@@ -1,0 +1,1 @@
+{"ok": true, "proxyReleaseId": "us-tts-origin-proxy-20260907-v2", "revision": 2, "currentSlot": "green", "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133", "active": {"blue": 0, "green": 0}, "drainTrusted": true, "inflightReuse": {"producersStarted": 44, "subscribersJoined": 0, "responsesRetained": 0, "replayBytes": 0}}

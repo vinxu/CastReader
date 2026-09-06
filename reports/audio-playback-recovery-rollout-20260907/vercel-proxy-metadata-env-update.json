@@ -1,0 +1,17 @@
+{
+  "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+  "environment": "production",
+  "type": "config",
+  "before": {
+    "TTS_UPSTREAM_RELEASE_ID": "us-tts-origin-proxy-20260906-v1",
+    "TTS_UPSTREAM_RECEIPT_SHA256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877"
+  },
+  "after": {
+    "TTS_UPSTREAM_RELEASE_ID": "us-tts-origin-proxy-20260907-v2",
+    "TTS_UPSTREAM_RECEIPT_SHA256": "493ae5a2309cb6a6fc65142a8756c019e6b4cdd40ad41a9edc972718162051c1"
+  },
+  "verified": true,
+  "verifiedAtUTC": "2026-09-06T17:10:32.652518+00:00",
+  "appliesTo": "future builds; existing artifacts unchanged",
+  "secretsChanged": false
+}

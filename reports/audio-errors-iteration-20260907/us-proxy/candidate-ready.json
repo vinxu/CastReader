@@ -1,0 +1,68 @@
+{
+  "schema": "castreader.us-proxy-v2-candidate-ready.v1",
+  "createdAtUTC": "2026-09-06T16:31:52.163021+00:00",
+  "worktree": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-inflight-diagnostics-20260907",
+  "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
+  "gitClean": true,
+  "productionModified": false,
+  "candidateDeployed": false,
+  "synthesisStarted": false,
+  "testResult": {
+    "passed": 26,
+    "failures": 0,
+    "runtimePython": "3.12.2",
+    "runtimeAiohttp": "3.14.1",
+    "command": "python -m unittest deployment.test_r133_stable_proxy deployment.test_r134_inflight_proxy deployment.test_r134_proxy_upgrade_host -q"
+  },
+  "files": [
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-inflight-diagnostics-20260907/deployment/r133_stable_proxy.py",
+      "bytes": 47315,
+      "sha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-inflight-diagnostics-20260907/deployment/r134_proxy_upgrade_host.py",
+      "bytes": 24140,
+      "sha256": "d63787355c0794e8ab4c6608560275f5bf73055df7fbc86ac4a2642b4915c741"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-inflight-diagnostics-20260907/deployment/operate_r134_proxy.py",
+      "bytes": 3305,
+      "sha256": "db5972dfc2d5ca6e6c6c90988e79bffe7b7c39d66a336936e5a01f61adf21699"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-inflight-diagnostics-20260907/deployment/R134_PROXY_UPGRADE.md",
+      "bytes": 6482,
+      "sha256": "f54dfac5c4496d19097b8358cce258ebef0f91fe5dc32bae91aec0d9d4976821"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-inflight-diagnostics-20260907/deployment/test_r134_inflight_proxy.py",
+      "bytes": 13478,
+      "sha256": "0c3860ee787890bd2fa358c39d8b6028fc55a9fde8554bd4da92f261bb6ddc20"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-inflight-diagnostics-20260907/deployment/test_r134_proxy_upgrade_host.py",
+      "bytes": 8194,
+      "sha256": "37f7e7f72a7d8eb2a7262d38c85fe2f7b24eaf9e3ccf42bfbd5503793893a4de"
+    }
+  ],
+  "limits": {
+    "explicitStreamFalseOnly": true,
+    "fullRequestBodyMaximumBytes": 16384,
+    "responseReplayPerFlightBytes": 2097152,
+    "maximumRetainedFlights": 16,
+    "maximumSubscribersPerFlight": 32,
+    "limitExceededBehavior": "independent relay",
+    "lastSubscriberLeaves": "cancel and await upstream HTTP task before release",
+    "completedResponseCache": false
+  },
+  "deployment": {
+    "oldRelease": "us-tts-origin-proxy-20260906-v1",
+    "newRelease": "us-tts-origin-proxy-20260907-v2",
+    "productionProxyPort": 8889,
+    "candidateLoopbackPort": 18989,
+    "stopwaitsecs": 210,
+    "newConnectionGapDisclosed": true,
+    "modelsRestarted": false
+  }
+}

@@ -1,0 +1,3212 @@
+{
+  "schema": "castreader.vercel-preset-event-window.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "expectedDeployment": "dpl_E3vhShktBut8yrPjXLViPqhp1zRt",
+  "window": {
+    "requestStartInclusiveUTC": "2026-09-06T16:45:55.382733Z",
+    "requestStartExclusiveUTC": "2026-09-06T16:54:27Z"
+  },
+  "query": {
+    "production": true,
+    "deploymentPinned": true,
+    "search": "tts-preset"
+  },
+  "collectionStartedUTC": "2026-09-06T16:55:43.566010Z",
+  "coverage": {
+    "pagesRead": 20,
+    "providerHasMoreRows": true,
+    "issues": [
+      "pagination_incomplete"
+    ],
+    "tlsCertificateAndHostnameVerified": true,
+    "completeForReturnedRequestCohort": false,
+    "providerRowsRead": 1000,
+    "uniqueProviderRequests": 50,
+    "parserCounts": {
+      "duplicateProviderRows": 950,
+      "duplicateSafeEvents": 4750
+    },
+    "requestsMissingStartOrFinish": 0,
+    "structuredEventsObserved": true,
+    "ingestionCompletenessVerified": false
+  },
+  "requests": [
+    {
+      "vercelRequestKey": "2905af122cc175b00dbc",
+      "requestStartUTC": "2026-09-06T16:53:57.238000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "21645e3a30fed8d08fda",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "21645e3a30fed8d08fda",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "21645e3a30fed8d08fda",
+          "attempt": 1,
+          "elapsedMs": 1549,
+          "attemptElapsedMs": 1548,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "21645e3a30fed8d08fda",
+          "attempt": 1,
+          "elapsedMs": 1564,
+          "attemptElapsedMs": 1564,
+          "bodyBytes": 59538,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "21645e3a30fed8d08fda",
+          "attempt": 1,
+          "elapsedMs": 1564,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1626,
+      "applicationRequestKeys": [
+        "21645e3a30fed8d08fda"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "1a1ff10d5b23b41cd6c6",
+      "requestStartUTC": "2026-09-06T16:53:58.457000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "eb29ca218c5b98fda5c8",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "eb29ca218c5b98fda5c8",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "eb29ca218c5b98fda5c8",
+          "attempt": 1,
+          "elapsedMs": 847,
+          "attemptElapsedMs": 847,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "eb29ca218c5b98fda5c8",
+          "attempt": 1,
+          "elapsedMs": 877,
+          "attemptElapsedMs": 876,
+          "bodyBytes": 302231,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "eb29ca218c5b98fda5c8",
+          "attempt": 1,
+          "elapsedMs": 877,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 946,
+      "applicationRequestKeys": [
+        "eb29ca218c5b98fda5c8"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "1e852d4a7a9d0b93cbc0",
+      "requestStartUTC": "2026-09-06T16:53:58.606000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "f0a647dc04f93f7e3e34",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "f0a647dc04f93f7e3e34",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "f0a647dc04f93f7e3e34",
+          "attempt": 1,
+          "elapsedMs": 1079,
+          "attemptElapsedMs": 1079,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "f0a647dc04f93f7e3e34",
+          "attempt": 1,
+          "elapsedMs": 1087,
+          "attemptElapsedMs": 1087,
+          "bodyBytes": 32530,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "f0a647dc04f93f7e3e34",
+          "attempt": 1,
+          "elapsedMs": 1088,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1243,
+      "applicationRequestKeys": [
+        "f0a647dc04f93f7e3e34"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "f1a5b76026091c1e05ef",
+      "requestStartUTC": "2026-09-06T16:53:58.913000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "912b4d3843b93505e5ec",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "912b4d3843b93505e5ec",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "912b4d3843b93505e5ec",
+          "attempt": 1,
+          "elapsedMs": 1252,
+          "attemptElapsedMs": 1252,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "912b4d3843b93505e5ec",
+          "attempt": 1,
+          "elapsedMs": 1270,
+          "attemptElapsedMs": 1270,
+          "bodyBytes": 74034,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "912b4d3843b93505e5ec",
+          "attempt": 1,
+          "elapsedMs": 1270,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1331,
+      "applicationRequestKeys": [
+        "912b4d3843b93505e5ec"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "9842c112a70884a51196",
+      "requestStartUTC": "2026-09-06T16:53:59.461000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "1dbce9d2605b47a6e7e2",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "1dbce9d2605b47a6e7e2",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "1dbce9d2605b47a6e7e2",
+          "attempt": 1,
+          "elapsedMs": 1245,
+          "attemptElapsedMs": 1245,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "1dbce9d2605b47a6e7e2",
+          "attempt": 1,
+          "elapsedMs": 1272,
+          "attemptElapsedMs": 1272,
+          "bodyBytes": 281269,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "1dbce9d2605b47a6e7e2",
+          "attempt": 1,
+          "elapsedMs": 1273,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1300,
+      "applicationRequestKeys": [
+        "1dbce9d2605b47a6e7e2"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "e471328f84f157f41c01",
+      "requestStartUTC": "2026-09-06T16:54:00.286000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "5abd79c7a55a8b275420",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "5abd79c7a55a8b275420",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "5abd79c7a55a8b275420",
+          "attempt": 1,
+          "elapsedMs": 953,
+          "attemptElapsedMs": 953,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "5abd79c7a55a8b275420",
+          "attempt": 1,
+          "elapsedMs": 978,
+          "attemptElapsedMs": 978,
+          "bodyBytes": 190386,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "5abd79c7a55a8b275420",
+          "attempt": 1,
+          "elapsedMs": 978,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1071,
+      "applicationRequestKeys": [
+        "5abd79c7a55a8b275420"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "56e534634bc95fdab187",
+      "requestStartUTC": "2026-09-06T16:54:00.829000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "eb6ae2075b8ab8d0b65a",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "eb6ae2075b8ab8d0b65a",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "eb6ae2075b8ab8d0b65a",
+          "attempt": 1,
+          "elapsedMs": 802,
+          "attemptElapsedMs": 802,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "eb6ae2075b8ab8d0b65a",
+          "attempt": 1,
+          "elapsedMs": 817,
+          "attemptElapsedMs": 817,
+          "bodyBytes": 55963,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "eb6ae2075b8ab8d0b65a",
+          "attempt": 1,
+          "elapsedMs": 817,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 914,
+      "applicationRequestKeys": [
+        "eb6ae2075b8ab8d0b65a"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "1adefcc0ce1ebfc2c6c6",
+      "requestStartUTC": "2026-09-06T16:54:01.388000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "d95a37bb99edea27eff9",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "d95a37bb99edea27eff9",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "d95a37bb99edea27eff9",
+          "attempt": 1,
+          "elapsedMs": 829,
+          "attemptElapsedMs": 829,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "d95a37bb99edea27eff9",
+          "attempt": 1,
+          "elapsedMs": 854,
+          "attemptElapsedMs": 853,
+          "bodyBytes": 185546,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "d95a37bb99edea27eff9",
+          "attempt": 1,
+          "elapsedMs": 854,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 932,
+      "applicationRequestKeys": [
+        "d95a37bb99edea27eff9"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "b6e1e7b2947aa5306f2e",
+      "requestStartUTC": "2026-09-06T16:54:01.587000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "787e127cdccf82a02459",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "787e127cdccf82a02459",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "787e127cdccf82a02459",
+          "attempt": 1,
+          "elapsedMs": 2021,
+          "attemptElapsedMs": 2020,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "787e127cdccf82a02459",
+          "attempt": 1,
+          "elapsedMs": 2058,
+          "attemptElapsedMs": 2058,
+          "bodyBytes": 401493,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "787e127cdccf82a02459",
+          "attempt": 1,
+          "elapsedMs": 2060,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 3233,
+      "applicationRequestKeys": [
+        "787e127cdccf82a02459"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "abe967cf4ad5b46f57a9",
+      "requestStartUTC": "2026-09-06T16:54:01.786000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "269adaa0bfce813626d8",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "269adaa0bfce813626d8",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "269adaa0bfce813626d8",
+          "attempt": 1,
+          "elapsedMs": 2992,
+          "attemptElapsedMs": 2992,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "269adaa0bfce813626d8",
+          "attempt": 1,
+          "elapsedMs": 3022,
+          "attemptElapsedMs": 3022,
+          "bodyBytes": 324086,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "269adaa0bfce813626d8",
+          "attempt": 1,
+          "elapsedMs": 3023,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 3073,
+      "applicationRequestKeys": [
+        "269adaa0bfce813626d8"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "9312480a4a7d2343f238",
+      "requestStartUTC": "2026-09-06T16:54:02.347000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "4528540fd26df308dcc9",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "4528540fd26df308dcc9",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "4528540fd26df308dcc9",
+          "attempt": 1,
+          "elapsedMs": 1878,
+          "attemptElapsedMs": 1878,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "4528540fd26df308dcc9",
+          "attempt": 1,
+          "elapsedMs": 1894,
+          "attemptElapsedMs": 1894,
+          "bodyBytes": 58369,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "4528540fd26df308dcc9",
+          "attempt": 1,
+          "elapsedMs": 1894,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1966,
+      "applicationRequestKeys": [
+        "4528540fd26df308dcc9"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "1de98b7775068cb2af74",
+      "requestStartUTC": "2026-09-06T16:54:02.640000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "f94e2b98386b7f207436",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "f94e2b98386b7f207436",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "f94e2b98386b7f207436",
+          "attempt": 1,
+          "elapsedMs": 2540,
+          "attemptElapsedMs": 2539,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "f94e2b98386b7f207436",
+          "attempt": 1,
+          "elapsedMs": 2554,
+          "attemptElapsedMs": 2554,
+          "bodyBytes": 63065,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "f94e2b98386b7f207436",
+          "attempt": 1,
+          "elapsedMs": 2554,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 3209,
+      "applicationRequestKeys": [
+        "f94e2b98386b7f207436"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "2518201ef378bafa9361",
+      "requestStartUTC": "2026-09-06T16:54:04.344000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "ce3b65bdc527dd4c457b",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "ce3b65bdc527dd4c457b",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "ce3b65bdc527dd4c457b",
+          "attempt": 1,
+          "elapsedMs": 1418,
+          "attemptElapsedMs": 1417,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "ce3b65bdc527dd4c457b",
+          "attempt": 1,
+          "elapsedMs": 1440,
+          "attemptElapsedMs": 1440,
+          "bodyBytes": 102558,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "ce3b65bdc527dd4c457b",
+          "attempt": 1,
+          "elapsedMs": 1441,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1692,
+      "applicationRequestKeys": [
+        "ce3b65bdc527dd4c457b"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "d9b566d350c53bb51a82",
+      "requestStartUTC": "2026-09-06T16:54:04.414000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "3feaef45de4d4ff3933d",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "3feaef45de4d4ff3933d",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "3feaef45de4d4ff3933d",
+          "attempt": 1,
+          "elapsedMs": 1856,
+          "attemptElapsedMs": 1856,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "3feaef45de4d4ff3933d",
+          "attempt": 1,
+          "elapsedMs": 1873,
+          "attemptElapsedMs": 1873,
+          "bodyBytes": 75055,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "3feaef45de4d4ff3933d",
+          "attempt": 1,
+          "elapsedMs": 1873,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1940,
+      "applicationRequestKeys": [
+        "3feaef45de4d4ff3933d"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "8093adc8cdd4cd98826e",
+      "requestStartUTC": "2026-09-06T16:54:04.924000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "a2d3b47fe88db765a1a7",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "a2d3b47fe88db765a1a7",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "a2d3b47fe88db765a1a7",
+          "attempt": 1,
+          "elapsedMs": 1799,
+          "attemptElapsedMs": 1799,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "a2d3b47fe88db765a1a7",
+          "attempt": 1,
+          "elapsedMs": 1814,
+          "attemptElapsedMs": 1814,
+          "bodyBytes": 57999,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "a2d3b47fe88db765a1a7",
+          "attempt": 1,
+          "elapsedMs": 1815,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1861,
+      "applicationRequestKeys": [
+        "a2d3b47fe88db765a1a7"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "9b88ae212dd7bd4ceda5",
+      "requestStartUTC": "2026-09-06T16:54:06.380000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "e18922ccd5e7e519cbd8",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "e18922ccd5e7e519cbd8",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "e18922ccd5e7e519cbd8",
+          "attempt": 1,
+          "elapsedMs": 887,
+          "attemptElapsedMs": 887,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "e18922ccd5e7e519cbd8",
+          "attempt": 1,
+          "elapsedMs": 912,
+          "attemptElapsedMs": 912,
+          "bodyBytes": 174287,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "e18922ccd5e7e519cbd8",
+          "attempt": 1,
+          "elapsedMs": 912,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 989,
+      "applicationRequestKeys": [
+        "e18922ccd5e7e519cbd8"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "203020aa2dee9bcd5ddb",
+      "requestStartUTC": "2026-09-06T16:54:06.830000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "8de8ec4b570e52733e26",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "8de8ec4b570e52733e26",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "8de8ec4b570e52733e26",
+          "attempt": 1,
+          "elapsedMs": 1475,
+          "attemptElapsedMs": 1475,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "8de8ec4b570e52733e26",
+          "attempt": 1,
+          "elapsedMs": 1491,
+          "attemptElapsedMs": 1491,
+          "bodyBytes": 82607,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "8de8ec4b570e52733e26",
+          "attempt": 1,
+          "elapsedMs": 1491,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1504,
+      "applicationRequestKeys": [
+        "8de8ec4b570e52733e26"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "dee270108160010105fd",
+      "requestStartUTC": "2026-09-06T16:54:07.425000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "fb846f59297312895a30",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "fb846f59297312895a30",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "fb846f59297312895a30",
+          "attempt": 1,
+          "elapsedMs": 1308,
+          "attemptElapsedMs": 1308,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "fb846f59297312895a30",
+          "attempt": 1,
+          "elapsedMs": 1330,
+          "attemptElapsedMs": 1329,
+          "bodyBytes": 108295,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "fb846f59297312895a30",
+          "attempt": 1,
+          "elapsedMs": 1330,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1419,
+      "applicationRequestKeys": [
+        "fb846f59297312895a30"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "f1829dc508ee2a1b95d5",
+      "requestStartUTC": "2026-09-06T16:54:08.375000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "024bcf94c25a15f892bd",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "024bcf94c25a15f892bd",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "024bcf94c25a15f892bd",
+          "attempt": 1,
+          "elapsedMs": 937,
+          "attemptElapsedMs": 937,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "024bcf94c25a15f892bd",
+          "attempt": 1,
+          "elapsedMs": 965,
+          "attemptElapsedMs": 965,
+          "bodyBytes": 292698,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "024bcf94c25a15f892bd",
+          "attempt": 1,
+          "elapsedMs": 966,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1026,
+      "applicationRequestKeys": [
+        "024bcf94c25a15f892bd"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "afeaeca2cdd0c8ab18e8",
+      "requestStartUTC": "2026-09-06T16:54:08.871000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "261919e3bb707c0ae662",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "261919e3bb707c0ae662",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "261919e3bb707c0ae662",
+          "attempt": 1,
+          "elapsedMs": 977,
+          "attemptElapsedMs": 977,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "261919e3bb707c0ae662",
+          "attempt": 1,
+          "elapsedMs": 1002,
+          "attemptElapsedMs": 1001,
+          "bodyBytes": 130534,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "261919e3bb707c0ae662",
+          "attempt": 1,
+          "elapsedMs": 1002,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1077,
+      "applicationRequestKeys": [
+        "261919e3bb707c0ae662"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "5949c298a1d91bce1079",
+      "requestStartUTC": "2026-09-06T16:54:09.231000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "52a7ee685ebf7237d44d",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "52a7ee685ebf7237d44d",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "52a7ee685ebf7237d44d",
+          "attempt": 1,
+          "elapsedMs": 1079,
+          "attemptElapsedMs": 1079,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "52a7ee685ebf7237d44d",
+          "attempt": 1,
+          "elapsedMs": 1108,
+          "attemptElapsedMs": 1108,
+          "bodyBytes": 216037,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "52a7ee685ebf7237d44d",
+          "attempt": 1,
+          "elapsedMs": 1109,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 2315,
+      "applicationRequestKeys": [
+        "52a7ee685ebf7237d44d"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "4ffa5184369a437aa00a",
+      "requestStartUTC": "2026-09-06T16:54:09.456000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "30478cb673e8955ab00c",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "30478cb673e8955ab00c",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "30478cb673e8955ab00c",
+          "attempt": 1,
+          "elapsedMs": 1960,
+          "attemptElapsedMs": 1960,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "30478cb673e8955ab00c",
+          "attempt": 1,
+          "elapsedMs": 1992,
+          "attemptElapsedMs": 1992,
+          "bodyBytes": 324496,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "30478cb673e8955ab00c",
+          "attempt": 1,
+          "elapsedMs": 1993,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 2020,
+      "applicationRequestKeys": [
+        "30478cb673e8955ab00c"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "7e71ebde526a51fc4798",
+      "requestStartUTC": "2026-09-06T16:54:11.563000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "66f35501d10eed8185f4",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "66f35501d10eed8185f4",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "66f35501d10eed8185f4",
+          "attempt": 1,
+          "elapsedMs": 523,
+          "attemptElapsedMs": 523,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "66f35501d10eed8185f4",
+          "attempt": 1,
+          "elapsedMs": 548,
+          "attemptElapsedMs": 548,
+          "bodyBytes": 172023,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "66f35501d10eed8185f4",
+          "attempt": 1,
+          "elapsedMs": 548,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 609,
+      "applicationRequestKeys": [
+        "66f35501d10eed8185f4"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "a757510c551988c6670d",
+      "requestStartUTC": "2026-09-06T16:54:12.029000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "8cee1655512fd74c7d7d",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "8cee1655512fd74c7d7d",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "8cee1655512fd74c7d7d",
+          "attempt": 1,
+          "elapsedMs": 508,
+          "attemptElapsedMs": 508,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "8cee1655512fd74c7d7d",
+          "attempt": 1,
+          "elapsedMs": 524,
+          "attemptElapsedMs": 523,
+          "bodyBytes": 90099,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "8cee1655512fd74c7d7d",
+          "attempt": 1,
+          "elapsedMs": 524,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 713,
+      "applicationRequestKeys": [
+        "8cee1655512fd74c7d7d"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "4cd93dc3db16fdc752d8",
+      "requestStartUTC": "2026-09-06T16:54:12.225000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "169e6caa6425ff0aab96",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "169e6caa6425ff0aab96",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "169e6caa6425ff0aab96",
+          "attempt": 1,
+          "elapsedMs": 856,
+          "attemptElapsedMs": 856,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "169e6caa6425ff0aab96",
+          "attempt": 1,
+          "elapsedMs": 880,
+          "attemptElapsedMs": 880,
+          "bodyBytes": 166825,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "169e6caa6425ff0aab96",
+          "attempt": 1,
+          "elapsedMs": 881,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 907,
+      "applicationRequestKeys": [
+        "169e6caa6425ff0aab96"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "e9c2ae385dfde47dfc35",
+      "requestStartUTC": "2026-09-06T16:54:12.389000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "85e9ce3d39b97719fe04",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "85e9ce3d39b97719fe04",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "85e9ce3d39b97719fe04",
+          "attempt": 1,
+          "elapsedMs": 1026,
+          "attemptElapsedMs": 1026,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "85e9ce3d39b97719fe04",
+          "attempt": 1,
+          "elapsedMs": 1042,
+          "attemptElapsedMs": 1041,
+          "bodyBytes": 83693,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "85e9ce3d39b97719fe04",
+          "attempt": 1,
+          "elapsedMs": 1042,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1671,
+      "applicationRequestKeys": [
+        "85e9ce3d39b97719fe04"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "2e42d150adf435faf742",
+      "requestStartUTC": "2026-09-06T16:54:13.175000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "4d94403ffcfb5828a865",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "4d94403ffcfb5828a865",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "4d94403ffcfb5828a865",
+          "attempt": 1,
+          "elapsedMs": 981,
+          "attemptElapsedMs": 981,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "4d94403ffcfb5828a865",
+          "attempt": 1,
+          "elapsedMs": 1018,
+          "attemptElapsedMs": 1018,
+          "bodyBytes": 417930,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "4d94403ffcfb5828a865",
+          "attempt": 1,
+          "elapsedMs": 1019,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1063,
+      "applicationRequestKeys": [
+        "4d94403ffcfb5828a865"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "292498175f7ed4592d9c",
+      "requestStartUTC": "2026-09-06T16:54:14.306000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "9328c05e0e6fba8a0f2f",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "9328c05e0e6fba8a0f2f",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "9328c05e0e6fba8a0f2f",
+          "attempt": 1,
+          "elapsedMs": 512,
+          "attemptElapsedMs": 512,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "9328c05e0e6fba8a0f2f",
+          "attempt": 1,
+          "elapsedMs": 534,
+          "attemptElapsedMs": 534,
+          "bodyBytes": 228082,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "9328c05e0e6fba8a0f2f",
+          "attempt": 1,
+          "elapsedMs": 535,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 578,
+      "applicationRequestKeys": [
+        "9328c05e0e6fba8a0f2f"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "f37eee79f07955a738ec",
+      "requestStartUTC": "2026-09-06T16:54:14.959000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "ffb82ab9d631c10fc054",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "ffb82ab9d631c10fc054",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "ffb82ab9d631c10fc054",
+          "attempt": 1,
+          "elapsedMs": 1036,
+          "attemptElapsedMs": 1036,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "ffb82ab9d631c10fc054",
+          "attempt": 1,
+          "elapsedMs": 1067,
+          "attemptElapsedMs": 1067,
+          "bodyBytes": 349793,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "ffb82ab9d631c10fc054",
+          "attempt": 1,
+          "elapsedMs": 1068,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1180,
+      "applicationRequestKeys": [
+        "ffb82ab9d631c10fc054"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "839a31e76c1ce9201e13",
+      "requestStartUTC": "2026-09-06T16:54:16.205000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "87ede818f2cadb097b15",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "87ede818f2cadb097b15",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "87ede818f2cadb097b15",
+          "attempt": 1,
+          "elapsedMs": 543,
+          "attemptElapsedMs": 542,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "87ede818f2cadb097b15",
+          "attempt": 1,
+          "elapsedMs": 566,
+          "attemptElapsedMs": 565,
+          "bodyBytes": 205958,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "87ede818f2cadb097b15",
+          "attempt": 1,
+          "elapsedMs": 566,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 622,
+      "applicationRequestKeys": [
+        "87ede818f2cadb097b15"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "b82ec14bc1305986a655",
+      "requestStartUTC": "2026-09-06T16:54:16.891000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "d2101db0e907e9d506c0",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "d2101db0e907e9d506c0",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "d2101db0e907e9d506c0",
+          "attempt": 1,
+          "elapsedMs": 522,
+          "attemptElapsedMs": 521,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "d2101db0e907e9d506c0",
+          "attempt": 1,
+          "elapsedMs": 545,
+          "attemptElapsedMs": 545,
+          "bodyBytes": 226927,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "d2101db0e907e9d506c0",
+          "attempt": 1,
+          "elapsedMs": 546,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 591,
+      "applicationRequestKeys": [
+        "d2101db0e907e9d506c0"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "f934043abb0c854b936a",
+      "requestStartUTC": "2026-09-06T16:54:17.545000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "2e6e84fb7874eb4786bb",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "2e6e84fb7874eb4786bb",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "2e6e84fb7874eb4786bb",
+          "attempt": 1,
+          "elapsedMs": 530,
+          "attemptElapsedMs": 530,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "2e6e84fb7874eb4786bb",
+          "attempt": 1,
+          "elapsedMs": 554,
+          "attemptElapsedMs": 553,
+          "bodyBytes": 161045,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "2e6e84fb7874eb4786bb",
+          "attempt": 1,
+          "elapsedMs": 554,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 586,
+      "applicationRequestKeys": [
+        "2e6e84fb7874eb4786bb"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "77aadd3e9ae83c1f8037",
+      "requestStartUTC": "2026-09-06T16:54:18.179000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "c6d7900827818664fc76",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "c6d7900827818664fc76",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "c6d7900827818664fc76",
+          "attempt": 1,
+          "elapsedMs": 878,
+          "attemptElapsedMs": 877,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "c6d7900827818664fc76",
+          "attempt": 1,
+          "elapsedMs": 900,
+          "attemptElapsedMs": 900,
+          "bodyBytes": 116920,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "c6d7900827818664fc76",
+          "attempt": 1,
+          "elapsedMs": 900,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 957,
+      "applicationRequestKeys": [
+        "c6d7900827818664fc76"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "8086e51cca1ae3fa73a9",
+      "requestStartUTC": "2026-09-06T16:54:19.179000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "30cf831ade778b6e27d0",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "30cf831ade778b6e27d0",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "30cf831ade778b6e27d0",
+          "attempt": 1,
+          "elapsedMs": 531,
+          "attemptElapsedMs": 530,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "30cf831ade778b6e27d0",
+          "attempt": 1,
+          "elapsedMs": 553,
+          "attemptElapsedMs": 553,
+          "bodyBytes": 253137,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "30cf831ade778b6e27d0",
+          "attempt": 1,
+          "elapsedMs": 554,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 603,
+      "applicationRequestKeys": [
+        "30cf831ade778b6e27d0"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "42434b4b25ba97c43ae4",
+      "requestStartUTC": "2026-09-06T16:54:19.348000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "e95ebdeaaad862a25121",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "e95ebdeaaad862a25121",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "e95ebdeaaad862a25121",
+          "attempt": 1,
+          "elapsedMs": 1292,
+          "attemptElapsedMs": 1292,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "e95ebdeaaad862a25121",
+          "attempt": 1,
+          "elapsedMs": 1325,
+          "attemptElapsedMs": 1325,
+          "bodyBytes": 367279,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "e95ebdeaaad862a25121",
+          "attempt": 1,
+          "elapsedMs": 1327,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 2008,
+      "applicationRequestKeys": [
+        "e95ebdeaaad862a25121"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "0c81bfa3f3134e6579af",
+      "requestStartUTC": "2026-09-06T16:54:19.841000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "76723f477975170a0353",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "76723f477975170a0353",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "76723f477975170a0353",
+          "attempt": 1,
+          "elapsedMs": 1467,
+          "attemptElapsedMs": 1467,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "76723f477975170a0353",
+          "attempt": 1,
+          "elapsedMs": 1498,
+          "attemptElapsedMs": 1498,
+          "bodyBytes": 272166,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "76723f477975170a0353",
+          "attempt": 1,
+          "elapsedMs": 1499,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1529,
+      "applicationRequestKeys": [
+        "76723f477975170a0353"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "51ea2c8fe586fc7d8a75",
+      "requestStartUTC": "2026-09-06T16:54:21.438000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "020244f0dc697f84ad97",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "020244f0dc697f84ad97",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "020244f0dc697f84ad97",
+          "attempt": 1,
+          "elapsedMs": 475,
+          "attemptElapsedMs": 474,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "020244f0dc697f84ad97",
+          "attempt": 1,
+          "elapsedMs": 482,
+          "attemptElapsedMs": 482,
+          "bodyBytes": 45547,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "020244f0dc697f84ad97",
+          "attempt": 1,
+          "elapsedMs": 482,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 540,
+      "applicationRequestKeys": [
+        "020244f0dc697f84ad97"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "fcff034408704a0373b0",
+      "requestStartUTC": "2026-09-06T16:54:22.026000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "751fc45a55467b74c3fc",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "751fc45a55467b74c3fc",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "751fc45a55467b74c3fc",
+          "attempt": 1,
+          "elapsedMs": 679,
+          "attemptElapsedMs": 679,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "751fc45a55467b74c3fc",
+          "attempt": 1,
+          "elapsedMs": 716,
+          "attemptElapsedMs": 715,
+          "bodyBytes": 442569,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "751fc45a55467b74c3fc",
+          "attempt": 1,
+          "elapsedMs": 716,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 778,
+      "applicationRequestKeys": [
+        "751fc45a55467b74c3fc"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "e6fb0e7a963736fd3de2",
+      "requestStartUTC": "2026-09-06T16:54:22.700000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "15a60ded8789728cce3e",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "15a60ded8789728cce3e",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "15a60ded8789728cce3e",
+          "attempt": 1,
+          "elapsedMs": 565,
+          "attemptElapsedMs": 565,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "15a60ded8789728cce3e",
+          "attempt": 1,
+          "elapsedMs": 596,
+          "attemptElapsedMs": 596,
+          "bodyBytes": 303103,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "15a60ded8789728cce3e",
+          "attempt": 1,
+          "elapsedMs": 597,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 622,
+      "applicationRequestKeys": [
+        "15a60ded8789728cce3e"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "3c0de71b7e48c0db57c8",
+      "requestStartUTC": "2026-09-06T16:54:22.727000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "680f9fb4cfac85016278",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "680f9fb4cfac85016278",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "680f9fb4cfac85016278",
+          "attempt": 1,
+          "elapsedMs": 2149,
+          "attemptElapsedMs": 2149,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "680f9fb4cfac85016278",
+          "attempt": 1,
+          "elapsedMs": 2180,
+          "attemptElapsedMs": 2179,
+          "bodyBytes": 223619,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "680f9fb4cfac85016278",
+          "attempt": 1,
+          "elapsedMs": 2180,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 3477,
+      "applicationRequestKeys": [
+        "680f9fb4cfac85016278"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "186cd9b300d9ee69851e",
+      "requestStartUTC": "2026-09-06T16:54:22.896000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "2df229d7e343a70280ff",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "2df229d7e343a70280ff",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "2df229d7e343a70280ff",
+          "attempt": 1,
+          "elapsedMs": 1016,
+          "attemptElapsedMs": 1016,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "2df229d7e343a70280ff",
+          "attempt": 1,
+          "elapsedMs": 1040,
+          "attemptElapsedMs": 1040,
+          "bodyBytes": 142041,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "2df229d7e343a70280ff",
+          "attempt": 1,
+          "elapsedMs": 1041,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1065,
+      "applicationRequestKeys": [
+        "2df229d7e343a70280ff"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "1568b8f2c9fe8fac0551",
+      "requestStartUTC": "2026-09-06T16:54:23.137000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "59bca9f46f38216f245e",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "59bca9f46f38216f245e",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "59bca9f46f38216f245e",
+          "attempt": 1,
+          "elapsedMs": 257,
+          "attemptElapsedMs": 256,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "59bca9f46f38216f245e",
+          "attempt": 1,
+          "elapsedMs": 277,
+          "attemptElapsedMs": 276,
+          "bodyBytes": 82751,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "59bca9f46f38216f245e",
+          "attempt": 1,
+          "elapsedMs": 277,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 300,
+      "applicationRequestKeys": [
+        "59bca9f46f38216f245e"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "e52cf854ce99f0cfd74c",
+      "requestStartUTC": "2026-09-06T16:54:23.487000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "199f9fdc040772906431",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "199f9fdc040772906431",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "199f9fdc040772906431",
+          "attempt": 1,
+          "elapsedMs": 837,
+          "attemptElapsedMs": 837,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "199f9fdc040772906431",
+          "attempt": 1,
+          "elapsedMs": 864,
+          "attemptElapsedMs": 864,
+          "bodyBytes": 204241,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "199f9fdc040772906431",
+          "attempt": 1,
+          "elapsedMs": 865,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 897,
+      "applicationRequestKeys": [
+        "199f9fdc040772906431"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "734a4f2132719596d89b",
+      "requestStartUTC": "2026-09-06T16:54:23.524000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "3f49c0710d586b4a1ae7",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "3f49c0710d586b4a1ae7",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "3f49c0710d586b4a1ae7",
+          "attempt": 1,
+          "elapsedMs": 1084,
+          "attemptElapsedMs": 1084,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "3f49c0710d586b4a1ae7",
+          "attempt": 1,
+          "elapsedMs": 1108,
+          "attemptElapsedMs": 1108,
+          "bodyBytes": 180170,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "3f49c0710d586b4a1ae7",
+          "attempt": 1,
+          "elapsedMs": 1109,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 1145,
+      "applicationRequestKeys": [
+        "3f49c0710d586b4a1ae7"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "5319b58d4d45cde25765",
+      "requestStartUTC": "2026-09-06T16:54:24.009000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "bb944b5cef32841f6af0",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "bb944b5cef32841f6af0",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "bb944b5cef32841f6af0",
+          "attempt": 1,
+          "elapsedMs": 3754,
+          "attemptElapsedMs": 3754,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "bb944b5cef32841f6af0",
+          "attempt": 1,
+          "elapsedMs": 3793,
+          "attemptElapsedMs": 3792,
+          "bodyBytes": 520945,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "bb944b5cef32841f6af0",
+          "attempt": 1,
+          "elapsedMs": 3794,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 3953,
+      "applicationRequestKeys": [
+        "bb944b5cef32841f6af0"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "54fd97b2ef1177970dad",
+      "requestStartUTC": "2026-09-06T16:54:24.779000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "4a7a5df695ee32620816",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "4a7a5df695ee32620816",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "4a7a5df695ee32620816",
+          "attempt": 1,
+          "elapsedMs": 701,
+          "attemptElapsedMs": 701,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "4a7a5df695ee32620816",
+          "attempt": 1,
+          "elapsedMs": 724,
+          "attemptElapsedMs": 724,
+          "bodyBytes": 169846,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "4a7a5df695ee32620816",
+          "attempt": 1,
+          "elapsedMs": 725,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 779,
+      "applicationRequestKeys": [
+        "4a7a5df695ee32620816"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "2072bc3ac0114eb40f9f",
+      "requestStartUTC": "2026-09-06T16:54:24.951000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "4ffbe6afb93116665237",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "4ffbe6afb93116665237",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "4ffbe6afb93116665237",
+          "attempt": 1,
+          "elapsedMs": 1862,
+          "attemptElapsedMs": 1862,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "4ffbe6afb93116665237",
+          "attempt": 1,
+          "elapsedMs": 1887,
+          "attemptElapsedMs": 1887,
+          "bodyBytes": 121616,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "4ffbe6afb93116665237",
+          "attempt": 1,
+          "elapsedMs": 1887,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 2156,
+      "applicationRequestKeys": [
+        "4ffbe6afb93116665237"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "103e65a436814e08df47",
+      "requestStartUTC": "2026-09-06T16:54:25.645000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "cefe0934bfe232a1be9a",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "cefe0934bfe232a1be9a",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "cefe0934bfe232a1be9a",
+          "attempt": 1,
+          "elapsedMs": 737,
+          "attemptElapsedMs": 736,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "cefe0934bfe232a1be9a",
+          "attempt": 1,
+          "elapsedMs": 768,
+          "attemptElapsedMs": 768,
+          "bodyBytes": 249841,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "cefe0934bfe232a1be9a",
+          "attempt": 1,
+          "elapsedMs": 769,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 848,
+      "applicationRequestKeys": [
+        "cefe0934bfe232a1be9a"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "4b434092db4f77d3397b",
+      "requestStartUTC": "2026-09-06T16:54:26.587000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "96ea677b5996f26deb27",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "96ea677b5996f26deb27",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "96ea677b5996f26deb27",
+          "attempt": 1,
+          "elapsedMs": 601,
+          "attemptElapsedMs": 601,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "96ea677b5996f26deb27",
+          "attempt": 1,
+          "elapsedMs": 619,
+          "attemptElapsedMs": 619,
+          "bodyBytes": 184194,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "96ea677b5996f26deb27",
+          "attempt": 1,
+          "elapsedMs": 620,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 652,
+      "applicationRequestKeys": [
+        "96ea677b5996f26deb27"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    },
+    {
+      "vercelRequestKey": "f56b250219bb0de87fe0",
+      "requestStartUTC": "2026-09-06T16:54:26.883000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "510da8c878d4e82561a3",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "510da8c878d4e82561a3",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "510da8c878d4e82561a3",
+          "attempt": 1,
+          "elapsedMs": 1562,
+          "attemptElapsedMs": 1562,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "510da8c878d4e82561a3",
+          "attempt": 1,
+          "elapsedMs": 1578,
+          "attemptElapsedMs": 1578,
+          "bodyBytes": 42388,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "510da8c878d4e82561a3",
+          "attempt": 1,
+          "elapsedMs": 1578,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 2233,
+      "applicationRequestKeys": [
+        "510da8c878d4e82561a3"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    }
+  ],
+  "counts": {
+    "events": {
+      "request_start": 50,
+      "attempt_start": 50,
+      "upstream_headers": 50,
+      "upstream_body": 50,
+      "request_finished": 50
+    },
+    "failureCodes": {},
+    "terminalCodes": {},
+    "attemptStarts": {
+      "1": 50
+    }
+  },
+  "collectedAtUTC": "2026-09-06T16:57:51.947638Z",
+  "limitations": [
+    "Window selects provider request-start timestamps; nested event elapsedMs is relative to the application executor start, not the provider request start.",
+    "Application events have no absolute timestamp. Requests may finish after the window end; never infer exact event wall time by adding elapsedMs to the provider timestamp.",
+    "Vercel search and ingestion can omit or delay logs. Zero accepted events and even complete pagination do not prove zero requests or healthy playback.",
+    "requestKey plus attempt joins proxy caller diagnostics; vercelRequestKey is a separate provider identifier hash and must not be joined as an application key.",
+    "Repeated application request keys across provider requests remain separate. An attempt failure, scheduled retry and final error may describe the same failure.",
+    "Header/body timings locate the observed waiting stage; they do not distinguish network, queue, language lock or inference time inside the upstream.",
+    "Complete HTTP audio bytes do not prove decoding quality, delivery to the device or playback completion."
+  ]
+}

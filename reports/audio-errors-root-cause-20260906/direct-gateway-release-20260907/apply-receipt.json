@@ -1,0 +1,5 @@
+{
+  "status": "transaction_started",
+  "unit": "castreader-direct-release-abort-source.service",
+  "hostProgramSha256": "798de44a87806e1b4408323da5db0c9c3b50a90e769cff88af3157be51f8d87e"
+}

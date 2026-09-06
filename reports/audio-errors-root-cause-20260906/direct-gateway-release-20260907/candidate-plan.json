@@ -1,0 +1,14 @@
+{
+  "status": "local_plan_only",
+  "productionAccessed": false,
+  "sourceCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+  "sourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+  "expectedBaselineCommit": "b9e7e9129e49f882398289511bbb90dbda8c6c08",
+  "expectedBaselineSourceSha256": "53a4ca273a7b3d60b1ce24f3cb089985f57bb6006b2838b683549c69e93d26d5",
+  "hostReleaseRoot": "/var/lib/castreader-tts-release/20260907-abort-source",
+  "requiresFreshBaseline": true,
+  "requiresVerifiedPrivateBackup": true,
+  "candidatePort": 17778,
+  "productionPort": 7778,
+  "preservesRegionAndIngress": true
+}

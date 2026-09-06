@@ -10,38 +10,10 @@
     "monitorMaxObservedGapSeconds": 900,
     "requireAndroid145GatewaySample": true
   },
-  "releaseHistory": [],
-  "requiredComponents": {
-    "directGateway": {
-      "activeFromUtc": "2026-09-06T03:55:52.850340+00:00",
-      "runtimeSourceSha256": "53a4ca273a7b3d60b1ce24f3cb089985f57bb6006b2838b683549c69e93d26d5",
-      "sourceCommit": "b9e7e9129e49f882398289511bbb90dbda8c6c08",
-      "verified": true,
-      "verifiedAtUtc": "2026-09-06T03:55:56.628488+00:00",
-      "version": "b9e7e9129e49f882398289511bbb90dbda8c6c08"
-    },
-    "globalGateway": {
-      "activationTimeSemantics": "First confirmed production alias convergence after promotion",
-      "activeFromUtc": "2026-09-06T04:57:01Z",
-      "routeRevision": 1,
-      "routeSource": "database",
-      "sourceCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
-      "upstreamReceiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
-      "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
-      "verified": true,
-      "verifiedAtUtc": "2026-09-06T04:58:11.348402+00:00",
-      "version": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc"
-    },
-    "usKokoro": {
+  "releaseHistory": [
+    {
       "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
-      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
-      "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
-      "verified": true,
-      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
-      "version": "ca857ee91c3367999fb905de1f0924a6e28edd81"
-    },
-    "usOriginProxy": {
-      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
+      "component": "usOriginProxy",
       "currentReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
       "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
       "currentSlot": "green",
@@ -52,6 +24,72 @@
       "verified": true,
       "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
       "version": "us-tts-origin-proxy-20260906-v1"
+    },
+    {
+      "activationTimeSemantics": "First confirmed production alias convergence after promotion",
+      "activeFromUtc": "2026-09-06T04:57:01Z",
+      "component": "globalGateway",
+      "routeRevision": 1,
+      "routeSource": "database",
+      "sourceCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+      "upstreamReceiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:58:11.348402+00:00",
+      "version": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc"
+    },
+    {
+      "activeFromUtc": "2026-09-06T03:55:52.850340+00:00",
+      "component": "directGateway",
+      "runtimeSourceSha256": "53a4ca273a7b3d60b1ce24f3cb089985f57bb6006b2838b683549c69e93d26d5",
+      "sourceCommit": "b9e7e9129e49f882398289511bbb90dbda8c6c08",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T03:55:56.628488+00:00",
+      "version": "b9e7e9129e49f882398289511bbb90dbda8c6c08"
+    }
+  ],
+  "requiredComponents": {
+    "directGateway": {
+      "activeFromUtc": "2026-09-06T16:51:50.888941+00:00",
+      "runtimeSourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+      "sourceCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T16:52:02.916356+00:00",
+      "version": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5"
+    },
+    "globalGateway": {
+      "activationTimeSemantics": "First independent production identity readback after successful full release workflow",
+      "activeFromUtc": "2026-09-06T16:45:55.382733+00:00",
+      "routeRevision": 1,
+      "routeSource": "database",
+      "sourceCommit": "33e49a945e36940618457d5c33f8277652e7b92d",
+      "upstreamReceiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T16:45:55.382733+00:00",
+      "version": "dpl_E3vhShktBut8yrPjXLViPqhp1zRt"
+    },
+    "usKokoro": {
+      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
+      "version": "ca857ee91c3367999fb905de1f0924a6e28edd81"
+    },
+    "usOriginProxy": {
+      "activationTimeSemantics": "First independent confirmed production identity after proxy upgrade; actual switch was earlier within apply receipt interval",
+      "activeFromUtc": "2026-09-06T16:36:52.292087+00:00",
+      "currentReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+      "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+      "currentSlot": "green",
+      "routeRevision": 2,
+      "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+      "runtimeSourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
+      "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T16:36:52.292087+00:00",
+      "version": "us-tts-origin-proxy-20260907-v2"
     }
   },
   "schema": "castreader.audio-acceptance-state.v1",

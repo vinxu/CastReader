@@ -1,0 +1,22 @@
+{
+  "schema": "castreader.audio-observation-alert-state.v1",
+  "recordedAtUtc": "2026-09-06T16:58:16.614630+00:00",
+  "heartbeatAutomationId": "24",
+  "window": {
+    "endUtc": "2026-09-07T16:52:02.916356+00:00",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T16:52:02.916356+00:00"
+  },
+  "latestSnapshotDirectory": "observations/20260906T1655Z",
+  "alertEventKeys": [],
+  "directRequestKeys": [],
+  "vercelCoreRequestKeys": [],
+  "latestClientTechnicalFailureCount": 0,
+  "latestVercelCore5xxCount": 0,
+  "latestDirect5xxCount": 0,
+  "latestDirectNoResponseCount": 0,
+  "lastDecision": "DONT_NOTIFY",
+  "lastDecisionReason": "First short post-release window, no new technical failures in collected sources; native start samples not yet present. Not a full playback or 24-hour pass.",
+  "historicalAlertState": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/notification-state.json",
+  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/README.md"
+}

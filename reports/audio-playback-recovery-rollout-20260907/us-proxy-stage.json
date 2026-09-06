@@ -1,0 +1,80 @@
+{
+  "baseline": {
+    "modelProcesses": {
+      "blue": {
+        "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+        "pid": 2665473,
+        "startTicks": "541243790"
+      },
+      "clone": {
+        "cwd": "/workspace/castreader-clone",
+        "pid": 568834,
+        "startTicks": "524136804"
+      },
+      "green": {
+        "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+        "pid": 3459850,
+        "startTicks": "545406132"
+      },
+      "nari": {
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "pid": 4136837,
+        "startTicks": "519185503"
+      }
+    },
+    "proxyConfigSha256": "e99a49a0ddfaa63023534bb950ccae1643a2d7f7ba16856284a882297e4c307a",
+    "proxyProcess": {
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1",
+      "pid": 3439385,
+      "startTicks": "545295266"
+    },
+    "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+    "proxySourceSha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44",
+    "routing": {
+      "currentSlot": "green",
+      "revision": 2,
+      "slots": {
+        "blue": {
+          "enabled": true,
+          "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+          "releaseId": "20260905-kokoro-english-g2p-us-r132"
+        },
+        "green": {
+          "enabled": true,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      }
+    }
+  },
+  "candidate": {
+    "health": {
+      "active": {
+        "blue": 0,
+        "green": 0
+      },
+      "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+      "currentSlot": "green",
+      "drainTrusted": true,
+      "inflightReuse": {
+        "producersStarted": 0,
+        "replayBytes": 0,
+        "responsesRetained": 0,
+        "subscribersJoined": 0
+      },
+      "ok": true,
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 2
+    },
+    "process": {
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+      "pid": 4028149,
+      "startTicks": "549853044"
+    }
+  },
+  "candidateStarted": true,
+  "hostSourceSha256": "d63787355c0794e8ab4c6608560275f5bf73055df7fbc86ac4a2642b4915c741",
+  "productionModified": false,
+  "schema": "castreader.us-origin-proxy-stage.v2",
+  "sourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+}

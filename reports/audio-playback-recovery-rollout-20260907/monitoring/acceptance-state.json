@@ -1,0 +1,89 @@
+{
+  "cutoverState": "observing",
+  "policy": {
+    "minimumProductionStartsByPlatform": {
+      "android": 1,
+      "ios": 1
+    },
+    "monitorExpectedCadenceSeconds": 300,
+    "monitorMaxBoundaryLagSeconds": 900,
+    "monitorMaxObservedGapSeconds": 900,
+    "observationReason": "User requested post-iteration observation; new window after all three backend releases verified, historical window retained separately",
+    "parentWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/acceptance-state.json",
+    "requireAndroid145GatewaySample": true
+  },
+  "releaseHistory": [],
+  "requiredComponents": {
+    "directGateway": {
+      "activeFromUtc": "2026-09-06T16:51:50.888941+00:00",
+      "runtimeSourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+      "sourceCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T16:52:02.916356+00:00",
+      "version": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5"
+    },
+    "globalGateway": {
+      "activationTimeSemantics": "First independent production identity readback after successful full release workflow",
+      "activeFromUtc": "2026-09-06T16:45:55.382733+00:00",
+      "routeRevision": 1,
+      "routeSource": "database",
+      "sourceCommit": "33e49a945e36940618457d5c33f8277652e7b92d",
+      "upstreamReceiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T16:45:55.382733+00:00",
+      "version": "dpl_E3vhShktBut8yrPjXLViPqhp1zRt"
+    },
+    "usKokoro": {
+      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
+      "version": "ca857ee91c3367999fb905de1f0924a6e28edd81"
+    },
+    "usOriginProxy": {
+      "activationTimeSemantics": "First independent confirmed production identity after proxy upgrade; actual switch was earlier within apply receipt interval",
+      "activeFromUtc": "2026-09-06T16:36:52.292087+00:00",
+      "currentReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+      "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+      "currentSlot": "green",
+      "routeRevision": 2,
+      "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+      "runtimeSourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
+      "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T16:36:52.292087+00:00",
+      "version": "us-tts-origin-proxy-20260907-v2"
+    }
+  },
+  "schema": "castreader.audio-acceptance-state.v1",
+  "sources": {
+    "cnSshHost": "ubuntu@106.54.47.163",
+    "cnSshIdentity": "~/.ssh/castreader_cn_deploy",
+    "globalCapabilitiesTimeoutSeconds": 15,
+    "globalCapabilitiesURL": "https://api.castreader.ai/api/capabilities",
+    "globalEnvFile": "/Users/xuxuheng/Documents/MyProject/readout-web/.env.local",
+    "kokoroSshTimeoutSeconds": 30,
+    "mobileMaxPages": 100,
+    "mobilePageSize": 1000,
+    "mobileTimeoutSeconds": 25,
+    "mobileWallClockBudgetSeconds": 180,
+    "sshTimeoutSeconds": 90,
+    "supabaseCredentialSource": "/Users/xuxuheng/Documents/MyProject/cast-reader-api/reader-service/supabase_storage.py",
+    "usKokoroSshHost": "castreader-us4090",
+    "usSshHost": "root@140.82.14.49",
+    "vercelCacheSafetyLagSeconds": 900,
+    "vercelMaxQueries": 80,
+    "vercelPageLimit": 1000,
+    "vercelProjectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+    "vercelRepo": "/Users/xuxuheng/Documents/MyProject/readout-web",
+    "vercelTimeoutSeconds": 45,
+    "vercelWallClockBudgetSeconds": 300
+  },
+  "window": {
+    "endUtc": "2026-09-07T16:52:02.916356+00:00",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T16:52:02.916356+00:00"
+  }
+}

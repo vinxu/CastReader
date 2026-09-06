@@ -17,7 +17,10 @@
     "f12f08ecb06c1f31d891",
     "f8dc697edd4e3c44aa6c",
     "db06d2cbb1dc6da992ab",
-    "e17fc636d1daf5bf701c"
+    "e17fc636d1daf5bf701c",
+    "e08918341c4265a32e2a",
+    "798ead151458637a016f",
+    "855d7b43d4f616193757"
   ],
   "alertKinds": [
     "ios_1233_kindle_navigation_failure",
@@ -47,7 +50,8 @@
   "directRequestKeys": [
     "5aff31cfb056a2d01086",
     "0cb20e9c60e8856663f7",
-    "9fc0b08a4367240fc14c"
+    "9fc0b08a4367240fc14c",
+    "dd3c14770acef97c611f"
   ],
   "nonAudio503Classification": "google_play_reconcile_incomplete",
   "collectorRecovery": {
@@ -55,10 +59,10 @@
     "windowUnchanged": true,
     "productionChanged": false
   },
-  "latestClientTechnicalFailureCount": 9,
+  "latestClientTechnicalFailureCount": 12,
   "lastDecision": "NOTIFY",
-  "lastDecisionReason": "One new iOS1.2.33 Kindle page_turn_failed event; core Vercel and direct5xx keys unchanged; two additional non-audio503s remain Google Play reconciliation incomplete; no observed production identity drift.",
-  "latestCauseAnalysis": "reports/audio-errors-root-cause-20260906/README.md",
+  "lastDecisionReason": "Three further client failures located at16:04/16:13UTC before all audio cutovers, Android1.0.45/build52; no post-cutover regression established. Global and Direct historical504 counts remain4 each.",
+  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/README.md",
   "confirmedCodeFindings": [
     "kindle_sync_dialog_blocked_also_covers_mode_change",
     "ios_tts_wrapping_erases_underlying_error_type",
@@ -72,9 +76,9 @@
   ],
   "individualUnderlyingExceptionsRecovered": false,
   "latestVercelCore5xxCount": 4,
-  "latestDirect5xxCount": 3,
+  "latestDirect5xxCount": 4,
   "latestClientIterationReport": "reports/backend-audio-failure-analysis-20260906/iteration.md",
-  "clientIterationProductionStatus": "committed_not_published",
+  "clientIterationProductionStatus": "ios_1.2.34_build54_waiting_review_contains_prior_patches_new_player_build55_in_preparation_android_patches_not_published",
   "vercelCoreRequestKeys": [
     "e061a66c335ef6dece59",
     "0865d60458fd5519c2d1",
@@ -105,5 +109,11 @@
     "clientBuild": 53,
     "playbackSeconds": 3243,
     "underlyingCause": "navigation_failure_detail_not_retained"
-  }
+  },
+  "backendIterationStatus": "three_components_deployed_verified_20260906",
+  "lastNewPredeploymentFailureKeys": [
+    "e08918341c4265a32e2a",
+    "798ead151458637a016f",
+    "855d7b43d4f616193757"
+  ]
 }

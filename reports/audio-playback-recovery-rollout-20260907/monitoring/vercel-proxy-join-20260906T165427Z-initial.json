@@ -1,0 +1,1604 @@
+{
+  "schema": "castreader.vercel-proxy-anonymous-join.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "expectedDeployment": "dpl_E3vhShktBut8yrPjXLViPqhp1zRt",
+  "window": {
+    "requestStartInclusiveUTC": "2026-09-06T16:45:55.382733Z",
+    "requestStartExclusiveUTC": "2026-09-06T16:54:27Z"
+  },
+  "coverage": {
+    "vercel": {
+      "pagesRead": 20,
+      "providerHasMoreRows": true,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "tlsCertificateAndHostnameVerified": true,
+      "completeForReturnedRequestCohort": false,
+      "providerRowsRead": 1000,
+      "uniqueProviderRequests": 50,
+      "parserCounts": {
+        "duplicateProviderRows": 950,
+        "duplicateSafeEvents": 4750
+      },
+      "requestsMissingStartOrFinish": 0,
+      "structuredEventsObserved": true,
+      "ingestionCompletenessVerified": false
+    },
+    "proxyCoversWindow": true,
+    "proxyRuntimeVerified": true,
+    "proxyCoverageComplete": true,
+    "proxyAnonymousRequestsTruncated": false,
+    "proxyEventDetailTruncationIgnoredForJoin": true
+  },
+  "counts": {
+    "attempts": 50,
+    "matched": 50,
+    "ambiguous": 0,
+    "matchedProxyComplete": 50
+  },
+  "attempts": [
+    {
+      "vercelRequestKey": "2905af122cc175b00dbc",
+      "requestStartUTC": "2026-09-06T16:53:57.238000Z",
+      "requestKey": "21645e3a30fed8d08fda",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:53:57.264251+00:00",
+          "lastUTC": "2026-09-06T16:53:58.800438+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "52acf4aa1da2f5154c67"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "1a1ff10d5b23b41cd6c6",
+      "requestStartUTC": "2026-09-06T16:53:58.457000Z",
+      "requestKey": "eb29ca218c5b98fda5c8",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:53:58.515221+00:00",
+          "lastUTC": "2026-09-06T16:53:59.366084+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "893285c4dbfb50d51b13"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "1e852d4a7a9d0b93cbc0",
+      "requestStartUTC": "2026-09-06T16:53:58.606000Z",
+      "requestKey": "f0a647dc04f93f7e3e34",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:53:58.678161+00:00",
+          "lastUTC": "2026-09-06T16:53:59.746755+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "8357fe78aaf54cceae4a"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "f1a5b76026091c1e05ef",
+      "requestStartUTC": "2026-09-06T16:53:58.913000Z",
+      "requestKey": "912b4d3843b93505e5ec",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:53:58.937752+00:00",
+          "lastUTC": "2026-09-06T16:54:00.178472+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "128a6766bb7b18981a63"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "9842c112a70884a51196",
+      "requestStartUTC": "2026-09-06T16:53:59.461000Z",
+      "requestKey": "1dbce9d2605b47a6e7e2",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:53:59.484754+00:00",
+          "lastUTC": "2026-09-06T16:54:00.719265+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "7cd3b15db471db347914"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "e471328f84f157f41c01",
+      "requestStartUTC": "2026-09-06T16:54:00.286000Z",
+      "requestKey": "5abd79c7a55a8b275420",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:00.308955+00:00",
+          "lastUTC": "2026-09-06T16:54:01.250925+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "91f39fcdd9e0e0b9eb09"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "56e534634bc95fdab187",
+      "requestStartUTC": "2026-09-06T16:54:00.829000Z",
+      "requestKey": "eb6ae2075b8ab8d0b65a",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:00.929529+00:00",
+          "lastUTC": "2026-09-06T16:54:01.719696+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "3c92a1fae6ada730c0a5"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "1adefcc0ce1ebfc2c6c6",
+      "requestStartUTC": "2026-09-06T16:54:01.388000Z",
+      "requestKey": "d95a37bb99edea27eff9",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:01.412309+00:00",
+          "lastUTC": "2026-09-06T16:54:02.230267+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "1c928a228a5ff953ce1e"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "b6e1e7b2947aa5306f2e",
+      "requestStartUTC": "2026-09-06T16:54:01.587000Z",
+      "requestKey": "787e127cdccf82a02459",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:01.756454+00:00",
+          "lastUTC": "2026-09-06T16:54:03.765607+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "a8c3f6be65f34b4d8b01"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "abe967cf4ad5b46f57a9",
+      "requestStartUTC": "2026-09-06T16:54:01.786000Z",
+      "requestKey": "269adaa0bfce813626d8",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:01.829018+00:00",
+          "lastUTC": "2026-09-06T16:54:04.811828+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "51e5515d4cc7c5207c83"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "9312480a4a7d2343f238",
+      "requestStartUTC": "2026-09-06T16:54:02.347000Z",
+      "requestKey": "4528540fd26df308dcc9",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:02.378870+00:00",
+          "lastUTC": "2026-09-06T16:54:04.245356+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "4cea226ab8ef7a42b25c"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "1de98b7775068cb2af74",
+      "requestStartUTC": "2026-09-06T16:54:02.640000Z",
+      "requestKey": "f94e2b98386b7f207436",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:02.775246+00:00",
+          "lastUTC": "2026-09-06T16:54:05.296606+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "11cbd1c5c21783142f87"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "2518201ef378bafa9361",
+      "requestStartUTC": "2026-09-06T16:54:04.344000Z",
+      "requestKey": "ce3b65bdc527dd4c457b",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:04.397553+00:00",
+          "lastUTC": "2026-09-06T16:54:05.804154+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "fd9ae903d2a61ae47752"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "d9b566d350c53bb51a82",
+      "requestStartUTC": "2026-09-06T16:54:04.414000Z",
+      "requestKey": "3feaef45de4d4ff3933d",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:04.444226+00:00",
+          "lastUTC": "2026-09-06T16:54:06.289197+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "c705ca9c4b92c7677185"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "8093adc8cdd4cd98826e",
+      "requestStartUTC": "2026-09-06T16:54:04.924000Z",
+      "requestKey": "a2d3b47fe88db765a1a7",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:04.973998+00:00",
+          "lastUTC": "2026-09-06T16:54:06.761549+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "a47bb4f0af0177580ca9"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "9b88ae212dd7bd4ceda5",
+      "requestStartUTC": "2026-09-06T16:54:06.380000Z",
+      "requestKey": "e18922ccd5e7e519cbd8",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:06.404109+00:00",
+          "lastUTC": "2026-09-06T16:54:07.279358+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "b6111292606148252a5b"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "203020aa2dee9bcd5ddb",
+      "requestStartUTC": "2026-09-06T16:54:06.830000Z",
+      "requestKey": "8de8ec4b570e52733e26",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:06.845856+00:00",
+          "lastUTC": "2026-09-06T16:54:08.308010+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "63f21cc5fdf810fd3b9d"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "dee270108160010105fd",
+      "requestStartUTC": "2026-09-06T16:54:07.425000Z",
+      "requestKey": "fb846f59297312895a30",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:07.462968+00:00",
+          "lastUTC": "2026-09-06T16:54:08.760085+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "402d47ed01f463de15cc"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "f1829dc508ee2a1b95d5",
+      "requestStartUTC": "2026-09-06T16:54:08.375000Z",
+      "requestKey": "024bcf94c25a15f892bd",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:08.427495+00:00",
+          "lastUTC": "2026-09-06T16:54:09.350704+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "8acc4feffc31a1b7a083"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "afeaeca2cdd0c8ab18e8",
+      "requestStartUTC": "2026-09-06T16:54:08.871000Z",
+      "requestKey": "261919e3bb707c0ae662",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:08.893525+00:00",
+          "lastUTC": "2026-09-06T16:54:09.859871+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "b1353893b00dbc6faf74"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "5949c298a1d91bce1079",
+      "requestStartUTC": "2026-09-06T16:54:09.231000Z",
+      "requestKey": "52a7ee685ebf7237d44d",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:09.363401+00:00",
+          "lastUTC": "2026-09-06T16:54:10.430437+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "74815503ab3f4ee8bcb4"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "4ffa5184369a437aa00a",
+      "requestStartUTC": "2026-09-06T16:54:09.456000Z",
+      "requestKey": "30478cb673e8955ab00c",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:09.478827+00:00",
+          "lastUTC": "2026-09-06T16:54:11.427687+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "2e14e236afcc3c47ce42"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "7e71ebde526a51fc4798",
+      "requestStartUTC": "2026-09-06T16:54:11.563000Z",
+      "requestKey": "66f35501d10eed8185f4",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:11.623146+00:00",
+          "lastUTC": "2026-09-06T16:54:12.134807+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "aa860456cf94b40f8531"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "a757510c551988c6670d",
+      "requestStartUTC": "2026-09-06T16:54:12.029000Z",
+      "requestKey": "8cee1655512fd74c7d7d",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:12.077139+00:00",
+          "lastUTC": "2026-09-06T16:54:12.573538+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "33884fcbb94e4e284874"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "4cd93dc3db16fdc752d8",
+      "requestStartUTC": "2026-09-06T16:54:12.225000Z",
+      "requestKey": "169e6caa6425ff0aab96",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:12.250115+00:00",
+          "lastUTC": "2026-09-06T16:54:13.095096+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "14194adf8da480be911b"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "e9c2ae385dfde47dfc35",
+      "requestStartUTC": "2026-09-06T16:54:12.389000Z",
+      "requestKey": "85e9ce3d39b97719fe04",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:12.521603+00:00",
+          "lastUTC": "2026-09-06T16:54:13.536679+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "9b86a509b436ff06e16a"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "2e42d150adf435faf742",
+      "requestStartUTC": "2026-09-06T16:54:13.175000Z",
+      "requestKey": "4d94403ffcfb5828a865",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:13.212776+00:00",
+          "lastUTC": "2026-09-06T16:54:14.204203+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "6de52d2336b2a5f95f65"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "292498175f7ed4592d9c",
+      "requestStartUTC": "2026-09-06T16:54:14.306000Z",
+      "requestKey": "9328c05e0e6fba8a0f2f",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:14.346288+00:00",
+          "lastUTC": "2026-09-06T16:54:14.848598+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "08ec1e590bd88047496f"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "f37eee79f07955a738ec",
+      "requestStartUTC": "2026-09-06T16:54:14.959000Z",
+      "requestKey": "ffb82ab9d631c10fc054",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:15.046568+00:00",
+          "lastUTC": "2026-09-06T16:54:16.070773+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "24e42d8ba7285067658d"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "839a31e76c1ce9201e13",
+      "requestStartUTC": "2026-09-06T16:54:16.205000Z",
+      "requestKey": "87ede818f2cadb097b15",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:16.257958+00:00",
+          "lastUTC": "2026-09-06T16:54:16.791183+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "a3ee68821e1b646ff03f"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "b82ec14bc1305986a655",
+      "requestStartUTC": "2026-09-06T16:54:16.891000Z",
+      "requestKey": "d2101db0e907e9d506c0",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:16.927530+00:00",
+          "lastUTC": "2026-09-06T16:54:17.439250+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "75343cc61e3f2a4cc5b6"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "f934043abb0c854b936a",
+      "requestStartUTC": "2026-09-06T16:54:17.545000Z",
+      "requestKey": "2e6e84fb7874eb4786bb",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:17.577518+00:00",
+          "lastUTC": "2026-09-06T16:54:18.097582+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "0102670e87059909a25c"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "77aadd3e9ae83c1f8037",
+      "requestStartUTC": "2026-09-06T16:54:18.179000Z",
+      "requestKey": "c6d7900827818664fc76",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:18.236612+00:00",
+          "lastUTC": "2026-09-06T16:54:19.102878+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "ec141c0d35a34b7f5760"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "8086e51cca1ae3fa73a9",
+      "requestStartUTC": "2026-09-06T16:54:19.179000Z",
+      "requestKey": "30cf831ade778b6e27d0",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:19.220483+00:00",
+          "lastUTC": "2026-09-06T16:54:19.741686+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "02a1acb0124bef3c5231"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "42434b4b25ba97c43ae4",
+      "requestStartUTC": "2026-09-06T16:54:19.348000Z",
+      "requestKey": "e95ebdeaaad862a25121",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:19.489973+00:00",
+          "lastUTC": "2026-09-06T16:54:20.778382+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "1441b55677f2593f6854"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "0c81bfa3f3134e6579af",
+      "requestStartUTC": "2026-09-06T16:54:19.841000Z",
+      "requestKey": "76723f477975170a0353",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:19.867338+00:00",
+          "lastUTC": "2026-09-06T16:54:21.325272+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "a12040f04cf48b62e4e7"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "51ea2c8fe586fc7d8a75",
+      "requestStartUTC": "2026-09-06T16:54:21.438000Z",
+      "requestKey": "020244f0dc697f84ad97",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:21.498815+00:00",
+          "lastUTC": "2026-09-06T16:54:21.963222+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "2a636f6b44a2bd9e2586"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "fcff034408704a0373b0",
+      "requestStartUTC": "2026-09-06T16:54:22.026000Z",
+      "requestKey": "751fc45a55467b74c3fc",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:22.081674+00:00",
+          "lastUTC": "2026-09-06T16:54:22.747262+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "1f1202fad3ea87bd69ba"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "e6fb0e7a963736fd3de2",
+      "requestStartUTC": "2026-09-06T16:54:22.700000Z",
+      "requestKey": "15a60ded8789728cce3e",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:22.721109+00:00",
+          "lastUTC": "2026-09-06T16:54:23.276468+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "32017a2266b38487113e"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "3c0de71b7e48c0db57c8",
+      "requestStartUTC": "2026-09-06T16:54:22.727000Z",
+      "requestKey": "680f9fb4cfac85016278",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:23.069779+00:00",
+          "lastUTC": "2026-09-06T16:54:25.198499+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "0de84f705b4956593dab"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "186cd9b300d9ee69851e",
+      "requestStartUTC": "2026-09-06T16:54:22.896000Z",
+      "requestKey": "2df229d7e343a70280ff",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:22.920660+00:00",
+          "lastUTC": "2026-09-06T16:54:23.925763+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "7918d8fa2e9ce21a9204"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "1568b8f2c9fe8fac0551",
+      "requestStartUTC": "2026-09-06T16:54:23.137000Z",
+      "requestKey": "59bca9f46f38216f245e",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:23.170527+00:00",
+          "lastUTC": "2026-09-06T16:54:23.405579+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "7d1947449fe3b154fc51"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "e52cf854ce99f0cfd74c",
+      "requestStartUTC": "2026-09-06T16:54:23.487000Z",
+      "requestKey": "199f9fdc040772906431",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:23.514951+00:00",
+          "lastUTC": "2026-09-06T16:54:24.341772+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "29eabfc064a3aab04183"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "734a4f2132719596d89b",
+      "requestStartUTC": "2026-09-06T16:54:23.524000Z",
+      "requestKey": "3f49c0710d586b4a1ae7",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:23.559479+00:00",
+          "lastUTC": "2026-09-06T16:54:24.631976+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "e73226da9131ad0146b5"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "5319b58d4d45cde25765",
+      "requestStartUTC": "2026-09-06T16:54:24.009000Z",
+      "requestKey": "bb944b5cef32841f6af0",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:24.123219+00:00",
+          "lastUTC": "2026-09-06T16:54:27.867198+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "0db2504c351bf58c11c2"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "54fd97b2ef1177970dad",
+      "requestStartUTC": "2026-09-06T16:54:24.779000Z",
+      "requestKey": "4a7a5df695ee32620816",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:24.827805+00:00",
+          "lastUTC": "2026-09-06T16:54:25.517750+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "868d29ed7367a3885e71"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "2072bc3ac0114eb40f9f",
+      "requestStartUTC": "2026-09-06T16:54:24.951000Z",
+      "requestKey": "4ffbe6afb93116665237",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:25.021971+00:00",
+          "lastUTC": "2026-09-06T16:54:26.874240+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "a0a5e376ead6b1611cd7"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "103e65a436814e08df47",
+      "requestStartUTC": "2026-09-06T16:54:25.645000Z",
+      "requestKey": "cefe0934bfe232a1be9a",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:25.660566+00:00",
+          "lastUTC": "2026-09-06T16:54:26.387240+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "2ce15804341e1db78ace"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "4b434092db4f77d3397b",
+      "requestStartUTC": "2026-09-06T16:54:26.587000Z",
+      "requestKey": "96ea677b5996f26deb27",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:26.614400+00:00",
+          "lastUTC": "2026-09-06T16:54:27.205283+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "97c2d6d7689f8173dd0b"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    },
+    {
+      "vercelRequestKey": "f56b250219bb0de87fe0",
+      "requestStartUTC": "2026-09-06T16:54:26.883000Z",
+      "requestKey": "510da8c878d4e82561a3",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T16:54:27.030271+00:00",
+          "lastUTC": "2026-09-06T16:54:28.580884+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "flightKeys": [
+            "97d4e3d5a3474b19d0ae"
+          ],
+          "outcomes": {
+            "complete": 1
+          }
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Correlation uses application requestKey + attempt, never provider ID or timing alone.",
+    "Application key reuse across Vercel invocations or duplicate proxy groups is marked ambiguous.",
+    "The complete proxy anonymous request-group list is used; its truncated event-detail list is not the join source.",
+    "A matched complete upstream request is not evidence of audio decode quality or successful user playback."
+  ],
+  "sources": {
+    "vercelSnapshot": "reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-20260906T165427Z.json",
+    "proxySnapshot": "reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-first-window.json"
+  }
+}

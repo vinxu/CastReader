@@ -1,0 +1,67 @@
+{
+  "window": {
+    "requestStartInclusiveUTC": "2026-09-06T16:45:55.382733Z",
+    "requestStartExclusiveUTC": "2026-09-06T16:54:27Z"
+  },
+  "counts": {
+    "events": {
+      "request_start": 812,
+      "attempt_start": 812,
+      "upstream_headers": 812,
+      "upstream_body": 812,
+      "request_finished": 812
+    },
+    "failureCodes": {},
+    "terminalCodes": {},
+    "attemptStarts": {
+      "1": 812
+    }
+  },
+  "statusCounts": {
+    "200": 812
+  },
+  "joinCounts": {
+    "attempts": 812,
+    "matched": 812,
+    "ambiguous": 0,
+    "matchedProxyComplete": 812
+  },
+  "applicationElapsedTiming": {
+    "upstream_headers": {
+      "n": 812,
+      "p50Ms": 1056,
+      "p95Ms": 3064,
+      "maxMs": 7337
+    },
+    "upstream_body": {
+      "n": 812,
+      "p50Ms": 1085,
+      "p95Ms": 3087,
+      "maxMs": 7372
+    },
+    "request_finished": {
+      "n": 812,
+      "p50Ms": 1086,
+      "p95Ms": 3087,
+      "maxMs": 7373
+    }
+  },
+  "coverage": {
+    "pagesRead": 17,
+    "providerHasMoreRows": false,
+    "issues": [],
+    "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+    "tlsCertificateAndHostnameVerified": true,
+    "completeForReturnedRequestCohort": true,
+    "providerRowsRead": 828,
+    "uniqueProviderRequests": 812,
+    "parserCounts": {
+      "duplicateProviderRows": 16,
+      "duplicateSafeEvents": 80
+    },
+    "requestsMissingStartOrFinish": 0,
+    "structuredEventsObserved": true,
+    "ingestionCompletenessVerified": false
+  },
+  "unmatchedRows": []
+}

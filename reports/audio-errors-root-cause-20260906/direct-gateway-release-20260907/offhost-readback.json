@@ -1,0 +1,37 @@
+{
+  "schema": "castreader.backup-readback.v1",
+  "created_at": "2026-09-06T16:43:39.656805+00:00",
+  "project_ref": "zqxgmqygirtpttnrvjpf",
+  "bucket": "castreader-tts-backups",
+  "public": false,
+  "plan_sha256": "2aabb99520aa683b47c2b1bfc02755d9348a2a1af6040cf6dd7cbb04a48913d7",
+  "expected_files": 1,
+  "verified_files": 1,
+  "expected_objects": 1,
+  "verified_objects": 1,
+  "expected_bytes": 4502,
+  "downloaded_bytes": 4502,
+  "files": [
+    {
+      "name": "complete-baseline.tar.gz",
+      "object_base": "runtime-releases/us/20260907-direct-gateway-abort-source/complete-baseline.tar.gz",
+      "bytes": 4502,
+      "sha256": "e4983e56b4297cae05e35321ed2471ba8b0c5345a42910d0bc760036ae4bf860",
+      "downloaded_bytes": 4502,
+      "readback_sha256": "e4983e56b4297cae05e35321ed2471ba8b0c5345a42910d0bc760036ae4bf860",
+      "parts": [
+        {
+          "object": "runtime-releases/us/20260907-direct-gateway-abort-source/complete-baseline.tar.gz",
+          "offset": 0,
+          "bytes": 4502,
+          "sha256": "e4983e56b4297cae05e35321ed2471ba8b0c5345a42910d0bc760036ae4bf860",
+          "downloaded_bytes": 4502,
+          "readback_sha256": "e4983e56b4297cae05e35321ed2471ba8b0c5345a42910d0bc760036ae4bf860",
+          "verified": true
+        }
+      ],
+      "verified": true
+    }
+  ],
+  "verified": true
+}

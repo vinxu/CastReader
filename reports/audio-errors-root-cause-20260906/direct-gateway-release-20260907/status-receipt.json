@@ -1,0 +1,156 @@
+{
+  "stage.json": {
+    "status": "staged_and_verified",
+    "observedAt": "2026-09-06T16:42:51.551853+00:00",
+    "sourceCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+    "sourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+    "baseline": {
+      "capturedAtUtc": "2026-09-06T16:41:34.770906Z",
+      "readOnly": true,
+      "productionModified": false,
+      "synthesisStarted": false,
+      "files": [
+        {
+          "path": "/opt/castreader-tts-gateway/gateway.mjs",
+          "sha256": "53a4ca273a7b3d60b1ce24f3cb089985f57bb6006b2838b683549c69e93d26d5",
+          "bytes": 11118
+        },
+        {
+          "path": "/etc/systemd/system/castreader-tts-gateway.service",
+          "sha256": "71b0ca830d4554851c11feab0bf48a271ded803558942d685a194ca68b17fca9",
+          "bytes": 770
+        },
+        {
+          "path": "/etc/caddy/Caddyfile",
+          "sha256": "243706a702274b86cea400b4ff0c627ddead335e2dfb457fe62303952b30bdd1",
+          "bytes": 729
+        }
+      ],
+      "service": {
+        "MainPID": "555810",
+        "NRestarts": "0",
+        "ActiveState": "active",
+        "SubState": "running",
+        "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+        "DropInPaths": "",
+        "ActiveEnterTimestamp": "Sun 2026-09-06 03:55:52 UTC"
+      },
+      "inFlight": 0,
+      "protectedCaddyPid": "4980",
+      "protectedQuickreadPids": [
+        "543663"
+      ]
+    },
+    "shadowPid": "575934",
+    "shadowUnitSha256": "eb3955aea540f63750db97ae8359a51eeb521fc9aa2f42f7db092e944707afb1",
+    "protectedPids": {
+      "caddy": "4980",
+      "quickreadListeners": [
+        "543663"
+      ]
+    },
+    "privateBackupSha256": "e4983e56b4297cae05e35321ed2471ba8b0c5345a42910d0bc760036ae4bf860",
+    "privateBackupBytes": 4502,
+    "privateBackupReadback": true,
+    "validation": {
+      "label": "loopback candidate",
+      "observedAt": "2026-09-06T16:42:51.543547+00:00",
+      "fixedNonUserText": true,
+      "results": [
+        {
+          "contract": "omitted",
+          "audioBytes": 132141,
+          "pcmSamples": 198144,
+          "audioSha256": "7e57d109a27ba149d2c4a4de8815c8ff1fb66f459ef4d637188859381ce33e94",
+          "elapsedSeconds": 0.624
+        },
+        {
+          "contract": true,
+          "audioBytes": 132141,
+          "pcmSamples": 198144,
+          "audioSha256": "9d1f54a92caf2401e5cf14d8a34ae68b4d6f2889de7a55431652703859053ae0",
+          "elapsedSeconds": 0.64
+        },
+        {
+          "contract": false,
+          "audioBytes": 132141,
+          "pcmSamples": 198144,
+          "audioSha256": "ac1cd17df4f85b9328849a36cd313c47ec1b8f59a8bfd9f87620b0c07b2e64aa",
+          "elapsedSeconds": 0.603
+        }
+      ]
+    }
+  },
+  "production.json": {
+    "status": "production_verified",
+    "firstNewTrafficAt": "2026-09-06T16:51:50.888941+00:00",
+    "verifiedAt": "2026-09-06T16:52:02.458777+00:00",
+    "sourceCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+    "sourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+    "mainPid": "576327",
+    "runtimeIdentity": {
+      "MainPID": "576327",
+      "argvSha256": "cd11429ca20e0d1263c7e208926c085a6b1260dc9d2132f8bf0161e927eeebe6",
+      "cwd": "/opt/castreader-tts-gateway",
+      "inFlight": 0
+    },
+    "caddyRestoredExactly": true,
+    "oldRequestsDrainedBeforeRestart": true,
+    "shadowCleanupPending": true,
+    "offhostBackup": {
+      "receiptSha256": "ffcd13e33e350e23d2e29cb77099f9298e28391d8fb988675318cd627f0719ab",
+      "createdAt": "2026-09-06T16:43:39.656805+00:00"
+    },
+    "validation": {
+      "label": "permanent gateway before route restore",
+      "observedAt": "2026-09-06T16:52:02.259896+00:00",
+      "fixedNonUserText": true,
+      "results": [
+        {
+          "contract": "omitted",
+          "audioBytes": 132141,
+          "pcmSamples": 198144,
+          "audioSha256": "f6db3f4f11295e69384cfbf65efa822af49ae38430878c4aa525aa39c2fd665e",
+          "elapsedSeconds": 2.674
+        },
+        {
+          "contract": true,
+          "audioBytes": 132141,
+          "pcmSamples": 198144,
+          "audioSha256": "1c32d4723199de37378bedf441b3d52258a1425915e430dfb469df71dffe080a",
+          "elapsedSeconds": 4.142
+        },
+        {
+          "contract": false,
+          "audioBytes": 132141,
+          "pcmSamples": 198144,
+          "audioSha256": "ae092df835eae89498e8af1c3ec2ad11496a5a443589f2433b74515ac9610bfc",
+          "elapsedSeconds": 4.221
+        }
+      ]
+    },
+    "protectedPids": {
+      "caddy": "4980",
+      "quickreadListeners": [
+        "543663"
+      ]
+    }
+  },
+  "cleanup.json": {
+    "status": "production_cleanup_complete",
+    "completedAt": "2026-09-06T16:52:02.916356+00:00",
+    "mainPid": "576327",
+    "shadowStopped": true,
+    "shadowDrainedBeforeStop": true
+  },
+  "transaction.json": {
+    "phase": "shadow_serving",
+    "switchedAt": "2026-09-06T16:51:50.888941+00:00"
+  },
+  "transactionUnit": {
+    "Result": "success",
+    "ExecMainStatus": "0",
+    "ActiveState": "inactive",
+    "SubState": "dead"
+  }
+}

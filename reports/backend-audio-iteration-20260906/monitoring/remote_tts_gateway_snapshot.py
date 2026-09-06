@@ -82,22 +82,36 @@ def request_from_block(block: str, observed_at: datetime):
     status = field(block, "status")
     elapsed = field(block, "elapsedMs")
     request_bytes = field(block, "requestBytes")
-    if not request_id or not status:
+    request_key = field(block, "requestKey")
+    if request_key and re.fullmatch(r"[0-9a-f]{20}", request_key):
+        key = request_key
+    elif request_id:
+        key = hashlib.sha256(request_id.encode()).hexdigest()[:20]
+    else:
+        return None
+    disconnected_field = field(block, "downstreamDisconnected")
+    downstream_closed = (disconnected_field == "true") if disconnected_field in {"true", "false"} else None
+    no_response = status == "null" and downstream_closed
+    if not status:
         return None
     try:
-        status_number = int(status)
+        status_number = None if no_response else int(status)
         elapsed_number = int(elapsed) if elapsed is not None else None
         bytes_number = int(request_bytes) if request_bytes is not None else None
     except ValueError:
         return None
-    if not 100 <= status_number <= 599:
+    if status_number is not None and not 100 <= status_number <= 599:
         return None
     return {
-        "key": hashlib.sha256(request_id.encode()).hexdigest()[:20],
+        "key": key,
         "observedAt": iso(observed_at),
         "method": method if method in {"GET", "POST"} else "other",
         "path": safe_path(path),
         "status": status_number,
+        "downstreamDisconnected": downstream_closed,
+        "downstreamDisconnectedFieldObserved": downstream_closed is not None,
+        "abortSource": field(block, "abortSource") if field(block, "abortSource") in {"downstream_closed", "upstream_timeout"} else None,
+        "abortStage": field(block, "abortStage") if field(block, "abortStage") in {"request_body", "request_validation", "upstream_headers", "upstream_body", "response_validation", "response"} else None,
         "elapsedMs": elapsed_number if elapsed_number is not None and elapsed_number >= 0 else None,
         "requestBytes": bytes_number if bytes_number is not None and bytes_number >= 0 else None,
         "clientPlatform": safe_platform(field(block, "clientPlatform")),
@@ -106,6 +120,16 @@ def request_from_block(block: str, observed_at: datetime):
 
 
 def error_from_block(block: str):
+    # New fixed codes are evidence; old ambiguous logs keep their old class.
+    classes = {
+        "TTS_DOWNSTREAM_CLOSED": "downstream_closed",
+        "TTS_UPSTREAM_TIMEOUT": "upstream_timeout",
+        "TTS_UPSTREAM_ABORTED": "upstream_aborted",
+        "TTS_UPSTREAM_UNAVAILABLE": "upstream_unavailable",
+    }
+    code = field(block, "code")
+    if code in classes:
+        return classes[code]
     name = str(field(block, "name") or "").lower()
     message = str(field(block, "message") or "").lower()
     combined = f"{name} {message}"
@@ -172,14 +196,14 @@ def aggregate_entries(entries, start: datetime, end: datetime):
             error_counts[error_from_block(block)] += 1
 
     rows = sorted(requests.values(), key=lambda row: row["observedAt"])
-    status_counts = Counter(str(row["status"]) for row in rows)
-    path_status = Counter((row["path"], str(row["status"])) for row in rows)
+    status_counts = Counter((str(row["status"]) if row["status"] is not None else "no_response") for row in rows)
+    path_status = Counter((row["path"], (str(row["status"]) if row["status"] is not None else "no_response")) for row in rows)
     client_status = Counter(
-        (row["clientPlatform"], row["clientVersion"], str(row["status"]))
+        (row["clientPlatform"], row["clientVersion"], (str(row["status"]) if row["status"] is not None else "no_response"))
         for row in rows
     )
     hourly_status = Counter(
-        (row["observedAt"][:13] + ":00:00Z", str(row["status"])) for row in rows
+        (row["observedAt"][:13] + ":00:00Z", (str(row["status"]) if row["status"] is not None else "no_response")) for row in rows
     )
     legacy = [
         row
@@ -193,6 +217,12 @@ def aggregate_entries(entries, start: datetime, end: datetime):
         "incompleteConsoleBlocks": incomplete_blocks,
         "malformedRequestBlocks": malformed_request_blocks,
         "uniqueRequestIds": len(rows),
+        "downstreamDisconnectedRequests": sum(row["downstreamDisconnected"] is True for row in rows),
+        "downstreamConnectionStateUnknownRequests": sum(row["downstreamDisconnected"] is None for row in rows),
+        "abortSourceCounts": dict(sorted(Counter(row["abortSource"] for row in rows if row["abortSource"]).items())),
+        "nonHttpRequestCount": sum(row["status"] is None for row in rows),
+        "nonHttpRequests": [row for row in rows if row["status"] is None][:200],
+        "nonHttpRequestsTruncated": sum(row["status"] is None for row in rows) > 200,
         "duplicateRequestLogBlocks": max(
             0,
             logical_blocks - sum(error_counts.values()) - malformed_request_blocks - len(rows),
@@ -225,7 +255,7 @@ def aggregate_entries(entries, start: datetime, end: datetime):
         "android145Preset": {
             "requests": len(legacy),
             "statusCounts": dict(
-                sorted(Counter(str(row["status"]) for row in legacy).items())
+                sorted(Counter((str(row["status"]) if row["status"] is not None else "no_response") for row in legacy).items())
             ),
             "elapsedMs": distribution([row["elapsedMs"] for row in legacy]),
             "firstRequestAtUtc": legacy[0]["observedAt"] if legacy else None,

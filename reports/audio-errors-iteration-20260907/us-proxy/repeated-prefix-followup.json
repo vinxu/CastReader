@@ -1,0 +1,19 @@
+{
+  "schema": "castreader.us-upstream-repeated-prefix-followup.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "userTextExported": false,
+  "synthesisStarted": false,
+  "source": "/var/log/onstart.log",
+  "readAtUTC": "2026-09-06T16:32:42.925590+00:00",
+  "startOffset": 15153839698,
+  "bytesScanned": 20701961,
+  "structuredFirstUTC": "2026-09-06T08:46:26.399345+00:00",
+  "structuredLastUTC": "2026-09-06T16:29:40.250053+00:00",
+  "dateAssignmentVerified": true,
+  "matchingPrefixCount": 124,
+  "firstMatchUTC": "2026-09-06T13:29:20+00:00",
+  "lastMatchUTC": "2026-09-06T13:30:10+00:00",
+  "matchesAfterIncidentBurst": 0,
+  "limitation": "Only the previously hashed first50-character prefix plus ellipsis; provenance and complete-input equality remain unknown."
+}

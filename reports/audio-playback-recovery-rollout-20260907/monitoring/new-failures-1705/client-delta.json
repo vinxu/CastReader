@@ -1,0 +1,2313 @@
+{
+  "schema": "castreader.client-failure-delta.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "snapshotGeneratedAtUtc": "2026-09-06T17:05:27.598373Z",
+  "query": {
+    "startInclusive": "2026-09-06T05:01:25Z",
+    "endExclusive": "2026-09-06T17:05:27.598373Z"
+  },
+  "cutovers": {
+    "global": "2026-09-06T16:45:55.382733+00:00",
+    "proxy": "2026-09-06T16:36:52.292087+00:00",
+    "directFirstNewTraffic": "2026-09-06T16:51:50.888941+00:00",
+    "directVerified": "2026-09-06T16:52:02.458777+00:00"
+  },
+  "completeRead": true,
+  "selectedEndRows": 90,
+  "knownFailureCount": 9,
+  "cumulativeFailureCount": 12,
+  "newFailureCount": 3,
+  "counterMatchesSnapshot": true,
+  "newEventKeys": [
+    "e08918341c4265a32e2a",
+    "798ead151458637a016f",
+    "855d7b43d4f616193757"
+  ],
+  "newIncidents": [
+    {
+      "failure": {
+        "eventKey": "e08918341c4265a32e2a",
+        "deviceKey": "63a17b72f6f1bd9e4d42",
+        "event": "read_end",
+        "platform": "android",
+        "receivedAtUtc": "2026-09-06T16:04:07.099+00:00",
+        "receivedRelativeToCutovers": {
+          "global": "before",
+          "proxy": "before",
+          "directFirstNewTraffic": "before",
+          "directVerified": "before"
+        },
+        "clientVersion": "1.0.45",
+        "clientBuild": 52.0,
+        "contentSource": "unknown",
+        "language": "unknown",
+        "clientRoute": "global",
+        "ingressRoute": "global",
+        "environment": "production",
+        "result": "failed",
+        "endReason": "tts_failed",
+        "errorCode": "generation_failed",
+        "errorStage": "tts",
+        "completionBucket": "unclassified_format",
+        "playbackSeconds": 44.0,
+        "readSessionKey": "e3c1b434489043126311",
+        "contentSessionKey": "190c2cd4287da1a90121",
+        "occurredAtUtc": "2026-09-06T16:04:04.923Z",
+        "occurredRelativeToCutovers": {
+          "global": "before",
+          "proxy": "before",
+          "directFirstNewTraffic": "before",
+          "directVerified": "before"
+        }
+      },
+      "sessionChains": [
+        {
+          "type": "readSession",
+          "sessionKey": "e3c1b434489043126311",
+          "complete": true,
+          "rows": [
+            {
+              "eventKey": "af91a3bb8d9d891d44f2",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "en",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "resume": false,
+              "occurredAtUtc": "2026-09-06T16:02:15.757Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "a61c18c6c8f5fa8c6640",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "en",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 1963.0,
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:17.720Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "5855d63a709dc9804920",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_milestone",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:03:51.339+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 30.0,
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:03:49.170Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "e08918341c4265a32e2a",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:07.099+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "failed",
+              "endReason": "tts_failed",
+              "errorCode": "generation_failed",
+              "errorStage": "tts",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 44.0,
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:04.923Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            }
+          ]
+        },
+        {
+          "type": "contentSession",
+          "sessionKey": "190c2cd4287da1a90121",
+          "complete": true,
+          "rows": [
+            {
+              "eventKey": "f7720848511cfedf9ed1",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_input_stage",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:14.678+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "started",
+              "contentFormat": "web",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:12.349Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "c3c5138ff6ee866248cd",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_input_stage",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:14.678+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "contentFormat": "web",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:12.348Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "ffef488b15575a64e145",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_intent",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:14.678+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:12.349Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "e00c66d26411bc49fe7a",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_input_stage",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "contentFormat": "web",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:15.721Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "dc3944fb8f8d5d83bc9f",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_ready",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "latencyMs": 3375.0,
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:15.723Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "af91a3bb8d9d891d44f2",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "en",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "resume": false,
+              "occurredAtUtc": "2026-09-06T16:02:15.757Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "a61c18c6c8f5fa8c6640",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "en",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 1963.0,
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:17.720Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "5855d63a709dc9804920",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_milestone",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:03:51.339+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 30.0,
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:03:49.170Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "e08918341c4265a32e2a",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:07.099+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "failed",
+              "endReason": "tts_failed",
+              "errorCode": "generation_failed",
+              "errorStage": "tts",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 44.0,
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:04.923Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "1fcc44bc6dfb54bdfc53",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 1327.0,
+              "readSessionKey": "3c41a9b0590ebf08f99d",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:17.432Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "0438c556029d699e1055",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "3c41a9b0590ebf08f99d",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "resume": true,
+              "occurredAtUtc": "2026-09-06T16:04:16.105Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "798ead151458637a016f",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "failed",
+              "endReason": "tts_failed",
+              "errorCode": "generation_failed",
+              "errorStage": "tts",
+              "completionBucket": "unknown",
+              "playbackSeconds": 0.0,
+              "readSessionKey": "3c41a9b0590ebf08f99d",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:17.983Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "e0f543e88adbe39dde86",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:32.104+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 751.0,
+              "readSessionKey": "1d164949c0bcc0904c9c",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:29.933Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "594baa1878e52a0bdc9c",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:32.104+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "1d164949c0bcc0904c9c",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "resume": true,
+              "occurredAtUtc": "2026-09-06T16:04:29.181Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "b543f8a814b8f3e8eb3b",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:44.702+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "endReason": "completed",
+              "completionBucket": "complete",
+              "playbackSeconds": 9.0,
+              "readSessionKey": "1d164949c0bcc0904c9c",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:42.522Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "failure": {
+        "eventKey": "798ead151458637a016f",
+        "deviceKey": "63a17b72f6f1bd9e4d42",
+        "event": "read_end",
+        "platform": "android",
+        "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+        "receivedRelativeToCutovers": {
+          "global": "before",
+          "proxy": "before",
+          "directFirstNewTraffic": "before",
+          "directVerified": "before"
+        },
+        "clientVersion": "1.0.45",
+        "clientBuild": 52.0,
+        "contentSource": "unknown",
+        "language": "unknown",
+        "clientRoute": "global",
+        "ingressRoute": "global",
+        "environment": "production",
+        "result": "failed",
+        "endReason": "tts_failed",
+        "errorCode": "generation_failed",
+        "errorStage": "tts",
+        "completionBucket": "unknown",
+        "playbackSeconds": 0.0,
+        "readSessionKey": "3c41a9b0590ebf08f99d",
+        "contentSessionKey": "190c2cd4287da1a90121",
+        "occurredAtUtc": "2026-09-06T16:04:17.983Z",
+        "occurredRelativeToCutovers": {
+          "global": "before",
+          "proxy": "before",
+          "directFirstNewTraffic": "before",
+          "directVerified": "before"
+        }
+      },
+      "sessionChains": [
+        {
+          "type": "readSession",
+          "sessionKey": "3c41a9b0590ebf08f99d",
+          "complete": true,
+          "rows": [
+            {
+              "eventKey": "1fcc44bc6dfb54bdfc53",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 1327.0,
+              "readSessionKey": "3c41a9b0590ebf08f99d",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:17.432Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "0438c556029d699e1055",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "3c41a9b0590ebf08f99d",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "resume": true,
+              "occurredAtUtc": "2026-09-06T16:04:16.105Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "798ead151458637a016f",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "failed",
+              "endReason": "tts_failed",
+              "errorCode": "generation_failed",
+              "errorStage": "tts",
+              "completionBucket": "unknown",
+              "playbackSeconds": 0.0,
+              "readSessionKey": "3c41a9b0590ebf08f99d",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:17.983Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            }
+          ]
+        },
+        {
+          "type": "contentSession",
+          "sessionKey": "190c2cd4287da1a90121",
+          "complete": true,
+          "rows": [
+            {
+              "eventKey": "f7720848511cfedf9ed1",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_input_stage",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:14.678+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "started",
+              "contentFormat": "web",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:12.349Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "c3c5138ff6ee866248cd",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_input_stage",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:14.678+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "contentFormat": "web",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:12.348Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "ffef488b15575a64e145",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_intent",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:14.678+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:12.349Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "e00c66d26411bc49fe7a",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_input_stage",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "contentFormat": "web",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:15.721Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "dc3944fb8f8d5d83bc9f",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_ready",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "share_sheet",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "latencyMs": 3375.0,
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:15.723Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "af91a3bb8d9d891d44f2",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "en",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "resume": false,
+              "occurredAtUtc": "2026-09-06T16:02:15.757Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "a61c18c6c8f5fa8c6640",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:02:20.094+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "en",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 1963.0,
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:02:17.720Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "5855d63a709dc9804920",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_milestone",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:03:51.339+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 30.0,
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:03:49.170Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "e08918341c4265a32e2a",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:07.099+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "failed",
+              "endReason": "tts_failed",
+              "errorCode": "generation_failed",
+              "errorStage": "tts",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 44.0,
+              "readSessionKey": "e3c1b434489043126311",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:04.923Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "1fcc44bc6dfb54bdfc53",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 1327.0,
+              "readSessionKey": "3c41a9b0590ebf08f99d",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:17.432Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "0438c556029d699e1055",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "3c41a9b0590ebf08f99d",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "resume": true,
+              "occurredAtUtc": "2026-09-06T16:04:16.105Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "798ead151458637a016f",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:20.322+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "failed",
+              "endReason": "tts_failed",
+              "errorCode": "generation_failed",
+              "errorStage": "tts",
+              "completionBucket": "unknown",
+              "playbackSeconds": 0.0,
+              "readSessionKey": "3c41a9b0590ebf08f99d",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:17.983Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "e0f543e88adbe39dde86",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:32.104+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 751.0,
+              "readSessionKey": "1d164949c0bcc0904c9c",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:29.933Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "594baa1878e52a0bdc9c",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:32.104+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "1d164949c0bcc0904c9c",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "resume": true,
+              "occurredAtUtc": "2026-09-06T16:04:29.181Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "b543f8a814b8f3e8eb3b",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:04:44.702+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "endReason": "completed",
+              "completionBucket": "complete",
+              "playbackSeconds": 9.0,
+              "readSessionKey": "1d164949c0bcc0904c9c",
+              "contentSessionKey": "190c2cd4287da1a90121",
+              "occurredAtUtc": "2026-09-06T16:04:42.522Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "failure": {
+        "eventKey": "855d7b43d4f616193757",
+        "deviceKey": "63a17b72f6f1bd9e4d42",
+        "event": "read_end",
+        "platform": "android",
+        "receivedAtUtc": "2026-09-06T16:13:15.168+00:00",
+        "receivedRelativeToCutovers": {
+          "global": "before",
+          "proxy": "before",
+          "directFirstNewTraffic": "before",
+          "directVerified": "before"
+        },
+        "clientVersion": "1.0.45",
+        "clientBuild": 52.0,
+        "contentSource": "unknown",
+        "language": "unknown",
+        "clientRoute": "global",
+        "ingressRoute": "global",
+        "environment": "production",
+        "result": "failed",
+        "endReason": "tts_failed",
+        "errorCode": "generation_failed",
+        "errorStage": "tts",
+        "completionBucket": "unclassified_format",
+        "playbackSeconds": 48.0,
+        "readSessionKey": "f8dd73a35a427eb16fcd",
+        "contentSessionKey": "adbd1e86a0480799e173",
+        "occurredAtUtc": "2026-09-06T16:13:12.965Z",
+        "occurredRelativeToCutovers": {
+          "global": "before",
+          "proxy": "before",
+          "directFirstNewTraffic": "before",
+          "directVerified": "before"
+        }
+      },
+      "sessionChains": [
+        {
+          "type": "readSession",
+          "sessionKey": "f8dd73a35a427eb16fcd",
+          "complete": true,
+          "rows": [
+            {
+              "eventKey": "7f44c5aa79e538c2606d",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:11:14.034+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 1342.0,
+              "readSessionKey": "f8dd73a35a427eb16fcd",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:11:11.841Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "11ea9511ad8d3bd23ad6",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:11:14.034+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "f8dd73a35a427eb16fcd",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "resume": false,
+              "occurredAtUtc": "2026-09-06T16:11:10.499Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "23771c4b7ff2f32219d7",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_milestone",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:12:27.577+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 30.0,
+              "readSessionKey": "f8dd73a35a427eb16fcd",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:12:25.385Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "855d7b43d4f616193757",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:13:15.168+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "failed",
+              "endReason": "tts_failed",
+              "errorCode": "generation_failed",
+              "errorStage": "tts",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 48.0,
+              "readSessionKey": "f8dd73a35a427eb16fcd",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:13:12.965Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            }
+          ]
+        },
+        {
+          "type": "contentSession",
+          "sessionKey": "adbd1e86a0480799e173",
+          "complete": true,
+          "rows": [
+            {
+              "eventKey": "7f44c5aa79e538c2606d",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:11:14.034+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 1342.0,
+              "readSessionKey": "f8dd73a35a427eb16fcd",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:11:11.841Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "85290be2eb3c7d418517",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_input_stage",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:11:14.034+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "contentFormat": "web",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:11:10.451Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "95fdf3ac758ef61f060c",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_input_stage",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:11:14.034+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "contentFormat": "web",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:11:10.448Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "5e6a87818d3f3e7e3648",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_ready",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:11:14.034+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "latencyMs": 3.0,
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:11:10.451Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "abd348ec85be840bac1a",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_intent",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:11:14.034+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:11:10.450Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "11ea9511ad8d3bd23ad6",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:11:14.034+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "f8dd73a35a427eb16fcd",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "resume": false,
+              "occurredAtUtc": "2026-09-06T16:11:10.499Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "28d9a7c3b8518a10394c",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "content_input_stage",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:11:14.034+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "started",
+              "contentFormat": "web",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:11:10.449Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "23771c4b7ff2f32219d7",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_milestone",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:12:27.577+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 30.0,
+              "readSessionKey": "f8dd73a35a427eb16fcd",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:12:25.385Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "855d7b43d4f616193757",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:13:15.168+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "failed",
+              "endReason": "tts_failed",
+              "errorCode": "generation_failed",
+              "errorStage": "tts",
+              "completionBucket": "unclassified_format",
+              "playbackSeconds": 48.0,
+              "readSessionKey": "f8dd73a35a427eb16fcd",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:13:12.965Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "0444011ae95906df6e78",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:13:18.691+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "c9d8470b8fe5aaaa7e1a",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "resume": true,
+              "occurredAtUtc": "2026-09-06T16:13:16.145Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "4e0b782b432c52883e47",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:13:18.691+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 373.0,
+              "readSessionKey": "c9d8470b8fe5aaaa7e1a",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:13:16.518Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "2af4610b60160e3dcc52",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:13:50.866+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "endReason": "completed",
+              "completionBucket": "complete",
+              "playbackSeconds": 17.0,
+              "readSessionKey": "c9d8470b8fe5aaaa7e1a",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:13:48.682Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "48be515ef478d86ab7d9",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:18.163+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "cancelled",
+              "endReason": "mode_switched",
+              "completionBucket": "unknown",
+              "playbackSeconds": 1.0,
+              "readSessionKey": "1c8868a2c6ea29bec31f",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:15.871Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "a6d58d2e6b7e8f1a5f2e",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "explain_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:18.163+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "explainSessionKey": "94aa9edb7cf3e6e2808f",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:12.430Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "7bbb194bf217e76e959a",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:18.163+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "1c8868a2c6ea29bec31f",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "resume": true,
+              "occurredAtUtc": "2026-09-06T16:14:13.937Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "1d61ba26f78ad821c3c8",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:18.163+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 50.0,
+              "readSessionKey": "1c8868a2c6ea29bec31f",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:13.988Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "5ce3688b2ac6a0d0ccb6",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "explain_first_block",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:21.134+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 6519.0,
+              "explainSessionKey": "94aa9edb7cf3e6e2808f",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:18.950Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "5a1599b05419366c17c6",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "explain_milestone",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:24.482+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "explainSessionKey": "94aa9edb7cf3e6e2808f",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:22.290Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "22544bca6ed784e340f1",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:28.874+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 50.0,
+              "readSessionKey": "f8dc034ec63c9c5d66b9",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:26.427Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "897faedab7ae1e0efbb6",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:28.874+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "f8dc034ec63c9c5d66b9",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "resume": true,
+              "occurredAtUtc": "2026-09-06T16:14:26.377Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "8efe307431b349efc94e",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "explain_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:28.874+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "endReason": "completed",
+              "completionBucket": "complete",
+              "explainSessionKey": "94aa9edb7cf3e6e2808f",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:26.656Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "36c3e255641c9215cdb2",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "explain_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:34.242+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "explainSessionKey": "3be542ca12d039d2646d",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:31.765Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "617cab7b1e5034818713",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:34.242+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "cancelled",
+              "endReason": "mode_switched",
+              "completionBucket": "unknown",
+              "playbackSeconds": 3.0,
+              "readSessionKey": "f8dc034ec63c9c5d66b9",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:31.764Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "94197467de0d4baa40b3",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "explain_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:34.242+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "blocked",
+              "endReason": "quota_exhausted",
+              "errorCode": "quota_exhausted",
+              "errorStage": "entitlement",
+              "completionBucket": "unknown",
+              "explainSessionKey": "3be542ca12d039d2646d",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:31.867Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "5bf0b3bf84b3f8bc2869",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_first_audio",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:38.047+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "latencyMs": 64.0,
+              "readSessionKey": "a2980a165764c81c6126",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:35.870Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "6ae3110a0ef825d72c14",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_start",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:38.047+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "url",
+              "language": "es",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "contentFormat": "web",
+              "readSessionKey": "a2980a165764c81c6126",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "resume": true,
+              "occurredAtUtc": "2026-09-06T16:14:35.805Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            },
+            {
+              "eventKey": "22664c91b6bf01f84377",
+              "deviceKey": "63a17b72f6f1bd9e4d42",
+              "event": "read_end",
+              "platform": "android",
+              "receivedAtUtc": "2026-09-06T16:14:44.207+00:00",
+              "receivedRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              },
+              "clientVersion": "1.0.45",
+              "clientBuild": 52.0,
+              "contentSource": "unknown",
+              "language": "unknown",
+              "clientRoute": "global",
+              "ingressRoute": "global",
+              "environment": "production",
+              "result": "success",
+              "endReason": "completed",
+              "completionBucket": "complete",
+              "playbackSeconds": 6.0,
+              "readSessionKey": "a2980a165764c81c6126",
+              "contentSessionKey": "adbd1e86a0480799e173",
+              "occurredAtUtc": "2026-09-06T16:14:42.024Z",
+              "occurredRelativeToCutovers": {
+                "global": "before",
+                "proxy": "before",
+                "directFirstNewTraffic": "before",
+                "directVerified": "before"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Received time is server-clocked; occurred time is client-supplied. A post-cutover receipt alone does not prove the request used that deployment.",
+    "Only explicitly selected request/trace property names were queried; absence does not prove no correlation metadata exists anywhere.",
+    "Session and device keys are anonymous correlation handles, not verified identities."
+  ]
+}

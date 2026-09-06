@@ -1,0 +1,24 @@
+{
+  "readOnly": true,
+  "rawContentExported": false,
+  "productionModified": false,
+  "complete": true,
+  "requests": [
+    {
+      "key": "dd3c14770acef97c611f",
+      "observedAt": "2026-09-06T15:56:07.783652Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": 504,
+      "elapsedMs": 314,
+      "requestBytes": 293,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.45",
+      "diagnostic": {
+        "name": "AbortError",
+        "classification": "timeout_or_abort",
+        "atUtc": "2026-09-06T15:56:07.783652Z"
+      }
+    }
+  ]
+}
