@@ -1523,6 +1523,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     private static func analyticsErrorCode(_ error: Error) -> String {
+        if let ttsError = error as? TTSError { return ttsError.analyticsCode }
         if error is URLError { return "network" }
         if error is CancellationError { return "cancelled" }
         if case QuickReadError.httpError(let code) = error { return "http_\(code)" }

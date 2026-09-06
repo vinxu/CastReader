@@ -1741,7 +1741,7 @@ final class ReadAloudViewModel: ObservableObject {
                 session: session
             ) else {
                 failLiveWebCarryPrewarm(
-                    TTSError.generationFailed("Audio queue rejected exact page segment"),
+                    TTSError.generationFailed("audio_queue_rejected"),
                     paragraphIndex: paragraphIndex,
                     epoch: epoch,
                     session: session,
@@ -1902,7 +1902,7 @@ final class ReadAloudViewModel: ObservableObject {
         ) else {
             liveWebCarryPrewarmPlaybackStarted = false
             failLiveWebCarryPrewarm(
-                TTSError.generationFailed("Audio queue rejected exact page buffer"),
+                TTSError.generationFailed("audio_queue_rejected"),
                 paragraphIndex: paragraphIndex,
                 epoch: epoch,
                 session: session,
@@ -4426,6 +4426,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private static func analyticsErrorCode(_ error: Error) -> String {
+        if let ttsError = error as? TTSError { return ttsError.analyticsCode }
         if error is URLError { return "network" }
         if error is CancellationError { return "cancelled" }
         let description = String(describing: error).lowercased()

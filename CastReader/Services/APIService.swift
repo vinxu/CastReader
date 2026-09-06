@@ -155,6 +155,51 @@ enum APIError: Error, LocalizedError {
     }
 }
 
+enum PresetTTSRetryPolicy {
+    static let maximumAttempts = 2
+    static let delayNanoseconds: UInt64 = 250_000_000
+
+    static func isRetryable(_ error: Error) -> Bool {
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .httpError(let code):
+                return code == 408 || code >= 500
+            case .invalidResponse, .decodingError:
+                return true
+            case .networkError(let underlying):
+                return isRetryable(underlying)
+            default:
+                return false
+            }
+        }
+        guard let urlError = error as? URLError else { return false }
+        return [
+            .timedOut,
+            .cannotFindHost,
+            .cannotConnectToHost,
+            .dnsLookupFailed,
+            .networkConnectionLost,
+            .notConnectedToInternet,
+            .internationalRoamingOff,
+            .callIsActive,
+            .dataNotAllowed,
+        ].contains(urlError.code)
+    }
+
+    static func run<T>(_ operation: () async throws -> T) async throws -> T {
+        var attempt = 1
+        while true {
+            do {
+                return try await operation()
+            } catch {
+                guard attempt < maximumAttempts, isRetryable(error) else { throw error }
+                attempt += 1
+                try await Task.sleep(nanoseconds: delayNanoseconds)
+            }
+        }
+    }
+}
+
 actor APIService: VoiceCloneSTSCredentialProviding {
     static let shared = APIService()
 
@@ -651,12 +696,20 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         ) else {
             throw APIError.invalidURL
         }
-        return try await request(
-            url,
-            method: "POST",
-            body: bodyData,
-            session: ttsSessions[route]
-        )
+        // Retry only the anonymous preset request, once, on the exact frozen
+        // regional route. Clone synthesis keeps its separate idempotent/billed policy.
+        return try await PresetTTSRetryPolicy.run {
+            let response: TTSResponse = try await request(
+                url,
+                method: "POST",
+                body: bodyData,
+                session: ttsSessions[route]
+            )
+            guard let audio = Data(base64Encoded: response.audio), !audio.isEmpty else {
+                throw APIError.invalidResponse
+            }
+            return response
+        }
     }
 
     private func requestClonedVoiceTTS(

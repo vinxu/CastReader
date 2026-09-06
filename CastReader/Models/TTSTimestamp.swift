@@ -107,6 +107,39 @@ struct TTSResponse: Codable {
     }
 }
 
+private struct FailableDecodable<Value: Decodable>: Decodable {
+    let value: Value?
+
+    init(from decoder: Decoder) throws {
+        value = try? Value(from: decoder)
+    }
+}
+
+extension TTSResponse {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Audio and both text-progress fields remain strict. Accepting a malformed
+        // continuation could skip unsynthesized text, which is worse than retrying.
+        audio = try container.decode(String.self, forKey: .audio)
+        processedText = try container.decodeIfPresent(String.self, forKey: .processedText)
+        unprocessedText = try container.decodeIfPresent(String.self, forKey: .unprocessedText)
+
+        // Format, duration and word timing only enhance playback. Bad optional
+        // metadata degrades highlighting/duration estimation, never valid audio.
+        audioFormat = (try? container.decodeIfPresent(String.self, forKey: .audioFormat)) ?? nil
+        duration = (try? container.decodeIfPresent(Double.self, forKey: .duration)) ?? nil
+        if !container.contains(.timestamps)
+            || ((try? container.decodeNil(forKey: .timestamps)) ?? false) {
+            timestamps = nil
+        } else {
+            timestamps = (try? container.decode(
+                [FailableDecodable<TTSTimestamp>].self,
+                forKey: .timestamps
+            ).compactMap(\.value)) ?? []
+        }
+    }
+}
+
 // MARK: - TTS Timestamp
 struct TTSTimestamp: Codable {
     let word: String

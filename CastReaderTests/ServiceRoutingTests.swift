@@ -702,7 +702,7 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(laterConflictingSignal, first)
     }
 
-    func testAnonymousTTSNeverResendsPayloadAcrossComputeRoutes() async {
+    func testAnonymousTTSRetriesTechnicalFailureOnlyOnTheFrozenComputeRoute() async throws {
         ServiceRouting.overrideRoute = .chinaGateway
         resetSnapshots()
         let unavailable = ComputeRouting.NetworkProbe(
@@ -718,16 +718,21 @@ final class ServiceRoutingTests: XCTestCase {
         )
 
         var requestedHosts: [String] = []
+        var requestBodies: [Data] = []
         RoutingURLProtocol.handler = { request in
             requestedHosts.append(request.url?.host ?? "")
-            let status = 503
+            requestBodies.append(request.httpBody ?? Data())
+            let status = requestedHosts.count == 1 ? 503 : 200
             let response = HTTPURLResponse(
                 url: request.url!,
                 statusCode: status,
                 httpVersion: nil,
                 headerFields: ["Content-Type": "application/json"]
             )!
-            return (response, Data(#"{"error":"temporarily unavailable"}"#.utf8))
+            let body = status == 200
+                ? Data(#"{"audio":"bXAz","timestamps":[],"processed_text":"hello","unprocessed_text":""}"#.utf8)
+                : Data(#"{"error":"temporarily unavailable"}"#.utf8)
+            return (response, body)
         }
         let routingSession = makeRoutingSession()
         let service = APIService(
@@ -738,19 +743,15 @@ final class ServiceRoutingTests: XCTestCase {
             ]
         )
 
-        do {
-            _ = try await service.generateTTS(text: "hello", language: "en")
-            XCTFail("a failed CN TTS payload must not be resent globally")
-        } catch APIError.httpError(let status) {
-            XCTAssertEqual(status, 503)
-        } catch {
-            XCTFail("unexpected error: \(error)")
-        }
-        XCTAssertEqual(requestedHosts, ["api.castreader.cn"])
+        let result = try await service.generateTTS(text: "hello", language: "en")
+        XCTAssertEqual(result.audio, "bXAz")
+        XCTAssertEqual(requestedHosts, ["api.castreader.cn", "api.castreader.cn"])
+        XCTAssertEqual(requestBodies.count, 2)
+        XCTAssertEqual(requestBodies[0], requestBodies[1], "a retry must preserve the complete input")
     }
 
     func testAnonymousTTSDoesNotFallbackForRateLimitOrAuthContractFailure() async {
-        for status in [401, 422, 429, 500] {
+        for status in [401, 422, 429] {
             ServiceRouting.overrideRoute = .chinaGateway
             resetSnapshots()
             let unavailable = ComputeRouting.NetworkProbe(
@@ -792,6 +793,106 @@ final class ServiceRoutingTests: XCTestCase {
             }
             XCTAssertEqual(requestedHosts, ["api.castreader.cn"])
         }
+    }
+
+    func testAnonymousTTSRetriesMalformedWholeResponseOnceWithoutChangingRoute() async throws {
+        ServiceRouting.overrideRoute = .globalGateway
+        resetSnapshots()
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "America/Los_Angeles",
+            arguments: [],
+            simCountryCodes: ["US"],
+            precomputedProbe: .init(
+                china: .unavailable,
+                global: .init(isReachable: true, latency: 0.01),
+                country: .init(countryCode: "US")
+            )
+        )
+
+        var requestCount = 0
+        var requestedHosts: [String] = []
+        RoutingURLProtocol.handler = { request in
+            requestCount += 1
+            requestedHosts.append(request.url?.host ?? "")
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            let data = requestCount == 1
+                ? Data(#"{"audio":"truncated"#.utf8)
+                : Data(#"{"audio":"bXAz","timestamps":[],"processed_text":"hello","unprocessed_text":""}"#.utf8)
+            return (response, data)
+        }
+        let routingSession = makeRoutingSession()
+        let service = APIService(
+            session: routingSession,
+            ttsSessions: [
+                .chinaGateway: routingSession,
+                .globalGateway: routingSession,
+            ]
+        )
+
+        let result = try await service.generateTTS(text: "hello", language: "en")
+        XCTAssertEqual(result.audio, "bXAz")
+        XCTAssertEqual(requestedHosts, ["api.castreader.ai", "api.castreader.ai"])
+    }
+
+    func testAnonymousTTSRetriesInvalidAudioBeforeAnythingCanBeQueued() async throws {
+        ServiceRouting.overrideRoute = .globalGateway
+        resetSnapshots()
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "America/Los_Angeles",
+            arguments: [],
+            simCountryCodes: ["US"],
+            precomputedProbe: .init(
+                china: .unavailable,
+                global: .init(isReachable: true, latency: 0.01),
+                country: .init(countryCode: "US")
+            )
+        )
+
+        var requestCount = 0
+        RoutingURLProtocol.handler = { request in
+            requestCount += 1
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            let audio = requestCount == 1 ? "%%%" : "bXAz"
+            let data = Data(
+                #"{"audio":"\#(audio)","timestamps":[],"processed_text":"hello","unprocessed_text":""}"#.utf8
+            )
+            return (response, data)
+        }
+        let routingSession = makeRoutingSession()
+        let service = APIService(
+            session: routingSession,
+            ttsSessions: [
+                .chinaGateway: routingSession,
+                .globalGateway: routingSession,
+            ]
+        )
+
+        let result = try await service.generateTTS(text: "hello", language: "en")
+        XCTAssertEqual(result.audio, "bXAz")
+        XCTAssertEqual(requestCount, 2)
+    }
+
+    func testTTSResponseDropsBadOptionalTimestampsButKeepsAudioAndTextProgress() throws {
+        let data = Data(#"{"audio":"bXAz","audio_format":42,"duration":"unknown","timestamps":[{"word":"Hello","start_time":0,"end_time":0.3},null,{"word":null,"start_time":0.3,"end_time":0.5},{"word":"missing-end","start_time":0.5}],"processed_text":"Hello.","unprocessed_text":"Next sentence."}"#.utf8)
+
+        let response = try JSONDecoder().decode(TTSResponse.self, from: data)
+        XCTAssertEqual(response.audio, "bXAz")
+        XCTAssertNil(response.audioFormat)
+        XCTAssertNil(response.duration)
+        XCTAssertEqual(response.timestamps?.map(\.word), ["Hello"])
+        XCTAssertEqual(response.processedText, "Hello.")
+        XCTAssertEqual(response.unprocessedText, "Next sentence.")
+    }
+
+    func testTTSResponseStillRejectsMalformedContinuationRatherThanSkippingText() {
+        let malformedProgress = Data(#"{"audio":"bXAz","timestamps":[],"processed_text":"Hello.","unprocessed_text":{"lost":"tail"}}"#.utf8)
+        XCTAssertThrowsError(try JSONDecoder().decode(TTSResponse.self, from: malformedProgress))
     }
 
     func testEnabledCloneVoiceNeverFallsBackToAnonymousComputeTTS() async throws {

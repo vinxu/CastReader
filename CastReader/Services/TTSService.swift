@@ -30,6 +30,47 @@ enum TTSError: Error, LocalizedError {
     var errorDescription: String? {
         AppLocalized("声音服务暂时不可用，请稍后重试")
     }
+
+    var analyticsCode: String {
+        switch self {
+        case .cancelled:
+            return "cancelled"
+        case .generationFailed(let code):
+            return [
+                "audio_decode_failed",
+                "audio_queue_rejected",
+                "http_4xx",
+                "http_5xx",
+                "network_failed",
+                "network_timeout",
+                "response_decode_failed",
+                "response_invalid",
+            ].contains(code) ? code : "tts_failed"
+        }
+    }
+
+    static func wrapping(_ error: Error) -> TTSError {
+        if let urlError = error as? URLError {
+            return .generationFailed(
+                urlError.code == .timedOut ? "network_timeout" : "network_failed"
+            )
+        }
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .httpError(let code):
+                return .generationFailed(code >= 500 ? "http_5xx" : "http_4xx")
+            case .decodingError:
+                return .generationFailed("response_decode_failed")
+            case .invalidResponse:
+                return .generationFailed("response_invalid")
+            case .networkError(let underlying):
+                return wrapping(underlying)
+            default:
+                return .generationFailed("tts_failed")
+            }
+        }
+        return .generationFailed("tts_failed")
+    }
 }
 
 enum TTSRequestPriority: String, Sendable {
@@ -137,7 +178,7 @@ actor TTSService {
                 )
                 try Task.checkCancellation()
                 guard let audioData = Data(base64Encoded: response.audio) else {
-                    throw TTSError.generationFailed("Failed to decode audio data")
+                    throw TTSError.generationFailed("audio_decode_failed")
                 }
                 let rawSegment = AudioSegment(
                     paragraphIndex: paragraphIndex,
@@ -229,7 +270,7 @@ actor TTSService {
                 ttsDebugLog("[TTSService] 📊 - Timestamps count: \(response.safeTimestamps.count)")
 
                 guard let audioData = Data(base64Encoded: response.audio) else {
-                    throw TTSError.generationFailed("Failed to decode audio data")
+                    throw TTSError.generationFailed("audio_decode_failed")
                 }
 
                 guard currentRequestId == requestId else {
@@ -283,7 +324,7 @@ actor TTSService {
                 throw error
             } catch {
                 ttsDebugLog("[TTSService] Cloud TTS failed: \(error)")
-                throw TTSError.generationFailed(error.localizedDescription)
+                throw TTSError.wrapping(error)
             }
           }
         }
