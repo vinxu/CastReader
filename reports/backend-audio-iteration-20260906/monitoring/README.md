@@ -1,5 +1,7 @@
 # 核心音频迭代后 24 小时只读验收工具
 
+> 后续生产状态已更新，本文下方保留上一轮历史快照。请以[本次上线报告](../../backend-audio-rollout-20260906/README.md)与当前验收状态为准；历史凭据阻塞和 R133 未上线的描述已过时。
+
 这套工具在三个必需生产组件都完成发布和验证以后，按固定 UTC 窗口汇总已有证据。它不会发起 TTS 或克隆合成，不会重启服务，不会改线上配置，也不会发送通知。`automaticVerdict` 只验收下表列出的现有数据源，不能认证 iOS、Android、Web、扩展四端完整链路，也不能单独证明所有请求都没有跨境。
 
 当前状态文件是 [acceptance-state.json](acceptance-state.json)。截至本文生成时，US direct gateway 已完成正式切换和验证；Global 网关与 US Kokoro R133 仍是 `verified:false`。状态保持 `waiting_release`，24 小时计时尚未开始。

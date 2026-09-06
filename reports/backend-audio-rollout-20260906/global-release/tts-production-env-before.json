@@ -1,0 +1,48 @@
+{
+  "readAtUtc": "2026-09-06T03:43:46.222851+00:00",
+  "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+  "region": "global",
+  "fields": [
+    {
+      "id": "zE5nMRBRL5RMI7nw",
+      "key": "TTS_UPSTREAM_RECEIPT_SHA256",
+      "type": "encrypted",
+      "target": [
+        "production"
+      ],
+      "value": "3b5efd0238a6c3f20d94f393e00928be3d5b7cf9b80ecefec028274461bb9646",
+      "updatedAt": 1788321669594
+    },
+    {
+      "id": "0zDyKMgPynsNiAzj",
+      "key": "TTS_UPSTREAM_RELEASE_ID",
+      "type": "encrypted",
+      "target": [
+        "production"
+      ],
+      "value": "20260724-kokoro-ja-vn28-delisted-clean-us-r129",
+      "updatedAt": 1788321667456
+    },
+    {
+      "id": "Npwf4IaC9zKysCLm",
+      "key": "TTS_UPSTREAM_NODE_ID",
+      "type": "encrypted",
+      "target": [
+        "production"
+      ],
+      "value": "castreader-us4090",
+      "updatedAt": 1788321665332
+    },
+    {
+      "id": "OTP1a7lSyQSB5I63",
+      "key": "TTS_UPSTREAM_URL",
+      "type": "encrypted",
+      "target": [
+        "production"
+      ],
+      "value": "http://71.175.237.103:41228/dev/captioned_speech",
+      "updatedAt": 1788321663096
+    }
+  ],
+  "mutationPerformed": false
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "castreader.production-ci-dispatch.v1",
+  "workflow": "backend-maintenance-release.yml",
+  "runId": 34012365932,
+  "runAttempt": 1,
+  "createdAtUtc": "2026-09-06T04:46:52Z",
+  "releaseSource": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+  "previousProductionSource": "045b5cd657ae6c571dbf130a994b14eefd8e5098",
+  "previousProductionId": "dpl_AQWet1dUVBKuJzbNKkaUoSxGQWJT",
+  "url": "https://github.com/scmyyan/readout-web/actions/runs/34012365932"
+}

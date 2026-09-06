@@ -1,0 +1,37 @@
+{
+  "startedAtUtc": "2026-09-06T03:58:18.233995+00:00",
+  "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+  "fields": [
+    {
+      "key": "TTS_UPSTREAM_RECEIPT_SHA256",
+      "before": "3b5efd0238a6c3f20d94f393e00928be3d5b7cf9b80ecefec028274461bb9646",
+      "after": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "readbackVerified": true,
+      "updatedAt": 1788667102903
+    },
+    {
+      "key": "TTS_UPSTREAM_RELEASE_ID",
+      "before": "20260724-kokoro-ja-vn28-delisted-clean-us-r129",
+      "after": "us-tts-origin-proxy-20260906-v1",
+      "readbackVerified": true,
+      "updatedAt": 1788667110359
+    },
+    {
+      "key": "TTS_UPSTREAM_NODE_ID",
+      "before": "castreader-us4090",
+      "after": "castreader-us4090",
+      "readbackVerified": true,
+      "updatedAt": 1788321665332
+    },
+    {
+      "key": "TTS_UPSTREAM_URL",
+      "before": "http://71.175.237.103:41228/dev/captioned_speech",
+      "after": "http://71.175.237.103:41209/dev/captioned_speech",
+      "readbackVerified": true,
+      "updatedAt": 1788667120291
+    }
+  ],
+  "complete": true,
+  "otherProductionFieldsModified": false,
+  "completedAtUtc": "2026-09-06T03:58:43.051940+00:00"
+}

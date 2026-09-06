@@ -1,0 +1,14 @@
+{
+  "schema": "castreader.audio-observation-automation-readback.v1",
+  "readAtUtc": "2026-09-06T05:02:31.539538+00:00",
+  "automationId": "24",
+  "name": "核心音频迭代后24小时验收",
+  "status": "ACTIVE",
+  "kind": "heartbeat",
+  "targetThreadId": "01a06667-570e-70f2-8e02-ed20755d6709",
+  "cadence": "hourly",
+  "updatedAtUnixMs": 1788670897993,
+  "promptSha256": "94c20d7ea153ec739698fb058f1840fffbf9a6fe719195522d2bba8dfe8b9cbd",
+  "unchangedAndNonActionableBehavior": "quiet",
+  "fixedWindowCompletionBehavior": "final_read_only_collection_then_pause"
+}

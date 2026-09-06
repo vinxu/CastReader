@@ -1,0 +1,86 @@
+{
+  "cutoverState": "observing",
+  "policy": {
+    "minimumProductionStartsByPlatform": {
+      "android": 1,
+      "ios": 1
+    },
+    "monitorExpectedCadenceSeconds": 300,
+    "monitorMaxBoundaryLagSeconds": 900,
+    "monitorMaxObservedGapSeconds": 900,
+    "requireAndroid145GatewaySample": true
+  },
+  "releaseHistory": [],
+  "requiredComponents": {
+    "directGateway": {
+      "activeFromUtc": "2026-09-06T03:55:52.850340+00:00",
+      "runtimeSourceSha256": "53a4ca273a7b3d60b1ce24f3cb089985f57bb6006b2838b683549c69e93d26d5",
+      "sourceCommit": "b9e7e9129e49f882398289511bbb90dbda8c6c08",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T03:55:56.628488+00:00",
+      "version": "b9e7e9129e49f882398289511bbb90dbda8c6c08"
+    },
+    "globalGateway": {
+      "activationTimeSemantics": "First confirmed production alias convergence after promotion",
+      "activeFromUtc": "2026-09-06T04:57:01Z",
+      "routeRevision": 1,
+      "routeSource": "database",
+      "sourceCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+      "upstreamReceiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:58:11.348402+00:00",
+      "version": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc"
+    },
+    "usKokoro": {
+      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
+      "version": "ca857ee91c3367999fb905de1f0924a6e28edd81"
+    },
+    "usOriginProxy": {
+      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
+      "currentReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+      "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+      "currentSlot": "green",
+      "routeRevision": 2,
+      "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1/r133_stable_proxy.py",
+      "runtimeSourceSha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44",
+      "sourceCommit": "954730c1c67e0a103f8ce80992e97a2df400e4a8",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
+      "version": "us-tts-origin-proxy-20260906-v1"
+    }
+  },
+  "schema": "castreader.audio-acceptance-state.v1",
+  "sources": {
+    "cnSshHost": "ubuntu@106.54.47.163",
+    "cnSshIdentity": "~/.ssh/castreader_cn_deploy",
+    "globalCapabilitiesTimeoutSeconds": 15,
+    "globalCapabilitiesURL": "https://api.castreader.ai/api/capabilities",
+    "globalEnvFile": "/tmp/castreader-core-audio-env-source-20260905/.vercel/.env.production.local",
+    "kokoroSshTimeoutSeconds": 30,
+    "mobileMaxPages": 100,
+    "mobilePageSize": 1000,
+    "mobileTimeoutSeconds": 25,
+    "mobileWallClockBudgetSeconds": 180,
+    "sshTimeoutSeconds": 90,
+    "supabaseCredentialSource": "/Users/xuxuheng/Documents/MyProject/cast-reader-api/reader-service/supabase_storage.py",
+    "usKokoroSshHost": "castreader-us4090",
+    "usSshHost": "root@140.82.14.49",
+    "vercelCacheSafetyLagSeconds": 900,
+    "vercelMaxQueries": 80,
+    "vercelPageLimit": 1000,
+    "vercelProjectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+    "vercelRepo": "/Users/xuxuheng/Documents/MyProject/readout-web",
+    "vercelTimeoutSeconds": 45,
+    "vercelWallClockBudgetSeconds": 300
+  },
+  "window": {
+    "endUtc": "2026-09-07T05:01:25Z",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T05:01:25Z"
+  }
+}

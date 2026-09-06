@@ -1,0 +1,113 @@
+{
+  "files": [
+    {
+      "bytes": 31621,
+      "gid": 0,
+      "mode": "0o500",
+      "path": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1/r133_stable_proxy.py",
+      "sha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44",
+      "uid": 0
+    },
+    {
+      "bytes": 357,
+      "gid": 0,
+      "mode": "0o600",
+      "path": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1/RELEASE.json",
+      "sha256": "a8d3b49fde6b991e5f7f99252806760d03bf72c9e0f3ab1c0bd96aaaea0bdb79",
+      "uid": 0
+    },
+    {
+      "bytes": 699,
+      "gid": 0,
+      "mode": "0o644",
+      "path": "/etc/supervisor/conf.d/castreader-tts-origin-proxy.conf",
+      "sha256": "e99a49a0ddfaa63023534bb950ccae1643a2d7f7ba16856284a882297e4c307a",
+      "uid": 0
+    },
+    {
+      "bytes": 610,
+      "gid": 0,
+      "mode": "0o644",
+      "path": "/etc/supervisor/conf.d/castreader-tts-r133-green.conf",
+      "sha256": "bf277234717160bf30686944e7907c50a778f91f4e0593bcafc25f683cf05fa7",
+      "uid": 0
+    },
+    {
+      "bytes": 574,
+      "gid": 0,
+      "mode": "0o600",
+      "path": "/var/lib/castreader-tts-origin-proxy/state.json",
+      "sha256": "5f034ab62e212bb4bd8ca2b591e4c25ace0d888f099b030281b0087b909bdbe6",
+      "uid": 0
+    }
+  ],
+  "listeners": {
+    "18880": [],
+    "8094": [
+      {
+        "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2",
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "exe": "/usr/bin/python3.12",
+        "pid": 4136837,
+        "startTicks": "519185503"
+      }
+    ],
+    "8880": [
+      {
+        "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+        "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 2665473,
+        "startTicks": "541243790"
+      }
+    ],
+    "8889": [
+      {
+        "argvSha256": "7370620a0645a93ae89be6f0d3ed53d8661e89e0e7b0a6c2d59ff24814f7d442",
+        "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 3439385,
+        "startTicks": "545295266"
+      }
+    ],
+    "8890": [
+      {
+        "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e",
+        "cwd": "/workspace/castreader-clone",
+        "exe": "/usr/bin/python3.12",
+        "pid": 568834,
+        "startTicks": "524136804"
+      }
+    ]
+  },
+  "observedAtUTC": "2026-09-06T03:57:03.346530+00:00",
+  "runtime": {
+    "aiohttp": "3.14.1",
+    "av": "17.1.0",
+    "python": "/venv/main/bin/python3.12"
+  },
+  "schema": "castreader.us-tts-origin-proxy-runtime-readback.v1",
+  "state": {
+    "bootId": "547423d5bded443193273aa1fc00eef1",
+    "cleanShutdown": false,
+    "currentSlot": "blue",
+    "lastOperationId": null,
+    "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+    "revision": 0,
+    "schema": "castreader.us-tts-origin-proxy-state.v1",
+    "slots": {
+      "blue": {
+        "enabled": true,
+        "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+        "releaseId": "20260905-kokoro-english-g2p-us-r132"
+      },
+      "green": {
+        "enabled": false,
+        "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+        "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+      }
+    },
+    "updatedAt": null
+  },
+  "verified": true
+}

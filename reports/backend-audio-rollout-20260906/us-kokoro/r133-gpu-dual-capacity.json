@@ -1,0 +1,64 @@
+{
+  "candidateRelease": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+  "candidateStopped": true,
+  "candidateTreeSha256": "d9bcd4d1f6f578eb90728dc82650ae7abc43e1756ffd63196baffcf1e7d508fe",
+  "cloneAndNariUnchanged": true,
+  "concurrency": {
+    "allBelowBudget": true,
+    "allCompleteAndDecodable": true,
+    "inputCharactersPerRequest": 786,
+    "maximumRequestBudgetSeconds": 28,
+    "maximumRequestSeconds": 8.621295017190278,
+    "minimumRequestSeconds": 6.281989891082048,
+    "requests": 4,
+    "timestampsPerRequest": [
+      119
+    ],
+    "wallSeconds": 8.623937926255167
+  },
+  "fixedAudioCases": {
+    "allPassed": true,
+    "count": 7,
+    "longDecodedSamples": 1536768,
+    "longTimestamps": 145,
+    "maximumElapsedSeconds": 2.901245708577335
+  },
+  "gpu": {
+    "afterStop": {
+      "free_mib": 10165,
+      "total_mib": 24564,
+      "used_mib": 13928,
+      "utilization_percent": 0
+    },
+    "afterValidation": {
+      "free_mib": 5179,
+      "total_mib": 24564,
+      "used_mib": 18914,
+      "utilization_percent": 0
+    },
+    "before": {
+      "free_mib": 10113,
+      "total_mib": 24564,
+      "used_mib": 13980,
+      "utilization_percent": 0
+    },
+    "minimumFreeMiB": 4811,
+    "peakUsedMiB": 19282
+  },
+  "limitations": [
+    "Same-host dual loading remains a shared host failure domain.",
+    "This capacity run did not route public user traffic to the candidate."
+  ],
+  "observedAt": "2026-09-06T03:12:37.755162+00:00",
+  "privacy": {
+    "fixedOperatorInputsOnly": true,
+    "userContentReadOrStored": false
+  },
+  "productionConnectionsObserved": 2,
+  "productionKokoroUnchanged": true,
+  "productionSwitched": false,
+  "publiclyRouted": false,
+  "schema": "castreader.r133-dual-gpu-capacity.v1",
+  "sourceCommit": "ca857ee91c3367999fb905de1f0924a6e28edd81",
+  "verified": true
+}

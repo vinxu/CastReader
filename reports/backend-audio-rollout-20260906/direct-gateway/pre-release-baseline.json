@@ -1,0 +1,31 @@
+{
+  "capturedAtUtc": "2026-09-06T03:21:29.791181Z",
+  "files": [
+    {
+      "path": "/opt/castreader-tts-gateway/gateway.mjs",
+      "sha256": "0bfb14b9363d25de01d78fdd3777b203d1ec86966e71389d9815bb62a8b66cb0",
+      "bytes": 10473
+    },
+    {
+      "path": "/etc/systemd/system/castreader-tts-gateway.service",
+      "sha256": "71b0ca830d4554851c11feab0bf48a271ded803558942d685a194ca68b17fca9",
+      "bytes": 770
+    },
+    {
+      "path": "/etc/caddy/Caddyfile",
+      "sha256": "243706a702274b86cea400b4ff0c627ddead335e2dfb457fe62303952b30bdd1",
+      "bytes": 729
+    }
+  ],
+  "service": {
+    "MainPID": "553831",
+    "NRestarts": "0",
+    "ActiveState": "active",
+    "SubState": "running",
+    "DropInPaths": "",
+    "ActiveEnterTimestamp": "Sun 2026-09-06 01:59:23 UTC"
+  },
+  "upstreamConfiguredInProcess": true,
+  "knownEffectiveUpstream": "http://71.175.237.103:41228/dev/captioned_speech",
+  "protectedCaddyPid": "4980"
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "castreader.global-capabilities-production-readback.v1",
+  "readAtUtc": "2026-09-06T04:57:28.810321+00:00",
+  "releaseId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+  "commitSha": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+  "voiceCloneRegion": "global",
+  "voiceGiftRegion": "global",
+  "voiceGiftEnabled": true
+}

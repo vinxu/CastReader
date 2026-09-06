@@ -1,0 +1,22 @@
+{
+  "schema": "castreader.rollout-independent-evidence-review.v1",
+  "recordedAtUtc": "2026-09-06T04:48:54.481578+00:00",
+  "scope": "R133 and Direct production evidence present before final Global CLI release",
+  "readOnly": true,
+  "checksPassed": 26,
+  "checks": "Cross-receipt bytes/SHA256, production identity, route revision/slot, unchanged protected process identity, private archive and receipt full readback references",
+  "credentialValueFindings": 0,
+  "userContentOrIdentifierFindings": 0,
+  "audioOrTTSBodyFindings": 0,
+  "excludedTransientProducts": [
+    "direct-gateway/__pycache__",
+    "monitoring/__pycache__"
+  ],
+  "limits": [
+    "Not an executed disaster recovery drill",
+    "Not a four-client playback success proof",
+    "Not a 24-hour acceptance verdict",
+    "Same GPU dual slots are not independent-host failover",
+    "Global TTS region evidence does not certify every storage and LLM request"
+  ]
+}

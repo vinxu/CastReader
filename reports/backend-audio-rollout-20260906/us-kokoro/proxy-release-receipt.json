@@ -1,0 +1,76 @@
+{
+  "adminTransport": "root-only Unix socket /run/castreader-tts-origin-proxy/admin.sock",
+  "allAudioDecoded": true,
+  "allFinalSourceTailsVerified": true,
+  "allRemainingCharactersZero": true,
+  "boundaries": {
+    "audioOrInputRetained": false,
+    "automaticCrossSlotFallback": false,
+    "cloneOrNariRestarted": false,
+    "fixedSameUSBackends": [
+      "127.0.0.1:8880",
+      "127.0.0.1:18880"
+    ],
+    "old41228Changed": false,
+    "publicAdminAPI": false,
+    "r132StoppedOrRestarted": false,
+    "r133Started": false,
+    "redirectFollowing": false
+  },
+  "currentModelReleaseId": "20260905-kokoro-english-g2p-us-r132",
+  "currentSlot": "blue",
+  "evidence": {
+    "install": {
+      "bytes": 1654,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/proxy-install-receipt.json",
+      "sha256": "275f101f8e7b8ac4fe7e3d34e966a98c2566d6f2316055fd1dfbb8276d925b2b"
+    },
+    "nineLanguageMatrix": {
+      "bytes": 7474,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/proxy-nine-language-r132.json",
+      "sha256": "7e27164603008d18761d589d669e20e9ac2d0425552de433520c8a357784867f"
+    },
+    "publicHealth": {
+      "bytes": 479,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/proxy-public-health.json",
+      "sha256": "4862887381f0abe377c49031ff8af4bd4cadc48a2a99ad9be0f76051ca4ccc42"
+    },
+    "runtimeReadback": {
+      "bytes": 3519,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/proxy-runtime-readback.json",
+      "sha256": "da9b2bd7278b28834478eafb50430db7ac0ca0b5ab6674532023e947484c8e25"
+    }
+  },
+  "healthEndpoint": "http://71.175.237.103:41209/health",
+  "languageCases": 9,
+  "nodeId": "castreader-us4090",
+  "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+  "publicEndpoint": "http://71.175.237.103:41209/dev/captioned_speech",
+  "region": "us",
+  "revision": 0,
+  "runtime": {
+    "aiohttp": "3.14.1",
+    "av": "17.1.0",
+    "python": "/venv/main/bin/python3.12"
+  },
+  "schema": "castreader.us-tts-origin-proxy-release-receipt.v1",
+  "sourceCommit": "954730c1c67e0a103f8ce80992e97a2df400e4a8",
+  "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1/r133_stable_proxy.py",
+  "sourceSha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44",
+  "statePath": "/var/lib/castreader-tts-origin-proxy/state.json",
+  "stateSchema": "castreader.us-tts-origin-proxy-state.v1",
+  "supervisorProgram": "castreader-tts-origin-proxy",
+  "verified": true,
+  "verifiedAtUTC": "2026-09-06T03:57:33Z",
+  "verifiedLanguages": [
+    "en",
+    "zh",
+    "de",
+    "fr",
+    "ja",
+    "pt",
+    "es",
+    "it",
+    "hi"
+  ]
+}

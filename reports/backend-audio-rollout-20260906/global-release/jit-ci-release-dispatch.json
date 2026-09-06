@@ -1,0 +1,27 @@
+{
+  "schema": "castreader.jit-ci-release-dispatch.v1",
+  "startedAtUtc": "2026-09-06T02:54:54.353726Z",
+  "repo": "scmyyan/readout-web",
+  "environment": "production",
+  "secretName": "VERCEL_TOKEN",
+  "secretValueRecorded": false,
+  "refreshTokenExported": false,
+  "authorizationUse": "Existing provider-authorized access token for this fixed-SHA workflow run; not a durable CI credential fix.",
+  "accessExpiresAtUtc": "2026-09-06T10:50:22Z",
+  "releaseSourceSha": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+  "baselineSourceSha": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+  "baselineDeploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+  "workflowRunId": 33979932773,
+  "ciSecretUpdated": true,
+  "releaseDispatched": true,
+  "ciSecretUpdatedAtUtc": "2026-09-06T02:55:04.785238Z",
+  "githubSecretUpdatedAtUtc": "2026-09-06T02:55:04Z",
+  "dispatchCompletedAtUtc": "2026-09-06T02:55:16.567168Z",
+  "runStatusAfterDispatch": {
+    "attempt": 2,
+    "conclusion": "",
+    "headSha": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+    "status": "in_progress",
+    "url": "https://github.com/scmyyan/readout-web/actions/runs/33979932773"
+  }
+}

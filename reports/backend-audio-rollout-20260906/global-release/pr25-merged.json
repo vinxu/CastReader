@@ -1,0 +1,10 @@
+{
+  "baseRefOid": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+  "headRefOid": "dc75d8989375ec2c65dbaf6ca75f83c2c5984e38",
+  "mergeCommit": {
+    "oid": "045b5cd657ae6c571dbf130a994b14eefd8e5098"
+  },
+  "mergedAt": "2026-09-06T04:09:49Z",
+  "state": "MERGED",
+  "url": "https://github.com/scmyyan/readout-web/pull/25"
+}

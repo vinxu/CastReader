@@ -1,0 +1,44 @@
+{
+  "adminSocket": "/run/castreader-tts-origin-proxy/admin.sock",
+  "cloneUnchanged": true,
+  "health": {
+    "active": {
+      "blue": 0,
+      "green": 0
+    },
+    "currentReleaseId": "20260905-kokoro-english-g2p-us-r132",
+    "currentSlot": "blue",
+    "drainTrusted": true,
+    "ok": true,
+    "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+    "revision": 0
+  },
+  "hostSourceSha256": "dca166f8cf145b04d7568ccbe07313228c626ff6d9d7b0184299041fd17a5fab",
+  "initialProbe": {
+    "audioBase64Characters": 61500,
+    "finalWord": "sunflower",
+    "requestId": "ops-origin-proxy-install-20260906",
+    "timestamps": 6
+  },
+  "installedAt": "2026-09-06T03:53:29.161106+00:00",
+  "nariUnchanged": true,
+  "nodeId": "castreader-us4090",
+  "oldPublicRouteChanged": false,
+  "payloadSha256": "9aaca05cc6505eb265e0133ca89008596e70f271f47dc9c37646986525a20626",
+  "process": {
+    "argvSha256": "7370620a0645a93ae89be6f0d3ed53d8661e89e0e7b0a6c2d59ff24814f7d442",
+    "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1",
+    "exe": "/venv/main/bin/python3.12",
+    "pid": 3439385,
+    "startTicks": "545295266"
+  },
+  "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+  "r132Unchanged": true,
+  "r133Started": false,
+  "schema": "castreader.us-tts-origin-proxy-install.v1",
+  "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1/r133_stable_proxy.py",
+  "sourceSha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44",
+  "statePath": "/var/lib/castreader-tts-origin-proxy/state.json",
+  "supervisorProgram": "castreader-tts-origin-proxy",
+  "verified": true
+}

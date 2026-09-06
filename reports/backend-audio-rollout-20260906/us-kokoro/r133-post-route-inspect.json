@@ -1,0 +1,74 @@
+{
+  "action": "inspect",
+  "gpu": {
+    "freeMiB": 4223,
+    "totalMiB": 24564,
+    "usedMiB": 19870,
+    "utilizationPercent": 0
+  },
+  "greenListenerAvailable": false,
+  "payloadSha256": "bfe90e6c7440b0a0f5b941fc8948064d42fec60773927ef78350235fa23596db",
+  "proxyState": {
+    "accepting": true,
+    "active": {
+      "blue": 0,
+      "green": 0
+    },
+    "drainTrusted": true,
+    "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+    "state": {
+      "bootId": "547423d5bded443193273aa1fc00eef1",
+      "cleanShutdown": false,
+      "currentSlot": "green",
+      "lastOperationId": "ops-r133-route-green-20260906",
+      "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+      "revision": 2,
+      "schema": "castreader.us-tts-origin-proxy-state.v1",
+      "slots": {
+        "blue": {
+          "enabled": true,
+          "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+          "releaseId": "20260905-kokoro-english-g2p-us-r132"
+        },
+        "green": {
+          "enabled": true,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      },
+      "updatedAt": "2026-09-06T04:14:09.225793+00:00"
+    }
+  },
+  "schema": "castreader.us-kokoro-r133-proxy-switch.v1",
+  "services": {
+    "clone": {
+      "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e",
+      "cwd": "/workspace/castreader-clone",
+      "exe": "/usr/bin/python3.12",
+      "pid": 568834,
+      "startTicks": "524136804"
+    },
+    "nari": {
+      "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2",
+      "cwd": "/workspace/nari-qwen3-tts-clean",
+      "exe": "/usr/bin/python3.12",
+      "pid": 4136837,
+      "startTicks": "519185503"
+    },
+    "proxy": {
+      "argvSha256": "7370620a0645a93ae89be6f0d3ed53d8661e89e0e7b0a6c2d59ff24814f7d442",
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1",
+      "exe": "/venv/main/bin/python3.12",
+      "pid": 3439385,
+      "startTicks": "545295266"
+    },
+    "r132": {
+      "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+      "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+      "exe": "/venv/main/bin/python3.12",
+      "pid": 2665473,
+      "startTicks": "541243790"
+    }
+  },
+  "verified": true
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "castreader.tts-routing-final-database-readback.v1",
+  "readOnly": true,
+  "readAtUtc": "2026-09-06T04:58:07.124561+00:00",
+  "projectRef": "zqxgmqygirtpttnrvjpf",
+  "httpStatus": 200,
+  "rowCount": 2,
+  "stateEqualsAppendOnlyAudit": true,
+  "state": {
+    "schemaVersion": 1,
+    "current": {
+      "url": "http://71.175.237.103:41209/dev/captioned_speech",
+      "nodeId": "castreader-us4090",
+      "releaseId": "us-tts-origin-proxy-20260906-v1",
+      "receiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "verifiedLanguages": [
+        "en",
+        "zh",
+        "ja",
+        "es",
+        "fr",
+        "de",
+        "pt",
+        "it",
+        "hi"
+      ]
+    },
+    "previous": {
+      "url": "http://71.175.237.103:41209/dev/captioned_speech",
+      "nodeId": "castreader-us4090",
+      "releaseId": "us-tts-origin-proxy-20260906-v1",
+      "receiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "verifiedLanguages": []
+    },
+    "revision": 1,
+    "updatedAt": "2026-09-06T04:57:09.285Z",
+    "incidentId": "gh-34012365932-1-stable-proxy"
+  }
+}

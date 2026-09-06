@@ -1,0 +1,115 @@
+{
+  "base": {
+    "bucket": "castreader-tts-backups",
+    "description": "Previously verified private R132 recovery set; not uploaded again.",
+    "objects": [
+      {
+        "bytes": 3324807745,
+        "downloadedBytes": 3324807745,
+        "object": "runtime-releases/us/r130-compatible-20260903-bngg0e/castreader-runtime-local-equivalent.tar.zst",
+        "parts": 1,
+        "readbackSha256": "659b6a46de3e86bad826657ffd64fb3e53490e951e991cba9f6c4c074c12b441",
+        "role": "shared-r130-base",
+        "sha256": "659b6a46de3e86bad826657ffd64fb3e53490e951e991cba9f6c4c074c12b441",
+        "verified": true
+      },
+      {
+        "bytes": 244589,
+        "downloadedBytes": 244589,
+        "object": "runtime-releases/us/r132-post-20260905-8xl7xr43/runtime-delta.tar.gz",
+        "parts": 1,
+        "readbackSha256": "d33cb156400f7fa78b12602069f29cc18bbe908ad0edf1adbdfc08530207790a",
+        "role": "r132-delta",
+        "sha256": "d33cb156400f7fa78b12602069f29cc18bbe908ad0edf1adbdfc08530207790a",
+        "verified": true
+      },
+      {
+        "bytes": 901,
+        "downloadedBytes": 901,
+        "object": "runtime-releases/us/r132-post-20260905-8xl7xr43/metadata/backup-receipt.json",
+        "parts": 1,
+        "readbackSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+        "role": "r132-backup-receipt",
+        "sha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+        "verified": true
+      }
+    ],
+    "projectRef": "zqxgmqygirtpttnrvjpf",
+    "public": false,
+    "receiptPath": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/us-kokoro/r133-baseline-recovery-readback.json",
+    "receiptSha256": "89178834db2fa7017355bf6a50ca85bce925ab3173137b17de796f8a01f7c296",
+    "verified": true
+  },
+  "constraints": {
+    "automaticCrossSlotFallback": false,
+    "crossRegionFallback": false,
+    "keepCloneAndNariUntouched": true,
+    "neverOverwriteLiveReleaseInPlace": true,
+    "sameRegionOnly": true
+  },
+  "createdAtUTC": "2026-09-06T04:29:13.753302+00:00",
+  "evidence": {
+    "archiveManifest": {
+      "bytes": 2227,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/r133-production-archive-manifest.json",
+      "sha256": "008d9b30439fbb1599e2f4e84eb527af4dadc3c46ddb71efe4670e9af6a8f964"
+    },
+    "privateBackupReadback": {
+      "bytes": 3596,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/r133-production-private-backup-readback.json",
+      "sha256": "e644ea992d0ce2f337adf8c48459f7c24de289e97ad120ee2c3451fbe921dbc7"
+    },
+    "productionReceipt": {
+      "bytes": 4371,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/r133-production-receipt.json",
+      "sha256": "108b820bb00e7249758288704dd78f698aae623ff196a6800a3a6cc4a29b7c68"
+    }
+  },
+  "production": {
+    "currentSlot": "green",
+    "modelReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+    "modelTreeSha256": "d9bcd4d1f6f578eb90728dc82650ae7abc43e1756ffd63196baffcf1e7d508fe",
+    "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+    "proxyRevision": 2
+  },
+  "productionDelta": {
+    "archive": {
+      "bytes": 89344,
+      "object": "runtime-releases/us/20260906-r133-proxy-production/complete-production-delta.tar.gz",
+      "sha256": "c3709e022cd3f22a4eb589b6e20c4525785f57eccacfd4117d92d33592d3a0d9"
+    },
+    "archiveFullReadbackReceiptSha256": "18a27d29ee533a58abb8b1ed3e708921e22df5ade8b00b22bb530060a7a8aa44",
+    "backupReceipt": {
+      "bytes": 985,
+      "object": "runtime-releases/us/20260906-r133-proxy-production/metadata/backup-receipt.json",
+      "sha256": "409c44b4f86c5501d0b1016c95988fc969ef836feac326e4b72a70f18fcdb288"
+    },
+    "containsCredentials": false,
+    "containsFullR132R133HashInventories": true,
+    "containsProxyAndGreenSupervisorConfigs": true,
+    "containsProxySourceReleaseState": true,
+    "containsR133DeltaAndInstallMarker": true,
+    "containsUserData": false,
+    "receiptFullReadbackReceiptSha256": "59cfa4db2a4e031fb448e462560d3bfbe9207931eb0beba50347abd621a1053a"
+  },
+  "public": false,
+  "reconstruction": {
+    "deltaPaths": [
+      "R133_INSTALL.json",
+      "api/src/inference/english_g2p_recovery.py"
+    ],
+    "proxySourceSha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44",
+    "r133SourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+    "restoreOrder": [
+      "restore-verified-r132-base-into-new-release",
+      "apply-exact-r133-delta-and-install-marker",
+      "verify-full-inventory-and-r133-tree-digest",
+      "restore-proxy-release-root-state-and-supervisor-configs",
+      "start-blue-and-green-before-stable-proxy",
+      "verify-revision-2-green-and-public-complete-audio-before-traffic"
+    ]
+  },
+  "region": "us",
+  "schema": "castreader.us-kokoro-r133-production-recovery-index.v1",
+  "verified": true
+}

@@ -1,0 +1,11 @@
+{
+  "dispatchedAtUtc": "2026-09-06T04:11:03.018781+00:00",
+  "sourceCommit": "045b5cd657ae6c571dbf130a994b14eefd8e5098",
+  "reviewedTreeCommit": "dc75d8989375ec2c65dbaf6ca75f83c2c5984e38",
+  "previousSourceCommit": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+  "previousDeploymentId": "dpl_Dssxs5dfQ4JK24LTsHaDQ4DU89P2",
+  "workflow": "backend-maintenance-release.yml",
+  "scope": "all gates retained; stable US ingress routing only",
+  "workflowRunId": 34010853465,
+  "workflowRunURL": "https://github.com/scmyyan/readout-web/actions/runs/34010853465"
+}

@@ -1,0 +1,72 @@
+{
+  "schema": "castreader.global-production-release.v1",
+  "sourceCommit": "045b5cd657ae6c571dbf130a994b14eefd8e5098",
+  "deploymentId": "dpl_AQWet1dUVBKuJzbNKkaUoSxGQWJT",
+  "workflowRun": 34010853465,
+  "workflowAttempt": 2,
+  "workflowConclusion": "failure",
+  "applicationProductionVerified": true,
+  "routeDatabaseReconciled": false,
+  "routeSource": "fallback",
+  "routeRevision": 0,
+  "cliFailure": "ESM named export missing before execution; no admin mutation attempted",
+  "steps": [
+    {
+      "completedAt": "2026-09-06T04:36:44Z",
+      "conclusion": "success",
+      "name": "Promote the verified artifact",
+      "number": 39,
+      "startedAt": "2026-09-06T04:36:40Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-06T04:36:54Z",
+      "conclusion": "success",
+      "name": "Wait for promoted production alias convergence",
+      "number": 40,
+      "startedAt": "2026-09-06T04:36:44Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-06T04:36:58Z",
+      "conclusion": "success",
+      "name": "Verify TTS sentence boundaries on production aliases",
+      "number": 41,
+      "startedAt": "2026-09-06T04:36:54Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-06T04:36:59Z",
+      "conclusion": "success",
+      "name": "Verify production aliases",
+      "number": 42,
+      "startedAt": "2026-09-06T04:36:58Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-06T04:37:01Z",
+      "conclusion": "success",
+      "name": "Inspect final deployment",
+      "number": 43,
+      "startedAt": "2026-09-06T04:36:59Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-06T04:37:02Z",
+      "conclusion": "failure",
+      "name": "Reconcile the persisted Global TTS route with the verified proxy",
+      "number": 44,
+      "startedAt": "2026-09-06T04:37:01Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-06T04:37:03Z",
+      "conclusion": "failure",
+      "name": "Preserve the redacted Global TTS routing receipt",
+      "number": 45,
+      "startedAt": "2026-09-06T04:37:02Z",
+      "status": "completed"
+    }
+  ],
+  "publicAudioEvidence": "../public-final-audio-probe.json"
+}

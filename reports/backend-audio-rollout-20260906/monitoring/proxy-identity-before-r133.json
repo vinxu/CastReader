@@ -1,0 +1,35 @@
+{
+  "coverage": {
+    "complete": true
+  },
+  "health": {
+    "currentReleaseId": "20260905-kokoro-english-g2p-us-r132",
+    "currentSlot": "blue",
+    "ok": true,
+    "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+    "revision": 0
+  },
+  "identity": {
+    "currentEnabled": true,
+    "currentReceiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+    "currentReleaseId": "20260905-kokoro-english-g2p-us-r132",
+    "currentSlot": "blue",
+    "listenerProcessIds": [
+      3439385
+    ],
+    "processIds": [
+      3439385
+    ],
+    "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+    "revision": 0,
+    "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1/r133_stable_proxy.py",
+    "sourceSha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44"
+  },
+  "limitations": [
+    "Point-in-time source, process and routing identity; existing continuous probes provide the interval evidence."
+  ],
+  "readAtUtc": "2026-09-06T03:57:52.581648+00:00",
+  "readOnly": true,
+  "schema": "castreader.us-origin-proxy-identity.v1",
+  "synthesisStarted": false
+}

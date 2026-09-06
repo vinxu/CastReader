@@ -1,0 +1,59 @@
+{
+  "archive": {
+    "bytes": 89344,
+    "path": "/Users/xuxuheng/Backups/CastReader/tts/20260906-r133-proxy-production.7442599c/complete-production-delta.tar.gz",
+    "sha256": "c3709e022cd3f22a4eb589b6e20c4525785f57eccacfd4117d92d33592d3a0d9"
+  },
+  "containsCredentials": false,
+  "containsUserData": false,
+  "createdAtUTC": "2026-09-06T04:27:17.737835+00:00",
+  "members": {
+    "metadata/RECOVERY.json": {
+      "bytes": 5643,
+      "sha256": "c8b7d3bd21077043f1c85d00403e0c328b212ae587fe4a66578d48db90c476e9"
+    },
+    "metadata/r132-private-recovery-readback.json": {
+      "bytes": 1756,
+      "sha256": "89178834db2fa7017355bf6a50ca85bce925ab3173137b17de796f8a01f7c296"
+    },
+    "metadata/r132-r133-inventories.json": {
+      "bytes": 340401,
+      "sha256": "3c3beb09ac91a17541438137ec5d567543e555fa591defb95f90f9dbb07c45cc"
+    },
+    "metadata/r133-production-receipt.json": {
+      "bytes": 4371,
+      "sha256": "108b820bb00e7249758288704dd78f698aae623ff196a6800a3a6cc4a29b7c68"
+    },
+    "runtime/proxy/RELEASE.json": {
+      "bytes": 357,
+      "sha256": "a8d3b49fde6b991e5f7f99252806760d03bf72c9e0f3ab1c0bd96aaaea0bdb79"
+    },
+    "runtime/proxy/r133_stable_proxy.py": {
+      "bytes": 31621,
+      "sha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44"
+    },
+    "runtime/proxy/state.json": {
+      "bytes": 631,
+      "sha256": "393e70c2811d21211c95f1c868f799df528c3b6f2c6a3889b16c699526702571"
+    },
+    "runtime/r133/R133_INSTALL.json": {
+      "bytes": 490,
+      "sha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314"
+    },
+    "runtime/r133/api/src/inference/english_g2p_recovery.py": {
+      "bytes": 6886,
+      "sha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e"
+    },
+    "runtime/supervisor/castreader-tts-origin-proxy.conf": {
+      "bytes": 699,
+      "sha256": "e99a49a0ddfaa63023534bb950ccae1643a2d7f7ba16856284a882297e4c307a"
+    },
+    "runtime/supervisor/castreader-tts-r133-green.conf": {
+      "bytes": 609,
+      "sha256": "9fafc5dfbd48122f9bff4ce26647ecbffeb6452f7cf405a3ba9d704a4eef1250"
+    }
+  },
+  "schema": "castreader.us-kokoro-r133-production-archive.v1",
+  "sourceStable": true,
+  "verified": true
+}

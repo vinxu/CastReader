@@ -1,0 +1,20 @@
+{
+  "environment": {
+    "TTS_UPSTREAM_URL": "http://71.175.237.103:41209/dev/captioned_speech",
+    "TTS_UPSTREAM_NODE_ID": "castreader-us4090",
+    "TTS_UPSTREAM_RELEASE_ID": "us-tts-origin-proxy-20260906-v1",
+    "TTS_UPSTREAM_RECEIPT_SHA256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877"
+  },
+  "verifiedLanguages": [
+    "en",
+    "zh",
+    "de",
+    "fr",
+    "ja",
+    "pt",
+    "es",
+    "it",
+    "hi"
+  ],
+  "proxyReceiptPath": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/proxy-release-receipt.json"
+}

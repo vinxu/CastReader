@@ -1,0 +1,115 @@
+{
+  "boundaries": {
+    "audioOrResponseBodiesRetained": false,
+    "automaticCrossSlotFallback": false,
+    "crossRegionFallback": false,
+    "publicAdminAPI": false,
+    "r132KeptWarm": true,
+    "userContentUsed": false
+  },
+  "capacity": {
+    "gpuFreeMiBAfterVerification": 4223,
+    "greenStartupMinFreeMiB": 5019
+  },
+  "evidence": {
+    "gpuCapacity": {
+      "bytes": 1853,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/r133-gpu-dual-capacity.json",
+      "sha256": "92186935140af2fa6f21ff66fc964c8b56b21801ffdc8d7215b99cd854f08d1d"
+    },
+    "greenReady": {
+      "bytes": 6448,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/r133-green-ready.json",
+      "sha256": "e151f65b18be9b0ef37ac9089dee8987f9b9fbee876bf2fb529e8e3c4ae6161f"
+    },
+    "postRouteInspect": {
+      "bytes": 2464,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/r133-post-route-inspect.json",
+      "sha256": "8db7b3cc8b053d496c440564da5aa744703b0d768b655ece986413482356772b"
+    },
+    "publicValidation": {
+      "bytes": 4889,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/r133-public-41209-validation.json",
+      "sha256": "656f3bd0bcb6cabd59988da3dd545f25bb307d395d98c5d11bd80f6f0db638f3"
+    },
+    "routeGreen": {
+      "bytes": 6022,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/r133-route-green.json",
+      "sha256": "fccf7112cbba1a64b34a07428295bfbddba0e6e6c762f596fb39b0221f6ce024"
+    },
+    "switchPlan": {
+      "bytes": 434,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/us-kokoro/r133-proxy-switch-plan.json",
+      "sha256": "d406e4a6a75cc17ba519fec4decae76cd314d0a810094b7c3bf7af152cf6edef"
+    }
+  },
+  "firstNewTrafficNotBefore": "2026-09-06T04:14:08.795582+00:00",
+  "nodeId": "castreader-us4090",
+  "protectedProcesses": {
+    "clonePid": 568834,
+    "cloneUnchanged": true,
+    "nariPid": 4136837,
+    "nariUnchanged": true,
+    "r132Unchanged": true
+  },
+  "proxy": {
+    "currentModelReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+    "currentSlot": "green",
+    "drainTrusted": true,
+    "pid": 3439385,
+    "releaseId": "us-tts-origin-proxy-20260906-v1",
+    "revision": 2,
+    "sourceSha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44"
+  },
+  "publicEndpoint": "http://71.175.237.103:41209/dev/captioned_speech",
+  "r133": {
+    "installReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+    "pid": 3459850,
+    "releaseDirectory": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+    "sourceCommit": "ca857ee91c3367999fb905de1f0924a6e28edd81",
+    "supervisorAutostart": true,
+    "treeSha256": "d9bcd4d1f6f578eb90728dc82650ae7abc43e1756ffd63196baffcf1e7d508fe"
+  },
+  "region": "us",
+  "releaseTooling": {
+    "commit": "89678209dc8f386b6ebb659e7faf6e35d1c4e2cd",
+    "hostSourceSha256": "33299ca01af3743c56672f89bdb81da802a4c12b1992a7dfe7616ccca17a2311",
+    "reviewedPayloadSha256": "bfe90e6c7440b0a0f5b941fc8948064d42fec60773927ef78350235fa23596db",
+    "testsPassed": 21
+  },
+  "rollback": {
+    "activeAfterDrain": 0,
+    "pid": 2665473,
+    "privateRecoveryReadback": {
+      "bytes": 1756,
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/us-kokoro/r133-baseline-recovery-readback.json",
+      "public": false,
+      "sha256": "89178834db2fa7017355bf6a50ca85bce925ab3173137b17de796f8a01f7c296",
+      "verified": true
+    },
+    "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+    "releaseId": "20260905-kokoro-english-g2p-us-r132",
+    "stoppedOrRestarted": false,
+    "warmSlot": "blue"
+  },
+  "schema": "castreader.us-kokoro-r133-production-receipt.v1",
+  "supply": {
+    "allNineLanguagesDecoded": true,
+    "allRemainingCharactersZero": true,
+    "allSourceTailsVerified": true,
+    "repeatedDigitSourceCue00Verified": true,
+    "verifiedLanguages": [
+      "en",
+      "zh",
+      "de",
+      "fr",
+      "ja",
+      "pt",
+      "es",
+      "it",
+      "hi"
+    ]
+  },
+  "verified": true,
+  "verifiedAtUTC": "2026-09-06T04:17:43.595454+00:00"
+}

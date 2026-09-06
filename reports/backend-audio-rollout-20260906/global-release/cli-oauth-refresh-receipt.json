@@ -1,0 +1,32 @@
+{
+  "captured_at_utc": "2026-09-06T02:50:22Z",
+  "operation": "official_vercel_cli_oauth_refresh",
+  "result": "success",
+  "provider": "https://vercel.com",
+  "old_access_active_before_refresh": true,
+  "new_access_active_after_atomic_write": true,
+  "same_local_user_record": true,
+  "same_oauth_client": true,
+  "scope_preserved": true,
+  "provider_rotated_refresh_token": true,
+  "old_access_expires_at_utc": "2026-09-06T02:59:30Z",
+  "new_access_expires_at_utc": "2026-09-06T10:50:22Z",
+  "new_access_lifetime_seconds": 28800,
+  "auth_cache": {
+    "owner_is_current_user": true,
+    "mode": "0600",
+    "atomic_same_directory_replace": true
+  },
+  "post_refresh_checks": {
+    "vercel_whoami": "same_authenticated_account",
+    "legacy_readout_web_project_inspect": "passed",
+    "project_node_runtime": "22.x"
+  },
+  "mutations_excluded": [
+    "github_secret",
+    "github_environment",
+    "vercel_project",
+    "production_deployment"
+  ],
+  "secret_material_recorded": false
+}

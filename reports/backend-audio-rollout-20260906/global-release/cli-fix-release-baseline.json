@@ -1,0 +1,13 @@
+{
+  "schema": "castreader.cli-fix-release-baseline.v1",
+  "readAtUtc": "2026-09-06T04:46:37.094304+00:00",
+  "releaseSource": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+  "reviewedTreeMatches": true,
+  "previousProductionSha": "045b5cd657ae6c571dbf130a994b14eefd8e5098",
+  "previousProductionId": "dpl_AQWet1dUVBKuJzbNKkaUoSxGQWJT",
+  "voiceCloneRoute": "global",
+  "voiceGiftEnabled": true,
+  "typescriptPassed": true,
+  "routingTestsPassed": 10,
+  "productionMigrationGateTestsPassed": 6
+}

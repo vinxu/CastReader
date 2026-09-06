@@ -1,0 +1,11 @@
+{
+  "dispatchedAtUtc": "2026-09-06T04:26:15.248976+00:00",
+  "workflowRunId": 34010853465,
+  "attempt": 2,
+  "sameWorkflowAndSource": true,
+  "sourceCommit": "045b5cd657ae6c571dbf130a994b14eefd8e5098",
+  "baselineSourceCommit": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+  "baselineDeploymentId": "dpl_Dssxs5dfQ4JK24LTsHaDQ4DU89P2",
+  "reason": "Candidate probe curl exit35 TLS connection reset before HTTP response",
+  "gatesSkipped": false
+}

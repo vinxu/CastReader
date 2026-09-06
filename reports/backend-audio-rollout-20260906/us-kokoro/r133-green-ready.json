@@ -1,0 +1,203 @@
+{
+  "cloneUnchanged": true,
+  "gpuAfter": {
+    "freeMiB": 5019,
+    "totalMiB": 24564,
+    "usedMiB": 19074,
+    "utilizationPercent": 1
+  },
+  "gpuMinFreeMiB": 5019,
+  "greenProcess": {
+    "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b",
+    "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+    "exe": "/venv/main/bin/python3.12",
+    "pid": 3459850,
+    "startTicks": "545406132"
+  },
+  "greenSupervisorAutostart": true,
+  "greenSupervisorConfigSha256": "9fafc5dfbd48122f9bff4ce26647ecbffeb6452f7cf405a3ba9d704a4eef1250",
+  "languageMatrix": {
+    "cases": [
+      {
+        "audioBytes": 56493,
+        "decodedSamples": 84672,
+        "inputCharacters": 54,
+        "inputSha256": "d208e68fc4b5eae603e742bb827281be6622bf0f60bd01088a57c1e17969194a",
+        "language": "en",
+        "languageCode": "a",
+        "remainingCharacters": 0,
+        "requestId": "ops-r133-green-direct-en-20260906",
+        "tailVerified": true,
+        "timestamps": 8,
+        "voice": "am_adam"
+      },
+      {
+        "audioBytes": 68013,
+        "decodedSamples": 101952,
+        "inputCharacters": 20,
+        "inputSha256": "a3c84a923d77ebcf1ba7801f8fb73417a25bd7a80e79efc8b0dd455074f67629",
+        "language": "zh",
+        "languageCode": "z",
+        "remainingCharacters": 0,
+        "requestId": "ops-r133-green-direct-zh-20260906",
+        "tailVerified": true,
+        "timestamps": 1,
+        "voice": "zf_001"
+      },
+      {
+        "audioBytes": 61869,
+        "decodedSamples": 92736,
+        "inputCharacters": 57,
+        "inputSha256": "182ddfc3cfe411f9cc49a3040cfb4e1e1c1bf03bdddf7d55512837875f777a90",
+        "language": "de",
+        "languageCode": "de",
+        "remainingCharacters": 0,
+        "requestId": "ops-r133-green-direct-de-20260906",
+        "tailVerified": true,
+        "timestamps": 9,
+        "voice": "df_eva"
+      },
+      {
+        "audioBytes": 60333,
+        "decodedSamples": 90432,
+        "inputCharacters": 49,
+        "inputSha256": "9909764a8b53ab94dbd5b34592f93a4e499286da568e20f875fce03f38de72b1",
+        "language": "fr",
+        "languageCode": "f",
+        "remainingCharacters": 0,
+        "requestId": "ops-r133-green-direct-fr-20260906",
+        "tailVerified": true,
+        "timestamps": 9,
+        "voice": "ff_celine"
+      },
+      {
+        "audioBytes": 86829,
+        "decodedSamples": 130176,
+        "inputCharacters": 25,
+        "inputSha256": "d0a41e51ae3d292a4214ed3c68f116a7e6926d0b7723a8da5cee8ef368f51bcf",
+        "language": "ja",
+        "languageCode": "j",
+        "remainingCharacters": 0,
+        "requestId": "ops-r133-green-direct-ja-20260906",
+        "tailVerified": true,
+        "timestamps": 1,
+        "voice": "jm_haruto"
+      },
+      {
+        "audioBytes": 59181,
+        "decodedSamples": 88704,
+        "inputCharacters": 45,
+        "inputSha256": "de65f476513b0a5e71487d76ce704a6fcae2251e42436bba9c605f4bbf0c0ea7",
+        "language": "pt",
+        "languageCode": "p",
+        "remainingCharacters": 0,
+        "requestId": "ops-r133-green-direct-pt-20260906",
+        "tailVerified": true,
+        "timestamps": 9,
+        "voice": "pm_lucas"
+      },
+      {
+        "audioBytes": 49581,
+        "decodedSamples": 74304,
+        "inputCharacters": 49,
+        "inputSha256": "8b309f07c019ced01b74644276baeb74967c57bdd81ec49ee909c024abcdf6fe",
+        "language": "es",
+        "languageCode": "e",
+        "remainingCharacters": 0,
+        "requestId": "ops-r133-green-direct-es-20260906",
+        "tailVerified": true,
+        "timestamps": 9,
+        "voice": "ef_dora"
+      },
+      {
+        "audioBytes": 59565,
+        "decodedSamples": 89280,
+        "inputCharacters": 54,
+        "inputSha256": "e85de584c565391a36e3f0160fd5bb450225769a1d83684355261cdac5820e66",
+        "language": "it",
+        "languageCode": "i",
+        "remainingCharacters": 0,
+        "requestId": "ops-r133-green-direct-it-20260906",
+        "tailVerified": true,
+        "timestamps": 8,
+        "voice": "im_alessandro"
+      },
+      {
+        "audioBytes": 57261,
+        "decodedSamples": 85824,
+        "inputCharacters": 45,
+        "inputSha256": "369caa14d8c0daf0f4896356a3bf45cf320dcfd8235aae0d3b3e7b62d7b27bb6",
+        "language": "hi",
+        "languageCode": "h",
+        "remainingCharacters": 0,
+        "requestId": "ops-r133-green-direct-hi-20260906",
+        "tailVerified": true,
+        "timestamps": 9,
+        "voice": "hf_kathbath_0130"
+      }
+    ],
+    "phase": "green-direct",
+    "verifiedLanguages": [
+      "en",
+      "zh",
+      "de",
+      "fr",
+      "ja",
+      "pt",
+      "es",
+      "it",
+      "hi"
+    ]
+  },
+  "nariUnchanged": true,
+  "newTrafficStillR132": true,
+  "probes": [
+    {
+      "audioBytes": 43821,
+      "decodedSamples": 65664,
+      "finalWord": "sunflower",
+      "inputCharacters": 43,
+      "inputSha256": "754a270b75294e5a02bc5683b657eda2e51595eef54875afaf3b4b00a19496b5",
+      "remainingCharacters": 0,
+      "requestId": "ops-r133-green-ready-20260906",
+      "timestamps": 6
+    },
+    {
+      "audioBytes": 70317,
+      "decodedSamples": 105408,
+      "finalWord": "sunflower",
+      "inputCharacters": 68,
+      "inputSha256": "c48ed123bfb6923018b324096d992d721dcaf21cb8e42fbbfab42bb5ca638e9e",
+      "remainingCharacters": 0,
+      "requestId": "ops-r133-green-repeated-digits-20260906",
+      "timestamps": 11
+    }
+  ],
+  "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+  "r132Unchanged": true,
+  "readyAt": "2026-09-06T04:12:23.560712+00:00",
+  "schema": "castreader.us-kokoro-r133-green-ready.v1",
+  "state": {
+    "bootId": "547423d5bded443193273aa1fc00eef1",
+    "cleanShutdown": false,
+    "currentSlot": "blue",
+    "lastOperationId": "ops-r133-green-enable-20260906",
+    "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+    "revision": 1,
+    "schema": "castreader.us-tts-origin-proxy-state.v1",
+    "slots": {
+      "blue": {
+        "enabled": true,
+        "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+        "releaseId": "20260905-kokoro-english-g2p-us-r132"
+      },
+      "green": {
+        "enabled": true,
+        "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+        "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+      }
+    },
+    "updatedAt": "2026-09-06T04:12:23.558664+00:00"
+  },
+  "verified": true
+}

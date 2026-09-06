@@ -1,0 +1,19 @@
+{
+  "body": {
+    "active": {
+      "blue": 1,
+      "green": 0
+    },
+    "currentReleaseId": "20260905-kokoro-english-g2p-us-r132",
+    "currentSlot": "blue",
+    "drainTrusted": true,
+    "ok": true,
+    "proxyReleaseId": "us-tts-origin-proxy-20260906-v1",
+    "revision": 0
+  },
+  "endpoint": "http://71.175.237.103:41209/health",
+  "observedAtUTC": "2026-09-06T03:57:04Z",
+  "schema": "castreader.us-tts-origin-proxy-public-health.v1",
+  "status": 200,
+  "verified": true
+}

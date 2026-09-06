@@ -1,0 +1,40 @@
+{
+  "verifiedAtUtc": "2026-09-06T04:29:12.108494+00:00",
+  "deploymentURL": "https://readout-nqn23o94u-castreader.vercel.app",
+  "sameSource": true,
+  "verification": {
+    "status": "passed",
+    "cases": [
+      {
+        "id": "zh-decimal",
+        "segments": 2,
+        "inputLength": 22,
+        "timestampSemanticsVerified": false
+      },
+      {
+        "id": "en-decimal-timestamp",
+        "segments": 1,
+        "inputLength": 48,
+        "timestampSemanticsVerified": true
+      },
+      {
+        "id": "titles-and-place",
+        "segments": 2,
+        "inputLength": 51,
+        "timestampSemanticsVerified": false
+      },
+      {
+        "id": "initialisms-and-time",
+        "segments": 1,
+        "inputLength": 56,
+        "timestampSemanticsVerified": false
+      },
+      {
+        "id": "domain-and-version",
+        "segments": 2,
+        "inputLength": 50,
+        "timestampSemanticsVerified": false
+      }
+    ]
+  }
+}

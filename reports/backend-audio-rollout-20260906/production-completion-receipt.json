@@ -1,0 +1,100 @@
+{
+  "aliasConvergedAtUtc": "2026-09-06T04:57:01Z",
+  "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+  "evidence": [
+    {
+      "bytes": 15873,
+      "path": "global-release/ci-run-34012365932-attempt1/run-safe-metadata.json",
+      "sha256": "34a76d3e3a0f78c8a094577b95dab3b94d2cd8beef62c1de27aca307be83e571"
+    },
+    {
+      "bytes": 2448,
+      "path": "global-release/ci-run-34012365932-attempt1/routing-artifact/evidence.json",
+      "sha256": "9bc6233407e0b2627b7f99d45fb910c38dc185cd85e902ec90ae0e531a69ec36"
+    },
+    {
+      "bytes": 324,
+      "path": "global-release/final-production-capabilities.json",
+      "sha256": "2a0a5d23b64d1d349480b4954260c03836e792dad8a80a8bb3bddcae32b6e80c"
+    },
+    {
+      "bytes": 1146,
+      "path": "global-release/tts-db-final-readback.json",
+      "sha256": "7b024da10a0c2ff887fc4162b3cc2767c72e1f6faee1ef4cce62e961e513073d"
+    },
+    {
+      "bytes": 1429,
+      "path": "public-final-after-route-audio-probe.json",
+      "sha256": "93a032f9bbdd01507108ac59174a18e48cfd43c64bdcc3114d65d506f30bdc95"
+    },
+    {
+      "bytes": 4371,
+      "path": "us-kokoro/r133-production-receipt.json",
+      "sha256": "108b820bb00e7249758288704dd78f698aae623ff196a6800a3a6cc4a29b7c68"
+    },
+    {
+      "bytes": 2350,
+      "path": "direct-gateway/status-receipt.json",
+      "sha256": "36e12f214f6b43db6ec289ccaa80637eb62cb2fd188d49b650534d4c180d7c7d"
+    }
+  ],
+  "promotionStartedAtUtc": "2026-09-06T04:56:44Z",
+  "requiredComponents": {
+    "directGateway": {
+      "activeFromUtc": "2026-09-06T03:55:52.850340+00:00",
+      "runtimeSourceSha256": "53a4ca273a7b3d60b1ce24f3cb089985f57bb6006b2838b683549c69e93d26d5",
+      "sourceCommit": "b9e7e9129e49f882398289511bbb90dbda8c6c08",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T03:55:56.628488+00:00",
+      "version": "b9e7e9129e49f882398289511bbb90dbda8c6c08"
+    },
+    "globalGateway": {
+      "activationTimeSemantics": "First confirmed production alias convergence after promotion",
+      "activeFromUtc": "2026-09-06T04:57:01Z",
+      "routeRevision": 1,
+      "routeSource": "database",
+      "sourceCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+      "upstreamReceiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:58:11.348402+00:00",
+      "version": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc"
+    },
+    "usKokoro": {
+      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
+      "version": "ca857ee91c3367999fb905de1f0924a6e28edd81"
+    },
+    "usOriginProxy": {
+      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
+      "currentReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+      "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+      "currentSlot": "green",
+      "routeRevision": 2,
+      "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1/r133_stable_proxy.py",
+      "runtimeSourceSha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44",
+      "sourceCommit": "954730c1c67e0a103f8ce80992e97a2df400e4a8",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
+      "version": "us-tts-origin-proxy-20260906-v1"
+    }
+  },
+  "routeAppliedAtUtc": "2026-09-06T04:57:09.285Z",
+  "routeRevision": 1,
+  "routeSource": "database",
+  "schema": "castreader.final-backend-rollout-production.v1",
+  "sourceCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+  "verified": true,
+  "verifiedAtUtc": "2026-09-06T04:58:11.348402+00:00",
+  "window": {
+    "endUtc": "2026-09-07T05:01:25Z",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T05:01:25Z"
+  },
+  "workflowAttempt": 1,
+  "workflowConclusion": "success",
+  "workflowRun": 34012365932
+}

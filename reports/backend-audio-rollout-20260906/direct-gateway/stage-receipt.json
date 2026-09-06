@@ -1,0 +1,76 @@
+{
+  "status": "staged_and_verified",
+  "observedAt": "2026-09-06T03:55:08.511474+00:00",
+  "sourceCommit": "b9e7e9129e49f882398289511bbb90dbda8c6c08",
+  "sourceSha256": "53a4ca273a7b3d60b1ce24f3cb089985f57bb6006b2838b683549c69e93d26d5",
+  "baseline": {
+    "capturedAtUtc": "2026-09-06T03:21:29.791181Z",
+    "files": [
+      {
+        "path": "/opt/castreader-tts-gateway/gateway.mjs",
+        "sha256": "0bfb14b9363d25de01d78fdd3777b203d1ec86966e71389d9815bb62a8b66cb0",
+        "bytes": 10473
+      },
+      {
+        "path": "/etc/systemd/system/castreader-tts-gateway.service",
+        "sha256": "71b0ca830d4554851c11feab0bf48a271ded803558942d685a194ca68b17fca9",
+        "bytes": 770
+      },
+      {
+        "path": "/etc/caddy/Caddyfile",
+        "sha256": "243706a702274b86cea400b4ff0c627ddead335e2dfb457fe62303952b30bdd1",
+        "bytes": 729
+      }
+    ],
+    "service": {
+      "MainPID": "553831",
+      "NRestarts": "0",
+      "ActiveState": "active",
+      "SubState": "running",
+      "DropInPaths": "",
+      "ActiveEnterTimestamp": "Sun 2026-09-06 01:59:23 UTC"
+    },
+    "upstreamConfiguredInProcess": true,
+    "knownEffectiveUpstream": "http://71.175.237.103:41228/dev/captioned_speech",
+    "protectedCaddyPid": "4980"
+  },
+  "shadowPid": "555609",
+  "shadowUnitSha256": "cf133d54a61c18b89de60faa765d493deae750ee64499bf221e200aca5f40de8",
+  "protectedPids": {
+    "caddy": "4980",
+    "quickreadListeners": [
+      "543663"
+    ]
+  },
+  "privateBackupSha256": "39e0d8028aa6733594d693c0319e002bc88d85b1fdab19457681b62033ccf8d6",
+  "privateBackupBytes": 4288,
+  "privateBackupReadback": true,
+  "validation": {
+    "label": "loopback candidate",
+    "observedAt": "2026-09-06T03:55:08.503971+00:00",
+    "fixedNonUserText": true,
+    "results": [
+      {
+        "contract": "omitted",
+        "audioBytes": 132141,
+        "pcmSamples": 198144,
+        "audioSha256": "d38545e403c5420a4c66c9ac742212950673db782121d77a775ffbb8a2d0fe8f",
+        "elapsedSeconds": 2.054
+      },
+      {
+        "contract": true,
+        "audioBytes": 132141,
+        "pcmSamples": 198144,
+        "audioSha256": "83fcfaed40ad2d2bd9e55e6f73dfa47e7f0d8838f6e129f0bc38d717c2971474",
+        "elapsedSeconds": 1.588
+      },
+      {
+        "contract": false,
+        "audioBytes": 132141,
+        "pcmSamples": 198144,
+        "audioSha256": "4e50301c079bab3a85359aa8109bb64ae7ceba56db5e43f1ca555ae2dbdafba7",
+        "elapsedSeconds": 1.349
+      }
+    ]
+  }
+}

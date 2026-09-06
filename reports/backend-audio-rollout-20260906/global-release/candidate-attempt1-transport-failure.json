@@ -1,0 +1,13 @@
+{
+  "workflowRunId": 34010853465,
+  "attempt": 1,
+  "sourceCommit": "045b5cd657ae6c571dbf130a994b14eefd8e5098",
+  "candidateURL": "https://readout-nqn23o94u-castreader.vercel.app",
+  "failedStep": "Verify TTS sentence boundaries against the exact candidate",
+  "failedAtUtc": "2026-09-06T04:20:38Z",
+  "exitCode": 35,
+  "failure": "curl TLS receive: connection reset by peer",
+  "httpResponseReceived": false,
+  "productionPromoted": false,
+  "action": "Recheck the exact immutable candidate, then rerun the unchanged full release workflow; no gate skipped."
+}

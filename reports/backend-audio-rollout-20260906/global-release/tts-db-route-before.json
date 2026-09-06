@@ -1,0 +1,16 @@
+{
+  "readAtUtc": "2026-09-06T03:54:22.714005+00:00",
+  "projectRef": "zqxgmqygirtpttnrvjpf",
+  "readOnly": true,
+  "table": "config",
+  "key": "tts_upstream_routing_v1",
+  "rowCount": 0,
+  "state": null,
+  "publicHeadStatus": 200,
+  "publicHeadRouteHeaders": {
+    "x-castreader-upstream-node": "castreader-us4090",
+    "x-castreader-upstream-region": "global",
+    "x-castreader-upstream-revision": "0",
+    "x-castreader-upstream-source": "fallback"
+  }
+}

@@ -1,0 +1,470 @@
+{
+  "schema": "castreader.github-maintenance-run-safe-metadata.v1",
+  "capturedAt": "2026-09-06T04:58:11Z",
+  "repository": "scmyyan/readout-web",
+  "workflowRun": {
+    "id": 34012365932,
+    "run_number": 7,
+    "run_attempt": 1,
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "success",
+    "head_branch": "beta",
+    "head_sha": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+    "created_at": "2026-09-06T04:46:52Z",
+    "run_started_at": "2026-09-06T04:46:52Z",
+    "updated_at": "2026-09-06T04:57:17Z",
+    "html_url": "https://github.com/scmyyan/readout-web/actions/runs/34012365932"
+  },
+  "jobs": [
+    {
+      "id": 101430263927,
+      "name": "release",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-09-06T04:46:56Z",
+      "completedAt": "2026-09-06T04:57:16Z",
+      "url": "https://github.com/scmyyan/readout-web/actions/runs/34012365932/job/101430263927",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:46:58Z",
+          "completedAt": "2026-09-06T04:46:58Z"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:46:58Z",
+          "completedAt": "2026-09-06T04:47:04Z"
+        },
+        {
+          "number": 3,
+          "name": "Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:47:04Z",
+          "completedAt": "2026-09-06T04:47:05Z"
+        },
+        {
+          "number": 4,
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:47:05Z",
+          "completedAt": "2026-09-06T04:47:19Z"
+        },
+        {
+          "number": 5,
+          "name": "Fetch the protected release ref",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:47:19Z",
+          "completedAt": "2026-09-06T04:47:20Z"
+        },
+        {
+          "number": 6,
+          "name": "Verify immutable release source",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:47:20Z",
+          "completedAt": "2026-09-06T04:47:21Z"
+        },
+        {
+          "number": 7,
+          "name": "Run pnpm install --frozen-lockfile",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:47:21Z",
+          "completedAt": "2026-09-06T04:47:33Z"
+        },
+        {
+          "number": 8,
+          "name": "Run pnpm test:tts-gateway",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:47:33Z",
+          "completedAt": "2026-09-06T04:47:38Z"
+        },
+        {
+          "number": 9,
+          "name": "Run pnpm test:voice-clone-contract",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:47:38Z",
+          "completedAt": "2026-09-06T04:47:58Z"
+        },
+        {
+          "number": 10,
+          "name": "Run pnpm test:tts-monitoring",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:47:58Z",
+          "completedAt": "2026-09-06T04:48:04Z"
+        },
+        {
+          "number": 11,
+          "name": "Configure PostgreSQL migration-test binaries",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:04Z",
+          "completedAt": "2026-09-06T04:48:04Z"
+        },
+        {
+          "number": 12,
+          "name": "Run pnpm test:google-play-recovery",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:04Z",
+          "completedAt": "2026-09-06T04:48:30Z"
+        },
+        {
+          "number": 13,
+          "name": "Run pnpm test:voice-gift-migration",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:30Z",
+          "completedAt": "2026-09-06T04:48:31Z"
+        },
+        {
+          "number": 14,
+          "name": "Run pnpm test:tts-runtime-migration",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:31Z",
+          "completedAt": "2026-09-06T04:48:33Z"
+        },
+        {
+          "number": 15,
+          "name": "Run pnpm test:tts-production-migration-gate",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:33Z",
+          "completedAt": "2026-09-06T04:48:35Z"
+        },
+        {
+          "number": 16,
+          "name": "Verify Global TTS routing reconciliation regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:35Z",
+          "completedAt": "2026-09-06T04:48:37Z"
+        },
+        {
+          "number": 17,
+          "name": "Run pnpm test:voice-gift-request-migration",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:37Z",
+          "completedAt": "2026-09-06T04:48:38Z"
+        },
+        {
+          "number": 18,
+          "name": "Run pnpm test:voice-gift-v1-migration",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:38Z",
+          "completedAt": "2026-09-06T04:48:40Z"
+        },
+        {
+          "number": 19,
+          "name": "Run pnpm test:voice-gift-guest-draft-migration",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:40Z",
+          "completedAt": "2026-09-06T04:48:42Z"
+        },
+        {
+          "number": 20,
+          "name": "Run pnpm test:voice-gift-request-locale-migration",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:42Z",
+          "completedAt": "2026-09-06T04:48:43Z"
+        },
+        {
+          "number": 21,
+          "name": "Run pnpm test:voice-gift-request-expiry-migration",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:43Z",
+          "completedAt": "2026-09-06T04:48:44Z"
+        },
+        {
+          "number": 22,
+          "name": "Run pnpm test:voice-gift-guest-draft-release",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:44Z",
+          "completedAt": "2026-09-06T04:48:46Z"
+        },
+        {
+          "number": 23,
+          "name": "Run pnpm exec tsx --test scripts/voice-gift-candidate-e2e.test.ts",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:46Z",
+          "completedAt": "2026-09-06T04:48:48Z"
+        },
+        {
+          "number": 24,
+          "name": "Verify upload and CN regional isolation regressions",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:48Z",
+          "completedAt": "2026-09-06T04:48:53Z"
+        },
+        {
+          "number": 25,
+          "name": "Run pnpm exec tsc --noEmit",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:48:53Z",
+          "completedAt": "2026-09-06T04:49:43Z"
+        },
+        {
+          "number": 26,
+          "name": "Capture and verify the current production baseline",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:49:43Z",
+          "completedAt": "2026-09-06T04:49:44Z"
+        },
+        {
+          "number": 27,
+          "name": "Install pinned Vercel CLI",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:49:44Z",
+          "completedAt": "2026-09-06T04:50:02Z"
+        },
+        {
+          "number": 28,
+          "name": "Pull and audit the existing Global production configuration",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:50:02Z",
+          "completedAt": "2026-09-06T04:50:05Z"
+        },
+        {
+          "number": 29,
+          "name": "Build one immutable configuration-preserving candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:50:05Z",
+          "completedAt": "2026-09-06T04:53:43Z"
+        },
+        {
+          "number": 30,
+          "name": "Deploy the candidate without assigning production domains",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:53:43Z",
+          "completedAt": "2026-09-06T04:54:10Z"
+        },
+        {
+          "number": 31,
+          "name": "Verify candidate contracts preserve the production baseline",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:54:10Z",
+          "completedAt": "2026-09-06T04:54:38Z"
+        },
+        {
+          "number": 32,
+          "name": "Verify the Google Play cron is authenticated and non-cacheable",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:54:38Z",
+          "completedAt": "2026-09-06T04:54:42Z"
+        },
+        {
+          "number": 33,
+          "name": "Verify both RTDN formats without claiming a purchase",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:54:42Z",
+          "completedAt": "2026-09-06T04:54:48Z"
+        },
+        {
+          "number": 34,
+          "name": "Install ffmpeg for candidate audio validation",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:54:48Z",
+          "completedAt": "2026-09-06T04:55:04Z"
+        },
+        {
+          "number": 35,
+          "name": "Verify TTS sentence boundaries against the exact candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:55:04Z",
+          "completedAt": "2026-09-06T04:55:29Z"
+        },
+        {
+          "number": 36,
+          "name": "Run Voice Gift authenticated and guest E2E against the exact candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:55:29Z",
+          "completedAt": "2026-09-06T04:56:43Z"
+        },
+        {
+          "number": 37,
+          "name": "Preserve the redacted candidate E2E attestation",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:56:43Z",
+          "completedAt": "2026-09-06T04:56:44Z"
+        },
+        {
+          "number": 38,
+          "name": "Recheck production has not moved before promotion",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:56:44Z",
+          "completedAt": "2026-09-06T04:56:44Z"
+        },
+        {
+          "number": 39,
+          "name": "Promote the verified artifact",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:56:44Z",
+          "completedAt": "2026-09-06T04:56:48Z"
+        },
+        {
+          "number": 40,
+          "name": "Wait for promoted production alias convergence",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:56:48Z",
+          "completedAt": "2026-09-06T04:57:01Z"
+        },
+        {
+          "number": 41,
+          "name": "Verify TTS sentence boundaries on production aliases",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:57:01Z",
+          "completedAt": "2026-09-06T04:57:03Z"
+        },
+        {
+          "number": 42,
+          "name": "Verify production aliases",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:57:03Z",
+          "completedAt": "2026-09-06T04:57:04Z"
+        },
+        {
+          "number": 43,
+          "name": "Inspect final deployment",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:57:04Z",
+          "completedAt": "2026-09-06T04:57:06Z"
+        },
+        {
+          "number": 44,
+          "name": "Reconcile the persisted Global TTS route with the verified proxy",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:57:06Z",
+          "completedAt": "2026-09-06T04:57:13Z"
+        },
+        {
+          "number": 45,
+          "name": "Preserve the redacted Global TTS routing receipt",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:57:13Z",
+          "completedAt": "2026-09-06T04:57:14Z"
+        },
+        {
+          "number": 46,
+          "name": "Restore the original complete production artifact if verification fails",
+          "status": "completed",
+          "conclusion": "skipped",
+          "startedAt": "2026-09-06T04:57:14Z",
+          "completedAt": "2026-09-06T04:57:14Z"
+        },
+        {
+          "number": 90,
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:57:14Z",
+          "completedAt": "2026-09-06T04:57:14Z"
+        },
+        {
+          "number": 91,
+          "name": "Post Run pnpm/action-setup@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:57:14Z",
+          "completedAt": "2026-09-06T04:57:14Z"
+        },
+        {
+          "number": 92,
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:57:14Z",
+          "completedAt": "2026-09-06T04:57:15Z"
+        },
+        {
+          "number": 93,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "startedAt": "2026-09-06T04:57:15Z",
+          "completedAt": "2026-09-06T04:57:15Z"
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 9982972937,
+      "name": "global-tts-routing-reconcile-34012365932-1",
+      "size_in_bytes": 880,
+      "expired": false,
+      "created_at": "2026-09-06T04:57:14Z",
+      "expires_at": "2026-10-06T04:57:13Z"
+    },
+    {
+      "id": 9982967557,
+      "name": "voice-gift-maintenance-e2e-34012365932-1",
+      "size_in_bytes": 580,
+      "expired": false,
+      "created_at": "2026-09-06T04:56:44Z",
+      "expires_at": "2026-10-06T04:56:44Z"
+    }
+  ],
+  "downloadedRoutingArtifact": {
+    "name": "global-tts-routing-reconcile-34012365932-1",
+    "relativePath": "routing-artifact/evidence.json",
+    "sha256": "9bc6233407e0b2627b7f99d45fb910c38dc185cd85e902ec90ae0e531a69ec36",
+    "bytes": 2448
+  },
+  "verifiedRelease": {
+    "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+    "sourceCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+    "publicReadbackAt": "2026-09-06T04:58:11Z",
+    "publicApiAndDirectFixedAudio": "http_200_full_pcm_decode_remainder_zero",
+    "apiRouteSource": "database",
+    "apiRouteRevision": 1,
+    "evidenceBoundary": "Deployment/public readback fields were independently supplied by the release owner; this collector did not issue production probes."
+  },
+  "safety": {
+    "rawLogsStored": false,
+    "credentialsStored": false,
+    "userContentStored": false
+  }
+}
