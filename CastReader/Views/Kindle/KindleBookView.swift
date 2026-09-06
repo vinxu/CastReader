@@ -9688,11 +9688,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 errorCode: errorCode
             )
         }
-        guard mode == continuationMode, !isKindleSyncDialogVisible else {
-            KindleRunLog.write("KINDLE auto advance blocked sync-dialog mode=\(continuationMode.rawValue) reason=\(reason)")
-            finishInterruptedReadSession(errorCode: "sync_dialog_blocked")
-            return
+        func continuationIsOwned() -> Bool {
+            // A mode switch/cancellation belongs to the new owner. The sync
+            // dialog has its own resume task; neither is a navigation failure.
+            guard !Task.isCancelled, mode == continuationMode else {
+                KindleRunLog.write("KINDLE auto advance abandoned context-change reason=\(reason)")
+                return false
+            }
+            guard !isKindleSyncDialogVisible else {
+                KindleRunLog.write("KINDLE auto advance deferred to sync-dialog recovery reason=\(reason)")
+                return false
+            }
+            return true
         }
+        guard continuationIsOwned() else { return }
         let oldKey = rawOldKey.trimmingCharacters(in: .whitespacesAndNewlines)
         let previousSnapshot = currentPreparedPageSnapshot()
         var attemptedForwardTurn = false
@@ -9734,11 +9743,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 onDispatchEvidence: { dispatchEvidence = $0 }
             )
             confirmedForwardTurn = true
-            guard mode == continuationMode, !isKindleSyncDialogVisible else {
-                KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance suspended sync-dialog old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(targetKey)) reason=\(reason)")
-                finishInterruptedReadSession(errorCode: "sync_dialog_interrupted")
-                return
-            }
+            guard continuationIsOwned() else { return }
             pendingCaptureKey = targetKey
 
             let prepared = try await preparedPageForNativeAutoAdvance(
@@ -9760,11 +9765,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 startKindOverride: .sourceParagraph
             )
             activatedNextPage = true
-            guard !isKindleSyncDialogVisible else {
-                KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance suspended-before-play sync-dialog old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(prepared.page.key)) reason=\(reason)")
-                finishInterruptedReadSession(errorCode: "sync_dialog_before_play")
-                return
-            }
+            guard continuationIsOwned() else { return }
 
             if let previousSnapshot {
                 pageBackStack.append(previousSnapshot)
