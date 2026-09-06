@@ -1,0 +1,28 @@
+{
+  "schema": "castreader.hourly-audio-evidence-manifest.v1",
+  "createdAtUtc": "2026-09-06T06:12:41.409321+00:00",
+  "productionModified": false,
+  "additionalSynthesisStarted": false,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2823,
+      "sha256": "b0732093a9042f83ea884c19a5f1c326922c2295e9c05e09fe716906aee8eb30"
+    },
+    {
+      "path": "acceptance.json",
+      "bytes": 35792,
+      "sha256": "de407851ef6375d72b3cdf4902b085bbaa19c624ce8246c8ea57867c947c4ecb"
+    },
+    {
+      "path": "kindle-navigation-readback.json",
+      "bytes": 1225,
+      "sha256": "680c1f82c71d902740a283382c351fae814cf8764cd3ba2fa561bce93a92147c"
+    },
+    {
+      "path": "non-core-5xx-metadata.json",
+      "bytes": 599,
+      "sha256": "ff061724dfd1ce8d6b3883f30093a28bc7b88dab0681414e24d795e2b7eb1213"
+    }
+  ]
+}

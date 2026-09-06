@@ -1,0 +1,34 @@
+{
+  "schema": "castreader.hourly-kindle-navigation-failure-readback.v1",
+  "readOnly": true,
+  "readAtUtc": "2026-09-06T06:07:31.620875+00:00",
+  "queryTimeBasis": "server received_at inside original window",
+  "count": 1,
+  "rows": [
+    {
+      "event_name": "read_end",
+      "received_at": "2026-09-06T05:15:01.942+00:00",
+      "occurredAt": "2026-09-06T05:14:59.770Z",
+      "environment": "production",
+      "clientVersion": "1.2.33",
+      "clientBuild": "53",
+      "result": "failed",
+      "endReason": "kindle_page_advance_failed",
+      "errorCode": "page_turn_failed",
+      "errorStage": "navigation",
+      "playbackSeconds": "3432",
+      "durationSec": null,
+      "clientRoute": "global",
+      "ingressRoute": "global",
+      "eventKey": "194cbc9c7aaeb2b962a9",
+      "sessionKey": "f0a6f35324bbef1b2129",
+      "receivedInsideObservationWindow": true,
+      "clientClockAgeAtReceiptSeconds": 2.172
+    }
+  ],
+  "limits": [
+    "Client occurred_at is supplementary only; server received_at remains authoritative",
+    "Navigation failure bucket does not identify the exact exception; cancellation can be reported here by iOS 1.2.33",
+    "No backend request correlation is available in this event"
+  ]
+}

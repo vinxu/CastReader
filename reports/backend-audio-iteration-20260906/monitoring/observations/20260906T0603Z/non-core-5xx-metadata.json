@@ -1,0 +1,20 @@
+{
+  "schema": "castreader.hourly-non-core-5xx-metadata.v1",
+  "readOnly": true,
+  "readAtUtc": "2026-09-06T06:10:30.545342+00:00",
+  "rows": [
+    {
+      "observedAtUtc": "2026-09-06T05:45:33.077000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc"
+    },
+    {
+      "observedAtUtc": "2026-09-06T05:15:33.328000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc"
+    }
+  ],
+  "rawLogsOrIdentifiersExported": false
+}

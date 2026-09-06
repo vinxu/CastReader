@@ -1,0 +1,25 @@
+{
+  "schema": "castreader.audio-observation-alert-state.v1",
+  "recordedAtUtc": "2026-09-06T06:12:41.408004+00:00",
+  "heartbeatAutomationId": "24",
+  "window": {
+    "endUtc": "2026-09-07T05:01:25Z",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T05:01:25Z"
+  },
+  "latestSnapshotDirectory": "observations/20260906T0603Z",
+  "alertEventKeys": [
+    "194cbc9c7aaeb2b962a9"
+  ],
+  "alertKinds": [
+    "ios_1233_kindle_navigation_failure",
+    "non_audio_google_play_reconcile_503"
+  ],
+  "nonAudio503Count": 2,
+  "knownEvidenceLimitations": [
+    "ios_start_cohort_missing",
+    "clone_explain_first_output_missing",
+    "web_extension_end_to_end_not_collected"
+  ],
+  "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps."
+}
