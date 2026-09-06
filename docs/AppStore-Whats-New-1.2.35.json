@@ -1,0 +1,13 @@
+{
+  "en-US": "Improved recovery after temporary audio playback errors. Improved Kindle continuous reading when switching reading modes.",
+  "zh-Hans": "改善临时音频播放异常后的恢复，提升切换阅读模式时 Kindle 连续朗读的稳定性。",
+  "ja": "一時的な音声再生エラーからの復旧を改善しました。読書モード切り替え時の Kindle の連続読み上げを改善しました。",
+  "es-ES": "Mejoramos la recuperación tras errores temporales de reproducción de audio y la lectura continua de Kindle al cambiar de modo de lectura.",
+  "fr-FR": "Amélioration de la reprise après une erreur temporaire de lecture audio et de la lecture continue sur Kindle lors du changement de mode de lecture.",
+  "pt-BR": "Melhoramos a recuperação após erros temporários na reprodução de áudio e a leitura contínua no Kindle ao alternar os modos de leitura.",
+  "it": "Migliorato il recupero dopo errori temporanei di riproduzione audio e la lettura continua su Kindle durante il cambio di modalità di lettura.",
+  "hi": "ऑडियो प्लेबैक में अस्थायी गड़बड़ी के बाद फिर से चलने की प्रक्रिया बेहतर की गई है। पढ़ने का मोड बदलते समय Kindle पर लगातार पढ़कर सुनाने में सुधार किया गया है।",
+  "de-DE": "Die Wiederaufnahme nach vorübergehenden Audiowiedergabefehlern wurde verbessert. Das fortlaufende Vorlesen auf Kindle beim Wechsel des Lesemodus wurde verbessert.",
+  "zh-Hant": "改善暫時性音訊播放異常後的恢復，提升切換閱讀模式時 Kindle 連續朗讀的穩定性。",
+  "es-MX": "Mejoramos la recuperación tras errores temporales de reproducción de audio y la lectura continua de Kindle al cambiar de modo de lectura."
+}
