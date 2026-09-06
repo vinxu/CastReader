@@ -1,0 +1,10 @@
+{
+  "app": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-audio-recovery-release-1.2.35/build/CastReader-1.2.35-55.xcarchive/Products/Applications/CastReader.app",
+  "version": "1.2.35",
+  "build": "55",
+  "filesScanned": 119,
+  "markersChecked": 30,
+  "debugPositiveControlsPassed": true,
+  "releaseMatches": [],
+  "passed": true
+}

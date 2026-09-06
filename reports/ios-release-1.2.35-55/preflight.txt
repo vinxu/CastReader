@@ -1,0 +1,64 @@
+{
+  "project": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-audio-recovery-release-1.2.35",
+  "workspace": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-audio-recovery-release-1.2.35/CastReader.xcworkspace",
+  "marketingVersion": "1.2.35",
+  "buildNumber": "55",
+  "releaseTargets": [
+    {
+      "target": "CastReader",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.35",
+      "buildNumber": "55"
+    },
+    {
+      "target": "CastReader",
+      "configuration": "Release",
+      "marketingVersion": "1.2.35",
+      "buildNumber": "55"
+    },
+    {
+      "target": "CastReader Share Extension",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.35",
+      "buildNumber": "55"
+    },
+    {
+      "target": "CastReader Share Extension",
+      "configuration": "Release",
+      "marketingVersion": "1.2.35",
+      "buildNumber": "55"
+    },
+    {
+      "target": "CastReader Widget",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.35",
+      "buildNumber": "55"
+    },
+    {
+      "target": "CastReader Widget",
+      "configuration": "Release",
+      "marketingVersion": "1.2.35",
+      "buildNumber": "55"
+    }
+  ],
+  "locales": [
+    "en-US",
+    "zh-Hans",
+    "ja",
+    "es-ES",
+    "fr-FR",
+    "pt-BR",
+    "it",
+    "hi",
+    "de-DE",
+    "zh-Hant",
+    "es-MX"
+  ],
+  "metadata": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-audio-recovery-release-1.2.35/docs/CastReader-AppStore-Metadata-11-Languages-1.2.20.md",
+  "whatsNew": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-audio-recovery-release-1.2.35/docs/AppStore-Whats-New-1.2.35.json",
+  "appStoreConnectKeyMode": "600",
+  "xcode": [
+    "Xcode 26.6",
+    "Build version 17F113"
+  ]
+}

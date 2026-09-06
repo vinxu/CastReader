@@ -1,0 +1,25 @@
+{
+  "sourceFilesUnchanged": 251,
+  "archivePayloadFilesUnchanged": 128,
+  "archiveMetadataChange": "Xcode added successful upload record to archive Info.plist",
+  "archiveInfoSHA256AfterUpload": "373cf3136b6e324787a27a3b81c9c7ef39aae045c4118780f25fbf5e378e6986",
+  "build": "55",
+  "preparation": {
+    "date": "2026-09-06T16:59:20Z",
+    "errors": [],
+    "infoMessages": [],
+    "shortTitle": "Prepared",
+    "state": "success",
+    "title": "Prepared archive for uploading",
+    "warnings": []
+  },
+  "upload": {
+    "date": "2026-09-06T17:03:38Z",
+    "errors": [],
+    "infoMessages": [],
+    "shortTitle": "Uploaded",
+    "state": "success",
+    "title": "Uploaded to Apple",
+    "warnings": []
+  }
+}
