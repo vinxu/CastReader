@@ -1,0 +1,167 @@
+{
+  "schema": "castreader.vercel-new-errors.v1",
+  "readOnly": true,
+  "generatedAtUtc": "2026-09-06T14:38:16.447751+00:00",
+  "snapshotGeneratedAtUtc": "2026-09-06T14:22:22.032377Z",
+  "previousCollectionEndExclusive": "2026-09-06T13:28:17.030997Z",
+  "currentCollectionEndExclusive": "2026-09-06T14:22:22.032377Z",
+  "comparison": {
+    "previousCore504Count": 0,
+    "currentCore504Count": 4,
+    "newCore504Count": 4,
+    "previousOther503Count": 17,
+    "currentOther503Count": 19,
+    "newOther503Count": 2
+  },
+  "rows": [
+    {
+      "requestKey": "e061a66c335ef6dece59",
+      "observedAtUtc": "2026-09-06T13:29:35.925000Z",
+      "staticPath": "/api/captioned_speech_partly",
+      "status": 504,
+      "routeGroup": "tts",
+      "domainClass": "api.castreader.ai",
+      "deploymentMatchesObservationBaseline": true,
+      "afterPreviousCollectionCutoff": true,
+      "matchedSafeLogTags": [],
+      "durationMs": null,
+      "durationEvidence": "duration_not_present_in_vercel_logs_json",
+      "statusClassification": "http_504_unclassified",
+      "underlyingCause": "unconfirmed",
+      "nestedLogCount": 0
+    },
+    {
+      "requestKey": "0865d60458fd5519c2d1",
+      "observedAtUtc": "2026-09-06T13:29:36.132000Z",
+      "staticPath": "/api/captioned_speech_partly",
+      "status": 504,
+      "routeGroup": "tts",
+      "domainClass": "api.castreader.ai",
+      "deploymentMatchesObservationBaseline": true,
+      "afterPreviousCollectionCutoff": true,
+      "matchedSafeLogTags": [],
+      "durationMs": null,
+      "durationEvidence": "duration_not_present_in_vercel_logs_json",
+      "statusClassification": "http_504_unclassified",
+      "underlyingCause": "unconfirmed",
+      "nestedLogCount": 0
+    },
+    {
+      "requestKey": "498d54bede61726ce98c",
+      "observedAtUtc": "2026-09-06T13:29:49.696000Z",
+      "staticPath": "/api/captioned_speech_partly",
+      "status": 504,
+      "routeGroup": "tts",
+      "domainClass": "api.castreader.ai",
+      "deploymentMatchesObservationBaseline": true,
+      "afterPreviousCollectionCutoff": true,
+      "matchedSafeLogTags": [],
+      "durationMs": null,
+      "durationEvidence": "duration_not_present_in_vercel_logs_json",
+      "statusClassification": "http_504_unclassified",
+      "underlyingCause": "unconfirmed",
+      "nestedLogCount": 0
+    },
+    {
+      "requestKey": "5e7c7c1c359ddd58195d",
+      "observedAtUtc": "2026-09-06T13:29:49.992000Z",
+      "staticPath": "/api/captioned_speech_partly",
+      "status": 504,
+      "routeGroup": "tts",
+      "domainClass": "api.castreader.ai",
+      "deploymentMatchesObservationBaseline": true,
+      "afterPreviousCollectionCutoff": true,
+      "matchedSafeLogTags": [],
+      "durationMs": null,
+      "durationEvidence": "duration_not_present_in_vercel_logs_json",
+      "statusClassification": "http_504_unclassified",
+      "underlyingCause": "unconfirmed",
+      "nestedLogCount": 0
+    },
+    {
+      "requestKey": "d2f5b0754287d7821c0c",
+      "observedAtUtc": "2026-09-06T13:45:33.156000Z",
+      "staticPath": "/api/cron/google-play-reconcile",
+      "status": 503,
+      "routeGroup": "other",
+      "afterPreviousCollectionCutoff": true,
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ],
+      "durationMs": null,
+      "durationEvidence": "duration_not_present_in_vercel_logs_json",
+      "statusClassification": "google_play_reconcile_incomplete",
+      "underlyingCause": "incomplete_reconciliation_tag_confirmed_details_not_exported"
+    },
+    {
+      "requestKey": "aae4f592862fa66cc428",
+      "observedAtUtc": "2026-09-06T14:15:33.448000Z",
+      "staticPath": "/api/cron/google-play-reconcile",
+      "status": 503,
+      "routeGroup": "other",
+      "afterPreviousCollectionCutoff": true,
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ],
+      "durationMs": null,
+      "durationEvidence": "duration_not_present_in_vercel_logs_json",
+      "statusClassification": "google_play_reconcile_incomplete",
+      "underlyingCause": "incomplete_reconciliation_tag_confirmed_details_not_exported"
+    }
+  ],
+  "diagnosis": {
+    "coreTiming": "All four request-log timestamps are after the previous cutoff, so they are newly occurring relative to that snapshot, not historical records backfilled from its covered interval.",
+    "coreStatusEvidence": "Four retained unique request-log keys on /api/captioned_speech_partly have HTTP 504. Nested logs are empty, and the CLI output has no duration field or matched fixed timeout/error tag.",
+    "timeoutCause": "HTTP 504 alone does not identify the timeout layer or distinguish upstream latency, network failure, application timeout, platform timeout, or cancellation. No exact duration or underlying cause was recovered.",
+    "productionIdentity": "The four cached records match the existing observation deployment; no production identity change is evidenced.",
+    "other503": "Both new 503s are /api/cron/google-play-reconcile with the fixed [google-play-reconcile] incomplete tag, continuing the known non-audio incident.",
+    "clientCorrelation": "Request keys are not linked to client event keys. Timing alone does not establish that these four HTTP 504s caused the new iOS player_item_failed events."
+  },
+  "verification": {
+    "cacheReadOnly": true,
+    "vercelLogsWindows": [
+      {
+        "startInclusive": "2026-09-06T13:01:25Z",
+        "endExclusive": "2026-09-06T13:31:25Z",
+        "result": "complete",
+        "returnedRows": 5,
+        "newSelectedRows": 4
+      },
+      {
+        "startInclusive": "2026-09-06T13:31:25Z",
+        "endExclusive": "2026-09-06T14:01:25Z",
+        "result": "complete",
+        "returnedRows": 1,
+        "newSelectedRows": 1
+      },
+      {
+        "startInclusive": "2026-09-06T14:01:25Z",
+        "endExclusive": "2026-09-06T14:22:22.032377Z",
+        "result": "query_timeout"
+      },
+      {
+        "startInclusive": "2026-09-06T14:15:00Z",
+        "endExclusive": "2026-09-06T14:16:00Z",
+        "result": "complete",
+        "returnedRows": 1,
+        "newSelectedRows": 1
+      }
+    ],
+    "supplementalNarrowDetailQuery": {
+      "startInclusive": "2026-09-06T13:29:30Z",
+      "endExclusive": "2026-09-06T13:30:00Z",
+      "via": "vercel_api_cli",
+      "result": "query_failed",
+      "safeExitCode": 1
+    },
+    "selectedSixRecordsVerified": true
+  },
+  "limitations": [
+    "Vercel request-log timestamps establish temporal comparison, not an ingestion-delay measurement.",
+    "Counts represent retained unique request-log keys, not users, unique synthesis attempts, or a failure-rate denominator.",
+    "Nested logs for the four 504s are empty in the retrieved CLI records. Supplemental detailed metadata was not recovered.",
+    "No request body, user text, raw request ID, IP, credential, header, or log body was persisted or returned."
+  ],
+  "productionModified": false,
+  "rawContentExported": false
+}

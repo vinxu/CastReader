@@ -1,0 +1,53 @@
+{
+  "schema": "castreader.direct-gateway-5xx-detail.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "additionalSynthesisStarted": false,
+  "readAtUtc": "2026-09-06T14:34:15.026180Z",
+  "query": {
+    "startInclusive": "2026-09-06T14:00:00Z",
+    "endExclusive": "2026-09-06T14:22:22.032377Z"
+  },
+  "coverage": {
+    "complete": true,
+    "journalParseErrors": 0,
+    "rowLimitReached": false,
+    "incompleteConsoleBlocks": 0,
+    "malformedRequestBlocks": 0
+  },
+  "runtimeSourceSha256": "53a4ca273a7b3d60b1ce24f3cb089985f57bb6006b2838b683549c69e93d26d5",
+  "configuredUpstreamTimeoutMs": 120000,
+  "configuredTimeoutEvidence": "Same runtime source hash as source review at 2026-09-06T10:07Z; verify hash equality before reuse.",
+  "statusCounts": {
+    "200": 35,
+    "504": 1
+  },
+  "failures": [
+    {
+      "key": "9fc0b08a4367240fc14c",
+      "observedAt": "2026-09-06T14:17:58.072382Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": 504,
+      "elapsedMs": 328,
+      "requestBytes": 211,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.45",
+      "error": {
+        "class": "timeout_or_abort",
+        "name": "AbortError",
+        "observedAt": "2026-09-06T14:17:58.072382Z"
+      },
+      "belowConfigured120SecondDeadline": true,
+      "neighboring2xxWithin10Seconds": 3,
+      "newComparedWithKnownRequestKeys": true
+    }
+  ],
+  "rawLogOrUserContentExported": false,
+  "runtimeSourceUnchangedSincePriorReview": true,
+  "limitations": [
+    "AbortError does not distinguish downstream connection closure from timer cancellation.",
+    "Logged 504 does not prove that an HTTP 504 was delivered to the client.",
+    "Client platform and version are caller-supplied."
+  ]
+}

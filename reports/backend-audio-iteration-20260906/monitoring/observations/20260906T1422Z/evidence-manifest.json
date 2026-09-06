@@ -1,0 +1,30 @@
+{
+  "schema": "castreader.audio-observation-manifest.v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2908,
+      "sha256": "8f38fe2aef620784dad5ecc1cb5878b1525f2b006e15804ad782f9f6e331c5eb"
+    },
+    {
+      "path": "acceptance.json",
+      "bytes": 58652,
+      "sha256": "e61532bc99b26f4ae5c40e2c5740d27958217149d6eb074817408e4222ff2cfb"
+    },
+    {
+      "path": "client-failure-dedup.json",
+      "bytes": 3758,
+      "sha256": "9898ba8d3695834dfef0917e986933e76530d7b2d97e3d3bc4d66e2c5489887a"
+    },
+    {
+      "path": "direct-new-error.json",
+      "bytes": 1750,
+      "sha256": "58773288cc53fc5507d1c3a4fe623a0bfd5706f7854b8e297547f1568fce0ca7"
+    },
+    {
+      "path": "vercel-new-errors.json",
+      "bytes": 6943,
+      "sha256": "ef88a7599cbe7ef41283f9ff9dce3911917dcad9a802cc378febf8e11307a736"
+    }
+  ]
+}

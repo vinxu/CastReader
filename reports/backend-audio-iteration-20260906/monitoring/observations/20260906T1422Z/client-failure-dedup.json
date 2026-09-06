@@ -1,0 +1,123 @@
+{
+  "readOnly": true,
+  "completeRead": true,
+  "selectedEndRows": 47,
+  "technicalFailures": [
+    {
+      "eventKey": "194cbc9c7aaeb2b962a9",
+      "occurredAtUtc": "2026-09-06T05:14:59.770Z",
+      "receivedAtUtc": "2026-09-06T05:15:01.942+00:00",
+      "platform": "ios",
+      "clientVersion": "1.2.33",
+      "event": "read_end",
+      "endReason": "kindle_page_advance_failed",
+      "errorCode": "page_turn_failed",
+      "errorStage": "navigation",
+      "playbackSeconds": 3432.0,
+      "contentFormat": null,
+      "contentSource": null
+    },
+    {
+      "eventKey": "e744cc9e13c1ce37a508",
+      "occurredAtUtc": "2026-09-06T08:54:19.065Z",
+      "receivedAtUtc": "2026-09-06T08:54:21.417+00:00",
+      "platform": "ios",
+      "clientVersion": "1.2.33",
+      "event": "read_end",
+      "endReason": "kindle_page_advance_failed",
+      "errorCode": "sync_dialog_blocked",
+      "errorStage": "navigation",
+      "playbackSeconds": 36.0,
+      "contentFormat": null,
+      "contentSource": null
+    },
+    {
+      "eventKey": "17fdc8de28c31db425ca",
+      "occurredAtUtc": "2026-09-06T09:07:13.107Z",
+      "receivedAtUtc": "2026-09-06T09:11:37.922+00:00",
+      "platform": "ios",
+      "clientVersion": "1.2.33",
+      "event": "read_end",
+      "endReason": "tts_failed",
+      "errorCode": "tts_failed",
+      "errorStage": "tts",
+      "playbackSeconds": 2447.0,
+      "contentFormat": null,
+      "contentSource": null
+    },
+    {
+      "eventKey": "2efcb7cf33b2ee717ab8",
+      "occurredAtUtc": "2026-09-06T09:31:27.428Z",
+      "receivedAtUtc": "2026-09-06T09:31:35.604+00:00",
+      "platform": "android",
+      "clientVersion": "1.0.45",
+      "event": "explain_end",
+      "endReason": "pipeline_failed",
+      "errorCode": "unexpected_error",
+      "errorStage": "pipeline",
+      "playbackSeconds": null,
+      "contentFormat": null,
+      "contentSource": null
+    },
+    {
+      "eventKey": "746346a4fb3395e8d30e",
+      "occurredAtUtc": "2026-09-06T10:05:50.070Z",
+      "receivedAtUtc": "2026-09-06T10:05:50.553+00:00",
+      "platform": "ios",
+      "clientVersion": "1.2.33",
+      "event": "read_end",
+      "endReason": "tts_failed",
+      "errorCode": "tts_failed",
+      "errorStage": "tts",
+      "playbackSeconds": 0.0,
+      "contentFormat": null,
+      "contentSource": null
+    },
+    {
+      "eventKey": "f12f08ecb06c1f31d891",
+      "occurredAtUtc": "2026-09-06T10:44:51.863Z",
+      "receivedAtUtc": "2026-09-06T10:44:54.885+00:00",
+      "platform": "android",
+      "clientVersion": "1.0.45",
+      "event": "explain_end",
+      "endReason": "pipeline_failed",
+      "errorCode": "unexpected_error",
+      "errorStage": "pipeline",
+      "playbackSeconds": null,
+      "contentFormat": null,
+      "contentSource": null
+    },
+    {
+      "eventKey": "f8dc697edd4e3c44aa6c",
+      "occurredAtUtc": "2026-09-06T13:59:43.618Z",
+      "receivedAtUtc": "2026-09-06T13:59:46.06+00:00",
+      "platform": "ios",
+      "clientVersion": "1.2.33",
+      "event": "read_end",
+      "endReason": "audio_playback_failed",
+      "errorCode": "player_item_failed",
+      "errorStage": "player",
+      "playbackSeconds": 0.0,
+      "contentFormat": null,
+      "contentSource": null
+    },
+    {
+      "eventKey": "db06d2cbb1dc6da992ab",
+      "occurredAtUtc": "2026-09-06T14:16:31.236Z",
+      "receivedAtUtc": "2026-09-06T14:16:32.017+00:00",
+      "platform": "ios",
+      "clientVersion": "1.2.33",
+      "event": "read_end",
+      "endReason": "audio_playback_failed",
+      "errorCode": "player_item_failed",
+      "errorStage": "player",
+      "playbackSeconds": 370.0,
+      "contentFormat": null,
+      "contentSource": null
+    }
+  ],
+  "newEventKeys": [
+    "f8dc697edd4e3c44aa6c",
+    "db06d2cbb1dc6da992ab"
+  ]
+}
