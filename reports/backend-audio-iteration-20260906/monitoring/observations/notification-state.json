@@ -1,13 +1,13 @@
 {
   "schema": "castreader.audio-observation-alert-state.v1",
-  "recordedAtUtc": "2026-09-06T11:10:55.494873+00:00",
+  "recordedAtUtc": "2026-09-06T13:33:27.214540+00:00",
   "heartbeatAutomationId": "24",
   "window": {
     "endUtc": "2026-09-07T05:01:25Z",
     "requiredSeconds": 86400,
     "startUtc": "2026-09-06T05:01:25Z"
   },
-  "latestSnapshotDirectory": "observations/20260906T1105Z",
+  "latestSnapshotDirectory": "observations/20260906T1328Z",
   "alertEventKeys": [
     "194cbc9c7aaeb2b962a9",
     "e744cc9e13c1ce37a508",
@@ -24,14 +24,15 @@
     "android_1045_explain_pipeline_failed",
     "direct_early_abort_recorded_504"
   ],
-  "nonAudio503Count": 12,
+  "nonAudio503Count": 17,
   "knownEvidenceLimitations": [
     "clone_first_output_absent_or_unattributed",
     "web_extension_end_to_end_not_collected",
     "first_output_does_not_prove_playback_completion",
     "client_failure_underlying_exception_unavailable",
     "direct_abort_cause_and_504_delivery_unconfirmed",
-    "hourly_identity_snapshots_absent_0800_0900_utc"
+    "hourly_identity_snapshots_absent_0800_0900_utc",
+    "hourly_identity_snapshot_absent_1206_utc"
   ],
   "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps.",
   "directRequestKeys": [
@@ -45,8 +46,8 @@
     "productionChanged": false
   },
   "latestClientTechnicalFailureCount": 6,
-  "lastDecision": "NOTIFY",
-  "lastDecisionReason": "One newly deduplicated Android 1.0.45 Explain pipeline failure after first block",
+  "lastDecision": "DONT_NOTIFY",
+  "lastDecisionReason": "No new client or core audio failure, source coverage gap or observed version drift; known reconcile incident continues",
   "latestCauseAnalysis": "reports/backend-audio-failure-analysis-20260906/README.md",
   "confirmedCodeFindings": [
     "kindle_sync_dialog_blocked_also_covers_mode_change",

@@ -1,0 +1,25 @@
+{
+  "schema": "castreader.audio-observation-manifest.v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 2772,
+      "sha256": "41d190a475a55073b17375cd15403f6af15f24b4750f1d98bc5c76077cc991cd"
+    },
+    {
+      "path": "acceptance.json",
+      "bytes": 56480,
+      "sha256": "981dc2a784974d5f56a7ee0b7877375950d640e31edee1e575113289c56c727c"
+    },
+    {
+      "path": "client-failure-dedup.json",
+      "bytes": 1958,
+      "sha256": "9148d3c0abb399bca3e09927bf301c0c66bc9bb39e4bdfdc369c01d26ffbb8f7"
+    },
+    {
+      "path": "non-core-5xx-classification.json",
+      "bytes": 1574,
+      "sha256": "8fc2a1b26a83df5dde8fb0fcbea19e42b1d75fc9c31f8dc7ec9727c6cf4c86d2"
+    }
+  ]
+}

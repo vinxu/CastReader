@@ -1,0 +1,55 @@
+{
+  "readOnly": true,
+  "complete": true,
+  "startUtc": "2026-09-06T11:05:38.744925Z",
+  "endUtc": "2026-09-06T13:28:17.030997Z",
+  "returnedRows": 5,
+  "rows": [
+    {
+      "requestKey": "7086ce1263111b44a145",
+      "observedAtUtc": "2026-09-06T13:15:34.147000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "requestKey": "8d323d49901e5efdfa43",
+      "observedAtUtc": "2026-09-06T12:45:33.213000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "requestKey": "f0e7504e74084936c95f",
+      "observedAtUtc": "2026-09-06T12:15:33.265000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "requestKey": "4a0ac935a29ab29b2e6c",
+      "observedAtUtc": "2026-09-06T11:45:33.230000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "requestKey": "18aa4b505d94c63618c9",
+      "observedAtUtc": "2026-09-06T11:15:33.272000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    }
+  ],
+  "rawContentExported": false
+}
