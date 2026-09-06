@@ -1,0 +1,41 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "files": [
+    {
+      "file": "README.md",
+      "bytes": 3127,
+      "sha256": "a23d75fea6b43a08e18c25dfd852881f5aa1fafed12da67f60cc3bbfa3ba0164"
+    },
+    {
+      "file": "acceptance.json",
+      "bytes": 61280,
+      "sha256": "06683a5c978333adc208b23c9964bc37ba0639b6026947773583ee970205a386"
+    },
+    {
+      "file": "client-failure-dedup.json",
+      "bytes": 9422,
+      "sha256": "4f332b225660203ea23f5940c442ab663e2a612337bfbbdf8bcbbcc276d72cf9"
+    },
+    {
+      "file": "direct-dedup.json",
+      "bytes": 1190,
+      "sha256": "08a91fd3298ea74b6d4c4d92f35e4420647ab43233266e560b8ce88c044e0b3e"
+    },
+    {
+      "file": "inspect_event_delta.py",
+      "bytes": 4120,
+      "sha256": "46c92d72f91ab3d8046a1dd9e4963bab484b3f596d9b421aa6e58243a1396f0a"
+    },
+    {
+      "file": "notification-before.json",
+      "bytes": 3798,
+      "sha256": "0baa69f598cdffda62d97a080587a9ea95b8b16436a401b396607f8ecc7b1182"
+    },
+    {
+      "file": "vercel-dedup.json",
+      "bytes": 3298,
+      "sha256": "40419e658847e97ffbfb741c5a23afaef9c8ed733dad4730387e0e63e5c911b7"
+    }
+  ]
+}

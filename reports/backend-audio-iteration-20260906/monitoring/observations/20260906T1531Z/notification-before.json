@@ -1,0 +1,98 @@
+{
+  "schema": "castreader.audio-observation-alert-state.v1",
+  "recordedAtUtc": "2026-09-06T14:39:28.346675+00:00",
+  "heartbeatAutomationId": "24",
+  "window": {
+    "endUtc": "2026-09-07T05:01:25Z",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T05:01:25Z"
+  },
+  "latestSnapshotDirectory": "observations/20260906T1422Z",
+  "alertEventKeys": [
+    "194cbc9c7aaeb2b962a9",
+    "e744cc9e13c1ce37a508",
+    "17fdc8de28c31db425ca",
+    "2efcb7cf33b2ee717ab8",
+    "746346a4fb3395e8d30e",
+    "f12f08ecb06c1f31d891",
+    "f8dc697edd4e3c44aa6c",
+    "db06d2cbb1dc6da992ab"
+  ],
+  "alertKinds": [
+    "ios_1233_kindle_navigation_failure",
+    "non_audio_google_play_reconcile_503",
+    "ios_1233_kindle_sync_dialog_blocked",
+    "ios_1233_tts_failed",
+    "android_1045_explain_pipeline_failed",
+    "direct_early_abort_recorded_504",
+    "ios_1233_player_item_failed",
+    "global_tts_http_504_unclassified"
+  ],
+  "nonAudio503Count": 19,
+  "knownEvidenceLimitations": [
+    "clone_first_output_absent_or_unattributed",
+    "web_extension_end_to_end_not_collected",
+    "first_output_does_not_prove_playback_completion",
+    "client_failure_underlying_exception_unavailable",
+    "direct_abort_cause_and_504_delivery_unconfirmed",
+    "hourly_identity_snapshots_absent_0800_0900_utc",
+    "hourly_identity_snapshot_absent_1206_utc",
+    "new_player_events_not_correlated_to_gateway_requests",
+    "global_tts_individual_slow_stage_unavailable",
+    "repeated_prefix_traffic_origin_unknown",
+    "ios_player_initial_error_stage_and_nserror_unavailable"
+  ],
+  "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps.",
+  "directRequestKeys": [
+    "5aff31cfb056a2d01086",
+    "0cb20e9c60e8856663f7",
+    "9fc0b08a4367240fc14c"
+  ],
+  "nonAudio503Classification": "google_play_reconcile_incomplete",
+  "collectorRecovery": {
+    "mobileBackfillComplete": true,
+    "windowUnchanged": true,
+    "productionChanged": false
+  },
+  "latestClientTechnicalFailureCount": 8,
+  "lastDecision": "NOTIFY",
+  "lastDecisionReason": "Two new iOS player failures, four new global TTS HTTP504 records and one new early-abort direct log504; no observed production identity drift.",
+  "latestCauseAnalysis": "reports/audio-errors-root-cause-20260906/README.md",
+  "confirmedCodeFindings": [
+    "kindle_sync_dialog_blocked_also_covers_mode_change",
+    "ios_tts_wrapping_erases_underlying_error_type",
+    "android_pdf_generic_exception_catch_includes_cancellation",
+    "android_failed_completion_bucket_not_document_completion",
+    "gateway_combines_timeout_and_abort_as_504_without_diagnostics",
+    "ios_player_failure_state_can_be_overwritten_by_producer",
+    "ios_player_retry_can_reuse_failed_item",
+    "ios_first_audio_event_uses_optimistic_is_playing",
+    "ios_base64_validation_does_not_prove_playable_media"
+  ],
+  "individualUnderlyingExceptionsRecovered": false,
+  "latestVercelCore5xxCount": 4,
+  "latestDirect5xxCount": 3,
+  "latestClientIterationReport": "reports/backend-audio-failure-analysis-20260906/iteration.md",
+  "clientIterationProductionStatus": "committed_not_published",
+  "vercelCoreRequestKeys": [
+    "e061a66c335ef6dece59",
+    "0865d60458fd5519c2d1",
+    "498d54bede61726ce98c",
+    "5e7c7c1c359ddd58195d"
+  ],
+  "causeAnalysisUpdatedAtUtc": "2026-09-06T15:27:50.447479+00:00",
+  "globalTts504Analysis": {
+    "functionDurationMs": [
+      28007,
+      28006,
+      28033,
+      28006
+    ],
+    "platformMaxDurationSeconds": 300,
+    "applicationBudgetMs": 28000,
+    "classification": "high_confidence_application_budget_expiration_not_captured_exception",
+    "individualUpstreamSlowStageConfirmed": false,
+    "concurrentAggregateBacklogObserved": true,
+    "correlatedToNewPlayerFailures": false
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "schema": "castreader.vercel-dedup.v1",
+  "readOnly": true,
+  "generatedAtUtc": "2026-09-06T15:37:15.620307+00:00",
+  "previousCollectionEndExclusive": "2026-09-06T14:22:22.032377Z",
+  "currentCollectionEndExclusive": "2026-09-06T15:31:31.485104Z",
+  "core5xx": {
+    "previousCount": 4,
+    "currentCount": 4,
+    "knownRequestKeys": [
+      "0865d60458fd5519c2d1",
+      "498d54bede61726ce98c",
+      "5e7c7c1c359ddd58195d",
+      "e061a66c335ef6dece59"
+    ],
+    "observedCacheRequestKeys": [
+      "0865d60458fd5519c2d1",
+      "498d54bede61726ce98c",
+      "5e7c7c1c359ddd58195d",
+      "e061a66c335ef6dece59"
+    ],
+    "newRequestKeys": [],
+    "allMatchPreviousKeys": true
+  },
+  "nonAudio503": {
+    "previousCount": 19,
+    "currentCount": 21,
+    "newUniqueRequestCount": 2,
+    "allNewRecordsClassifiedAsKnownReconcileIncident": true,
+    "rows": [
+      {
+        "requestKey": "79999d832b515d50283d",
+        "observedAtUtc": "2026-09-06T14:45:33.289000Z",
+        "staticPath": "/api/cron/google-play-reconcile",
+        "status": 503,
+        "matchedSafeLogTags": [
+          "[google-play-reconcile] incomplete"
+        ],
+        "alreadyInPreviousWindow": false,
+        "cachedRecordMatched": true,
+        "deploymentMatchesObservationBaseline": true
+      },
+      {
+        "requestKey": "8acfc63e46e503d5af32",
+        "observedAtUtc": "2026-09-06T15:15:33.250000Z",
+        "staticPath": "/api/cron/google-play-reconcile",
+        "status": 503,
+        "matchedSafeLogTags": [
+          "[google-play-reconcile] incomplete"
+        ],
+        "alreadyInPreviousWindow": false,
+        "cachedRecordMatched": false,
+        "deploymentMatchesObservationBaseline": true
+      }
+    ]
+  },
+  "queries": [
+    {
+      "startInclusive": "2026-09-06T14:45:00Z",
+      "endExclusive": "2026-09-06T14:46:00Z",
+      "method": "vercel_logs_cli",
+      "readOnly": true,
+      "result": "complete",
+      "rows": [
+        {
+          "requestKey": "79999d832b515d50283d",
+          "observedAtUtc": "2026-09-06T14:45:33.289000Z",
+          "staticPath": "/api/cron/google-play-reconcile",
+          "status": 503,
+          "matchedSafeLogTags": [
+            "[google-play-reconcile] incomplete"
+          ],
+          "alreadyInPreviousWindow": false,
+          "cachedRecordMatched": true,
+          "deploymentMatchesObservationBaseline": true
+        }
+      ]
+    },
+    {
+      "startInclusive": "2026-09-06T15:15:00Z",
+      "endExclusive": "2026-09-06T15:16:00Z",
+      "method": "vercel_logs_cli",
+      "readOnly": true,
+      "result": "complete",
+      "rows": [
+        {
+          "requestKey": "8acfc63e46e503d5af32",
+          "observedAtUtc": "2026-09-06T15:15:33.250000Z",
+          "staticPath": "/api/cron/google-play-reconcile",
+          "status": 503,
+          "matchedSafeLogTags": [
+            "[google-play-reconcile] incomplete"
+          ],
+          "alreadyInPreviousWindow": false,
+          "cachedRecordMatched": false,
+          "deploymentMatchesObservationBaseline": true
+        }
+      ]
+    }
+  ],
+  "conclusion": "No new core Vercel failure; two new 503 records continue the known Google Play reconciliation incomplete incident.",
+  "newVercelIncidentDetected": false,
+  "rawContentExported": false,
+  "productionModified": false
+}

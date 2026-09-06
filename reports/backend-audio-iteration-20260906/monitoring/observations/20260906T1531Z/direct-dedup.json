@@ -1,0 +1,47 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "complete": true,
+  "rows": [
+    {
+      "key": "5aff31cfb056a2d01086",
+      "observedAt": "2026-09-06T08:55:29.053806Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": 504,
+      "elapsedMs": 1006,
+      "requestBytes": 606,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.45"
+    },
+    {
+      "key": "0cb20e9c60e8856663f7",
+      "observedAt": "2026-09-06T09:55:32.544948Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": 504,
+      "elapsedMs": 297,
+      "requestBytes": 5225,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.45"
+    },
+    {
+      "key": "9fc0b08a4367240fc14c",
+      "observedAt": "2026-09-06T14:17:58.072382Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": 504,
+      "elapsedMs": 328,
+      "requestBytes": 211,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.45"
+    }
+  ],
+  "newRequestKeys": [],
+  "retainedKnownKeys": [
+    "0cb20e9c60e8856663f7",
+    "5aff31cfb056a2d01086",
+    "9fc0b08a4367240fc14c"
+  ]
+}

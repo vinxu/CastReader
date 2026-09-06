@@ -1,13 +1,13 @@
 {
   "schema": "castreader.audio-observation-alert-state.v1",
-  "recordedAtUtc": "2026-09-06T14:39:28.346675+00:00",
+  "recordedAtUtc": "2026-09-06T15:39:42.460897+00:00",
   "heartbeatAutomationId": "24",
   "window": {
     "endUtc": "2026-09-07T05:01:25Z",
     "requiredSeconds": 86400,
     "startUtc": "2026-09-06T05:01:25Z"
   },
-  "latestSnapshotDirectory": "observations/20260906T1422Z",
+  "latestSnapshotDirectory": "observations/20260906T1531Z",
   "alertEventKeys": [
     "194cbc9c7aaeb2b962a9",
     "e744cc9e13c1ce37a508",
@@ -16,7 +16,8 @@
     "746346a4fb3395e8d30e",
     "f12f08ecb06c1f31d891",
     "f8dc697edd4e3c44aa6c",
-    "db06d2cbb1dc6da992ab"
+    "db06d2cbb1dc6da992ab",
+    "e17fc636d1daf5bf701c"
   ],
   "alertKinds": [
     "ios_1233_kindle_navigation_failure",
@@ -28,7 +29,7 @@
     "ios_1233_player_item_failed",
     "global_tts_http_504_unclassified"
   ],
-  "nonAudio503Count": 19,
+  "nonAudio503Count": 21,
   "knownEvidenceLimitations": [
     "clone_first_output_absent_or_unattributed",
     "web_extension_end_to_end_not_collected",
@@ -54,9 +55,9 @@
     "windowUnchanged": true,
     "productionChanged": false
   },
-  "latestClientTechnicalFailureCount": 8,
+  "latestClientTechnicalFailureCount": 9,
   "lastDecision": "NOTIFY",
-  "lastDecisionReason": "Two new iOS player failures, four new global TTS HTTP504 records and one new early-abort direct log504; no observed production identity drift.",
+  "lastDecisionReason": "One new iOS1.2.33 Kindle page_turn_failed event; core Vercel and direct5xx keys unchanged; two additional non-audio503s remain Google Play reconciliation incomplete; no observed production identity drift.",
   "latestCauseAnalysis": "reports/audio-errors-root-cause-20260906/README.md",
   "confirmedCodeFindings": [
     "kindle_sync_dialog_blocked_also_covers_mode_change",
@@ -94,5 +95,15 @@
     "individualUpstreamSlowStageConfirmed": false,
     "concurrentAggregateBacklogObserved": true,
     "correlatedToNewPlayerFailures": false
+  },
+  "lastNewEventSummary": {
+    "eventKey": "e17fc636d1daf5bf701c",
+    "occurredAtUtc": "2026-09-06T14:35:29.364Z",
+    "errorCode": "page_turn_failed",
+    "errorStage": "navigation",
+    "clientVersion": "1.2.33",
+    "clientBuild": 53,
+    "playbackSeconds": 3243,
+    "underlyingCause": "navigation_failure_detail_not_retained"
   }
 }
