@@ -1,0 +1,24 @@
+{
+  "schema": "castreader.audio-observation-delta.v1",
+  "previousThroughUtc": "2026-09-06T10:07:01.058070Z",
+  "currentThroughUtc": "2026-09-06T11:05:38.744925Z",
+  "newClientFailureEventKeys": [
+    "f12f08ecb06c1f31d891"
+  ],
+  "previousTechnicalFailures": 5,
+  "currentTechnicalFailures": 6,
+  "newDirectRequests": 90,
+  "newDirectNon2xx": 0,
+  "coreVercel5xx": 0,
+  "newNonCore503": 2,
+  "nonCoreClassification": "known_google_play_reconcile_incomplete",
+  "unchangedIdentitySources": [
+    "global_capabilities",
+    "origin_proxy_us",
+    "kokoro_us"
+  ],
+  "dataOrCoverageGaps": [],
+  "fixedWindowUnchanged": true,
+  "decision": "NOTIFY",
+  "decisionReason": "new_client_technical_failure"
+}

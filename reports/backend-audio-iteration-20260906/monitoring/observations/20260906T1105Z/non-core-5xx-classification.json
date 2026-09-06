@@ -1,0 +1,40 @@
+{
+  "coverage": {
+    "complete": true,
+    "pageLimit": 1000,
+    "returnedRows": 2,
+    "selectedRows": 2
+  },
+  "interpretation": "New rows remain classified separately from audio routes; incomplete tag proves partial reconciliation failure, not its underlying cause.",
+  "queryWindow": {
+    "endExclusive": "2026-09-06T11:05:38.744925+00:00",
+    "startInclusive": "2026-09-06T10:07:01.058070+00:00"
+  },
+  "rawLogsOrIdentifiersExported": false,
+  "readAtUtc": "2026-09-06T11:09:41.828940+00:00",
+  "readOnly": true,
+  "rows": [
+    {
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ],
+      "observedAtUtc": "2026-09-06T10:15:33.673000Z",
+      "requestKey": "2078002c2ee6232a31f3",
+      "staticPath": "/api/cron/google-play-reconcile",
+      "status": 503
+    },
+    {
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ],
+      "observedAtUtc": "2026-09-06T10:45:33.625000Z",
+      "requestKey": "a50c10ef8ae489988cac",
+      "staticPath": "/api/cron/google-play-reconcile",
+      "status": 503
+    }
+  ],
+  "schema": "castreader.audio-non-core-error-classification.v1",
+  "verifiedStaticRouteSourceCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54"
+}
