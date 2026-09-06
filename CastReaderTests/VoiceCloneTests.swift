@@ -2251,7 +2251,10 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(resetSucceeded)
         let resetVoice = try! XCTUnwrap(store.voice(withID: "vc_rename"))
         XCTAssertEqual(resetVoice.identity?.nameMode, .auto)
-        XCTAssertEqual(store.displayName(for: resetVoice), "我的声音 1")
+        XCTAssertEqual(
+            store.displayName(for: resetVoice),
+            String(format: AppLocalized("我的声音 %lld"), Int64(1))
+        )
     }
 
     @MainActor
