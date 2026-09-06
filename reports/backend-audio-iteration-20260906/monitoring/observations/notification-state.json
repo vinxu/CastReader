@@ -14,7 +14,8 @@
     "855d7b43d4f616193757",
     "14826f73872753709911",
     "75181424100861e4d767",
-    "a6fbedfbaf4a619cc70c"
+    "a6fbedfbaf4a619cc70c",
+    "7922259581349511cb5c"
   ],
   "alertKinds": [
     "android_1045_explain_pipeline_failed",
@@ -83,7 +84,7 @@
     "ios_player_initial_error_stage_and_nserror_unavailable"
   ],
   "lastDecision": "NOTIFY",
-  "lastDecisionReason": "New client Explain failure and confirmed source lifecycle gap, plus separately identified new blog-page timeout incident. Current observation is read-only and includes no fix or deployment.",
+  "lastDecisionReason": "One new iOS1.2.33 Kindle navigation failure after 2377 playback seconds. Later same-content playback reaches1800s but does not prove automatic failed-page recovery. Previous failures remain; no new production deployment.",
   "lastNewEventSummary": {
     "clientBuild": 53,
     "clientVersion": "1.2.33",
@@ -104,16 +105,16 @@
     "798ead151458637a016f",
     "855d7b43d4f616193757"
   ],
-  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/heartbeat-review.json",
+  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/heartbeat-review.json",
   "latestClientIterationReport": "reports/backend-audio-failure-analysis-20260906/iteration.md",
-  "latestClientTechnicalFailureCount": 15,
+  "latestClientTechnicalFailureCount": 16,
   "latestDirect5xxCount": 5,
-  "latestSnapshotDirectory": "observations/20260906T2151Z",
+  "latestSnapshotDirectory": "observations/20260906T2252Z",
   "latestVercelCore5xxCount": 4,
   "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps.",
   "nonAudio503Classification": "google_play_reconcile_incomplete",
-  "nonAudio503Count": 34,
-  "recordedAtUtc": "2026-09-06T22:05:45.980039+00:00",
+  "nonAudio503Count": 36,
+  "recordedAtUtc": "2026-09-06T23:02:11.959833+00:00",
   "schema": "castreader.audio-observation-alert-state.v1",
   "vercelCoreRequestKeys": [
     "e061a66c335ef6dece59",
@@ -141,8 +142,8 @@
     "bab861a2f6665c24c0c0"
   ],
   "latestDirectNoResponseCount": 15,
-  "latestProxyWindowEndUTC": "2026-09-06T21:51:47.178000+00:00",
-  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2151Z.json",
+  "latestProxyWindowEndUTC": "2026-09-06T22:52:47.445000+00:00",
+  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2252Z.json",
   "newAndroid1046Incident": {
     "eventKeys": [
       "14826f73872753709911",
@@ -160,7 +161,7 @@
   "knownBusinessBlockedEventKeys": [
     "aa6e8229818cfd9e4305"
   ],
-  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/heartbeat-review.json",
+  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/heartbeat-review.json",
   "knownBlog504RequestKeys": [
     "4fe0c35911b8e6fb74bd",
     "9a63dcd73bd7e95593ca",
@@ -197,5 +198,21 @@
     "fixed120SecondTimerEstablished": false,
     "underlyingExceptionRecovered": false,
     "clientToServerRequestJoinAvailable": false
+  },
+  "newIOS1233KindleIncident": {
+    "eventKey": "7922259581349511cb5c",
+    "occurredAtUtc": "2026-09-06T22:08:22.359000Z",
+    "playbackSeconds": 2377,
+    "laterSessionFirstAudioMs": 915,
+    "laterSessionMilestoneSeconds": 1800,
+    "automaticFailedPageRecoveryEstablished": false,
+    "underlyingNavigationExceptionRecovered": false,
+    "dispatchEvidenceRecovered": false,
+    "status": "new_incident_read_only_no_fix_deployment"
+  },
+  "latestReverseProxyGlobalAttribution": {
+    "unrepresentedAttempt1CompleteGroups": 31,
+    "reviewPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/vercel-proxy-join-summary.json",
+    "callerOrDeploymentIdentityEstablished": false
   }
 }

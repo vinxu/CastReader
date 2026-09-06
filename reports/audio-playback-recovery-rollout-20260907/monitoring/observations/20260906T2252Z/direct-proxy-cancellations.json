@@ -1,0 +1,30 @@
+{
+  "schema": "castreader.direct-proxy-cancellation-review.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "window": {
+    "endUTCExclusive": "2026-09-06T22:52:47.445000+00:00",
+    "productionActiveFromUTC": "2026-09-06T18:37:52.522573+00:00",
+    "startUTC": "2026-09-06T21:51:47.178000+00:00"
+  },
+  "rows": [],
+  "counts": {
+    "newDirectNoResponse": 0,
+    "exactProxyMatches": 0,
+    "newDirectHttpFailures": 0
+  },
+  "limitations": [
+    "Previously recorded no-response entries remain unknown downstream outcomes, not successes or HTTP errors."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/latest-acceptance.json",
+      "sha256": "f1aa67090da2ceaef444a337b1bf45a875242b503df877ed4272a1981d253f24"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2252Z.json",
+      "sha256": "665ca112882a9aa821f781adf167a953ed49849520b73697a4c5f0614fb06b9d"
+    }
+  ]
+}

@@ -1,0 +1,503 @@
+{
+  "boundaryRequests": [
+    {
+      "attempt": 1,
+      "classification": "no_proxy_completion_in_selected_slice_not_a_failure",
+      "globalHasNonemptyBodyAndFinished200": true,
+      "providerRequestStartUTC": "2026-09-06T22:52:46.913000Z",
+      "proxyFirstUTC": "2026-09-06T22:52:47.010285+00:00",
+      "proxyLastUTCInsideSlice": "2026-09-06T22:52:47.010935+00:00",
+      "proxyOutcomesInsideSlice": {},
+      "proxyPhasesInsideSlice": [
+        "admission",
+        "connect",
+        "inbound_body"
+      ],
+      "requestKey": "c5b3318f1096f6942411",
+      "vercelStatus": 200
+    }
+  ],
+  "collectedAtUTC": "2026-09-06T22:56:40.044440Z",
+  "collectionStartedUTC": "2026-09-06T22:53:50.757758Z",
+  "comparisonWithPreviousWindow": {
+    "currentAmbiguousJoinCount": 0,
+    "currentGlobalFailureCodes": {},
+    "meaning": "No new observed Global error or pinned-runtime drift. Known earlier Android and blog-page failures are not recounted by this preset-only query.",
+    "newObservedGlobalFailure": false,
+    "previousAmbiguousJoinCount": 3,
+    "previousGlobalFailureCodes": {},
+    "sameExpectedDeployment": true
+  },
+  "counts": {
+    "attemptStarts": {
+      "1": 1708
+    },
+    "bodiesWithByteCount": 1708,
+    "bodiesZeroBytes": 0,
+    "bodyBytesMax": 787741,
+    "bodyBytesMin": 10437,
+    "events": {
+      "attempt_start": 1708,
+      "request_finished": 1708,
+      "request_start": 1708,
+      "upstream_body": 1708,
+      "upstream_headers": 1708
+    },
+    "failureCodes": {},
+    "globalApplicationKeyIntersectionWithProxyCancelled": 0,
+    "join": {
+      "ambiguous": 0,
+      "attempts": 1708,
+      "matched": 1708,
+      "matchedProxyComplete": 1707
+    },
+    "matchedRequestsWithoutProxyCompletionInsideSlice": 1,
+    "proxyAttempt1AdmissionsUnrepresentedInReturnedGlobalCohort": 31,
+    "proxyCancellationKeys": 0,
+    "requestsMissingHeadersOrBodyOrFinish": 0,
+    "terminalCodes": {},
+    "vercelRequests": 1708,
+    "vercelStatuses": {
+      "200": 1708
+    }
+  },
+  "coverage": {
+    "proxyAnonymousRequestsTruncated": false,
+    "proxyCoverageComplete": true,
+    "proxyCoversWindow": true,
+    "proxyEventDetailTruncationIgnoredForJoin": false,
+    "proxyRuntimeVerified": true,
+    "vercel": {
+      "completeForReturnedRequestCohort": true,
+      "ingestionCompletenessVerified": false,
+      "issues": [],
+      "pagesRead": 35,
+      "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+      "parserCounts": {
+        "duplicateProviderRows": 34,
+        "duplicateSafeEvents": 170
+      },
+      "providerHasMoreRows": false,
+      "providerRowsRead": 1742,
+      "requestsMissingStartOrFinish": 0,
+      "structuredEventsObserved": true,
+      "tlsCertificateAndHostnameVerified": true,
+      "uniqueProviderRequests": 1708
+    }
+  },
+  "expectedDeployment": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+  "findings": [
+    "All 1,708 currently returned Global requests have provider200, attempt1, upstream headers, nonempty upstream body and request_finished. No cancellation, retry or failure code was returned.",
+    "All 1,708 key/attempt pairs match proxy without ambiguity; 1,707 have a complete event inside this proxy slice. One admission near the slice end has no completion inside it, while the Global request-start cohort includes finished200.",
+    "No proxy cancellation was recorded in this slice.",
+    "31 additional proxy attempt1 admissions completed but are not represented in the returned Global cohort; preserve that coverage distinction without inventing failures or asserting their deployment identity."
+  ],
+  "identity": {
+    "expectedModelIdentity": {
+      "releaseId": "20260907-kokoro-silent-separators-us-r134",
+      "releasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "slot": "blue",
+      "sourceRelativePath": "api/src/services/tts_service.py",
+      "sourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
+    },
+    "modelProcessComparisonSource": "runtime.identity.currentModel.supervisorProcess",
+    "proxyIdentityAndCoverageVerified": true,
+    "sameExpectedModelAsPreviousWindow": true,
+    "sameModelProcessAsPreviousWindow": true,
+    "sameProxyProcessAsPreviousWindow": true,
+    "unexpectedReleaseEvents": 0,
+    "unexpectedRoutingIdentityEvents": 0
+  },
+  "limitations": [
+    "Correlation uses application requestKey + attempt, never provider ID or timing alone.",
+    "Application key reuse across Vercel invocations or duplicate proxy groups is marked ambiguous.",
+    "The complete proxy anonymous request-group list is used; its truncated event-detail list is not the join source.",
+    "A matched complete upstream request is not evidence of audio decode quality or successful user playback.",
+    "Provider search/ingestion completeness remains unverified despite complete pagination and lifecycle records.",
+    "Provider request-start cohorts and proxy wall-clock event windows differ; nested completion can be outside the selected cohort end. Application elapsed milliseconds do not provide exact event UTC timestamps.",
+    "Observed body byte count and complete HTTP stages do not prove device receipt, audio decoding or completed playback.",
+    "The 31 reverse-unmatched proxy attempt1 records do not establish the fixed Global deployment, an HTTP failure or cross-region routing. Complete returned-cohort pagination is not complete platform ingestion."
+  ],
+  "productionModified": false,
+  "rawContentExported": false,
+  "readOnly": true,
+  "schema": "castreader.vercel-proxy-heartbeat-phase-summary.v1",
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260906T2252Z.json",
+      "sha256": "8c1494015b4c58339f29f61192b48c7b60618e70cd9e34343ffd9fd6349ed11f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2252Z.json",
+      "sha256": "665ca112882a9aa821f781adf167a953ed49849520b73697a4c5f0614fb06b9d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-proxy-join-model-r134-20260906T2252Z.json",
+      "sha256": "5a986c28a92fcfb14a25db2ef365300dab82203bff46adf94d91dc41828b4651"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/vercel-proxy-join-summary.json",
+      "sha256": "c8f35913d8d525e685f0d182dd6a11fd9adec98994697f669cf1cf14b85d20c7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2151Z.json",
+      "sha256": "22750c563fefda1cfa2c6be7a648543ebda9312723a9e90c63cea999d325a547"
+    }
+  ],
+  "synthesisStarted": false,
+  "unrepresentedProxyCohort": {
+    "classification": "cohort_coverage_difference_not_an_observed_audio_error",
+    "groups": [
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:36.180307+00:00",
+        "lastUTC": "2026-09-06T22:47:36.267527+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "88e324e297e01ffbcd10"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:36.550184+00:00",
+        "lastUTC": "2026-09-06T22:47:36.631738+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "c2c2da556fc6ee979043"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:37.887132+00:00",
+        "lastUTC": "2026-09-06T22:47:38.353986+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "e8ce54a1824648a628e6"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:38.918546+00:00",
+        "lastUTC": "2026-09-06T22:47:39.052248+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "ef5e6f733227334b3908"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:39.367458+00:00",
+        "lastUTC": "2026-09-06T22:47:39.487835+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "39df5ed013f50dc0b698"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:39.721648+00:00",
+        "lastUTC": "2026-09-06T22:47:39.858203+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "8507711d253d5ff76be3"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:40.115224+00:00",
+        "lastUTC": "2026-09-06T22:47:40.579618+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "23cf7226cf7d6cd1e4e5"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:40.279743+00:00",
+        "lastUTC": "2026-09-06T22:47:40.648301+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "c5f354e6ebc675dc2431"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:56.757354+00:00",
+        "lastUTC": "2026-09-06T22:47:56.838898+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "4a405dbdddf9bb2c3d04"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:47:58.011439+00:00",
+        "lastUTC": "2026-09-06T22:47:58.870796+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "11254fcfd530159c1c20"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:21.511059+00:00",
+        "lastUTC": "2026-09-06T22:48:21.930811+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "4cb2ff1e2e42b858e928"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:22.223869+00:00",
+        "lastUTC": "2026-09-06T22:48:22.821558+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "032b098e635bc9b660f1"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:22.263625+00:00",
+        "lastUTC": "2026-09-06T22:48:23.306241+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "b7154e9dcedc26af1976"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:23.094041+00:00",
+        "lastUTC": "2026-09-06T22:48:23.833672+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "afe6f5598616728e1c8a"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:23.538129+00:00",
+        "lastUTC": "2026-09-06T22:48:23.919412+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "1850a8d2ba20dd146f1b"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:26.535171+00:00",
+        "lastUTC": "2026-09-06T22:48:27.367504+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "b4f536ad3c229fe76dd6"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:28.017709+00:00",
+        "lastUTC": "2026-09-06T22:48:28.441718+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "9347f1772f97c43c8137"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:28.658122+00:00",
+        "lastUTC": "2026-09-06T22:48:29.039168+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "d10c108845004d917357"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:29.166336+00:00",
+        "lastUTC": "2026-09-06T22:48:29.567248+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "4e70834d7bbd9329d03f"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:29.869055+00:00",
+        "lastUTC": "2026-09-06T22:48:30.266656+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "9d7b40507767cbf9ad04"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:34.970418+00:00",
+        "lastUTC": "2026-09-06T22:48:36.428647+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "b6b0604b1e2f7502291d"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:35.622818+00:00",
+        "lastUTC": "2026-09-06T22:48:37.388965+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "d8eeacd9be13482712d8"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:55.543292+00:00",
+        "lastUTC": "2026-09-06T22:48:56.288673+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "d8a3d90d31b2dc80944f"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:57.016561+00:00",
+        "lastUTC": "2026-09-06T22:48:57.413353+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "b6f2e554a4f369aeb74f"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:57.071553+00:00",
+        "lastUTC": "2026-09-06T22:48:57.881471+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "dc61e7bc01f79006fc23"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:58.557895+00:00",
+        "lastUTC": "2026-09-06T22:48:58.953955+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "90b495d14a2c6fdeebed"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:48:59.778950+00:00",
+        "lastUTC": "2026-09-06T22:49:00.204333+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "30e9c90759f38a7209ca"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:49:00.513071+00:00",
+        "lastUTC": "2026-09-06T22:49:00.899140+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "995a856383c0bba380fc"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:49:01.151733+00:00",
+        "lastUTC": "2026-09-06T22:49:01.540508+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "2a8ea04d41b7af70bc4a"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:49:02.344199+00:00",
+        "lastUTC": "2026-09-06T22:49:02.729358+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "59a47789e577a1e80139"
+      },
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-06T22:49:07.358738+00:00",
+        "lastUTC": "2026-09-06T22:49:07.869231+00:00",
+        "outcomes": {
+          "complete": 1
+        },
+        "receivedEvents": 1,
+        "requestKey": "e973a7ef54623b8dc93c"
+      }
+    ],
+    "interpretation": "These 31 proxy attempt1 admissions have complete outcomes but no matching key/attempt in the currently returned deployment-pinned Global cohort. An attempt header alone does not establish Vercel deployment identity; source differences and provider ingestion/search omissions remain possible, not proven.",
+    "outcomes": {
+      "complete": 31
+    }
+  },
+  "window": {
+    "requestStartExclusiveUTC": "2026-09-06T22:52:47.445000Z",
+    "requestStartInclusiveUTC": "2026-09-06T21:51:47.178000Z"
+  }
+}

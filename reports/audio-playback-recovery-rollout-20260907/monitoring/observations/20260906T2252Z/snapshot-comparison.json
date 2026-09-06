@@ -1,0 +1,406 @@
+{
+  "schema": "castreader.audio-heartbeat-comparison.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "previousFinalWindow": {
+    "generatedAtUtc": "2026-09-06T21:52:41.458505Z",
+    "mobileEvents": 182,
+    "mobileDevices": 17,
+    "clientTechnicalFailures": 3,
+    "mobileOtherBlocked": 1,
+    "readStarts": {
+      "android": 15,
+      "ios": 24
+    },
+    "explainStarts": {
+      "android": 5
+    },
+    "sessionCohorts": {
+      "explain": {
+        "byPlatform": {
+          "android": {
+            "pairedFirstOutputByVoiceFamily": {
+              "unknown": 2
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 5,
+            "withEnd": 5,
+            "withFirstOutput": 2,
+            "withQuotaBlock": 0,
+            "withTechnicalFailure": 1,
+            "withoutEndInsideWindow": 0,
+            "withoutFirstOutputInsideWindow": 3
+          }
+        },
+        "pairedFirstOutputByVoiceFamily": {
+          "unknown": 2
+        },
+        "startEventsMissingSessionId": 0,
+        "startedSessions": 5,
+        "withEnd": 5,
+        "withFirstOutput": 2,
+        "withQuotaBlock": 0,
+        "withTechnicalFailure": 1,
+        "withoutEndInsideWindow": 0,
+        "withoutFirstOutputInsideWindow": 3
+      },
+      "read": {
+        "byPlatform": {
+          "android": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 14
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 15,
+            "withEnd": 14,
+            "withFirstOutput": 14,
+            "withQuotaBlock": 0,
+            "withTechnicalFailure": 2,
+            "withoutEndInsideWindow": 1,
+            "withoutFirstOutputInsideWindow": 1
+          },
+          "ios": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 20
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 24,
+            "withEnd": 18,
+            "withFirstOutput": 20,
+            "withQuotaBlock": 1,
+            "withTechnicalFailure": 0,
+            "withoutEndInsideWindow": 6,
+            "withoutFirstOutputInsideWindow": 4
+          }
+        },
+        "pairedFirstOutputByVoiceFamily": {
+          "preset": 34
+        },
+        "startEventsMissingSessionId": 0,
+        "startedSessions": 39,
+        "withEnd": 32,
+        "withFirstOutput": 34,
+        "withQuotaBlock": 1,
+        "withTechnicalFailure": 2,
+        "withoutEndInsideWindow": 7,
+        "withoutFirstOutputInsideWindow": 5
+      }
+    },
+    "combinedFirstOutputLatencyMs": {
+      "android": {
+        "max": 39719.0,
+        "p50": 1180.0,
+        "p95": 39719.0,
+        "samples": 16
+      },
+      "ios": {
+        "max": 1844.0,
+        "p50": 1107.0,
+        "p95": 1668.0,
+        "samples": 20
+      }
+    },
+    "directHttpStatuses": {
+      "200": 1884,
+      "no_response": 12
+    },
+    "globalCore5xx": 0,
+    "otherProject5xx": 29,
+    "vercelRouteStatusCounts": [
+      {
+        "count": 7,
+        "routeGroup": "other",
+        "status": "503"
+      },
+      {
+        "count": 22,
+        "routeGroup": "other",
+        "status": "504"
+      }
+    ],
+    "usProbeStatus": {
+      "healthy": 37
+    },
+    "cnProbeStatus": {
+      "healthy": 38
+    },
+    "routeMismatchEvents": 0,
+    "dataOrCoverageGaps": [],
+    "verdict": "fail"
+  },
+  "currentFinalWindow": {
+    "generatedAtUtc": "2026-09-06T22:54:02.578098Z",
+    "mobileEvents": 196,
+    "mobileDevices": 17,
+    "clientTechnicalFailures": 4,
+    "mobileOtherBlocked": 1,
+    "readStarts": {
+      "android": 15,
+      "ios": 26
+    },
+    "explainStarts": {
+      "android": 5
+    },
+    "sessionCohorts": {
+      "explain": {
+        "byPlatform": {
+          "android": {
+            "pairedFirstOutputByVoiceFamily": {
+              "unknown": 2
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 5,
+            "withEnd": 5,
+            "withFirstOutput": 2,
+            "withQuotaBlock": 0,
+            "withTechnicalFailure": 1,
+            "withoutEndInsideWindow": 0,
+            "withoutFirstOutputInsideWindow": 3
+          }
+        },
+        "pairedFirstOutputByVoiceFamily": {
+          "unknown": 2
+        },
+        "startEventsMissingSessionId": 0,
+        "startedSessions": 5,
+        "withEnd": 5,
+        "withFirstOutput": 2,
+        "withQuotaBlock": 0,
+        "withTechnicalFailure": 1,
+        "withoutEndInsideWindow": 0,
+        "withoutFirstOutputInsideWindow": 3
+      },
+      "read": {
+        "byPlatform": {
+          "android": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 14
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 15,
+            "withEnd": 14,
+            "withFirstOutput": 14,
+            "withQuotaBlock": 0,
+            "withTechnicalFailure": 2,
+            "withoutEndInsideWindow": 1,
+            "withoutFirstOutputInsideWindow": 1
+          },
+          "ios": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 21
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 26,
+            "withEnd": 20,
+            "withFirstOutput": 21,
+            "withQuotaBlock": 1,
+            "withTechnicalFailure": 1,
+            "withoutEndInsideWindow": 6,
+            "withoutFirstOutputInsideWindow": 5
+          }
+        },
+        "pairedFirstOutputByVoiceFamily": {
+          "preset": 35
+        },
+        "startEventsMissingSessionId": 0,
+        "startedSessions": 41,
+        "withEnd": 34,
+        "withFirstOutput": 35,
+        "withQuotaBlock": 1,
+        "withTechnicalFailure": 3,
+        "withoutEndInsideWindow": 7,
+        "withoutFirstOutputInsideWindow": 6
+      }
+    },
+    "combinedFirstOutputLatencyMs": {
+      "android": {
+        "max": 39719.0,
+        "p50": 1180.0,
+        "p95": 39719.0,
+        "samples": 16
+      },
+      "ios": {
+        "max": 1844.0,
+        "p50": 1107.0,
+        "p95": 1668.0,
+        "samples": 21
+      }
+    },
+    "directHttpStatuses": {
+      "200": 1884,
+      "no_response": 12
+    },
+    "globalCore5xx": 0,
+    "otherProject5xx": 31,
+    "vercelRouteStatusCounts": [
+      {
+        "count": 9,
+        "routeGroup": "other",
+        "status": "503"
+      },
+      {
+        "count": 22,
+        "routeGroup": "other",
+        "status": "504"
+      }
+    ],
+    "usProbeStatus": {
+      "healthy": 49
+    },
+    "cnProbeStatus": {
+      "healthy": 50
+    },
+    "routeMismatchEvents": 0,
+    "dataOrCoverageGaps": [],
+    "verdict": "fail"
+  },
+  "currentHistoricalWindow": {
+    "generatedAtUtc": "2026-09-06T22:54:02.596319Z",
+    "mobileEvents": 789,
+    "mobileDevices": 38,
+    "clientTechnicalFailures": 16,
+    "mobileOtherBlocked": 1,
+    "readStarts": {
+      "android": 59,
+      "ios": 111
+    },
+    "explainStarts": {
+      "android": 13,
+      "ios": 2
+    },
+    "sessionCohorts": {
+      "explain": {
+        "byPlatform": {
+          "android": {
+            "pairedFirstOutputByVoiceFamily": {
+              "unknown": 7
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 13,
+            "withEnd": 12,
+            "withFirstOutput": 7,
+            "withQuotaBlock": 3,
+            "withTechnicalFailure": 3,
+            "withoutEndInsideWindow": 1,
+            "withoutFirstOutputInsideWindow": 6
+          },
+          "ios": {
+            "pairedFirstOutputByVoiceFamily": {
+              "unknown": 1
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 2,
+            "withEnd": 2,
+            "withFirstOutput": 1,
+            "withQuotaBlock": 0,
+            "withTechnicalFailure": 0,
+            "withoutEndInsideWindow": 0,
+            "withoutFirstOutputInsideWindow": 1
+          }
+        },
+        "pairedFirstOutputByVoiceFamily": {
+          "unknown": 8
+        },
+        "startEventsMissingSessionId": 0,
+        "startedSessions": 15,
+        "withEnd": 14,
+        "withFirstOutput": 8,
+        "withQuotaBlock": 3,
+        "withTechnicalFailure": 3,
+        "withoutEndInsideWindow": 1,
+        "withoutFirstOutputInsideWindow": 7
+      },
+      "read": {
+        "byPlatform": {
+          "android": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 55
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 59,
+            "withEnd": 52,
+            "withFirstOutput": 55,
+            "withQuotaBlock": 0,
+            "withTechnicalFailure": 5,
+            "withoutEndInsideWindow": 7,
+            "withoutFirstOutputInsideWindow": 4
+          },
+          "ios": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 103
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 111,
+            "withEnd": 78,
+            "withFirstOutput": 103,
+            "withQuotaBlock": 3,
+            "withTechnicalFailure": 6,
+            "withoutEndInsideWindow": 33,
+            "withoutFirstOutputInsideWindow": 8
+          }
+        },
+        "pairedFirstOutputByVoiceFamily": {
+          "preset": 158
+        },
+        "startEventsMissingSessionId": 0,
+        "startedSessions": 170,
+        "withEnd": 130,
+        "withFirstOutput": 158,
+        "withQuotaBlock": 3,
+        "withTechnicalFailure": 11,
+        "withoutEndInsideWindow": 40,
+        "withoutFirstOutputInsideWindow": 12
+      }
+    },
+    "combinedFirstOutputLatencyMs": {
+      "android": {
+        "max": 39719.0,
+        "p50": 1488.0,
+        "p95": 16203.0,
+        "samples": 62
+      },
+      "ios": {
+        "max": 23077.0,
+        "p50": 1562.0,
+        "p95": 4752.0,
+        "samples": 104
+      }
+    },
+    "directHttpStatuses": {
+      "200": 7870,
+      "400": 3,
+      "502": 1,
+      "504": 4,
+      "no_response": 15
+    },
+    "globalCore5xx": 4,
+    "otherProject5xx": 58,
+    "vercelRouteStatusCounts": [
+      {
+        "count": 36,
+        "routeGroup": "other",
+        "status": "503"
+      },
+      {
+        "count": 22,
+        "routeGroup": "other",
+        "status": "504"
+      },
+      {
+        "count": 4,
+        "routeGroup": "tts",
+        "status": "504"
+      }
+    ],
+    "usProbeStatus": {
+      "healthy": 207
+    },
+    "cnProbeStatus": {
+      "healthy": 207
+    },
+    "routeMismatchEvents": 0,
+    "dataOrCoverageGaps": [],
+    "verdict": "fail"
+  },
+  "newDirectNoResponseKeys": []
+}
