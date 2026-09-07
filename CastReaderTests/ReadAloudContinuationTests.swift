@@ -305,6 +305,90 @@ final class ReadAloudContinuationTests: XCTestCase {
 
 @MainActor
 final class AudioStreamingPauseIntentTests: XCTestCase {
+    func testSeekingBackAfterCompletedQueueReplaysCurrentItemAndCompletesAgain() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let player = AudioPlayerService(testTemporaryRoot: root)
+        defer { player.stop(); try? FileManager.default.removeItem(at: root) }
+        let token = player.claimPlaybackSession(owner: .readAloud)
+        var completions = 0
+        player.onPlaybackComplete = { completions += 1 }
+        XCTAssertTrue(player.loadSegments([AudioSegment(
+            paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadAloudHTTPFixture.wav(duration: 0.4),
+            timestamps: [], duration: 0.4, text: "Replay this sentence", isWavFormat: true
+        )], session: token))
+        for _ in 0..<150 where completions == 0 { try await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertEqual(completions, 1)
+        XCTAssertTrue(player.pause(session: token))
+        XCTAssertTrue(player.seek(to: 0.1, session: token))
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertFalse(player.isPlaying, "Seeking must preserve an explicit Pause")
+        XCTAssertTrue(player.play(session: token))
+        for _ in 0..<150 where completions < 2 { try await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertEqual(completions, 2, "A completed sentence must be replayable after seeking back")
+        XCTAssertTrue(player.play(session: token))
+        XCTAssertEqual(completions, 2, "The replay must deliver its completion only once")
+    }
+
+    func testSeekingBackAtStreamingBoundaryReplaysPrefixBeforeQueuedTail() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let player = AudioPlayerService(testTemporaryRoot: root)
+        defer { player.stop(); try? FileManager.default.removeItem(at: root) }
+        let token = player.claimPlaybackSession(owner: .readAloud)
+        XCTAssertTrue(player.clearQueue(session: token))
+        XCTAssertTrue(player.setMoreSegmentsExpected(true, session: token))
+        func segment(_ index: Int) -> AudioSegment {
+            AudioSegment(paragraphIndex: 0, segmentIndex: index,
+                         audioData: ReadAloudHTTPFixture.wav(duration: 0.4),
+                         timestamps: [], duration: 0.4, text: "Part \(index)", isWavFormat: true)
+        }
+        var completed: [Int] = []
+        player.onSegmentComplete = { completed.append(player.currentSegment!.segmentIndex) }
+        XCTAssertTrue(player.loadSegment(segment(0), session: token))
+        for _ in 0..<150 where !player.isWaitingForNextSegment { try await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertTrue(player.isWaitingForNextSegment)
+        XCTAssertTrue(player.pause(session: token))
+        XCTAssertTrue(player.skipBackward(seconds: 15, session: token))
+        XCTAssertFalse(player.isWaitingForNextSegment, "The user now owns a replay of the current item")
+        XCTAssertTrue(player.loadSegment(segment(1), session: token))
+        XCTAssertTrue(player.finishStreamingProducer(session: token))
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertFalse(player.isPlaying)
+        XCTAssertEqual(completed, [0])
+        XCTAssertTrue(player.play(session: token))
+        for _ in 0..<150 where completed.count < 3 { try await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertEqual(completed, [0, 0, 1], "Back must replay the prefix before consuming the late tail")
+    }
+
+    func testImmediatePlayAfterRewindWaitsForTheRequestedPosition() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let player = AudioPlayerService(testTemporaryRoot: root)
+        defer { player.stop(); try? FileManager.default.removeItem(at: root) }
+        let token = player.claimPlaybackSession(owner: .readAloud)
+        var completions = 0
+        player.onPlaybackComplete = { completions += 1 }
+        XCTAssertTrue(player.loadSegments([AudioSegment(
+            paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadAloudHTTPFixture.wav(duration: 1),
+            timestamps: [], duration: 1, text: "Resume near the end", isWavFormat: true
+        )], session: token))
+        for _ in 0..<150 where completions == 0 { try await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertEqual(completions, 1)
+        XCTAssertTrue(player.pause(session: token))
+        var playbackStarts: [Double] = []
+        let observation = player.$isPlaying.filter { $0 }.sink { _ in playbackStarts.append(player.currentTime) }
+        defer { observation.cancel() }
+        XCTAssertTrue(player.seek(to: 0.75, session: token))
+        XCTAssertTrue(player.play(session: token))
+        for _ in 0..<150 where completions < 2 { try await Task.sleep(nanoseconds: 20_000_000) }
+        XCTAssertEqual(completions, 2)
+        XCTAssertFalse(playbackStarts.isEmpty)
+        XCTAssertTrue(playbackStarts.allSatisfy { $0 >= 0.70 }, "Play must not emit the sentence start before restoration: \(playbackStarts)")
+        XCTAssertTrue(player.seek(to: 0.1, session: token))
+        XCTAssertTrue(player.clearQueue(session: token))
+        XCTAssertFalse(player.play(session: token), "Cancelling restoration must not leave an empty queue waiting for a seek")
+    }
+
     func testLateStreamingTailHonorsPauseAndResumeStartsTailOnce() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let player = AudioPlayerService(testTemporaryRoot: root)

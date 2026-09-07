@@ -1402,6 +1402,9 @@ class AudioPlayerService: NSObject, ObservableObject {
             if !moreSegmentsExpected { publishDrainedQueueCompletion() }
             return true
         }
+        // A restored/replayed item must reach its requested position before
+        // Play can emit audio. The readiness callback consumes this intent.
+        if isSeekingInitialPosition { return true }
         if segmentsQueue.isEmpty, moreSegmentsExpected { return true }
         if playerItem?.status == .failed || player?.status == .failed
             || (currentTempFileURL.map { !FileManager.default.fileExists(atPath: $0.path) } ?? false) {
@@ -1534,6 +1537,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         isExplicitlyPaused = false
         currentItemDrained = false
         queueCompletionDelivered = false
+        isSeekingInitialPosition = false
         recoveryBudget = AudioPlaybackRecoveryBudget()
         lastPlaybackFailureCode = nil
         progressEvidence = AudioPlaybackProgressEvidence()
@@ -1564,6 +1568,21 @@ class AudioPlayerService: NSObject, ObservableObject {
         session token: AudioPlaybackSessionToken? = nil
     ) -> Bool {
         guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
+        guard time.isFinite else { return false }
+        if currentItemDrained, duration.isFinite, duration > 0, time < duration,
+           segmentsQueue.indices.contains(currentSegmentIndex) {
+            // A user rewind is a new playback of this item, even while the
+            // producer is preparing its tail. Rebuild through the existing
+            // position-restoration path so old end notifications cannot mark
+            // the replay drained or let a late segment bypass it.
+            let shouldResume = playbackRequested && !isExplicitlyPaused && !playbackSuspendedByInterruption
+            isWaitingForNextSegment = false
+            return playSegment(
+                at: currentSegmentIndex,
+                initialProgress: max(0, time) / duration,
+                autoPlayWhenReady: shouldResume
+            )
+        }
         progressEvidence = AudioPlaybackProgressEvidence()
         hasAudibleProgress = false
         let cmTime = CMTime(seconds: time, preferredTimescale: 600)

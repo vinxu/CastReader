@@ -20,6 +20,8 @@ MARKERS = [
     "-CastReaderGoogleBooksBlankFixture", "-CastReaderGoogleBooksPopupFixture",
     "castreader.kobo.hundred-shelf-fixture.v1",
     "castreader.googlebooks.hundred-shelf-fixture.v1",
+    "-CastReaderKindleSettingsFixture", "KindleReadingSettingsFixtureView",
+    "-CastReaderFixtureAppearance", "kindleFixtureColorScheme",
 ]
 
 def inspect(root):
