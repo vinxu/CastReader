@@ -1,0 +1,372 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "rows": [
+    {
+      "modelRequestKey": "8146d9d06f3582698dfa",
+      "diagnostics": [
+        {
+          "atUTC": "2026-09-07T09:06:22.622146+00:00",
+          "stage": "english_g2p_recovered",
+          "requestKey": "8146d9d06f3582698dfa",
+          "causes": []
+        }
+      ],
+      "proxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T09:06:22.307507+00:00",
+          "flightKeys": [
+            "8146d9d06f3582698dfa"
+          ],
+          "lastUTC": "2026-09-07T09:06:22.895450+00:00",
+          "outcomes": {
+            "complete": 1
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 1,
+          "requestKey": "888709fdb80dbbe5ea62"
+        }
+      ],
+      "globalRequests": [
+        {
+          "vercelRequestKey": "9a25d4886c56ab255cd4",
+          "requestStartUTC": "2026-09-07T09:06:22.114000Z",
+          "path": "/api/captioned_speech_partly",
+          "events": [
+            {
+              "event": "request_start",
+              "stage": "request",
+              "requestKey": "888709fdb80dbbe5ea62",
+              "attempt": 0,
+              "elapsedMs": 0,
+              "budgetMs": 28000,
+              "attemptTimeoutMs": 20000,
+              "region": "global"
+            },
+            {
+              "event": "attempt_start",
+              "stage": "headers",
+              "requestKey": "888709fdb80dbbe5ea62",
+              "attempt": 1,
+              "elapsedMs": 0,
+              "attemptTimeoutMs": 20000,
+              "region": "global"
+            },
+            {
+              "event": "upstream_headers",
+              "stage": "headers",
+              "requestKey": "888709fdb80dbbe5ea62",
+              "attempt": 1,
+              "elapsedMs": 595,
+              "attemptElapsedMs": 595,
+              "region": "global",
+              "status": 200
+            },
+            {
+              "event": "upstream_body",
+              "stage": "body",
+              "requestKey": "888709fdb80dbbe5ea62",
+              "attempt": 1,
+              "elapsedMs": 627,
+              "bodyBytes": 278453,
+              "attemptElapsedMs": 627,
+              "region": "global",
+              "status": 200
+            },
+            {
+              "event": "request_finished",
+              "stage": "validation",
+              "requestKey": "888709fdb80dbbe5ea62",
+              "attempt": 1,
+              "elapsedMs": 628,
+              "region": "global",
+              "status": 200
+            }
+          ],
+          "status": 200,
+          "requestDurationMs": 1588,
+          "applicationRequestKeys": [
+            "888709fdb80dbbe5ea62"
+          ],
+          "hasRequestStart": true,
+          "hasRequestFinished": true
+        }
+      ],
+      "exactProxyEvents": [],
+      "limitations": [
+        "Proxy event detail is capped; complete anonymous request groups are retained.",
+        "Complete HTTP body delivery does not independently prove audio decode or user playback completion."
+      ]
+    },
+    {
+      "modelRequestKey": "c26ea0bf406bd8bf04ed",
+      "diagnostics": [
+        {
+          "atUTC": "2026-09-07T08:39:35.421007+00:00",
+          "stage": "source_frontend_unavailable",
+          "requestKey": "c26ea0bf406bd8bf04ed",
+          "causes": [
+            {
+              "type": "RuntimeError",
+              "frames": [
+                {
+                  "file": "kokoro_v1.py",
+                  "line": 947,
+                  "function": "generate"
+                },
+                {
+                  "file": "compatible_english_timestamps.py",
+                  "line": 91,
+                  "function": "prepare_english_chunks"
+                }
+              ]
+            },
+            {
+              "type": "ValueError",
+              "frames": [
+                {
+                  "file": "compatible_english_timestamps.py",
+                  "line": 89,
+                  "function": "prepare_english_chunks"
+                },
+                {
+                  "file": "en.py",
+                  "line": 683,
+                  "function": "__call__"
+                },
+                {
+                  "file": "en.py",
+                  "line": 595,
+                  "function": "retokenize"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "atUTC": "2026-09-07T08:39:35.437675+00:00",
+          "stage": "english_g2p_recovered",
+          "requestKey": "c26ea0bf406bd8bf04ed",
+          "causes": []
+        }
+      ],
+      "proxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T08:39:35.122656+00:00",
+          "flightKeys": [
+            "c26ea0bf406bd8bf04ed"
+          ],
+          "lastUTC": "2026-09-07T08:39:35.635430+00:00",
+          "outcomes": {
+            "complete": 1
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 1,
+          "requestKey": "416f276a86cf446474fb"
+        }
+      ],
+      "globalRequests": [
+        {
+          "vercelRequestKey": "32f58e3981e8a687dcc3",
+          "requestStartUTC": "2026-09-07T08:39:34.953000Z",
+          "path": "/api/captioned_speech_partly",
+          "events": [
+            {
+              "event": "request_start",
+              "stage": "request",
+              "requestKey": "416f276a86cf446474fb",
+              "attempt": 0,
+              "elapsedMs": 0,
+              "budgetMs": 28000,
+              "attemptTimeoutMs": 20000,
+              "region": "global"
+            },
+            {
+              "event": "attempt_start",
+              "stage": "headers",
+              "requestKey": "416f276a86cf446474fb",
+              "attempt": 1,
+              "elapsedMs": 0,
+              "attemptTimeoutMs": 20000,
+              "region": "global"
+            },
+            {
+              "event": "upstream_headers",
+              "stage": "headers",
+              "requestKey": "416f276a86cf446474fb",
+              "attempt": 1,
+              "elapsedMs": 526,
+              "attemptElapsedMs": 526,
+              "region": "global",
+              "status": 200
+            },
+            {
+              "event": "upstream_body",
+              "stage": "body",
+              "requestKey": "416f276a86cf446474fb",
+              "attempt": 1,
+              "elapsedMs": 555,
+              "bodyBytes": 193652,
+              "attemptElapsedMs": 555,
+              "region": "global",
+              "status": 200
+            },
+            {
+              "event": "request_finished",
+              "stage": "validation",
+              "requestKey": "416f276a86cf446474fb",
+              "attempt": 1,
+              "elapsedMs": 556,
+              "region": "global",
+              "status": 200
+            }
+          ],
+          "status": 200,
+          "requestDurationMs": 1477,
+          "applicationRequestKeys": [
+            "416f276a86cf446474fb"
+          ],
+          "hasRequestStart": true,
+          "hasRequestFinished": true
+        }
+      ],
+      "exactProxyEvents": [
+        {
+          "atUTC": "2026-09-07T08:39:35.122836+00:00",
+          "attempt": 1,
+          "bodyBytes": 309,
+          "flightKey": "c26ea0bf406bd8bf04ed",
+          "phase": "admission",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "requestKey": "416f276a86cf446474fb",
+          "revision": 10,
+          "slot": "green",
+          "stage": "flight_created",
+          "timeUnix": 1788770375.1228359,
+          "upstreamRequestKey": "c26ea0bf406bd8bf04ed"
+        },
+        {
+          "atUTC": "2026-09-07T08:39:35.123011+00:00",
+          "attempt": 1,
+          "flightKey": "c26ea0bf406bd8bf04ed",
+          "phase": "connect",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "requestKey": "416f276a86cf446474fb",
+          "revision": 10,
+          "slot": "green",
+          "stage": "upstream_connect_started",
+          "timeUnix": 1788770375.1230106,
+          "upstreamRequestKey": "c26ea0bf406bd8bf04ed"
+        },
+        {
+          "atUTC": "2026-09-07T08:39:35.123314+00:00",
+          "attempt": 1,
+          "connectMs": 0.302,
+          "flightKey": "c26ea0bf406bd8bf04ed",
+          "phase": "connect",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "requestKey": "416f276a86cf446474fb",
+          "revision": 10,
+          "slot": "green",
+          "stage": "upstream_connected",
+          "timeUnix": 1788770375.1233141,
+          "upstreamRequestKey": "c26ea0bf406bd8bf04ed"
+        },
+        {
+          "atUTC": "2026-09-07T08:39:35.634797+00:00",
+          "attempt": 1,
+          "elapsedMs": 511.903,
+          "flightKey": "c26ea0bf406bd8bf04ed",
+          "phase": "response_headers",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "requestKey": "416f276a86cf446474fb",
+          "revision": 10,
+          "slot": "green",
+          "stage": "upstream_headers",
+          "status": 200,
+          "timeUnix": 1788770375.6347973,
+          "upstreamRequestKey": "c26ea0bf406bd8bf04ed"
+        },
+        {
+          "atUTC": "2026-09-07T08:39:35.635057+00:00",
+          "attempt": 1,
+          "elapsedMs": 512.168,
+          "flightKey": "c26ea0bf406bd8bf04ed",
+          "phase": "response_body",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "requestKey": "416f276a86cf446474fb",
+          "revision": 10,
+          "slot": "green",
+          "stage": "upstream_first_body",
+          "timeUnix": 1788770375.6350574,
+          "upstreamRequestKey": "c26ea0bf406bd8bf04ed"
+        },
+        {
+          "atUTC": "2026-09-07T08:39:35.635259+00:00",
+          "attempt": 1,
+          "elapsedMs": 512.37,
+          "flightKey": "c26ea0bf406bd8bf04ed",
+          "peakReplayBytes": 193652,
+          "phase": "response_complete",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "requestKey": "416f276a86cf446474fb",
+          "responseBytes": 193652,
+          "revision": 10,
+          "slot": "green",
+          "stage": "upstream_complete",
+          "status": 200,
+          "timeUnix": 1788770375.6352592,
+          "upstreamRequestKey": "c26ea0bf406bd8bf04ed"
+        },
+        {
+          "atUTC": "2026-09-07T08:39:35.635430+00:00",
+          "attempt": 1,
+          "elapsedMs": 512.773,
+          "flightKey": "c26ea0bf406bd8bf04ed",
+          "outcome": "complete",
+          "phase": "completion",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "requestKey": "416f276a86cf446474fb",
+          "revision": 10,
+          "slot": "green",
+          "stage": "request_finished",
+          "status": 200,
+          "timeUnix": 1788770375.6354303,
+          "upstreamRequestKey": "c26ea0bf406bd8bf04ed"
+        }
+      ],
+      "limitations": [
+        "Proxy event detail is capped; complete anonymous request groups are retained.",
+        "Complete HTTP body delivery does not independently prove audio decode or user playback completion."
+      ]
+    }
+  ]
+}

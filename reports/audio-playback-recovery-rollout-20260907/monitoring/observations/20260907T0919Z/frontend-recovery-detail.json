@@ -1,0 +1,64 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "rows": [
+    {
+      "atUTC": "2026-09-07T08:39:35.421007+00:00",
+      "stage": "source_frontend_unavailable",
+      "requestKey": "c26ea0bf406bd8bf04ed",
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "kokoro_v1.py",
+              "line": 947,
+              "function": "generate"
+            },
+            {
+              "file": "compatible_english_timestamps.py",
+              "line": 91,
+              "function": "prepare_english_chunks"
+            }
+          ]
+        },
+        {
+          "type": "ValueError",
+          "frames": [
+            {
+              "file": "compatible_english_timestamps.py",
+              "line": 89,
+              "function": "prepare_english_chunks"
+            },
+            {
+              "file": "en.py",
+              "line": 683,
+              "function": "__call__"
+            },
+            {
+              "file": "en.py",
+              "line": 595,
+              "function": "retokenize"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "atUTC": "2026-09-07T08:39:35.437675+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "c26ea0bf406bd8bf04ed",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T09:06:22.622146+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "8146d9d06f3582698dfa",
+      "causes": []
+    }
+  ],
+  "scope": "Fixed optional source-bookkeeping recovery diagnostics only; no text or exception messages.",
+  "collectorSha256": "e6136c627889314440d214f802ea3c44d8e65b06da14c2832eb97d4f90b91ac5"
+}

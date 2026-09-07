@@ -1,0 +1,57 @@
+{
+  "schema": "castreader.direct-pid-window.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T09:20:37.783440+00:00",
+  "window": {
+    "startUTC": "2026-09-07T08:18:21.015000Z",
+    "endUTCExclusive": "2026-09-07T09:19:51.483000Z"
+  },
+  "journalRows": 88,
+  "parseErrors": 0,
+  "groups": [
+    {
+      "pid": "596392",
+      "statusCounts": {
+        "200": 2
+      },
+      "policyCounts": {
+        "legacy": 2
+      },
+      "requests": 2,
+      "firstCompletionUTC": "2026-09-07T08:18:23.718395Z",
+      "lastCompletionUTC": "2026-09-07T08:18:31.808472Z",
+      "incompleteBlocks": 0,
+      "malformedRequests": 0,
+      "duplicateRequestKeys": 0
+    }
+  ],
+  "requests": [
+    {
+      "requestKey": "49902ef3df99af7f9c76",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T08:18:23.718395Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 562,
+      "attempts": 1
+    },
+    {
+      "requestKey": "bf416d64c320b812332a",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T08:18:31.808472Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 450,
+      "attempts": 1
+    }
+  ],
+  "limitations": [
+    "Process identity is bound to separately verified release receipts.",
+    "This unit excludes the private candidate unit and its brief public handoff interval.",
+    "Journal timestamps are completion/log times; they are not request-start times."
+  ],
+  "parserSourceSha256": "f6a1c14271f69096e2a18af9d28960eba461bb88d2a070b9a631aa4056fa9acd"
+}
