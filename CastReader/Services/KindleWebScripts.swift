@@ -687,7 +687,7 @@ enum KindleWebScripts {
     /// Kindle localizes visible labels per marketplace. These helpers deliberately
     /// score stable DOM semantics first (`data-*`, id/class, role, geometry).
     /// Text in CastReader's eight non-Chinese app languages is only a fallback.
-    private static let uiSemanticHelpers = """
+    static let uiSemanticHelpers = """
       function crKindleUINorm(value) {
         try {
           value = String(value || '').normalize('NFKC');
@@ -5151,7 +5151,7 @@ enum KindleWebScripts {
     static let pageCaptureBootstrap = """
     (function() {
       \(uiSemanticHelpers)
-      var crKindleInstallVersion = 41;
+      var crKindleInstallVersion = 43;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -5991,8 +5991,8 @@ enum KindleWebScripts {
       //
       // 现在：fiber 捕获一旦成功就把 action 闭包缓存到 window——这些闭包指向
       // 阅读器控制器，组件从 DOM 卸载后依然可调。翻页按「新鲜捕获 → 缓存能力
-      // → 键盘事件」三级降级，只有全部失败才报错；键盘一级完全不依赖任何
-      // DOM 元素的存在。
+      // → 键盘事件」三级发现降级。动作一旦开始调用，即使抛错也不能继续
+      // 派发：它可能已经翻页。原生侧随后依据可见页证据处理不确定结果。
       function crKindleResolveProgression(props, fallbackProgression) {
         var progression = String((props && props.pageProgressionDirection) || '').toLowerCase();
         if (progression === 'rtl' || progression === 'ltr') {
@@ -6018,11 +6018,12 @@ enum KindleWebScripts {
           };
         } catch (_) {}
       }
-      function crKindleDispatchPairedAction(props, progression, direction) {
+      function crKindleDispatchPairedAction(props, progression, direction, onDispatch) {
         var next = String(direction || 'next').toLowerCase() !== 'previous';
         var useLeft = next ? progression === 'rtl' : progression !== 'rtl';
         var action = useLeft ? props.leftAction : props.rightAction;
         if (typeof action !== 'function') throw new Error('paired-action-missing');
+        onDispatch(useLeft ? 'leftAction' : 'rightAction');
         action.call(props);
         return useLeft ? 'leftAction' : 'rightAction';
       }
@@ -6040,6 +6041,7 @@ enum KindleWebScripts {
       window.__crKindleSemanticPageTurn = function(direction, fallbackProgression) {
         var attempts = [];
         var fingerprint = '';
+        var dispatched = null;
         try { fingerprint = crKindleVisiblePixelFingerprint(currentReadingCandidate()); } catch (_) {}
         function success(strategy, semanticAction, progression, extra) {
           var payload = {
@@ -6050,19 +6052,32 @@ enum KindleWebScripts {
           if (extra) for (var k in extra) payload[k] = extra[k];
           return JSON.stringify(payload);
         }
+        function dispatchedFailure(error) {
+          return JSON.stringify({
+            ok: false, reason: 'semantic-action-threw',
+            strategy: dispatched.strategy, semanticAction: dispatched.semanticAction,
+            progressionDirection: dispatched.progression.value,
+            progressionSource: dispatched.progression.source,
+            dispatchCount: 1, dispatchUncertain: true,
+            tried: attempts.join('|'), beforeFingerprint: fingerprint
+          });
+        }
         // 1) 新鲜捕获：组件在场时是最权威的一级，成功即刷新缓存。
         try {
           var match = crKindleFindPaginationActions();
           if (match) {
             var progression = crKindleResolveProgression(match.props, fallbackProgression);
             crKindleCacheTurnCapability(match, progression.value);
-            var semanticAction = crKindleDispatchPairedAction(match.props, progression.value, direction);
+            var semanticAction = crKindleDispatchPairedAction(match.props, progression.value, direction, function(action) {
+              dispatched = { strategy: 'react-paired-action', semanticAction: action, progression: progression };
+            });
             return success('react-paired-action', semanticAction, progression, {
               component: match.component, fiberDepth: match.fiberDepth, propsSource: match.propsSource
             });
           }
           attempts.push('fiber-unavailable');
         } catch (eFresh) {
+          if (dispatched) return dispatchedFailure(eFresh);
           attempts.push('fiber-error:' + String(eFresh && eFresh.message || eFresh).slice(0, 60));
         }
         // 2) 缓存能力：组件已从 DOM 卸载，但捕获过的闭包仍指向阅读器控制器。
@@ -6070,7 +6085,9 @@ enum KindleWebScripts {
           var cached = window.__crKindleTurnCapability;
           if (cached && cached.props) {
             var cachedProgression = crKindleResolveProgression(cached.props, fallbackProgression);
-            var cachedAction = crKindleDispatchPairedAction(cached.props, cachedProgression.value, direction);
+            var cachedAction = crKindleDispatchPairedAction(cached.props, cachedProgression.value, direction, function(action) {
+              dispatched = { strategy: 'react-cached-action', semanticAction: action, progression: cachedProgression };
+            });
             return success('react-cached-action', cachedAction, cachedProgression, {
               component: cached.component,
               capabilityAgeMs: Date.now() - (cached.capturedAt || Date.now())
@@ -6078,6 +6095,7 @@ enum KindleWebScripts {
           }
           attempts.push('no-cached-capability');
         } catch (eCached) {
+          if (dispatched) return dispatchedFailure(eCached);
           attempts.push('cached-error:' + String(eCached && eCached.message || eCached).slice(0, 60));
         }
         // 3) 键盘事件：不依赖任何 DOM 元素的存在，Amazon 怎么改版都拦不住。
@@ -6091,10 +6109,14 @@ enum KindleWebScripts {
           if (ae && ae !== document.body && ae !== document.documentElement && ae.blur) ae.blur();
           var opts = { key: keyName, code: keyName, keyCode: keyCode, which: keyCode, bubbles: true, cancelable: true };
           var target = document.activeElement || document.body || document;
-          target.dispatchEvent(new KeyboardEvent('keydown', opts));
-          target.dispatchEvent(new KeyboardEvent('keyup', opts));
+          var keyDown = new KeyboardEvent('keydown', opts);
+          var keyUp = new KeyboardEvent('keyup', opts);
+          dispatched = { strategy: 'keyboard-fallback', semanticAction: keyName, progression: kbProgression };
+          target.dispatchEvent(keyDown);
+          target.dispatchEvent(keyUp);
           return success('keyboard-fallback', keyName, kbProgression, {});
         } catch (eKb) {
+          if (dispatched) return dispatchedFailure(eKb);
           attempts.push('keyboard-error:' + String(eKb && eKb.message || eKb).slice(0, 60));
         }
         return JSON.stringify({
@@ -6621,22 +6643,14 @@ enum KindleWebScripts {
             w = nw * coverScale; h = nh * coverScale;
           } else if (fit === 'none') {
             w = nw; h = nh;
-          } else {
-            // Kindle pages should not distort the page bitmap. If the element
-            // box aspect visibly disagrees with the blob aspect, use the
-            // rendered width as the source of truth and recover height from
-            // the image aspect to avoid cumulative Y-axis drift.
-            var boxAspect = r.height / Math.max(1, r.width);
-            var imgAspect = nh / Math.max(1, nw);
-            if (Math.abs(boxAspect - imgAspect) / Math.max(0.001, imgAspect) > 0.025) {
-              h = r.width * imgAspect;
-            }
           }
+          // fill really stretches into the element box. Reconstructing its
+          // natural aspect invents pixels WebKit did not paint and shifts OCR
+          // Y coordinates (a 300px box was previously reported as 600px).
           var pos = objectPositionOffset(st.objectPosition || '50% 50%', r.width, r.height, w, h);
           return rectFromLeftTopWidthHeight(r.left + pos.x, r.top + pos.y, w, h);
         } catch (e) {
-          var aspect = nh / Math.max(1, nw);
-          return rectFromLeftTopWidthHeight(r.left, r.top, r.width, r.width * aspect);
+          return r;
         }
       }
       function visibleArea(rect) {
@@ -9343,6 +9357,42 @@ enum KindleWebScripts {
       function crKindleCurrentGeometryCandidate() {
         return currentReadingCandidate() || bestCandidate();
       }
+      function crKindlePresentationEvidence(current, viewportW, viewportH) {
+        // Only complete, painted page images can justify a native presentation
+        // fit. CSS clipping cannot be repaired by scaling the WKWebView.
+        var viewport = { left:0, top:0, right:viewportW, bottom:viewportH };
+        function contains(outer, inner) {
+          return inner.left >= outer.left - 1 && inner.top >= outer.top - 1 &&
+            inner.right <= outer.right + 1 && inner.bottom <= outer.bottom + 1;
+        }
+        function ownsPage(c) {
+          try { return !!(c && c.el && c.el.closest('.kg-full-page-img,#kr-renderer')); }
+          catch (_) { return false; }
+        }
+        var pages = candidates().filter(function(c) {
+          return ownsPage(c) && c.rect && visibleArea(c.rect) > 1;
+        });
+        if (!current || !current.key || pages.length < 1 || pages.length > 2 ||
+            !pages.some(function(c) { return c.el === current.el; })) return null;
+        var rects = [];
+        for (var i = 0; i < pages.length; i++) {
+          var c = pages[i], r = c.rect, img = c.img;
+          if (!img || !img.complete || img.naturalWidth <= 80 || img.naturalHeight <= 80 ||
+              r.width < viewportW * 0.18 || r.height < viewportH * 0.35 || !contains(viewport, r)) return null;
+          if (!contains(c.el.getBoundingClientRect(), r)) return null;
+          for (var node = c.el; node && node !== document.documentElement; node = node.parentElement) {
+            var style = getComputedStyle(node), box = node.getBoundingClientRect();
+            if (style.display === 'none' || style.visibility === 'hidden') return null;
+            if (/hidden|clip|auto|scroll/.test(style.overflowX || '') &&
+                (r.left < box.left - 1 || r.right > box.right + 1)) return null;
+            if (/hidden|clip|auto|scroll/.test(style.overflowY || '') &&
+                (r.top < box.top - 1 || r.bottom > box.bottom + 1)) return null;
+          }
+          rects.push({ key:String(c.key), rect:crKindlePreciseRect(r) });
+        }
+        rects.sort(function(a, b) { return a.rect.left - b.rect.left || a.rect.top - b.rect.top; });
+        return { pageKey:String(current.key), pages:rects, decoded:true };
+      }
       window.__crKindleGeometry = function() {
         try {
           var c = crKindleCurrentGeometryCandidate();
@@ -9382,6 +9432,8 @@ enum KindleWebScripts {
           }
           return JSON.stringify({
             ok:!!candidate,
+            documentID:String(performance.timeOrigin || 0),
+            presentation:crKindlePresentationEvidence(c, viewportW, viewportH),
             viewport:{ width:viewportW, height:viewportH, devicePixelRatio:Number(devicePixelRatio || 1) },
             visualViewport:vv ? {
               width:Number(vv.width || 0),

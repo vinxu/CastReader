@@ -359,6 +359,11 @@ class AudioPlayerService: NSObject, ObservableObject {
     private var wasInterrupted = false
     private var playbackSuspendedByInterruption = false
     private var playbackRequested = false
+    /// A user pause outlives a network wait and is distinct from natural item
+    /// completion (where isPlaying is also false).
+    private(set) var isExplicitlyPaused = false
+    private var currentItemDrained = false
+    private var queueCompletionDelivered = false
     private var progressEvidence = AudioPlaybackProgressEvidence()
     private var isSeekingInitialPosition = false
 
@@ -622,12 +627,7 @@ class AudioPlayerService: NSObject, ObservableObject {
                       currentSegmentIndex: self.currentSegmentIndex,
                       queueCount: self.segmentsQueue.count
                   ) else { return }
-            self.isWaitingForNextSegment = false
-            self.isBuffering = false
-            ReaderRunLog.write(
-                "AUDIO resolved drained streaming producer segment=\(terminalSegmentID ?? "nil")"
-            )
-            self.onPlaybackComplete?()
+            self.publishDrainedQueueCompletion()
         }
         return true
     }
@@ -1150,17 +1150,18 @@ class AudioPlayerService: NSObject, ObservableObject {
         }
 
         // If we were waiting for the next segment, play it now
-        if isWaitingForNextSegment, autoPlay {
+        if isWaitingForNextSegment, autoPlay, !isExplicitlyPaused {
             print("🔊 loadSegment: Was waiting, now playing segment \(segmentsQueue.count - 1)")
             isWaitingForNextSegment = false
             return playSegment(at: segmentsQueue.count - 1)
         }
         // If this is the first segment and we're not playing, start playback
-        else if autoPlay && segmentsQueue.count == 1 && !isPlaying {
+        else if autoPlay && !isExplicitlyPaused && segmentsQueue.count == 1 && !isPlaying {
             print("🔊 loadSegment: First segment, starting playback")
             return playSegment(at: 0)
         } else {
-            if !autoPlay { isWaitingForNextSegment = false }
+            // Retain the drained position when paused: Resume must start the
+            // newly queued tail rather than replaying the completed prefix.
             print("🔊 loadSegment: Segment queued (autoPlay=\(autoPlay), isPlaying=\(isPlaying), queueCount=\(segmentsQueue.count))")
         }
         return true
@@ -1228,10 +1229,10 @@ class AudioPlayerService: NSObject, ObservableObject {
             isWaitingForNextSegment = false
             return predecessor
         }
-        if isWaitingForNextSegment {
+        if isWaitingForNextSegment, !isExplicitlyPaused {
             isWaitingForNextSegment = false
             playSegment(at: firstAppendedIndex)
-        } else if currentSegment == nil, !isPlaying {
+        } else if currentSegment == nil, !isPlaying, !isExplicitlyPaused {
             playSegment(at: firstAppendedIndex)
         }
         return predecessor
@@ -1352,7 +1353,8 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard playbackOwnership.permitsPlayback(
             requestedBy: effectiveSession
         ) else { return }
-        guard let index = gatedSegmentIndex else { return }
+        guard !isExplicitlyPaused, !playbackSuspendedByInterruption,
+              let index = gatedSegmentIndex else { return }
         playSegment(at: index)
     }
 
@@ -1385,7 +1387,22 @@ class AudioPlayerService: NSObject, ObservableObject {
             return false
         }
         guard !hasTerminalPlaybackFailure else { return false }
+        isExplicitlyPaused = false
+        playbackRequested = true
         playbackSuspendedByInterruption = false
+        if let index = gatedSegmentIndex {
+            return playSegment(at: index)
+        }
+        if currentItemDrained {
+            if currentSegmentIndex + 1 < segmentsQueue.count {
+                return playSegment(at: currentSegmentIndex + 1)
+            }
+            // The producer or paragraph coordinator owns the next item. Never
+            // resume an AVPlayerItem which has already emitted completion.
+            if !moreSegmentsExpected { publishDrainedQueueCompletion() }
+            return true
+        }
+        if segmentsQueue.isEmpty, moreSegmentsExpected { return true }
         if playerItem?.status == .failed || player?.status == .failed
             || (currentTempFileURL.map { !FileManager.default.fileExists(atPath: $0.path) } ?? false) {
             playbackRequested = true
@@ -1419,7 +1436,8 @@ class AudioPlayerService: NSObject, ObservableObject {
         return true
     }
 
-    private func pauseRegardlessOfOwnership() {
+    private func pauseRegardlessOfOwnership(recordsUserIntent: Bool = true) {
+        if recordsUserIntent { isExplicitlyPaused = true }
         playbackRequested = false
         player?.pause()
         isPlaying = false
@@ -1430,7 +1448,9 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// producer-transient state owned by the outgoing session. Otherwise a
     /// cancelled stream can leave the next mode permanently "buffering".
     private func suspendQueueForOwnershipChange() {
-        pauseRegardlessOfOwnership()
+        // Claim/release fences the old queue; it is not a user Pause on the
+        // new session (including a freshly created player's empty queue).
+        pauseRegardlessOfOwnership(recordsUserIntent: false)
         moreSegmentsExpected = false
         isWaitingForNextSegment = false
         isBuffering = false
@@ -1441,6 +1461,16 @@ class AudioPlayerService: NSObject, ObservableObject {
     func pause(session token: AudioPlaybackSessionToken? = nil) -> Bool {
         guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
         pauseRegardlessOfOwnership()
+        return true
+    }
+
+    /// A paragraph entitlement refresh can stop the transport while preserving
+    /// the user's intent. A real Pause during the await still sets the flag and
+    /// prevents the coordinator from automatically advancing afterwards.
+    @discardableResult
+    func pauseForEntitlementRefresh(session token: AudioPlaybackSessionToken) -> Bool {
+        guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
+        pauseRegardlessOfOwnership(recordsUserIntent: false)
         return true
     }
 
@@ -1501,6 +1531,9 @@ class AudioPlayerService: NSObject, ObservableObject {
         playerItemReadinessWorkItem = nil
         playbackSuspendedByInterruption = false
         playbackRequested = false
+        isExplicitlyPaused = false
+        currentItemDrained = false
+        queueCompletionDelivered = false
         recoveryBudget = AudioPlaybackRecoveryBudget()
         lastPlaybackFailureCode = nil
         progressEvidence = AudioPlaybackProgressEvidence()
@@ -1576,7 +1609,10 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     @discardableResult
-    func nextSegment(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+    func nextSegment(
+        session token: AudioPlaybackSessionToken? = nil,
+        automatically: Bool = false
+    ) -> Bool {
         guard !hasTerminalPlaybackFailure else { return false }
         let effectiveSession: AudioPlaybackSessionToken?
         if let token {
@@ -1592,6 +1628,15 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard playbackOwnership.permitsPlayback(
             requestedBy: effectiveSession
         ) else { return false }
+        if !automatically {
+            isExplicitlyPaused = false
+            playbackRequested = true
+            playbackSuspendedByInterruption = false
+        }
+        currentItemDrained = true
+        // UI/remote Next remains an explicit transport action. A natural end
+        // callback, however, may race with Pause and must retain that intent.
+        if automatically, isExplicitlyPaused { return true }
         print("🔊 nextSegment: currentIndex=\(currentSegmentIndex), queueCount=\(segmentsQueue.count), moreExpected=\(moreSegmentsExpected)")
         if currentSegmentIndex < segmentsQueue.count - 1 {
             print("🔊 nextSegment: Playing next segment at index \(currentSegmentIndex + 1)")
@@ -1614,9 +1659,19 @@ class AudioPlayerService: NSObject, ObservableObject {
                 "AUDIO queue complete segment=\(currentSegment?.id ?? "nil") " +
                 "queue=\(segmentsQueue.count)"
             )
-            onPlaybackComplete?()
+            publishDrainedQueueCompletion()
         }
         return true
+    }
+
+    private func publishDrainedQueueCompletion() {
+        guard currentItemDrained, !moreSegmentsExpected,
+              !isExplicitlyPaused, !hasTerminalPlaybackFailure,
+              !queueCompletionDelivered else { return }
+        queueCompletionDelivered = true
+        isWaitingForNextSegment = false
+        isBuffering = false
+        onPlaybackComplete?()
     }
 
     @discardableResult
@@ -1663,6 +1718,9 @@ class AudioPlayerService: NSObject, ObservableObject {
             recoveryBudget = AudioPlaybackRecoveryBudget()
             lastPlaybackFailureCode = nil
         }
+        currentItemDrained = false
+        queueCompletionDelivered = false
+        isExplicitlyPaused = !autoPlayWhenReady
         playbackRequested = autoPlayWhenReady
 
         // Release the previous asset and callbacks before removing its file.
@@ -1965,7 +2023,8 @@ class AudioPlayerService: NSObject, ObservableObject {
                     || playerItem?.status == .failed {
             isBuffering = false
         }
-        let actuallyPlaying = player.timeControlStatus == .playing && player.rate > 0
+        let actuallyPlaying = !currentItemDrained
+            && player.timeControlStatus == .playing && player.rate > 0
         guard actuallyPlaying != isPlaying else {
             updateNowPlayingElapsedTime()
             return
@@ -2029,6 +2088,12 @@ class AudioPlayerService: NSObject, ObservableObject {
             return
         }
         let finishedSession = playerItemSession
+        // The terminal notification is authoritative even if time-control KVO
+        // is delivered later. Publish this before invoking client callbacks so
+        // a Play tap cannot be misclassified as Pause on the ended prefix.
+        currentItemDrained = true
+        isPlaying = false
+        updateNowPlayingInfo()
         print("🔊 playerDidFinishPlaying: Segment finished, currentIndex=\(currentSegmentIndex)")
         ReaderRunLog.write(
             "AUDIO item finished segment=\(currentSegment?.id ?? "nil") " +
@@ -2040,7 +2105,7 @@ class AudioPlayerService: NSObject, ObservableObject {
               playbackOwnership.permitsCallback(from: finishedSession) else {
             return
         }
-        _ = nextSegment(session: finishedSession)
+        _ = nextSegment(session: finishedSession, automatically: true)
     }
 
     @objc private func playerFailedToPlayToEnd(_ notification: Notification) {

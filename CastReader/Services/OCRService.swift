@@ -28,29 +28,30 @@ enum OCRError: Error, LocalizedError {
     }
 }
 
-/// `VNImageRequestHandler.perform` is synchronous, so a task cancellation alone
-/// cannot interrupt an in-flight Vision pass. This tiny lock-protected bridge
-/// lets the structured-concurrency cancellation handler cancel the active
-/// request from another executor without racing request installation.
-private final class VisionCancellationBridge: @unchecked Sendable {
-    private let lock = NSLock()
-    private var request: VNRequest?
-    private var isCancelled = false
+/// Vision's `perform` is synchronous and supplies one throwing return path.
+/// Do not also resume a continuation from its request completion callback: a
+/// cancelled request can call that callback AND make `perform` throw.
+///
+/// The request exists before installing the task cancellation handler, so a
+/// pre-cancelled task cannot miss request installation. VNRequest.cancel is the
+/// only cross-executor operation; recognition and result reads stay with the
+/// OCR actor. Cancellation takes precedence over a late Vision error/result.
+final class VisionRequestExecution: @unchecked Sendable {
+    private let request: VNRequest
 
-    func install(_ request: VNRequest) {
-        lock.lock()
-        self.request = request
-        let shouldCancel = isCancelled
-        lock.unlock()
-        if shouldCancel { request.cancel() }
-    }
+    init(request: VNRequest) { self.request = request }
 
-    func cancel() {
-        lock.lock()
-        isCancelled = true
-        let request = request
-        lock.unlock()
-        request?.cancel()
+    func cancel() { request.cancel() }
+
+    func perform(_ operation: () throws -> Void) throws {
+        try Task.checkCancellation()
+        do {
+            try operation()
+        } catch {
+            try Task.checkCancellation()
+            throw error
+        }
+        try Task.checkCancellation()
     }
 }
 
@@ -525,25 +526,18 @@ actor OCRService {
         try Task.checkCancellation()
         let probe = Self.downscaled(cgImage, maxSide: 900) ?? cgImage
         try Task.checkCancellation()
-        let cancellationBridge = VisionCancellationBridge()
-        let boxes = try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[CGRect], Error>) in
-                let request = VNRecognizeTextRequest { request, error in
-                    if let error { cont.resume(throwing: error); return }
-                    let observations = (request.results as? [VNRecognizedTextObservation]) ?? []
-                    cont.resume(returning: observations.map(\.boundingBox))
-                }
-                cancellationBridge.install(request)
-                request.recognitionLevel = .accurate
-                request.usesLanguageCorrection = false
-                let handler = VNImageRequestHandler(cgImage: probe, orientation: .up, options: [:])
-                do { try handler.perform([request]) } catch { cont.resume(throwing: error) }
-            }
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        let execution = VisionRequestExecution(request: request)
+        let handler = VNImageRequestHandler(cgImage: probe, orientation: .up, options: [:])
+        try await withTaskCancellationHandler {
+            try execution.perform { try handler.perform([request]) }
         } onCancel: {
-            cancellationBridge.cancel()
+            execution.cancel()
         }
         try Task.checkCancellation()
-        return boxes
+        return (request.results ?? []).map(\.boundingBox)
     }
 
     private nonisolated static func downscaled(_ cgImage: CGImage, maxSide: Int) -> CGImage? {
@@ -592,7 +586,7 @@ actor OCRService {
             var words: [OCRWord] = []
             for w in box.words {
                 try Task.checkCancellation()
-                words.append(OCRWord(id: globalWordId, text: w.text, bboxNorm: w.bbox))
+                words.append(w.word(id: globalWordId))
                 globalWordId += 1
             }
             let text = box.text
@@ -771,7 +765,8 @@ actor OCRService {
                     y: 1 - bottom / result.imageHeight,
                     width: (right - left) / result.imageWidth,
                     height: (bottom - top) / result.imageHeight
-                )
+                ),
+                bboxSource: .tesseractWord
             )
         }
         let wordBoxes = result.words.compactMap(normalizedWord)
@@ -966,7 +961,7 @@ actor OCRService {
 
     // MARK: - Vision
 
-    private struct WordBox { let text: String; let bbox: CGRect }
+    private typealias WordBox = OCRTokenGeometryCoverage.Token
     private struct LineBox { let text: String; let bbox: CGRect; let words: [WordBox] }
 
     private func recognizeLines(
@@ -975,78 +970,72 @@ actor OCRService {
         language: String?
     ) async throws -> [LineBox] {
         try Task.checkCancellation()
-        let cancellationBridge = VisionCancellationBridge()
-        let lines = try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[LineBox], Error>) in
-                let request = VNRecognizeTextRequest { request, error in
-                    if let error = error { cont.resume(throwing: error); return }
-                    let observations = (request.results as? [VNRecognizedTextObservation]) ?? []
-                    var lines: [LineBox] = []
-                    for obs in observations {
-                        guard let candidate = obs.topCandidates(1).first else { continue }
-                        let str = candidate.string
-                        var words: [WordBox] = []
-                        // Latin uses words; Chinese/Japanese use grapheme ranges so
-                        // a whole no-space line never collapses into one highlight box.
-                        for range in KindleOCRTextContract.tokenRanges(in: str, language: language) {
-                            if let box = try? candidate.boundingBox(for: range), !box.boundingBox.isNull {
-                                words.append(WordBox(text: String(str[range]), bbox: box.boundingBox))
-                            }
-                        }
-                        // Geometry fallback preserves the same script-aware tokens.
-                        if words.isEmpty {
-                            words = self.splitProportionally(
-                                text: str,
-                                lineBox: obs.boundingBox,
-                                language: language
-                            )
-                        }
-                        lines.append(LineBox(text: str, bbox: obs.boundingBox, words: words))
-                    }
-                    cont.resume(returning: lines)
-                }
-                cancellationBridge.install(request)
-                request.recognitionLevel = .accurate
-                request.usesLanguageCorrection = true
-                if !languages.isEmpty {
-                    let available = Set((try? request.supportedRecognitionLanguages()) ?? [])
-                    let supported = languages.filter(available.contains)
-                    guard !supported.isEmpty else {
-                        cont.resume(throwing: OCRError.unsupportedLanguages(languages))
-                        return
-                    }
-                    request.recognitionLanguages = supported
-                    request.automaticallyDetectsLanguage = supported.count > 1
-                }
-
-                let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .up, options: [:])
-                do { try handler.perform([request]) }
-                catch { cont.resume(throwing: error) }
-            }
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = true
+        if !languages.isEmpty {
+            let available = Set((try? request.supportedRecognitionLanguages()) ?? [])
+            let supported = languages.filter(available.contains)
+            try Task.checkCancellation()
+            guard !supported.isEmpty else { throw OCRError.unsupportedLanguages(languages) }
+            request.recognitionLanguages = supported
+            request.automaticallyDetectsLanguage = supported.count > 1
+        }
+        let execution = VisionRequestExecution(request: request)
+        let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .up, options: [:])
+        try await withTaskCancellationHandler {
+            try execution.perform { try handler.perform([request]) }
         } onCancel: {
-            cancellationBridge.cancel()
+            execution.cancel()
         }
         try Task.checkCancellation()
-        return lines
-    }
-
-    private nonisolated func splitProportionally(
-        text: String,
-        lineBox: CGRect,
-        language: String?
-    ) -> [WordBox] {
-        let tokens = KindleOCRTextContract.tokens(in: text, language: language)
-        guard !tokens.isEmpty else { return [] }
-        let totalChars = max(1, tokens.reduce(0) { $0 + $1.count + 1 })
-        var cursor = lineBox.minX
-        var result: [WordBox] = []
-        for tok in tokens {
-            let frac = CGFloat(tok.count + 1) / CGFloat(totalChars)
-            let w = lineBox.width * frac
-            result.append(WordBox(text: tok, bbox: CGRect(x: cursor, y: lineBox.minY, width: w * 0.92, height: lineBox.height)))
-            cursor += w
+        var lines: [LineBox] = []
+        for (lineID, obs) in (request.results ?? []).enumerated() {
+            try Task.checkCancellation()
+            guard let candidate = obs.topCandidates(1).first else { continue }
+            let str = candidate.string
+            // Latin uses words; Chinese/Japanese use grapheme ranges so
+            // a whole no-space line never collapses into one highlight box.
+            let boxes: [CGRect?] = KindleOCRTextContract.tokenRanges(in: str, language: language).map { range in
+                (try? candidate.boundingBox(for: range))?.boundingBox
+            }
+            // A single missing box must not delete an already recognized
+            // word. Preserve genuine boxes and mark only the estimates.
+            let words = OCRTokenGeometryCoverage.resolve(
+                text: str, language: language, lineBox: obs.boundingBox,
+                sourceLineID: lineID, confidence: candidate.confidence,
+                tokenBoxes: boxes
+            )
+            lines.append(LineBox(text: str, bbox: obs.boundingBox, words: words))
         }
-        return result
+        // Run pixel work on this OCR actor after Vision's synchronous pass,
+        // never on a UI callback. The immutable CGImage and bounded buffer remain
+        // owned until measurement finishes; cancellation cannot free their data.
+        let candidateLines = lines.map { line in
+            line.words.contains { $0.text.range(of: "^[1-9][0-9]{0,2}$", options: .regularExpression) != nil }
+        }
+        guard candidateLines.contains(true) else { return lines }
+        let ink = OCRWordInkBounds(image: cgImage)
+        var measuredLines: [LineBox] = []
+        for (lineIndex, line) in lines.enumerated() {
+            try Task.checkCancellation()
+            guard candidateLines[lineIndex] else { measuredLines.append(line); continue }
+            let words = try line.words.enumerated().map { index, original -> WordBox in
+                try Task.checkCancellation()
+                var word = original
+                word.inkBoundsChecked = true
+                if word.bboxSource == .visionTextRange {
+                    word.inkBoundsNorm = ink?.measure(
+                        word: word.bbox,
+                        previous: index > 0 ? line.words[index - 1].bbox : nil,
+                        next: index + 1 < line.words.count ? line.words[index + 1].bbox : nil
+                    )
+                }
+                return word
+            }
+            measuredLines.append(LineBox(text: line.text, bbox: line.bbox, words: words))
+        }
+        return measuredLines
     }
 
     // MARK: - 段落聚类
@@ -1072,7 +1061,7 @@ actor OCRService {
             guard !text.isEmpty else { continue }
             let words = box.words.map { word -> OCRWord in
                 defer { globalWordID += 1 }
-                return OCRWord(id: globalWordID, text: word.text, bboxNorm: word.bbox)
+                return word.word(id: globalWordID)
             }
             paragraphs.append(ReadingParagraph(
                 id: paragraphs.count,
@@ -1266,6 +1255,10 @@ actor OCRService {
 
         var result: [LineBox] = []
         for line in lines {
+            guard !OCRTokenGeometryCoverage.requiresEngineLineOrder(line.words) else {
+                result.append(line)
+                continue
+            }
             let spanned = columns.filter { column in
                 let overlap = min(line.bbox.maxX, column.upperBound) - max(line.bbox.minX, column.lowerBound)
                 let reference = min(line.bbox.width, column.upperBound - column.lowerBound)
@@ -1447,6 +1440,17 @@ actor OCRService {
     private func layoutLines(from lines: [LineBox], preserveOrder: Bool = false) -> [LayoutLine] {
         var result: [LayoutLine] = []
         for line in lines {
+            if OCRTokenGeometryCoverage.requiresEngineLineOrder(line.words),
+               !line.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               OCRTokenGeometryCoverage.isUsable(line.bbox) {
+                result.append(LayoutLine(
+                    words: line.words, text: line.text,
+                    left: line.bbox.minX, top: layoutTop(line.bbox), right: line.bbox.maxX,
+                    bottom: layoutBottom(line.bbox), centerY: layoutCenterY(line.bbox),
+                    height: layoutHeight(line.bbox)
+                ))
+                continue
+            }
             let valid = line.words.filter {
                 !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     && $0.bbox.width > 0 && $0.bbox.height > 0

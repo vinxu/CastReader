@@ -78,6 +78,14 @@ enum TTSRequestPriority: String, Sendable {
     case prefetch
 }
 
+/// Exact ungenerated suffix of a paragraph. It includes later local sentence
+/// units as well as the backend's partial tail, and preserves clone subrequest
+/// indices when the same logical producer is retried.
+struct TTSContinuation: Equatable, Sendable {
+    let requestUnits: [String]
+    let nextSegmentIndex: Int
+}
+
 // MARK: - TTS Service
 
 actor TTSService {
@@ -85,7 +93,11 @@ actor TTSService {
 
     private var currentRequestId: UUID?
 
-    private init() {}
+    private let api: APIService
+
+    init(api: APIService = .shared) {
+        self.api = api
+    }
 
     // MARK: - TTS Generation
 
@@ -104,6 +116,8 @@ actor TTSService {
         includeVoiceCode: Bool = true,
         speaker: String? = nil,
         cloneRequestID: String? = nil,
+        continuation: TTSContinuation? = nil,
+        onCheckpoint: ((TTSContinuation) async -> Void)? = nil,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
         try Task.checkCancellation()
@@ -129,6 +143,8 @@ actor TTSService {
             includeVoiceCode: includeVoiceCode,
             speaker: speaker,
             cloneRequestID: cloneRequestID,
+            continuation: continuation,
+            onCheckpoint: onCheckpoint,
             onSegmentReady: onSegmentReady
         )
     }
@@ -164,7 +180,7 @@ actor TTSService {
             var remainingText = requestUnit
             while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
                 try Task.checkCancellation()
-                let response = try await APIService.shared.generateTTS(
+                let response = try await api.generateTTS(
                     text: remainingText,
                     voice: resolvedVoice,
                     speed: speed,
@@ -190,6 +206,7 @@ actor TTSService {
                     ),
                     duration: response.safeDuration,
                     text: response.processedText ?? remainingText,
+                    isWavFormat: response.audioFormat?.lowercased() == "wav",
                     unprocessedText: response.unprocessedText ?? "",
                     speaker: speaker
                 )
@@ -224,28 +241,39 @@ actor TTSService {
         includeVoiceCode: Bool,
         speaker: String?,
         cloneRequestID: String?,
+        continuation: TTSContinuation?,
+        onCheckpoint: ((TTSContinuation) async -> Void)?,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
         guard currentRequestId == requestId else {
             throw TTSError.cancelled
         }
 
-        var segmentIndex = 0
-        let requestUnits = TTSSentenceSegmenter.requestUnits(text, language: language)
+        var segmentIndex = continuation?.nextSegmentIndex ?? 0
+        let requestUnits = continuation?.requestUnits
+            ?? TTSSentenceSegmenter.requestUnits(text, language: language)
 
         // Segment-timed languages first split into natural sentences. The inner
         // loop still consumes a backend partial response without dropping text.
-        for requestUnit in requestUnits {
+        for (unitIndex, requestUnit) in requestUnits.enumerated() {
           var remainingText = requestUnit
           while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
             guard currentRequestId == requestId else {
                 throw TTSError.cancelled
             }
 
+            if let onCheckpoint {
+                await onCheckpoint(TTSContinuation(
+                    requestUnits: [remainingText] + Array(requestUnits.dropFirst(unitIndex + 1)),
+                    nextSegmentIndex: segmentIndex
+                ))
+            }
+            try Task.checkCancellation()
+            guard currentRequestId == requestId else { throw TTSError.cancelled }
             do {
                 ttsDebugLog("[TTSService] 📊 Cloud TTS request #\(segmentIndex): \(remainingText.prefix(50))...")
 
-                let response = try await APIService.shared.generateTTS(
+                let response = try await api.generateTTS(
                     text: remainingText,
                     voice: voice,
                     speed: speed,
@@ -292,6 +320,7 @@ actor TTSService {
                     timestamps: timestamps,
                     duration: duration,
                     text: segmentText,
+                    isWavFormat: response.audioFormat?.lowercased() == "wav",
                     unprocessedText: response.unprocessedText ?? "",
                     speaker: speaker
                 )

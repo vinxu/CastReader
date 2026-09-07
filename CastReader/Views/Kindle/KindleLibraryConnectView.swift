@@ -354,6 +354,124 @@ enum KindleCookieConsentRecoveryPolicy {
     }
 }
 
+/// Presentation-only mapping from the canonical, untransformed container
+/// coordinates. It never changes WKWebView.bounds or the page's CSS viewport.
+struct KindleViewportPresentationFit: Equatable {
+    var scale: CGFloat
+    var translationX: CGFloat
+    var translationY: CGFloat
+
+    static let identity = KindleViewportPresentationFit(scale: 1, translationX: 0, translationY: 0)
+
+    var isValid: Bool {
+        scale.isFinite && scale > 0 && scale <= 1 && translationX.isFinite && translationY.isFinite
+    }
+
+    func applying(to rect: CGRect) -> CGRect {
+        CGRect(
+            x: rect.minX * scale + translationX,
+            y: rect.minY * scale + translationY,
+            width: rect.width * scale,
+            height: rect.height * scale
+        )
+    }
+}
+
+enum KindleViewportPresentationPolicy {
+    struct Measurement {
+        let documentID: String
+        let pageKey: String
+        let pageKeys: [String]
+        let viewport: CGSize
+        let pages: [CGRect]
+        let currentPage: CGRect
+
+        var union: CGRect { pages.reduce(.null) { $0.union($1) } }
+
+        func isStable(with other: Measurement) -> Bool {
+            guard documentID == other.documentID, pageKey == other.pageKey,
+                  pageKeys == other.pageKeys, viewport == other.viewport,
+                  pages.count == other.pages.count else { return false }
+            return zip(pages + [currentPage], other.pages + [other.currentPage]).allSatisfy { a, b in
+                abs(a.minX - b.minX) <= 0.75 && abs(a.minY - b.minY) <= 0.75 &&
+                    abs(a.width - b.width) <= 0.75 && abs(a.height - b.height) <= 0.75
+            }
+        }
+    }
+
+    static func measurement(
+        from geometry: [String: Any], canonicalFrame: CGRect
+    ) -> Measurement? {
+        guard canonicalFrame.width.isFinite, canonicalFrame.height.isFinite,
+              canonicalFrame.width > 80, canonicalFrame.height > 80,
+              geometry["ok"] as? Bool == true,
+              let documentID = geometry["documentID"] as? String, !documentID.isEmpty, documentID != "0",
+              let presentation = geometry["presentation"] as? [String: Any], presentation["decoded"] as? Bool == true,
+              let pageKey = presentation["pageKey"] as? String, !pageKey.isEmpty,
+              let viewport = geometry["viewport"] as? [String: Any],
+              let width = viewport["width"] as? Double, let height = viewport["height"] as? Double,
+              width.isFinite, height.isFinite, width > 80, height > 80,
+              let rawPages = presentation["pages"] as? [[String: Any]], (1...2).contains(rawPages.count),
+              let candidate = geometry["candidate"] as? [String: Any] else { return nil }
+        func mappedRect(_ value: Any?) -> CGRect? {
+            guard let raw = value as? [String: Any],
+                  let x = raw["left"] as? Double, let y = raw["top"] as? Double,
+                  let w = raw["width"] as? Double, let h = raw["height"] as? Double,
+                  x.isFinite, y.isFinite, w.isFinite, h.isFinite, w > 0, h > 0 else { return nil }
+            return CGRect(
+                x: canonicalFrame.minX + x * canonicalFrame.width / width,
+                y: canonicalFrame.minY + y * canonicalFrame.height / height,
+                width: w * canonicalFrame.width / width,
+                height: h * canonicalFrame.height / height
+            )
+        }
+        let pages = rawPages.compactMap { mappedRect($0["rect"]) }
+        let keys = rawPages.compactMap { $0["key"] as? String }
+        guard pages.count == rawPages.count, keys.count == pages.count,
+              keys.allSatisfy({ !$0.isEmpty }), keys.contains(pageKey),
+              let current = mappedRect(candidate["rect"]) else { return nil }
+        return Measurement(documentID: documentID, pageKey: pageKey, pageKeys: keys,
+                           viewport: CGSize(width: width, height: height), pages: pages, currentPage: current)
+    }
+
+    static func canonicalFrame(surfaceSize: CGSize, crop: KindleViewportCrop) -> CGRect {
+        if crop.isIdentity { return CGRect(origin: .zero, size: surfaceSize) }
+        return CGRect(
+            x: crop.offsetX, y: crop.offsetY,
+            width: surfaceSize.width * max(1, min(crop.scale, 2.4)),
+            height: surfaceSize.height * max(1, min(crop.heightScale, 2.4))
+        )
+    }
+
+    /// The caller supplies a decoded, stable page rect (or visible spread union)
+    /// in canonical container coordinates, with the current book/runtime/frame
+    /// ownership checked. Never pass a rect based on transformed webView.frame.
+    static func contain(
+        contentRect: CGRect,
+        surfaceSize: CGSize,
+        current: KindleViewportPresentationFit = .identity
+    ) -> KindleViewportPresentationFit? {
+        guard surfaceSize.width.isFinite, surfaceSize.height.isFinite,
+              surfaceSize.width > 80, surfaceSize.height > 80,
+              contentRect.minX.isFinite, contentRect.minY.isFinite,
+              contentRect.width.isFinite, contentRect.height.isFinite,
+              contentRect.width > 80, contentRect.height > 80 else { return nil }
+        let surface = CGRect(origin: .zero, size: surfaceSize)
+        let retained = current.isValid ? current : .identity
+        // A subpixel difference is not a new zoom decision. Keeping a fit that
+        // already contains the next page also avoids zooming up at every turn.
+        if surface.insetBy(dx: -1, dy: -1).contains(retained.applying(to: contentRect)) {
+            return retained
+        }
+        let scale = min(1, min(surfaceSize.width / contentRect.width, surfaceSize.height / contentRect.height))
+        return KindleViewportPresentationFit(
+            scale: scale,
+            translationX: (surfaceSize.width - contentRect.width * scale) / 2 - contentRect.minX * scale,
+            translationY: (surfaceSize.height - contentRect.height * scale) / 2 - contentRect.minY * scale
+        )
+    }
+}
+
 final class KindleWebViewContainer: UIView {
     let webView: WKWebView
     var crop: KindleViewportCrop = .identity {
@@ -363,10 +481,20 @@ final class KindleWebViewContainer: UIView {
             }
         }
     }
+    var presentationFit: KindleViewportPresentationFit = .identity {
+        didSet {
+            if presentationFit != oldValue { setNeedsLayout() }
+        }
+    }
 
-    init(webView: WKWebView, crop: KindleViewportCrop = .identity) {
+    init(
+        webView: WKWebView,
+        crop: KindleViewportCrop = .identity,
+        presentationFit: KindleViewportPresentationFit = .identity
+    ) {
         self.webView = webView
         self.crop = crop
+        self.presentationFit = presentationFit
         super.init(frame: .zero)
         clipsToBounds = true
         addSubview(webView)
@@ -379,26 +507,28 @@ final class KindleWebViewContainer: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         let size = bounds.size
-        webView.transform = .identity
-        if crop.isIdentity {
-            webView.frame = bounds
-            return
+        guard webView.superview === self,
+              size.width.isFinite, size.height.isFinite,
+              size.width > 0, size.height > 0 else { return }
+        let canonical = KindleViewportPresentationPolicy.canonicalFrame(surfaceSize: size, crop: crop)
+        let fit = presentationFit.isValid ? presentationFit : .identity
+        // Assign bounds/center while keeping presentation independent. Setting
+        // frame with a nonidentity transform can resize WebKit's CSS viewport.
+        UIView.performWithoutAnimation {
+            webView.bounds = CGRect(origin: .zero, size: canonical.size)
+            webView.center = CGPoint(
+                x: canonical.midX * fit.scale + fit.translationX,
+                y: canonical.midY * fit.scale + fit.translationY
+            )
+            webView.transform = CGAffineTransform(scaleX: fit.scale, y: fit.scale)
         }
-
-        let widthScale = max(1, min(crop.scale, 2.4))
-        let heightScale = max(1, min(crop.heightScale, 2.4))
-        webView.frame = CGRect(
-            x: crop.offsetX,
-            y: crop.offsetY,
-            width: size.width * widthScale,
-            height: size.height * heightScale
-        )
     }
 }
 
 struct KindleWebView: UIViewRepresentable {
     let webView: WKWebView
     var crop: KindleViewportCrop = .identity
+    var presentationFit: KindleViewportPresentationFit = .identity
 
     func makeUIView(context: Context) -> KindleWebViewContainer {
         webView.isOpaque = false
@@ -411,13 +541,14 @@ struct KindleWebView: UIViewRepresentable {
         if #available(iOS 13.0, *) {
             webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
         }
-        return KindleWebViewContainer(webView: webView, crop: crop)
+        return KindleWebViewContainer(webView: webView, crop: crop, presentationFit: presentationFit)
     }
 
     func updateUIView(_ uiView: KindleWebViewContainer, context: Context) {
         uiView.webView.underPageBackgroundColor = .systemBackground
         uiView.webView.scrollView.backgroundColor = .systemBackground
         uiView.crop = crop
+        uiView.presentationFit = presentationFit
     }
 }
 

@@ -50,11 +50,51 @@ extension ReadingSourceKind {
 
 // MARK: - OCR Word
 
+/// Geometry provenance is separate from recognition success. Old persisted
+/// photo snapshots have no such evidence and intentionally restore as unknown.
+enum OCRWordBoxSource: String, Equatable {
+    case unknown
+    case visionTextRange
+    case tesseractWord
+    case proportional
+}
+
 /// 单个 OCR 词及其归一化包围盒（Vision 坐标：原点左下，0...1）
 struct OCRWord: Identifiable, Equatable {
     let id: Int            // 文档内全局词索引
     let text: String
     let bboxNorm: CGRect   // Vision 归一化（原点左下），原样保存
+    let bboxSource: OCRWordBoxSource
+    /// The recognizer's original line, before paragraph/column reconstruction.
+    let sourceLineID: Int?
+    /// Raw line-candidate confidence from Vision; not a calibrated per-word probability.
+    let recognitionConfidence: Float?
+    /// Optional independent glyph pixels, in the same coordinate space. Never
+    /// replaces Vision's original box, which remains the highlight geometry.
+    let inkBoundsNorm: CGRect?
+    /// A failed/unsupported measurement is negative evidence, not permission to
+    /// fall back to a line-height Vision box for typography classification.
+    let inkBoundsChecked: Bool
+
+    init(id: Int, text: String, bboxNorm: CGRect,
+         bboxSource: OCRWordBoxSource = .unknown, sourceLineID: Int? = nil,
+         recognitionConfidence: Float? = nil, inkBoundsNorm: CGRect? = nil,
+         inkBoundsChecked: Bool = false) {
+        self.id = id
+        self.text = text
+        self.bboxNorm = bboxNorm
+        self.bboxSource = bboxSource
+        self.sourceLineID = sourceLineID
+        self.recognitionConfidence = recognitionConfidence
+        self.inkBoundsNorm = inkBoundsNorm
+        self.inkBoundsChecked = inkBoundsChecked
+    }
+
+    func reidentified(id: Int) -> OCRWord {
+        OCRWord(id: id, text: text, bboxNorm: bboxNorm, bboxSource: bboxSource,
+                sourceLineID: sourceLineID, recognitionConfidence: recognitionConfidence,
+                inkBoundsNorm: inkBoundsNorm, inkBoundsChecked: inkBoundsChecked)
+    }
 }
 
 /// One independently paintable region of a logical OCR paragraph. A Kindle

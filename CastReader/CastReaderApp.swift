@@ -152,7 +152,9 @@ struct RootAuthGate: View {
             // Exercise the real Kobo connection UI against a local four-page
             // shelf. The fixture and its isolated WebView/store exist only in
             // Debug builds; release builds always use the normal auth gate.
-            if ProcessInfo.processInfo.arguments.contains("-CastReaderKoboShelfFixture")
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderKindleSettingsFixture") {
+                KindleReadingSettingsFixtureView()
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderKoboShelfFixture")
                 || ProcessInfo.processInfo.arguments.contains("-CastReaderKoboLoginFixture")
                 || ProcessInfo.processInfo.arguments.contains("-CastReaderKoboBlankFixture")
                 || ProcessInfo.processInfo.arguments.contains("-CastReaderKoboPopupFixture") {

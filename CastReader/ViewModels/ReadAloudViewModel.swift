@@ -544,6 +544,42 @@ enum YouTubeAudioMemoryWindow {
     }
 }
 
+/// A bounded lead-time target, not an assertion that estimated text is already
+/// playable. Only complete READY audio contributes measured duration.
+enum KindleParagraphPrefetchHorizon {
+    struct Candidate {
+        let index: Int
+        let utf16Count: Int
+        let readyDuration: Double?
+    }
+    struct Selection {
+        let indices: [Int]
+        let estimatedSeconds: Double
+        let additionalCharacters: Int
+    }
+    static func select(_ candidates: [Candidate], speed: Double) -> Selection {
+        let rate = speed.isFinite && speed > 0 ? speed : 1
+        var selected: [Int] = []
+        var seconds = 0.0
+        var extraCharacters = 0
+        for candidate in candidates {
+            guard selected.count < 8 else { break }
+            if selected.count >= 2 {
+                guard seconds < 12 else { break }
+                guard candidate.utf16Count <= 1600 - extraCharacters else { break }
+                extraCharacters += candidate.utf16Count
+            }
+            selected.append(candidate.index)
+            let duration = candidate.readyDuration.flatMap {
+                $0.isFinite && $0 > 0 ? $0 : nil
+            } ?? max(0.1, Double(candidate.utf16Count) / 24)
+            seconds += duration / rate
+        }
+        return Selection(indices: selected, estimatedSeconds: seconds,
+                         additionalCharacters: extraCharacters)
+    }
+}
+
 @MainActor
 final class ReadAloudViewModel: ObservableObject {
 
@@ -564,6 +600,15 @@ final class ReadAloudViewModel: ObservableObject {
     @Published var autoScrollEnabled: Bool = true
 
     private let audio: AudioPlayerService
+    private let tts: TTSService
+    private struct ParagraphContinuation {
+        let paragraphIndex: Int
+        let voice: String
+        let language: String
+        let checkpoint: TTSContinuation
+    }
+    private var paragraphContinuation: ParagraphContinuation?
+    private var pendingPrefetchAdvanceFrom: Int?
     private let settings = AppSettings.shared
     private let pro = ProManager.shared
     private let quota = QuotaManager.shared
@@ -599,6 +644,13 @@ final class ReadAloudViewModel: ObservableObject {
     private var prefetchingIndex: Int? = nil     // 正在预取中的段
     private var prefetchedIndex: Int? = nil       // 已预取完成、可秒接的段
     private var prefetchedSegments: [AudioSegment] = []
+    // Kindle ordinary voices can buffer a bounded duration across short
+    // paragraphs. The legacy next-paragraph fields above remain the single
+    // promotion interface; these tables only own speculative producers/data.
+    private var kindlePrefetchTasks: [Int: Task<Void, Never>] = [:]
+    private var kindlePrefetchOwners: [Int: UUID] = [:]
+    private var kindlePrefetchedSegments: [Int: [AudioSegment]] = [:]
+    private var kindlePrefetchFailures = Set<Int>()
     /// One cloned-voice request id survives the prefetch -> foreground fallback
     /// for the same paragraph and voice. This keeps backend reservation and
     /// settlement idempotent when a transient failure crosses a paragraph edge.
@@ -771,9 +823,11 @@ final class ReadAloudViewModel: ObservableObject {
         document: ReadingDocument,
         analyticsContext: AnalyticsContentContext? = nil,
         analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator? = nil,
-        audioService: AudioPlayerService = .shared
+        audioService: AudioPlayerService = .shared,
+        ttsService: TTSService = .shared
     ) {
         self.audio = audioService
+        self.tts = ttsService
         self.document = document
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         self.analyticsSessionCoordinator = analyticsSessionCoordinator
@@ -1629,7 +1683,7 @@ final class ReadAloudViewModel: ObservableObject {
         generationTask = Task { [weak self] in
             guard let self else { return }
             do {
-                _ = try await TTSService.shared.generatePrefetchSegments(
+                _ = try await self.tts.generatePrefetchSegments(
                     paragraphIndex: paragraphIndex,
                     text: SpeechTextSanitizer.sanitizedForTTS(sourceText),
                     voice: voiceID,
@@ -2127,16 +2181,27 @@ final class ReadAloudViewModel: ObservableObject {
            }) {
             return
         }
+        if ownsAudioQueue, audio.isPlaying {
+            invalidateAccessRetry()
+            if let token = audioSessionToken { _ = audio.pause(session: token) }
+            return
+        }
         if case .error = status {
-            generate(currentParagraphIndex)
+            retryCurrentParagraph()
+            return
+        }
+        if ownsAudioQueue,
+           !audio.isExplicitlyPaused,
+           (audio.isPlaying || status.isLoading || status.isStreaming || isBuffering) {
+            invalidateAccessRetry()
+            if let token = audioSessionToken { _ = audio.pause(session: token) }
             return
         }
         // A second tap while the first cloud request is still waiting for
         // playable audio is not a retry. Restarting it cancels valid work and
         // makes a slow network request take roughly twice as long.
-        if (status.isLoading || status.isStreaming || isBuffering),
-           audio.currentSegment == nil,
-           !audio.hasQueuedSegments {
+        if pendingPrefetchAdvanceFrom != nil {
+            resumePendingParagraphAdvance()
             return
         }
         // 从暂停恢复播放时补额度闸门：否则免费用户在「宽限硬上限」弹墙后关墙、再点播放即可无限续听。
@@ -2154,6 +2219,11 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         if !audio.isPlaying { beginAnalyticsReadSessionIfNeeded(resume: true) }
+        if (status.isLoading || status.isStreaming),
+           let token = audioSessionToken {
+            _ = audio.play(session: token)
+            return
+        }
         if !audio.isPlaying, !audio.hasQueuedSegments, audio.currentSegment == nil, !isFinished {
             generate(currentParagraphIndex)
             return
@@ -2169,10 +2239,14 @@ final class ReadAloudViewModel: ObservableObject {
     func ensurePlaying() {
         liveWebTurnIntentSuspended = false
         if case .error = status, currentParagraphIndex >= 0 {
-            generate(currentParagraphIndex)
+            retryCurrentParagraph()
             return
         }
         if ownsAudioQueue, audio.isPlaying { return }
+        if pendingPrefetchAdvanceFrom != nil {
+            resumePendingParagraphAdvance()
+            return
+        }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
             self?.ensurePlaying()
         }) {
@@ -2193,11 +2267,6 @@ final class ReadAloudViewModel: ObservableObject {
             rebuildCurrentParagraphAfterOwnershipChange()
             return
         }
-        if (status.isLoading || isBuffering || status.isStreaming),
-           audio.currentSegment == nil,
-           !audio.hasQueuedSegments {
-            return
-        }
         guard currentAudioIsQuotaExempt
                 || pro.isPro
                 || quota.canStartListen(isPro: pro.isPro) else {
@@ -2205,7 +2274,8 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         invalidateAccessRetry()
-        if audio.currentSegment != nil || audio.hasQueuedSegments {
+        if audio.currentSegment != nil || audio.hasQueuedSegments
+            || status.isLoading || status.isStreaming {
             beginAnalyticsReadSessionIfNeeded(resume: true)
             if let token = audioSessionToken {
                 _ = audio.play(session: token)
@@ -2491,18 +2561,30 @@ final class ReadAloudViewModel: ObservableObject {
         invalidateAccessRetry()
         let retryEpoch = accessRetryEpoch
         let paragraphIndex = currentParagraphIndex
+        let epoch = generationEpoch
+        let session = audioSessionToken
         accessRetryTask = Task { [weak self] in
             await ProManager.shared.refresh()
             guard let self,
                   !Task.isCancelled,
                   self.accessRetryEpoch == retryEpoch,
                   self.isActive,
-                  self.currentParagraphIndex == paragraphIndex else { return }
+                  self.currentParagraphIndex == paragraphIndex,
+                  self.generationEpoch == epoch,
+                  self.audioSessionToken == session else { return }
             self.accessRetryTask = nil
             if self.currentAudioIsQuotaExempt
                 || self.pro.isPro
                 || self.quota.canStartListen(isPro: self.pro.isPro) {
                 self.beginAnalyticsReadSessionIfNeeded(resume: true)
+                if case .error = self.status {
+                    self.retryCurrentParagraph()
+                    return
+                }
+                if self.pendingPrefetchAdvanceFrom != nil {
+                    self.resumePendingParagraphAdvance()
+                    return
+                }
                 // This is a retry of an explicit Resume action. `play()` is
                 // idempotent; toggle could pause audio started by a newer event.
                 if self.ownsAudioQueue, let token = self.audioSessionToken {
@@ -2569,6 +2651,9 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func applySpeed() {
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
+        if document.sourceKind == .kindle, currentParagraphIndex >= 0 {
+            preloadNext(after: currentParagraphIndex)
+        }
     }
 
     /// Stops playback synchronously and returns the final YouTube persistence
@@ -2758,12 +2843,54 @@ final class ReadAloudViewModel: ObservableObject {
         return false
     }
 
+    private func retryCurrentParagraph() {
+        guard isActive, currentParagraphIndex >= 0 else { return }
+        guard canStartAudio(persistentYouTubeCacheHit: currentAudioIsQuotaExempt) else {
+            refreshAccessThenRetryResume()
+            return
+        }
+        let continuation = paragraphContinuation.flatMap { saved -> TTSContinuation? in
+            guard ownsAudioQueue,
+                  !audio.hasTerminalPlaybackFailure,
+                  saved.paragraphIndex == currentParagraphIndex,
+                  saved.voice == settings.voice(for: docLanguage),
+                  saved.language == docLanguage,
+                  saved.checkpoint.nextSegmentIndex > 0 else { return nil }
+            return saved.checkpoint
+        }
+        generate(currentParagraphIndex, continuation: continuation)
+    }
+
+    private func resumePendingParagraphAdvance() {
+        guard ownsAudioQueue, let token = audioSessionToken else { return }
+        if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
+            self?.resumePendingParagraphAdvance()
+        }) { return }
+        guard canStartAudio(persistentYouTubeCacheHit: currentAudioIsQuotaExempt) else {
+            refreshAccessThenRetryResume()
+            return
+        }
+        if accessRetryTask != nil {
+            // Record an explicit Resume without outrunning the authoritative
+            // refresh. This queue has drained, so play cannot replay its prefix.
+            _ = audio.play(session: token)
+            return
+        }
+        invalidateAccessRetry()
+        _ = audio.play(session: token) // drained item only records resume intent
+        if prefetchPromotionTask == nil {
+            pendingPrefetchAdvanceFrom = nil
+            advance()
+        }
+    }
+
     private func generate(
         _ index: Int,
         voiceOverride: String? = nil,
         autoPlay: Bool = true,
         voiceSwitchID: UUID? = nil,
-        allowAccessRefresh: Bool = true
+        allowAccessRefresh: Bool = true,
+        continuation: TTSContinuation? = nil
     ) {
         guard isActive, paras.indices.contains(index) else { return }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
@@ -2808,17 +2935,23 @@ final class ReadAloudViewModel: ObservableObject {
         resetLiveWebCarryPrewarmState()
         clearPrefetch()   // 重新生成某段 → 作废旧预取
 
-        _ = audio.clearQueue(session: session)
+        if continuation == nil {
+            paragraphContinuation = nil
+            _ = audio.clearQueue(session: session)
+        }
         _ = audio.setMoreSegmentsExpected(true, session: session)
+        if !autoPlay { _ = audio.pause(session: session) }
+        if continuation != nil, autoPlay { _ = audio.play(session: session) }
         setYouTubeAudioQuotaOrigin(
             paragraphIndex: index,
             persistentCacheHit: false
         )
         retainYouTubeAudioMemory(for: index)
-        segmentsByParagraph[index] = []
+        if continuation == nil { segmentsByParagraph[index] = [] }
         youtubeCompletionSubmittedParagraph = nil
         currentParagraphIndex = index
-        processedDisplayText = nil
+        processedDisplayText = continuation == nil
+            ? nil : segmentsByParagraph[index]?.map(\.text).joined()
         highlightRange = nil
         photoHighlightWordIndex = nil
         photoHighlightWordRange = nil
@@ -2840,7 +2973,7 @@ final class ReadAloudViewModel: ObservableObject {
                     allowAccessRefresh: allowAccessRefresh
                 ) else { return }
                 NSLog("CRDBG generate request begin para=%d voice=%@ epoch=%llu", index, voice, epoch)
-                try await TTSService.shared.generateTTSForParagraph(
+                try await self.tts.generateTTSForParagraph(
                     paragraphIndex: index,
                     text: SpeechTextSanitizer.sanitizedForTTS(
                         para.resolvedSpeechText
@@ -2850,7 +2983,20 @@ final class ReadAloudViewModel: ObservableObject {
                     language: self.docLanguage,
                     includeVoiceCode: self.includeVoiceCodeForTTS,
                     speaker: para.speaker,
-                    cloneRequestID: cloneRequestID
+                    cloneRequestID: cloneRequestID,
+                    continuation: continuation,
+                    onCheckpoint: { [weak self] checkpoint in
+                        guard let self,
+                              self.isActive,
+                              self.generationEpoch == epoch,
+                              self.currentParagraphIndex == index,
+                              self.audioSessionToken == session,
+                              self.audio.isPlaybackSessionActive(session) else { return }
+                        self.paragraphContinuation = ParagraphContinuation(
+                            paragraphIndex: index, voice: voice,
+                            language: self.docLanguage, checkpoint: checkpoint
+                        )
+                    }
                 ) { [weak self] segment in
                     self?.appendSegment(
                         segment,
@@ -2925,7 +3071,8 @@ final class ReadAloudViewModel: ObservableObject {
                     guard self.generationEpoch == epoch,
                           self.audioSessionToken == session,
                           self.audio.isPlaybackSessionActive(session) else { return }
-                    _ = self.audio.setMoreSegmentsExpected(false, session: session)
+                    let hasPrefix = !(self.segmentsByParagraph[index] ?? []).isEmpty
+                    _ = self.audio.setMoreSegmentsExpected(hasPrefix, session: session)
                     if self.currentParagraphIndex == index {
                         ReaderRunLog.write(
                             "READ generate failed para=\(index) epoch=\(epoch) " +
@@ -2958,6 +3105,7 @@ final class ReadAloudViewModel: ObservableObject {
         finishPendingLiveWebResumeIfNeeded(paragraph: paragraph, session: session)
         guard generationEpoch == epoch, !audio.hasTerminalPlaybackFailure,
               audio.finishStreamingProducer(session: session) else { return false }
+        paragraphContinuation = nil
         status = .ready
         return true
     }
@@ -2986,6 +3134,7 @@ final class ReadAloudViewModel: ObservableObject {
         processedDisplayText = segs.map { $0.text }.joined()
         if document.sourceKind.isWebRendered { webAudioSegments.append(segment) }
         let shouldAutoPlay = autoPlay && !liveWebTurnIntentSuspended
+            && !audio.isExplicitlyPaused
         if let pending = pendingLiveWebResume,
            pending.paragraphIndex == paragraph {
             guard WeReadPlaybackResumeContract.segmentMatches(segment.text, anchor: pending.anchor) else {
@@ -3035,6 +3184,9 @@ final class ReadAloudViewModel: ObservableObject {
         }
         guard epoch == generationEpoch, !audio.hasTerminalPlaybackFailure else { return }
         status = .streaming
+        if document.sourceKind == .kindle, !playbackVoiceID.hasPrefix("vc_") {
+            preloadNext(after: paragraph)
+        }
         // The clone worker is intentionally single-flight on one GPU. Starting
         // the next paragraph after only the first segment makes prefetch race
         // the foreground producer for the rest of this paragraph. `generate`
@@ -3100,11 +3252,10 @@ final class ReadAloudViewModel: ObservableObject {
         let previewHadSuspendedPlayback = VoicePreviewPlaybackCoordinator.shared.cancelForVoiceSwitch()
         VoiceSamplePlayer.shared.stop(resumeSuspendedPlayback: false)
         VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
-        let shouldAutoPlay = audio.isPlaying ||
-            audio.isQueuedSegmentGated ||
-            previewHadSuspendedPlayback ||
-            status.isLoading ||
-            (status.isStreaming && audio.currentSegment == nil && !audio.hasQueuedSegments)
+        let shouldAutoPlay = previewHadSuspendedPlayback ||
+            (!audio.isExplicitlyPaused && (audio.isPlaying ||
+                audio.isQueuedSegmentGated || status.isLoading ||
+                (status.isStreaming && audio.currentSegment == nil && !audio.hasQueuedSegments)))
         NotificationCenter.default.post(
             name: .castReaderPlaybackVoiceWillSwitch,
             object: self,
@@ -3146,12 +3297,122 @@ final class ReadAloudViewModel: ObservableObject {
     /// 当前段生成完后调用：后台预生成下一段 TTS 到缓存（不入队播放），advance 命中时秒接，消除段间等首字节的 gap。
     private func preloadNext(after index: Int) {
         guard isActive, !audio.hasTerminalPlaybackFailure else { return }
+        if document.sourceKind == .kindle,
+           !settings.voice(for: docLanguage).hasPrefix("vc_") {
+            preloadKindleHorizon(after: index)
+            return
+        }
         guard let pos = readableIndices.firstIndex(of: index) else { return }
         let nextPos = pos + 1
         guard nextPos < readableIndices.count else { return }
         let nextIndex = readableIndices[nextPos]
         if prefetchingIndex == nextIndex || prefetchedIndex == nextIndex { return }   // 已在预取/已就绪
         startPrefetch(nextIndex)
+    }
+
+    private func synchronizeKindleNextPrefetch(after index: Int) {
+        guard let position = readableIndices.firstIndex(of: index),
+              position + 1 < readableIndices.count else {
+            prefetchTask = nil
+            prefetchingIndex = nil
+            prefetchedIndex = nil
+            prefetchedSegments = []
+            return
+        }
+        let next = readableIndices[position + 1]
+        prefetchTask = kindlePrefetchTasks[next]
+        prefetchingIndex = prefetchTask == nil ? nil : next
+        prefetchedSegments = kindlePrefetchedSegments[next] ?? []
+        prefetchedIndex = prefetchedSegments.isEmpty ? nil : next
+        prefetchedYouTubeAudioIsQuotaExempt = false
+    }
+
+    private func preloadKindleHorizon(after index: Int) {
+        guard ownsAudioQueue,
+              let session = audioSessionToken,
+              let position = readableIndices.firstIndex(of: index),
+              canStartAudio(persistentYouTubeCacheHit: false) else { return }
+        let candidates = readableIndices.dropFirst(position + 1).map { next in
+            KindleParagraphPrefetchHorizon.Candidate(
+                index: next,
+                utf16Count: SpeechTextSanitizer.sanitizedForTTS(
+                    paras[next].resolvedSpeechText
+                ).utf16.count,
+                readyDuration: kindlePrefetchedSegments[next].flatMap { segments in
+                    guard !segments.isEmpty,
+                          segments.allSatisfy({ $0.duration.isFinite && $0.duration > 0 }) else { return nil }
+                    return segments.reduce(0) { $0 + $1.duration }
+                }
+            )
+        }
+        let selection = KindleParagraphPrefetchHorizon.select(candidates, speed: Double(audio.playbackRate))
+        let selected = Set(selection.indices)
+        // Retire work outside the current window. Each callback also carries a
+        // unique producer id, so a late cancelled response cannot refill it.
+        for key in Array(kindlePrefetchOwners.keys) where !selected.contains(key) {
+            kindlePrefetchTasks.removeValue(forKey: key)?.cancel()
+            kindlePrefetchOwners.removeValue(forKey: key)
+            kindlePrefetchedSegments.removeValue(forKey: key)
+        }
+        #if DEBUG
+        ReaderRunLog.write(
+            "READ Kindle horizon para=\(index) selected=\(selection.indices.map(String.init).joined(separator: ",")) " +
+            "seconds=\(String(format: "%.2f", selection.estimatedSeconds)) extraChars=\(selection.additionalCharacters)"
+        )
+        #endif
+        for next in selection.indices where kindlePrefetchOwners[next] == nil
+            && !kindlePrefetchFailures.contains(next) {
+            startKindleHorizonPrefetch(next, session: session)
+        }
+        synchronizeKindleNextPrefetch(after: index)
+    }
+
+    private func startKindleHorizonPrefetch(_ index: Int, session: AudioPlaybackSessionToken) {
+        let producerID = UUID()
+        let epoch = generationEpoch
+        let voice = settings.voice(for: docLanguage)
+        let language = docLanguage
+        let paragraph = paras[index]
+        let includeVoiceCode = includeVoiceCodeForTTS
+        let service = tts
+        kindlePrefetchOwners[index] = producerID
+        ReaderRunLog.write("READ prefetch start para=\(index) epoch=\(epoch) source=kindle-horizon")
+        kindlePrefetchTasks[index] = Task { [weak self] in
+            do {
+                let collected = try await service.generatePrefetchSegments(
+                    paragraphIndex: index,
+                    text: SpeechTextSanitizer.sanitizedForTTS(paragraph.resolvedSpeechText),
+                    voice: voice, speed: 1, language: language,
+                    includeVoiceCode: includeVoiceCode, speaker: paragraph.speaker
+                )
+                guard let self, !Task.isCancelled,
+                      self.isActive, self.generationEpoch == epoch,
+                      self.audioSessionToken == session, self.ownsAudioQueue,
+                      self.settings.voice(for: self.docLanguage) == voice,
+                      self.docLanguage == language,
+                      self.kindlePrefetchOwners[index] == producerID else { return }
+                self.kindlePrefetchTasks.removeValue(forKey: index)
+                if collected.isEmpty {
+                    self.kindlePrefetchFailures.insert(index)
+                } else {
+                    self.kindlePrefetchedSegments[index] = collected
+                    self.audio.prestageSegments(collected)
+                }
+                ReaderRunLog.write("READ prefetch done para=\(index) epoch=\(epoch) segs=\(collected.count) source=kindle-horizon")
+                // READY can be much shorter than its estimate. Always replan
+                // from the real playback anchor, never from this future index.
+                self.preloadNext(after: self.currentParagraphIndex)
+            } catch {
+                guard let self, !Task.isCancelled,
+                      self.isActive, self.generationEpoch == epoch,
+                      self.audioSessionToken == session, self.ownsAudioQueue,
+                      self.kindlePrefetchOwners[index] == producerID else { return }
+                self.kindlePrefetchTasks.removeValue(forKey: index)
+                self.kindlePrefetchFailures.insert(index)
+                self.synchronizeKindleNextPrefetch(after: self.currentParagraphIndex)
+                ReaderRunLog.write("READ prefetch failed para=\(index) epoch=\(epoch) source=kindle-horizon")
+            }
+        }
     }
 
     /// 后台生成 nextIndex 段的全部 segment 到 `prefetchedSegments`（不碰播放器，
@@ -3163,6 +3424,7 @@ final class ReadAloudViewModel: ObservableObject {
         prefetchedIndex = nil
         prefetchedSegments = []
         prefetchedYouTubeAudioIsQuotaExempt = false
+        let service = tts
         let epoch = generationEpoch
         let para = paras[nextIndex]
         let voice = settings.voice(for: docLanguage)
@@ -3188,7 +3450,7 @@ final class ReadAloudViewModel: ObservableObject {
                     }
                     return
                 }
-                let collected = try await TTSService.shared.generatePrefetchSegments(
+                let collected = try await service.generatePrefetchSegments(
                     paragraphIndex: nextIndex,
                     text: SpeechTextSanitizer.sanitizedForTTS(
                         para.resolvedSpeechText
@@ -3264,6 +3526,12 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// 取消并清空预取缓存（jump / stop / 重新 generate 时）。
     private func clearPrefetch() {
+        pendingPrefetchAdvanceFrom = nil
+        kindlePrefetchTasks.values.forEach { $0.cancel() }
+        kindlePrefetchTasks.removeAll()
+        kindlePrefetchOwners.removeAll()
+        kindlePrefetchedSegments.removeAll()
+        kindlePrefetchFailures.removeAll()
         prefetchPromotionTask?.cancel()
         prefetchPromotionTask = nil
         prefetchTask?.cancel()
@@ -3281,6 +3549,9 @@ final class ReadAloudViewModel: ObservableObject {
         guard isActive else { return }
         guard let session = ensureAudioSessionClaim() else { return }
         let segs = prefetchedSegments
+        kindlePrefetchedSegments.removeValue(forKey: index)
+        kindlePrefetchOwners.removeValue(forKey: index)
+        kindlePrefetchTasks.removeValue(forKey: index)
         let persistentYouTubeCacheHit = prefetchedYouTubeAudioIsQuotaExempt
         prefetchedSegments = []
         prefetchedIndex = nil
@@ -3316,7 +3587,7 @@ final class ReadAloudViewModel: ObservableObject {
         _ = audio.setMoreSegmentsExpected(false, session: session)
         guard audio.loadSegments(
             segs,
-            autoPlay: !liveWebTurnIntentSuspended,
+            autoPlay: !liveWebTurnIntentSuspended && !audio.isExplicitlyPaused,
             session: session
         ) else { return }
         status = .ready
@@ -3369,6 +3640,10 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func advance(allowAccessRefresh: Bool) {
+        if case .error = status {
+            ReaderRunLog.write("READ advance blocked reason=tts-error para=\(currentParagraphIndex)")
+            return
+        }
         guard isActive else {
             ReaderRunLog.write(
                 "READ advance ignored reason=inactive para=\(currentParagraphIndex)"
@@ -3534,6 +3809,8 @@ final class ReadAloudViewModel: ObservableObject {
             )
             let epoch = generationEpoch
             let sourceParagraphIndex = currentParagraphIndex
+            let session = audioSessionToken
+            pendingPrefetchAdvanceFrom = sourceParagraphIndex
             prefetchPromotionTask?.cancel()
             prefetchPromotionTask = Task { [weak self] in
                 _ = await task.value
@@ -3541,8 +3818,12 @@ final class ReadAloudViewModel: ObservableObject {
                       !Task.isCancelled,
                       self.isActive,
                       self.generationEpoch == epoch,
-                      self.currentParagraphIndex == sourceParagraphIndex else { return }
+                      self.currentParagraphIndex == sourceParagraphIndex,
+                      self.audioSessionToken == session,
+                      self.ownsAudioQueue else { return }
                 self.prefetchPromotionTask = nil
+                guard !self.audio.isExplicitlyPaused else { return }
+                self.pendingPrefetchAdvanceFrom = nil
                 self.advance(allowAccessRefresh: allowAccessRefresh)
             }
             return
@@ -3568,6 +3849,7 @@ final class ReadAloudViewModel: ObservableObject {
             }
             status = .ready
             showPaywall = true
+            pendingPrefetchAdvanceFrom = currentParagraphIndex
             if let token = audioSessionToken {
                 _ = audio.pause(session: token)
             }
@@ -3589,6 +3871,8 @@ final class ReadAloudViewModel: ObservableObject {
             )
             let epoch = generationEpoch
             let sourceParagraphIndex = currentParagraphIndex
+            let session = audioSessionToken
+            pendingPrefetchAdvanceFrom = sourceParagraphIndex
             prefetchPromotionTask?.cancel()
             prefetchPromotionTask = Task { [weak self] in
                 _ = await task.value
@@ -3596,19 +3880,14 @@ final class ReadAloudViewModel: ObservableObject {
                       !Task.isCancelled,
                       self.isActive,
                       self.generationEpoch == epoch,
-                      self.currentParagraphIndex == sourceParagraphIndex else { return }
+                      self.currentParagraphIndex == sourceParagraphIndex,
+                      self.audioSessionToken == session,
+                      self.ownsAudioQueue else { return }
                 self.prefetchPromotionTask = nil
-                if self.prefetchedIndex == nextIndex, !self.prefetchedSegments.isEmpty {
-                    self.promotePrefetch(to: nextIndex)
-                } else {
-                    ReaderRunLog.write(
-                        "READ boundary prefetch miss next=\(nextIndex); foreground generate"
-                    )
-                    self.generate(
-                        nextIndex,
-                        allowAccessRefresh: allowAccessRefresh
-                    )
-                }
+                guard !self.audio.isExplicitlyPaused else { return }
+                self.pendingPrefetchAdvanceFrom = nil
+                // Recheck the paragraph entitlement gate after the network wait.
+                self.advance(allowAccessRefresh: allowAccessRefresh)
             }
             return
         }
@@ -3637,22 +3916,32 @@ final class ReadAloudViewModel: ObservableObject {
         }
     }
 
-    private func refreshAccessThenRetryAdvance() {
+    private func refreshAccessThenRetryAdvance(
+        refresh: @escaping @MainActor () async -> Void = { await ProManager.shared.refresh() }
+    ) {
         status = .loading
         if let token = audioSessionToken {
-            _ = audio.pause(session: token)
+            _ = audio.pauseForEntitlementRefresh(session: token)
         }
         invalidateAccessRetry()
         let retryEpoch = accessRetryEpoch
         let paragraphIndex = currentParagraphIndex
+        let epoch = generationEpoch
+        let session = audioSessionToken
+        pendingPrefetchAdvanceFrom = paragraphIndex
         accessRetryTask = Task { [weak self] in
-            await ProManager.shared.refresh()
+            await refresh()
             guard let self,
                   !Task.isCancelled,
                   self.accessRetryEpoch == retryEpoch,
                   self.isActive,
-                  self.currentParagraphIndex == paragraphIndex else { return }
+                  self.currentParagraphIndex == paragraphIndex,
+                  self.generationEpoch == epoch,
+                  self.audioSessionToken == session,
+                  self.ownsAudioQueue else { return }
             self.accessRetryTask = nil
+            guard !self.audio.isExplicitlyPaused else { return }
+            self.pendingPrefetchAdvanceFrom = nil
             self.advance(allowAccessRefresh: false)
         }
     }
@@ -4548,6 +4837,8 @@ extension ReadAloudViewModel {
     var dbgPrefetchingIndex: Int? { prefetchingIndex }
     var dbgPrefetchedIndex: Int? { prefetchedIndex }
     var dbgPrefetchedSegments: [AudioSegment] { prefetchedSegments }
+    var dbgKindlePrefetchIndices: [Int] { kindlePrefetchOwners.keys.sorted() }
+    var dbgKindleReadyIndices: [Int] { kindlePrefetchedSegments.keys.sorted() }
     func dbgSegments(for i: Int) -> [AudioSegment] { segmentsByParagraph[i] ?? [] }
     func dbgPreloadNext(after i: Int) async {
         activate()
@@ -4563,5 +4854,9 @@ extension ReadAloudViewModel {
         generate(i)
     }
     func dbgWaitGeneration() async { _ = await generationTask?.value }
+    func dbgRefreshAccessThenRetryAdvance(refresh: @escaping @MainActor () async -> Void) {
+        refreshAccessThenRetryAdvance(refresh: refresh)
+    }
+    var dbgIsAwaitingAccessRefresh: Bool { accessRetryTask != nil }
 }
 #endif

@@ -1,6 +1,586 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "应用版本" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "应用版本"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App version"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリのバージョン"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión de la app"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version de l’app"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App-Version"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versão do app"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versione dell’app"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ऐप संस्करण"
+          }
+        }
+      }
+    },
+    "阅读设置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading settings"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leseeinstellungen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de lectura"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réglages de lecture"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पढ़ने की सेटिंग"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impostazioni di lettura"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読書設定"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurações de leitura"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "阅读设置"
+          }
+        }
+      }
+    },
+    "Kindle 字号" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle font size"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle-Schriftgröße"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tamaño de letra de Kindle"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taille du texte Kindle"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle फ़ॉन्ट का आकार"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dimensione testo Kindle"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindleの文字サイズ"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tamanho da fonte do Kindle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle 字号"
+          }
+        }
+      }
+    },
+    "减小字号" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrease font size"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schrift verkleinern"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reducir tamaño de letra"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réduire la taille du texte"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "फ़ॉन्ट का आकार घटाएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riduci dimensione testo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字を小さくする"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diminuir tamanho da fonte"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "减小字号"
+          }
+        }
+      }
+    },
+    "增大字号" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increase font size"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schrift vergrößern"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumentar tamaño de letra"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agrandir la taille du texte"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "फ़ॉन्ट का आकार बढ़ाएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumenta dimensione testo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字を大きくする"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aumentar tamanho da fonte"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增大字号"
+          }
+        }
+      }
+    },
+    "正在应用阅读设置…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applying reading settings…"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leseeinstellungen werden angewendet…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aplicando ajustes de lectura…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Application des réglages de lecture…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पढ़ने की सेटिंग लागू हो रही है…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applicazione delle impostazioni…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読書設定を適用中…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aplicando configurações de leitura…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在应用阅读设置…"
+          }
+        }
+      }
+    },
+    "调整后将重新排版当前页。点击播放，从当前页开始朗读。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes reflow the current page. Tap Play to read from the current page."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Änderungen gestalten die aktuelle Seite neu. Tippe auf Wiedergabe, um ab dieser Seite vorzulesen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los cambios redistribuyen la página actual. Pulsa Reproducir para leer desde esta página."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les modifications réorganisent la page actuelle. Touchez Lecture pour lire à partir de cette page."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बदलाव से मौजूदा पेज का लेआउट बदलेगा। इसी पेज से सुनने के लिए चलाएँ पर टैप करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le modifiche ridistribuiscono il testo della pagina. Tocca Riproduci per leggere dalla pagina attuale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "変更すると現在のページが再配置されます。再生をタップすると、現在のページから読み上げます。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As alterações reorganizam a página atual. Toque em Reproduzir para ler a partir desta página."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "调整后将重新排版当前页。点击播放，从当前页开始朗读。"
+          }
+        }
+      }
+    },
+    "跳过脚注引用编号" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip footnote reference numbers"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fußnotenverweise überspringen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Omitir números de referencia a notas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorer les numéros d’appel de note"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "फ़ुटनोट संदर्भ संख्याएँ छोड़ें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salta i numeri di richiamo delle note"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "脚注の参照番号をスキップ"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignorar números de referência de notas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "跳过脚注引用编号"
+          }
+        }
+      }
+    },
+    "仅跳过可明确识别的上标脚注编号，保留正文数字和脚注内容。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only clearly identified superscript footnote references are skipped. Body numbers and footnote text are kept."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur eindeutig erkannte hochgestellte Fußnotenverweise werden übersprungen. Zahlen im Text und Fußnotentexte bleiben erhalten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo se omiten referencias a notas en superíndice claramente identificadas. Se conservan los números del texto y el contenido de las notas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seuls les appels de note en exposant clairement identifiés sont ignorés. Les nombres du texte et le contenu des notes sont conservés."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "केवल स्पष्ट रूप से पहचाने गए सुपरस्क्रिप्ट फ़ुटनोट संदर्भ छोड़े जाते हैं। मुख्य पाठ की संख्याएँ और फ़ुटनोट का पाठ बनाए रखे जाते हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vengono saltati solo i richiami in apice chiaramente riconosciuti. I numeri nel testo e il contenuto delle note restano invariati."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "明確に識別できる上付きの脚注参照番号のみをスキップします。本文の数字と脚注の内容は保持します。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Somente referências de notas em sobrescrito claramente identificadas são ignoradas. Os números do texto e o conteúdo das notas são mantidos."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅跳过可明确识别的上标脚注编号，保留正文数字和脚注内容。"
+          }
+        }
+      }
+    },
+    "此页面暂时无法调整字号，请关闭设置后重试。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Font size is unavailable on this page. Close settings and try again."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Schriftgröße lässt sich hier derzeit nicht ändern. Schließe die Einstellungen und versuche es erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede ajustar el tamaño de letra en esta página. Cierra los ajustes e inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La taille du texte est indisponible sur cette page. Fermez les réglages et réessayez."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इस पेज पर फ़ॉन्ट का आकार अभी नहीं बदला जा सकता। सेटिंग बंद करके फिर कोशिश करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La dimensione del testo non è disponibile su questa pagina. Chiudi le impostazioni e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このページでは現在文字サイズを変更できません。設定を閉じて再試行してください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O tamanho da fonte está indisponível nesta página. Feche as configurações e tente novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此页面暂时无法调整字号，请关闭设置后重试。"
+          }
+        }
+      }
+    },
     "请先登录" : {"localizations": {"de": {"stringUnit": {"state": "translated", "value": "Bitte melde dich zuerst an."}}, "en": {"stringUnit": {"state": "translated", "value": "Please sign in first."}}, "es": {"stringUnit": {"state": "translated", "value": "Inicia sesión primero."}}, "fr": {"stringUnit": {"state": "translated", "value": "Connectez-vous d’abord."}}, "hi": {"stringUnit": {"state": "translated", "value": "पहले साइन इन करें।"}}, "it": {"stringUnit": {"state": "translated", "value": "Accedi prima di continuare."}}, "ja": {"stringUnit": {"state": "translated", "value": "先にログインしてください。"}}, "pt-BR": {"stringUnit": {"state": "translated", "value": "Entre na sua conta primeiro."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "请先登录"}}}},
     "请清除书架的搜索或进度筛选后重试。" : {"localizations": {"de": {"stringUnit": {"state": "translated", "value": "Entferne die Such- oder Fortschrittsfilter deiner Bibliothek und versuche es erneut."}}, "en": {"stringUnit": {"state": "translated", "value": "Clear the search or progress filter in your library, then try again."}}, "es": {"stringUnit": {"state": "translated", "value": "Borra los filtros de búsqueda o progreso de tu biblioteca y vuelve a intentarlo."}}, "fr": {"stringUnit": {"state": "translated", "value": "Effacez les filtres de recherche ou de progression de votre bibliothèque, puis réessayez."}}, "hi": {"stringUnit": {"state": "translated", "value": "अपनी लाइब्रेरी में खोज या प्रगति फ़िल्टर हटाएँ, फिर दोबारा प्रयास करें।"}}, "it": {"stringUnit": {"state": "translated", "value": "Rimuovi i filtri di ricerca o avanzamento della libreria, poi riprova."}}, "ja": {"stringUnit": {"state": "translated", "value": "ライブラリの検索または進捗フィルターを解除して、もう一度お試しください。"}}, "pt-BR": {"stringUnit": {"state": "translated", "value": "Limpe os filtros de pesquisa ou progresso da biblioteca e tente novamente."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "请清除书架的搜索或进度筛选后重试。"}}}},
     "书架尚未完整加载，请重试。" : {"localizations": {"de": {"stringUnit": {"state": "translated", "value": "Die Bibliothek ist noch nicht vollständig geladen. Bitte versuche es erneut."}}, "en": {"stringUnit": {"state": "translated", "value": "The full library could not be loaded. Please try again."}}, "es": {"stringUnit": {"state": "translated", "value": "No se pudo cargar toda la biblioteca. Inténtalo de nuevo."}}, "fr": {"stringUnit": {"state": "translated", "value": "La bibliothèque n’a pas pu être chargée entièrement. Réessayez."}}, "hi": {"stringUnit": {"state": "translated", "value": "पूरी लाइब्रेरी लोड नहीं हो सकी। फिर कोशिश करें।"}}, "it": {"stringUnit": {"state": "translated", "value": "Non è stato possibile caricare l’intera libreria. Riprova."}}, "ja": {"stringUnit": {"state": "translated", "value": "本棚全体を読み込めませんでした。もう一度お試しください。"}}, "pt-BR": {"stringUnit": {"state": "translated", "value": "Não foi possível carregar toda a biblioteca. Tente novamente."}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "书架尚未完整加载，请重试。"}}}},

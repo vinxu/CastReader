@@ -74,6 +74,15 @@ struct SettingsView: View {
                 explainSection
                 appearanceSection
                 supportSection
+                Section {
+                    LabeledContent(AppLocalized("应用版本")) {
+                        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+                        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
+                        Text("\(version) (\(build))")
+                            .textSelection(.enabled)
+                    }
+                    .accessibilityIdentifier("settingsAppVersion")
+                }
                 if AppRegion.current == .cn {
                     chinaAboutSection
                 }

@@ -529,12 +529,20 @@ enum KindleTurnContract {
         return isTerminalProgress(storedProgress)
     }
 
-    static func progress(beforeLocation: Int?, afterLocation: Int?, beforeRenderer: Int?, afterRenderer: Int?) -> KindleForwardProgress {
+    /// Progress is relative to the requested turn. A decreasing location is
+    /// evidence for Previous, while an increase contradicts that request.
+    static func progress(
+        beforeLocation: Int?, afterLocation: Int?,
+        beforeRenderer: Int?, afterRenderer: Int?,
+        direction: KindlePageTurnDirection = .next
+    ) -> KindleForwardProgress {
         func compare(_ before: Int?, _ after: Int?) -> KindleForwardProgress? {
             guard let before, let after else { return nil }
-            if after > before { return .forward }
-            if after < before { return .backward }
-            return .unchanged
+            guard before != after else { return .unchanged }
+            switch direction {
+            case .next: return after > before ? .forward : .backward
+            case .previous: return after < before ? .forward : .backward
+            }
         }
         if let location = compare(beforeLocation, afterLocation), location != .unchanged { return location }
         if let renderer = compare(beforeRenderer, afterRenderer), renderer != .unchanged { return renderer }

@@ -21,7 +21,7 @@ import Foundation
 struct PhotoOCRSnapshot: Codable, Equatable {
     /// 识别管线的产物契约版本。改动 OCR 的分段/几何/语言判定后必须 +1，
     /// 否则旧快照会把过期的版面结果一直带下去。
-    static let currentVersion = 1
+    static let currentVersion = 2
 
     struct Word: Codable, Equatable {
         let id: Int
