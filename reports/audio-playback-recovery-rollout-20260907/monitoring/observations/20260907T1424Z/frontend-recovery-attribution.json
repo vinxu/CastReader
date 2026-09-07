@@ -1,0 +1,398 @@
+{
+  "schema": "castreader.frontend-recovery-group-attribution.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "rows": [
+    {
+      "modelRequestKey": "466ce180efc31172d08b",
+      "stage": "english_g2p_recovered",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:01:36.958364+00:00",
+          "flightKeys": [
+            "466ce180efc31172d08b"
+          ],
+          "lastUTC": "2026-09-07T14:01:37.474786+00:00",
+          "outcomes": {
+            "complete": 1
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 1,
+          "requestKey": "4217f496063d7ea387fa"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": false
+    },
+    {
+      "modelRequestKey": "9902ed226234dff5e956",
+      "stage": "english_g2p_recovered",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:10:45.861372+00:00",
+          "flightKeys": [
+            "9902ed226234dff5e956"
+          ],
+          "lastUTC": "2026-09-07T14:10:46.384288+00:00",
+          "outcomes": {
+            "complete": 1
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 1,
+          "requestKey": "e86fc15119fd053f73c0"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": false
+    },
+    {
+      "modelRequestKey": "3a973a8317a2172dcaae",
+      "stage": "english_g2p_recovered",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:10:47.797255+00:00",
+          "flightKeys": [
+            "3a973a8317a2172dcaae"
+          ],
+          "lastUTC": "2026-09-07T14:10:48.331154+00:00",
+          "outcomes": {
+            "complete": 1
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 1,
+          "requestKey": "78f84e6cbecf22e492d5"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": false
+    },
+    {
+      "modelRequestKey": "8a5482acca73554d265f",
+      "stage": "english_g2p_recovered",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:11:34.977911+00:00",
+          "flightKeys": [
+            "8a5482acca73554d265f"
+          ],
+          "lastUTC": "2026-09-07T14:11:35.496010+00:00",
+          "outcomes": {
+            "complete": 1
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 1,
+          "requestKey": "f756f4706b746763adb7"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": false
+    },
+    {
+      "modelRequestKey": "0a8906bb1e1019cd24da",
+      "stage": "english_g2p_recovered",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:14:56.994648+00:00",
+          "flightKeys": [
+            "0a8906bb1e1019cd24da"
+          ],
+          "lastUTC": "2026-09-07T14:14:57.469480+00:00",
+          "outcomes": {
+            "complete": 1
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 1,
+          "requestKey": "b76b63778198dc536432"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": false
+    },
+    {
+      "modelRequestKey": "daf50a4f7fe8089e32a9",
+      "stage": "source_frontend_unavailable",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": true,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:20:50.122922+00:00",
+          "flightKeys": [
+            "97aa3fd44caf2562df57",
+            "aa63c038ce3355e40eb8",
+            "daf50a4f7fe8089e32a9"
+          ],
+          "lastUTC": "2026-09-07T14:21:00.332225+00:00",
+          "outcomes": {
+            "complete": 3
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 3,
+          "requestKey": "ae80e376449600c48ed8"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": true
+    },
+    {
+      "modelRequestKey": "aa63c038ce3355e40eb8",
+      "stage": "source_frontend_unavailable",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": true,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:20:50.122922+00:00",
+          "flightKeys": [
+            "97aa3fd44caf2562df57",
+            "aa63c038ce3355e40eb8",
+            "daf50a4f7fe8089e32a9"
+          ],
+          "lastUTC": "2026-09-07T14:21:00.332225+00:00",
+          "outcomes": {
+            "complete": 3
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 3,
+          "requestKey": "ae80e376449600c48ed8"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": true
+    },
+    {
+      "modelRequestKey": "97aa3fd44caf2562df57",
+      "stage": "source_frontend_unavailable",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": true,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:20:50.122922+00:00",
+          "flightKeys": [
+            "97aa3fd44caf2562df57",
+            "aa63c038ce3355e40eb8",
+            "daf50a4f7fe8089e32a9"
+          ],
+          "lastUTC": "2026-09-07T14:21:00.332225+00:00",
+          "outcomes": {
+            "complete": 3
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 3,
+          "requestKey": "ae80e376449600c48ed8"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": true
+    },
+    {
+      "modelRequestKey": "e0d9bbd635f89c67f93b",
+      "stage": "source_frontend_unavailable",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": true,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:21:21.761762+00:00",
+          "flightKeys": [
+            "18783ac8225248bd5ef9",
+            "e0d9bbd635f89c67f93b",
+            "e43d4178b58e2ce9870b"
+          ],
+          "lastUTC": "2026-09-07T14:21:33.059935+00:00",
+          "outcomes": {
+            "complete": 3
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 3,
+          "requestKey": "672af14d6c41b01ca3a4"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": true
+    },
+    {
+      "modelRequestKey": "83c86bd9870f7cb64cc8",
+      "stage": "english_g2p_recovered",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:21:22.601357+00:00",
+          "flightKeys": [
+            "83c86bd9870f7cb64cc8"
+          ],
+          "lastUTC": "2026-09-07T14:21:24.245471+00:00",
+          "outcomes": {
+            "complete": 1
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 1,
+          "requestKey": "a597a1abe5a6635fa2f2"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": false
+    },
+    {
+      "modelRequestKey": "e43d4178b58e2ce9870b",
+      "stage": "source_frontend_unavailable",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": true,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:21:21.761762+00:00",
+          "flightKeys": [
+            "18783ac8225248bd5ef9",
+            "e0d9bbd635f89c67f93b",
+            "e43d4178b58e2ce9870b"
+          ],
+          "lastUTC": "2026-09-07T14:21:33.059935+00:00",
+          "outcomes": {
+            "complete": 3
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 3,
+          "requestKey": "672af14d6c41b01ca3a4"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": true
+    },
+    {
+      "modelRequestKey": "18783ac8225248bd5ef9",
+      "stage": "source_frontend_unavailable",
+      "matchingProxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": true,
+          "attempt": 1,
+          "firstUTC": "2026-09-07T14:21:21.761762+00:00",
+          "flightKeys": [
+            "18783ac8225248bd5ef9",
+            "e0d9bbd635f89c67f93b",
+            "e43d4178b58e2ce9870b"
+          ],
+          "lastUTC": "2026-09-07T14:21:33.059935+00:00",
+          "outcomes": {
+            "complete": 3
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 3,
+          "requestKey": "672af14d6c41b01ca3a4"
+        }
+      ],
+      "allMatchingGroupsOnlyHaveCompleteOutcomes": true,
+      "ambiguousCallerRequestKey": true
+    }
+  ],
+  "knownOptionalFailureStack": "misaki en.py retokenize ValueError wrapped by compatible_english_timestamps.prepare_english_chunks",
+  "newTerminalFailureEstablished": false,
+  "limitations": [
+    "Model requestKey is compared to proxy flightKeys. Some caller keys repeat; preserve group ambiguity and do not force individual HTTP joins.",
+    "All matched groups contain complete outcomes only; this does not prove each repeated caller key maps one-to-one to a model diagnostic.",
+    "No text, error message or audio read."
+  ]
+}

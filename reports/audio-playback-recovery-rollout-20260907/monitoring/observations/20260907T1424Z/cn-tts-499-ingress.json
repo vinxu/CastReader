@@ -1,0 +1,40 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "synthesisStarted": false,
+  "window": {
+    "startUTC": "2026-09-07T13:40:22.326000+00:00",
+    "endUTCExclusive": "2026-09-07T14:24:51.334000+00:00"
+  },
+  "counts": [
+    {
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": "200",
+      "count": 177
+    },
+    {
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": "499",
+      "count": 1
+    }
+  ],
+  "rows": [
+    {
+      "atUTC": "2026-09-07T14:09:46+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "b1ef411125a248a7b68f"
+    }
+  ],
+  "unparsedFileLines": 87,
+  "limitations": [
+    "This is the existing default ingress log for the TTS route only; 499 is an ingress log status, not proof it was delivered to the caller.",
+    "No request-id join available; matching timestamps alone are not exact attribution.",
+    "Recorded HTTP200 cannot prove streaming delivery completed."
+  ],
+  "collectorSha256": "6ce138d4f2be328c8afbc294f14ebf55f3386ba4fce1042cdd39d34eb9514b18"
+}

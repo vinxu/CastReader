@@ -1,0 +1,63 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "synthesisStarted": false,
+  "window": {
+    "startUTC": "2026-09-07T13:40:22.326000+00:00",
+    "endUTCExclusive": "2026-09-07T14:24:51.334000+00:00"
+  },
+  "warnings": [
+    {
+      "atUTC": "2026-09-07T13:51:02.821519+00:00",
+      "event": "generated_audio_quality_warning",
+      "blocking": false,
+      "policy": "playback-first-v1",
+      "warnings": [
+        "unstable-prefix-pitch"
+      ],
+      "metrics": {
+        "prefix_spectral_flatness_p75": 0.000147,
+        "high_frequency_ratio": 3e-06,
+        "silent_ratio": 0.063617,
+        "prefix_pitch_frame_count": 42.0,
+        "spectral_flatness": 0.000169,
+        "prefix_high_frequency_p75": 4e-06,
+        "body_pitch_frame_count": 39.0,
+        "prefix_body_pitch_p90_ratio": 2.0453,
+        "peak": 0.353882,
+        "rms": 0.053875,
+        "duration_s": 4.4,
+        "prefix_body_pitch_ratio": 1.6498,
+        "clipping_ratio": 0.0
+      }
+    },
+    {
+      "atUTC": "2026-09-07T13:51:31.863518+00:00",
+      "event": "generated_audio_duration_warning",
+      "blocking": false,
+      "policy": "playback-first-v1",
+      "metrics": {
+        "prefix_spectral_flatness_p75": 0.003233,
+        "expected_duration_limit_s": 4.0,
+        "high_frequency_ratio": 0.020577,
+        "silent_ratio": 0.410036,
+        "prefix_pitch_frame_count": 2.0,
+        "spectral_flatness": 0.101692,
+        "prefix_high_frequency_p75": 4.2e-05,
+        "body_pitch_frame_count": 0.0,
+        "prefix_body_pitch_p90_ratio": 0.0,
+        "peak": 0.025208,
+        "rms": 0.001228,
+        "duration_s": 6.56,
+        "prefix_body_pitch_ratio": 0.0,
+        "clipping_ratio": 0.0
+      }
+    }
+  ],
+  "limitations": [
+    "Acoustic warning scores do not establish that playback failed or audio is defective.",
+    "No recording/audio/text read; no exact HTTP request join is available in these warning records."
+  ],
+  "collectorSha256": "6b5b672ca27491cee2341c6d2df1a6fd406ec3c5056cab1fbf7a315149a047d9"
+}

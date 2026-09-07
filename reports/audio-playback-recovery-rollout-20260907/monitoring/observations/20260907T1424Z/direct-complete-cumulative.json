@@ -1,0 +1,612 @@
+{
+  "aggregate": {
+    "abortSourceCounts": {
+      "downstream_closed": 20
+    },
+    "android145Preset": {
+      "attribution": "client_supplied_platform_and_version_headers",
+      "elapsedMs": {
+        "max": 4615.0,
+        "p50": 489.0,
+        "p95": 1463.0,
+        "samples": 7945
+      },
+      "firstRequestAtUtc": "2026-09-06T18:37:52.832054Z",
+      "lastRequestAtUtc": "2026-09-07T13:58:46.923210Z",
+      "requests": 7945,
+      "statusCounts": {
+        "200": 7944,
+        "no_response": 1
+      }
+    },
+    "clientStatusCounts": [
+      {
+        "clientPlatform": "android",
+        "clientVersion": "1.0.45",
+        "count": 7944,
+        "status": "200"
+      },
+      {
+        "clientPlatform": "android",
+        "clientVersion": "1.0.45",
+        "count": 1,
+        "status": "no_response"
+      },
+      {
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "count": 942,
+        "status": "200"
+      },
+      {
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "count": 18,
+        "status": "no_response"
+      },
+      {
+        "clientPlatform": "extension",
+        "clientVersion": "1.2.37",
+        "count": 2101,
+        "status": "200"
+      },
+      {
+        "clientPlatform": "extension",
+        "clientVersion": "1.2.37",
+        "count": 1,
+        "status": "no_response"
+      },
+      {
+        "clientPlatform": "other",
+        "clientVersion": "1.2.37",
+        "count": 12,
+        "status": "200"
+      },
+      {
+        "clientPlatform": "other",
+        "clientVersion": "unknown",
+        "count": 24,
+        "status": "200"
+      },
+      {
+        "clientPlatform": "unknown",
+        "clientVersion": "unknown",
+        "count": 17,
+        "status": "200"
+      },
+      {
+        "clientPlatform": "unknown",
+        "clientVersion": "unknown",
+        "count": 1,
+        "status": "400"
+      }
+    ],
+    "consoleErrorClassCounts": {
+      "downstream_closed": 20
+    },
+    "downstreamConnectionStateUnknownRequests": 0,
+    "downstreamDisconnectedRequests": 20,
+    "duplicateRequestLogBlocks": 0,
+    "elapsedMs": {
+      "max": 6083.0,
+      "p50": 491.0,
+      "p95": 1548.0,
+      "samples": 11061
+    },
+    "firstJournalAtUtc": "2026-09-06T18:37:52.832054Z",
+    "firstRequestAtUtc": "2026-09-06T18:37:52.832054Z",
+    "hourlyStatusCounts": [
+      {
+        "count": 171,
+        "hourUtc": "2026-09-06T18:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 1391,
+        "hourUtc": "2026-09-06T19:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 7,
+        "hourUtc": "2026-09-06T19:00:00Z",
+        "status": "no_response"
+      },
+      {
+        "count": 206,
+        "hourUtc": "2026-09-06T20:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 4,
+        "hourUtc": "2026-09-06T20:00:00Z",
+        "status": "no_response"
+      },
+      {
+        "count": 116,
+        "hourUtc": "2026-09-06T21:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 1,
+        "hourUtc": "2026-09-06T21:00:00Z",
+        "status": "no_response"
+      },
+      {
+        "count": 416,
+        "hourUtc": "2026-09-06T23:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 775,
+        "hourUtc": "2026-09-07T00:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 719,
+        "hourUtc": "2026-09-07T01:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 749,
+        "hourUtc": "2026-09-07T02:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 1,
+        "hourUtc": "2026-09-07T02:00:00Z",
+        "status": "400"
+      },
+      {
+        "count": 748,
+        "hourUtc": "2026-09-07T03:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 774,
+        "hourUtc": "2026-09-07T04:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 932,
+        "hourUtc": "2026-09-07T05:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 819,
+        "hourUtc": "2026-09-07T06:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 233,
+        "hourUtc": "2026-09-07T07:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 6,
+        "hourUtc": "2026-09-07T07:00:00Z",
+        "status": "no_response"
+      },
+      {
+        "count": 260,
+        "hourUtc": "2026-09-07T08:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 104,
+        "hourUtc": "2026-09-07T10:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 1,
+        "hourUtc": "2026-09-07T10:00:00Z",
+        "status": "no_response"
+      },
+      {
+        "count": 886,
+        "hourUtc": "2026-09-07T11:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 352,
+        "hourUtc": "2026-09-07T12:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 1,
+        "hourUtc": "2026-09-07T12:00:00Z",
+        "status": "no_response"
+      },
+      {
+        "count": 1260,
+        "hourUtc": "2026-09-07T13:00:00Z",
+        "status": "200"
+      },
+      {
+        "count": 129,
+        "hourUtc": "2026-09-07T14:00:00Z",
+        "status": "200"
+      }
+    ],
+    "incompleteConsoleBlocks": 0,
+    "journalRowsRead": 342036,
+    "lastJournalAtUtc": "2026-09-07T14:21:17.689168Z",
+    "lastRequestAtUtc": "2026-09-07T14:21:17.689168Z",
+    "logicalGatewayBlocks": 11081,
+    "malformedRequestBlocks": 0,
+    "nonHttpRequestCount": 20,
+    "nonHttpRequests": [
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 3141,
+        "key": "8c8b84541970494ab13d",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:00:45.252998Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 1614,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 939,
+        "key": "a58bd8bfc90cf70a7f82",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:00:46.291252Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 453,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 669,
+        "key": "c8aba42cc4befb6eae5b",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:01:16.637459Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 202,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 852,
+        "key": "7c3617a7bb14615ddf8a",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:15:19.483229Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 269,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 227,
+        "key": "a55fc8cccb8c112a3f51",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:31:48.538629Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 167,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 996,
+        "key": "830340491d782f37bd75",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:31:51.569058Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 214,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 350,
+        "key": "82e5f8bfb9348d6a82d4",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:43:00.790079Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 282,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 1055,
+        "key": "3e4a240e0eda0aa81373",
+        "method": "POST",
+        "observedAt": "2026-09-06T20:42:06.516877Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 173,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 1265,
+        "key": "3f60bf396bd2ccad244e",
+        "method": "POST",
+        "observedAt": "2026-09-06T20:42:06.621050Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 309,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 1376,
+        "key": "0b307fa7ad7f8e17d591",
+        "method": "POST",
+        "observedAt": "2026-09-06T20:42:06.622212Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 406,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 2495,
+        "key": "97de8b3977234c2030c9",
+        "method": "POST",
+        "observedAt": "2026-09-06T20:42:11.576047Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 379,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.45",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 161,
+        "key": "bab861a2f6665c24c0c0",
+        "method": "POST",
+        "observedAt": "2026-09-06T21:16:46.933193Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 421,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 283,
+        "key": "c0dd9e504567e5e96eda",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:12.684887Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 183,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 234,
+        "key": "4027da2438208bdf9b9e",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:35.600105Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 175,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 324,
+        "key": "6fe122353ef4997c425f",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:36.583579Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 186,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 124,
+        "key": "09304f1bf10dba9b6507",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:37.636100Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 189,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 52,
+        "key": "820ba0e254358b80c008",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:42.491965Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 749,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 818,
+        "key": "a48fb6b69d43039bc2a8",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:43.346509Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 181,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 114,
+        "key": "856f2b44cf0ac713abf6",
+        "method": "POST",
+        "observedAt": "2026-09-07T10:29:22.804063Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 406,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "extension",
+        "clientVersion": "1.2.37",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 362,
+        "key": "597f9cfcbaefa97e0a49",
+        "method": "POST",
+        "observedAt": "2026-09-07T12:46:36.434707Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 167,
+        "status": null
+      }
+    ],
+    "nonHttpRequestsTruncated": false,
+    "pathStatusCounts": [
+      {
+        "count": 11040,
+        "path": "/api/captioned_speech_partly",
+        "status": "200"
+      },
+      {
+        "count": 1,
+        "path": "/api/captioned_speech_partly",
+        "status": "400"
+      },
+      {
+        "count": 20,
+        "path": "/api/captioned_speech_partly",
+        "status": "no_response"
+      }
+    ],
+    "requestBytes": {
+      "max": 1703.0,
+      "p50": 214.0,
+      "p95": 382.0,
+      "samples": 11061
+    },
+    "statusCounts": {
+      "200": 11040,
+      "400": 1,
+      "no_response": 20
+    },
+    "uniqueRequestIds": 11061
+  },
+  "coverage": {
+    "complete": true,
+    "journalParseErrors": 0,
+    "journalRowLimitReached": false,
+    "note": "No request body, text, raw message, request id, header, IP, or credential is exported."
+  },
+  "hostClockUtc": "2026-09-07T14:26:51.230853Z",
+  "limitations": [
+    "clientPlatform and clientVersion are caller-supplied headers and cannot exclude spoofing or manual tests.",
+    "Absence of request records can mean no traffic; it is not by itself proof of journal retention coverage.",
+    "HTTP aggregation covers only the direct US compatibility gateway used by applicable legacy clients, not Vercel ingress."
+  ],
+  "probeStarted": false,
+  "productionModified": false,
+  "query": {
+    "endExclusive": "2026-09-07T14:24:51.334000Z",
+    "maxJournalRows": 500000,
+    "startInclusive": "2026-09-06T18:37:52.522573Z",
+    "unit": "castreader-tts-gateway.service"
+  },
+  "readAtUtc": "2026-09-07T14:26:51.230853Z",
+  "readOnly": true,
+  "schema": "castreader.direct-tts-gateway-journal.v1",
+  "source": {
+    "bytes": 37688,
+    "path": "/opt/castreader-tts-gateway/gateway.mjs",
+    "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+  },
+  "systemd": {
+    "ActiveState": "active",
+    "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+    "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+    "MainPID": "596392",
+    "NRestarts": "0",
+    "SubState": "running"
+  },
+  "parserSourceSha256": "f6a1c14271f69096e2a18af9d28960eba461bb88d2a070b9a631aa4056fa9acd",
+  "localCollectorRowCapOverride": {
+    "original": 250000,
+    "boundedBackfill": 500000,
+    "productionModified": false
+  }
+}
