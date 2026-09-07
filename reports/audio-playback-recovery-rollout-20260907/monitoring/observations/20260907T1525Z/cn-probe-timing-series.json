@@ -1,0 +1,171 @@
+{
+  "schema": "castreader.cn-existing-probe-timing-series.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "startUTC": "2026-09-07T14:24:51.334000Z",
+  "endUTCExclusive": "2026-09-07T15:25:51.573000Z",
+  "capturedAtUTC": "2026-09-07T15:26:55.940959Z",
+  "rows": [
+    {
+      "observedAtUTC": "2026-09-07T14:28:24.243000Z",
+      "elapsedMs": 4476,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "b24dcb5212967a22896cf76d35a7868c7937cc5a16fe1367b1de18f918ddd48b",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T14:33:28.069000Z",
+      "elapsedMs": 2778,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "d4efc2338281300c070a497c4263adb32e4244fb17d76b08219413cb29a3b369",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T14:38:42.181000Z",
+      "elapsedMs": 2409,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "d85591fe2593b89b75e9a356731c2ab9bd18994f5e69c05d7ab44faa0ae0f797",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T14:43:52.155000Z",
+      "elapsedMs": 2384,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "bfc11cb35f073e026506e4f44cf3b2b1e664362e21e4e5ea04029105f8c4c1b6",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T14:49:13.708000Z",
+      "elapsedMs": 12085,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "42ca9c1a84308bdc62181f385c798804d4acb49a82471fa1b9ce78d0aa30246d",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T14:54:22.570000Z",
+      "elapsedMs": 2795,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "730886cdbdc4e6092068d5b383b712c36e18c7cf31ef0b7aeaae44727308c8ff",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T14:59:41.961000Z",
+      "elapsedMs": 2186,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "88f384d30c38d6ca0b44d775275772f4716483447cc0724b4c4c02964a400bde",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T15:04:52.399000Z",
+      "elapsedMs": 2632,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "5d19a1150498d87e77c3421fa37a93582d0a3bb21280ff4c7eb7c0185de5bdde",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T15:10:11.961000Z",
+      "elapsedMs": 2193,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "92fe5579ad03f954c2e1a400d7fdbba777709a78db0dfffc7b3b12d7e41914de",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T15:15:27.558000Z",
+      "elapsedMs": 2271,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "91203f88b22aca0d7bb617ede36951a33a8604db146c2daa2e720d424beff3da",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T15:20:41.897000Z",
+      "elapsedMs": 2129,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "5bfc4d301e33e2f438595ee4ba0b81a2f3821ef222f675b9f272f1c519135d51",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    }
+  ],
+  "limitations": [
+    "Each duration is a whole synthetic continuity probe, including multiple requests/contracts and local checks; it is not real-user TTFB or one model request.",
+    "Uses already persisted results only; no probes were started."
+  ],
+  "collectorHelperSha256": "be7224c90b9e824931089892a76131782807730d204ed4241effccba40ebacb8"
+}

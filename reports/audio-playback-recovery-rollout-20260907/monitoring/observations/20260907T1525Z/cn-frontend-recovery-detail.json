@@ -1,0 +1,88 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "rows": [
+    {
+      "atUTC": "2026-09-07T14:47:33.084637+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "5b8482ec4d23530578f9",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T14:47:55.629273+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "259a5b2745dd3dd5efcb",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T14:57:56.201444+00:00",
+      "stage": "source_frontend_unavailable",
+      "requestKey": "2b3bde6956e9dc362671",
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "kokoro_v1.py",
+              "line": 947,
+              "function": "generate"
+            },
+            {
+              "file": "compatible_english_timestamps.py",
+              "line": 125,
+              "function": "prepare_english_chunks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "atUTC": "2026-09-07T14:57:57.950072+00:00",
+      "stage": "source_frontend_unavailable",
+      "requestKey": "b6f6b8f5caf0a7054c4d",
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "kokoro_v1.py",
+              "line": 947,
+              "function": "generate"
+            },
+            {
+              "file": "compatible_english_timestamps.py",
+              "line": 125,
+              "function": "prepare_english_chunks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "atUTC": "2026-09-07T14:58:05.444079+00:00",
+      "stage": "source_frontend_unavailable",
+      "requestKey": "28453ef6b73e0af7f8e2",
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "kokoro_v1.py",
+              "line": 947,
+              "function": "generate"
+            },
+            {
+              "file": "compatible_english_timestamps.py",
+              "line": 125,
+              "function": "prepare_english_chunks"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scope": "Fixed optional source-bookkeeping recovery diagnostics only; no text or exception messages.",
+  "collectorSha256": "6690ed0fbf74bc3fc2e774de1509294d83b725698b81008a5b2dd9253ffd9122"
+}

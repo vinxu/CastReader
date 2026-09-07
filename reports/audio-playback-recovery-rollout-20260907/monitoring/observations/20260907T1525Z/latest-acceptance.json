@@ -1,0 +1,3035 @@
+{
+  "cutoverState": "observing",
+  "evaluation": {
+    "advisories": [
+      {
+        "code": "business_quota_blocked_separate",
+        "detail": "3",
+        "source": "mobile"
+      },
+      {
+        "code": "client_cancelled_separate",
+        "detail": "68",
+        "source": "mobile"
+      },
+      {
+        "code": "other_blocked_events_separate_review",
+        "detail": "1",
+        "source": "mobile"
+      },
+      {
+        "code": "android_145_gateway_no_http_response",
+        "detail": "1; downstream outcome and user intent unknown",
+        "source": "direct_gateway"
+      }
+    ],
+    "automaticExtensionAllowed": false,
+    "automaticVerdict": "fail",
+    "clientEvidenceVerdict": "fail",
+    "configuredWindowSeconds": 86400,
+    "coverageVerdict": "inconclusive",
+    "cutoverState": "observing",
+    "dataOrCoverageGaps": [
+      {
+        "code": "direct_gateway_journal_incomplete",
+        "detail": "parse/truncation",
+        "source": "direct_gateway"
+      },
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "endUtc": "2026-09-07T18:37:52.522573Z",
+    "evidenceLimitations": [
+      {
+        "code": "automatic_verdict_scoped_to_configured_sources",
+        "detail": "automaticVerdict assesses only the configured, successfully collected sources; it does not certify the complete iOS, Android, Web and extension chain or prove every request stayed in-region.",
+        "source": "evaluation"
+      },
+      {
+        "code": "web_client_events_not_collected",
+        "detail": "No Web client start-to-first-output session telemetry is collected by this tool.",
+        "source": "mobile"
+      },
+      {
+        "code": "extension_client_events_not_collected",
+        "detail": "No extension client start-to-first-output session telemetry is collected by this tool.",
+        "source": "mobile"
+      },
+      {
+        "code": "first_output_is_not_playback_completion",
+        "detail": "A paired first-output event proves initial output only; it does not prove that the whole document played to completion.",
+        "source": "mobile"
+      },
+      {
+        "code": "clone_first_output_evidence_absent_or_unattributed",
+        "detail": "No same-window mobile start-to-first-output session was attributed to a clone voice; this is an evidence limitation, not a clone failure.",
+        "source": "mobile"
+      },
+      {
+        "code": "explain_evidence_limited_to_mobile_funnel",
+        "detail": "4 same-window Explain start-to-first-block session(s) were observed, without Web/extension or full-playback certification.",
+        "source": "mobile"
+      },
+      "The stable US proxy is checked against its expected live source and current model slot; it shares the GPU host failure domain."
+    ],
+    "finalVersionObservationRequirementMet": false,
+    "finalVersionObservationSeconds": 30447,
+    "latestActiveComponent": "usKokoro",
+    "latestActiveComponentAtUtc": "2026-09-07T06:37:55.624577Z",
+    "latestRequiredComponent": "usKokoro",
+    "latestRequiredComponentVerifiedAtUtc": "2026-09-07T06:59:28.071711Z",
+    "mixedVersionWindow": true,
+    "observationRequirementMet": false,
+    "observationSeconds": 74942,
+    "releaseTransitionsInsideWindow": [
+      {
+        "activeFromUtc": "2026-09-07T06:37:55.624577Z",
+        "component": "usKokoro",
+        "verifiedAtUtc": "2026-09-07T06:59:28.071711Z",
+        "version": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e"
+      },
+      {
+        "activeFromUtc": "2026-09-07T06:37:55.624577Z",
+        "component": "usOriginProxy",
+        "verifiedAtUtc": "2026-09-07T06:59:28.071711Z",
+        "version": "us-tts-origin-proxy-20260907-v2"
+      }
+    ],
+    "requiredObservationSeconds": 86400,
+    "sampleGaps": [
+      {
+        "code": "final_version_observation_incomplete",
+        "detail": "latest=usKokoro; observed=30447s; required=86400s",
+        "source": "state"
+      },
+      {
+        "code": "mobile_read_start_without_first_output",
+        "detail": "android:2; boundary sessions are not classified as technical failures",
+        "source": "mobile"
+      },
+      {
+        "code": "mobile_read_start_without_first_output",
+        "detail": "ios:7; boundary sessions are not classified as technical failures",
+        "source": "mobile"
+      }
+    ],
+    "startUtc": "2026-09-06T18:37:52.522573Z",
+    "stopAtConfiguredEnd": true,
+    "supplyVerdict": "fail",
+    "technicalFailures": [
+      {
+        "code": "monitor_supply_failure",
+        "detail": "1",
+        "source": "monitor_cn"
+      },
+      {
+        "code": "monitor_incomplete_audio",
+        "detail": "1",
+        "source": "monitor_cn"
+      },
+      {
+        "code": "client_technical_failure",
+        "detail": "10",
+        "source": "mobile"
+      },
+      {
+        "code": "vercel_core_5xx",
+        "detail": "1",
+        "source": "vercel"
+      }
+    ],
+    "verdictScope": "configured_existing_sources_only",
+    "versionSegments": {
+      "directGateway": [
+        {
+          "endUtc": "2026-09-07T18:37:52.522573Z",
+          "seconds": 86400,
+          "startUtc": "2026-09-06T18:37:52.522573Z",
+          "version": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5"
+        }
+      ],
+      "globalGateway": [
+        {
+          "endUtc": "2026-09-07T18:37:52.522573Z",
+          "seconds": 86400,
+          "startUtc": "2026-09-06T18:37:52.522573Z",
+          "version": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5"
+        }
+      ],
+      "usKokoro": [
+        {
+          "endUtc": "2026-09-07T06:37:55.624577Z",
+          "seconds": 43203,
+          "startUtc": "2026-09-06T18:37:52.522573Z",
+          "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
+        },
+        {
+          "endUtc": "2026-09-07T18:37:52.522573Z",
+          "seconds": 43196,
+          "startUtc": "2026-09-07T06:37:55.624577Z",
+          "version": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e"
+        }
+      ],
+      "usOriginProxy": [
+        {
+          "endUtc": "2026-09-07T06:37:55.624577Z",
+          "seconds": 43203,
+          "startUtc": "2026-09-06T18:37:52.522573Z",
+          "version": "us-tts-origin-proxy-20260907-v2"
+        },
+        {
+          "endUtc": "2026-09-07T18:37:52.522573Z",
+          "seconds": 43196,
+          "startUtc": "2026-09-07T06:37:55.624577Z",
+          "version": "us-tts-origin-proxy-20260907-v2"
+        }
+      ]
+    },
+    "windowStarted": true
+  },
+  "generatedAtUtc": "2026-09-07T15:26:55.441225Z",
+  "limitations": [
+    "This run reads existing monitors, journals and telemetry; it starts no synthetic audio request.",
+    "A production-tagged mobile event can still come from an operator or manual test.",
+    "A configured 24-hour end is final for this run; the collector never extends the window automatically.",
+    "automaticVerdict is scoped to configured existing sources and cannot certify the complete iOS, Android, Web and extension chain or prove every request stayed in-region.",
+    "The legacy current-symlink Kokoro identity is retained as sources.legacy_blue; sources.kokoro_us is rebuilt from the stable proxy's actual current slot."
+  ],
+  "mode": "live_read_only",
+  "probeStarted": false,
+  "productionModified": false,
+  "readOnly": true,
+  "requiredComponents": {
+    "directGateway": {
+      "activeFromUtc": "2026-09-06T16:51:50.888941+00:00",
+      "runtimeSourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+      "sourceCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T16:52:02.916356+00:00",
+      "version": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5"
+    },
+    "globalGateway": {
+      "activationTimeSemantics": "First independent production identity readback after successful full release workflow",
+      "activeFromUtc": "2026-09-06T17:26:40.829093+00:00",
+      "routeRevision": 2,
+      "routeSource": "database",
+      "sourceCommit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+      "upstreamReceiptSha256": "493ae5a2309cb6a6fc65142a8756c019e6b4cdd40ad41a9edc972718162051c1",
+      "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T17:26:40.829093+00:00",
+      "version": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5"
+    },
+    "usKokoro": {
+      "activationTimeSemantics": "R135 actual CAS route time; independent readback and public audio validation retained separately",
+      "activeFromUtc": "2026-09-07T06:37:55.624577+00:00",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+      "runtimeSourceRelativePath": "api/src/inference/kokoro_v1.py",
+      "runtimeSourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-07T06:59:28.071711+00:00",
+      "version": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e"
+    },
+    "usOriginProxy": {
+      "activationTimeSemantics": "Unchanged v2 binary; inactive green registered, enabled, and routed with R134 blue retained",
+      "activeFromUtc": "2026-09-07T06:37:55.624577+00:00",
+      "currentReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+      "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "currentSlot": "green",
+      "routeRevision": 10,
+      "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+      "runtimeSourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
+      "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-07T06:59:28.071711+00:00",
+      "version": "us-tts-origin-proxy-20260907-v2"
+    }
+  },
+  "schema": "castreader.audio-acceptance-run.v1",
+  "sources": {
+    "direct_gateway": {
+      "aggregate": {
+        "abortSourceCounts": {
+          "downstream_closed": 19
+        },
+        "android145Preset": {
+          "attribution": "client_supplied_platform_and_version_headers",
+          "elapsedMs": {
+            "max": 4615.0,
+            "p50": 487.0,
+            "p95": 1475.0,
+            "samples": 7579
+          },
+          "firstRequestAtUtc": "2026-09-06T18:37:52.832054Z",
+          "lastRequestAtUtc": "2026-09-07T11:33:30.128907Z",
+          "requests": 7579,
+          "statusCounts": {
+            "200": 7578,
+            "no_response": 1
+          }
+        },
+        "clientStatusCounts": [
+          {
+            "clientPlatform": "android",
+            "clientVersion": "1.0.45",
+            "count": 7578,
+            "status": "200"
+          },
+          {
+            "clientPlatform": "android",
+            "clientVersion": "1.0.45",
+            "count": 1,
+            "status": "no_response"
+          },
+          {
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "count": 930,
+            "status": "200"
+          },
+          {
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "count": 18,
+            "status": "no_response"
+          },
+          {
+            "clientPlatform": "extension",
+            "clientVersion": "1.2.37",
+            "count": 387,
+            "status": "200"
+          },
+          {
+            "clientPlatform": "other",
+            "clientVersion": "1.2.37",
+            "count": 12,
+            "status": "200"
+          },
+          {
+            "clientPlatform": "other",
+            "clientVersion": "unknown",
+            "count": 24,
+            "status": "200"
+          },
+          {
+            "clientPlatform": "unknown",
+            "clientVersion": "unknown",
+            "count": 17,
+            "status": "200"
+          },
+          {
+            "clientPlatform": "unknown",
+            "clientVersion": "unknown",
+            "count": 1,
+            "status": "400"
+          }
+        ],
+        "consoleErrorClassCounts": {
+          "downstream_closed": 19
+        },
+        "downstreamConnectionStateUnknownRequests": 0,
+        "downstreamDisconnectedRequests": 19,
+        "duplicateRequestLogBlocks": 0,
+        "elapsedMs": {
+          "max": 6083.0,
+          "p50": 492.0,
+          "p95": 1508.0,
+          "samples": 8968
+        },
+        "firstJournalAtUtc": "2026-09-06T18:37:52.832054Z",
+        "firstRequestAtUtc": "2026-09-06T18:37:52.832054Z",
+        "hourlyStatusCounts": [
+          {
+            "count": 171,
+            "hourUtc": "2026-09-06T18:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 1391,
+            "hourUtc": "2026-09-06T19:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 7,
+            "hourUtc": "2026-09-06T19:00:00Z",
+            "status": "no_response"
+          },
+          {
+            "count": 206,
+            "hourUtc": "2026-09-06T20:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 4,
+            "hourUtc": "2026-09-06T20:00:00Z",
+            "status": "no_response"
+          },
+          {
+            "count": 116,
+            "hourUtc": "2026-09-06T21:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 1,
+            "hourUtc": "2026-09-06T21:00:00Z",
+            "status": "no_response"
+          },
+          {
+            "count": 416,
+            "hourUtc": "2026-09-06T23:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 775,
+            "hourUtc": "2026-09-07T00:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 719,
+            "hourUtc": "2026-09-07T01:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 749,
+            "hourUtc": "2026-09-07T02:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 1,
+            "hourUtc": "2026-09-07T02:00:00Z",
+            "status": "400"
+          },
+          {
+            "count": 748,
+            "hourUtc": "2026-09-07T03:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 774,
+            "hourUtc": "2026-09-07T04:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 932,
+            "hourUtc": "2026-09-07T05:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 819,
+            "hourUtc": "2026-09-07T06:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 233,
+            "hourUtc": "2026-09-07T07:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 6,
+            "hourUtc": "2026-09-07T07:00:00Z",
+            "status": "no_response"
+          },
+          {
+            "count": 260,
+            "hourUtc": "2026-09-07T08:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 104,
+            "hourUtc": "2026-09-07T10:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 1,
+            "hourUtc": "2026-09-07T10:00:00Z",
+            "status": "no_response"
+          },
+          {
+            "count": 535,
+            "hourUtc": "2026-09-07T11:00:00Z",
+            "status": "200"
+          }
+        ],
+        "incompleteConsoleBlocks": 0,
+        "journalRowsRead": 250000,
+        "lastJournalAtUtc": "2026-09-07T11:33:34.212799Z",
+        "lastRequestAtUtc": "2026-09-07T11:33:30.128907Z",
+        "logicalGatewayBlocks": 8987,
+        "malformedRequestBlocks": 0,
+        "nonHttpRequestCount": 19,
+        "nonHttpRequests": [
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 3141,
+            "key": "8c8b84541970494ab13d",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:00:45.252998Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 1614,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 939,
+            "key": "a58bd8bfc90cf70a7f82",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:00:46.291252Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 453,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 669,
+            "key": "c8aba42cc4befb6eae5b",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:01:16.637459Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 202,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 852,
+            "key": "7c3617a7bb14615ddf8a",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:15:19.483229Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 269,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 227,
+            "key": "a55fc8cccb8c112a3f51",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:31:48.538629Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 167,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 996,
+            "key": "830340491d782f37bd75",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:31:51.569058Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 214,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 350,
+            "key": "82e5f8bfb9348d6a82d4",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:43:00.790079Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 282,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 1055,
+            "key": "3e4a240e0eda0aa81373",
+            "method": "POST",
+            "observedAt": "2026-09-06T20:42:06.516877Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 173,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 1265,
+            "key": "3f60bf396bd2ccad244e",
+            "method": "POST",
+            "observedAt": "2026-09-06T20:42:06.621050Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 309,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 1376,
+            "key": "0b307fa7ad7f8e17d591",
+            "method": "POST",
+            "observedAt": "2026-09-06T20:42:06.622212Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 406,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 2495,
+            "key": "97de8b3977234c2030c9",
+            "method": "POST",
+            "observedAt": "2026-09-06T20:42:11.576047Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 379,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.45",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 161,
+            "key": "bab861a2f6665c24c0c0",
+            "method": "POST",
+            "observedAt": "2026-09-06T21:16:46.933193Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 421,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 283,
+            "key": "c0dd9e504567e5e96eda",
+            "method": "POST",
+            "observedAt": "2026-09-07T07:25:12.684887Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 183,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 234,
+            "key": "4027da2438208bdf9b9e",
+            "method": "POST",
+            "observedAt": "2026-09-07T07:25:35.600105Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 175,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 324,
+            "key": "6fe122353ef4997c425f",
+            "method": "POST",
+            "observedAt": "2026-09-07T07:25:36.583579Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 186,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 124,
+            "key": "09304f1bf10dba9b6507",
+            "method": "POST",
+            "observedAt": "2026-09-07T07:25:37.636100Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 189,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 52,
+            "key": "820ba0e254358b80c008",
+            "method": "POST",
+            "observedAt": "2026-09-07T07:25:42.491965Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 749,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 818,
+            "key": "a48fb6b69d43039bc2a8",
+            "method": "POST",
+            "observedAt": "2026-09-07T07:25:43.346509Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 181,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 114,
+            "key": "856f2b44cf0ac713abf6",
+            "method": "POST",
+            "observedAt": "2026-09-07T10:29:22.804063Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 406,
+            "status": null
+          }
+        ],
+        "nonHttpRequestsTruncated": false,
+        "pathStatusCounts": [
+          {
+            "count": 8948,
+            "path": "/api/captioned_speech_partly",
+            "status": "200"
+          },
+          {
+            "count": 1,
+            "path": "/api/captioned_speech_partly",
+            "status": "400"
+          },
+          {
+            "count": 19,
+            "path": "/api/captioned_speech_partly",
+            "status": "no_response"
+          }
+        ],
+        "requestBytes": {
+          "max": 1614.0,
+          "p50": 211.0,
+          "p95": 349.0,
+          "samples": 8968
+        },
+        "statusCounts": {
+          "200": 8948,
+          "400": 1,
+          "no_response": 19
+        },
+        "uniqueRequestIds": 8968
+      },
+      "coverage": {
+        "complete": false,
+        "journalParseErrors": 0,
+        "journalRowLimitReached": true,
+        "note": "No request body, text, raw message, request id, header, IP, or credential is exported."
+      },
+      "hostClockUtc": "2026-09-07T15:27:41.223399Z",
+      "limitations": [
+        "clientPlatform and clientVersion are caller-supplied headers and cannot exclude spoofing or manual tests.",
+        "Absence of request records can mean no traffic; it is not by itself proof of journal retention coverage.",
+        "HTTP aggregation covers only the direct US compatibility gateway used by applicable legacy clients, not Vercel ingress."
+      ],
+      "probeStarted": false,
+      "productionModified": false,
+      "query": {
+        "endExclusive": "2026-09-07T15:26:55.441225Z",
+        "maxJournalRows": 250000,
+        "startInclusive": "2026-09-06T18:37:52.522573Z",
+        "unit": "castreader-tts-gateway.service"
+      },
+      "readAtUtc": "2026-09-07T15:27:41.223399Z",
+      "readOnly": true,
+      "schema": "castreader.direct-tts-gateway-journal.v1",
+      "source": {
+        "bytes": 37688,
+        "path": "/opt/castreader-tts-gateway/gateway.mjs",
+        "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+      },
+      "systemd": {
+        "ActiveState": "active",
+        "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+        "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+        "MainPID": "596392",
+        "NRestarts": "0",
+        "SubState": "running"
+      }
+    },
+    "global_capabilities": {
+      "coverage": {
+        "complete": true,
+        "fieldErrors": [],
+        "tlsCertificateVerification": true
+      },
+      "identity": {
+        "commitSha": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+        "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+        "region": "global"
+      },
+      "limitations": [
+        "Only deploymentId, commitSha and the published service region are retained from the response.",
+        "This identity GET performs no synthesis and does not provide a traffic denominator."
+      ],
+      "probeStarted": false,
+      "productionModified": false,
+      "query": {
+        "endpoint": "https://api.castreader.ai/api/capabilities",
+        "method": "GET"
+      },
+      "readAtUtc": "2026-09-07T15:27:47.798716Z",
+      "readOnly": true,
+      "schema": "castreader.global-capabilities-identity.v1"
+    },
+    "kokoro_us": {
+      "coverage": {
+        "complete": true
+      },
+      "diagnosticFunctionExecuted": false,
+      "identity": {
+        "internalPort": 18880,
+        "listenerProcessIds": [
+          507638
+        ],
+        "routeReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+        "routeReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+        "routeSlot": "green",
+        "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+        "runtimeSourceBytes": 49675,
+        "runtimeSourceRelativePath": "api/src/inference/kokoro_v1.py",
+        "runtimeSourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+        "supervisorCwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+        "supervisorPid": 507638,
+        "supervisorProgram": "castreader-tts-r133-green",
+        "supervisorState": "RUNNING"
+      },
+      "limitations": [
+        "Identity follows the stable proxy's actual current slot; the legacy current symlink is retained separately as legacy_blue evidence."
+      ],
+      "modelLoadedByCollector": false,
+      "productionModified": false,
+      "readAtUtc": "2026-09-07T15:28:22.108764+00:00",
+      "readOnly": true,
+      "schema": "castreader.kokoro-runtime-identity.v1"
+    },
+    "legacy_blue": {
+      "coverage": {
+        "complete": true
+      },
+      "diagnosticFunctionExecuted": false,
+      "identity": {
+        "currentLink": "/workspace/castreader-runtime/current",
+        "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "runtimeSourceBytes": 6886,
+        "runtimeSourceRelativePath": "api/src/inference/english_g2p_recovery.py",
+        "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e"
+      },
+      "limitations": [
+        "This read verifies the current symlink target and one release-critical source file; it does not execute G2P or load the model.",
+        "Release-directory immutability remains an operational requirement."
+      ],
+      "modelLoaded": false,
+      "productionModified": false,
+      "readAtUtc": "2026-09-07T15:27:44.642937Z",
+      "readOnly": true,
+      "schema": "castreader.kokoro-runtime-identity.v1"
+    },
+    "mobile": {
+      "aggregate": {
+        "cancelledEvents": 68,
+        "devices": 42,
+        "events": 685,
+        "explainStartsByPlatform": {
+          "android": 9,
+          "ios": 2
+        },
+        "firstOutputLatencyMs": {
+          "android": {
+            "max": 39719.0,
+            "p50": 1302.0,
+            "p95": 7526.0,
+            "samples": 42
+          },
+          "ios": {
+            "max": 9465.0,
+            "p50": 1213.0,
+            "p95": 3493.0,
+            "samples": 95
+          }
+        },
+        "groups": [
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "mode_switched",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "reader_closed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "reader_closed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "pipeline_failed",
+            "errorCode": "unexpected_error",
+            "errorStage": "pipeline",
+            "event": "explain_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "failed",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 4,
+            "endReason": "completed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "success",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "pipeline_failed",
+            "errorCode": "unexpected_error",
+            "errorStage": "pipeline",
+            "event": "explain_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "failed",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "mode_switched",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_first_block",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_first_block",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_first_block",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_first_block",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 3,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "file",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "file",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_start",
+            "ingressRoute": "global",
+            "language": "es",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "kindle",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_start",
+            "ingressRoute": "global",
+            "language": "pt",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "url",
+            "count": 4,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "file",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "text",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_start",
+            "ingressRoute": "global",
+            "language": "de",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 5,
+            "endReason": "content_closed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 11,
+            "endReason": "content_closed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 4,
+            "endReason": "mode_switched",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "tts_failed",
+            "errorCode": "generation_failed",
+            "errorStage": "tts",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "failed",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "completed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "success",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 5,
+            "endReason": "completed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "success",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "content_closed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "mode_switched",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "growth_first_value_preview",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "blocked",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "listen_quota",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "blocked",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "listen_quota",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "blocked",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 31,
+            "endReason": "closed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 5,
+            "endReason": "closed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "mode_switched",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "mode_switched",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "kindle_continuous_handoff_failed",
+            "errorCode": "audio_adoption_failed",
+            "errorStage": "page_handoff",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "failed",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "kindle_page_advance_failed",
+            "errorCode": "page_turn_failed",
+            "errorStage": "navigation",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "failed",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 3,
+            "endReason": "tts_failed",
+            "errorCode": "tts_failed",
+            "errorStage": "tts",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "failed",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 14,
+            "endReason": "completed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "success",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 5,
+            "endReason": "completed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "success",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 10,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 20,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "es",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "fr",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 3,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "zh",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "unknown",
+            "count": 3,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.31",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "zh",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.32",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 69,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "de",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 17,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "es",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "pt",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "zh",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 31,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 29,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "unknown",
+            "count": 3,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.31",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.32",
+            "contentSource": "unknown",
+            "count": 5,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 175,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "unknown",
+            "count": 30,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "file",
+            "count": 4,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "file",
+            "count": 7,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "file",
+            "count": 3,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "es",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "file",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "fr",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "file",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "zh",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "kindle",
+            "count": 4,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "url",
+            "count": 5,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "url",
+            "count": 10,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "url",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "zh",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "youtube_android",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "file",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "unknown",
+            "clientVersion": "1.0.40",
+            "contentSource": "url",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "camera",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "clipboard",
+            "count": 18,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "clipboard",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "file",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "file",
+            "count": 4,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "file",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "es",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "file",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "zh",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.32",
+            "contentSource": "history",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "history",
+            "count": 8,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "kindle",
+            "count": 47,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "kindle",
+            "count": 6,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "kindle",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "pt",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "kobo",
+            "count": 3,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "photo_library",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.31",
+            "contentSource": "share_sheet",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "zh",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "text",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "de",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.34",
+            "contentSource": "url",
+            "count": 3,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          }
+        ],
+        "otherBlockedEvents": 1,
+        "quotaBlockedByPlatform": {
+          "ios": 3
+        },
+        "quotaBlockedEvents": 3,
+        "readStartsByPlatform": {
+          "android": 41,
+          "ios": 101
+        },
+        "routeMismatchEvents": 0,
+        "sessionCohorts": {
+          "explain": {
+            "byPlatform": {
+              "android": {
+                "pairedFirstOutputByVoiceFamily": {
+                  "unknown": 3
+                },
+                "startEventsMissingSessionId": 0,
+                "startedSessions": 9,
+                "withEnd": 9,
+                "withFirstOutput": 3,
+                "withQuotaBlock": 0,
+                "withTechnicalFailure": 2,
+                "withoutEndInsideWindow": 0,
+                "withoutFirstOutputInsideWindow": 6
+              },
+              "ios": {
+                "pairedFirstOutputByVoiceFamily": {
+                  "unknown": 1
+                },
+                "startEventsMissingSessionId": 0,
+                "startedSessions": 2,
+                "withEnd": 2,
+                "withFirstOutput": 1,
+                "withQuotaBlock": 0,
+                "withTechnicalFailure": 0,
+                "withoutEndInsideWindow": 0,
+                "withoutFirstOutputInsideWindow": 1
+              }
+            },
+            "pairedFirstOutputByVoiceFamily": {
+              "unknown": 4
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 11,
+            "withEnd": 11,
+            "withFirstOutput": 4,
+            "withQuotaBlock": 0,
+            "withTechnicalFailure": 2,
+            "withoutEndInsideWindow": 0,
+            "withoutFirstOutputInsideWindow": 7
+          },
+          "read": {
+            "byPlatform": {
+              "android": {
+                "pairedFirstOutputByVoiceFamily": {
+                  "preset": 39
+                },
+                "startEventsMissingSessionId": 0,
+                "startedSessions": 41,
+                "withEnd": 31,
+                "withFirstOutput": 39,
+                "withQuotaBlock": 0,
+                "withTechnicalFailure": 2,
+                "withoutEndInsideWindow": 10,
+                "withoutFirstOutputInsideWindow": 2
+              },
+              "ios": {
+                "pairedFirstOutputByVoiceFamily": {
+                  "preset": 94
+                },
+                "startEventsMissingSessionId": 0,
+                "startedSessions": 101,
+                "withEnd": 69,
+                "withFirstOutput": 94,
+                "withQuotaBlock": 3,
+                "withTechnicalFailure": 6,
+                "withoutEndInsideWindow": 32,
+                "withoutFirstOutputInsideWindow": 7
+              }
+            },
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 133
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 142,
+            "withEnd": 100,
+            "withFirstOutput": 133,
+            "withQuotaBlock": 3,
+            "withTechnicalFailure": 8,
+            "withoutEndInsideWindow": 42,
+            "withoutFirstOutputInsideWindow": 9
+          }
+        },
+        "sessionEvidenceByPlatform": {
+          "android": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 39,
+              "unknown": 3
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 50,
+            "withFirstOutput": 42,
+            "withoutFirstOutputInsideWindow": 8
+          },
+          "ios": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 94,
+              "unknown": 1
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 103,
+            "withFirstOutput": 95,
+            "withoutFirstOutputInsideWindow": 8
+          }
+        },
+        "startEventsByPlatform": {
+          "android": 50,
+          "ios": 103
+        },
+        "technicalFailureEvents": 10,
+        "technicalFailuresByPlatform": {
+          "android": 4,
+          "ios": 6
+        }
+      },
+      "coverage": {
+        "complete": true,
+        "duplicateRows": 0,
+        "expectedRowsAllEnvironments": 685,
+        "firstProductionReceivedAt": "2026-09-06T18:42:37.130000Z",
+        "invalidSelectedRows": 0,
+        "lastProductionReceivedAt": "2026-09-07T15:24:46.973000Z",
+        "nonProductionRowsExcluded": 0,
+        "pageBudgetExhausted": false,
+        "pages": 1,
+        "productionTagCannotExcludeManualTests": true,
+        "productionTaggedRows": 685,
+        "returnedRowsAllEnvironments": 685,
+        "serverClockColumn": "received_at",
+        "source": "authenticated HTTPS PostgREST; credential values not exported",
+        "tlsCertificateVerification": true,
+        "uniqueSelectedRowsAllEnvironments": 685,
+        "wallClockBudgetExhausted": false,
+        "wallClockBudgetSeconds": 180.0
+      },
+      "limitations": [
+        "Only server-clocked mobile_funnel_events.received_at is used.",
+        "production is a validated client event label, but production traffic can still include operator or manual tests.",
+        "Starts and ends inside the bounded window are not a cohort completion rate for sessions crossing a boundary.",
+        "A start without a later first-output event inside the same window is an evidence gap, not by itself a technical failure; the session may cross the window boundary.",
+        "Device counts are installations, not verified people."
+      ],
+      "query": {
+        "endExclusive": "2026-09-07T15:26:55.441225Z",
+        "startInclusive": "2026-09-06T18:37:52.522573Z"
+      },
+      "readOnly": true,
+      "schema": "castreader.mobile-funnel-acceptance.v1"
+    },
+    "monitor_cn": {
+      "aggregate": {
+        "alignmentDegradationCycles": 0,
+        "alignmentDegradationSequence": {
+          "currentConsecutiveCycles": 0,
+          "episodes": 0,
+          "maximumConsecutiveCycles": 0,
+          "recoveryEvents": []
+        },
+        "completeRemainderDecodedCycles": 240,
+        "completeRemainderDecodedRatio": 0.995851,
+        "cycles": 241,
+        "executedRequestContractCounts": {
+          "stream_false": 240,
+          "stream_omitted": 240,
+          "stream_true": 240
+        },
+        "failedRequestContractCounts": {
+          "stream_omitted": 1
+        },
+        "failureCodeCounts": {
+          "http_502": 1
+        },
+        "firstSegmentAudioDurationSeconds": {
+          "max": 3.576,
+          "p50": 3.576,
+          "p95": 3.576,
+          "samples": 240
+        },
+        "largestObservedGapSeconds": 350.045,
+        "observedGapSeconds": {
+          "max": 350.045,
+          "p50": 311.209,
+          "p95": 321.781,
+          "samples": 240
+        },
+        "probeElapsedMs": {
+          "max": 31702.0,
+          "p50": 2778.0,
+          "p95": 12085.0,
+          "samples": 241
+        },
+        "regionMismatchCycles": 0,
+        "statusCounts": {
+          "healthy": 240,
+          "supply_failed": 1
+        },
+        "supplyFailureSequence": {
+          "currentConsecutiveCycles": 0,
+          "episodes": 1,
+          "maximumConsecutiveCycles": 1,
+          "recoveryEvents": [
+            {
+              "observedAtUtc": "2026-09-07T07:00:37.319Z",
+              "precedingCycles": 1,
+              "recoveredStatus": "healthy"
+            }
+          ]
+        },
+        "supplyOkCycles": 240,
+        "totalAudioDurationSeconds": {
+          "max": 13.44,
+          "p50": 13.44,
+          "p95": 13.44,
+          "samples": 240
+        },
+        "upstreamMetadata": [
+          {
+            "cyclesContainingVariant": 240,
+            "gateway": "vercel-r2",
+            "upstreamNode": "castreader-cn4090",
+            "upstreamRevision": "0",
+            "upstreamSource": "cn-environment"
+          }
+        ]
+      },
+      "coverage": {
+        "completeRead": true,
+        "note": "Persisted result schema does not distinguish timer from manual invocation.",
+        "originAttributionAvailable": false,
+        "selectedCycles": 241
+      },
+      "limitations": [
+        "observedAt is probe completion time, not request start time.",
+        "First-segment audio duration is not time-to-first-audio latency.",
+        "No persisted client traffic or user identity is read by this collector."
+      ],
+      "monitorRelease": {
+        "currentTarget": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+        "files": 9,
+        "treeSha256": "7a2c0b1f0715d4db766a26fe84a5899a1c77b3107f2119d0907d766cef12236a"
+      },
+      "probeStarted": false,
+      "productionModified": false,
+      "query": {
+        "endExclusive": "2026-09-07T15:26:55.441225Z",
+        "startInclusive": "2026-09-06T18:37:52.522573Z"
+      },
+      "readAtUtc": "2026-09-07T15:27:03.220321Z",
+      "readOnly": true,
+      "region": "cn",
+      "schema": "castreader.monitor-window-readback.v2",
+      "source": {
+        "conflictingObservedAt": [],
+        "exactDuplicatesSkipped": 0,
+        "firstAvailableObservedAt": "2026-09-05T15:58:13.669Z",
+        "firstSelectedObservedAt": "2026-09-06T18:38:42.441Z",
+        "invalidResults": [],
+        "lastAvailableObservedAt": "2026-09-07T15:26:11.975Z",
+        "lastSelectedObservedAt": "2026-09-07T15:26:11.975Z",
+        "lastSelectedToWindowEndSeconds": 43.466,
+        "resultFilesScanned": 551,
+        "resultsDirectory": "/var/lib/castreader-core-audio-monitor/cn/results",
+        "uniqueResultCycles": 551,
+        "validResultFiles": 551,
+        "windowStartToFirstSelectedSeconds": 49.918
+      },
+      "systemd": {
+        "service": {
+          "ActiveState": "inactive",
+          "ExecMainStatus": "0",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "timer": {
+          "ActiveState": "active",
+          "LastTriggerUSec": "Mon 2026-09-07 23:25:59 CST",
+          "NextElapseUSecRealtime": "",
+          "SubState": "waiting",
+          "UnitFileState": "enabled"
+        }
+      }
+    },
+    "monitor_us": {
+      "aggregate": {
+        "alignmentDegradationCycles": 0,
+        "alignmentDegradationSequence": {
+          "currentConsecutiveCycles": 0,
+          "episodes": 0,
+          "maximumConsecutiveCycles": 0,
+          "recoveryEvents": []
+        },
+        "completeRemainderDecodedCycles": 241,
+        "completeRemainderDecodedRatio": 1.0,
+        "cycles": 241,
+        "executedRequestContractCounts": {
+          "stream_omitted": 241,
+          "stream_true": 241
+        },
+        "failedRequestContractCounts": {},
+        "failureCodeCounts": {},
+        "firstSegmentAudioDurationSeconds": {
+          "max": 23.088,
+          "p50": 23.088,
+          "p95": 23.088,
+          "samples": 241
+        },
+        "largestObservedGapSeconds": 326.399,
+        "observedGapSeconds": {
+          "max": 326.399,
+          "p50": 310.081,
+          "p95": 320.032,
+          "samples": 240
+        },
+        "probeElapsedMs": {
+          "max": 9251.0,
+          "p50": 2446.0,
+          "p95": 4889.0,
+          "samples": 241
+        },
+        "regionMismatchCycles": 0,
+        "statusCounts": {
+          "healthy": 241
+        },
+        "supplyFailureSequence": {
+          "currentConsecutiveCycles": 0,
+          "episodes": 0,
+          "maximumConsecutiveCycles": 0,
+          "recoveryEvents": []
+        },
+        "supplyOkCycles": 241,
+        "totalAudioDurationSeconds": {
+          "max": 37.464,
+          "p50": 37.464,
+          "p95": 37.464,
+          "samples": 241
+        },
+        "upstreamMetadata": [
+          {
+            "cyclesContainingVariant": 241,
+            "gateway": "vercel-r2",
+            "upstreamNode": "castreader-us4090",
+            "upstreamRevision": "2",
+            "upstreamSource": "database"
+          }
+        ]
+      },
+      "coverage": {
+        "completeRead": true,
+        "note": "Persisted result schema does not distinguish timer from manual invocation.",
+        "originAttributionAvailable": false,
+        "selectedCycles": 241
+      },
+      "limitations": [
+        "observedAt is probe completion time, not request start time.",
+        "First-segment audio duration is not time-to-first-audio latency.",
+        "No persisted client traffic or user identity is read by this collector."
+      ],
+      "monitorRelease": {
+        "currentTarget": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+        "files": 9,
+        "treeSha256": "7a2c0b1f0715d4db766a26fe84a5899a1c77b3107f2119d0907d766cef12236a"
+      },
+      "probeStarted": false,
+      "productionModified": false,
+      "query": {
+        "endExclusive": "2026-09-07T15:26:55.441225Z",
+        "startInclusive": "2026-09-06T18:37:52.522573Z"
+      },
+      "readAtUtc": "2026-09-07T15:27:02.610550Z",
+      "readOnly": true,
+      "region": "us",
+      "schema": "castreader.monitor-window-readback.v2",
+      "source": {
+        "conflictingObservedAt": [],
+        "exactDuplicatesSkipped": 0,
+        "firstAvailableObservedAt": "2026-09-05T16:15:00.370Z",
+        "firstSelectedObservedAt": "2026-09-06T18:42:58.726Z",
+        "invalidResults": [],
+        "lastAvailableObservedAt": "2026-09-07T15:26:24.884Z",
+        "lastSelectedObservedAt": "2026-09-07T15:26:24.884Z",
+        "lastSelectedToWindowEndSeconds": 30.557,
+        "resultFilesScanned": 548,
+        "resultsDirectory": "/var/lib/castreader-core-audio-monitor/us/results",
+        "uniqueResultCycles": 548,
+        "validResultFiles": 548,
+        "windowStartToFirstSelectedSeconds": 306.203
+      },
+      "systemd": {
+        "service": {
+          "ActiveState": "inactive",
+          "ExecMainStatus": "0",
+          "MainPID": "0",
+          "Result": "success",
+          "SubState": "dead"
+        },
+        "timer": {
+          "ActiveState": "active",
+          "LastTriggerUSec": "Mon 2026-09-07 15:26:22 UTC",
+          "NextElapseUSecRealtime": "",
+          "SubState": "waiting",
+          "UnitFileState": "enabled"
+        }
+      }
+    },
+    "origin_proxy_us": {
+      "coverage": {
+        "complete": true
+      },
+      "diagnosticFunctionExecuted": false,
+      "health": {
+        "active": {
+          "blue": 0,
+          "green": 0
+        },
+        "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+        "currentSlot": "green",
+        "drainTrusted": true,
+        "ok": true,
+        "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+        "revision": 10
+      },
+      "identity": {
+        "currentEnabled": true,
+        "currentModel": {
+          "expectedVersion": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+          "fixedReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "internalPort": 18880,
+          "listenerProcessIds": [
+            507638
+          ],
+          "listenerProcesses": [
+            {
+              "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+              "exe": "/venv/main/bin/python3.12",
+              "parentPid": 262,
+              "pid": 507638,
+              "startTicks": "554888220"
+            }
+          ],
+          "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+          "runtimeSourceBytes": 49675,
+          "runtimeSourceRelativePath": "api/src/inference/kokoro_v1.py",
+          "runtimeSourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+          "slot": "green",
+          "stateEnabled": true,
+          "stateReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+          "stateReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "supervisorCwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+          "supervisorPid": 507638,
+          "supervisorProcess": {
+            "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+            "exe": "/venv/main/bin/python3.12",
+            "parentPid": 262,
+            "pid": 507638,
+            "startTicks": "554888220"
+          },
+          "supervisorProgram": "castreader-tts-r133-green",
+          "supervisorState": "RUNNING"
+        },
+        "currentReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+        "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+        "currentSlot": "green",
+        "listenerProcessIds": [
+          509279
+        ],
+        "processIds": [
+          509279
+        ],
+        "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+        "revision": 10,
+        "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+        "sourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+      },
+      "limitations": [
+        "Point-in-time source, process and routing identity; existing continuous probes provide the interval evidence."
+      ],
+      "productionModified": false,
+      "readAtUtc": "2026-09-07T15:28:22.108764+00:00",
+      "readOnly": true,
+      "schema": "castreader.us-origin-proxy-identity.v1",
+      "synthesisStarted": false
+    },
+    "vercel": {
+      "aggregate": {
+        "core5xxRecords": 1,
+        "deploymentCounts": [
+          {
+            "count": 1,
+            "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5"
+          }
+        ],
+        "failureCodeCounts": [
+          {
+            "count": 43,
+            "failureCode": "http_503_unclassified",
+            "routeGroup": "other"
+          },
+          {
+            "count": 22,
+            "failureCode": "http_504_unclassified",
+            "routeGroup": "other"
+          },
+          {
+            "count": 1,
+            "failureCode": "http_500_unclassified",
+            "routeGroup": "tts"
+          }
+        ],
+        "otherProject5xxRecords": 65,
+        "routeStatusCounts": [
+          {
+            "count": 43,
+            "routeGroup": "other",
+            "status": "503"
+          },
+          {
+            "count": 22,
+            "routeGroup": "other",
+            "status": "504"
+          },
+          {
+            "count": 1,
+            "routeGroup": "tts",
+            "status": "500"
+          }
+        ],
+        "unique5xxRecords": 66
+      },
+      "coverage": {
+        "cacheHits": 19,
+        "cacheMisses": 2,
+        "complete": true,
+        "failedShards": 0,
+        "firstReturnedAtUtc": "2026-09-06T18:45:33.351000Z",
+        "lastReturnedAtUtc": "2026-09-07T15:15:33.082000Z",
+        "pages": [
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-06T19:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-06T18:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-06T20:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-06T19:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-06T21:37:52.522573Z",
+            "returnedRows": 24,
+            "startInclusive": "2026-09-06T20:37:52.522573Z",
+            "uniqueRows": 24
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-06T22:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-06T21:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-06T23:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-06T22:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T00:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-06T23:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T01:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T00:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T02:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T01:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T03:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T02:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T04:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T03:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T05:37:52.522573Z",
+            "returnedRows": 3,
+            "startInclusive": "2026-09-07T04:37:52.522573Z",
+            "uniqueRows": 3
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T06:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T05:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T07:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T06:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T08:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T07:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T09:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T08:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T10:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T09:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T11:37:52.522573Z",
+            "returnedRows": 3,
+            "startInclusive": "2026-09-07T10:37:52.522573Z",
+            "uniqueRows": 3
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T12:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T11:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "hit",
+            "endExclusive": "2026-09-07T13:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T12:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "miss",
+            "endExclusive": "2026-09-07T14:37:52.522573Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T13:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "miss",
+            "endExclusive": "2026-09-07T15:26:55.441225Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T14:37:52.522573Z",
+            "uniqueRows": 2
+          }
+        ],
+        "queryBudgetExhausted": false,
+        "queryFailures": [],
+        "successfulShards": 21,
+        "wallClockBudgetExhausted": false
+      },
+      "limitations": [
+        "Counts are unique retained Vercel request-log ids, not users or a request denominator.",
+        "Vercel retention or ingestion can be incomplete even when every query shard succeeds.",
+        "No raw message, nested log, request body, header, text, IP, or request id is persisted."
+      ],
+      "query": {
+        "cacheSafetyLagSeconds": 900.0,
+        "endExclusive": "2026-09-07T15:26:55.441225Z",
+        "environment": "production",
+        "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+        "queriesUsed": 2,
+        "queryBudget": 80,
+        "startInclusive": "2026-09-06T18:37:52.522573Z",
+        "statusCode": "5xx",
+        "wallClockBudgetSeconds": 300.0
+      },
+      "readOnly": true,
+      "schema": "castreader.vercel-core-5xx-window.v1"
+    }
+  },
+  "sourcesAttempted": [
+    "direct_gateway",
+    "global_capabilities",
+    "kokoro_us",
+    "legacy_blue",
+    "mobile",
+    "monitor_cn",
+    "monitor_us",
+    "origin_proxy_us",
+    "vercel"
+  ],
+  "sourcesReturned": [
+    "direct_gateway",
+    "global_capabilities",
+    "kokoro_us",
+    "legacy_blue",
+    "mobile",
+    "monitor_cn",
+    "monitor_us",
+    "origin_proxy_us",
+    "vercel"
+  ],
+  "window": {
+    "collectedThroughExclusive": "2026-09-07T15:26:55.441225Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  }
+}

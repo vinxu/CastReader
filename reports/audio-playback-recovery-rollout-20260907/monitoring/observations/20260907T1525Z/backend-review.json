@@ -1,0 +1,614 @@
+{
+  "schema": "castreader.backend-heartbeat-review.v1",
+  "automationId": "24",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "reviewedAtUTC": "2026-09-07T15:34:28.356153+00:00",
+  "snapshotDirectory": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z",
+  "fixedWindow": {
+    "collectedThroughExclusive": "2026-09-07T15:26:55.441225Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  },
+  "incrementalWindow": {
+    "endUTCExclusive": "2026-09-07T15:25:51.573000+00:00",
+    "productionActiveFromUTC": "2026-09-07T06:59:28.071711+00:00",
+    "startUTC": "2026-09-07T14:24:51.334000+00:00"
+  },
+  "backendVerdict": "存在异常（历史故障保留）；本轮未见新增确证供给失败，解读/克隆完整交付仍证据不足",
+  "decision": "DONT_NOTIFY",
+  "newActionableChange": false,
+  "reason": "本轮无新增确证供给失败或身份/地区变化；CN新增同类request_disconnected结果未知，已知慢探针和交付缺口保留，无需用户操作。",
+  "globalTts": {
+    "requests": 2105,
+    "finished200": 2105,
+    "allAttempt1": true,
+    "globalElapsedMs": {
+      "samples": 2105,
+      "p95Ms": 1477,
+      "maxMs": 3446
+    },
+    "proxyCounts": {
+      "errorClasses": {},
+      "failureScopesAndLastObservedPhases": {},
+      "finishedOutcomes": {
+        "complete": 4151
+      },
+      "finishedReportedStatuses": {
+        "200": 4151
+      },
+      "phases": {
+        "admission": 8297,
+        "coalescing": 5,
+        "completion": 4151,
+        "connect": 8292,
+        "inbound_body": 4151,
+        "response_body": 4144,
+        "response_complete": 4146,
+        "response_headers": 4146
+      },
+      "receivedAttempts": {
+        "1": 4151
+      },
+      "stages": {
+        "flight_created": 4146,
+        "flight_joined": 5,
+        "request_body_read": 4151,
+        "request_finished": 4151,
+        "request_received": 4151,
+        "upstream_complete": 4146,
+        "upstream_connect_started": 4146,
+        "upstream_connected": 4146,
+        "upstream_first_body": 4144,
+        "upstream_headers": 4146
+      }
+    },
+    "coalescing": {
+      "callersJoined": 5,
+      "denominatorNote": "Admission events in this window, not a completed-request cohort.",
+      "independentCallers": 0,
+      "joinFractionOfAllAdmissions": 0.0012045290291496024,
+      "joinFractionOfSharedAdmissions": 0.0012045290291496024,
+      "sharedProducersCreated": 4146
+    },
+    "proxyTimingsMs": {
+      "request_body_read.elapsedMs": {
+        "max": 0.311,
+        "median": 0.052,
+        "n": 4151,
+        "p95": 0.093
+      },
+      "request_finished.elapsedMs": {
+        "max": 4808.679,
+        "median": 486.017,
+        "n": 4151,
+        "p95": 1436.541
+      },
+      "upstream_complete.elapsedMs": {
+        "max": 4792.802,
+        "median": 485.538,
+        "n": 4146,
+        "p95": 1434.657
+      },
+      "upstream_connected.connectMs": {
+        "max": 1.538,
+        "median": 0.257,
+        "n": 4146,
+        "p95": 0.331
+      },
+      "upstream_first_body.elapsedMs": {
+        "max": 4792.261,
+        "median": 485.226,
+        "n": 4144,
+        "p95": 1434.149
+      },
+      "upstream_headers.elapsedMs": {
+        "max": 4792.189,
+        "median": 485.103,
+        "n": 4146,
+        "p95": 1434.071
+      }
+    },
+    "globalJoin": {
+      "attempts": 2105,
+      "matched": 2105,
+      "ambiguous": 0,
+      "matchedProxyComplete": 2105
+    },
+    "proxyIdentityAndCoverageVerified": true,
+    "cumulativeCore5xx": 1,
+    "historicalJapanese500Preserved": true
+  },
+  "direct": {
+    "cumulativeStatusCounts": {
+      "200": 13087,
+      "400": 1,
+      "no_response": 20
+    },
+    "source": {
+      "bytes": 37688,
+      "path": "/opt/castreader-tts-gateway/gateway.mjs",
+      "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+    },
+    "incrementalExactWindow": {
+      "200": 2047
+    },
+    "newDownstreamDisconnects": [],
+    "knownFrozenVersionMismatchPreserved": true,
+    "cumulativeCoverage": {
+      "complete": true,
+      "journalParseErrors": 0,
+      "journalRowLimitReached": false,
+      "note": "No request body, text, raw message, request id, header, IP, or credential is exported."
+    },
+    "cumulativeSource": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/direct-complete-cumulative.json",
+    "legacyAcceptanceSnapshotTruncated": true,
+    "journalRows": 431964
+  },
+  "cnTts": {
+    "parsedCumulativeStatuses": {
+      "200": 3135,
+      "499": 2,
+      "502": 2
+    },
+    "incrementalStatuses": {
+      "200": 120,
+      "499": 0,
+      "502": 0
+    },
+    "baseline": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/backend-supply/cn-backend-supply.json",
+    "unparsedFileLines": 88,
+    "knownMaintenance502Count": 2,
+    "new502": 0,
+    "publicationAvailabilityGapClosed": false,
+    "existingProbeSeries": {
+      "schema": "castreader.cn-existing-probe-timing-series.v1",
+      "readOnly": true,
+      "productionModified": false,
+      "synthesisStarted": false,
+      "rawContentExported": false,
+      "startUTC": "2026-09-07T14:24:51.334000Z",
+      "endUTCExclusive": "2026-09-07T15:25:51.573000Z",
+      "capturedAtUTC": "2026-09-07T15:26:55.940959Z",
+      "rows": [
+        {
+          "observedAtUTC": "2026-09-07T14:28:24.243000Z",
+          "elapsedMs": 4476,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "b24dcb5212967a22896cf76d35a7868c7937cc5a16fe1367b1de18f918ddd48b",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T14:33:28.069000Z",
+          "elapsedMs": 2778,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "d4efc2338281300c070a497c4263adb32e4244fb17d76b08219413cb29a3b369",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T14:38:42.181000Z",
+          "elapsedMs": 2409,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "d85591fe2593b89b75e9a356731c2ab9bd18994f5e69c05d7ab44faa0ae0f797",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T14:43:52.155000Z",
+          "elapsedMs": 2384,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "bfc11cb35f073e026506e4f44cf3b2b1e664362e21e4e5ea04029105f8c4c1b6",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T14:49:13.708000Z",
+          "elapsedMs": 12085,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "42ca9c1a84308bdc62181f385c798804d4acb49a82471fa1b9ce78d0aa30246d",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T14:54:22.570000Z",
+          "elapsedMs": 2795,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "730886cdbdc4e6092068d5b383b712c36e18c7cf31ef0b7aeaae44727308c8ff",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T14:59:41.961000Z",
+          "elapsedMs": 2186,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "88f384d30c38d6ca0b44d775275772f4716483447cc0724b4c4c02964a400bde",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:04:52.399000Z",
+          "elapsedMs": 2632,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "5d19a1150498d87e77c3421fa37a93582d0a3bb21280ff4c7eb7c0185de5bdde",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:10:11.961000Z",
+          "elapsedMs": 2193,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "92fe5579ad03f954c2e1a400d7fdbba777709a78db0dfffc7b3b12d7e41914de",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:15:27.558000Z",
+          "elapsedMs": 2271,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "91203f88b22aca0d7bb617ede36951a33a8604db146c2daa2e720d424beff3da",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:20:41.897000Z",
+          "elapsedMs": 2129,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "5bfc4d301e33e2f438595ee4ba0b81a2f3821ef222f675b9f272f1c519135d51",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        }
+      ],
+      "limitations": [
+        "Each duration is a whole synthetic continuity probe, including multiple requests/contracts and local checks; it is not real-user TTFB or one model request.",
+        "Uses already persisted results only; no probes were started."
+      ],
+      "collectorHelperSha256": "be7224c90b9e824931089892a76131782807730d204ed4241effccba40ebacb8"
+    },
+    "wholeProbeIsModelTTFB": false
+  },
+  "proxyAttribution": {
+    "globalExactMatched": 2105,
+    "directExactMatched": 2042,
+    "remainingUnattributedGroups": 4,
+    "source": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/reverse-attribution.json"
+  },
+  "runtimeComparisonsToPreviousSnapshot": {
+    "usQuickreadUnchanged": true,
+    "cnQuickreadUnchanged": true,
+    "cnServiceUnitsUnchanged": true,
+    "usCloneProcessUnchanged": true,
+    "usNariProcessUnchanged": true,
+    "directSourceUnchanged": true,
+    "directProcessUnchanged": true,
+    "globalDeploymentUnchanged": true
+  },
+  "models": {
+    "us": {
+      "release": "20260907-kokoro-japanese-numbers-us-r135",
+      "identityVerified": true,
+      "diagnosticWindow": {
+        "startUTC": "2026-09-07T14:24:51.334Z",
+        "endUTCExclusive": "2026-09-07T15:25:51.573Z"
+      },
+      "fixedStageCounts": {
+        "english_g2p_recovered": 21,
+        "source_frontend_unavailable": 1
+      },
+      "failureEvents": [],
+      "successLedgerComplete": false
+    },
+    "cn": {
+      "release": "20260907-kokoro-japanese-numbers-cn-r135",
+      "identityVerified": true,
+      "diagnosticWindow": {
+        "startUTC": "2026-09-07T14:24:51.334Z",
+        "endUTCExclusive": "2026-09-07T15:25:51.573Z"
+      },
+      "fixedStageCounts": {
+        "english_g2p_recovered": 2,
+        "source_frontend_unavailable": 3
+      },
+      "failureEvents": [],
+      "successLedgerComplete": false
+    }
+  },
+  "optionalFrontendReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/frontend-recovery-attribution.json",
+  "existingProbes": {
+    "us": {
+      "cycles": 241,
+      "statusCounts": {
+        "healthy": 241
+      },
+      "newHealthyCycles": 12,
+      "newSupplyFailedCycles": 0,
+      "regionMismatchCycles": 0,
+      "lastCompletedUTC": "2026-09-07T15:26:24.884Z",
+      "currentConsecutiveFailures": 0
+    },
+    "cn": {
+      "cycles": 241,
+      "statusCounts": {
+        "healthy": 240,
+        "supply_failed": 1
+      },
+      "newHealthyCycles": 12,
+      "newSupplyFailedCycles": 0,
+      "regionMismatchCycles": 0,
+      "lastCompletedUTC": "2026-09-07T15:26:11.975Z",
+      "currentConsecutiveFailures": 0
+    }
+  },
+  "quickread": {
+    "us": {
+      "incrementalFixedTagCounts": {
+        "[pro-gate] allow": 5
+      },
+      "knownFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-06T21:42:46+00:00",
+          "tag": "fast-block0 error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T03:46:40+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "newFixedErrorRecords": [],
+      "readyFileOutcomes": {
+        "modifiedFiles": 167,
+        "allBlocks": 136,
+        "partialReady": 31
+      },
+      "backendVerdict": "有新增ready结果，无新增固定错误；完整HTTP交付仍缺证据"
+    },
+    "cn": {
+      "incrementalFixedTagCounts": {
+        "[pro-gate] allow": 8,
+        "extract-plan error:": 1
+      },
+      "knownFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-07T03:09:52.512816+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T09:41:31.662448+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T13:20:18.370924+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T14:50:04.544195+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "newFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-07T14:50:04.544195+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "readyFileOutcomes": {
+        "modifiedFiles": 29,
+        "allBlocks": 24,
+        "partialReady": 5
+      },
+      "backendVerdict": "有新增ready结果；新增断开单列，完整HTTP交付仍缺证据"
+    }
+  },
+  "clone": {
+    "us": {
+      "incrementalEvents": [],
+      "startupHealthCounters": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 64,
+        "submitted": 670,
+        "completed": 670,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.03,
+        "queue_wait_p95_ms": 25.4,
+        "run_p50_ms": 572.71,
+        "run_p95_ms": 1640.62
+      },
+      "backendVerdict": "本轮无新增生成任务，历史生成成功保留；新窗口完整交付证据不足"
+    },
+    "cn": {
+      "startupHealthCounters": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 32,
+        "submitted": 4,
+        "completed": 4,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.08,
+        "queue_wait_p95_ms": 0.17,
+        "run_p50_ms": 381.57,
+        "run_p95_ms": 1829.4
+      },
+      "backendVerdict": "证据不足：本轮无新生成样本"
+    }
+  },
+  "preservedIssues": [
+    "历史Global504的逐阶段归因与持续恢复",
+    "中国区慢探针分项耗时证据",
+    "QuickRead US2/CN1 request_disconnected及交付日志缺口",
+    "中国区模型发布空窗",
+    "Direct独立版本变更、旧代理过渡区间覆盖缺口"
+  ],
+  "limitations": [
+    "HTTP200 and ready files do not certify full user playback or complete QuickRead/clone delivery.",
+    "CN request_disconnected has no HTTP request-id join or proven initial cause; do not count it as a model failure, delivered HTTP error or intentional cancellation.",
+    "CN optional source-preparation diagnostics identify a model-vocabulary check, not a proven audio termination; individual delivery remains unjoined.",
+    "No new clone tasks means insufficient current-window samples, not new service failure.",
+    "Provider pagination does not prove complete log ingestion.",
+    "Original 250k-row cumulative Direct read remains truncated; this separate bounded500k read restores parsing coverage without rewriting the old snapshot.",
+    "Cumulative existing probes are collected at a later time than the exact proxy window.",
+    "Old faults, region audit limitations and the mixed-version fixed window are preserved."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/backend-supply/cn-backend-supply.json",
+      "sha256": "6794a09a898e8c79c388010c70443033233be122da0f3954389fa3379a4c0559"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/backend-supply/us-backend-supply.json",
+      "sha256": "0090c134031bbbe8e0368beea153594da9900e99218fafa745a253a2f77d995d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/backend-supply/us-gpu-backend-supply.json",
+      "sha256": "1e8142e25668a85e3071047460a8296478db4eff35bbabe03c5f5da35f3b879c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/cn-frontend-recovery-detail.json",
+      "sha256": "b06ed81e2a4a9896cb9f43ffd652e28ff1c6fb865b0bffb756bbba89f3d8572c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/cn-probe-timing-series.json",
+      "sha256": "08ae8ec22a57c1d1c09bba212f08a4ccbae6e96885bd20ec36f0facf077241ca"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/cn-r135-model.json",
+      "sha256": "44afade7688c62dcc5602724fe1cc2e752db303a24d7bccb38fb2ec707b5661f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/direct-complete-cumulative.json",
+      "sha256": "71d96c5477dd13c7a9c718cd8231462db979e48d08c5b3dfa3aba621b0b9d6b1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/direct-version-requests.json",
+      "sha256": "6b6ccae35b4b6219f3c6ca07e406c617ca6b333b2952b40ad22d67859570237d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/frontend-recovery-attribution.json",
+      "sha256": "7031e7a5c27f29811ecd9b63c9f172d18850a3d5c96950e1067300412372c765"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/latest-acceptance.json",
+      "sha256": "f02c131eda680707dbf11a9a528af5f3033740fffac1f8942a3c86a5f318ea22"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/proxy-window.json",
+      "sha256": "24d299a2004baf3eae0b29cbd07bda2fc5af7d56d368f8e4b48bf0b767e4b7ab"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/quickread-disconnect-review.json",
+      "sha256": "a26dd1423b8d0b0cb9db1985f26830b32bd08182fb00c7870046d8acc6f57ae6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/reverse-attribution.json",
+      "sha256": "133fa909c9c9879d5194355a06503ec68a85bbff1aeb69f5ae9c0496a34bd2f0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/us-frontend-recovery-detail.json",
+      "sha256": "48249899907fe3b5397dc0a193d7961ae37a51f8dbb205f0149b7f6532d75038"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/us-r135-model.json",
+      "sha256": "a77117e61f7ee1916978ac05ee7dff4aeeb1004086f8970cf14d558ff9016c39"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/vercel-preset.json",
+      "sha256": "64691aa86b24b9d029896d8907335e737dba1d5e54d4a837c883dcc334c7fdb1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/vercel-proxy-join.json",
+      "sha256": "46a43edfe3645fcd7659a4b2e20e6ed3e5669652bd01c102f0dcd183cb92f748"
+    }
+  ]
+}
