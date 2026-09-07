@@ -963,209 +963,6 @@ enum KindleWebScripts {
     })();
     """
 
-    static let applyReaderPreferences = """
-    (function() {
-      \(uiSemanticHelpers)
-      window.__crKindlePrefs = window.__crKindlePrefs || { applied:false, attempts:0 };
-      window.__crKindlePrefs.attempts += 1;
-
-      function isVisible(el) {
-        if (!el) return false;
-        try {
-          var style = getComputedStyle(el);
-          var rect = el.getBoundingClientRect();
-          return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 2 && rect.height > 2;
-        } catch (_) {
-          return false;
-        }
-      }
-      function labelOf(el) {
-        try {
-          return [
-            el.getAttribute && (el.getAttribute('aria-label') || ''),
-            el.getAttribute && (el.getAttribute('title') || ''),
-            el.getAttribute && (el.getAttribute('data-testid') || ''),
-            (el.innerText || el.textContent || '')
-          ].join(' ').replace(/\\s+/g, ' ').trim();
-        } catch (_) {
-          return '';
-        }
-      }
-      function clickElement(el) {
-        if (!el) return false;
-        try {
-          var target = el.closest && el.closest('button,[role="button"],ion-button,span,div') || el;
-          var rect = target.getBoundingClientRect ? target.getBoundingClientRect() : null;
-          var opts = rect ? {
-            clientX: rect.left + rect.width / 2,
-            clientY: rect.top + rect.height / 2,
-            bubbles: true,
-            cancelable: true
-          } : { bubbles:true, cancelable:true };
-          try { target.dispatchEvent(new PointerEvent('pointerdown', Object.assign({ pointerId:1, pointerType:'mouse' }, opts))); } catch (_) {}
-          try { target.dispatchEvent(new MouseEvent('mousedown', opts)); } catch (_) {}
-          try { target.dispatchEvent(new PointerEvent('pointerup', Object.assign({ pointerId:1, pointerType:'mouse' }, opts))); } catch (_) {}
-          try { target.dispatchEvent(new MouseEvent('mouseup', opts)); } catch (_) {}
-          try { target.click(); } catch (_) { target.dispatchEvent(new MouseEvent('click', opts)); }
-          return true;
-        } catch (_) {
-          return false;
-        }
-      }
-      function findExactAria(value) {
-        var wanted = String(value || '').toLowerCase();
-        var nodes = Array.from(document.querySelectorAll('[aria-label],button,[role="button"],span,div'));
-        for (var i = 0; i < nodes.length; i++) {
-          var el = nodes[i];
-          if (!isVisible(el)) continue;
-          var aria = String((el.getAttribute && el.getAttribute('aria-label')) || '').trim().toLowerCase();
-          var text = String((el.innerText || el.textContent || '')).replace(/\\s+/g, ' ').trim().toLowerCase();
-          if (aria === wanted || text === wanted) return el;
-        }
-        return null;
-      }
-      function findSettingsButton() {
-        var exact = Array.from(document.querySelectorAll('button,[role="button"],ion-button,span,div')).filter(isVisible);
-        for (var i = 0; i < exact.length; i++) {
-          var glyph = String(exact[i].innerText || exact[i].textContent || '').replace(/\\s+/g, '').trim();
-          if (/^aa$/i.test(glyph) && glyph.length === 2) return exact[i];
-        }
-        var semantic = crKindleUIFind(
-          'settings',
-          document,
-          'button,[role="button"],ion-button,[data-testid],[data-action],[aria-label],[title]'
-        );
-        if (semantic && crKindleUISemanticScore(semantic.el, 'font-size') < semantic.score) {
-          return semantic.el;
-        }
-        return null;
-      }
-      function findFontSizeRange() {
-        var nodes = Array.from(document.querySelectorAll('ion-range,[role="slider"],input[type="range"]')).filter(isVisible);
-        var ranked = nodes.map(function(el) {
-          return { el:el, score:crKindleUISemanticScore(el, 'font-size') };
-        }).sort(function(a, b) { return b.score - a.score; });
-        if (ranked.length && ranked[0].score >= 45) return ranked[0].el;
-        // A single visible range inside the already-open settings surface is a
-        // stable structural fallback even when Amazon strips every label.
-        return nodes.length === 1 ? nodes[0] : null;
-      }
-      function findReaderOption(kind) {
-        var selector = 'button,[role="button"],[role="radio"],[role="option"],ion-button,ion-item,[aria-checked],[aria-selected],[data-testid],[data-action]';
-        var match = crKindleUIFind(kind, document, selector);
-        return match ? match.el : null;
-      }
-      function setRangeValue(range, desiredRatio) {
-        if (!range) return { ok:false, reason:'range-not-found' };
-        try {
-          var minRaw = range.getAttribute('min');
-          var maxRaw = range.getAttribute('max');
-          var min = minRaw == null || minRaw === '' ? 0 : Number(minRaw);
-          var max = maxRaw == null || maxRaw === '' ? 10 : Number(maxRaw);
-          if (!Number.isFinite(min)) min = 0;
-          if (!Number.isFinite(max) || max <= min) max = 10;
-          var target = min + (max - min) * desiredRatio;
-          var stepRaw = range.getAttribute('step');
-          var step = stepRaw == null || stepRaw === '' ? 1 : Number(stepRaw);
-          if (Number.isFinite(step) && step > 0) {
-            target = Math.round(target / step) * step;
-          }
-          target = Math.max(min, Math.min(max, target));
-          var oldValue = range.value;
-          try { range.value = target; } catch (_) {}
-          try { range.setAttribute('value', String(target)); } catch (_) {}
-          var detail = { value: target };
-          try { range.dispatchEvent(new CustomEvent('ionInput', { bubbles:true, cancelable:true, detail:detail })); } catch (_) {}
-          try { range.dispatchEvent(new CustomEvent('ionChange', { bubbles:true, cancelable:true, detail:detail })); } catch (_) {}
-          try { range.dispatchEvent(new Event('input', { bubbles:true, cancelable:true })); } catch (_) {}
-          try { range.dispatchEvent(new Event('change', { bubbles:true, cancelable:true })); } catch (_) {}
-          return { ok:true, oldValue:oldValue, value:target, min:min, max:max };
-        } catch (e) {
-          return { ok:false, reason:String(e && e.message || e) };
-        }
-      }
-      function bumpFontSize(times) {
-        var button = findExactAria('Increase font size');
-        var clicks = 0;
-        for (var i = 0; i < times; i++) {
-          if (clickElement(button)) clicks += 1;
-        }
-        return { ok:clicks > 0, clicks:clicks };
-      }
-      function settingsMenuOpen() {
-        var menus = Array.from(document.querySelectorAll('ion-menu,[aria-label="menu"],[role="menu"],[role="dialog"],.popover-content,.modal-wrapper'));
-        for (var i = 0; i < menus.length; i++) {
-          if (!isVisible(menus[i])) continue;
-          var semanticScore = crKindleUIStructureScore(menus[i], 'settings');
-          var controls = menus[i].querySelectorAll('ion-range,[role="slider"],input[type="range"],[role="radio"],[aria-checked],ion-segment-button').length;
-          if (semanticScore >= 100 || controls >= 2 ||
-              (controls >= 1 && crKindleUITextMatches('settings', crKindleUIText(menus[i])))) {
-            return true;
-          }
-        }
-        var settingsButton = findSettingsButton();
-        return !!(settingsButton &&
-          String(settingsButton.getAttribute && settingsButton.getAttribute('aria-expanded') || '').toLowerCase() === 'true');
-      }
-      function closeSettingsMenu() {
-        var closeMatch = crKindleUIFind(
-          'close',
-          document,
-          'button,[role="button"],ion-button,[data-testid],[data-action],[part],[aria-label],[title]'
-        );
-        var close = closeMatch && closeMatch.el;
-        if (clickElement(close)) return 'close-button';
-        try {
-          document.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape', code:'Escape', keyCode:27, which:27, bubbles:true, cancelable:true }));
-        } catch (_) {}
-        var aa = findSettingsButton();
-        if (clickElement(aa)) return 'aa-toggle';
-        return '';
-      }
-
-      var hasNext = !!crKindleUIFind('next', document);
-      var hasPrev = !!crKindleUIFind('previous', document);
-      var menuWasOpen = settingsMenuOpen();
-      if (!menuWasOpen) {
-        var aaButton = findSettingsButton();
-        var opened = clickElement(aaButton);
-        return JSON.stringify({
-          ok:false,
-          stage:opened ? 'opening-settings' : 'settings-button-not-found',
-          opened:opened,
-          hasNext:hasNext,
-          hasPrev:hasPrev,
-          attempts:window.__crKindlePrefs.attempts,
-          ua:navigator.userAgent || '',
-          url:location.href
-        });
-      }
-
-      var single = findReaderOption('single-column');
-      var narrow = findReaderOption('narrow');
-      var singleClicked = clickElement(single);
-      var narrowClicked = clickElement(narrow);
-      var fontSize = { ok:false, reason:'not-forced' };
-      var fontBump = { ok:false, clicks:0, reason:'not-forced' };
-      window.__crKindlePrefs.applied = singleClicked || narrowClicked || window.__crKindlePrefs.applied;
-      var closeMode = closeSettingsMenu();
-      return JSON.stringify({
-        ok:!!window.__crKindlePrefs.applied,
-        stage:'applied-reader-preferences',
-        singleClicked:singleClicked,
-        narrowClicked:narrowClicked,
-        fontSize:fontSize,
-        fontBump:fontBump,
-        closeMode:closeMode,
-        hasNext:hasNext,
-        hasPrev:hasPrev,
-        attempts:window.__crKindlePrefs.attempts,
-        ua:navigator.userAgent || '',
-        url:location.href
-      });
-    })();
-    """
-
     /// Mirrors the extension's renderer-metadata authority in Kindle's page world.
     /// Only the small normalized profile is retained; renderer text/TAR data never crosses the bridge.
     static let metadataBootstrap = """
@@ -4608,7 +4405,7 @@ enum KindleWebScripts {
     static let pageModeLockBootstrap = """
     (function() {
       \(uiSemanticHelpers)
-      var crKindlePageModeLockVersion = 7;
+      var crKindlePageModeLockVersion = 8;
       window.__crKindleProbe = window.__crKindleProbe || {};
       window.__crKindleProbe.pageModeLocked = !!window.__crKindleProbe.pageModeLocked;
       window.__crKindleProbe.programmaticScrollUntil = Number(window.__crKindleProbe.programmaticScrollUntil || 0);
@@ -4798,7 +4595,7 @@ enum KindleWebScripts {
           });
         } catch (_) {}
       }
-      function crKindleApplyPageModeLockStyles(locked) {
+      function crKindleApplyPageModeLockStyles(locked, notifyResize) {
         try {
           var wasLocked = document.documentElement.classList.contains('cr-kindle-page-mode-locked');
           var id = 'cr-kindle-page-mode-lock-style';
@@ -4857,7 +4654,7 @@ enum KindleWebScripts {
             setTimeout(function() { crKindleHideCastReaderChrome(true); }, 120);
             setTimeout(function() { crKindleHideCastReaderChrome(true); }, 420);
             setTimeout(function() { crKindleHideCastReaderChrome(true); }, 1000);
-            if (!wasLocked) {
+            if (!wasLocked && notifyResize !== false) {
               try { window.dispatchEvent(new Event('resize')); } catch (_) {}
             }
           }
@@ -5047,10 +4844,10 @@ enum KindleWebScripts {
         try { document.addEventListener('gesturestart', crKindlePreventManualScroll, { capture:true, passive:false }); } catch (_) {}
         try { document.addEventListener('click', crKindleNavigationClick, true); } catch (_) {}
       }
-      window.__crKindleSetPageModeLocked = function(locked) {
+      window.__crKindleSetPageModeLocked = function(locked, notifyResize) {
         window.__crKindleProbe = window.__crKindleProbe || {};
         window.__crKindleProbe.pageModeLocked = !!locked;
-        crKindleApplyPageModeLockStyles(!!locked);
+        crKindleApplyPageModeLockStyles(!!locked, notifyResize);
         return JSON.stringify({
           ok:true,
           locked:window.__crKindleProbe.pageModeLocked,
@@ -5151,7 +4948,7 @@ enum KindleWebScripts {
     static let pageCaptureBootstrap = """
     (function() {
       \(uiSemanticHelpers)
-      var crKindleInstallVersion = 43;
+      var crKindleInstallVersion = 44;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -5537,7 +5334,7 @@ enum KindleWebScripts {
           });
         } catch (_) {}
       }
-      function crKindleApplyPageModeLockStyles(locked) {
+      function crKindleApplyPageModeLockStyles(locked, notifyResize) {
         try {
           var wasLocked = document.documentElement.classList.contains('cr-kindle-page-mode-locked');
           var id = 'cr-kindle-page-mode-lock-style';
@@ -5596,7 +5393,7 @@ enum KindleWebScripts {
             setTimeout(function() { crKindleHideCastReaderChrome(true); }, 120);
             setTimeout(function() { crKindleHideCastReaderChrome(true); }, 420);
             setTimeout(function() { crKindleHideCastReaderChrome(true); }, 1000);
-            if (!wasLocked) {
+            if (!wasLocked && notifyResize !== false) {
               try { window.dispatchEvent(new Event('resize')); } catch (_) {}
             }
           }
@@ -6306,9 +6103,9 @@ enum KindleWebScripts {
         try { document.addEventListener('click', crKindleNavigationClick, true); } catch (_) {}
         try { window.addEventListener('scroll', crKindleHandleScrollEvent, true); } catch (_) {}
       }
-      window.__crKindleSetPageModeLocked = function(locked) {
+      window.__crKindleSetPageModeLocked = function(locked, notifyResize) {
         window.__crKindleProbe.pageModeLocked = !!locked;
-        crKindleApplyPageModeLockStyles(!!locked);
+        crKindleApplyPageModeLockStyles(!!locked, notifyResize);
         return JSON.stringify({ ok:true, locked:window.__crKindleProbe.pageModeLocked });
       };
       var originalCreate = null;

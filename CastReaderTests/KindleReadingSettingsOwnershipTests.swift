@@ -12,6 +12,7 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
     private var window: UIWindow!
     private weak var previousKeyWindow: UIWindow?
     private var model: KindleBookViewModel!
+    private var fixtureReaderURL: URL!
 
     override func setUp() {
         super.setUp()
@@ -20,13 +21,18 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
             .compactMap { $0 as? UIWindowScene }
             .flatMap(\.windows)
             .first(where: \.isKeyWindow)
+        guard let storefront = KindleStorefront.entry(id: "us") else {
+            XCTFail("The fixture requires the canonical US storefront")
+            return
+        }
+        fixtureReaderURL = storefront.readerURL(asin: "B000000001")
         let book = KindleBook(
             id: "settings-ownership-\(UUID().uuidString)",
             asin: "B000000001",
             title: "Local settings fixture",
             author: "",
             coverURL: nil,
-            readerURL: "https://read.amazon.com/sample/B000000001",
+            readerURL: fixtureReaderURL.absoluteString,
             progressLabel: "",
             storefrontID: "us",
             lastOpenedAt: nil,
@@ -34,7 +40,7 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
             lastReadPageKey: nil,
             lastReadURL: nil
         )
-        model = KindleBookViewModel(book: book)
+        model = KindleBookViewModel(book: book, websiteDataStore: .nonPersistent())
         model.webView.navigationDelegate = nil
         window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
         let controller = UIViewController()
@@ -109,6 +115,606 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         withExtendedLifetime(navigation) { }
     }
 
+    func testFullCaptureSettingsRelockPreservesNativeFontWithoutSyntheticResize() async throws {
+        try await assertSettingsRelockPreservesNativeFont(useLightLock: false)
+    }
+
+    func testLightBootstrapSettingsRelockPreservesNativeFontWithoutSyntheticResize() async throws {
+        try await assertSettingsRelockPreservesNativeFont(useLightLock: true)
+    }
+
+    func testAaRetainsAppliedPortraitViewportWhenModelStillHasLandscapeCrop() async throws {
+        try await assertAaRetainsAppliedPortraitViewport(presentationFit: .identity)
+    }
+
+    func testAaAlsoRetainsTheAppliedPresentationFitAcrossStaleSurfaceCallback() async throws {
+        try await assertAaRetainsAppliedPortraitViewport(presentationFit: KindleViewportPresentationFit(
+            scale: 0.94, translationX: 12, translationY: 18
+        ))
+    }
+
+    func testConfirmedNativeFontDoneClosesAndRelocksOnceWithoutReloading() async throws {
+        try await loadNativeFontCommitFixture()
+        let navigation = SettingsReloadNavigationSpy()
+        model.webView.navigationDelegate = navigation
+        let originalURL = try XCTUnwrap(model.webView.url)
+        XCTAssertEqual(originalURL, fixtureReaderURL)
+        XCTAssertTrue(KindleStorefrontNavigationPolicy.allowsReaderMainFrame(
+            originalURL, expectedStorefrontID: "us", expectedASIN: "B000000001"
+        ))
+        try await openAndCommitNativeFont()
+        let committed = try await nativeFontCommitSnapshot()
+        XCTAssertEqual(committed["fontClicks"] as? Int, 1)
+        XCTAssertEqual(committed["value"] as? Int, 7)
+        XCTAssertEqual(committed["saved"] as? Int, 7)
+
+        model.closeReadingSettings()
+        model.closeReadingSettings() // SwiftUI onDismiss while Done is in flight.
+        try await waitUntil { !self.model.isApplyingReadingSettings && !self.model.isReadingSettingsPresented }
+        let closed = try await nativeFontCommitSnapshot()
+        XCTAssertEqual(closed["closeClicks"] as? Int, 1)
+        XCTAssertEqual(closed["panelHidden"] as? Bool, true)
+        XCTAssertEqual(closed["locked"] as? Bool, true)
+        XCTAssertEqual(closed["saved"] as? Int, 7)
+        let events = try XCTUnwrap(closed["events"] as? [String])
+        let closeIndex = try XCTUnwrap(events.firstIndex(of: "close"))
+        let relockIndex = try XCTUnwrap(events.lastIndex(of: "lock:true"))
+        XCTAssertLessThan(closeIndex, relockIndex)
+        XCTAssertTrue(model.readerControlsReady, "Done keeps the current initialized document")
+        XCTAssertFalse(model.isReadingSettingsPresented)
+        XCTAssertNil(model.readVM)
+        XCTAssertFalse(AudioPlayerService.shared.isPlaying)
+
+        model.closeReadingSettings() // A repeated Done after the successful session.
+        try await assertNoAdditionalNavigation(navigation, count: 0)
+        XCTAssertEqual(model.webView.url, originalURL)
+        XCTAssertTrue(navigation.types.isEmpty, "Font changes cannot navigate the user away from the current page")
+        XCTAssertNil(model.readingSettingsError)
+        withExtendedLifetime(navigation) { }
+    }
+
+    func testNoFontChangeFootnoteOnlyAndUnpersistedFontDoNotReload() async throws {
+        let preferenceKey = "kindle.skipFootnoteReferences.v1"
+        let originalPreference = UserDefaults.standard.object(forKey: preferenceKey)
+        defer {
+            if let originalPreference { UserDefaults.standard.set(originalPreference, forKey: preferenceKey) }
+            else { UserDefaults.standard.removeObject(forKey: preferenceKey) }
+        }
+        for scenario in ["open-close", "footnote-only", "unpersisted-font"] {
+            try await loadNativeFontCommitFixture(persistChanges: scenario != "unpersisted-font")
+            let navigation = SettingsReloadNavigationSpy()
+            model.webView.navigationDelegate = navigation
+            model.openReadingSettings()
+            try await waitUntil { self.model.readerFontValue == 6 && !self.model.isApplyingReadingSettings }
+            if scenario == "footnote-only" {
+                model.setSkipsFootnoteReferences(!model.skipsFootnoteReferences)
+            } else if scenario == "unpersisted-font" {
+                model.changeReaderFont(by: 1)
+                try await waitUntil { self.model.readerFontValue == 7 && !self.model.isApplyingReadingSettings }
+            }
+            model.closeReadingSettings()
+            try await waitUntil { !self.model.isApplyingReadingSettings }
+            model.closeReadingSettings()
+            try await assertNoAdditionalNavigation(navigation, count: 0)
+            let closed = try await nativeFontCommitSnapshot()
+            XCTAssertEqual(closed["panelHidden"] as? Bool, true, scenario)
+            XCTAssertEqual(closed["locked"] as? Bool, true, scenario)
+            XCTAssertEqual(closed["closeClicks"] as? Int, 1, scenario)
+            XCTAssertEqual(closed["saved"] as? Int, 6, scenario)
+            XCTAssertEqual(closed["fontClicks"] as? Int, scenario == "unpersisted-font" ? 1 : 0, scenario)
+            XCTAssertFalse(model.isReadingSettingsPresented, scenario)
+            XCTAssertNil(model.readingSettingsError, scenario)
+            XCTAssertFalse(AudioPlayerService.shared.isPlaying, scenario)
+            withExtendedLifetime(navigation) { }
+        }
+    }
+
+    func testDoneDoesNotReloadOrRewriteAnUnrelatedPreferenceMismatch() async throws {
+        try await loadNativeFontCommitFixture()
+        let navigation = SettingsReloadNavigationSpy()
+        model.webView.navigationDelegate = navigation
+        try await openAndCommitNativeFont()
+        _ = try await model.webView.evaluateJavaScript("""
+        localStorage.setItem('KWR_Display_Settings',JSON.stringify({fontSizeIndex:5})); true
+        """)
+        model.closeReadingSettings()
+        try await waitUntil { !self.model.isReadingSettingsPresented && !self.model.isApplyingReadingSettings }
+        try await assertNoAdditionalNavigation(navigation, count: 0)
+        let closed = try await nativeFontCommitSnapshot()
+        XCTAssertEqual(closed["value"] as? Int, 7)
+        XCTAssertEqual(closed["saved"] as? Int, 5, "An arbitrary mismatch outside resize is not repair authorization")
+        XCTAssertEqual(closed["closeClicks"] as? Int, 1)
+        XCTAssertEqual(closed["panelHidden"] as? Bool, true)
+        XCTAssertEqual(closed["locked"] as? Bool, true)
+        XCTAssertNil(model.readingSettingsError)
+        XCTAssertFalse(AudioPlayerService.shared.isPlaying)
+        model.closeReadingSettings()
+        try await assertNoAdditionalNavigation(navigation, count: 0)
+        withExtendedLifetime(navigation) { }
+    }
+
+    func testNavigationAndStopRevokeFontSettingsCloseWithoutAnyReload() async throws {
+        for revocation in ["navigation", "stop"] {
+            try await loadNativeFontCommitFixture()
+            try await openAndCommitNativeFont()
+            if revocation == "navigation" {
+                let observer = SettingsFixtureNavigationObserver(model: model)
+                model.webView.navigationDelegate = observer
+                // A real local replacement navigation invokes the production
+                // didStart invalidation, without requesting any remote page.
+                try await loadFixture(initializeControls: false)
+                XCTAssertFalse(model.readerControlsReady)
+                withExtendedLifetime(observer) { }
+            } else {
+                model.stopAll()
+            }
+            let navigation = SettingsReloadNavigationSpy()
+            model.webView.navigationDelegate = navigation
+            model.closeReadingSettings()
+            model.closeReadingSettings()
+            try await waitUntil { !self.model.isApplyingReadingSettings }
+            try await assertNoAdditionalNavigation(navigation, count: 0)
+            XCTAssertFalse(AudioPlayerService.shared.isPlaying, revocation)
+            XCTAssertNil(model.readVM, revocation)
+            withExtendedLifetime(navigation) { }
+        }
+    }
+
+    func testResizeCompatibilityRestoresOnlyFontPairAndNotifiesNativeHook() async throws {
+        try await loadFontResizeCompatibilityFixture()
+        _ = try await model.webView.evaluateJavaScript("window.dispatchEvent(new Event('resize')); true")
+        try await awaitFontResizeTurn()
+        let state = try await fontResizeSnapshot()
+        XCTAssertEqual(state["index"] as? Int, 6)
+        XCTAssertEqual(state["size"] as? Int, 26)
+        XCTAssertEqual(state["nativeIndex"] as? Int, 6, "The native hook must adopt the corrected object")
+        XCTAssertEqual(state["margin"] as? String, "wide", "Keep the other native resize updates")
+        XCTAssertEqual(state["theme"] as? String, "night")
+        XCTAssertEqual(state["hookIndices"] as? [Int], [5, 6])
+        XCTAssertEqual(state["invalidHookDetails"] as? Int, 0)
+    }
+
+    func testNativeWKResizeAlsoPreservesFontAndPublishesCorrectiveHook() async throws {
+        try await loadFontResizeCompatibilityFixture()
+        let oldBounds = model.webView.bounds
+        model.webView.bounds = CGRect(origin: oldBounds.origin, size: CGSize(width: oldBounds.width, height: oldBounds.height + 48))
+        defer { model.webView.bounds = oldBounds }
+        var observed = false
+        for _ in 0..<100 {
+            let state = try await fontResizeSnapshot()
+            if (state["trustedResizes"] as? Int ?? 0) > 0 {
+                observed = true
+                break
+            }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        guard observed else { throw FixtureError.timedOut("a real WK bounds change must deliver a trusted resize") }
+        try await awaitFontResizeTurn()
+        let state = try await fontResizeSnapshot()
+        XCTAssertEqual(state["index"] as? Int, 6)
+        XCTAssertEqual(state["size"] as? Int, 26)
+        XCTAssertEqual(state["nativeIndex"] as? Int, 6)
+        XCTAssertEqual((state["hookIndices"] as? [Int])?.last, 6)
+    }
+
+    func testExplicitNativeFontChangeCancelsPendingResizeCorrection() async throws {
+        try await loadFontResizeCompatibilityFixture()
+        // Dispatch and the explicit production change occur in one WebContent
+        // task, before the repair's timer. There is no test-only cancel call.
+        let change = KindleReadingSettingsScript.change(by: 1)
+        _ = try await model.webView.evaluateJavaScript("""
+        (() => {
+          window.dispatchEvent(new Event('resize'));
+          window.fixtureChangeResult=\(change);
+          return true;
+        })()
+        """)
+        let result = try await settingsJSON("window.fixtureChangeResult")
+        XCTAssertEqual(result["ok"] as? Bool, true)
+        try await awaitFontResizeTurn()
+        let state = try await fontResizeSnapshot()
+        // Amazon's stale storage hook changes its preference object, while
+        // the visible range stays at 6. Real A+ must therefore choose 7/27.
+        XCTAssertEqual(state["index"] as? Int, 7)
+        XCTAssertEqual(state["size"] as? Int, 27)
+        XCTAssertEqual(state["hookIndices"] as? [Int], [5], "Cancelled repair must not send its own hook")
+        let second = try await settingsJSON(KindleReadingSettingsScript.change(by: 1))
+        XCTAssertEqual(second["ok"] as? Bool, true)
+        try await awaitFontResizeTurn()
+        let final = try await fontResizeSnapshot()
+        XCTAssertEqual(final["index"] as? Int, 8)
+        XCTAssertEqual(final["size"] as? Int, 28)
+    }
+
+    func testSameKeyWriteOutsideResizeWinsOverPendingCorrection() async throws {
+        try await loadFontResizeCompatibilityFixture()
+        _ = try await model.webView.evaluateJavaScript("""
+        (() => {
+          window.dispatchEvent(new Event('resize'));
+          localStorage.setItem('KWR_Display_Settings',JSON.stringify({fontSizeIndex:9,fontSize:29,sideMarginsSize:'latest',theme:'day'}));
+          return true;
+        })()
+        """)
+        try await awaitFontResizeTurn()
+        let state = try await fontResizeSnapshot()
+        XCTAssertEqual(state["index"] as? Int, 9)
+        XCTAssertEqual(state["size"] as? Int, 29)
+        XCTAssertEqual(state["margin"] as? String, "latest")
+        XCTAssertEqual(state["hookIndices"] as? [Int], [5])
+    }
+
+    func testUnrelatedLocalKeysAndSessionStoragePassThroughDuringResize() async throws {
+        try await loadFontResizeCompatibilityFixture()
+        _ = try await model.webView.evaluateJavaScript("""
+        (() => {
+          const stale=window.fixtureResizeWrite;
+          window.fixtureResizeWrite=()=>{
+            stale();
+            localStorage.setItem('fixture.other','unchanged-other');
+            sessionStorage.setItem('KWR_Display_Settings','session-only');
+          };
+          window.dispatchEvent(new Event('resize'));
+          return true;
+        })()
+        """)
+        try await awaitFontResizeTurn()
+        let state = try await fontResizeSnapshot()
+        XCTAssertEqual(state["index"] as? Int, 6)
+        let unrelated = try await settingsJSON("JSON.stringify({other:localStorage.getItem('fixture.other'),session:sessionStorage.getItem('KWR_Display_Settings')})")
+        XCTAssertEqual(unrelated["other"] as? String, "unchanged-other")
+        XCTAssertEqual(unrelated["session"] as? String, "session-only")
+        XCTAssertEqual(state["hookIndices"] as? [Int], [5, 6])
+    }
+
+    func testMalformedOrAbsentFontPairsAreNeverRepaired() async throws {
+        try await loadFontResizeCompatibilityFixture()
+        for before in ["null", "'{'", "JSON.stringify({fontSizeIndex:6})", "JSON.stringify({fontSizeIndex:'6',fontSize:26})", "JSON.stringify({fontSizeIndex:6,fontSize:-1})", "'[]'"] {
+            _ = try await model.webView.evaluateJavaScript("""
+            (() => {
+              const before=\(before);
+              if(before===null)localStorage.removeItem('KWR_Display_Settings');
+              else localStorage.setItem('KWR_Display_Settings',before);
+              window.fixtureHookIndices=[];
+              window.fixtureResizeWrite=()=>localStorage.setItem('KWR_Display_Settings','{"fontSizeIndex":5,"fontSize":25}');
+              window.dispatchEvent(new Event('resize'));
+              return true;
+            })()
+            """)
+            try await awaitFontResizeTurn()
+            let state = try await fontResizeSnapshot()
+            XCTAssertEqual(state["index"] as? Int, 5, before)
+            XCTAssertEqual(state["size"] as? Int, 25, before)
+            XCTAssertEqual(state["hookIndices"] as? [Int], [], before)
+        }
+        // A valid before-state also cannot authorize replacing malformed
+        // native output or manufacturing a now-missing member afterward.
+        for after in ["'{'", "JSON.stringify({fontSizeIndex:5})"] {
+            _ = try await model.webView.evaluateJavaScript("""
+            (() => {
+              localStorage.setItem('KWR_Display_Settings','{"fontSizeIndex":6,"fontSize":26}');
+              window.fixtureAfterRaw=\(after);
+              window.fixtureResizeWrite=()=>localStorage.setItem('KWR_Display_Settings',fixtureAfterRaw);
+              window.dispatchEvent(new Event('resize'));
+              return true;
+            })()
+            """)
+            try await awaitFontResizeTurn()
+            let unchanged = try await model.webView.evaluateJavaScript("localStorage.getItem('KWR_Display_Settings')===fixtureAfterRaw") as? Bool
+            XCTAssertEqual(unchanged, true, after)
+        }
+    }
+
+    func testTwoResizeBurstRetainsFirstSnapshotAndBootstrapIsIdempotent() async throws {
+        try await loadFontResizeCompatibilityFixture()
+        _ = try await model.webView.evaluateJavaScript(KindleReadingSettingsScript.resizePreferenceCompatibilityBootstrap)
+        _ = try await model.webView.evaluateJavaScript(KindleReadingSettingsScript.resizePreferenceCompatibilityBootstrap)
+        _ = try await model.webView.evaluateJavaScript("""
+        window.dispatchEvent(new Event('resize'));
+        window.dispatchEvent(new Event('resize'));
+        true
+        """)
+        try await awaitFontResizeTurn()
+        let state = try await fontResizeSnapshot()
+        XCTAssertEqual(state["index"] as? Int, 6)
+        XCTAssertEqual(state["size"] as? Int, 26)
+        XCTAssertEqual(state["hookIndices"] as? [Int], [5, 5, 6], "One corrective hook covers the burst; installation must not add duplicate observers")
+    }
+
+    private func loadFontResizeCompatibilityFixture() async throws {
+        try await loadNativeFontCommitFixture()
+        model.openReadingSettings()
+        try await waitUntil { self.model.readerFontValue == 6 && !self.model.isApplyingReadingSettings }
+        _ = try await model.webView.evaluateJavaScript("""
+        (() => {
+          localStorage.setItem('KWR_Display_Settings',JSON.stringify({fontSizeIndex:6,fontSize:26,sideMarginsSize:'narrow',theme:'night'}));
+          window.fixtureHookIndices=[];window.fixtureInvalidHookDetails=0;window.fixtureTrustedResizes=0;
+          window.fixtureNativePreferenceIndex=6;
+          window.addEventListener('onLocalStorageChange',event=>{
+            const detail=event.detail;
+            if(!detail || detail.key!=='KWR_Display_Settings')return;
+            if(!detail.value || typeof detail.value!=='object'){fixtureInvalidHookDetails++;return;}
+            fixtureHookIndices.push(detail.value.fontSizeIndex);
+            // The public hook updates the preference object; the visible
+            // native range has separate state and changes only on real A±.
+            window.fixtureNativePreferenceIndex=detail.value.fontSizeIndex;
+          });
+          for(const button of font.querySelectorAll('button'))button.addEventListener('click',()=>{
+            const prefs=JSON.parse(localStorage.getItem('KWR_Display_Settings'));
+            prefs.fontSize=20+Number(font.value);
+            localStorage.setItem('KWR_Display_Settings',JSON.stringify(prefs));
+          });
+          window.fixtureResizeWrite=()=>{
+            const prefs=JSON.parse(localStorage.getItem('KWR_Display_Settings'));
+            prefs.fontSizeIndex=5;prefs.fontSize=25;prefs.sideMarginsSize='wide';
+            localStorage.setItem('KWR_Display_Settings',JSON.stringify(prefs));
+            window.dispatchEvent(new CustomEvent('onLocalStorageChange',{detail:{key:'KWR_Display_Settings',value:prefs}}));
+          };
+          return true;
+        })()
+        """)
+        _ = try await model.webView.evaluateJavaScript(KindleReadingSettingsScript.resizePreferenceCompatibilityBootstrap)
+        _ = try await model.webView.evaluateJavaScript("""
+        window.addEventListener('resize',event=>{if(event.isTrusted)fixtureTrustedResizes++;window.fixtureResizeWrite();}); true
+        """)
+    }
+
+    private func awaitFontResizeTurn() async throws {
+        _ = try await model.webView.evaluateJavaScript("window.fixtureResizeTurnDone=false;setTimeout(()=>{window.fixtureResizeTurnDone=true;},0);true")
+        for _ in 0..<100 {
+            if (try await model.webView.evaluateJavaScript("window.fixtureResizeTurnDone")) as? Bool == true { return }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        throw FixtureError.timedOut("pending font resize timer")
+    }
+
+    private func fontResizeSnapshot() async throws -> [String: Any] {
+        try await settingsJSON("""
+        (() => {
+          const prefs=JSON.parse(localStorage.getItem('KWR_Display_Settings'));
+          return JSON.stringify({index:prefs.fontSizeIndex,size:prefs.fontSize,margin:prefs.sideMarginsSize,theme:prefs.theme,
+            nativeIndex:fixtureNativePreferenceIndex,visibleIndex:Number(font.value),hookIndices:fixtureHookIndices,invalidHookDetails:fixtureInvalidHookDetails,trustedResizes:fixtureTrustedResizes});
+        })()
+        """)
+    }
+
+    /// Native Ionic buttons own the update and optional persistence. The real
+    /// production script must discover and click them; tests never inject a
+    /// pending state or replace the production Close/relock implementation.
+    private func loadNativeFontCommitFixture(persistChanges: Bool = true) async throws {
+        model.webView.navigationDelegate = nil
+        try await loadFixture()
+        XCTAssertFalse(model.webView.configuration.websiteDataStore.isPersistent)
+        _ = try await model.webView.evaluateJavaScript("""
+        (() => {
+          const old=document.getElementById('font'), range=document.createElement('ion-range');
+          range.id='font';range.setAttribute('aria-label','Font size');
+          range.setAttribute('min','1');range.setAttribute('max','10');range.setAttribute('step','1');
+          range.value=6;range.style.cssText='display:block;width:260px;height:48px';
+          window.fixtureFontClicks=0;window.fixtureCommitEvents=[];
+          localStorage.setItem('KWR_Display_Settings',JSON.stringify({fontSizeIndex:6,fontId:'Bookerly'}));
+          for(const [delta,label] of [[-1,'Decrease font size'],[1,'Increase font size']]){
+            const button=document.createElement('button');button.setAttribute('aria-label',label);
+            button.textContent=delta>0?'A+':'A−';button.style.cssText='width:100px;height:44px';
+            button.onclick=()=>{
+              fixtureFontClicks++;range.value=Number(range.value)+delta;
+              fixtureCommitEvents.push('font:'+range.value);commits.push(String(range.value));
+              if(\(persistChanges ? "true" : "false")){
+                const prefs=JSON.parse(localStorage.getItem('KWR_Display_Settings'));
+                prefs.fontSizeIndex=Number(range.value);localStorage.setItem('KWR_Display_Settings',JSON.stringify(prefs));
+              }
+            };
+            range.appendChild(button);
+          }
+          old.replaceWith(range);
+          aa.addEventListener('click',()=>{if(panel.hidden)fixtureCommitEvents.push('close');});
+          const nativeLock=window.__crKindleSetPageModeLocked;
+          window.__crKindleSetPageModeLocked=(value,notifyResize)=>{
+            const result=nativeLock(value,notifyResize);fixtureCommitEvents.push('lock:'+value);return result;
+          };
+          return true;
+        })()
+        """)
+    }
+
+    private func openAndCommitNativeFont() async throws {
+        model.openReadingSettings()
+        try await waitUntil { self.model.readerFontValue == 6 && !self.model.isApplyingReadingSettings }
+        model.changeReaderFont(by: 1)
+        try await waitUntil { self.model.readerFontValue == 7 && !self.model.isApplyingReadingSettings }
+        XCTAssertNil(model.readingSettingsError)
+    }
+
+    private func nativeFontCommitSnapshot() async throws -> [String: Any] {
+        try await settingsJSON("""
+        JSON.stringify({value:Number(font.value),saved:JSON.parse(localStorage.getItem('KWR_Display_Settings')).fontSizeIndex,
+          fontClicks:fixtureFontClicks,events:fixtureCommitEvents,closeClicks,panelHidden:panel.hidden,
+          locked:!!window.__crKindleProbe.pageModeLocked})
+        """)
+    }
+
+    private func assertNoAdditionalNavigation(_ navigation: SettingsReloadNavigationSpy, count: Int) async throws {
+        // Barrier through the real WebContent process, then leave time for a
+        // forbidden queued reload to reach its policy callback. Every request
+        // is cancelled by the spy, so a regression cannot access Amazon.
+        _ = try await model.webView.evaluateJavaScript("true")
+        try await Task.sleep(for: .milliseconds(180))
+        XCTAssertEqual(navigation.urls.count, count)
+    }
+
+    private func assertAaRetainsAppliedPortraitViewport(presentationFit: KindleViewportPresentationFit) async throws {
+        try await loadFixture()
+        let landscapeSize = CGSize(width: 750, height: 269)
+        let portraitSize = CGSize(width: 402, height: 653)
+        let landscapeCrop = KindleViewportCrop(
+            scale: 1.25, heightScale: 419.0 / 269.0, offsetX: -93.75, offsetY: -60
+        )
+        // Seed the concrete delayed-model state from the rotation failure. The
+        // real container then renders the model's effective portrait prediction,
+        // just as SwiftUI can before its onChange callback commits the new size.
+        model.viewportCrop = landscapeCrop
+        let host = KindleWebViewContainer(webView: model.webView, crop: landscapeCrop)
+        host.frame = CGRect(origin: .zero, size: landscapeSize)
+        window.rootViewController!.view.addSubview(host)
+        host.layoutIfNeeded()
+        host.frame = CGRect(origin: .zero, size: portraitSize)
+        let visibleCrop = model.effectiveViewportCrop(forSurfaceSize: portraitSize)
+        XCTAssertNotEqual(visibleCrop, landscapeCrop)
+        host.crop = visibleCrop
+        host.presentationFit = presentationFit
+        host.setNeedsLayout()
+        host.layoutIfNeeded()
+        let canonical = KindleViewportPresentationPolicy.canonicalFrame(surfaceSize: portraitSize, crop: visibleCrop)
+        XCTAssertEqual(canonical.width, 502.5, accuracy: 0.01)
+        XCTAssertEqual(canonical.height, 803, accuracy: 0.01)
+        try await waitForCSSViewport(canonical.size)
+        let oldBounds = model.webView.bounds
+        let oldCenter = model.webView.center
+        let oldTransform = model.webView.transform
+
+        model.openReadingSettings()
+        XCTAssertTrue(model.isReadingSettingsPresented)
+        XCTAssertEqual(model.viewportCrop, visibleCrop, "Aa must freeze the applied portrait crop, not the stale landscape model")
+        XCTAssertEqual(model.effectiveViewportPresentationFit(forSurfaceSize: portraitSize), presentationFit)
+        host.crop = model.effectiveViewportCrop(forSurfaceSize: portraitSize)
+        host.presentationFit = model.effectiveViewportPresentationFit(forSurfaceSize: portraitSize)
+        host.layoutIfNeeded()
+        XCTAssertEqual(model.webView.bounds, oldBounds)
+        XCTAssertEqual(model.webView.center, oldCenter)
+        XCTAssertEqual(model.webView.transform, oldTransform)
+        try await waitUntil { self.model.readerFontValue == 6 && !self.model.isApplyingReadingSettings }
+        try await assertCSSViewport(canonical.size)
+
+        // A late size callback must not undo the snapshot while settings owns
+        // the page. Closing without a font change must preserve it as well.
+        model.updateReaderSurfaceSize(landscapeSize)
+        host.crop = model.effectiveViewportCrop(forSurfaceSize: portraitSize)
+        host.presentationFit = model.effectiveViewportPresentationFit(forSurfaceSize: portraitSize)
+        host.layoutIfNeeded()
+        XCTAssertEqual(model.webView.bounds, oldBounds)
+        XCTAssertEqual(model.webView.center, oldCenter)
+        model.closeReadingSettings()
+        try await waitUntil { !self.model.isReadingSettingsPresented && !self.model.isApplyingReadingSettings }
+        host.crop = model.effectiveViewportCrop(forSurfaceSize: portraitSize)
+        host.presentationFit = model.effectiveViewportPresentationFit(forSurfaceSize: portraitSize)
+        host.layoutIfNeeded()
+        XCTAssertEqual(model.webView.bounds, oldBounds)
+        XCTAssertEqual(model.webView.center, oldCenter)
+        XCTAssertEqual(model.webView.transform, oldTransform)
+        try await assertCSSViewport(canonical.size)
+        XCTAssertNil(model.readingSettingsError)
+    }
+
+    func testAaDefersUntilAttachedContainerHasAppliedItsNewCrop() async throws {
+        try await loadFixture()
+        let size = CGSize(width: 402, height: 653)
+        let host = KindleWebViewContainer(webView: model.webView, crop: .identity)
+        host.frame = CGRect(origin: .zero, size: size)
+        window.rootViewController!.view.addSubview(host)
+        host.layoutIfNeeded()
+        host.crop = model.effectiveViewportCrop(forSurfaceSize: size)
+        // The new crop has not reached layoutSubviews yet. Opening now must
+        // not capture it as if WebKit had already applied the matching frame.
+        model.openReadingSettings()
+        XCTAssertFalse(model.isReadingSettingsPresented)
+        let before = try await snapshot()
+        XCTAssertEqual(before["openClicks"] as? Int, 0)
+
+        host.layoutIfNeeded()
+        model.openReadingSettings()
+        XCTAssertTrue(model.isReadingSettingsPresented)
+        try await waitUntil { self.model.readerFontValue == 6 && !self.model.isApplyingReadingSettings }
+        let after = try await snapshot()
+        XCTAssertEqual(after["openClicks"] as? Int, 1)
+    }
+
+    private func waitForCSSViewport(_ size: CGSize) async throws {
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline {
+            let viewport = try await settingsJSON("JSON.stringify({width:innerWidth,height:innerHeight})")
+            if let width = viewport["width"] as? NSNumber, let height = viewport["height"] as? NSNumber,
+               abs(width.doubleValue - Double(size.width)) <= 1,
+               abs(height.doubleValue - Double(size.height)) <= 1 { return }
+            try await Task.sleep(for: .milliseconds(30))
+        }
+        throw FixtureError.timedOut("waiting for applied WK CSS viewport \(size)")
+    }
+
+    private func assertCSSViewport(_ size: CGSize, file: StaticString = #filePath, line: UInt = #line) async throws {
+        let viewport = try await settingsJSON("JSON.stringify({width:innerWidth,height:innerHeight})")
+        let width = try XCTUnwrap(viewport["width"] as? NSNumber, file: file, line: line)
+        let height = try XCTUnwrap(viewport["height"] as? NSNumber, file: file, line: line)
+        XCTAssertEqual(width.doubleValue, Double(size.width), accuracy: 1, file: file, line: line)
+        XCTAssertEqual(height.doubleValue, Double(size.height), accuracy: 1, file: file, line: line)
+    }
+
+    private func assertSettingsRelockPreservesNativeFont(useLightLock: Bool) async throws {
+        try await loadFixture()
+        if useLightLock {
+            _ = try await model.webView.evaluateJavaScript(KindleWebScripts.pageModeLockBootstrap)
+        }
+        model.openReadingSettings()
+        try await waitUntil { self.model.readerFontValue == 6 && !self.model.isApplyingReadingSettings }
+        _ = try await model.webView.evaluateJavaScript("""
+        (() => {
+          const mountedFont=Number(font.value);
+          window.fixtureSavedFont=mountedFont;
+          window.fixtureSyntheticResizes=0;
+          // A real button handler owns both the control and its preference.
+          // The intentionally stale resize closure models the independent
+          // writeback observed in Amazon; no production storage is changed.
+          const nativeIncrease=document.createElement('button');
+          nativeIncrease.textContent='Increase font size';
+          nativeIncrease.onclick=()=>{
+            font.value=String(Number(font.value)+1);
+            window.fixtureSavedFont=Number(font.value);
+          };
+          panel.appendChild(nativeIncrease);
+          window.addEventListener('resize',event=>{
+            if(event.isTrusted)return;
+            window.fixtureSyntheticResizes++;
+            font.value=String(mountedFont);
+            window.fixtureSavedFont=mountedFont;
+          });
+          nativeIncrease.click();
+          return true;
+        })()
+        """)
+        let selected = try await settingsJSON("JSON.stringify({value:Number(font.value),saved:fixtureSavedFont})")
+        XCTAssertEqual(selected["value"] as? Int, 7)
+        XCTAssertEqual(selected["saved"] as? Int, 7)
+
+        model.closeReadingSettings()
+        try await waitUntil { !self.model.isApplyingReadingSettings }
+        let preserved = try await settingsJSON("""
+        JSON.stringify({value:Number(font.value),saved:fixtureSavedFont,resizes:fixtureSyntheticResizes,
+          locked:!!window.__crKindleProbe.pageModeLocked,
+          lockClass:document.documentElement.classList.contains('cr-kindle-page-mode-locked'),
+          headerHidden:getComputedStyle(document.querySelector('header')).display==='none',panelHidden:panel.hidden})
+        """)
+        XCTAssertEqual(preserved["resizes"] as? Int, 0)
+        XCTAssertEqual(preserved["value"] as? Int, 7)
+        XCTAssertEqual(preserved["saved"] as? Int, 7)
+        XCTAssertEqual(preserved["locked"] as? Bool, true)
+        XCTAssertEqual(preserved["lockClass"] as? Bool, true)
+        XCTAssertEqual(preserved["headerHidden"] as? Bool, true)
+        XCTAssertEqual(preserved["panelHidden"] as? Bool, true)
+        XCTAssertNil(model.readingSettingsError)
+
+        // Existing viewport/rotation callers omit the second argument. Their
+        // resize behavior must remain intact, and proves this fixture would
+        // detect the prior settings relock regression rather than merely
+        // observing a nonfunctional resize handler.
+        _ = try await model.webView.evaluateJavaScript("""
+        window.__crKindleSetPageModeLocked(false);
+        window.__crKindleSetPageModeLocked(true);
+        true
+        """)
+        let defaultLock = try await settingsJSON("JSON.stringify({value:Number(font.value),saved:fixtureSavedFont,resizes:fixtureSyntheticResizes})")
+        XCTAssertEqual(defaultLock["resizes"] as? Int, 1)
+        XCTAssertEqual(defaultLock["value"] as? Int, 6)
+        XCTAssertEqual(defaultLock["saved"] as? Int, 6)
+    }
+
     func testPageModeLockHidesAaUntilModelUnlocksAndDoneRelocks() async throws {
         try await loadFixture()
         _ = try await model.webView.evaluateJavaScript(KindleWebScripts.pageModeLockBootstrap)
@@ -179,9 +785,9 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         (() => {
           window.fixtureRelockCount=0;
           const nativeLock=window.__crKindleSetPageModeLocked;
-          window.__crKindleSetPageModeLocked=value=>{
+          window.__crKindleSetPageModeLocked=(value,notifyResize)=>{
             if(value)fixtureRelockCount++;
-            return nativeLock(value);
+            return nativeLock(value,notifyResize);
           };
           aa.addEventListener('click',()=>{
             if(!panel.hidden)return;
@@ -437,8 +1043,8 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
             configurable:true,
             get:function(){return lockFunction;},
             set:function(nativeLock){
-              lockFunction=function(value){
-                var result=nativeLock(value);
+              lockFunction=function(value,notifyResize){
+                var result=nativeLock(value,notifyResize);
                 if(window.fixtureDelayedLockObserved)return result;
                 window.fixtureDelayedLockObserved=true;
                 window.webkit.messageHandlers.fixtureLightLock.postMessage('entered');
@@ -480,10 +1086,18 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         <script>
           window.openClicks=0; window.closeClicks=0; window.closeWorks=true;
           window.commits=[]; window.closeObservations=0;
-          let lastCloseAttempt='';
+          let lastCloseAttempt='', observedCloseThisJob=false;
           Object.defineProperty(window,'__crKindleFontCloseAttempt',{
             configurable:true,
-            get(){window.closeObservations++;return lastCloseAttempt;},
+            // Count one native close evaluation, not how many times its
+            // synchronous helpers read the same attempt within that JS job.
+            get(){
+              if(!observedCloseThisJob){
+                window.closeObservations++;observedCloseThisJob=true;
+                queueMicrotask(()=>observedCloseThisJob=false);
+              }
+              return lastCloseAttempt;
+            },
             set(value){lastCloseAttempt=value;}
           });
           aa.addEventListener('click',()=>{
@@ -508,7 +1122,7 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
           window.fixtureLoadID='\(fixtureID)';
           window.fixtureReady=true;
         </script></body></html>
-        """, baseURL: URL(string: "https://read.amazon.com/sample/B000000001"))
+        """, baseURL: fixtureReaderURL)
         for _ in 0..<100 {
             if (try? await model.webView.evaluateJavaScript("window.fixtureReady===true && window.fixtureLoadID==='\(fixtureID)'")) as? Bool == true,
                !model.webView.isLoading, !model.isNavigating {
@@ -570,5 +1184,22 @@ private final class SettingsFixtureNavigationObserver: NSObject, WKNavigationDel
     init(model: KindleBookViewModel) { self.model = model }
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         model?.webView(webView, didStartProvisionalNavigation: navigation)
+    }
+}
+
+/// Installed only after local HTML is ready. All main-frame requests are
+/// recorded and cancelled before network loading, including accidental reloads.
+@MainActor
+private final class SettingsReloadNavigationSpy: NSObject, WKNavigationDelegate {
+    private(set) var urls: [URL] = []
+    private(set) var types: [WKNavigationType] = []
+
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if navigationAction.targetFrame?.isMainFrame == true, let url = navigationAction.request.url {
+            urls.append(url)
+            types.append(navigationAction.navigationType)
+        }
+        decisionHandler(.cancel)
     }
 }

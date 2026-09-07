@@ -145,7 +145,13 @@ struct KindleBookView: View {
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
-        .sheet(isPresented: $model.isReadingSettingsPresented, onDismiss: {
+        // Let Kindle finish mounting its native font controls before the
+        // SwiftUI sheet occludes the WKWebView. The model already owns the
+        // operation and pauses playback throughout this preparation.
+        .sheet(isPresented: Binding(
+            get: { model.isReadingSettingsPresented && (model.readerFontValue != nil || model.readingSettingsError != nil) },
+            set: { model.isReadingSettingsPresented = $0 }
+        ), onDismiss: {
             model.closeReadingSettings()
         }) {
             KindleReadingSettingsView(
@@ -480,7 +486,7 @@ struct KindleBookView: View {
             }
             .accessibilityLabel(AppLocalized("阅读设置"))
             .accessibilityIdentifier("kindleReadingSettingsButton")
-            .disabled(!model.readerControlsReady || model.isNavigating || model.isPreparing
+            .disabled(!model.readerControlsReady || model.isNavigating || model.isPreparing || model.isApplyingReadingSettings
                 || model.isPageTurnResuming || model.isNativeTOCLoading
                 || model.isKindleSyncDialogVisible || model.isAmazonCookieConsentVisible)
 
@@ -2048,6 +2054,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var readingSettingsTask: Task<Void, Never>?
     private var readingSettingsRevision: UInt64 = 0
     private var suppressReadingSettingsCloseAfterSync = false
+    private var readingSettingsSessionActive = false
+    private var readingSettingsCloseInProgress = false
     #if DEBUG
     var debugAcceptancePage: String {
         guard let page = livePageKey, !page.isEmpty else { return "page=none" }
@@ -2127,7 +2135,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     let webView: WKWebView
 
     var isPlaybackPreparing: Bool {
-        isPreparing || isPageTurnResuming || isApplyingReadingSettings
+        isPreparing || isPageTurnResuming || isApplyingReadingSettings || isNavigating
     }
 
     var isExplainTransitionLoading: Bool {
@@ -2655,7 +2663,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private func repairReaderLayout(reason: String, attempt: Int = 1) async {
         guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
-        guard didLoad else { return }
+        guard didLoad, !Task.isCancelled else { return }
+        let navigation = readerControlsNavigationGeneration
+        let settings = readingSettingsRevision
         webView.setNeedsLayout()
         webView.layoutIfNeeded()
         webView.scrollView.setNeedsLayout()
@@ -2663,40 +2673,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         configurePageModeGestures()
         installCaptureScript()
         await setKindlePageModeLocked(true)
-
-        let script = """
-        (function() {
-          try { window.dispatchEvent(new Event('resize')); } catch (_) {}
-          try { document.dispatchEvent(new Event('visibilitychange')); } catch (_) {}
-          try {
-            if (window.__crKindleProbe) {
-              window.__crKindleProbe.layoutRepairAt = Date.now ? Date.now() : new Date().getTime();
-            }
-          } catch (_) {}
-          try {
-            if (window.crKindleUpdateLiveOverlay) window.crKindleUpdateLiveOverlay();
-          } catch (_) {}
-          try {
-            var state = window.__crKindleState ? window.__crKindleState() : '{}';
-            var parsed = typeof state === 'string' ? JSON.parse(state) : state;
-            return JSON.stringify({
-              ok: true,
-              key: parsed && parsed.key || '',
-              liveKey: parsed && parsed.liveKey || '',
-              orderedCount: parsed && parsed.orderedCount || 0,
-              viewportWidth: parsed && parsed.viewportWidth || 0,
-              viewportHeight: parsed && parsed.viewportHeight || 0,
-              visibleArea: parsed && parsed.visibleArea || 0,
-              bandVisibleArea: parsed && parsed.bandVisibleArea || 0
-            });
-          } catch (e) {
-            return JSON.stringify({ ok:false, reason:String(e && e.message || e) });
-          }
-        })()
-        """
+        guard !Task.isCancelled, readerControlsNavigationGeneration == navigation,
+              readingSettingsRevision == settings,
+              readerOperationAllowed(.layoutRepair, reason: reason) else { return }
 
         do {
-            let result = try await evaluateJSON(script)
+            let result = try await refreshReaderLayoutState(reason: reason)
             let key = result["key"] as? String ?? ""
             let liveKey = result["liveKey"] as? String ?? ""
             let orderedCount = Self.int(from: result["orderedCount"]) ?? 0
@@ -2705,6 +2687,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 "KINDLE reader layout repair reason=\(reason) ok=\(String(describing: result["ok"] ?? false)) key=\(Self.keyLog(key)) live=\(Self.keyLog(liveKey)) ordered=\(String(describing: result["orderedCount"] ?? 0)) viewport=\(String(describing: result["viewportWidth"] ?? 0))x\(String(describing: result["viewportHeight"] ?? 0)) visible=\(String(describing: result["visibleArea"] ?? 0)) band=\(String(describing: result["bandVisibleArea"] ?? 0))"
             )
             await logKindleGeometrySnapshot(reason: "layout-repair-\(reason)")
+            guard !Task.isCancelled, readerControlsNavigationGeneration == navigation,
+                  readingSettingsRevision == settings,
+                  readerOperationAllowed(.layoutRepair, reason: reason) else { return }
             clearReaderLayoutUnstableIfRecovered(
                 reason: reason,
                 key: key,
@@ -2728,10 +2713,85 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     visibleArea: visibleArea
                 )
             }
+        } catch is CancellationError {
+            return
         } catch {
+            guard !Task.isCancelled, readerOperationAllowed(.layoutRepair, reason: reason) else { return }
             KindleRunLog.write("KINDLE reader layout repair error reason=\(reason) \(error.localizedDescription)")
             scheduleReaderLayoutRepairRetry(reason: reason, attempt: attempt)
         }
+    }
+
+    /// The same core runs for the visible reader and local WK regression tests.
+    /// Expanding an already usable, unchanged viewport needs only an overlay
+    /// refresh. Amazon can otherwise persist an older mounted font preference
+    /// from its resize handler even though the current font already reflowed.
+    func refreshReaderLayoutState(reason: String) async throws -> [String: Any] {
+        try requireReaderOperation(.layoutRepair, reason: reason)
+        try Task.checkCancellation()
+        let navigation = readerControlsNavigationGeneration
+        let settings = readingSettingsRevision
+        let bounds = webView.bounds
+        let host = webView.superview
+        let window = webView.window
+        let viewportGeneration = viewportPresentationGeneration
+        let surface = (host as? KindleWebViewContainer)?.bounds.size ?? readerSurfaceSize
+        guard bounds.width.isFinite, bounds.height.isFinite,
+              surface.width.isFinite, surface.height.isFinite else { throw CancellationError() }
+        let result = try await evaluateJSON("""
+        (function() {
+          function read() {
+            try {
+              var raw = window.__crKindleState ? window.__crKindleState() : '{}';
+              var state = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              return {
+                ok: true,
+                key: state && state.key || '', liveKey: state && state.liveKey || '',
+                orderedCount: Number(state && state.orderedCount || 0),
+                naturalWidth: Number(state && state.naturalSize && state.naturalSize.width || 0),
+                naturalHeight: Number(state && state.naturalSize && state.naturalSize.height || 0),
+                viewportWidth: Number(state && state.viewportWidth || 0),
+                viewportHeight: Number(state && state.viewportHeight || 0),
+                visibleArea: Number(state && state.visibleArea || 0),
+                bandVisibleArea: Number(state && state.bandVisibleArea || 0)
+              };
+            } catch (_) { return {ok:false}; }
+          }
+          var before = read();
+          var key = String(before.key || '').trim(), liveKey = String(before.liveKey || '').trim();
+          var area = Math.max(before.visibleArea || 0, before.bandVisibleArea || 0);
+          var surfaceWidth = \(Double(surface.width)), surfaceHeight = \(Double(surface.height));
+          var retain = '\(Self.jsString(reason))' === 'expand' && before.ok && key.length > 0 &&
+            before.orderedCount > 0 && Number.isFinite(area) && area > 0 &&
+            Number.isFinite(before.naturalWidth) && before.naturalWidth > 0 &&
+            Number.isFinite(before.naturalHeight) && before.naturalHeight > 0 &&
+            surfaceWidth > 80 && surfaceHeight > 80 && area >= surfaceWidth * surfaceHeight * 0.82 &&
+            innerWidth > 80 && innerHeight > 80 &&
+            Math.abs(before.viewportWidth - innerWidth) <= 1 &&
+            Math.abs(before.viewportHeight - innerHeight) <= 1 &&
+            Math.abs(innerWidth - \(Double(bounds.width))) <= 1 &&
+            Math.abs(innerHeight - \(Double(bounds.height))) <= 1 &&
+            (!liveKey || liveKey === key);
+          if (!retain) {
+            try { window.dispatchEvent(new Event('resize')); } catch (_) {}
+            try { document.dispatchEvent(new Event('visibilitychange')); } catch (_) {}
+          }
+          try {
+            if (window.__crKindleProbe) window.__crKindleProbe.layoutRepairAt = Date.now();
+          } catch (_) {}
+          try { if (window.crKindleUpdateLiveOverlay) window.crKindleUpdateLiveOverlay(); } catch (_) {}
+          var result = read();
+          result.repairMode = retain ? 'retained' : 'poked';
+          return JSON.stringify(result);
+        })()
+        """)
+        try Task.checkCancellation()
+        try requireReaderOperation(.layoutRepair, reason: reason)
+        guard readerControlsNavigationGeneration == navigation, readingSettingsRevision == settings,
+              viewportPresentationGeneration == viewportGeneration, webView.bounds == bounds,
+              webView.superview === host, webView.window === window else { throw CancellationError() }
+        KindleRunLog.write("KINDLE reader layout refresh reason=\(reason) mode=\(result["repairMode"] as? String ?? "unknown")")
+        return result
     }
 
     private func scheduleReaderLayoutRepairRetry(reason: String, attempt: Int) {
@@ -2934,7 +2994,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     init(
         book: KindleBook,
         staleRecoveryAlreadyAttempted: Bool = false,
-        openIntent: KindleOpenIntent = .present
+        openIntent: KindleOpenIntent = .present,
+        websiteDataStore: WKWebsiteDataStore? = nil
     ) {
         var resolvedBook = book
         if KindleStorefront.entry(id: resolvedBook.storefrontID) == nil {
@@ -2959,7 +3020,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             storefront: readerStorefront
         )
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = CommercialWebSession.websiteDataStore
+        config.websiteDataStore = websiteDataStore ?? CommercialWebSession.websiteDataStore
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         let userContentController = WKUserContentController()
         // These are the only scripts that must run before Amazon's renderer:
@@ -3012,6 +3073,55 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 forMainFrameOnly: true
             ))
         }
+        // Kindle's resize handler persists a stale font closure. Keep the
+        // current native preference through that event without reloading the
+        // reader or changing its reading position.
+        userContentController.addUserScript(WKUserScript(
+            source: KindleWebScripts.restrictedToKnownStorefronts(
+                KindleReadingSettingsScript.resizePreferenceCompatibilityBootstrap
+            ),
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true,
+            in: .page
+        ))
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderKindleFontDiagnostics") {
+            // Opt-in, read-only diagnostics. Only a numeric font preference and
+            // viewport events leave the page; never observe other storage keys.
+            userContentController.addUserScript(WKUserScript(
+                source: KindleWebScripts.restrictedToKnownStorefronts("""
+                (() => {
+                  let last, count = 0;
+                  function sample(event, trusted) {
+                    if (count >= 300) return;
+                    let value = null;
+                    try {
+                      const parsed = JSON.parse(localStorage.getItem('KWR_Display_Settings') || '{}').fontSizeIndex;
+                      if (typeof parsed === 'number' && Number.isFinite(parsed)) value = parsed;
+                    } catch (_) {}
+                    if (event === 'poll' && last === value) return;
+                    last = value; count++;
+                    window.webkit.messageHandlers.castReaderKindle.postMessage({
+                      type:'kindle-font-diagnostic', event, value, trusted:!!trusted,
+                      time:Date.now(), width:innerWidth, height:innerHeight,
+                      knownReaderBundle:performance.getEntriesByType('resource').some(r => r.name.split('?')[0].endsWith('/91FlWPKIGuL.js')),
+                      knownFontBundle:performance.getEntriesByType('resource').some(r => r.name.split('?')[0].endsWith('/C1I2cjCoo7L.js')),
+                      locked:!!(window.__crKindleProbe && window.__crKindleProbe.pageModeLocked)
+                    });
+                  }
+                  for (const event of ['resize', 'visibilitychange', 'pagehide']) {
+                    (event === 'visibilitychange' ? document : window).addEventListener(event, e => {
+                      sample(event, e.isTrusted);
+                      setTimeout(() => sample(event + '-after', e.isTrusted), 50);
+                    }, true);
+                  }
+                  sample('initial', false);
+                  setInterval(() => sample('poll', false), 100);
+                })();
+                """), injectionTime: .atDocumentStart, forMainFrameOnly: true, in: .page
+            ))
+        }
+        #endif
         config.userContentController = userContentController
         webView = WKWebView(frame: .zero, configuration: config)
 #if DEBUG
@@ -3127,6 +3237,21 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         }
         let type = payload["type"] as? String ?? "unknown"
+        #if DEBUG
+        if type == "kindle-font-diagnostic" {
+            guard ProcessInfo.processInfo.arguments.contains("-CastReaderKindleFontDiagnostics"),
+                  isMainFrame, sourceWebView === webView,
+                  sourceContentController === webView.configuration.userContentController else { return }
+            let events: Set<String> = ["initial", "poll", "resize", "resize-after", "visibilitychange", "visibilitychange-after", "pagehide", "pagehide-after"]
+            guard let event = payload["event"] as? String, events.contains(event) else { return }
+            func scalar(_ key: String) -> String {
+                guard let value = payload[key] as? NSNumber, value.doubleValue.isFinite else { return "unknown" }
+                return value.stringValue
+            }
+            KindleRunLog.write("KINDLE font diagnostic event=\(event) value=\(scalar("value")) time=\(scalar("time")) trusted=\(scalar("trusted")) locked=\(scalar("locked")) viewport=\(scalar("width"))x\(scalar("height")) knownReaderBundle=\(scalar("knownReaderBundle")) knownFontBundle=\(scalar("knownFontBundle"))")
+            return
+        }
+        #endif
         switch type {
         case "kindle-cookie-consent":
             handleAmazonCookieConsentMessage(
@@ -3869,8 +3994,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         configurePageModeGestures()
         readerSetupTask = Task { @MainActor [weak self] in
             guard let self, !Task.isCancelled else { return }
-            await self.applyKindleReaderPreferences(reason: reason)
-            guard !Task.isCancelled else { return }
+            // Preserve Amazon's current font, margins and columns. The native
+            // settings controls are only used for explicit user changes.
             guard await self.prepareReaderControls(reason: reason) else { return }
             guard !Task.isCancelled else { return }
             try? await self.waitForKindleImageStable()
@@ -3900,6 +4025,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func resetReaderControlsForNavigation() {
+        readingSettingsSessionActive = false
+        readingSettingsCloseInProgress = false
         readerControlsReady = false
         readerControlsNavigationGeneration &+= 1
         readerSetupTask?.cancel()
@@ -4562,38 +4689,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         webView.scrollView.pinchGestureRecognizer?.isEnabled = false
     }
 
-    private func applyKindleReaderPreferences(reason: String) async {
-        var lastStage = ""
-        for attempt in 1...5 {
-            guard !Task.isCancelled else {
-                KindleRunLog.write("KINDLE reader prefs cancelled reason=\(reason) attempt=\(attempt)")
-                return
-            }
-            do {
-                try await Task.sleep(nanoseconds: attempt == 1 ? 1_000_000_000 : 450_000_000)
-            } catch {
-                return
-            }
-            guard !Task.isCancelled else { return }
-            do {
-                let result = try await evaluateJSON(KindleWebScripts.applyReaderPreferences)
-                let ok = Self.boolValue(result["ok"])
-                let stage = (result["stage"] as? String) ?? ""
-                lastStage = stage
-                KindleRunLog.write(
-                    "KINDLE reader prefs reason=\(reason) attempt=\(attempt) ok=\(ok) stage=\(stage) single=\(String(describing: result["singleClicked"] ?? false)) narrow=\(String(describing: result["narrowClicked"] ?? false)) fontSize=\(String(describing: result["fontSize"] ?? [:])) close=\(String(describing: result["closeMode"] ?? "")) hasNext=\(String(describing: result["hasNext"] ?? false)) hasPrev=\(String(describing: result["hasPrev"] ?? false))"
-                )
-                if ok {
-                    try? await Task.sleep(nanoseconds: 900_000_000)
-                    return
-                }
-            } catch {
-                KindleRunLog.write("KINDLE reader prefs error reason=\(reason) attempt=\(attempt) \(error.localizedDescription)")
-            }
-        }
-        KindleRunLog.write("KINDLE reader prefs incomplete reason=\(reason) lastStage=\(lastStage)")
-    }
-
     /// Settings deliberately own this lock while the ordinary reader pipeline
     /// is gated. Do not call the general layout-repair entry point here: it is
     /// correctly blocked while the sheet is presented.
@@ -4623,13 +4718,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             // rotation. A dispatch flag belonging to detached nodes cannot own
             // the replacement menu; retain it while the original nodes live.
             const button=window.__crKindleFontSettingsButton, panel=window.__crKindleFontSettingsPanel;
-            if ((button && !button.isConnected) || (panel && !panel.isConnected)) {
+            if ((panel && !panel.isConnected) || (button && !button.isConnected && !(panel && panel.isConnected))) {
               window.__crKindleFontOpenedByNative=false;
               window.__crKindleFontSettingsButton=null;
               window.__crKindleFontSettingsPanel=null;
             }
           }
-          return window.__crKindleSetPageModeLocked(\(flag));
+          // Native font controls already repaginate. A synthetic resize here
+          // can run Amazon's stale mount-time preference closure on relock.
+          return window.__crKindleSetPageModeLocked(\(flag), false);
         })()
         """
         let result = try? await evaluateJSON(script)
@@ -4640,14 +4737,52 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func logReadingSettingsSample(_ result: [String: Any]?, operation: String, attempt: Int) {
-        let allowedReasons: Set<String> = ["range-not-found", "settings-unavailable", "opening-settings", "invalid-range", "unsupported-range"]
+        let allowedReasons: Set<String> = ["range-not-found", "settings-unavailable", "opening-settings", "invalid-range", "unsupported-range", "ambiguous-settings-button", "font-button-unavailable", "font-button-disabled", "ambiguous-font-button", "settings-menu-animating", "close-control-pending", "ambiguous-close-button", "settings-panel-ambiguous", "settings-panel-unresolved", "closing-native-menu", "native-menu-close-failed"]
         let rawReason = result?["reason"] as? String ?? ""
         let reason = result == nil ? "bridge-error" : (rawReason.isEmpty ? "none" : (allowedReasons.contains(rawReason) ? rawReason : "other"))
         func scalar(_ key: String) -> String {
             guard let number = result?[key] as? NSNumber, number.doubleValue.isFinite else { return "unknown" }
             return number.stringValue
         }
-        KindleRunLog.write("KINDLE reading settings sample operation=\(operation) attempt=\(attempt) ok=\(result.map { Self.boolValue($0["ok"]) } ?? false) reason=\(reason) value=\(scalar("value")) min=\(scalar("min")) max=\(scalar("max"))")
+        KindleRunLog.write("KINDLE reading settings sample operation=\(operation) attempt=\(attempt) ok=\(result.map { Self.boolValue($0["ok"]) } ?? false) reason=\(reason) value=\(scalar("value")) min=\(scalar("min")) max=\(scalar("max")) persisted=\(scalar("persistedValue"))")
+        #if DEBUG
+        if let probe = result?["probe"], let data = try? JSONSerialization.data(withJSONObject: probe, options: .sortedKeys),
+           let snapshot = String(data: data, encoding: .utf8) {
+            KindleRunLog.write("KINDLE reading settings controls \(snapshot)")
+        }
+        #endif
+    }
+
+    /// SwiftUI can already be displaying a size-derived crop before its size
+    /// callback reaches the model. Freeze that attached presentation for Aa;
+    /// freezing the older model crop would resize WebKit during menu mounting.
+    private func retainAttachedViewportForReadingSettings() -> Bool {
+        guard let host = webView.superview as? KindleWebViewContainer else { return true }
+        guard host.webView === webView, host.window != nil else { return false }
+        let size = host.bounds.size
+        guard size.width.isFinite, size.height.isFinite, size.width > 80, size.height > 80 else { return false }
+        let crop = host.crop
+        let fit = host.presentationFit.isValid ? host.presentationFit : .identity
+        let canonical = KindleViewportPresentationPolicy.canonicalFrame(surfaceSize: size, crop: crop)
+        guard canonical.minX.isFinite, canonical.minY.isFinite,
+              canonical.width.isFinite, canonical.height.isFinite,
+              abs(webView.bounds.width - canonical.width) <= 1,
+              abs(webView.bounds.height - canonical.height) <= 1,
+              abs(webView.center.x - (canonical.midX * fit.scale + fit.translationX)) <= 1,
+              abs(webView.center.y - (canonical.midY * fit.scale + fit.translationY)) <= 1,
+              webView.transform == CGAffineTransform(scaleX: fit.scale, y: fit.scale) else {
+            return false
+        }
+
+        // No await or native frame assignment: discard old measurement owners,
+        // then make the upcoming settings freeze use exactly the visible host.
+        resetViewportPresentation(reason: "reading-settings-attached-snapshot")
+        readerSurfaceSize = CGSize(width: size.width.rounded(.toNearestOrAwayFromZero),
+                                   height: size.height.rounded(.toNearestOrAwayFromZero))
+        viewportCrop = crop
+        viewportPresentationFit = fit
+        KindleRunLog.write("KINDLE reading settings viewport retained surface=\(Self.sizeLog(readerSurfaceSize)) \(Self.cropLog(crop)) fit=\(fit.scale)")
+        return true
     }
 
     func openReadingSettings() {
@@ -4657,7 +4792,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         guard !isReadingSettingsPresented, !isApplyingReadingSettings, !isPreparing, !isPageTurnResuming,
               !isNativeTOCLoading, !isKindleSyncDialogVisible, !isAmazonCookieConsentVisible else { return }
+        guard retainAttachedViewportForReadingSettings() else {
+            KindleRunLog.write("KINDLE reading settings open deferred reason=reader-viewport-not-applied")
+            return
+        }
         suppressReadingSettingsCloseAfterSync = false
+        readingSettingsSessionActive = true
+        readingSettingsCloseInProgress = false
         isReadingSettingsPresented = true
         readingSettingsError = nil
         readerFontValue = nil
@@ -4725,6 +4866,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 self.readingSettingsError = AppLocalized("此页面暂时无法调整字号，请关闭设置后重试。")
                 return
             }
+            guard ownsPage(), self.isReadingSettingsPresented else { return }
             for attempt in 1...8 {
                 try? await Task.sleep(for: .milliseconds(200))
                 guard ownsPage(), self.isReadingSettingsPresented else { return }
@@ -4758,6 +4900,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         readingSettingsTask = nil
         isReadingSettingsPresented = false
         isApplyingReadingSettings = false
+        readingSettingsSessionActive = false
+        readingSettingsCloseInProgress = false
         readingSettingsError = nil
         // Keep the confirmed native font and footnote preference. The user
         // chooses the sync outcome; no No/Yes or native Aa action is sent here.
@@ -4770,6 +4914,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         }
         guard !isKindleSyncDialogVisible else { return }
+        guard !readingSettingsCloseInProgress,
+              readingSettingsSessionActive || isReadingSettingsPresented else { return }
+        readingSettingsCloseInProgress = true
         readingSettingsRevision &+= 1
         readingSettingsTask?.cancel()
         readingSettingsTask = nil
@@ -4792,7 +4939,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let expectedViewportGeneration = viewportPresentationGeneration
         readingSettingsTask = Task { @MainActor [weak self] in
             guard let self, !Task.isCancelled, self.readingSettingsRevision == revision else { return }
-            defer { if self.readingSettingsRevision == revision { self.isApplyingReadingSettings = false } }
+            defer {
+                if self.readingSettingsRevision == revision {
+                    self.isApplyingReadingSettings = false
+                    self.readingSettingsCloseInProgress = false
+                }
+            }
             let ownsPage = { self.readingSettingsOwnsPage(revision: revision, bookID: expectedBookID, viewportGeneration: expectedViewportGeneration) }
             guard await self.setReadingSettingsPageModeLocked(false, revision: revision, bookID: expectedBookID, viewportGeneration: expectedViewportGeneration, phase: "close-unlock") else {
                 if ownsPage() {
@@ -4808,7 +4960,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 let closed = result.map({ Self.boolValue($0["ok"]) }) == true
                 KindleRunLog.write("KINDLE reading settings close attempt=\(attempt) confirmed=\(closed)")
                 if closed {
-                    if await self.setReadingSettingsPageModeLocked(true, revision: revision, bookID: expectedBookID, viewportGeneration: expectedViewportGeneration, phase: "close-relock") { return }
+                    if await self.setReadingSettingsPageModeLocked(true, revision: revision, bookID: expectedBookID, viewportGeneration: expectedViewportGeneration, phase: "close-relock") {
+                        guard ownsPage() else { return }
+                        self.readingSettingsSessionActive = false
+                        return
+                    }
                     break
                 }
                 try? await Task.sleep(for: .milliseconds(200))
@@ -6607,6 +6763,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func stopAll() {
+        readingSettingsSessionActive = false
+        readingSettingsCloseInProgress = false
         cancelPendingPlaybackStart(reason: "stop-all")
         readingSettingsRevision &+= 1
         readingSettingsTask?.cancel()
