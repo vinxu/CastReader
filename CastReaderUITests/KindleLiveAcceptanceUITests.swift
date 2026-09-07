@@ -102,7 +102,9 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         wait(90) { play.value as? String == "Playing" }
         snapshot(app, "Kindle-live-portrait-restored")
 
-        app.buttons["kindleReadingSettingsButton"].tap()
+        let readingSettings = app.buttons["kindleReadingSettingsButton"]
+        wait(60) { readingSettings.isEnabled && readingSettings.isHittable }
+        readingSettings.tap()
         let font = app.staticTexts["kindleFontValue"]
         XCTAssertTrue(font.waitForExistence(timeout: 15))
         wait(15) { font.label != "—" }
@@ -154,7 +156,8 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         for _ in 0..<6 where !restoredBook.isHittable { app.swipeUp() }
         restoredBook.tap()
         XCTAssertTrue(app.buttons["kindleReadingSettingsButton"].waitForExistence(timeout: 60))
-        app.buttons["kindleReadingSettingsButton"].tap()
+        wait(60) { readingSettings.isEnabled && readingSettings.isHittable }
+        readingSettings.tap()
         // A late Amazon position dialog may preempt the native settings
         // sheet. The wait helper chooses No in Amazon's visible UI; only
         // then may this explicit settings request be repeated.

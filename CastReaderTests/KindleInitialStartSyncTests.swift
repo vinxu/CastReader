@@ -47,7 +47,7 @@ final class KindleInitialStartSyncTests: XCTestCase {
         let book = KindleBook(
             id: "start-sync-\(UUID().uuidString)", asin: "B000000001",
             title: "Local initial start fixture", author: "", coverURL: nil,
-            readerURL: "https://fixture.invalid/reader", progressLabel: "", storefrontID: "us",
+            readerURL: "https://read.amazon.com/sample/B000000001", progressLabel: "", storefrontID: "us",
             lastOpenedAt: nil, lastSyncedAt: Date(timeIntervalSince1970: 0),
             lastReadPageKey: nil, lastReadURL: nil
         )
@@ -75,6 +75,7 @@ final class KindleInitialStartSyncTests: XCTestCase {
             previousKeyWindow?.makeKey()
         }
         model.webView.loadHTMLString("""
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:">
         <meta name="viewport" content="width=device-width,initial-scale=1">
         <button id="aa" aria-label="Reading settings" onclick="panel.hidden=!panel.hidden">Aa</button>
         <section id="panel" hidden><input aria-label="Font size" type="range" min="1" max="10" value="6"></section>
@@ -88,14 +89,17 @@ final class KindleInitialStartSyncTests: XCTestCase {
             type:'kindle-sync-dialog-choice',visible:true,choice:'no',localLocation:1635,cloudLocation:1111
           });
         </script>
-        """, baseURL: URL(string: "https://fixture.invalid/reader"))
+        """, baseURL: URL(string: "https://read.amazon.com/sample/B000000001"))
         var loaded = false
         for _ in 0..<100 {
             loaded = (try? await model.webView.evaluateJavaScript("window.fixtureReady===true")) as? Bool == true
-            if loaded { break }
+            if loaded && !model.webView.isLoading && !model.isNavigating { break }
+            loaded = false
             try await Task.sleep(nanoseconds: 30_000_000)
         }
         guard loaded else { throw FixtureError.timedOut }
+        let controlsReady = await model.prepareReaderControls(reason: "initial-sync-fixture")
+        XCTAssertTrue(controlsReady, "Use the real bootstrap before the settings cancellation scenario")
         let initialStart = Task { try await model.startCurrentMode() }
         defer { initialStart.cancel() }
         try await waitUntil { preparation.calls == 1 }

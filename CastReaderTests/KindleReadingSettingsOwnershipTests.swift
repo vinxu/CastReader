@@ -26,7 +26,7 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
             title: "Local settings fixture",
             author: "",
             coverURL: nil,
-            readerURL: "https://fixture.invalid/reader",
+            readerURL: "https://read.amazon.com/sample/B000000001",
             progressLabel: "",
             storefrontID: "us",
             lastOpenedAt: nil,
@@ -55,6 +55,58 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         previousKeyWindow?.makeKey()
         previousKeyWindow = nil
         super.tearDown()
+    }
+
+    func testEarlyAaDoesNotPresentOrCancelRealBootstrapAndSyncObserverStillRuns() async throws {
+        try await loadFixture(initializeControls: false)
+        XCTAssertFalse(model.readerControlsReady)
+        model.openReadingSettings()
+        XCTAssertFalse(model.isReadingSettingsPresented)
+        XCTAssertFalse(model.isApplyingReadingSettings)
+        let before = try await snapshot()
+        XCTAssertEqual(before["openClicks"] as? Int, 0)
+
+        let setup = Task { @MainActor in await self.model.prepareReaderControls(reason: "local-early-aa") }
+        model.openReadingSettings()
+        XCTAssertFalse(model.isReadingSettingsPresented, "An early Aa cannot cancel the queued bootstrap task")
+        let initialized = await setup.value
+        XCTAssertTrue(initialized)
+        XCTAssertTrue(model.readerControlsReady)
+        _ = try await model.webView.evaluateJavaScript("window.fixtureShowSyncDialog(); true")
+        try await waitUntil { self.model.isKindleSyncDialogVisible }
+        XCTAssertTrue(model.readerControlsReady, "A visible sync choice does not undo the installed observer")
+        model.openReadingSettings()
+        XCTAssertFalse(model.isReadingSettingsPresented)
+        let choices = try await model.webView.evaluateJavaScript("window.fixtureSyncChoices") as? [String]
+        XCTAssertEqual(choices, [], "Bootstrap observes the prompt without choosing a reading location")
+    }
+
+    func testNewDocumentRevokesReadyAndNeedsItsOwnBootstrapBeforeAa() async throws {
+        try await loadFixture()
+        XCTAssertTrue(model.readerControlsReady)
+        model.openReadingSettings()
+        try await waitUntil { self.model.readerFontValue == 6 && !self.model.isApplyingReadingSettings }
+        let navigation = SettingsFixtureNavigationObserver(model: model)
+        model.webView.navigationDelegate = navigation
+        try await loadFixture(initializeControls: false)
+        XCTAssertFalse(model.readerControlsReady)
+        XCTAssertFalse(model.isReadingSettingsPresented)
+        XCTAssertFalse(model.isApplyingReadingSettings)
+        // Match SwiftUI's dismissal callback: the old session cannot lock or
+        // click controls in the replacement document.
+        model.closeReadingSettings()
+        model.openReadingSettings()
+        XCTAssertFalse(model.isReadingSettingsPresented)
+        let before = try await snapshot()
+        XCTAssertEqual(before["openClicks"] as? Int, 0)
+        XCTAssertEqual(before["closeClicks"] as? Int, 0)
+        let ready = await model.prepareReaderControls(reason: "local-replacement-document")
+        XCTAssertTrue(ready)
+        model.openReadingSettings()
+        try await waitUntil { self.model.readerFontValue == 6 && !self.model.isApplyingReadingSettings }
+        XCTAssertTrue(model.isReadingSettingsPresented)
+        XCTAssertNil(model.readingSettingsError)
+        withExtendedLifetime(navigation) { }
     }
 
     func testPageModeLockHidesAaUntilModelUnlocksAndDoneRelocks() async throws {
@@ -89,6 +141,7 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
 
     func testSameDocumentToolbarReplacementRevokesDetachedMenuDispatchFlag() async throws {
         try await loadFixture()
+        _ = try await model.webView.evaluateJavaScript("window.__crKindleSetPageModeLocked(false)")
         _ = try await settingsJSON(KindleReadingSettingsScript.read)
         _ = try await model.webView.evaluateJavaScript("""
         (() => {
@@ -132,6 +185,7 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
           };
           aa.addEventListener('click',()=>{
             if(!panel.hidden)return;
+            window.fixtureShowSyncDialog();
             window.webkit.messageHandlers.castReaderKindle.postMessage({
               type:'kindle-sync-dialog',visible:true,localLocation:1635,cloudLocation:1111
             });
@@ -263,9 +317,10 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
           window.syncChoices=[];
           const dialog=document.createElement('div');
           dialog.id='fixtureSync';
+          dialog.setAttribute('role','dialog');
           dialog.hidden=true;
           dialog.style.cssText='position:fixed;inset:0;z-index:999;background:white';
-          dialog.innerHTML='<button id="fixtureNo">No</button><button id="fixtureYes">Yes</button>';
+          dialog.innerHTML='<span data-location="1635"></span><span data-location="1111"></span><button id="fixtureNo">No</button><button id="fixtureYes">Yes</button>';
           document.body.appendChild(dialog);
           fixtureNo.onclick=()=>syncChoices.push('no');
           fixtureYes.onclick=()=>syncChoices.push('yes');
@@ -410,7 +465,8 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         }
     }
 
-    private func loadFixture() async throws {
+    private func loadFixture(initializeControls: Bool = true) async throws {
+        let fixtureID = UUID().uuidString
         model.webView.loadHTMLString("""
         <!doctype html><html><head>
         <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -440,11 +496,26 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
           });
           font.addEventListener('change',()=>window.commits.push(font.value));
           window.__crKindleLiveClear=()=>JSON.stringify({ok:true});
+          window.fixtureSyncChoices=[];
+          window.fixtureShowSyncDialog=()=>{
+            const dialog=document.createElement('div');
+            dialog.id='fixtureObservedSync';dialog.setAttribute('role','dialog');
+            dialog.style.cssText='position:fixed;inset:60px 0 0;z-index:999;background:white';
+            dialog.innerHTML='<span data-location="1635"></span><span data-location="1111"></span><button>No</button><button>Yes</button>';
+            dialog.querySelectorAll('button').forEach(button=>button.onclick=()=>fixtureSyncChoices.push(button.textContent));
+            document.body.appendChild(dialog);
+          };
+          window.fixtureLoadID='\(fixtureID)';
           window.fixtureReady=true;
         </script></body></html>
-        """, baseURL: URL(string: "https://fixture.invalid/reader"))
+        """, baseURL: URL(string: "https://read.amazon.com/sample/B000000001"))
         for _ in 0..<100 {
-            if (try? await model.webView.evaluateJavaScript("window.fixtureReady===true")) as? Bool == true {
+            if (try? await model.webView.evaluateJavaScript("window.fixtureReady===true && window.fixtureLoadID==='\(fixtureID)'")) as? Bool == true,
+               !model.webView.isLoading, !model.isNavigating {
+                if initializeControls {
+                    let ready = await model.prepareReaderControls(reason: "local-settings-fixture")
+                    XCTAssertTrue(ready, "The fixture must install the real capture/sync bootstrap before opening Aa")
+                }
                 return
             }
             try await Task.sleep(for: .milliseconds(30))
@@ -488,5 +559,16 @@ private final class LightLockObserver: NSObject, WKScriptMessageHandler {
     init(onLock: @escaping () -> Void) { self.onLock = onLock }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         onLock()
+    }
+}
+
+/// A real local WK navigation invokes the production invalidation callback;
+/// didFinish stays under the fixture's explicit, network-free bootstrap phase.
+@MainActor
+private final class SettingsFixtureNavigationObserver: NSObject, WKNavigationDelegate {
+    private weak var model: KindleBookViewModel?
+    init(model: KindleBookViewModel) { self.model = model }
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        model?.webView(webView, didStartProvisionalNavigation: navigation)
     }
 }

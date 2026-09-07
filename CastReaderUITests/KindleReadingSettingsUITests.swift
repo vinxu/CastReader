@@ -91,7 +91,9 @@ final class KindleReadingSettingsUITests: XCTestCase {
         let bottom = min(visibleForm.maxY, probeFrame.maxY)
         return frame.width > 0 && frame.height > 0 &&
             frame.minX >= visibleForm.minX && frame.maxX <= visibleForm.maxX &&
-            frame.minY >= top && frame.maxY <= bottom
+            // Accessibility may round the footer and fixed probe on opposite
+            // sides of a physical pixel (840.333 vs 840 in the 3x fixture).
+            frame.minY >= top - 0.5 && frame.maxY <= bottom + 0.5
     }
 
     private func isControlFullyVisible(_ control: XCUIElement, in app: XCUIApplication) -> Bool {

@@ -480,7 +480,8 @@ struct KindleBookView: View {
             }
             .accessibilityLabel(AppLocalized("阅读设置"))
             .accessibilityIdentifier("kindleReadingSettingsButton")
-            .disabled(model.isPreparing || model.isPageTurnResuming || model.isNativeTOCLoading
+            .disabled(!model.readerControlsReady || model.isNavigating || model.isPreparing
+                || model.isPageTurnResuming || model.isNativeTOCLoading
                 || model.isKindleSyncDialogVisible || model.isAmazonCookieConsentVisible)
 
             HStack(spacing: 2) {
@@ -2085,6 +2086,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published private(set) var contentCover: String?
     /// Straight mirrors of the WebView's own loading state — no interpretation.
     @Published private(set) var isNavigating = false
+    @Published private(set) var readerControlsReady = false
+    private var readerControlsNavigationGeneration: UInt64 = 0
     @Published private(set) var loadProgress: Double = 0
     /// While Kindle advances its WebView shortly before an audio boundary, keep
     /// the last visible frame on screen. It is released only after the old page
@@ -3043,7 +3046,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
         webView.publisher(for: \.isLoading)
             .receive(on: RunLoop.main)
-            .sink { [weak self] in self?.isNavigating = $0 }
+            .sink { [weak self] loading in
+                self?.isNavigating = loading
+                if loading { self?.readerControlsReady = false }
+            }
             .store(in: &cancellables)
         webView.publisher(for: \.estimatedProgress)
             .receive(on: RunLoop.main)
@@ -3067,6 +3073,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// Every path that stops owning a reader must call this. Do not move any of
     /// it back into `deinit`.
     func destroy() {
+        resetReaderControlsForNavigation()
         resetViewportPresentation(reason: "destroy")
         stopAll()
         resetAmazonCookieConsentState(reason: .destroy)
@@ -3864,8 +3871,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             guard let self, !Task.isCancelled else { return }
             await self.applyKindleReaderPreferences(reason: reason)
             guard !Task.isCancelled else { return }
-            self.installCaptureScript()
-            await self.setKindlePageModeLocked(true)
+            guard await self.prepareReaderControls(reason: reason) else { return }
             guard !Task.isCancelled else { return }
             try? await self.waitForKindleImageStable()
             guard !Task.isCancelled else { return }
@@ -3873,6 +3879,43 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             await self.logKindleGeometrySnapshot(reason: reason)
             self.schedulePendingContinueListening(reason: "webview-\(reason)")
         }
+    }
+
+    /// Basic capture and dialog observers must exist before Aa may cancel the
+    /// remaining setup work. This is independent of whether a visible Amazon
+    /// sync/cookie dialog currently permits interaction.
+    @discardableResult
+    func prepareReaderControls(reason: String) async -> Bool {
+        let generation = readerControlsNavigationGeneration
+        do {
+            _ = try await ensureCaptureScriptInstalled(reason: "controls-\(reason)")
+            guard !Task.isCancelled, readerControlsNavigationGeneration == generation,
+                  !webView.isLoading else { return false }
+            await setKindlePageModeLocked(true)
+            return !Task.isCancelled && readerControlsNavigationGeneration == generation && readerControlsReady
+        } catch {
+            KindleRunLog.write("KINDLE reader controls ready=false reason=bootstrap-unconfirmed")
+            return false
+        }
+    }
+
+    private func resetReaderControlsForNavigation() {
+        readerControlsReady = false
+        readerControlsNavigationGeneration &+= 1
+        readerSetupTask?.cancel()
+        readerSetupTask = nil
+        guard isReadingSettingsPresented || isApplyingReadingSettings else { return }
+        // Only dismiss our sheet. Its onDismiss must not close/relock controls
+        // in the replacement document on behalf of the old settings session.
+        if isReadingSettingsPresented { suppressReadingSettingsCloseAfterSync = true }
+        readingSettingsRevision &+= 1
+        readingSettingsTask?.cancel()
+        readingSettingsTask = nil
+        isReadingSettingsPresented = false
+        isApplyingReadingSettings = false
+        readerFontValue = nil
+        readingSettingsError = nil
+        KindleRunLog.write("KINDLE reading settings preempted reason=navigation")
     }
 
     private func detectAndRecoverStaleBookEntry() {
@@ -4244,7 +4287,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-        if webView === self.webView { resetViewportPresentation(reason: "new-document") }
+        if webView === self.webView {
+            resetReaderControlsForNavigation()
+            resetViewportPresentation(reason: "new-document")
+        }
         finishKindleSyncDialog(reason: "navigation-start")
         resetAmazonCookieConsentState(reason: .navigationStart)
         KindleRunLog.write(
@@ -4605,6 +4651,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func openReadingSettings() {
+        guard readerControlsReady, !isNavigating, !webView.isLoading else {
+            KindleRunLog.write("KINDLE reading settings open deferred reason=reader-controls-not-ready")
+            return
+        }
         guard !isReadingSettingsPresented, !isApplyingReadingSettings, !isPreparing, !isPageTurnResuming,
               !isNativeTOCLoading, !isKindleSyncDialogVisible, !isAmazonCookieConsentVisible else { return }
         suppressReadingSettingsCloseAfterSync = false
@@ -12561,6 +12611,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         KindleRunLog.write("KINDLE webview load reason=\(reason) storefront=\(storefront.id) route=\(KindleSessionProbe.safeRouteLabel(url)) raw=\(Self.keyLog(raw)) last=\(Self.keyLog(book.lastReadURL ?? "")) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
         KindleSessionProbe.logCookies(reason: "book-load-\(reason)")
+        resetReaderControlsForNavigation()
         webView.load(URLRequest(url: url))
     }
 
@@ -12583,6 +12634,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE script install blocked unknown-origin reason=\(reason)")
             throw KindleBookError.invalidPayload
         }
+        let generation = readerControlsNavigationGeneration
+        let expectedBookID = book.id
         let script = """
         (function() {
           try {
@@ -12599,18 +12652,29 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
           }
           var turnReady = typeof window.__crKindleTurnPage === 'function';
           var stateReady = typeof window.__crKindleState === 'function';
+          var lockReady = typeof window.__crKindleSetPageModeLocked === 'function';
+          var syncObserverReady = !!window.__crKindleSyncDialogTimer;
+          var ready = turnReady && stateReady && lockReady && syncObserverReady;
           return JSON.stringify({
-            ok:turnReady && stateReady,
-            reason:(turnReady && stateReady) ? '' : 'missing-functions',
+            ok:ready,
+            reason:ready ? '' : 'missing-functions',
             turn:turnReady,
             state:stateReady,
+            lock:lockReady,
+            syncObserver:syncObserverReady,
             installedVersion:window.__crKindleInstalledVersion || 0,
             url:location.href
           });
         })()
         """
         let result = try await evaluateJSON(script)
+        guard !Task.isCancelled, readerControlsNavigationGeneration == generation,
+              book.id == expectedBookID, !webView.isLoading else { throw CancellationError() }
         let ok = Self.boolValue(result["ok"])
+        // A sync prompt is allowed to be visible here. Readiness describes its
+        // installed observer, while the interaction gate owns the user choice.
+        readerControlsReady = ok
+        KindleRunLog.write("KINDLE reader controls ready=\(ok) syncObserver=\(Self.boolValue(result["syncObserver"]))")
         KindleRunLog.write("KINDLE script install reason=\(reason) ok=\(ok) turn=\(String(describing: result["turn"] ?? false)) state=\(String(describing: result["state"] ?? false)) version=\(String(describing: result["installedVersion"] ?? 0)) jsReason=\(String(describing: result["reason"] ?? ""))")
         guard ok else {
             throw KindleBookError.captureFailed("kindle-script-not-ready:\(result["reason"] as? String ?? "unknown")")
