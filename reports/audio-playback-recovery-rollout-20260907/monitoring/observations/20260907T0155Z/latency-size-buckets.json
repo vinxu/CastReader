@@ -1,0 +1,129 @@
+{
+  "schema": "castreader.backend-latency-size-bucket-comparison.v1",
+  "readOnly": true,
+  "synthesisStarted": false,
+  "windows": [
+    {
+      "tag": "20260906T2353Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-06T22:52:47.445000Z",
+        "requestStartExclusiveUTC": "2026-09-06T23:53:17.725000Z"
+      },
+      "bodyBytes": {
+        "n": 1890,
+        "p50": 151232,
+        "p95": 537473,
+        "max": 2128979
+      },
+      "requestFinishByBodyBytes": {
+        "under64KiB": {
+          "n": 429,
+          "p50": 451,
+          "p95": 1240,
+          "max": 2969
+        },
+        "atLeast256KiB": {
+          "n": 581,
+          "p50": 1096,
+          "p95": 1933,
+          "max": 3728
+        },
+        "128to256KiB": {
+          "n": 470,
+          "p50": 563,
+          "p95": 1185,
+          "max": 2689
+        },
+        "64to128KiB": {
+          "n": 410,
+          "p50": 504,
+          "p95": 1204,
+          "max": 2376
+        }
+      }
+    },
+    {
+      "tag": "20260907T0053Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-06T23:53:17.725000Z",
+        "requestStartExclusiveUTC": "2026-09-07T00:53:48.099000Z"
+      },
+      "bodyBytes": {
+        "n": 3454,
+        "p50": 98634,
+        "p95": 494401,
+        "max": 2043508
+      },
+      "requestFinishByBodyBytes": {
+        "under64KiB": {
+          "n": 1195,
+          "p50": 583,
+          "p95": 1742,
+          "max": 3030
+        },
+        "64to128KiB": {
+          "n": 893,
+          "p50": 668,
+          "p95": 1643,
+          "max": 2865
+        },
+        "atLeast256KiB": {
+          "n": 691,
+          "p50": 1247,
+          "p95": 3186,
+          "max": 7385
+        },
+        "128to256KiB": {
+          "n": 675,
+          "p50": 814,
+          "p95": 1979,
+          "max": 2861
+        }
+      }
+    },
+    {
+      "tag": "20260907T0155Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-07T00:53:48.099Z",
+        "requestStartExclusiveUTC": "2026-09-07T01:55:18.503Z"
+      },
+      "bodyBytes": {
+        "n": 3475,
+        "p50": 165563,
+        "p95": 516239,
+        "max": 4013684
+      },
+      "requestFinishByBodyBytes": {
+        "atLeast256KiB": {
+          "n": 1140,
+          "p50": 1354,
+          "p95": 3409,
+          "max": 7591
+        },
+        "64to128KiB": {
+          "n": 810,
+          "p50": 776,
+          "p95": 2071,
+          "max": 4642
+        },
+        "under64KiB": {
+          "n": 569,
+          "p50": 738,
+          "p95": 2098,
+          "max": 4351
+        },
+        "128to256KiB": {
+          "n": 956,
+          "p50": 839,
+          "p95": 2198,
+          "max": 5842
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Body bytes are output payload size, not input text, generation cost or audio duration.",
+    "Buckets control only one coarse output property; they cannot prove queue, inference, provider/network or client causes.",
+    "Request-finish elapsed time is not client time-to-first-audio."
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "schema": "castreader.vercel-preset-collection-receipt.v1",
+  "snapshot": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0155Z.json",
+    "sha256": "50da7c6d69f307e91d80a4144765e9942c436aac9e003f2952a759ce3376b84c"
+  },
+  "sourceSnapshots": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0155Z-part1.json",
+      "sha256": "1405d96e4389958a6ab27d9e1fca5cece5a8882c2f49bfa100c566a8812e93e3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0155Z-part2.json",
+      "sha256": "8f27cd97d42469f681bd85e510ea2c4ec659fc483f52e75a07f85f90deb3b89d"
+    }
+  ],
+  "queryWindow": {
+    "requestStartInclusiveUTC": "2026-09-07T00:53:48.099Z",
+    "requestStartExclusiveUTC": "2026-09-07T01:55:18.503Z"
+  },
+  "coverage": {
+    "pagesRead": 72,
+    "providerHasMoreRows": false,
+    "issues": [],
+    "completeForReturnedRequestCohort": true,
+    "paginationMode": "two_adjacent_half_open_windows_with_independent_backward_pagination",
+    "tlsCertificateAndHostnameVerified": true,
+    "providerRowsRead": 3547,
+    "uniqueProviderRequests": 3475,
+    "parserCounts": {
+      "duplicateProviderRows": 72,
+      "duplicateSafeEvents": 360
+    },
+    "requestsMissingStartOrFinish": 0,
+    "structuredEventsObserved": true,
+    "ingestionCompletenessVerified": false
+  },
+  "collectedAtUTC": "2026-09-07T01:58:01.855161Z"
+}

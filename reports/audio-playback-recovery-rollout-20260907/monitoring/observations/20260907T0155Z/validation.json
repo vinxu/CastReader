@@ -1,0 +1,12 @@
+{
+  "schema": "castreader.backend-observation-validation.v1",
+  "sourceReferencesVerified": 12,
+  "pendingProxyGroupsInsideWindow": 2,
+  "noLiveValidationRequests": true,
+  "productionModified": false,
+  "globalShardWindowsAdjacent": true,
+  "providerRequestIdsUniqueAcrossShards": true,
+  "ambiguityRetainedProviderRequests": 12,
+  "latencyUnits": "milliseconds",
+  "oldFailuresRetained": true
+}

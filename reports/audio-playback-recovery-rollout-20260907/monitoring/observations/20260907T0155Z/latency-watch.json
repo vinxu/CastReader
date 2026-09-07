@@ -1,0 +1,115 @@
+{
+  "schema": "castreader.backend-latency-trend.v2",
+  "classification": "observed_supply_latency_regression",
+  "relativeToPriorObservedBaseline": true,
+  "absoluteProductLatencySloSpecified": false,
+  "exceededExistingTimeoutBudget": false,
+  "windows": [
+    {
+      "tag": "20260906T2353Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-06T22:52:47.445000Z",
+        "requestStartExclusiveUTC": "2026-09-06T23:53:17.725000Z"
+      },
+      "globalRequestCount": 1890,
+      "globalRequestFinishMs": {
+        "p50": 572,
+        "p95": 1570,
+        "max": 3728
+      },
+      "proxyUpstreamHeadersElapsedMs": {
+        "max": 3677.495,
+        "median": 531.292,
+        "n": 2199,
+        "p95": 1494.506
+      },
+      "proxyUpstreamConnectMs": {
+        "max": 0.702,
+        "median": 0.254,
+        "n": 2200,
+        "p95": 0.32
+      },
+      "proxyRequestBodyReadMs": {
+        "max": 0.306,
+        "median": 0.052,
+        "n": 2210,
+        "p95": 0.09
+      }
+    },
+    {
+      "tag": "20260907T0053Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-06T23:53:17.725000Z",
+        "requestStartExclusiveUTC": "2026-09-07T00:53:48.099000Z"
+      },
+      "globalRequestCount": 3454,
+      "globalRequestFinishMs": {
+        "p50": 755,
+        "p95": 2201,
+        "max": 7385
+      },
+      "proxyUpstreamHeadersElapsedMs": {
+        "max": 7326.668,
+        "median": 685.783,
+        "n": 4236,
+        "p95": 2083.657
+      },
+      "proxyUpstreamConnectMs": {
+        "max": 0.691,
+        "median": 0.254,
+        "n": 4235,
+        "p95": 0.329
+      },
+      "proxyRequestBodyReadMs": {
+        "max": 0.682,
+        "median": 0.052,
+        "n": 4246,
+        "p95": 0.093
+      }
+    },
+    {
+      "tag": "20260907T0155Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-07T00:53:48.099Z",
+        "requestStartExclusiveUTC": "2026-09-07T01:55:18.503Z"
+      },
+      "globalRequestCount": 3475,
+      "globalRequestFinishMs": {
+        "p50": 1046,
+        "p95": 2697,
+        "max": 7591
+      },
+      "proxyUpstreamHeadersElapsedMs": {
+        "max": 7525.657,
+        "median": 937.812,
+        "n": 4226,
+        "p95": 2543.123
+      },
+      "proxyUpstreamConnectMs": {
+        "max": 2.45,
+        "median": 0.258,
+        "n": 4227,
+        "p95": 0.333
+      },
+      "proxyRequestBodyReadMs": {
+        "max": 0.339,
+        "median": 0.054,
+        "n": 4231,
+        "p95": 0.093
+      }
+    }
+  ],
+  "boundedFinding": "Both Global request completion and US proxy waiting for upstream response headers slowed across three windows. TCP connect timing stayed sub-millisecond; the observed waiting stage is after connection establishment and before model response headers.",
+  "unresolvedCause": [
+    "model queue/concurrency",
+    "inference or frontend work",
+    "encoding and other pre-response work",
+    "within-bucket request mix"
+  ],
+  "caution": "Output-size buckets and different gateway/proxy request cohorts cannot isolate a specific internal cause or establish client playback stalls.",
+  "sizeBucketEvidence": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/latency-size-buckets.json",
+    "sha256": "724e065d4e701ced06e456ec7f7f1738233de05a280478b37d9a7c63f8361f80"
+  },
+  "keepObservingTrend": true
+}
