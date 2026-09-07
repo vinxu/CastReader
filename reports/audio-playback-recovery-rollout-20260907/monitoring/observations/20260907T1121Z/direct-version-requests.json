@@ -1,0 +1,2363 @@
+{
+  "schema": "castreader.direct-pid-window.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T11:22:19.270195+00:00",
+  "window": {
+    "startUTC": "2026-09-07T10:19:51.888000Z",
+    "endUTCExclusive": "2026-09-07T11:21:22.363000Z"
+  },
+  "journalRows": 11240,
+  "parseErrors": 0,
+  "groups": [
+    {
+      "pid": "596392",
+      "statusCounts": {
+        "200": 257,
+        "None": 1
+      },
+      "policyCounts": {
+        "legacy": 185,
+        "extension-v1": 73
+      },
+      "requests": 258,
+      "firstCompletionUTC": "2026-09-07T10:29:14.302891Z",
+      "lastCompletionUTC": "2026-09-07T11:21:20.244703Z",
+      "incompleteBlocks": 0,
+      "malformedRequests": 0,
+      "duplicateRequestKeys": 0
+    }
+  ],
+  "requests": [
+    {
+      "requestKey": "d130976ad0adb6ac9852",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:14.302891Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 99,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8a4760bac303ae174515",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:14.621630Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 125,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8284bd02fa9f07e116e3",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:14.721254Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 72,
+      "attempts": 1
+    },
+    {
+      "requestKey": "ef9ce65505c359253987",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:16.567321Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 123,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0d45755e652eb1db1fff",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:20.399878Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 124,
+      "attempts": 1
+    },
+    {
+      "requestKey": "5be314e44694ed17add3",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:21.880609Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 120,
+      "attempts": 1
+    },
+    {
+      "requestKey": "5f3cbe70cefa4e33ee99",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:22.153436Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 110,
+      "attempts": 1
+    },
+    {
+      "requestKey": "270f6d754d9e961fe558",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:22.430476Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 91,
+      "attempts": 1
+    },
+    {
+      "requestKey": "856f2b44cf0ac713abf6",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:22.804063Z",
+      "status": null,
+      "policy": "legacy",
+      "elapsedMs": 114,
+      "attempts": 1
+    },
+    {
+      "requestKey": "74a1a73c8b144866a767",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:23.074556Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 271,
+      "attempts": 1
+    },
+    {
+      "requestKey": "e9b3fa75bb4c148aba1a",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:23.491672Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 231,
+      "attempts": 1
+    },
+    {
+      "requestKey": "2063170fc14aa30e51fa",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:26.850342Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 338,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0a1926baaf0fffe8bf55",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:27.963752Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 498,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c136a71338200753fdbe",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:28.379762Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 252,
+      "attempts": 1
+    },
+    {
+      "requestKey": "34a5544295fe8eaa86fd",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:28.698355Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 94,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9a69abd9470b6487295b",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:29.003138Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 162,
+      "attempts": 1
+    },
+    {
+      "requestKey": "6b754ef690e3691b9e13",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:29:48.143689Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 96,
+      "attempts": 1
+    },
+    {
+      "requestKey": "d64aed9f7b5c516fcc5c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:30:00.658575Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 134,
+      "attempts": 1
+    },
+    {
+      "requestKey": "44182cec2a9f780d07ba",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:30:22.227325Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 94,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9025f3efa6c31723c399",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:22.472659Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 149,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b564439461a4b97da2c3",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:25.137579Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 438,
+      "attempts": 1
+    },
+    {
+      "requestKey": "d3f17fc741d44c6cc35a",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:28.527035Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 852,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9c5274f75246e1ed594c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:28.577333Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 606,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b12c6e0533265313078e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:30.208928Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 1089,
+      "attempts": 1
+    },
+    {
+      "requestKey": "bec3eb26bc015e8a2361",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:31.945795Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 676,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f0dc28a959b481f6f402",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:32.507571Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 120,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9f0e0399801fac922d75",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:33.080448Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 207,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0e25fbeea87c9d4a59af",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:33.587642Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 161,
+      "attempts": 1
+    },
+    {
+      "requestKey": "88f49dcdd02e2ae67899",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:34.202709Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 157,
+      "attempts": 1
+    },
+    {
+      "requestKey": "3bda47b6190f71b1c197",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:35.064757Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 518,
+      "attempts": 1
+    },
+    {
+      "requestKey": "e67b16d50a11f838c830",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:36.283594Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 774,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b621e907047a6e5b5a02",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:36.969045Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1456,
+      "attempts": 1
+    },
+    {
+      "requestKey": "671cc91ce1bd3a16f25f",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:37.287237Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 162,
+      "attempts": 1
+    },
+    {
+      "requestKey": "803ca039289ab8bf58b1",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:38.157644Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 585,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a23872b8eb2e3ccfd8c4",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:39.194071Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 571,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b15459e0fa3d8db1a32d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:40.291045Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 644,
+      "attempts": 1
+    },
+    {
+      "requestKey": "4a9f95f8641087d185a0",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:48.873398Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 144,
+      "attempts": 1
+    },
+    {
+      "requestKey": "3966d7240966afe84e25",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:31:54.556596Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 93,
+      "attempts": 1
+    },
+    {
+      "requestKey": "30f4a8b5bad990c642a6",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:32:05.343797Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 550,
+      "attempts": 1
+    },
+    {
+      "requestKey": "3efb94ea6003df29669a",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:32:11.195051Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 673,
+      "attempts": 1
+    },
+    {
+      "requestKey": "53079d2913946e921541",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:32:14.315419Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 658,
+      "attempts": 1
+    },
+    {
+      "requestKey": "ee31a93c4dfd7e309b80",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:32:16.687674Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 434,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9a5a93429c6d53c12786",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:32:17.544824Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 519,
+      "attempts": 1
+    },
+    {
+      "requestKey": "ac5498337ead61326e90",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:32:42.952235Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 614,
+      "attempts": 1
+    },
+    {
+      "requestKey": "aca620a784152e182238",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:32:45.171067Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 539,
+      "attempts": 1
+    },
+    {
+      "requestKey": "ca60a4ab3db37ed657b1",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:26.693426Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 158,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9d2b33fdc3f4f5ddbfbe",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:28.866657Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 479,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8cacfb1f4e4b95a04c36",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:32.061088Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 668,
+      "attempts": 1
+    },
+    {
+      "requestKey": "fbb3d1ad060c77bfaa7a",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:33.691192Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 1041,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f846dc7fee090535c1fe",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:35.330649Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 622,
+      "attempts": 1
+    },
+    {
+      "requestKey": "68bc7cecff9e3f982cf9",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:35.897438Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 117,
+      "attempts": 1
+    },
+    {
+      "requestKey": "273c4ccfc79160f8869d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:36.502669Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 183,
+      "attempts": 1
+    },
+    {
+      "requestKey": "2389d1600ae438e29115",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:37.027544Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 176,
+      "attempts": 1
+    },
+    {
+      "requestKey": "84f6d78e7ff8f21a9d57",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:37.647443Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 197,
+      "attempts": 1
+    },
+    {
+      "requestKey": "647eb1c51ceb73829467",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:38.513262Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 533,
+      "attempts": 1
+    },
+    {
+      "requestKey": "83b89c8dbfc7b7c35df6",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:41.539256Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 568,
+      "attempts": 1
+    },
+    {
+      "requestKey": "d25b44e902fd83541006",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:42.550596Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 558,
+      "attempts": 1
+    },
+    {
+      "requestKey": "09859d5cfe4dc11234f7",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:35:43.553261Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 582,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a55cd0f9df646be11703",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:36:14.481092Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 644,
+      "attempts": 1
+    },
+    {
+      "requestKey": "7f8fcaf46edfe218c885",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:36:17.073371Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 634,
+      "attempts": 1
+    },
+    {
+      "requestKey": "ea361c46962478575fa3",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:36:19.953633Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 434,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0c5c2dddde19eee1c406",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:36:20.942779Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 650,
+      "attempts": 1
+    },
+    {
+      "requestKey": "e9c64b11d4d58092b287",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:36:46.154252Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 608,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a74e434b21299ca5b9cc",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:36:48.383109Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 552,
+      "attempts": 1
+    },
+    {
+      "requestKey": "276d76516e70ce1e2f85",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:02.354538Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 138,
+      "attempts": 1
+    },
+    {
+      "requestKey": "12b6d05367d92c57b739",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:04.674599Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 629,
+      "attempts": 1
+    },
+    {
+      "requestKey": "50b71b6f643cec330c04",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:11.567430Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 440,
+      "attempts": 1
+    },
+    {
+      "requestKey": "191e81c100862a29a2c8",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:13.249584Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 1051,
+      "attempts": 1
+    },
+    {
+      "requestKey": "48e6962b8ba570bcedbe",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:15.341593Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 575,
+      "attempts": 1
+    },
+    {
+      "requestKey": "eb951abebd089996605d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:16.279559Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 126,
+      "attempts": 1
+    },
+    {
+      "requestKey": "cbba136d1ecb6841e8cf",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:16.947829Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 158,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c8bce784747c4ca03b85",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:17.778603Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 480,
+      "attempts": 1
+    },
+    {
+      "requestKey": "138d916b900f9b5d2dae",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:18.528558Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 124,
+      "attempts": 1
+    },
+    {
+      "requestKey": "dfda704db0609610a943",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:18.980308Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 124,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f2027d033385b05f487b",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:22.044232Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 578,
+      "attempts": 1
+    },
+    {
+      "requestKey": "cfa394ca88d6b03502ec",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:23.815345Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 674,
+      "attempts": 1
+    },
+    {
+      "requestKey": "769fed5df7f4f8fde8e1",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:25.489655Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 552,
+      "attempts": 1
+    },
+    {
+      "requestKey": "473b307026acbaffdbb5",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:37:56.810890Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 663,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a1df8798e0f996d15bb1",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:01.269708Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 421,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9b61105abe7a233444f5",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:02.106514Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 455,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a10182d132d198931590",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:28.328297Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 640,
+      "attempts": 1
+    },
+    {
+      "requestKey": "5889023006da69295846",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:30.394403Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 505,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8f4b94f625980fec1c68",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:43.467573Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 0,
+      "attempts": 0
+    },
+    {
+      "requestKey": "e18892323db4e4e2031a",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:53.161485Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 135,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8906dbee3319f49a6186",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:54.217458Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 431,
+      "attempts": 1
+    },
+    {
+      "requestKey": "114490ea12799c415b4e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:55.276477Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 558,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a5a93af9b9bf1f9dfa89",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:56.962270Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 1191,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c74fc7ed9ca121fde044",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:58.553260Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 597,
+      "attempts": 1
+    },
+    {
+      "requestKey": "29046a74e3cc81058ebe",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:59.128294Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 116,
+      "attempts": 1
+    },
+    {
+      "requestKey": "531607d0af4cdfe17ad1",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:38:59.623201Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 160,
+      "attempts": 1
+    },
+    {
+      "requestKey": "d982f606e2e091b7283e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:39:00.143545Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 151,
+      "attempts": 1
+    },
+    {
+      "requestKey": "55f024ecf6fd15857b23",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:39:01.055622Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 307,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c26094a0199eaeaea2d1",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:39:01.856276Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 474,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a45da100f33e061813cc",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:39:04.931131Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 584,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c0e216e54611420395eb",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:39:06.169055Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 812,
+      "attempts": 1
+    },
+    {
+      "requestKey": "395234a49c09da7c5691",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:39:07.145226Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 558,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a5e1a1376a5a9049e357",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:39:37.862039Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 673,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8f4ba11f0d71d5581c25",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:39:52.857210Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 594,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f29f7c0cbca4bbabc476",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:39:54.748487Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 659,
+      "attempts": 1
+    },
+    {
+      "requestKey": "2eb0344e42546dbaa15a",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:40:30.092717Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 469,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9417e04c2b7123804a31",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:40:31.299546Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 462,
+      "attempts": 1
+    },
+    {
+      "requestKey": "03390fdc0a2343f0edc3",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:40:43.313173Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 602,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b29b20f822b32c99efaa",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:40:47.818072Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 572,
+      "attempts": 1
+    },
+    {
+      "requestKey": "2fb07419d2e1726c7e57",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:40:54.758735Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 522,
+      "attempts": 1
+    },
+    {
+      "requestKey": "eb2a82b6b07f200f68da",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T10:40:57.709681Z",
+      "status": 200,
+      "policy": "extension-v1",
+      "elapsedMs": 708,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8007ad06fa289977555e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:10:16.929702Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1454,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a431c49d300b53396ab8",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:10:23.444054Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1053,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b11776875da190012ed7",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:10:28.036230Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 982,
+      "attempts": 1
+    },
+    {
+      "requestKey": "64b9164eaea219efe6a6",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:10:35.372589Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 963,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c276236db79b4b7b0176",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:10:39.948708Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1436,
+      "attempts": 1
+    },
+    {
+      "requestKey": "99d8bb25a99d1ba4206c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:10:44.742077Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1456,
+      "attempts": 1
+    },
+    {
+      "requestKey": "22a3809a37935799e2b0",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:10:49.613620Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1020,
+      "attempts": 1
+    },
+    {
+      "requestKey": "ce29fc9f828629724258",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:10:53.254658Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 735,
+      "attempts": 1
+    },
+    {
+      "requestKey": "541a587716326ea0f715",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:10:57.565539Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1068,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a41dc3f4f50d2fd16ad2",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:00.828695Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 507,
+      "attempts": 1
+    },
+    {
+      "requestKey": "bacbdf3f2362a06722ef",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:05.081937Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 801,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0fce40bcca7c88b25d11",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:16.434854Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1197,
+      "attempts": 1
+    },
+    {
+      "requestKey": "71da15eecb284dfcc14c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:23.447707Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 485,
+      "attempts": 1
+    },
+    {
+      "requestKey": "6f3e7a1cf9b9952fe36b",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:26.453666Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 433,
+      "attempts": 1
+    },
+    {
+      "requestKey": "679fc3803910fbac7dc8",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:29.817762Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 742,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b5d3fecdd06d94ee5e0c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:33.507953Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 546,
+      "attempts": 1
+    },
+    {
+      "requestKey": "7755c65bf0860cb3851d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:40.437575Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 501,
+      "attempts": 1
+    },
+    {
+      "requestKey": "4e74bcc16042c05634b8",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:44.266651Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 507,
+      "attempts": 1
+    },
+    {
+      "requestKey": "35086d632584de2f4f9c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:11:49.306543Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 625,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f26a7cccc9197f1860b1",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:02.714710Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 476,
+      "attempts": 1
+    },
+    {
+      "requestKey": "3e738b8b80b952092df8",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:08.171701Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 951,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c05a258e85a257136ac7",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:11.296575Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 546,
+      "attempts": 1
+    },
+    {
+      "requestKey": "1ebaea70ff456d3f8777",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:16.899179Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 491,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a77ee40a50644c04796b",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:21.918132Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 561,
+      "attempts": 1
+    },
+    {
+      "requestKey": "124e61ef774341c4048e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:28.011728Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 491,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f312ff15eed63eb42b11",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:30.849548Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 464,
+      "attempts": 1
+    },
+    {
+      "requestKey": "92af4cd8c4d33df1638f",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:34.709598Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 465,
+      "attempts": 1
+    },
+    {
+      "requestKey": "38fbb042d7ef9736e336",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:38.572921Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 598,
+      "attempts": 1
+    },
+    {
+      "requestKey": "ce3d20b5da8b223b1b65",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:49.236663Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1228,
+      "attempts": 1
+    },
+    {
+      "requestKey": "6fba8058de18b0f28dfa",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:53.884100Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 518,
+      "attempts": 1
+    },
+    {
+      "requestKey": "7f5e569136aa67049780",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:12:58.011983Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 526,
+      "attempts": 1
+    },
+    {
+      "requestKey": "dbae38ff51fa1fe46996",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:03.584745Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 725,
+      "attempts": 1
+    },
+    {
+      "requestKey": "5638aeac68bc10c1887e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:07.311890Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 589,
+      "attempts": 1
+    },
+    {
+      "requestKey": "77cbb294c1ff2be40c4e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:17.917533Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 662,
+      "attempts": 1
+    },
+    {
+      "requestKey": "48e85b0fcc96691484aa",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:18.295224Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 2,
+      "attempts": 0
+    },
+    {
+      "requestKey": "d788b30d66a808ed3a1e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:25.785675Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 448,
+      "attempts": 1
+    },
+    {
+      "requestKey": "136a29f21f7f629e48ee",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:28.212818Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 517,
+      "attempts": 1
+    },
+    {
+      "requestKey": "713ae89c5124d84d13bb",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:32.051785Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 563,
+      "attempts": 1
+    },
+    {
+      "requestKey": "6c6535542899e4705c4f",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:40.550845Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 476,
+      "attempts": 1
+    },
+    {
+      "requestKey": "3ce9cf5b834a629f61ec",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:43.160207Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 486,
+      "attempts": 1
+    },
+    {
+      "requestKey": "ad7cbf746f5cb57ab959",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:49.133097Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 542,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a7b586f5270c9f99e496",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:54.504609Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 497,
+      "attempts": 1
+    },
+    {
+      "requestKey": "e4fdccee200c6d22a1bd",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:13:57.845657Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 454,
+      "attempts": 1
+    },
+    {
+      "requestKey": "98313d108fccdad33aa5",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:01.598087Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 448,
+      "attempts": 1
+    },
+    {
+      "requestKey": "ccd5d922f4c6a09e723c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:05.550586Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 479,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f2c79130fca8e6b19de7",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:09.971678Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 465,
+      "attempts": 1
+    },
+    {
+      "requestKey": "cdabc703a266f4dbf7ec",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:14.054552Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 447,
+      "attempts": 1
+    },
+    {
+      "requestKey": "49bca675c3ecdd58d6d0",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:17.354119Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 447,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0628b478bfafccd18823",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:21.185678Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 506,
+      "attempts": 1
+    },
+    {
+      "requestKey": "5d8eff8ef7f39319ff6f",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:27.034688Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 438,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f3a6233acc78a749c90e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:30.401651Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 859,
+      "attempts": 1
+    },
+    {
+      "requestKey": "d907f410e7d646b37ba7",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:33.040044Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 587,
+      "attempts": 1
+    },
+    {
+      "requestKey": "d349ea5b7e9bdd6000ba",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:41.214065Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 906,
+      "attempts": 1
+    },
+    {
+      "requestKey": "202cf6b2be1558b94500",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:52.235663Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 611,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9b1d860813cee3917c5d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:55.983625Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 455,
+      "attempts": 1
+    },
+    {
+      "requestKey": "e802b9519fb6dea26686",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:57.692457Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 139,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0c168a0ffe2de7072c16",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:14:58.972697Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 540,
+      "attempts": 1
+    },
+    {
+      "requestKey": "457ab718c5447b72b133",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:00.107821Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 457,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b4de00cba19bad2d70f6",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:02.601621Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 568,
+      "attempts": 1
+    },
+    {
+      "requestKey": "6f776a671dc6d50bc006",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:03.969537Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 576,
+      "attempts": 1
+    },
+    {
+      "requestKey": "63a26d99cbd241b40d9e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:06.220349Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 530,
+      "attempts": 1
+    },
+    {
+      "requestKey": "95e340c20f4c1e85686c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:08.948568Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 454,
+      "attempts": 1
+    },
+    {
+      "requestKey": "4121ac0e536acfbc8461",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:12.298956Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 942,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8c69acae7639dd4af2ea",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:21.934055Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 821,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9616ca7acaa6461828ae",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:24.748731Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 553,
+      "attempts": 1
+    },
+    {
+      "requestKey": "bdafd49d75b6760af817",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:29.545578Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 446,
+      "attempts": 1
+    },
+    {
+      "requestKey": "2fbea21855fa9064b6a9",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:31.914796Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 453,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c217325e4fb1d723b00a",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:35.419341Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1054,
+      "attempts": 1
+    },
+    {
+      "requestKey": "624901d6f8a71033d8b2",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:41.012890Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 505,
+      "attempts": 1
+    },
+    {
+      "requestKey": "7d73674e4e703903f8df",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:44.484684Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 444,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c47290141b7998c47639",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:47.847602Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 510,
+      "attempts": 1
+    },
+    {
+      "requestKey": "292c7e006cf3f2b6248b",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:52.336293Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1134,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c09815a864ff40c44f2c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:15:59.765168Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 557,
+      "attempts": 1
+    },
+    {
+      "requestKey": "4a32e72a3743d28e6a69",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:06.733680Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 797,
+      "attempts": 1
+    },
+    {
+      "requestKey": "143076ac3c0d8fd70efd",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:09.629601Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 450,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8c988147454917770729",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:12.714648Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 454,
+      "attempts": 1
+    },
+    {
+      "requestKey": "1f8fc78b69ed1731f96d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:16.695716Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 432,
+      "attempts": 1
+    },
+    {
+      "requestKey": "236e0a8bbd1976c27d2c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:19.678549Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 759,
+      "attempts": 1
+    },
+    {
+      "requestKey": "7ecd9932a346e05e85c2",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:22.506457Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 477,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9ea973574e133eb6b37d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:25.053749Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 520,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c3600fc5dd060473ed48",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:28.451524Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 438,
+      "attempts": 1
+    },
+    {
+      "requestKey": "471758a0b7296d3849cf",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:31.106731Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 499,
+      "attempts": 1
+    },
+    {
+      "requestKey": "d2897357943101a3aa81",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:37.731290Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 491,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b4b2d2a86fcf83f72da5",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:42.342506Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 473,
+      "attempts": 1
+    },
+    {
+      "requestKey": "add0bf005835c97e2fb2",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:47.198249Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 479,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a4c0e1c4b9d168ecd75f",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:51.186709Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 468,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9ec464d13330ff70f2cb",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:16:55.731487Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 675,
+      "attempts": 1
+    },
+    {
+      "requestKey": "81324a40005d8d4b0459",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:01.634827Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 546,
+      "attempts": 1
+    },
+    {
+      "requestKey": "57b5afdb958f12dc60f2",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:07.687522Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 488,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8d83142e729aa0d20afa",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:12.700287Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 605,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8ed4162092c1a1ec4b03",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:17.424423Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 869,
+      "attempts": 1
+    },
+    {
+      "requestKey": "42799a010c55c7fb219d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:23.631166Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1346,
+      "attempts": 1
+    },
+    {
+      "requestKey": "7c4b459a3b557a0c7f80",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:26.918712Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 487,
+      "attempts": 1
+    },
+    {
+      "requestKey": "2929d129e812d2aa935c",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:31.871495Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 496,
+      "attempts": 1
+    },
+    {
+      "requestKey": "88d0311dd837102d90e3",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:36.287623Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 426,
+      "attempts": 1
+    },
+    {
+      "requestKey": "1d23eaef0ea75d424b42",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:38.579738Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 468,
+      "attempts": 1
+    },
+    {
+      "requestKey": "e5327629bca33e635757",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:41.934217Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 559,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9d863df027fc74a8cc5f",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:47.920561Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 450,
+      "attempts": 1
+    },
+    {
+      "requestKey": "187015c6212e775f6471",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:48.113877Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 0,
+      "attempts": 0
+    },
+    {
+      "requestKey": "7c147e3195d6dbb3185d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:50.267637Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 452,
+      "attempts": 1
+    },
+    {
+      "requestKey": "4d5b67d06118699c77f3",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:53.922644Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 864,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0db5806b28a18dbe40d0",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:17:58.367588Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1314,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f7aee3af76f65611c60b",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:03.221582Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 436,
+      "attempts": 1
+    },
+    {
+      "requestKey": "3e701269eb5b4e966ce3",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:05.833109Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 486,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f486e3abdac8700d34c2",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:10.970920Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 480,
+      "attempts": 1
+    },
+    {
+      "requestKey": "1fc1a33b868fb04db687",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:15.049485Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 470,
+      "attempts": 1
+    },
+    {
+      "requestKey": "68774e8c1a60ba075095",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:15.215433Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1,
+      "attempts": 0
+    },
+    {
+      "requestKey": "7bda7657021b2d046396",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:17.282570Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 510,
+      "attempts": 1
+    },
+    {
+      "requestKey": "dcaec9458e94b9ab38cf",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:23.782446Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 543,
+      "attempts": 1
+    },
+    {
+      "requestKey": "4490cf26ac289e220195",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:29.589870Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 469,
+      "attempts": 1
+    },
+    {
+      "requestKey": "af204e1d091201dd4f9f",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:33.345247Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 464,
+      "attempts": 1
+    },
+    {
+      "requestKey": "3fa39ff26a853a0cebfe",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:38.156785Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1030,
+      "attempts": 1
+    },
+    {
+      "requestKey": "1d347e53ef3167aa19f1",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:42.326892Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1081,
+      "attempts": 1
+    },
+    {
+      "requestKey": "524ac431676bc15809ee",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:46.811752Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1315,
+      "attempts": 1
+    },
+    {
+      "requestKey": "2d840e5e748c3fa36fac",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:49.781612Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 762,
+      "attempts": 1
+    },
+    {
+      "requestKey": "5b81826d2c3b018663af",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:52.945250Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 880,
+      "attempts": 1
+    },
+    {
+      "requestKey": "8b8441ef28ead1cbb9c8",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:18:58.772433Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 526,
+      "attempts": 1
+    },
+    {
+      "requestKey": "59f56afdb087972d830f",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:05.148792Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 469,
+      "attempts": 1
+    },
+    {
+      "requestKey": "cc55002b61b124def636",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:08.891339Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 538,
+      "attempts": 1
+    },
+    {
+      "requestKey": "50e589119276732c7ff7",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:14.223868Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 481,
+      "attempts": 1
+    },
+    {
+      "requestKey": "3ff051960be0beac3629",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:18.106744Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 448,
+      "attempts": 1
+    },
+    {
+      "requestKey": "5052a9ae7c06c2552ec6",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:21.517748Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 502,
+      "attempts": 1
+    },
+    {
+      "requestKey": "2f649d61897a7fed3045",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:26.448845Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 550,
+      "attempts": 1
+    },
+    {
+      "requestKey": "09979ed9d95a0d5012d3",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:29.293669Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 435,
+      "attempts": 1
+    },
+    {
+      "requestKey": "29c8ed74e15dfe19968a",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:32.280708Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 427,
+      "attempts": 1
+    },
+    {
+      "requestKey": "b8900c7b8a08b68bfdd2",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:35.368369Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 544,
+      "attempts": 1
+    },
+    {
+      "requestKey": "08602329b20208591e5d",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:41.726273Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 474,
+      "attempts": 1
+    },
+    {
+      "requestKey": "fb2aee3573883edc9a49",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:46.115579Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 429,
+      "attempts": 1
+    },
+    {
+      "requestKey": "554e757074681dd67686",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:48.453527Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 412,
+      "attempts": 1
+    },
+    {
+      "requestKey": "11002a12ee3b5b7f67b6",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:50.691848Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 519,
+      "attempts": 1
+    },
+    {
+      "requestKey": "5eb552e9273a8c36fe02",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:55.955648Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 450,
+      "attempts": 1
+    },
+    {
+      "requestKey": "4489ee1638242a07b579",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:19:58.774748Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 460,
+      "attempts": 1
+    },
+    {
+      "requestKey": "dabd5d1346fba5450ac9",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:02.770981Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 458,
+      "attempts": 1
+    },
+    {
+      "requestKey": "c0be4d51a71fb2222473",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:06.903182Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 900,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a1e4d920a5549bcfdf62",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:09.506481Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 420,
+      "attempts": 1
+    },
+    {
+      "requestKey": "666d82547ebc028142d2",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:11.917757Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 533,
+      "attempts": 1
+    },
+    {
+      "requestKey": "78e220027de349f17ac6",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:15.316648Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 482,
+      "attempts": 1
+    },
+    {
+      "requestKey": "016c5d13223ae91fc4a7",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:17.985589Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 827,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0c0d40547028363d434e",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:20.630780Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 442,
+      "attempts": 1
+    },
+    {
+      "requestKey": "150553755ff74b0bd8c5",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:23.847750Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1209,
+      "attempts": 1
+    },
+    {
+      "requestKey": "e2ce147dd91072111a01",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:27.504785Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 788,
+      "attempts": 1
+    },
+    {
+      "requestKey": "19990a411e2f796bf3f2",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:31.772849Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 970,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f511d2cef8d33edfc4f5",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:35.891625Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 447,
+      "attempts": 1
+    },
+    {
+      "requestKey": "77ff2aecd2ce5b85e9ac",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:39.058612Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 658,
+      "attempts": 1
+    },
+    {
+      "requestKey": "a7877207bb15b049fb39",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:42.305008Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 792,
+      "attempts": 1
+    },
+    {
+      "requestKey": "93988951c34d712e79e5",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:47.734813Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 986,
+      "attempts": 1
+    },
+    {
+      "requestKey": "05ff43a402b1c9f03786",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:51.664374Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1119,
+      "attempts": 1
+    },
+    {
+      "requestKey": "85d6d42925b24cf11c40",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:20:58.139686Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 464,
+      "attempts": 1
+    },
+    {
+      "requestKey": "9fe195ae996e1c8b45a9",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:21:01.638783Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 808,
+      "attempts": 1
+    },
+    {
+      "requestKey": "0454abbebc043ac222e9",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:21:05.031538Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 465,
+      "attempts": 1
+    },
+    {
+      "requestKey": "dd06aadd02ac73512835",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:21:09.174732Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 425,
+      "attempts": 1
+    },
+    {
+      "requestKey": "bd637482dc33183f7b8b",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:21:12.458770Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 1001,
+      "attempts": 1
+    },
+    {
+      "requestKey": "f2f11876502aa6b91a85",
+      "pid": "596392",
+      "observedAtUTC": "2026-09-07T11:21:20.244703Z",
+      "status": 200,
+      "policy": "legacy",
+      "elapsedMs": 525,
+      "attempts": 1
+    }
+  ],
+  "limitations": [
+    "Process identity is bound to separately verified release receipts.",
+    "This unit excludes the private candidate unit and its brief public handoff interval.",
+    "Journal timestamps are completion/log times; they are not request-start times."
+  ],
+  "parserSourceSha256": "f6a1c14271f69096e2a18af9d28960eba461bb88d2a070b9a631aa4056fa9acd"
+}
