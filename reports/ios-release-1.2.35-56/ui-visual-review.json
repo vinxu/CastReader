@@ -1,0 +1,40 @@
+{
+  "uiMethodsPassed": 5,
+  "uiMethodsSkipped": 1,
+  "uiFailures": 0,
+  "settingsScenarios": 42,
+  "settingsScreenshots": 114,
+  "visuallyInspected": [
+    {
+      "name": "Kindle-settings-en-Light-normal_0_5545A58E-38DB-4A2C-A4AB-140C6F6B246F.png",
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-kindle-parity-20260907/build/kindle-release-review/ui-attachments/A8ACAAEE-A8C7-47D4-9DD6-2FADB02A9C6A.png"
+    },
+    {
+      "name": "Kindle-settings-zh-Hans-Dark-normal_0_4DED3A59-7575-4AD4-A272-8BD6434173EA.png",
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-kindle-parity-20260907/build/kindle-release-review/ui-attachments/3B9B8B86-879A-4D4E-8656-70E34EC599D9.png"
+    },
+    {
+      "name": "Kindle-settings-de-Light-AXXXL-font-controls_0_716A9E5C-4C49-4E8D-AA92-50D39E6B4AF0.png",
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-kindle-parity-20260907/build/kindle-release-review/ui-attachments/88695095-D2CD-4B76-B8AD-33E684594BA6.png"
+    },
+    {
+      "name": "Kindle-settings-zh-Hans-Light-AXXXL-footnote-footer_0_8D68C8AE-242A-42F7-930F-D894369DED14.png",
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-kindle-parity-20260907/build/kindle-release-review/ui-attachments/BFAC0361-C8F3-4D02-92F3-63BE5CA5F86E.png"
+    },
+    {
+      "name": "Kindle-settings-pt-BR-Dark-AXXXL-footnote-footer_0_CFCAAC4A-F368-4CC8-90D1-8855DD4DE38D.png",
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-kindle-parity-20260907/build/kindle-release-review/ui-attachments/0F514DCA-11E0-4A68-A149-174D2A4096DC.png"
+    },
+    {
+      "name": "Kindle-settings-en-Light-AXXXL-footnote-footer_0_A61ED8DA-4C5A-4871-9E3A-42EB70A9F266.png",
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-kindle-parity-20260907/build/kindle-release-review/ui-attachments/4124C925-1783-4BDB-951C-21772C854D4B.png"
+    }
+  ],
+  "visualFindings": [
+    "English light and Chinese dark normal-size settings have visible controls and complete explanatory text.",
+    "German AXXXL font controls remain visible and usable; other sections scroll.",
+    "English, Chinese, and Brazilian Portuguese AXXXL footnote descriptions can be fully reached while Done remains visible.",
+    "Portuguese AXXXL navigation title truncates as in the existing acceptance record; the accessible title and Done remain available."
+  ],
+  "liveVoiceUIProbe": "Not enabled; recorded as skipped, not passed."
+}

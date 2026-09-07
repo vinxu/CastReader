@@ -1,0 +1,10 @@
+{
+  "app": "/Users/xuxuheng/Documents/.worktrees/CastReader-ios-kindle-parity-20260907/build/CastReader-1.2.35-56.xcarchive/Products/Applications/CastReader.app",
+  "version": "1.2.35",
+  "build": "56",
+  "filesScanned": 119,
+  "markersChecked": 34,
+  "debugPositiveControlsPassed": true,
+  "releaseMatches": [],
+  "passed": true
+}

@@ -1,0 +1,31 @@
+{
+  "time": "2026-09-07T09:32:58Z",
+  "protectedMetadataUnchanged": true,
+  "whatsNewMatches": true,
+  "appInfoLocales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "screenshots": {
+    "pt-BR": 5,
+    "zh-Hans": 5,
+    "it": 5,
+    "fr-FR": 5,
+    "zh-Hant": 0,
+    "es-ES": 5,
+    "hi": 5,
+    "en-US": 5,
+    "ja": 5,
+    "de-DE": 5,
+    "es-MX": 0
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "version": {
+    "id": "1db5a12c-64cd-4961-ad04-4ff117646723",
+    "version": "1.2.34",
+    "state": "READY_FOR_SALE",
+    "releaseType": "AFTER_APPROVAL"
+  },
+  "build": {
+    "id": "c7e03dec-5c12-4914-a69b-ec1a7db2c7b6",
+    "number": "54",
+    "processingState": "VALID",
+    "buildAudienceType": "APP_STORE_ELIGIBLE",
+    "usesNonExemptEncryption": false
+  },
+  "locales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "titleGuard": {
+    "policy": "ignore",
+    "unchanged": null
+  },
+  "screenshots": {
+    "zh-Hant": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "hi": {
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "es-MX": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "de-DE": {
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "fr-FR": {
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "it": {
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "en-US": {
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "complete": 6,
+          "total": 6
+        }
+      ],
+      "complete": 6,
+      "fallbackToPrimary": false
+    },
+    "zh-Hans": {
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "ja": {
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "pt-BR": {
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "es-ES": {
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    }
+  },
+  "reviewDetailsPresent": true,
+  "errors": [
+
+  ]
+}

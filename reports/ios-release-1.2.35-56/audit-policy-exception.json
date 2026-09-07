@@ -1,0 +1,46 @@
+{
+  "time": "2026-09-07T09:34:13.586661+00:00",
+  "scope": "1.2.35 (56) only; preserve the user-created version metadata",
+  "genericAuditPassed": false,
+  "onlyGenericAuditErrors": [
+    "pt-BR version field promotionalText is empty",
+    "zh-Hans version field promotionalText is empty",
+    "it version field promotionalText is empty",
+    "fr-FR version field promotionalText is empty",
+    "zh-Hant version field promotionalText is empty",
+    "es-ES version field promotionalText is empty",
+    "hi version field promotionalText is empty",
+    "en-US version field promotionalText is empty",
+    "ja version field promotionalText is empty",
+    "de-DE version field promotionalText is empty",
+    "es-MX version field promotionalText is empty"
+  ],
+  "userBaselinePromotionalTextEmptyLocales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "reason": "User explicitly requested that all copy except What’s New remain unchanged. Do not fill promotionalText to satisfy the generic helper.",
+  "otherGenericAuditChecksPassed": true,
+  "protectedMetadataUnchangedAfterSubmission": true,
+  "appleSubmissionAccepted": true,
+  "versionState": "WAITING_FOR_REVIEW",
+  "reviewSubmissionState": "WAITING_FOR_REVIEW",
+  "reviewSubmissionId": "7131053c-8038-45d4-93b1-0cf2e4dc62b1",
+  "submittedDate": "2026-09-07T09:31:54.384Z",
+  "evidence": [
+    "pre-submit-audit.json",
+    "post-submit-audit.json",
+    "user-metadata-before.json",
+    "metadata-preservation-audit.json",
+    "submission-result.json"
+  ]
+}

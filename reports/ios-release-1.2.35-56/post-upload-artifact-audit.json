@@ -1,0 +1,16 @@
+{
+  "time": "2026-09-07T09:23:39.238751+00:00",
+  "sourceCommit": "50b4ccc98e1e2680833313bbf509353876288611",
+  "sourceFilesUnchanged": 328,
+  "archiveFilesCompared": 129,
+  "archiveChangedFiles": [
+    "Info.plist"
+  ],
+  "applicationAndSymbolsUnchanged": true,
+  "xcodeExportSucceeded": true,
+  "uploadEvents": [
+    "2026-09-07 17:23:11.754 xcodebuild[66895:2103336] Progress 97%: Upload succeeded.",
+    "Uploaded CastReader",
+    "** EXPORT SUCCEEDED **"
+  ]
+}

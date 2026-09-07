@@ -1,0 +1,57 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "5E6C9500-D581-413A-8D75-A8586AB3C60B",
+        "deviceName" : "CastReader Google Books QA",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 2,
+      "passedTests" : 0,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 2,
+  "finishTime" : 1788771477.644,
+  "passedTests" : 0,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1788771414.168,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertEqual failed: (\"1\") is not equal to (\"2\") - A completed sentence must be replayable after seeking back",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "AudioStreamingPauseIntentTests/testSeekingBackAfterCompletedQueueReplaysCurrentItemAndCompletesAgain()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/AudioStreamingPauseIntentTests/testSeekingBackAfterCompletedQueueReplaysCurrentItemAndCompletesAgain",
+      "testName" : "testSeekingBackAfterCompletedQueueReplaysCurrentItemAndCompletesAgain()"
+    },
+    {
+      "failureText" : "XCTAssertFalse failed - The user now owns a replay of the current item",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 2,
+      "testIdentifierString" : "AudioStreamingPauseIntentTests/testSeekingBackAtStreamingBoundaryReplaysPrefixBeforeQueuedTail()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/AudioStreamingPauseIntentTests/testSeekingBackAtStreamingBoundaryReplaysPrefixBeforeQueuedTail",
+      "testName" : "testSeekingBackAtStreamingBoundaryReplaysPrefixBeforeQueuedTail()"
+    }
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 2
+}

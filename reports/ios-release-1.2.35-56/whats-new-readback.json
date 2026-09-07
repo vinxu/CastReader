@@ -1,0 +1,30 @@
+{
+  "time": "2026-09-07T09:14:49Z",
+  "updatedLocales": [
+    "pt-BR",
+    "zh-Hans",
+    "it",
+    "fr-FR",
+    "zh-Hant",
+    "es-ES",
+    "hi",
+    "en-US",
+    "ja",
+    "de-DE",
+    "es-MX"
+  ],
+  "verifiedLocales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "protectedMetadataUnchanged": true
+}
