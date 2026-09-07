@@ -1,0 +1,1200 @@
+{
+  "schema": "castreader.backend-heartbeat-review.v1",
+  "automationId": "24",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "reviewedAtUTC": "2026-09-07T16:34:54.444875+00:00",
+  "snapshotDirectory": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z",
+  "fixedWindow": {
+    "collectedThroughExclusive": "2026-09-07T16:27:10.182805Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  },
+  "incrementalWindow": {
+    "endUTCExclusive": "2026-09-07T16:25:51.808000+00:00",
+    "productionActiveFromUTC": "2026-09-07T06:59:28.071711+00:00",
+    "startUTC": "2026-09-07T15:25:51.573000+00:00"
+  },
+  "backendVerdict": "存在异常：国际区下游断开集中增多、响应头等待变慢；未见新增5xx或模型终止错误，初始原因及完整交付仍不明",
+  "decision": "NOTIFY",
+  "newActionableChange": true,
+  "reason": "Direct新增33次无HTTP响应的下游断开，集中在等待上游响应头阶段；Global耗时及代理响应头P95同步上升，构成需通知的实质变化，初始断开原因未确证。",
+  "globalTts": {
+    "requests": 1807,
+    "finished200": 1807,
+    "allAttempt1": true,
+    "globalElapsedMs": {
+      "samples": 1807,
+      "p95Ms": 2680,
+      "maxMs": 6442
+    },
+    "proxyCounts": {
+      "errorClasses": {},
+      "failureScopesAndLastObservedPhases": {},
+      "finishedOutcomes": {
+        "cancelled": 33,
+        "complete": 3701
+      },
+      "finishedReportedStatuses": {
+        "200": 3701
+      },
+      "phases": {
+        "admission": 7458,
+        "cancellation": 33,
+        "coalescing": 12,
+        "completion": 3734,
+        "connect": 7446,
+        "inbound_body": 3735,
+        "response_body": 3688,
+        "response_complete": 3690,
+        "response_headers": 3690
+      },
+      "receivedAttempts": {
+        "1": 3735
+      },
+      "stages": {
+        "flight_created": 3723,
+        "flight_joined": 12,
+        "request_body_read": 3735,
+        "request_finished": 3734,
+        "request_received": 3735,
+        "upstream_cancelled": 33,
+        "upstream_complete": 3690,
+        "upstream_connect_started": 3723,
+        "upstream_connected": 3723,
+        "upstream_first_body": 3688,
+        "upstream_headers": 3690
+      }
+    },
+    "coalescing": {
+      "callersJoined": 12,
+      "denominatorNote": "Admission events in this window, not a completed-request cohort.",
+      "independentCallers": 0,
+      "joinFractionOfAllAdmissions": 0.00321285140562249,
+      "joinFractionOfSharedAdmissions": 0.00321285140562249,
+      "sharedProducersCreated": 3723
+    },
+    "proxyTimingsMs": {
+      "request_body_read.elapsedMs": {
+        "max": 0.31,
+        "median": 0.057,
+        "n": 3735,
+        "p95": 0.097
+      },
+      "request_finished.elapsedMs": {
+        "max": 7947.31,
+        "median": 825.878,
+        "n": 3734,
+        "p95": 2913.805
+      },
+      "upstream_complete.elapsedMs": {
+        "max": 7946.923,
+        "median": 818.524,
+        "n": 3690,
+        "p95": 2913.401
+      },
+      "upstream_connected.connectMs": {
+        "max": 0.783,
+        "median": 0.266,
+        "n": 3723,
+        "p95": 0.342
+      },
+      "upstream_first_body.elapsedMs": {
+        "max": 7946.302,
+        "median": 817.677,
+        "n": 3688,
+        "p95": 2913.352
+      },
+      "upstream_headers.elapsedMs": {
+        "max": 7946.219,
+        "median": 818.184,
+        "n": 3690,
+        "p95": 2913.054
+      }
+    },
+    "globalJoin": {
+      "attempts": 1807,
+      "matched": 1807,
+      "ambiguous": 0,
+      "matchedProxyComplete": 1806
+    },
+    "proxyIdentityAndCoverageVerified": true,
+    "cumulativeCore5xx": 1,
+    "historicalJapanese500Preserved": true,
+    "terminalDiagnosticGapReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/proxy-terminal-gap.json"
+  },
+  "direct": {
+    "cumulativeStatusCounts": {
+      "200": 14985,
+      "400": 1,
+      "no_response": 53
+    },
+    "source": {
+      "path": "/opt/castreader-tts-gateway/gateway.mjs",
+      "bytes": 37688,
+      "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+    },
+    "incrementalExactWindow": {
+      "200": 1898,
+      "None": 33
+    },
+    "newDownstreamDisconnects": [
+      {
+        "key": "374b39bb208bba3d5cc4",
+        "observedAt": "2026-09-07T15:40:09.381242Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1771,
+        "requestBytes": 267,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "f10f1ddff616bad6c99c",
+        "observedAt": "2026-09-07T15:44:30.252452Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1547,
+        "requestBytes": 199,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "2dc7e8c5f1e11d8d31b7",
+        "observedAt": "2026-09-07T15:47:39.309671Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1616,
+        "requestBytes": 447,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.47"
+      },
+      {
+        "key": "cb5dbbc2c8888868d16d",
+        "observedAt": "2026-09-07T16:04:30.561555Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1340,
+        "requestBytes": 219,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "ad431b92bb889b868954",
+        "observedAt": "2026-09-07T16:04:30.576068Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1341,
+        "requestBytes": 178,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "307a9db921374d2858e4",
+        "observedAt": "2026-09-07T16:05:11.614270Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1695,
+        "requestBytes": 174,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "7f0fd50c526f9fb1776d",
+        "observedAt": "2026-09-07T16:05:13.322885Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1695,
+        "requestBytes": 176,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "efd67add2359059ed473",
+        "observedAt": "2026-09-07T16:05:14.204863Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2755,
+        "requestBytes": 1008,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "8b4ca118fffd01b40996",
+        "observedAt": "2026-09-07T16:05:16.581992Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2124,
+        "requestBytes": 219,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "02b85e8c6340a9fb31ad",
+        "observedAt": "2026-09-07T16:05:18.262249Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1725,
+        "requestBytes": 176,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "57dd4a1e3251c3218279",
+        "observedAt": "2026-09-07T16:05:19.419229Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2583,
+        "requestBytes": 1008,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "80279b34f52da51365e0",
+        "observedAt": "2026-09-07T16:05:24.285751Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1588,
+        "requestBytes": 172,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "6f5318347986b7c93dab",
+        "observedAt": "2026-09-07T16:05:24.326304Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 27,
+        "requestBytes": 176,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "09c5bd58e708b6dec973",
+        "observedAt": "2026-09-07T16:05:26.326812Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1987,
+        "requestBytes": 187,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "023a880a46632695351c",
+        "observedAt": "2026-09-07T16:05:54.937268Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1412,
+        "requestBytes": 179,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "8dfb70d57ea21a9c9a84",
+        "observedAt": "2026-09-07T16:09:02.389866Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1801,
+        "requestBytes": 212,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "835e3a277a6e1e1f27fe",
+        "observedAt": "2026-09-07T16:09:18.309651Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1365,
+        "requestBytes": 245,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "e095b16a0e48eec871e4",
+        "observedAt": "2026-09-07T16:09:38.634945Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 3553,
+        "requestBytes": 223,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "3038dc213ecbafb8e94e",
+        "observedAt": "2026-09-07T16:09:51.186756Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 3609,
+        "requestBytes": 249,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "28dc8c60e8b929bccfe1",
+        "observedAt": "2026-09-07T16:10:15.266752Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1988,
+        "requestBytes": 170,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "964bc76f740a39507fd2",
+        "observedAt": "2026-09-07T16:10:26.516780Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1432,
+        "requestBytes": 229,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "08db929781b8fc212356",
+        "observedAt": "2026-09-07T16:10:47.538519Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1280,
+        "requestBytes": 195,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "119165068657618b61dd",
+        "observedAt": "2026-09-07T16:10:57.886983Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2065,
+        "requestBytes": 181,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "5b16e8c9be8d4635b2c9",
+        "observedAt": "2026-09-07T16:11:10.608876Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1735,
+        "requestBytes": 230,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "286529242e4d93f6fb6b",
+        "observedAt": "2026-09-07T16:11:37.825343Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1633,
+        "requestBytes": 191,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "2f5e464fcc6de23d7f4d",
+        "observedAt": "2026-09-07T16:11:39.631455Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1653,
+        "requestBytes": 247,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "e8815d5ed05de7a8dc91",
+        "observedAt": "2026-09-07T16:11:44.007591Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2007,
+        "requestBytes": 220,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "aa4dabcf0c515e968234",
+        "observedAt": "2026-09-07T16:11:58.149051Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1716,
+        "requestBytes": 246,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "77601dd021ec365fe333",
+        "observedAt": "2026-09-07T16:12:18.014137Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1148,
+        "requestBytes": 210,
+        "clientPlatform": "extension",
+        "clientVersion": "1.2.37"
+      },
+      {
+        "key": "53ec742672e7bde79ab7",
+        "observedAt": "2026-09-07T16:13:43.439846Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2304,
+        "requestBytes": 228,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "fd8536f8a93c68eda036",
+        "observedAt": "2026-09-07T16:13:45.631818Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2004,
+        "requestBytes": 211,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "af829eb4afcf4c663ab0",
+        "observedAt": "2026-09-07T16:17:42.058966Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1697,
+        "requestBytes": 190,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      {
+        "key": "a043a91c577cd7b681e7",
+        "observedAt": "2026-09-07T16:18:46.146869Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1753,
+        "requestBytes": 212,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      }
+    ],
+    "disconnectionIncreaseReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-disconnection-increase.json",
+    "terminalOccurrenceSupplement": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-terminal-occurrences.json",
+    "knownFrozenVersionMismatchPreserved": true,
+    "cumulativeCoverage": {
+      "complete": true,
+      "journalParseErrors": 0,
+      "journalRowLimitReached": false,
+      "shards": [
+        {
+          "startInclusive": "2026-09-06T18:37:52.522573Z",
+          "endExclusive": "2026-09-06T21:37:52.522573Z",
+          "journalRowsRead": 25926,
+          "selectedHalfOpenRows": 25926,
+          "journalParseErrors": 0,
+          "journalRowLimitReached": false
+        },
+        {
+          "startInclusive": "2026-09-06T21:37:52.522573Z",
+          "endExclusive": "2026-09-07T00:37:52.522573Z",
+          "journalRowsRead": 13566,
+          "selectedHalfOpenRows": 13566,
+          "journalParseErrors": 0,
+          "journalRowLimitReached": false
+        },
+        {
+          "startInclusive": "2026-09-07T00:37:52.522573Z",
+          "endExclusive": "2026-09-07T03:37:52.522573Z",
+          "journalRowsRead": 38751,
+          "selectedHalfOpenRows": 38751,
+          "journalParseErrors": 0,
+          "journalRowLimitReached": false
+        },
+        {
+          "startInclusive": "2026-09-07T03:37:52.522573Z",
+          "endExclusive": "2026-09-07T06:37:52.522573Z",
+          "journalRowsRead": 108493,
+          "selectedHalfOpenRows": 108493,
+          "journalParseErrors": 0,
+          "journalRowLimitReached": false
+        },
+        {
+          "startInclusive": "2026-09-07T06:37:52.522573Z",
+          "endExclusive": "2026-09-07T09:37:52.522573Z",
+          "journalRowsRead": 35216,
+          "selectedHalfOpenRows": 35216,
+          "journalParseErrors": 0,
+          "journalRowLimitReached": false
+        },
+        {
+          "startInclusive": "2026-09-07T09:37:52.522573Z",
+          "endExclusive": "2026-09-07T12:37:52.522573Z",
+          "journalRowsRead": 47968,
+          "selectedHalfOpenRows": 47968,
+          "journalParseErrors": 0,
+          "journalRowLimitReached": false
+        },
+        {
+          "startInclusive": "2026-09-07T12:37:52.522573Z",
+          "endExclusive": "2026-09-07T15:37:52.522573Z",
+          "journalRowsRead": 174672,
+          "selectedHalfOpenRows": 174672,
+          "journalParseErrors": 0,
+          "journalRowLimitReached": false
+        },
+        {
+          "startInclusive": "2026-09-07T15:37:52.522573Z",
+          "endExclusive": "2026-09-07T16:25:51.808000Z",
+          "journalRowsRead": 72268,
+          "selectedHalfOpenRows": 72268,
+          "journalParseErrors": 0,
+          "journalRowLimitReached": false
+        }
+      ],
+      "reassembledBeforeConsoleParsing": true,
+      "boundaryPolicy": "Exactly adjacent half-open timestamp shards are concatenated in journal order; console blocks are parsed only after reassembly."
+    },
+    "cumulativeSource": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-complete-cumulative.json",
+    "legacyAcceptanceSnapshotTruncated": true,
+    "journalRows": 516860
+  },
+  "cnTts": {
+    "parsedCumulativeStatuses": {
+      "200": 3207,
+      "499": 2,
+      "502": 2
+    },
+    "incrementalStatuses": {
+      "200": 72,
+      "499": 0,
+      "502": 0
+    },
+    "baseline": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/backend-supply/cn-backend-supply.json",
+    "unparsedFileLines": 88,
+    "rotationCoverageSupplement": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/cn-rotated-ingress.json",
+    "knownMaintenance502Count": 2,
+    "new502": 0,
+    "publicationAvailabilityGapClosed": false,
+    "existingProbeSeries": {
+      "schema": "castreader.cn-existing-probe-timing-series.v1",
+      "readOnly": true,
+      "productionModified": false,
+      "synthesisStarted": false,
+      "rawContentExported": false,
+      "startUTC": "2026-09-07T15:25:51.573000Z",
+      "endUTCExclusive": "2026-09-07T16:25:51.808000Z",
+      "capturedAtUTC": "2026-09-07T16:27:10.783621Z",
+      "rows": [
+        {
+          "observedAtUTC": "2026-09-07T15:26:11.975000Z",
+          "elapsedMs": 12208,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "e8cc7637bea61f0aa078a026827412f4f8f8f7dd9c2dd0b36d8ad373aa8d8d55",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:31:12.586000Z",
+          "elapsedMs": 2818,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "4e17f67c3944b5db9e403b698705ced71801f17eb9e6b3a7c50279882c91ab8c",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:36:28.034000Z",
+          "elapsedMs": 2749,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "3860f52067a9faf9256b096cb3b1111eafb14aa012bf9a90a47ab6cf7ea768c0",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:41:42.406000Z",
+          "elapsedMs": 2636,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "7df31e6ae0faee9edcb1a617c3099fd61776645284fddc7ff4d3ef0b24ba4d75",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:46:52.455000Z",
+          "elapsedMs": 2686,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "374e71f31eb0726ae1c906308cc226130b254099afcd5e440595c60b77df7eff",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:52:02.418000Z",
+          "elapsedMs": 2647,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "1d577523613d15d191a3fcb91a86ead7ddbb0ffb462a9095fd69abba6fc958c7",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T15:57:03.943000Z",
+          "elapsedMs": 2533,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "5c0524486595593e1f653022f521001668320a9ad1b2e322e420d5777bed5cf9",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T16:02:22.313000Z",
+          "elapsedMs": 2543,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "3d4f4b0bdb4fa4469aebcad4ea8927d2a7cb05bff2f4e573ec76fc3a3b4f2ecd",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T16:07:42.695000Z",
+          "elapsedMs": 2926,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "bfd63cd098f2037e3256931707c44e443038caaf7afa5eb8904fea5ea1b16288",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T16:13:02.282000Z",
+          "elapsedMs": 2513,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "13c4f7fa35a39dccd487db815a63c9f2ba33e29cbbf8e572442c6db324f6f04c",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T16:18:13.509000Z",
+          "elapsedMs": 3739,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "a4941bd2799aad9a50a85b79ce58f49fb823c5c3cac1ec33a50f2701cb46778f",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T16:23:23.708000Z",
+          "elapsedMs": 3940,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "d830fd242653f623d6f1250dcdf1357ca06307a13ba67a601169dd250a5ea54a",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        }
+      ],
+      "limitations": [
+        "Each duration is a whole synthetic continuity probe, including multiple requests/contracts and local checks; it is not real-user TTFB or one model request.",
+        "Uses already persisted results only; no probes were started."
+      ],
+      "collectorHelperSha256": "be7224c90b9e824931089892a76131782807730d204ed4241effccba40ebacb8"
+    },
+    "wholeProbeIsModelTTFB": false
+  },
+  "proxyAttribution": {
+    "globalExactMatched": 1807,
+    "directExactMatched": 1926,
+    "remainingUnattributedGroups": 1,
+    "source": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/reverse-attribution.json"
+  },
+  "runtimeComparisonsToPreviousSnapshot": {
+    "usQuickreadUnchanged": true,
+    "cnQuickreadUnchanged": true,
+    "cnServiceUnitsUnchanged": true,
+    "usCloneProcessUnchanged": true,
+    "usNariProcessUnchanged": true,
+    "directSourceUnchanged": true,
+    "directProcessUnchanged": true,
+    "globalDeploymentUnchanged": true
+  },
+  "models": {
+    "us": {
+      "release": "20260907-kokoro-japanese-numbers-us-r135",
+      "identityVerified": true,
+      "diagnosticWindow": {
+        "startUTC": "2026-09-07T15:25:51.573Z",
+        "endUTCExclusive": "2026-09-07T16:25:51.808Z"
+      },
+      "fixedStageCounts": {
+        "japanese_numeric_text_recovered": 2,
+        "source_frontend_unavailable": 1,
+        "silent_separator_skipped": 3,
+        "english_g2p_recovered": 2
+      },
+      "failureEvents": [],
+      "successLedgerComplete": false
+    },
+    "cn": {
+      "release": "20260907-kokoro-japanese-numbers-cn-r135",
+      "identityVerified": true,
+      "diagnosticWindow": {
+        "startUTC": "2026-09-07T15:25:51.573Z",
+        "endUTCExclusive": "2026-09-07T16:25:51.808Z"
+      },
+      "fixedStageCounts": {},
+      "failureEvents": [],
+      "successLedgerComplete": false
+    }
+  },
+  "optionalFrontendReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/frontend-recovery-attribution.json",
+  "existingProbes": {
+    "us": {
+      "cycles": 252,
+      "statusCounts": {
+        "healthy": 252
+      },
+      "newHealthyCycles": 11,
+      "newSupplyFailedCycles": 0,
+      "regionMismatchCycles": 0,
+      "lastCompletedUTC": "2026-09-07T16:23:18.867Z",
+      "currentConsecutiveFailures": 0
+    },
+    "cn": {
+      "cycles": 252,
+      "statusCounts": {
+        "healthy": 251,
+        "supply_failed": 1
+      },
+      "newHealthyCycles": 11,
+      "newSupplyFailedCycles": 0,
+      "regionMismatchCycles": 0,
+      "lastCompletedUTC": "2026-09-07T16:23:23.708Z",
+      "currentConsecutiveFailures": 0
+    }
+  },
+  "quickread": {
+    "us": {
+      "incrementalFixedTagCounts": {
+        "[pro-gate] allow": 24
+      },
+      "knownFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-06T21:42:46+00:00",
+          "tag": "fast-block0 error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T03:46:40+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "newFixedErrorRecords": [],
+      "readyFileOutcomes": {
+        "modifiedFiles": 191,
+        "allBlocks": 155,
+        "partialReady": 36
+      },
+      "backendVerdict": "有新增ready结果，无新增固定错误；完整HTTP交付仍缺证据"
+    },
+    "cn": {
+      "incrementalFixedTagCounts": {},
+      "knownFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-07T03:09:52.512816+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T09:41:31.662448+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T13:20:18.370924+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T14:50:04.544195+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "newFixedErrorRecords": [],
+      "readyFileOutcomes": {
+        "modifiedFiles": 29,
+        "allBlocks": 24,
+        "partialReady": 5
+      },
+      "backendVerdict": "无新增放行或固定错误，ready结果保持29；完整HTTP交付仍缺证据"
+    }
+  },
+  "clone": {
+    "us": {
+      "incrementalEvents": [],
+      "startupHealthCounters": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 64,
+        "submitted": 670,
+        "completed": 670,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.03,
+        "queue_wait_p95_ms": 25.4,
+        "run_p50_ms": 572.71,
+        "run_p95_ms": 1640.62
+      },
+      "backendVerdict": "本轮无新增生成任务，历史生成成功保留；新窗口完整交付证据不足"
+    },
+    "cn": {
+      "startupHealthCounters": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 32,
+        "submitted": 4,
+        "completed": 4,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.08,
+        "queue_wait_p95_ms": 0.17,
+        "run_p50_ms": 381.57,
+        "run_p95_ms": 1829.4
+      },
+      "backendVerdict": "证据不足：本轮无新生成样本"
+    }
+  },
+  "preservedIssues": [
+    "历史Global504的逐阶段归因与持续恢复",
+    "中国区慢探针分项耗时证据",
+    "QuickRead US2/CN1 request_disconnected及交付日志缺口",
+    "中国区模型发布空窗",
+    "Direct独立版本变更、旧代理过渡区间覆盖缺口"
+  ],
+  "limitations": [
+    "HTTP200 and ready files do not certify full user playback or complete QuickRead/clone delivery.",
+    "All33 Direct disconnections have downstream_closed and upstream_headers; initial trigger and user intent remain unknown. One repeated key also has a later HTTP200 occurrence; both are retained.",
+    "One Global request has complete application response and upstream_complete but no proxy request_finished diagnostic; do not infer a13-minute running request or model timeout from the missing terminal event.",
+    "No new clone tasks means insufficient current-window samples, not new service failure.",
+    "Provider pagination does not prove complete log ingestion.",
+    "Original250k Direct read remains truncated; eight adjacent3h journal shards are reassembled before parsing to preserve console blocks across boundaries.",
+    "Cumulative existing probes are collected at a later time than the exact proxy window.",
+    "Old faults, region audit limitations and the mixed-version fixed window are preserved."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/backend-supply/cn-backend-supply.json",
+      "sha256": "ea7f6b734e37598a13d6d52dc6c0ed0ffb7daa3664634f41667034ede0f8aac8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/backend-supply/us-backend-supply.json",
+      "sha256": "e3eb6841ab8ae95a96a2b4f1d7740342545819ea21bc1f84a2a78841ec7efad5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/backend-supply/us-gpu-backend-supply.json",
+      "sha256": "b4bd40dfc3e415fecb7a30255e4f857584dc9a190bcd4cb0dc3d6d58e07e2ef2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/cn-probe-timing-series.json",
+      "sha256": "391d1bc36abdbac5b5621c575ece9a084c7459d5c336917149b0c1fcaade8f54"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/cn-r135-model.json",
+      "sha256": "b72f1a1cf7bae25860b37ac39309f68c4d56b287a942b70eead76f7a535cecc6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/cn-rotated-ingress.json",
+      "sha256": "3e3ec1b7504ba004b6a8a02144221a61218eeea9c6d911888da9c7126502cb10"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-complete-cumulative.json",
+      "sha256": "63131796a86391c7a2a349fbdc0ba75efe7ccc36813f5c66609e3bdff1eb0fe3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-disconnection-increase.json",
+      "sha256": "ea1c97bf820be00d6dc07c43204fefe6eed52368a33345f66e02e237f613423c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-terminal-occurrences.json",
+      "sha256": "bb402af49369f7eab9603c671acb266f580ff6119cdd6bc5910d5b31288ceb8b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-version-requests.json",
+      "sha256": "9d8d7dd38a18acef9625736ebe047e9cca18e88b73271cb7a93abefb80b5ae17"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/frontend-recovery-attribution.json",
+      "sha256": "7b605020f6540bf7f7749e75db96e0a1a8d524159d0b53629dc84950d00c602b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/latest-acceptance.json",
+      "sha256": "c17ebedd807c7920b8bc9291c0ef8440ab218a57e1c314350255bae7648bca23"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/proxy-window.json",
+      "sha256": "abdc9c4b074b97d4016efc3e52e9ac2a361e34d1e90eac98ff800d89526a5ce6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/quickread-disconnect-review.json",
+      "sha256": "b0dd260b81faa118144162c2f20f1451bc0ebc71614b0572ba39359da89a124a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/reverse-attribution.json",
+      "sha256": "47bf44dc9ad6f384c1fc11f8d00efff33daf3ca99d6a8d14ae627179199e86df"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/us-frontend-recovery-detail.json",
+      "sha256": "619fd6c65a6edc6b44adf4a057bbd982ddf0b303a52d992b5007486bde40bdd5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/us-r135-model.json",
+      "sha256": "ccda321e4ae21540edaf15d2b189c76eabf3885f3c3aa1c9abbb0146a55fc805"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/vercel-preset.json",
+      "sha256": "de70389b58eadce8a23a2a403d60906addff810fe3b9953d3c8317fd5907a83a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/vercel-proxy-join.json",
+      "sha256": "6837a5625012bf77a5cc80f5117804a4c81a9a9b28b41e2fc81ea61155f1c25d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/proxy-terminal-gap.json",
+      "sha256": "892c5e13c9b816d4f3e8b1e9c1a7c079c0978d333dd669831f34030406a3083d"
+    }
+  ]
+}

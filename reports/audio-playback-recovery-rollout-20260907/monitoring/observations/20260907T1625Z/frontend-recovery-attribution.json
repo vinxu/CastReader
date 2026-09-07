@@ -1,0 +1,204 @@
+{
+  "schema": "castreader.optional-frontend-window-attribution.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "us": {
+    "rows": [
+      {
+        "diagnostic": {
+          "atUTC": "2026-09-07T15:31:37.180491+00:00",
+          "stage": "japanese_numeric_text_recovered",
+          "requestKey": "f22e6e1e31d95dcbf83f",
+          "causes": []
+        },
+        "matchingProxyGroups": [
+          {
+            "ambiguousRepeatedRequestKey": false,
+            "attempt": 1,
+            "firstUTC": "2026-09-07T15:31:37.175283+00:00",
+            "flightKeys": [
+              "f22e6e1e31d95dcbf83f"
+            ],
+            "lastUTC": "2026-09-07T15:31:37.359624+00:00",
+            "outcomes": {
+              "complete": 1
+            },
+            "phases": [
+              "admission",
+              "completion",
+              "connect",
+              "inbound_body",
+              "response_body",
+              "response_complete",
+              "response_headers"
+            ],
+            "receivedEvents": 1,
+            "requestKey": "af449c9e4575d50d78af"
+          }
+        ],
+        "allGroupsComplete": true
+      },
+      {
+        "diagnostic": {
+          "atUTC": "2026-09-07T15:52:23.442537+00:00",
+          "stage": "source_frontend_unavailable",
+          "requestKey": "96780d8a8060b0015090",
+          "causes": [
+            {
+              "type": "RuntimeError",
+              "frames": [
+                {
+                  "file": "kokoro_v1.py",
+                  "line": 947,
+                  "function": "generate"
+                },
+                {
+                  "file": "compatible_english_timestamps.py",
+                  "line": 125,
+                  "function": "prepare_english_chunks"
+                }
+              ]
+            }
+          ]
+        },
+        "matchingProxyGroups": [
+          {
+            "ambiguousRepeatedRequestKey": false,
+            "attempt": 1,
+            "firstUTC": "2026-09-07T15:52:23.115216+00:00",
+            "flightKeys": [
+              "96780d8a8060b0015090"
+            ],
+            "lastUTC": "2026-09-07T15:52:23.596789+00:00",
+            "outcomes": {
+              "complete": 1
+            },
+            "phases": [
+              "admission",
+              "completion",
+              "connect",
+              "inbound_body",
+              "response_body",
+              "response_complete",
+              "response_headers"
+            ],
+            "receivedEvents": 1,
+            "requestKey": "07061298854bd981ee41"
+          }
+        ],
+        "allGroupsComplete": true
+      },
+      {
+        "diagnostic": {
+          "atUTC": "2026-09-07T15:59:48.952272+00:00",
+          "stage": "japanese_numeric_text_recovered",
+          "requestKey": "0f024901a133b5dfc0b4",
+          "causes": []
+        },
+        "matchingProxyGroups": [
+          {
+            "ambiguousRepeatedRequestKey": false,
+            "attempt": 1,
+            "firstUTC": "2026-09-07T15:59:48.308798+00:00",
+            "flightKeys": [
+              "0f024901a133b5dfc0b4"
+            ],
+            "lastUTC": "2026-09-07T15:59:49.089457+00:00",
+            "outcomes": {
+              "complete": 1
+            },
+            "phases": [
+              "admission",
+              "completion",
+              "connect",
+              "inbound_body",
+              "response_body",
+              "response_complete",
+              "response_headers"
+            ],
+            "receivedEvents": 1,
+            "requestKey": "6007c2f22f58d279f7ce"
+          }
+        ],
+        "allGroupsComplete": true
+      },
+      {
+        "diagnostic": {
+          "atUTC": "2026-09-07T16:01:18.605431+00:00",
+          "stage": "english_g2p_recovered",
+          "requestKey": "bce191e432aa53628ead",
+          "causes": []
+        },
+        "matchingProxyGroups": [
+          {
+            "ambiguousRepeatedRequestKey": false,
+            "attempt": 1,
+            "firstUTC": "2026-09-07T16:01:18.274587+00:00",
+            "flightKeys": [
+              "bce191e432aa53628ead"
+            ],
+            "lastUTC": "2026-09-07T16:01:18.765608+00:00",
+            "outcomes": {
+              "complete": 1
+            },
+            "phases": [
+              "admission",
+              "completion",
+              "connect",
+              "inbound_body",
+              "response_body",
+              "response_complete",
+              "response_headers"
+            ],
+            "receivedEvents": 1,
+            "requestKey": "c4fb5e8a4fa4dbd69057"
+          }
+        ],
+        "allGroupsComplete": true
+      },
+      {
+        "diagnostic": {
+          "atUTC": "2026-09-07T16:25:16.422433+00:00",
+          "stage": "english_g2p_recovered",
+          "requestKey": "3e1700e54c0202f798ec",
+          "causes": []
+        },
+        "matchingProxyGroups": [
+          {
+            "ambiguousRepeatedRequestKey": false,
+            "attempt": 1,
+            "firstUTC": "2026-09-07T16:25:16.095497+00:00",
+            "flightKeys": [
+              "3e1700e54c0202f798ec"
+            ],
+            "lastUTC": "2026-09-07T16:25:16.570578+00:00",
+            "outcomes": {
+              "complete": 1
+            },
+            "phases": [
+              "admission",
+              "completion",
+              "connect",
+              "inbound_body",
+              "response_body",
+              "response_complete",
+              "response_headers"
+            ],
+            "receivedEvents": 1,
+            "requestKey": "e45ec64cc023d2338b6d"
+          }
+        ],
+        "allGroupsComplete": true
+      }
+    ],
+    "allDiagnosticsMatchedComplete": true
+  },
+  "cn": {
+    "rows": [],
+    "newFailureEvents": []
+  },
+  "limitations": [
+    "Two Japanese numeric recovery events matched completed responses; caller origin and population are not inferred.",
+    "Optional source preparation vocabulary warning matched complete response; no user text or audio read."
+  ]
+}

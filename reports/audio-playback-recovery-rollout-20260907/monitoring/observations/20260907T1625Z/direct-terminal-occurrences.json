@@ -1,0 +1,54 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "synthesisStarted": false,
+  "window": {
+    "startUTC": "2026-09-07T15:25:51.573000Z",
+    "endUTCExclusive": "2026-09-07T16:25:51.808000Z"
+  },
+  "journalParseErrors": 0,
+  "journalRowLimitReached": false,
+  "terminalOccurrences": 1932,
+  "statusCountsByOccurrence": {
+    "200": 1899,
+    "None": 33
+  },
+  "repeatedKeyOccurrences": [
+    {
+      "key": "77601dd021ec365fe333",
+      "observedAt": "2026-09-07T16:12:18.014137Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 1148,
+      "requestBytes": 210,
+      "clientPlatform": "extension",
+      "clientVersion": "1.2.37"
+    },
+    {
+      "key": "77601dd021ec365fe333",
+      "observedAt": "2026-09-07T16:12:21.070908Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": 200,
+      "downstreamDisconnected": false,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": null,
+      "abortStage": null,
+      "elapsedMs": 1506,
+      "requestBytes": 210,
+      "clientPlatform": "extension",
+      "clientVersion": "1.2.37"
+    }
+  ],
+  "limitations": [
+    "Repeated caller request keys are separate terminal occurrences; cannot prove they represent one user intention or a successful user retry.",
+    "The legacy cumulative parser deduplicates by key; its original counts are preserved alongside this occurrence supplement."
+  ],
+  "parserSha256": "f6a1c14271f69096e2a18af9d28960eba461bb88d2a070b9a631aa4056fa9acd"
+}

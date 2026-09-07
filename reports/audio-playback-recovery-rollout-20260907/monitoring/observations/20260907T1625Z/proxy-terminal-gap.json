@@ -1,0 +1,103 @@
+{
+  "schema": "castreader.proxy-terminal-diagnostic-gap.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "proxyGroups": [
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T16:12:02.957009+00:00",
+      "flightKeys": [
+        "e27231918bb04ce6a345"
+      ],
+      "lastUTC": "2026-09-07T16:12:03.759257+00:00",
+      "outcomes": {},
+      "phases": [
+        "admission",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "a5616a87462982534d6a"
+    }
+  ],
+  "matchingVercelRequests": [
+    {
+      "vercelRequestKey": "edfe57bb04a0996b635b",
+      "requestStartUTC": "2026-09-07T16:12:02.913000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "a5616a87462982534d6a",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "a5616a87462982534d6a",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "a5616a87462982534d6a",
+          "attempt": 1,
+          "elapsedMs": 812,
+          "attemptElapsedMs": 811,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "a5616a87462982534d6a",
+          "attempt": 1,
+          "elapsedMs": 836,
+          "attemptElapsedMs": 836,
+          "bodyBytes": 229304,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "a5616a87462982534d6a",
+          "attempt": 1,
+          "elapsedMs": 837,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 887,
+      "applicationRequestKeys": [
+        "a5616a87462982534d6a"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    }
+  ],
+  "interpretation": "No request_finished event was collected for this proxy group. The same key has upstream response completion stages and Global request_finished status200. Retain a diagnostic coverage gap, not a model timeout or13-minute active request.",
+  "sourceSnapshots": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/proxy-window.json",
+      "sha256": "abdc9c4b074b97d4016efc3e52e9ac2a361e34d1e90eac98ff800d89526a5ce6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/vercel-preset.json",
+      "sha256": "de70389b58eadce8a23a2a403d60906addff810fe3b9953d3c8317fd5907a83a"
+    }
+  ]
+}

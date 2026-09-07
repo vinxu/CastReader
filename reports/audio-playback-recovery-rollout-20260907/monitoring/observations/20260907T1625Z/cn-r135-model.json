@@ -1,0 +1,114 @@
+{
+  "schema": "castreader.r135-model-readonly-observation.v1",
+  "region": "cn",
+  "release": "20260907-kokoro-japanese-numbers-cn-r135",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T16:27:11.183471+00:00",
+  "window": {
+    "startUTC": "2026-09-07T15:25:51.573Z",
+    "endUTCExclusive": "2026-09-07T16:25:51.808Z"
+  },
+  "identity": {
+    "primary": {
+      "actual": {
+        "pid": 338758,
+        "cwd": "/root/autodl-tmp/castreader-runtime/releases/20260907-kokoro-japanese-numbers-cn-r135",
+        "startTicks": "2046938149",
+        "exe": "/root/miniconda3/bin/python3.12",
+        "argvSha256": "062db979d0deab2ff2b3b78fc6c35a3d733d03c97928c756c14524a8dab42d45"
+      },
+      "matchesFrozen": true
+    },
+    "sourceDigests": {
+      "api/src/inference/kokoro_v1.py": {
+        "actual": {
+          "sha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+          "bytes": 49675
+        },
+        "matchesFrozen": true
+      },
+      "api/src/inference/japanese_numeric_text.py": {
+        "actual": {
+          "sha256": "0a6ce6d888a83bb9aca7597f8e9c9ece68d2f56dbcd1a3a1c74d6912bbfeb207",
+          "bytes": 1783
+        },
+        "matchesFrozen": true
+      },
+      "api/src/inference/english_g2p_recovery.py": {
+        "actual": {
+          "sha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+          "bytes": 6886
+        },
+        "matchesFrozen": true
+      },
+      "api/src/inference/compatible_english_timestamps.py": {
+        "actual": {
+          "sha256": "5aaaa66e015772f8ffae73f915685b7fa58d48e9983e3e0135e2b345a31f3c99",
+          "bytes": 7963
+        },
+        "matchesFrozen": true
+      },
+      "api/src/services/tts_service.py": {
+        "actual": {
+          "sha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+          "bytes": 33974
+        },
+        "matchesFrozen": true
+      },
+      "api/src/services/streaming_audio_writer.py": {
+        "actual": {
+          "sha256": "752274ecd95d5427e8e3f0dd7c9913417dd2eda4a08518f51f177ea7694aecc5",
+          "bytes": 4356
+        },
+        "matchesFrozen": true
+      },
+      "api/src/routers/development.py": {
+        "actual": {
+          "sha256": "8cf5bd113485d361a6db3a0b82d40941b48c50af4a4f8db5b198e40caddf5cdf",
+          "bytes": 18109
+        },
+        "matchesFrozen": true
+      }
+    },
+    "currentMatchesFrozen": true,
+    "protectedProcesses": {
+      "18890": {
+        "actual": {
+          "pid": 639681,
+          "cwd": "/root",
+          "startTicks": "2020113411",
+          "exe": "/root/miniconda3/bin/python3.12",
+          "argvSha256": "13cf9f6363f3e0840293e9fd5965725549de2e29b8dc132abf0bd29f7df02736"
+        },
+        "matchesFrozen": true
+      },
+      "18094": {
+        "actual": {
+          "pid": 639323,
+          "cwd": "/root",
+          "startTicks": "2020111398",
+          "exe": "/root/miniconda3/bin/python3.12",
+          "argvSha256": "edd41993b3c0d224869ebc898c2dd0d841386a0ead9de6ce95fd36a9e84a1432"
+        },
+        "matchesFrozen": true
+      }
+    },
+    "verified": true
+  },
+  "fixedStageCounts": {},
+  "failureEvents": [],
+  "unclassifiedEvents": 0,
+  "invalidLines": 0,
+  "coverage": [
+    {
+      "name": "playback.jsonl",
+      "bytes": 101299,
+      "sha256": "34b412d7f665c586d2f057ce4e029e27c3209a4aab89ad630dcb124aaab31876"
+    }
+  ],
+  "successLedgerComplete": false,
+  "collectorSha256": "fc8cf1149086578c257e6835eaba5e0c879dc162aa93d5da6a214a15e2b3d055"
+}
