@@ -1,0 +1,15 @@
+{
+  "schema": "castreader.monitor-access-readback.v1",
+  "checkedAtUTC": "2026-09-07T17:37:16.894313+00:00",
+  "additionalAuthorizationRequired": false,
+  "cnBackendReadSucceeded": true,
+  "usBackendReadSucceeded": true,
+  "vercelDetailedReadSucceeded": true,
+  "vercelPagesRead": 20,
+  "productionModified": false,
+  "credentialsExported": false,
+  "existingAutomationId": "24",
+  "automationViewSucceeded": true,
+  "windowUnchanged": true,
+  "history": "Previously recorded local network and saved-login refresh blocks remain archived; current successful reads establish access has recovered, not a production-service recovery."
+}

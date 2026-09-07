@@ -1,0 +1,79 @@
+{
+  "schema": "castreader.cn-rotated-tts-ingress.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-06T18:37:52.522573+00:00",
+    "incrementalStartUTC": "2026-09-07T16:25:51.808000+00:00",
+    "endUTCExclusive": "2026-09-07T17:26:52.003000+00:00"
+  },
+  "sources": [
+    {
+      "path": "/var/log/nginx/access.log.1",
+      "bytes": 4442956,
+      "sha256": "cfdc24ae23cb16a2680cfa783cbb2eca7eaa29a68e5370084c7a8a6cc61debf0",
+      "unparsedLines": 88,
+      "firstParsedUTC": "2026-09-06T16:00:02+00:00",
+      "lastParsedUTC": "2026-09-07T15:59:55+00:00"
+    },
+    {
+      "path": "/var/log/nginx/access.log",
+      "bytes": 207873,
+      "sha256": "cc0665f62e686123c7cc20a17541dae64d0657d7f706a2176d3f4c838f502501",
+      "unparsedLines": 1,
+      "firstParsedUTC": "2026-09-07T16:00:02+00:00",
+      "lastParsedUTC": "2026-09-07T17:27:48+00:00"
+    }
+  ],
+  "orderedFilesHaveNonoverlappingTimestamps": true,
+  "cumulativeStatuses": {
+    "200": 3378,
+    "499": 2,
+    "502": 2
+  },
+  "incrementalStatuses": {
+    "200": 171
+  },
+  "non200Rows": [
+    {
+      "atUTC": "2026-09-07T03:30:24+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "5c0792d0a550e52b167a",
+      "incremental": false
+    },
+    {
+      "atUTC": "2026-09-07T06:55:29+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 502,
+      "lineFingerprint": "9876ec306ed3f6c73556",
+      "incremental": false
+    },
+    {
+      "atUTC": "2026-09-07T06:55:32+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 502,
+      "lineFingerprint": "9d9c91520726039165db",
+      "incremental": false
+    },
+    {
+      "atUTC": "2026-09-07T14:09:46+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "b1ef411125a248a7b68f",
+      "incremental": false
+    }
+  ],
+  "limitations": [
+    "Both retained files are read; original current-file-only snapshot is preserved and not used as a cumulative total.",
+    "Unparsed lines remain a coverage limitation. HTTP200 is not proof of complete playback.",
+    "Ingress log has no request-id join or voice attribution; 499 does not prove the status was delivered to a caller."
+  ],
+  "collectorSha256": "a5c68481195c58687fe769d4346d3e38f238949a4c5aa90735b5abfb283e51ac"
+}

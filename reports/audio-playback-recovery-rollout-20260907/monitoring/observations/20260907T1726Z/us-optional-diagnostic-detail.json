@@ -1,0 +1,16 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "rows": [
+    {
+      "atUTC": "2026-09-07T16:36:30.318616+00:00",
+      "stage": "trim_preserved_complete_pcm",
+      "requestKey": "54bc3e4b72c15efe77d5",
+      "causes": []
+    }
+  ],
+  "scope": "Fixed optional timestamp and trimming diagnostic names taken from reviewed production source; no text or exception messages.",
+  "collectorSha256": "9e926581c3fd863e9cd0bee37818fdc7b12451a92b16efbf2218ce3b0406039e"
+}

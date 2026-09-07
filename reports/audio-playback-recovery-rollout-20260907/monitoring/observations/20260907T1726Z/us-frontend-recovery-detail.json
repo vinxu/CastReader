@@ -1,0 +1,40 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "rows": [
+    {
+      "atUTC": "2026-09-07T16:33:09.252794+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "3ec69127cd264c1d60cf",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T16:37:55.102452+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "a100b6d3544cda523534",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T16:44:55.277926+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "a38d4a7406585d31312e",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T16:49:25.815490+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "9b9ad5f083aba84ee93f",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T17:26:06.644025+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "0840e6617efde08a9600",
+      "causes": []
+    }
+  ],
+  "scope": "Fixed optional source-bookkeeping recovery diagnostics only; no text or exception messages.",
+  "collectorSha256": "5cf914d60f60369935c950e18d2357b10e83a7c5583eaafc7b1a18568b667baf"
+}

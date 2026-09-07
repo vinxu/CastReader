@@ -1,0 +1,181 @@
+{
+  "schema": "castreader.backend-supply-observation.v1",
+  "regionRole": "us-gpu",
+  "window": {
+    "role": "us-gpu",
+    "startUTC": "2026-09-06T18:37:52.522573Z",
+    "endUTC": "2026-09-07T17:26:52.003Z",
+    "incrementalStartUTC": "2026-09-07T16:25:51.808Z"
+  },
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T17:27:55.458758+00:00",
+  "result": {
+    "cloneHealthAfterCutoff": {
+      "httpStatus": 200,
+      "fields": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 64,
+        "submitted": 671,
+        "completed": 671,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.03,
+        "queue_wait_p95_ms": 25.4,
+        "run_p50_ms": 573.07,
+        "run_p95_ms": 1640.62
+      },
+      "observedAtUTC": "2026-09-07T17:27:55.405050+00:00",
+      "counterScope": "Cumulative since current service startup, not window outcomes."
+    },
+    "expectedCloneProcess": {
+      "pid": 568834,
+      "startTicks": "524136804",
+      "cwd": "/workspace/castreader-clone"
+    },
+    "expectedNariProcess": {
+      "pid": 4136837,
+      "startTicks": "519185503",
+      "cwd": "/workspace/nari-qwen3-tts-clean"
+    },
+    "cloneStructuredLog": {
+      "path": "/var/log/portal/castreader-clone.log",
+      "fileBytes": 3939080,
+      "scanOffset": 0,
+      "bytesRead": 3939080,
+      "firstTrustedUTC": "2026-08-25T20:29:06.666956+00:00",
+      "lastTrustedUTC": "2026-09-07T17:15:47.401039+00:00",
+      "wholeFileScanned": true,
+      "windowEvents": [
+        {
+          "event": "captioned_timestamps_built",
+          "kind": "other_or_missing",
+          "count": 493
+        },
+        {
+          "event": "generated_audio_duration_warning",
+          "kind": "other_or_missing",
+          "count": 7
+        },
+        {
+          "event": "generated_audio_fast_path_accepted",
+          "kind": "other_or_missing",
+          "count": 495
+        },
+        {
+          "event": "generated_audio_quality_warning",
+          "kind": "other_or_missing",
+          "count": 2
+        },
+        {
+          "event": "gpu_job_completed",
+          "kind": "captioned-speech",
+          "count": 493
+        },
+        {
+          "event": "gpu_job_completed",
+          "kind": "speech",
+          "count": 2
+        },
+        {
+          "event": "gpu_job_completed",
+          "kind": "voice-denoise-prompt-build",
+          "count": 3
+        },
+        {
+          "event": "xvector_fallback_accepted",
+          "kind": "other_or_missing",
+          "count": 495
+        }
+      ],
+      "incrementalEvents": [
+        {
+          "event": "captioned_timestamps_built",
+          "kind": "other_or_missing",
+          "count": 1
+        },
+        {
+          "event": "generated_audio_fast_path_accepted",
+          "kind": "other_or_missing",
+          "count": 1
+        },
+        {
+          "event": "gpu_job_completed",
+          "kind": "captioned-speech",
+          "count": 1
+        },
+        {
+          "event": "xvector_fallback_accepted",
+          "kind": "other_or_missing",
+          "count": 1
+        }
+      ],
+      "unclassifiedEventCounts": {
+        "otherStructuredEvents": 12
+      },
+      "timings": [
+        {
+          "kind": "captioned-speech",
+          "metric": "queue_wait_ms",
+          "samples": 493,
+          "p50": 0.03,
+          "p95": 27.07,
+          "max": 2234.28
+        },
+        {
+          "kind": "captioned-speech",
+          "metric": "run_ms",
+          "samples": 493,
+          "p50": 578.53,
+          "p95": 1666.88,
+          "max": 2404.94
+        },
+        {
+          "kind": "speech",
+          "metric": "queue_wait_ms",
+          "samples": 2,
+          "p50": 0.04,
+          "p95": 0.05,
+          "max": 0.05
+        },
+        {
+          "kind": "speech",
+          "metric": "run_ms",
+          "samples": 2,
+          "p50": 574.31,
+          "p95": 604.49,
+          "max": 604.49
+        },
+        {
+          "kind": "voice-denoise-prompt-build",
+          "metric": "queue_wait_ms",
+          "samples": 3,
+          "p50": 0.05,
+          "p95": 0.05,
+          "max": 0.05
+        },
+        {
+          "kind": "voice-denoise-prompt-build",
+          "metric": "run_ms",
+          "samples": 3,
+          "p50": 63.19,
+          "p95": 65.2,
+          "max": 65.2
+        }
+      ],
+      "limitation": "Scheduled job completion is not HTTP media completion; unstructured HTTP lines lack trustworthy timestamps."
+    }
+  },
+  "limitations": [
+    "QuickRead has no complete HTTP request ledger; persisted blocks do not prove downstream TTS completion.",
+    "No log-content/body/audio/identity export; counts include unclassified callers and existing probes.",
+    "Current health is outside the fixed cutoff. Readiness and cumulative counters alone cannot prove window success rate."
+  ],
+  "collectorSourceSha256": "ee5436c9e0001a46a4888eed46a01fde592327dfe8eae01170ba05b2c61d5d9e"
+}
