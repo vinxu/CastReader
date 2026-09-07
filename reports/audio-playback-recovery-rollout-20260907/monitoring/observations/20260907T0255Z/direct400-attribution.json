@@ -1,0 +1,56 @@
+{
+  "schema": "castreader.direct-request-validation-attribution.v1",
+  "request": {
+    "abortSource": null,
+    "abortStage": null,
+    "clientPlatform": "unknown",
+    "clientVersion": "unknown",
+    "downstreamDisconnected": false,
+    "downstreamDisconnectedFieldObserved": true,
+    "elapsedMs": 0,
+    "key": "a6d6b93dc8a10d1b9fc3",
+    "method": "POST",
+    "observedAt": "2026-09-07T02:27:33.419072Z",
+    "path": "/api/captioned_speech_partly",
+    "relativeToDirectRelease": "after",
+    "requestBytes": 2,
+    "stage": "request_validation",
+    "status": 400
+  },
+  "classification": "invalid_request_rejected_locally_before_upstream",
+  "http400Preserved": true,
+  "validTtsSupplyFailureEstablished": false,
+  "modelInvokedForThisRequest": false,
+  "confirmedEvidence": [
+    "Logged terminal stage=request_validation, HTTP400, 2-byte body and 0ms elapsed.",
+    "Frozen running-source SHA matches reviewed local source. All status400 exits at that stage are JSON parse/type/input validation; fetch begins only after stage becomes upstream_headers.",
+    "No matching anonymous request key in the complete proxy scan. This supports the static control-flow evidence; absence alone would not prove non-invocation."
+  ],
+  "possibleSubtypes": [
+    "malformed JSON",
+    "non-object or array JSON",
+    "missing or empty string input"
+  ],
+  "exactSubtypeAndCallerKnown": false,
+  "bodyReadForInvestigation": false,
+  "source": {
+    "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-tts-direct-cancellation-20260907/ops/tts-direct-gateway/gateway.mjs",
+    "sha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d"
+  },
+  "lineReferences": {
+    "payloadValidation": 76,
+    "jsonParseValidation": 273,
+    "upstreamStarts": 293,
+    "safeTerminalLog": 382
+  },
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/direct400.json",
+      "sha256": "db7432dd88a8c218ed69b1e0f1b736bcc7ad30ebd13a1c8a657c14a7e2b3ed47"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260907T0255Z.json",
+      "sha256": "19fd195b9ad170c72de88bf8631bf22e36e981a0e919c7e0113c6d5128585d5f"
+    }
+  ]
+}

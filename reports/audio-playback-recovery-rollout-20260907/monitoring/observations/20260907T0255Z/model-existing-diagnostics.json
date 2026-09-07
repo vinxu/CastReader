@@ -1,0 +1,58 @@
+{
+  "schema": "castreader.model-existing-diagnostics-window.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-06T18:37:52.522573Z",
+    "incrementalStartUTC": "2026-09-07T01:55:18.503Z",
+    "endUTCExclusive": "2026-09-07T02:55:18.766Z"
+  },
+  "capturedAtUTC": "2026-09-07T03:00:45.667262+00:00",
+  "releaseId": "20260907-kokoro-silent-separators-us-r134",
+  "files": [
+    {
+      "path": "/workspace/castreader-runtime/logs/playback.jsonl",
+      "bytesAtRead": 4149949,
+      "bytesScanned": 4149949,
+      "parsedTimestampedRows": 7705,
+      "invalidJsonRows": 0,
+      "firstTimestampUTC": "2026-09-04T04:04:14.255055+00:00",
+      "lastTimestampUTC": "2026-09-07T02:56:17.752629+00:00"
+    }
+  ],
+  "sourceDigests": [
+    {
+      "path": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134/api/src/core/playback_diagnostics.py",
+      "bytes": 4134,
+      "sha256": "027cb5fd9ecf2a2dd41a5a20ccb583d04497526c6cf585bb6f285e3edfb2138a"
+    },
+    {
+      "path": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134/api/src/services/tts_service.py",
+      "bytes": 33974,
+      "sha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682"
+    }
+  ],
+  "fixedStageCounts": {
+    "silent_request_audio_ready": 179,
+    "source_frontend_unavailable": 89,
+    "silent_separator_skipped": 5,
+    "trim_preserved_complete_pcm": 8
+  },
+  "incrementalFixedStageCounts": {
+    "silent_request_audio_ready": 23,
+    "trim_preserved_complete_pcm": 7,
+    "source_frontend_unavailable": 2
+  },
+  "unrecognizedStageRows": 29,
+  "fixedTimingFieldSampleCounts": {},
+  "failureEvents": [],
+  "failureEventsTruncated": false,
+  "limitations": [
+    "Diagnostics record failures/degradation/recovery, not a complete successful request ledger.",
+    "Zero stage-specific timing fields cannot isolate queue, inference or encoding.",
+    "Retained files are bounded snapshots; lack of model diagnostics does not establish all-event ingestion completeness."
+  ],
+  "collectorSha256": "0ed839167db28aa37ef9ba3f538cc3631ef7324820c210e01f0c7bea5cb6544c"
+}

@@ -1,0 +1,169 @@
+{
+  "windows": [
+    {
+      "tag": "20260906T2353Z",
+      "sizeBuckets": [
+        {
+          "outputBodySize": "<64KiB",
+          "requestFinishMs": {
+            "samples": 429,
+            "p50": 451,
+            "p95": 1240,
+            "max": 2969
+          }
+        },
+        {
+          "outputBodySize": "64-128KiB",
+          "requestFinishMs": {
+            "samples": 410,
+            "p50": 504,
+            "p95": 1204,
+            "max": 2376
+          }
+        },
+        {
+          "outputBodySize": "128-256KiB",
+          "requestFinishMs": {
+            "samples": 470,
+            "p50": 563,
+            "p95": 1185,
+            "max": 2689
+          }
+        },
+        {
+          "outputBodySize": ">=256KiB",
+          "requestFinishMs": {
+            "samples": 581,
+            "p50": 1096,
+            "p95": 1933,
+            "max": 3728
+          }
+        }
+      ]
+    },
+    {
+      "tag": "20260907T0053Z",
+      "sizeBuckets": [
+        {
+          "outputBodySize": "<64KiB",
+          "requestFinishMs": {
+            "samples": 1195,
+            "p50": 583,
+            "p95": 1742,
+            "max": 3030
+          }
+        },
+        {
+          "outputBodySize": "64-128KiB",
+          "requestFinishMs": {
+            "samples": 893,
+            "p50": 668,
+            "p95": 1643,
+            "max": 2865
+          }
+        },
+        {
+          "outputBodySize": "128-256KiB",
+          "requestFinishMs": {
+            "samples": 675,
+            "p50": 814,
+            "p95": 1979,
+            "max": 2861
+          }
+        },
+        {
+          "outputBodySize": ">=256KiB",
+          "requestFinishMs": {
+            "samples": 691,
+            "p50": 1247,
+            "p95": 3186,
+            "max": 7385
+          }
+        }
+      ]
+    },
+    {
+      "tag": "20260907T0155Z",
+      "sizeBuckets": [
+        {
+          "outputBodySize": "<64KiB",
+          "requestFinishMs": {
+            "samples": 569,
+            "p50": 738,
+            "p95": 2098,
+            "max": 4351
+          }
+        },
+        {
+          "outputBodySize": "64-128KiB",
+          "requestFinishMs": {
+            "samples": 810,
+            "p50": 776,
+            "p95": 2071,
+            "max": 4642
+          }
+        },
+        {
+          "outputBodySize": "128-256KiB",
+          "requestFinishMs": {
+            "samples": 956,
+            "p50": 839,
+            "p95": 2198,
+            "max": 5842
+          }
+        },
+        {
+          "outputBodySize": ">=256KiB",
+          "requestFinishMs": {
+            "samples": 1140,
+            "p50": 1354,
+            "p95": 3409,
+            "max": 7591
+          }
+        }
+      ]
+    },
+    {
+      "tag": "20260907T0255Z",
+      "sizeBuckets": [
+        {
+          "outputBodySize": "<64KiB",
+          "requestFinishMs": {
+            "samples": 733,
+            "p50": 481,
+            "p95": 1756,
+            "max": 3337
+          }
+        },
+        {
+          "outputBodySize": "64-128KiB",
+          "requestFinishMs": {
+            "samples": 781,
+            "p50": 525,
+            "p95": 1662,
+            "max": 3880
+          }
+        },
+        {
+          "outputBodySize": "128-256KiB",
+          "requestFinishMs": {
+            "samples": 882,
+            "p50": 597,
+            "p95": 1659,
+            "max": 3937
+          }
+        },
+        {
+          "outputBodySize": ">=256KiB",
+          "requestFinishMs": {
+            "samples": 863,
+            "p50": 1170,
+            "p95": 2752,
+            "max": 5865
+          }
+        }
+      ]
+    }
+  ],
+  "limitation": "Output response size is not input length, audio duration or model cost; coarse buckets do not isolate workload composition."
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "castreader.backend-observation-validation.v1",
+  "passed": true,
+  "referencedSourcesShaVerified": true,
+  "globalProxyExactMatches": 3259,
+  "previousPendingResolved": 2,
+  "proxyPendingAtCutoff": 0,
+  "rawInitialCNFailureRetained": true,
+  "sameWindowCNReadRecovery": true,
+  "fixedWindowStartAndEndUnchanged": true,
+  "liveTestsOrSynthesisStarted": false,
+  "modelDiagnosticUnknownStageRows": 0,
+  "direct400AttributedWithoutBodyRead": true,
+  "globalNonEmptyBodiesVerified": true,
+  "validationReportSources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/heartbeat-review.json",
+      "sha256": "61d458abc27a39d6bc29ecfcce8d912d9de657696bbd40a34be045a85474a2c7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/backend-review.md",
+      "sha256": "ff512751398914ba9358fc71ece8e7a9010a24eb1fc757bfb057976121128d4e"
+    }
+  ]
+}

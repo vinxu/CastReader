@@ -1,0 +1,2318 @@
+{
+  "schema": "castreader.backend-vercel-proxy-join-summary.v1",
+  "window": {
+    "requestStartInclusiveUTC": "2026-09-07T01:55:18.503Z",
+    "requestStartExclusiveUTC": "2026-09-07T02:55:18.766Z"
+  },
+  "coverage": {
+    "vercel": {
+      "pagesRead": 67,
+      "providerHasMoreRows": false,
+      "issues": [],
+      "completeForReturnedRequestCohort": true,
+      "paginationMode": "two_adjacent_half_open_windows_with_independent_backward_pagination",
+      "tlsCertificateAndHostnameVerified": true,
+      "providerRowsRead": 3324,
+      "uniqueProviderRequests": 3259,
+      "parserCounts": {
+        "duplicateProviderRows": 65,
+        "duplicateSafeEvents": 325
+      },
+      "requestsMissingStartOrFinish": 0,
+      "structuredEventsObserved": true,
+      "ingestionCompletenessVerified": false
+    },
+    "proxyCoversWindow": true,
+    "proxyRuntimeVerified": true,
+    "proxyCoverageComplete": true,
+    "proxyAnonymousRequestsTruncated": false,
+    "proxyEventDetailTruncationIgnoredForJoin": false
+  },
+  "counts": {
+    "attempts": 3259,
+    "matched": 3259,
+    "ambiguous": 0,
+    "matchedProxyComplete": 3259
+  },
+  "vercelStatusCounts": {
+    "200": 3258,
+    "None": 1
+  },
+  "events": {
+    "events": {
+      "request_start": 3259,
+      "attempt_start": 3259,
+      "upstream_headers": 3259,
+      "upstream_body": 3259,
+      "request_finished": 3259
+    },
+    "failureCodes": {},
+    "terminalCodes": {},
+    "attemptStarts": {
+      "1": 3259
+    }
+  },
+  "elapsedMsFromRequestStart": {
+    "upstream_headers": {
+      "samples": 3259,
+      "p50": 638,
+      "p95": 2022,
+      "max": 5815
+    },
+    "upstream_body": {
+      "samples": 3259,
+      "p50": 664,
+      "p95": 2062,
+      "max": 5864
+    },
+    "request_finished": {
+      "samples": 3259,
+      "p50": 665,
+      "p95": 2065,
+      "max": 5865
+    }
+  },
+  "bodySamples": 3259,
+  "nonEmptyBodySamples": 3259,
+  "ambiguousMatches": [],
+  "boundaryRequests": [],
+  "carryoverProxyCompletions": [
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": null,
+      "firstUTC": "2026-09-07T01:55:18.902525+00:00",
+      "flightKeys": [
+        "a5fe4645cb7c45a6a623"
+      ],
+      "lastUTC": "2026-09-07T01:55:18.902998+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "completion",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 0,
+      "requestKey": "16ee225545b79d2da025"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T01:55:19.490265+00:00",
+      "flightKeys": [
+        "67399fdfb7e36f2b3600"
+      ],
+      "lastUTC": "2026-09-07T01:55:19.505679+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "completion",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 0,
+      "requestKey": "86a7dd92a2e508264581"
+    }
+  ],
+  "previousPendingResolvedWithFlightKey": [
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": null,
+      "firstUTC": "2026-09-07T01:55:18.902525+00:00",
+      "flightKeys": [
+        "a5fe4645cb7c45a6a623"
+      ],
+      "lastUTC": "2026-09-07T01:55:18.902998+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "completion",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 0,
+      "requestKey": "16ee225545b79d2da025"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T01:55:19.490265+00:00",
+      "flightKeys": [
+        "67399fdfb7e36f2b3600"
+      ],
+      "lastUTC": "2026-09-07T01:55:19.505679+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "completion",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 0,
+      "requestKey": "86a7dd92a2e508264581"
+    }
+  ],
+  "pendingProxyGroups": [],
+  "unrepresentedProxyGroupsByAttempt": {
+    "None": 788,
+    "1": 93
+  },
+  "unrepresentedProxyAdmissionsByAttempt": {
+    "None": 788,
+    "1": 93
+  },
+  "unrepresentedAttempt1Groups": [
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:31:57.296820+00:00",
+      "flightKeys": [
+        "5b3cb29c5ca909f5e0cd"
+      ],
+      "lastUTC": "2026-09-07T02:31:59.511090+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "b6c80aa14560245177be"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:31:57.872981+00:00",
+      "flightKeys": [
+        "41d262bb20d5598aa425"
+      ],
+      "lastUTC": "2026-09-07T02:31:58.319766+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "75af72f65d5294b883cb"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:31:58.390930+00:00",
+      "flightKeys": [
+        "8b320635cde6a91e43fe"
+      ],
+      "lastUTC": "2026-09-07T02:32:00.447886+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "41838261903c9a93c6ac"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:31:59.490464+00:00",
+      "flightKeys": [
+        "ff68e361e4f644cca051"
+      ],
+      "lastUTC": "2026-09-07T02:32:00.022323+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "28b51c16515fa4cb3c6c"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:32:00.204933+00:00",
+      "flightKeys": [
+        "e4b8fcfe38993a60cd4f"
+      ],
+      "lastUTC": "2026-09-07T02:32:00.590428+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "93e4cf6fd5cf4998521f"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:32:20.281119+00:00",
+      "flightKeys": [
+        "c80729147ad80de35db7"
+      ],
+      "lastUTC": "2026-09-07T02:32:20.666653+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "1907950d2d93dce93d0d"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:32:20.636043+00:00",
+      "flightKeys": [
+        "e6d167064d27057c600b"
+      ],
+      "lastUTC": "2026-09-07T02:32:21.162560+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "847d1f76f67a07f8bc2c"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:32:21.171143+00:00",
+      "flightKeys": [
+        "f92dc2a1be98dbe88a3a"
+      ],
+      "lastUTC": "2026-09-07T02:32:21.290885+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "aec4b6364d44f4cc6c6f"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:32:21.461784+00:00",
+      "flightKeys": [
+        "962ddc53be4b089f0a47"
+      ],
+      "lastUTC": "2026-09-07T02:32:22.976787+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "04a45facbe93f8e9b4ea"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:32:21.479781+00:00",
+      "flightKeys": [
+        "5f3cddb6ab2ca57417de"
+      ],
+      "lastUTC": "2026-09-07T02:32:23.395806+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "adf84d7365eff6e2a528"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:32:21.568136+00:00",
+      "flightKeys": [
+        "38fbf59265967e98378e"
+      ],
+      "lastUTC": "2026-09-07T02:32:22.367022+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "fff17a4b91917d5a2c7a"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:32:23.895325+00:00",
+      "flightKeys": [
+        "c62500ded610bc9f93a8"
+      ],
+      "lastUTC": "2026-09-07T02:32:24.287027+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "70c0434ecc520c54d1e6"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:32:23.998136+00:00",
+      "flightKeys": [
+        "c2e49b1fe5e62070fc8d"
+      ],
+      "lastUTC": "2026-09-07T02:32:24.476981+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "ceeada76bd0ca5e98b69"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:34:53.543398+00:00",
+      "flightKeys": [
+        "596382680715d3a368bd"
+      ],
+      "lastUTC": "2026-09-07T02:34:54.000494+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "2337684e11dba52419f7"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:38:25.959060+00:00",
+      "flightKeys": [
+        "71b4bf7b5d4b42082001"
+      ],
+      "lastUTC": "2026-09-07T02:38:26.426951+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "8cd1729b97e3a908a91d"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:38:45.899324+00:00",
+      "flightKeys": [
+        "d7b56a6f748371b6e844"
+      ],
+      "lastUTC": "2026-09-07T02:38:47.774145+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "8ba3135ff17410220ef2"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:38:47.646506+00:00",
+      "flightKeys": [
+        "a2bef1632e08dc8abe2b"
+      ],
+      "lastUTC": "2026-09-07T02:38:47.886208+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "5cb68bab46af9f8e6eb4"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:38:55.540958+00:00",
+      "flightKeys": [
+        "0f4c5fb561f0ae6c6caf"
+      ],
+      "lastUTC": "2026-09-07T02:38:56.017479+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "b25daa7fa3f2fa1eaebb"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:38:57.635582+00:00",
+      "flightKeys": [
+        "c5d144a52e0df02ce390"
+      ],
+      "lastUTC": "2026-09-07T02:38:57.762386+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "e04675dd7c2c231649d7"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:39:03.955358+00:00",
+      "flightKeys": [
+        "2e5c2fa6dbfb84259e82"
+      ],
+      "lastUTC": "2026-09-07T02:39:04.456707+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "14dc6d88d46d8fd402f9"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:39:50.262082+00:00",
+      "flightKeys": [
+        "08ea14084541c96f4651"
+      ],
+      "lastUTC": "2026-09-07T02:39:50.442204+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "c46e0912642b7361c32f"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:39:58.884913+00:00",
+      "flightKeys": [
+        "2e136abb8cefeacbc579"
+      ],
+      "lastUTC": "2026-09-07T02:39:59.907234+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "9da1075dddb86322c1d4"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:39:59.398220+00:00",
+      "flightKeys": [
+        "6bdb66a5e7174b531383"
+      ],
+      "lastUTC": "2026-09-07T02:40:00.755776+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "adcaa3e841e27d9c1d7b"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:39:59.848576+00:00",
+      "flightKeys": [
+        "5f4e150af3f245fae320"
+      ],
+      "lastUTC": "2026-09-07T02:40:00.379175+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "36ddd0e8d78a89e63a90"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:01.001345+00:00",
+      "flightKeys": [
+        "9e91647a0d4022371ef3"
+      ],
+      "lastUTC": "2026-09-07T02:40:01.394561+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "c6cf50883b953304e3f3"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:02.440221+00:00",
+      "flightKeys": [
+        "b8e1c59c4b5774522939"
+      ],
+      "lastUTC": "2026-09-07T02:40:03.217956+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "fb57b8795064f347e2a7"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:39.489187+00:00",
+      "flightKeys": [
+        "64ae962eef3e7fffa615"
+      ],
+      "lastUTC": "2026-09-07T02:40:40.015136+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "2d197aeb01704404c322"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:39.740275+00:00",
+      "flightKeys": [
+        "5b1fec681859dc960d5a"
+      ],
+      "lastUTC": "2026-09-07T02:40:40.614349+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "d3ff418d2ab5aa1b1b67"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:42.307312+00:00",
+      "flightKeys": [
+        "be2a633047555a3855c2"
+      ],
+      "lastUTC": "2026-09-07T02:40:42.411289+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "051edad313aba3d57d7b"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:42.366988+00:00",
+      "flightKeys": [
+        "ff220b2a0eb8c728a7c6"
+      ],
+      "lastUTC": "2026-09-07T02:40:43.396806+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "d96a15d332f1db9ba369"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:45.573588+00:00",
+      "flightKeys": [
+        "d333966dec838747a50f"
+      ],
+      "lastUTC": "2026-09-07T02:40:45.793069+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "1662f41a2ace34b363b2"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:45.957938+00:00",
+      "flightKeys": [
+        "8c96f1735bb492830aa1"
+      ],
+      "lastUTC": "2026-09-07T02:40:46.416559+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "11081f40a1d0459790d9"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:49.712100+00:00",
+      "flightKeys": [
+        "ded02243e251e6a714d9"
+      ],
+      "lastUTC": "2026-09-07T02:40:50.233940+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "a2dbb3f332ee257af89d"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:49.751397+00:00",
+      "flightKeys": [
+        "62bdfe7b8f880ba3620c"
+      ],
+      "lastUTC": "2026-09-07T02:40:52.197828+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "79d3f39ca0acf754c45d"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:49.961540+00:00",
+      "flightKeys": [
+        "13fb6ddae1877014ff64"
+      ],
+      "lastUTC": "2026-09-07T02:40:51.562501+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "9b7db1f8de0cd19bcf9c"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:50.487600+00:00",
+      "flightKeys": [
+        "77bf949c26c4cb64b399"
+      ],
+      "lastUTC": "2026-09-07T02:40:53.041618+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "37fef92b987fe1df7fc9"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:51.695125+00:00",
+      "flightKeys": [
+        "5c53ed87cffb780c71b8"
+      ],
+      "lastUTC": "2026-09-07T02:40:53.579804+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "073f7a7c5da2ca473129"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:53.418067+00:00",
+      "flightKeys": [
+        "62f6cfbd3afe83fd870f"
+      ],
+      "lastUTC": "2026-09-07T02:40:54.072330+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "a31381f088174d4248f1"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:53.885764+00:00",
+      "flightKeys": [
+        "f6fef8e425e8000813a6"
+      ],
+      "lastUTC": "2026-09-07T02:40:54.984812+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "ed56b0947d3a9749fd29"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:54.182438+00:00",
+      "flightKeys": [
+        "3781aa63a41f2342eda5"
+      ],
+      "lastUTC": "2026-09-07T02:40:57.035161+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "34633e83e64e6f74dff4"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:58.541402+00:00",
+      "flightKeys": [
+        "5e9254ba374dad188df3"
+      ],
+      "lastUTC": "2026-09-07T02:40:59.568865+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "be4a0ca0b0c6e945b5f7"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:40:58.611362+00:00",
+      "flightKeys": [
+        "2c9ae445b0065b1fcecd"
+      ],
+      "lastUTC": "2026-09-07T02:41:01.085228+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "96f69de4c392e063db16"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:41:24.920816+00:00",
+      "flightKeys": [
+        "713e4eb5cf65af4e3966"
+      ],
+      "lastUTC": "2026-09-07T02:41:25.634602+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "f10e4b2c7f6d3789f3e7"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:41:26.207926+00:00",
+      "flightKeys": [
+        "2efcd9cbc94024fb3614"
+      ],
+      "lastUTC": "2026-09-07T02:41:26.763175+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "5129a4648d1d26944387"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:18.328562+00:00",
+      "flightKeys": [
+        "a72e08c8353872c5f4fc"
+      ],
+      "lastUTC": "2026-09-07T02:48:18.576933+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "68a98e53de6a7d75ab30"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:19.528266+00:00",
+      "flightKeys": [
+        "987b448b73e5293e8d0e"
+      ],
+      "lastUTC": "2026-09-07T02:48:20.051376+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "f46a92233415b1641f90"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:20.251314+00:00",
+      "flightKeys": [
+        "a99400e823fe00ee657c"
+      ],
+      "lastUTC": "2026-09-07T02:48:21.308401+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "c741af3e0d99129e9f5b"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:20.859705+00:00",
+      "flightKeys": [
+        "b8330b1d54cc42d01115"
+      ],
+      "lastUTC": "2026-09-07T02:48:21.644128+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "6469884ccd9632c6da61"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:21.501685+00:00",
+      "flightKeys": [
+        "246f839c363c79badfb0"
+      ],
+      "lastUTC": "2026-09-07T02:48:22.263596+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "93f4530861ba2158f816"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:21.580099+00:00",
+      "flightKeys": [
+        "ec6ad4f7869c9ec0228d"
+      ],
+      "lastUTC": "2026-09-07T02:48:22.851554+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "bde0ab2aa94f227ddb84"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:22.720816+00:00",
+      "flightKeys": [
+        "fb6ea919f28e4de11f95"
+      ],
+      "lastUTC": "2026-09-07T02:48:23.218396+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "5cead07e80cdeb04b972"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:23.046671+00:00",
+      "flightKeys": [
+        "b4eab46ce3918bc05d5b"
+      ],
+      "lastUTC": "2026-09-07T02:48:23.838572+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "1ac3d75e8a2ca96b7598"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:23.307962+00:00",
+      "flightKeys": [
+        "383348b39cec043d94e7"
+      ],
+      "lastUTC": "2026-09-07T02:48:25.312282+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "a088afd39a1ccd817a09"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:23.928157+00:00",
+      "flightKeys": [
+        "56f2f1583a27b8e39157"
+      ],
+      "lastUTC": "2026-09-07T02:48:24.629093+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "e66fd23ea2923294f0c0"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:24.071112+00:00",
+      "flightKeys": [
+        "977e9a975001d0b0ef5d"
+      ],
+      "lastUTC": "2026-09-07T02:48:27.598016+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "a1823c079857401d538c"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:25.081630+00:00",
+      "flightKeys": [
+        "33bf8fb5d3ea2e1de255"
+      ],
+      "lastUTC": "2026-09-07T02:48:27.097139+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "c4911976231cf378694f"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:25.253133+00:00",
+      "flightKeys": [
+        "72bd4d5e8c08ac374c0c"
+      ],
+      "lastUTC": "2026-09-07T02:48:25.989053+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "8cabc5d0465333428101"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:25.530530+00:00",
+      "flightKeys": [
+        "20d27c572439ad61ffe3"
+      ],
+      "lastUTC": "2026-09-07T02:48:26.637953+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "84d04e285fbce5c2c2d9"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:46.557477+00:00",
+      "flightKeys": [
+        "84f43f58d0fe88a10033"
+      ],
+      "lastUTC": "2026-09-07T02:48:46.727111+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "e97e62eac76a62dbe812"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:47.570947+00:00",
+      "flightKeys": [
+        "d9bcd3b8746b5e5c7bca"
+      ],
+      "lastUTC": "2026-09-07T02:48:47.917052+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "4b6326471f6981524f12"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:53.508126+00:00",
+      "flightKeys": [
+        "b9d6b9eb92d7264660c7"
+      ],
+      "lastUTC": "2026-09-07T02:48:53.658370+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "4b5ed2bd9cbe4173ef02"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:48:54.568935+00:00",
+      "flightKeys": [
+        "72cee80b5604716cea56"
+      ],
+      "lastUTC": "2026-09-07T02:48:54.686590+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "c0c6c349585eb9ce5d5e"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:49:04.471980+00:00",
+      "flightKeys": [
+        "1c0a8a784ff06b8c9e2e"
+      ],
+      "lastUTC": "2026-09-07T02:49:04.840679+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "19d7d1f14cbc88999b4e"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:49:05.852906+00:00",
+      "flightKeys": [
+        "8551412d2125941056ea"
+      ],
+      "lastUTC": "2026-09-07T02:49:05.969510+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "d576b4c1b83ab5595ddc"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:49:06.200880+00:00",
+      "flightKeys": [
+        "6c6339f6ee75f3d859c7"
+      ],
+      "lastUTC": "2026-09-07T02:49:06.642182+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "15d6f40c5b56a91eac97"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:49:06.423645+00:00",
+      "flightKeys": [
+        "ee8bd6bc11bebe6448ac"
+      ],
+      "lastUTC": "2026-09-07T02:49:06.782717+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "ece1bf2cb3949ce513d8"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:49:27.193336+00:00",
+      "flightKeys": [
+        "16df667e21215d3fd570"
+      ],
+      "lastUTC": "2026-09-07T02:49:28.349324+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "7aad011aa38371ad43b7"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:49:30.126940+00:00",
+      "flightKeys": [
+        "a83e8125d37fe14f190f"
+      ],
+      "lastUTC": "2026-09-07T02:49:30.599457+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "7992c1574c291c2b2fc1"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:49:53.498228+00:00",
+      "flightKeys": [
+        "fdccd5d71019676c87b2"
+      ],
+      "lastUTC": "2026-09-07T02:49:55.431345+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "ca2de644048a10d06eb2"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:50:44.983587+00:00",
+      "flightKeys": [
+        "36c3aeab8cd361fde625"
+      ],
+      "lastUTC": "2026-09-07T02:50:45.120227+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "bb10668da27d9a5ebb44"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:50:45.954591+00:00",
+      "flightKeys": [
+        "201d0ad7b1780f155023"
+      ],
+      "lastUTC": "2026-09-07T02:50:46.043409+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "24ea228318458d6ca96b"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:51:15.883782+00:00",
+      "flightKeys": [
+        "88f4d6c7e82c007fb900"
+      ],
+      "lastUTC": "2026-09-07T02:51:16.444871+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "3c7e3375c9223a20b4e3"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:51:41.580095+00:00",
+      "flightKeys": [
+        "0f1f21985a82ad727986"
+      ],
+      "lastUTC": "2026-09-07T02:51:42.744790+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "9853167cb484512173bb"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:52:09.602941+00:00",
+      "flightKeys": [
+        "a8e6a9bc75fccb415682"
+      ],
+      "lastUTC": "2026-09-07T02:52:09.853637+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "36ac892b2f231f2a71c1"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:52:14.543084+00:00",
+      "flightKeys": [
+        "8d1683651bc011c43570"
+      ],
+      "lastUTC": "2026-09-07T02:52:14.940369+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "62221134f039e93d1551"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:52:15.000028+00:00",
+      "flightKeys": [
+        "6e491ffcef6fe758aad6"
+      ],
+      "lastUTC": "2026-09-07T02:52:15.453896+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "951e509ae003f588f006"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:52:33.836679+00:00",
+      "flightKeys": [
+        "8ec0d6026ffc152a619e"
+      ],
+      "lastUTC": "2026-09-07T02:52:35.002639+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "ea712a203a2a2aec7c6a"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:53:18.436794+00:00",
+      "flightKeys": [
+        "f1bca7dbc70257bb82fd"
+      ],
+      "lastUTC": "2026-09-07T02:53:19.713873+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "3b9080611775fc937151"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:53:19.975840+00:00",
+      "flightKeys": [
+        "20b3334c724095562cf8"
+      ],
+      "lastUTC": "2026-09-07T02:53:21.114024+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "29c9862669549a0ac039"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:53:21.612486+00:00",
+      "flightKeys": [
+        "2055874efd7d930182ff"
+      ],
+      "lastUTC": "2026-09-07T02:53:22.935041+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "86de0f7c50c094a2c127"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:53:56.096776+00:00",
+      "flightKeys": [
+        "f2914f10e09b82ba94d9"
+      ],
+      "lastUTC": "2026-09-07T02:53:56.564664+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "db552cbce935c050f371"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:53:56.162274+00:00",
+      "flightKeys": [
+        "46a736cc64c5a5072f8d"
+      ],
+      "lastUTC": "2026-09-07T02:53:57.981249+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "6607a67337bbb2167573"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:54:00.045502+00:00",
+      "flightKeys": [
+        "7ffcc5220f267b29daa5"
+      ],
+      "lastUTC": "2026-09-07T02:54:00.752547+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "ef77157a21a086818470"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:54:03.829830+00:00",
+      "flightKeys": [
+        "62833e65b9e275f33ac5"
+      ],
+      "lastUTC": "2026-09-07T02:54:04.270095+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "eaf8c3edb408117fbf8f"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:54:15.336622+00:00",
+      "flightKeys": [
+        "4ffab36342da994c3f85"
+      ],
+      "lastUTC": "2026-09-07T02:54:15.826148+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "9f4ea94f7c2c3fbab2e2"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:54:24.225152+00:00",
+      "flightKeys": [
+        "a4849d43f2fdf630f5bb"
+      ],
+      "lastUTC": "2026-09-07T02:54:25.320544+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "56da8fe119fe9af5b491"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:54:39.642566+00:00",
+      "flightKeys": [
+        "1c9aa853478f6d26e5bb"
+      ],
+      "lastUTC": "2026-09-07T02:54:40.102065+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "7b0c381d5dfe5716e29f"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:54:43.359851+00:00",
+      "flightKeys": [
+        "74385c44cb2bb52d4c6c"
+      ],
+      "lastUTC": "2026-09-07T02:54:44.415818+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "fe0a80c941f4f84e8de0"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:54:44.632888+00:00",
+      "flightKeys": [
+        "e1e605fb0d71231aa1ba"
+      ],
+      "lastUTC": "2026-09-07T02:54:45.366773+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "6587ceafbe63f4470203"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:54:51.124468+00:00",
+      "flightKeys": [
+        "fa8fb7485b02d7d34ee3"
+      ],
+      "lastUTC": "2026-09-07T02:54:51.551834+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "266170fbe6ce37e0e2f6"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:54:58.683625+00:00",
+      "flightKeys": [
+        "ff337ecf90c1719c065b"
+      ],
+      "lastUTC": "2026-09-07T02:54:59.147259+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "9f162259e37fba3c29b7"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:55:01.436336+00:00",
+      "flightKeys": [
+        "a457cdad13a2cdfa965d"
+      ],
+      "lastUTC": "2026-09-07T02:55:02.555787+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "367539908249cfc679b0"
+    },
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T02:55:08.435525+00:00",
+      "flightKeys": [
+        "2ad5eabe38697b79ecff"
+      ],
+      "lastUTC": "2026-09-07T02:55:08.896672+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "admission",
+        "completion",
+        "connect",
+        "inbound_body",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "27d0549ad4266d481bf9"
+    }
+  ],
+  "limitations": [
+    "Attempt headers cannot identify caller or deployment. Unrepresented requests do not prove a different route or cross-border traffic.",
+    "Complete returned provider pagination is not provider ingestion completeness.",
+    "Provider start timestamps and application elapsedMs cannot be added to infer exact application event wall time."
+  ]
+}

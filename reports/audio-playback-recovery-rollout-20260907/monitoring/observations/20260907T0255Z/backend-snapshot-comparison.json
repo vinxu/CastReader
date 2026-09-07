@@ -1,0 +1,107 @@
+{
+  "schema": "castreader.backend-snapshot-comparison.v2",
+  "current": {
+    "generatedAtUTC": "2026-09-07T02:56:05.405297Z",
+    "directStatusCounts": {
+      "200": 4514,
+      "400": 1,
+      "no_response": 12
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 5914.0,
+      "p50": 511.0,
+      "p95": 1661.0,
+      "samples": 4527
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 96
+    },
+    "cnProbeStatus": {
+      "healthy": 96
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "source_missing",
+        "detail": "collector returned no document",
+        "source": "monitor_cn"
+      }
+    ],
+    "supplementalCNRecoveryUsed": true,
+    "observedSeconds": 29892
+  },
+  "previous": {
+    "generatedAtUTC": "2026-09-07T01:56:20.518805Z",
+    "directStatusCounts": {
+      "200": 3739,
+      "no_response": 12
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 5914.0,
+      "p50": 509.0,
+      "p95": 1657.0,
+      "samples": 3751
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 84
+    },
+    "cnProbeStatus": {
+      "healthy": 85
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [],
+    "supplementalCNRecoveryUsed": false,
+    "observedSeconds": 26307
+  },
+  "historicalWindow": {
+    "generatedAtUTC": "2026-09-07T02:56:05.406898Z",
+    "directStatusCounts": {
+      "200": 10500,
+      "400": 4,
+      "502": 1,
+      "504": 4,
+      "no_response": 15
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 9742.0,
+      "p50": 499.0,
+      "p95": 1561.0,
+      "samples": 10524
+    },
+    "globalCore5xx": 4,
+    "usProbeStatus": {
+      "healthy": 254
+    },
+    "cnProbeStatus": {
+      "healthy": 253
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [],
+    "supplementalCNRecoveryUsed": false,
+    "observedSeconds": 78880
+  },
+  "originalAutomaticVerdictPreserved": true,
+  "excludedFromBackendVerdict": [
+    "mobile",
+    "blog",
+    "payment"
+  ],
+  "collectionRecovery": {
+    "source": "monitor_cn",
+    "originalError": {
+      "complete": false,
+      "detail": "collector_failed_without_exporting_raw_stderr_or_response_body",
+      "errorType": "RuntimeError",
+      "schema": "castreader.acceptance-source-error.v1",
+      "source": "monitor_cn"
+    },
+    "sameExactWindowRecovery": {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/monitor-cn-recovery.json",
+      "sha256": "e9e723bd6e94059cbbffee8850a7726b00e4f4cd622a1232e11dd4056e3bac72"
+    },
+    "originalSnapshotUnchanged": true,
+    "unresolvedBackendCoverageErrors": []
+  }
+}

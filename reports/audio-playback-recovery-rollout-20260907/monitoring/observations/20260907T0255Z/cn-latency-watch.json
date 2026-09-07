@@ -1,0 +1,119 @@
+{
+  "schema": "castreader.cn-probe-latency-watch.v1",
+  "classification": "intermittent_probe_path_latency_unattributed",
+  "windows": [
+    {
+      "tag": "20260906T2353Z",
+      "probeElapsedMs": {
+        "samples": 12,
+        "p50": 2441,
+        "p95": 2950,
+        "max": 2950
+      },
+      "allComplete": true,
+      "allSegmentsFirstAttempt": true,
+      "overTenSeconds": []
+    },
+    {
+      "tag": "20260907T0053Z",
+      "probeElapsedMs": {
+        "samples": 12,
+        "p50": 2664,
+        "p95": 8184,
+        "max": 8184
+      },
+      "allComplete": true,
+      "allSegmentsFirstAttempt": true,
+      "overTenSeconds": []
+    },
+    {
+      "tag": "20260907T0155Z",
+      "probeElapsedMs": {
+        "samples": 11,
+        "p50": 3919,
+        "p95": 31702,
+        "max": 31702
+      },
+      "allComplete": true,
+      "allSegmentsFirstAttempt": true,
+      "overTenSeconds": [
+        {
+          "observedAtUTC": "2026-09-07T01:14:10.569000Z",
+          "elapsedMs": 31702,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "77f9703d65b479f8f43cda931c265628a8a8b39b995367d55b91b24debfb7eb5",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        }
+      ]
+    },
+    {
+      "tag": "20260907T0255Z",
+      "probeElapsedMs": {
+        "samples": 12,
+        "p50": 2987,
+        "p95": 22466,
+        "max": 22466
+      },
+      "allComplete": true,
+      "allSegmentsFirstAttempt": true,
+      "overTenSeconds": [
+        {
+          "observedAtUTC": "2026-09-07T02:00:47.176000Z",
+          "elapsedMs": 21883,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "9c565e11526992b6a2c859f6cf71ce1c74a960f18ff73928569a716554118514",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T02:37:12.239000Z",
+          "elapsedMs": 22466,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "4cbf975e8198369250552beceec043a4575ec0d70cd6072804d4883750e8a47e",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T02:52:36.553000Z",
+          "elapsedMs": 11260,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "b62e7851179c8315701ba3cdee3e1c3f78c75d7d1de5ebc3ef60ee539d6cf813",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        }
+      ]
+    }
+  ],
+  "serverInternalCauseEstablished": false,
+  "requestOrModelTTFBAvailable": false,
+  "limitation": "Whole three-segment probe elapsed includes HTTP, local decode and validation. All successful; it cannot identify which portion slowed or establish user playback interruption.",
+  "source": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/cn-probe-timing-series.json",
+    "sha256": "50d74f4900cc184c4b1d2d79cb90e347ff2249a906f71ff368b79e2c1d8c748f"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema": "castreader.model-diagnostic-coverage-review.v1",
+  "source": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/model-existing-diagnostics-v2.json",
+    "sha256": "2dc4ae904c2443813c04024f297b769b95e9d6aa5189d4db85b542b929c0bb2e"
+  },
+  "fixedFailureEvents": [],
+  "allReturnedStageNamesClassified": true,
+  "queueInferenceEncodingTimingsAvailable": false,
+  "diagnosticSourceMatchesReviewedLocalSource": true,
+  "finding": "Existing R134 diagnostics log failure/degradation/recovery counters, without successful request queue/inference/encoding stage times. This read-only evidence cannot split the previously observed upstream-header wait.",
+  "degradationAndRecoveryCounters": {
+    "silent_request_audio_ready": 179,
+    "source_frontend_unavailable": 89,
+    "english_g2p_recovered": 29,
+    "silent_separator_skipped": 5,
+    "trim_preserved_complete_pcm": 8
+  },
+  "limitation": "source_frontend_unavailable is a recovery-path marker, not by itself a terminal model/HTTP failure; no terminal failure events were captured in this retained window."
+}

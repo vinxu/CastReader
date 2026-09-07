@@ -1,0 +1,79 @@
+{
+  "afterReleaseCount": 1,
+  "beforeReleaseCount": 0,
+  "collectedAtUTC": "2026-09-07T02:58:39.451124Z",
+  "coverage": {
+    "complete": true,
+    "duplicate400Blocks": 0,
+    "firstJournalAtUTC": "2026-09-07T01:55:18.919707Z",
+    "incompleteConsoleBlocks": 0,
+    "journalParseErrors": 0,
+    "journalRowLimitReached": false,
+    "journalRows": 11200,
+    "lastJournalAtUTC": "2026-09-07T02:56:04.547177Z",
+    "logicalBlocks": 800,
+    "malformedRequestBlocks": 0
+  },
+  "currentIdentity": {
+    "sourceBytes": 13665,
+    "sourceMatchesRelease": true,
+    "sourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+    "systemd": {
+      "ActiveState": "active",
+      "ExecMainStartTimestamp": "Sun 2026-09-06 16:51:50 UTC",
+      "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+      "MainPID": "576327",
+      "NRestarts": "0",
+      "SubState": "running"
+    }
+  },
+  "limitations": [
+    "Missing stage/abortSource means not logged, not absence of that stage.",
+    "Old logs omit downstreamDisconnected; the parser default false is replaced with null when the field was not observed.",
+    "Platform/version come from caller-supplied headers.",
+    "No client request/trace key is retained for the three client failures; time proximity cannot establish an exact join.",
+    "Journal timestamp is the request completion/log observation time.",
+    "Current source identity does not assign that version to earlier records."
+  ],
+  "productionModified": false,
+  "provenance": {
+    "directStatusReceiptPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-errors-root-cause-20260906/direct-gateway-release-20260907/status-receipt.json",
+    "directStatusReceiptSha256": "7f75ac995f88e7c955a231e06bc26fc32380cb51231e3e1df4ed789681bce6fd",
+    "helperPath": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/remote_tts_gateway_snapshot.py",
+    "helperSha256": "f6a1c14271f69096e2a18af9d28960eba461bb88d2a070b9a631aa4056fa9acd"
+  },
+  "rawUserDataExported": false,
+  "readOnly": true,
+  "release": {
+    "firstNewTrafficAtUTC": "2026-09-06T16:51:50.888941+00:00",
+    "sourceCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+    "sourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d"
+  },
+  "requests": [
+    {
+      "abortSource": null,
+      "abortStage": null,
+      "clientPlatform": "unknown",
+      "clientVersion": "unknown",
+      "downstreamDisconnected": false,
+      "downstreamDisconnectedFieldObserved": true,
+      "elapsedMs": 0,
+      "key": "a6d6b93dc8a10d1b9fc3",
+      "method": "POST",
+      "observedAt": "2026-09-07T02:27:33.419072Z",
+      "path": "/api/captioned_speech_partly",
+      "relativeToDirectRelease": "after",
+      "requestBytes": 2,
+      "stage": "request_validation",
+      "status": 400
+    }
+  ],
+  "requestsTruncated": false,
+  "schema": "castreader.direct-gateway-400-incident.v1",
+  "status400Count": 1,
+  "synthesisStarted": false,
+  "window": {
+    "endUTCExclusive": "2026-09-07T02:56:05.405297Z",
+    "startUTC": "2026-09-07T01:55:18.503000Z"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "quickreadIdentityUnchanged": {
+    "us": true,
+    "cn": true
+  },
+  "usCloneProcessUnchanged": true,
+  "usNariProcessUnchanged": true,
+  "cnUnitsUnchanged": true,
+  "cloneHealthCounterChanges": {
+    "us": {
+      "submitted": 0,
+      "completed": 0,
+      "failed": 0,
+      "expired": 0
+    },
+    "cn": {
+      "submitted": 0,
+      "completed": 0,
+      "failed": 0,
+      "expired": 0
+    }
+  },
+  "quickreadIncrementalFixedTags": {
+    "us": {
+      "[pro-gate] allow": 27
+    },
+    "cn": {}
+  },
+  "knownDirectDisconnectKeySetUnchanged": true
+}
