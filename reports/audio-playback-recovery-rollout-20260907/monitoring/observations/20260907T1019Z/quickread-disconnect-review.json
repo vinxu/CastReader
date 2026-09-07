@@ -1,0 +1,54 @@
+{
+  "schema": "castreader.quickread-disconnect-window.v1",
+  "newFixedDisconnectRecords": [
+    {
+      "region": "cn",
+      "timestampUTC": "2026-09-07T09:41:31.662448+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "staticCodeMatch": "request_disconnected"
+    }
+  ],
+  "actualHttpStatusesAvailable": false,
+  "callerIntentOrInitialDisconnectCauseKnown": false,
+  "generationFaultEstablished": false,
+  "knownSourceBehavior": "The unchanged request-lifecycle source signals request_disconnected on request abort or response socket close before end; ordinary request close is excluded.",
+  "runtimeIdentity": {
+    "pid": 1608646,
+    "startTicks": "245729048",
+    "cwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+    "serverSourceSha256": "b155806c93c4b098bdc3f6a44ddd2d596d6a7bed5be776af171b4426197ce0b0",
+    "requestLifecycleSourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+  },
+  "source": {
+    "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-quickread-cancellation-recovery-20260905/scripts/video-pipeline/server/request-lifecycle.mjs",
+    "sha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+  },
+  "existingIngressInspection": {
+    "readOnly": true,
+    "productionModified": false,
+    "rawContentExported": false,
+    "synthesisStarted": false,
+    "window": {
+      "startUTC": "2026-09-07T09:19:51.483000+00:00",
+      "endUTCExclusive": "2026-09-07T10:19:51.888000+00:00"
+    },
+    "counts": [],
+    "rows": [],
+    "unparsedFileLines": 75,
+    "limitations": [
+      "This is the existing default ingress log only, not all QuickRead entrypoints.",
+      "No request-id join available; matching timestamps alone are not exact attribution.",
+      "Recorded HTTP200 cannot prove streaming delivery completed."
+    ],
+    "collectorSha256": "d6c16697a8a3fa322c82036e78e84fcff7fa07fe25641b4c37001b79a62fc996"
+  },
+  "nginxLogDiscovery": {
+    "readOnly": true,
+    "configuredAccessLogPaths": [
+      "/var/log/nginx/access.log"
+    ],
+    "matchingQuickReadRowsInExistingDefaultLog": 0
+  },
+  "scope": "One additional instance of the known disconnect class. Do not label it HTTP502, LLM failure, intentional user cancellation or successful playback."
+}

@@ -1,0 +1,19 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "synthesisStarted": false,
+  "window": {
+    "startUTC": "2026-09-07T09:19:51.483000+00:00",
+    "endUTCExclusive": "2026-09-07T10:19:51.888000+00:00"
+  },
+  "counts": [],
+  "rows": [],
+  "unparsedFileLines": 75,
+  "limitations": [
+    "This is the existing default ingress log only, not all QuickRead entrypoints.",
+    "No request-id join available; matching timestamps alone are not exact attribution.",
+    "Recorded HTTP200 cannot prove streaming delivery completed."
+  ],
+  "collectorSha256": "d6c16697a8a3fa322c82036e78e84fcff7fa07fe25641b4c37001b79a62fc996"
+}
