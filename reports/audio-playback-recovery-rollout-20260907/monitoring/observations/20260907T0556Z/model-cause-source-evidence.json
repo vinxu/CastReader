@@ -1,0 +1,438 @@
+{
+  "schema": "castreader.backend-exception-source-evidence.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "collectedAtUTC": "2026-09-07T06:03:57.020736+00:00",
+  "sources": [
+    {
+      "path": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134/api/src/inference/kokoro_v1.py",
+      "found": true,
+      "sha256": "591f6d910fa7c02297cf46f9df9bbfdf7327222d2cce4e96c9c4580f66377d9f",
+      "bytes": 49155,
+      "lines": [
+        {
+          "line": 970,
+          "code": "                    if route.lang_code == \"z\" and not package.matches_voice(voice_name):"
+        },
+        {
+          "line": 971,
+          "code": "                        voice_input = \"zf_001\" if voice_name.startswith(\"zf_\") else \"zm_010\""
+        },
+        {
+          "line": 972,
+          "code": "                else:"
+        },
+        {
+          "line": 973,
+          "code": "                    voice_input = await self._prepare_file_voice(voice, voice_name)"
+        },
+        {
+          "line": 974,
+          "code": "                generator = self._non_english_results("
+        },
+        {
+          "line": 975,
+          "code": "                    pipeline, text, voice_input, model,"
+        },
+        {
+          "line": 976,
+          "code": "                    speed_callable if route.lang_code == \"z\" else speed,"
+        },
+        {
+          "line": 977,
+          "code": "                )"
+        },
+        {
+          "line": 978,
+          "code": ""
+        },
+        {
+          "line": 979,
+          "code": "                for result in generator:"
+        },
+        {
+          "line": 980,
+          "code": "                    if result.audio is not None and result.audio.numel() > 0:"
+        },
+        {
+          "line": 981,
+          "code": "                        if return_timestamps and route.lang_code not in \"ab\":"
+        },
+        {
+          "line": 982,
+          "code": "                            try:"
+        },
+        {
+          "line": 983,
+          "code": "                                result = self._attach_non_english_word_timestamps("
+        },
+        {
+          "line": 984,
+          "code": "                                pipeline,"
+        },
+        {
+          "line": 985,
+          "code": "                                result,"
+        },
+        {
+          "line": 986,
+          "code": "                                # Kikiri's German frontend expands numbers and"
+        },
+        {
+          "line": 1058,
+          "code": "            if current.strip():"
+        },
+        {
+          "line": 1059,
+          "code": "                chunks.append(current.strip())"
+        },
+        {
+          "line": 1060,
+          "code": "            for source in chunks:"
+        },
+        {
+          "line": 1061,
+          "code": "                phonemes, _ = pipeline.g2p(source)"
+        },
+        {
+          "line": 1062,
+          "code": "                if not phonemes:"
+        },
+        {
+          "line": 1063,
+          "code": "                    if any(character.isalnum() for character in source):"
+        },
+        {
+          "line": 1064,
+          "code": "                        raise RuntimeError(\"Speech frontend returned no phonemes\")"
+        },
+        {
+          "line": 1065,
+          "code": "                    continue"
+        },
+        {
+          "line": 1066,
+          "code": "                pieces = list(KokoroV1._phone_chunks(phonemes))"
+        },
+        {
+          "line": 1067,
+          "code": "                for piece in pieces:"
+        },
+        {
+          "line": 1068,
+          "code": "                    with torch.inference_mode():"
+        },
+        {
+          "line": 1069,
+          "code": "                        output = KPipeline.infer(model, piece, pack, speed)"
+        },
+        {
+          "line": 1070,
+          "code": "                    # Split-phone chunks lack a reliable source subspan. Return"
+        },
+        {
+          "line": 1071,
+          "code": "                    # genuine audio with no invented source-word timestamps."
+        },
+        {
+          "line": 1072,
+          "code": "                    yield KPipeline.Result(graphemes=source if len(pieces)==1 else \"\","
+        }
+      ]
+    },
+    {
+      "path": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134/api/src/services/tts_service.py",
+      "found": true,
+      "sha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "bytes": 33974,
+      "lines": [
+        {
+          "line": 178,
+          "code": ""
+        },
+        {
+          "line": 179,
+          "code": "                requires_audio = _requires_generated_audio(chunk_text)"
+        },
+        {
+          "line": 180,
+          "code": "                # Generate audio using pre-warmed model"
+        },
+        {
+          "line": 181,
+          "code": "                if isinstance(backend, KokoroV1):"
+        },
+        {
+          "line": 182,
+          "code": "                    # For Kokoro V1, pass text and voice info with lang_code"
+        },
+        {
+          "line": 183,
+          "code": "                    async with self._language_lock(lang_code, voice_name):"
+        },
+        {
+          "line": 184,
+          "code": "                        for attempt in range(2):"
+        },
+        {
+          "line": 185,
+          "code": "                            pending_audio = []"
+        },
+        {
+          "line": 186,
+          "code": "                            missing_audio = False"
+        },
+        {
+          "line": 187,
+          "code": "                            try:"
+        },
+        {
+          "line": 188,
+          "code": "                                async for chunk_data in self.model_manager.generate("
+        },
+        {
+          "line": 189,
+          "code": "                                        chunk_text,"
+        },
+        {
+          "line": 190,
+          "code": "                                        (voice_name, voice_path),"
+        },
+        {
+          "line": 191,
+          "code": "                                        speed=speed,"
+        },
+        {
+          "line": 192,
+          "code": "                                        lang_code=lang_code,"
+        },
+        {
+          "line": 193,
+          "code": "                                        return_timestamps=return_timestamps,"
+        },
+        {
+          "line": 194,
+          "code": "                                ):"
+        },
+        {
+          "line": 195,
+          "code": "                                    if not isinstance(chunk_data, AudioChunk):"
+        },
+        {
+          "line": 196,
+          "code": "                                        raise RuntimeError(\"Model returned an invalid audio chunk\")"
+        },
+        {
+          "line": 197,
+          "code": "                                    if chunk_data.audio is None or len(chunk_data.audio) == 0:"
+        },
+        {
+          "line": 198,
+          "code": "                                        missing_audio = True"
+        },
+        {
+          "line": 199,
+          "code": "                                        continue"
+        },
+        {
+          "line": 200,
+          "code": "                                    validate_pcm(chunk_data.audio)"
+        },
+        {
+          "line": 201,
+          "code": "                                    pending_audio.append(chunk_data)"
+        },
+        {
+          "line": 202,
+          "code": ""
+        },
+        {
+          "line": 203,
+          "code": "                                # Nothing from this unit is published yet. Retry"
+        },
+        {
+          "line": 204,
+          "code": "                                # the identical full unit once after a late model"
+        },
+        {
+          "line": 205,
+          "code": "                                # error; never accept only its earlier prefix."
+        },
+        {
+          "line": 206,
+          "code": "                                if missing_audio and pending_audio and requires_audio:"
+        },
+        {
+          "line": 207,
+          "code": "                                    raise RuntimeError(\"Model omitted audio within a readable chunk\")"
+        },
+        {
+          "line": 208,
+          "code": "                                if not pending_audio:"
+        },
+        {
+          "line": 209,
+          "code": "                                    if not requires_audio:"
+        },
+        {
+          "line": 210,
+          "code": "                                        return"
+        },
+        {
+          "line": 211,
+          "code": "                                    raise RuntimeError(\"Model returned no audio for a readable chunk\")"
+        },
+        {
+          "line": 212,
+          "code": "                            except Exception as error:"
+        },
+        {
+          "line": 213,
+          "code": "                                event(\"model_unit_retry\" if attempt == 0 else \"model_unit_failed\","
+        },
+        {
+          "line": 214,
+          "code": "                                      error, attempt=attempt+1, text_chars=len(chunk_text),"
+        },
+        {
+          "line": 215,
+          "code": "                                      discarded_chunks=len(pending_audio))"
+        },
+        {
+          "line": 216,
+          "code": "                                if attempt == 0:"
+        },
+        {
+          "line": 217,
+          "code": "                                    await asyncio.sleep(0)"
+        },
+        {
+          "line": 218,
+          "code": "                                    continue"
+        },
+        {
+          "line": 219,
+          "code": "                                raise"
+        },
+        {
+          "line": 220,
+          "code": ""
+        }
+      ]
+    },
+    {
+      "path": "/venv/main/lib/python3.12/site-packages/misaki/ja.py",
+      "found": true,
+      "sha256": "00518acec6b1cd679b031249850094caf37cae4fe987f290b1b9e0fa171dadca",
+      "bytes": 11521,
+      "lines": [
+        {
+          "line": 254,
+          "code": "            return M2P[m]"
+        },
+        {
+          "line": 255,
+          "code": "        # https://en.wikipedia.org/wiki/N_(kana)"
+        },
+        {
+          "line": 256,
+          "code": "        if future:"
+        },
+        {
+          "line": 257,
+          "code": "            future = M2P[future][0]"
+        },
+        {
+          "line": 258,
+          "code": "            if future in 'mpb':"
+        },
+        {
+          "line": 259,
+          "code": "                return 'm' # m before m,p,b"
+        },
+        {
+          "line": 260,
+          "code": "            elif future in 'kɡ':"
+        },
+        {
+          "line": 261,
+          "code": "                return 'ŋ' # ŋ before k,ɡ"
+        },
+        {
+          "line": 262,
+          "code": "            elif future in 'ɲʨʥ':"
+        },
+        {
+          "line": 263,
+          "code": "                return 'ɲ' # ɲ before ɲ,ʨ,ʥ"
+        },
+        {
+          "line": 264,
+          "code": "            elif future in 'ntdɽz':"
+        },
+        {
+          "line": 265,
+          "code": "                return 'n' # n before n,t,d,ɽ,z"
+        },
+        {
+          "line": 266,
+          "code": "        return 'ɴ' # ɴ otherwise"
+        },
+        {
+          "line": 267,
+          "code": ""
+        },
+        {
+          "line": 268,
+          "code": "    def __call__(self, text) -> Tuple[str, Optional[List[MToken]]]:"
+        },
+        {
+          "line": 269,
+          "code": "        if self.cutlet:"
+        },
+        {
+          "line": 270,
+          "code": "            return self.cutlet(text)"
+        },
+        {
+          "line": 271,
+          "code": "        tokens = []"
+        },
+        {
+          "line": 272,
+          "code": "        last_a, last_p = 0, ''"
+        },
+        {
+          "line": 273,
+          "code": "        acc, mcount = None, 0"
+        },
+        {
+          "line": 274,
+          "code": "        for word in pyopenjtalk.run_frontend(text):"
+        },
+        {
+          "line": 275,
+          "code": "            pron, mora_size = word['pron'], word['mora_size']"
+        },
+        {
+          "line": 276,
+          "code": "            chain_flag = word['chain_flag'] == 1 and mora_size > 0 and tokens and tokens[-1]._.mora_size > 0"
+        },
+        {
+          "line": 277,
+          "code": "            if not chain_flag:"
+        }
+      ]
+    },
+    {
+      "path": "/venv/main/lib/python3.12/site-packages/cutlet/cutlet.py",
+      "found": false
+    }
+  ],
+  "limitations": [
+    "Installed dependency files are read without importing or executing model code.",
+    "Source SHA binds file content, while traceback file basenames alone do not identify every installed import path."
+  ],
+  "collectorSourceSha256": "58d1279c362c33a9321e3ea228cd5d870de69cf4895c165e6cab38cdd584b382"
+}

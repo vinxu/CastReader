@@ -1,0 +1,213 @@
+{
+  "schema": "castreader.cn-probe-latency-watch.v4",
+  "probeElapsedMs": {
+    "samples": 12,
+    "p50": 2703,
+    "p95": 12340,
+    "max": 12340
+  },
+  "rows": [
+    {
+      "observedAtUTC": "2026-09-07T04:56:27.782000Z",
+      "elapsedMs": 2491,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "8ef76daba2ca8022fdf6b024028fcc78ecc2179221b6a54d5997f5b46f39a960",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:01:52.109000Z",
+      "elapsedMs": 12340,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "ad1654e51843e21199734e61b5263f3fea373ccdac0720c8674fa5e84c0c0440",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:07:07.626000Z",
+      "elapsedMs": 11722,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "595d6bb8b9b5521304e50a6360b1ebfa8e51afe9d97a69ca5e5c70e10f6493bc",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:12:03.846000Z",
+      "elapsedMs": 2466,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "56fe6dbc4931cc56d23f2b9ef7fcfe7e630ecfbc881b6a11f7508f0d63fffb4b",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:17:22.473000Z",
+      "elapsedMs": 2705,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "85157a1815e892cc02794444bda1b4783849342a16ec1133d042133193f84c52",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:22:25Z",
+      "elapsedMs": 2660,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "05564d22e30861abefcb32ec1bb189abf26e6bb581d72842599e41e96167b734",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:27:42.471000Z",
+      "elapsedMs": 2703,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "52f6850bf091791a513a26df553fa7361e36556e1a876ea193f86dbc9060ea0f",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:32:51.109000Z",
+      "elapsedMs": 2547,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "0c36b532beda770deabb85b956d92014d6fe20c6183ea6362407d85ba64ea493",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:37:56.547000Z",
+      "elapsedMs": 5845,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "462e01f29ed4415011a0df33025ba5d1ff3dd04ba66b4fc75ab384d08dedb90e",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:43:08.968000Z",
+      "elapsedMs": 4917,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "e5f26316af66041f03ca0315faeade408ead67ffe82331984140e9c7a339a800",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:48:11.081000Z",
+      "elapsedMs": 2306,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "d4e5d49c8df971c6b73cd0e68340ecf03f403612aaefd11f257900886741e68d",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:53:28.518000Z",
+      "elapsedMs": 3120,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "b85f63a38c2d345f52b951444dc2aacf1d7b22865ae1b34ced891f978ab80222",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    }
+  ],
+  "overTenSeconds": [
+    {
+      "observedAtUTC": "2026-09-07T05:01:52.109000Z",
+      "elapsedMs": 12340,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "ad1654e51843e21199734e61b5263f3fea373ccdac0720c8674fa5e84c0c0440",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T05:07:07.626000Z",
+      "elapsedMs": 11722,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "595d6bb8b9b5521304e50a6360b1ebfa8e51afe9d97a69ca5e5c70e10f6493bc",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    }
+  ],
+  "serverSlowStageEstablished": false,
+  "limitations": [
+    "Existing three-segment probe totals include HTTP and local decode, not model TTFB. Two new11.722/12.340s cycles completed and are retained alongside older slow cycles."
+  ]
+}

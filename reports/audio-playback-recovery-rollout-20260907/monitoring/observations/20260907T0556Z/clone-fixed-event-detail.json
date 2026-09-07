@@ -1,0 +1,81 @@
+{
+  "schema": "castreader.clone-fixed-event-detail.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-07T04:55:49.447000+00:00",
+    "endUTCExclusive": "2026-09-07T05:56:19.987000+00:00"
+  },
+  "capturedAtUTC": "2026-09-07T06:03:57.486005+00:00",
+  "source": {
+    "path": "/workspace/castreader-clone/app/clone_worker.py",
+    "sha256": "97cb920eadf2c467faa284d910d9ea2e1a35540d0e189de4a4cbbb9ff8e21ab6",
+    "bytes": 106371
+  },
+  "log": {
+    "path": "/var/log/portal/castreader-clone.log",
+    "bytesAtRead": 3514136,
+    "bytesRead": 3514136
+  },
+  "fixedEventCounts": {
+    "voice_reference_quality_passed": 4,
+    "voice_reference_semantic_deferred": 4,
+    "gpu_job_completed": 176,
+    "voice_denoise_selected": 3,
+    "xvector_fallback_accepted": 173,
+    "generated_audio_fast_path_accepted": 173,
+    "captioned_timestamps_built": 171,
+    "voice_denoise_reference_rejected": 1,
+    "generated_audio_duration_warning": 5
+  },
+  "unknownEventCount": 0,
+  "durationWarnings": [
+    {
+      "atUTC": "2026-09-07T05:36:57.235067+00:00",
+      "event": "generated_audio_duration_warning",
+      "blocking": false,
+      "policy": "playback-first-v1",
+      "duration_s": 5.28,
+      "expected_duration_limit_s": 4.8
+    },
+    {
+      "atUTC": "2026-09-07T05:54:13.747384+00:00",
+      "event": "generated_audio_duration_warning",
+      "blocking": false,
+      "policy": "playback-first-v1",
+      "duration_s": 6.96,
+      "expected_duration_limit_s": 5.073
+    },
+    {
+      "atUTC": "2026-09-07T05:55:31.971938+00:00",
+      "event": "generated_audio_duration_warning",
+      "blocking": false,
+      "policy": "playback-first-v1",
+      "duration_s": 7.6,
+      "expected_duration_limit_s": 7.527
+    },
+    {
+      "atUTC": "2026-09-07T05:55:43.536640+00:00",
+      "event": "generated_audio_duration_warning",
+      "blocking": false,
+      "policy": "playback-first-v1",
+      "duration_s": 5.28,
+      "expected_duration_limit_s": 4.255
+    },
+    {
+      "atUTC": "2026-09-07T05:55:46.005151+00:00",
+      "event": "generated_audio_duration_warning",
+      "blocking": false,
+      "policy": "playback-first-v1",
+      "duration_s": 6.56,
+      "expected_duration_limit_s": 4.0
+    }
+  ],
+  "limitations": [
+    "Known event names were taken from static clone source. No voice, job, account, text, audio or arbitrary error values are exported.",
+    "Job completion and nonblocking warning fields do not prove full HTTP delivery."
+  ],
+  "collectorSourceSha256": "c165559c4ff76c3b03999da8cf327233b5d331ae3a3ab5a4aeed3f33cc0dcd5d"
+}

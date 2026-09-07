@@ -1,0 +1,126 @@
+{
+  "schema": "castreader.backend-observation-validation.v2",
+  "referenceChecks": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/latest-acceptance.json",
+      "sha256": "8a4a964e9e05d3c3b12ba8ada82da5593b77ad341797fc923f3a5e9c4310a097",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260907T0556Z.json",
+      "sha256": "5efb39fb6276d67ea9aef23ed606e940e4d90d0ef16d19f96d400e67c95ada2e",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0556Z.json",
+      "sha256": "93531b3bdef2b4eae36de2220caacda5e19557fb5cc8b365f0672f44914df243",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/tts500-cause-review.json",
+      "sha256": "4d1bc4cf8a1c60755676a9cb0e5b3968c662cd2c286620c0e1134187f37e2107",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/vercel-proxy-join-summary.json",
+      "sha256": "4edbf0c985471e8343b26b5cd91d97ddf0a8cdb738035d628806b618bef6980b",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/direct-version-observation.json",
+      "sha256": "204a237344214059b3b1ea92765fb570c0ec4ab4fe009af83aa481dc9ef28b6a",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-identity-comparison.json",
+      "sha256": "32ff2b71bfd716a0176504faac18a5d31b414943dc2ed7217c93c476b1cd5a0b",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/clone-supply-review.json",
+      "sha256": "c502fb7066a292ea908192936ca4d5d09564a56edb7025ce2dada9e029cd08ff",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/latency-watch.json",
+      "sha256": "c5a564eb27125cb5efa0d088af00e14f133e5f2823fc602833d6c4385f7ce739",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/cn-latency-watch.json",
+      "sha256": "8b9ae9e0828936348f03181e359b6954d775e1e75a6ffda5f8d747dc33f8343c",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/us-backend-supply.json",
+      "sha256": "a6408c5cc00ece72024eb5894b781afb539d2b3eb3d347f34f93ac581d90a5f8",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/cn-backend-supply.json",
+      "sha256": "c752cb553c29b2855cc08b2dc4cbe1ca9baf0958132f8b75efb00e5fa9f49d0a",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/us-gpu-backend-supply.json",
+      "sha256": "96b04eab86b7eb8b22c247bc74b388ee45fd5b945d8d24e31d7c374f0ea8f72b",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/proxy-500-window.json",
+      "sha256": "7a63e678a9fc3f5f6829f1530401a4450d11b4983f6d887a10ed035043c4632d",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/model-existing-diagnostics-v3.json",
+      "sha256": "0b9031a4b05aaa3738bb902522a5aada78bf7364679fa8b5fc65a1a63c45f4e7",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/model-cause-source-evidence-v2.json",
+      "sha256": "62bdaa4568b9b707cd2172e6304ba9c0dce1af7409b395233625f2cf76a532af",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-silent-separators-20260907/api/src/inference/kokoro_v1.py",
+      "sha256": "591f6d910fa7c02297cf46f9df9bbfdf7327222d2cce4e96c9c4580f66377d9f",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/clone-fixed-event-detail-v2.json",
+      "sha256": "1262f7868b6465e99eefe03b0a3ae72703de2dd1f0e6bce21aa45321e2910437",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/nari-dynamic-voice-clone-poc/worker/clone_worker.py",
+      "sha256": "97cb920eadf2c467faa284d910d9ea2e1a35540d0e189de4a4cbbb9ff8e21ab6",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-transition.json",
+      "sha256": "76ec29dca3a78b23fe48173e3ecb7e030029d8115b8c0ede932002fe45636f32",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0556Z-part1.json",
+      "sha256": "e782f0c367858e259b40c6c316de4796c72fc4f93cb37a206a445fa14cec4275",
+      "matches": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0556Z-part2.json",
+      "sha256": "764afde3e5045fcaffa79f76617059774a169e66d70ca55b8218f3a342a050d9",
+      "matches": true
+    }
+  ],
+  "allReferencesMatch": true,
+  "jsonFilesParsed": 28,
+  "frozenExpectedStateAndOldArchiveByteIdenticalToHEAD": true,
+  "notificationHistoricalKeysPreserved": true,
+  "newGlobalRequestExactlyJoinsThreeProxyAndModelRequests": true,
+  "sixTerminalAssertionStacksVerified": true,
+  "allCauseSourceFilesFoundInFinalRead": true,
+  "allEventDetailAndDiagnosticsUntruncated": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "clientSourceOrTelemetryInvestigationPerformed": false
+}

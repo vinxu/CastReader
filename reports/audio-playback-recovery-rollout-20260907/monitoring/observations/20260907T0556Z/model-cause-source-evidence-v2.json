@@ -1,0 +1,878 @@
+{
+  "schema": "castreader.backend-exception-source-evidence.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "collectedAtUTC": "2026-09-07T06:04:50.562293+00:00",
+  "sources": [
+    {
+      "path": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134/api/src/inference/kokoro_v1.py",
+      "found": true,
+      "sha256": "591f6d910fa7c02297cf46f9df9bbfdf7327222d2cce4e96c9c4580f66377d9f",
+      "bytes": 49155,
+      "lines": [
+        {
+          "line": 970,
+          "code": "                    if route.lang_code == \"z\" and not package.matches_voice(voice_name):"
+        },
+        {
+          "line": 971,
+          "code": "                        voice_input = \"zf_001\" if voice_name.startswith(\"zf_\") else \"zm_010\""
+        },
+        {
+          "line": 972,
+          "code": "                else:"
+        },
+        {
+          "line": 973,
+          "code": "                    voice_input = await self._prepare_file_voice(voice, voice_name)"
+        },
+        {
+          "line": 974,
+          "code": "                generator = self._non_english_results("
+        },
+        {
+          "line": 975,
+          "code": "                    pipeline, text, voice_input, model,"
+        },
+        {
+          "line": 976,
+          "code": "                    speed_callable if route.lang_code == \"z\" else speed,"
+        },
+        {
+          "line": 977,
+          "code": "                )"
+        },
+        {
+          "line": 978,
+          "code": ""
+        },
+        {
+          "line": 979,
+          "code": "                for result in generator:"
+        },
+        {
+          "line": 980,
+          "code": "                    if result.audio is not None and result.audio.numel() > 0:"
+        },
+        {
+          "line": 981,
+          "code": "                        if return_timestamps and route.lang_code not in \"ab\":"
+        },
+        {
+          "line": 982,
+          "code": "                            try:"
+        },
+        {
+          "line": 983,
+          "code": "                                result = self._attach_non_english_word_timestamps("
+        },
+        {
+          "line": 984,
+          "code": "                                pipeline,"
+        },
+        {
+          "line": 985,
+          "code": "                                result,"
+        },
+        {
+          "line": 986,
+          "code": "                                # Kikiri's German frontend expands numbers and"
+        },
+        {
+          "line": 1058,
+          "code": "            if current.strip():"
+        },
+        {
+          "line": 1059,
+          "code": "                chunks.append(current.strip())"
+        },
+        {
+          "line": 1060,
+          "code": "            for source in chunks:"
+        },
+        {
+          "line": 1061,
+          "code": "                phonemes, _ = pipeline.g2p(source)"
+        },
+        {
+          "line": 1062,
+          "code": "                if not phonemes:"
+        },
+        {
+          "line": 1063,
+          "code": "                    if any(character.isalnum() for character in source):"
+        },
+        {
+          "line": 1064,
+          "code": "                        raise RuntimeError(\"Speech frontend returned no phonemes\")"
+        },
+        {
+          "line": 1065,
+          "code": "                    continue"
+        },
+        {
+          "line": 1066,
+          "code": "                pieces = list(KokoroV1._phone_chunks(phonemes))"
+        },
+        {
+          "line": 1067,
+          "code": "                for piece in pieces:"
+        },
+        {
+          "line": 1068,
+          "code": "                    with torch.inference_mode():"
+        },
+        {
+          "line": 1069,
+          "code": "                        output = KPipeline.infer(model, piece, pack, speed)"
+        },
+        {
+          "line": 1070,
+          "code": "                    # Split-phone chunks lack a reliable source subspan. Return"
+        },
+        {
+          "line": 1071,
+          "code": "                    # genuine audio with no invented source-word timestamps."
+        },
+        {
+          "line": 1072,
+          "code": "                    yield KPipeline.Result(graphemes=source if len(pieces)==1 else \"\","
+        }
+      ]
+    },
+    {
+      "path": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134/api/src/services/tts_service.py",
+      "found": true,
+      "sha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "bytes": 33974,
+      "lines": [
+        {
+          "line": 178,
+          "code": ""
+        },
+        {
+          "line": 179,
+          "code": "                requires_audio = _requires_generated_audio(chunk_text)"
+        },
+        {
+          "line": 180,
+          "code": "                # Generate audio using pre-warmed model"
+        },
+        {
+          "line": 181,
+          "code": "                if isinstance(backend, KokoroV1):"
+        },
+        {
+          "line": 182,
+          "code": "                    # For Kokoro V1, pass text and voice info with lang_code"
+        },
+        {
+          "line": 183,
+          "code": "                    async with self._language_lock(lang_code, voice_name):"
+        },
+        {
+          "line": 184,
+          "code": "                        for attempt in range(2):"
+        },
+        {
+          "line": 185,
+          "code": "                            pending_audio = []"
+        },
+        {
+          "line": 186,
+          "code": "                            missing_audio = False"
+        },
+        {
+          "line": 187,
+          "code": "                            try:"
+        },
+        {
+          "line": 188,
+          "code": "                                async for chunk_data in self.model_manager.generate("
+        },
+        {
+          "line": 189,
+          "code": "                                        chunk_text,"
+        },
+        {
+          "line": 190,
+          "code": "                                        (voice_name, voice_path),"
+        },
+        {
+          "line": 191,
+          "code": "                                        speed=speed,"
+        },
+        {
+          "line": 192,
+          "code": "                                        lang_code=lang_code,"
+        },
+        {
+          "line": 193,
+          "code": "                                        return_timestamps=return_timestamps,"
+        },
+        {
+          "line": 194,
+          "code": "                                ):"
+        },
+        {
+          "line": 195,
+          "code": "                                    if not isinstance(chunk_data, AudioChunk):"
+        },
+        {
+          "line": 196,
+          "code": "                                        raise RuntimeError(\"Model returned an invalid audio chunk\")"
+        },
+        {
+          "line": 197,
+          "code": "                                    if chunk_data.audio is None or len(chunk_data.audio) == 0:"
+        },
+        {
+          "line": 198,
+          "code": "                                        missing_audio = True"
+        },
+        {
+          "line": 199,
+          "code": "                                        continue"
+        },
+        {
+          "line": 200,
+          "code": "                                    validate_pcm(chunk_data.audio)"
+        },
+        {
+          "line": 201,
+          "code": "                                    pending_audio.append(chunk_data)"
+        },
+        {
+          "line": 202,
+          "code": ""
+        },
+        {
+          "line": 203,
+          "code": "                                # Nothing from this unit is published yet. Retry"
+        },
+        {
+          "line": 204,
+          "code": "                                # the identical full unit once after a late model"
+        },
+        {
+          "line": 205,
+          "code": "                                # error; never accept only its earlier prefix."
+        },
+        {
+          "line": 206,
+          "code": "                                if missing_audio and pending_audio and requires_audio:"
+        },
+        {
+          "line": 207,
+          "code": "                                    raise RuntimeError(\"Model omitted audio within a readable chunk\")"
+        },
+        {
+          "line": 208,
+          "code": "                                if not pending_audio:"
+        },
+        {
+          "line": 209,
+          "code": "                                    if not requires_audio:"
+        },
+        {
+          "line": 210,
+          "code": "                                        return"
+        },
+        {
+          "line": 211,
+          "code": "                                    raise RuntimeError(\"Model returned no audio for a readable chunk\")"
+        },
+        {
+          "line": 212,
+          "code": "                            except Exception as error:"
+        },
+        {
+          "line": 213,
+          "code": "                                event(\"model_unit_retry\" if attempt == 0 else \"model_unit_failed\","
+        },
+        {
+          "line": 214,
+          "code": "                                      error, attempt=attempt+1, text_chars=len(chunk_text),"
+        },
+        {
+          "line": 215,
+          "code": "                                      discarded_chunks=len(pending_audio))"
+        },
+        {
+          "line": 216,
+          "code": "                                if attempt == 0:"
+        },
+        {
+          "line": 217,
+          "code": "                                    await asyncio.sleep(0)"
+        },
+        {
+          "line": 218,
+          "code": "                                    continue"
+        },
+        {
+          "line": 219,
+          "code": "                                raise"
+        },
+        {
+          "line": 220,
+          "code": ""
+        }
+      ]
+    },
+    {
+      "path": "/venv/main/lib/python3.12/site-packages/misaki/ja.py",
+      "found": true,
+      "sha256": "00518acec6b1cd679b031249850094caf37cae4fe987f290b1b9e0fa171dadca",
+      "bytes": 11521,
+      "lines": [
+        {
+          "line": 1,
+          "code": "from .num2kana import Convert"
+        },
+        {
+          "line": 2,
+          "code": "from .token import MToken"
+        },
+        {
+          "line": 3,
+          "code": "from typing import List, Optional, Tuple"
+        },
+        {
+          "line": 4,
+          "code": "import pyopenjtalk"
+        },
+        {
+          "line": 5,
+          "code": "import re"
+        },
+        {
+          "line": 6,
+          "code": ""
+        },
+        {
+          "line": 7,
+          "code": "M2P = {"
+        },
+        {
+          "line": 8,
+          "code": "chr(12449): 'a', #ァ"
+        },
+        {
+          "line": 9,
+          "code": "chr(12450): 'a', #ア"
+        },
+        {
+          "line": 10,
+          "code": "chr(12451): 'i', #ィ"
+        },
+        {
+          "line": 11,
+          "code": "chr(12452): 'i', #イ"
+        },
+        {
+          "line": 12,
+          "code": "chr(12453): 'ɯ', #ゥ"
+        },
+        {
+          "line": 13,
+          "code": "chr(12454): 'ɯ', #ウ"
+        },
+        {
+          "line": 14,
+          "code": "chr(12455): 'e', #ェ"
+        },
+        {
+          "line": 15,
+          "code": "chr(12456): 'e', #エ"
+        },
+        {
+          "line": 16,
+          "code": "chr(12457): 'o', #ォ"
+        },
+        {
+          "line": 17,
+          "code": "chr(12458): 'o', #オ"
+        },
+        {
+          "line": 18,
+          "code": "chr(12459): 'ka', #カ"
+        },
+        {
+          "line": 19,
+          "code": "chr(12460): 'ɡa', #ガ"
+        },
+        {
+          "line": 20,
+          "code": "chr(12461): 'ki', #キ"
+        },
+        {
+          "line": 21,
+          "code": "chr(12462): 'ɡi', #ギ"
+        },
+        {
+          "line": 22,
+          "code": "chr(12463): 'kɯ', #ク"
+        },
+        {
+          "line": 23,
+          "code": "chr(12464): 'ɡɯ', #グ"
+        },
+        {
+          "line": 24,
+          "code": "chr(12465): 'ke', #ケ"
+        },
+        {
+          "line": 25,
+          "code": "chr(12466): 'ɡe', #ゲ"
+        },
+        {
+          "line": 254,
+          "code": "            return M2P[m]"
+        },
+        {
+          "line": 255,
+          "code": "        # https://en.wikipedia.org/wiki/N_(kana)"
+        },
+        {
+          "line": 256,
+          "code": "        if future:"
+        },
+        {
+          "line": 257,
+          "code": "            future = M2P[future][0]"
+        },
+        {
+          "line": 258,
+          "code": "            if future in 'mpb':"
+        },
+        {
+          "line": 259,
+          "code": "                return 'm' # m before m,p,b"
+        },
+        {
+          "line": 260,
+          "code": "            elif future in 'kɡ':"
+        },
+        {
+          "line": 261,
+          "code": "                return 'ŋ' # ŋ before k,ɡ"
+        },
+        {
+          "line": 262,
+          "code": "            elif future in 'ɲʨʥ':"
+        },
+        {
+          "line": 263,
+          "code": "                return 'ɲ' # ɲ before ɲ,ʨ,ʥ"
+        },
+        {
+          "line": 264,
+          "code": "            elif future in 'ntdɽz':"
+        },
+        {
+          "line": 265,
+          "code": "                return 'n' # n before n,t,d,ɽ,z"
+        },
+        {
+          "line": 266,
+          "code": "        return 'ɴ' # ɴ otherwise"
+        },
+        {
+          "line": 267,
+          "code": ""
+        },
+        {
+          "line": 268,
+          "code": "    def __call__(self, text) -> Tuple[str, Optional[List[MToken]]]:"
+        },
+        {
+          "line": 269,
+          "code": "        if self.cutlet:"
+        },
+        {
+          "line": 270,
+          "code": "            return self.cutlet(text)"
+        },
+        {
+          "line": 271,
+          "code": "        tokens = []"
+        },
+        {
+          "line": 272,
+          "code": "        last_a, last_p = 0, ''"
+        },
+        {
+          "line": 273,
+          "code": "        acc, mcount = None, 0"
+        },
+        {
+          "line": 274,
+          "code": "        for word in pyopenjtalk.run_frontend(text):"
+        },
+        {
+          "line": 275,
+          "code": "            pron, mora_size = word['pron'], word['mora_size']"
+        },
+        {
+          "line": 276,
+          "code": "            chain_flag = word['chain_flag'] == 1 and mora_size > 0 and tokens and tokens[-1]._.mora_size > 0"
+        },
+        {
+          "line": 277,
+          "code": "            if not chain_flag:"
+        }
+      ]
+    },
+    {
+      "path": "/venv/main/lib/python3.12/site-packages/misaki/cutlet.py",
+      "found": true,
+      "sha256": "7695fc7d853ae4e99679dff4ca0c8404d4804a6fb1059a9d6ad02baeabc4d4de",
+      "bytes": 13809,
+      "lines": [
+        {
+          "line": 267,
+          "code": ""
+        },
+        {
+          "line": 268,
+          "code": "    def __call__(self, text) -> Tuple[str, None]:"
+        },
+        {
+          "line": 269,
+          "code": "        \"\"\"Build a complete string from input text.\"\"\""
+        },
+        {
+          "line": 270,
+          "code": "        # TODO: Return List[MToken] instead of None"
+        },
+        {
+          "line": 271,
+          "code": "        if not text:"
+        },
+        {
+          "line": 272,
+          "code": "            return '', None"
+        },
+        {
+          "line": 273,
+          "code": "        text = self._normalize_text(text)"
+        },
+        {
+          "line": 274,
+          "code": "        words = [Word("
+        },
+        {
+          "line": 275,
+          "code": "            w.surface,"
+        },
+        {
+          "line": 276,
+          "code": "            jaconv.kata2hira(w.feature.pron or w.feature.kana or w.surface),"
+        },
+        {
+          "line": 277,
+          "code": "            6 if w.char_type == 7 or not w.is_unk else w.char_type"
+        },
+        {
+          "line": 278,
+          "code": "        ) for w in self.tagger(text)]"
+        },
+        {
+          "line": 279,
+          "code": "        tokens = self._romaji_tokens(words)"
+        },
+        {
+          "line": 280,
+          "code": "        out = ''.join([str(tok) for tok in tokens])"
+        },
+        {
+          "line": 281,
+          "code": "        ps = re.sub(r'\\s+', ' ', out.strip()).replace('(', '«').replace(')', '»')"
+        },
+        {
+          "line": 282,
+          "code": "        ps = re.sub(r'(?<![!\",.:;?»—…”]) (?=ʔ)|(?<=ʔ) (?![\"«“])', '', ps)"
+        },
+        {
+          "line": 283,
+          "code": "        return ps, None"
+        },
+        {
+          "line": 284,
+          "code": ""
+        },
+        {
+          "line": 310,
+          "code": "        while i < len(words):"
+        },
+        {
+          "line": 311,
+          "code": "            z = next((z for z in range(i+1, len(words)) if words[z].char_type != words[i].char_type), len(words))"
+        },
+        {
+          "line": 312,
+          "code": "            j = next((j for j in range(z, i, -1) if ''.join(w.surface for w in words[i:j]) in JA_WORDS), None)"
+        },
+        {
+          "line": 313,
+          "code": "            if j is None:"
+        },
+        {
+          "line": 314,
+          "code": "                groups.append([words[i]])"
+        },
+        {
+          "line": 315,
+          "code": "                i += 1"
+        },
+        {
+          "line": 316,
+          "code": "            else:"
+        },
+        {
+          "line": 317,
+          "code": "                groups.append(words[i:j])"
+        },
+        {
+          "line": 318,
+          "code": "                i = j"
+        },
+        {
+          "line": 319,
+          "code": "        words = [Word("
+        },
+        {
+          "line": 320,
+          "code": "            ''.join(w.surface for w in g),"
+        },
+        {
+          "line": 321,
+          "code": "            ''.join(w.hira for w in g),"
+        },
+        {
+          "line": 322,
+          "code": "            g[0].char_type"
+        },
+        {
+          "line": 323,
+          "code": "        ) for g in groups]"
+        },
+        {
+          "line": 324,
+          "code": "        out = []"
+        },
+        {
+          "line": 325,
+          "code": "        for wi, word in enumerate(words):"
+        },
+        {
+          "line": 326,
+          "code": "            po = out[-1] if out else None"
+        },
+        {
+          "line": 327,
+          "code": "            pw = words[wi - 1] if wi > 0 else None"
+        },
+        {
+          "line": 328,
+          "code": "            nw = words[wi + 1] if wi < len(words) - 1 else None"
+        },
+        {
+          "line": 329,
+          "code": "            roma = self._romaji_word(word)"
+        },
+        {
+          "line": 330,
+          "code": "            tok = Token(roma, False)"
+        },
+        {
+          "line": 331,
+          "code": "            # handle punctuation with atypical spacing"
+        },
+        {
+          "line": 332,
+          "code": "            surface = word.surface#['orig']"
+        },
+        {
+          "line": 333,
+          "code": "            if surface in '「『«' or roma in '([':"
+        },
+        {
+          "line": 334,
+          "code": "                if po:"
+        },
+        {
+          "line": 335,
+          "code": "                    po.space = True"
+        },
+        {
+          "line": 336,
+          "code": "            elif surface in '」』»' or roma in ']).,?!:':"
+        },
+        {
+          "line": 337,
+          "code": "                if po:"
+        },
+        {
+          "line": 338,
+          "code": "                    po.space = False"
+        },
+        {
+          "line": 339,
+          "code": "                tok.space = True"
+        },
+        {
+          "line": 340,
+          "code": "            elif roma == ' ':"
+        },
+        {
+          "line": 341,
+          "code": "                tok.space = False"
+        },
+        {
+          "line": 342,
+          "code": "            else:"
+        },
+        {
+          "line": 343,
+          "code": "                tok.space = True"
+        },
+        {
+          "line": 344,
+          "code": "            out.append(tok)"
+        },
+        {
+          "line": 345,
+          "code": "        # remove any leftover sokuon"
+        },
+        {
+          "line": 346,
+          "code": "        for tok in out:"
+        },
+        {
+          "line": 347,
+          "code": "            tok.surface = tok.surface.replace('っ', '')"
+        },
+        {
+          "line": 348,
+          "code": "        return out"
+        },
+        {
+          "line": 349,
+          "code": ""
+        },
+        {
+          "line": 350,
+          "code": "    def _romaji_word(self, word):"
+        },
+        {
+          "line": 351,
+          "code": "        \"\"\"Return the romaji for a single word (node).\"\"\""
+        },
+        {
+          "line": 352,
+          "code": "        surface = word.surface#['orig']"
+        },
+        {
+          "line": 353,
+          "code": "        if surface in self.exceptions:"
+        },
+        {
+          "line": 354,
+          "code": "            return self.exceptions[surface]"
+        },
+        {
+          "line": 355,
+          "code": "        assert not surface.isdigit(), surface"
+        },
+        {
+          "line": 356,
+          "code": "        if surface.isascii():"
+        },
+        {
+          "line": 357,
+          "code": "            return surface"
+        },
+        {
+          "line": 358,
+          "code": "        if word.char_type == 3: # symbol"
+        },
+        {
+          "line": 359,
+          "code": "            return ''.join(map(lambda c: self.table.get(c, c), surface))"
+        },
+        {
+          "line": 360,
+          "code": "        elif word.char_type != 6:"
+        },
+        {
+          "line": 361,
+          "code": "            return '' # TODO: silently fail"
+        },
+        {
+          "line": 362,
+          "code": "        out = ''"
+        },
+        {
+          "line": 363,
+          "code": "        hira = word.hira"
+        },
+        {
+          "line": 364,
+          "code": "        for ki, char in enumerate(hira):"
+        },
+        {
+          "line": 365,
+          "code": "            nk = hira[ki + 1] if ki < len(hira) - 1 else None"
+        },
+        {
+          "line": 366,
+          "code": "            pk = hira[ki - 1] if ki > 0 else None"
+        },
+        {
+          "line": 367,
+          "code": "            out += self._get_single_mapping(pk, char, nk)"
+        },
+        {
+          "line": 368,
+          "code": "        return out"
+        },
+        {
+          "line": 369,
+          "code": ""
+        },
+        {
+          "line": 370,
+          "code": "    def _get_single_mapping(self, pk, kk, nk):"
+        },
+        {
+          "line": 371,
+          "code": "        \"\"\"Given a single kana and its neighbors, return the mapped romaji.\"\"\""
+        },
+        {
+          "line": 372,
+          "code": "        # handle odoriji"
+        },
+        {
+          "line": 373,
+          "code": "        # NOTE: This is very rarely useful at present because odoriji are not"
+        },
+        {
+          "line": 374,
+          "code": "        # left in readings for dictionary words, and we can't follow kana"
+        },
+        {
+          "line": 375,
+          "code": "        # across word boundaries."
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Installed dependency files are read without importing or executing model code.",
+    "Source SHA binds file content, while traceback file basenames alone do not identify every installed import path."
+  ],
+  "collectorSourceSha256": "5862fa042bf23b4624aec77222316495a6b8c6b148e69ad418e1bc7333a4eb0c"
+}

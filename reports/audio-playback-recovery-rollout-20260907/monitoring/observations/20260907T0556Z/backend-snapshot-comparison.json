@@ -1,0 +1,66 @@
+{
+  "schema": "castreader.backend-snapshot-comparison.v5",
+  "current": {
+    "generatedAtUTC": "2026-09-07T05:57:23.703334Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T05:57:23.703334Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T18:37:52.522573Z",
+      "startInclusive": "2026-09-06T18:37:52.522573Z"
+    },
+    "directStatusCounts": {
+      "200": 6957,
+      "400": 1,
+      "no_response": 12
+    },
+    "globalCore5xx": 1,
+    "usProbeStatus": {
+      "healthy": 131
+    },
+    "cnProbeStatus": {
+      "healthy": 131
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 40771
+  },
+  "previous": {
+    "generatedAtUTC": "2026-09-07T04:56:42.644203Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T04:56:42.644203Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T18:37:52.522573Z",
+      "startInclusive": "2026-09-06T18:37:52.522573Z"
+    },
+    "directStatusCounts": {
+      "200": 6024,
+      "400": 1,
+      "no_response": 12
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 119
+    },
+    "cnProbeStatus": {
+      "healthy": 120
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 37130
+  },
+  "oldWindowCollectionStopped": true,
+  "oldWindowArchive": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/archive.json",
+  "originalAutomaticVerdictUsed": false
+}

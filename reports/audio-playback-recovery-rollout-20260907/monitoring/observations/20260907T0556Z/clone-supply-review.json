@@ -1,0 +1,41 @@
+{
+  "schema": "castreader.clone-supply-coverage-review.v1",
+  "usGenerationJobSamples": {
+    "captioned-speech": 171,
+    "speech": 2,
+    "voice-denoise-prompt-build": 3
+  },
+  "firstPositiveStructuredSynthesisWindow": true,
+  "generationCompletionEstablishedForObservedJobs": true,
+  "completeHttpMediaDeliveryEstablished": false,
+  "fiveDurationWarningsExplicitlyNonblocking": true,
+  "referenceRejections": [
+    {
+      "atUTC": "2026-09-07T05:33:38.754572+00:00",
+      "event": "voice_denoise_reference_rejected",
+      "code": "VOICE_REFERENCE_MULTIPLE_SPEAKERS",
+      "raw_fallback": false
+    }
+  ],
+  "referenceRejectionClassification": "Voice creation reference validation, fixed MULTIPLE_SPEAKERS code, source branch raises422; not an established interruption of existing-voice TTS playback. Accuracy of the classifier and actual HTTP delivery were not independently verified.",
+  "sourceBranch": {
+    "file": "/Users/xuxuheng/Documents/CastReader/reports/nari-dynamic-voice-clone-poc/worker/clone_worker.py",
+    "eventLine": 1185,
+    "raiseHttp422Line": 1192
+  },
+  "healthCounterLimit": "US362 completed is a post-cutoff cumulative health read, including events outside this fixed slice. Use173 timed audio-generation jobs for window supply, not362 or the189 counter delta.",
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/clone-fixed-event-detail-v2.json",
+      "sha256": "1262f7868b6465e99eefe03b0a3ae72703de2dd1f0e6bce21aa45321e2910437"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/us-gpu-backend-supply.json",
+      "sha256": "96b04eab86b7eb8b22c247bc74b388ee45fd5b945d8d24e31d7c374f0ea8f72b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/nari-dynamic-voice-clone-poc/worker/clone_worker.py",
+      "sha256": "97cb920eadf2c467faa284d910d9ea2e1a35540d0e189de4a4cbbb9ff8e21ab6"
+    }
+  ]
+}

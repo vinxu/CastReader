@@ -1,0 +1,648 @@
+{
+  "schema": "castreader.backend-audio-heartbeat-review.v6",
+  "automationId": "24",
+  "reviewedAtUTC": "2026-09-07T06:09:53.860759+00:00",
+  "decision": "NOTIFY",
+  "decisionReason": "新增1条Global500，已精确归因到日语G2P数字词元断言；首次获得US克隆真实生成完成样本。",
+  "observationScope": "backend_tts_clone_quickread_only",
+  "backendVerdict": "存在异常",
+  "backendVerdictReason": "Global日语G2P对纯数字词元的断言导致同一请求最终500，精确贯通网关、代理与生成层。其他服务覆盖边界单列。",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "finalWindow": {
+    "collectedThroughExclusive": "2026-09-07T05:57:23.703334Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  },
+  "backendDetailWindow": {
+    "endUTCExclusive": "2026-09-07T05:56:19.987000+00:00",
+    "productionActiveFromUTC": "2026-09-06T18:37:52.522573+00:00",
+    "startUTC": "2026-09-07T04:55:49.447000+00:00"
+  },
+  "services": [
+    {
+      "region": "global",
+      "service": "kokoro_tts",
+      "backendVerdict": "存在异常",
+      "scope": "本小时可见供给与确证故障",
+      "evidence": "Global2620条中2619条200且非空完整，1条500。日语G2P数字断言导致3个上游500、6次前处理异常；最终3679ms失败。Direct936条均200。"
+    },
+    {
+      "region": "cn",
+      "service": "kokoro_tts",
+      "backendVerdict": "证据不足",
+      "scope": "可见供给正常，慢探针及交付覆盖不足",
+      "evidence": "累计已解析1032条TTS POST200、既有1条499；40行无法解析。131轮探针均供给及余文完整；本小时12轮中2轮耗时12.340/11.722秒，未定位分项。"
+    },
+    {
+      "region": "global",
+      "service": "clone_tts",
+      "backendVerdict": "符合预期",
+      "scope": "本小时已观测到的音频生成任务，不含完整HTTP交付验收",
+      "evidence": "171次captioned-speech与2次speech生成完成，captioned运行P95为1251.39ms、队列P95为0.05ms；5条时长提示均blocking=false。另1条建音色参考MULTIPLE_SPEAKERS校验拒绝单列。"
+    },
+    {
+      "region": "cn",
+      "service": "clone_tts",
+      "backendVerdict": "证据不足",
+      "scope": "本窗口真实合成和交付",
+      "evidence": "启动累计4完成、0失败/过期不变，当前健康不能代替窗口合成样本。"
+    },
+    {
+      "region": "global",
+      "service": "quickread",
+      "backendVerdict": "证据不足",
+      "scope": "可见生成正常、HTTP交付覆盖不足",
+      "evidence": "107份窗口修改任务均ready有首块，90份全块生成、17份partial-ready；本小时3条权益放行，无新增固定错误。既有2条断开保留。"
+    },
+    {
+      "region": "cn",
+      "service": "quickread",
+      "backendVerdict": "证据不足",
+      "scope": "可见生成正常、HTTP交付覆盖不足",
+      "evidence": "16份窗口修改任务均ready有首块，14份全块生成、2份partial-ready不变；本小时无新增固定错误，既有1条断开保留。"
+    }
+  ],
+  "currentBackendSnapshot": {
+    "generatedAtUTC": "2026-09-07T05:57:23.703334Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T05:57:23.703334Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T18:37:52.522573Z",
+      "startInclusive": "2026-09-06T18:37:52.522573Z"
+    },
+    "directStatusCounts": {
+      "200": 6957,
+      "400": 1,
+      "no_response": 12
+    },
+    "globalCore5xx": 1,
+    "usProbeStatus": {
+      "healthy": 131
+    },
+    "cnProbeStatus": {
+      "healthy": 131
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 40771
+  },
+  "newConfirmedValidTtsOrLlmSupplyFailures": [
+    {
+      "requestKey": "db01858dc3443217d896",
+      "providerRequestKey": "5bef6cbfd9c294282156",
+      "status": 500,
+      "stage": "japanese_g2p_digit_assertion",
+      "evidence": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/tts500-cause-review.json"
+    }
+  ],
+  "newQuickreadDisconnectRecords": [],
+  "newObservedDirectVersion": null,
+  "newCloneReferenceValidationRejections": [
+    {
+      "atUTC": "2026-09-07T05:33:38.754572+00:00",
+      "event": "voice_denoise_reference_rejected",
+      "code": "VOICE_REFERENCE_MULTIPLE_SPEAKERS",
+      "raw_fallback": false
+    }
+  ],
+  "unattributedModelHTTP404": {
+    "record": {
+      "atUTC": "2026-09-07T05:27:02.675949+00:00",
+      "stage": "request_failed",
+      "requestKey": "9adbaf428a086d9d9f96",
+      "status": 404,
+      "elapsed_ms": 0,
+      "causes": []
+    },
+    "knownRoute": false,
+    "matchingProxyRequestFound": false,
+    "validTtsGenerationFailureEstablished": false,
+    "note": "RequestDiagnosticsMiddleware observes all HTTP routes; this0ms404 has no correlated generation failure or route and is preserved separately."
+  },
+  "proxyPendingBoundaryGroups": [
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T05:56:19.700084+00:00",
+      "flightKeys": [
+        "913e3e1fc5c117cc0a3b"
+      ],
+      "lastUTC": "2026-09-07T05:56:19.700846+00:00",
+      "outcomes": {},
+      "phases": [
+        "admission",
+        "connect",
+        "inbound_body"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "9d0bf89544b0f36c68d3"
+    }
+  ],
+  "resolvedPriorProxyBoundaryGroups": [
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T04:55:49.816112+00:00",
+      "flightKeys": [
+        "4be145386b4fcdd2836f"
+      ],
+      "lastUTC": "2026-09-07T04:55:49.816628+00:00",
+      "outcomes": {
+        "complete": 1
+      },
+      "phases": [
+        "completion",
+        "response_body",
+        "response_complete",
+        "response_headers"
+      ],
+      "receivedEvents": 0,
+      "requestKey": "beb9876571056917852f"
+    }
+  ],
+  "actualBackendWindowMixedVersions": true,
+  "originalFrozenDirectVersion24hCanBeCertified": false,
+  "oldWindowStillArchived": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/archive.json",
+  "oldWindowCollectedAgain": false,
+  "latencyWatch": {
+    "schema": "castreader.backend-latency-trend.v6",
+    "classification": "success_latency_within_recent_range_new_frontend_failure_separate",
+    "windows": [
+      {
+        "tag": "20260906T2353Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-06T22:52:47.445000Z",
+          "requestStartExclusiveUTC": "2026-09-06T23:53:17.725000Z"
+        },
+        "globalRequestCount": 1890,
+        "globalRequestFinishMs": {
+          "samples": 1890,
+          "p50": 572,
+          "p95": 1570,
+          "max": 3728
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 3677.495,
+          "median": 531.292,
+          "n": 2199,
+          "p95": 1494.506
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.702,
+          "median": 0.254,
+          "n": 2200,
+          "p95": 0.32
+        }
+      },
+      {
+        "tag": "20260907T0053Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-06T23:53:17.725000Z",
+          "requestStartExclusiveUTC": "2026-09-07T00:53:48.099000Z"
+        },
+        "globalRequestCount": 3454,
+        "globalRequestFinishMs": {
+          "samples": 3454,
+          "p50": 755,
+          "p95": 2201,
+          "max": 7385
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 7326.668,
+          "median": 685.783,
+          "n": 4236,
+          "p95": 2083.657
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.691,
+          "median": 0.254,
+          "n": 4235,
+          "p95": 0.329
+        }
+      },
+      {
+        "tag": "20260907T0155Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T00:53:48.099Z",
+          "requestStartExclusiveUTC": "2026-09-07T01:55:18.503Z"
+        },
+        "globalRequestCount": 3475,
+        "globalRequestFinishMs": {
+          "samples": 3475,
+          "p50": 1046,
+          "p95": 2697,
+          "max": 7591
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 7525.657,
+          "median": 937.812,
+          "n": 4226,
+          "p95": 2543.123
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 2.45,
+          "median": 0.258,
+          "n": 4227,
+          "p95": 0.333
+        }
+      },
+      {
+        "tag": "20260907T0255Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T01:55:18.503Z",
+          "requestStartExclusiveUTC": "2026-09-07T02:55:18.766Z"
+        },
+        "globalRequestCount": 3259,
+        "globalRequestFinishMs": {
+          "samples": 3259,
+          "p50": 665,
+          "p95": 2065,
+          "max": 5865
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 5788.14,
+          "median": 590.031,
+          "n": 4138,
+          "p95": 1959.63
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 1.018,
+          "median": 0.251,
+          "n": 4136,
+          "p95": 0.328
+        }
+      },
+      {
+        "tag": "20260907T0355Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T02:55:18.766Z",
+          "requestStartExclusiveUTC": "2026-09-07T03:55:19.088Z"
+        },
+        "globalRequestCount": 2658,
+        "globalRequestFinishMs": {
+          "samples": 2658,
+          "p50": 552,
+          "p95": 1755,
+          "max": 4626
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 4579.498,
+          "median": 502.264,
+          "n": 3454,
+          "p95": 1663.523
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.739,
+          "median": 0.25,
+          "n": 3454,
+          "p95": 0.321
+        }
+      },
+      {
+        "tag": "20260907T0455Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T03:55:19.088Z",
+          "requestStartExclusiveUTC": "2026-09-07T04:55:49.447Z"
+        },
+        "globalRequestCount": 2062,
+        "globalRequestFinishMs": {
+          "samples": 2062,
+          "p50": 545,
+          "p95": 1339,
+          "max": 3479
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 3419.692,
+          "median": 477.34,
+          "n": 2833,
+          "p95": 1214.769
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.706,
+          "median": 0.251,
+          "n": 2834,
+          "p95": 0.32
+        }
+      },
+      {
+        "tag": "20260907T0556Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T04:55:49.447Z",
+          "requestStartExclusiveUTC": "2026-09-07T05:56:19.987Z"
+        },
+        "globalRequestCount": 2620,
+        "successfulRequestSamples": 2619,
+        "globalRequestFinishMs": {
+          "samples": 2619,
+          "p50": 485,
+          "p95": 1540,
+          "max": 4199
+        },
+        "timingCohort": "HTTP200 requests only; one500 reported separately",
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 4134.634,
+          "median": 445.036,
+          "n": 3553,
+          "p95": 1353.983
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.92,
+          "median": 0.25,
+          "n": 3553,
+          "p95": 0.321
+        }
+      }
+    ],
+    "absoluteLatencySloSpecified": false,
+    "sustainedRecoveryEstablished": false,
+    "limitations": [
+      "The request mix and output sizes vary. Lower latency is observed, not proof of a specific model/queue fix or an absolute product SLO.",
+      "The current P95 is below the 23:53Z reference in this window; longer lasting recovery remains under observation."
+    ]
+  },
+  "cnLatencyWatch": {
+    "schema": "castreader.cn-probe-latency-watch.v4",
+    "probeElapsedMs": {
+      "samples": 12,
+      "p50": 2703,
+      "p95": 12340,
+      "max": 12340
+    },
+    "rows": [
+      {
+        "observedAtUTC": "2026-09-07T04:56:27.782000Z",
+        "elapsedMs": 2491,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "8ef76daba2ca8022fdf6b024028fcc78ecc2179221b6a54d5997f5b46f39a960",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:01:52.109000Z",
+        "elapsedMs": 12340,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "ad1654e51843e21199734e61b5263f3fea373ccdac0720c8674fa5e84c0c0440",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:07:07.626000Z",
+        "elapsedMs": 11722,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "595d6bb8b9b5521304e50a6360b1ebfa8e51afe9d97a69ca5e5c70e10f6493bc",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:12:03.846000Z",
+        "elapsedMs": 2466,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "56fe6dbc4931cc56d23f2b9ef7fcfe7e630ecfbc881b6a11f7508f0d63fffb4b",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:17:22.473000Z",
+        "elapsedMs": 2705,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "85157a1815e892cc02794444bda1b4783849342a16ec1133d042133193f84c52",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:22:25Z",
+        "elapsedMs": 2660,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "05564d22e30861abefcb32ec1bb189abf26e6bb581d72842599e41e96167b734",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:27:42.471000Z",
+        "elapsedMs": 2703,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "52f6850bf091791a513a26df553fa7361e36556e1a876ea193f86dbc9060ea0f",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:32:51.109000Z",
+        "elapsedMs": 2547,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "0c36b532beda770deabb85b956d92014d6fe20c6183ea6362407d85ba64ea493",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:37:56.547000Z",
+        "elapsedMs": 5845,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "462e01f29ed4415011a0df33025ba5d1ff3dd04ba66b4fc75ab384d08dedb90e",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:43:08.968000Z",
+        "elapsedMs": 4917,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "e5f26316af66041f03ca0315faeade408ead67ffe82331984140e9c7a339a800",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:48:11.081000Z",
+        "elapsedMs": 2306,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "d4e5d49c8df971c6b73cd0e68340ecf03f403612aaefd11f257900886741e68d",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:53:28.518000Z",
+        "elapsedMs": 3120,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "b85f63a38c2d345f52b951444dc2aacf1d7b22865ae1b34ced891f978ab80222",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      }
+    ],
+    "overTenSeconds": [
+      {
+        "observedAtUTC": "2026-09-07T05:01:52.109000Z",
+        "elapsedMs": 12340,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "ad1654e51843e21199734e61b5263f3fea373ccdac0720c8674fa5e84c0c0440",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T05:07:07.626000Z",
+        "elapsedMs": 11722,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "595d6bb8b9b5521304e50a6360b1ebfa8e51afe9d97a69ca5e5c70e10f6493bc",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      }
+    ],
+    "serverSlowStageEstablished": false,
+    "limitations": [
+      "Existing three-segment probe totals include HTTP and local decode, not model TTFB. Two new11.722/12.340s cycles completed and are retained alongside older slow cycles."
+    ]
+  },
+  "limitations": [
+    "Current500 is counted once at Global, not3 or6 independent failures. HTTP transport completion includes error bodies.",
+    "No raw content was read. The numeric-token assertion condition is proven, but exact characters, normalization trigger and caller identity are unknown.",
+    "The unattributed0ms model404 has no request-route or TTS-generation association; preserve it without inventing a caller.",
+    "Voice creation reference rejection is separate from existing-voice speech generation; classifier accuracy and HTTP delivery remain unverified.",
+    "CN clone and all-request QuickRead/clone delivery coverage remain incomplete. Ready task files are not a complete HTTP ledger.",
+    "CN R134 remains undeployed. Regional metadata has no mismatch but does not certify every physical cross-border hop.",
+    "All known older no_response,400,502,504,499 and cancelled events remain preserved; no successful request cancels a failure."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/latest-acceptance.json",
+      "sha256": "8a4a964e9e05d3c3b12ba8ada82da5593b77ad341797fc923f3a5e9c4310a097"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260907T0556Z.json",
+      "sha256": "5efb39fb6276d67ea9aef23ed606e940e4d90d0ef16d19f96d400e67c95ada2e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0556Z.json",
+      "sha256": "93531b3bdef2b4eae36de2220caacda5e19557fb5cc8b365f0672f44914df243"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/tts500-cause-review.json",
+      "sha256": "4d1bc4cf8a1c60755676a9cb0e5b3968c662cd2c286620c0e1134187f37e2107"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/vercel-proxy-join-summary.json",
+      "sha256": "4edbf0c985471e8343b26b5cd91d97ddf0a8cdb738035d628806b618bef6980b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/direct-version-observation.json",
+      "sha256": "204a237344214059b3b1ea92765fb570c0ec4ab4fe009af83aa481dc9ef28b6a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-identity-comparison.json",
+      "sha256": "32ff2b71bfd716a0176504faac18a5d31b414943dc2ed7217c93c476b1cd5a0b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/clone-supply-review.json",
+      "sha256": "c502fb7066a292ea908192936ca4d5d09564a56edb7025ce2dada9e029cd08ff"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/latency-watch.json",
+      "sha256": "c5a564eb27125cb5efa0d088af00e14f133e5f2823fc602833d6c4385f7ce739"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/cn-latency-watch.json",
+      "sha256": "8b9ae9e0828936348f03181e359b6954d775e1e75a6ffda5f8d747dc33f8343c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/us-backend-supply.json",
+      "sha256": "a6408c5cc00ece72024eb5894b781afb539d2b3eb3d347f34f93ac581d90a5f8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/cn-backend-supply.json",
+      "sha256": "c752cb553c29b2855cc08b2dc4cbe1ca9baf0958132f8b75efb00e5fa9f49d0a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/us-gpu-backend-supply.json",
+      "sha256": "96b04eab86b7eb8b22c247bc74b388ee45fd5b945d8d24e31d7c374f0ea8f72b"
+    }
+  ]
+}
