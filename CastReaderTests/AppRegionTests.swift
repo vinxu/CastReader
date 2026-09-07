@@ -378,8 +378,8 @@ final class AppRegionTests: XCTestCase {
         XCTAssertEqual(QuickReadEndpoint.base(), "https://api.castreader.ai")
         // Account, content and generation remain in the same regional boundary
         // even when the physical network/time zone is mainland China.
-        XCTAssertEqual(TTSEndpoint.primaryBase(), "https://api.castreader.ai")
-        XCTAssertNil(TTSEndpoint.fallbackBase())
+        XCTAssertEqual(TTSEndpoint.primaryBase(), "https://tts.castreader.ai")
+        XCTAssertEqual(TTSEndpoint.fallbackBase(), "https://api.castreader.ai")
     }
 
     // MARK: - 引导步骤

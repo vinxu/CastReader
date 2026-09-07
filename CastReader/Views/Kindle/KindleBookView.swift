@@ -1416,7 +1416,7 @@ enum KindleRunLog {
         #if DEBUG
         _ = launchMarker
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
+        formatter.dateFormat = "HH:mm:ss.SSS"
         let stateName: String
         if Thread.isMainThread {
             stateName = MainActor.assumeIsolated {
@@ -9504,6 +9504,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func stageContinuousReadPage(_ handoff: KindleContinuousReadHandoff) async throws {
+        let started = ProcessInfo.processInfo.systemUptime
+        func mark(_ stage: String) {
+            KindleRunLog.write("KINDLE_HANDOFF serial=\(handoff.serial) stage=\(stage) elapsedMs=\(Int((ProcessInfo.processInfo.systemUptime - started) * 1000))")
+        }
+        mark("begin")
         try requireReaderOperation(.automaticPageTurn, reason: "continuous-stage")
         guard continuousReadHandoff?.serial == handoff.serial else { throw CancellationError() }
         try await ensureCaptureScriptInstalled(reason: "read-continuous-page-turn")
@@ -9574,11 +9579,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             )
         }
 
+        mark("turn-confirmed")
         let staged = try await preparedPageForNativeAutoAdvance(
             afterKey: handoff.oldKey,
             targetKey: targetKey,
             mode: .read
         )
+        mark("page-prepared")
         let actualKey = try await installLiveOverlay(page: staged.page, document: staged.document)
         guard continuousReadHandoff?.serial == handoff.serial else { throw CancellationError() }
         let prefetchedFingerprint = readSpeechFingerprint(handoff.target.document)
@@ -9609,6 +9616,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
         }
 
+        mark("overlay-audio-ready")
         continuousReadStagedPage = staged
         continuousReadStagedLiveKey = actualKey
         continuousReadTurnFailureCount = 0
@@ -9835,24 +9843,25 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return false
         }
 
-        let mappings = OCRWordAligner.mapTimestampWords(
+        let mappings = OCRWordAligner.mapTimestampWordRanges(
+            handoff.segments.flatMap(\.timestamps),
             in: paragraph,
-            segments: handoff.segments,
             allowFallback: false,
             allowBoundedFallback: true
         )
-        guard let wordIndex = mappings.compactMap({ $0 }).first else {
+        guard let wordRange = mappings.compactMap({ $0 }).first else {
             KindleRunLog.write("KINDLE read continuous highlight-prime unavailable serial=\(serial) reason=no-mapping")
             return false
         }
 
+        let wordIndex = wordRange.lowerBound
         let sequence = nextVisualSyncSequence()
         var lastReason = "unknown"
         for attempt in 1...3 {
             do {
                 let result = try await evaluateJSON(
-                    "window.__crKindleLiveHighlightWord && " +
-                    "window.__crKindleLiveHighlightWord(\(paragraph.id), \(wordIndex), \(sequence))"
+                    "window.__crKindleLiveHighlightWords && " +
+                    "window.__crKindleLiveHighlightWords(\(paragraph.id), \(wordIndex), \(wordRange.upperBound), \(sequence))"
                 )
                 let ok = result["ok"] as? Bool == true && result["stale"] as? Bool != true
                 if ok {
@@ -11998,25 +12007,18 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             guard preloadEpoch == epoch else { return }
             let captureLimit = mode == .explain ? 1 : 12
             KindleRunLog.write("KINDLE \(mode.rawValue) preload capture-limit after=\(Self.keyLog(afterKey)) limit=\(captureLimit) epoch=\(epoch)")
-            let pages = try await captureCandidatePages(afterKey: afterKey, limit: captureLimit)
-            guard !Task.isCancelled, preloadEpoch == epoch else { return }
-            guard !pages.isEmpty else {
-                throw KindleBookError.noText
-            }
-
-            var warmedAudioCount = 0
             var preparedCount = 0
             var firstPrepared: KindleCachedPage?
-            for page in pages {
+            _ = try await captureCandidatePages(afterKey: afterKey, limit: captureLimit) { [self] page in
                 try Task.checkCancellation()
                 guard preloadEpoch == epoch else { return }
                 guard !page.key.isEmpty, page.key != afterKey else {
                     KindleRunLog.write("KINDLE blob transition source=preload-capture status=repeat old=\(Self.keyLog(afterKey)) expected= actual=\(Self.keyLog(page.key))")
-                    continue
+                    return
                 }
-                guard !page.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+                guard !page.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
                 let doc = makeLiveDocument(from: page)
-                guard hasReadableParagraphs(doc) else { continue }
+                guard hasReadableParagraphs(doc) else { return }
                 let prepared = KindleCachedPage(
                     afterKey: afterKey,
                     page: page,
@@ -12024,13 +12026,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     startParagraphIndex: firstReadableParagraph(in: doc)
                 )
                 cachePreparedCandidate(prepared)
-                if firstPrepared == nil {
-                    firstPrepared = prepared
-                }
+                if firstPrepared == nil { firstPrepared = prepared }
+                cachedNextPage = firstPrepared
                 if preparedCount == 0 {
                     markExpectedNextBlob(afterKey: afterKey, nextKey: page.key, source: "preload-ready")
                 }
-                cachedStartAudioCandidates[page.key] = nil
                 preparedCount += 1
                 #if DEBUG
                 NSLog("CRDBG KINDLE page preload ready after=%@ key=%@ paras=%d words=%d chars=%d",
@@ -12045,20 +12045,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     if preparedCount == 1 {
                         startExplainFirstBlockPrefetch(afterKey: prepared.afterKey, pageKey: page.key, document: doc, epoch: epoch)
                     }
-                    continue
+                    return
                 }
                 guard mode == .read else {
                     KindleRunLog.write("KINDLE page preload skip-read-tts mode=\(mode.rawValue) after=\(Self.keyLog(prepared.afterKey)) key=\(Self.keyLog(page.key))")
-                    continue
+                    return
                 }
-                guard warmedAudioCount < 2 else {
-                    continue
+                guard preparedCount <= 2 else {
+                    return
                 }
                 do {
-                    let preparedAudio = try await ensureReadStartSegmentsPrepared(prepared, epoch: epoch, reason: "page-preload")
-                    if preparedAudio {
-                        warmedAudioCount += 1
-                    }
+                    _ = try await ensureReadStartSegmentsPrepared(prepared, epoch: epoch, reason: "page-preload")
                 } catch is CancellationError {
                     throw CancellationError()
                 } catch {
@@ -13066,7 +13063,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         throw KindleBookError.captureFailed(lastReason)
     }
 
-    private func captureCandidatePages(afterKey: String, limit: Int) async throws -> [CapturedKindlePage] {
+    private func captureCandidatePages(
+        afterKey: String, limit: Int,
+        onCaptured: ((CapturedKindlePage) async throws -> Void)? = nil
+    ) async throws -> [CapturedKindlePage] {
         try requireReaderOperation(.capture, reason: "candidate-pages")
         installCaptureScript()
         await setKindlePageModeLocked(true)
@@ -13076,7 +13076,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let boundedLimit = max(1, min(12, limit))
         var payload: [String: Any] = [:]
         for attempt in 0..<3 {
-            let candidatePayload = try await evaluateJSON("window.__crKindleCandidateSnapshotsAfterKey && window.__crKindleCandidateSnapshotsAfterKey('\(escapedKey)', \(boundedLimit), \(Self.ocrCaptureJavaScriptArguments))")
+            let candidatePayload = try await evaluateJSON("window.__crKindleCandidateSnapshotsAfterKey && window.__crKindleCandidateSnapshotsAfterKey('\(escapedKey)', \(boundedLimit), \(Self.ocrCaptureJavaScriptArguments), true)")
             let candidateCount = (candidatePayload["pages"] as? [[String: Any]] ?? []).count
             let heldCount = Self.int(from: candidatePayload["heldCount"]) ?? 0
             if candidateCount > (payload["pages"] as? [[String: Any]] ?? []).count {
@@ -13102,11 +13102,27 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             guard raw["ok"] as? Bool == true else { continue }
             let key = (raw["key"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             guard !key.isEmpty, key != afterKey, !seen.contains(key) else { continue }
-            let page = try await makeCapturedPage(from: raw, pageIndex: pages.count)
+            let page: CapturedKindlePage
+            if let fingerprint = raw["pixelFingerprint"] as? String, !fingerprint.isEmpty,
+               let cached = preparedCandidate(forKey: key), cached.page.pixelFingerprint == fingerprint {
+                page = cached.page.replacingSessionId(Self.int(from: raw["sessionId"]) ?? 0)
+                KindleRunLog.write("KINDLE preload OCR-cache-hit key=\(Self.keyLog(key))")
+            } else {
+                let encodedKey = String(data: try JSONSerialization.data(withJSONObject: [key]), encoding: .utf8)!
+                let snapshot = try await evaluateJSON("window.__crKindlePrefetchSnapshotForKey && window.__crKindlePrefetchSnapshotForKey(\(encodedKey)[0], \(Self.ocrCaptureJavaScriptArguments))")
+                guard snapshot["ok"] as? Bool == true,
+                      snapshot["key"] as? String == key,
+                      snapshot["pixelFingerprint"] as? String == raw["pixelFingerprint"] as? String else { continue }
+                var capture = raw
+                capture.merge(snapshot) { _, fresh in fresh }
+                capture["source"] = raw["source"]
+                page = try await makeCapturedPage(from: capture, pageIndex: pages.count)
+            }
             try Task.checkCancellation()
             guard !page.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
             seen.insert(key)
             pages.append(page)
+            try await onCaptured?(page)
         }
         if !pages.isEmpty {
             let orderedKeys = (payload["orderedKeys"] as? [String] ?? []).map(Self.keyLog).joined(separator: ",")
@@ -13119,7 +13135,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let afterHeldIndex = String(describing: payload["afterHeldIndex"] ?? "")
         let orderedKeys = (payload["orderedKeys"] as? [String] ?? []).map(Self.keyLog).joined(separator: ",")
         KindleRunLog.write("KINDLE preload multi-capture miss after=\(Self.keyLog(afterKey)) reason=\(reason) held=\(heldCount) afterHeldIndex=\(afterHeldIndex) ordered=\(orderedKeys)")
-        return [try await captureNextPage(afterKey: afterKey)]
+        let page = try await captureNextPage(afterKey: afterKey)
+        try await onCaptured?(page)
+        return [page]
     }
 
     private func makeCapturedPage(from payload: [String: Any], pageIndex: Int) async throws -> CapturedKindlePage {

@@ -153,6 +153,22 @@ struct TTSTimestamp: Codable {
     }
 }
 
+extension TTSTimestamp {
+    private enum WireKeys: String, CodingKey {
+        case word, start, end
+        case startTime = "start_time", endTime = "end_time"
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: WireKeys.self)
+        word = try values.decode(String.self, forKey: .word)
+        startTime = try values.decodeIfPresent(Double.self, forKey: .start)
+            ?? values.decode(Double.self, forKey: .startTime)
+        endTime = try values.decodeIfPresent(Double.self, forKey: .end)
+            ?? values.decode(Double.self, forKey: .endTime)
+    }
+}
+
 /// Response-level safety gate shared by every reader source. This validates
 /// the shape and text coverage of a candidate word timeline. The separate
 /// `TTSHighlightPolicy` first decides whether the reading language is allowed

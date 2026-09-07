@@ -56,6 +56,8 @@ final class ServiceRoutingTests: XCTestCase {
         super.tearDown()
     }
 
+    static let validPresetAudio = "SUQzBAAAAAAAIlRTU0UAAAAOAAADTGF2ZjYyLjguMTAwAAAAAAAAAAAAAAD/84TAAAAAAAAAAAAASW5mbwAAAA8AAAALAAAE4AA7Ozs7Ozs7OztOTk5OTk5OTk5iYmJiYmJiYmJ2dnZ2dnZ2dnaJiYmJiYmJiYmdnZ2dnZ2dnZ2xsbGxsbGxsbHExMTExMTExMTY2NjY2NjY2Njs7Ozs7Ozs7Oz///////////8AAAAATGF2YzYyLjIzAAAAAAAAAAAAAAAAJAPAAAAAAAAABOBJKWNRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/80TEABJ4anw/WBgAC7ZJaAztnbD13qnWO47wF/DOc0nM5TGEtGimxOH5fLKSkpKSkpMATB8HwffUCHB8/lAxKcoH+Hvf0e/o9/8MA+frAgIaAf5T39BBCCDCCAAAAI3/80TECRTpPoRXm2gAxZ7dT7phakdsVDBaeGDA0qO+KzJQwts9vXz4E1BaQnv47hhhhib/jlHCZD2Ht/5iXS6ZF4vf/mJdLqSRkj/BURBUFf+WCoKiI8CtDtaccAVD7Q//80TECBMQWjR/3gAAS8tyj6WtMCkIIwehejA2CbMGsMw5s17DL0DJMHkHwwOwNDA/AYBgAqAVNVpT9T3Hder02fv3xtejTRZ9n/0/+z/V6PpVrww1tQAEgCYGA0YekCb/80TEDhEQVhwA7/RA9N8mRwCmBAg+Jo/C5GYUqCDn4mGnNmKDFm0VFTuXDls5/+9X9P/fv3K/7WMs3HPV1FfT/37qlaJ+2WIpgICDCEFTGoajw6TjRMbCEMuM5jj5DB//80TEHBaadhQA78RMwGyMBLAkTADAEAEgD4gADC86XjLHnkGXsv//3V+y0/tZTfrTp9v9PdP+9u2tGTv96/6Ub0rDaUJktvGsrG1KFqAAgnpM87NEgxYJAcT5z2GhncP/80TEFBK4VhxO7/RA6YEIFRmBvujJgGALGY/sYBqFSwoFT+aXA8HUZm1Nudvj3rG/o7fv3K1+j2o29/3aitHt2e7d35bFoFZskiBgaMRA5OWH/M9SYMDjCjDLrG3Iwb//80TEHBFIVhwA7/RABVDwczSsjGFwKESpgqQwNOm7f+uuv0o7fs6q1+n2obZ3dS+st+3+3dWqjUZdphqJxgICZhiOhvnkRm0UJgjgRWaTCtdmFeAjpy7AZ8VmNiBgwCj/80TEKRGgVhwA7/ZApQLNQ7LjOz/1q+hPts271f/ta2/n+pepRX/t7n7qiblq7BABxgFAGGBYBQYIYcJhKFRmMWRSZnxbB9wRPGi2LKYHQLBgSAgGC4B0gFCoAIOATL3/80TENRDYXigBXgAA7T6Oxr////////29//LVAAghDQaDgkDgoAAMCAjCAwKApggfrpClkfeZIdmHHO8TdD4SHDOiEwoF/wOKwM4Q38L5BaMFw3FACgCIE2I5D5Q+Ecr/80TERCIhunm9m5gB8i5uYFxhcwrYho5o5v0U745QuYVsQ0c0ZX80sbppmhNEWIEUSKkVMv6DJpuggyZeJoxLpdMi8Xjf//HgCMeAIwWEVBclTEFNRTMuMTAwVVVVVVX/80TEDgAAA0gBwAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU="
+
     // MARK: - 安全默认与优先级
 
     func testAuthoritativeChinaStorefrontDefaultsToChinaWithoutRollout() {
@@ -548,7 +550,7 @@ final class ServiceRoutingTests: XCTestCase {
         )
         let frozenTTSBase = TTSEndpoint.primaryBase()
         XCTAssertTrue(
-            ["https://api.castreader.ai", "https://api.castreader.cn"].contains(frozenTTSBase)
+            ["https://tts.castreader.ai", "https://api.castreader.cn"].contains(frozenTTSBase)
         )
         UserDefaults.standard.set(
             ["cn_url": "https://cn-b.example", "us_url": "https://us-b.example"],
@@ -702,8 +704,8 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(laterConflictingSignal, first)
     }
 
-    func testAnonymousTTSRetriesTechnicalFailureOnlyOnTheFrozenComputeRoute() async throws {
-        ServiceRouting.overrideRoute = .chinaGateway
+    func testAnonymousTTSReplaysOnlyUndispatchedBusyWithinGlobalRegion() async throws {
+        ServiceRouting.overrideRoute = .globalGateway
         resetSnapshots()
         let unavailable = ComputeRouting.NetworkProbe(
             china: .unavailable,
@@ -727,10 +729,10 @@ final class ServiceRoutingTests: XCTestCase {
                 url: request.url!,
                 statusCode: status,
                 httpVersion: nil,
-                headerFields: ["Content-Type": "application/json"]
+                headerFields: ["Content-Type": "application/json", "x-castreader-tts-contract": "preset-gateway-v1", "x-castreader-tts-attempts": "0", "x-tts-error-code": "TTS_GATEWAY_BUSY", "x-voice-retryable": "true"]
             )!
             let body = status == 200
-                ? Data(#"{"audio":"bXAz","timestamps":[],"processed_text":"hello","unprocessed_text":""}"#.utf8)
+                ? Data(#"{"audio":"\#(Self.validPresetAudio)","timestamps":[],"processed_text":"hello","unprocessed_text":""}"#.utf8)
                 : Data(#"{"error":"temporarily unavailable"}"#.utf8)
             return (response, body)
         }
@@ -744,8 +746,8 @@ final class ServiceRoutingTests: XCTestCase {
         )
 
         let result = try await service.generateTTS(text: "hello", language: "en")
-        XCTAssertEqual(result.audio, "bXAz")
-        XCTAssertEqual(requestedHosts, ["api.castreader.cn", "api.castreader.cn"])
+        XCTAssertEqual(result.audio, Self.validPresetAudio)
+        XCTAssertEqual(requestedHosts, ["tts.castreader.ai", "api.castreader.ai"])
         XCTAssertEqual(requestBodies.count, 2)
         XCTAssertEqual(requestBodies[0], requestBodies[1], "a retry must preserve the complete input")
     }
@@ -795,7 +797,7 @@ final class ServiceRoutingTests: XCTestCase {
         }
     }
 
-    func testAnonymousTTSRetriesMalformedWholeResponseOnceWithoutChangingRoute() async throws {
+    func testAnonymousTTSDoesNotReplayMalformedResponseAfterSynthesis() async throws {
         ServiceRouting.overrideRoute = .globalGateway
         resetSnapshots()
         _ = await ComputeRouting.bootstrapForCurrentProcess(
@@ -832,12 +834,14 @@ final class ServiceRoutingTests: XCTestCase {
             ]
         )
 
-        let result = try await service.generateTTS(text: "hello", language: "en")
-        XCTAssertEqual(result.audio, "bXAz")
-        XCTAssertEqual(requestedHosts, ["api.castreader.ai", "api.castreader.ai"])
+        do {
+            _ = try await service.generateTTS(text: "hello", language: "en")
+            XCTFail("Malformed response must fail without replay")
+        } catch APIError.decodingError { } catch { XCTFail("Unexpected error: \(error)") }
+        XCTAssertEqual(requestedHosts, ["tts.castreader.ai"])
     }
 
-    func testAnonymousTTSRetriesInvalidAudioBeforeAnythingCanBeQueued() async throws {
+    func testAnonymousTTSDoesNotReplayInvalidAudioAfterSynthesis() async throws {
         ServiceRouting.overrideRoute = .globalGateway
         resetSnapshots()
         _ = await ComputeRouting.bootstrapForCurrentProcess(
@@ -873,9 +877,225 @@ final class ServiceRoutingTests: XCTestCase {
             ]
         )
 
-        let result = try await service.generateTTS(text: "hello", language: "en")
-        XCTAssertEqual(result.audio, "bXAz")
-        XCTAssertEqual(requestCount, 2)
+        do {
+            _ = try await service.generateTTS(text: "hello", language: "en")
+            XCTFail("Invalid audio must fail without replay")
+        } catch APIError.invalidResponse { } catch { XCTFail("Unexpected error: \(error)") }
+        XCTAssertEqual(requestCount, 1)
+    }
+
+    func testPresetWireRequestKeepsIdentityAndBodyWithoutAccountCredentials() async throws {
+        ServiceRouting.overrideRoute = .globalGateway
+        resetSnapshots()
+        var requests: [URLRequest] = []
+        RoutingURLProtocol.handler = { request in
+            requests.append(request)
+            if requests.count == 1 { throw URLError(.cannotConnectToHost) }
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: [:])!
+            return (response, Data(#"{"audio":"\#(Self.validPresetAudio)","voice_code":"af_heart"}"#.utf8))
+        }
+        let service = APIService(session: makeRoutingSession())
+        let response = try await service.generateTTS(text: "Hello.", voice: "af_heart", requestID: "ios-contract-request")
+        XCTAssertEqual(response.processedText, "Hello.")
+        XCTAssertEqual(response.unprocessedText, "")
+        XCTAssertGreaterThan(response.safeDuration, 0)
+        XCTAssertEqual(requests.compactMap { $0.url?.host }, ["tts.castreader.ai", "api.castreader.ai"])
+        for request in requests {
+            XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+            XCTAssertNil(request.value(forHTTPHeaderField: "Cookie"))
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-CastReader-Platform"), "ios")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-Request-ID"), "ios-contract-request")
+        }
+        XCTAssertEqual(requests[0].httpBody, requests[1].httpBody)
+    }
+
+    func testPresetUnknownDispatchFailuresNeverReplay() async throws {
+        ServiceRouting.overrideRoute = .globalGateway
+        resetSnapshots()
+        for status in [302, 401, 403, 408, 422, 429, 500, 502, 503, 504] {
+            var requests = 0
+            RoutingURLProtocol.handler = { request in
+                requests += 1
+                return (HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: [:])!, Data())
+            }
+            do { _ = try await APIService(session: makeRoutingSession()).generateTTS(text: "Hello.")
+                XCTFail("HTTP \(status) must fail")
+            } catch APIError.httpError(let actual) { XCTAssertEqual(actual, status) }
+            XCTAssertEqual(requests, 1)
+        }
+        for code in [URLError.timedOut, .networkConnectionLost, .cancelled, .secureConnectionFailed] {
+            var requests = 0
+            RoutingURLProtocol.handler = { _ in requests += 1; throw URLError(code) }
+            do { _ = try await APIService(session: makeRoutingSession()).generateTTS(text: "Hello."); XCTFail("must fail") }
+            catch { }
+            XCTAssertEqual(requests, 1)
+        }
+    }
+
+    func testPresetCancellationWhileConnectionFailsNeverReplays() async {
+        ServiceRouting.overrideRoute = .globalGateway
+        resetSnapshots()
+        let started = expectation(description: "primary request started")
+        let gate = DispatchSemaphore(value: 0)
+        var count = 0
+        RoutingURLProtocol.handler = { _ in
+            count += 1
+            started.fulfill()
+            _ = gate.wait(timeout: .now() + 2)
+            throw URLError(.cannotConnectToHost)
+        }
+        let api = APIService(session: makeRoutingSession())
+        let task = Task { try await api.generateTTS(text: "Hello.") }
+        await fulfillment(of: [started], timeout: 2)
+        task.cancel()
+        gate.signal()
+        do { _ = try await task.value; XCTFail("cancelled request must fail") }
+        catch { }
+        XCTAssertEqual(count, 1)
+    }
+
+    func testLiveDirectPresetNineLanguagesAndSourceBoundaries() async throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_DIRECT_TTS_LIVE"] == "1",
+                          "Explicit bounded anonymous live contract probe")
+        let cases = [
+            ("en", "af_heart", "The final word is sunflower."),
+            ("zh", "zf_001", "今天阳光很好。"),
+            ("ja", "jf_alpha", "今日はいい天気です。"),
+            ("es", "ef_dora", "Hoy hace buen tiempo."),
+            ("fr", "ff_siwis", "Il fait beau aujourd’hui."),
+            ("pt", "pf_dora", "Hoje o tempo está bom."),
+            ("it", "if_sara", "Oggi il tempo è bello."),
+            ("hi", "hf_alpha", "आज मौसम अच्छा है।"),
+            ("de", "df_mls_19", "Dr. Müller zahlt 3.14 Euro."),
+            ("en", "af_heart", "Reading improves literacy.[5] The final word is sunflower."),
+            ("en", "af_heart", "We were imprisoned-bound together. The final word is sunflower.")
+        ]
+        let session = OwnedAPIURLSession.makeExplicitCredentialSession(
+            route: .globalGateway, requestTimeout: PresetTTSTransport.readTimeout,
+            resourceTimeout: PresetTTSTransport.totalTimeout, rejectsEveryRedirect: true)
+        defer { session.invalidateAndCancel() }
+        var evidence: [[String: Any]] = []
+        for (language, voice, input) in cases {
+            var remaining = input
+            var spokenSource = ""
+            var words: [String] = []
+            var parts = 0
+            var duration: Double = 0
+            while !remaining.isEmpty {
+                parts += 1
+                XCTAssertLessThanOrEqual(parts, 6)
+                guard parts <= 6 else { break }
+                let body = try JSONEncoder().encode(TTSRequest(input: remaining, voice: voice, language: language))
+                let result = try await PresetTTSTransport.generate(
+                    input: remaining, voice: voice, body: body, route: .globalGateway,
+                    requestID: "ios-live-contract-" + UUID().uuidString, session: session)
+                let consumed = try XCTUnwrap(result.processedText)
+                XCTAssertFalse(consumed.isEmpty)
+                spokenSource += consumed
+                remaining = result.unprocessedText ?? ""
+                duration += result.safeDuration
+                XCTAssertGreaterThan(result.safeDuration, 0)
+                var previous: Double = -1
+                for stamp in result.safeTimestamps {
+                    XCTAssertGreaterThanOrEqual(stamp.startTime, previous)
+                    XCTAssertGreaterThanOrEqual(stamp.endTime, stamp.startTime)
+                    XCTAssertLessThanOrEqual(stamp.endTime, result.safeDuration + 0.15)
+                    previous = stamp.startTime
+                }
+                words += result.safeTimestamps.map(\.word)
+            }
+            XCTAssertEqual(spokenSource, input)
+            if language == "de" {
+                XCTAssertTrue(words.contains("Dr.")); XCTAssertTrue(words.contains("3.14"))
+            }
+            if input.contains("[5]") { XCTAssertFalse(words.contains("5")) }
+            if input.contains("sunflower") { XCTAssertTrue(words.contains { $0.lowercased().contains("sunflower") }) }
+            if TTSHighlightPolicy.usesWordTimestamps(language: language) { XCTAssertFalse(words.isEmpty) }
+            else { XCTAssertTrue(words.isEmpty) }
+            evidence.append(["language": language, "voice": voice, "parts": parts,
+                             "duration": duration, "words": words, "sourceComplete": spokenSource == input])
+        }
+        let attachment = XCTAttachment(data: try JSONSerialization.data(withJSONObject: evidence, options: [.prettyPrinted, .sortedKeys]), uniformTypeIdentifier: "public.json")
+        attachment.name = "ios-direct-live-contract"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    func testPresetBusyProofRequiresEveryHeaderAndZeroAttempts() {
+        let proof = ["x-castreader-tts-contract": "preset-gateway-v1", "x-castreader-tts-attempts": "0", "x-tts-error-code": "TTS_GATEWAY_BUSY", "x-voice-retryable": "true"]
+        let url = URL(string: "https://tts.castreader.ai/api/captioned_speech_partly")!
+        XCTAssertTrue(PresetTTSTransport.mayReplay(HTTPURLResponse(url: url, statusCode: 503, httpVersion: nil, headerFields: proof)!))
+        for key in proof.keys {
+            var headers = proof
+            headers.removeValue(forKey: key)
+            XCTAssertFalse(PresetTTSTransport.mayReplay(HTTPURLResponse(url: url, statusCode: 503, httpVersion: nil, headerFields: headers)!))
+        }
+        var dispatched = proof
+        dispatched["x-castreader-tts-attempts"] = "1"
+        XCTAssertFalse(PresetTTSTransport.mayReplay(HTTPURLResponse(url: url, statusCode: 503, httpVersion: nil, headerFields: dispatched)!))
+    }
+
+    func testChinaPresetNeverReplaysAcrossRegionEvenWithUndispatchedProof() async {
+        ServiceRouting.overrideRoute = .chinaGateway
+        resetSnapshots()
+        var requests = 0
+        RoutingURLProtocol.handler = { request in
+            requests += 1
+            XCTAssertEqual(request.url?.host, "api.castreader.cn")
+            throw URLError(.cannotConnectToHost)
+        }
+        do { _ = try await APIService(session: makeRoutingSession()).generateTTS(text: "Hello."); XCTFail("must fail") }
+        catch { }
+        XCTAssertEqual(requests, 1)
+    }
+
+    func testPresetSourceProjectionPreservesAbbreviationDecimalCitationAndUnicode() throws {
+        for input in ["Dr. Müller zahlt 3.14 Euro.", "Reading improves literacy.[5] The end.", "  A--B 👩🏽‍🔬 é. Next.  "] {
+            let projection = PresetTTSSourceProjection(input)
+            let complete = try projection.resolve(processed: nil, remaining: nil)
+            XCTAssertEqual(complete.processed, input)
+            XCTAssertEqual(complete.remaining, "")
+            let prefix = String(projection.wire.prefix(3))
+            let tail = String(projection.wire.dropFirst(3))
+            let partial = try projection.resolve(processed: prefix, remaining: tail)
+            XCTAssertEqual(partial.processed + partial.remaining, input)
+            XCTAssertFalse(partial.processed.isEmpty)
+        }
+        let projection = PresetTTSSourceProjection("Dr. Müller zahlt 3.14 Euro.")
+        XCTAssertThrowsError(try projection.resolve(processed: "Dr.", remaining: "Müller zahlt 3. 14 Euro."))
+        XCTAssertThrowsError(try projection.resolve(processed: "", remaining: projection.wire))
+        XCTAssertThrowsError(try projection.resolve(processed: "Wrong.", remaining: ""))
+    }
+
+    func testPresetLongSourceConsumesExactlyOnceAcrossUnicodeSafeRequests() throws {
+        let input = String(repeating: "word 👩🏽‍🔬 é--next ", count: 800)
+        var remaining = input
+        var consumed = ""
+        var calls = 0
+        while !remaining.isEmpty {
+            let projection = PresetTTSSourceProjection(remaining)
+            XCTAssertLessThanOrEqual(projection.wire.utf16.count, 5_000)
+            XCTAssertEqual(projection.wire, projection.wire.trimmingCharacters(in: .whitespacesAndNewlines))
+            let response = try projection.resolve(processed: nil, remaining: nil)
+            consumed += response.processed
+            remaining = response.remaining
+            calls += 1
+            XCTAssertLessThan(calls, 10)
+        }
+        XCTAssertGreaterThan(calls, 1)
+        XCTAssertEqual(consumed, input)
+    }
+
+    func testPresetValidationUsesDecodedAudioDurationAndChecksReturnedVoice() throws {
+        let projection = PresetTTSSourceProjection("Hello.")
+        let valid = Data(#"{"audio":"\#(Self.validPresetAudio)","audio_format":"mp3","duration":9999,"voice_code":"af_heart","timestamps":[{"word":"Hello","start":0,"end":0.1}]}"#.utf8)
+        let result = try PresetTTSTransport.validate(valid, projection: projection, voice: "af_heart")
+        XCTAssertGreaterThan(result.safeDuration, 0)
+        XCTAssertLessThan(result.safeDuration, 1)
+        XCTAssertEqual(result.safeTimestamps.first?.endTime, 0.1)
+        XCTAssertThrowsError(try PresetTTSTransport.validate(valid, projection: projection, voice: "other"))
+        let invalid = Data(#"{"audio":"bXAz","processed_text":"Hello."}"#.utf8)
+        XCTAssertThrowsError(try PresetTTSTransport.validate(invalid, projection: projection, voice: "af_heart"))
     }
 
     func testTTSResponseDropsBadOptionalTimestampsButKeepsAudioAndTextProgress() throws {
@@ -1013,8 +1233,8 @@ final class ServiceRoutingTests: XCTestCase {
 
         XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: true), "https://api.castreader.cn")
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: true))
-        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://api.castreader.ai")
-        XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: false))
+        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://tts.castreader.ai")
+        XCTAssertEqual(TTSEndpoint.fallbackBase(isMainlandChina: false), "https://api.castreader.ai")
 
         XCTAssertEqual(QuickReadEndpoint.base(), "https://api.castreader.ai")
         XCTAssertEqual(QuickReadEndpoint.planURL, "https://api.castreader.ai/api/quickread/extract-plan")
@@ -1054,9 +1274,9 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(Constants.API.emailOTPBaseURL, "https://api.castreader.cn")
 
         XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: true), "https://api.castreader.cn")
-        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://api.castreader.ai")
+        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://tts.castreader.ai")
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: true))
-        XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: false))
+        XCTAssertEqual(TTSEndpoint.fallbackBase(isMainlandChina: false), "https://api.castreader.ai")
 
         XCTAssertEqual(QuickReadEndpoint.base(), "https://quickread.castreader.cn")
         XCTAssertEqual(Constants.API.quickReadBaseURL, "https://quickread.castreader.cn")

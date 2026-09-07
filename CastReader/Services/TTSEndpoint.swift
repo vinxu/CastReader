@@ -341,11 +341,15 @@ private final class ComputeRoutingRuntime: @unchecked Sendable {
 }
 
 enum TTSEndpoint {
-    static let globalBase = ServiceRoute.globalGateway.apiGatewayBaseURL
+    static let globalBase = "https://tts.castreader.ai"
     static let chinaMainlandBase = ServiceRoute.chinaGateway.apiGatewayBaseURL
 
     static func primaryBase() -> String {
-        ComputeRouting.current.apiGatewayBaseURL
+        primaryBase(for: ComputeRouting.current)
+    }
+
+    static func primaryBase(for route: ServiceRoute) -> String {
+        route == .chinaGateway ? chinaMainlandBase : globalBase
     }
 
     /// Pure compatibility seam retained for endpoint policy tests.
@@ -353,14 +357,14 @@ enum TTSEndpoint {
         isMainlandChina ? chinaMainlandBase : globalBase
     }
 
-    /// Generation flows are route-frozen. A TTS payload is never resent across
-    /// borders after a network or server failure.
+    /// Only the global preset transport may replay at its same-region gateway,
+    /// and only with evidence that synthesis was not dispatched.
     static func fallbackBase() -> String? {
-        nil
+        fallbackBase(isMainlandChina: ComputeRouting.current == .chinaGateway)
     }
 
     static func fallbackBase(isMainlandChina: Bool) -> String? {
-        nil
+        isMainlandChina ? nil : ServiceRoute.globalGateway.apiGatewayBaseURL
     }
 
     static func candidateRoutes() -> [ServiceRoute] {

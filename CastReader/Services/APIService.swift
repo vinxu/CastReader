@@ -155,51 +155,6 @@ enum APIError: Error, LocalizedError {
     }
 }
 
-enum PresetTTSRetryPolicy {
-    static let maximumAttempts = 2
-    static let delayNanoseconds: UInt64 = 250_000_000
-
-    static func isRetryable(_ error: Error) -> Bool {
-        if let apiError = error as? APIError {
-            switch apiError {
-            case .httpError(let code):
-                return code == 408 || code >= 500
-            case .invalidResponse, .decodingError:
-                return true
-            case .networkError(let underlying):
-                return isRetryable(underlying)
-            default:
-                return false
-            }
-        }
-        guard let urlError = error as? URLError else { return false }
-        return [
-            .timedOut,
-            .cannotFindHost,
-            .cannotConnectToHost,
-            .dnsLookupFailed,
-            .networkConnectionLost,
-            .notConnectedToInternet,
-            .internationalRoamingOff,
-            .callIsActive,
-            .dataNotAllowed,
-        ].contains(urlError.code)
-    }
-
-    static func run<T>(_ operation: () async throws -> T) async throws -> T {
-        var attempt = 1
-        while true {
-            do {
-                return try await operation()
-            } catch {
-                guard attempt < maximumAttempts, isRetryable(error) else { throw error }
-                attempt += 1
-                try await Task.sleep(nanoseconds: delayNanoseconds)
-            }
-        }
-    }
-}
-
 actor APIService: VoiceCloneSTSCredentialProviding {
     static let shared = APIService()
 
@@ -224,8 +179,9 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                     route,
                     OwnedAPIURLSession.makeExplicitCredentialSession(
                         route: route,
-                        requestTimeout: 30,
-                        resourceTimeout: 60
+                        requestTimeout: PresetTTSTransport.readTimeout,
+                        resourceTimeout: PresetTTSTransport.totalTimeout,
+                        rejectsEveryRedirect: true
                     )
                 )
             }
@@ -639,9 +595,8 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         priority: TTSRequestPriority = .interactive,
         requestID: String? = nil
     ) async throws -> TTSResponse {
-        // Compute locality is independent from the account/content route. TTS
-        // is anonymous, so a mainland user may use the filed CN compute ingress
-        // without moving or exposing the account's cms_ session.
+        // Preset compute follows the frozen account region, but uses its own
+        // anonymous transport. Clone authorization remains on the account API.
         let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
         guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
             throw APIError.serverError("No speakable text for TTS")
@@ -691,25 +646,14 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         }
 
         let route = ComputeRouting.current
-        guard let url = URL(
-            string: TTSEndpoint.partlyURL(base: route.apiGatewayBaseURL)
-        ) else {
-            throw APIError.invalidURL
-        }
-        // Retry only the anonymous preset request, once, on the exact frozen
-        // regional route. Clone synthesis keeps its separate idempotent/billed policy.
-        return try await PresetTTSRetryPolicy.run {
-            let response: TTSResponse = try await request(
-                url,
-                method: "POST",
-                body: bodyData,
-                session: ttsSessions[route]
-            )
-            guard let audio = Data(base64Encoded: response.audio), !audio.isEmpty else {
-                throw APIError.invalidResponse
-            }
-            return response
-        }
+        return try await PresetTTSTransport.generate(
+            input: inputText,
+            voice: resolvedVoice,
+            body: bodyData,
+            route: route,
+            requestID: requestID ?? UUID().uuidString,
+            session: ttsSessions[route] ?? session
+        )
     }
 
     private func requestClonedVoiceTTS(

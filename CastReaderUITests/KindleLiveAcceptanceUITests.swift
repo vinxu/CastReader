@@ -98,7 +98,7 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         defer { XCUIDevice.shared.orientation = .portrait }
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
-        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding", "-CastReaderKindleFontDiagnostics",
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding", "-CastReaderKindleFontDiagnostics", "-CastReaderTTSClockDiagnostics",
                                "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
         app.launch()
         let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.kindle.")).firstMatch

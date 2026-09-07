@@ -356,6 +356,32 @@ final class EvalTests: XCTestCase {
         }
     }
 
+    func testOCRCompoundTimestampOwnsAllBoxesAcrossLineWrap() {
+        let paragraph = ocrParagraph(text: "We were imprisoned- bound together.",
+                                     ocrWords: ["We", "were", "imprisoned-", "bound", "together."])
+        let result = OCRWordAligner.mapTimestampWordRanges(
+            timestamps(["We", "were", "imprisoned-bound", "together"]), in: paragraph,
+            allowFallback: false, allowBoundedFallback: true)
+        XCTAssertEqual(result, [0..<1, 1..<2, 2..<4, 4..<5])
+    }
+
+    func testOCRSeparateCompoundTokensDoNotPaintTheirNeighborEarly() {
+        let paragraph = ocrParagraph(text: "We were imprisoned-bound together.",
+                                     ocrWords: ["We", "were", "imprisoned-", "bound", "together."])
+        XCTAssertEqual(OCRWordAligner.mapTimestampWordRanges(
+            timestamps(["We", "were", "imprisoned", "bound", "together"]), in: paragraph,
+            allowFallback: false, allowBoundedFallback: true), [0..<1, 1..<2, 2..<3, 3..<4, 4..<5])
+    }
+
+    func testOCRCompoundSpanNeverIncludesUnrelatedFollowingWords() {
+        let paragraph = ocrParagraph(text: "ice cream is cold ice-cream melts",
+                                     ocrWords: ["ice", "cream", "is", "cold", "ice-cream", "melts"])
+        let mapped = OCRWordAligner.mapTimestampWordRanges(
+            timestamps(["ice-cream", "is", "cold", "ice-cream", "melts"]), in: paragraph,
+            allowFallback: false, allowBoundedFallback: true)
+        XCTAssertEqual(mapped, [0..<2, 2..<3, 3..<4, 4..<5, 5..<6])
+    }
+
     /// Kindle/OCR 英文词高亮必须像扩展一样只向前匹配：同段重复词不能跳回之前的同名词。
     func testOCRWordAligner_RepeatedWordsFollowReadingOrder() {
         let words = ["the", "cat", "and", "the", "dog", "saw", "the", "cat"]

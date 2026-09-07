@@ -152,7 +152,7 @@ final class ReadAloudContinuationTests: XCTestCase {
             if input == "Alpha. Bravo." {
                 return .response(ReadAloudHTTPFixture.body("Alpha. ", tail: "Bravo.", duration: prefixDuration))
             }
-            if input == "Bravo.", attempt <= 2 {
+            if input == "Bravo.", attempt == 1 {
                 if timeoutFailure { return .failure(.timedOut, delay: failureAfterDrain ? 0.3 : 0) }
                 return .response(Data("{}".utf8), status: 500, delay: failureAfterDrain ? 0.3 : 0)
             }
@@ -177,8 +177,8 @@ final class ReadAloudContinuationTests: XCTestCase {
         vm.togglePlayPause()
         try await waitUntil { finished == 1 }
         XCTAssertEqual(fixture.requests.filter { $0 == "Alpha. Bravo." }.count, 1)
-        XCTAssertEqual(fixture.requests.filter { $0 == "Bravo." }.count, 3,
-                       "Two API attempts exhausted, then one explicit tail retry")
+        XCTAssertEqual(fixture.requests.filter { $0 == "Bravo." }.count, 2,
+                       "One failed dispatch, then one explicit tail retry without automatic replay")
         XCTAssertEqual(completed, ["Alpha. ", "Bravo.", "Charlie."])
         XCTAssertFalse(player.hasTerminalPlaybackFailure)
     }
@@ -193,7 +193,7 @@ final class ReadAloudContinuationTests: XCTestCase {
             if input == "Alpha. Bravo." {
                 return .response(ReadAloudHTTPFixture.body("Alpha. ", tail: "Bravo.", duration: 2))
             }
-            if input == "Bravo.", attempt <= 2 { return .response(Data("{}".utf8), status: 500) }
+            if input == "Bravo.", attempt == 1 { return .response(Data("{}".utf8), status: 500) }
             return .response(ReadAloudHTTPFixture.body(input))
         }
         defer { fixture.close() }
@@ -202,22 +202,22 @@ final class ReadAloudContinuationTests: XCTestCase {
                                    audioService: player, ttsService: fixture.service())
         defer { vm.deactivate(); player.stop() }
         vm.dbgGenerate(0)
-        try await waitUntil { if case .error = vm.status { return player.isPlaying }; return false }
+        try await waitUntil { if case .error = vm.status { return player.isPlaying && player.currentTime > 0 }; return false }
         vm.togglePlayPause()
         XCTAssertFalse(player.isPlaying)
         try await Task.sleep(nanoseconds: 150_000_000)
-        XCTAssertEqual(fixture.requests.filter { $0 == "Bravo." }.count, 2)
+        XCTAssertEqual(fixture.requests.filter { $0 == "Bravo." }.count, 1)
         let pausedAt = player.currentTime
         vm.ensurePlaying()
         try await waitUntil { vm.isFinished }
         XCTAssertGreaterThan(pausedAt, 0)
         XCTAssertEqual(fixture.requests.filter { $0 == "Alpha. Bravo." }.count, 1)
-        XCTAssertEqual(fixture.requests.filter { $0 == "Bravo." }.count, 3)
+        XCTAssertEqual(fixture.requests.filter { $0 == "Bravo." }.count, 2)
     }
     func testLocalSentenceCheckpointRetainsLaterUnstartedUnits() async throws {
         let text = "第一句。第二句。第三句。"
         let fixture = ReadAloudHTTPFixture { input, attempt in
-            if input == "第二句。", attempt <= 2 { return .response(Data("{}".utf8), status: 500) }
+            if input == "第二句。", attempt == 1 { return .response(Data("{}".utf8), status: 500) }
             return .response(ReadAloudHTTPFixture.body(input, duration: 0.15))
         }
         defer { fixture.close() }

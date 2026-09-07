@@ -36,13 +36,23 @@ enum OCRWordAligner {
         allowFallback: Bool = true,
         allowBoundedFallback: Bool = false
     ) -> [Int?] {
+        mapTimestampWordRanges(timestamps, in: paragraph, allowFallback: allowFallback,
+                               allowBoundedFallback: allowBoundedFallback).map { $0?.lowerBound }
+    }
+
+    /// One spoken token can own several OCR boxes, including a line-wrapped
+    /// compound. Preserve those boxes without inventing sub-word timing.
+    static func mapTimestampWordRanges(
+        _ timestamps: [TTSTimestamp], in paragraph: ReadingParagraph,
+        allowFallback: Bool = true, allowBoundedFallback: Bool = false
+    ) -> [Range<Int>?] {
         guard !timestamps.isEmpty, !paragraph.words.isEmpty else { return [] }
         let textChars = Array(paragraph.text)
         let wordRanges = buildOCRWordRanges(paragraph: paragraph, textChars: textChars)
         let comparableWords = paragraph.words.map { comparable($0.text) }
         var searchPos = 0
         var ocrCursor = 0
-        var output: [Int?] = []
+        var output: [Range<Int>?] = []
         output.reserveCapacity(timestamps.count)
 
         for ts in timestamps {
@@ -51,18 +61,21 @@ enum OCRWordAligner {
             // token after locale folding. Searching the full paragraph first
             // is unsafe for short accented words: Italian `e` can otherwise
             // skip the current `è` and land on a later unaccented `e`.
-            if let idx = boundedFallbackWordIndex(
-                word,
-                comparableWords: comparableWords,
-                from: ocrCursor,
+            let directIndex = boundedFallbackWordIndex(
+                word, comparableWords: comparableWords, from: ocrCursor,
                 allowBoundedFallback: allowBoundedFallback
-            ) {
-                output.append(idx)
+            )
+            let match = findWordPositionNormalized(
+                textChars: textChars, word: word, startPos: searchPos, distanceGuard: true
+            )
+            if let idx = directIndex,
+               match == nil || (wordRanges.first(where: { $0.idx == idx })?.start ?? Int.min) <= match!.pos {
+                output.append(idx..<(idx + 1))
                 ocrCursor = idx + 1
                 if let range = wordRanges.first(where: { $0.idx == idx }) {
                     searchPos = max(searchPos, range.end)
                 }
-            } else if let match = findWordPositionNormalized(textChars: textChars, word: word, startPos: searchPos, distanceGuard: true) {
+            } else if let match {
                 let idx = nearestOCRWordIndex(forCharPos: match.pos, ranges: wordRanges, tolerance: 3, minIndex: ocrCursor)
                     ?? (allowFallback ? fallbackWordIndex(
                         word,
@@ -71,9 +84,15 @@ enum OCRWordAligner {
                         window: 14,
                         allowFuzzy: true
                     ) : nil)
-                output.append(idx)
+                let overlapping = wordRanges.filter {
+                    max($0.start, match.pos) < min($0.end, match.pos + match.matchLen)
+                }
+                let range = overlapping.first.flatMap { first in
+                    overlapping.last.map { first.idx..<($0.idx + 1) }
+                } ?? idx.map { $0..<($0 + 1) }
+                output.append(range)
                 searchPos = match.pos + match.matchLen
-                if let idx { ocrCursor = max(ocrCursor, idx + 1) }
+                if let range { ocrCursor = max(ocrCursor, range.upperBound) }
             } else if allowFallback, let idx = fallbackWordIndex(
                 word,
                 comparableWords: comparableWords,
@@ -81,7 +100,7 @@ enum OCRWordAligner {
                 window: 14,
                 allowFuzzy: true
             ) {
-                output.append(idx)
+                output.append(idx..<(idx + 1))
                 ocrCursor = idx + 1
             } else {
                 output.append(nil)
@@ -260,9 +279,19 @@ enum OCRWordAligner {
         let wordChars = Array(word)
         guard !wordChars.isEmpty, startPos <= textChars.count else { return nil }
         let maxDistance = wordChars.count <= 2 ? 30 : (wordChars.count <= 4 ? 50 : 150)
-        func guardDistance(_ m: Match?) -> Match? {
-            guard distanceGuard, let m else { return m }
-            return m.pos - startPos > maxDistance ? nil : m
+        let compoundMatch = wordChars.contains(where: isHyphen)
+            ? findWithRemovedCharacters(textChars: textChars, wordChars: wordChars, startPos: startPos,
+                                        shouldRemove: { isHyphen($0) || $0.isWhitespace })
+            : nil
+        func guardDistance(_ candidate: Match?) -> Match? {
+            var match = candidate
+            if let compoundMatch,
+               compoundMatch.pos < (candidate?.pos ?? Int.max),
+               compoundMatch.matchLen <= wordChars.count + 16 {
+                match = compoundMatch
+            }
+            guard distanceGuard, let match else { return match }
+            return match.pos - startPos > maxDistance ? nil : match
         }
 
         if let m = guardDistance(find(wordChars, in: textChars, from: startPos, caseInsensitive: false)) { return m }
@@ -311,6 +340,13 @@ enum OCRWordAligner {
             if let guarded = guardDistance(m) { return guarded }
         }
 
+        if wordChars.contains(where: isHyphen),
+           let match = findWithRemovedCharacters(
+               textChars: textChars, wordChars: wordChars, startPos: startPos,
+               shouldRemove: { isHyphen($0) || $0.isWhitespace }
+           ) {
+            return guardDistance(match)
+        }
         return nil
     }
 

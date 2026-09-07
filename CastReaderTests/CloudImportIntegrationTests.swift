@@ -1468,7 +1468,7 @@ private final class CloudNoUploadURLProtocol: URLProtocol, @unchecked Sendable {
                 contentType: "application/json",
                 data: Data(
                     """
-                    {"audio":"AA==","audio_format":"mp3","timestamps":[],"duration":0.1,"processed_text":"Allowed spoken text","unprocessed_text":""}
+                    {"audio":"\(ServiceRoutingTests.validPresetAudio)","audio_format":"mp3","timestamps":[],"duration":0.1}
                     """.utf8
                 )
             )

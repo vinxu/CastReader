@@ -120,6 +120,7 @@
 		709B65EF0392C0D1F3A77F3A /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48D9703C788196326AACDB7B /* LibraryView.swift */; };
 		717D9F9EE66FD13E7EBC0EEE /* home-pro-pride.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 31CF3D06EABD7D584D6ADD86 /* home-pro-pride.jpg */; };
 		71D3A1B488210571D7371CD5 /* PhoneAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7649817AE3F16758FE998884 /* PhoneAuthService.swift */; };
+		75E890A0F6C4B6D66C9D1206 /* PresetTTSTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8B7B04891C5193D9B9941F /* PresetTTSTransport.swift */; };
 		761BCCCA2F0E95070086EC4D /* CastReaderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761BCCC92F0E95070086EC4D /* CastReaderApp.swift */; };
 		761BCCCE2F0E95090086EC4D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 761BCCCD2F0E95090086EC4D /* Assets.xcassets */; };
 		761BCCD12F0E95090086EC4D /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 761BCCD02F0E95090086EC4D /* Preview Assets.xcassets */; };
@@ -425,6 +426,7 @@
 		5CF8763DFD904B9F457AEA72 /* OCRWordInkBoundsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OCRWordInkBoundsTests.swift; sourceTree = "<group>"; };
 		5DE0EF97C0D76FF954DE45CF /* YouTubeCacheStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = YouTubeCacheStore.swift; sourceTree = "<group>"; };
 		5E54211E09D3FCAB3E2322D7 /* CapturePipelineTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CapturePipelineTests.swift; sourceTree = "<group>"; };
+		5E8B7B04891C5193D9B9941F /* PresetTTSTransport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PresetTTSTransport.swift; sourceTree = "<group>"; };
 		5E9AE73F761C52888CAFB727 /* KindleReadingSettingsScript.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleReadingSettingsScript.swift; sourceTree = "<group>"; };
 		5EAAB9BE64778DB5A65742C6 /* ImportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportViewModel.swift; sourceTree = "<group>"; };
 		5FABAD88C95BB6B22857C769 /* OCRTokenGeometryCoverage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OCRTokenGeometryCoverage.swift; sourceTree = "<group>"; };
@@ -1143,6 +1145,7 @@
 				2A84330817F627F8D27C636F /* GrowthLoopConversionCoordinator.swift */,
 				BC3850395CA4CC71987918A7 /* VoiceCloneReferencePreprocessor.swift */,
 				5E9AE73F761C52888CAFB727 /* KindleReadingSettingsScript.swift */,
+				5E8B7B04891C5193D9B9941F /* PresetTTSTransport.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -1572,6 +1575,7 @@
 				BF7FB8FCCB457519EF9850C7 /* OCRTokenGeometryCoverage.swift in Sources */,
 				66EE801F903863D15D67DFD7 /* KindleFootnoteSpeech.swift in Sources */,
 				9C89459734F01C14422A4D55 /* OCRWordInkBounds.swift in Sources */,
+				75E890A0F6C4B6D66C9D1206 /* PresetTTSTransport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

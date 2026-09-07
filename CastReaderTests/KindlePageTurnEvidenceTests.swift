@@ -292,6 +292,65 @@ final class KindlePageTurnEvidenceTests: XCTestCase {
         XCTAssertTrue(clipped["presentation"] is NSNull)
     }
 
+    @MainActor
+    func testHeldPrefetchRasterHasSameFingerprintAsItsVisiblePage() async throws {
+        let fixture = try await TurnWebFixture.make()
+        defer { fixture.close() }
+        // Create held images through the actual bootstrap's Blob hook, then
+        // return to the prior page. The next image is detached when prefetched.
+        _ = try await fixture.webView.evaluateJavaScript("drawPage(101)")
+        try await fixture.waitForImages()
+        try await Task.sleep(nanoseconds: 150_000_000)
+        _ = try await fixture.webView.evaluateJavaScript("drawPage(102)")
+        try await fixture.waitForImages()
+        try await Task.sleep(nanoseconds: 150_000_000)
+        let next = try await fixture.state()
+        let nextFingerprint = try XCTUnwrap(next["pixelFingerprint"] as? String)
+        XCTAssertFalse(nextFingerprint.isEmpty)
+        _ = try await fixture.webView.evaluateJavaScript("drawPage(101)")
+        try await fixture.waitForImages()
+        try await Task.sleep(nanoseconds: 150_000_000)
+        let current = try await fixture.state()
+        let key = try XCTUnwrap(current["key"] as? String)
+        var pages: [[String: Any]] = []
+        for _ in 0..<10 {
+            let candidates = try await fixture.json("window.__crKindleCandidateSnapshotsAfterKey('\(key)',12,1400,1)")
+            pages = candidates["pages"] as? [[String: Any]] ?? []
+            if !pages.isEmpty { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        XCTAssertFalse(pages.isEmpty, "Real held Blob candidates must be available")
+        XCTAssertTrue(pages.contains { $0["pixelFingerprint"] as? String == nextFingerprint },
+                      "Detached prefetch must pass the same pixel identity gate as visible OCR")
+        _ = try await fixture.webView.evaluateJavaScript("""
+        window.__pngEncodes = 0;
+        const originalEncode = HTMLCanvasElement.prototype.toDataURL;
+        HTMLCanvasElement.prototype.toDataURL = function(...args) {
+          window.__pngEncodes++;
+          return originalEncode.apply(this, args);
+        };
+        true;
+        """)
+        let metadata = try await fixture.json("window.__crKindleCandidateSnapshotsAfterKey('\(key)',12,1400,1,true)")
+        let identities = try XCTUnwrap(metadata["pages"] as? [[String: Any]])
+        XCTAssertEqual(identities.compactMap { $0["key"] as? String }, pages.compactMap { $0["key"] as? String })
+        XCTAssertTrue(identities.allSatisfy { $0["image"] == nil })
+        let beforeEncodes = try await fixture.webView.evaluateJavaScript("window.__pngEncodes") as? Int
+        XCTAssertEqual(beforeEncodes, 0, "Cache identity checks must never encode full rasters")
+        let identity = try XCTUnwrap(identities.first { $0["pixelFingerprint"] as? String == nextFingerprint })
+        let nextKey = try XCTUnwrap(identity["key"] as? String)
+        let raster = try await fixture.json("window.__crKindlePrefetchSnapshotForKey('\(nextKey)',1400,1)")
+        XCTAssertEqual(raster["key"] as? String, nextKey)
+        XCTAssertEqual(raster["pixelFingerprint"] as? String, nextFingerprint)
+        XCTAssertTrue((raster["image"] as? String)?.hasPrefix("data:image/png;base64,") == true)
+        let afterEncodes = try await fixture.webView.evaluateJavaScript("window.__pngEncodes") as? Int
+        XCTAssertEqual(afterEncodes, 1)
+        let after = try await fixture.state()
+        XCTAssertEqual(after["key"] as? String, current["key"] as? String)
+        XCTAssertEqual(after["pixelFingerprint"] as? String, current["pixelFingerprint"] as? String,
+                       "Speculative capture must preserve the current visible page")
+    }
+
     private func attachGeometryEvidence(_ geometry: [String: Any], name: String) {
         guard let data = try? JSONSerialization.data(withJSONObject: geometry, options: [.prettyPrinted, .sortedKeys]),
               let text = String(data: data, encoding: .utf8) else { return }

@@ -6595,7 +6595,11 @@ enum KindleWebScripts {
       }
       function crKindleVisiblePixelFingerprint(candidate) {
         candidate = refreshCandidate(candidate || currentReadingCandidate());
-        var img = candidate && candidate.img;
+        return crKindleImagePixelFingerprint(candidate && candidate.img);
+      }
+      // Held prefetch images have no connected DOM element. Hash the actual
+      // source raster, using the same algorithm as visible-turn confirmation.
+      function crKindleImagePixelFingerprint(img) {
         if (!img || !img.complete || !(img.naturalWidth > 0)) return '';
         try {
           var size = 48;
@@ -6611,7 +6615,7 @@ enum KindleWebScripts {
             hashA = Math.imul(hashA ^ lum, 0x01000193) >>> 0;
             hashB = Math.imul(hashB ^ (lum + (i >>> 2)), 0x85ebca6b) >>> 0;
           }
-          return 'px:' + Number(candidate.nw || img.naturalWidth || 0) + 'x' + Number(candidate.nh || img.naturalHeight || 0) + ':' + hashA.toString(16) + ':' + hashB.toString(16);
+          return 'px:' + Number(img.naturalWidth || 0) + 'x' + Number(img.naturalHeight || 0) + ':' + hashA.toString(16) + ':' + hashB.toString(16);
         } catch (_) { return ''; }
       }
       function crKindleHeldKeyByImageFingerprint(key) {
@@ -7235,7 +7239,7 @@ enum KindleWebScripts {
         return {
           ok: true,
           key: key || '',
-          pixelFingerprint: crKindleVisiblePixelFingerprint(candidate || currentReadingCandidate()),
+          pixelFingerprint: crKindleImagePixelFingerprint(img),
           source: 'visible',
           image: canvas.toDataURL('image/png'),
           natural: nw + 'x' + nh,
@@ -7471,7 +7475,22 @@ enum KindleWebScripts {
           return JSON.stringify({ ok:false, reason:String(e), afterKey:String(afterKey || ''), url:location.href });
         }
       };
-      window.__crKindleCandidateSnapshotsAfterKey = function(afterKey, limit, maxWidth, quality) {
+      window.__crKindlePrefetchSnapshotForKey = function(key, maxWidth, quality) {
+        try {
+          key = String(key || '');
+          var c = crKindleHeldCandidateForStableKey(key) || crKindleCandidateForKey(key);
+          if (!c || !c.img || !c.img.complete || !(c.img.naturalWidth > 0)) {
+            return JSON.stringify({ ok:false, reason:'prefetch-image-unavailable', key:key });
+          }
+          // Speculation must not lock or scroll the currently visible page.
+          var shot = draw(c.img, c.key || key, maxWidth, quality, c.rect, c);
+          shot.sessionId = window.__crKindleProbe.liveSessionId || 0;
+          return JSON.stringify(shot);
+        } catch (e) {
+          return JSON.stringify({ ok:false, reason:String(e), key:String(key || '') });
+        }
+      };
+      window.__crKindleCandidateSnapshotsAfterKey = function(afterKey, limit, maxWidth, quality, metadataOnly) {
         try {
           afterKey = String(afterKey || window.__crKindleProbe.liveKey || '');
           limit = Math.max(1, Math.min(12, Number(limit || 12)));
@@ -7483,7 +7502,11 @@ enum KindleWebScripts {
             if (pages.length >= limit || !c || !c.key || seen[c.key]) return;
             if (!c.img || !c.img.complete || !(c.img.naturalWidth > 0)) return;
             seen[c.key] = true;
-            var shot = draw(c.img, c.key || '', maxWidth || crKindleOcrMaxWidth, quality || crKindleOcrJpegQuality, c.rect, c);
+            // Send small identities first. Native code requests a raster only
+            // for an OCR cache miss, one image per asynchronous bridge call.
+            var shot = metadataOnly
+              ? { ok:true, key:c.key, pixelFingerprint:crKindleImagePixelFingerprint(c.img) }
+              : draw(c.img, c.key || '', maxWidth || crKindleOcrMaxWidth, quality || crKindleOcrJpegQuality, c.rect, c);
             shot.kind = c.kind || '';
             shot.visibleArea = c.visible || 0;
             shot.bandVisibleArea = c.bandVisible || 0;

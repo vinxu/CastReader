@@ -717,6 +717,7 @@ final class ReadAloudViewModel: ObservableObject {
     private var ocrAlignedPara = -1
     private var ocrAlignedSegCount = -1
     private var ocrWordIndexes: [Int?] = []
+    private var ocrWordRanges: [Range<Int>?] = []
     private var photoCursor = 0
     private var lastSegmentId = ""
     private var lastSegmentBaselineTime: Double = 0
@@ -1265,7 +1266,8 @@ final class ReadAloudViewModel: ObservableObject {
         guard firstGlobalIndex < end,
               let mapped = ocrWordIndexes[firstGlobalIndex..<end].compactMap({ $0 }).first else { return }
 
-        photoHighlightWordRange = mapped..<(mapped + 1)
+        photoHighlightWordRange = ocrWordRanges[firstGlobalIndex..<end].compactMap { $0 }.first
+            ?? (mapped..<(mapped + 1))
         photoHighlightWordIndex = mapped
         #if DEBUG
         NSLog(
@@ -4313,6 +4315,20 @@ final class ReadAloudViewModel: ObservableObject {
         guard localIdx >= 0 else { return }
 
         let wordKey = "\(seg.id)#\(localIdx)"
+        #if DEBUG
+        if document.sourceKind == .kindle,
+           ProcessInfo.processInfo.arguments.contains("-CastReaderTTSClockDiagnostics"),
+           lastWordKey.hasPrefix("\(seg.id)#"),
+           let previous = lastWordKey.split(separator: "#").last.flatMap({ Int($0) }),
+           localIdx > previous + 1 {
+            let missed = seg.timestamps[(previous + 1)..<localIdx]
+            let durations = missed.map { String(Int(($0.endTime - $0.startTime) * 1000)) }.joined(separator: ",")
+            let windows = missed.enumerated().map { offset, stamp in
+                String(Int((seg.timestamps[previous + 2 + offset].startTime - stamp.startTime) * 1000))
+            }.joined(separator: ",")
+            KindleRunLog.write("KINDLE_CLOCK missed=\(localIdx - previous - 1) segment=\(seg.id) from=\(previous) to=\(localIdx) audioMs=\(Int(t * 1000)) speechMs=\(durations) displayWindowMs=\(windows)")
+        }
+        #endif
         defer { lastWordKey = wordKey }
 
         if document.usesNativeTextRendering {
@@ -4327,7 +4343,8 @@ final class ReadAloudViewModel: ObservableObject {
             let gIdx = wordHighlightSegments(segs).prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx
             if gIdx >= 0, gIdx < ocrWordIndexes.count, let idx = ocrWordIndexes[gIdx] {
                 let next = max(photoHighlightWordIndex ?? -1, idx)
-                let range = next..<(next + 1)
+                let mappedRange = ocrWordRanges[gIdx] ?? (idx..<(idx + 1))
+                let range = next..<max(next + 1, mappedRange.upperBound)
                 if photoHighlightWordRange != range {
                     photoHighlightWordRange = range
                 }
@@ -4395,12 +4412,13 @@ final class ReadAloudViewModel: ObservableObject {
         let segs = wordHighlightSegments(segmentsByParagraph[currentParagraphIndex] ?? [])
         if ocrAlignedPara == currentParagraphIndex && ocrAlignedSegCount == segs.count { return }
         let allowFallback = document.sourceKind != .kindle
-        ocrWordIndexes = OCRWordAligner.mapTimestampWords(
+        ocrWordRanges = OCRWordAligner.mapTimestampWordRanges(
+            segs.flatMap(\.timestamps),
             in: document.paragraphs[currentParagraphIndex],
-            segments: segs,
             allowFallback: allowFallback,
             allowBoundedFallback: document.sourceKind == .kindle
         )
+        ocrWordIndexes = ocrWordRanges.map { $0?.lowerBound }
         ocrAlignedPara = currentParagraphIndex
         ocrAlignedSegCount = segs.count
         #if DEBUG
@@ -4429,6 +4447,7 @@ final class ReadAloudViewModel: ObservableObject {
         ocrAlignedPara = -1
         ocrAlignedSegCount = -1
         ocrWordIndexes = []
+        ocrWordRanges = []
     }
 
     /// photo 无词时间戳时：把「段内第 segPos 个 segment + 其内部进度」线性映射到 OCR 词索引（句子级近似）。
