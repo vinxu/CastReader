@@ -1,0 +1,569 @@
+{
+  "schema": "castreader.backend-heartbeat-review.v1",
+  "automationId": "24",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "reviewedAtUTC": "2026-09-07T08:24:57.324094+00:00",
+  "snapshotDirectory": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z",
+  "fixedWindow": {
+    "collectedThroughExclusive": "2026-09-07T08:19:11.014412Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  },
+  "incrementalWindow": {
+    "endUTCExclusive": "2026-09-07T08:18:21.015000+00:00",
+    "productionActiveFromUTC": "2026-09-07T06:59:28.071711+00:00",
+    "startUTC": "2026-09-07T07:18:20.570000+00:00"
+  },
+  "backendVerdict": "存在异常（历史故障保留）；本轮未发现新的确证供给失败，新增6次下游断开单列，解读/克隆完整交付仍证据不足",
+  "decision": "DONT_NOTIFY",
+  "newActionableChange": false,
+  "reason": "后端供给与版本稳定，无新HTTP/流内/模型技术错误；新增断开已精确关联到下游关闭，尚无新的后端故障或用户操作需求。",
+  "globalTts": {
+    "requests": 1570,
+    "finished200": 1570,
+    "allAttempt1": true,
+    "globalElapsedMs": {
+      "samples": 1570,
+      "p95Ms": 835,
+      "maxMs": 2571
+    },
+    "proxyCounts": {
+      "errorClasses": {},
+      "failureScopesAndLastObservedPhases": {},
+      "finishedOutcomes": {
+        "cancelled": 6,
+        "complete": 2077
+      },
+      "finishedReportedStatuses": {
+        "200": 2077
+      },
+      "phases": {
+        "admission": 4166,
+        "cancellation": 6,
+        "completion": 2083,
+        "connect": 4166,
+        "inbound_body": 2083,
+        "response_body": 2077,
+        "response_complete": 2077,
+        "response_headers": 2077
+      },
+      "receivedAttempts": {
+        "1": 2083
+      },
+      "stages": {
+        "flight_created": 2083,
+        "request_body_read": 2083,
+        "request_finished": 2083,
+        "request_received": 2083,
+        "upstream_cancelled": 6,
+        "upstream_complete": 2077,
+        "upstream_connect_started": 2083,
+        "upstream_connected": 2083,
+        "upstream_first_body": 2077,
+        "upstream_headers": 2077
+      }
+    },
+    "proxyTimingsMs": {
+      "request_body_read.elapsedMs": {
+        "max": 0.439,
+        "median": 0.057,
+        "n": 2083,
+        "p95": 0.091
+      },
+      "request_finished.elapsedMs": {
+        "max": 2538.197,
+        "median": 428.586,
+        "n": 2083,
+        "p95": 892.928
+      },
+      "upstream_complete.elapsedMs": {
+        "max": 2516.733,
+        "median": 428.305,
+        "n": 2077,
+        "p95": 892.539
+      },
+      "upstream_connected.connectMs": {
+        "max": 0.951,
+        "median": 0.253,
+        "n": 2083,
+        "p95": 0.323
+      },
+      "upstream_first_body.elapsedMs": {
+        "max": 2516.318,
+        "median": 428.253,
+        "n": 2077,
+        "p95": 892.32
+      },
+      "upstream_headers.elapsedMs": {
+        "max": 2515.991,
+        "median": 427.973,
+        "n": 2077,
+        "p95": 892.145
+      }
+    },
+    "globalJoin": {
+      "attempts": 1570,
+      "matched": 1570,
+      "ambiguous": 0,
+      "matchedProxyComplete": 1570
+    },
+    "proxyIdentityAndCoverageVerified": true,
+    "cumulativeCore5xx": 1,
+    "historicalJapanese500Preserved": true
+  },
+  "direct": {
+    "cumulativeStatusCounts": {
+      "200": 8309,
+      "400": 1,
+      "no_response": 18
+    },
+    "source": {
+      "bytes": 37688,
+      "path": "/opt/castreader-tts-gateway/gateway.mjs",
+      "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+    },
+    "incrementalExactWindow": {
+      "http200": 491,
+      "noResponse": 6
+    },
+    "newDownstreamDisconnects": [
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 283,
+        "key": "c0dd9e504567e5e96eda",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:12.684887Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 183,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 234,
+        "key": "4027da2438208bdf9b9e",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:35.600105Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 175,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 324,
+        "key": "6fe122353ef4997c425f",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:36.583579Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 186,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 124,
+        "key": "09304f1bf10dba9b6507",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:37.636100Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 189,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 52,
+        "key": "820ba0e254358b80c008",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:42.491965Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 749,
+        "status": null
+      },
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 818,
+        "key": "a48fb6b69d43039bc2a8",
+        "method": "POST",
+        "observedAt": "2026-09-07T07:25:43.346509Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 181,
+        "status": null
+      }
+    ],
+    "classification": "downstream_closed while awaiting upstream headers; result unknown, no HTTP response",
+    "observedElapsedMsRange": [
+      52,
+      818
+    ],
+    "modelTimeoutOrFailureEstablished": false,
+    "userIntentEstablished": false,
+    "knownFrozenVersionMismatchPreserved": true
+  },
+  "cnTts": {
+    "parsedCumulativeStatuses": {
+      "200": 1586,
+      "499": 1,
+      "502": 2
+    },
+    "incrementalStatuses": {
+      "200": 261,
+      "499": 0,
+      "502": 0
+    },
+    "baseline": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-supply/cn-backend-supply.json",
+    "unparsedFileLines": 64,
+    "knownMaintenance502Count": 2,
+    "new502": 0,
+    "publicationAvailabilityGapClosed": false
+  },
+  "proxyAttribution": {
+    "admissions": 2083,
+    "finished200": 2077,
+    "cancelled": 6,
+    "globalExactMatched": 1570,
+    "directExactMatched": 495,
+    "remainingUnattributedGroups": 18,
+    "reverseSource": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/reverse-attribution.json",
+    "directRequestsWithoutProxyMatch": [
+      {
+        "requestKey": "0111f81344758f6651b0",
+        "directStatus": 200,
+        "directElapsedMs": 1,
+        "directCompletionUTC": "2026-09-07T08:11:15.246296Z",
+        "directPid": "596392",
+        "directPolicy": "legacy",
+        "matchCount": 0,
+        "ambiguous": true,
+        "proxyOutcomes": []
+      },
+      {
+        "requestKey": "4ad18fc2d894423760f3",
+        "directStatus": 200,
+        "directElapsedMs": 0,
+        "directCompletionUTC": "2026-09-07T08:11:19.965405Z",
+        "directPid": "596392",
+        "directPolicy": "legacy",
+        "matchCount": 0,
+        "ambiguous": true,
+        "proxyOutcomes": []
+      }
+    ]
+  },
+  "models": {
+    "us": {
+      "release": "20260907-kokoro-japanese-numbers-us-r135",
+      "identityVerified": true,
+      "diagnosticWindow": {
+        "startUTC": "2026-09-07T07:18:20.570Z",
+        "endUTCExclusive": "2026-09-07T08:18:21.015Z"
+      },
+      "fixedStageCounts": {
+        "english_g2p_recovered": 1,
+        "silent_separator_skipped": 1
+      },
+      "failureEvents": [],
+      "successLedgerComplete": false
+    },
+    "cn": {
+      "release": "20260907-kokoro-japanese-numbers-cn-r135",
+      "identityVerified": true,
+      "diagnosticWindow": {
+        "startUTC": "2026-09-07T07:18:20.570Z",
+        "endUTCExclusive": "2026-09-07T08:18:21.015Z"
+      },
+      "fixedStageCounts": {},
+      "failureEvents": [],
+      "successLedgerComplete": false
+    }
+  },
+  "existingProbes": {
+    "us": {
+      "cycles": 158,
+      "statusCounts": {
+        "healthy": 158
+      },
+      "newHealthyCycles": 11,
+      "newSupplyFailedCycles": 0,
+      "regionMismatchCycles": 0,
+      "lastCompletedUTC": "2026-09-07T08:16:38.833Z",
+      "currentConsecutiveFailures": 0
+    },
+    "cn": {
+      "cycles": 159,
+      "statusCounts": {
+        "healthy": 158,
+        "supply_failed": 1
+      },
+      "newHealthyCycles": 12,
+      "newSupplyFailedCycles": 0,
+      "regionMismatchCycles": 0,
+      "lastCompletedUTC": "2026-09-07T08:18:03.880Z",
+      "currentConsecutiveFailures": 0
+    }
+  },
+  "quickread": {
+    "us": {
+      "incrementalFixedTagCounts": {
+        "[pro-gate] allow": 3
+      },
+      "knownFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-06T21:42:46+00:00",
+          "tag": "fast-block0 error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T03:46:40+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "newFixedErrorRecords": [],
+      "readyFileOutcomes": {
+        "modifiedFiles": 115,
+        "allBlocks": 94,
+        "partialReady": 21
+      },
+      "backendVerdict": "证据不足：已存生成结果不是完整HTTP交付"
+    },
+    "cn": {
+      "incrementalFixedTagCounts": {},
+      "knownFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-07T03:09:52.512816+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "newFixedErrorRecords": [],
+      "readyFileOutcomes": {
+        "modifiedFiles": 16,
+        "allBlocks": 14,
+        "partialReady": 2
+      },
+      "backendVerdict": "证据不足：已存生成结果不是完整HTTP交付"
+    }
+  },
+  "clone": {
+    "us": {
+      "incrementalEvents": [
+        {
+          "event": "captioned_timestamps_built",
+          "kind": "other_or_missing",
+          "count": 23
+        },
+        {
+          "event": "generated_audio_duration_warning",
+          "kind": "other_or_missing",
+          "count": 1
+        },
+        {
+          "event": "generated_audio_fast_path_accepted",
+          "kind": "other_or_missing",
+          "count": 23
+        },
+        {
+          "event": "generated_audio_quality_warning",
+          "kind": "other_or_missing",
+          "count": 1
+        },
+        {
+          "event": "gpu_job_completed",
+          "kind": "captioned-speech",
+          "count": 23
+        },
+        {
+          "event": "xvector_fallback_accepted",
+          "kind": "other_or_missing",
+          "count": 23
+        }
+      ],
+      "startupHealthCounters": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 64,
+        "submitted": 400,
+        "completed": 400,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.03,
+        "queue_wait_p95_ms": 0.06,
+        "run_p50_ms": 470.56,
+        "run_p95_ms": 1212.54
+      },
+      "warnings": [
+        {
+          "atUTC": "2026-09-07T07:38:27.012472+00:00",
+          "event": "generated_audio_quality_warning",
+          "blocking": false,
+          "policy": "playback-first-v1",
+          "warnings": [
+            "noise-or-electronic-spectrum"
+          ],
+          "metrics": {
+            "prefix_pitch_frame_count": 27.0,
+            "spectral_flatness": 0.113281,
+            "rms": 0.039987,
+            "body_pitch_frame_count": 2.0,
+            "duration_s": 7.6,
+            "high_frequency_ratio": 0.062732,
+            "prefix_spectral_flatness_p75": 0.01951,
+            "peak": 0.477173,
+            "prefix_high_frequency_p75": 0.095213,
+            "silent_ratio": 0.749594,
+            "clipping_ratio": 0.0,
+            "prefix_body_pitch_ratio": 0.285,
+            "prefix_body_pitch_p90_ratio": 0.764
+          }
+        },
+        {
+          "atUTC": "2026-09-07T07:38:27.012555+00:00",
+          "event": "generated_audio_duration_warning",
+          "blocking": false,
+          "policy": "playback-first-v1",
+          "metrics": {
+            "prefix_pitch_frame_count": 27.0,
+            "spectral_flatness": 0.113281,
+            "rms": 0.039987,
+            "body_pitch_frame_count": 2.0,
+            "duration_s": 7.6,
+            "high_frequency_ratio": 0.062732,
+            "prefix_spectral_flatness_p75": 0.01951,
+            "expected_duration_limit_s": 5.073,
+            "peak": 0.477173,
+            "prefix_high_frequency_p75": 0.095213,
+            "silent_ratio": 0.749594,
+            "clipping_ratio": 0.0,
+            "prefix_body_pitch_ratio": 0.285,
+            "prefix_body_pitch_p90_ratio": 0.764
+          }
+        }
+      ],
+      "blockingWarnings": false,
+      "backendVerdict": "本轮23条已观测音频生成任务完成，无新增生成失败；完整HTTP交付证据不足"
+    },
+    "cn": {
+      "startupHealthCounters": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 32,
+        "submitted": 4,
+        "completed": 4,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.08,
+        "queue_wait_p95_ms": 0.17,
+        "run_p50_ms": 381.57,
+        "run_p95_ms": 1829.4
+      },
+      "backendVerdict": "证据不足：无本轮新增生产任务"
+    }
+  },
+  "preservedIssues": [
+    "历史Global504的逐阶段归因与持续恢复",
+    "中国区慢探针分项耗时证据",
+    "QuickRead US2/CN1 request_disconnected及交付日志缺口",
+    "中国区模型发布空窗",
+    "Direct独立版本变更、旧代理过渡区间覆盖缺口"
+  ],
+  "limitations": [
+    "历史Global500、CN维护502和更早504均保留，混合版本窗口不能认证R135已运行24小时。",
+    "HTTP200、ready块或任务完成不是用户完成播放的证明。",
+    "本轮克隆声学/时长警告均blocking=false；未读取音频，不认定音质异常或播放失败。",
+    "Vercel返回请求分页完整，写入完整性未认证；代理事件明细截断不影响完整匿名请求列表关联。",
+    "地区探针元数据无不匹配不能代替项目全部链路无跨境证明。",
+    "累计Direct采集截止晚于本轮精确关联窗口，两个口径的增量不同。",
+    "2条Direct200未找到代理关联，耗时分别1ms/0ms；仅凭耗时不能判定其具体处理分支或是否调用模型。"
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/backend-supply/cn-backend-supply.json",
+      "sha256": "4646732c96990d0abed3a60074d57c54c34477b6601aceb10851ee7a55a3c636"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/backend-supply/us-backend-supply.json",
+      "sha256": "bbfd5cbbecc6f712a2963d1b1ac948cd58962f74d9791c31459e04e262562e00"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/backend-supply/us-gpu-backend-supply.json",
+      "sha256": "2ffa17ac3b4f4e8703ebad7690ec7787d7ef1c76572a06b932fa94a0070d3b4e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/clone-warning-detail.json",
+      "sha256": "c2c88940c836446bcf36337b48020730840f90a946e701da1873c9eb82c17f36"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/cn-r135-model.json",
+      "sha256": "8d4064878f6ea9a591ba91fc727dc7210276f41adcc007b9acbe7f24b5cd7b8a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/direct-version-requests.json",
+      "sha256": "af5eab156b0274956c91084018029daaadba9ec47133db77607409545b042920"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/latest-acceptance.json",
+      "sha256": "a771f409858bbd56189a6f3cff77d39ce3275a78f5d860864b08af15f7882d4c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/proxy-window.json",
+      "sha256": "59ddbb91d4dff0ef863baea14084bd6c518e84d0dbd4708ca6eba4231b7f2d6b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/reverse-attribution.json",
+      "sha256": "bee06df115aca069bf333b4b9dead3ae02ebdc92f5ad752e55e10c5fb4d9e692"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/us-r135-model.json",
+      "sha256": "f050072159e428e0b5099249b766753b0f3c109829946799a89d135456e65834"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/vercel-preset.json",
+      "sha256": "ad28e947a378e5bd443dfcfd0c90a4698941e0351bef8189d86854ae02a5cc48"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/vercel-proxy-join.json",
+      "sha256": "50a952e98e3b9ac39d82f6fcc7190578c6f5e2a81b42ae8734c52568957d9f4d"
+    }
+  ]
+}

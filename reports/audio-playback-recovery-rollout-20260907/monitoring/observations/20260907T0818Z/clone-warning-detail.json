@@ -1,0 +1,63 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "synthesisStarted": false,
+  "window": {
+    "startUTC": "2026-09-07T07:18:20.570000+00:00",
+    "endUTCExclusive": "2026-09-07T08:18:21.015000+00:00"
+  },
+  "warnings": [
+    {
+      "atUTC": "2026-09-07T07:38:27.012472+00:00",
+      "event": "generated_audio_quality_warning",
+      "blocking": false,
+      "policy": "playback-first-v1",
+      "warnings": [
+        "noise-or-electronic-spectrum"
+      ],
+      "metrics": {
+        "prefix_pitch_frame_count": 27.0,
+        "spectral_flatness": 0.113281,
+        "rms": 0.039987,
+        "body_pitch_frame_count": 2.0,
+        "duration_s": 7.6,
+        "high_frequency_ratio": 0.062732,
+        "prefix_spectral_flatness_p75": 0.01951,
+        "peak": 0.477173,
+        "prefix_high_frequency_p75": 0.095213,
+        "silent_ratio": 0.749594,
+        "clipping_ratio": 0.0,
+        "prefix_body_pitch_ratio": 0.285,
+        "prefix_body_pitch_p90_ratio": 0.764
+      }
+    },
+    {
+      "atUTC": "2026-09-07T07:38:27.012555+00:00",
+      "event": "generated_audio_duration_warning",
+      "blocking": false,
+      "policy": "playback-first-v1",
+      "metrics": {
+        "prefix_pitch_frame_count": 27.0,
+        "spectral_flatness": 0.113281,
+        "rms": 0.039987,
+        "body_pitch_frame_count": 2.0,
+        "duration_s": 7.6,
+        "high_frequency_ratio": 0.062732,
+        "prefix_spectral_flatness_p75": 0.01951,
+        "expected_duration_limit_s": 5.073,
+        "peak": 0.477173,
+        "prefix_high_frequency_p75": 0.095213,
+        "silent_ratio": 0.749594,
+        "clipping_ratio": 0.0,
+        "prefix_body_pitch_ratio": 0.285,
+        "prefix_body_pitch_p90_ratio": 0.764
+      }
+    }
+  ],
+  "limitations": [
+    "Acoustic warning scores do not establish that playback failed or audio is defective.",
+    "No recording/audio/text read; no exact HTTP request join is available in these warning records."
+  ],
+  "collectorSha256": "a9f1eb0fa21c5a4614e11e70ebd42fee505d827b9631a8686da1f2e9fe6b20b5"
+}
