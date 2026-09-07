@@ -1,0 +1,11 @@
+{
+  "schema": "castreader.backend-observation-local-validation.v1",
+  "sourceSha256": "ee5436c9e0001a46a4888eed46a01fde592327dfe8eae01170ba05b2c61d5d9e",
+  "passed": [
+    "disconnect classified separately from model failure",
+    "missing creation date does not suppress modified ready job or fabricate new job",
+    "post-cutoff file state excluded"
+  ],
+  "productionAccess": false,
+  "synthesisStarted": false
+}

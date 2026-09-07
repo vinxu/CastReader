@@ -1,0 +1,11 @@
+{
+  "serverSourceSha256": "d7ba0a21cafd3208fcb8025f5580580e38c8b2a300a5169e4f54bb8306e43c8f",
+  "lifecycleSourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed",
+  "fastBlockLogsCaughtError": true,
+  "rejectOnlyWhileResponseWritable": true,
+  "staticDisconnectLiteralPresent": true,
+  "requestAbortListener": true,
+  "responseCloseListener": true,
+  "ordinaryRequestCloseNotUsed": true,
+  "localQuerySha256": "b53e84812f23fa39ec63281712dde5270673a57dbab71505b3154ad1d0f34f5c"
+}

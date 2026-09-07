@@ -1,0 +1,40 @@
+{
+  "us": {
+    "serverShaMatchesReviewedRelease": true,
+    "lifecycleShaMatchesReviewedLocalSource": true,
+    "current": {
+      "pid": 543663,
+      "startTicks": "182086288",
+      "cwd": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+      "serverSourceSha256": "d7ba0a21cafd3208fcb8025f5580580e38c8b2a300a5169e4f54bb8306e43c8f",
+      "requestLifecycleSourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+    },
+    "releaseEvidence": {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/us-candidate-runtime-preflight.json",
+      "sha256": "28e5ddf41116fc3773c1c5f3fa1bd04af78a38f064f64b31dca5c4cd67c25e7c"
+    },
+    "localLifecycleSource": {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-quickread-cancellation-recovery-20260905/scripts/video-pipeline/server/request-lifecycle.mjs",
+      "sha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+    }
+  },
+  "cn": {
+    "serverShaMatchesReviewedRelease": true,
+    "lifecycleShaMatchesReviewedLocalSource": true,
+    "current": {
+      "pid": 1608646,
+      "startTicks": "245729048",
+      "cwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+      "serverSourceSha256": "b155806c93c4b098bdc3f6a44ddd2d596d6a7bed5be776af171b4426197ce0b0",
+      "requestLifecycleSourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+    },
+    "releaseEvidence": {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cn-candidate-runtime-preflight.json",
+      "sha256": "d996a302568d74be3f683e0817f3c1191463afac91e2d12e1ff0635dee71f1ef"
+    },
+    "localLifecycleSource": {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-quickread-cancellation-recovery-20260905/scripts/video-pipeline/server/request-lifecycle.mjs",
+      "sha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+    }
+  }
+}

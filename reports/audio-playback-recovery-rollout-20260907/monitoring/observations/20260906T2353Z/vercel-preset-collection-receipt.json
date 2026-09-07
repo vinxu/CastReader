@@ -1,0 +1,29 @@
+{
+  "schema": "castreader.vercel-preset-collection-receipt.v1",
+  "snapshot": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260906T2353Z.json",
+    "sha256": "3db839ee3550ba0d120675acde2a28719a307934765d3b753adfdfbe100b2248"
+  },
+  "queryWindow": {
+    "requestStartInclusiveUTC": "2026-09-06T22:52:47.445000Z",
+    "requestStartExclusiveUTC": "2026-09-06T23:53:17.725000Z"
+  },
+  "coverage": {
+    "pagesRead": 39,
+    "providerHasMoreRows": false,
+    "issues": [],
+    "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+    "tlsCertificateAndHostnameVerified": true,
+    "completeForReturnedRequestCohort": true,
+    "providerRowsRead": 1929,
+    "uniqueProviderRequests": 1890,
+    "parserCounts": {
+      "duplicateProviderRows": 39,
+      "duplicateSafeEvents": 195
+    },
+    "requestsMissingStartOrFinish": 0,
+    "structuredEventsObserved": true,
+    "ingestionCompletenessVerified": false
+  },
+  "collectedAtUTC": "2026-09-07T00:00:43.456365Z"
+}

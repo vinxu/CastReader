@@ -1,0 +1,81 @@
+{
+  "schema": "castreader.backend-supply-observation.v1",
+  "regionRole": "us",
+  "window": {
+    "role": "us",
+    "startUTC": "2026-09-06T18:37:52.522573Z",
+    "endUTC": "2026-09-06T23:53:17.725Z",
+    "incrementalStartUTC": "2026-09-06T22:52:47.445Z"
+  },
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T00:02:42.119450+00:00",
+  "result": {
+    "quickreadHealthAfterCutoff": {
+      "httpStatus": 200,
+      "fields": {
+        "ok": true,
+        "queue": 0,
+        "active": false,
+        "jobs_cached": 195
+      },
+      "observedAtUTC": "2026-09-07T00:02:41.859222+00:00",
+      "counterScope": "Cumulative since current service startup, not window outcomes."
+    },
+    "quickreadExpectedProcess": {
+      "pid": 543663,
+      "startTicks": "182086288",
+      "cwd": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us"
+    },
+    "quickreadLogCoverage": [
+      {
+        "path": "/root/.pm2/logs/quickread-out.log",
+        "bytes": 2958309,
+        "completeFileRead": true
+      },
+      {
+        "path": "/root/.pm2/logs/quickread-error.log",
+        "bytes": 46576,
+        "completeFileRead": true
+      }
+    ],
+    "quickreadLogs": {
+      "windowTimestampedLines": 50,
+      "incrementalTimestampedLines": 1,
+      "fixedTagCounts": {
+        "[pro-gate] allow": 38,
+        "fast-block0 error:": 1
+      },
+      "incrementalFixedTagCounts": {
+        "[pro-gate] allow": 1
+      },
+      "undatedFixedTagCounts": {},
+      "firstTrustedTimestampUTC": "2026-08-15T15:58:01+00:00",
+      "lastTrustedTimestampUTC": "2026-09-06T23:34:42+00:00"
+    },
+    "quickreadJobs": {
+      "directory": "/root/.url-video-agent/jobs/quickread-state",
+      "filesAtRead": 415,
+      "parseFailures": 1,
+      "jobsCreatedInWindow": 0,
+      "jobsCreatedInIncrementalWindow": 0,
+      "filesModifiedInWindow": 39,
+      "createdJobsUpdatedAfterCutoffExcludedFromOutcome": 0,
+      "status": {},
+      "streamStateStatus": {},
+      "withAtLeastBlock0": 0,
+      "allServerBlocksGenerated": 0,
+      "partialButReady": 0,
+      "sectionTotalPairs": {},
+      "nextIndexConsistentWithStoredSections": 0
+    }
+  },
+  "limitations": [
+    "QuickRead has no complete HTTP request ledger; persisted blocks do not prove downstream TTS completion.",
+    "No log-content/body/audio/identity export; counts include unclassified callers and existing probes.",
+    "Current health is outside the fixed cutoff. Readiness and cumulative counters alone cannot prove window success rate."
+  ],
+  "collectorSourceSha256": "98a90664cbb6e0011d95cf805845ab8bb93037f5850a15793147039e80adab40"
+}

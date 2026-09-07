@@ -1,0 +1,162 @@
+{
+  "schema": "castreader.backend-vercel-proxy-join-summary.v1",
+  "window": {
+    "requestStartInclusiveUTC": "2026-09-06T22:52:47.445000Z",
+    "requestStartExclusiveUTC": "2026-09-06T23:53:17.725000Z"
+  },
+  "coverage": {
+    "vercel": {
+      "pagesRead": 39,
+      "providerHasMoreRows": false,
+      "issues": [],
+      "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+      "tlsCertificateAndHostnameVerified": true,
+      "completeForReturnedRequestCohort": true,
+      "providerRowsRead": 1929,
+      "uniqueProviderRequests": 1890,
+      "parserCounts": {
+        "duplicateProviderRows": 39,
+        "duplicateSafeEvents": 195
+      },
+      "requestsMissingStartOrFinish": 0,
+      "structuredEventsObserved": true,
+      "ingestionCompletenessVerified": false
+    },
+    "proxyCoversWindow": true,
+    "proxyRuntimeVerified": true,
+    "proxyCoverageComplete": true,
+    "proxyAnonymousRequestsTruncated": false,
+    "proxyEventDetailTruncationIgnoredForJoin": false
+  },
+  "counts": {
+    "attempts": 1890,
+    "matched": 1890,
+    "ambiguous": 0,
+    "matchedProxyComplete": 1889
+  },
+  "vercelStatusCounts": {
+    "200": 1890
+  },
+  "events": {
+    "events": {
+      "request_start": 1890,
+      "attempt_start": 1890,
+      "upstream_headers": 1890,
+      "upstream_body": 1890,
+      "request_finished": 1890
+    },
+    "failureCodes": {},
+    "terminalCodes": {},
+    "attemptStarts": {
+      "1": 1890
+    }
+  },
+  "elapsedMsFromRequestStart": {
+    "upstream_headers": {
+      "samples": 1890,
+      "p50": 545,
+      "p95": 1531,
+      "max": 3689
+    },
+    "upstream_body": {
+      "samples": 1890,
+      "p50": 571,
+      "p95": 1568,
+      "max": 3727
+    },
+    "request_finished": {
+      "samples": 1890,
+      "p50": 572,
+      "p95": 1570,
+      "max": 3728
+    }
+  },
+  "bodySamples": 1890,
+  "nonEmptyBodySamples": 1890,
+  "boundaryRequests": [
+    {
+      "vercelRequestKey": "3821f300c9036ebeea84",
+      "requestStartUTC": "2026-09-06T23:53:17.300000Z",
+      "requestKey": "d3791c1a0148b3eed406",
+      "attempt": 1,
+      "vercelStatus": 200,
+      "matchCount": 1,
+      "ambiguous": false,
+      "proxy": [
+        {
+          "firstUTC": "2026-09-06T23:53:17.384706+00:00",
+          "lastUTC": "2026-09-06T23:53:17.385208+00:00",
+          "receivedEvents": 1,
+          "phases": [
+            "admission",
+            "connect",
+            "inbound_body"
+          ],
+          "flightKeys": [
+            "9868f296c35cac573e7d"
+          ],
+          "outcomes": {}
+        }
+      ]
+    }
+  ],
+  "unrepresentedProxyAdmissionsByAttempt": {
+    "None": 320
+  },
+  "proxyWindowCounts": {
+    "errorClasses": {},
+    "failureScopesAndLastObservedPhases": {},
+    "finishedOutcomes": {
+      "complete": 2209
+    },
+    "finishedReportedStatuses": {
+      "200": 2209
+    },
+    "phases": {
+      "admission": 4410,
+      "coalescing": 10,
+      "completion": 2209,
+      "connect": 4400,
+      "inbound_body": 2210,
+      "response_body": 2199,
+      "response_complete": 2199,
+      "response_headers": 2199
+    },
+    "receivedAttempts": {
+      "1": 1890,
+      "unavailable": 320
+    },
+    "stages": {
+      "flight_created": 2200,
+      "flight_joined": 10,
+      "request_body_read": 2210,
+      "request_finished": 2209,
+      "request_received": 2210,
+      "upstream_complete": 2199,
+      "upstream_connect_started": 2200,
+      "upstream_connected": 2200,
+      "upstream_first_body": 2199,
+      "upstream_headers": 2199
+    }
+  },
+  "proxyIdentityAndCoverageVerified": true,
+  "limitations": [
+    "Provider request-start cohort includes nested completion after the cutoff; completion times must not be fabricated from request timestamp plus elapsedMs.",
+    "Successful gateway/body delivery is backend supply evidence, not client playback or decode proof.",
+    "No ingestion completeness or complete reverse caller attribution claim. Unrepresented attempt=None requests are not errors or proof of cross-border routing."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260906T2353Z.json",
+      "sha256": "3db839ee3550ba0d120675acde2a28719a307934765d3b753adfdfbe100b2248"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2353Z.json",
+      "sha256": "eebf884eb60668e97297b4f4649e8973ee0b46846cce9869fa0afe693fee0697"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/vercel-proxy-join.json",
+      "sha256": "dbf302e356b0def0f172cccec7b78ac38e303fea6da6d47c6720b8c2d0057c54"
+    }
+  ]
+}
