@@ -1,0 +1,68 @@
+{
+  "schema": "castreader.backend-supply-observation.v1",
+  "regionRole": "us-gpu",
+  "window": {
+    "role": "us-gpu",
+    "startUTC": "2026-09-06T18:37:52.522573Z",
+    "endUTC": "2026-09-07T00:53:48.099Z",
+    "incrementalStartUTC": "2026-09-06T23:53:17.725Z"
+  },
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T00:54:59.163852+00:00",
+  "result": {
+    "cloneHealthAfterCutoff": {
+      "httpStatus": 200,
+      "fields": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 64,
+        "submitted": 173,
+        "completed": 173,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.04,
+        "queue_wait_p95_ms": 0.06,
+        "run_p50_ms": 361.67,
+        "run_p95_ms": 1122.73
+      },
+      "observedAtUTC": "2026-09-07T00:54:59.123516+00:00",
+      "counterScope": "Cumulative since current service startup, not window outcomes."
+    },
+    "expectedCloneProcess": {
+      "pid": 568834,
+      "startTicks": "524136804",
+      "cwd": "/workspace/castreader-clone"
+    },
+    "expectedNariProcess": {
+      "pid": 4136837,
+      "startTicks": "519185503",
+      "cwd": "/workspace/nari-qwen3-tts-clean"
+    },
+    "cloneStructuredLog": {
+      "path": "/var/log/portal/castreader-clone.log",
+      "fileBytes": 3213694,
+      "scanOffset": 0,
+      "bytesRead": 3213694,
+      "firstTrustedUTC": "2026-08-25T20:29:06.666956+00:00",
+      "lastTrustedUTC": "2026-09-06T17:24:43.486974+00:00",
+      "wholeFileScanned": true,
+      "windowEvents": [],
+      "incrementalEvents": [],
+      "unclassifiedEventCounts": {},
+      "timings": [],
+      "limitation": "Scheduled job completion is not HTTP media completion; unstructured HTTP lines lack trustworthy timestamps."
+    }
+  },
+  "limitations": [
+    "QuickRead has no complete HTTP request ledger; persisted blocks do not prove downstream TTS completion.",
+    "No log-content/body/audio/identity export; counts include unclassified callers and existing probes.",
+    "Current health is outside the fixed cutoff. Readiness and cumulative counters alone cannot prove window success rate."
+  ],
+  "collectorSourceSha256": "ee5436c9e0001a46a4888eed46a01fde592327dfe8eae01170ba05b2c61d5d9e"
+}

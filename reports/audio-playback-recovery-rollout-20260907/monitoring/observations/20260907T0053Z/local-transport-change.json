@@ -1,0 +1,15 @@
+{
+  "schema": "castreader.local-proxy-transport-check.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "change": "SSH compression only; no query, identity, sanitization, coverage or deadline changes",
+  "runtimeEvidence": "proxy-compressed-read-receipt.json",
+  "localProxyRegressionCommand": "python3 -B reports/audio-playback-recovery-rollout-20260907/monitoring/test_proxy_events.py",
+  "recordedAtUTC": "2026-09-07T01:13:12.482136+00:00",
+  "collectorSourceSha256": "00610c8df424e795942e8852795abcf698e5e508c09a91298a61bd159cf1bff7",
+  "localRegressionResult": {
+    "passed": 10,
+    "failed": 0,
+    "durationSeconds": 0.013
+  }
+}

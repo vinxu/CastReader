@@ -1,0 +1,32 @@
+{
+  "schema": "castreader.backend-service-delta.v1",
+  "quickreadIdentityUnchanged": {
+    "us": true,
+    "cn": true
+  },
+  "usCloneProcessUnchanged": true,
+  "usNariProcessUnchanged": true,
+  "cnUnitsUnchanged": true,
+  "cloneHealthCounterChanges": {
+    "us": {
+      "submitted": 0,
+      "completed": 0,
+      "failed": 0,
+      "expired": 0
+    },
+    "cn": {
+      "submitted": 0,
+      "completed": 0,
+      "failed": 0,
+      "expired": 0
+    }
+  },
+  "quickreadNewErrorTags": {
+    "us": {},
+    "cn": {}
+  },
+  "knownDirectDisconnectKeySetUnchanged": true,
+  "unrepresentedProxyAdmissionsByAttempt": {
+    "None": 792
+  }
+}

@@ -24,3 +24,5 @@ python3 -B reports/audio-playback-recovery-rollout-20260907/monitoring/collect_b
 - 整体 backendVerdict 与原 automaticVerdict 分开，保留旧故障，不将客户端、博客及支付记录重新混入后端告警。
 
 20260906T2353Z 的辅助采集初版因 journal 时间格式及任务 created_at 缺失而修正；该轮以 `*-backend-supply-v2.json` 为准。两区 QuickRead server hash 与发布预检回执一致；request lifecycle hash 与已审阅源码一致。后续如变更，报告差异，不自动更新预期版本。
+
+20260907T0053Z 代理详细记录回读多次超过本地 SSH 截止。独立分阶段读取显示，身份验证与原窗口 64 MiB 扫描约 2.5 秒即可完成；开启 SSH 压缩后，原窗口全量匿名请求在 36.346 秒回读完成。现有 `collect_proxy_events.py` 只增加 `ssh -C`，保留原 60 秒截止、身份预期、扫描预算、脱敏和关联规则。该调整仅影响本地观察数据传输，没有变更生产音频服务或路由；未将采集超时计作 TTS 超时。

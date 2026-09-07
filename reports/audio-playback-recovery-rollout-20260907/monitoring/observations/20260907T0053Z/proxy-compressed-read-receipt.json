@@ -1,0 +1,23 @@
+{
+  "schema": "castreader.proxy-compressed-read-receipt.v1",
+  "sshCompressionEnabled": true,
+  "startedAtUTC": "2026-09-07T01:10:11.495496+00:00",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "originalRemoteDeadlineSeconds": 60,
+  "retryRemoteDeadlineSeconds": 180,
+  "sourceSha256": "3c9b6c710bce4253ded91f174d7115a85f026a8206c773313c2d1b11b2761ff0",
+  "wrapperSha256": "e65966184696d18c35fd8d42f48ff5e2c8baff3cc64d231941552b213103c0ce",
+  "semanticsUnchanged": [
+    "frozen identity",
+    "fixed window",
+    "64 MiB scan limit",
+    "sanitization",
+    "coverage checks",
+    "request grouping"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 36.346,
+  "finishedAtUTC": "2026-09-07T01:10:47.841344+00:00"
+}

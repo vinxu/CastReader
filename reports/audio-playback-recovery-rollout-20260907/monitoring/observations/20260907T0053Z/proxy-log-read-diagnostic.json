@@ -1,0 +1,21 @@
+{
+  "fileBytes": 15272633236,
+  "fileInode": 2167399091,
+  "readAtUnix": 1788743198.3327494,
+  "stdinPythonReaders": [
+    {
+      "pid": 216371,
+      "state": "R",
+      "parent": 216232,
+      "userTicks": 1,
+      "systemTicks": 1,
+      "startTicks": "552934281"
+    }
+  ],
+  "lastMiB": {
+    "bytes": 1048576,
+    "newlineCount": 3574,
+    "schemaMarkerCount": 0,
+    "maxLineBytesInSlice": 448
+  }
+}

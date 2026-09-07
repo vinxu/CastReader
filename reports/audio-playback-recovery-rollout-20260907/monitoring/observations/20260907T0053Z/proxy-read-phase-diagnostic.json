@@ -1,0 +1,102 @@
+{
+  "timedOut": false,
+  "marks": [
+    {
+      "phase": "identity_source",
+      "elapsed": 0.005
+    },
+    {
+      "phase": "identity_helper_main",
+      "elapsed": 0.025
+    },
+    {
+      "phase": "identity_helper_done",
+      "elapsed": 0.374
+    },
+    {
+      "phase": "supervisor_stat",
+      "elapsed": 0.375
+    },
+    {
+      "phase": "supervisor_read",
+      "elapsed": 0.375
+    },
+    {
+      "phase": "supervisor_read_done",
+      "elapsed": 0.375
+    },
+    {
+      "phase": "proxy_log_scan",
+      "elapsed": 0.375
+    },
+    {
+      "phase": "proxy_log_scan_done",
+      "elapsed": 2.495
+    }
+  ],
+  "metadata": {
+    "/var/log/supervisor/supervisord.log": {
+      "bytes": 106482,
+      "regular": true,
+      "symlink": false
+    },
+    "/var/log/onstart.log": {
+      "bytes": 15273250315,
+      "regular": true,
+      "symlink": false
+    }
+  },
+  "identityVerified": true,
+  "counts": {
+    "stages": {
+      "upstream_headers": 4236,
+      "upstream_first_body": 4236,
+      "upstream_complete": 4236,
+      "request_finished": 4247,
+      "request_received": 4246,
+      "request_body_read": 4246,
+      "flight_created": 4235,
+      "upstream_connect_started": 4235,
+      "upstream_connected": 4235,
+      "flight_joined": 11
+    },
+    "phases": {
+      "response_headers": 4236,
+      "response_body": 4236,
+      "response_complete": 4236,
+      "completion": 4247,
+      "admission": 8481,
+      "inbound_body": 4246,
+      "connect": 8470,
+      "coalescing": 11
+    },
+    "finishedOutcomes": {
+      "complete": 4247
+    },
+    "finishedReportedStatuses": {
+      "200": 4247
+    },
+    "receivedAttempts": {
+      "1": 3454,
+      "unavailable": 792
+    },
+    "failureScopesAndLastObservedPhases": {},
+    "errorClasses": {}
+  },
+  "coverage": {
+    "complete": true,
+    "issues": [],
+    "filePath": "/var/log/onstart.log",
+    "fileBytesAtRead": 15273251971,
+    "fileInode": 2167399091,
+    "scanStartOffset": 15206143107,
+    "bytesScanned": 67108864,
+    "firstAnyStructuredUTC": "2026-09-06T18:45:39.698238+00:00",
+    "lastAnyStructuredUTC": "2026-09-07T01:08:30.214351+00:00",
+    "firstProxyEventUTC": "2026-09-06T18:45:39.698238+00:00",
+    "lastProxyEventUTC": "2026-09-07T01:08:30.214351+00:00",
+    "scannedProxyEventCount": 143956,
+    "unexpectedReleaseEvents": 0,
+    "unexpectedRoutingIdentityEvents": 0
+  }
+}

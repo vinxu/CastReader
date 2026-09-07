@@ -1,0 +1,23 @@
+{
+  "schema": "castreader.proxy-extended-read-receipt.v1",
+  "startedAtUTC": "2026-09-07T01:02:09.770689+00:00",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "originalRemoteDeadlineSeconds": 60,
+  "retryRemoteDeadlineSeconds": 180,
+  "sourceSha256": "3c9b6c710bce4253ded91f174d7115a85f026a8206c773313c2d1b11b2761ff0",
+  "wrapperSha256": "5fda262977dc473f3cafc644f04c8c2e4fc07b9b3115dc00d534dfb17109feb7",
+  "semanticsUnchanged": [
+    "frozen identity",
+    "fixed window",
+    "64 MiB scan limit",
+    "sanitization",
+    "coverage checks",
+    "request grouping"
+  ],
+  "collectionFailed": true,
+  "errorClass": "TimeoutExpired",
+  "elapsedSeconds": 180.084,
+  "finishedAtUTC": "2026-09-07T01:05:09.857233+00:00"
+}

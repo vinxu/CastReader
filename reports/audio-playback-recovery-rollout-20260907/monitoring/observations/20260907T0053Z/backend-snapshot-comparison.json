@@ -1,0 +1,81 @@
+{
+  "schema": "castreader.backend-snapshot-comparison.v1",
+  "current": {
+    "generatedAtUTC": "2026-09-07T00:54:54.753558Z",
+    "directStatusCounts": {
+      "200": 3010,
+      "no_response": 12
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 5914.0,
+      "p50": 502.0,
+      "p95": 1482.0,
+      "samples": 3022
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 72
+    },
+    "cnProbeStatus": {
+      "healthy": 73
+    },
+    "regionMismatchCycles": 0,
+    "collectorCoverageGaps": [],
+    "observedSeconds": 22622
+  },
+  "previous": {
+    "generatedAtUTC": "2026-09-06T23:54:12.961358Z",
+    "directStatusCounts": {
+      "200": 2217,
+      "no_response": 12
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 5914.0,
+      "p50": 495.0,
+      "p95": 1357.0,
+      "samples": 2229
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 60
+    },
+    "cnProbeStatus": {
+      "healthy": 61
+    },
+    "regionMismatchCycles": 0,
+    "collectorCoverageGaps": [],
+    "observedSeconds": 18980
+  },
+  "historicalWindow": {
+    "generatedAtUTC": "2026-09-07T00:54:54.755960Z",
+    "directStatusCounts": {
+      "200": 8996,
+      "400": 3,
+      "502": 1,
+      "504": 4,
+      "no_response": 15
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 9742.0,
+      "p50": 495.0,
+      "p95": 1482.0,
+      "samples": 9019
+    },
+    "globalCore5xx": 4,
+    "usProbeStatus": {
+      "healthy": 230
+    },
+    "cnProbeStatus": {
+      "healthy": 230
+    },
+    "regionMismatchCycles": 0,
+    "collectorCoverageGaps": [],
+    "observedSeconds": 71609
+  },
+  "excludedFromBackendVerdict": [
+    "mobile",
+    "blog",
+    "payment"
+  ],
+  "originalAutomaticVerdictPreserved": true
+}

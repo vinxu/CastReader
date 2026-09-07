@@ -1,0 +1,12 @@
+{
+  "schema": "castreader.read-only-collection-attempt.v1",
+  "source": "US proxy event collector",
+  "recordedAtUTC": "2026-09-07T00:58:41.548183+00:00",
+  "success": false,
+  "errorClass": "TimeoutExpired",
+  "remoteDeadlineSeconds": 60,
+  "maxScanMiB": 64,
+  "productionFailureEstablished": false,
+  "nextReadUsesMiB": 32,
+  "coverageMustStillCoverOriginalFixedWindow": true
+}

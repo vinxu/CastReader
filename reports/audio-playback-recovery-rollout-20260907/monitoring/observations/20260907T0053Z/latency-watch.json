@@ -1,0 +1,17 @@
+{
+  "previousWindowRequestFinishMs": {
+    "samples": 1890,
+    "p50": 572,
+    "p95": 1570,
+    "max": 3728
+  },
+  "currentWindowRequestFinishMs": {
+    "samples": 3454,
+    "p50": 755,
+    "p95": 2201,
+    "max": 7385
+  },
+  "p95ChangeMs": 631,
+  "interpretation": "请求结束时延升高，全部样本仍在既有单次预算内；请求数同时增长，但没有队列/模型分阶段关联，不能将增长确认为耗时原因或用户播放卡顿。",
+  "keepObservingTrend": true
+}

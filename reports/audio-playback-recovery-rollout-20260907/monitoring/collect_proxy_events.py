@@ -159,7 +159,7 @@ def main():
     source = remote.decode() + "\nprint(" + repr(PREFIX) + " + json.dumps(collect(json.loads(" + repr(
         json.dumps(payload)) + ")), sort_keys=True))\n"
     completed = subprocess.run(
-        ["ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "castreader-us4090",
+        ["ssh", "-C", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "castreader-us4090",
          "/venv/main/bin/python -B -"], input=source, text=True, capture_output=True, timeout=60, check=False)
     # SSH banners and exception values are never reflected into the evidence.
     lines = [line[len(PREFIX):] for line in completed.stdout.splitlines() if line.startswith(PREFIX)]
