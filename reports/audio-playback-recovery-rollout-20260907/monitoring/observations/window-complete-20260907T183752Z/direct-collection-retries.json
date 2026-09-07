@@ -1,0 +1,9 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "firstAttempt": "3h shard reached250000 rows; incomplete snapshot preserved",
+  "secondAttempt": "24 hourly shards exceeded local90s read deadline; no valid result produced",
+  "thirdAttempt": "Seven3h and three1h adjacent half-open shards; same parser, row limits, fixed cutoff; local read deadline150s",
+  "recordedAtUTC": "2026-09-07T19:15:40.430394+00:00",
+  "productionFailureEstablished": false
+}

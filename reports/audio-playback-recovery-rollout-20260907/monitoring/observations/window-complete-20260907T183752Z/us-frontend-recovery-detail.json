@@ -1,0 +1,64 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "rows": [
+    {
+      "atUTC": "2026-09-07T17:35:27.740827+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "9466cf8258c45fa9ef89",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T17:49:18.335753+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "dab3b29d52b7b751e0a1",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T17:53:04.506246+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "ec90400906a43fed8725",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T17:54:14.823810+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "b4ea490c5c296561d9f8",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T17:58:09.233620+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "535103bb7001f59260c7",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T18:07:44.853625+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "0569869deb06694b4f79",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T18:12:39.564042+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "0c22459e07d8de6b2aed",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T18:19:34.287690+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "4e606f6f32ca3b1b23d8",
+      "causes": []
+    },
+    {
+      "atUTC": "2026-09-07T18:31:51.113006+00:00",
+      "stage": "english_g2p_recovered",
+      "requestKey": "e7f4efe60782218d76d8",
+      "causes": []
+    }
+  ],
+  "scope": "Fixed optional source-bookkeeping recovery diagnostics only; no text or exception messages.",
+  "collectorSha256": "214ad63272a2b7dbcef07697f6a0c9bfb975d784e0bb7c838ced1b41f1c614c0"
+}

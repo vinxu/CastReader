@@ -1,0 +1,90 @@
+{
+  "readOnly": true,
+  "fixedCutoffUTC": "2026-09-07T18:37:52.522573+00:00",
+  "proxyGroupsAtCutoff": [
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T18:37:52.006644+00:00",
+      "flightKeys": [
+        "28fe02c6430550cd142e"
+      ],
+      "lastUTC": "2026-09-07T18:37:52.007254+00:00",
+      "outcomes": {},
+      "phases": [
+        "admission",
+        "connect",
+        "inbound_body"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "2d321787eaae5c5cfe84"
+    }
+  ],
+  "providerRequestCohortRecords": [
+    {
+      "vercelRequestKey": "7ee9f148d60000b93d86",
+      "requestStartUTC": "2026-09-07T18:37:51.922000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "2d321787eaae5c5cfe84",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "budgetMs": 28000,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "2d321787eaae5c5cfe84",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "2d321787eaae5c5cfe84",
+          "attempt": 1,
+          "elapsedMs": 589,
+          "attemptElapsedMs": 589,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "2d321787eaae5c5cfe84",
+          "attempt": 1,
+          "elapsedMs": 617,
+          "bodyBytes": 330243,
+          "attemptElapsedMs": 617,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "2d321787eaae5c5cfe84",
+          "attempt": 1,
+          "elapsedMs": 618,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 961,
+      "applicationRequestKeys": [
+        "2d321787eaae5c5cfe84"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    }
+  ],
+  "diagnosis": "Boundary truncation: the proxy request began0.516s before the fixed cutoff. Provider-level completed record is supplementary evidence and does not extend the fixed proxy window.",
+  "newBackendFailureEstablished": false
+}

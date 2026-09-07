@@ -1,0 +1,128 @@
+{
+  "schema": "castreader.backend-supply-observation.v1",
+  "regionRole": "us",
+  "window": {
+    "role": "us",
+    "startUTC": "2026-09-06T18:37:52.522573Z",
+    "endUTC": "2026-09-07T18:37:52.522573Z",
+    "incrementalStartUTC": "2026-09-07T17:26:52.003Z"
+  },
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T19:11:35.487471+00:00",
+  "result": {
+    "quickreadHealthAfterCutoff": {
+      "httpStatus": 200,
+      "fields": {
+        "ok": true,
+        "queue": 0,
+        "active": false,
+        "jobs_cached": 386
+      },
+      "observedAtUTC": "2026-09-07T19:11:35.111695+00:00",
+      "counterScope": "Cumulative since current service startup, not window outcomes."
+    },
+    "quickreadExpectedProcess": {
+      "pid": 543663,
+      "startTicks": "182086288",
+      "cwd": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+      "serverSourceSha256": "d7ba0a21cafd3208fcb8025f5580580e38c8b2a300a5169e4f54bb8306e43c8f",
+      "requestLifecycleSourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+    },
+    "quickreadLogCoverage": [
+      {
+        "path": "/root/.pm2/logs/quickread-out.log",
+        "bytes": 2996949,
+        "completeFileRead": true
+      },
+      {
+        "path": "/root/.pm2/logs/quickread-error.log",
+        "bytes": 46734,
+        "completeFileRead": true
+      }
+    ],
+    "quickreadLogs": {
+      "windowTimestampedLines": 335,
+      "incrementalTimestampedLines": 27,
+      "fixedTagCounts": {
+        "[pro-gate] allow": 223,
+        "fast-block0 error:": 1,
+        "extract-plan error:": 1
+      },
+      "incrementalFixedTagCounts": {
+        "[pro-gate] allow": 19
+      },
+      "undatedFixedTagCounts": {},
+      "fixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-06T21:42:46+00:00",
+          "tag": "fast-block0 error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T03:46:40+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "firstTrustedTimestampUTC": "2026-08-15T15:58:01+00:00",
+      "lastTrustedTimestampUTC": "2026-09-07T19:10:46+00:00"
+    },
+    "quickreadJobs": {
+      "directory": "/root/.url-video-agent/jobs/quickread-state",
+      "filesAtRead": 606,
+      "parseFailures": 1,
+      "parseFailuresModifiedInsideWindow": 0,
+      "jobsWithExplicitCreationTimeInWindow": 0,
+      "jobsWithExplicitCreationTimeInIncrementalWindow": 0,
+      "jobsMissingExplicitCreationTime": 605,
+      "outcomeCohort": "Current state of files modified inside the window, not all HTTP requests or newly created jobs.",
+      "filesModifiedInWindow": 223,
+      "createdJobsUpdatedAfterCutoffExcludedFromOutcome": 0,
+      "status": {
+        "streaming": 223
+      },
+      "streamStateStatus": {
+        "ready": 223
+      },
+      "withAtLeastBlock0": 223,
+      "allServerBlocksGenerated": 186,
+      "partialButReady": 37,
+      "sectionTotalPairs": {
+        "3/3": 60,
+        "2/2": 27,
+        "1/5": 2,
+        "1/1": 16,
+        "5/5": 18,
+        "4/4": 53,
+        "1/2": 3,
+        "2/3": 2,
+        "1/3": 17,
+        "1/4": 7,
+        "9/9": 2,
+        "2/10": 1,
+        "1/13": 1,
+        "6/6": 4,
+        "3/5": 1,
+        "8/8": 2,
+        "2/5": 1,
+        "2/4": 1,
+        "3/4": 1,
+        "11/11": 2,
+        "7/7": 1,
+        "10/10": 1
+      },
+      "nextIndexConsistentWithStoredSections": 223
+    }
+  },
+  "limitations": [
+    "QuickRead has no complete HTTP request ledger; persisted blocks do not prove downstream TTS completion.",
+    "No log-content/body/audio/identity export; counts include unclassified callers and existing probes.",
+    "Current health is outside the fixed cutoff. Readiness and cumulative counters alone cannot prove window success rate."
+  ],
+  "collectorSourceSha256": "ee5436c9e0001a46a4888eed46a01fde592327dfe8eae01170ba05b2c61d5d9e"
+}

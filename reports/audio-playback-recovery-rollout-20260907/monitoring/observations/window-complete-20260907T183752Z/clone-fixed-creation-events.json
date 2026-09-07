@@ -1,0 +1,41 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "synthesisStarted": false,
+  "window": {
+    "startUTC": "2026-09-06T18:37:52.522573+00:00",
+    "incrementalStartUTC": "2026-09-07T17:26:52.003000+00:00",
+    "endUTCExclusive": "2026-09-07T18:37:52.522573+00:00"
+  },
+  "fixedCreationEventCounts": {
+    "voice_reference_quality_passed": 5,
+    "voice_reference_semantic_deferred": 5,
+    "voice_denoise_selected": 4,
+    "voice_denoise_reference_rejected": 1
+  },
+  "incrementalCounts": {
+    "voice_reference_quality_passed": 1,
+    "voice_reference_semantic_deferred": 1,
+    "voice_denoise_selected": 1
+  },
+  "incrementalRows": [
+    {
+      "timestampUTC": "2026-09-07T18:19:03.067404+00:00",
+      "event": "voice_reference_quality_passed"
+    },
+    {
+      "timestampUTC": "2026-09-07T18:19:03.067488+00:00",
+      "event": "voice_reference_semantic_deferred"
+    },
+    {
+      "timestampUTC": "2026-09-07T18:19:04.861178+00:00",
+      "event": "voice_denoise_selected"
+    }
+  ],
+  "limitations": [
+    "Only fixed names from reviewed local worker source; no reference recordings, voice identities, quality metrics or exception messages.",
+    "Voice creation is distinct from existing-voice TTS and HTTP audio delivery."
+  ],
+  "collectorSha256": "6db76165a9fe0c6f336496cb83046c70a36181682abf16622efa8a31496be636"
+}

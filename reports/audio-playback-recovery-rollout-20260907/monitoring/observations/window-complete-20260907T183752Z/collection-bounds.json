@@ -1,0 +1,9 @@
+{
+  "actualCollectionStartedUTC": "2026-09-07T19:10:56.587960+00:00",
+  "triggerUTC": "2026-09-07T18:27:55.229Z",
+  "fixedStartUTC": "2026-09-06T18:37:52.522573Z",
+  "incrementalStartUTC": "2026-09-07T17:26:52.003Z",
+  "endUTCExclusive": "2026-09-07T18:37:52.522573Z",
+  "fixedWindowExtended": false,
+  "capturedAfterDeadline": true
+}

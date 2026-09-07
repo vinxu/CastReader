@@ -1,0 +1,54 @@
+{
+  "globalGateway": {
+    "version": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+    "deployment": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+    "wholeFixedWindowIdentityExpected": true,
+    "core5xx": 1
+  },
+  "directGateway": {
+    "frozenOriginalVersion": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+    "observedIndependentVersion": "7d0a22ce8169fb6b6fe8aa3e80a08ae3804ee161",
+    "firstNewTrafficAtUTC": "2026-09-07T03:21:22.184392Z",
+    "actualSource": {
+      "path": "/opt/castreader-tts-gateway/gateway.mjs",
+      "bytes": 37688,
+      "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+    },
+    "originalFrozenExpectationRetained": true,
+    "singleVersion24hCertified": false
+  },
+  "globalKokoro": {
+    "initialWindowVersion": "R134",
+    "currentVersion": "R135",
+    "sourceCommit": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+    "activeFromUTC": "2026-09-07T06:37:55.624577Z",
+    "activeUntilFixedEndSeconds": 43196.897996,
+    "independentlyVerifiedFromUTC": "2026-09-07T06:59:28.071711Z",
+    "diagnosticObservationSeconds": 41904.450862,
+    "singleVersion24hCertified": false
+  },
+  "cnKokoro": {
+    "initialWindowVersion": "r131b",
+    "currentVersion": "R135",
+    "sourceCommit": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+    "primaryAudioValidatedUTC": "2026-09-07T06:55:56.613912Z",
+    "validatedUntilFixedEndSeconds": 42115.908661,
+    "independentlyVerifiedFromUTC": "2026-09-07T06:59:29.643656Z",
+    "diagnosticObservationSeconds": 41902.878917,
+    "singleVersion24hCertified": false
+  },
+  "quickreadAndClone": {
+    "latestReadbackComparedToPrevious": {
+      "usQuickreadUnchanged": true,
+      "cnQuickreadUnchanged": true,
+      "cnServiceUnitsUnchanged": true,
+      "usCloneProcessUnchanged": true,
+      "usNariProcessUnchanged": true,
+      "directSourceUnchanged": true,
+      "directProcessUnchanged": true,
+      "globalDeploymentUnchanged": true
+    },
+    "newReleaseByThisObservation": false,
+    "readbackAfterDeadlineIsNotProofOfEveryInstantDuringWindow": true
+  }
+}

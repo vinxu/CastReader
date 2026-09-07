@@ -1,5 +1,5 @@
 {
-  "cutoverState": "observing",
+  "cutoverState": "window_complete",
   "maintenanceEvents": [
     {
       "actualProxyRevision": 3,

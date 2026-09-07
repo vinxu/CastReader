@@ -1,0 +1,13 @@
+{
+  "automationId": "24",
+  "completedAtUTC": "2026-09-07T19:24:52.934229+00:00",
+  "fixedWindowEndUTC": "2026-09-07T18:37:52.522573Z",
+  "mode": "delete",
+  "deleteStatus": "deleted",
+  "officialToolSucceeded": true,
+  "localAutomationConfigStillPresent": false,
+  "originalConfigurationArchivedAt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/automation-before.toml",
+  "reason": "The fixed observation is complete. Codex desktop heartbeat lifecycle instructions require deleting a completed monitor; the original scheduled prompt asked for PAUSED. The original configuration and all evidence are archived, and no new observation is scheduled.",
+  "productionServicesStopped": false,
+  "existingServerProbesStopped": false
+}

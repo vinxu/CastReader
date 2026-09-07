@@ -1,0 +1,2941 @@
+{
+  "schema": "castreader.backend-observation-archive.v1",
+  "createdAtUTC": "2026-09-07T19:24:52.934229+00:00",
+  "gitParentCommit": "cd5b316bd2872dc348dafa09223e5c3f276b4aa1",
+  "fixedWindow": {
+    "startUTC": "2026-09-06T18:37:52.522573Z",
+    "endUTCExclusive": "2026-09-07T18:37:52.522573Z",
+    "seconds": 86400
+  },
+  "state": "window_complete",
+  "finalReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/backend-final-review.json",
+  "automationClosure": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/automation-closure.json",
+  "beforeStateSnapshots": [
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/before-acceptance-state.json",
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/before-notification-state.json"
+  ],
+  "finalStateSnapshots": [
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/final-acceptance-state.json",
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/final-notification-state.json"
+  ],
+  "oldCompletedWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/archive.json",
+  "originalEvidenceKeptInPlace": true,
+  "sourceManifest": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/README.md",
+      "bytes": 15944,
+      "sha256": "366b0c25f2392e4b658840d4b2f7c25d38547d9eb7e51b77cad3874fb98e9274"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/README.md",
+      "bytes": 10178,
+      "sha256": "109e313398fc89f338e1d30be33179971ae3ef72b9bacd1675943b611ac6227a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/acceptance-state-after-r135.json",
+      "bytes": 10340,
+      "sha256": "f3525fc8c530cd295ab80379571480988a912dabdd87981071a927c5d6de547d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/acceptance-state-before-r135.json",
+      "bytes": 7663,
+      "sha256": "eb42f29aaacb52129bf4168b69c3ca99d1e7d9b905935b231c3ed386d012e43c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/automation-readback.json",
+      "bytes": 7234,
+      "sha256": "0b1ad912a6f12e02b01052d7b5a457d2b3a42544e4884fdf42b81e834c4ba51e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-final-identity.json",
+      "bytes": 2345,
+      "sha256": "3b07da028ec905069e2c9cea7814c1cab77ad463c74b6f4f193ab2503ed537ad"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-primary-promote-direct.json",
+      "bytes": 844,
+      "sha256": "b6df3912626e204dc1e163e044dc252f6b775d3ea816f6c461b01160a2df5c10"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-private-backup.json",
+      "bytes": 536,
+      "sha256": "9c35dad1c2c310a21aa72becf6c3c8dd2d73735d9870ed15b6c14628560429f1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-public-audio-validation.json",
+      "bytes": 10667,
+      "sha256": "7e3fcabd6a5a848666f5335f271563a57b4a705c22724f783fad8a480890b241"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-stage.json",
+      "bytes": 2608,
+      "sha256": "3027b23a164bb434a52dad7f6b9132212e6c04035d27bf13b9af8ef961d79586"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-start.json",
+      "bytes": 876,
+      "sha256": "cb8d643e88eab8cca8fbaa7d19c686f52df36fa1dc5d0a0e06d4e0080bcaaa0d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-tunnel-inspect.json",
+      "bytes": 1856,
+      "sha256": "ac0aedeab6bc0e3b46aaac9b448c13b020685c4842fcaa48cfa1be463098f352"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-tunnel-rollback-readback.json",
+      "bytes": 440,
+      "sha256": "925d5a17f517abe996870be04a4c69a90658d53a2beba77cba7d0b344b8c22db"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-validate.json",
+      "bytes": 2137,
+      "sha256": "177d504f5e4f74ee1e6d78edab9ee8440089687706a1c4a1dd6bb70f7ccc41f1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/frontend-playback-tests-corrected.json",
+      "bytes": 98,
+      "sha256": "67201530cd61989c34f5f96bef8f013fe78a18e0d8d8d418106afef950ffce2e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/frontend-playback-tests.json",
+      "bytes": 60,
+      "sha256": "b1a371f4f985b9faa31ceb5907fd7d74b04cfc9b27f0f689cb277d9b83620350"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/notification-state-before-r135.json",
+      "bytes": 26112,
+      "sha256": "604ea0d5500cea8a33f1b4875f939b218990893933d556db939a603e54c8434e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/backend-review.json",
+      "bytes": 6589,
+      "sha256": "6c9203fdb907d3d30a52d45ec38bed2be7632376790aa44559a179a5e084ebd8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/backend-supply/cn-backend-supply.json",
+      "bytes": 6164,
+      "sha256": "362eff5e54d48df1ff4bc474fcdd447f303211f088c02d2227d80d3f183e0328"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/backend-supply/us-backend-supply.json",
+      "bytes": 4087,
+      "sha256": "d4d31c072fc3cfb4808e330289b447851322d85b517ca23c3239b7898a4c0ee6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 4975,
+      "sha256": "d38dd66844b0bde0dcbb35bfe6a6b9670ba140034785a51ed21bc71bc17a83dd"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/cn-maintenance-statuses.json",
+      "bytes": 521,
+      "sha256": "73bd9d155f6e7a31328fdcec02e185a1c080a7107943e6eac94bb561219e35ce"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/cn-post-r135-model-diagnostics.json",
+      "bytes": 483,
+      "sha256": "121431cde985f0a900bed76d398cffc3b87068e1feb4ec972bbf828de229e3ad"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/cn-probe-timing-series.json",
+      "bytes": 2067,
+      "sha256": "3ba2f30a037e41096b2aa74fc494789a6ad630e8e2a3fdf24f3d2d1f9b68ea28"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/collect_cn_probe_series.py",
+      "bytes": 2539,
+      "sha256": "2056ede0a68e0929983eb89e051d9f7afe4baa54a8ab0bd2351460af04dc02a9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/latest-acceptance.json",
+      "bytes": 90617,
+      "sha256": "faa075ab58eccd43cf7874b928dcb59e4a01de9dbc1b233d12810cb242187680"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/proxy-post-r135.json",
+      "bytes": 192459,
+      "sha256": "380a1bb6a955a2e30e2a3a4ad8c820c0f1e06c141fe3a555b813ab4e75c3ce6a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/proxy-pre-r135-transition.json",
+      "bytes": 1424048,
+      "sha256": "bfddeac938a4e7c50cbb72f1273b4d38f6e3939be7988643785c6ddb90a0337c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/us-post-r135-model-diagnostics.json",
+      "bytes": 517,
+      "sha256": "5b1744e8ef30aad62cba40b4e133dd0e9893691d4d01d9e043366b82e2e4ad37"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/proxy-monitor-identity.json",
+      "bytes": 2996,
+      "sha256": "6d7e48260f5fad57973ea0b943f696cbe8fd22bfdd449dc92c149b0f1f02ff26"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-audio-validation.json",
+      "bytes": 1693,
+      "sha256": "fe7e707231eab5bee116df42eaf800e6312be29bb204d56d42f37f9052eeca13"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-final-identity.json",
+      "bytes": 2871,
+      "sha256": "969b91ecd2d1c42ed5165521f6f63ab722b91d2f64b48a9ceb64e04bda372407"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-green-start.json",
+      "bytes": 1179,
+      "sha256": "1fac132bbd2a595c0bf35a6d68ba72edd674d573ef1710c295441eecec7850eb"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-inspect.json",
+      "bytes": 129825,
+      "sha256": "20224b577d88ec8b651f7d7652c5dd26f95168ab97b605869f1b16ddebf05ecd"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-live-audio-validation.json",
+      "bytes": 1690,
+      "sha256": "ad75672d75e63f523ce78f63f823149c7adcb626fcb6ef7cd498b99ea0355bd4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-model-plan.json",
+      "bytes": 205446,
+      "sha256": "9ab0c4235f095c3bcaf784172ee5fa1a215aa7ab02337ea3b9ca22e0d12448fa"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-private-backup.json",
+      "bytes": 1363,
+      "sha256": "44130b1894b29df2633e3e6988cef15ecbd7baa6104d5b4ead49ea5587f6534b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-public-audio-validation.json",
+      "bytes": 8276,
+      "sha256": "2b44f3c67e245dfa51d8077e3082ea2ee852ba9beebd6af3e008289b1eb8bd58"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-registry-apply.json",
+      "bytes": 2318,
+      "sha256": "99b485d50fad3eeb23ba440fab07ec9166b667a2b97304e0a130827aff631836"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-registry-inspect.json",
+      "bytes": 2762,
+      "sha256": "c8fb5ab9e7d0c4a606ac0aa09a38c576863335c67ac7677f5ce81dacf3a40a84"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-registry-payload.json",
+      "bytes": 4102,
+      "sha256": "fb19b72cf9000d4fc5fb70d1847d88b63429d1c45eeba488365b171da7c5cba8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-registry-plan.json",
+      "bytes": 2719,
+      "sha256": "c6120837f3a20d4b400f85d361fd8496288418048e1aa7546df6396ed809fd3e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-route.json",
+      "bytes": 2686,
+      "sha256": "e3d26cafe37920578706ba248a9dcd5e9d707d887813306585fadfd24750d037"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-stage.json",
+      "bytes": 305,
+      "sha256": "1e86567ad1f866f49e908c5d25a00e2158c519024f2af034279ec54692292d12"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/acceptance-state.json",
+      "bytes": 10346,
+      "sha256": "6b3f1135d55cb03faacb1c3700b95b1b2e13ad9500a1ece8a38838bbe06679cc"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/backend-observation-scope.md",
+      "bytes": 1973,
+      "sha256": "1a4e120ee07d8893f6bc7adcee5aefd85f51f73a390ab2b55a28ad089c8c5f3f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/latest-acceptance.json",
+      "bytes": 110779,
+      "sha256": "9820dcda5315b7ba39ff52e6e72bf6bf2aea8d54454ac9d7f22e6755e9bc1880"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/notification-state.json",
+      "bytes": 43781,
+      "sha256": "eb82a1325c4d0554a10bcf2c3c966cab64f0591a34bf9915da663ef2b84f2ed3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1655Z/acceptance.json",
+      "bytes": 31476,
+      "sha256": "53ac0e16098dbb10ff65e891bf0e161ad2f0721ee954c7849fe6cfd2a95c8c2e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1735Z/acceptance.json",
+      "bytes": 44871,
+      "sha256": "8ac30458ca0d00ab2c96b04893cd2c8bff8ba8acecc40a1192d5a44f52ab7031"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1816Z/acceptance.json",
+      "bytes": 47813,
+      "sha256": "f155f572747ab5c6b09aeeb5f84fb3daf4eb9969bd0fa08c84ae482a41599826"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1839Z/acceptance-state.json",
+      "bytes": 7663,
+      "sha256": "eb42f29aaacb52129bf4168b69c3ca99d1e7d9b905935b231c3ed386d012e43c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1839Z/latest-acceptance.json",
+      "bytes": 31368,
+      "sha256": "4393c23ba3fdbd6850153d6d45d56373f184580201351512182efc5ba2d85559"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1839Z/snapshot-note.json",
+      "bytes": 340,
+      "sha256": "d3df7681117b384d8e7fa2b8aab3fd92338b69d85107099d857b60b67e41b3d4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1845Z/acceptance-state.json",
+      "bytes": 7663,
+      "sha256": "eb42f29aaacb52129bf4168b69c3ca99d1e7d9b905935b231c3ed386d012e43c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1845Z/latest-acceptance.json",
+      "bytes": 33719,
+      "sha256": "4ea714e1dc27c6c8e07d3b272d4363c707e954d5c4e9859e11f3beb572160f15"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/README.md",
+      "bytes": 1557,
+      "sha256": "a48504a5798dad7f1b24b47eef78675992c727fa30256e69a0188075db49a96a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/acceptance-state.json",
+      "bytes": 7663,
+      "sha256": "eb42f29aaacb52129bf4168b69c3ca99d1e7d9b905935b231c3ed386d012e43c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/direct-502-maintenance-timeline.json",
+      "bytes": 4539,
+      "sha256": "7ae390cd83cdfc4fdf9b131098eb0364a4a31d3c0d5013b3dbb1e5435bc41daf"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/direct-new-502.json",
+      "bytes": 5374,
+      "sha256": "26266ed8af25d3d9979518970ffd585769a837f3bf170490dfb72da48bee7d92"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/heartbeat-review.json",
+      "bytes": 3803,
+      "sha256": "4a71ec3c8dd93afc41e691ae17d7213d7fd188e1c78e65a8b7c965a61ea1b0ef"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/latest-acceptance.json",
+      "bytes": 33731,
+      "sha256": "d020ac8dfa827a30cb5b92dd6db6c05bcd20a7a1efb0af3c3456e23d7188f7f4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/vercel-proxy-join-summary.json",
+      "bytes": 2626,
+      "sha256": "b198a9999f541cc8ddac64ff489a6ce2f4165359ec0b2ff44df113638821dbd2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/README.md",
+      "bytes": 2190,
+      "sha256": "853b67e10bea594c8097fc8353a549214a5a3d958b6514a3b4dcee5d771323d5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/acceptance-state.json",
+      "bytes": 7663,
+      "sha256": "eb42f29aaacb52129bf4168b69c3ca99d1e7d9b905935b231c3ed386d012e43c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/android-generation-failed-source-audit.md",
+      "bytes": 13792,
+      "sha256": "d854073e289776bde6e10029f66528ceabb38807d76d24785e10735b98ed2b24"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/android-generation-failed-source-evidence.json",
+      "bytes": 80763,
+      "sha256": "2fc55437dae634498cfc681bf77d3c09d64acbfe0b5b2c679c923be0a9ca70e8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/direct-proxy-cancellations.json",
+      "bytes": 9502,
+      "sha256": "089f70b44423ba1ca026890eab5136baf76bee227e65984374d2de64da777ab1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/heartbeat-review.json",
+      "bytes": 7425,
+      "sha256": "588202c9b9963201dadb31a40cfbc3a56c3b2b804022f09e0fe55ebf9dc415b6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/inspect_mobile_new_failures.py",
+      "bytes": 9261,
+      "sha256": "220bd9cbab296641bc78db79b3bfecc8df17b7a92d936b187bc55d5e223e0d3e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/latest-acceptance.json",
+      "bytes": 50299,
+      "sha256": "03a38b84e6f494d15908a96f4b46664ba390540eb760747bc7eb87196333130e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/mobile-new-failures.json",
+      "bytes": 37521,
+      "sha256": "cd1850eefa236a512231fe5a160fb98c589c4988ccf2d6aceebe36db8c07734d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/vercel-preset-collection-receipt.json",
+      "bytes": 2323,
+      "sha256": "9a483e6cd64f836f4da8961937db9dd420e4ea09fda48a6de7f8f7c3216fab36"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/vercel-proxy-join-summary.json",
+      "bytes": 5493,
+      "sha256": "df25efbc4ef04da18abb305e0f734fa7fdd5149e5f328e67cb822e7bd742aa30"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/README.md",
+      "bytes": 2626,
+      "sha256": "86799c6f84dc900edb39cfe781d3b4e1ff0c6e1930b9f39bc422ccde3164f2a7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/acceptance-state.json",
+      "bytes": 7663,
+      "sha256": "eb42f29aaacb52129bf4168b69c3ca99d1e7d9b905935b231c3ed386d012e43c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/blocked-preview-review.json",
+      "bytes": 14006,
+      "sha256": "4c1be682459c9455888d7d3c0b75594d089f9b74539d1c5869af775f872e32e3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/direct-proxy-cancellations.json",
+      "bytes": 6144,
+      "sha256": "d568e87093b1c5dae28d81f9d6a4a4f92c459c62be5bb9c6193791cccd59a48c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/heartbeat-review.json",
+      "bytes": 12159,
+      "sha256": "82f0fd2d32cf3e86d676ad433f97136cbd9dcb889955b5c3088b5bb4b06e9544"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/inspect_blocked_preview.py",
+      "bytes": 6978,
+      "sha256": "4687c37d793212af3010ab5bf4834611cb4ff547019409354159c3b39ab46d34"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/latest-acceptance.json",
+      "bytes": 56719,
+      "sha256": "919b4e0f820b2fa68dfbdf57c830027c61e5f20915a6f889bd8ea0837a600dba"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/snapshot-comparison.json",
+      "bytes": 9504,
+      "sha256": "8b6f50def59354ad26eb8f882bdff59e30d678f0cb36456ee25e58515b189a52"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/vercel-preset-collection-receipt.json",
+      "bytes": 2307,
+      "sha256": "c2567d2e4f0c572c86207b71a75c20142c663764835acf49984034a7f04e3bc0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/vercel-proxy-join-summary.json",
+      "bytes": 6287,
+      "sha256": "f11ccc17d89b98426c940bef2efbb03ef0f49692e689e50f335fa5059fb0fcf6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/README.md",
+      "bytes": 3568,
+      "sha256": "2d7ec030209cd27685ea414971577376cf71d7cbc6a54c02f69f388dfdc40170"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/acceptance-state.json",
+      "bytes": 7663,
+      "sha256": "eb42f29aaacb52129bf4168b69c3ca99d1e7d9b905935b231c3ed386d012e43c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/collect_noncore_504_review.py",
+      "bytes": 7345,
+      "sha256": "4898ef062bb02bcfac85d82f96a83c7970e3934f4cc2872f417dc7f082682336"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/direct-proxy-cancellations.json",
+      "bytes": 2434,
+      "sha256": "2e84225bd77afca293f1db0fe0151168321c1ea762f90371d59cb771fc6e75a2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/heartbeat-review.json",
+      "bytes": 15715,
+      "sha256": "3d65ba87c8f0d349de002de059d97b4e6d6b82ab1dbc4ef557b68130aa339c15"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/inspect_mobile_delta.py",
+      "bytes": 6601,
+      "sha256": "b05be20fa3f19f1ee47414d162d598e68d8cb176b8e88ea05ec31870b4ef0723"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/inspect_quickread_log_window.py",
+      "bytes": 2668,
+      "sha256": "5fc81332ed6500e6ebf5fdb33de6c87e7ce75d37d9e53fea9552c6de34ace29d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/latest-acceptance.json",
+      "bytes": 63579,
+      "sha256": "54140e18b4d43e56eb493ee52d8b2d3c2f8611535f5ea38bee34423d4e71d28c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/mobile-new-failures.json",
+      "bytes": 52006,
+      "sha256": "9a22787195bcc5d46672f24e775621a1f889edecbd7ffd116c2282013fe8fdbe"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/mobile-review.md",
+      "bytes": 2150,
+      "sha256": "d7737924c8671a3f158529a28a5cd40ead24e2e42aa45540996216244b4f2c59"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/noncore-504-review.initial-unmapped.json",
+      "bytes": 46331,
+      "sha256": "d311577fb8b6d29995d2fe96edf6466edaa6d7e10c50ff905f800e797018198f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/noncore-504-review.json",
+      "bytes": 71431,
+      "sha256": "07bd4a2988d2ace37f021fd16a35b97d7dca6261552f20807b8905184313f572"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/noncore-504-review.md",
+      "bytes": 3804,
+      "sha256": "a3256356417a1be82f9f483375d6a6cf1dccdaaffe180f1bb486fe4abc3ffc15"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/quickread-log-window.json",
+      "bytes": 1658,
+      "sha256": "c79d492e44737ad91ce5c71e8aead0c79dc80296b0db6d165e0352a56275d0cb"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/snapshot-comparison.json",
+      "bytes": 10355,
+      "sha256": "8fda7fa0e01f03e360d612df5cc54a93852f2c0b6b612dca886dce84967244e6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/source-path-review.md",
+      "bytes": 5115,
+      "sha256": "d8859cf4e99474a3bc2a77543b4a77b6869e9c2f674b446e243114cb6c73f3e4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/vercel-preset-collection-receipt.json",
+      "bytes": 2307,
+      "sha256": "93c8307d1eddf5449122f8d0cd27561163084a96b49517ceda7b21893669c7e4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/vercel-proxy-join-summary.json",
+      "bytes": 8417,
+      "sha256": "c8f35913d8d525e685f0d182dd6a11fd9adec98994697f669cf1cf14b85d20c7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/README.md",
+      "bytes": 2946,
+      "sha256": "f157bf7269c462edb0ea16ace6f36af3558d4441389ddd9e593546b9d7a657c8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/acceptance-state.json",
+      "bytes": 7663,
+      "sha256": "eb42f29aaacb52129bf4168b69c3ca99d1e7d9b905935b231c3ed386d012e43c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/direct-proxy-cancellations.json",
+      "bytes": 1126,
+      "sha256": "afa80aaa18e6f93ad951b8a0485574c22d526b39ba8879c07e505b74fda1ffd3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/heartbeat-review.json",
+      "bytes": 14865,
+      "sha256": "2ca235a197f5aa18dfb50d7a7298d9eb26135530a67cf0f2c9612353c2c94087"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/inspect_mobile_delta.py",
+      "bytes": 5356,
+      "sha256": "8e4ad83aa61d27875278878882f6cc75e346ab957976c397334b4b45e372b97f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/latest-acceptance.json",
+      "bytes": 64339,
+      "sha256": "f1aa67090da2ceaef444a337b1bf45a875242b503df877ed4272a1981d253f24"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/mobile-new-failures.json",
+      "bytes": 42659,
+      "sha256": "0a522eb8d7b1b0ac890620d466e91d4b6334a0143b9c18bdd5666f738051dec7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/mobile-review.md",
+      "bytes": 4150,
+      "sha256": "576cafbd398aadce73ed52bff10a668490c871df3402681eecb80cdf6eddd341"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/snapshot-comparison.json",
+      "bytes": 10517,
+      "sha256": "8540517142dedf3b9567a6ec96ba8bf24b065245573c8f12ae4393eed046844d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/vercel-preset-collection-receipt.json",
+      "bytes": 2314,
+      "sha256": "c22d291c5ee03bf3c1adaccc04f62984eef44c33cc48973bfc31801c13342fd8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/vercel-proxy-join-summary.json",
+      "bytes": 17780,
+      "sha256": "3b80e25032080658e58ceeb94127b9136b13c53d7831d93c9f2b3272eb6f47a4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/backend-review.md",
+      "bytes": 6318,
+      "sha256": "c27a029c6261e5b18e8e0ed99656f7809a5b77990575f620359ebf50c10b5351"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/backend-snapshot-comparison.json",
+      "bytes": 1735,
+      "sha256": "203a9f66e1bb09b900fefe258b86a264c6c8cf4cd277f8742e4ed443e2d59463"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/cn-backend-supply-v2.json",
+      "bytes": 5321,
+      "sha256": "2a408e11eebbc749bca8a40dcf6391c4dc2fbe19302870299335d7f435459b98"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/cn-backend-supply.json",
+      "bytes": 164,
+      "sha256": "82a197bdfefabbf1bc18cc7ce3c4346b0fb8da363a32855255c0eb532e7f4816"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/cn-unparsed-tts-lines-evidence-check.json",
+      "bytes": 220,
+      "sha256": "2264d1e457dadb6474242d20c7494d73c47fe47b2f2691eaf3f5bece8c49f234"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/heartbeat-review.json",
+      "bytes": 10346,
+      "sha256": "ecc2271529c031b691318b92634768f741e31141611be8c6b4a1b6ee584fda53"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/latest-acceptance.json",
+      "bytes": 68167,
+      "sha256": "3c97053488601c75cc1b20c9e2c7ba1a3d493ebc8e31e950528f34516394d4f4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/local-reporting-validation.json",
+      "bytes": 416,
+      "sha256": "211e9c99e9883ff3235b16fda661c78b489faa525266e9179555f54935aa3762"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/quickread-identity-comparison.json",
+      "bytes": 2150,
+      "sha256": "3e02963e48e061bcb1ee3d40daaddce6242f7f165ebb43a07392d6a076f0cac0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/us-backend-supply-v2.json",
+      "bytes": 3690,
+      "sha256": "028f6ce1543be0bfc3122664c8261a22ab5c7de8fde23070b2e20914692e5a86"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/us-backend-supply.json",
+      "bytes": 2712,
+      "sha256": "62d1e961d5904d184d36453be158b2b2beea58322d77bd0136ab53fdfc105aeb"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/us-gpu-backend-supply-v2.json",
+      "bytes": 2377,
+      "sha256": "d9363381db7dbbda3cbef6ebadd712e6fcec9effc07d74bb8c9c5ac95469d314"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/us-gpu-backend-supply.json",
+      "bytes": 2377,
+      "sha256": "9b874f4fd7021115d184f740778ce9373bdedb0b5673205ae249f70b2f925584"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/us-quickread-disconnect-evidence-check.json",
+      "bytes": 505,
+      "sha256": "0e6e72eff0a2679c3fe6103f26a13b7386b0d712007948d30aab50c315b6fb22"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/vercel-preset-collection-receipt.json",
+      "bytes": 1063,
+      "sha256": "f138fc1cae2c8e2a4d585cdb438aa8439c26040ad2e846dd0c48fbf31da6d23f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/vercel-proxy-join-summary.json",
+      "bytes": 4784,
+      "sha256": "87724c6993dba6f16633c90ff52929129416951b6ca3454f45157a52ce520c54"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2353Z/vercel-proxy-join.json",
+      "bytes": 1543159,
+      "sha256": "dbf302e356b0def0f172cccec7b78ac38e303fea6da6d47c6720b8c2d0057c54"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/backend-review.md",
+      "bytes": 4301,
+      "sha256": "eb9360c9be4bb66b28bb088e7f714fe996707856b3b783f656a0788bf3446e79"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/backend-service-delta.json",
+      "bytes": 635,
+      "sha256": "fbbcbcfc5bd750ef48cb80edd917742298550ced604a9feb6b3adffcfc6342fa"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/backend-snapshot-comparison.json",
+      "bytes": 1735,
+      "sha256": "dda0b2dd653d3077f034a36974a0043978250b2ea2419a6ad28f2620a6aef977"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/backend-supply/cn-backend-supply.json",
+      "bytes": 5322,
+      "sha256": "9407a3c21d64bb9fdb0bd60d3c28baea879db9695912bbac6eb078da0af48526"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/backend-supply/us-backend-supply.json",
+      "bytes": 3653,
+      "sha256": "27cd28cdd12fd64c2e65e1eeb2e9a3a228af2f4098a25ff7bbb758e1693aba85"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 2377,
+      "sha256": "671854016d607bd9d91c69a858622115c0371a62aa407264a310dbcf591d939d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/collect_proxy_compressed_read.py",
+      "bytes": 2258,
+      "sha256": "e65966184696d18c35fd8d42f48ff5e2c8baff3cc64d231941552b213103c0ce"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/collect_proxy_extended_read.py",
+      "bytes": 2199,
+      "sha256": "5fda262977dc473f3cafc644f04c8c2e4fc07b9b3115dc00d534dfb17109feb7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/heartbeat-review.json",
+      "bytes": 12548,
+      "sha256": "754b66a493f6df50def334327117261eec94f863f8d9a714b0acd4892cc82ebc"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/latency-watch.json",
+      "bytes": 495,
+      "sha256": "50728bd034c459886ede67e0cfa3ede0b9003fef9b1e6729f901d72f43187b84"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/latest-acceptance.json",
+      "bytes": 68526,
+      "sha256": "a6f70e2a18742fd2e0766c5eb2e248488a7ce1e343345b7b21ee2dde8cf0d7d9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/local-transport-change.json",
+      "bytes": 646,
+      "sha256": "bc3acbd205d0880d92a7d7a6bdb77266a47f41c135e894146e93b776055f8592"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/proxy-compressed-read-receipt.json",
+      "bytes": 743,
+      "sha256": "4804b5713a6efee9b59c68ec7b6b818c9ffa70ee6427bf022421a5e1d33164e6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/proxy-extended-read-receipt.json",
+      "bytes": 754,
+      "sha256": "c9dd33b7b932159aae34c26b8b53bb2a0129b7e90000b3606a9d9711ea74b2bb"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/proxy-first-collection-timeout.json",
+      "bytes": 314,
+      "sha256": "091c0d79c1ab5e699d22fd3472824c87ae21a96b29c3d052a4b4800d933e7221"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/proxy-log-read-diagnostic.json",
+      "bytes": 407,
+      "sha256": "bd5b57efa7e797fd6a5b6032aee049032e30054ef7c9057dadfee6173ad552e4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/proxy-read-phase-diagnostic.json",
+      "bytes": 2366,
+      "sha256": "67811d8ca13e9df602044bbb85e76fc8c1e47b66cc112c31aab8eae2c821a41f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/proxy-second-collection-timeout.json",
+      "bytes": 380,
+      "sha256": "597f9308e92ba42595540ba6be5d29cb29e902f2c1cade974f9792da02172a19"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/proxy-third-collection-timeout.json",
+      "bytes": 287,
+      "sha256": "71e0429f4b27a1b2c5cd54945e0501ed3dafe27389d0f73144ff4aad1377fb5e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/quickread-identity-comparison.json",
+      "bytes": 2246,
+      "sha256": "7acc9efba3c0423f821871d6f1c50da23b1d535d1982850d68f5fcf7d522323e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/vercel-preset-collection-receipt.json",
+      "bytes": 1063,
+      "sha256": "5ce81fad5cd95257f61566b28530b88f876b40060f5460d5193eb85f11754e8f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/vercel-proxy-join-summary.json",
+      "bytes": 5750,
+      "sha256": "bbe95bcbaac913d4600dd57690a544430cb5527795e6f70cb1caa3dc3a5db753"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0053Z/vercel-proxy-join.json",
+      "bytes": 2819278,
+      "sha256": "4c8e297893b1de86a166d495432321343f67778f5017c4a24f927ef5ff8ed561"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/backend-review.md",
+      "bytes": 4940,
+      "sha256": "6fc6a11eaa0f4bb13af42144fe06831b7ef934116c5ab48b70552a6371860f6e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/backend-service-delta.json",
+      "bytes": 765,
+      "sha256": "9bdf8d4c9f5ed986822e6e7b7203d5896fa6c29617edd88c2fdf6038e4ebe419"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/backend-snapshot-comparison.json",
+      "bytes": 1735,
+      "sha256": "de9d07ac294a618abee37f8891f7b15457480df2fd76243b15f6254e9a306902"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/backend-supply/cn-backend-supply.json",
+      "bytes": 5322,
+      "sha256": "15ff7ca5e57f3886599311ca0610a7a718c9c5a62a368a84b1eace721246e0dc"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/backend-supply/us-backend-supply.json",
+      "bytes": 3695,
+      "sha256": "006d69868ff0ef511a8acc7849e90a5c25daa4d5a16fd3a4613dde357249a9e2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 2377,
+      "sha256": "158f5d1b60de083dc3323d88c469cffc7920e5bc237576b1c0b56cd19b496b01"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/cn-unparsed-tts-lines-evidence-check.json",
+      "bytes": 251,
+      "sha256": "f867c234184374e515f3332d83dbd0c3f266d96fb1fe7165f22a89de9cb6cb79"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/heartbeat-review.json",
+      "bytes": 19667,
+      "sha256": "102fdec38796b6df51f266032fcfae5bfd6e8fe735b9de9634f4ad44870910d9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/latency-size-buckets.json",
+      "bytes": 3022,
+      "sha256": "724e065d4e701ced06e456ec7f7f1738233de05a280478b37d9a7c63f8361f80"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/latency-watch.json",
+      "bytes": 3398,
+      "sha256": "17839e8906921a2692dad148dc3ecede0cf0c40c99fb9ac0371984ad75d68f02"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/latest-acceptance.json",
+      "bytes": 74547,
+      "sha256": "59364e821c41a72d6389ec28ba2e39fabe42ae1bfbc855e1cff44e5378be2bc9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/merge_vercel_windows.py",
+      "bytes": 4614,
+      "sha256": "7b1c36a227059c48246d472118633a7df94ba3f2f13d3a336987c5c293bbdb12"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/quickread-identity-comparison.json",
+      "bytes": 2246,
+      "sha256": "7acc9efba3c0423f821871d6f1c50da23b1d535d1982850d68f5fcf7d522323e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/validation.json",
+      "bytes": 397,
+      "sha256": "0d3c39601254f5345fcc9686208dc498a7823e799086e8db927e3c429517f41e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/vercel-preset-collection-receipt.json",
+      "bytes": 1630,
+      "sha256": "7be6732c72603ff4b1c03c5f4a3b9c9eed484e0915cb4ddfc1a7cf6f0e650875"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/vercel-proxy-join-summary.json",
+      "bytes": 37903,
+      "sha256": "f5fff90acf85f59db6e4732aa6f002a1fd3ba9bff0cbf291e37c7ad72d6a3920"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0155Z/vercel-proxy-join.json",
+      "bytes": 2838428,
+      "sha256": "d7d437d3a62de223585cb6846602d275edcfc0234df7fecbc41f174d02dc1b7d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/backend-review.md",
+      "bytes": 5088,
+      "sha256": "ff512751398914ba9358fc71ece8e7a9010a24eb1fc757bfb057976121128d4e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/backend-service-delta.json",
+      "bytes": 560,
+      "sha256": "5310a8c2a7a60b13c1a49c13eb867dc5a63a0bcf939c98586d6d9797f07b6018"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/backend-snapshot-comparison.json",
+      "bytes": 2710,
+      "sha256": "f6d9be6b6c50e483190f17aaea736a4eec532c858009aa01fa6ef2fc29208ffd"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/backend-supply/cn-backend-supply.json",
+      "bytes": 5322,
+      "sha256": "4678ce131fa43387cf7e9dde900f04ba62eb9ab88ff8f5201cc4ec9e804f2e95"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/backend-supply/us-backend-supply.json",
+      "bytes": 3751,
+      "sha256": "29f0adfbc39a670c2c37b241abffc6a8f65e8fb7b421b9e2b1c631cb1e767151"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 2377,
+      "sha256": "5312b5cf6b024c5a6027fce1dd2c568e4954794c29faea14d6ab39f9be863da0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/build_backend_review.py",
+      "bytes": 22688,
+      "sha256": "b75645be303b584611e1708c88ca3f1c6167340fd745b45ccf508e489a3a6da7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/cn-latency-watch.json",
+      "bytes": 3391,
+      "sha256": "1220bc3d6c8726c7644ea7c41401a13d5bf3718790cbe3ae8f75027f905d9a88"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/cn-probe-timing-series.json",
+      "bytes": 17516,
+      "sha256": "50d74f4900cc184c4b1d2d79cb90e347ff2249a906f71ff368b79e2c1d8c748f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/collect_cn_probe_series.py",
+      "bytes": 2505,
+      "sha256": "d621580564a0ea9fb8501796bccd59efc0b2d437a5e5606bc8461d7969db06a8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/collect_direct400.py",
+      "bytes": 5756,
+      "sha256": "628e6ec0ccd2a34e7aa8ca3cd0167970ca5591e6d760e6b213bc41abbdbe1709"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/direct400-attribution.json",
+      "bytes": 2329,
+      "sha256": "8a7e12a276bd819fbb0d69599b7aaafb67024efcb5dd86ec6a4609f02418de16"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/direct400.json",
+      "bytes": 3126,
+      "sha256": "db7432dd88a8c218ed69b1e0f1b736bcc7ad30ebd13a1c8a657c14a7e2b3ed47"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/heartbeat-review.json",
+      "bytes": 23018,
+      "sha256": "61d458abc27a39d6bc29ecfcce8d912d9de657696bbd40a34be045a85474a2c7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/latency-size-buckets.json",
+      "bytes": 3751,
+      "sha256": "6cb4602496bb1e668704a5b66dc5a86fdc4d535c3f52e0133268e7740f3a90ad"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/latency-watch.json",
+      "bytes": 3585,
+      "sha256": "04fb56e6c9474fc2108ab549bdb3d564ba8d4241cb3ad234ca4145f61c203152"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/latest-acceptance.json",
+      "bytes": 72635,
+      "sha256": "881aed2e8b2d6c259bb4e8c4cee2d3b3ee8c57babd9b88ae6613813bade6cd44"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/merge_vercel_windows.py",
+      "bytes": 4617,
+      "sha256": "e768db6d1d7c8f5d4079e63a3ba7d4880c9bd09777ae711aef427497db0f40d1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/model-diagnostic-coverage-review.json",
+      "bytes": 1160,
+      "sha256": "9bd4a2c7f4aa949d7bb66a173957f8dfcd7d4c36ed89cc1887473baa9b474684"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/model-existing-diagnostics-v2.json",
+      "bytes": 2278,
+      "sha256": "2dc4ae904c2443813c04024f297b769b95e9d6aa5189d4db85b542b929c0bb2e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/model-existing-diagnostics.json",
+      "bytes": 2214,
+      "sha256": "672efb8c2a66f3665535ba4e52ceee2c4b0480debc4ece3ca472e550aaa0f1f1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/monitor-cn-recovery.json",
+      "bytes": 3526,
+      "sha256": "e9e723bd6e94059cbbffee8850a7726b00e4f4cd622a1232e11dd4056e3bac72"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/quickread-identity-comparison.json",
+      "bytes": 2142,
+      "sha256": "7b73a474a723999a243cf96a346b1b530bd22aed0ae2ad9e211f879eaa6338ef"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/remote_model_diagnostics.py",
+      "bytes": 4316,
+      "sha256": "0ed839167db28aa37ef9ba3f538cc3631ef7324820c210e01f0c7bea5cb6544c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/remote_model_diagnostics_v2.py",
+      "bytes": 4328,
+      "sha256": "3ab286c614e6565c0219430e7abe95b272b648bbcb0cdf937c151c3e749696ae"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/validation.json",
+      "bytes": 1052,
+      "sha256": "d3a2b17a679defb5591ed2566506fabf0bb0f414fd606d122b3962dd4eaf0cb3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/vercel-proxy-join-summary.json",
+      "bytes": 56796,
+      "sha256": "0f8eca1b59cb48c9366d730585fd79aa079ce2f1024d4ab6ca5767266ab6fce6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0255Z/vercel-proxy-join.json",
+      "bytes": 2660914,
+      "sha256": "145b8ea89b86fa4dad760da412bb117e1bc4db9afe048aad7c561acf397cf4fb"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-review.md",
+      "bytes": 6115,
+      "sha256": "ca9f4f0d8c2475b53ef31c4760c17afda977b563add6cabad9258451ff6f23c2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-service-delta.json",
+      "bytes": 1112,
+      "sha256": "6fe43d1f90bcac51ecf4acd98cb5fa34c0dbbb2ff6dc309f353ad98a31e5d9bf"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-snapshot-comparison.json",
+      "bytes": 2342,
+      "sha256": "e090ec6c6cfcb5ef18987d563aafbc0f4e129bc04442cddeb65f92a9f2f6e191"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6075,
+      "sha256": "5b083c2b65fb886182c4ac1acee5e000e24c08deb5a936c37fcf4ea875b646a1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/us-backend-supply.json",
+      "bytes": 4107,
+      "sha256": "1f4ddf50ef2a757931f4bc73f6b47a6ffeb6c9b6f912f5a29d16be3b373a2c4d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 2377,
+      "sha256": "e5587c288e02fbce1a0d3be4931ea6be81a91526489d1f26f285745eb11db6bf"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/build_backend_review.py",
+      "bytes": 22751,
+      "sha256": "2231d91b1c838ebc390efa4f06ad67b5d6c306dba6dfc3819617957d4bb40de6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/cn-ingress-non200.json",
+      "bytes": 791,
+      "sha256": "87c51fffde2fa3e3708d9cbaf49d781a4bd3bee7983de59563b38ab79b3b1c29"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/cn-latency-watch.json",
+      "bytes": 1662,
+      "sha256": "63f14eb5e857f4328b9d90bf83d08423dffc0f940699956d0ffe7176f5495d0e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/cn-probe-timing-series.json",
+      "bytes": 21814,
+      "sha256": "f2e185b0d35339f0944d48d4d6eea7bc22a43c4842c4e268e826b7265b7339e1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/collect_cn_probe_series.py",
+      "bytes": 2505,
+      "sha256": "1c5dfc15f5393d7b037844cd4f1e15933833bb9e18cdf73acd340d3625ee6e97"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/collect_direct_version_buckets.py",
+      "bytes": 3481,
+      "sha256": "81b4d45b726944fb38f2c7d1e59647102e5aac404fbab3e5b290b06747030f9d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/collect_direct_version_requests.py",
+      "bytes": 3785,
+      "sha256": "b174811d00c9eb3450c69c262408978d56809ecaafa2c9639791a25d7af09c59"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-new-release-receipt-check.json",
+      "bytes": 1529,
+      "sha256": "8ea5b16d6394182bfab1986c2d3ff59de54d7a5768e0cbacee5558d06f8fb0a2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-buckets.json",
+      "bytes": 1810,
+      "sha256": "ffcc9b3a8857ec9a8d27c4f9d4121750883ca782139f591a0925dabe2ef3021b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-requests.json",
+      "bytes": 165752,
+      "sha256": "a079b96e055162bc280fd6d4970d6feeb3e1693c7b54fdf334f174706e81bdc8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-transition.json",
+      "bytes": 4572,
+      "sha256": "76ec29dca3a78b23fe48173e3ecb7e030029d8115b8c0ede932002fe45636f32"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/heartbeat-review.json",
+      "bytes": 26807,
+      "sha256": "0d94ec7322ee9e469b9ccf5318ac958f1ddf94a9d4f71471030b0c2fd4a4c45b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/latency-watch.json",
+      "bytes": 3945,
+      "sha256": "7c7b3d2d5a3d36daf9863625e9ff683493b62408bf2d4a9dc6b62c963e23b208"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/latest-acceptance.json",
+      "bytes": 77383,
+      "sha256": "ea4d886503df87eac6066ea8136eec50888916c6c716794b31e26f7492b7ce5b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/merge_vercel_windows.py",
+      "bytes": 4621,
+      "sha256": "f42a9101e5a67b19ee917231039fe46c5d32b3036c6a12c3edd29f23707f9083"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/proxy-retry-attribution.json",
+      "bytes": 2578,
+      "sha256": "730a02e3c80607e019a60e8d2aecd8ae232b6342b65fbeacf99e3163a60f4a2c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/proxy-retry-incident.json",
+      "bytes": 160035,
+      "sha256": "71cdc0dd694bd015afd40d946eaa468d8de609197ca1b39b5b3e38c0cb583402"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/quickread-disconnect-review.json",
+      "bytes": 5878,
+      "sha256": "8c9edec2588edafd977354926085db8c4ad6455c79d97c7657dd5f225b345cff"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/quickread-identity-comparison.json",
+      "bytes": 2052,
+      "sha256": "5b9d3e7d189e1a07ddaced13af1026b4d4fbff8c60365af5acfe40ab9eb33057"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/validation.json",
+      "bytes": 697,
+      "sha256": "af1ae86941574210b2a8f21f939a13b819a4ddd3a92b3e39a48cb1269558d09b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/vercel-access-diagnostic.json",
+      "bytes": 205,
+      "sha256": "df2c5ca7dbcad5e56309924bbc8055f25d1c0ff1e3e5e00602166f0fbb5523e6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/vercel-collection-recovery.json",
+      "bytes": 1735,
+      "sha256": "8962c8d4a6e359192983257350b0985325079f327e1981fcf123cbf9e4af3b37"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/vercel-proxy-join-summary.json",
+      "bytes": 681216,
+      "sha256": "490aa45ba1966fbb0a785fc49c151b28dfb6d6d22d58dae93fbb159e6a8de8b0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/vercel-proxy-join.json",
+      "bytes": 2170912,
+      "sha256": "c8eb49cbdef82084806b1b941df17725a7304118b6894c2b0f7901dce49ccf4e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-identity-comparison.json",
+      "bytes": 285,
+      "sha256": "38f601e79c32f23973cbf918dd91435a5af59f4403e73832ee38ccdcdf10df15"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-review.md",
+      "bytes": 4826,
+      "sha256": "3a482c7f2e47fd61b06af975042cd97cacfaf2ad7322346149f51f116026a8c6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-service-delta.json",
+      "bytes": 3477,
+      "sha256": "117fda2ac49bb41a5c93b38a8dc6fa60b9f65552303dca2aefb6ac761fe1be91"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-snapshot-comparison.json",
+      "bytes": 3492,
+      "sha256": "31306ca83c70b527165f90a201f876ca4e6932f30ac1e442788e5b6642ae7ff5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6058,
+      "sha256": "732b242bf5e5650be496482a08bde48ed76619253c2b38e622d879646bd27a7c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-supply/us-backend-supply.json",
+      "bytes": 4071,
+      "sha256": "4e262fb06af3dad998a70e952618b6a3fda3a7fd8c6921c651d3f25ba370f47d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 2377,
+      "sha256": "6d668c015a3b48714a1d9ff7f3a44f2d6cfc190350e4611b0362d925faa76e90"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/build_backend_review.py",
+      "bytes": 24430,
+      "sha256": "333f54a3caf4a450acde89db3a6502a0cd8688250a85dd627ba4b09f57d3954d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/cn-latency-watch.json",
+      "bytes": 4475,
+      "sha256": "f980168916594cdfbb4b9a6a4887de4572fd02fceb688432fd0cce1d47183d8e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/cn-probe-timing-series.json",
+      "bytes": 4624,
+      "sha256": "440a872e97ac349d32d007489a6296dec1330a8aa0ca7d2914d012c923909caf"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "c21a9cd385c4fb6932d77a7ec459d05c7dfcca2e40e9e070e36c56d659f00fb0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "3369d7c08f4707564a9cdc7aa3e5913e178c7645eaa03b6d95b34c065dfdaa6f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/direct-version-observation.json",
+      "bytes": 1493,
+      "sha256": "55e3baa84a63a50274ab0a8d4be382abf51df4f93461d52045f712bf5f57f99e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/direct-version-requests.json",
+      "bytes": 178688,
+      "sha256": "d92b0aedc7b221589607b84782053936dc14ba6fd239dd079f49aefb1fe98aa1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/heartbeat-review.json",
+      "bytes": 23819,
+      "sha256": "8fd656cfcccda62576d313978731aef476d482fa7ad0836eeb38aec8eb7223b4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/latency-watch.json",
+      "bytes": 4341,
+      "sha256": "1a7bf01d529eeca70074df0582e4b80a056d315eee12106584a1a833d815482d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/latest-acceptance.json",
+      "bytes": 78728,
+      "sha256": "e1127e42ef7b5926a6be90c69c26f180a3330c0f10fd98787fddee42efe4bd3f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/merge_vercel_windows.py",
+      "bytes": 4617,
+      "sha256": "9b8247144d372965bf7dbc44693a6c58621bc5108f7cb55b809c721f12a34edb"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/validation.json",
+      "bytes": 7157,
+      "sha256": "6ff15731e5686e15b953cd2b910a252138066c7714ccbd531a2758883caac744"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/vercel-proxy-join-summary.json",
+      "bytes": 689616,
+      "sha256": "49cbdaddc508fbc85a329b0de0a1fb65f811dc194aa4337eb165531ca3d5fb3f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/vercel-proxy-join.json",
+      "bytes": 1684334,
+      "sha256": "227976b5e6c4e52e71a320c904f3bc86941dd8d0cf6aaa4427cd5474a33bdee0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-identity-comparison.json",
+      "bytes": 294,
+      "sha256": "32ff2b71bfd716a0176504faac18a5d31b414943dc2ed7217c93c476b1cd5a0b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-review.md",
+      "bytes": 8527,
+      "sha256": "e13c8460f637591a6d621f2cc5dcdca08c94fa9db3880ccae3240b66bf43539b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-snapshot-comparison.json",
+      "bytes": 1935,
+      "sha256": "6516a6009b0d758797e6b6833973e0377bfe82f6a4b39aed7e892f93c57fd436"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6021,
+      "sha256": "c752cb553c29b2855cc08b2dc4cbe1ca9baf0958132f8b75efb00e5fa9f49d0a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/us-backend-supply.json",
+      "bytes": 4071,
+      "sha256": "a6408c5cc00ece72024eb5894b781afb539d2b3eb3d347f34f93ac581d90a5f8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 5357,
+      "sha256": "96b04eab86b7eb8b22c247bc74b388ee45fd5b945d8d24e31d7c374f0ea8f72b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/build_backend_review.py",
+      "bytes": 25480,
+      "sha256": "2e51d7ceb5e99e0dca1cb8a9501e3db5e4fd9a95a7525920b23c7be55e8dac0f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/clone-fixed-event-detail-v2.json",
+      "bytes": 2879,
+      "sha256": "1262f7868b6465e99eefe03b0a3ae72703de2dd1f0e6bce21aa45321e2910437"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/clone-fixed-event-detail.json",
+      "bytes": 2654,
+      "sha256": "73fb73774d5f666e9e96f7500832e9593cb4b2f09b55c31b89c3772c34a3c8d9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/clone-supply-review.json",
+      "bytes": 2077,
+      "sha256": "c502fb7066a292ea908192936ca4d5d09564a56edb7025ce2dada9e029cd08ff"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/cn-latency-watch.json",
+      "bytes": 5441,
+      "sha256": "8b9ae9e0828936348f03181e359b6954d775e1e75a6ffda5f8d747dc33f8343c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/cn-probe-timing-series.json",
+      "bytes": 4977,
+      "sha256": "b40b88c5ded3aca7e39af046593943ea39e40ed2d3e10c17f9767d98321fd98a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "472b9089102613dc9bf10522a446c41d98b807e076a8feb39a5ec995c0291079"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "31607dd9c08a5af57d7ce152767a38b0f730fa074ff07cea857d7da1b4eaf1b0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/direct-version-observation.json",
+      "bytes": 1520,
+      "sha256": "204a237344214059b3b1ea92765fb570c0ec4ab4fe009af83aa481dc9ef28b6a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/direct-version-requests.json",
+      "bytes": 211808,
+      "sha256": "016f6ef14a5e97a05e91373130e4903c160364958f226e85262488a2a44fd9b9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/heartbeat-review.json",
+      "bytes": 22410,
+      "sha256": "ef09ba90cf83a5354fedf56edaa64cd6aa61e98c1607b53cc1daa8ebca466e7e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/latency-watch.json",
+      "bytes": 5084,
+      "sha256": "c5a564eb27125cb5efa0d088af00e14f133e5f2823fc602833d6c4385f7ce739"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/latest-acceptance.json",
+      "bytes": 84535,
+      "sha256": "8a4a964e9e05d3c3b12ba8ada82da5593b77ad341797fc923f3a5e9c4310a097"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/merge_vercel_windows.py",
+      "bytes": 4614,
+      "sha256": "f3ba5d72495105c166b8ee0ea5a9f31d3dc4ce29afec8803fb4d3681f8d81c95"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/model-cause-source-evidence-v2.json",
+      "bytes": 24350,
+      "sha256": "62bdaa4568b9b707cd2172e6304ba9c0dce1af7409b395233625f2cf76a532af"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/model-cause-source-evidence.json",
+      "bytes": 13291,
+      "sha256": "1c6c52c70e5be564dc773b34bd3b1e49457c8b7d47ff160646d335ca5fcfe3ff"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/model-existing-diagnostics-v2.json",
+      "bytes": 25890,
+      "sha256": "552519828c30c536b0b3d475473aaad27ade4879566244d471dd4f50c01354df"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/model-existing-diagnostics-v3.json",
+      "bytes": 41065,
+      "sha256": "0b9031a4b05aaa3738bb902522a5aada78bf7364679fa8b5fc65a1a63c45f4e7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/model-existing-diagnostics.json",
+      "bytes": 19905,
+      "sha256": "d76e8072c00a5e06d1d91bf2c490869e317d1e6fc575831d033fb225ecbe9f9c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/proxy-500-window.json",
+      "bytes": 841135,
+      "sha256": "7a63e678a9fc3f5f6829f1530401a4450d11b4983f6d887a10ed035043c4632d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/remote_cause_sources.py",
+      "bytes": 1602,
+      "sha256": "58d1279c362c33a9321e3ea228cd5d870de69cf4895c165e6cab38cdd584b382"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/remote_cause_sources_v2.py",
+      "bytes": 1611,
+      "sha256": "5862fa042bf23b4624aec77222316495a6b8c6b148e69ad418e1bc7333a4eb0c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/remote_clone_detail.py",
+      "bytes": 3508,
+      "sha256": "c165559c4ff76c3b03999da8cf327233b5d331ae3a3ab5a4aeed3f33cc0dcd5d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/remote_clone_detail_v2.py",
+      "bytes": 4272,
+      "sha256": "7309828ec4d0ee9795bccd36edd4e144ec8a621e332474623fcf2e212ca199ab"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/remote_model_diagnostics.py",
+      "bytes": 5450,
+      "sha256": "f2dfeb0f6977fdfd787a576be47ac5422ae429c58389964e37785381f05d96e6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/remote_model_diagnostics_v2.py",
+      "bytes": 5554,
+      "sha256": "72e0fea93d00d7425bbdf2e6932fba09f16082f5a686f23467d1eaba916e2b59"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/remote_model_diagnostics_v3.py",
+      "bytes": 5659,
+      "sha256": "d26c86ee6cce6176d682bad3063e3f05d8cb489ada90910b959d53b6b51fbd7b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/tts500-cause-review.json",
+      "bytes": 68412,
+      "sha256": "4d1bc4cf8a1c60755676a9cb0e5b3968c662cd2c286620c0e1134187f37e2107"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/validation.json",
+      "bytes": 6849,
+      "sha256": "036e09ffe2430ed5668a4cddaf0875bd786e1e177dc556519dc1aac87c49503c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/vercel-proxy-join-summary.json",
+      "bytes": 824050,
+      "sha256": "4edbf0c985471e8343b26b5cd91d97ddf0a8cdb738035d628806b618bef6980b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/vercel-proxy-join.json",
+      "bytes": 2141374,
+      "sha256": "699b1129b6218064be1b9f72dcc40d3b8a50dcc2056d93bc1e66f8745136b0d9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/README.md",
+      "bytes": 1804,
+      "sha256": "e16abdc255ce7f33e7a799af1b863bfeee9f122eef478e80ccd3d63509ee1eac"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-review.json",
+      "bytes": 11642,
+      "sha256": "1ac6dfbb3dfd6c7d5226e80758bca71979045275d55fd2ddba7d751ce5b79be2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6164,
+      "sha256": "d3f316da67bd1bd62638cf9b035d5be676885bcc7beb5b5adccb74816f2cc091"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-supply/us-backend-supply.json",
+      "bytes": 4049,
+      "sha256": "d4ab707d4f30b89adf5abf302e05a5b1d06a73838f34fa9ec86e583bfcc824a4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 4451,
+      "sha256": "7e4ece21251abfbe46c353af4804d179ee4810415ba46f401ef1bbca6a4070b2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/build_backend_review.py",
+      "bytes": 10266,
+      "sha256": "d5b4be7e8c8bc52eb4a224b97c293048e6979dd70d87736915fc6d50026e5149"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/cn-r135-model.json",
+      "bytes": 3596,
+      "sha256": "bbd8d22ff0aa5c42e75539f1df91439e0f2ba724684791f029d2f0ba24554d5c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/collect_r135_readonly.py",
+      "bytes": 5778,
+      "sha256": "780fea2a8dd242b622e97f3e2ed9c3b88ff062a761bb11b23c3889da63574c77"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/latest-acceptance.json",
+      "bytes": 90617,
+      "sha256": "aa0b37f587a32d61e822cb281b1de3790b09e7d0c013ad639ad4b7696ae3397a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/proxy-window.json",
+      "bytes": 1067464,
+      "sha256": "b5326e85555f8c960676d2dd15e60b45bd74123a816aeeb885b34053b6410b0b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/us-r135-model.json",
+      "bytes": 1477,
+      "sha256": "d2ae8a520cb85886dae7f93aeed36ba2471dadd62f756165cafb775eb3d587d1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/vercel-preset.json",
+      "bytes": 358225,
+      "sha256": "11092e0ea67f5b2006e145843a77b2ca44740ebca989fab306599b4a40ec0234"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/vercel-proxy-join.json",
+      "bytes": 168460,
+      "sha256": "733e8bcb4d8e3c50a93dd7b8f08d066a6815a1f76d69a863a71150b8a648498c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/README.md",
+      "bytes": 2116,
+      "sha256": "0ff0c39a5093d438ddf0973dbe24a47b12ea7f29341f972d209ec9a69690cee3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/backend-review.json",
+      "bytes": 19753,
+      "sha256": "ecc814127009e2bbd1d3891cd5579af934993fe8671bf98913833039e6b9a3c8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6168,
+      "sha256": "4646732c96990d0abed3a60074d57c54c34477b6601aceb10851ee7a55a3c636"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/backend-supply/us-backend-supply.json",
+      "bytes": 4109,
+      "sha256": "bbfd5cbbecc6f712a2963d1b1ac948cd58962f74d9791c31459e04e262562e00"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 5384,
+      "sha256": "2ffa17ac3b4f4e8703ebad7690ec7787d7ef1c76572a06b932fa94a0070d3b4e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/build_backend_review.py",
+      "bytes": 14043,
+      "sha256": "4087187ce87c0aa01b9458df6617908946c39e07c80b475e6a987849474ec09a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/clone-warning-detail.json",
+      "bytes": 2065,
+      "sha256": "c2c88940c836446bcf36337b48020730840f90a946e701da1873c9eb82c17f36"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/cn-r135-model.json",
+      "bytes": 3593,
+      "sha256": "8d4064878f6ea9a591ba91fc727dc7210276f41adcc007b9acbe7f24b5cd7b8a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/collect_clone_warning_detail.py",
+      "bytes": 2593,
+      "sha256": "a9f1eb0fa21c5a4614e11e70ebd42fee505d827b9631a8686da1f2e9fe6b20b5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "3b3c7062950633547b95c79cb234cfe87c7274f308fbd53e633d41cc29d425a5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/collect_r135_readonly.py",
+      "bytes": 5775,
+      "sha256": "4252613c446da6f84ffd308a90ac795826fc9391fafff78d656aa561b254940c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/direct-version-requests.json",
+      "bytes": 113046,
+      "sha256": "af5eab156b0274956c91084018029daaadba9ec47133db77607409545b042920"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/latest-acceptance.json",
+      "bytes": 94669,
+      "sha256": "a771f409858bbd56189a6f3cff77d39ce3275a78f5d860864b08af15f7882d4c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/proxy-window.json",
+      "bytes": 6307628,
+      "sha256": "59ddbb91d4dff0ef863baea14084bd6c518e84d0dbd4708ca6eba4231b7f2d6b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/reverse-attribution.json",
+      "bytes": 211038,
+      "sha256": "bee06df115aca069bf333b4b9dead3ae02ebdc92f5ad752e55e10c5fb4d9e692"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/us-r135-model.json",
+      "bytes": 1543,
+      "sha256": "f050072159e428e0b5099249b766753b0f3c109829946799a89d135456e65834"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/vercel-preset.json",
+      "bytes": 2739263,
+      "sha256": "ad28e947a378e5bd443dfcfd0c90a4698941e0351bef8189d86854ae02a5cc48"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/vercel-proxy-join.json",
+      "bytes": 1283109,
+      "sha256": "50a952e98e3b9ac39d82f6fcc7190578c6f5e2a81b42ae8734c52568957d9f4d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/README.md",
+      "bytes": 1991,
+      "sha256": "932491b1304868b3b54db45c38e381b913cb1a12aafeaae11dd955df10434478"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/backend-review.json",
+      "bytes": 19704,
+      "sha256": "8f1658a0ee09c8f0ac5d4283233e481e1dd7b7030dd8a6ead820aedc5cb78955"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6246,
+      "sha256": "1eb6f050dc9dcc1e3571e37c7f4d90eb74d375d2af54ec7ae22e6042b576fbdc"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/backend-supply/us-backend-supply.json",
+      "bytes": 4072,
+      "sha256": "745160bfa2e40e2f3326bddee5dee9411d5990ed9c10ded88ce259e2dd9ba7a7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 4591,
+      "sha256": "f1eb419b11cb02b9e946621c081ecdb73fc2299fd4191f0312b6f8ec46064eb8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/build_backend_review.py",
+      "bytes": 14145,
+      "sha256": "0151954e41480ad1a0a0b8c2b44886ec168cbc75cbb60f55cde20c4136ec439d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/cn-probe-timing-series.json",
+      "bytes": 4624,
+      "sha256": "59874ca608ec7330221624e0d365b2433b8bd82e06a965efaf97e55702ae6c9c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/cn-r135-model.json",
+      "bytes": 3593,
+      "sha256": "2127406f775560f8c588f45fc77adec23289840adcec819b205b1f6d00606260"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "e8545321a3a8b4a5cc2aa02f44db0cfbc21bbee9b26db002ac8161ee5a88ee31"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "78e85b9086e6444ee332da0cad9abbb645029672f9d5aeca934fd4aaf9fa5cd8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/collect_frontend_recovery_detail.py",
+      "bytes": 2322,
+      "sha256": "e6136c627889314440d214f802ea3c44d8e65b06da14c2832eb97d4f90b91ac5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/collect_r135_readonly.py",
+      "bytes": 5775,
+      "sha256": "1096b882663bb6ddca7a3857dae9e5dd82e7b36c5d194b0575ad1104cce8b6f2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/direct-version-requests.json",
+      "bytes": 1598,
+      "sha256": "00a38ae70bde0316331da1f2201c5297777b08307fb558d32b12f2c22d3965a6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/frontend-recovery-attribution.json",
+      "bytes": 12066,
+      "sha256": "9a605f144a20c6dbd994cec16c489745f10bf8b20ab83ea9e2c548c89173c9e8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/frontend-recovery-detail.json",
+      "bytes": 1721,
+      "sha256": "ae8fd77a806938a768db2e32c0daf5516906084ac4a07e7593c0775b14c7077e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/latest-acceptance.json",
+      "bytes": 94901,
+      "sha256": "ddaeb6fd52438582909120280fd764733b6c5d1b143dd2a612a79a6ba19874f9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/proxy-window.json",
+      "bytes": 6043686,
+      "sha256": "51f2f595b2a4d36732ca4222fdeafc390de4f8346f3a3500556183050f49125a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/reverse-attribution.json",
+      "bytes": 26312,
+      "sha256": "7d85d52005f0870d0f657c6184579ccf82f5aad0930d8f1aafc9eaf3ae65d004"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/us-r135-model.json",
+      "bytes": 1546,
+      "sha256": "243825a7736023aa84ff7f6381538aeb55b4fad83661716a493781fc289ecf8d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/vercel-preset.json",
+      "bytes": 2728397,
+      "sha256": "3f72994f33158c5a8053f944876ec935ac6231ee6039b02ae7a22fdd9b979611"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0919Z/vercel-proxy-join.json",
+      "bytes": 1277947,
+      "sha256": "12b8fe9c60fef8533c18672aa8e44b1ceb0ee11cdfd3f03387e6c3778556c2a9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/README.md",
+      "bytes": 1942,
+      "sha256": "6d9855944c1ad44131abc0fb68bf7d6bd7e93762c97b2e6c77b8c07fb71ec8c7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/backend-review.json",
+      "bytes": 21058,
+      "sha256": "e3a6bb8bb6e4383d921b0b6c2b908acbd271014025812806fdb3464713809ba3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6549,
+      "sha256": "83cfb5c21905d34c918dca95a130003136d0b86aacfe90b4bc41a51e83d24200"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/backend-supply/us-backend-supply.json",
+      "bytes": 4109,
+      "sha256": "89e8e53c7e7de36954e807a5985451eb6c355c82577105be006cc99699187b4d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 5115,
+      "sha256": "eb4f48b10196523625557244f5a586fdf703e8c3ade58ddbca47578c7a02090a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/build_backend_review.py",
+      "bytes": 13006,
+      "sha256": "63ac64a6fee582f9c3aa8a0ddcde269f8fdecfa903637c5894ebd384f8c8402b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/cn-probe-timing-series.json",
+      "bytes": 4983,
+      "sha256": "6e1d69313534fb0ce2ed5a841fb054ed06a458bfe479605369b42d9b95fcf0d5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/cn-quickread-ingress.json",
+      "bytes": 654,
+      "sha256": "4090a1ce64e0aed169c30dfd570d5f1f6019c543b343d8fefa00bbecee05d80b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/cn-r135-model.json",
+      "bytes": 3593,
+      "sha256": "f6fc9a3276d141c70cb38a74297a0d0952e33b20491dbd678cf8def7241e13b3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "30cd085abb28efc4748f159c663b04d151012c94b8fec8502f8ab7f82aba523f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/collect_cn_quickread_ingress.py",
+      "bytes": 2335,
+      "sha256": "d6c16697a8a3fa322c82036e78e84fcff7fa07fe25641b4c37001b79a62fc996"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "039d16b3709e7c7dd7086aaafdc27f5d48e110edcf15906fceda382076fc5838"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/collect_r135_readonly.py",
+      "bytes": 5775,
+      "sha256": "fb8da5e45c35ef99eed85abe2b1bce962f91638798a2cbc8d0e8fd0b3e4c2e6d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/direct-version-requests.json",
+      "bytes": 775,
+      "sha256": "ecc404b26fa5d793f15a6f6f0ea50e360b1914e9c48d016162a9bf292dd6848d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/latest-acceptance.json",
+      "bytes": 95619,
+      "sha256": "102a4e172ac5f73cfd3237ba7830eb203aa5860964652591e5bf63f7c6facd93"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/proxy-window.json",
+      "bytes": 6091766,
+      "sha256": "6dda773a43301957fd68e6452211f369dbc54388040dac725f6174ecd168e305"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/quickread-disconnect-review.json",
+      "bytes": 2394,
+      "sha256": "97808eb567009e82de0a94d5a246618b3e66d8dc864ad31ea30e5bee6e305410"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/us-r135-model.json",
+      "bytes": 1508,
+      "sha256": "749c0ad235b0d6d3e0924bc47d71c9da98abf0a0019348b82a81a053163bdfa2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/vercel-preset.json",
+      "bytes": 2960812,
+      "sha256": "ab5db3ceda816d546021a2b449fbf786c655cd0581a4c47037a5a64dffade1e2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1019Z/vercel-proxy-join.json",
+      "bytes": 1386475,
+      "sha256": "a556ceeb3e21aca9509f06f88ae7d915d560cbb51be600509ad7380e8350c6b3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/README.md",
+      "bytes": 2026,
+      "sha256": "e2f941dd733f830adf3643804cbfe6b249a234d2482a6f90bd54e5633a23e33a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/backend-review.json",
+      "bytes": 22121,
+      "sha256": "4068d174437ee404753083dde72c3800f212e2e15ecec3b99d2ec755e8c0d379"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6533,
+      "sha256": "dca8356a8cfb96680b08274935d0ecbf6792756aa78112b10df7bb323e1107c5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/backend-supply/us-backend-supply.json",
+      "bytes": 4149,
+      "sha256": "4f2ed99131becbd60652825fb1b4bcd1b1058621281cd413fbf352dba6dfd6ad"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 5119,
+      "sha256": "a07178314f663d26c49caf7a261ce023cac470994c179f70524a42fcf1dfbe4d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/build_backend_review.py",
+      "bytes": 13368,
+      "sha256": "335b210a68e52fe7b4c0b146e102477cd93339676435db858c19c87ea7c92019"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/cn-probe-timing-series.json",
+      "bytes": 4982,
+      "sha256": "381939259614ba0efe47deb3aa975f9a3cac90ac6395fe1312df0c3b5df59757"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/cn-r135-model.json",
+      "bytes": 3593,
+      "sha256": "9a55e469ecff4ee6253c51bb749129bef344f3a4f92d2906ba82707c79524156"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "ac9455444a9e0d686613b0425e048366028137c9cd07a8a4cc8baa6e39dfc78e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "ea0e5dfda7def942ddf99ba802678dda7920f3ba867fb24704b293f690dce6b8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/collect_r135_readonly.py",
+      "bytes": 5775,
+      "sha256": "cc8b2db6140329ad3786420c87f4b34d7030eb884921c85f4fbf3ada5c8495a7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/direct-version-requests.json",
+      "bytes": 59701,
+      "sha256": "c58a83e07501e21a34a43d2a6b0d77ce1b17505f6a8ec2496cec50863d8393ad"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/latest-acceptance.json",
+      "bytes": 98808,
+      "sha256": "0f7487da10deead682b53ce0e871513cd5993f55a8b345418359a79687774627"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/proxy-window.json",
+      "bytes": 6475867,
+      "sha256": "cd81ba60737a4f2e00da844bab5ccfcff72499646402c36bb3c3270e4d1da12e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/reverse-attribution.json",
+      "bytes": 85549,
+      "sha256": "10952225bba4985bd3e7f79db45c6b00d181bc620dc6ea2b213d5900e2981ec0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/us-r135-model.json",
+      "bytes": 1581,
+      "sha256": "68a35a74400b270d62774bf6e8fc24734a4511c9096a8faca6caf799fd9da660"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/vercel-preset.json",
+      "bytes": 3712523,
+      "sha256": "da53f710d6ae00a98962eb62f68dec94fd71d24b851d82ad026df552350077cd"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/vercel-proxy-join.json",
+      "bytes": 1738263,
+      "sha256": "1b173fb047509d086a9c4c71add03cd4ebe800d0fd1eee5fff9d2040139c3a0d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1222Z/README.md",
+      "bytes": 1168,
+      "sha256": "88bfce6981e443b06d3616988fa7e70862f898af15539b14df1f8676f109d68c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1222Z/backend-review.json",
+      "bytes": 3255,
+      "sha256": "345b8628467790bc90e05e70dcb263ed48d66bafc2f4bb4672c33fe3b94337b7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1222Z/transport-preflight.json",
+      "bytes": 776,
+      "sha256": "29f1f946ffa60ff15aaab5c05af7d8f65703bfc3b6fbc49bc7c0e9de1ac5cd03"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1323Z/README.md",
+      "bytes": 904,
+      "sha256": "baac0a31bccdba12e16604adcdba45510618e9e1d537dd6c8692d99971484e85"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1323Z/backend-review.json",
+      "bytes": 2263,
+      "sha256": "ddbd1d7e98baa1a229d9ddf98605e4a0cfd6f12c90d10c0c5d5bddbce7c02424"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1323Z/transport-preflight.json",
+      "bytes": 776,
+      "sha256": "c3a5e479b6059a6373545fb18e9a220552dee34ba0d79fbcf43a22d32489ff03"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/README.md",
+      "bytes": 2302,
+      "sha256": "6fc64d45df0f1ec90d6e02773e349b077b53eaaa09e02a21ab80481b9f581214"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/access-recovery.json",
+      "bytes": 1597,
+      "sha256": "62b993cc209337e15ebb7cc2db054a0fa3ff1081757bb3b3013c5b97efc47db4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/backend-review.json",
+      "bytes": 32854,
+      "sha256": "0b710e6f7e03e8ff7266e647d45a21657e5f1989ab03231db502b4c7cd8af6b8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6855,
+      "sha256": "c59e865d739a5009f8cc294f4a95f655e0cf206d86ce6516ca6b8ef4daa2f6d5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/backend-supply/us-backend-supply.json",
+      "bytes": 4168,
+      "sha256": "9243f6bec5902acf83001a2248e54921930c3fc9e0dfa7c8d427345bd501a6af"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 5117,
+      "sha256": "07e94a0fa02f403a2b6ab7fbde402b0d81c456d254e451eeb68402c6861c6339"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/build_backend_review.py",
+      "bytes": 16136,
+      "sha256": "a21b05596a943be356118cc6e815c5d3f9c01f156747db4363390a9a65413d6b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/cn-probe-timing-series.json",
+      "bytes": 9996,
+      "sha256": "04c026f81d327d55a1abcf855b51db5ad0683108e230d2a8d6a6af58074ddd5b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/cn-r135-model.json",
+      "bytes": 3630,
+      "sha256": "944585f407e1f95fdcb8c65f794978496bb6fecc78d0524061e515a9572e8bed"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "0a3b17de197267ddf16d403c109341ad911f4a51bbb52b8fd8add351c3e6774f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/collect_direct_complete.py",
+      "bytes": 1291,
+      "sha256": "7b35dc05fdb4e0b8a2e801c07a1db2b5bda38d3f71e9354d68bd7fce6161f977"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "096bc8ae1154a80f4f9d3498bf8a606663ebe75dadf4b3350fb5ca563f63f38b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/collect_r135_readonly.py",
+      "bytes": 5775,
+      "sha256": "8a4db9b482a79d819bfd00717de45ff040dd8a8b14a281034035480feea7f4a6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/complete_vercel_middle.py",
+      "bytes": 2839,
+      "sha256": "ddf346a8f2842d916cfcebb384950f98476b4d26f61312ce538b6d71c3689e8e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/direct-complete-cumulative.json",
+      "bytes": 17929,
+      "sha256": "7a0c0bb1bf1468fcb6087599490afce63719aa90dd1e349c021c39667fb39fd8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/direct-version-requests.json",
+      "bytes": 398707,
+      "sha256": "931f59df2755637a040b1b99e4119a920832c89742c64e22ead456b90055a848"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/latest-acceptance.json",
+      "bytes": 102618,
+      "sha256": "de68fab95651ab2447cd51d753e2d54859904f900399e8e2c28f45cb020de168"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/merge_vercel_windows.py",
+      "bytes": 4659,
+      "sha256": "99c1966eb5b002469e1232a5783b1b7bd783f87f0eb439c39f5a045965929768"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/proxy-window.json",
+      "bytes": 10112015,
+      "sha256": "e671ea20797e630080ccc51bd2bde21849d6a27787c83d5208ba2c4c1d336b58"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/quickread-disconnect-review.json",
+      "bytes": 1588,
+      "sha256": "c6c4f972a83973835e4dc83acbc9c556480a53ca1b2d6cb2880b7856dd63fbba"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/reverse-attribution.json",
+      "bytes": 567083,
+      "sha256": "a30c223254de76aa937476b2706bf5c2af5c742b3bf76e9244ca443591e3ccbc"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/transport-preflight.json",
+      "bytes": 444,
+      "sha256": "10b1a7ad22ff39041c4f639bd43d6bb951282a4e82fcb3aa08ec22966fcf077b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/us-r135-model.json",
+      "bytes": 1545,
+      "sha256": "d12e5829e46b3687ca3b77e496468f69d0907d4a84c109cbb6385d11a70af7d2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part1-retry.json",
+      "bytes": 4252770,
+      "sha256": "6db5fbf23b137b8baa4988460db264801ce763469cbc9340c39710c12986c9d9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part1.json",
+      "bytes": 1870,
+      "sha256": "5b7f5d8f3930ea558727caa65dc5d372f52bf0a247ccfa7a6f27f583ab8b2083"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part2-complete.json",
+      "bytes": 5192271,
+      "sha256": "e239aa396da3b5a5f33d16fe5ea5fa23f4731b5bc7c340ef20f25db7ddb8964d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part2-prefix.json",
+      "bytes": 61871,
+      "sha256": "012f2003c8b01f34844c6250fcd79da14563762cb251de5346d9f747f5d14e26"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part2-retry.json",
+      "bytes": 5133613,
+      "sha256": "54d7a584a674c05b971615d4fd132f59cab85369195d88b64c64720f0aa8b237"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part2.json",
+      "bytes": 1870,
+      "sha256": "608b109b351acac443389d1f3095eb363f42974a97eb4835cf1b21d74d66fc8a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part3-retry.json",
+      "bytes": 3007662,
+      "sha256": "2299c47f3c5ea6634f4dc2dcbee49ea646b589b9f7afa99cb2a2e4faf2ed3cf3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part3.json",
+      "bytes": 1870,
+      "sha256": "f7c68a5033ae0b360286a0d6aa317fb28d57a25e09243142df0c962f81882d86"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-preset.json",
+      "bytes": 12447695,
+      "sha256": "7f58387f151f37e64aaa50ba68ff1cd6b0967d2499fc444c79ce05c95e2217f9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-proxy-join.json",
+      "bytes": 5821893,
+      "sha256": "e188b5ffc99019c1591b839041ae230e4a33e99e403f3050051eb19f8cddd34c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/README.md",
+      "bytes": 2412,
+      "sha256": "a4dbcd200dc9b2af3523849503554275e05032326a416ce37e2ba4b9d8e29c0d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/backend-review.json",
+      "bytes": 22841,
+      "sha256": "dfa8ad290a692c6cbe844589da714dad51efe378b5d9bfbfb0b6c0c2d09418d1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6821,
+      "sha256": "4f67a38e05e88c47e086779e5e8bc9f6b4eb256c8112e0810833e9b3e0f8bae6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/backend-supply/us-backend-supply.json",
+      "bytes": 4188,
+      "sha256": "696dfaa3a88cc355149c63a3f2c80cb19efd6406ee855780a68c9e85702cb642"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 5386,
+      "sha256": "620f6ae69d83560ceff74cfcbe1f7f1101d960cf3f394a4b35e81a00ab6f7890"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/build_backend_review.py",
+      "bytes": 17413,
+      "sha256": "def714fc79cc1497be140686d9294955805fb0321d3fd7ab98ab9f73dc0e6ba3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/clone-warning-detail.json",
+      "bytes": 2050,
+      "sha256": "02eae09c1f8f7ef7bb5ed889c990cb198b313e3caa4a8dfb7648d3541cf8f72e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/cn-probe-timing-series.json",
+      "bytes": 3910,
+      "sha256": "b792f0d7eaaf04a039dab24ef7aa0d8ec38ccfe4fe9cbb88a3f54cd4e13fdf05"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/cn-r135-model.json",
+      "bytes": 3630,
+      "sha256": "9c3e256916abc93113aba808f95854e1a8fd6e8cc9b98ba4b8d794e3f661d1a8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/cn-tts-499-ingress.json",
+      "bytes": 1167,
+      "sha256": "735329206273031d2dd7fb07eb560dc2d97f38c699d924191396b305d5822161"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/collect_clone_warning_detail.py",
+      "bytes": 2593,
+      "sha256": "6b5b672ca27491cee2341c6d2df1a6fd406ec3c5056cab1fbf7a315149a047d9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "6eb135b959f4cb8b32c82d762c2e071dbdca537ff69fd5420fa1c5353f27dd20"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/collect_cn_tts_499.py",
+      "bytes": 2291,
+      "sha256": "6ce138d4f2be328c8afbc294f14ebf55f3386ba4fce1042cdd39d34eb9514b18"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/collect_direct_complete.py",
+      "bytes": 1291,
+      "sha256": "d5ce3be11b48e23f200419ba1f1ba1b8e348b968ca71b8985dd43c3ff2e88175"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "6f5b2d1e5944a70e896ff974c35a997f3ecb5e666036bfa99473fe05b02f2c1b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/collect_frontend_recovery_detail.py",
+      "bytes": 2322,
+      "sha256": "b8271ed96a78edd84db4c63fea7d0cb7d83c58bfc7a0f47357c31d0be270cc45"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/collect_r135_readonly.py",
+      "bytes": 5775,
+      "sha256": "697bbb69d98289c770dc3d4ed0c933ef73226917f4d60275d2e089d7914ef6ee"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/direct-complete-cumulative.json",
+      "bytes": 18036,
+      "sha256": "087e3340ad3eeb5c461e36b1fe4610e29e96973168f252b0dd1e6a476da41377"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/direct-version-requests.json",
+      "bytes": 172712,
+      "sha256": "6fd511e4b7958a8f1a1d418b5711de970ce218c2997176beecff872d21c6088f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/frontend-recovery-attribution.json",
+      "bytes": 11827,
+      "sha256": "aeadb68927e62d364036aaa008187953d8d7ddce2612094b4012a3daece614f5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/frontend-recovery-detail.json",
+      "bytes": 7699,
+      "sha256": "6e4453ccb905100b47b66a17d2c90207dbaaf02291ef96dc013ce915fda9116a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/latest-acceptance.json",
+      "bytes": 102618,
+      "sha256": "7f887bc12a6bd7e38e63442390b0b41ca6ef21976a7fcabe712d9a1ff18b9c70"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/proxy-window.json",
+      "bytes": 6796368,
+      "sha256": "1cc9692370704839b1ea948b83b87a316dba1608c98a25e3b1f2393c01bb2d65"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/reverse-attribution.json",
+      "bytes": 252902,
+      "sha256": "12bc53a6bbae2c1438e8cc85e2fa94ad356fd38a9f175a4417f967e6598b6c4b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/us-r135-model.json",
+      "bytes": 1583,
+      "sha256": "9d7f7b4a9e41a86ad5e5dd6533a88c005ea347bb82fc07c40b609a6fefe2ebcd"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/vercel-preset.json",
+      "bytes": 3845159,
+      "sha256": "9b6403ddfc5f3bec8674a668c3c9aa6dda3700ea56b39a69685375d168c86147"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1424Z/vercel-proxy-join.json",
+      "bytes": 1797635,
+      "sha256": "090b8ba433b0e1d6ebb708d52b41dafaf93315979434338f3b996456a76f7433"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/README.md",
+      "bytes": 2397,
+      "sha256": "c87f03167fd468d0764fd613014760b638299e21625cf5f09d6813885a769a2a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/backend-review.json",
+      "bytes": 22560,
+      "sha256": "3670218e920e7b69996b22c7863d5f4d596a9fd87d2f44540f24af13dcde488b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/backend-supply/cn-backend-supply.json",
+      "bytes": 7145,
+      "sha256": "6794a09a898e8c79c388010c70443033233be122da0f3954389fa3379a4c0559"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/backend-supply/us-backend-supply.json",
+      "bytes": 4223,
+      "sha256": "0090c134031bbbe8e0368beea153594da9900e99218fafa745a253a2f77d995d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 4593,
+      "sha256": "1e8142e25668a85e3071047460a8296478db4eff35bbabe03c5f5da35f3b879c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/build_backend_review.py",
+      "bytes": 15645,
+      "sha256": "d002f0b4d5f87b02f45e8e6140866ab3403ea9e1f94a4023e0899d94bd3292c0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/cn-frontend-recovery-detail.json",
+      "bytes": 2348,
+      "sha256": "b06ed81e2a4a9896cb9f43ffd652e28ff1c6fb865b0bffb756bbba89f3d8572c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/cn-probe-timing-series.json",
+      "bytes": 4625,
+      "sha256": "08ae8ec22a57c1d1c09bba212f08a4ccbae6e96885bd20ec36f0facf077241ca"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/cn-r135-model.json",
+      "bytes": 3666,
+      "sha256": "44afade7688c62dcc5602724fe1cc2e752db303a24d7bccb38fb2ec707b5661f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/collect_cn_frontend_recovery.py",
+      "bytes": 2434,
+      "sha256": "6690ed0fbf74bc3fc2e774de1509294d83b725698b81008a5b2dd9253ffd9122"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "f93001de1bcc941753a2cbe13e61f535f59947f2facf108e2262f0131ba49540"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/collect_direct_complete.py",
+      "bytes": 1291,
+      "sha256": "13319ad09eb7c096a3a59298fd770b0af73d34f97c7ccd89de95997fbb02bf3a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "8c74542d6a02aabf8f24624b3035d0b8ad7a9e7ae8e93dbfdcd006c193910eaf"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/collect_r135_readonly.py",
+      "bytes": 5775,
+      "sha256": "01d998968d2a0a3a66a209838d680e4524609d4fe006af92cbd262ea0789511a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/collect_us_frontend_recovery.py",
+      "bytes": 2325,
+      "sha256": "9c4dc931bcf00d5a5ec6de12864268c6b65c22e9204751dd43410577494d62d2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/direct-complete-cumulative.json",
+      "bytes": 18144,
+      "sha256": "71d96c5477dd13c7a9c718cd8231462db979e48d08c5b3dfa3aba621b0b9d6b1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/direct-version-requests.json",
+      "bytes": 470957,
+      "sha256": "6b6ccae35b4b6219f3c6ca07e406c617ca6b333b2952b40ad22d67859570237d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/frontend-recovery-attribution.json",
+      "bytes": 27499,
+      "sha256": "7031e7a5c27f29811ecd9b63c9f172d18850a3d5c96950e1067300412372c765"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/latest-acceptance.json",
+      "bytes": 103348,
+      "sha256": "f02c131eda680707dbf11a9a528af5f3033740fffac1f8942a3c86a5f318ea22"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/proxy-window.json",
+      "bytes": 7468601,
+      "sha256": "24d299a2004baf3eae0b29cbd07bda2fc5af7d56d368f8e4b48bf0b767e4b7ab"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/quickread-disconnect-review.json",
+      "bytes": 1359,
+      "sha256": "a26dd1423b8d0b0cb9db1985f26830b32bd08182fb00c7870046d8acc6f57ae6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/reverse-attribution.json",
+      "bytes": 543274,
+      "sha256": "133fa909c9c9879d5194355a06503ec68a85bbff1aeb69f5ae9c0496a34bd2f0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/us-frontend-recovery-detail.json",
+      "bytes": 4894,
+      "sha256": "48249899907fe3b5397dc0a193d7961ae37a51f8dbb205f0149b7f6532d75038"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/us-r135-model.json",
+      "bytes": 1547,
+      "sha256": "a77117e61f7ee1916978ac05ee7dff4aeeb1004086f8970cf14d558ff9016c39"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/vercel-preset.json",
+      "bytes": 3672992,
+      "sha256": "64691aa86b24b9d029896d8907335e737dba1d5e54d4a837c883dcc334c7fdb1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1525Z/vercel-proxy-join.json",
+      "bytes": 1719587,
+      "sha256": "46a43edfe3645fcd7659a4b2e20e6ed3e5669652bd01c102f0dcd183cb92f748"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/README.md",
+      "bytes": 2868,
+      "sha256": "b5bf9d54fe0f0eea3f2f7beecd8ad1cc243273b8ad059a1972729fa013350874"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/backend-review.json",
+      "bytes": 43843,
+      "sha256": "4edb58b3777fbde71ca2b107a72c7d86becc7d91cf678b5fdeaa8587fbb70fab"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6774,
+      "sha256": "ea7f6b734e37598a13d6d52dc6c0ed0ffb7daa3664634f41667034ede0f8aac8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/backend-supply/us-backend-supply.json",
+      "bytes": 4224,
+      "sha256": "e3eb6841ab8ae95a96a2b4f1d7740342545819ea21bc1f84a2a78841ec7efad5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 4593,
+      "sha256": "b4bd40dfc3e415fecb7a30255e4f857584dc9a190bcd4cb0dc3d6d58e07e2ef2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/build_backend_review.py",
+      "bytes": 17501,
+      "sha256": "2f4230387b3408faad77d9a1c2d7b425966f43bbcec132190e4d59f03c672472"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/cn-probe-timing-series.json",
+      "bytes": 4983,
+      "sha256": "391d1bc36abdbac5b5621c575ece9a084c7459d5c336917149b0c1fcaade8f54"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/cn-r135-model.json",
+      "bytes": 3594,
+      "sha256": "b72f1a1cf7bae25860b37ac39309f68c4d56b287a942b70eead76f7a535cecc6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/cn-rotated-ingress.json",
+      "bytes": 2531,
+      "sha256": "3e3ec1b7504ba004b6a8a02144221a61218eeea9c6d911888da9c7126502cb10"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "bbe6c7a4590a2e00a879e47a01bb2e82f919016966dc53a3a7e38ef64949a76b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/collect_cn_rotated_ingress.py",
+      "bytes": 3104,
+      "sha256": "5a1e0a7cfe89a8a946aa22c10d3a7b874e7b99f3ec889b67815143344a2ff4ff"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/collect_direct_occurrences.py",
+      "bytes": 1859,
+      "sha256": "8ddc3b14127edae153af61843b88dc581a88bbe4d1c96294a5250d0894c38728"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/collect_direct_sharded.py",
+      "bytes": 3225,
+      "sha256": "9d93b1ef32898d6b7f1d5ec19755958012cbf4d51340b0c574adb6752b82eb7b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "49bccdf5a6ce4ed68bda9f6f76b12444ecd79fb91112448a9085b3394a928d5f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/collect_model_recovery_details.py",
+      "bytes": 2359,
+      "sha256": "0dcf22c5105daf0a70423df5e42c126f1539c03eb91bd19320b04a34093c64b3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/collect_r135_readonly.py",
+      "bytes": 5775,
+      "sha256": "fc8cf1149086578c257e6835eaba5e0c879dc162aa93d5da6a214a15e2b3d055"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-complete-cumulative.json",
+      "bytes": 37903,
+      "sha256": "63131796a86391c7a2a349fbdc0ba75efe7ccc36813f5c66609e3bdff1eb0fe3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-disconnection-increase.json",
+      "bytes": 40993,
+      "sha256": "ea1c97bf820be00d6dc07c43204fefe6eed52368a33345f66e02e237f613423c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-terminal-occurrences.json",
+      "bytes": 1753,
+      "sha256": "bb402af49369f7eab9603c671acb266f580ff6119cdd6bc5910d5b31288ceb8b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/direct-version-requests.json",
+      "bytes": 443512,
+      "sha256": "9d8d7dd38a18acef9625736ebe047e9cca18e88b73271cb7a93abefb80b5ae17"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/frontend-recovery-attribution.json",
+      "bytes": 5977,
+      "sha256": "7b605020f6540bf7f7749e75db96e0a1a8d524159d0b53629dc84950d00c602b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/latest-acceptance.json",
+      "bytes": 104631,
+      "sha256": "c17ebedd807c7920b8bc9291c0ef8440ab218a57e1c314350255bae7648bca23"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/proxy-terminal-gap.json",
+      "bytes": 3222,
+      "sha256": "892c5e13c9b816d4f3e8b1e9c1a7c079c0978d333dd669831f34030406a3083d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/proxy-window.json",
+      "bytes": 7231690,
+      "sha256": "abdc9c4b074b97d4016efc3e52e9ac2a361e34d1e90eac98ff800d89526a5ce6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/quickread-disconnect-review.json",
+      "bytes": 1290,
+      "sha256": "b0dd260b81faa118144162c2f20f1451bc0ebc71614b0572ba39359da89a124a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/reverse-attribution.json",
+      "bytes": 528495,
+      "sha256": "47bf44dc9ad6f384c1fc11f8d00efff33daf3ca99d6a8d14ae627179199e86df"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/us-frontend-recovery-detail.json",
+      "bytes": 1576,
+      "sha256": "619fd6c65a6edc6b44adf4a057bbd982ddf0b303a52d992b5007486bde40bdd5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/us-r135-model.json",
+      "bytes": 1623,
+      "sha256": "ccda321e4ae21540edaf15d2b189c76eabf3885f3c3aa1c9abbb0146a55fc805"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/vercel-preset.json",
+      "bytes": 3155719,
+      "sha256": "de70389b58eadce8a23a2a403d60906addff810fe3b9953d3c8317fd5907a83a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/vercel-proxy-join.json",
+      "bytes": 1476347,
+      "sha256": "6837a5625012bf77a5cc80f5117804a4c81a9a9b28b41e2fc81ea61155f1c25d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/README.md",
+      "bytes": 2862,
+      "sha256": "1bd1a4cbc574ea7da5c3b4e3f76b4ca658b4abd58a46d7ae2fafd7cb19c0b015"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/access-readback.json",
+      "bytes": 633,
+      "sha256": "257dd2aa06ed65fa5d6e289a1d09cadfa8861ec0555e90272199a4da37618886"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/backend-review.json",
+      "bytes": 31028,
+      "sha256": "786bb90c7a3a338bfe7c447b576a13a47564c36fa2979584c9360c5d9d5d0577"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6776,
+      "sha256": "aa73d6efd1a1d9a72ff1da5d3ac8d1c15668905acd457b2f82d6552134f44cca"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/backend-supply/us-backend-supply.json",
+      "bytes": 4224,
+      "sha256": "a6301618227189e9bc388e61ee3d332d046ab39583a644293706779d2ef68a8e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 5113,
+      "sha256": "4a643f128943a895b5dcd3fb7323add4f90a6479409a9c48e5060c704fe2c2d8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/build_backend_review.py",
+      "bytes": 21709,
+      "sha256": "462d11a93b86523db331d15eb659ca6a0d0665dc8c7b996d7b3056a17331abfe"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/cn-probe-timing-series.json",
+      "bytes": 4983,
+      "sha256": "4d9c26cf52e2a84eeb713378ff84e5eaf8ca64ac3507dc52a56294b0b1b153ae"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/cn-r135-model.json",
+      "bytes": 3594,
+      "sha256": "1fc111d8c57ad8a4ac56474fe9cea0f692017b8c6f85a056f31fac2a803cf83a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/cn-rotated-ingress.json",
+      "bytes": 2533,
+      "sha256": "2880d5e72d2e8829a74c806b5166607466dce4ba03fdae5443755a729a53f72a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/collect_cn_probe_series.py",
+      "bytes": 2547,
+      "sha256": "c2e0d4dcc0f153cbb7400e82ba961966dd3a1332dd2c74746d8c8ac9916d8b82"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/collect_cn_rotated_ingress.py",
+      "bytes": 3104,
+      "sha256": "a5c68481195c58687fe769d4346d3e38f238949a4c5aa90735b5abfb283e51ac"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/collect_direct_occurrences.py",
+      "bytes": 2299,
+      "sha256": "006bfc806e59f47cba5190aa15ff4a900946529f6fe4e84e2d74878c2ffe7ae4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/collect_direct_sharded.py",
+      "bytes": 3225,
+      "sha256": "7983e0c47c86eb902e9adc4e5c7b20234ec51dd7208f8b5d730a7088cff96104"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/collect_direct_version_requests.py",
+      "bytes": 3851,
+      "sha256": "11ee88bf467e85d7d4ec441115b34e462779c1d3cdca1d83233c35df31b48122"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/collect_model_recovery_details.py",
+      "bytes": 2359,
+      "sha256": "5cf914d60f60369935c950e18d2357b10e83a7c5583eaafc7b1a18568b667baf"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/collect_optional_diagnostic_details.py",
+      "bytes": 2433,
+      "sha256": "9e926581c3fd863e9cd0bee37818fdc7b12451a92b16efbf2218ce3b0406039e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/collect_r135_readonly.py",
+      "bytes": 5775,
+      "sha256": "4d05acf6a5437d2dffd95512245aee34fa905c5087e4ea1d6b2e9458891d2d2f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/direct-complete-cumulative.json",
+      "bytes": 41714,
+      "sha256": "bdd7e661d7305607737e643be11215bd1fd4e4298b1ead7c7a411e3b638a2ce2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/direct-terminal-occurrences.json",
+      "bytes": 10033,
+      "sha256": "6fad979c8fd268aec7dbcb678ed77d5b25435ae3150048eca51b95bed8baf235"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/direct-version-requests.json",
+      "bytes": 585807,
+      "sha256": "05f8822119f36c215b4a3a565939b93f34076fff1f8e002bcffc76b572b789a0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/disconnect-followup.json",
+      "bytes": 9331,
+      "sha256": "4bdd3cf40a2e30858ad1c3f5562389d5298e336845fcaf7c6efcfbfa2508991f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/frontend-recovery-attribution.json",
+      "bytes": 6673,
+      "sha256": "6eba4eade8ae5abc0da1cf86fda25ff2f448d6ff4e4451b1b45cf75b56533695"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/latest-acceptance.json",
+      "bytes": 106408,
+      "sha256": "da09de65cb5c5be6af8e42e80ffbecad59cb67869f99c2660fd1556616a2605f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/proxy-window.json",
+      "bytes": 7104092,
+      "sha256": "08583984cdeef4bf235795d8007127f341d615f58fe32ced2b3877e705a22bd8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/reverse-attribution.json",
+      "bytes": 754297,
+      "sha256": "61ae2c3fb66f6cc0f518d42438d45d237e3ade19b30558ec8bb501d12f30b5a7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/us-frontend-recovery-detail.json",
+      "bytes": 1160,
+      "sha256": "a2e30f3efeb668abb6f439f47b0c15c0ae859153294c18201bf56e63b1d02dc7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/us-optional-diagnostic-detail.json",
+      "bytes": 531,
+      "sha256": "097c2b9cee55de591a265aa71a2cb20625dcda52aa9924c8acf96b3df03888cc"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/us-r135-model.json",
+      "bytes": 1543,
+      "sha256": "a7e33f71810e82171b00e4c92b839abf5eabb0b17b9f8aaad63440f6cd86d121"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/vercel-preset.json",
+      "bytes": 1677517,
+      "sha256": "2eb9bb6eb422e9de57a4cf8c96c9b79895c7b665937c9162b1ec8454249430d9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/vercel-proxy-join.json",
+      "bytes": 786159,
+      "sha256": "3307447e08f8b3dd3b5a698cfd33227fa3560ae29eb6804e24bd2a0de42c313c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/acceptance-state.json",
+      "bytes": 5353,
+      "sha256": "cc1655adc350729bdcdf3a18c0bdf90c2a957c89540aa92bd7af118b9a062c05"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/archive-metadata.json",
+      "bytes": 303,
+      "sha256": "a8139dad3ad514b04ad2d8fe3f847a0e86631ddbe04b32ccb80042b771f7bd31"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/latest-acceptance.json",
+      "bytes": 47813,
+      "sha256": "f155f572747ab5c6b09aeeb5f84fb3daf4eb9969bd0fa08c84ae482a41599826"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/notification-state.json",
+      "bytes": 1077,
+      "sha256": "37ea2d12616e6758db359e6802e00ae8ab5ae32c7eabac3dda47d4af5d5c330b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/README.md",
+      "bytes": 5474,
+      "sha256": "cebb3a0a934e92f1a70b072e40472c62a31e56c4621532433df9b5cbefaf7284"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/automation-before.toml",
+      "bytes": 7191,
+      "sha256": "8f1219a2e0ddb28953168fa453ab3900534a3c85d0838ecb60e8df73d0f5f387"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/automation-closure.json",
+      "bytes": 827,
+      "sha256": "3d72878e76c7eb89cd31d304b2b22ebb27e16d3ba9ae975df8b11ae7659a9295"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/backend-final-review.json",
+      "bytes": 39601,
+      "sha256": "7bda96037ba577367730c52a231397d403c735dd3e2d91be71ba6b0df9e66877"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/backend-review.json",
+      "bytes": 39601,
+      "sha256": "7bda96037ba577367730c52a231397d403c735dd3e2d91be71ba6b0df9e66877"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/backend-supply/cn-backend-supply.json",
+      "bytes": 6779,
+      "sha256": "b63c23dbf3af394b554fd7e7868ac24cb318c4ea37d31995230e647d42a29391"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/backend-supply/us-backend-supply.json",
+      "bytes": 4247,
+      "sha256": "5971e2194a1813ad26e2ed9ffb1b9dfc66af381255f722aa445988daaf60652e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/backend-supply/us-gpu-backend-supply.json",
+      "bytes": 5109,
+      "sha256": "019599a54c5b343e06063f0bb71161ea9329a19f33d7a01c1e25e6e7062a0cec"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/before-acceptance-state.json",
+      "bytes": 10340,
+      "sha256": "f3525fc8c530cd295ab80379571480988a912dabdd87981071a927c5d6de547d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/before-notification-state.json",
+      "bytes": 41354,
+      "sha256": "1c32ba6aaecfa800f8968952e20d06110d3aa50ecbaab4479ad3101a7971d460"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/build_final_review.py",
+      "bytes": 27602,
+      "sha256": "1476660acc6ed7bb7e8aaa2566e431f0be2dc244ee79a38254f56777bf32de50"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/clone-fixed-creation-events.json",
+      "bytes": 1365,
+      "sha256": "6cd84c961fa943c6eb3fc2ca9a6a3999618ed97dc714f7b1c4d1260909804461"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/cn-probe-timing-series.json",
+      "bytes": 5340,
+      "sha256": "8c93a8011369db50f6275da82a234b7869a0b2bf83ef7c6bb0cbb1fd199536aa"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/cn-r135-cumulative-diagnostics.json",
+      "bytes": 3745,
+      "sha256": "56e912f9f604a6dc2955e3e16603ae705c51b0a3d25d67436d8ca66ea66d32d6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/cn-r135-cumulative-model.json",
+      "bytes": 3707,
+      "sha256": "017f130c0641b471c815f6243f741593360af97d135d88850ffdc39a7a4897c1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/cn-r135-model.json",
+      "bytes": 3597,
+      "sha256": "dd3fa2523c3b6034bfe199ea10a929c3a8901a6d4490e41662efc693f71c6a4a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/cn-rotated-ingress.json",
+      "bytes": 2533,
+      "sha256": "2cef34fd45f7fbac1fc69df9597a8ba516ac6e94461fb6b58078a1dfca09b298"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_clone_fixed_creation_events.py",
+      "bytes": 2601,
+      "sha256": "6db76165a9fe0c6f336496cb83046c70a36181682abf16622efa8a31496be636"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_cn_probe_series.py",
+      "bytes": 2550,
+      "sha256": "59ad44440093d87ab3acfe93d24281e82a4eeb0dcefbe235d8c55f28e08c8715"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_cn_rotated_ingress.py",
+      "bytes": 3107,
+      "sha256": "5b93942c9220fc736dc0ba82bbe4ae41ce399612edd835c69d3c1affb9cba26a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_direct_adaptive_sharded.py",
+      "bytes": 3321,
+      "sha256": "9dc16f2ed4ed0e72e5f4326633b93a899b0283af85a4eb5c74888116f55f8b9c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_direct_hourly_sharded.py",
+      "bytes": 3235,
+      "sha256": "c720860e3e0b0f0863979126f34c764c52229a4a7361e195794e0cc8836ec3e1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_direct_sharded.py",
+      "bytes": 3228,
+      "sha256": "a50ec0b9a1303cf14d9de2f26de781a8c525a2b94ac9889f3d0052098ec6f113"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_direct_version_requests.py",
+      "bytes": 3854,
+      "sha256": "52f1ba8a587c1d773a25a96881ab21eb7a3e4d3447c17f4a10880215c933c69f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_model_recovery_details.py",
+      "bytes": 2362,
+      "sha256": "214ad63272a2b7dbcef07697f6a0c9bfb975d784e0bb7c838ced1b41f1c614c0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_optional_diagnostic_details.py",
+      "bytes": 2436,
+      "sha256": "7b1c7c666815ef8cd1240c5774c97fe263fbde051928978cddd116e5286c06cf"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_r135_cumulative.py",
+      "bytes": 5845,
+      "sha256": "ca025ff33334d6cf7e07b3cbf2ba0abd99e46d755d091d4afdbb5ef9552bebed"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_r135_cumulative_diagnostics.py",
+      "bytes": 5978,
+      "sha256": "f9cb7640ebe5bf09e8bb143025300eb2d665f8675a6e0751fdc3d2bca77ef4a4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collect_r135_readonly.py",
+      "bytes": 5778,
+      "sha256": "28b1dc3c2d0126a21a49d674944ed6a76fdfea699e32759b20fbe330e20ba52a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/collection-bounds.json",
+      "bytes": 335,
+      "sha256": "9373025cc056093aef1c68b9354a836036473fc677797fff68234b2484a0d64d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/cutoff-boundary.json",
+      "bytes": 2558,
+      "sha256": "61258ff7d4540b1a0f7853631e7f782f7d9d2bf3cc0ecc4980c3e014c917315e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/direct-collection-retries.json",
+      "bytes": 458,
+      "sha256": "73fd6003d135c56d74292347e3ccd225026ea1ebeb5baec6a820f1ebe543f08a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/direct-complete-cumulative-final.json",
+      "bytes": 49832,
+      "sha256": "12742ee19d1a8b22860a77d3f6b538f38c4797ac17d416c111b51f07b734016b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/direct-complete-cumulative.json",
+      "bytes": 44925,
+      "sha256": "86855106d85ae0ba260604b6f85004fe66e40da12361c8f2e42e5da2f1b34eec"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/direct-version-requests.json",
+      "bytes": 857746,
+      "sha256": "8984f4531019bad79cda02c49573ec3363cd49f6760a5b6a40d212caabb564ac"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/disconnect-followup.json",
+      "bytes": 17141,
+      "sha256": "3caf01efd8144743e31d3bc4fd11e4093d97a8cb0078f15321ebaf7bd459600f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/final-acceptance-state.json",
+      "bytes": 10346,
+      "sha256": "6b3f1135d55cb03faacb1c3700b95b1b2e13ad9500a1ece8a38838bbe06679cc"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/final-notification-state.json",
+      "bytes": 43781,
+      "sha256": "eb82a1325c4d0554a10bcf2c3c966cab64f0591a34bf9915da663ef2b84f2ed3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/frontend-recovery-attribution.json",
+      "bytes": 8652,
+      "sha256": "a4edabc3c36e92638ef4a6dac0c58370c5a30ea30e301cf64f14134dda92614d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/latest-acceptance.json",
+      "bytes": 110779,
+      "sha256": "9820dcda5315b7ba39ff52e6e72bf6bf2aea8d54454ac9d7f22e6755e9bc1880"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/proxy-window.json",
+      "bytes": 7574129,
+      "sha256": "27865844ab314931bb934e944211ddef77d4b7818a257d7d2335cce45d212331"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/reverse-attribution.json",
+      "bytes": 3947745,
+      "sha256": "5cde78033956cf5abdcc17b70e7b927a5ab993e24ef37dce2d7845bc051754df"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/us-frontend-recovery-detail.json",
+      "bytes": 1828,
+      "sha256": "891d74e056faba72f67a4eb0aa4a151563f0c484cc66cf407616a2b1220039a0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/us-r135-cumulative-diagnostics.json",
+      "bytes": 1671,
+      "sha256": "9e7b92955f1ea378686987387e162b3bb34e64138a3c743cbb49c86c794caf7b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/us-r135-cumulative-model.json",
+      "bytes": 1633,
+      "sha256": "d717d2677fd885d018f2ae0016891f3bdbf6418c7c3b36f4f0a7896eccbed326"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/us-r135-model.json",
+      "bytes": 1546,
+      "sha256": "25ebbae563e173aafdac719fd6566440b8b661aef176c5045597881c2a238f32"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/vercel-preset.json",
+      "bytes": 1110023,
+      "sha256": "219184457bd41d62bea6a6caff0dd6cb37f541b559e1a0e654e2e1e12fc0dfca"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/vercel-proxy-join.json",
+      "bytes": 520081,
+      "sha256": "58c57aca78ca87470862fbf4f81308f40ea2e1663fbae96223e8326a2f1af4c9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/version-periods.json",
+      "bytes": 2045,
+      "sha256": "2002ee5b7884c6b36204d276bef19b83fdf1936698484d69b6335fce988f16af"
+    }
+  ],
+  "evidenceBytes": 183650496,
+  "limitations": [
+    "Manifest preserves evidence locations and hashes; it is not a new production backup.",
+    "Caches are excluded; original observation snapshots, state copies, model receipts and the prior completed window remain preserved.",
+    "No post-deadline business events were added to the fixed observation window."
+  ]
+}
