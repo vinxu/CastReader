@@ -22,17 +22,17 @@
     "139ec3e2bd125e8c7db9"
   ],
   "lastDecision": "NOTIFY",
-  "lastDecisionReason": "Direct已被独立发布更换版本并有完整回执；需保留新旧版本边界。中国区解读首次有正向任务样本；新断开/取消仍未证实模型或LLM供给失败。",
+  "lastDecisionReason": "旧固定24小时窗口到期归档；新窗口继续。当前无新增已确认供给失败，Global时延继续改善，克隆和解读完整交付证据仍不足。",
   "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/heartbeat-review.json",
   "latestClientTechnicalFailureCount": 4,
   "latestDirect5xxCount": 0,
   "latestDirectNoResponseCount": 12,
-  "latestProxyWindowEndUTC": "2026-09-07T03:55:19.088000+00:00",
-  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260907T0355Z.json",
-  "latestSnapshotDirectory": "observations/20260907T0355Z",
+  "latestProxyWindowEndUTC": "2026-09-07T04:55:49.447000+00:00",
+  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260907T0455Z.json",
+  "latestSnapshotDirectory": "observations/20260907T0455Z",
   "latestVercelCore5xxCount": 0,
   "previousWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/notification-state.json",
-  "recordedAtUtc": "2026-09-07T04:10:04.274609+00:00",
+  "recordedAtUtc": "2026-09-07T05:09:12.920634+00:00",
   "schema": "castreader.audio-observation-alert-state.v1",
   "vercelCoreRequestKeys": [],
   "window": {
@@ -68,7 +68,7 @@
   "knownBusinessBlockedEventKeys": [
     "aa6e8229818cfd9e4305"
   ],
-  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/heartbeat-review.json",
+  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/heartbeat-review.json",
   "nonAudio503Count": 9,
   "knownBlog504RequestKeys": [
     "4fe0c35911b8e6fb74bd",
@@ -119,14 +119,30 @@
     "status": "new_incident_read_only_no_fix_deployment"
   },
   "latestReverseProxyGlobalAttribution": {
-    "unrepresentedAttempt1CompleteGroups": 550,
-    "missingAttemptGroups": 245,
-    "attempt2CancelledGroups": 1,
-    "directExactMatchedGroups": 707,
-    "remainingUnattributedAttempt1Groups": 88,
-    "remainingUnattributedAttempt2Groups": 1,
-    "reviewPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/vercel-proxy-join-summary.json",
-    "remainingCallerOrDeploymentIdentityEstablished": false
+    "globalMatchedGroups": 2062,
+    "globalProxyCompleteGroups": 2061,
+    "directExactMatchedGroups": 773,
+    "remainingUnattributedGroups": 0,
+    "pendingBoundaryGroups": [
+      {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": 1,
+        "firstUTC": "2026-09-07T04:55:49.368021+00:00",
+        "flightKeys": [
+          "4be145386b4fcdd2836f"
+        ],
+        "lastUTC": "2026-09-07T04:55:49.368630+00:00",
+        "outcomes": {},
+        "phases": [
+          "admission",
+          "connect",
+          "inbound_body"
+        ],
+        "receivedEvents": 1,
+        "requestKey": "beb9876571056917852f"
+      }
+    ],
+    "reviewPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/vercel-proxy-join-summary.json"
   },
   "observationScope": "backend_tts_clone_quickread_only",
   "scopeUpdatedAtUtc": "2026-09-06T23:30:11.443112+00:00",
@@ -144,46 +160,46 @@
       "region": "global",
       "service": "kokoro_tts",
       "backendVerdict": "符合预期",
-      "scope": "本小时可见Global有效HTTP供给；既往时延退化继续观察",
-      "evidence": "2658条Global均200、非空body并完成、单次尝试，全部精确关联代理完成；P95降至1755ms。Direct新PID472条、旧PID245条均200；观察窗包含两个Direct版本，原固定版本24h不能成立。"
+      "scope": "本小时可见HTTP供给",
+      "evidence": "Global2062条均200、非空响应体并完成、单次尝试，P95为1339ms。2061条代理完成，另1条处于代理切片边界、匹配Global已完成。Direct当前PID789条均200，其中773条精确关联代理完成、16条上游尝试数0。"
     },
     {
       "region": "cn",
       "service": "kokoro_tts",
       "backendVerdict": "证据不足",
-      "scope": "可见供给成功，断开及整轮校验时延仍未归因",
-      "evidence": "844条已解析TTS POST200，另1条nginx记录499、交付未知。108轮合同健康；本小时12轮完整，仍有11.039和12.337秒整轮耗时，缺HTTP/解码分项。"
+      "scope": "可见供给正常，历史断开和慢探针尚未完全归因",
+      "evidence": "累计已解析890条TTS POST200，既有1条nginx499未增加；另35行无法解析不能假定与TTS无关。120轮探针均供给和完整余文解码成功；本小时11轮均完整、最大9735ms。"
     },
     {
       "region": "global",
       "service": "clone_tts",
       "backendVerdict": "证据不足",
-      "scope": "本窗口真实合成",
-      "evidence": "健康、累计173完成、0失败/过期不变，仍无窗口结构化合成样本。"
+      "scope": "本窗口真实合成和交付",
+      "evidence": "当前健康，启动累计173完成、0失败/过期不变，本窗口结构化合成样本仍为0；不以健康计数代替成功率。"
     },
     {
       "region": "cn",
       "service": "clone_tts",
       "backendVerdict": "证据不足",
-      "scope": "本窗口真实合成",
-      "evidence": "健康、累计4完成、0失败/过期不变，不能替代窗口合成结果。"
+      "scope": "本窗口真实合成和交付",
+      "evidence": "当前健康，启动累计4完成、0失败/过期不变，缺本窗口逐次合成和完整HTTP交付样本。"
     },
     {
       "region": "global",
       "service": "quickread",
       "backendVerdict": "证据不足",
-      "scope": "可见生成正常，新增断开交付结果未知",
-      "evidence": "102份窗口修改任务均ready有首块，87份全块生成、15份可续；本小时17条权益放行，新增1条request_disconnected，无实际HTTP结果或LLM故障证据。"
+      "scope": "可见生成正常，完整HTTP交付覆盖不足",
+      "evidence": "104份窗口修改任务均ready有首块，88份全块生成、16份partial-ready；本小时2条权益放行，无新增固定错误。既有2条request_disconnected结果未知。"
     },
     {
       "region": "cn",
       "service": "quickread",
       "backendVerdict": "证据不足",
-      "scope": "首次获得任务正向样本，完整HTTP交付仍有缺口",
-      "evidence": "新增16条权益放行和15份ready首块任务，14份全块生成、1份可续；另1条request_disconnected，无法与持久任务或HTTP交付逐条贯通。"
+      "scope": "可见生成正常，完整HTTP交付覆盖不足",
+      "evidence": "16份窗口修改任务均ready有首块，14份全块生成、2份partial-ready；本小时1条权益放行，无新增固定错误。既有1条request_disconnected结果未知。"
     }
   ],
-  "latestBackendObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/heartbeat-review.json",
+  "latestBackendObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/heartbeat-review.json",
   "latestKnownQuickreadDisconnectedLogs": [
     {
       "region": "us",
@@ -208,11 +224,11 @@
     }
   ],
   "latestBackendSupplySnapshotPaths": [
-    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/us-backend-supply.json",
-    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/cn-backend-supply.json",
-    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/us-gpu-backend-supply.json"
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-supply/us-backend-supply.json",
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-supply/cn-backend-supply.json",
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-supply/us-gpu-backend-supply.json"
   ],
-  "latestBackendLatencyWatch": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/latency-watch.json",
+  "latestBackendLatencyWatch": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/latency-watch.json",
   "latestProxyReadTransport": "ssh_compression",
   "latestLocalCollectionRecovery": {
     "originalTimeoutAttempts": 3,
@@ -244,7 +260,7 @@
     "pendingReadOnlyAttribution": "Track existing model/header timings and CN probe/network/decode evidence without synthesis, deployment or client investigation.",
     "absoluteLatencySloSpecified": false
   },
-  "latestCNBackendLatencyWatch": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/cn-latency-watch.json",
+  "latestCNBackendLatencyWatch": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/cn-latency-watch.json",
   "latestBackendCollectionRecovery": {
     "schema": "castreader.vercel-read-recovery.v1",
     "initialFailures": [
@@ -282,15 +298,12 @@
     "note": "Original403 responses preserved. An authorized CLI account read succeeded, followed by a200 logs diagnostic and successful unchanged-window retries; this is collection recovery, not a productionTTS outage."
   },
   "latestBackendPerformanceObservation": {
-    "observedThroughUTC": "2026-09-07T03:55:19.088000+00:00",
-    "requestFinishP95Ms": 1755,
-    "proxyHeadersP95Ms": 1663.523,
-    "globalPartialImprovement": true,
-    "fullGlobalRecoveryEstablished": false,
-    "cnSlowProbeCompletionUTCs": [
-      "2026-09-07T03:08:10.812000Z",
-      "2026-09-07T03:23:32.109000Z"
-    ],
+    "observedThroughUTC": "2026-09-07T04:55:49.447000+00:00",
+    "requestFinishP95Ms": 1339,
+    "proxyHeadersP95Ms": 1214.769,
+    "currentWindowBelowPriorReference": true,
+    "sustainedGlobalRecoveryEstablished": false,
+    "cnSlowProbeCompletionUTCs": [],
     "cnServerSlowStageEstablished": false
   },
   "knownBackendValidationRejectionKeys": [
@@ -507,5 +520,54 @@
     "globalCallerProven": false,
     "permanentDirectCallerProven": false,
     "sourceVersionTransitionEvidence": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-transition.json"
-  }
+  },
+  "latestDirectVersionReadback": {
+    "schema": "castreader.direct-version-observation.v1",
+    "observedCommit": "7d0a22ce8169fb6b6fe8aa3e80a08ae3804ee161",
+    "observedSha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+    "systemd": {
+      "ActiveState": "active",
+      "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+      "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+      "MainPID": "596392",
+      "NRestarts": "0",
+      "SubState": "running"
+    },
+    "unchangedSincePreviousObservation": true,
+    "frozenExpectedSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+    "originalFrozenExpectationMatches": false,
+    "originalAcceptanceStateUpdated": false,
+    "actualBackendWindowMixedVersions": true,
+    "originalFrozenDirectVersion24hCanBeCertified": false,
+    "requestCountsByRecordedPID": [
+      {
+        "pid": "596392",
+        "statusCounts": {
+          "200": 789
+        },
+        "policyCounts": {
+          "legacy": 789
+        },
+        "requests": 789,
+        "firstCompletionUTC": "2026-09-07T03:55:20.285965Z",
+        "lastCompletionUTC": "2026-09-07T04:55:47.630328Z",
+        "incompleteBlocks": 0,
+        "malformedRequests": 0,
+        "duplicateRequestKeys": 0
+      }
+    ],
+    "priorReleaseEvidence": {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-transition.json",
+      "sha256": "76ec29dca3a78b23fe48173e3ecb7e030029d8115b8c0ede932002fe45636f32"
+    }
+  },
+  "oldWindowArchivePath": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/archive.json",
+  "stopFurtherOldWindowCollection": true,
+  "backendWindowCompletionNotifications": [
+    {
+      "windowEndUTC": "2026-09-07T05:01:25Z",
+      "reviewPath": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/backend-final-review.json",
+      "atUTC": "2026-09-07T05:09:12.920634+00:00"
+    }
+  ]
 }

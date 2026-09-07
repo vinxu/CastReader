@@ -1,0 +1,133 @@
+{
+  "schema": "castreader.backend-snapshot-comparison.v4",
+  "current": {
+    "generatedAtUTC": "2026-09-07T04:56:42.644203Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T04:56:42.644203Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T18:37:52.522573Z",
+      "startInclusive": "2026-09-06T18:37:52.522573Z"
+    },
+    "directStatusCounts": {
+      "200": 6024,
+      "400": 1,
+      "no_response": 12
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 119
+    },
+    "cnProbeStatus": {
+      "healthy": 120
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 37130
+  },
+  "previous": {
+    "generatedAtUTC": "2026-09-07T03:55:59.581713Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T03:55:59.581713Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T18:37:52.522573Z",
+      "startInclusive": "2026-09-06T18:37:52.522573Z"
+    },
+    "directStatusCounts": {
+      "200": 5228,
+      "400": 1,
+      "no_response": 12
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 107
+    },
+    "cnProbeStatus": {
+      "healthy": 108
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 33487
+  },
+  "historicalWindowBeforeEnd": {
+    "generatedAtUTC": "2026-09-07T04:56:42.644094Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T04:56:42.644094Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T05:01:25Z",
+      "startInclusive": "2026-09-06T05:01:25Z"
+    },
+    "directStatusCounts": {
+      "200": 12010,
+      "400": 4,
+      "502": 1,
+      "504": 4,
+      "no_response": 15
+    },
+    "globalCore5xx": 4,
+    "usProbeStatus": {
+      "healthy": 277
+    },
+    "cnProbeStatus": {
+      "healthy": 277
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 86117
+  },
+  "historicalWindowFinal": {
+    "generatedAtUTC": "2026-09-07T05:03:46.589951Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T05:01:25Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T05:01:25Z",
+      "startInclusive": "2026-09-06T05:01:25Z"
+    },
+    "directStatusCounts": {
+      "200": 12063,
+      "400": 4,
+      "502": 1,
+      "504": 4,
+      "no_response": 15
+    },
+    "globalCore5xx": 4,
+    "usProbeStatus": {
+      "healthy": 278
+    },
+    "cnProbeStatus": {
+      "healthy": 277
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 86400
+  },
+  "excludedFromBackendVerdict": [
+    "mobile",
+    "blog",
+    "payment"
+  ],
+  "originalAutomaticVerdictPreserved": true
+}

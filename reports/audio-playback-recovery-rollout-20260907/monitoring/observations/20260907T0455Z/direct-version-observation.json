@@ -1,0 +1,40 @@
+{
+  "schema": "castreader.direct-version-observation.v1",
+  "observedCommit": "7d0a22ce8169fb6b6fe8aa3e80a08ae3804ee161",
+  "observedSha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+  "systemd": {
+    "ActiveState": "active",
+    "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+    "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+    "MainPID": "596392",
+    "NRestarts": "0",
+    "SubState": "running"
+  },
+  "unchangedSincePreviousObservation": true,
+  "frozenExpectedSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+  "originalFrozenExpectationMatches": false,
+  "originalAcceptanceStateUpdated": false,
+  "actualBackendWindowMixedVersions": true,
+  "originalFrozenDirectVersion24hCanBeCertified": false,
+  "requestCountsByRecordedPID": [
+    {
+      "pid": "596392",
+      "statusCounts": {
+        "200": 789
+      },
+      "policyCounts": {
+        "legacy": 789
+      },
+      "requests": 789,
+      "firstCompletionUTC": "2026-09-07T03:55:20.285965Z",
+      "lastCompletionUTC": "2026-09-07T04:55:47.630328Z",
+      "incompleteBlocks": 0,
+      "malformedRequests": 0,
+      "duplicateRequestKeys": 0
+    }
+  ],
+  "priorReleaseEvidence": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-transition.json",
+    "sha256": "76ec29dca3a78b23fe48173e3ecb7e030029d8115b8c0ede932002fe45636f32"
+  }
+}

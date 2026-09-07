@@ -1,0 +1,675 @@
+{
+  "schema": "castreader.backend-audio-heartbeat-review.v5",
+  "automationId": "24",
+  "reviewedAtUTC": "2026-09-07T05:09:12.920634+00:00",
+  "decision": "NOTIFY",
+  "decisionReason": "旧固定24小时窗口到期归档；新窗口继续。当前无新增已确认供给失败，Global时延继续改善，克隆和解读完整交付证据仍不足。",
+  "observationScope": "backend_tts_clone_quickread_only",
+  "backendVerdict": "证据不足",
+  "backendVerdictReason": "可见有效供给本小时正常，整体仍缺克隆/解读完整交付覆盖及未决慢请求归因，且Direct窗内变更版本。",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "finalWindow": {
+    "collectedThroughExclusive": "2026-09-07T04:56:42.644203Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  },
+  "backendDetailWindow": {
+    "endUTCExclusive": "2026-09-07T04:55:49.447000+00:00",
+    "productionActiveFromUTC": "2026-09-06T18:37:52.522573+00:00",
+    "startUTC": "2026-09-07T03:55:19.088000+00:00"
+  },
+  "services": [
+    {
+      "region": "global",
+      "service": "kokoro_tts",
+      "backendVerdict": "符合预期",
+      "scope": "本小时可见HTTP供给",
+      "evidence": "Global2062条均200、非空响应体并完成、单次尝试，P95为1339ms。2061条代理完成，另1条处于代理切片边界、匹配Global已完成。Direct当前PID789条均200，其中773条精确关联代理完成、16条上游尝试数0。"
+    },
+    {
+      "region": "cn",
+      "service": "kokoro_tts",
+      "backendVerdict": "证据不足",
+      "scope": "可见供给正常，历史断开和慢探针尚未完全归因",
+      "evidence": "累计已解析890条TTS POST200，既有1条nginx499未增加；另35行无法解析不能假定与TTS无关。120轮探针均供给和完整余文解码成功；本小时11轮均完整、最大9735ms。"
+    },
+    {
+      "region": "global",
+      "service": "clone_tts",
+      "backendVerdict": "证据不足",
+      "scope": "本窗口真实合成和交付",
+      "evidence": "当前健康，启动累计173完成、0失败/过期不变，本窗口结构化合成样本仍为0；不以健康计数代替成功率。"
+    },
+    {
+      "region": "cn",
+      "service": "clone_tts",
+      "backendVerdict": "证据不足",
+      "scope": "本窗口真实合成和交付",
+      "evidence": "当前健康，启动累计4完成、0失败/过期不变，缺本窗口逐次合成和完整HTTP交付样本。"
+    },
+    {
+      "region": "global",
+      "service": "quickread",
+      "backendVerdict": "证据不足",
+      "scope": "可见生成正常，完整HTTP交付覆盖不足",
+      "evidence": "104份窗口修改任务均ready有首块，88份全块生成、16份partial-ready；本小时2条权益放行，无新增固定错误。既有2条request_disconnected结果未知。"
+    },
+    {
+      "region": "cn",
+      "service": "quickread",
+      "backendVerdict": "证据不足",
+      "scope": "可见生成正常，完整HTTP交付覆盖不足",
+      "evidence": "16份窗口修改任务均ready有首块，14份全块生成、2份partial-ready；本小时1条权益放行，无新增固定错误。既有1条request_disconnected结果未知。"
+    }
+  ],
+  "currentBackendSnapshot": {
+    "generatedAtUTC": "2026-09-07T04:56:42.644203Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T04:56:42.644203Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T18:37:52.522573Z",
+      "startInclusive": "2026-09-06T18:37:52.522573Z"
+    },
+    "directStatusCounts": {
+      "200": 6024,
+      "400": 1,
+      "no_response": 12
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 119
+    },
+    "cnProbeStatus": {
+      "healthy": 120
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 37130
+  },
+  "historicalBackendSnapshot": {
+    "generatedAtUTC": "2026-09-07T05:03:46.589951Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T05:01:25Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T05:01:25Z",
+      "startInclusive": "2026-09-06T05:01:25Z"
+    },
+    "directStatusCounts": {
+      "200": 12063,
+      "400": 4,
+      "502": 1,
+      "504": 4,
+      "no_response": 15
+    },
+    "globalCore5xx": 4,
+    "usProbeStatus": {
+      "healthy": 278
+    },
+    "cnProbeStatus": {
+      "healthy": 277
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 86400
+  },
+  "historicalWindowArchived": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/archive.json",
+    "sha256": "f3bf486ae90ff963077d04737b1a4d66a9d95196bad040bca499208d3d7bdba0"
+  },
+  "newConfirmedValidTtsOrLlmSupplyFailures": [],
+  "newObservedDirectVersion": null,
+  "newQuickreadDisconnectRecords": [],
+  "newProxyCancellation": null,
+  "newCNIngressLoggedNon200": [],
+  "latestDirectVersionObservation": {
+    "schema": "castreader.direct-version-observation.v1",
+    "observedCommit": "7d0a22ce8169fb6b6fe8aa3e80a08ae3804ee161",
+    "observedSha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+    "systemd": {
+      "ActiveState": "active",
+      "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+      "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+      "MainPID": "596392",
+      "NRestarts": "0",
+      "SubState": "running"
+    },
+    "unchangedSincePreviousObservation": true,
+    "frozenExpectedSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+    "originalFrozenExpectationMatches": false,
+    "originalAcceptanceStateUpdated": false,
+    "actualBackendWindowMixedVersions": true,
+    "originalFrozenDirectVersion24hCanBeCertified": false,
+    "requestCountsByRecordedPID": [
+      {
+        "pid": "596392",
+        "statusCounts": {
+          "200": 789
+        },
+        "policyCounts": {
+          "legacy": 789
+        },
+        "requests": 789,
+        "firstCompletionUTC": "2026-09-07T03:55:20.285965Z",
+        "lastCompletionUTC": "2026-09-07T04:55:47.630328Z",
+        "incompleteBlocks": 0,
+        "malformedRequests": 0,
+        "duplicateRequestKeys": 0
+      }
+    ],
+    "priorReleaseEvidence": {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-transition.json",
+      "sha256": "76ec29dca3a78b23fe48173e3ecb7e030029d8115b8c0ede932002fe45636f32"
+    }
+  },
+  "proxyPendingBoundaryGroups": [
+    {
+      "ambiguousRepeatedRequestKey": false,
+      "attempt": 1,
+      "firstUTC": "2026-09-07T04:55:49.368021+00:00",
+      "flightKeys": [
+        "4be145386b4fcdd2836f"
+      ],
+      "lastUTC": "2026-09-07T04:55:49.368630+00:00",
+      "outcomes": {},
+      "phases": [
+        "admission",
+        "connect",
+        "inbound_body"
+      ],
+      "receivedEvents": 1,
+      "requestKey": "beb9876571056917852f"
+    }
+  ],
+  "boundaryProviderCompletionEvidence": [
+    {
+      "vercelRequestKey": "0140c46147a7fa87bf4a",
+      "requestStartUTC": "2026-09-07T04:55:49.193000Z",
+      "path": "/api/captioned_speech_partly",
+      "events": [
+        {
+          "event": "request_start",
+          "stage": "request",
+          "requestKey": "beb9876571056917852f",
+          "attempt": 0,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "budgetMs": 28000,
+          "region": "global"
+        },
+        {
+          "event": "attempt_start",
+          "stage": "headers",
+          "requestKey": "beb9876571056917852f",
+          "attempt": 1,
+          "elapsedMs": 0,
+          "attemptTimeoutMs": 20000,
+          "region": "global"
+        },
+        {
+          "event": "upstream_headers",
+          "stage": "headers",
+          "requestKey": "beb9876571056917852f",
+          "attempt": 1,
+          "elapsedMs": 459,
+          "attemptElapsedMs": 459,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "upstream_body",
+          "stage": "body",
+          "requestKey": "beb9876571056917852f",
+          "attempt": 1,
+          "elapsedMs": 468,
+          "bodyBytes": 36781,
+          "attemptElapsedMs": 468,
+          "region": "global",
+          "status": 200
+        },
+        {
+          "event": "request_finished",
+          "stage": "validation",
+          "requestKey": "beb9876571056917852f",
+          "attempt": 1,
+          "elapsedMs": 468,
+          "region": "global",
+          "status": 200
+        }
+      ],
+      "status": 200,
+      "requestDurationMs": 950,
+      "applicationRequestKeys": [
+        "beb9876571056917852f"
+      ],
+      "hasRequestStart": true,
+      "hasRequestFinished": true
+    }
+  ],
+  "latencyWatch": {
+    "schema": "castreader.backend-latency-trend.v5",
+    "classification": "current_window_below_previous_reference_after_three_improving_windows",
+    "windows": [
+      {
+        "tag": "20260906T2353Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-06T22:52:47.445000Z",
+          "requestStartExclusiveUTC": "2026-09-06T23:53:17.725000Z"
+        },
+        "globalRequestCount": 1890,
+        "globalRequestFinishMs": {
+          "samples": 1890,
+          "p50": 572,
+          "p95": 1570,
+          "max": 3728
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 3677.495,
+          "median": 531.292,
+          "n": 2199,
+          "p95": 1494.506
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.702,
+          "median": 0.254,
+          "n": 2200,
+          "p95": 0.32
+        }
+      },
+      {
+        "tag": "20260907T0053Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-06T23:53:17.725000Z",
+          "requestStartExclusiveUTC": "2026-09-07T00:53:48.099000Z"
+        },
+        "globalRequestCount": 3454,
+        "globalRequestFinishMs": {
+          "samples": 3454,
+          "p50": 755,
+          "p95": 2201,
+          "max": 7385
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 7326.668,
+          "median": 685.783,
+          "n": 4236,
+          "p95": 2083.657
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.691,
+          "median": 0.254,
+          "n": 4235,
+          "p95": 0.329
+        }
+      },
+      {
+        "tag": "20260907T0155Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T00:53:48.099Z",
+          "requestStartExclusiveUTC": "2026-09-07T01:55:18.503Z"
+        },
+        "globalRequestCount": 3475,
+        "globalRequestFinishMs": {
+          "samples": 3475,
+          "p50": 1046,
+          "p95": 2697,
+          "max": 7591
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 7525.657,
+          "median": 937.812,
+          "n": 4226,
+          "p95": 2543.123
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 2.45,
+          "median": 0.258,
+          "n": 4227,
+          "p95": 0.333
+        }
+      },
+      {
+        "tag": "20260907T0255Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T01:55:18.503Z",
+          "requestStartExclusiveUTC": "2026-09-07T02:55:18.766Z"
+        },
+        "globalRequestCount": 3259,
+        "globalRequestFinishMs": {
+          "samples": 3259,
+          "p50": 665,
+          "p95": 2065,
+          "max": 5865
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 5788.14,
+          "median": 590.031,
+          "n": 4138,
+          "p95": 1959.63
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 1.018,
+          "median": 0.251,
+          "n": 4136,
+          "p95": 0.328
+        }
+      },
+      {
+        "tag": "20260907T0355Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T02:55:18.766Z",
+          "requestStartExclusiveUTC": "2026-09-07T03:55:19.088Z"
+        },
+        "globalRequestCount": 2658,
+        "globalRequestFinishMs": {
+          "samples": 2658,
+          "p50": 552,
+          "p95": 1755,
+          "max": 4626
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 4579.498,
+          "median": 502.264,
+          "n": 3454,
+          "p95": 1663.523
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.739,
+          "median": 0.25,
+          "n": 3454,
+          "p95": 0.321
+        }
+      },
+      {
+        "tag": "20260907T0455Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T03:55:19.088Z",
+          "requestStartExclusiveUTC": "2026-09-07T04:55:49.447Z"
+        },
+        "globalRequestCount": 2062,
+        "globalRequestFinishMs": {
+          "samples": 2062,
+          "p50": 545,
+          "p95": 1339,
+          "max": 3479
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 3419.692,
+          "median": 477.34,
+          "n": 2833,
+          "p95": 1214.769
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.706,
+          "median": 0.251,
+          "n": 2834,
+          "p95": 0.32
+        }
+      }
+    ],
+    "absoluteLatencySloSpecified": false,
+    "sustainedRecoveryEstablished": false,
+    "limitations": [
+      "The request mix and output sizes vary. Lower latency is observed, not proof of a specific model/queue fix or an absolute product SLO.",
+      "The current P95 is below the 23:53Z reference in this window; longer lasting recovery remains under observation."
+    ]
+  },
+  "cnLatencyWatch": {
+    "schema": "castreader.cn-probe-latency-watch.v3",
+    "probeElapsedMs": {
+      "samples": 11,
+      "p50": 2480,
+      "p95": 9735,
+      "max": 9735
+    },
+    "rows": [
+      {
+        "observedAtUTC": "2026-09-07T03:59:32.200000Z",
+        "elapsedMs": 2428,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "d558ed6cdbeb407a2911883df6a1fdfef8ebc75a4792e9e521bd18b817b9b6c5",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:04:42.046000Z",
+        "elapsedMs": 2278,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "6361f2d9d5eae056cac2ab9a9b87bf085dda43d3f3c325f0896cb6aee6e7380e",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:09:57.067000Z",
+        "elapsedMs": 9735,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "660df5faab1c6eac46423033f9b6a91072ac850bbe6da3594cf3173d293ef54c",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:14:52.367000Z",
+        "elapsedMs": 2598,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "f3a14f60710508c9e55c369dc7eb7ab53b7c3192470f1cf449df7c9f4b070a5f",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:20:08.930000Z",
+        "elapsedMs": 9112,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "73d1802611f2503489971e74ba7a15c3610193f4c16e786f0a20bac49617a70b",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:25:12.075000Z",
+        "elapsedMs": 2305,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "cceb1b54e8a68b1f7c0cce7e474be455c9bdd8916a32deabeb6fe96358c277bd",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:30:32.490000Z",
+        "elapsedMs": 2721,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "9a65fe435212bbff137c7195863f6162bd7ac4830f6e990269cf9df455731623",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:35:52.050000Z",
+        "elapsedMs": 2279,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "01b8f4ff7a47e8d2a92674afa999ae34c7fce363c5b1dbaa95ba230b8572ef3c",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:40:56.915000Z",
+        "elapsedMs": 2331,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "ede99c09e0020d99bfad93bab21fc272471bb834207394df3262f0e437d9074e",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:46:11.342000Z",
+        "elapsedMs": 2817,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "dbfde3ef06e4faa86343178e585945b259ba3b56a4ab171d0bedf9e68f3c4675",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T04:51:22.246000Z",
+        "elapsedMs": 2480,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "7ae906780ffab9070667fe7a7d3daa4ee40e1654d79d62ac9278dc7d63519bfd",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      }
+    ],
+    "overTenSeconds": [],
+    "classification": "no_new_over_10s_cycle_in_current_slice",
+    "serverSlowStageEstablished": false,
+    "limitations": [
+      "These are existing three-segment probe cycles, including HTTP and local decode; elapsed time is not model TTFB.",
+      "Older 31.702s, 21.883s, 22.466s and other slow cycles remain retained and not fully attributed."
+    ]
+  },
+  "actualBackendWindowMixedVersions": true,
+  "originalFrozenDirectVersion24hCanBeCertified": false,
+  "limitations": [
+    "Original automaticVerdict includes out-of-scope clients and is not used for this backend conclusion.",
+    "No new confirmed supply failures is limited to returned backend data; clone/QuickRead request ledgers and provider ingestion completeness are not established.",
+    "Historical request_disconnected, no_response,499 and cancelled outcomes remain unresolved unless individually matched; none proves model failure or requester intent.",
+    "Task-file ready/all-block counters are modified-file cohorts, not complete HTTP or downstream TTS outcomes.",
+    "Source/node labels and sampled regional contracts do not certify every physical hop stays in-region. CN R134 is not deployed.",
+    "The final window retains its original deadline. The observed Direct version change does not restart or extend it."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/latest-acceptance.json",
+      "sha256": "e1127e42ef7b5926a6be90c69c26f180a3330c0f10fd98787fddee42efe4bd3f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/20260907T0455Z/latest-acceptance.json",
+      "sha256": "648651d2f37f70fbfa894c31e2a30f06337392de894a297d2df8735f6a5b8bbc"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260907T0455Z.json",
+      "sha256": "72cb97bbaeb7ab71694d7ce9560f365420f7a132f782763e98facc5e4d6463e1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0455Z.json",
+      "sha256": "fb0eac6282a4fb620f7ae8128f7f2b7c741828543169a89a5225b02f8f13ed98"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/vercel-proxy-join-summary.json",
+      "sha256": "49cbdaddc508fbc85a329b0de0a1fb65f811dc194aa4337eb165531ca3d5fb3f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/direct-version-requests.json",
+      "sha256": "d92b0aedc7b221589607b84782053936dc14ba6fd239dd079f49aefb1fe98aa1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/direct-version-observation.json",
+      "sha256": "55e3baa84a63a50274ab0a8d4be382abf51df4f93461d52045f712bf5f57f99e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-identity-comparison.json",
+      "sha256": "38f601e79c32f23973cbf918dd91435a5af59f4403e73832ee38ccdcdf10df15"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-service-delta.json",
+      "sha256": "117fda2ac49bb41a5c93b38a8dc6fa60b9f65552303dca2aefb6ac761fe1be91"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/latency-watch.json",
+      "sha256": "1a7bf01d529eeca70074df0582e4b80a056d315eee12106584a1a833d815482d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/cn-latency-watch.json",
+      "sha256": "f980168916594cdfbb4b9a6a4887de4572fd02fceb688432fd0cce1d47183d8e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/backend-final-review.json",
+      "sha256": "42e5453ef2c363beb5eda441cd23d14502f031e40bf93fef1b8b3d3a0541abee"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-supply/us-backend-supply.json",
+      "sha256": "4e262fb06af3dad998a70e952618b6a3fda3a7fd8c6921c651d3f25ba370f47d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-supply/cn-backend-supply.json",
+      "sha256": "732b242bf5e5650be496482a08bde48ed76619253c2b38e622d879646bd27a7c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0455Z/backend-supply/us-gpu-backend-supply.json",
+      "sha256": "6d668c015a3b48714a1d9ff7f3a44f2d6cfc190350e4611b0362d925faa76e90"
+    }
+  ]
+}

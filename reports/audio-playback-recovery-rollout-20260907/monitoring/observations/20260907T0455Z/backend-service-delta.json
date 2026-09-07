@@ -1,0 +1,125 @@
+{
+  "us": {
+    "quickreadIncrementalTags": {
+      "[pro-gate] allow": 2
+    },
+    "quickreadJobs": {
+      "directory": "/root/.url-video-agent/jobs/quickread-state",
+      "filesAtRead": 480,
+      "parseFailures": 1,
+      "parseFailuresModifiedInsideWindow": 0,
+      "jobsWithExplicitCreationTimeInWindow": 0,
+      "jobsWithExplicitCreationTimeInIncrementalWindow": 0,
+      "jobsMissingExplicitCreationTime": 479,
+      "outcomeCohort": "Current state of files modified inside the window, not all HTTP requests or newly created jobs.",
+      "filesModifiedInWindow": 104,
+      "createdJobsUpdatedAfterCutoffExcludedFromOutcome": 0,
+      "status": {
+        "streaming": 104
+      },
+      "streamStateStatus": {
+        "ready": 104
+      },
+      "withAtLeastBlock0": 104,
+      "allServerBlocksGenerated": 88,
+      "partialButReady": 16,
+      "sectionTotalPairs": {
+        "2/2": 18,
+        "3/3": 21,
+        "1/1": 13,
+        "4/4": 26,
+        "5/5": 6,
+        "1/4": 4,
+        "1/3": 8,
+        "9/9": 1,
+        "6/6": 2,
+        "3/5": 1,
+        "1/2": 2,
+        "3/4": 1,
+        "7/7": 1
+      },
+      "nextIndexConsistentWithStoredSections": 104
+    },
+    "newFixedErrorRecords": [],
+    "cloneCurrentCumulativeCounters": {
+      "submitted": 173,
+      "completed": 173,
+      "failed": 0,
+      "expired": 0
+    },
+    "cloneCounterDelta": {
+      "submitted": 0,
+      "completed": 0,
+      "failed": 0,
+      "expired": 0
+    }
+  },
+  "cn": {
+    "quickreadIncrementalTags": {
+      "[pro-gate] allow": 1
+    },
+    "quickreadJobs": {
+      "directory": "/var/lib/castreader-quickread-cn/.url-video-agent/jobs/quickread-state",
+      "filesAtRead": 36,
+      "parseFailures": 0,
+      "parseFailuresModifiedInsideWindow": 0,
+      "jobsWithExplicitCreationTimeInWindow": 0,
+      "jobsWithExplicitCreationTimeInIncrementalWindow": 0,
+      "jobsMissingExplicitCreationTime": 36,
+      "outcomeCohort": "Current state of files modified inside the window, not all HTTP requests or newly created jobs.",
+      "filesModifiedInWindow": 16,
+      "createdJobsUpdatedAfterCutoffExcludedFromOutcome": 0,
+      "status": {
+        "streaming": 16
+      },
+      "streamStateStatus": {
+        "ready": 16
+      },
+      "withAtLeastBlock0": 16,
+      "allServerBlocksGenerated": 14,
+      "partialButReady": 2,
+      "sectionTotalPairs": {
+        "2/2": 9,
+        "3/3": 5,
+        "3/7": 1,
+        "1/2": 1
+      },
+      "nextIndexConsistentWithStoredSections": 16
+    },
+    "newFixedErrorRecords": [],
+    "cloneCurrentCumulativeCounters": {
+      "submitted": 4,
+      "completed": 4,
+      "failed": 0,
+      "expired": 0
+    },
+    "cloneCounterDelta": {
+      "submitted": 0,
+      "completed": 0,
+      "failed": 0,
+      "expired": 0
+    },
+    "ttsIngress": {
+      "path": "/var/log/nginx/access.log",
+      "fileBytes": 1894892,
+      "unparsedLines": 35,
+      "firstParsedUTC": "2026-09-07T00:00:02+08:00",
+      "lastParsedUTC": "2026-09-07T12:56:30+08:00",
+      "routeMethodStatuses": [
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": "200",
+          "count": 890
+        },
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": "499",
+          "count": 1
+        }
+      ],
+      "limitation": "No model/voice attribution or request latency in access format; includes existing monitoring traffic."
+    }
+  }
+}

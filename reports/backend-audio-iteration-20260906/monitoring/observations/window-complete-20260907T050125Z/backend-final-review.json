@@ -1,0 +1,85 @@
+{
+  "schema": "castreader.backend-fixed-window-completion.v1",
+  "automationId": "24",
+  "archivedAtUTC": "2026-09-07T05:09:12.920634+00:00",
+  "window": {
+    "collectedThroughExclusive": "2026-09-07T05:01:25Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T05:01:25Z",
+    "startInclusive": "2026-09-06T05:01:25Z"
+  },
+  "cutoverState": "window_complete",
+  "backendVerdict": "存在异常",
+  "backendVerdictReason": "整个旧窗保留真实HTTP错误及版本切换，不能认定无故障通过。收尾未发现新增已确认供给失败。",
+  "backendFinalSnapshot": {
+    "generatedAtUTC": "2026-09-07T05:03:46.589951Z",
+    "window": {
+      "collectedThroughExclusive": "2026-09-07T05:01:25Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T05:01:25Z",
+      "startInclusive": "2026-09-06T05:01:25Z"
+    },
+    "directStatusCounts": {
+      "200": 12063,
+      "400": 4,
+      "502": 1,
+      "504": 4,
+      "no_response": 15
+    },
+    "globalCore5xx": 4,
+    "usProbeStatus": {
+      "healthy": 278
+    },
+    "cnProbeStatus": {
+      "healthy": 277
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 86400
+  },
+  "originalAutomaticVerdictUsedAsBackendConclusion": false,
+  "historicalFailuresPreserved": true,
+  "retainedFindings": [
+    "Global4条504、Direct4条504及1条维护阶段502均保留，不把两个入口计数相加为独立用户故障数。",
+    "Direct400共4条：既有3条旧模型拒绝、1条本地请求校验拒绝；本地校验拒绝不算有效TTS模型供给失败。",
+    "Direct15条无HTTP响应，最终交付与取消原因未知；不改写为成功、模型超时或用户主动取消。",
+    "US278轮、CN277轮既有探针完整供给及余文解码正常、地区元数据不匹配0，但不覆盖所有真实请求及物理跨境路径。",
+    "本旧窗存在多次Global/Direct/代理/模型版本切换。Direct最新独立发布的证据单列，冻结期望未用实时值覆盖。",
+    "QuickRead和克隆完整HTTP交付仍缺覆盖；后续细分供给证据从最终R134窗口采集，不能冒充整个旧窗的样本。"
+  ],
+  "readOnlyProduction": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "stopFurtherOldWindowCollection": true,
+  "finalWindowStillActive": {
+    "endUtc": "2026-09-07T18:37:52.522573+00:00",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T18:37:52.522573+00:00"
+  },
+  "finalWindowExtendedOrRestarted": false,
+  "automationPaused": false,
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/latest-acceptance.json",
+      "sha256": "d6f826bfa6095b9f8a77bd44a7226e8f68088bdb749aa04629f4d8ade4b76932"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/acceptance-state-before.json",
+      "sha256": "22151b6e0f4d0cc93986064c3433e2cd1d0a1011c96cd03029e851bdda2c2c1f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/acceptance-state.json",
+      "sha256": "55c28fc5649d14fbb20e18d9e384070bbc0fa6c79a1bd2f43b50eb2c96238123"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-transition.json",
+      "sha256": "76ec29dca3a78b23fe48173e3ecb7e030029d8115b8c0ede932002fe45636f32"
+    }
+  ]
+}

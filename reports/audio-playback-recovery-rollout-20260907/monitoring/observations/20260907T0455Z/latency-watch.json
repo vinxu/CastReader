@@ -1,0 +1,168 @@
+{
+  "schema": "castreader.backend-latency-trend.v5",
+  "classification": "current_window_below_previous_reference_after_three_improving_windows",
+  "windows": [
+    {
+      "tag": "20260906T2353Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-06T22:52:47.445000Z",
+        "requestStartExclusiveUTC": "2026-09-06T23:53:17.725000Z"
+      },
+      "globalRequestCount": 1890,
+      "globalRequestFinishMs": {
+        "samples": 1890,
+        "p50": 572,
+        "p95": 1570,
+        "max": 3728
+      },
+      "proxyUpstreamHeadersElapsedMs": {
+        "max": 3677.495,
+        "median": 531.292,
+        "n": 2199,
+        "p95": 1494.506
+      },
+      "proxyUpstreamConnectMs": {
+        "max": 0.702,
+        "median": 0.254,
+        "n": 2200,
+        "p95": 0.32
+      }
+    },
+    {
+      "tag": "20260907T0053Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-06T23:53:17.725000Z",
+        "requestStartExclusiveUTC": "2026-09-07T00:53:48.099000Z"
+      },
+      "globalRequestCount": 3454,
+      "globalRequestFinishMs": {
+        "samples": 3454,
+        "p50": 755,
+        "p95": 2201,
+        "max": 7385
+      },
+      "proxyUpstreamHeadersElapsedMs": {
+        "max": 7326.668,
+        "median": 685.783,
+        "n": 4236,
+        "p95": 2083.657
+      },
+      "proxyUpstreamConnectMs": {
+        "max": 0.691,
+        "median": 0.254,
+        "n": 4235,
+        "p95": 0.329
+      }
+    },
+    {
+      "tag": "20260907T0155Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-07T00:53:48.099Z",
+        "requestStartExclusiveUTC": "2026-09-07T01:55:18.503Z"
+      },
+      "globalRequestCount": 3475,
+      "globalRequestFinishMs": {
+        "samples": 3475,
+        "p50": 1046,
+        "p95": 2697,
+        "max": 7591
+      },
+      "proxyUpstreamHeadersElapsedMs": {
+        "max": 7525.657,
+        "median": 937.812,
+        "n": 4226,
+        "p95": 2543.123
+      },
+      "proxyUpstreamConnectMs": {
+        "max": 2.45,
+        "median": 0.258,
+        "n": 4227,
+        "p95": 0.333
+      }
+    },
+    {
+      "tag": "20260907T0255Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-07T01:55:18.503Z",
+        "requestStartExclusiveUTC": "2026-09-07T02:55:18.766Z"
+      },
+      "globalRequestCount": 3259,
+      "globalRequestFinishMs": {
+        "samples": 3259,
+        "p50": 665,
+        "p95": 2065,
+        "max": 5865
+      },
+      "proxyUpstreamHeadersElapsedMs": {
+        "max": 5788.14,
+        "median": 590.031,
+        "n": 4138,
+        "p95": 1959.63
+      },
+      "proxyUpstreamConnectMs": {
+        "max": 1.018,
+        "median": 0.251,
+        "n": 4136,
+        "p95": 0.328
+      }
+    },
+    {
+      "tag": "20260907T0355Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-07T02:55:18.766Z",
+        "requestStartExclusiveUTC": "2026-09-07T03:55:19.088Z"
+      },
+      "globalRequestCount": 2658,
+      "globalRequestFinishMs": {
+        "samples": 2658,
+        "p50": 552,
+        "p95": 1755,
+        "max": 4626
+      },
+      "proxyUpstreamHeadersElapsedMs": {
+        "max": 4579.498,
+        "median": 502.264,
+        "n": 3454,
+        "p95": 1663.523
+      },
+      "proxyUpstreamConnectMs": {
+        "max": 0.739,
+        "median": 0.25,
+        "n": 3454,
+        "p95": 0.321
+      }
+    },
+    {
+      "tag": "20260907T0455Z",
+      "window": {
+        "requestStartInclusiveUTC": "2026-09-07T03:55:19.088Z",
+        "requestStartExclusiveUTC": "2026-09-07T04:55:49.447Z"
+      },
+      "globalRequestCount": 2062,
+      "globalRequestFinishMs": {
+        "samples": 2062,
+        "p50": 545,
+        "p95": 1339,
+        "max": 3479
+      },
+      "proxyUpstreamHeadersElapsedMs": {
+        "max": 3419.692,
+        "median": 477.34,
+        "n": 2833,
+        "p95": 1214.769
+      },
+      "proxyUpstreamConnectMs": {
+        "max": 0.706,
+        "median": 0.251,
+        "n": 2834,
+        "p95": 0.32
+      }
+    }
+  ],
+  "absoluteLatencySloSpecified": false,
+  "sustainedRecoveryEstablished": false,
+  "limitations": [
+    "The request mix and output sizes vary. Lower latency is observed, not proof of a specific model/queue fix or an absolute product SLO.",
+    "The current P95 is below the 23:53Z reference in this window; longer lasting recovery remains under observation."
+  ]
+}

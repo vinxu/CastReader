@@ -1,0 +1,18 @@
+{
+  "schema": "castreader.fixed-window-archive.v1",
+  "archivedAtUTC": "2026-09-07T05:09:12.920634+00:00",
+  "window": {
+    "endUtc": "2026-09-07T05:01:25Z",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T05:01:25Z"
+  },
+  "stopFurtherCollection": true,
+  "finalSnapshot": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/latest-acceptance.json",
+    "sha256": "d6f826bfa6095b9f8a77bd44a7226e8f68088bdb749aa04629f4d8ade4b76932"
+  },
+  "backendReview": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/window-complete-20260907T050125Z/backend-final-review.json",
+    "sha256": "42e5453ef2c363beb5eda441cd23d14502f031e40bf93fef1b8b3d3a0541abee"
+  }
+}
