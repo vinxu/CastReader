@@ -13,6 +13,7 @@ import math
 from pathlib import Path
 import re
 import ssl
+import subprocess
 import sys
 import urllib.error
 import urllib.parse
@@ -187,6 +188,13 @@ def query_parameters(project, start, end, deployment, page):
 def collect_pages(start, end, deployment, max_pages, max_rows):
     context = tls_context()
     project = json.loads((REPO/'.vercel/project.json').read_text())
+    # Let the official CLI refresh its existing login before reading the token.
+    # A raw request with a stale token can return 403 despite valid project access.
+    # Never initiate interactive login, print credentials, or change team scope.
+    login = subprocess.run(['vercel', 'whoami'], cwd=REPO,
+        stdin=subprocess.DEVNULL, capture_output=True, timeout=45)
+    if login.returncode:
+        raise RuntimeError('existing_vercel_login_unavailable')
     auth = Path.home()/'Library/Application Support/com.vercel.cli/auth.json'
     credential = json.loads(auth.read_text())['token']
     opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=context), NoRedirect())

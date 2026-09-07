@@ -1,0 +1,36 @@
+{
+  "schema": "castreader.vercel-preset-event-window.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "expectedDeployment": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+  "window": {
+    "requestStartInclusiveUTC": "2026-09-07T11:21:22.363000Z",
+    "requestStartExclusiveUTC": "2026-09-07T12:21:22.363000Z"
+  },
+  "query": {
+    "production": true,
+    "deploymentPinned": true,
+    "search": "tts-preset"
+  },
+  "collectionStartedUTC": "2026-09-07T13:41:23.639558Z",
+  "coverage": {
+    "completeForReturnedRequestCohort": false,
+    "issues": [
+      "http_error"
+    ],
+    "ingestionCompletenessVerified": false,
+    "httpStatus": 403
+  },
+  "collectedAtUTC": "2026-09-07T13:41:26.987358Z",
+  "limitations": [
+    "Window selects provider request-start timestamps; nested event elapsedMs is relative to the application executor start, not the provider request start.",
+    "Application events have no absolute timestamp. Requests may finish after the window end; never infer exact event wall time by adding elapsedMs to the provider timestamp.",
+    "Vercel search and ingestion can omit or delay logs. Zero accepted events and even complete pagination do not prove zero requests or healthy playback.",
+    "requestKey plus attempt joins proxy caller diagnostics; vercelRequestKey is a separate provider identifier hash and must not be joined as an application key.",
+    "Repeated application request keys across provider requests remain separate. An attempt failure, scheduled retry and final error may describe the same failure.",
+    "Header/body timings locate the observed waiting stage; they do not distinguish network, queue, language lock or inference time inside the upstream.",
+    "Complete HTTP audio bytes do not prove decoding quality, delivery to the device or playback completion."
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "schema": "castreader.backend-heartbeat-coverage-gap.v1",
+  "automationId": "24",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "reviewedAtUTC": "2026-09-07T12:24:37.848960+00:00",
+  "decision": "NOTIFY",
+  "newActionableChange": true,
+  "backendVerdict": "证据不足：本轮监控无法联网采集；不能判断当前服务健康，历史已知故障保留",
+  "collectionStatus": "blocked_by_local_network_permission",
+  "localPermissionChangeObserved": true,
+  "productionOutageEstablished": false,
+  "source": "Current environment network restriction, confirmed by two SSH Operation not permitted results and HTTPS PermissionError errno1.",
+  "uncollectedWindow": {
+    "startUTC": "2026-09-07T11:21:22.363000+00:00",
+    "requestedEndUTC": "2026-09-07T12:22:50.844Z",
+    "cursorAdvanced": false
+  },
+  "lastSuccessfulObservation": {
+    "directory": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z",
+    "reviewPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/backend-review.json",
+    "reviewSha256": "4068d174437ee404753083dde72c3800f212e2e15ecec3b99d2ec755e8c0d379",
+    "proxyWindowEndUTC": "2026-09-07T11:21:22.363000+00:00",
+    "cumulativeCollectionWindow": {
+      "collectedThroughExclusive": "2026-09-07T11:22:13.637269Z",
+      "configuredSeconds": 86400,
+      "endExclusive": "2026-09-07T18:37:52.522573Z",
+      "startInclusive": "2026-09-06T18:37:52.522573Z"
+    },
+    "historicalBackendVerdict": "存在异常（历史故障保留）；本轮没有新增确证供给失败，新增1次下游无响应断开，解读/克隆完整交付仍证据不足",
+    "currentStatusInferredFromOldData": false
+  },
+  "fixedWindow": {
+    "endUtc": "2026-09-07T18:37:52.522573+00:00",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T18:37:52.522573+00:00"
+  },
+  "windowRestartedOrExtended": false,
+  "preflightEvidence": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1222Z/transport-preflight.json",
+    "sha256": "29f1f946ffa60ff15aaab5c05af7d8f65703bfc3b6fbc49bc7c0e9de1ac5cd03"
+  },
+  "collectorsNotRunAfterAccessDenial": [
+    "collect_rollout_acceptance.py",
+    "collect_proxy_events.py",
+    "collect_backend_supply.py",
+    "collect_vercel_preset_events.py",
+    "model identity and model diagnostics SSH readers"
+  ],
+  "permissionBypassAttempted": false,
+  "latestAcceptanceOverwritten": false,
+  "gitCommitAttempted": false,
+  "gitCommitLimitation": "Current environment marks .git read-only; local report files saved without git mutation.",
+  "requiredUserAction": "Restore authorized network access for this task so production monitoring can resume.",
+  "nextObservation": "Recheck authorized transport; if available, collect from the unchanged last successful cursor through current/fixed deadline. Preserve gaps if old data is no longer retained. Repeated unchanged permission blocks should remain quiet.",
+  "notificationDedupKey": "backend-monitor-local-network-permission-20260907T1222Z"
+}

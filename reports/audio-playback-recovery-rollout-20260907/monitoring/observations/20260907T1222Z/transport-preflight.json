@@ -1,0 +1,31 @@
+{
+  "schema": "castreader.monitor-transport-preflight.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T12:23:42.696628+00:00",
+  "results": [
+    {
+      "source": "us_ssh",
+      "exitCode": 255,
+      "success": false,
+      "errorClass": "local_permission_denied",
+      "operationNotPermittedObserved": true
+    },
+    {
+      "source": "cn_ssh",
+      "exitCode": 255,
+      "success": false,
+      "errorClass": "local_permission_denied",
+      "operationNotPermittedObserved": true
+    },
+    {
+      "source": "global_capabilities_https",
+      "success": false,
+      "errorClass": "URLError",
+      "reasonClass": "PermissionError",
+      "reasonErrno": 1
+    }
+  ]
+}

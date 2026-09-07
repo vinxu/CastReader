@@ -1,0 +1,72 @@
+"""Reconcile recovered production evidence; never modify production or erase failures."""
+import collections,hashlib,json,math
+from datetime import datetime,timezone
+from pathlib import Path
+O=Path(__file__).resolve().parent;M=O.parent.parent;P=O.parent/'20260907T1121Z'
+read=lambda p:json.loads(p.read_text())
+write=lambda p,v:p.write_text(json.dumps(v,ensure_ascii=False,indent=2)+'\n')
+a=read(O/'latest-acceptance.json');p=read(O/'proxy-window.json');v=read(O/'vercel-preset.json');j=read(O/'vercel-proxy-join.json');d=read(O/'direct-version-requests.json');dc=read(O/'direct-complete-cumulative.json');old=read(P/'backend-review.json')
+s={r:read(O/'backend-supply'/f'{r}-backend-supply.json')['result'] for r in ['us','cn','us-gpu']};ps={r:read(P/'backend-supply'/f'{r}-backend-supply.json')['result'] for r in s};models={r:read(O/f'{r}-r135-model.json') for r in ['us','cn']}
+finished=[e for q in v['requests'] for e in q['events'] if e['event']=='request_finished'];times=sorted(e['elapsedMs'] for e in finished if e.get('status')==200);perf={'samples':len(times),'p95Ms':times[math.ceil(len(times)*.95)-1] if times else None,'maxMs':max(times) if times else None}
+index=collections.defaultdict(list)
+for r in p['anonymousRequests']:index[r['requestKey']].append(r)
+dj=[]
+for r in d['requests']:
+ hits=index[r['requestKey']];dj.append({'requestKey':r['requestKey'],'directStatus':r['status'],'directElapsedMs':r['elapsedMs'],'directCompletionUTC':r['observedAtUTC'],'matchCount':len(hits),'ambiguous':len(hits)>1 or any(h['ambiguousRepeatedRequestKey'] for h in hits),'proxyOutcomes':[h['outcomes'] for h in hits]})
+gk={r['requestKey'] for r in j['attempts'] if r['matchCount']==1 and not r['ambiguous']};dk={r['requestKey'] for r in dj if r['matchCount']==1 and not r['ambiguous']};remaining=[r for r in p['anonymousRequests'] if r['requestKey'] not in gk|dk]
+cancelled=[r for r in p['anonymousRequests'] if r['outcomes'].get('cancelled')];ck={r['requestKey'] for r in cancelled};newdc=[r for r in dc['aggregate']['nonHttpRequests'] if r['key'] in ck]
+reverse={'schema':'castreader.backend-reverse-attribution.v1','readOnly':True,'global':j['counts'],'direct':{'requests':len(dj),'exactMatched':len(dk),'records':dj},'remainingUnattributedProxyGroups':remaining,'unfinishedProxyGroupsAtCutoff':[r for r in p['anonymousRequests'] if not r['outcomes']],'cancelledProxyGroups':cancelled,'exactMatchedDirectDisconnects':newdc,'limitations':['Unattributed groups are not assigned by counts or attempt headers.','Direct completion timestamps differ from Vercel request-start cohorts; a request open at cutoff is not a failure.','No-response is neither HTTP failure nor success; user intent and actual playback result remain unknown.']}
+write(O/'reverse-attribution.json',reverse)
+cn={r['status']:r['count'] for r in s['cn']['ttsIngress']['routeMethodStatuses'] if r['path']=='/api/captioned_speech_partly' and r['method']=='POST'};delta={k:n-old['cnTts']['parsedCumulativeStatuses'].get(k,0) for k,n in cn.items()};cnseries=read(O/'cn-probe-timing-series.json')
+probes={}
+for r in ['us','cn']:
+ m=a['sources']['monitor_'+r];prev=old['existingProbes'][r]
+ probes[r]={'cycles':m['aggregate']['cycles'],'statusCounts':m['aggregate']['statusCounts'],'newHealthyCycles':m['aggregate']['statusCounts'].get('healthy',0)-prev['statusCounts'].get('healthy',0),'newSupplyFailedCycles':m['aggregate']['statusCounts'].get('supply_failed',0)-prev['statusCounts'].get('supply_failed',0),'regionMismatchCycles':m['aggregate']['regionMismatchCycles'],'lastCompletedUTC':m['source']['lastSelectedObservedAt'],'currentConsecutiveFailures':m['aggregate']['supplyFailureSequence']['currentConsecutiveCycles']}
+newqr={r:[e for e in s[r]['quickreadLogs']['fixedErrorRecords'] if e not in old['quickread'][r]['knownFixedErrorRecords']] for r in ['us','cn']}
+identity={'usQuickreadUnchanged':s['us']['quickreadExpectedProcess']==ps['us']['quickreadExpectedProcess'],'cnQuickreadUnchanged':s['cn']['quickreadProcess']==ps['cn']['quickreadProcess'],'cnServiceUnitsUnchanged':s['cn']['units']==ps['cn']['units'],'usCloneProcessUnchanged':s['us-gpu']['expectedCloneProcess']==ps['us-gpu']['expectedCloneProcess'],'usNariProcessUnchanged':s['us-gpu']['expectedNariProcess']==ps['us-gpu']['expectedNariProcess']}
+assert all(identity.values()) and all(m['identity']['verified'] and not m['failureEvents'] for m in models.values())
+assert p['identityAndCoverageVerified'] and not p['failureEvents'] and v['coverage']['completeForReturnedRequestCohort'] and dc['coverage']['complete']
+assert all(e.get('status')==200 for e in finished)
+assert a['sources']['vercel']['aggregate']['core5xxRecords']==1 and delta.get('502',0)==0 and all(x['newSupplyFailedCycles']==0 for x in probes.values())
+assert len(newdc)==len(cancelled)==1 and newdc[0]['abortSource']=='downstream_closed' and newdc[0]['status'] is None
+assert all(e['staticCodeMatch']=='request_disconnected' for es in newqr.values() for e in es)
+clone_completed=sum(e['count'] for e in s['us-gpu']['cloneStructuredLog']['incrementalEvents'] if e['event']=='gpu_job_completed' and e['kind']=='captioned-speech')
+access=read(O/'access-recovery.json');access.update({'vercelDetailedLogBackfillSucceeded':True,'backfilledStartUTC':p['window']['startUTC'],'backfilledEndUTCExclusive':p['window']['endUTCExclusive'],'recoveredAtUTC':datetime.now(timezone.utc).isoformat(),'providerIngestionCompletenessVerified':False});write(O/'access-recovery.json',access)
+review={'schema':'castreader.backend-heartbeat-review.v1','automationId':'24','trigger':'user_requested_access_recovery','readOnly':True,'productionModified':False,'synthesisStarted':False,'rawContentExported':False,'reviewedAtUTC':datetime.now(timezone.utc).isoformat(),'snapshotDirectory':str(O),'fixedWindow':a['window'],'incrementalWindow':p['window'],'backendVerdict':'监控读取恢复并补采；本轮无新增确证供给失败，新增Direct及CN解读断开各1次，完整交付仍证据不足，历史故障保留','decision':'DONT_NOTIFY','newActionableChange':True,'reason':'Recovery and current evidence reported in the normal user turn; no additional grant is needed. Do not repeat the same recovery notice on the next heartbeat.',
+'globalTts':{'requests':len(v['requests']),'finished200':len(times),'allAttempt1':all(e['attempt']==1 for e in finished),'globalElapsedMs':perf,'proxyCounts':p['counts'],'coalescing':p['coalescing'],'proxyTimingsMs':p['stageTimingMilliseconds'],'globalJoin':j['counts'],'proxyIdentityAndCoverageVerified':True,'cumulativeCore5xx':1,'historicalJapanese500Preserved':True},
+'direct':{'cumulativeStatusCounts':dc['aggregate']['statusCounts'],'source':dc['source'],'incrementalExactWindow':dict(collections.Counter(str(r['status']) for r in d['requests'])),'newDownstreamDisconnects':newdc,'knownFrozenVersionMismatchPreserved':True,'cumulativeCoverage':dc['coverage'],'cumulativeSource':str(O/'direct-complete-cumulative.json'),'legacyAcceptanceSnapshotTruncated':True,'cohortLimit':'The old 250k-row cumulative snapshot stopped at 11:33 UTC. The separate 500k bounded read covers 309344 rows through the exact cutoff; both originals are preserved.'},
+'cnTts':{'parsedCumulativeStatuses':cn,'incrementalStatuses':delta,'baseline':str(P/'backend-supply/cn-backend-supply.json'),'unparsedFileLines':s['cn']['ttsIngress']['unparsedLines'],'knownMaintenance502Count':2,'new502':0,'publicationAvailabilityGapClosed':False,'existingProbeSeries':cnseries,'wholeProbeIsModelTTFB':False},
+'proxyAttribution':{'globalExactMatched':len(gk),'directExactMatched':len(dk),'remainingUnattributedGroups':len(remaining),'source':str(O/'reverse-attribution.json')},'runtimeComparisonsToPreviousSnapshot':identity,
+'models':{r:{'release':m['release'],'identityVerified':m['identity']['verified'],'diagnosticWindow':m['window'],'fixedStageCounts':m['fixedStageCounts'],'failureEvents':m['failureEvents'],'successLedgerComplete':False} for r,m in models.items()},'existingProbes':probes,
+'quickread':{r:{'incrementalFixedTagCounts':s[r]['quickreadLogs']['incrementalFixedTagCounts'],'knownFixedErrorRecords':s[r]['quickreadLogs']['fixedErrorRecords'],'newFixedErrorRecords':newqr[r],'readyFileOutcomes':{'modifiedFiles':s[r]['quickreadJobs']['filesModifiedInWindow'],'allBlocks':s[r]['quickreadJobs']['allServerBlocksGenerated'],'partialReady':s[r]['quickreadJobs']['partialButReady']},'backendVerdict':'有新增ready结果；CN新增1条已知request_disconnected类型，初始断开原因及完整HTTP交付仍缺证据' if r=='cn' else '有新增ready结果，无新固定错误；完整HTTP交付仍缺证据'} for r in ['us','cn']},
+'clone':{'us':{'incrementalEvents':s['us-gpu']['cloneStructuredLog']['incrementalEvents'],'startupHealthCounters':s['us-gpu']['cloneHealthAfterCutoff']['fields'],'backendVerdict':f'{clone_completed}条已观测captioned-speech任务完成，无新固定生成失败；完整HTTP交付不足'},'cn':{'startupHealthCounters':s['cn']['cloneHealthAfterCutoff']['fields'],'backendVerdict':'证据不足：本轮无新生产样本'}},'accessRecovery':access,'preservedIssues':old['preservedIssues'],
+'limitations':['Complete HTTP output, ready blocks and generated audio tasks do not establish full user playback.','No-response records remain unknown outcomes, not intentional user cancellation or model timeout.','QuickRead fixed disconnect records now US2/CN3; no exact HTTP join or complete delivery ledger.','Provider pagination can be complete while ingestion coverage remains unverified.','Current traffic mix differs; latency changes alone are not a controlled performance benchmark.','Original fixed window and historical failures remain unchanged; R135 cannot be certified for24h.','Known Direct production version differs from the original frozen expectation; the expected receipt is not rewritten.'],
+'sources':[{'path':str(f),'sha256':hashlib.sha256(f.read_bytes()).hexdigest()} for f in sorted(O.rglob('*.json'))]}
+write(O/'backend-review.json',review)
+md=f'''# 后端监控恢复：2026-09-07 13:40 UTC
+
+当前任务的网络限制已解除；两区 SSH 和 Vercel 日志读取恢复，不需要新增账号或密钥。本次补采 11:21:22–13:40:22 UTC（北京时间 19:21–21:40），生产未修改。
+
+- 国际区 Global：{len(v['requests']):,} 个可见请求，{len(times):,} 个完整 200；应用耗时 P95 {perf['p95Ms']}ms。US 代理记录 8,861 个完整响应、1 次取消；截止时另有 1 个请求尚未结束，不能算失败。
+- Direct：精确窗口 1,731 个 200、1 次无响应。12:46:36 UTC 的 362ms 断开按匿名键对应代理取消，记录为等待上游响应头期间下游关闭，用户意图未知。完整累计 10,297 个 200、1 个既知 400、20 次无响应，无 5xx。
+- 中国区：新增 {delta.get('200',0)} 个已解析 TTS 200，无新增 502；累计 2 个维护期 502 保留。既有探针国际区 220/220、中国区 220/221 健康，唯一失败仍是旧维护轮次；无新增区域不一致记录。
+- 两区 R135、解读、克隆/Nari 和中国区服务进程身份未变；未发现新增固定模型失败。US 新增 19 次英文前处理恢复、2 次分隔符推进，CN 新增 5 次分隔符推进。
+- 国际区解读新增 22 条放行，ready 文件 129→151；中国区新增 2 条放行，ready 文件 19→20。中国区 13:20:18 UTC 新增一次 request_disconnected，固定记录现为 US2/CN3；不能断言用户主动退出、模型报错或完整交付。
+- 国际区克隆新增 {clone_completed} 条 captioned-speech 生成完成，无新固定生成失败；中国区克隆无新增生产样本。
+- 旧累计采集器触及 25 万行上限，本次用有界 50 万行补采完整 309,344 行；原截断证据保留。原始 Vercel 请求一度返回 403，官方 CLI 更新现有登录后重试成功；本地采集器已增加官方 CLI 非交互登录检查。
+
+[后端评估](backend-review.json) · [权限恢复证据](access-recovery.json) · [断开关联](reverse-attribution.json) · [解读断开](quickread-disconnect-review.json)。请求计数包含监控等流量，不能直接当作用户数或完整播放次数。
+
+固定观察截止仍为 2026-09-07 18:37:52 UTC（北京时间 9 月 8 日 02:37:52），不重置、不延长。已有历史失败、版本变更、发布停顿及完整交付证据不足均保留。
+'''
+(O/'README.md').write_text(md)
+f=M/'notification-state.json';state=read(f)
+state.update({'latestSnapshotDirectory':str(O),'latestObservationReview':str(O/'backend-review.json'),'latestBackendObservationReview':str(O/'backend-review.json'),'latestCollectionAttemptDirectory':str(O),'latestCollectionAttemptReview':str(O/'backend-review.json'),'latestProxyWindowPath':str(O/'proxy-window.json'),'latestProxyWindowEndUTC':p['window']['endUTCExclusive'],'latestVercelCore5xxCount':1,'latestDirect5xxCount':0,'latestDirectNoResponseCount':20,'latestDirectHttp400Count':1,'latestBackendVerdict':review['backendVerdict'],'latestBackendSupplySnapshotPaths':[str(O/'backend-supply'/f'{r}-backend-supply.json') for r in s],'latestBackendHeartbeatDecision':{'decision':'DONT_NOTIFY','reason':review['reason'],'reviewedAtUTC':review['reviewedAtUTC']},'latestReverseProxyGlobalAttribution':review['proxyAttribution'],'latestBackendPerformanceObservation':{'observedThroughUTC':p['window']['endUTCExclusive'],'successfulRequestFinishP95Ms':perf['p95Ms'],'proxyHeadersP95Ms':p['stageTimingMilliseconds']['upstream_headers.elapsedMs']['p95'],'sustainedGlobalRecoveryEstablished':False,'cnServerSlowStageEstablished':False},'latestCNBackendLatencyWatch':str(O/'cn-probe-timing-series.json'),'latestBackendDisconnectReview':str(O/'reverse-attribution.json'),'latestQuickreadDisconnectReview':str(O/'quickread-disconnect-review.json'),'latestBackendCollectionRecovery':access,'currentBackendCollectionStatus':'available','latestCompleteDirectSupplement':str(O/'direct-complete-cumulative.json'),'nextCollectionNotes':['If the legacy cumulative Direct reader reaches its 250k cap, use bounded/sharded read-only journal backfill and preserve the gap in the original snapshot.','The Vercel detailed collector now checks the existing official CLI login before reading the saved credential. No interactive login or scope changes.']})
+state['latestBackendCollectionFailure']['resolvedAtUTC']=review['reviewedAtUTC'];state['latestBackendCollectionFailure']['recoveryReviewPath']=str(O/'access-recovery.json')
+state['knownProxyCancellationKeys']=sorted(set(state.get('knownProxyCancellationKeys',[]))|ck);state['knownDirectNoResponseKeys']=sorted(set(state.get('knownDirectNoResponseKeys',[]))|{r['key'] for r in newdc})
+state['knownQuickreadDisconnectEvents'] += [dict(region=r,**e) for r,es in newqr.items() for e in es]
+state['latestBackendServiceVerdicts']=[{'region':'global','service':'kokoro_tts','backendVerdict':'本轮可见供给正常；新增断开结果未知，历史异常保留','evidence':f"{len(times)}个Global完整200，无新模型失败"},{'region':'cn','service':'kokoro_tts','backendVerdict':'本轮可见供给正常；旧慢阶段未关闭','evidence':f"{delta.get('200',0)}个新增200，无新增502"},{'region':'global','service':'quickread','backendVerdict':'有新增ready结果，无新增固定错误；完整交付不足'},{'region':'cn','service':'quickread','backendVerdict':'有新增ready结果，新增1次连接提前断开；初始原因及完整交付不足'},{'region':'global','service':'clone_tts','backendVerdict':f'{clone_completed}条已观测生成任务完成；完整交付不足'},{'region':'cn','service':'clone_tts','backendVerdict':'证据不足：本轮无新生成样本'}]
+state['latestKnownQuickreadDisconnectedLogs']=state['knownQuickreadDisconnectEvents']
+state['recordedAtUtc']=review['reviewedAtUTC'];state['lastDecision']='DONT_NOTIFY';state['lastDecisionReason']=review['reason']
+write(f,state)
+print(json.dumps({'globalRequests':len(v['requests']),'p95Ms':perf['p95Ms'],'directMatched':len(dk),'unattributedProxyGroups':len(remaining),'newConfirmedSupplyFailures':0,'accessRecovered':True},ensure_ascii=False))

@@ -1,0 +1,30 @@
+{
+  "schema": "castreader.quickread-disconnect-window.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "newFixedDisconnectRecords": [
+    {
+      "region": "cn",
+      "timestampUTC": "2026-09-07T13:20:18.370924+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "staticCodeMatch": "request_disconnected"
+    }
+  ],
+  "actualHttpStatusesAvailable": false,
+  "callerIntentOrInitialDisconnectCauseKnown": false,
+  "generationFaultEstablished": false,
+  "knownSourceBehavior": "The unchanged request-lifecycle source signals request_disconnected on request abort or response socket close before end; ordinary request close is excluded.",
+  "runtimeIdentity": {
+    "pid": 1608646,
+    "startTicks": "245729048",
+    "cwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+    "serverSourceSha256": "b155806c93c4b098bdc3f6a44ddd2d596d6a7bed5be776af171b4426197ce0b0",
+    "requestLifecycleSourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+  },
+  "source": {
+    "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-quickread-cancellation-recovery-20260905/scripts/video-pipeline/server/request-lifecycle.mjs",
+    "sha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+  },
+  "scope": "Same proven request_disconnected class, without request-id HTTP join or proof of initial cause. Do not count as model failure, HTTP502, successful delivery or intentional user cancellation."
+}

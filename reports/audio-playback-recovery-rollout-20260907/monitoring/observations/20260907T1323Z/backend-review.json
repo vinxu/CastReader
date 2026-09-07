@@ -1,0 +1,42 @@
+{
+  "schema": "castreader.backend-heartbeat-coverage-gap.v1",
+  "automationId": "24",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "reviewedAtUTC": "2026-09-07T13:24:52.526129+00:00",
+  "decision": "DONT_NOTIFY",
+  "newActionableChange": false,
+  "backendVerdict": "证据不足：已告知的本地网络权限限制未恢复，无法核验当前后端状态",
+  "collectionStatus": "blocked_by_local_network_permission",
+  "unchangedPreviouslyNotifiedCondition": "backend-monitor-local-network-permission-20260907T1222Z",
+  "productionOutageEstablished": false,
+  "uncollectedWindow": {
+    "startUTC": "2026-09-07T11:21:22.363000+00:00",
+    "requestedEndUTC": "2026-09-07T13:23:26.164Z",
+    "cursorAdvanced": false
+  },
+  "lastSuccessfulObservation": {
+    "directory": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z",
+    "reviewPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/backend-review.json",
+    "proxyWindowEndUTC": "2026-09-07T11:21:22.363000+00:00",
+    "currentStatusInferredFromOldData": false
+  },
+  "fixedWindow": {
+    "endUtc": "2026-09-07T18:37:52.522573+00:00",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T18:37:52.522573+00:00"
+  },
+  "windowRestartedOrExtended": false,
+  "preflightEvidence": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1323Z/transport-preflight.json",
+    "sha256": "c3a5e479b6059a6373545fb18e9a220552dee34ba0d79fbcf43a22d32489ff03"
+  },
+  "priorFailureReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1222Z/backend-review.json",
+  "collectorsNotRunAfterAccessDenial": true,
+  "permissionBypassAttempted": false,
+  "latestAcceptanceOverwritten": false,
+  "gitCommitAttempted": false,
+  "nextObservation": "After authorized network access resumes, collect from the unchanged successful cursor and preserve any retention gap. Keep the original deadline. Repeated unchanged permission failure is quiet."
+}

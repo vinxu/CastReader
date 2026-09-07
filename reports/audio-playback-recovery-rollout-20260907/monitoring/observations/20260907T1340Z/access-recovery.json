@@ -1,0 +1,36 @@
+{
+  "schema": "castreader.monitor-access-recovery.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "previousBlock": "local_network_permission_denied",
+  "sshRecovered": true,
+  "vercelOfficialCliIdentityReadSucceeded": true,
+  "vercelOfficialCliCumulative5xxReadSucceeded": true,
+  "initialRawLogApiStatuses": [
+    403,
+    403,
+    403
+  ],
+  "credentialFileUpdatedUTC": "2026-09-07T13:42:01.707977+00:00",
+  "credentialExpiryAfterCliRefreshUTC": "2026-09-07T21:42:01+00:00",
+  "additionalCredentialsRequested": false,
+  "permissionsExpandedByCollector": false,
+  "initial403Cause": "Raw collector read credential before the official CLI updated the saved login. Stale login is supported by timing; the original error response subtype was not retained.",
+  "localCollectorCorrection": "Run official noninteractive vercel whoami before reading its saved credential; suppress output, retain existing project and grant, fail if existing login unavailable.",
+  "directJournalCap": {
+    "initialCap": 250000,
+    "initialRowsRead": 250000,
+    "initialCoverageComplete": false,
+    "boundedSupplementCap": 500000,
+    "supplementRows": 309344,
+    "supplementCoverageComplete": true,
+    "originalTruncatedSnapshotPreserved": true
+  },
+  "fixedObservationWindowUnchanged": true,
+  "userActionRequired": false,
+  "vercelDetailedLogBackfillSucceeded": true,
+  "backfilledStartUTC": "2026-09-07T11:21:22.363000+00:00",
+  "backfilledEndUTCExclusive": "2026-09-07T13:40:22.326000+00:00",
+  "recoveredAtUTC": "2026-09-07T13:55:50.589431+00:00",
+  "providerIngestionCompletenessVerified": false
+}

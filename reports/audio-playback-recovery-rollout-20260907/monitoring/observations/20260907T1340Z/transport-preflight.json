@@ -1,0 +1,21 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T13:40:53.158275+00:00",
+  "results": [
+    {
+      "source": "us_ssh",
+      "success": true,
+      "exitCode": 0,
+      "operationNotPermittedObserved": false
+    },
+    {
+      "source": "cn_ssh",
+      "success": true,
+      "exitCode": 0,
+      "operationNotPermittedObserved": false
+    }
+  ]
+}

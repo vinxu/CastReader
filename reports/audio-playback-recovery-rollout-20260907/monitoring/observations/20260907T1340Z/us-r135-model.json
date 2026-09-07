@@ -1,0 +1,52 @@
+{
+  "schema": "castreader.r135-model-readonly-observation.v1",
+  "region": "us",
+  "release": "20260907-kokoro-japanese-numbers-us-r135",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T13:41:27.816051+00:00",
+  "window": {
+    "startUTC": "2026-09-07T11:21:22.363Z",
+    "endUTCExclusive": "2026-09-07T13:40:22.326Z"
+  },
+  "identity": {
+    "primary": {
+      "actual": {
+        "pid": 507638,
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+        "startTicks": "554888220",
+        "exe": "/venv/main/bin/python3.12",
+        "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b"
+      },
+      "matchesFrozen": true
+    },
+    "sourceDigests": {
+      "api/src/inference/kokoro_v1.py": {
+        "actual": {
+          "sha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+          "bytes": 49675
+        },
+        "matchesFrozen": true
+      }
+    },
+    "verified": true
+  },
+  "fixedStageCounts": {
+    "english_g2p_recovered": 19,
+    "silent_separator_skipped": 2
+  },
+  "failureEvents": [],
+  "unclassifiedEvents": 37,
+  "invalidLines": 0,
+  "coverage": [
+    {
+      "name": "playback.jsonl",
+      "bytes": 4228036,
+      "sha256": "cbd16165834a7f5faf7b054cc72bba2e445246668f344cc5bb55470d24779e72"
+    }
+  ],
+  "successLedgerComplete": false,
+  "collectorSha256": "8a4db9b482a79d819bfd00717de45ff040dd8a8b14a281034035480feea7f4a6"
+}

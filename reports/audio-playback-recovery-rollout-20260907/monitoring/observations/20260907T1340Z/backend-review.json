@@ -1,0 +1,918 @@
+{
+  "schema": "castreader.backend-heartbeat-review.v1",
+  "automationId": "24",
+  "trigger": "user_requested_access_recovery",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "reviewedAtUTC": "2026-09-07T13:55:50.589960+00:00",
+  "snapshotDirectory": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z",
+  "fixedWindow": {
+    "collectedThroughExclusive": "2026-09-07T13:41:23.418893Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  },
+  "incrementalWindow": {
+    "endUTCExclusive": "2026-09-07T13:40:22.326000+00:00",
+    "productionActiveFromUTC": "2026-09-07T06:59:28.071711+00:00",
+    "startUTC": "2026-09-07T11:21:22.363000+00:00"
+  },
+  "backendVerdict": "监控读取恢复并补采；本轮无新增确证供给失败，新增Direct及CN解读断开各1次，完整交付仍证据不足，历史故障保留",
+  "decision": "DONT_NOTIFY",
+  "newActionableChange": true,
+  "reason": "Recovery and current evidence reported in the normal user turn; no additional grant is needed. Do not repeat the same recovery notice on the next heartbeat.",
+  "globalTts": {
+    "requests": 7133,
+    "finished200": 7133,
+    "allAttempt1": true,
+    "globalElapsedMs": {
+      "samples": 7133,
+      "p95Ms": 2112,
+      "maxMs": 8132
+    },
+    "proxyCounts": {
+      "errorClasses": {},
+      "failureScopesAndLastObservedPhases": {},
+      "finishedOutcomes": {
+        "cancelled": 1,
+        "complete": 8861
+      },
+      "finishedReportedStatuses": {
+        "200": 8861
+      },
+      "phases": {
+        "admission": 17715,
+        "cancellation": 1,
+        "coalescing": 11,
+        "completion": 8862,
+        "connect": 17704,
+        "inbound_body": 8863,
+        "response_body": 8848,
+        "response_complete": 8850,
+        "response_headers": 8850
+      },
+      "receivedAttempts": {
+        "1": 8863
+      },
+      "stages": {
+        "flight_created": 8852,
+        "flight_joined": 11,
+        "request_body_read": 8863,
+        "request_finished": 8862,
+        "request_received": 8863,
+        "upstream_cancelled": 1,
+        "upstream_complete": 8850,
+        "upstream_connect_started": 8852,
+        "upstream_connected": 8852,
+        "upstream_first_body": 8848,
+        "upstream_headers": 8850
+      }
+    },
+    "coalescing": {
+      "callersJoined": 11,
+      "denominatorNote": "Admission events in this window, not a completed-request cohort.",
+      "independentCallers": 0,
+      "joinFractionOfAllAdmissions": 0.001241114746699763,
+      "joinFractionOfSharedAdmissions": 0.001241114746699763,
+      "sharedProducersCreated": 8852
+    },
+    "proxyTimingsMs": {
+      "request_body_read.elapsedMs": {
+        "max": 0.344,
+        "median": 0.055,
+        "n": 8863,
+        "p95": 0.096
+      },
+      "request_finished.elapsedMs": {
+        "max": 8106.92,
+        "median": 615.857,
+        "n": 8862,
+        "p95": 2067.167
+      },
+      "upstream_complete.elapsedMs": {
+        "max": 8081.948,
+        "median": 615.478,
+        "n": 8850,
+        "p95": 2062.549
+      },
+      "upstream_connected.connectMs": {
+        "max": 2.275,
+        "median": 0.263,
+        "n": 8852,
+        "p95": 0.339
+      },
+      "upstream_first_body.elapsedMs": {
+        "max": 8080.854,
+        "median": 615.037,
+        "n": 8848,
+        "p95": 2061.318
+      },
+      "upstream_headers.elapsedMs": {
+        "max": 8080.772,
+        "median": 615.068,
+        "n": 8850,
+        "p95": 2062.203
+      }
+    },
+    "globalJoin": {
+      "attempts": 7133,
+      "matched": 7133,
+      "ambiguous": 0,
+      "matchedProxyComplete": 7132
+    },
+    "proxyIdentityAndCoverageVerified": true,
+    "cumulativeCore5xx": 1,
+    "historicalJapanese500Preserved": true
+  },
+  "direct": {
+    "cumulativeStatusCounts": {
+      "200": 10297,
+      "400": 1,
+      "no_response": 20
+    },
+    "source": {
+      "bytes": 37688,
+      "path": "/opt/castreader-tts-gateway/gateway.mjs",
+      "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+    },
+    "incrementalExactWindow": {
+      "200": 1731,
+      "None": 1
+    },
+    "newDownstreamDisconnects": [
+      {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "extension",
+        "clientVersion": "1.2.37",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 362,
+        "key": "597f9cfcbaefa97e0a49",
+        "method": "POST",
+        "observedAt": "2026-09-07T12:46:36.434707Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 167,
+        "status": null
+      }
+    ],
+    "knownFrozenVersionMismatchPreserved": true,
+    "cumulativeCoverage": {
+      "complete": true,
+      "journalParseErrors": 0,
+      "journalRowLimitReached": false,
+      "note": "No request body, text, raw message, request id, header, IP, or credential is exported."
+    },
+    "cumulativeSource": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/direct-complete-cumulative.json",
+    "legacyAcceptanceSnapshotTruncated": true,
+    "cohortLimit": "The old 250k-row cumulative snapshot stopped at 11:33 UTC. The separate 500k bounded read covers 309344 rows through the exact cutoff; both originals are preserved."
+  },
+  "cnTts": {
+    "parsedCumulativeStatuses": {
+      "200": 2838,
+      "499": 1,
+      "502": 2
+    },
+    "incrementalStatuses": {
+      "200": 837,
+      "499": 0,
+      "502": 0
+    },
+    "baseline": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/backend-supply/cn-backend-supply.json",
+    "unparsedFileLines": 87,
+    "knownMaintenance502Count": 2,
+    "new502": 0,
+    "publicationAvailabilityGapClosed": false,
+    "existingProbeSeries": {
+      "schema": "castreader.cn-existing-probe-timing-series.v1",
+      "readOnly": true,
+      "productionModified": false,
+      "synthesisStarted": false,
+      "rawContentExported": false,
+      "startUTC": "2026-09-07T11:21:22.363000Z",
+      "endUTCExclusive": "2026-09-07T13:40:22.326000Z",
+      "capturedAtUTC": "2026-09-07T13:41:24.000845Z",
+      "rows": [
+        {
+          "observedAtUTC": "2026-09-07T11:25:59.501000Z",
+          "elapsedMs": 19733,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "27be3653132830726bf16454dfa5010bbeae66358ac2665c914e0fed9d6e5857",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T11:30:51.209000Z",
+          "elapsedMs": 3571,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "a3251ed377de82451bb748b81f28b55f2aace1994e31539ad677aac53eceddae",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T11:36:04.296000Z",
+          "elapsedMs": 2567,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "3f18d541232426b94c16ab208f297fc208edc25c01a1fb749100a080592414e8",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T11:41:12.448000Z",
+          "elapsedMs": 2682,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "ffa0e92268d535a5a1a5fc513f316029d5c22bfb90da579d6a0fbaeda8943676",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T11:46:24.134000Z",
+          "elapsedMs": 4358,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "4ae647b64816c087f295659ed27439846368151821851969fd563cc364e51d5d",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T11:51:42.684000Z",
+          "elapsedMs": 2914,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "6f4da10688b2f4c0d42d161ba02dc6dec0c67e54109a707bac12dd90efd2fba3",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T11:56:55.203000Z",
+          "elapsedMs": 5434,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "07933141c2ad0797d9f441dfb3404f21d4df930097aa985f81513c03b2978d7d",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:02:14.268000Z",
+          "elapsedMs": 4496,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "3cf45f9a7a662ed689d669dfb97562fe3b7281b4666f893e1a16468ac06edffa",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:07:20.553000Z",
+          "elapsedMs": 9460,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "ad8f0e4c57acffcc2b603b56c1d4a65f7e7d7a2a0d4fd99c54b6e4ce5268dac6",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:12:27.659000Z",
+          "elapsedMs": 2369,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "3d569d80cfba5ae6bb2ad637d2f669b25366e27fe6c42e5f36688bcaaf1e7a86",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:17:52.905000Z",
+          "elapsedMs": 13130,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "e1824f044e117eba3cb93f9456692dde17013dc4bc6c698e32ef83b81d8b4008",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:22:52.973000Z",
+          "elapsedMs": 3202,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "103ec175873ac9b12211f2b377b78a7c14898978b6321e546293e7d6177b2aa1",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:28:12.457000Z",
+          "elapsedMs": 2689,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "b41144fc849d60f47ed2f1eec2244fa05299fefec3e048195416ca14694077f4",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:33:24.621000Z",
+          "elapsedMs": 4852,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "ed4eed2bf36ad2a3191ca302fd416b99b58197f463317755db502f71b62e4d9f",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:38:34.059000Z",
+          "elapsedMs": 8770,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "85a261beffcc151b7d5e619d36444b26680e54b1c6daed5de0e5093d43115a57",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:43:42.790000Z",
+          "elapsedMs": 3023,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "a863b408fdf70c0a0b8ee9557376a52ee94fa42b99f355552d449c02d2f79faf",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:48:53.781000Z",
+          "elapsedMs": 4011,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "e5c0c52ab22254fdaede177e1eef667c5df4cdc2623d01a1fa23a3a145ce6bfb",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:54:12.649000Z",
+          "elapsedMs": 2881,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "9b172ca37b2ea77941930a99280d11afeab0dd9625e3163fc02697a87e8257fd",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T12:59:22.479000Z",
+          "elapsedMs": 2941,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "b161e02adcb017befb35e81a0b5cbc4b0d333c8a8a979505cc87b4d3749b5231",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T13:04:32.490000Z",
+          "elapsedMs": 2724,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "d3f570c6145523d97afc5c4e66417dc7466902a76018326f7ac62647caaf075b",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T13:09:52.199000Z",
+          "elapsedMs": 2431,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "befebc7cf7438ff41995487b7640b8c66ff8cb8ee945e31896adb402a5e2bea1",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T13:15:02.182000Z",
+          "elapsedMs": 2415,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "2f544e4b262957a50e1e0f993e74bc0856ef887d9930c9d0011feb19714fe3ec",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T13:20:13.671000Z",
+          "elapsedMs": 2502,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "adf8c0f47045eba4dd8994de4e238577973410575246bdcc3a376372e34797f8",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T13:25:27.778000Z",
+          "elapsedMs": 2489,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "2e626d937139eab904e460a279c6842e697472538ce27d6262c95f131d3b4dac",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T13:30:34.549000Z",
+          "elapsedMs": 4782,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "1468b4b666b8b7706853b776898a9373db68fb06886eaa3596fd4cf656fd0e9f",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        },
+        {
+          "observedAtUTC": "2026-09-07T13:35:42.181000Z",
+          "elapsedMs": 2412,
+          "supplyOk": true,
+          "completeAudio": true,
+          "segmentCount": 3,
+          "sourceSha256": "16b97b70479410376160c53b895667b4cbd5b5bb9fc1b3fe4a446f61e8dceebc",
+          "segmentAttempts": [
+            1,
+            1,
+            1
+          ],
+          "regionMismatch": false
+        }
+      ],
+      "limitations": [
+        "Each duration is a whole synthetic continuity probe, including multiple requests/contracts and local checks; it is not real-user TTFB or one model request.",
+        "Uses already persisted results only; no probes were started."
+      ],
+      "collectorHelperSha256": "be7224c90b9e824931089892a76131782807730d204ed4241effccba40ebacb8"
+    },
+    "wholeProbeIsModelTTFB": false
+  },
+  "proxyAttribution": {
+    "globalExactMatched": 7133,
+    "directExactMatched": 1730,
+    "remainingUnattributedGroups": 0,
+    "source": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/reverse-attribution.json"
+  },
+  "runtimeComparisonsToPreviousSnapshot": {
+    "usQuickreadUnchanged": true,
+    "cnQuickreadUnchanged": true,
+    "cnServiceUnitsUnchanged": true,
+    "usCloneProcessUnchanged": true,
+    "usNariProcessUnchanged": true
+  },
+  "models": {
+    "us": {
+      "release": "20260907-kokoro-japanese-numbers-us-r135",
+      "identityVerified": true,
+      "diagnosticWindow": {
+        "startUTC": "2026-09-07T11:21:22.363Z",
+        "endUTCExclusive": "2026-09-07T13:40:22.326Z"
+      },
+      "fixedStageCounts": {
+        "english_g2p_recovered": 19,
+        "silent_separator_skipped": 2
+      },
+      "failureEvents": [],
+      "successLedgerComplete": false
+    },
+    "cn": {
+      "release": "20260907-kokoro-japanese-numbers-cn-r135",
+      "identityVerified": true,
+      "diagnosticWindow": {
+        "startUTC": "2026-09-07T11:21:22.363Z",
+        "endUTCExclusive": "2026-09-07T13:40:22.326Z"
+      },
+      "fixedStageCounts": {
+        "silent_separator_skipped": 5
+      },
+      "failureEvents": [],
+      "successLedgerComplete": false
+    }
+  },
+  "existingProbes": {
+    "us": {
+      "cycles": 220,
+      "statusCounts": {
+        "healthy": 220
+      },
+      "newHealthyCycles": 27,
+      "newSupplyFailedCycles": 0,
+      "regionMismatchCycles": 0,
+      "lastCompletedUTC": "2026-09-07T13:38:01.411Z",
+      "currentConsecutiveFailures": 0
+    },
+    "cn": {
+      "cycles": 221,
+      "statusCounts": {
+        "healthy": 220,
+        "supply_failed": 1
+      },
+      "newHealthyCycles": 27,
+      "newSupplyFailedCycles": 0,
+      "regionMismatchCycles": 0,
+      "lastCompletedUTC": "2026-09-07T13:40:55.198Z",
+      "currentConsecutiveFailures": 0
+    }
+  },
+  "quickread": {
+    "us": {
+      "incrementalFixedTagCounts": {
+        "[pro-gate] allow": 22
+      },
+      "knownFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-06T21:42:46+00:00",
+          "tag": "fast-block0 error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T03:46:40+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "newFixedErrorRecords": [],
+      "readyFileOutcomes": {
+        "modifiedFiles": 151,
+        "allBlocks": 122,
+        "partialReady": 29
+      },
+      "backendVerdict": "有新增ready结果，无新固定错误；完整HTTP交付仍缺证据"
+    },
+    "cn": {
+      "incrementalFixedTagCounts": {
+        "[pro-gate] allow": 2,
+        "extract-plan error:": 1
+      },
+      "knownFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-07T03:09:52.512816+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T09:41:31.662448+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        },
+        {
+          "timestampUTC": "2026-09-07T13:20:18.370924+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "newFixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-07T13:20:18.370924+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "readyFileOutcomes": {
+        "modifiedFiles": 20,
+        "allBlocks": 17,
+        "partialReady": 3
+      },
+      "backendVerdict": "有新增ready结果；CN新增1条已知request_disconnected类型，初始断开原因及完整HTTP交付仍缺证据"
+    }
+  },
+  "clone": {
+    "us": {
+      "incrementalEvents": [
+        {
+          "event": "captioned_timestamps_built",
+          "kind": "other_or_missing",
+          "count": 27
+        },
+        {
+          "event": "generated_audio_fast_path_accepted",
+          "kind": "other_or_missing",
+          "count": 27
+        },
+        {
+          "event": "gpu_job_completed",
+          "kind": "captioned-speech",
+          "count": 27
+        },
+        {
+          "event": "xvector_fallback_accepted",
+          "kind": "other_or_missing",
+          "count": 27
+        }
+      ],
+      "startupHealthCounters": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 64,
+        "submitted": 575,
+        "completed": 575,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.03,
+        "queue_wait_p95_ms": 25.4,
+        "run_p50_ms": 554.74,
+        "run_p95_ms": 1666.88
+      },
+      "backendVerdict": "27条已观测captioned-speech任务完成，无新固定生成失败；完整HTTP交付不足"
+    },
+    "cn": {
+      "startupHealthCounters": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 32,
+        "submitted": 4,
+        "completed": 4,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.08,
+        "queue_wait_p95_ms": 0.17,
+        "run_p50_ms": 381.57,
+        "run_p95_ms": 1829.4
+      },
+      "backendVerdict": "证据不足：本轮无新生产样本"
+    }
+  },
+  "accessRecovery": {
+    "schema": "castreader.monitor-access-recovery.v1",
+    "readOnly": true,
+    "productionModified": false,
+    "previousBlock": "local_network_permission_denied",
+    "sshRecovered": true,
+    "vercelOfficialCliIdentityReadSucceeded": true,
+    "vercelOfficialCliCumulative5xxReadSucceeded": true,
+    "initialRawLogApiStatuses": [
+      403,
+      403,
+      403
+    ],
+    "credentialFileUpdatedUTC": "2026-09-07T13:42:01.707977+00:00",
+    "credentialExpiryAfterCliRefreshUTC": "2026-09-07T21:42:01+00:00",
+    "additionalCredentialsRequested": false,
+    "permissionsExpandedByCollector": false,
+    "initial403Cause": "Raw collector read credential before the official CLI updated the saved login. Stale login is supported by timing; the original error response subtype was not retained.",
+    "localCollectorCorrection": "Run official noninteractive vercel whoami before reading its saved credential; suppress output, retain existing project and grant, fail if existing login unavailable.",
+    "directJournalCap": {
+      "initialCap": 250000,
+      "initialRowsRead": 250000,
+      "initialCoverageComplete": false,
+      "boundedSupplementCap": 500000,
+      "supplementRows": 309344,
+      "supplementCoverageComplete": true,
+      "originalTruncatedSnapshotPreserved": true
+    },
+    "fixedObservationWindowUnchanged": true,
+    "userActionRequired": false,
+    "vercelDetailedLogBackfillSucceeded": true,
+    "backfilledStartUTC": "2026-09-07T11:21:22.363000+00:00",
+    "backfilledEndUTCExclusive": "2026-09-07T13:40:22.326000+00:00",
+    "recoveredAtUTC": "2026-09-07T13:55:50.589431+00:00",
+    "providerIngestionCompletenessVerified": false
+  },
+  "preservedIssues": [
+    "历史Global504的逐阶段归因与持续恢复",
+    "中国区慢探针分项耗时证据",
+    "QuickRead US2/CN1 request_disconnected及交付日志缺口",
+    "中国区模型发布空窗",
+    "Direct独立版本变更、旧代理过渡区间覆盖缺口"
+  ],
+  "limitations": [
+    "Complete HTTP output, ready blocks and generated audio tasks do not establish full user playback.",
+    "No-response records remain unknown outcomes, not intentional user cancellation or model timeout.",
+    "QuickRead fixed disconnect records now US2/CN3; no exact HTTP join or complete delivery ledger.",
+    "Provider pagination can be complete while ingestion coverage remains unverified.",
+    "Current traffic mix differs; latency changes alone are not a controlled performance benchmark.",
+    "Original fixed window and historical failures remain unchanged; R135 cannot be certified for24h.",
+    "Known Direct production version differs from the original frozen expectation; the expected receipt is not rewritten."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/access-recovery.json",
+      "sha256": "62b993cc209337e15ebb7cc2db054a0fa3ff1081757bb3b3013c5b97efc47db4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/backend-supply/cn-backend-supply.json",
+      "sha256": "c59e865d739a5009f8cc294f4a95f655e0cf206d86ce6516ca6b8ef4daa2f6d5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/backend-supply/us-backend-supply.json",
+      "sha256": "9243f6bec5902acf83001a2248e54921930c3fc9e0dfa7c8d427345bd501a6af"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/backend-supply/us-gpu-backend-supply.json",
+      "sha256": "07e94a0fa02f403a2b6ab7fbde402b0d81c456d254e451eeb68402c6861c6339"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/cn-probe-timing-series.json",
+      "sha256": "04c026f81d327d55a1abcf855b51db5ad0683108e230d2a8d6a6af58074ddd5b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/cn-r135-model.json",
+      "sha256": "944585f407e1f95fdcb8c65f794978496bb6fecc78d0524061e515a9572e8bed"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/direct-complete-cumulative.json",
+      "sha256": "7a0c0bb1bf1468fcb6087599490afce63719aa90dd1e349c021c39667fb39fd8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/direct-version-requests.json",
+      "sha256": "931f59df2755637a040b1b99e4119a920832c89742c64e22ead456b90055a848"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/latest-acceptance.json",
+      "sha256": "de68fab95651ab2447cd51d753e2d54859904f900399e8e2c28f45cb020de168"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/proxy-window.json",
+      "sha256": "e671ea20797e630080ccc51bd2bde21849d6a27787c83d5208ba2c4c1d336b58"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/quickread-disconnect-review.json",
+      "sha256": "c6c4f972a83973835e4dc83acbc9c556480a53ca1b2d6cb2880b7856dd63fbba"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/reverse-attribution.json",
+      "sha256": "a30c223254de76aa937476b2706bf5c2af5c742b3bf76e9244ca443591e3ccbc"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/transport-preflight.json",
+      "sha256": "10b1a7ad22ff39041c4f639bd43d6bb951282a4e82fcb3aa08ec22966fcf077b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/us-r135-model.json",
+      "sha256": "d12e5829e46b3687ca3b77e496468f69d0907d4a84c109cbb6385d11a70af7d2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part1-retry.json",
+      "sha256": "6db5fbf23b137b8baa4988460db264801ce763469cbc9340c39710c12986c9d9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part1.json",
+      "sha256": "5b7f5d8f3930ea558727caa65dc5d372f52bf0a247ccfa7a6f27f583ab8b2083"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part2-complete.json",
+      "sha256": "e239aa396da3b5a5f33d16fe5ea5fa23f4731b5bc7c340ef20f25db7ddb8964d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part2-prefix.json",
+      "sha256": "012f2003c8b01f34844c6250fcd79da14563762cb251de5346d9f747f5d14e26"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part2-retry.json",
+      "sha256": "54d7a584a674c05b971615d4fd132f59cab85369195d88b64c64720f0aa8b237"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part2.json",
+      "sha256": "608b109b351acac443389d1f3095eb363f42974a97eb4835cf1b21d74d66fc8a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part3-retry.json",
+      "sha256": "2299c47f3c5ea6634f4dc2dcbee49ea646b589b9f7afa99cb2a2e4faf2ed3cf3"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-part3.json",
+      "sha256": "f7c68a5033ae0b360286a0d6aa317fb28d57a25e09243142df0c962f81882d86"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-preset.json",
+      "sha256": "7f58387f151f37e64aaa50ba68ff1cd6b0967d2499fc444c79ce05c95e2217f9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/vercel-proxy-join.json",
+      "sha256": "e188b5ffc99019c1591b839041ae230e4a33e99e403f3050051eb19f8cddd34c"
+    }
+  ]
+}
