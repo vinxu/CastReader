@@ -1,0 +1,177 @@
+{
+  "schema": "castreader.backend-supply-observation.v1",
+  "regionRole": "cn",
+  "window": {
+    "role": "cn",
+    "startUTC": "2026-09-06T18:37:52.522573Z",
+    "endUTC": "2026-09-07T03:55:19.088Z",
+    "incrementalStartUTC": "2026-09-07T02:55:18.766Z"
+  },
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T03:56:00.591213+00:00",
+  "result": {
+    "quickreadHealthAfterCutoff": {
+      "httpStatus": 200,
+      "fields": {
+        "ok": true,
+        "queue": 0,
+        "active": 0,
+        "concurrency": 3,
+        "jobs_cached": 20
+      },
+      "observedAtUTC": "2026-09-07T03:56:00.308865+00:00",
+      "counterScope": "Cumulative since current service startup, not window outcomes."
+    },
+    "units": {
+      "castreader.service": {
+        "MainPID": "1630406",
+        "NRestarts": "0",
+        "ActiveState": "active",
+        "SubState": "running",
+        "ActiveEnterTimestamp": "Sun 2026-09-06 02:50:15 CST"
+      },
+      "castreader-quickread-cn.service": {
+        "MainPID": "1608646",
+        "NRestarts": "0",
+        "ActiveState": "active",
+        "SubState": "running",
+        "ActiveEnterTimestamp": "Sun 2026-09-06 01:48:15 CST"
+      },
+      "castreader-cn-kokoro-tunnel.service": {
+        "MainPID": "1029281",
+        "NRestarts": "0",
+        "ActiveState": "active",
+        "SubState": "running",
+        "ActiveEnterTimestamp": "Fri 2026-09-04 11:30:19 CST"
+      },
+      "castreader-cn-clone-tunnel.service": {
+        "MainPID": "2090236",
+        "NRestarts": "0",
+        "ActiveState": "active",
+        "SubState": "running",
+        "ActiveEnterTimestamp": "Wed 2026-08-26 15:10:07 CST"
+      },
+      "nginx.service": {
+        "MainPID": "12692",
+        "NRestarts": "0",
+        "ActiveState": "active",
+        "SubState": "running",
+        "ActiveEnterTimestamp": "Sat 2026-08-08 15:27:48 CST"
+      }
+    },
+    "quickreadProcess": {
+      "pid": 1608646,
+      "startTicks": "245729048",
+      "cwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+      "serverSourceSha256": "b155806c93c4b098bdc3f6a44ddd2d596d6a7bed5be776af171b4426197ce0b0",
+      "requestLifecycleSourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+    },
+    "quickreadLogCoverage": {
+      "journalQueryOk": true,
+      "returnedRecords": 87,
+      "limitation": "Journal retention and application success-request coverage are not complete HTTP accounting."
+    },
+    "cloneHealthAfterCutoff": {
+      "httpStatus": 200,
+      "fields": {
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "max_queue_size": 32,
+        "submitted": 4,
+        "completed": 4,
+        "failed": 0,
+        "expired": 0,
+        "queue_wait_p50_ms": 0.08,
+        "queue_wait_p95_ms": 0.17,
+        "run_p50_ms": 381.57,
+        "run_p95_ms": 1829.4
+      },
+      "observedAtUTC": "2026-09-07T03:56:00.471084+00:00",
+      "counterScope": "Cumulative since current service startup, not window outcomes."
+    },
+    "ttsIngress": {
+      "path": "/var/log/nginx/access.log",
+      "fileBytes": 1760639,
+      "unparsedLines": 30,
+      "firstParsedUTC": "2026-09-07T00:00:02+08:00",
+      "lastParsedUTC": "2026-09-07T11:55:55+08:00",
+      "routeMethodStatuses": [
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": "200",
+          "count": 844
+        },
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": "499",
+          "count": 1
+        }
+      ],
+      "limitation": "No model/voice attribution or request latency in access format; includes existing monitoring traffic."
+    },
+    "quickreadLogs": {
+      "windowTimestampedLines": 87,
+      "incrementalTimestampedLines": 87,
+      "fixedTagCounts": {
+        "[pro-gate] allow": 16,
+        "extract-plan error:": 1
+      },
+      "incrementalFixedTagCounts": {
+        "[pro-gate] allow": 16,
+        "extract-plan error:": 1
+      },
+      "undatedFixedTagCounts": {},
+      "fixedErrorRecords": [
+        {
+          "timestampUTC": "2026-09-07T03:09:52.512816+00:00",
+          "tag": "extract-plan error:",
+          "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+          "staticCodeMatch": "request_disconnected"
+        }
+      ],
+      "firstTrustedTimestampUTC": "2026-09-07T03:09:51.875894+00:00",
+      "lastTrustedTimestampUTC": "2026-09-07T03:30:22.295395+00:00"
+    },
+    "quickreadJobs": {
+      "directory": "/var/lib/castreader-quickread-cn/.url-video-agent/jobs/quickread-state",
+      "filesAtRead": 35,
+      "parseFailures": 0,
+      "parseFailuresModifiedInsideWindow": 0,
+      "jobsWithExplicitCreationTimeInWindow": 0,
+      "jobsWithExplicitCreationTimeInIncrementalWindow": 0,
+      "jobsMissingExplicitCreationTime": 35,
+      "outcomeCohort": "Current state of files modified inside the window, not all HTTP requests or newly created jobs.",
+      "filesModifiedInWindow": 15,
+      "createdJobsUpdatedAfterCutoffExcludedFromOutcome": 0,
+      "status": {
+        "streaming": 15
+      },
+      "streamStateStatus": {
+        "ready": 15
+      },
+      "withAtLeastBlock0": 15,
+      "allServerBlocksGenerated": 14,
+      "partialButReady": 1,
+      "sectionTotalPairs": {
+        "2/2": 9,
+        "3/3": 5,
+        "1/2": 1
+      },
+      "nextIndexConsistentWithStoredSections": 15
+    }
+  },
+  "limitations": [
+    "QuickRead has no complete HTTP request ledger; persisted blocks do not prove downstream TTS completion.",
+    "No log-content/body/audio/identity export; counts include unclassified callers and existing probes.",
+    "Current health is outside the fixed cutoff. Readiness and cumulative counters alone cannot prove window success rate."
+  ],
+  "collectorSourceSha256": "ee5436c9e0001a46a4888eed46a01fde592327dfe8eae01170ba05b2c61d5d9e"
+}

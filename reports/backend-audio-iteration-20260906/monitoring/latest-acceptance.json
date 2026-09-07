@@ -9,7 +9,7 @@
       },
       {
         "code": "client_cancelled_separate",
-        "detail": "104",
+        "detail": "106",
         "source": "mobile"
       },
       {
@@ -32,9 +32,15 @@
     "automaticVerdict": "fail",
     "clientEvidenceVerdict": "fail",
     "configuredWindowSeconds": 86400,
-    "coverageVerdict": "observing",
+    "coverageVerdict": "inconclusive",
     "cutoverState": "observing",
-    "dataOrCoverageGaps": [],
+    "dataOrCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
     "endUtc": "2026-09-07T05:01:25Z",
     "evidenceLimitations": [
       {
@@ -70,14 +76,14 @@
       "The stable US proxy is checked against its expected live source and current model slot; it shares the GPU host failure domain."
     ],
     "finalVersionObservationRequirementMet": false,
-    "finalVersionObservationSeconds": 29892,
+    "finalVersionObservationSeconds": 33487,
     "latestActiveComponent": "usKokoro",
     "latestActiveComponentAtUtc": "2026-09-06T18:37:52.522573Z",
     "latestRequiredComponent": "usKokoro",
     "latestRequiredComponentVerifiedAtUtc": "2026-09-06T18:37:52.522573Z",
     "mixedVersionWindow": true,
     "observationRequirementMet": false,
-    "observationSeconds": 78880,
+    "observationSeconds": 82474,
     "releaseTransitionsInsideWindow": [
       {
         "activeFromUtc": "2026-09-06T16:36:52.292087Z",
@@ -120,7 +126,7 @@
     "sampleGaps": [
       {
         "code": "final_version_observation_incomplete",
-        "detail": "latest=usKokoro; observed=29892s; required=86400s",
+        "detail": "latest=usKokoro; observed=33487s; required=86400s",
         "source": "state"
       },
       {
@@ -237,7 +243,7 @@
     },
     "windowStarted": true
   },
-  "generatedAtUtc": "2026-09-07T02:56:05.406898Z",
+  "generatedAtUtc": "2026-09-07T03:55:59.581790Z",
   "limitations": [
     "This run reads existing monitors, journals and telemetry; it starts no synthetic audio request.",
     "A production-tagged mobile event can still come from an operator or manual test.",
@@ -307,14 +313,14 @@
           "elapsedMs": {
             "max": 9742.0,
             "p50": 498.0,
-            "p95": 1556.0,
-            "samples": 9689
+            "p95": 1552.0,
+            "samples": 10300
           },
           "firstRequestAtUtc": "2026-09-06T05:02:06.614286Z",
-          "lastRequestAtUtc": "2026-09-07T02:56:04.547177Z",
-          "requests": 9689,
+          "lastRequestAtUtc": "2026-09-07T03:55:57.089113Z",
+          "requests": 10300,
           "statusCounts": {
-            "200": 9679,
+            "200": 10290,
             "400": 3,
             "502": 1,
             "504": 4,
@@ -325,7 +331,7 @@
           {
             "clientPlatform": "android",
             "clientVersion": "1.0.45",
-            "count": 9679,
+            "count": 10290,
             "status": "200"
           },
           {
@@ -365,15 +371,27 @@
             "status": "no_response"
           },
           {
+            "clientPlatform": "extension",
+            "clientVersion": "1.2.37",
+            "count": 86,
+            "status": "200"
+          },
+          {
+            "clientPlatform": "other",
+            "clientVersion": "1.2.37",
+            "count": 6,
+            "status": "200"
+          },
+          {
             "clientPlatform": "other",
             "clientVersion": "unknown",
-            "count": 30,
+            "count": 33,
             "status": "200"
           },
           {
             "clientPlatform": "unknown",
             "clientVersion": "unknown",
-            "count": 2,
+            "count": 10,
             "status": "200"
           },
           {
@@ -394,8 +412,8 @@
         "elapsedMs": {
           "max": 9742.0,
           "p50": 499.0,
-          "p95": 1561.0,
-          "samples": 10524
+          "p95": 1557.0,
+          "samples": 11238
         },
         "firstJournalAtUtc": "2026-09-06T05:02:06.614286Z",
         "firstRequestAtUtc": "2026-09-06T05:02:06.614286Z",
@@ -556,7 +574,7 @@
             "status": "200"
           },
           {
-            "count": 720,
+            "count": 749,
             "hourUtc": "2026-09-07T02:00:00Z",
             "status": "200"
           },
@@ -564,13 +582,18 @@
             "count": 1,
             "hourUtc": "2026-09-07T02:00:00Z",
             "status": "400"
+          },
+          {
+            "count": 685,
+            "hourUtc": "2026-09-07T03:00:00Z",
+            "status": "200"
           }
         ],
         "incompleteConsoleBlocks": 0,
-        "journalRowsRead": 130359,
-        "lastJournalAtUtc": "2026-09-07T02:56:04.547177Z",
-        "lastRequestAtUtc": "2026-09-07T02:56:04.547177Z",
-        "logicalGatewayBlocks": 10556,
+        "journalRowsRead": 154576,
+        "lastJournalAtUtc": "2026-09-07T03:55:57.089113Z",
+        "lastRequestAtUtc": "2026-09-07T03:55:57.089113Z",
+        "logicalGatewayBlocks": 11270,
         "malformedRequestBlocks": 0,
         "nonHttpRequestCount": 15,
         "nonHttpRequests": [
@@ -803,7 +826,7 @@
         "nonHttpRequestsTruncated": false,
         "pathStatusCounts": [
           {
-            "count": 10500,
+            "count": 11214,
             "path": "/api/captioned_speech_partly",
             "status": "200"
           },
@@ -832,16 +855,16 @@
           "max": 5234.0,
           "p50": 211.0,
           "p95": 351.0,
-          "samples": 10524
+          "samples": 11238
         },
         "statusCounts": {
-          "200": 10500,
+          "200": 11214,
           "400": 4,
           "502": 1,
           "504": 4,
           "no_response": 15
         },
-        "uniqueRequestIds": 10524
+        "uniqueRequestIds": 11238
       },
       "coverage": {
         "complete": true,
@@ -849,7 +872,7 @@
         "journalRowLimitReached": false,
         "note": "No request body, text, raw message, request id, header, IP, or credential is exported."
       },
-      "hostClockUtc": "2026-09-07T02:56:23.720430Z",
+      "hostClockUtc": "2026-09-07T03:56:20.948099Z",
       "limitations": [
         "clientPlatform and clientVersion are caller-supplied headers and cannot exclude spoofing or manual tests.",
         "Absence of request records can mean no traffic; it is not by itself proof of journal retention coverage.",
@@ -858,24 +881,24 @@
       "probeStarted": false,
       "productionModified": false,
       "query": {
-        "endExclusive": "2026-09-07T02:56:05.406898Z",
+        "endExclusive": "2026-09-07T03:55:59.581790Z",
         "maxJournalRows": 250000,
         "startInclusive": "2026-09-06T05:01:25Z",
         "unit": "castreader-tts-gateway.service"
       },
-      "readAtUtc": "2026-09-07T02:56:23.720430Z",
+      "readAtUtc": "2026-09-07T03:56:20.948099Z",
       "readOnly": true,
       "schema": "castreader.direct-tts-gateway-journal.v1",
       "source": {
-        "bytes": 13665,
+        "bytes": 37688,
         "path": "/opt/castreader-tts-gateway/gateway.mjs",
-        "sha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d"
+        "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
       },
       "systemd": {
         "ActiveState": "active",
-        "ExecMainStartTimestamp": "Sun 2026-09-06 16:51:50 UTC",
+        "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
         "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
-        "MainPID": "576327",
+        "MainPID": "596392",
         "NRestarts": "0",
         "SubState": "running"
       }
@@ -901,7 +924,7 @@
         "endpoint": "https://api.castreader.ai/api/capabilities",
         "method": "GET"
       },
-      "readAtUtc": "2026-09-07T02:56:30.396827Z",
+      "readAtUtc": "2026-09-07T03:56:27.584398Z",
       "readOnly": true,
       "schema": "castreader.global-capabilities-identity.v1"
     },
@@ -932,7 +955,7 @@
       ],
       "modelLoadedByCollector": false,
       "productionModified": false,
-      "readAtUtc": "2026-09-07T02:56:44.997674+00:00",
+      "readAtUtc": "2026-09-07T03:56:43.353763+00:00",
       "readOnly": true,
       "schema": "castreader.kokoro-runtime-identity.v1"
     },
@@ -954,15 +977,15 @@
       ],
       "modelLoaded": false,
       "productionModified": false,
-      "readAtUtc": "2026-09-07T02:56:27.934520Z",
+      "readAtUtc": "2026-09-07T03:56:25.070314Z",
       "readOnly": true,
       "schema": "castreader.kokoro-runtime-identity.v1"
     },
     "mobile": {
       "aggregate": {
-        "cancelledEvents": 104,
+        "cancelledEvents": 106,
         "devices": 42,
-        "events": 895,
+        "events": 909,
         "explainStartsByPlatform": {
           "android": 13,
           "ios": 4
@@ -972,13 +995,13 @@
             "max": 39719.0,
             "p50": 1438.0,
             "p95": 16203.0,
-            "samples": 68
+            "samples": 69
           },
           "ios": {
             "max": 23077.0,
             "p50": 1519.0,
             "p95": 4752.0,
-            "samples": 120
+            "samples": 122
           }
         },
         "groups": [
@@ -1391,7 +1414,7 @@
             "clientRoute": "global",
             "clientVersion": "1.0.45",
             "contentSource": "unknown",
-            "count": 27,
+            "count": 28,
             "endReason": "content_closed",
             "errorCode": "unspecified",
             "errorStage": "unspecified",
@@ -1556,7 +1579,7 @@
             "clientRoute": "global",
             "clientVersion": "1.2.33",
             "contentSource": "unknown",
-            "count": 46,
+            "count": 47,
             "endReason": "closed",
             "errorCode": "unspecified",
             "errorStage": "unspecified",
@@ -1721,7 +1744,7 @@
             "clientRoute": "global",
             "clientVersion": "1.0.45",
             "contentSource": "unknown",
-            "count": 28,
+            "count": 29,
             "endReason": "unspecified",
             "errorCode": "unspecified",
             "errorStage": "unspecified",
@@ -1826,7 +1849,7 @@
             "clientRoute": "global",
             "clientVersion": "1.2.33",
             "contentSource": "unknown",
-            "count": 103,
+            "count": 105,
             "endReason": "unspecified",
             "errorCode": "unspecified",
             "errorStage": "unspecified",
@@ -1916,7 +1939,7 @@
             "clientRoute": "global",
             "clientVersion": "1.0.45",
             "contentSource": "unknown",
-            "count": 60,
+            "count": 62,
             "endReason": "unspecified",
             "errorCode": "unspecified",
             "errorStage": "unspecified",
@@ -1961,7 +1984,7 @@
             "clientRoute": "global",
             "clientVersion": "1.2.33",
             "contentSource": "unknown",
-            "count": 233,
+            "count": 237,
             "endReason": "unspecified",
             "errorCode": "unspecified",
             "errorStage": "unspecified",
@@ -1991,7 +2014,7 @@
             "clientRoute": "global",
             "clientVersion": "1.0.45",
             "contentSource": "file",
-            "count": 12,
+            "count": 13,
             "endReason": "unspecified",
             "errorCode": "unspecified",
             "errorStage": "unspecified",
@@ -2336,7 +2359,7 @@
             "clientRoute": "global",
             "clientVersion": "1.2.33",
             "contentSource": "kindle",
-            "count": 57,
+            "count": 59,
             "endReason": "unspecified",
             "errorCode": "unspecified",
             "errorStage": "unspecified",
@@ -2430,8 +2453,8 @@
         },
         "quotaBlockedEvents": 6,
         "readStartsByPlatform": {
-          "android": 65,
-          "ios": 126
+          "android": 66,
+          "ios": 128
         },
         "routeMismatchEvents": 0,
         "sessionCohorts": {
@@ -2480,12 +2503,12 @@
             "byPlatform": {
               "android": {
                 "pairedFirstOutputByVoiceFamily": {
-                  "preset": 61
+                  "preset": 62
                 },
                 "startEventsMissingSessionId": 0,
-                "startedSessions": 65,
-                "withEnd": 55,
-                "withFirstOutput": 61,
+                "startedSessions": 66,
+                "withEnd": 56,
+                "withFirstOutput": 62,
                 "withQuotaBlock": 0,
                 "withTechnicalFailure": 5,
                 "withoutEndInsideWindow": 10,
@@ -2493,56 +2516,56 @@
               },
               "ios": {
                 "pairedFirstOutputByVoiceFamily": {
-                  "preset": 118
+                  "preset": 120
                 },
                 "startEventsMissingSessionId": 0,
-                "startedSessions": 126,
-                "withEnd": 84,
-                "withFirstOutput": 118,
+                "startedSessions": 128,
+                "withEnd": 85,
+                "withFirstOutput": 120,
                 "withQuotaBlock": 3,
                 "withTechnicalFailure": 6,
-                "withoutEndInsideWindow": 42,
+                "withoutEndInsideWindow": 43,
                 "withoutFirstOutputInsideWindow": 8
               }
             },
             "pairedFirstOutputByVoiceFamily": {
-              "preset": 179
+              "preset": 182
             },
             "startEventsMissingSessionId": 0,
-            "startedSessions": 191,
-            "withEnd": 139,
-            "withFirstOutput": 179,
+            "startedSessions": 194,
+            "withEnd": 141,
+            "withFirstOutput": 182,
             "withQuotaBlock": 3,
             "withTechnicalFailure": 11,
-            "withoutEndInsideWindow": 52,
+            "withoutEndInsideWindow": 53,
             "withoutFirstOutputInsideWindow": 12
           }
         },
         "sessionEvidenceByPlatform": {
           "android": {
             "pairedFirstOutputByVoiceFamily": {
-              "preset": 61,
+              "preset": 62,
               "unknown": 7
             },
             "startEventsMissingSessionId": 0,
-            "startedSessions": 78,
-            "withFirstOutput": 68,
+            "startedSessions": 79,
+            "withFirstOutput": 69,
             "withoutFirstOutputInsideWindow": 10
           },
           "ios": {
             "pairedFirstOutputByVoiceFamily": {
-              "preset": 118,
+              "preset": 120,
               "unknown": 2
             },
             "startEventsMissingSessionId": 0,
-            "startedSessions": 130,
-            "withFirstOutput": 120,
+            "startedSessions": 132,
+            "withFirstOutput": 122,
             "withoutFirstOutputInsideWindow": 10
           }
         },
         "startEventsByPlatform": {
-          "android": 78,
-          "ios": 130
+          "android": 79,
+          "ios": 132
         },
         "technicalFailureEvents": 16,
         "technicalFailuresByPlatform": {
@@ -2553,20 +2576,20 @@
       "coverage": {
         "complete": true,
         "duplicateRows": 0,
-        "expectedRowsAllEnvironments": 895,
+        "expectedRowsAllEnvironments": 909,
         "firstProductionReceivedAt": "2026-09-06T05:15:01.942000Z",
         "invalidSelectedRows": 0,
-        "lastProductionReceivedAt": "2026-09-07T02:48:21.852000Z",
+        "lastProductionReceivedAt": "2026-09-07T03:52:45.970000Z",
         "nonProductionRowsExcluded": 0,
         "pageBudgetExhausted": false,
         "pages": 1,
         "productionTagCannotExcludeManualTests": true,
-        "productionTaggedRows": 895,
-        "returnedRowsAllEnvironments": 895,
+        "productionTaggedRows": 909,
+        "returnedRowsAllEnvironments": 909,
         "serverClockColumn": "received_at",
         "source": "authenticated HTTPS PostgREST; credential values not exported",
         "tlsCertificateVerification": true,
-        "uniqueSelectedRowsAllEnvironments": 895,
+        "uniqueSelectedRowsAllEnvironments": 909,
         "wallClockBudgetExhausted": false,
         "wallClockBudgetSeconds": 180.0
       },
@@ -2578,7 +2601,7 @@
         "Device counts are installations, not verified people."
       ],
       "query": {
-        "endExclusive": "2026-09-07T02:56:05.406898Z",
+        "endExclusive": "2026-09-07T03:55:59.581790Z",
         "startInclusive": "2026-09-06T05:01:25Z"
       },
       "readOnly": true,
@@ -2593,13 +2616,13 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "completeRemainderDecodedCycles": 253,
+        "completeRemainderDecodedCycles": 265,
         "completeRemainderDecodedRatio": 1.0,
-        "cycles": 253,
+        "cycles": 265,
         "executedRequestContractCounts": {
-          "stream_false": 253,
-          "stream_omitted": 253,
-          "stream_true": 253
+          "stream_false": 265,
+          "stream_omitted": 265,
+          "stream_true": 265
         },
         "failedRequestContractCounts": {},
         "failureCodeCounts": {},
@@ -2607,24 +2630,24 @@
           "max": 3.576,
           "p50": 3.576,
           "p95": 3.576,
-          "samples": 253
+          "samples": 265
         },
         "largestObservedGapSeconds": 350.045,
         "observedGapSeconds": {
           "max": 350.045,
-          "p50": 310.43,
-          "p95": 321.071,
-          "samples": 252
+          "p50": 310.352,
+          "p95": 321.06,
+          "samples": 264
         },
         "probeElapsedMs": {
           "max": 31702.0,
-          "p50": 2684.0,
-          "p95": 8895.0,
-          "samples": 253
+          "p50": 2699.0,
+          "p95": 10827.0,
+          "samples": 265
         },
         "regionMismatchCycles": 0,
         "statusCounts": {
-          "healthy": 253
+          "healthy": 265
         },
         "supplyFailureSequence": {
           "currentConsecutiveCycles": 0,
@@ -2632,16 +2655,16 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "supplyOkCycles": 253,
+        "supplyOkCycles": 265,
         "totalAudioDurationSeconds": {
           "max": 13.44,
           "p50": 13.44,
           "p95": 13.44,
-          "samples": 253
+          "samples": 265
         },
         "upstreamMetadata": [
           {
-            "cyclesContainingVariant": 253,
+            "cyclesContainingVariant": 265,
             "gateway": "vercel-r2",
             "upstreamNode": "castreader-cn4090",
             "upstreamRevision": "0",
@@ -2653,7 +2676,7 @@
         "completeRead": true,
         "note": "Persisted result schema does not distinguish timer from manual invocation.",
         "originAttributionAvailable": false,
-        "selectedCycles": 253
+        "selectedCycles": 265
       },
       "limitations": [
         "observedAt is probe completion time, not request start time.",
@@ -2668,10 +2691,10 @@
       "probeStarted": false,
       "productionModified": false,
       "query": {
-        "endExclusive": "2026-09-07T02:56:05.406898Z",
+        "endExclusive": "2026-09-07T03:55:59.581790Z",
         "startInclusive": "2026-09-06T05:01:25Z"
       },
-      "readAtUtc": "2026-09-07T02:56:09.795197Z",
+      "readAtUtc": "2026-09-07T03:56:04.273857Z",
       "readOnly": true,
       "region": "cn",
       "schema": "castreader.monitor-window-readback.v2",
@@ -2681,13 +2704,13 @@
         "firstAvailableObservedAt": "2026-09-05T15:58:13.669Z",
         "firstSelectedObservedAt": "2026-09-06T05:03:52.331Z",
         "invalidResults": [],
-        "lastAvailableObservedAt": "2026-09-07T02:52:36.553Z",
-        "lastSelectedObservedAt": "2026-09-07T02:52:36.553Z",
-        "lastSelectedToWindowEndSeconds": 208.854,
-        "resultFilesScanned": 406,
+        "lastAvailableObservedAt": "2026-09-07T03:54:27.686Z",
+        "lastSelectedObservedAt": "2026-09-07T03:54:27.686Z",
+        "lastSelectedToWindowEndSeconds": 91.896,
+        "resultFilesScanned": 418,
         "resultsDirectory": "/var/lib/castreader-core-audio-monitor/cn/results",
-        "uniqueResultCycles": 406,
-        "validResultFiles": 406,
+        "uniqueResultCycles": 418,
+        "validResultFiles": 418,
         "windowStartToFirstSelectedSeconds": 147.331
       },
       "systemd": {
@@ -2700,7 +2723,7 @@
         },
         "timer": {
           "ActiveState": "active",
-          "LastTriggerUSec": "Mon 2026-09-07 10:52:25 CST",
+          "LastTriggerUSec": "Mon 2026-09-07 11:54:25 CST",
           "NextElapseUSecRealtime": "",
           "SubState": "waiting",
           "UnitFileState": "enabled"
@@ -2716,12 +2739,12 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "completeRemainderDecodedCycles": 254,
+        "completeRemainderDecodedCycles": 265,
         "completeRemainderDecodedRatio": 1.0,
-        "cycles": 254,
+        "cycles": 265,
         "executedRequestContractCounts": {
-          "stream_omitted": 254,
-          "stream_true": 254
+          "stream_omitted": 265,
+          "stream_true": 265
         },
         "failedRequestContractCounts": {},
         "failureCodeCounts": {},
@@ -2729,24 +2752,24 @@
           "max": 23.088,
           "p50": 23.088,
           "p95": 23.088,
-          "samples": 254
+          "samples": 265
         },
         "largestObservedGapSeconds": 323.012,
         "observedGapSeconds": {
           "max": 323.012,
-          "p50": 310.518,
-          "p95": 320.257,
-          "samples": 253
+          "p50": 310.463,
+          "p95": 320.146,
+          "samples": 264
         },
         "probeElapsedMs": {
           "max": 9251.0,
-          "p50": 2633.0,
+          "p50": 2632.0,
           "p95": 5193.0,
-          "samples": 254
+          "samples": 265
         },
         "regionMismatchCycles": 0,
         "statusCounts": {
-          "healthy": 254
+          "healthy": 265
         },
         "supplyFailureSequence": {
           "currentConsecutiveCycles": 0,
@@ -2754,12 +2777,12 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "supplyOkCycles": 254,
+        "supplyOkCycles": 265,
         "totalAudioDurationSeconds": {
           "max": 37.464,
           "p50": 37.464,
           "p95": 37.464,
-          "samples": 254
+          "samples": 265
         },
         "upstreamMetadata": [
           {
@@ -2770,7 +2793,7 @@
             "upstreamSource": "database"
           },
           {
-            "cyclesContainingVariant": 111,
+            "cyclesContainingVariant": 122,
             "gateway": "vercel-r2",
             "upstreamNode": "castreader-us4090",
             "upstreamRevision": "2",
@@ -2782,7 +2805,7 @@
         "completeRead": true,
         "note": "Persisted result schema does not distinguish timer from manual invocation.",
         "originAttributionAvailable": false,
-        "selectedCycles": 254
+        "selectedCycles": 265
       },
       "limitations": [
         "observedAt is probe completion time, not request start time.",
@@ -2797,10 +2820,10 @@
       "probeStarted": false,
       "productionModified": false,
       "query": {
-        "endExclusive": "2026-09-07T02:56:05.406898Z",
+        "endExclusive": "2026-09-07T03:55:59.581790Z",
         "startInclusive": "2026-09-06T05:01:25Z"
       },
-      "readAtUtc": "2026-09-07T02:56:09.246381Z",
+      "readAtUtc": "2026-09-07T03:56:03.535474Z",
       "readOnly": true,
       "region": "us",
       "schema": "castreader.monitor-window-readback.v2",
@@ -2810,13 +2833,13 @@
         "firstAvailableObservedAt": "2026-09-05T16:15:00.370Z",
         "firstSelectedObservedAt": "2026-09-06T05:04:37.191Z",
         "invalidResults": [],
-        "lastAvailableObservedAt": "2026-09-07T02:55:41.079Z",
-        "lastSelectedObservedAt": "2026-09-07T02:55:41.079Z",
-        "lastSelectedToWindowEndSeconds": 24.328,
-        "resultFilesScanned": 403,
+        "lastAvailableObservedAt": "2026-09-07T03:52:16.663Z",
+        "lastSelectedObservedAt": "2026-09-07T03:52:16.663Z",
+        "lastSelectedToWindowEndSeconds": 222.919,
+        "resultFilesScanned": 414,
         "resultsDirectory": "/var/lib/castreader-core-audio-monitor/us/results",
-        "uniqueResultCycles": 403,
-        "validResultFiles": 403,
+        "uniqueResultCycles": 414,
+        "validResultFiles": 414,
         "windowStartToFirstSelectedSeconds": 192.191
       },
       "systemd": {
@@ -2829,7 +2852,7 @@
         },
         "timer": {
           "ActiveState": "active",
-          "LastTriggerUSec": "Mon 2026-09-07 02:55:36 UTC",
+          "LastTriggerUSec": "Mon 2026-09-07 03:52:14 UTC",
           "NextElapseUSecRealtime": "",
           "SubState": "waiting",
           "UnitFileState": "enabled"
@@ -2843,7 +2866,7 @@
       "diagnosticFunctionExecuted": false,
       "health": {
         "active": {
-          "blue": 0,
+          "blue": 1,
           "green": 0
         },
         "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
@@ -2909,7 +2932,7 @@
         "Point-in-time source, process and routing identity; existing continuous probes provide the interval evidence."
       ],
       "productionModified": false,
-      "readAtUtc": "2026-09-07T02:56:44.997674+00:00",
+      "readAtUtc": "2026-09-07T03:56:43.353763+00:00",
       "readOnly": true,
       "schema": "castreader.us-origin-proxy-identity.v1",
       "synthesisStarted": false
@@ -2925,7 +2948,7 @@
         ],
         "failureCodeCounts": [
           {
-            "count": 44,
+            "count": 46,
             "failureCode": "http_503_unclassified",
             "routeGroup": "other"
           },
@@ -2940,10 +2963,10 @@
             "routeGroup": "tts"
           }
         ],
-        "otherProject5xxRecords": 66,
+        "otherProject5xxRecords": 68,
         "routeStatusCounts": [
           {
-            "count": 44,
+            "count": 46,
             "routeGroup": "other",
             "status": "503"
           },
@@ -2958,15 +2981,15 @@
             "status": "504"
           }
         ],
-        "unique5xxRecords": 70
+        "unique5xxRecords": 72
       },
       "coverage": {
-        "cacheHits": 20,
+        "cacheHits": 21,
         "cacheMisses": 2,
         "complete": true,
         "failedShards": 0,
         "firstReturnedAtUtc": "2026-09-06T05:15:33.328000Z",
-        "lastReturnedAtUtc": "2026-09-07T02:45:33.163000Z",
+        "lastReturnedAtUtc": "2026-09-07T03:45:33.101000Z",
         "pages": [
           {
             "cache": "hit",
@@ -3109,7 +3132,7 @@
             "uniqueRows": 2
           },
           {
-            "cache": "miss",
+            "cache": "hit",
             "endExclusive": "2026-09-07T02:01:25Z",
             "returnedRows": 2,
             "startInclusive": "2026-09-07T01:01:25Z",
@@ -3117,15 +3140,22 @@
           },
           {
             "cache": "miss",
-            "endExclusive": "2026-09-07T02:56:05.406898Z",
+            "endExclusive": "2026-09-07T03:01:25Z",
             "returnedRows": 2,
             "startInclusive": "2026-09-07T02:01:25Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "miss",
+            "endExclusive": "2026-09-07T03:55:59.581790Z",
+            "returnedRows": 2,
+            "startInclusive": "2026-09-07T03:01:25Z",
             "uniqueRows": 2
           }
         ],
         "queryBudgetExhausted": false,
         "queryFailures": [],
-        "successfulShards": 22,
+        "successfulShards": 23,
         "wallClockBudgetExhausted": false
       },
       "limitations": [
@@ -3135,7 +3165,7 @@
       ],
       "query": {
         "cacheSafetyLagSeconds": 900.0,
-        "endExclusive": "2026-09-07T02:56:05.406898Z",
+        "endExclusive": "2026-09-07T03:55:59.581790Z",
         "environment": "production",
         "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
         "queriesUsed": 2,
@@ -3171,7 +3201,7 @@
     "vercel"
   ],
   "window": {
-    "collectedThroughExclusive": "2026-09-07T02:56:05.406898Z",
+    "collectedThroughExclusive": "2026-09-07T03:55:59.581790Z",
     "configuredSeconds": 86400,
     "endExclusive": "2026-09-07T05:01:25Z",
     "startInclusive": "2026-09-06T05:01:25Z"

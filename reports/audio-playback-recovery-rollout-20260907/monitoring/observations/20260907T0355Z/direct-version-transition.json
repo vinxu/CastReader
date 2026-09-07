@@ -1,0 +1,110 @@
+{
+  "schema": "castreader.observed-direct-version-transition.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "frozenExpectedCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+  "frozenExpectedSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+  "observedCommit": "7d0a22ce8169fb6b6fe8aa3e80a08ae3804ee161",
+  "observedSha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+  "observedSourcePath": "/opt/castreader-tts-gateway/gateway.mjs",
+  "observedSourceBytes": 37688,
+  "systemd": {
+    "ActiveState": "active",
+    "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+    "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+    "MainPID": "596392",
+    "NRestarts": "0",
+    "SubState": "running"
+  },
+  "productionTransaction": {
+    "firstNewTrafficAt": "2026-09-07T03:21:22.184392+00:00",
+    "verifiedAt": "2026-09-07T03:21:31.064818+00:00",
+    "mainPid": "596392",
+    "sourceCommit": "7d0a22ce8169fb6b6fe8aa3e80a08ae3804ee161",
+    "sourceSha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+  },
+  "cleanup": {
+    "status": "production_cleanup_complete",
+    "completedAt": "2026-09-07T03:21:37.790676+00:00",
+    "mainPid": "596392",
+    "shadowStopped": true,
+    "shadowDrainedBeforeStop": true
+  },
+  "actualMatchesIndependentReleaseReceipt": true,
+  "originalFrozenExpectationMatches": false,
+  "originalAcceptanceStateUpdated": false,
+  "fixedWindowExtendedOrRestarted": false,
+  "oneUnchangedVersionForOriginal24hCanBeCertified": false,
+  "changeSummary": "Standalone Direct gateway text preprocessing parity, explicit legacy120s and extension-v1 total28s/attempt20s policies; fixed US stable origin alias normalization retained.",
+  "requestCountsByRecordedPID": [
+    {
+      "pid": "576327",
+      "statusCounts": {
+        "200": 245
+      },
+      "policyCounts": {
+        "unavailable": 245
+      },
+      "requests": 245,
+      "firstCompletionUTC": "2026-09-07T02:55:22.583863Z",
+      "lastCompletionUTC": "2026-09-07T03:18:03.812680Z",
+      "incompleteBlocks": 0,
+      "malformedRequests": 0,
+      "duplicateRequestKeys": 0
+    },
+    {
+      "pid": "other",
+      "statusCounts": {},
+      "policyCounts": {},
+      "requests": 0,
+      "firstCompletionUTC": null,
+      "lastCompletionUTC": null,
+      "incompleteBlocks": 0,
+      "malformedRequests": 0,
+      "duplicateRequestKeys": 0
+    },
+    {
+      "pid": "596392",
+      "statusCounts": {
+        "200": 472
+      },
+      "policyCounts": {
+        "legacy": 379,
+        "extension-v1": 93
+      },
+      "requests": 472,
+      "firstCompletionUTC": "2026-09-07T03:21:29.459213Z",
+      "lastCompletionUTC": "2026-09-07T03:55:16.969309Z",
+      "incompleteBlocks": 0,
+      "malformedRequests": 0,
+      "duplicateRequestKeys": 0
+    }
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/direct-gateway-parity-release-20260907/production-combined-receipt.json",
+      "sha256": "41c131a783519658cfb491b921301e2981248b483952ed4614186f297e044593"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/direct-gateway-parity-release-20260907/production-status-at-public-gate.json",
+      "sha256": "12ce418aff7185e9b79f27161bf56ebc14cb3c8d16898c750e9aa2d8b921a50a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-new-release-receipt-check.json",
+      "sha256": "8ea5b16d6394182bfab1986c2d3ff59de54d7a5768e0cbacee5558d06f8fb0a2"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-requests.json",
+      "sha256": "a079b96e055162bc280fd6d4970d6feeb3e1693c7b54fdf334f174706e81bdc8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-direct-tts-text-parity-20260907/ops/tts-direct-gateway/gateway.mjs",
+      "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+    }
+  ],
+  "limitations": [
+    "An independent release changed Direct during this fixed observation window. Do not replace frozen expectations from live values or certify 24h for a single Direct version.",
+    "The permanent unit ledger excludes the separate candidate unit during the brief handoff; those requests remain an attribution gap.",
+    "Counts include unclassified callers, existing probes and independent release validation; they are not user counts."
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "schema": "castreader.proxy-retry-attribution.v1",
+  "requestKey": "26c6fdb440baafb8efdc",
+  "attempts": [
+    {
+      "attempt": 1,
+      "upstreamCompleteUTC": "2026-09-07T03:03:59.280622+00:00",
+      "upstreamCompleteMs": 1014.813,
+      "upstreamBytes": 424124,
+      "upstreamStatus": 200,
+      "proxyRequestFinishedUTC": "2026-09-07T03:04:15.944005+00:00",
+      "proxyElapsedMs": 17678.362,
+      "proxyOutcome": "complete",
+      "afterUpstreamCompleteUntilCallerFinishedMs": 16663.383
+    },
+    {
+      "attempt": 2,
+      "upstreamCompleteUTC": "2026-09-07T03:04:20.634194+00:00",
+      "upstreamCompleteMs": 1598.383,
+      "upstreamBytes": 424110,
+      "upstreamStatus": 200,
+      "proxyRequestFinishedUTC": "2026-09-07T03:04:26.227168+00:00",
+      "proxyElapsedMs": 7191.547,
+      "proxyOutcome": "cancelled",
+      "afterUpstreamCompleteUntilCallerFinishedMs": 5592.974
+    }
+  ],
+  "matchingFixedGlobalProviderRequests": 0,
+  "matchingPermanentDirectRequests": 0,
+  "callerAndDeploymentEstablished": false,
+  "terminalCallerDeliveryEstablished": false,
+  "modelFailureEstablished": false,
+  "boundedFinding": "Both model responses completed with200 and bytes in about1.0s/1.6s. Remaining observed time is after upstream completion, in caller response/cleanup; the second handler ended cancelled. No queue/inference timeout is established for this key.",
+  "unresolved": [
+    "which caller issued the attempts",
+    "why a second attempt was issued",
+    "where response/cleanup waited",
+    "what caused handler cancellation",
+    "what the requester finally received"
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/proxy-retry-incident.json",
+      "sha256": "71cdc0dd694bd015afd40d946eaa468d8de609197ca1b39b5b3e38c0cb583402"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z.json",
+      "sha256": "d881538dbd313a1f4ee936c457214368526161c4a893e4ca3c2314c556bdb768"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-requests.json",
+      "sha256": "a079b96e055162bc280fd6d4970d6feeb3e1693c7b54fdf334f174706e81bdc8"
+    }
+  ],
+  "correction": "Initial commentary called this a Global retry before the join completed. The completed join does not establish a Global caller; retain this correction."
+}

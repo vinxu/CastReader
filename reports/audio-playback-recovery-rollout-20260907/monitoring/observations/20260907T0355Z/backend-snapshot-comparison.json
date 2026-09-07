@@ -1,0 +1,102 @@
+{
+  "schema": "castreader.backend-snapshot-comparison.v3",
+  "current": {
+    "generatedAtUTC": "2026-09-07T03:55:59.581713Z",
+    "directStatusCounts": {
+      "200": 5228,
+      "400": 1,
+      "no_response": 12
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 5914.0,
+      "p50": 511.0,
+      "p95": 1646.0,
+      "samples": 5241
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 107
+    },
+    "cnProbeStatus": {
+      "healthy": 108
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 33487
+  },
+  "previous": {
+    "generatedAtUTC": "2026-09-07T02:56:05.405297Z",
+    "directStatusCounts": {
+      "200": 4514,
+      "400": 1,
+      "no_response": 12
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 5914.0,
+      "p50": 511.0,
+      "p95": 1661.0,
+      "samples": 4527
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 96
+    },
+    "cnProbeStatus": {
+      "healthy": 96
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "source_missing",
+        "detail": "collector returned no document",
+        "source": "monitor_cn"
+      }
+    ],
+    "supplementalCNRecoveryUsed": true,
+    "observedSeconds": 29892
+  },
+  "historicalWindow": {
+    "generatedAtUTC": "2026-09-07T03:55:59.581790Z",
+    "directStatusCounts": {
+      "200": 11214,
+      "400": 4,
+      "502": 1,
+      "504": 4,
+      "no_response": 15
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 9742.0,
+      "p50": 499.0,
+      "p95": 1557.0,
+      "samples": 11238
+    },
+    "globalCore5xx": 4,
+    "usProbeStatus": {
+      "healthy": 265
+    },
+    "cnProbeStatus": {
+      "healthy": 265
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 82474
+  },
+  "excludedFromBackendVerdict": [
+    "mobile",
+    "blog",
+    "payment"
+  ],
+  "originalAutomaticVerdictPreserved": true
+}

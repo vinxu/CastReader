@@ -1,0 +1,655 @@
+{
+  "schema": "castreader.backend-audio-heartbeat-review.v4",
+  "automationId": "24",
+  "reviewedAtUTC": "2026-09-07T04:10:04.274609+00:00",
+  "decision": "NOTIFY",
+  "decisionReason": "Direct已被独立发布更换版本并有完整回执；需保留新旧版本边界。中国区解读首次有正向任务样本；新断开/取消仍未证实模型或LLM供给失败。",
+  "observationScope": "backend_tts_clone_quickread_only",
+  "backendVerdict": "证据不足",
+  "backendVerdictReason": "有效供给未出现新增已确认故障，但Direct固定版本被独立发布改变，克隆及部分交付/时延归因仍不足。",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "finalWindow": {
+    "collectedThroughExclusive": "2026-09-07T03:55:59.581713Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  },
+  "backendDetailWindow": {
+    "endUTCExclusive": "2026-09-07T03:55:19.088000+00:00",
+    "productionActiveFromUTC": "2026-09-06T18:37:52.522573+00:00",
+    "startUTC": "2026-09-07T02:55:18.766000+00:00"
+  },
+  "services": [
+    {
+      "region": "global",
+      "service": "kokoro_tts",
+      "backendVerdict": "符合预期",
+      "scope": "本小时可见Global有效HTTP供给；既往时延退化继续观察",
+      "evidence": "2658条Global均200、非空body并完成、单次尝试，全部精确关联代理完成；P95降至1755ms。Direct新PID472条、旧PID245条均200；观察窗包含两个Direct版本，原固定版本24h不能成立。"
+    },
+    {
+      "region": "cn",
+      "service": "kokoro_tts",
+      "backendVerdict": "证据不足",
+      "scope": "可见供给成功，断开及整轮校验时延仍未归因",
+      "evidence": "844条已解析TTS POST200，另1条nginx记录499、交付未知。108轮合同健康；本小时12轮完整，仍有11.039和12.337秒整轮耗时，缺HTTP/解码分项。"
+    },
+    {
+      "region": "global",
+      "service": "clone_tts",
+      "backendVerdict": "证据不足",
+      "scope": "本窗口真实合成",
+      "evidence": "健康、累计173完成、0失败/过期不变，仍无窗口结构化合成样本。"
+    },
+    {
+      "region": "cn",
+      "service": "clone_tts",
+      "backendVerdict": "证据不足",
+      "scope": "本窗口真实合成",
+      "evidence": "健康、累计4完成、0失败/过期不变，不能替代窗口合成结果。"
+    },
+    {
+      "region": "global",
+      "service": "quickread",
+      "backendVerdict": "证据不足",
+      "scope": "可见生成正常，新增断开交付结果未知",
+      "evidence": "102份窗口修改任务均ready有首块，87份全块生成、15份可续；本小时17条权益放行，新增1条request_disconnected，无实际HTTP结果或LLM故障证据。"
+    },
+    {
+      "region": "cn",
+      "service": "quickread",
+      "backendVerdict": "证据不足",
+      "scope": "首次获得任务正向样本，完整HTTP交付仍有缺口",
+      "evidence": "新增16条权益放行和15份ready首块任务，14份全块生成、1份可续；另1条request_disconnected，无法与持久任务或HTTP交付逐条贯通。"
+    }
+  ],
+  "currentBackendSnapshot": {
+    "generatedAtUTC": "2026-09-07T03:55:59.581713Z",
+    "directStatusCounts": {
+      "200": 5228,
+      "400": 1,
+      "no_response": 12
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 5914.0,
+      "p50": 511.0,
+      "p95": 1646.0,
+      "samples": 5241
+    },
+    "globalCore5xx": 0,
+    "usProbeStatus": {
+      "healthy": 107
+    },
+    "cnProbeStatus": {
+      "healthy": 108
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 33487
+  },
+  "historicalBackendSnapshot": {
+    "generatedAtUTC": "2026-09-07T03:55:59.581790Z",
+    "directStatusCounts": {
+      "200": 11214,
+      "400": 4,
+      "502": 1,
+      "504": 4,
+      "no_response": 15
+    },
+    "directElapsedMsMixedOutcomes": {
+      "max": 9742.0,
+      "p50": 499.0,
+      "p95": 1557.0,
+      "samples": 11238
+    },
+    "globalCore5xx": 4,
+    "usProbeStatus": {
+      "healthy": 265
+    },
+    "cnProbeStatus": {
+      "healthy": 265
+    },
+    "regionMismatchCycles": 0,
+    "rawCollectorCoverageGaps": [
+      {
+        "code": "direct_gateway_source_mismatch",
+        "detail": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+        "source": "direct_gateway"
+      }
+    ],
+    "observedSeconds": 82474
+  },
+  "newConfirmedValidTtsOrLlmSupplyFailures": [],
+  "newObservedDirectVersion": {
+    "schema": "castreader.observed-direct-version-transition.v1",
+    "readOnly": true,
+    "productionModified": false,
+    "frozenExpectedCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+    "frozenExpectedSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+    "observedCommit": "7d0a22ce8169fb6b6fe8aa3e80a08ae3804ee161",
+    "observedSha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+    "observedSourcePath": "/opt/castreader-tts-gateway/gateway.mjs",
+    "observedSourceBytes": 37688,
+    "systemd": {
+      "ActiveState": "active",
+      "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+      "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+      "MainPID": "596392",
+      "NRestarts": "0",
+      "SubState": "running"
+    },
+    "productionTransaction": {
+      "firstNewTrafficAt": "2026-09-07T03:21:22.184392+00:00",
+      "verifiedAt": "2026-09-07T03:21:31.064818+00:00",
+      "mainPid": "596392",
+      "sourceCommit": "7d0a22ce8169fb6b6fe8aa3e80a08ae3804ee161",
+      "sourceSha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+    },
+    "cleanup": {
+      "status": "production_cleanup_complete",
+      "completedAt": "2026-09-07T03:21:37.790676+00:00",
+      "mainPid": "596392",
+      "shadowStopped": true,
+      "shadowDrainedBeforeStop": true
+    },
+    "actualMatchesIndependentReleaseReceipt": true,
+    "originalFrozenExpectationMatches": false,
+    "originalAcceptanceStateUpdated": false,
+    "fixedWindowExtendedOrRestarted": false,
+    "oneUnchangedVersionForOriginal24hCanBeCertified": false,
+    "changeSummary": "Standalone Direct gateway text preprocessing parity, explicit legacy120s and extension-v1 total28s/attempt20s policies; fixed US stable origin alias normalization retained.",
+    "requestCountsByRecordedPID": [
+      {
+        "pid": "576327",
+        "statusCounts": {
+          "200": 245
+        },
+        "policyCounts": {
+          "unavailable": 245
+        },
+        "requests": 245,
+        "firstCompletionUTC": "2026-09-07T02:55:22.583863Z",
+        "lastCompletionUTC": "2026-09-07T03:18:03.812680Z",
+        "incompleteBlocks": 0,
+        "malformedRequests": 0,
+        "duplicateRequestKeys": 0
+      },
+      {
+        "pid": "other",
+        "statusCounts": {},
+        "policyCounts": {},
+        "requests": 0,
+        "firstCompletionUTC": null,
+        "lastCompletionUTC": null,
+        "incompleteBlocks": 0,
+        "malformedRequests": 0,
+        "duplicateRequestKeys": 0
+      },
+      {
+        "pid": "596392",
+        "statusCounts": {
+          "200": 472
+        },
+        "policyCounts": {
+          "legacy": 379,
+          "extension-v1": 93
+        },
+        "requests": 472,
+        "firstCompletionUTC": "2026-09-07T03:21:29.459213Z",
+        "lastCompletionUTC": "2026-09-07T03:55:16.969309Z",
+        "incompleteBlocks": 0,
+        "malformedRequests": 0,
+        "duplicateRequestKeys": 0
+      }
+    ],
+    "sources": [
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/direct-gateway-parity-release-20260907/production-combined-receipt.json",
+        "sha256": "41c131a783519658cfb491b921301e2981248b483952ed4614186f297e044593"
+      },
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/direct-gateway-parity-release-20260907/production-status-at-public-gate.json",
+        "sha256": "12ce418aff7185e9b79f27161bf56ebc14cb3c8d16898c750e9aa2d8b921a50a"
+      },
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-new-release-receipt-check.json",
+        "sha256": "8ea5b16d6394182bfab1986c2d3ff59de54d7a5768e0cbacee5558d06f8fb0a2"
+      },
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-requests.json",
+        "sha256": "a079b96e055162bc280fd6d4970d6feeb3e1693c7b54fdf334f174706e81bdc8"
+      },
+      {
+        "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-direct-tts-text-parity-20260907/ops/tts-direct-gateway/gateway.mjs",
+        "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+      }
+    ],
+    "limitations": [
+      "An independent release changed Direct during this fixed observation window. Do not replace frozen expectations from live values or certify 24h for a single Direct version.",
+      "The permanent unit ledger excludes the separate candidate unit during the brief handoff; those requests remain an attribution gap.",
+      "Counts include unclassified callers, existing probes and independent release validation; they are not user counts."
+    ]
+  },
+  "newQuickreadDisconnectRecords": [
+    {
+      "region": "us",
+      "timestampUTC": "2026-09-07T03:46:40+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "staticCodeMatch": "request_disconnected"
+    },
+    {
+      "region": "cn",
+      "timestampUTC": "2026-09-07T03:09:52.512816+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "staticCodeMatch": "request_disconnected"
+    }
+  ],
+  "newProxyCancellation": {
+    "schema": "castreader.proxy-retry-attribution.v1",
+    "requestKey": "26c6fdb440baafb8efdc",
+    "attempts": [
+      {
+        "attempt": 1,
+        "upstreamCompleteUTC": "2026-09-07T03:03:59.280622+00:00",
+        "upstreamCompleteMs": 1014.813,
+        "upstreamBytes": 424124,
+        "upstreamStatus": 200,
+        "proxyRequestFinishedUTC": "2026-09-07T03:04:15.944005+00:00",
+        "proxyElapsedMs": 17678.362,
+        "proxyOutcome": "complete",
+        "afterUpstreamCompleteUntilCallerFinishedMs": 16663.383
+      },
+      {
+        "attempt": 2,
+        "upstreamCompleteUTC": "2026-09-07T03:04:20.634194+00:00",
+        "upstreamCompleteMs": 1598.383,
+        "upstreamBytes": 424110,
+        "upstreamStatus": 200,
+        "proxyRequestFinishedUTC": "2026-09-07T03:04:26.227168+00:00",
+        "proxyElapsedMs": 7191.547,
+        "proxyOutcome": "cancelled",
+        "afterUpstreamCompleteUntilCallerFinishedMs": 5592.974
+      }
+    ],
+    "matchingFixedGlobalProviderRequests": 0,
+    "matchingPermanentDirectRequests": 0,
+    "callerAndDeploymentEstablished": false,
+    "terminalCallerDeliveryEstablished": false,
+    "modelFailureEstablished": false,
+    "boundedFinding": "Both model responses completed with200 and bytes in about1.0s/1.6s. Remaining observed time is after upstream completion, in caller response/cleanup; the second handler ended cancelled. No queue/inference timeout is established for this key.",
+    "unresolved": [
+      "which caller issued the attempts",
+      "why a second attempt was issued",
+      "where response/cleanup waited",
+      "what caused handler cancellation",
+      "what the requester finally received"
+    ],
+    "sources": [
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/proxy-retry-incident.json",
+        "sha256": "71cdc0dd694bd015afd40d946eaa468d8de609197ca1b39b5b3e38c0cb583402"
+      },
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z.json",
+        "sha256": "d881538dbd313a1f4ee936c457214368526161c4a893e4ca3c2314c556bdb768"
+      },
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-requests.json",
+        "sha256": "a079b96e055162bc280fd6d4970d6feeb3e1693c7b54fdf334f174706e81bdc8"
+      }
+    ],
+    "correction": "Initial commentary called this a Global retry before the join completed. The completed join does not establish a Global caller; retain this correction."
+  },
+  "newCNIngressLoggedNon200": {
+    "schema": "castreader.cn-tts-ingress-non200.v1",
+    "readOnly": true,
+    "productionModified": false,
+    "synthesisStarted": false,
+    "rawContentExported": false,
+    "capturedAtUTC": "2026-09-07T03:59:57.798375+00:00",
+    "logPath": "/var/log/nginx/access.log",
+    "bytesAtRead": 1771884,
+    "unparsedLines": 30,
+    "unparsedKnownRouteMatches": 0,
+    "non200Rows": [
+      {
+        "observedAtUTC": "2026-09-07T03:30:24+00:00",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "loggedStatus": 499
+      }
+    ],
+    "window": {
+      "startUTC": "2026-09-06T18:37:52.522573+00:00",
+      "endUTCExclusive": "2026-09-07T03:55:19.088000+00:00"
+    },
+    "limitation": "Logged status does not prove delivery to the requester; no model identity, request body, IP or latency is exported."
+  },
+  "latencyWatch": {
+    "schema": "castreader.backend-latency-trend.v4",
+    "classification": "continued_partial_improvement",
+    "windows": [
+      {
+        "tag": "20260906T2353Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-06T22:52:47.445000Z",
+          "requestStartExclusiveUTC": "2026-09-06T23:53:17.725000Z"
+        },
+        "globalRequestCount": 1890,
+        "globalRequestFinishMs": {
+          "samples": 1890,
+          "p50": 572,
+          "p95": 1570,
+          "max": 3728
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 3677.495,
+          "median": 531.292,
+          "n": 2199,
+          "p95": 1494.506
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.702,
+          "median": 0.254,
+          "n": 2200,
+          "p95": 0.32
+        }
+      },
+      {
+        "tag": "20260907T0053Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-06T23:53:17.725000Z",
+          "requestStartExclusiveUTC": "2026-09-07T00:53:48.099000Z"
+        },
+        "globalRequestCount": 3454,
+        "globalRequestFinishMs": {
+          "samples": 3454,
+          "p50": 755,
+          "p95": 2201,
+          "max": 7385
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 7326.668,
+          "median": 685.783,
+          "n": 4236,
+          "p95": 2083.657
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.691,
+          "median": 0.254,
+          "n": 4235,
+          "p95": 0.329
+        }
+      },
+      {
+        "tag": "20260907T0155Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T00:53:48.099Z",
+          "requestStartExclusiveUTC": "2026-09-07T01:55:18.503Z"
+        },
+        "globalRequestCount": 3475,
+        "globalRequestFinishMs": {
+          "samples": 3475,
+          "p50": 1046,
+          "p95": 2697,
+          "max": 7591
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 7525.657,
+          "median": 937.812,
+          "n": 4226,
+          "p95": 2543.123
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 2.45,
+          "median": 0.258,
+          "n": 4227,
+          "p95": 0.333
+        }
+      },
+      {
+        "tag": "20260907T0255Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T01:55:18.503Z",
+          "requestStartExclusiveUTC": "2026-09-07T02:55:18.766Z"
+        },
+        "globalRequestCount": 3259,
+        "globalRequestFinishMs": {
+          "samples": 3259,
+          "p50": 665,
+          "p95": 2065,
+          "max": 5865
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 5788.14,
+          "median": 590.031,
+          "n": 4138,
+          "p95": 1959.63
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 1.018,
+          "median": 0.251,
+          "n": 4136,
+          "p95": 0.328
+        }
+      },
+      {
+        "tag": "20260907T0355Z",
+        "window": {
+          "requestStartInclusiveUTC": "2026-09-07T02:55:18.766Z",
+          "requestStartExclusiveUTC": "2026-09-07T03:55:19.088Z"
+        },
+        "globalRequestCount": 2658,
+        "globalRequestFinishMs": {
+          "samples": 2658,
+          "p50": 552,
+          "p95": 1755,
+          "max": 4626
+        },
+        "proxyUpstreamHeadersElapsedMs": {
+          "max": 4579.498,
+          "median": 502.264,
+          "n": 3454,
+          "p95": 1663.523
+        },
+        "proxyUpstreamConnectMs": {
+          "max": 0.739,
+          "median": 0.25,
+          "n": 3454,
+          "p95": 0.321
+        }
+      }
+    ],
+    "relativeToPriorObservedBaseline": true,
+    "absoluteProductLatencySloSpecified": false,
+    "exceededExistingTimeoutBudget": false,
+    "requestFinishP95ChangeFromPriorPercent": -15.01,
+    "requestFinishP95ChangeFromBaselinePercent": 11.78,
+    "boundedFinding": "GlobalP95 continues2065 to1755ms; proxy header wait1959.630 to1663.523ms. Two improving hours still do not prove an entire-window recovery or all-service performance.",
+    "fullRecoveryEstablished": false,
+    "internalCauseResolved": false,
+    "unresolvedCause": [
+      "queue/concurrency",
+      "frontend/inference",
+      "encoding",
+      "request mix"
+    ],
+    "keepObservingTrend": true
+  },
+  "cnLatencyWatch": {
+    "schema": "castreader.cn-probe-latency-watch.v2",
+    "window": {
+      "endUTCExclusive": "2026-09-07T03:55:19.088000+00:00",
+      "productionActiveFromUTC": "2026-09-06T18:37:52.522573+00:00",
+      "startUTC": "2026-09-07T02:55:18.766000+00:00"
+    },
+    "samples": 12,
+    "probeElapsedMs": {
+      "samples": 12,
+      "p50": 3057,
+      "p95": 12337,
+      "max": 12337
+    },
+    "overTenSeconds": [
+      {
+        "observedAtUTC": "2026-09-07T03:08:10.812000Z",
+        "elapsedMs": 11039,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "b8f6d626aa655ed33d5aca4c13707fee1fa10a926d1419d2c38fe9da568391ae",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      },
+      {
+        "observedAtUTC": "2026-09-07T03:23:32.109000Z",
+        "elapsedMs": 12337,
+        "supplyOk": true,
+        "completeAudio": true,
+        "segmentCount": 3,
+        "sourceSha256": "81c912b13df72a751826560c42fe64f4f58fed025cd717867f47878f2a9e67d5",
+        "segmentAttempts": [
+          1,
+          1,
+          1
+        ],
+        "regionMismatch": false
+      }
+    ],
+    "allComplete": true,
+    "allFirstAttempt": true,
+    "modelOrHttpTtfbEstablished": false,
+    "internalCauseResolved": false,
+    "limitations": [
+      "Whole three-segment probe duration includes HTTP, local decode and validation. It is not model latency or a user playback outcome."
+    ],
+    "source": {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/cn-probe-timing-series.json",
+      "sha256": "f2e185b0d35339f0944d48d4d6eea7bc22a43c4842c4e268e826b7265b7339e1"
+    }
+  },
+  "collectionRecovery": {
+    "schema": "castreader.vercel-read-recovery.v1",
+    "initialFailures": [
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z-part1.json",
+        "sha256": "7ecef5c7b321e29aaaebf5601173148f8e6dadca830e8bb9873a5991cce3cd40"
+      },
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z-part2.json",
+        "sha256": "f780016eb7797878b8e7a3b7270f4ff9585b741a88351a66d4ae84dd703bfd98"
+      }
+    ],
+    "initialHttpStatuses": [
+      403,
+      403
+    ],
+    "readOnlyCliIdentityCheckSucceeded": true,
+    "sameFixedWindowsRetried": true,
+    "retrySources": [
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z-part1-retry1.json",
+        "sha256": "7a3265f7e09dfac934ea690f87464443ae15d2166e3f6776eb32a0b70b384c78"
+      },
+      {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z-part2-retry1.json",
+        "sha256": "9846ea0967882091580fb84dc8440406ad4d3bebaeb6cffe2ebed77fa0178eef"
+      }
+    ],
+    "recoveredReturnedPaginationComplete": true,
+    "ingestionCompletenessVerified": false,
+    "precise403CauseEstablished": false,
+    "credentialValuesExported": false,
+    "productionModified": false,
+    "synthesisStarted": false,
+    "note": "Original403 responses preserved. An authorized CLI account read succeeded, followed by a200 logs diagnostic and successful unchanged-window retries; this is collection recovery, not a productionTTS outage."
+  },
+  "limitations": [
+    "Original acceptance verdict includes out-of-scope clients; backend conclusion is independent and never rewrites history.",
+    "Existing Direct400 parameter rejection and older model400/502/504 remain retained; no_response and cancellation do not establish success, model timeout or user intent.",
+    "Frozen Direct expectation is deliberately not replaced with live values. Independent rollout evidence explains the mismatch but cannot restore a single-version24h observation.",
+    "CN499 is a recorded ingress status with unknown requester delivery; no full HTTP response or downstream intent is proven.",
+    "QuickRead task-file outcomes are modified-file cohorts, not complete new-request or HTTP ledgers.",
+    "Node/source identity and approved same-region routing do not certify every physical path has no cross-border behavior.",
+    "Prior attribution to Global for the proxy retry was provisional and is corrected: no fixed-deployment match or permanent Direct journal match."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/latest-acceptance.json",
+      "sha256": "ea4d886503df87eac6066ea8136eec50888916c6c716794b31e26f7492b7ce5b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/20260907T0355Z/latest-acceptance.json",
+      "sha256": "4dbbd9857add7297d76ef60718af418029cee700519cef6c2c0aa733f547e9e1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260907T0355Z.json",
+      "sha256": "0454455943a8bfb1b97d02b31d9c3061eb84dd8f9d5361f9b09ecd8e4f86a1eb"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z.json",
+      "sha256": "d881538dbd313a1f4ee936c457214368526161c4a893e4ca3c2314c556bdb768"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/direct-version-transition.json",
+      "sha256": "76ec29dca3a78b23fe48173e3ecb7e030029d8115b8c0ede932002fe45636f32"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/vercel-proxy-join-summary.json",
+      "sha256": "490aa45ba1966fbb0a785fc49c151b28dfb6d6d22d58dae93fbb159e6a8de8b0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/proxy-retry-attribution.json",
+      "sha256": "730a02e3c80607e019a60e8d2aecd8ae232b6342b65fbeacf99e3163a60f4a2c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/quickread-disconnect-review.json",
+      "sha256": "8c9edec2588edafd977354926085db8c4ad6455c79d97c7657dd5f225b345cff"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/cn-ingress-non200.json",
+      "sha256": "87c51fffde2fa3e3708d9cbaf49d781a4bd3bee7983de59563b38ab79b3b1c29"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/cn-latency-watch.json",
+      "sha256": "63f14eb5e857f4328b9d90bf83d08423dffc0f940699956d0ffe7176f5495d0e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/vercel-collection-recovery.json",
+      "sha256": "8962c8d4a6e359192983257350b0985325079f327e1981fcf123cbf9e4af3b37"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/us-backend-supply.json",
+      "sha256": "1f4ddf50ef2a757931f4bc73f6b47a6ffeb6c9b6f912f5a29d16be3b373a2c4d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/cn-backend-supply.json",
+      "sha256": "5b083c2b65fb886182c4ac1acee5e000e24c08deb5a936c37fcf4ea875b646a1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/us-gpu-backend-supply.json",
+      "sha256": "e5587c288e02fbce1a0d3be4931ea6be81a91526489d1f26f285745eb11db6bf"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-review.md",
+      "sha256": "ca9f4f0d8c2475b53ef31c4760c17afda977b563add6cabad9258451ff6f23c2"
+    }
+  ],
+  "actualBackendWindowMixedVersions": true,
+  "originalFrozenDirectVersion24hCanBeCertified": false,
+  "secondsSinceDirectReceiptVerifiedAtSnapshot": 2068
+}

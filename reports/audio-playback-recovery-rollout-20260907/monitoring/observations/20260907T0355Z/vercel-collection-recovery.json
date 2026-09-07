@@ -1,0 +1,36 @@
+{
+  "schema": "castreader.vercel-read-recovery.v1",
+  "initialFailures": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z-part1.json",
+      "sha256": "7ecef5c7b321e29aaaebf5601173148f8e6dadca830e8bb9873a5991cce3cd40"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z-part2.json",
+      "sha256": "f780016eb7797878b8e7a3b7270f4ff9585b741a88351a66d4ae84dd703bfd98"
+    }
+  ],
+  "initialHttpStatuses": [
+    403,
+    403
+  ],
+  "readOnlyCliIdentityCheckSucceeded": true,
+  "sameFixedWindowsRetried": true,
+  "retrySources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z-part1-retry1.json",
+      "sha256": "7a3265f7e09dfac934ea690f87464443ae15d2166e3f6776eb32a0b70b384c78"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260907T0355Z-part2-retry1.json",
+      "sha256": "9846ea0967882091580fb84dc8440406ad4d3bebaeb6cffe2ebed77fa0178eef"
+    }
+  ],
+  "recoveredReturnedPaginationComplete": true,
+  "ingestionCompletenessVerified": false,
+  "precise403CauseEstablished": false,
+  "credentialValuesExported": false,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "note": "Original403 responses preserved. An authorized CLI account read succeeded, followed by a200 logs diagnostic and successful unchanged-window retries; this is collection recovery, not a productionTTS outage."
+}

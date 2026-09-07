@@ -1,0 +1,9 @@
+{
+  "readOnly": true,
+  "httpStatus": 200,
+  "jsonResponse": true,
+  "htmlResponse": false,
+  "bodyBytes": 200000,
+  "observedAtUTC": "2026-09-07T03:58:04.494262+00:00",
+  "challengeMarkerPresent": false
+}

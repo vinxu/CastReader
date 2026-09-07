@@ -1,0 +1,42 @@
+{
+  "schema": "castreader.backend-service-delta.v2",
+  "quickreadIdentityUnchanged": {
+    "us": true,
+    "cn": true
+  },
+  "usCloneProcessUnchanged": true,
+  "usNariProcessUnchanged": true,
+  "cnUnitsUnchanged": true,
+  "cloneCounterChanges": {
+    "us": {
+      "submitted": 0,
+      "completed": 0,
+      "failed": 0,
+      "expired": 0
+    },
+    "cn": {
+      "submitted": 0,
+      "completed": 0,
+      "failed": 0,
+      "expired": 0
+    }
+  },
+  "newCNQuickreadReadyModifiedFiles": 15,
+  "newQuickreadDisconnectRecords": [
+    {
+      "region": "us",
+      "timestampUTC": "2026-09-07T03:46:40+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "staticCodeMatch": "request_disconnected"
+    },
+    {
+      "region": "cn",
+      "timestampUTC": "2026-09-07T03:09:52.512816+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "staticCodeMatch": "request_disconnected"
+    }
+  ],
+  "directKnownNoResponseKeysUnchanged": true
+}

@@ -1,0 +1,64 @@
+{
+  "schema": "castreader.direct-pid-window.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "capturedAtUTC": "2026-09-07T04:01:32.914652+00:00",
+  "window": {
+    "startUTC": "2026-09-07T02:55:18.766000Z",
+    "endUTCExclusive": "2026-09-07T03:55:59.581713Z"
+  },
+  "journalRows": 24413,
+  "parseErrors": 0,
+  "groups": [
+    {
+      "pid": "576327",
+      "statusCounts": {
+        "200": 245
+      },
+      "policyCounts": {
+        "unavailable": 245
+      },
+      "requests": 245,
+      "firstCompletionUTC": "2026-09-07T02:55:22.583863Z",
+      "lastCompletionUTC": "2026-09-07T03:18:03.812680Z",
+      "incompleteBlocks": 0,
+      "malformedRequests": 0,
+      "duplicateRequestKeys": 0
+    },
+    {
+      "pid": "other",
+      "statusCounts": {},
+      "policyCounts": {},
+      "requests": 0,
+      "firstCompletionUTC": null,
+      "lastCompletionUTC": null,
+      "incompleteBlocks": 0,
+      "malformedRequests": 0,
+      "duplicateRequestKeys": 0
+    },
+    {
+      "pid": "596392",
+      "statusCounts": {
+        "200": 483
+      },
+      "policyCounts": {
+        "legacy": 390,
+        "extension-v1": 93
+      },
+      "requests": 483,
+      "firstCompletionUTC": "2026-09-07T03:21:29.459213Z",
+      "lastCompletionUTC": "2026-09-07T03:55:57.089113Z",
+      "incompleteBlocks": 0,
+      "malformedRequests": 0,
+      "duplicateRequestKeys": 0
+    }
+  ],
+  "limitations": [
+    "Process identity is bound to separately verified release receipts.",
+    "This unit excludes the private candidate unit and its brief public handoff interval.",
+    "Journal timestamps are completion/log times; they are not request-start times."
+  ],
+  "parserSourceSha256": "f6a1c14271f69096e2a18af9d28960eba461bb88d2a070b9a631aa4056fa9acd"
+}

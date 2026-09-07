@@ -1,0 +1,17 @@
+{
+  "schema": "castreader.backend-observation-validation.v2",
+  "passed": true,
+  "sourceReferencesVerified": 28,
+  "actualDirectVersionChangePreserved": true,
+  "originalExpectedIdentityUnchanged": true,
+  "fixedWindowDatesUnchanged": true,
+  "globalExactProxyMatches": 2658,
+  "directExactProxyMatches": 707,
+  "remainingProxyAttemptsUnattributed": 89,
+  "probeOrModelSynthesisStarted": false,
+  "productionModified": false,
+  "currentReview": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/heartbeat-review.json",
+    "sha256": "0d94ec7322ee9e469b9ccf5318ac958f1ddf94a9d4f71471030b0c2fd4a4c45b"
+  }
+}

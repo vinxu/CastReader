@@ -1,0 +1,66 @@
+{
+  "source": "/Users/xuxuheng/Documents/CastReader/reports/direct-gateway-parity-release-20260907/production-combined-receipt.json",
+  "sourceSha256": "41c131a783519658cfb491b921301e2981248b483952ed4614186f297e044593",
+  "checks": [
+    {
+      "name": "release-plan.json",
+      "matches": true
+    },
+    {
+      "name": "cross-client-regression.json",
+      "matches": true
+    },
+    {
+      "name": "production-status-at-public-gate.json",
+      "matches": true
+    },
+    {
+      "name": "post-release-baseline.json",
+      "matches": true
+    },
+    {
+      "name": "post-release-upstream-baseline.json",
+      "matches": true
+    },
+    {
+      "name": "offhost-baseline-combined-receipt.json",
+      "matches": true
+    },
+    {
+      "name": "offhost-production-combined-receipt.json",
+      "matches": true
+    },
+    {
+      "name": "public-route-contract.json",
+      "matches": true
+    },
+    {
+      "name": "public-validation-20260907T033031Z/receipt.json",
+      "matches": true
+    },
+    {
+      "name": "operator-checks.json",
+      "matches": true
+    },
+    {
+      "name": "apply-dispatch-reconciled.json",
+      "matches": true
+    },
+    {
+      "name": "public-validation-20260907T032454Z/receipt.json",
+      "matches": true
+    },
+    {
+      "name": "public-validation-20260907T032621Z/receipt.json",
+      "matches": true
+    },
+    {
+      "name": "README.md",
+      "matches": true
+    }
+  ],
+  "allMatches": true,
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false
+}

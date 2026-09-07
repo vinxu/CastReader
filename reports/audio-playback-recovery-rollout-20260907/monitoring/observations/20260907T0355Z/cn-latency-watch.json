@@ -1,0 +1,56 @@
+{
+  "schema": "castreader.cn-probe-latency-watch.v2",
+  "window": {
+    "endUTCExclusive": "2026-09-07T03:55:19.088000+00:00",
+    "productionActiveFromUTC": "2026-09-06T18:37:52.522573+00:00",
+    "startUTC": "2026-09-07T02:55:18.766000+00:00"
+  },
+  "samples": 12,
+  "probeElapsedMs": {
+    "samples": 12,
+    "p50": 3057,
+    "p95": 12337,
+    "max": 12337
+  },
+  "overTenSeconds": [
+    {
+      "observedAtUTC": "2026-09-07T03:08:10.812000Z",
+      "elapsedMs": 11039,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "b8f6d626aa655ed33d5aca4c13707fee1fa10a926d1419d2c38fe9da568391ae",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T03:23:32.109000Z",
+      "elapsedMs": 12337,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "81c912b13df72a751826560c42fe64f4f58fed025cd717867f47878f2a9e67d5",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    }
+  ],
+  "allComplete": true,
+  "allFirstAttempt": true,
+  "modelOrHttpTtfbEstablished": false,
+  "internalCauseResolved": false,
+  "limitations": [
+    "Whole three-segment probe duration includes HTTP, local decode and validation. It is not model latency or a user playback outcome."
+  ],
+  "source": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/cn-probe-timing-series.json",
+    "sha256": "f2e185b0d35339f0944d48d4d6eea7bc22a43c4842c4e268e826b7265b7339e1"
+  }
+}

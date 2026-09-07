@@ -1,0 +1,138 @@
+{
+  "schema": "castreader.quickread-disconnect-window.v1",
+  "newFixedDisconnectRecords": [
+    {
+      "region": "us",
+      "timestampUTC": "2026-09-07T03:46:40+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "staticCodeMatch": "request_disconnected"
+    },
+    {
+      "region": "cn",
+      "timestampUTC": "2026-09-07T03:09:52.512816+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "staticCodeMatch": "request_disconnected"
+    }
+  ],
+  "actualHttpStatusesAvailable": false,
+  "callerIntentOrInitialDisconnectCauseKnown": false,
+  "generationFaultEstablished": false,
+  "unchangedRuntimeIdentities": {
+    "us": {
+      "current": {
+        "pid": 543663,
+        "startTicks": "182086288",
+        "cwd": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+        "serverSourceSha256": "d7ba0a21cafd3208fcb8025f5580580e38c8b2a300a5169e4f54bb8306e43c8f",
+        "requestLifecycleSourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+      },
+      "unchangedFromPriorVerifiedIdentity": true,
+      "releaseEvidence": {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/us-candidate-runtime-preflight.json",
+        "sha256": "28e5ddf41116fc3773c1c5f3fa1bd04af78a38f064f64b31dca5c4cd67c25e7c"
+      },
+      "localLifecycleSource": {
+        "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-quickread-cancellation-recovery-20260905/scripts/video-pipeline/server/request-lifecycle.mjs",
+        "sha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+      }
+    },
+    "cn": {
+      "current": {
+        "pid": 1608646,
+        "startTicks": "245729048",
+        "cwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+        "serverSourceSha256": "b155806c93c4b098bdc3f6a44ddd2d596d6a7bed5be776af171b4426197ce0b0",
+        "requestLifecycleSourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+      },
+      "unchangedFromPriorVerifiedIdentity": true,
+      "releaseEvidence": {
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cn-candidate-runtime-preflight.json",
+        "sha256": "d996a302568d74be3f683e0817f3c1191463afac91e2d12e1ff0635dee71f1ef"
+      },
+      "localLifecycleSource": {
+        "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-quickread-cancellation-recovery-20260905/scripts/video-pipeline/server/request-lifecycle.mjs",
+        "sha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+      }
+    }
+  },
+  "knownSourceBehavior": "The bound request-lifecycle source signals request_disconnected on request abort or response close before completion; ordinary request close is excluded.",
+  "scope": "These records demonstrate detected disconnected requests; do not turn them into HTTP502, model/LLM failure or intentional user cancellation.",
+  "persistedJobCohorts": {
+    "us": {
+      "directory": "/root/.url-video-agent/jobs/quickread-state",
+      "filesAtRead": 478,
+      "parseFailures": 1,
+      "parseFailuresModifiedInsideWindow": 0,
+      "jobsWithExplicitCreationTimeInWindow": 0,
+      "jobsWithExplicitCreationTimeInIncrementalWindow": 0,
+      "jobsMissingExplicitCreationTime": 477,
+      "outcomeCohort": "Current state of files modified inside the window, not all HTTP requests or newly created jobs.",
+      "filesModifiedInWindow": 102,
+      "createdJobsUpdatedAfterCutoffExcludedFromOutcome": 0,
+      "status": {
+        "streaming": 102
+      },
+      "streamStateStatus": {
+        "ready": 102
+      },
+      "withAtLeastBlock0": 102,
+      "allServerBlocksGenerated": 87,
+      "partialButReady": 15,
+      "sectionTotalPairs": {
+        "2/2": 18,
+        "3/3": 21,
+        "1/1": 12,
+        "4/4": 26,
+        "5/5": 6,
+        "1/4": 4,
+        "1/3": 7,
+        "9/9": 1,
+        "6/6": 2,
+        "3/5": 1,
+        "1/2": 2,
+        "3/4": 1,
+        "7/7": 1
+      },
+      "nextIndexConsistentWithStoredSections": 102
+    },
+    "cn": {
+      "directory": "/var/lib/castreader-quickread-cn/.url-video-agent/jobs/quickread-state",
+      "filesAtRead": 35,
+      "parseFailures": 0,
+      "parseFailuresModifiedInsideWindow": 0,
+      "jobsWithExplicitCreationTimeInWindow": 0,
+      "jobsWithExplicitCreationTimeInIncrementalWindow": 0,
+      "jobsMissingExplicitCreationTime": 35,
+      "outcomeCohort": "Current state of files modified inside the window, not all HTTP requests or newly created jobs.",
+      "filesModifiedInWindow": 15,
+      "createdJobsUpdatedAfterCutoffExcludedFromOutcome": 0,
+      "status": {
+        "streaming": 15
+      },
+      "streamStateStatus": {
+        "ready": 15
+      },
+      "withAtLeastBlock0": 15,
+      "allServerBlocksGenerated": 14,
+      "partialButReady": 1,
+      "sectionTotalPairs": {
+        "2/2": 9,
+        "3/3": 5,
+        "1/2": 1
+      },
+      "nextIndexConsistentWithStoredSections": 15
+    }
+  },
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/us-backend-supply.json",
+      "sha256": "1f4ddf50ef2a757931f4bc73f6b47a6ffeb6c9b6f912f5a29d16be3b373a2c4d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0355Z/backend-supply/cn-backend-supply.json",
+      "sha256": "5b083c2b65fb886182c4ac1acee5e000e24c08deb5a936c37fcf4ea875b646a1"
+    }
+  ]
+}
