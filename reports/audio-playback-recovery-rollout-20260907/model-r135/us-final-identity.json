@@ -1,0 +1,78 @@
+{
+  "coverage": {
+    "complete": true
+  },
+  "diagnosticFunctionExecuted": false,
+  "health": {
+    "active": {
+      "blue": 0,
+      "green": 0
+    },
+    "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+    "currentSlot": "green",
+    "drainTrusted": true,
+    "ok": true,
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 10
+  },
+  "identity": {
+    "currentEnabled": true,
+    "currentModel": {
+      "expectedVersion": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+      "fixedReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "internalPort": 18880,
+      "listenerProcessIds": [
+        507638
+      ],
+      "listenerProcesses": [
+        {
+          "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+          "exe": "/venv/main/bin/python3.12",
+          "parentPid": 262,
+          "pid": 507638,
+          "startTicks": "554888220"
+        }
+      ],
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+      "runtimeSourceBytes": 49675,
+      "runtimeSourceRelativePath": "api/src/inference/kokoro_v1.py",
+      "runtimeSourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+      "slot": "green",
+      "stateEnabled": true,
+      "stateReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+      "stateReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "supervisorCwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+      "supervisorPid": 507638,
+      "supervisorProcess": {
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+        "exe": "/venv/main/bin/python3.12",
+        "parentPid": 262,
+        "pid": 507638,
+        "startTicks": "554888220"
+      },
+      "supervisorProgram": "castreader-tts-r133-green",
+      "supervisorState": "RUNNING"
+    },
+    "currentReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+    "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+    "currentSlot": "green",
+    "listenerProcessIds": [
+      509279
+    ],
+    "processIds": [
+      509279
+    ],
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 10,
+    "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+    "sourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+  },
+  "limitations": [
+    "Point-in-time source, process and routing identity; existing continuous probes provide the interval evidence."
+  ],
+  "productionModified": false,
+  "readAtUtc": "2026-09-07T06:59:28.071711+00:00",
+  "readOnly": true,
+  "schema": "castreader.us-origin-proxy-identity.v1",
+  "synthesisStarted": false
+}

@@ -1,0 +1,37 @@
+{
+  "bucket": "castreader-tts-backups",
+  "created_at": "2026-09-07T06:34:59.324266+00:00",
+  "downloaded_bytes": 50125,
+  "expected_bytes": 50125,
+  "expected_files": 1,
+  "expected_objects": 1,
+  "files": [
+    {
+      "bytes": 50125,
+      "downloaded_bytes": 50125,
+      "name": "complete-production-delta.tar.gz",
+      "object_base": "runtime-releases/us/20260907-kokoro-japanese-numbers-r135/complete-production-delta.tar.gz",
+      "parts": [
+        {
+          "bytes": 50125,
+          "downloaded_bytes": 50125,
+          "object": "runtime-releases/us/20260907-kokoro-japanese-numbers-r135/complete-production-delta.tar.gz",
+          "offset": 0,
+          "readback_sha256": "679a42954fcfd269d8389fa0d1ac4a52226cfeac3f7907e02c94bf333d515130",
+          "sha256": "679a42954fcfd269d8389fa0d1ac4a52226cfeac3f7907e02c94bf333d515130",
+          "verified": true
+        }
+      ],
+      "readback_sha256": "679a42954fcfd269d8389fa0d1ac4a52226cfeac3f7907e02c94bf333d515130",
+      "sha256": "679a42954fcfd269d8389fa0d1ac4a52226cfeac3f7907e02c94bf333d515130",
+      "verified": true
+    }
+  ],
+  "plan_sha256": "e8382cbd3196a44b5999f85a2766e952dfb4b5d0dc9ad338ebdc62554b2a8510",
+  "project_ref": "zqxgmqygirtpttnrvjpf",
+  "public": false,
+  "schema": "castreader.backup-readback.v1",
+  "verified": true,
+  "verified_files": 1,
+  "verified_objects": 1
+}

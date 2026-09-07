@@ -1,0 +1,21 @@
+{
+  "candidateProcess": {
+    "argvSha256": "de79f925fbb8893330c1530f251bf3cb346e93da599f5f5aa066b4ec97fa8bff",
+    "cwd": "/root/autodl-tmp/castreader-runtime/releases/20260907-kokoro-japanese-numbers-cn-r135",
+    "exe": "/root/miniconda3/bin/python3.12",
+    "pid": 334125,
+    "startTicks": "2046862145"
+  },
+  "candidateTreeSha256": "fde21dcd2e0c264302b4d016314cfb177e8b33db26aa761bc56b0b18b9dfbfef",
+  "productionModified": false,
+  "protectedProcessesUnchanged": true,
+  "verified": true,
+  "watchdogProcess": {
+    "argvSha256": "a930ee98594fd36b049aa980809700d89dc132b722a9d442527518f35a08dc42",
+    "cwd": "/root/autodl-tmp/castreader-runtime/releases/20260907-kokoro-japanese-numbers-cn-r135",
+    "exe": "/usr/bin/bash",
+    "pid": 334122,
+    "startTicks": "2046862144"
+  },
+  "wrapperSha256": "2cc84195d7145c63faabd64145cc3ae9516091dd2f81ceba90b6454f35aa82ff"
+}

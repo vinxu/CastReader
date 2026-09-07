@@ -1,0 +1,38 @@
+{
+  "originalUnit": "[Unit]\nDescription=Private tunnel from China control plane to China Kokoro GPU\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=root\nExecStart=/usr/bin/ssh -NT -i /etc/castreader/cn-clone-tunnel -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/castreader/cn4090-known-hosts -p 12085 -L 127.0.0.1:18880:127.0.0.1:8880 root@connect.bjb1.seetacloud.com\nRestart=always\nRestartSec=3\nNoNewPrivileges=true\nPrivateTmp=true\nProtectHome=true\nProtectSystem=strict\n\n[Install]\nWantedBy=multi-user.target\n",
+  "protectedProcesses": {
+    "12692": {
+      "argvSha256": "a51f6afd063e470d668e5cf7072b4ecc760104164c496ad890b5ca09ee04c8ff",
+      "cwd": "/",
+      "pid": 12692,
+      "startTicks": "87123"
+    },
+    "1608646": {
+      "argvSha256": "381a0fb50d824976ffa985355aa334a77646cf8e6ad69459885190a0cbb30523",
+      "cwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+      "pid": 1608646,
+      "startTicks": "245729048"
+    },
+    "1630406": {
+      "argvSha256": "1eca2ed4f658f4b549d8ec4494129435ba7759abb52fb42c82e9849bd5c69557",
+      "cwd": "/opt/castreader/release-20260906014729",
+      "pid": 1630406,
+      "startTicks": "246101088"
+    },
+    "2090236": {
+      "argvSha256": "84a05404a60352c4a6bebe21498d62c0ae811de65a4424701dfc67c7bcbb48be",
+      "cwd": "/",
+      "pid": 2090236,
+      "startTicks": "155500308"
+    }
+  },
+  "tunnel": {
+    "argvSha256": "7ebb5f430a15b9fa56e0b5cc5fd4379a30c58f91970ec9ef6ddfc28656857ea6",
+    "cwd": "/",
+    "pid": 1029281,
+    "startTicks": "231941478"
+  },
+  "tunnelTargetPort": 8880,
+  "unitSha256": "aa79cd284aa13abe8da54bc7cf0f20c64ff9c66f2cd2acb456b022080b9588a2",
+  "verified": true
+}

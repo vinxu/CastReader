@@ -1,0 +1,68 @@
+{
+  "candidate": {
+    "candidateTreeSha256": "6691592d1abd618c43e4cf0d81c9494a39cf8858319092c09146c085f59f51c7",
+    "files": 779,
+    "installReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+    "process": {
+      "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+      "pid": 507638,
+      "startTicks": "554888220"
+    },
+    "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+    "releasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+    "sourceCommit": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+    "synthesisStarted": false,
+    "treeStatSha256": "6b4716b4faeead9394b62fcde3884e3f4baf4bd7a6c03941d21d841ad6db2570"
+  },
+  "expectedOldState": {
+    "bootId": "6aa7a9945aa341ff8926bfe66877cb79",
+    "cleanShutdown": false,
+    "currentSlot": "blue",
+    "lastOperationId": "r135-disable-old-green",
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 7,
+    "schema": "castreader.us-tts-origin-proxy-state.v1",
+    "slots": {
+      "blue": {
+        "enabled": true,
+        "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+        "releaseId": "20260907-kokoro-silent-separators-us-r134"
+      },
+      "green": {
+        "enabled": false,
+        "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+        "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+      }
+    },
+    "updatedAt": "2026-09-07T06:32:13.703542+00:00"
+  },
+  "operationTimeUTC": "2026-09-07T06:35:37.117002Z",
+  "payloadSha256": "a53c532880c81e00526a8e7d85330087717eab0b2834795364f903f6816df6b9",
+  "proposedState": {
+    "bootId": "6aa7a9945aa341ff8926bfe66877cb79",
+    "cleanShutdown": false,
+    "currentSlot": "blue",
+    "lastOperationId": "r135-registry-890a8fd8361ba7fcc81a",
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 8,
+    "schema": "castreader.us-tts-origin-proxy-state.v1",
+    "slots": {
+      "blue": {
+        "enabled": true,
+        "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+        "releaseId": "20260907-kokoro-silent-separators-us-r134"
+      },
+      "green": {
+        "enabled": false,
+        "receiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+        "releaseId": "20260907-kokoro-japanese-numbers-us-r135"
+      }
+    },
+    "updatedAt": "2026-09-07T06:35:37.117002Z"
+  },
+  "readOnly": true,
+  "schema": "castreader.us-origin-registry-plan.v1",
+  "stateUpdatedAtSemantics": "Frozen operator plan time, retained unchanged by apply.",
+  "synthesisStarted": false,
+  "verified": true
+}

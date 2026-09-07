@@ -1,0 +1,104 @@
+{
+  "candidateTreeSha256": "6691592d1abd618c43e4cf0d81c9494a39cf8858319092c09146c085f59f51c7",
+  "expected": {
+    "modelProcesses": {
+      "blue": {
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "pid": 4137311,
+        "startTicks": "550555282"
+      },
+      "clone": {
+        "cwd": "/workspace/castreader-clone",
+        "pid": 568834,
+        "startTicks": "524136804"
+      },
+      "green": {
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+        "pid": 507638,
+        "startTicks": "554888220"
+      },
+      "nari": {
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "pid": 4136837,
+        "startTicks": "519185503"
+      }
+    },
+    "modelWrapperSha256": "ab3735576d9d98b15100909a0ed4d6072090ee6d7a1b697b8217690dce5a486e",
+    "proxyCommandSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f",
+    "proxyConfigSha256": "70817413c6246424d2fcf0551bb7102cc23822475c4d95baabbedd8581a74c5f",
+    "proxyProcess": {
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+      "pid": 4140383,
+      "startTicks": "550575438"
+    },
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "proxySourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
+    "routing": {
+      "currentSlot": "blue",
+      "revision": 7,
+      "slots": {
+        "blue": {
+          "enabled": true,
+          "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134"
+        },
+        "green": {
+          "enabled": false,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      }
+    },
+    "state": {
+      "bootId": "6aa7a9945aa341ff8926bfe66877cb79",
+      "cleanShutdown": false,
+      "currentSlot": "blue",
+      "lastOperationId": "r135-disable-old-green",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 7,
+      "schema": "castreader.us-tts-origin-proxy-state.v1",
+      "slots": {
+        "blue": {
+          "enabled": true,
+          "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134"
+        },
+        "green": {
+          "enabled": false,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      },
+      "updatedAt": "2026-09-07T06:32:13.703542+00:00"
+    }
+  },
+  "expectedOldState": {
+    "bootId": "6aa7a9945aa341ff8926bfe66877cb79",
+    "cleanShutdown": false,
+    "currentSlot": "blue",
+    "lastOperationId": "r135-disable-old-green",
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 7,
+    "schema": "castreader.us-tts-origin-proxy-state.v1",
+    "slots": {
+      "blue": {
+        "enabled": true,
+        "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+        "releaseId": "20260907-kokoro-silent-separators-us-r134"
+      },
+      "green": {
+        "enabled": false,
+        "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+        "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+      }
+    },
+    "updatedAt": "2026-09-07T06:32:13.703542+00:00"
+  },
+  "hostSourceSha256": "1e6bc29e0385c179806bb6cb062ed4f20203b4fe8d3118343eb8f0fd3818437d",
+  "installReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+  "modelSourceCommit": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+  "operationId": "r135-registry-890a8fd8361ba7fcc81a",
+  "operationTimeUTC": "2026-09-07T06:35:37.117002Z",
+  "reviewedPayloadSha256": "a53c532880c81e00526a8e7d85330087717eab0b2834795364f903f6816df6b9",
+  "utilitySourceSha256": "d63787355c0794e8ab4c6608560275f5bf73055df7fbc86ac4a2642b4915c741"
+}

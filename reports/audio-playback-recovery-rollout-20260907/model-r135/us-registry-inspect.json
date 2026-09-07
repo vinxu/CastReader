@@ -1,0 +1,77 @@
+{
+  "baseline": {
+    "modelProcesses": {
+      "blue": {
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "pid": 4137311,
+        "startTicks": "550555282"
+      },
+      "clone": {
+        "cwd": "/workspace/castreader-clone",
+        "pid": 568834,
+        "startTicks": "524136804"
+      },
+      "green": {
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+        "pid": 507638,
+        "startTicks": "554888220"
+      },
+      "nari": {
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "pid": 4136837,
+        "startTicks": "519185503"
+      }
+    },
+    "modelWrapperSha256": "ab3735576d9d98b15100909a0ed4d6072090ee6d7a1b697b8217690dce5a486e",
+    "proxyCommandSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f",
+    "proxyConfigSha256": "70817413c6246424d2fcf0551bb7102cc23822475c4d95baabbedd8581a74c5f",
+    "proxyProcess": {
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+      "pid": 4140383,
+      "startTicks": "550575438"
+    },
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "proxySourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
+    "routing": {
+      "currentSlot": "blue",
+      "revision": 7,
+      "slots": {
+        "blue": {
+          "enabled": true,
+          "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134"
+        },
+        "green": {
+          "enabled": false,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      }
+    },
+    "state": {
+      "bootId": "6aa7a9945aa341ff8926bfe66877cb79",
+      "cleanShutdown": false,
+      "currentSlot": "blue",
+      "lastOperationId": "r135-disable-old-green",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 7,
+      "schema": "castreader.us-tts-origin-proxy-state.v1",
+      "slots": {
+        "blue": {
+          "enabled": true,
+          "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134"
+        },
+        "green": {
+          "enabled": false,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      },
+      "updatedAt": "2026-09-07T06:32:13.703542+00:00"
+    }
+  },
+  "readOnly": true,
+  "schema": "castreader.us-origin-registry-inspect.v1",
+  "synthesisStarted": false
+}

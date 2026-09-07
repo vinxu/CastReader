@@ -1,0 +1,60 @@
+{
+  "deploymentEvidence": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-final-identity.json",
+      "sha256": "969b91ecd2d1c42ed5165521f6f63ab722b91d2f64b48a9ceb64e04bda372407"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-route.json",
+      "sha256": "e3d26cafe37920578706ba248a9dcd5e9d707d887813306585fadfd24750d037"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-registry-apply.json",
+      "sha256": "99b485d50fad3eeb23ba440fab07ec9166b667a2b97304e0a130827aff631836"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-live-audio-validation.json",
+      "sha256": "ad75672d75e63f523ce78f63f823149c7adcb626fcb6ef7cd498b99ea0355bd4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-public-audio-validation.json",
+      "sha256": "2b44f3c67e245dfa51d8077e3082ea2ee852ba9beebd6af3e008289b1eb8bd58"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-private-backup.json",
+      "sha256": "44130b1894b29df2633e3e6988cef15ecbd7baa6104d5b4ead49ea5587f6534b"
+    }
+  ],
+  "expected": {
+    "currentReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+    "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+    "currentSlot": "green",
+    "modelProcess": {
+      "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+      "pid": 507638,
+      "startTicks": "554888220"
+    },
+    "modelSourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+    "process": {
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+      "pid": 509279,
+      "startTicks": "554914253"
+    },
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 10,
+    "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
+    "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+    "sourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+  },
+  "modelExpectation": {
+    "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+    "releasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+    "slot": "green",
+    "sourceRelativePath": "api/src/inference/kokoro_v1.py",
+    "sourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+    "version": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e"
+  },
+  "schema": "castreader.us-proxy-monitor-identity-receipt.v1",
+  "verified": true,
+  "verifiedAtUTC": "2026-09-07T06:59:28.071711+00:00"
+}

@@ -1,0 +1,17 @@
+{
+  "readOnly": true,
+  "rawContentExported": false,
+  "release": "20260907-kokoro-japanese-numbers-us-r135",
+  "startUTC": "2026-09-07T06:37:55.624577+00:00",
+  "capturedAtUTC": "2026-09-07T07:05:16.273802+00:00",
+  "fixedStageCounts": {
+    "japanese_numeric_text_recovered": 9,
+    "word_alignment_unavailable": 8,
+    "english_g2p_recovered": 1
+  },
+  "failureEvents": [],
+  "bytesScanned": 4208837,
+  "unclassifiedStageCounts": {},
+  "successLedgerComplete": false,
+  "countsMayIncludeReleaseValidation": true
+}

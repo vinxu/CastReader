@@ -1,0 +1,152 @@
+{
+  "schema": "castreader.backend-r135-deployment-observation.v1",
+  "scope": "中国区与国际区后端 Kokoro、克隆及 QuickRead；不扩展客户端",
+  "observedThroughUTC": "2026-09-07T07:05:17.342249+00:00",
+  "backendVerdict": "存在异常（历史故障及已恢复维护故障保留；R135 观察尚短）",
+  "fixedWindow": {
+    "startUTC": "2026-09-06T18:37:52.522573Z",
+    "endUTC": "2026-09-07T18:37:52.522573Z",
+    "restartedOrExtended": false,
+    "mixedVersions": true,
+    "singleVersion24hCertified": false
+  },
+  "implemented": {
+    "sourceCommit": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+    "deploymentToolsCommit": "3662d47",
+    "japaneseLongNumbersLeadingZerosUnicodeDigits": "fixed_and_deployed_both_regions",
+    "englishFrontendAndSilentSeparatorRecovery": "prior_US_fixes_deployed_to_CN",
+    "clientReleaseRequired": false,
+    "dependencyUpgrade": false,
+    "newPlaybackGate": false
+  },
+  "rootCause": {
+    "historicalApplicationRequestKey": "db01858dc3443217d896",
+    "upstreamAttempts": 3,
+    "modelFrontendFailures": 6,
+    "applicationElapsedMs": 3679,
+    "mechanism": "Installed num2kana returns an English error string for >9 digits; the embedded 10 reaches cutlet pure-digit assertion before acoustic inference. Repeating the unchanged input repeats the failure.",
+    "sameDependencyReproducedBothRegions": true,
+    "historicalUserTextOrExactNumberRead": false
+  },
+  "verification": {
+    "frontendAndPlaybackTestsPassed": 28,
+    "registryTestsPassed": 19,
+    "publicAudioCasesPassed": 12,
+    "originalDisplayTextPreserved": true,
+    "fullNumericPhonemesAndSuffixVerified": true
+  },
+  "currentDeployments": {
+    "global": {
+      "release": "20260907-kokoro-japanese-numbers-us-r135",
+      "activeFromUTC": "2026-09-07T06:37:55.624577Z",
+      "proxyRevision": 10,
+      "slot": "green",
+      "identityReceipt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-final-identity.json",
+      "monitorReceipt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/proxy-monitor-identity.json"
+    },
+    "cn": {
+      "release": "20260907-kokoro-japanese-numbers-cn-r135",
+      "primaryAudioValidatedUTC": "2026-09-07T06:55:56.613912Z",
+      "port": 8880,
+      "identityReceipt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-final-identity.json",
+      "tunnelPermissionsChanged": false,
+      "temporaryStandbyRetired": true
+    }
+  },
+  "maintenance": {
+    "usProxyStopToReadyUpperBoundSeconds": 6.07,
+    "cnDeniedStandbyRoute": {
+      "attemptedAtUTC": "2026-09-07T06:50:41.937522Z",
+      "rollbackStartedAtUTC": "2026-09-07T06:51:17.433232Z",
+      "cause": "Existing SSH forwarding permission rejects remote 18880. Original authorized 8880 restored; denied deployment path disabled.",
+      "permissionsExpanded": false
+    },
+    "cnPrimaryRestart": {
+      "startedAtUTC": "2026-09-07T06:54:57.853833Z",
+      "validatedAtUTC": "2026-09-07T06:55:56.613912Z",
+      "intervalIsExactDowntime": false,
+      "http502Events": [
+        {
+          "atUTC": "2026-09-07T06:55:29+00:00",
+          "status": 502,
+          "lineFingerprint": "9876ec306ed3f6c73556"
+        },
+        {
+          "atUTC": "2026-09-07T06:55:32+00:00",
+          "status": 502,
+          "lineFingerprint": "9d9c91520726039165db"
+        }
+      ],
+      "probeFailedAtUTC": "2026-09-07T06:55:32.262Z",
+      "probeRecoveredAtUTC": "2026-09-07T07:00:37.319Z",
+      "httpEventsExactlyJoinedToProbe": false,
+      "usersAffectedKnown": false,
+      "publishAvailabilityGapResolved": false
+    }
+  },
+  "backendServiceVerdicts": [
+    {
+      "region": "global",
+      "service": "kokoro_tts",
+      "backendVerdict": "短窗供给正常；全窗历史故障保留",
+      "evidence": "R135 代理独立身份确认后的 35 个完整响应均 200、attempt1，无新增模型 failureEvents。全固定窗 Global 核心 5xx 仍为已知 1 条。"
+    },
+    {
+      "region": "cn",
+      "service": "kokoro_tts",
+      "backendVerdict": "维护故障已恢复；稳定性验收未完成",
+      "evidence": "维护期间 2 条 HTTP502、1 轮既有探针失败；07:00 探针恢复。主实例验证后已解析 18 条200、0条5xx；全窗143/144探针健康。"
+    },
+    {
+      "region": "global",
+      "service": "clone_tts",
+      "backendVerdict": "已观测生成供给符合预期；完整交付证据不足",
+      "evidence": "增量28条captioned完成，无新增失败；任务完成并不等同用户听完。"
+    },
+    {
+      "region": "cn",
+      "service": "clone_tts",
+      "backendVerdict": "证据不足",
+      "evidence": "进程健康，启动以来4条完成；本轮没有新生产任务可验证完整交付。"
+    },
+    {
+      "region": "global",
+      "service": "quickread",
+      "backendVerdict": "证据不足",
+      "evidence": "未见新增固定生成错误；历史2条request_disconnected与HTTP交付缺口保留。"
+    },
+    {
+      "region": "cn",
+      "service": "quickread",
+      "backendVerdict": "证据不足",
+      "evidence": "未见新增固定生成错误；历史1条request_disconnected与HTTP交付缺口保留。"
+    }
+  ],
+  "cumulativeSnapshot": {
+    "queryEndUTC": "2026-09-07T07:01:50.630643Z",
+    "globalCore5xx": 1,
+    "direct200": 7816,
+    "directKnown400": 1,
+    "direct5xx": 0,
+    "directKnownNoResponse": 12,
+    "usExistingProbeHealthy": 143,
+    "usExistingProbeTotal": 143,
+    "cnExistingProbeHealthy": 143,
+    "cnExistingProbeTotal": 144,
+    "probeRegionMismatch": 0
+  },
+  "unresolved": [
+    "Historical Global 28-second 504 per-stage attribution and sustained recovery",
+    "CN slow multi-request probe per-stage attribution",
+    "QuickRead disconnect causes and complete HTTP delivery ledger",
+    "CN clone current traffic coverage",
+    "CN release availability and preflight gap"
+  ],
+  "limitations": [
+    "No complete user playback certification from HTTP200 or ready blocks.",
+    "Model recovery diagnostics include release validation, not a complete HTTP ledger.",
+    "Pre-R135 proxy transition is archived with identity mismatch/coverage limits, not forced into successful coverage.",
+    "No global guarantee that every project route is free of cross-border hops; this rollout and private backup stayed in their respective regions."
+  ],
+  "evidenceDirectory": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation"
+}

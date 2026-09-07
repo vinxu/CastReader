@@ -1,0 +1,13 @@
+{
+  "anonymousReadStatus": 403,
+  "bucket": "castreader-voice-1323065328",
+  "bytes": 31925,
+  "key": "runtime-backups/20260907/kokoro-r135-cn/complete-production-delta.tar.gz",
+  "public": false,
+  "readback_sha256": "83b7207b581df4cc870f527e8ae9e23a31915e48b493470a180a77ea2bd939c5",
+  "region": "ap-shanghai",
+  "sha256": "83b7207b581df4cc870f527e8ae9e23a31915e48b493470a180a77ea2bd939c5",
+  "transferPath": "China GPU -> China controller -> Shanghai COS",
+  "verified": true,
+  "verifiedAtUTC": "2026-09-07T06:47:06.457503+00:00"
+}

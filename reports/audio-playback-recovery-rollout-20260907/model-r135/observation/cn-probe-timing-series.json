@@ -1,0 +1,69 @@
+{
+  "schema": "castreader.cn-existing-probe-timing-series.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "startUTC": "2026-09-07T06:45:00Z",
+  "endUTCExclusive": "2026-09-07T07:06:00Z",
+  "capturedAtUTC": "2026-09-07T07:05:13.819018Z",
+  "rows": [
+    {
+      "observedAtUTC": "2026-09-07T06:45:00.911000Z",
+      "elapsedMs": 2373,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "b7f9a4a533307197df047a84e03920da26fcde6bd4e8f71253122592e1f05f60",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T06:50:20.153000Z",
+      "elapsedMs": 3632,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "0fc8528eacba8094d635f19db31240ef1439f39a2b24f2f1a4f9a2d6b2e1a9f7",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T06:55:32.262000Z",
+      "elapsedMs": 5235,
+      "supplyOk": false,
+      "completeAudio": false,
+      "segmentCount": 0,
+      "sourceSha256": "a631ad184523e48372c6d26e200304da96be892b55fd30201323498eb816d866",
+      "segmentAttempts": [],
+      "regionMismatch": false
+    },
+    {
+      "observedAtUTC": "2026-09-07T07:00:37.319000Z",
+      "elapsedMs": 3738,
+      "supplyOk": true,
+      "completeAudio": true,
+      "segmentCount": 3,
+      "sourceSha256": "8126a4617723c0c8aca0effeea245fb0cf63266004baf5392fb1145ee706884a",
+      "segmentAttempts": [
+        1,
+        1,
+        1
+      ],
+      "regionMismatch": false
+    }
+  ],
+  "limitations": [
+    "Each duration is a whole synthetic continuity probe, including multiple requests/contracts and local checks; it is not real-user TTFB or one model request.",
+    "Uses already persisted results only; no probes were started."
+  ],
+  "collectorHelperSha256": "be7224c90b9e824931089892a76131782807730d204ed4241effccba40ebacb8"
+}

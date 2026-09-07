@@ -1,0 +1,79 @@
+{
+  "audioRetained": false,
+  "candidateProcess": {
+    "argvSha256": "de79f925fbb8893330c1530f251bf3cb346e93da599f5f5aa066b4ec97fa8bff",
+    "cwd": "/root/autodl-tmp/castreader-runtime/releases/20260907-kokoro-japanese-numbers-cn-r135",
+    "exe": "/root/miniconda3/bin/python3.12",
+    "pid": 334125,
+    "startTicks": "2046862145"
+  },
+  "candidateTreeSha256": "fde21dcd2e0c264302b4d016314cfb177e8b33db26aa761bc56b0b18b9dfbfef",
+  "cases": [
+    {
+      "audioBytes": 116780,
+      "case": "ja-long",
+      "decodedSamples": 175104,
+      "elapsedSeconds": 0.538,
+      "remainingCharacters": 0,
+      "requestKey": "af6f58dc7ec84101fafb",
+      "status": 200
+    },
+    {
+      "audioBytes": 53420,
+      "case": "ja-zero",
+      "decodedSamples": 80064,
+      "elapsedSeconds": 0.276,
+      "remainingCharacters": 0,
+      "requestKey": "6b310f48d441d985b311",
+      "status": 200
+    },
+    {
+      "audioBytes": 81452,
+      "case": "ja-unicode",
+      "decodedSamples": 122112,
+      "elapsedSeconds": 0.297,
+      "remainingCharacters": 0,
+      "requestKey": "ea81b4ad8ae86141d68a",
+      "status": 200
+    },
+    {
+      "audioBytes": 68780,
+      "case": "en-zero",
+      "decodedSamples": 103104,
+      "elapsedSeconds": 0.879,
+      "remainingCharacters": 0,
+      "requestKey": "babca0667d2929d9e0d6",
+      "status": 200
+    },
+    {
+      "audioBytes": 79148,
+      "case": "en-unknown",
+      "decodedSamples": 118656,
+      "elapsedSeconds": 0.864,
+      "remainingCharacters": 0,
+      "requestKey": "9b9c6e2d6180e534822f",
+      "status": 200
+    },
+    {
+      "audioBytes": 49964,
+      "case": "silent-mixed",
+      "decodedSamples": 74880,
+      "elapsedSeconds": 0.723,
+      "remainingCharacters": 0,
+      "requestKey": "446931739d124912944a",
+      "status": 200
+    },
+    {
+      "audioBytes": 71852,
+      "case": "zh-control",
+      "decodedSamples": 107712,
+      "elapsedSeconds": 1.238,
+      "remainingCharacters": 0,
+      "requestKey": "89fb7fbc46f424072392",
+      "status": 200
+    }
+  ],
+  "productionModified": false,
+  "verified": true,
+  "verifiedAtUTC": "2026-09-07T06:44:00.541397+00:00"
+}

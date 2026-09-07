@@ -1,0 +1,65 @@
+{
+  "audioRetained": false,
+  "candidateTreeSha256": "6691592d1abd618c43e4cf0d81c9494a39cf8858319092c09146c085f59f51c7",
+  "cases": [
+    {
+      "audioBytes": 116781,
+      "case": "ja-long",
+      "decodedSamples": 175104,
+      "elapsedSeconds": 0.278,
+      "remainingCharacters": 0,
+      "requestKey": "9a455b8a05723022a75f",
+      "status": 200
+    },
+    {
+      "audioBytes": 53421,
+      "case": "ja-leading-zero",
+      "decodedSamples": 80064,
+      "elapsedSeconds": 0.161,
+      "remainingCharacters": 0,
+      "requestKey": "4b3e90eb86c776732eaa",
+      "status": 200
+    },
+    {
+      "audioBytes": 81453,
+      "case": "ja-unicode",
+      "decodedSamples": 122112,
+      "elapsedSeconds": 0.157,
+      "remainingCharacters": 0,
+      "requestKey": "ae8a9eeeb2b6690de4ef",
+      "status": 200
+    },
+    {
+      "audioBytes": 102957,
+      "case": "ja-normal",
+      "decodedSamples": 154368,
+      "elapsedSeconds": 0.173,
+      "remainingCharacters": 0,
+      "requestKey": "0763a0b78ac21b9df709",
+      "status": 200
+    },
+    {
+      "audioBytes": 68781,
+      "case": "en-zero",
+      "decodedSamples": 103104,
+      "elapsedSeconds": 0.464,
+      "remainingCharacters": 0,
+      "requestKey": "5fe7d6ae8a0d49362abc",
+      "status": 200
+    },
+    {
+      "audioBytes": 71853,
+      "case": "zh-control",
+      "decodedSamples": 107712,
+      "elapsedSeconds": 0.726,
+      "remainingCharacters": 0,
+      "requestKey": "b3a97be1752994c1c5e2",
+      "status": 200
+    }
+  ],
+  "port": 18880,
+  "protectedProcessesUnchanged": true,
+  "sourceCommit": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+  "verified": true,
+  "verifiedAtUTC": "2026-09-07T06:33:22.773110+00:00"
+}

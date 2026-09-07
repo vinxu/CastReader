@@ -1,0 +1,73 @@
+{
+  "audioProbe": {
+    "audioBytes": 47277,
+    "decodedSamples": 70848,
+    "requestId": "ops-stable-proxy-route-f5014ebd74b6420cb2a35e1d38d05dab",
+    "timestamps": 6
+  },
+  "candidateTreeSha256": "6691592d1abd618c43e4cf0d81c9494a39cf8858319092c09146c085f59f51c7",
+  "inflightRequestsDrainedNaturally": true,
+  "processes": {
+    "blue": {
+      "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+      "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "exe": "/venv/main/bin/python3.12",
+      "pid": 4137311,
+      "startTicks": "550555282"
+    },
+    "clone": {
+      "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e",
+      "cwd": "/workspace/castreader-clone",
+      "exe": "/usr/bin/python3.12",
+      "pid": 568834,
+      "startTicks": "524136804"
+    },
+    "green": {
+      "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b",
+      "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+      "exe": "/venv/main/bin/python3.12",
+      "pid": 507638,
+      "startTicks": "554888220"
+    },
+    "nari": {
+      "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2",
+      "cwd": "/workspace/nari-qwen3-tts-clean",
+      "exe": "/usr/bin/python3.12",
+      "pid": 4136837,
+      "startTicks": "519185503"
+    },
+    "proxy": {
+      "argvSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f",
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+      "exe": "/venv/main/bin/python3.12",
+      "pid": 509279,
+      "startTicks": "554914253"
+    }
+  },
+  "rollbackSlot": "blue",
+  "routedAtUTC": "2026-09-07T06:37:55.624577+00:00",
+  "sourceCommit": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+  "state": {
+    "bootId": "56d0a075dc8f4189b1390f0da55deaf9",
+    "cleanShutdown": false,
+    "currentSlot": "green",
+    "lastOperationId": "r135-route-validated-green",
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 10,
+    "schema": "castreader.us-tts-origin-proxy-state.v1",
+    "slots": {
+      "blue": {
+        "enabled": true,
+        "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+        "releaseId": "20260907-kokoro-silent-separators-us-r134"
+      },
+      "green": {
+        "enabled": true,
+        "receiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+        "releaseId": "20260907-kokoro-japanese-numbers-us-r135"
+      }
+    },
+    "updatedAt": "2026-09-07T06:37:55.622710+00:00"
+  },
+  "verified": true
+}

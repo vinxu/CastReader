@@ -15,6 +15,26 @@
       "operation": "R134_model_and_registry_live_verified",
       "proxyRestarted": true,
       "registryStopToReadyUpperBoundSeconds": 6.295
+    },
+    {
+      "atUTC": "2026-09-07T06:37:55.624577+00:00",
+      "evidence": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/us-route.json",
+      "operation": "R135_US_release",
+      "proxyRegistryRestartUpperBoundSeconds": 6.07
+    },
+    {
+      "atUTC": "2026-09-07T06:50:41.937522Z",
+      "evidence": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-tunnel-rollback-readback.json",
+      "noPermissionsChanged": true,
+      "operation": "CN_standby_tunnel_denied_and_rolled_back",
+      "recoveredAtUTC": "2026-09-07T06:51:17.433232Z"
+    },
+    {
+      "atUTC": "2026-09-07T06:54:57.853833Z",
+      "evidence": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/cn-primary-promote-direct.json",
+      "noForcedKill": true,
+      "operation": "R135_CN_existing_primary_watchdog_release",
+      "verifiedAtUTC": "2026-09-07T06:55:56.613912Z"
     }
   ],
   "policy": {
@@ -26,7 +46,7 @@
     "monitorExpectedCadenceSeconds": 300,
     "monitorMaxBoundaryLagSeconds": 900,
     "monitorMaxObservedGapSeconds": 900,
-    "observationReason": "Fixed 24h after complete final backend iteration including R134, public audio validation, independent runtime readback and same-region private backup. Earlier windows retained.",
+    "observationReason": "Original fixed 24h window retained through R135 iteration. Evaluate release segments separately; R135 has not received 24h observation. Do not restart/extend window or erase old failures.",
     "parentWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/acceptance-state.json",
     "requireAndroid145GatewaySample": true
   },
@@ -70,6 +90,34 @@
       "verified": true,
       "verifiedAtUtc": "2026-09-06T16:36:52.292087+00:00",
       "version": "us-tts-origin-proxy-20260907-v2"
+    },
+    {
+      "activationTimeSemantics": "Conservative first independent final identity confirmation after public complete-audio validation; route applied at 18:34:44Z",
+      "activeFromUtc": "2026-09-06T18:37:52.522573+00:00",
+      "component": "usKokoro",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "runtimeSourceRelativePath": "api/src/services/tts_service.py",
+      "runtimeSourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "supersededAtUtc": "2026-09-07T06:37:55.624577+00:00",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T18:37:52.522573+00:00",
+      "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
+    },
+    {
+      "activationTimeSemantics": "Final independently verified R134 routing and restarted v2 process; binary unchanged",
+      "activeFromUtc": "2026-09-06T18:37:52.522573+00:00",
+      "component": "usOriginProxy",
+      "currentReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+      "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
+      "currentSlot": "blue",
+      "routeRevision": 6,
+      "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+      "runtimeSourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
+      "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
+      "supersededAtUtc": "2026-09-07T06:37:55.624577+00:00",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T18:37:52.522573+00:00",
+      "version": "us-tts-origin-proxy-20260907-v2"
     }
   ],
   "requiredComponents": {
@@ -94,27 +142,27 @@
       "version": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5"
     },
     "usKokoro": {
-      "activationTimeSemantics": "Conservative first independent final identity confirmation after public complete-audio validation; route applied at 18:34:44Z",
-      "activeFromUtc": "2026-09-06T18:37:52.522573+00:00",
-      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
-      "runtimeSourceRelativePath": "api/src/services/tts_service.py",
-      "runtimeSourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "activationTimeSemantics": "R135 actual CAS route time; independent readback and public audio validation retained separately",
+      "activeFromUtc": "2026-09-07T06:37:55.624577+00:00",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+      "runtimeSourceRelativePath": "api/src/inference/kokoro_v1.py",
+      "runtimeSourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
       "verified": true,
-      "verifiedAtUtc": "2026-09-06T18:37:52.522573+00:00",
-      "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
+      "verifiedAtUtc": "2026-09-07T06:59:28.071711+00:00",
+      "version": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e"
     },
     "usOriginProxy": {
-      "activationTimeSemantics": "Final independently verified R134 routing and restarted v2 process; binary unchanged",
-      "activeFromUtc": "2026-09-06T18:37:52.522573+00:00",
-      "currentReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
-      "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
-      "currentSlot": "blue",
-      "routeRevision": 6,
+      "activationTimeSemantics": "Unchanged v2 binary; inactive green registered, enabled, and routed with R134 blue retained",
+      "activeFromUtc": "2026-09-07T06:37:55.624577+00:00",
+      "currentReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+      "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "currentSlot": "green",
+      "routeRevision": 10,
       "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
       "runtimeSourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
       "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
       "verified": true,
-      "verifiedAtUtc": "2026-09-06T18:37:52.522573+00:00",
+      "verifiedAtUtc": "2026-09-07T06:59:28.071711+00:00",
       "version": "us-tts-origin-proxy-20260907-v2"
     }
   },
