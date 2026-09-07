@@ -1,0 +1,92 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "observedAtUTC": "2026-09-07T19:35:22.119159+00:00",
+  "fixedWindow": {
+    "startUTC": "2026-09-06T18:37:52.522573+00:00",
+    "endUTCExclusive": "2026-09-07T18:37:52.522573+00:00"
+  },
+  "files": {
+    "/etc/caddy/Caddyfile": {
+      "bytes": 729,
+      "sha256": "243706a702274b86cea400b4ff0c627ddead335e2dfb457fe62303952b30bdd1"
+    },
+    "/opt/castreader-tts-gateway/gateway.mjs": {
+      "bytes": 37688,
+      "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+    }
+  },
+  "caddyRuntimeConfigSha256": "1c4424b147137c8f57a895e563a65cb769223b14eb93da278e867f3e32222448",
+  "directRoutes": [
+    {
+      "upstreams": [
+        "127.0.0.1:7778"
+      ],
+      "transport": {
+        "dial_timeout": 5000000000,
+        "protocol": "http",
+        "read_timeout": 125000000000,
+        "write_timeout": 125000000000
+      },
+      "flushInterval": null,
+      "streamTimeout": null
+    },
+    {
+      "upstreams": [
+        "127.0.0.1:7778"
+      ],
+      "transport": {},
+      "flushInterval": null,
+      "streamTimeout": null
+    }
+  ],
+  "httpServers": [
+    {
+      "name": "srv0",
+      "timeouts": {},
+      "accessLoggerConfigured": false
+    },
+    {
+      "name": "srv1",
+      "timeouts": {},
+      "accessLoggerConfigured": false
+    }
+  ],
+  "logWriters": [],
+  "units": {
+    "caddy": {
+      "MainPID": "4980",
+      "NRestarts": "0",
+      "ExecMainStartTimestamp": "Sat 2026-08-15 16:20:53 UTC",
+      "ActiveState": "active",
+      "SubState": "running"
+    },
+    "castreader-tts-gateway.service": {
+      "MainPID": "596392",
+      "NRestarts": "0",
+      "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+      "ActiveState": "active",
+      "SubState": "running"
+    }
+  },
+  "journal": {
+    "rowsRead": 91,
+    "parseErrors": 0,
+    "targetRecords": [],
+    "fixedErrorClassCounts": {
+      "non_json": 4
+    },
+    "withRequestObjectCounts": {
+      "False": 81,
+      "True": 6
+    }
+  },
+  "limitations": [
+    "Only existing logs and localhost configuration were read; no access logging was enabled.",
+    "Request keys exist only if the caller supplied a request ID that Caddy retained. Peer hashes are not account or user counts.",
+    "No text, credentials, raw identifiers, user agents or raw error messages exported."
+  ],
+  "collectorSha256": "6d6b8578494f4cc7785fecde167c5438a022423ab4fb6e03b95afc3a740b9fdb"
+}

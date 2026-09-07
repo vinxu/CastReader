@@ -1,0 +1,4240 @@
+{
+  "schema": "castreader.global-tts-disconnect-causal-review.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "incidentClosed": false,
+  "fixedWindow": {
+    "startInclusive": "2026-09-06T18:37:52.522573Z",
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "unit": "castreader-tts-gateway.service",
+    "maxRowsPerShard": 250000,
+    "maxTotalRows": 1000000,
+    "shardHoursPolicy": "3h before final3h, then1h"
+  },
+  "lastIncrement": {
+    "window": {
+      "endUTCExclusive": "2026-09-07T18:37:52.522573+00:00",
+      "productionActiveFromUTC": "2026-09-07T06:59:28.071711+00:00",
+      "startUTC": "2026-09-07T17:26:52.003000+00:00"
+    },
+    "count": 14
+  },
+  "recordedStatusCounts": {
+    "200": 21252,
+    "400": 1,
+    "no_response": 74
+  },
+  "noResponseCount": 74,
+  "elapsedMs": {
+    "count": 74,
+    "min": 27,
+    "median": 1548.0,
+    "max": 3609
+  },
+  "cohorts": [
+    {
+      "platform": "android",
+      "version": "1.0.43",
+      "recordedStatusCounts": {
+        "200": 222
+      },
+      "recordedTotal": 222,
+      "noResponsePercent": 0.0
+    },
+    {
+      "platform": "android",
+      "version": "1.0.45",
+      "recordedStatusCounts": {
+        "200": 7944,
+        "no_response": 1
+      },
+      "recordedTotal": 7945,
+      "noResponsePercent": 0.012586532410320957
+    },
+    {
+      "platform": "android",
+      "version": "1.0.46",
+      "recordedStatusCounts": {
+        "200": 3948,
+        "no_response": 70
+      },
+      "recordedTotal": 4018,
+      "noResponsePercent": 1.7421602787456445
+    },
+    {
+      "platform": "android",
+      "version": "1.0.47",
+      "recordedStatusCounts": {
+        "200": 103,
+        "no_response": 1
+      },
+      "recordedTotal": 104,
+      "noResponsePercent": 0.9615384615384616
+    },
+    {
+      "platform": "extension",
+      "version": "1.2.37",
+      "recordedStatusCounts": {
+        "200": 8978,
+        "no_response": 2
+      },
+      "recordedTotal": 8980,
+      "noResponsePercent": 0.022271714922048998
+    },
+    {
+      "platform": "other",
+      "version": "1.2.37",
+      "recordedStatusCounts": {
+        "200": 12
+      },
+      "recordedTotal": 12,
+      "noResponsePercent": 0.0
+    },
+    {
+      "platform": "other",
+      "version": "unknown",
+      "recordedStatusCounts": {
+        "200": 24
+      },
+      "recordedTotal": 24,
+      "noResponsePercent": 0.0
+    },
+    {
+      "platform": "unknown",
+      "version": "unknown",
+      "recordedStatusCounts": {
+        "200": 21,
+        "400": 1
+      },
+      "recordedTotal": 22,
+      "noResponsePercent": 0.0
+    }
+  ],
+  "proxy": {
+    "matchingEventCount": 529,
+    "uniqueRequestKeys": 74,
+    "receivedRequests": 75,
+    "stages": {
+      "request_received": 75,
+      "request_body_read": 75,
+      "flight_created": 75,
+      "upstream_connect_started": 75,
+      "upstream_connected": 75,
+      "upstream_cancelled": 73,
+      "request_finished": 75,
+      "upstream_headers": 2,
+      "upstream_first_body": 2,
+      "upstream_complete": 2
+    },
+    "outcomes": {
+      "cancelled": 73,
+      "complete": 2
+    },
+    "newConnectionMs": {
+      "count": 75,
+      "min": 0.171,
+      "median": 0.267,
+      "max": 0.608
+    },
+    "proxyTerminalMinusDirectJournalMs": {
+      "count": 73,
+      "min": 1.4734268188476562,
+      "median": 3.9925575256347656,
+      "max": 10.53762435913086
+    },
+    "crossHostClockPrecisionVerified": false,
+    "repeatedKey": "77601dd021ec365fe333",
+    "completeBeforeDirectClosedKey": "5227410452a5955e31d8"
+  },
+  "findings": {
+    "observedTrigger": "Direct response close/request aborted before response headers; gateway then aborts upstream transport.",
+    "upstreamFailuresBeforeCancellation": 0,
+    "timeoutBeforeCancellation": false,
+    "caddyHistoricalTargetAccessRecords": 0,
+    "knownSourceCancellationPath": "Ordinary natural paragraph advance invokes loadParagraph -> cancelPrefetchJobs -> Job.cancel -> Retrofit Call.cancel.",
+    "sourcePathExceptions": [
+      "Kindle in-flight successor handoff",
+      "YouTube in-flight successor handoff"
+    ],
+    "cancellationPathAlsoPresentIn145": true,
+    "introducedIn146Proven": false,
+    "historical74AttributedToThisSourcePath": false,
+    "clientSourcePin": "3fe41d62b9f0c1d699ba20e84aecb63fd970b33b (1.0.46 / 53)",
+    "clientBinaryProvenanceFromHeadersAlone": false,
+    "directSourcePin": "7d0a22ce8169fb6b6fe8aa3e80a08ae3804ee161",
+    "denominatorLimitation": "Recorded Direct request summaries only; max-in-flight 503 branch returns before request logging."
+  },
+  "tests": {
+    "command": "node --test --test-name-pattern='abort source and downstream connection evidence' ops/tts-direct-gateway/gateway.test.mjs",
+    "cwd": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-direct-tts-text-parity-20260907",
+    "nodeVersion": "v24.11.1",
+    "productionNodeVersion": "v22.23.2",
+    "passed": 6,
+    "failed": 0,
+    "cases": [
+      "headers deadline -> real 504/upstream_timeout",
+      "real downstream HTTP close waiting headers -> null/downstream_closed and upstream transport closes",
+      "body deadline -> real 504/upstream_timeout",
+      "real downstream HTTP close reading body -> null/downstream_closed and upstream transport closes",
+      "upstream AbortError without local deadline -> 502/upstream abort",
+      "incomplete upload -> downstream close, no synthesis dispatch"
+    ],
+    "runtimeParityLimitation": "Tests used exact production source locally on Node 24; not a production Node 22 runtime replay.",
+    "androidRuntimeReproductionPerformed": false
+  },
+  "sourceEvidence": [
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-direct-tts-text-parity-20260907/ops/tts-direct-gateway/gateway.mjs",
+      "bytes": 37688,
+      "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-direct-tts-text-parity-20260907/ops/tts-direct-gateway/gateway.test.mjs",
+      "bytes": 22283,
+      "sha256": "8e09df63846f996c4b1decc6750f2fe168aa1f5d06655e6dcbb37b7019c7e411"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-direct-tts-text-parity-20260907/ops/tts-direct-gateway/Caddyfile.production",
+      "bytes": 729,
+      "sha256": "243706a702274b86cea400b4ff0c627ddead335e2dfb457fe62303952b30bdd1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-inflight-diagnostics-20260907/deployment/r133_stable_proxy.py",
+      "bytes": 47315,
+      "sha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-Android-kindle-feedback-20260905/app/src/main/java/com/same/castreader/player/manager/PlaybackController.kt",
+      "bytes": 145234,
+      "sha256": "6fee3e94476e1130f2c31b934d8d101bfe397ca17366e956743eb1bcd105f9d7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-Android-kindle-feedback-20260905/app/src/main/java/com/same/castreader/player/manager/ParagraphPrefetchHorizon.kt",
+      "bytes": 3051,
+      "sha256": "289d8ab92351f119d64ae67c8f882a0fa31c79a833b1cb6d57f01a77246c9504"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-Android-kindle-feedback-20260905/app/src/main/java/com/same/castreader/data/remote/TtsEndpointInterceptor.kt",
+      "bytes": 7261,
+      "sha256": "0d1e237f70340e579519effee56ba4f9d91195bef6a610c78e2f2707959cafc1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-Android-kindle-feedback-20260905/app/src/main/java/com/same/castreader/data/remote/CastReaderApi.kt",
+      "bytes": 1578,
+      "sha256": "fd27e1cc515c079e964a707d35f3b1b0ef9885dd503f155761eb3350f089a6c5"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-Android-kindle-feedback-20260905/app/src/main/java/com/same/castreader/di/NetworkModule.kt",
+      "bytes": 5262,
+      "sha256": "4c90a29c50e2e1786637871c4e3a27eec1946ae21dd3142f5951df92a14c2110"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-Android-kindle-feedback-20260905/gradle/libs.versions.toml",
+      "bytes": 8360,
+      "sha256": "ef93f9f6febae4fd7dcc44ffc179317c58206421ec4c4c2e6c6aeb71d176452e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/.worktrees/CastReader-Android-kindle-feedback-20260905/app/build.gradle.kts",
+      "bytes": 11320,
+      "sha256": "587c84e7cf341f5dc275c27dc994d109fcb1c35387c5ac78e22c3722127bbf58"
+    }
+  ],
+  "archivedEvidence": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/direct-complete-cumulative-final.json",
+      "bytes": 49832,
+      "sha256": "12742ee19d1a8b22860a77d3f6b538f38c4797ac17d416c111b51f07b734016b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/disconnect-followup.json",
+      "bytes": 17141,
+      "sha256": "3caf01efd8144743e31d3bc4fd11e4093d97a8cb0078f15321ebaf7bd459600f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0818Z/proxy-window.json",
+      "bytes": 6307628,
+      "sha256": "59ddbb91d4dff0ef863baea14084bd6c518e84d0dbd4708ca6eba4231b7f2d6b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1121Z/proxy-window.json",
+      "bytes": 6475867,
+      "sha256": "cd81ba60737a4f2e00da844bab5ccfcff72499646402c36bb3c3270e4d1da12e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1340Z/proxy-window.json",
+      "bytes": 10112015,
+      "sha256": "e671ea20797e630080ccc51bd2bde21849d6a27787c83d5208ba2c4c1d336b58"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1625Z/proxy-window.json",
+      "bytes": 7231690,
+      "sha256": "abdc9c4b074b97d4016efc3e52e9ac2a361e34d1e90eac98ff800d89526a5ce6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T1726Z/proxy-window.json",
+      "bytes": 7104092,
+      "sha256": "08583984cdeef4bf235795d8007127f341d615f58fe32ced2b3877e705a22bd8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/window-complete-20260907T183752Z/proxy-window.json",
+      "bytes": 7574129,
+      "sha256": "27865844ab314931bb934e944211ddef77d4b7818a257d7d2335cce45d212331"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1949Z-complete.json",
+      "bytes": 1510630,
+      "sha256": "e6ae2bdf8c55cd85f8e0df5e9c6ac1d9205302c4ef307ae5b8f339990b268c76"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1949Z.json",
+      "bytes": 2156620,
+      "sha256": "9b1b98e6075173ff93206267a2074f0cb9536ea44bb3d2a2512d6ecc5e9b08ba"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2050Z.json",
+      "bytes": 1463443,
+      "sha256": "8dd5424021605e726745e9371bb6194878218c6395ba4688c2d2481662c4051c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2151Z.json",
+      "bytes": 643668,
+      "sha256": "22750c563fefda1cfa2c6be7a648543ebda9312723a9e90c63cea999d325a547"
+    }
+  ],
+  "requestEvidence": [
+    {
+      "direct": {
+        "key": "8c8b84541970494ab13d",
+        "observedAt": "2026-09-06T19:00:45.252998Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 3141,
+        "requestBytes": 1614,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788721245.256633,
+          "atUTC": "2026-09-06T19:00:45.256633+00:00",
+          "requestKey": "8c8b84541970494ab13d",
+          "flightKey": "744f224e9643a46f9a86",
+          "upstreamRequestKey": "744f224e9643a46f9a86",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 3139.078,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "a58bd8bfc90cf70a7f82",
+        "observedAt": "2026-09-06T19:00:46.291252Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 939,
+        "requestBytes": 453,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788721246.2939887,
+          "atUTC": "2026-09-06T19:00:46.293989+00:00",
+          "requestKey": "a58bd8bfc90cf70a7f82",
+          "flightKey": "cbf45311d93f2f2cd0fd",
+          "upstreamRequestKey": "cbf45311d93f2f2cd0fd",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 939.213,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "c8aba42cc4befb6eae5b",
+        "observedAt": "2026-09-06T19:01:16.637459Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 669,
+        "requestBytes": 202,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788721276.64337,
+          "atUTC": "2026-09-06T19:01:16.643370+00:00",
+          "requestKey": "c8aba42cc4befb6eae5b",
+          "flightKey": "e415f2f5a27d9c2b2300",
+          "upstreamRequestKey": "e415f2f5a27d9c2b2300",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 666.219,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "7c3617a7bb14615ddf8a",
+        "observedAt": "2026-09-06T19:15:19.483229Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 852,
+        "requestBytes": 269,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788722119.4876807,
+          "atUTC": "2026-09-06T19:15:19.487681+00:00",
+          "requestKey": "7c3617a7bb14615ddf8a",
+          "flightKey": "95a8b5b9aff9c29e8ae6",
+          "upstreamRequestKey": "95a8b5b9aff9c29e8ae6",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 842.465,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "a55fc8cccb8c112a3f51",
+        "observedAt": "2026-09-06T19:31:48.538629Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 227,
+        "requestBytes": 167,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788723108.5437503,
+          "atUTC": "2026-09-06T19:31:48.543750+00:00",
+          "requestKey": "a55fc8cccb8c112a3f51",
+          "flightKey": "a79e341640a05edf9d92",
+          "upstreamRequestKey": "a79e341640a05edf9d92",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 225.651,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "830340491d782f37bd75",
+        "observedAt": "2026-09-06T19:31:51.569058Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 996,
+        "requestBytes": 214,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788723111.5759816,
+          "atUTC": "2026-09-06T19:31:51.575982+00:00",
+          "requestKey": "830340491d782f37bd75",
+          "flightKey": "068aa37189f7895fcc72",
+          "upstreamRequestKey": "068aa37189f7895fcc72",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 994.916,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "82e5f8bfb9348d6a82d4",
+        "observedAt": "2026-09-06T19:43:00.790079Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 350,
+        "requestBytes": 282,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788723780.797546,
+          "atUTC": "2026-09-06T19:43:00.797546+00:00",
+          "requestKey": "82e5f8bfb9348d6a82d4",
+          "flightKey": "6e20c602be5a178d4ccd",
+          "upstreamRequestKey": "6e20c602be5a178d4ccd",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 348.933,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "3e4a240e0eda0aa81373",
+        "observedAt": "2026-09-06T20:42:06.516877Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1055,
+        "requestBytes": 173,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788727326.5200155,
+          "atUTC": "2026-09-06T20:42:06.520015+00:00",
+          "requestKey": "3e4a240e0eda0aa81373",
+          "flightKey": "1b2ab690466b0f74141a",
+          "upstreamRequestKey": "1b2ab690466b0f74141a",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 1046.548,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "3f60bf396bd2ccad244e",
+        "observedAt": "2026-09-06T20:42:06.621050Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1265,
+        "requestBytes": 309,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788727326.6248794,
+          "atUTC": "2026-09-06T20:42:06.624879+00:00",
+          "requestKey": "3f60bf396bd2ccad244e",
+          "flightKey": "fff88bf376a56cda1204",
+          "upstreamRequestKey": "fff88bf376a56cda1204",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 1257.36,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "0b307fa7ad7f8e17d591",
+        "observedAt": "2026-09-06T20:42:06.622212Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1376,
+        "requestBytes": 406,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788727326.6269002,
+          "atUTC": "2026-09-06T20:42:06.626900+00:00",
+          "requestKey": "0b307fa7ad7f8e17d591",
+          "flightKey": "7e3517dc102c1069bf93",
+          "upstreamRequestKey": "7e3517dc102c1069bf93",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 1375.28,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "97de8b3977234c2030c9",
+        "observedAt": "2026-09-06T20:42:11.576047Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2495,
+        "requestBytes": 379,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788727331.5812113,
+          "atUTC": "2026-09-06T20:42:11.581211+00:00",
+          "requestKey": "97de8b3977234c2030c9",
+          "flightKey": "ad411dfb89085cc7ea4b",
+          "upstreamRequestKey": "ad411dfb89085cc7ea4b",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 2494.867,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "bab861a2f6665c24c0c0",
+        "observedAt": "2026-09-06T21:16:46.933193Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 161,
+        "requestBytes": 421,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.45"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788729406.9369082,
+          "atUTC": "2026-09-06T21:16:46.936908+00:00",
+          "requestKey": "bab861a2f6665c24c0c0",
+          "flightKey": "33e8548f7cc10fc8cbf6",
+          "upstreamRequestKey": "33e8548f7cc10fc8cbf6",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134",
+          "slot": "blue",
+          "revision": 6,
+          "elapsedMs": 159.201,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "c0dd9e504567e5e96eda",
+        "observedAt": "2026-09-07T07:25:12.684887Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 283,
+        "requestBytes": 183,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788765912.6873786,
+          "atUTC": "2026-09-07T07:25:12.687379+00:00",
+          "requestKey": "c0dd9e504567e5e96eda",
+          "flightKey": "16954e2248ffcff9ebd3",
+          "upstreamRequestKey": "16954e2248ffcff9ebd3",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 280.78,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "4027da2438208bdf9b9e",
+        "observedAt": "2026-09-07T07:25:35.600105Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 234,
+        "requestBytes": 175,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788765935.6035848,
+          "atUTC": "2026-09-07T07:25:35.603585+00:00",
+          "requestKey": "4027da2438208bdf9b9e",
+          "flightKey": "90c43d4a3480a8ef5908",
+          "upstreamRequestKey": "90c43d4a3480a8ef5908",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 233.173,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "6fe122353ef4997c425f",
+        "observedAt": "2026-09-07T07:25:36.583579Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 324,
+        "requestBytes": 186,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788765936.5850525,
+          "atUTC": "2026-09-07T07:25:36.585052+00:00",
+          "requestKey": "6fe122353ef4997c425f",
+          "flightKey": "73c2da23f458990736ab",
+          "upstreamRequestKey": "73c2da23f458990736ab",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 322.664,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "09304f1bf10dba9b6507",
+        "observedAt": "2026-09-07T07:25:37.636100Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 124,
+        "requestBytes": 189,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788765937.6387691,
+          "atUTC": "2026-09-07T07:25:37.638769+00:00",
+          "requestKey": "09304f1bf10dba9b6507",
+          "flightKey": "4371e349538138807155",
+          "upstreamRequestKey": "4371e349538138807155",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 121.869,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "820ba0e254358b80c008",
+        "observedAt": "2026-09-07T07:25:42.491965Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 52,
+        "requestBytes": 749,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788765942.4971178,
+          "atUTC": "2026-09-07T07:25:42.497118+00:00",
+          "requestKey": "820ba0e254358b80c008",
+          "flightKey": "98c2a3fc9ddc5223d248",
+          "upstreamRequestKey": "98c2a3fc9ddc5223d248",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 49.044,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "a48fb6b69d43039bc2a8",
+        "observedAt": "2026-09-07T07:25:43.346509Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 818,
+        "requestBytes": 181,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788765943.3503199,
+          "atUTC": "2026-09-07T07:25:43.350320+00:00",
+          "requestKey": "a48fb6b69d43039bc2a8",
+          "flightKey": "a626e783be0f1b012f7d",
+          "upstreamRequestKey": "a626e783be0f1b012f7d",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 816.889,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "856f2b44cf0ac713abf6",
+        "observedAt": "2026-09-07T10:29:22.804063Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 114,
+        "requestBytes": 406,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788776962.810519,
+          "atUTC": "2026-09-07T10:29:22.810519+00:00",
+          "requestKey": "856f2b44cf0ac713abf6",
+          "flightKey": "6c5492efba3414e35fd5",
+          "upstreamRequestKey": "6c5492efba3414e35fd5",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 111.591,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "597f9cfcbaefa97e0a49",
+        "observedAt": "2026-09-07T12:46:36.434707Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 362,
+        "requestBytes": 167,
+        "clientPlatform": "extension",
+        "clientVersion": "1.2.37"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788785196.4405746,
+          "atUTC": "2026-09-07T12:46:36.440575+00:00",
+          "requestKey": "597f9cfcbaefa97e0a49",
+          "flightKey": "d85dbec125f3c9bac061",
+          "upstreamRequestKey": "d85dbec125f3c9bac061",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 359.953,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "374b39bb208bba3d5cc4",
+        "observedAt": "2026-09-07T15:40:09.381242Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1771,
+        "requestBytes": 267,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788795609.3851,
+          "atUTC": "2026-09-07T15:40:09.385100+00:00",
+          "requestKey": "374b39bb208bba3d5cc4",
+          "flightKey": "22ffdd841cbd5fe169dc",
+          "upstreamRequestKey": "22ffdd841cbd5fe169dc",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1769.295,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "f10f1ddff616bad6c99c",
+        "observedAt": "2026-09-07T15:44:30.252452Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1547,
+        "requestBytes": 199,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788795870.2543886,
+          "atUTC": "2026-09-07T15:44:30.254389+00:00",
+          "requestKey": "f10f1ddff616bad6c99c",
+          "flightKey": "8e9fc6d50bcdc7edf176",
+          "upstreamRequestKey": "8e9fc6d50bcdc7edf176",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1543.804,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "2dc7e8c5f1e11d8d31b7",
+        "observedAt": "2026-09-07T15:47:39.309671Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1616,
+        "requestBytes": 447,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.47"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788796059.3136556,
+          "atUTC": "2026-09-07T15:47:39.313656+00:00",
+          "requestKey": "2dc7e8c5f1e11d8d31b7",
+          "flightKey": "eedff311447bcd6f4982",
+          "upstreamRequestKey": "eedff311447bcd6f4982",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1607.137,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "cb5dbbc2c8888868d16d",
+        "observedAt": "2026-09-07T16:04:30.561555Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1340,
+        "requestBytes": 219,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797070.5676956,
+          "atUTC": "2026-09-07T16:04:30.567696+00:00",
+          "requestKey": "cb5dbbc2c8888868d16d",
+          "flightKey": "db044c3dfe219767654a",
+          "upstreamRequestKey": "db044c3dfe219767654a",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1338.519,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "ad431b92bb889b868954",
+        "observedAt": "2026-09-07T16:04:30.576068Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1341,
+        "requestBytes": 178,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797070.5785837,
+          "atUTC": "2026-09-07T16:04:30.578584+00:00",
+          "requestKey": "ad431b92bb889b868954",
+          "flightKey": "56be0b04ec0d476ce72a",
+          "upstreamRequestKey": "56be0b04ec0d476ce72a",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1334.532,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "307a9db921374d2858e4",
+        "observedAt": "2026-09-07T16:05:11.614270Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1695,
+        "requestBytes": 174,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797111.6175919,
+          "atUTC": "2026-09-07T16:05:11.617592+00:00",
+          "requestKey": "307a9db921374d2858e4",
+          "flightKey": "bb91464f299c4a769fcf",
+          "upstreamRequestKey": "bb91464f299c4a769fcf",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1693.537,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "7f0fd50c526f9fb1776d",
+        "observedAt": "2026-09-07T16:05:13.322885Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1695,
+        "requestBytes": 176,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797113.3251843,
+          "atUTC": "2026-09-07T16:05:13.325184+00:00",
+          "requestKey": "7f0fd50c526f9fb1776d",
+          "flightKey": "de21f1457a90e34defea",
+          "upstreamRequestKey": "de21f1457a90e34defea",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1693.786,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "efd67add2359059ed473",
+        "observedAt": "2026-09-07T16:05:14.204863Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2755,
+        "requestBytes": 1008,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797114.2102404,
+          "atUTC": "2026-09-07T16:05:14.210240+00:00",
+          "requestKey": "efd67add2359059ed473",
+          "flightKey": "624d6ad781b7798a3a20",
+          "upstreamRequestKey": "624d6ad781b7798a3a20",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 2741.706,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "8b4ca118fffd01b40996",
+        "observedAt": "2026-09-07T16:05:16.581992Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2124,
+        "requestBytes": 219,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797116.585784,
+          "atUTC": "2026-09-07T16:05:16.585784+00:00",
+          "requestKey": "8b4ca118fffd01b40996",
+          "flightKey": "21c3c17a676dc0027948",
+          "upstreamRequestKey": "21c3c17a676dc0027948",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 2123.781,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "02b85e8c6340a9fb31ad",
+        "observedAt": "2026-09-07T16:05:18.262249Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1725,
+        "requestBytes": 176,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797118.2680752,
+          "atUTC": "2026-09-07T16:05:18.268075+00:00",
+          "requestKey": "02b85e8c6340a9fb31ad",
+          "flightKey": "c986ab378cbe10870a7d",
+          "upstreamRequestKey": "c986ab378cbe10870a7d",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1722.987,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "57dd4a1e3251c3218279",
+        "observedAt": "2026-09-07T16:05:19.419229Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2583,
+        "requestBytes": 1008,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797119.4268694,
+          "atUTC": "2026-09-07T16:05:19.426869+00:00",
+          "requestKey": "57dd4a1e3251c3218279",
+          "flightKey": "da03ed65cebd62f32564",
+          "upstreamRequestKey": "da03ed65cebd62f32564",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 2582.222,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "80279b34f52da51365e0",
+        "observedAt": "2026-09-07T16:05:24.285751Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1588,
+        "requestBytes": 172,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797124.2884724,
+          "atUTC": "2026-09-07T16:05:24.288472+00:00",
+          "requestKey": "80279b34f52da51365e0",
+          "flightKey": "c76f760be4402ec511e5",
+          "upstreamRequestKey": "c76f760be4402ec511e5",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1581.375,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "6f5318347986b7c93dab",
+        "observedAt": "2026-09-07T16:05:24.326304Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 27,
+        "requestBytes": 176,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797124.3297172,
+          "atUTC": "2026-09-07T16:05:24.329717+00:00",
+          "requestKey": "6f5318347986b7c93dab",
+          "flightKey": "51030a19228aa4b89dfb",
+          "upstreamRequestKey": "51030a19228aa4b89dfb",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 27.085,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "09c5bd58e708b6dec973",
+        "observedAt": "2026-09-07T16:05:26.326812Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1987,
+        "requestBytes": 187,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797126.329509,
+          "atUTC": "2026-09-07T16:05:26.329509+00:00",
+          "requestKey": "09c5bd58e708b6dec973",
+          "flightKey": "e3f3669457234d63f5d2",
+          "upstreamRequestKey": "e3f3669457234d63f5d2",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1986.929,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "023a880a46632695351c",
+        "observedAt": "2026-09-07T16:05:54.937268Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1412,
+        "requestBytes": 179,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797154.9421775,
+          "atUTC": "2026-09-07T16:05:54.942178+00:00",
+          "requestKey": "023a880a46632695351c",
+          "flightKey": "d75a26d5598cd3acd18f",
+          "upstreamRequestKey": "d75a26d5598cd3acd18f",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1409.384,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "8dfb70d57ea21a9c9a84",
+        "observedAt": "2026-09-07T16:09:02.389866Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1801,
+        "requestBytes": 212,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797342.3923514,
+          "atUTC": "2026-09-07T16:09:02.392351+00:00",
+          "requestKey": "8dfb70d57ea21a9c9a84",
+          "flightKey": "6fa68c3051c5a61b43cf",
+          "upstreamRequestKey": "6fa68c3051c5a61b43cf",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1792.292,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "835e3a277a6e1e1f27fe",
+        "observedAt": "2026-09-07T16:09:18.309651Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1365,
+        "requestBytes": 245,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797358.3154666,
+          "atUTC": "2026-09-07T16:09:18.315467+00:00",
+          "requestKey": "835e3a277a6e1e1f27fe",
+          "flightKey": "19a5237ee664171dcc5b",
+          "upstreamRequestKey": "19a5237ee664171dcc5b",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1362.773,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "e095b16a0e48eec871e4",
+        "observedAt": "2026-09-07T16:09:38.634945Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 3553,
+        "requestBytes": 223,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797378.6367648,
+          "atUTC": "2026-09-07T16:09:38.636765+00:00",
+          "requestKey": "e095b16a0e48eec871e4",
+          "flightKey": "d230145937fbdb1ec736",
+          "upstreamRequestKey": "d230145937fbdb1ec736",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 3551.258,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "3038dc213ecbafb8e94e",
+        "observedAt": "2026-09-07T16:09:51.186756Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 3609,
+        "requestBytes": 249,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797391.1900387,
+          "atUTC": "2026-09-07T16:09:51.190039+00:00",
+          "requestKey": "3038dc213ecbafb8e94e",
+          "flightKey": "d9e67fa2fe82b0527497",
+          "upstreamRequestKey": "d9e67fa2fe82b0527497",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 3606.716,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "28dc8c60e8b929bccfe1",
+        "observedAt": "2026-09-07T16:10:15.266752Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1988,
+        "requestBytes": 170,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797415.2697797,
+          "atUTC": "2026-09-07T16:10:15.269780+00:00",
+          "requestKey": "28dc8c60e8b929bccfe1",
+          "flightKey": "67b6e4a57dde55c52817",
+          "upstreamRequestKey": "67b6e4a57dde55c52817",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1985.983,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "964bc76f740a39507fd2",
+        "observedAt": "2026-09-07T16:10:26.516780Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1432,
+        "requestBytes": 229,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797426.5207725,
+          "atUTC": "2026-09-07T16:10:26.520772+00:00",
+          "requestKey": "964bc76f740a39507fd2",
+          "flightKey": "90d5f568ec0020d21a05",
+          "upstreamRequestKey": "90d5f568ec0020d21a05",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1430.793,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "08db929781b8fc212356",
+        "observedAt": "2026-09-07T16:10:47.538519Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1280,
+        "requestBytes": 195,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797447.5417469,
+          "atUTC": "2026-09-07T16:10:47.541747+00:00",
+          "requestKey": "08db929781b8fc212356",
+          "flightKey": "d7badfa1fd1ebf5b0446",
+          "upstreamRequestKey": "d7badfa1fd1ebf5b0446",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1277.781,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "119165068657618b61dd",
+        "observedAt": "2026-09-07T16:10:57.886983Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2065,
+        "requestBytes": 181,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797457.889802,
+          "atUTC": "2026-09-07T16:10:57.889802+00:00",
+          "requestKey": "119165068657618b61dd",
+          "flightKey": "41d3cb6cc17e6da9402e",
+          "upstreamRequestKey": "41d3cb6cc17e6da9402e",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 2064.258,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "5b16e8c9be8d4635b2c9",
+        "observedAt": "2026-09-07T16:11:10.608876Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1735,
+        "requestBytes": 230,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797470.6124969,
+          "atUTC": "2026-09-07T16:11:10.612497+00:00",
+          "requestKey": "5b16e8c9be8d4635b2c9",
+          "flightKey": "8c5c079030b10ec274c0",
+          "upstreamRequestKey": "8c5c079030b10ec274c0",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1733.248,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "286529242e4d93f6fb6b",
+        "observedAt": "2026-09-07T16:11:37.825343Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1633,
+        "requestBytes": 191,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797497.8316486,
+          "atUTC": "2026-09-07T16:11:37.831649+00:00",
+          "requestKey": "286529242e4d93f6fb6b",
+          "flightKey": "044e1da4a9910173af17",
+          "upstreamRequestKey": "044e1da4a9910173af17",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1631.441,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "2f5e464fcc6de23d7f4d",
+        "observedAt": "2026-09-07T16:11:39.631455Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1653,
+        "requestBytes": 247,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797499.6352324,
+          "atUTC": "2026-09-07T16:11:39.635232+00:00",
+          "requestKey": "2f5e464fcc6de23d7f4d",
+          "flightKey": "409b87c4f4d3362b62d9",
+          "upstreamRequestKey": "409b87c4f4d3362b62d9",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1651.788,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "e8815d5ed05de7a8dc91",
+        "observedAt": "2026-09-07T16:11:44.007591Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2007,
+        "requestBytes": 220,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797504.0143917,
+          "atUTC": "2026-09-07T16:11:44.014392+00:00",
+          "requestKey": "e8815d5ed05de7a8dc91",
+          "flightKey": "57dbd89b40c75ae8a99e",
+          "upstreamRequestKey": "57dbd89b40c75ae8a99e",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 2005.809,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "aa4dabcf0c515e968234",
+        "observedAt": "2026-09-07T16:11:58.149051Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1716,
+        "requestBytes": 246,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797518.1530979,
+          "atUTC": "2026-09-07T16:11:58.153098+00:00",
+          "requestKey": "aa4dabcf0c515e968234",
+          "flightKey": "39418bd1d2e0c8bf7218",
+          "upstreamRequestKey": "39418bd1d2e0c8bf7218",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1715.099,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "77601dd021ec365fe333",
+        "observedAt": "2026-09-07T16:12:18.014137Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1148,
+        "requestBytes": 210,
+        "clientPlatform": "extension",
+        "clientVersion": "1.2.37"
+      },
+      "proxyReceived": 2,
+      "proxyStages": {
+        "request_received": 2,
+        "request_body_read": 2,
+        "flight_created": 2,
+        "upstream_connect_started": 2,
+        "upstream_connected": 2,
+        "upstream_cancelled": 1,
+        "request_finished": 2,
+        "upstream_headers": 1,
+        "upstream_first_body": 1,
+        "upstream_complete": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1,
+        "complete": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797538.0168436,
+          "atUTC": "2026-09-07T16:12:18.016844+00:00",
+          "requestKey": "77601dd021ec365fe333",
+          "flightKey": "fb53f5b049102fb9cf0d",
+          "upstreamRequestKey": "fb53f5b049102fb9cf0d",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1146.011,
+          "outcome": "cancelled"
+        },
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797541.0499406,
+          "atUTC": "2026-09-07T16:12:21.049941+00:00",
+          "requestKey": "77601dd021ec365fe333",
+          "flightKey": "8d3bd0dfd39379d77d3c",
+          "upstreamRequestKey": "8d3bd0dfd39379d77d3c",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "status": 200,
+          "attempt": 1,
+          "elapsedMs": 1480.019,
+          "outcome": "complete"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "53ec742672e7bde79ab7",
+        "observedAt": "2026-09-07T16:13:43.439846Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2304,
+        "requestBytes": 228,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797623.4430306,
+          "atUTC": "2026-09-07T16:13:43.443031+00:00",
+          "requestKey": "53ec742672e7bde79ab7",
+          "flightKey": "4316ea9045ebf16ed502",
+          "upstreamRequestKey": "4316ea9045ebf16ed502",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 2293.682,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "fd8536f8a93c68eda036",
+        "observedAt": "2026-09-07T16:13:45.631818Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2004,
+        "requestBytes": 211,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797625.634531,
+          "atUTC": "2026-09-07T16:13:45.634531+00:00",
+          "requestKey": "fd8536f8a93c68eda036",
+          "flightKey": "105b7410baee474146a8",
+          "upstreamRequestKey": "105b7410baee474146a8",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 2003.313,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "af829eb4afcf4c663ab0",
+        "observedAt": "2026-09-07T16:17:42.058966Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1697,
+        "requestBytes": 190,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797862.0619018,
+          "atUTC": "2026-09-07T16:17:42.061902+00:00",
+          "requestKey": "af829eb4afcf4c663ab0",
+          "flightKey": "a43d3728c2a10b89770b",
+          "upstreamRequestKey": "a43d3728c2a10b89770b",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1694.651,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "a043a91c577cd7b681e7",
+        "observedAt": "2026-09-07T16:18:46.146869Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1753,
+        "requestBytes": 212,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788797926.150594,
+          "atUTC": "2026-09-07T16:18:46.150594+00:00",
+          "requestKey": "a043a91c577cd7b681e7",
+          "flightKey": "b1c4034fdad4bd16f1dd",
+          "upstreamRequestKey": "b1c4034fdad4bd16f1dd",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1751.845,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "5227410452a5955e31d8",
+        "observedAt": "2026-09-07T16:48:14.142016Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1411,
+        "requestBytes": 180,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_headers": 1,
+        "upstream_first_body": 1,
+        "upstream_complete": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "complete": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788799694.140731,
+          "atUTC": "2026-09-07T16:48:14.140731+00:00",
+          "requestKey": "5227410452a5955e31d8",
+          "flightKey": "6223d4c47b476c86a705",
+          "upstreamRequestKey": "6223d4c47b476c86a705",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "status": 200,
+          "attempt": 1,
+          "elapsedMs": 1403.789,
+          "outcome": "complete"
+        }
+      ],
+      "upstreamCancelResponseBytes": [],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "a59bc7dffb96c336f927",
+        "observedAt": "2026-09-07T17:19:13.004774Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1450,
+        "requestBytes": 273,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788801553.0100164,
+          "atUTC": "2026-09-07T17:19:13.010016+00:00",
+          "requestKey": "a59bc7dffb96c336f927",
+          "flightKey": "f2a88df1a958d39e2083",
+          "upstreamRequestKey": "f2a88df1a958d39e2083",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1448.332,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "c27280f2eaf70aff833e",
+        "observedAt": "2026-09-07T17:20:53.339997Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1736,
+        "requestBytes": 190,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788801653.343839,
+          "atUTC": "2026-09-07T17:20:53.343839+00:00",
+          "requestKey": "c27280f2eaf70aff833e",
+          "flightKey": "136951614d240b107b61",
+          "upstreamRequestKey": "136951614d240b107b61",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1734.267,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "a30d400a395aaee4f773",
+        "observedAt": "2026-09-07T17:21:05.287150Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1549,
+        "requestBytes": 192,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788801665.296049,
+          "atUTC": "2026-09-07T17:21:05.296049+00:00",
+          "requestKey": "a30d400a395aaee4f773",
+          "flightKey": "889d135c74f2814f37bb",
+          "upstreamRequestKey": "889d135c74f2814f37bb",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1547.17,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "22d212bd566b7c364fad",
+        "observedAt": "2026-09-07T17:23:46.459329Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 280,
+        "requestBytes": 363,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788801826.464955,
+          "atUTC": "2026-09-07T17:23:46.464955+00:00",
+          "requestKey": "22d212bd566b7c364fad",
+          "flightKey": "e8619b87d61dc112d69e",
+          "upstreamRequestKey": "e8619b87d61dc112d69e",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 279.237,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "51c699fe532648454018",
+        "observedAt": "2026-09-07T17:25:31.957067Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 280,
+        "requestBytes": 246,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788801931.9624903,
+          "atUTC": "2026-09-07T17:25:31.962490+00:00",
+          "requestKey": "51c699fe532648454018",
+          "flightKey": "132bffba792a973b759e",
+          "upstreamRequestKey": "132bffba792a973b759e",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 277.867,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "22d0da5eebf207417b0c",
+        "observedAt": "2026-09-07T17:25:33.247119Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1291,
+        "requestBytes": 692,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788801933.2528417,
+          "atUTC": "2026-09-07T17:25:33.252842+00:00",
+          "requestKey": "22d0da5eebf207417b0c",
+          "flightKey": "58dcbe9fa31d9d7ffca7",
+          "upstreamRequestKey": "58dcbe9fa31d9d7ffca7",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1289.48,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "27057761d64d3b1ce05c",
+        "observedAt": "2026-09-07T17:41:23.683766Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1907,
+        "requestBytes": 178,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788802883.6929212,
+          "atUTC": "2026-09-07T17:41:23.692921+00:00",
+          "requestKey": "27057761d64d3b1ce05c",
+          "flightKey": "e76b252480ac2fd3f8f2",
+          "upstreamRequestKey": "e76b252480ac2fd3f8f2",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1689.977,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "22432ef19f478d709a67",
+        "observedAt": "2026-09-07T17:41:27.056332Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 3272,
+        "requestBytes": 173,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788802887.0668697,
+          "atUTC": "2026-09-07T17:41:27.066870+00:00",
+          "requestKey": "22432ef19f478d709a67",
+          "flightKey": "e510aaf5bcebd63d10fe",
+          "upstreamRequestKey": "e510aaf5bcebd63d10fe",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 3271.294,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "2968fb87516988be7ea9",
+        "observedAt": "2026-09-07T17:46:42.694333Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 2017,
+        "requestBytes": 277,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788803202.7014244,
+          "atUTC": "2026-09-07T17:46:42.701424+00:00",
+          "requestKey": "2968fb87516988be7ea9",
+          "flightKey": "08caa7b0e9a9cd46261f",
+          "upstreamRequestKey": "08caa7b0e9a9cd46261f",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 2015.188,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "cbfd09f0ac5e3ee45609",
+        "observedAt": "2026-09-07T17:46:44.184547Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1366,
+        "requestBytes": 201,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788803204.1894224,
+          "atUTC": "2026-09-07T17:46:44.189422+00:00",
+          "requestKey": "cbfd09f0ac5e3ee45609",
+          "flightKey": "a110aeee12bdde10d421",
+          "upstreamRequestKey": "a110aeee12bdde10d421",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1365.262,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "65611c5e88616d3169e0",
+        "observedAt": "2026-09-07T17:49:57.631291Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 273,
+        "requestBytes": 363,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788803397.6370113,
+          "atUTC": "2026-09-07T17:49:57.637011+00:00",
+          "requestKey": "65611c5e88616d3169e0",
+          "flightKey": "a1ff05337746061708c6",
+          "upstreamRequestKey": "a1ff05337746061708c6",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 271.597,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "3ba55da7d59c445f9e4f",
+        "observedAt": "2026-09-07T17:51:13.113274Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1759,
+        "requestBytes": 192,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788803473.120964,
+          "atUTC": "2026-09-07T17:51:13.120964+00:00",
+          "requestKey": "3ba55da7d59c445f9e4f",
+          "flightKey": "6876db00de1fda1bbdce",
+          "upstreamRequestKey": "6876db00de1fda1bbdce",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1757.496,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "5a4ae8d71f3c11e8f370",
+        "observedAt": "2026-09-07T17:57:15.151836Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1997,
+        "requestBytes": 255,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788803835.1564867,
+          "atUTC": "2026-09-07T17:57:15.156487+00:00",
+          "requestKey": "5a4ae8d71f3c11e8f370",
+          "flightKey": "ea3ce1a410e904c5c727",
+          "upstreamRequestKey": "ea3ce1a410e904c5c727",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1994.697,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "8a89c185990cd889ed2c",
+        "observedAt": "2026-09-07T18:05:42.173746Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1641,
+        "requestBytes": 216,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788804342.1794693,
+          "atUTC": "2026-09-07T18:05:42.179469+00:00",
+          "requestKey": "8a89c185990cd889ed2c",
+          "flightKey": "edefc4010b9c35caed6b",
+          "upstreamRequestKey": "edefc4010b9c35caed6b",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1639.594,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "154a6cf726a51e8dc213",
+        "observedAt": "2026-09-07T18:06:55.208617Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1577,
+        "requestBytes": 254,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788804415.2139783,
+          "atUTC": "2026-09-07T18:06:55.213978+00:00",
+          "requestKey": "154a6cf726a51e8dc213",
+          "flightKey": "128413734a0070ea6416",
+          "upstreamRequestKey": "128413734a0070ea6416",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1574.791,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "f15e0c786dd88b9af29c",
+        "observedAt": "2026-09-07T18:07:47.136733Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1926,
+        "requestBytes": 172,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788804467.140305,
+          "atUTC": "2026-09-07T18:07:47.140305+00:00",
+          "requestKey": "f15e0c786dd88b9af29c",
+          "flightKey": "f4e0d8fa3f4378551cda",
+          "upstreamRequestKey": "f4e0d8fa3f4378551cda",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1923.899,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "508f98bc4e90736d545b",
+        "observedAt": "2026-09-07T18:11:18.124858Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 290,
+        "requestBytes": 347,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788804678.1285665,
+          "atUTC": "2026-09-07T18:11:18.128567+00:00",
+          "requestKey": "508f98bc4e90736d545b",
+          "flightKey": "897f5eb2e7f6fd4929b5",
+          "upstreamRequestKey": "897f5eb2e7f6fd4929b5",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 287.324,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "2bb3631ed40ce1b06895",
+        "observedAt": "2026-09-07T18:13:00.329158Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1499,
+        "requestBytes": 192,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788804780.3356254,
+          "atUTC": "2026-09-07T18:13:00.335625+00:00",
+          "requestKey": "2bb3631ed40ce1b06895",
+          "flightKey": "7f7d6da0ee868b83e56a",
+          "upstreamRequestKey": "7f7d6da0ee868b83e56a",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1496.529,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "73ea102da88ea6094d64",
+        "observedAt": "2026-09-07T18:19:59.113050Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 333,
+        "requestBytes": 204,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788805199.1180184,
+          "atUTC": "2026-09-07T18:19:59.118018+00:00",
+          "requestKey": "73ea102da88ea6094d64",
+          "flightKey": "5544a405fe98cace5b78",
+          "upstreamRequestKey": "5544a405fe98cace5b78",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 332.248,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    },
+    {
+      "direct": {
+        "key": "5498ef8552759256d57c",
+        "observedAt": "2026-09-07T18:20:53.019913Z",
+        "method": "POST",
+        "path": "/api/captioned_speech_partly",
+        "status": null,
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "elapsedMs": 1942,
+        "requestBytes": 196,
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46"
+      },
+      "proxyReceived": 1,
+      "proxyStages": {
+        "request_received": 1,
+        "request_body_read": 1,
+        "flight_created": 1,
+        "upstream_connect_started": 1,
+        "upstream_connected": 1,
+        "upstream_cancelled": 1,
+        "request_finished": 1
+      },
+      "proxyOutcomes": {
+        "cancelled": 1
+      },
+      "proxyTerminalEvents": [
+        {
+          "stage": "request_finished",
+          "phase": "completion",
+          "timeUnix": 1788805253.0239918,
+          "atUTC": "2026-09-07T18:20:53.023992+00:00",
+          "requestKey": "5498ef8552759256d57c",
+          "flightKey": "f60a6bc08880c2eac52c",
+          "upstreamRequestKey": "f60a6bc08880c2eac52c",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+          "slot": "green",
+          "revision": 10,
+          "attempt": 1,
+          "elapsedMs": 1939.534,
+          "outcome": "cancelled"
+        }
+      ],
+      "upstreamCancelResponseBytes": [
+        0
+      ],
+      "initialCallerCause": "unproven",
+      "userPlaybackOutcome": "unproven"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema": "castreader.diagnostic-report-artifacts.v1",
+  "files": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/global-tts-disconnect-root-cause-20260908/README.md",
+      "bytes": 10875,
+      "sha256": "5c26b27e03b02b6a0dc126d8302a6e867d8c47eb898cce05be5fcba229f609c6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/global-tts-disconnect-root-cause-20260908/analyze_evidence.py",
+      "bytes": 8157,
+      "sha256": "cfd8e28e865b36ecbd5884802e44657bcf2b3c1c09870871e2542c39669e23fd"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/global-tts-disconnect-root-cause-20260908/archived-joined-events.json",
+      "bytes": 43056,
+      "sha256": "659bb86c2926858e5f27f675fc7181c22bd8a735ddeead93d64c494780605e66"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/global-tts-disconnect-root-cause-20260908/archived-proxy-joins.json",
+      "bytes": 122452,
+      "sha256": "7afb702c6282bdc016dd272eb93ff2263d476d96ae3b26d58edfd14b21852144"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/global-tts-disconnect-root-cause-20260908/collect_ingress_readonly.py",
+      "bytes": 5988,
+      "sha256": "6d6b8578494f4cc7785fecde167c5438a022423ab4fb6e03b95afc3a740b9fdb"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/global-tts-disconnect-root-cause-20260908/collect_proxy_targeted_readonly.py",
+      "bytes": 4405,
+      "sha256": "641ee048c744f14af739a86067d26ec747261d57f9c8fd6e31523e0deac802f0"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/global-tts-disconnect-root-cause-20260908/ingress-readback.json",
+      "bytes": 2498,
+      "sha256": "4f0ad35326cc360c643c0cda085fe1030669e39d18ae450db7604eaf5400afc6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/global-tts-disconnect-root-cause-20260908/proxy-targeted-readback.json",
+      "bytes": 259867,
+      "sha256": "0bd2bd4fd293218875ee7f7360ad0989059ef9f6aeaa2ebe85f22901b802ab73"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/global-tts-disconnect-root-cause-20260908/root-cause-review.json",
+      "bytes": 136079,
+      "sha256": "1df03c83973cb1cf5794b7b383f8789da8be06ad16613dc59a95b13fb885123e"
+    }
+  ]
+}
