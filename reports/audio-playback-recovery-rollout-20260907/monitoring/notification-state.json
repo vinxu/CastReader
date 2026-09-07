@@ -27,9 +27,9 @@
   "latestClientTechnicalFailureCount": 4,
   "latestDirect5xxCount": 0,
   "latestDirectNoResponseCount": 12,
-  "latestProxyWindowEndUTC": "2026-09-07T07:02:32.408465Z",
-  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/proxy-post-r135.json",
-  "latestSnapshotDirectory": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation",
+  "latestProxyWindowEndUTC": "2026-09-07T07:18:20.570000+00:00",
+  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/proxy-window.json",
+  "latestSnapshotDirectory": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z",
   "latestVercelCore5xxCount": 1,
   "previousWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/notification-state.json",
   "recordedAtUtc": "2026-09-07T06:09:53.860759+00:00",
@@ -70,7 +70,7 @@
   "knownBusinessBlockedEventKeys": [
     "aa6e8229818cfd9e4305"
   ],
-  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/backend-review.json",
+  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-review.json",
   "nonAudio503Count": 9,
   "knownBlog504RequestKeys": [
     "4fe0c35911b8e6fb74bd",
@@ -158,46 +158,46 @@
     "payment_reconciliation"
   ],
   "preserveHistoricalFailures": true,
-  "latestBackendVerdict": "存在异常（历史故障及已恢复维护故障保留；R135 观察尚短）",
+  "latestBackendVerdict": "存在异常（历史故障保留）；本次增量未见新增后端技术失败，解读及克隆交付证据仍不足",
   "latestBackendServiceVerdicts": [
     {
       "region": "global",
       "service": "kokoro_tts",
-      "backendVerdict": "短窗供给正常；全窗历史故障保留",
-      "evidence": "R135 代理独立身份确认后的 35 个完整响应均 200、attempt1，无新增模型 failureEvents。全固定窗 Global 核心 5xx 仍为已知 1 条。"
+      "backendVerdict": "本轮供给符合预期；全窗历史异常保留",
+      "evidence": "204个完整200，身份与匿名关联通过"
     },
     {
       "region": "cn",
       "service": "kokoro_tts",
-      "backendVerdict": "维护故障已恢复；稳定性验收未完成",
-      "evidence": "维护期间 2 条 HTTP502、1 轮既有探针失败；07:00 探针恢复。主实例验证后已解析 18 条200、0条5xx；全窗143/144探针健康。"
-    },
-    {
-      "region": "global",
-      "service": "clone_tts",
-      "backendVerdict": "已观测生成供给符合预期；完整交付证据不足",
-      "evidence": "增量28条captioned完成，无新增失败；任务完成并不等同用户听完。"
-    },
-    {
-      "region": "cn",
-      "service": "clone_tts",
-      "backendVerdict": "证据不足",
-      "evidence": "进程健康，启动以来4条完成；本轮没有新生产任务可验证完整交付。"
+      "backendVerdict": "本轮供给符合预期；历史维护故障保留",
+      "evidence": "无新增502，探针恢复持续，R135身份一致"
     },
     {
       "region": "global",
       "service": "quickread",
       "backendVerdict": "证据不足",
-      "evidence": "未见新增固定生成错误；历史2条request_disconnected与HTTP交付缺口保留。"
+      "evidence": "无新增固定错误或生成样本；完整交付覆盖不足"
     },
     {
       "region": "cn",
       "service": "quickread",
       "backendVerdict": "证据不足",
-      "evidence": "未见新增固定生成错误；历史1条request_disconnected与HTTP交付缺口保留。"
+      "evidence": "无新增固定错误或生成样本；完整交付覆盖不足"
+    },
+    {
+      "region": "global",
+      "service": "clone_tts",
+      "backendVerdict": "证据不足",
+      "evidence": "健康检查正常，无本轮新增生成样本"
+    },
+    {
+      "region": "cn",
+      "service": "clone_tts",
+      "backendVerdict": "证据不足",
+      "evidence": "健康检查正常，无本轮新增生成样本"
     }
   ],
-  "latestBackendObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/backend-review.json",
+  "latestBackendObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-review.json",
   "latestKnownQuickreadDisconnectedLogs": [
     {
       "region": "us",
@@ -222,9 +222,9 @@
     }
   ],
   "latestBackendSupplySnapshotPaths": [
-    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/backend-supply/us-backend-supply.json",
-    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/backend-supply/cn-backend-supply.json",
-    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/observation/backend-supply/us-gpu-backend-supply.json"
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-supply/us-backend-supply.json",
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-supply/cn-backend-supply.json",
+    "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0718Z/backend-supply/us-gpu-backend-supply.json"
   ],
   "latestBackendLatencyWatch": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260907T0556Z/latency-watch.json",
   "latestProxyReadTransport": "ssh_compression",
@@ -296,14 +296,10 @@
     "note": "Original403 responses preserved. An authorized CLI account read succeeded, followed by a200 logs diagnostic and successful unchanged-window retries; this is collection recovery, not a productionTTS outage."
   },
   "latestBackendPerformanceObservation": {
-    "observedThroughUTC": "2026-09-07T05:56:19.987000+00:00",
-    "successfulRequestFinishP95Ms": 1540,
-    "proxyHeadersP95Ms": 1353.983,
+    "observedThroughUTC": "2026-09-07T07:18:20.570000+00:00",
+    "successfulRequestFinishP95Ms": 1022,
+    "proxyHeadersP95Ms": 963.884,
     "sustainedGlobalRecoveryEstablished": false,
-    "cnSlowProbeCompletionUTCs": [
-      "2026-09-07T05:01:52.109000Z",
-      "2026-09-07T05:07:07.626000Z"
-    ],
     "cnServerSlowStageEstablished": false
   },
   "knownBackendValidationRejectionKeys": [
@@ -674,5 +670,10 @@
       "reviewPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r135/README.md",
       "maintenanceFailureIncluded": true
     }
-  ]
+  ],
+  "latestBackendHeartbeatDecision": {
+    "decision": "DONT_NOTIFY",
+    "reason": "R135修复及中国区维护故障已在正常任务说明；本轮身份一致、无新增后端错误，既有供给恢复持续。",
+    "reviewedAtUTC": "2026-09-07T07:24:23.211799+00:00"
+  }
 }
