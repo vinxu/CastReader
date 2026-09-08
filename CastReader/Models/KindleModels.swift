@@ -295,6 +295,37 @@ enum KindlePlaybackLifecycleContract {
 /// Kindle may stage its WebView during the old tail, but the held old-page frame
 /// is not released until both the spoken boundary and new surface are ready.
 enum KindleContinuousPageHandoffContract {
+    struct PreparedAudioTail {
+        let remainingAudioSeconds: Double
+        let lastSegmentID: String
+    }
+
+    /// Every remaining paragraph must be fully generated. Missing audio is not
+    /// zero-duration audio: it cannot authorize an early visual transition.
+    static func preparedAudioTail(
+        paragraphs: [[AudioSegment]],
+        currentSegmentID: String,
+        currentTime: Double,
+        currentDuration: Double
+    ) -> PreparedAudioTail? {
+        guard currentTime.isFinite, currentTime >= 0,
+              currentDuration.isFinite, currentDuration > 0,
+              !paragraphs.isEmpty, paragraphs.allSatisfy({ !$0.isEmpty }),
+              let currentIndex = paragraphs[0].firstIndex(where: { $0.id == currentSegmentID }),
+              let last = paragraphs.last?.last else { return nil }
+        let following = Array(paragraphs[0].dropFirst(currentIndex + 1)) + paragraphs.dropFirst().flatMap { $0 }
+        guard following.allSatisfy({ $0.duration.isFinite && $0.duration > 0 }) else { return nil }
+        let remaining = max(0, currentDuration - currentTime) + following.reduce(0) { $0 + $1.duration }
+        guard remaining.isFinite else { return nil }
+        return PreparedAudioTail(remainingAudioSeconds: remaining, lastSegmentID: last.id)
+    }
+
+    // Real next-page confirmation, overlay installation and replacement TTS
+    // took up to 3.45 seconds on the device when a speculative target missed.
+    // The old raster and its moving highlight remain visible until the spoken
+    // boundary; this budget advances preparation, never the visible page/audio.
+    static let visualTurnLeadSeconds: Double = 4
+
     static func shouldArm(
         isReadMode: Bool,
         isLastReadableParagraph: Bool,
@@ -312,12 +343,19 @@ enum KindleContinuousPageHandoffContract {
         predecessorSegmentID: String,
         remainingAudioSeconds: Double,
         playbackRate: Float,
-        wallClockLeadSeconds: Double = 1.4
+        wallClockLeadSeconds: Double = visualTurnLeadSeconds
     ) -> Bool {
         guard currentSegmentID == predecessorSegmentID,
-              remainingAudioSeconds >= 0 else { return false }
+              remainingAudioSeconds.isFinite, remainingAudioSeconds >= 0,
+              playbackRate.isFinite,
+              wallClockLeadSeconds.isFinite, wallClockLeadSeconds >= 0 else { return false }
         let rate = max(0.25, Double(playbackRate))
         return remainingAudioSeconds / rate <= wallClockLeadSeconds
+    }
+
+    static func shouldBeginPagePreparation(_ tail: PreparedAudioTail, playbackRate: Float) -> Bool {
+        guard playbackRate.isFinite else { return false }
+        return tail.remainingAudioSeconds / max(0.25, Double(playbackRate)) <= visualTurnLeadSeconds
     }
 
     static func shouldReleaseAudioGate(

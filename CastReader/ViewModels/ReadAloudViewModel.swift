@@ -929,6 +929,32 @@ final class ReadAloudViewModel: ObservableObject {
         return true
     }
 
+    /// Include the generated remainder of this page, even when its final
+    /// paragraph is only a short phrase. This is preparation evidence only;
+    /// the coordinator must still wait for that paragraph to own the queue
+    /// before appending next-page audio.
+    var preparedKindlePageAudioTail: KindleContinuousPageHandoffContract.PreparedAudioTail? {
+        guard document.sourceKind == .kindle,
+              currentTTSCompleteForPageHandoff,
+              let current = audio.currentSegment,
+              let position = readableIndices.firstIndex(of: currentParagraphIndex),
+              let currentSegments = segmentsByParagraph[currentParagraphIndex] else { return nil }
+        var paragraphs = [currentSegments]
+        for index in readableIndices.dropFirst(position + 1) {
+            if let ready = kindlePrefetchedSegments[index], !ready.isEmpty {
+                paragraphs.append(ready)
+            } else if prefetchedIndex == index, !prefetchedSegments.isEmpty {
+                paragraphs.append(prefetchedSegments)
+            } else {
+                return nil
+            }
+        }
+        return KindleContinuousPageHandoffContract.preparedAudioTail(
+            paragraphs: paragraphs, currentSegmentID: current.id,
+            currentTime: audio.currentTime, currentDuration: audio.duration
+        )
+    }
+
     /// A speculative next-page cache must never bypass the ordinary listen
     /// quota gate merely because its audio was generated early.
     var canContinueAcrossLivePageBoundary: Bool {

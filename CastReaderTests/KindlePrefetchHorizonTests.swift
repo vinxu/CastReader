@@ -110,6 +110,44 @@ final class KindlePrefetchHorizonTests: XCTestCase {
         XCTAssertFalse(fixture.requests.contains(texts[9]))
         XCTAssertEqual(fixture.requests.count, 9)
     }
+    func testPageTailIncludesPreparedShortFinalParagraphsWithoutAppendingThemEarly() async throws {
+        let texts = ["A longer penultimate sentence.", "A short phrase.", "The end."]
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: input == texts[0] ? 5 : 0.4))
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: document(texts), audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        vm.dbgGenerate(0)
+        try await waitUntil { vm.preparedKindlePageAudioTail != nil }
+        let tail = try XCTUnwrap(vm.preparedKindlePageAudioTail)
+        XCTAssertEqual(vm.currentParagraphIndex, 0)
+        XCTAssertFalse(vm.isOnLastReadableParagraph)
+        XCTAssertEqual(tail.lastSegmentID, "2-0")
+        XCTAssertEqual(audio.queuedTailSegmentID, "0-0", "Prepared future paragraphs still belong to the VM's normal promotion path")
+        XCTAssertEqual(tail.remainingAudioSeconds, max(0, audio.duration - audio.currentTime) + 0.8, accuracy: 0.04)
+        XCTAssertTrue(KindleContinuousPageHandoffContract.shouldBeginPagePreparation(tail, playbackRate: 2))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldBeginPagePreparation(tail, playbackRate: 0.5))
+    }
+
+    func testPageTailCannotTreatAnUnfinishedFinalRequestAsZeroSeconds() async throws {
+        let texts = ["Keep reading this longer sentence.", "This is still being generated."]
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: input == texts[0] ? 5 : 0.4),
+                      delay: input == texts[1] ? 0.5 : 0)
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: document(texts), audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        vm.dbgGenerate(0)
+        try await waitUntil { fixture.requests.contains(texts[1]) }
+        XCTAssertNil(vm.preparedKindlePageAudioTail)
+        try await waitUntil { vm.preparedKindlePageAudioTail != nil }
+        XCTAssertEqual(vm.preparedKindlePageAudioTail?.lastSegmentID, "1-0")
+    }
+
     func testOtherReaderSourcesRetainSingleParagraphPrefetch() async throws {
         let texts = (0..<10).map { "Paragraph \($0)." }
         let fixture = ReadAloudHTTPFixture { input, _ in

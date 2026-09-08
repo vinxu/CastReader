@@ -22,6 +22,7 @@ struct MarkInkView: View {
     var inkColor: Color = Color(red: 253/255, green: 95/255, blue: 1/255)        // #FD5F01 统一橙（深浅都清晰）
     var highlightColor: Color = Color(red: 253/255, green: 95/255, blue: 1/255)  // 同基色，绘制时各自叠 alpha
     var weight: String? = nil   // P1：重要度分层 → 笔触粗细倍率（nil = 普通，零回归）
+    var animateOnAppear = true
 
     @State private var progress: CGFloat = 0
 
@@ -33,6 +34,7 @@ struct MarkInkView: View {
         .allowsHitTesting(false)
         .onAppear {
             guard progress == 0 else { return }   // 复用/重绘时不重播已画完的 mark
+            guard animateOnAppear else { progress = 1; return }
             // 延迟一帧让 progress=0（落笔起点）先渲染，再动画到 1——否则 SwiftUI 在 overlay/LazyVStack
             // 里常首帧直接画终值、看不到落笔过程（常驻阅读器不重建后此问题暴露）。对齐 Chrome 扩展落笔。
             DispatchQueue.main.async {

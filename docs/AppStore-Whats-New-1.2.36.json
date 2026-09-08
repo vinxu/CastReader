@@ -1,0 +1,13 @@
+{
+  "en-US": "• Improved speech request handling and recovery from connection errors.\n• Improved Kindle page preloading and continuous reading between pages.\n• More accurate word highlighting for compound words in Kindle books.",
+  "zh-Hans": "• 优化语音请求处理和连接异常恢复。\n• 改善 Kindle 页面预加载与跨页连续朗读。\n• 提升 Kindle 书籍中复合词的高亮对齐准确性。",
+  "ja": "• 音声リクエストの処理と接続エラーからの復旧を改善しました。\n• Kindle のページ先読みと、ページをまたぐ連続読み上げを改善しました。\n• Kindle 書籍の複合語のハイライト精度を向上しました。",
+  "es-ES": "• Mejoras en las solicitudes de voz y la recuperación tras errores de conexión.\n• Mejoras en la precarga de páginas de Kindle y la lectura continua entre páginas.\n• Resaltado más preciso de palabras compuestas en libros de Kindle.",
+  "fr-FR": "• Amélioration du traitement des requêtes vocales et de la récupération après une erreur de connexion.\n• Amélioration du préchargement des pages Kindle et de la lecture continue entre les pages.\n• Surlignage plus précis des mots composés dans les livres Kindle.",
+  "pt-BR": "• Melhorias no processamento de solicitações de voz e na recuperação após erros de conexão.\n• Melhorias no pré-carregamento de páginas do Kindle e na leitura contínua entre páginas.\n• Destaque mais preciso de palavras compostas em livros do Kindle.",
+  "it": "• Migliorata la gestione delle richieste vocali e il recupero dopo errori di connessione.\n• Migliorati il precaricamento delle pagine Kindle e la lettura continua tra le pagine.\n• Evidenziazione più precisa delle parole composte nei libri Kindle.",
+  "hi": "• आवाज़ संबंधी अनुरोधों और कनेक्शन त्रुटियों के बाद बहाली में सुधार।\n• Kindle पेजों की प्रीलोडिंग और पेजों के बीच लगातार पढ़कर सुनाने में सुधार।\n• Kindle पुस्तकों में संयुक्त शब्दों को अधिक सटीक रूप से हाइलाइट किया जाता है।",
+  "de-DE": "• Verbesserte Verarbeitung von Sprachanfragen und Wiederherstellung nach Verbindungsfehlern.\n• Verbessertes Vorladen von Kindle-Seiten und fortlaufendes Vorlesen über Seitengrenzen hinweg.\n• Genauere Hervorhebung zusammengesetzter Wörter in Kindle-Büchern.",
+  "zh-Hant": "• 最佳化語音請求處理和連線異常恢復。\n• 改善 Kindle 頁面預先載入與跨頁連續朗讀。\n• 提升 Kindle 書籍中複合詞的反白對齊準確性。",
+  "es-MX": "• Mejoras en las solicitudes de voz y la recuperación tras errores de conexión.\n• Mejoras en la precarga de páginas de Kindle y la lectura continua entre páginas.\n• Resaltado más preciso de palabras compuestas en libros de Kindle."
+}

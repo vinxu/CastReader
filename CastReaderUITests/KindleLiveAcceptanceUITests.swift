@@ -6,6 +6,14 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
     private func wait(_ timeout: Double, _ condition: @escaping () -> Bool, file: StaticString = #filePath, line: UInt = #line) {
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             let app = XCUIApplication()
+            // The user's clipboard may legitimately offer a different reading
+            // task at launch. Dismiss that visible suggestion through its UI;
+            // never read or overwrite clipboard contents for this Kindle test.
+            if app.staticTexts["There's text in your clipboard"].exists {
+                let ignore = app.buttons["Ignore"]
+                if ignore.isHittable { ignore.tap() }
+                return false
+            }
             // The authorized account can have another device's saved location.
             // Keep this test's current page through Amazon's visible native UI.
             if app.staticTexts["Most Recent Page Read"].exists {
@@ -27,11 +35,18 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
             let settings = app.buttons["kindleReadingSettingsButton"]
             let loading = app.webViews.descendants(matching: .any)
                 .matching(NSPredicate(format: "label == %@", "Loading content")).firstMatch
-            let ready = play.value as? String == "Paused" && play.isEnabled && play.isHittable &&
-                settings.isEnabled && settings.isHittable && !loading.exists &&
-                !app.activityIndicators.firstMatch.exists &&
+            // During the reader's presentation iOS can publish controls with
+            // zero frames. Asking isHittable then raises an XCTest failure
+            // instead of returning false. Wait for actual laid-out controls.
+            let playFrame = play.frame
+            let settingsFrame = settings.frame
+            let ready = !loading.exists && !app.activityIndicators.firstMatch.exists &&
                 !app.buttons["kindleReadingSettingsDone"].exists &&
-                !app.staticTexts["Most Recent Page Read"].exists
+                !app.staticTexts["Most Recent Page Read"].exists &&
+                playFrame.width > 1 && playFrame.height > 1 && playFrame.intersects(app.frame) &&
+                settingsFrame.width > 1 && settingsFrame.height > 1 && settingsFrame.intersects(app.frame) &&
+                play.value as? String == "Paused" && play.isEnabled && play.isHittable &&
+                settings.isEnabled && settings.isHittable
             guard ready else { readySince = nil; return false }
             if readySince == nil { readySince = Date() }
             return Date().timeIntervalSince(readySince!) >= 2
@@ -150,7 +165,11 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         app.launch()
         let book = app.buttons["homeShelfBook.kindle.B002RKRMSY"]
         XCTAssertTrue(book.waitForExistence(timeout: 20))
-        for _ in 0..<6 where !book.isHittable { app.swipeUp() }
+        wait(30) {
+            if book.isHittable { return true }
+            app.swipeUp()
+            return false
+        }
         book.tap()
         XCTAssertTrue(app.buttons["kindleReadingSettingsButton"].waitForExistence(timeout: 60))
         waitForPausedReader(app)
@@ -195,6 +214,32 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         XCTAssertNotEqual(previous, "page=none")
         var visited: Set<String> = [previous]
         snapshot(app, "\(mode)-\(voice)-continuous-start")
+        if environment["CASTREADER_ACCEPTANCE_MANUAL_HELD_PAGE"] == "1" {
+            let held = app.otherElements["kindleHeldPageNavigationState"]
+            for direction in ["next", "previous"] {
+                wait(240) { (held.value as? String ?? "none").contains(" next=") }
+                let state = try XCTUnwrap(held.value as? String)
+                let fields = state.split(separator: " ").map(String.init)
+                let old = try XCTUnwrap(fields.first?.replacingOccurrences(of: "old=", with: "page="))
+                let target = try XCTUnwrap(fields.last?.replacingOccurrences(of: "next=", with: "page="))
+                XCTAssertNotEqual(old, target)
+                app.buttons[direction == "next" ? "kindleNextPageButton" : "kindlePreviousPageButton"].tap()
+                wait(90) {
+                    guard playbackState() == "playing", let actual = surface.value as? String else { return false }
+                    return actual != "page=none" && actual != old
+                }
+                let actual = try XCTUnwrap(surface.value as? String)
+                if direction == "next" {
+                    XCTAssertEqual(actual, target, "Next must adopt the already prepared successor, never turn twice")
+                } else {
+                    XCTAssertNotEqual(actual, target, "Previous must be relative to the displayed old page")
+                }
+                snapshot(app, "\(mode)-\(voice)-held-manual-\(direction)")
+            }
+            playControl().tap()
+            wait(15) { playbackState() == "paused" }
+            return
+        }
         if let seconds = environment["CASTREADER_ACCEPTANCE_QUIET_SECONDS"].flatMap(Double.init) {
             XCTAssertTrue((60...900).contains(seconds))
             // Frequent XCTest AX snapshots can stall short-word display on a

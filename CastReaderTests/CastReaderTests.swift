@@ -1704,6 +1704,34 @@ class CastReaderTests: XCTestCase {
         )
     }
 
+    func testKindleVisualPreparationBudgetsRealTimeWithoutReleasingTheOldPageEarly() {
+        for rate: Float in [0.5, 1, 1.5, 2, 3] {
+            XCTAssertTrue(KindleContinuousPageHandoffContract.shouldBeginVisualTurn(
+                currentSegmentID: "tail", predecessorSegmentID: "tail",
+                remainingAudioSeconds: 3.9 * Double(rate), playbackRate: rate
+            ))
+            XCTAssertFalse(KindleContinuousPageHandoffContract.shouldBeginVisualTurn(
+                currentSegmentID: "tail", predecessorSegmentID: "tail",
+                remainingAudioSeconds: 4.1 * Double(rate), playbackRate: rate
+            ))
+        }
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldBeginVisualTurn(
+            currentSegmentID: "tail", predecessorSegmentID: "tail",
+            remainingAudioSeconds: .nan, playbackRate: 1
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldBeginVisualTurn(
+            currentSegmentID: "tail", predecessorSegmentID: "tail",
+            remainingAudioSeconds: 1, playbackRate: .infinity
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseVisualHold(
+            audioBoundaryReached: false, hasConfirmedVisibleSurface: true
+        ), "Prepared next-page content cannot replace the still-spoken page")
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
+            hasConfirmedVisibleSurface: true, textFingerprintMatches: true,
+            firstHighlightHandshakeFinished: false
+        ))
+    }
+
     func testKindleContinuousHandoffRequiresFreshTargetDocumentOwner() {
         XCTAssertTrue(KindleContinuousPageHandoffContract.canAdoptPreparedAudio(
             previousOwnerDocumentID: "doc-a",

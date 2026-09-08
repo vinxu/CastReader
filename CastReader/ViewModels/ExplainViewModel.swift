@@ -158,6 +158,33 @@ final class ExplainViewModel: ObservableObject {
     private var playbackCoverURL: String?
     var onDocumentFinished: (() -> Void)?
 
+    /// The complete generated remainder of an authoritative page can authorize
+    /// visual preparation. A short final block must not collapse the lead time;
+    /// unfinished blocks and fast-lane placeholder counts cannot count as zero.
+    var kindlePagePreparationLeadSeconds: Double {
+        // The first cloned explanation includes authenticated generation and
+        // composition; measured cold successors take 11–13 seconds on device.
+        playbackVoiceID.hasPrefix("vc_") ? 16 : 10
+    }
+
+    var preparedLivePageAudioTail: KindleContinuousPageHandoffContract.PreparedAudioTail? {
+        guard doc.sourceKind == .kindle, ownsAudioQueue,
+              planSettled, !planFailed, !isReplayingCached,
+              pdfBatchCursor == nil, totalBlocks > 0,
+              (0..<totalBlocks).contains(currentBlockIndex),
+              activeVoiceSwitchID == nil,
+              let segment = audio.currentSegment else { return nil }
+        let remainingBlocks = (currentBlockIndex..<totalBlocks).map {
+            prepared[$0]?.segments ?? []
+        }
+        return KindleContinuousPageHandoffContract.preparedAudioTail(
+            paragraphs: remainingBlocks,
+            currentSegmentID: segment.id,
+            currentTime: audio.currentTime,
+            currentDuration: audio.duration
+        )
+    }
+
     /// 发给后端的解读深度：永远 = 用户在设置里选的 3 档（速览/标准/深入），场景绝不改它（content_type 与 depth 正交）。
     var requestDepth: String { settings.explainDepth }
 
@@ -320,8 +347,18 @@ final class ExplainViewModel: ObservableObject {
         let outputLanguage: String
         let textFingerprint: String
         let previousSummary: String?
+        let voiceID: String
+        let requestedLanguage: String
+        let depth: String
         fileprivate let section0: QuickreadSection
         fileprivate let block0: PreparedBlock
+
+        @MainActor var matchesCurrentSettings: Bool {
+            let settings = AppSettings.shared
+            return requestedLanguage == settings.explainLanguage &&
+                depth == settings.explainDepth &&
+                voiceID == settings.voice(for: outputLanguage)
+        }
     }
 
     private var jobId: String = ""
@@ -986,6 +1023,11 @@ final class ExplainViewModel: ObservableObject {
 
     private func startFromPrefetched(_ prefetched: PrefetchedFirstBlock, allowAccessRefresh: Bool) {
         guard status == .idle || isErrorState else { return }
+        guard prefetched.matchesCurrentSettings else {
+            kindlePerfLog("prefetched-start discarded settings-changed")
+            start()
+            return
+        }
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
@@ -1874,8 +1916,9 @@ final class ExplainViewModel: ObservableObject {
 
     /// 讲解 section → 可播放块（TTS + 拼时间线 + composeBlock 回填 mark.at）。参数化 jobId/语言 → 当前页与页间预取共用。
     /// idx = iOS 块序（TTS 段标识、匹配 currentBlockIndex）；composeIdx = 质道块号（快道激活后两者差 idxBase）。
-    private func prepareSection(_ section: QuickreadSection, idx: Int, composeIdx: Int, jobId: String, language: String, detachedTTS: Bool = false) async throws -> PreparedBlock {
+    private func prepareSection(_ section: QuickreadSection, idx: Int, composeIdx: Int, jobId: String, language: String, detachedTTS: Bool = false, voiceOverride: String? = nil) async throws -> PreparedBlock {
         let startedAt = Date()
+        let voiceID = voiceOverride ?? settings.voice(for: language)
         // TTS 讲解文本（收集全部 segment）
         var segs: [AudioSegment] = []
         let ttsStartedAt = Date()
@@ -1883,7 +1926,7 @@ final class ExplainViewModel: ObservableObject {
             segs = try await TTSService.shared.generatePrefetchSegments(
                 paragraphIndex: idx,
                 text: section.text,
-                voice: settings.voice(for: language),
+                voice: voiceID,
                 speed: 1.0,
                 language: language
             )
@@ -1891,7 +1934,7 @@ final class ExplainViewModel: ObservableObject {
             try await TTSService.shared.generateTTSForParagraph(
                 paragraphIndex: idx,
                 text: section.text,
-                voice: settings.voice(for: language),
+                voice: voiceID,
                 speed: 1.0,
                 language: language
             ) { segment in
@@ -2271,6 +2314,8 @@ final class ExplainViewModel: ObservableObject {
             $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count
         }
         guard readableChars >= minExplainChars else { throw QuickReadError.noBlock0 }
+        let requestedLanguage = settings.explainLanguage
+        let depth = settings.explainDepth
         let req = buildPlanRequest(document: targetDocument, paras: targetDocument.paragraphs, prevSummary: previousSummary)
         let box = PlanBlock0Box()
         let done = try await QuickReadService.forDocument(targetDocument).extractPlan(
@@ -2280,6 +2325,7 @@ final class ExplainViewModel: ObservableObject {
         )
         guard let b = box.value else { throw QuickReadError.noBlock0 }
         let lang = b.output_language ?? settings.explainLangOrNil ?? targetDocument.language
+        let voiceID = settings.voice(for: lang)
         var total = max(1, b.total_blocks)
         if let tb = done.total_blocks, tb > total { total = tb }
         let pb0 = try await prepareSection(
@@ -2288,8 +2334,13 @@ final class ExplainViewModel: ObservableObject {
             composeIdx: 0,
             jobId: b.job_id,
             language: lang,
-            detachedTTS: true
+            detachedTTS: true,
+            voiceOverride: voiceID
         )
+        try Task.checkCancellation()
+        guard requestedLanguage == settings.explainLanguage,
+              depth == settings.explainDepth,
+              voiceID == settings.voice(for: lang) else { throw CancellationError() }
         debugLog("prefetch first block READY job=%@ total=%d marks=%d text=%d fp=%@",
                  b.job_id, total, pb0.marks.count, pb0.text.count, String(textFingerprint.prefix(24)))
         return PrefetchedFirstBlock(
@@ -2298,6 +2349,9 @@ final class ExplainViewModel: ObservableObject {
             outputLanguage: lang,
             textFingerprint: textFingerprint,
             previousSummary: previousSummary,
+            voiceID: voiceID,
+            requestedLanguage: requestedLanguage,
+            depth: depth,
             section0: b.block_0,
             block0: pb0
         )
