@@ -1,0 +1,59 @@
+[
+  {
+    "path": "src/app/api/captioned_speech_partly/route.ts",
+    "commit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+    "sha256": "024f79c318bec6ccaa4ee3ed8f23209c111220358193edda575cb1ef9faeb33a",
+    "exportedHttpMethods": [
+      "HEAD",
+      "POST"
+    ],
+    "sourceMatches": []
+  },
+  {
+    "path": "src/shared/lib/tts-gateway.ts",
+    "commit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+    "sha256": "93a0d06edf3bbfbf3eceea58d0c2eae1f4bbbcc130e3f1e59e1b3874039abb1c",
+    "exportedHttpMethods": [],
+    "sourceMatches": []
+  },
+  {
+    "path": "src/shared/voice-clone/entitlements.ts",
+    "commit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+    "sha256": "789a8624f1616f60d4e5840921fca056d6005032bd432061c2cb479e05ebf78e",
+    "exportedHttpMethods": [],
+    "sourceMatches": [
+      {
+        "literal": "CLONE_QUOTA_EXHAUSTED",
+        "line": 615
+      }
+    ]
+  },
+  {
+    "path": "src/shared/voice-clone/worker.ts",
+    "commit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+    "sha256": "a72325c7b6aab55b530f5a39eda16c271b518fa9e8f58f2160e747172fd86277",
+    "exportedHttpMethods": [],
+    "sourceMatches": [
+      {
+        "literal": "response.status === 429",
+        "line": 79
+      }
+    ]
+  },
+  {
+    "path": "src/shared/pro/google-play-reconcile.ts",
+    "commit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+    "sha256": "622b74e6bd401ef693eb5eeea06b5a4b5e15d3faf439c95b34b0d9d080a5a56d",
+    "exportedHttpMethods": [],
+    "sourceMatches": [
+      {
+        "literal": "[google-play-reconcile] incomplete",
+        "line": 112
+      },
+      {
+        "literal": "[google-play-reconcile] storage failure",
+        "line": 118
+      }
+    ]
+  }
+]

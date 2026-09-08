@@ -1,0 +1,6 @@
+{
+  "collectionFailed": true,
+  "errorClass": "HTTPError",
+  "queryStatus": "5xx",
+  "collectorSha256": "5a50353dd606d76ff723ea58897ca7d3fd2617375a9ceaaf487694b98b84a729"
+}

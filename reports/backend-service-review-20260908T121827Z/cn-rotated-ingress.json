@@ -1,0 +1,143 @@
+{
+  "schema": "castreader.cn-rotated-tts-ingress.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-07T12:18:27+00:00",
+    "incrementalStartUTC": "2026-09-07T12:18:27+00:00",
+    "endUTCExclusive": "2026-09-08T12:18:27+00:00"
+  },
+  "sources": [
+    {
+      "path": "/var/log/nginx/access.log.1",
+      "bytes": 4442956,
+      "sha256": "cfdc24ae23cb16a2680cfa783cbb2eca7eaa29a68e5370084c7a8a6cc61debf0",
+      "unparsedLines": 88,
+      "firstParsedUTC": "2026-09-06T16:00:02+00:00",
+      "lastParsedUTC": "2026-09-07T15:59:55+00:00"
+    },
+    {
+      "path": "/var/log/nginx/access.log",
+      "bytes": 4084277,
+      "sha256": "24eed29455bbd9b48780de7297a6517beb405d84309a4b560b7178632ceb9846",
+      "unparsedLines": 72,
+      "firstParsedUTC": "2026-09-07T16:00:02+00:00",
+      "lastParsedUTC": "2026-09-08T12:20:48+00:00"
+    }
+  ],
+  "orderedFilesHaveNonoverlappingTimestamps": true,
+  "cumulativeStatuses": {
+    "200": 3892,
+    "499": 12
+  },
+  "incrementalStatuses": {
+    "200": 3892,
+    "499": 12
+  },
+  "non200Rows": [
+    {
+      "atUTC": "2026-09-07T14:09:46+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "b1ef411125a248a7b68f",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T02:24:33+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "57c7da78ee412f370a1a",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T03:44:04+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "487d7c9e09590ec7d925",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T03:44:09+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "2f6a4e2596a371c610c8",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T03:44:20+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "738fa3e00da35a225b15",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T03:46:06+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "a2e06e3be288b1abd0c8",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T03:46:16+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "b215282cd7cbc98e9543",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T03:46:16+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "b215282cd7cbc98e9543",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T03:46:19+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "ad9544cb92e0cd6455d0",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T03:52:38+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "ef8a6ff4b03aa60ca581",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T05:15:22+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "f564f1fd440e907b51f5",
+      "incremental": true
+    },
+    {
+      "atUTC": "2026-09-08T08:58:34+00:00",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "loggedStatus": 499,
+      "lineFingerprint": "1ba6abe889756919c8bd",
+      "incremental": true
+    }
+  ],
+  "limitations": [
+    "Both retained files are read; original current-file-only snapshot is preserved and not used as a cumulative total.",
+    "Unparsed lines remain a coverage limitation. HTTP200 is not proof of complete playback.",
+    "Ingress log has no request-id join or voice attribution; 499 does not prove the status was delivered to a caller."
+  ],
+  "collectorSha256": "949d6c5fce774f3b3dcfb681062522a9f1bdb424438f2e13300bc1248b25a4e1"
+}

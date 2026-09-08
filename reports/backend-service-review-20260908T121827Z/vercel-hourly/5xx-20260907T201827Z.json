@@ -1,0 +1,42 @@
+{
+  "statusQuery": "5xx",
+  "startUTC": "2026-09-07T20:18:27Z",
+  "endUTCExclusive": "2026-09-07T21:18:27Z",
+  "pages": 1,
+  "issues": [],
+  "completeReturnedPages": true,
+  "uniqueRequests": 4,
+  "coreRecords": [
+    {
+      "requestKey": "128c79baf3e1a58d018e",
+      "observedAtUtc": "2026-09-07T20:52:40.477000Z",
+      "path": "/api/captioned_speech_partly",
+      "routeGroup": "tts",
+      "status": 500,
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "domainClass": "api.castreader.ai",
+      "failureCodes": [
+        "http_500_unclassified"
+      ],
+      "durationMs": 60018,
+      "method": "GET"
+    },
+    {
+      "requestKey": "5d65ed7264224393cd25",
+      "observedAtUtc": "2026-09-07T20:50:23.980000Z",
+      "path": "/api/captioned_speech_partly",
+      "routeGroup": "tts",
+      "status": 500,
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "domainClass": "api.castreader.ai",
+      "failureCodes": [
+        "http_500_unclassified"
+      ],
+      "durationMs": 60021,
+      "method": "GET"
+    }
+  ],
+  "otherStatusCounts": {
+    "503": 2
+  }
+}

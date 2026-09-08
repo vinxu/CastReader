@@ -1,0 +1,32 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-07T12:18:27Z",
+    "endUTCExclusive": "2026-09-08T12:18:27Z"
+  },
+  "queryStatus": "3xx",
+  "deploymentPinned": false,
+  "coverage": {
+    "pagesRead": 17,
+    "providerHasMoreRows": false,
+    "issues": [],
+    "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+    "tlsCertificateAndHostnameVerified": true,
+    "invalidRows": 0,
+    "duplicateProviderRows": 16
+  },
+  "uniqueReturnedRequests": 787,
+  "coreRecords": [],
+  "nonCoreStatusCounts": {
+    "301": 380,
+    "307": 326,
+    "304": 81
+  },
+  "limitations": [
+    "Provider pagination completeness is not proof of complete ingestion or retention.",
+    "Includes all returned production deployments; non-core page failures are excluded from audio service records."
+  ],
+  "collectorSha256": "5a50353dd606d76ff723ea58897ca7d3fd2617375a9ceaaf487694b98b84a729"
+}

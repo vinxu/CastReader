@@ -1,0 +1,53 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-07T12:18:27Z",
+    "endUTCExclusive": "2026-09-08T12:18:27Z"
+  },
+  "queryStatus": "4xx",
+  "deploymentPinned": false,
+  "coverage": {
+    "pagesRead": 100,
+    "providerHasMoreRows": true,
+    "issues": [
+      "pagination_incomplete"
+    ],
+    "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+    "tlsCertificateAndHostnameVerified": true,
+    "invalidRows": 0,
+    "duplicateProviderRows": 100
+  },
+  "uniqueReturnedRequests": 4900,
+  "coreRecords": [
+    {
+      "requestKey": "b58187346fe296791437",
+      "observedAtUtc": "2026-09-08T09:44:10.492000Z",
+      "path": "/api/captioned_speech_partly",
+      "routeGroup": "tts",
+      "status": 429,
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "domainClass": "api.castreader.ai",
+      "failureCodes": [
+        "http_429_unclassified"
+      ],
+      "method": "POST",
+      "durationMs": 493,
+      "applicationEvents": []
+    }
+  ],
+  "nonCoreStatusCounts": {
+    "410": 3602,
+    "404": 441,
+    "409": 821,
+    "422": 24,
+    "401": 4,
+    "405": 7
+  },
+  "limitations": [
+    "Provider pagination completeness is not proof of complete ingestion or retention.",
+    "Includes all returned production deployments; non-core page failures are excluded from audio service records."
+  ],
+  "collectorSha256": "5a50353dd606d76ff723ea58897ca7d3fd2617375a9ceaaf487694b98b84a729"
+}

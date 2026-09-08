@@ -1,0 +1,31 @@
+{
+  "statusQuery": "4xx",
+  "startUTC": "2026-09-08T09:18:27Z",
+  "endUTCExclusive": "2026-09-08T10:18:27Z",
+  "pages": 8,
+  "issues": [],
+  "completeReturnedPages": true,
+  "uniqueRequests": 360,
+  "coreRecords": [
+    {
+      "requestKey": "b58187346fe296791437",
+      "observedAtUtc": "2026-09-08T09:44:10.492000Z",
+      "path": "/api/captioned_speech_partly",
+      "routeGroup": "tts",
+      "status": 429,
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "domainClass": "api.castreader.ai",
+      "failureCodes": [
+        "http_429_unclassified"
+      ],
+      "durationMs": 493,
+      "method": "POST"
+    }
+  ],
+  "otherStatusCounts": {
+    "410": 313,
+    "404": 26,
+    "409": 18,
+    "422": 2
+  }
+}

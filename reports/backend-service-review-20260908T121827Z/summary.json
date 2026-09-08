@@ -1,0 +1,392 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "newProductionSynthesis": false,
+  "window": {
+    "startUTC": "2026-09-07T12:18:27Z",
+    "endUTCExclusive": "2026-09-08T12:18:27Z"
+  },
+  "direct": {
+    "requests": 46521,
+    "statusCounts": {
+      "200": 46178,
+      "no_response": 343
+    },
+    "closedPercent": 0.7373,
+    "versions": [
+      {
+        "platform": "android",
+        "version": "1.0.43",
+        "requests": 222,
+        "http200": 222,
+        "closedBeforeResponse": 0,
+        "closedPercent": 0.0
+      },
+      {
+        "platform": "android",
+        "version": "1.0.45",
+        "requests": 56,
+        "http200": 56,
+        "closedBeforeResponse": 0,
+        "closedPercent": 0.0
+      },
+      {
+        "platform": "android",
+        "version": "1.0.46",
+        "requests": 9397,
+        "http200": 9189,
+        "closedBeforeResponse": 208,
+        "closedPercent": 2.2135
+      },
+      {
+        "platform": "android",
+        "version": "1.0.47",
+        "requests": 3118,
+        "http200": 3060,
+        "closedBeforeResponse": 58,
+        "closedPercent": 1.8602
+      },
+      {
+        "platform": "extension",
+        "version": "1.2.37",
+        "requests": 32656,
+        "http200": 32650,
+        "closedBeforeResponse": 6,
+        "closedPercent": 0.0184
+      },
+      {
+        "platform": "ios",
+        "version": "1.2.35",
+        "requests": 406,
+        "http200": 376,
+        "closedBeforeResponse": 30,
+        "closedPercent": 7.3892
+      },
+      {
+        "platform": "ios",
+        "version": "1.2.36",
+        "requests": 661,
+        "http200": 620,
+        "closedBeforeResponse": 41,
+        "closedPercent": 6.2027
+      },
+      {
+        "platform": "unknown",
+        "version": "unknown",
+        "requests": 5,
+        "http200": 5,
+        "closedBeforeResponse": 0,
+        "closedPercent": 0.0
+      }
+    ],
+    "abortStageCounts": {
+      "upstream_headers": 333,
+      "upstream_body": 10
+    },
+    "closedElapsedMs": {
+      "min": 3,
+      "max": 4961
+    },
+    "proxyJoinByDirectOccurrence": {
+      "cancelled": 327,
+      "cancel_and_complete_same_key": 1,
+      "complete": 14,
+      "missing": 1
+    },
+    "elapsedMs": {
+      "samples": 46521,
+      "p50": 566.0,
+      "p95": 2042.0,
+      "max": 7994.0
+    }
+  },
+  "proxy": {
+    "counts": {
+      "stages": {
+        "request_received": 82098,
+        "request_body_read": 82098,
+        "flight_created": 81813,
+        "upstream_connect_started": 81813,
+        "upstream_connected": 81813,
+        "upstream_headers": 81485,
+        "upstream_first_body": 81468,
+        "upstream_complete": 81484,
+        "request_finished": 82097,
+        "flight_joined": 285,
+        "upstream_cancelled": 328
+      },
+      "phases": {
+        "admission": 163911,
+        "inbound_body": 82098,
+        "connect": 163626,
+        "response_headers": 81485,
+        "response_body": 81468,
+        "response_complete": 81484,
+        "completion": 82097,
+        "coalescing": 285,
+        "cancellation": 328
+      },
+      "finishedOutcomes": {
+        "complete": 81769,
+        "cancelled": 328
+      },
+      "finishedReportedStatuses": {
+        "200": 81769
+      },
+      "receivedAttempts": {
+        "1": 82098
+      },
+      "failureScopesAndLastObservedPhases": {},
+      "errorClasses": {}
+    },
+    "timingsMs": {
+      "request_body_read.elapsedMs": {
+        "n": 82098,
+        "median": 0.053,
+        "p95": 0.094,
+        "max": 0.602
+      },
+      "upstream_connected.connectMs": {
+        "n": 81813,
+        "median": 0.259,
+        "p95": 0.335,
+        "max": 6.462
+      },
+      "upstream_headers.elapsedMs": {
+        "n": 81485,
+        "median": 550.139,
+        "p95": 2037.829,
+        "max": 8187.544
+      },
+      "upstream_first_body.elapsedMs": {
+        "n": 81468,
+        "median": 550.247,
+        "p95": 2037.772,
+        "max": 8187.634
+      },
+      "upstream_complete.elapsedMs": {
+        "n": 81484,
+        "median": 550.568,
+        "p95": 2038.335,
+        "max": 8188.692
+      },
+      "request_finished.elapsedMs": {
+        "n": 82097,
+        "median": 552.343,
+        "p95": 2049.613,
+        "max": 8223.581
+      }
+    },
+    "identityAndCoverageVerified": true,
+    "boundaryCaveat": "received and finished count events by their own timestamps; difference of one is not automatically a failed request"
+  },
+  "vercel": {
+    "coreNon200": [
+      {
+        "requestKey": "128c79baf3e1a58d018e",
+        "observedAtUtc": "2026-09-07T20:52:40.477000Z",
+        "path": "/api/captioned_speech_partly",
+        "routeGroup": "tts",
+        "status": 500,
+        "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+        "domainClass": "api.castreader.ai",
+        "failureCodes": [
+          "http_500_unclassified"
+        ],
+        "durationMs": 60018,
+        "method": "GET"
+      },
+      {
+        "requestKey": "5d65ed7264224393cd25",
+        "observedAtUtc": "2026-09-07T20:50:23.980000Z",
+        "path": "/api/captioned_speech_partly",
+        "routeGroup": "tts",
+        "status": 500,
+        "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+        "domainClass": "api.castreader.ai",
+        "failureCodes": [
+          "http_500_unclassified"
+        ],
+        "durationMs": 60021,
+        "method": "GET"
+      },
+      {
+        "requestKey": "074bfd47641ddf39c5fe",
+        "observedAtUtc": "2026-09-07T13:54:58.647000Z",
+        "path": "/api/voice-clone/captioned-speech",
+        "routeGroup": "clone",
+        "status": 429,
+        "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+        "domainClass": "[other_or_missing_domain]",
+        "failureCodes": [
+          "http_429_unclassified"
+        ],
+        "durationMs": 528,
+        "method": "POST"
+      },
+      {
+        "requestKey": "b58187346fe296791437",
+        "observedAtUtc": "2026-09-08T09:44:10.492000Z",
+        "path": "/api/captioned_speech_partly",
+        "routeGroup": "tts",
+        "status": 429,
+        "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+        "domainClass": "api.castreader.ai",
+        "failureCodes": [
+          "http_429_unclassified"
+        ],
+        "durationMs": 493,
+        "method": "POST"
+      }
+    ],
+    "core500Details": [
+      {
+        "requestKey": "128c79baf3e1a58d018e",
+        "atUTC": "2026-09-07T20:52:40.477Z",
+        "recordedMethod": "GET",
+        "httpStatus": 500,
+        "outerDurationMs": 60018,
+        "platformErrorCode": "INTERNAL_FUNCTION_INVOCATION_FAILED",
+        "hasFunctionCrashed": false,
+        "attachedPresetCompletionElapsedMs": 538,
+        "attachedPresetCompletionStatus": 200,
+        "functionDurationsMs": [
+          578
+        ]
+      },
+      {
+        "requestKey": "5d65ed7264224393cd25",
+        "atUTC": "2026-09-07T20:50:23.980Z",
+        "recordedMethod": "GET",
+        "httpStatus": 500,
+        "outerDurationMs": 60021,
+        "platformErrorCode": "INTERNAL_FUNCTION_INVOCATION_FAILED",
+        "hasFunctionCrashed": false,
+        "attachedPresetCompletionElapsedMs": 446,
+        "attachedPresetCompletionStatus": 200,
+        "functionDurationsMs": [
+          483
+        ]
+      }
+    ],
+    "http3xxCoreRecords": [],
+    "fiveHundredPaginationComplete": true,
+    "fourHundredPaginationComplete": false,
+    "targetedCore4xxHasMore": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "completeGlobalIngressDenominatorAvailable": false,
+    "limitations": [
+      "Runtime request logs are not full aggregate metrics or verified ingestion.",
+      "Vercel records may age out during collection; early fixed-window shards are preserved.",
+      "GET metadata conflicts with attached POST-only synthesis handler events; do not infer a deliberate unsupported GET or a model timeout."
+    ]
+  },
+  "cnIngress": [
+    {
+      "group": "clone",
+      "path": "/api/voice-clone/[other]",
+      "method": "GET",
+      "status": 200,
+      "count": 61
+    },
+    {
+      "group": "clone",
+      "path": "/api/voice-clone/captioned-speech",
+      "method": "POST",
+      "status": 200,
+      "count": 114
+    },
+    {
+      "group": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 200,
+      "count": 3892
+    },
+    {
+      "group": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 499,
+      "count": 12
+    }
+  ],
+  "monitors": {
+    "us": {
+      "cycles": 278,
+      "healthy": 278,
+      "healthyPercent": 100.0,
+      "failureCodeCounts": {},
+      "regionMismatch": 0,
+      "elapsedMs": {
+        "max": 8949.0,
+        "p50": 2688.0,
+        "p95": 6833.0,
+        "samples": 278
+      }
+    },
+    "cn": {
+      "cycles": 277,
+      "healthy": 274,
+      "healthyPercent": 98.917,
+      "failureCodeCounts": {
+        "unexpected_monitor_error": 3
+      },
+      "regionMismatch": 0,
+      "elapsedMs": {
+        "max": 85149.0,
+        "p50": 2734.0,
+        "p95": 18344.0,
+        "samples": 277
+      }
+    }
+  },
+  "confirmedClassificationGaps": [
+    {
+      "component": "DeepSeek response.json",
+      "injectedError": "SyntaxError",
+      "observedCode": "invalid JSON envelope",
+      "fetchAttempts": 1
+    },
+    {
+      "component": "DeepSeek response.json",
+      "injectedError": "TypeError",
+      "observedCode": "invalid JSON envelope",
+      "fetchAttempts": 1
+    },
+    {
+      "component": "DeepSeek response.json",
+      "injectedError": "AbortError",
+      "observedCode": "invalid JSON envelope",
+      "fetchAttempts": 1
+    },
+    {
+      "component": "Monitor response.arrayBuffer",
+      "injectedError": "TypeError",
+      "observedCode": "unexpected_monitor_error",
+      "status": "monitor_error",
+      "fetchAttempts": 2
+    },
+    {
+      "component": "Monitor response.arrayBuffer",
+      "injectedError": "AbortError",
+      "observedCode": "unexpected_monitor_error",
+      "status": "monitor_error",
+      "fetchAttempts": 2
+    }
+  ],
+  "unresolved": [
+    "Initial caller reason for 343 Direct downstream closures and CN 12 HTTP 499",
+    "Exact Vercel internal fault behind 2 outer HTTP 500",
+    "Business quota versus technical worker-busy origin of 2 HTTP 429",
+    "Original exception for 3 CN probe failures",
+    "Body truncation/abort versus malformed JSON for CN DeepSeek first-block failure",
+    "Complete QuickRead ingress HTTP ledger and complete 24-hour clone model event retention"
+  ],
+  "aggregateChecksPassed": true
+}

@@ -1,0 +1,337 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-07T12:18:27+00:00",
+    "endUTCExclusive": "2026-09-08T12:18:27+00:00"
+  },
+  "sources": [
+    {
+      "path": "/var/log/nginx/error.log.1",
+      "bytes": 3834,
+      "sha256": "c24f4d11809f12d85a5bf85779f050d9850205d49c7d82bd396010b476e5b623"
+    },
+    {
+      "path": "/var/log/nginx/error.log",
+      "bytes": 3371,
+      "sha256": "6b1d8fa4443d96b26fbd679078d174b4915e8e68e49020fb3f4ccfeba41061e5"
+    },
+    {
+      "path": "/var/log/nginx/castreader-voice-api-port-error.log",
+      "bytes": 2541,
+      "sha256": "334f0668ebb5d5f9b75aab5190f2177f2c5cb99f22daaf607d18fbfef8abe483"
+    },
+    {
+      "path": "/var/log/nginx/castreader-voice-api-origin-error.log",
+      "bytes": 3828,
+      "sha256": "2ced17d561da6bf279ea0afbd406ff9e63860dabc33181dcef8b8b22e134a395"
+    }
+  ],
+  "records": [
+    {
+      "atUTC": "2026-09-07T15:46:40+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "3d9f3f73281b2ae5a86d"
+    },
+    {
+      "atUTC": "2026-09-07T16:02:00+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "c31e940dbcc4e5460e26"
+    },
+    {
+      "atUTC": "2026-09-08T00:15:58+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "9ebd99d3885a2131b84e"
+    },
+    {
+      "atUTC": "2026-09-08T01:43:55+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "7fd35fb2418fe625432c"
+    },
+    {
+      "atUTC": "2026-09-08T02:26:23+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "7e60425efdc090b410c1"
+    },
+    {
+      "atUTC": "2026-09-08T03:24:58+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "355530743181bfc06193"
+    },
+    {
+      "atUTC": "2026-09-08T05:13:59+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "fc1ee0df0cb6beacbee0"
+    },
+    {
+      "atUTC": "2026-09-08T05:26:46+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "ca739fea5d217fce5d88"
+    },
+    {
+      "atUTC": "2026-09-08T05:27:42+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "933cbfdd2dd0ca3bc5f2"
+    },
+    {
+      "atUTC": "2026-09-08T05:38:29+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "d80087a702da998c5fcd"
+    },
+    {
+      "atUTC": "2026-09-08T05:48:33+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "91fc572925b10d975131"
+    },
+    {
+      "atUTC": "2026-09-08T06:04:51+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "6cd153ce36d85972fb4f"
+    },
+    {
+      "atUTC": "2026-09-08T06:09:40+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "a3b73227230cdf20a292"
+    },
+    {
+      "atUTC": "2026-09-08T06:13:00+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "9eab857551559f998eca"
+    },
+    {
+      "atUTC": "2026-09-08T06:24:36+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "f4b84506012709d6abee"
+    },
+    {
+      "atUTC": "2026-09-08T06:27:07+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "ba5d137937d49cf59f4e"
+    },
+    {
+      "atUTC": "2026-09-08T06:40:25+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "a505a83cdefe4a81e106"
+    },
+    {
+      "atUTC": "2026-09-08T07:03:40+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "fdc12f552d6864e4f771"
+    },
+    {
+      "atUTC": "2026-09-08T07:13:12+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "e3cbd57d98cccba1b9f1"
+    },
+    {
+      "atUTC": "2026-09-08T08:11:31+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "20db279812bfe73b1d7a"
+    },
+    {
+      "atUTC": "2026-09-08T08:36:02+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "ssl_handshake_failure"
+      ],
+      "lineKey": "3ea1aaadf87d102a77bc"
+    },
+    {
+      "atUTC": "2026-09-08T11:02:49+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "11139cee9612251733d7"
+    },
+    {
+      "atUTC": "2026-09-08T06:28:26+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "96f9eef7688a1fbf9c7a"
+    },
+    {
+      "atUTC": "2026-09-08T06:28:58+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "72bc2cfaaad988802dae"
+    },
+    {
+      "atUTC": "2026-09-08T06:29:12+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "75455736338bf51a9605"
+    },
+    {
+      "atUTC": "2026-09-08T07:05:35+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "9b7e18087ba4fe5a4bfe"
+    },
+    {
+      "atUTC": "2026-09-08T12:13:06+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "dcc3f7d0dbe9e64c7a1a"
+    },
+    {
+      "atUTC": "2026-09-08T12:13:20+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "c1c484dea1cd32270e99"
+    },
+    {
+      "atUTC": "2026-09-08T05:28:46+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "ab14f9adc3bdcea62e39"
+    },
+    {
+      "atUTC": "2026-09-08T05:28:46+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "21dbf53196618431068f"
+    },
+    {
+      "atUTC": "2026-09-08T05:29:06+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "fcdca300c517bd166f8a"
+    },
+    {
+      "atUTC": "2026-09-08T05:29:06+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "c62fd047e34df40f16a3"
+    },
+    {
+      "atUTC": "2026-09-08T05:33:39+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "28ab87372c9b69ce8eb3"
+    },
+    {
+      "atUTC": "2026-09-08T05:36:56+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "c8bc6d9234a1e9dc3321"
+    },
+    {
+      "atUTC": "2026-09-08T05:39:29+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "581bc8df4b97b3dd6040"
+    },
+    {
+      "atUTC": "2026-09-08T05:39:29+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "088d5f639ea759728097"
+    },
+    {
+      "atUTC": "2026-09-08T06:03:02+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "115853802dc3faeea8c8"
+    },
+    {
+      "atUTC": "2026-09-08T06:08:01+00:00",
+      "route": "other_or_unavailable",
+      "errorClasses": [
+        "other_unclassified"
+      ],
+      "lineKey": "84b7ee6106785b7602a1"
+    }
+  ]
+}

@@ -1,0 +1,472 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "statusQuery": "4xx",
+  "window": {
+    "startUTC": "2026-09-07T12:18:27Z",
+    "endUTCExclusive": "2026-09-08T12:18:27Z"
+  },
+  "shards": [
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T12:18:27Z",
+      "endUTCExclusive": "2026-09-07T13:18:27Z",
+      "pages": 3,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 109,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "404": 15,
+        "410": 83,
+        "400": 1,
+        "409": 10
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T13:18:27Z",
+      "endUTCExclusive": "2026-09-07T14:18:27Z",
+      "pages": 4,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 163,
+      "coreRecords": [
+        {
+          "requestKey": "074bfd47641ddf39c5fe",
+          "observedAtUtc": "2026-09-07T13:54:58.647000Z",
+          "path": "/api/voice-clone/captioned-speech",
+          "routeGroup": "clone",
+          "status": 429,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "domainClass": "[other_or_missing_domain]",
+          "failureCodes": [
+            "http_429_unclassified"
+          ],
+          "durationMs": 528,
+          "method": "POST"
+        }
+      ],
+      "otherStatusCounts": {
+        "404": 20,
+        "410": 136,
+        "409": 6
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T14:18:27Z",
+      "endUTCExclusive": "2026-09-07T15:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "409": 66,
+        "404": 15,
+        "410": 312
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T15:18:27Z",
+      "endUTCExclusive": "2026-09-07T16:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "409": 129,
+        "404": 46,
+        "410": 218
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T16:18:27Z",
+      "endUTCExclusive": "2026-09-07T17:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 259,
+        "409": 122,
+        "404": 12
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T17:18:27Z",
+      "endUTCExclusive": "2026-09-07T18:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "409": 205,
+        "404": 12,
+        "410": 176
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T18:18:27Z",
+      "endUTCExclusive": "2026-09-07T19:18:27Z",
+      "pages": 8,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 377,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "404": 13,
+        "410": 346,
+        "409": 18
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T19:18:27Z",
+      "endUTCExclusive": "2026-09-07T20:18:27Z",
+      "pages": 6,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 255,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "400": 5,
+        "404": 22,
+        "410": 228
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T20:18:27Z",
+      "endUTCExclusive": "2026-09-07T21:18:27Z",
+      "pages": 6,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 262,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 223,
+        "409": 21,
+        "404": 16,
+        "400": 2
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T21:18:27Z",
+      "endUTCExclusive": "2026-09-07T22:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 265,
+        "404": 19,
+        "409": 109
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T22:18:27Z",
+      "endUTCExclusive": "2026-09-07T23:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 318,
+        "409": 65,
+        "404": 10
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-07T23:18:27Z",
+      "endUTCExclusive": "2026-09-08T00:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 274,
+        "404": 21,
+        "409": 98
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T00:18:27Z",
+      "endUTCExclusive": "2026-09-08T01:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 299,
+        "409": 79,
+        "404": 9,
+        "405": 6
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T01:18:27Z",
+      "endUTCExclusive": "2026-09-08T02:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "409": 32,
+        "404": 19,
+        "410": 342
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T02:18:27Z",
+      "endUTCExclusive": "2026-09-08T03:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "409": 135,
+        "404": 22,
+        "410": 236
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T03:18:27Z",
+      "endUTCExclusive": "2026-09-08T04:18:27Z",
+      "pages": 8,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 351,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "404": 18,
+        "410": 291,
+        "409": 42
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T04:18:27Z",
+      "endUTCExclusive": "2026-09-08T05:18:27Z",
+      "pages": 7,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 324,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "404": 21,
+        "410": 147,
+        "422": 2,
+        "409": 154
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T05:18:27Z",
+      "endUTCExclusive": "2026-09-08T06:18:27Z",
+      "pages": 8,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 381,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 299,
+        "404": 18,
+        "409": 64
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T06:18:27Z",
+      "endUTCExclusive": "2026-09-08T07:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "409": 99,
+        "410": 282,
+        "404": 12
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T07:18:27Z",
+      "endUTCExclusive": "2026-09-08T08:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "409": 98,
+        "410": 278,
+        "404": 17
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T08:18:27Z",
+      "endUTCExclusive": "2026-09-08T09:18:27Z",
+      "pages": 8,
+      "issues": [
+        "pagination_incomplete"
+      ],
+      "completeReturnedPages": false,
+      "uniqueRequests": 393,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 266,
+        "404": 103,
+        "409": 20,
+        "401": 4
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T09:18:27Z",
+      "endUTCExclusive": "2026-09-08T10:18:27Z",
+      "pages": 8,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 360,
+      "coreRecords": [
+        {
+          "requestKey": "b58187346fe296791437",
+          "observedAtUtc": "2026-09-08T09:44:10.492000Z",
+          "path": "/api/captioned_speech_partly",
+          "routeGroup": "tts",
+          "status": 429,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "domainClass": "api.castreader.ai",
+          "failureCodes": [
+            "http_429_unclassified"
+          ],
+          "durationMs": 493,
+          "method": "POST"
+        }
+      ],
+      "otherStatusCounts": {
+        "410": 313,
+        "404": 26,
+        "409": 18,
+        "422": 2
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T10:18:27Z",
+      "endUTCExclusive": "2026-09-08T11:18:27Z",
+      "pages": 6,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 290,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 258,
+        "404": 17,
+        "409": 14,
+        "422": 1
+      }
+    },
+    {
+      "statusQuery": "4xx",
+      "startUTC": "2026-09-08T11:18:27Z",
+      "endUTCExclusive": "2026-09-08T12:18:27Z",
+      "pages": 5,
+      "issues": [],
+      "completeReturnedPages": true,
+      "uniqueRequests": 242,
+      "coreRecords": [],
+      "otherStatusCounts": {
+        "410": 186,
+        "404": 28,
+        "409": 9,
+        "422": 19
+      }
+    }
+  ],
+  "allShardsComplete": false,
+  "coreRecords": [
+    {
+      "requestKey": "074bfd47641ddf39c5fe",
+      "observedAtUtc": "2026-09-07T13:54:58.647000Z",
+      "path": "/api/voice-clone/captioned-speech",
+      "routeGroup": "clone",
+      "status": 429,
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "domainClass": "[other_or_missing_domain]",
+      "failureCodes": [
+        "http_429_unclassified"
+      ],
+      "durationMs": 528,
+      "method": "POST"
+    },
+    {
+      "requestKey": "b58187346fe296791437",
+      "observedAtUtc": "2026-09-08T09:44:10.492000Z",
+      "path": "/api/captioned_speech_partly",
+      "routeGroup": "tts",
+      "status": 429,
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "domainClass": "api.castreader.ai",
+      "failureCodes": [
+        "http_429_unclassified"
+      ],
+      "durationMs": 493,
+      "method": "POST"
+    }
+  ],
+  "collectorSha256": "49c36f51b291a44ac5f983d0b546e0f66dd69259cbcca3971cc0046af32c3d7e",
+  "limitations": [
+    "Covers returned request logs, not complete provider ingestion or paid aggregate metrics.",
+    "No deployment filter; production events are grouped by their recorded deployment."
+  ]
+}

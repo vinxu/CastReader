@@ -1,0 +1,262 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-07T12:18:27+00:00",
+    "endUTCExclusive": "2026-09-08T12:18:27+00:00"
+  },
+  "ingress": {
+    "sources": [
+      {
+        "path": "/var/log/nginx/access.log.1",
+        "bytes": 4442956,
+        "sha256": "cfdc24ae23cb16a2680cfa783cbb2eca7eaa29a68e5370084c7a8a6cc61debf0",
+        "unparsedLines": 88,
+        "firstUTC": "2026-09-06T16:00:02+00:00",
+        "lastUTC": "2026-09-07T15:59:55+00:00"
+      },
+      {
+        "path": "/var/log/nginx/access.log",
+        "bytes": 4120464,
+        "sha256": "8a421ddae41a179631d0bec4770ee1c765750c1060b0524f8f006ac7bf6b0350",
+        "unparsedLines": 72,
+        "firstUTC": "2026-09-07T16:00:02+00:00",
+        "lastUTC": "2026-09-08T12:32:04+00:00"
+      }
+    ],
+    "unparsedLinesContainingCoreRoute": 0,
+    "counts": [
+      {
+        "group": "clone",
+        "path": "/api/voice-clone/[other]",
+        "method": "GET",
+        "status": 200,
+        "count": 61
+      },
+      {
+        "group": "clone",
+        "path": "/api/voice-clone/captioned-speech",
+        "method": "POST",
+        "status": 200,
+        "count": 114
+      },
+      {
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 200,
+        "count": 3892
+      },
+      {
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "count": 12
+      }
+    ],
+    "non200Rows": [
+      {
+        "atUTC": "2026-09-07T14:09:46+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "b1ef411125a248a7b68f"
+      },
+      {
+        "atUTC": "2026-09-08T02:24:33+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "57c7da78ee412f370a1a"
+      },
+      {
+        "atUTC": "2026-09-08T03:44:04+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "487d7c9e09590ec7d925"
+      },
+      {
+        "atUTC": "2026-09-08T03:44:09+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "2f6a4e2596a371c610c8"
+      },
+      {
+        "atUTC": "2026-09-08T03:44:20+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "738fa3e00da35a225b15"
+      },
+      {
+        "atUTC": "2026-09-08T03:46:06+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "a2e06e3be288b1abd0c8"
+      },
+      {
+        "atUTC": "2026-09-08T03:46:16+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "b215282cd7cbc98e9543"
+      },
+      {
+        "atUTC": "2026-09-08T03:46:16+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "b215282cd7cbc98e9543"
+      },
+      {
+        "atUTC": "2026-09-08T03:46:19+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "ad9544cb92e0cd6455d0"
+      },
+      {
+        "atUTC": "2026-09-08T03:52:38+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "ef8a6ff4b03aa60ca581"
+      },
+      {
+        "atUTC": "2026-09-08T05:15:22+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "f564f1fd440e907b51f5"
+      },
+      {
+        "atUTC": "2026-09-08T08:58:34+00:00",
+        "group": "tts",
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 499,
+        "lineKey": "1ba6abe889756919c8bd"
+      }
+    ]
+  },
+  "monitorFailures": [
+    {
+      "observedAtUTC": "2026-09-08T07:32:42.022000+00:00",
+      "filename": "2026-09-08T07-32-42-022Z-09f39a24-2630-4c6f-b230-ba1ca1b595a5.json",
+      "sha256": "7f9c2eb3e1a1f18ad3fb4e197b49c97dab2e2fe2500c2d390dbd7a51c3fea2a5",
+      "elapsedMs": 85149,
+      "status": "monitor_error",
+      "failureCode": "unexpected_monitor_error",
+      "failedRequestContract": "stream_true",
+      "segmentCount": 1,
+      "errorFieldTypes": {
+        "failureCode": "str"
+      },
+      "errorMatches": {
+        "failureCode": []
+      },
+      "segments": [
+        {
+          "index": 0,
+          "attempts": 1,
+          "requestContract": "stream_omitted",
+          "processedCharacters": 16,
+          "remainingCharacters": 45,
+          "audioBytes": 57644,
+          "upstreamNode": "castreader-cn4090"
+        }
+      ]
+    },
+    {
+      "observedAtUTC": "2026-09-08T06:19:33.442000+00:00",
+      "filename": "2026-09-08T06-19-33-442Z-ca569ec5-564f-479d-b5bc-29e003018847.json",
+      "sha256": "a85e7f1cdded4ccb664164c9b492d8edbada332d33e120e6fe7f2e952eaef667",
+      "elapsedMs": 75977,
+      "status": "monitor_error",
+      "failureCode": "unexpected_monitor_error",
+      "failedRequestContract": "stream_omitted",
+      "segmentCount": 0,
+      "errorFieldTypes": {
+        "failureCode": "str"
+      },
+      "errorMatches": {
+        "failureCode": []
+      },
+      "segments": []
+    },
+    {
+      "observedAtUTC": "2026-09-08T04:14:26.311000+00:00",
+      "filename": "2026-09-08T04-14-26-311Z-719fd5b8-c83b-4ab9-97a7-4c3ccbfe7713.json",
+      "sha256": "e10edd93ddf850635a390b0ed2d713e5b249dfd82702569f3fae400db2abf32c",
+      "elapsedMs": 46541,
+      "status": "monitor_error",
+      "failureCode": "unexpected_monitor_error",
+      "failedRequestContract": "stream_omitted",
+      "segmentCount": 0,
+      "errorFieldTypes": {
+        "failureCode": "str"
+      },
+      "errorMatches": {
+        "failureCode": []
+      },
+      "segments": []
+    }
+  ],
+  "quickreadErrors": [
+    {
+      "atUTC": "2026-09-07T13:20:18.370924+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "classifiedFragments": [
+        "request_disconnected"
+      ],
+      "matchingSourceLiterals": [
+        {
+          "file": "server/request-lifecycle.mjs",
+          "line": 3,
+          "sourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+        }
+      ]
+    },
+    {
+      "atUTC": "2026-09-07T14:50:04.544195+00:00",
+      "tag": "extract-plan error:",
+      "messageSha256": "1d6dad470351e74d5d881a9c2193f0b8e1c38bf79fe4a8c1e801415914e23edc",
+      "classifiedFragments": [
+        "request_disconnected"
+      ],
+      "matchingSourceLiterals": [
+        {
+          "file": "server/request-lifecycle.mjs",
+          "line": 3,
+          "sourceSha256": "857ddfdf39f6f5716ce435c11c32854c654b79556d6625138ad1a334517070ed"
+        }
+      ]
+    },
+    {
+      "atUTC": "2026-09-08T02:43:12.282752+00:00",
+      "tag": "fast-block0 error:",
+      "messageSha256": "9f212d5a1b8c3e1e9e72aab7ea0458a51f2c4cba080b47bd2b5548b08ef9b6fe",
+      "classifiedFragments": [],
+      "matchingSourceLiterals": []
+    }
+  ],
+  "collectorSha256": "17d899c2a0fe65ea1d95fa6c783c467f57139082462b7c1a10bb080d9f72eb95"
+}

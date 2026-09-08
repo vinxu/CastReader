@@ -1,0 +1,679 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 16611,
+      "sha256": "ee8b2cf9e78676e47258caee1dfc4962ac2fa2838099e552a7b8bae9e48c9ddf"
+    },
+    {
+      "path": "analyze_evidence.py",
+      "bytes": 6429,
+      "sha256": "bc6de47aef5e17ee44efc5bc6d92af28ecc24977009689c3d0a0733638ee312e"
+    },
+    {
+      "path": "backend-supply/cn-backend-supply.json",
+      "bytes": 6716,
+      "sha256": "e7580d80446e058f6ffc0a6b90497a7cfe8ed57d9fb10f113a26d594764cff04"
+    },
+    {
+      "path": "backend-supply/us-backend-supply.json",
+      "bytes": 4641,
+      "sha256": "b30ef39a086969edf3a93c4128a7aa0fa609e567423cdca398878fb6a78e0bf7"
+    },
+    {
+      "path": "backend-supply/us-gpu-backend-supply.json",
+      "bytes": 4351,
+      "sha256": "dede63b8b65ac006b960fbd70260175d22bf596ed52c91ca0562c73c797a0122"
+    },
+    {
+      "path": "caddy-error-classification.json",
+      "bytes": 419,
+      "sha256": "ed0912a20d272668d7a71a5b327438bb2be9026a0c7b78ba4ce4af38ddebab3e"
+    },
+    {
+      "path": "clone-combined.json",
+      "bytes": 995,
+      "sha256": "a0a913dc005a5373f54dbf6cef87f63a30b70654ea5adce9c3e6555acf3ae857"
+    },
+    {
+      "path": "clone-log-inventory.json",
+      "bytes": 574,
+      "sha256": "fab2888203971f9cf831bd160e30b49d31ced75bf63873b1413104a84cd5e254"
+    },
+    {
+      "path": "cn-details-aliases.json",
+      "bytes": 7671,
+      "sha256": "ba9abd17e93c0857309305c7a3b2f28a0e33e53a3c6646ba8a2cadd4ef90594c"
+    },
+    {
+      "path": "cn-details-retry.json",
+      "bytes": 194,
+      "sha256": "74c1387f69b0a0864dd444715c562ce6f8fb2bf2d1d580a1131ede945c4a6790"
+    },
+    {
+      "path": "cn-details.json",
+      "bytes": 7671,
+      "sha256": "07ac2b44745e5ee2ce312f6682722ab20db45d0e7055f40ac59377c8f262f1ee"
+    },
+    {
+      "path": "cn-fast-block0-cause.json",
+      "bytes": 519,
+      "sha256": "462821d4fa4571b69671cf3fe35141865e771cc32c16899426fc78f06592e32a"
+    },
+    {
+      "path": "cn-fast-block0-error-shape.json",
+      "bytes": 391,
+      "sha256": "0375bdb17d72c8f3f2968bee263293e5a108aea2fb433edf3c5a1daf1094cb82"
+    },
+    {
+      "path": "cn-ingress-errors.json",
+      "bytes": 8496,
+      "sha256": "746fcda49f18fb61d77949ebb29a7a3582bdbc19d63a9e3f788076161af902ad"
+    },
+    {
+      "path": "cn-log-inventory.json",
+      "bytes": 3350,
+      "sha256": "f974995cce3d1aaed7ecd5d67be1eee2fb59a268bc8a509ddddf18c3f19fd064"
+    },
+    {
+      "path": "cn-nginx-route-map.json",
+      "bytes": 4941,
+      "sha256": "6784a6c4d81cb4f512854ff107f2ccc05d33a4d574038e3f11cda5d773473921"
+    },
+    {
+      "path": "cn-r135-full-model.json",
+      "bytes": 3733,
+      "sha256": "655977b5bc69b48b341b68dc0dc929f6c34543fabedb1fab8c474f8fd3da1c5c"
+    },
+    {
+      "path": "cn-r135-model.json",
+      "bytes": 3695,
+      "sha256": "4c39c3be836c17bdfaf9cf62ba4fdc218915d2981a264a9743e881051e475dd7"
+    },
+    {
+      "path": "cn-rotated-ingress.json",
+      "bytes": 4345,
+      "sha256": "6301cee14103234d302c366cd40014f213f49c1c434f2beac3a91cb281891c3d"
+    },
+    {
+      "path": "collect_clone_combined.py",
+      "bytes": 4848,
+      "sha256": "8db997105d4f74922199a50421a23ac428654f8913943e9c47d31e312ff84591"
+    },
+    {
+      "path": "collect_cn_details.py",
+      "bytes": 6518,
+      "sha256": "17d899c2a0fe65ea1d95fa6c783c467f57139082462b7c1a10bb080d9f72eb95"
+    },
+    {
+      "path": "collect_cn_details_aliases.py",
+      "bytes": 6641,
+      "sha256": "8da67c0f8d837f930e42c078278bd05af404ba2117444ed67b0ac6b6cd348f82"
+    },
+    {
+      "path": "collect_cn_rotated_ingress.py",
+      "bytes": 3089,
+      "sha256": "949d6c5fce774f3b3dcfb681062522a9f1bdb424438f2e13300bc1248b25a4e1"
+    },
+    {
+      "path": "collect_direct_adaptive_sharded.py",
+      "bytes": 3156,
+      "sha256": "6f1ba5a7ac72faa7029fb0888d0fa460335aabdfa41dd88a18026625c1923f7c"
+    },
+    {
+      "path": "collect_direct_streaming.py",
+      "bytes": 4813,
+      "sha256": "6cc63dd489372ce159bb9aed14147145d0175e23b907be6879c826aaaf0e1a50"
+    },
+    {
+      "path": "collect_ingress_readonly.py",
+      "bytes": 5974,
+      "sha256": "8872b9f804c14d4a290f2705b0187c2a7289b7d11ec7922029b57aaeca28d199"
+    },
+    {
+      "path": "collect_model_full_diagnostics.py",
+      "bytes": 5899,
+      "sha256": "169e79ba63798316b8ce4292b18d48ea2a6b14d2ee179a4efd4d1757855f8537"
+    },
+    {
+      "path": "collect_monitors.py",
+      "bytes": 889,
+      "sha256": "6b00c5a6003cdb85d1e9f6965187707c0227a10f6c6ce81cc6d8dd93b43658d4"
+    },
+    {
+      "path": "collect_proxy_day.py",
+      "bytes": 2537,
+      "sha256": "a0164ba00266912e64c5bcc18911a54d67e18fc71d7980667a768c492640682b"
+    },
+    {
+      "path": "collect_r135_readonly.py",
+      "bytes": 5767,
+      "sha256": "6a74f4a750eabaa45f643f81e2bb94e8ea2170024e8c92571a077988d93fadad"
+    },
+    {
+      "path": "collect_vercel_5xx_path_review.py",
+      "bytes": 4790,
+      "sha256": "abf20fff7a8ad3e2f2f17230616936d0f6da9f6ccbdf65a0710adb66b3bf6b8e"
+    },
+    {
+      "path": "collect_vercel_core_4xx_targeted.py",
+      "bytes": 4748,
+      "sha256": "f892ec0bb1cd3560d636519d262c12306cf879e1f2fe660bf425458dc63adb52"
+    },
+    {
+      "path": "collect_vercel_error_details.py",
+      "bytes": 3651,
+      "sha256": "8326e79efa93575a518550f5bc0741597129b1b85f9915187b8d1bd6565c8c7e"
+    },
+    {
+      "path": "collect_vercel_error_platform_details.py",
+      "bytes": 4803,
+      "sha256": "28b4011853a5348a696540bbffaca4910166932078524ed4b2561686b639e39c"
+    },
+    {
+      "path": "collect_vercel_hourly.py",
+      "bytes": 4366,
+      "sha256": "49c36f51b291a44ac5f983d0b546e0f66dd69259cbcca3971cc0046af32c3d7e"
+    },
+    {
+      "path": "collect_vercel_non200.py",
+      "bytes": 3124,
+      "sha256": "5a50353dd606d76ff723ea58897ca7d3fd2617375a9ceaaf487694b98b84a729"
+    },
+    {
+      "path": "collection-notes.json",
+      "bytes": 2402,
+      "sha256": "f443bc2b3eb9e3178072d73782a140d284ce0b6bc10112f8f7307a068c53dc87"
+    },
+    {
+      "path": "direct-streaming.json",
+      "bytes": 173878,
+      "sha256": "c51e106480de6ce043aa0da4dcdd986af43cac319b0feae5ba41292d554f74db"
+    },
+    {
+      "path": "global-capabilities.json",
+      "bytes": 764,
+      "sha256": "c612882124da1966a9938037f397f26dfccfe124f0d69961a8a033847294f8a7"
+    },
+    {
+      "path": "ingress-readback.json",
+      "bytes": 2827,
+      "sha256": "e403627d0c164b9ed78adf1a48f75a868dca67ff68314b16605c51a2870347eb"
+    },
+    {
+      "path": "monitor-cn.json",
+      "bytes": 4107,
+      "sha256": "8ef1886a553cbe6c7e1e951e58c6fe856e9ac215ff3616c387703f21c30b15d8"
+    },
+    {
+      "path": "monitor-us.json",
+      "bytes": 3498,
+      "sha256": "e3382ac10677b4802ef96a66f138d1eb3e9e8d1ed3ffdad7e3307175a5e1a629"
+    },
+    {
+      "path": "offline-error-classification.json",
+      "bytes": 1704,
+      "sha256": "4485d1480cfaa1792efd9ff50c1807633529ea649f2316b7753c3e68accf5477"
+    },
+    {
+      "path": "production-source-review.json",
+      "bytes": 1684,
+      "sha256": "b9ecb434a54f61a797595d0fc3d0601750be7fadfc15014ac675cf776ec018f9"
+    },
+    {
+      "path": "proxy-day.json",
+      "bytes": 1379518,
+      "sha256": "080e74ec0732845f6263486b3ba423f9395f100c5e482bc5e5c6c6c58fefdbdc"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 10514,
+      "sha256": "bb32f11b7b1e62b6aa06c698921c1186fb49e1e719ae6c2afa49e8a90d8cfe8a"
+    },
+    {
+      "path": "us-r135-full-model.json",
+      "bytes": 1660,
+      "sha256": "9564857b0c3a94d2f28ab4850c5064bd4e08d6753df6f59fd1ee4b2bca1874cf"
+    },
+    {
+      "path": "us-r135-model.json",
+      "bytes": 1622,
+      "sha256": "f090e11faf0cb228f0f04c8110d21fbd717dcf674c932d309616f08486b0f6e1"
+    },
+    {
+      "path": "vercel-3xx.json",
+      "bytes": 956,
+      "sha256": "3b2101f60885bbaf634b6e62f1035600e85f7c53674f6b3bb44f258205534685"
+    },
+    {
+      "path": "vercel-4xx.json",
+      "bytes": 1489,
+      "sha256": "0489fb82620eb61481088c2397404b71007a033d724624b7e611d8d443258ffe"
+    },
+    {
+      "path": "vercel-5xx.json",
+      "bytes": 172,
+      "sha256": "716b4dfada7db06b3c5d6bca24da494847a82bcd3c85b673df15e0c544b20f56"
+    },
+    {
+      "path": "vercel-core-4xx-targeted.json",
+      "bytes": 13921,
+      "sha256": "9635bdf5aa5e5c880a64132850185c5dd932ad753fcd5a5a163178aca593cc0c"
+    },
+    {
+      "path": "vercel-core-metrics.json",
+      "bytes": 266,
+      "sha256": "8869eef8a4255634db4a40274165e739c84355606507560168791fc726c7eb1b"
+    },
+    {
+      "path": "vercel-error-details.json",
+      "bytes": 26513,
+      "sha256": "9a48f22edbc8611720e649bed5a80d8fd5880bd657370135983821587156409d"
+    },
+    {
+      "path": "vercel-error-platform-details.json",
+      "bytes": 34258,
+      "sha256": "1ffd72faccf3cb9ff360a4240fe7778fd1ef177bac6c4ad94e6e5aab1cef04e2"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T121827Z.json",
+      "bytes": 275,
+      "sha256": "cde6a201db8a962201bcc7c93d7b25dfe5c14a0d22ffdd67fd139548632e21ae"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T131827Z.json",
+      "bytes": 290,
+      "sha256": "1e151cdc0ef76246ef90b584eb83ab7121ca3cbc3d85275c76fa4ac0ec07c72e"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T141827Z.json",
+      "bytes": 290,
+      "sha256": "4d6b54483160b26225150198f4e6f2b1e1b820c02d0b348916600b3d794df1f0"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T151827Z.json",
+      "bytes": 276,
+      "sha256": "78c9f63e2cced790eb7c556b11bc3f4a59f4a0c6fe34415bb89d2308a1d0f991"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T161827Z.json",
+      "bytes": 288,
+      "sha256": "43f0173353138649fb4b6e894c6b24acf7169a360dc9e976afa11bce708c3ba0"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T171827Z.json",
+      "bytes": 288,
+      "sha256": "6bace7875b0086f6060bf852675ce477129fe615397c347bbcd70f2a387957eb"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T181827Z.json",
+      "bytes": 289,
+      "sha256": "20e379f14a976c0c445e149101ff9e7103cd29d7ebe62b8ab55b5bdbb58993f7"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T191827Z.json",
+      "bytes": 288,
+      "sha256": "6755551036c7597cd367e18d158cc1bfa284322b31ee525c53ded60a00d0302a"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T201827Z.json",
+      "bytes": 289,
+      "sha256": "a3910aa0ddc4262cd369b6f19b3df9c168fbe8e0e3bffddac3993d55610724dc"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T211827Z.json",
+      "bytes": 273,
+      "sha256": "383c60a4d0d943365bef87132873155f03aec3292d09e0a2eaf7d2d4304900e0"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T221827Z.json",
+      "bytes": 289,
+      "sha256": "66736d5716584d92a81821c1d2bc3a2ce32d711e72b0612b53ec65e2b3410bd3"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260907T231827Z.json",
+      "bytes": 289,
+      "sha256": "1b3a2d40ed59788d61da5654e047b0f19943178f9827c4b5aac9f1a9d4e01f9a"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T001827Z.json",
+      "bytes": 290,
+      "sha256": "c9e970b0a5b7b47a16916530c83b8ce061149adc6a1a1cf7abd1a1eae745cef1"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T011827Z.json",
+      "bytes": 290,
+      "sha256": "f4254baa5c3d4d6023be30712947217526c282e7df4d67dc4d308241d64428eb"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T021827Z.json",
+      "bytes": 290,
+      "sha256": "a3eda6b3ca637ad3ef19fd67090b1e213761bf63df8c77fb046faee2464ad2d0"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T031827Z.json",
+      "bytes": 289,
+      "sha256": "4e5e5a520bc567a855a713b1b68789d046643891489af51c13c6a335fad6ba2d"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T041827Z.json",
+      "bytes": 290,
+      "sha256": "1a5a975b84b4ed8d629c4a756be1a79b42080a0f8dc6ed0a96741800fe77a1b5"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T051827Z.json",
+      "bytes": 288,
+      "sha256": "6a5d12ee5d82b0174cb08f314542d9fdd91e9b6d1c959b1dabf324ca6d8c1fc2"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T061827Z.json",
+      "bytes": 289,
+      "sha256": "2b05f25f754f9ea57a30f71ce5d525083c83ea3755b82148d86d1465ba2ad740"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T071827Z.json",
+      "bytes": 273,
+      "sha256": "a114432d3c52f1f57dabcc4a85829e319fa05fb39db2377fc8dbd938b80ae17b"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T081827Z.json",
+      "bytes": 291,
+      "sha256": "4acf8032297497693b9e180bc6bc1c853527f2fa507180697208ef22a309ad6b"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T091827Z.json",
+      "bytes": 276,
+      "sha256": "24a1f2bd019ef3c04f7188cab9a53daedded7902dd80145692ed534ef9216dab"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T101827Z.json",
+      "bytes": 289,
+      "sha256": "4b437bbc492bf3f9b967d32d14b285f8e4585652e6720d9ac42a1327b19652a8"
+    },
+    {
+      "path": "vercel-hourly/3xx-20260908T111827Z.json",
+      "bytes": 276,
+      "sha256": "87ce3bae9167a77b3f816b8a174cac32ae08b83a4bcf0eded2ff0105b5d385a0"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T121827Z.json",
+      "bytes": 306,
+      "sha256": "427f02e2ca43533970e869faa529202a596259885084cda9c22b0dc05c830b90"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T131827Z.json",
+      "bytes": 727,
+      "sha256": "2ec23970a274a15afabf12f5e4680106f13191a12d5664abdb8833907c696cf7"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T141827Z.json",
+      "bytes": 325,
+      "sha256": "cf79819c6f537087b516bdb8b8b590eeda47d491727804d68d41082cae5eb3e4"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T151827Z.json",
+      "bytes": 326,
+      "sha256": "352f9602ec3ba8780dae58827e4ecf2c587351c320da149b0ce0198640f93a96"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T161827Z.json",
+      "bytes": 326,
+      "sha256": "8c84d1969bfd7577d49517cba200f80f472b3086c0fd96ae9dfdfc0cd6248c78"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T171827Z.json",
+      "bytes": 326,
+      "sha256": "f55a809f98a8c844c66b0ef1e202378bf595a8dd4028dd9fa459d00be04410c0"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T181827Z.json",
+      "bytes": 293,
+      "sha256": "8eddfab39e82453602df6851a2ce6597cba311fe04ef7cfdeea776d5d0bfb268"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T191827Z.json",
+      "bytes": 292,
+      "sha256": "e253507412f1e58fae3e3cc9e6377e852ba0fce013b3ec48452760e6e20438bd"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T201827Z.json",
+      "bytes": 307,
+      "sha256": "630037697939c9e521eef89d5965bc495f2d8165d76a407c1dee31c9b54bd8b5"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T211827Z.json",
+      "bytes": 326,
+      "sha256": "17dc34d42521e17d16a455cad2bdd36ea259ba6564125c3b0fee36a69ac81da9"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T221827Z.json",
+      "bytes": 325,
+      "sha256": "bb8808faa766e53f7ef3f006cd8ecbcbfcba675d6e6a14e434d87a36b91dac8a"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260907T231827Z.json",
+      "bytes": 325,
+      "sha256": "28a8c6ac3b82db891092195a92044a120bdcd5ff55196ea75b955b4105b7f52b"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T001827Z.json",
+      "bytes": 338,
+      "sha256": "4e898e053a722e916a5828edb4a3f7c0a139faedd04c83210b7647f8370c45c8"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T011827Z.json",
+      "bytes": 325,
+      "sha256": "4c3d75e8fd32dcf9fbc917639efa0c917c74fafd4c1e8a84a67aa9cadd0fefc0"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T021827Z.json",
+      "bytes": 326,
+      "sha256": "c9994d7970c98147c3b4868224a9eb71d3c879a8ffa4552461dff9330e65ce9c"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T031827Z.json",
+      "bytes": 293,
+      "sha256": "c1bbd70d6aef30e4abbcc93bc71768fff808dfb4166e42b706d8d9aed339980d"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T041827Z.json",
+      "bytes": 308,
+      "sha256": "c6bb516b6d8c6ec36d86a4f31c962e6fe3a137f215ae596332564538a8e4c455"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T051827Z.json",
+      "bytes": 293,
+      "sha256": "5e0d56495434b161514b1450ad1f8ce7ed70322d97f7bd20329eb6495c33d7de"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T061827Z.json",
+      "bytes": 325,
+      "sha256": "6fb6fc8ac17e8fdbbd9081b73020e15aeeeab1cd06db3d33b0e79f37c2b80acd"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T071827Z.json",
+      "bytes": 325,
+      "sha256": "7abc8d520056b755e8d229aed3061ed027702691d3d85e73711ade1ca00ebd24"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T081827Z.json",
+      "bytes": 340,
+      "sha256": "ca7288eb32fdb6efacb931f1d90663455e5b82966529b93163021271ed1a9bf7"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T091827Z.json",
+      "bytes": 727,
+      "sha256": "11183fba709876feb25d9c0017a74930b99a3c6312c24f1eb8c4373a2be73a53"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T101827Z.json",
+      "bytes": 307,
+      "sha256": "11fc3c30a2dbfc0ac484c3988e3e326548882457bdf982d4493c8c601db97b58"
+    },
+    {
+      "path": "vercel-hourly/4xx-20260908T111827Z.json",
+      "bytes": 307,
+      "sha256": "b1f41dfdd2a4cd12493b90b8c76417113de7f5b431fe4322b4828aca171a3297"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T121827Z.json",
+      "bytes": 259,
+      "sha256": "ac1a970b0ff0329817e9a1cfaba15bc62d200b53d54fa60996160c21da26431a"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T131827Z.json",
+      "bytes": 259,
+      "sha256": "b6c73b2753de2630617810eee30908b14cdbae2a9a9cb076015a3a837ad1be8f"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T141827Z.json",
+      "bytes": 259,
+      "sha256": "4d99d0f11f9927b0ecb0db7ddb1a558c1c46d16ab502bba9f91678bcd167661a"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T151827Z.json",
+      "bytes": 259,
+      "sha256": "9393e8b5e4d52e10175b68ecf881fec7f3917c32fe8c078688dfcf252a7cc25c"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T161827Z.json",
+      "bytes": 259,
+      "sha256": "29d90fde14f626f7c752c49941041d28ddba4561df8986fa2c7ba0c2cc9de4e9"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T171827Z.json",
+      "bytes": 259,
+      "sha256": "f8f474d29e4f3b5af94ffe609b5418bfd5dd85cf2e4eb08e20c32816aca22922"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T181827Z.json",
+      "bytes": 259,
+      "sha256": "440c719fe1aa62a461b7aa1c1197758e2d3f3bed3a37651026f2c58f6d6466fc"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T191827Z.json",
+      "bytes": 259,
+      "sha256": "f3575ffdb22a0ff36df7ddd3cf04494eea0a05cdf9a531e18135175b39680212"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T201827Z.json",
+      "bytes": 1099,
+      "sha256": "2933c20b5fa27238e65e21e8a1a146b5db15eda8070194e92e5fad875c91109d"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T211827Z.json",
+      "bytes": 259,
+      "sha256": "d392b388daa6bda400a701a20887f4b4fefc7f3dc79838bab2308c3e1a014ca0"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T221827Z.json",
+      "bytes": 259,
+      "sha256": "3102f24a0f431be92ba72b86cbadf01d9c7afb3063d543b8142eadcf1efbb62f"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260907T231827Z.json",
+      "bytes": 259,
+      "sha256": "37f27a5e68ea4b81ab381f39dc1930dc56142ac9b745f40474009ae0acfb54e9"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T001827Z.json",
+      "bytes": 259,
+      "sha256": "1ffcd5ae5e6e2db1432e47f091326fa494a0e188214f412588d26ec28ea0c114"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T011827Z.json",
+      "bytes": 259,
+      "sha256": "067155fe6a2f76498472eab512d41ad8d435eb1ba320b580ab8cd697d05263b6"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T021827Z.json",
+      "bytes": 259,
+      "sha256": "d0fc74c73ee98dfcc3895119de0f5c06f342b9f56a44cfe25872ca38a8424a44"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T031827Z.json",
+      "bytes": 259,
+      "sha256": "b9bf6ecf32ed79a11984c332ef09fbd363fb0315f0bb9c9c4009135c4409f5ad"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T041827Z.json",
+      "bytes": 259,
+      "sha256": "2c846148771ff1017eec8d43ca98ebbe2502537f6c0e2c776cc9154df4517408"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T051827Z.json",
+      "bytes": 259,
+      "sha256": "07b0827c71ece43dff877e260a7a9cd8723f93b5b69330e4c0a53b3a06d9fe55"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T061827Z.json",
+      "bytes": 259,
+      "sha256": "9c42fce87cd3d452634b201e28c7fc8ffba06d87dce987c31ff7baa44c8f6230"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T071827Z.json",
+      "bytes": 259,
+      "sha256": "12563cad8af54eed2d32000c2d2d9acfe479bbc6244eb56d1f6c20636980c7b2"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T081827Z.json",
+      "bytes": 273,
+      "sha256": "7c2cd9038797918a4719416947e67a6b1c75e154a8b107239f9dd1aedffa9c6c"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T091827Z.json",
+      "bytes": 259,
+      "sha256": "a565dc834a9a13c023097fae157371076a5c80821d4bb436534ec3305e83e2de"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T101827Z.json",
+      "bytes": 259,
+      "sha256": "e9e59c037588aff42892ee91183a7bd08fc91095694502d106998285b59b0993"
+    },
+    {
+      "path": "vercel-hourly/5xx-20260908T111827Z.json",
+      "bytes": 259,
+      "sha256": "bcfadcf5b99c0b1cb453a86793c575d2b477790ea75c625ce167517d95b02f55"
+    },
+    {
+      "path": "vercel-hourly-3xx.json",
+      "bytes": 8897,
+      "sha256": "a4845a3056a2897920da6f6bae05d9f342569f20daaa7baedccea0f718fadf41"
+    },
+    {
+      "path": "vercel-hourly-4xx.json",
+      "bytes": 11594,
+      "sha256": "30549925592ff9490311b20e56659ad627b683544c40e8e6c46c006d3f10b02e"
+    },
+    {
+      "path": "vercel-hourly-5xx.json",
+      "bytes": 9904,
+      "sha256": "1a94b656f6262fe61d91b3650642299aecc9a44003c3d72d841875483cff40f0"
+    },
+    {
+      "path": "vercel-preset.json",
+      "bytes": 8548956,
+      "sha256": "f20cd799c6bb34379073a24e286410dd40f68bd557403ca38f928341eaafd37d"
+    },
+    {
+      "path": "vercel-read-diagnostic.json",
+      "bytes": 55,
+      "sha256": "bb2554a4d5e9ec114ff5c83437d5bf45ce4433b1486fd39a7871bed617d85730"
+    },
+    {
+      "path": "verify-error-classification.mjs",
+      "bytes": 3123,
+      "sha256": "0a40ce4f959b254128ff295d09c95546e687968e146febe6eb1b22b71d0d4830"
+    },
+    {
+      "path": "window.json",
+      "bytes": 286,
+      "sha256": "f3b2f8df449c075a811fcbd3921b523dba3fe009dde081a9f805dd3c307a55c5"
+    }
+  ],
+  "checks": {
+    "validJsonFiles": 114,
+    "commonSecretPatternsMatched": 0
+  },
+  "totalBytes": 10428266
+}

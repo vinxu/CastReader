@@ -1,0 +1,170 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "logs": [
+    {
+      "name": "access.log.12.gz",
+      "bytes": 282923
+    },
+    {
+      "name": "error.log.12.gz",
+      "bytes": 819
+    },
+    {
+      "name": "access.log.10.gz",
+      "bytes": 180746
+    },
+    {
+      "name": "error.log",
+      "bytes": 3371
+    },
+    {
+      "name": "access.log.14.gz",
+      "bytes": 282423
+    },
+    {
+      "name": "access.log.6.gz",
+      "bytes": 354736
+    },
+    {
+      "name": "error.log.4.gz",
+      "bytes": 967
+    },
+    {
+      "name": "access.log.5.gz",
+      "bytes": 299731
+    },
+    {
+      "name": "castreader-voice-api-port-error.log",
+      "bytes": 2541
+    },
+    {
+      "name": "access.log.11.gz",
+      "bytes": 276424
+    },
+    {
+      "name": "access.log.9.gz",
+      "bytes": 299515
+    },
+    {
+      "name": "error.log.8.gz",
+      "bytes": 571
+    },
+    {
+      "name": "access.log.8.gz",
+      "bytes": 283320
+    },
+    {
+      "name": "access.log.7.gz",
+      "bytes": 314726
+    },
+    {
+      "name": "error.log.14.gz",
+      "bytes": 402
+    },
+    {
+      "name": "error.log.11.gz",
+      "bytes": 925
+    },
+    {
+      "name": "access.log.4.gz",
+      "bytes": 315631
+    },
+    {
+      "name": "error.log.13.gz",
+      "bytes": 592
+    },
+    {
+      "name": "error.log.10.gz",
+      "bytes": 364
+    },
+    {
+      "name": "error.log.6.gz",
+      "bytes": 929
+    },
+    {
+      "name": "error.log.2.gz",
+      "bytes": 598
+    },
+    {
+      "name": "access.log.2.gz",
+      "bytes": 237593
+    },
+    {
+      "name": "access.log.13.gz",
+      "bytes": 250291
+    },
+    {
+      "name": "error.log.7.gz",
+      "bytes": 493
+    },
+    {
+      "name": "castreader-voice-api-origin-error.log",
+      "bytes": 3828
+    },
+    {
+      "name": "error.log.9.gz",
+      "bytes": 628
+    },
+    {
+      "name": "access.log.1",
+      "bytes": 4442956
+    },
+    {
+      "name": "access.log",
+      "bytes": 4142565
+    },
+    {
+      "name": "error.log.1",
+      "bytes": 3834
+    },
+    {
+      "name": "error.log.5.gz",
+      "bytes": 565
+    },
+    {
+      "name": "error.log.3.gz",
+      "bytes": 463
+    },
+    {
+      "name": "access.log.3.gz",
+      "bytes": 214492
+    }
+  ],
+  "nginxConfigs": [
+    {
+      "file": "castreader-voice-api-port",
+      "sha256": "69fddc0f2d28cd0438a4667cc9c382e1944da6486f37e4ec5497da63cc147f47",
+      "accessLogs": [],
+      "errorLogs": [
+        "/var/log/nginx/castreader-voice-api-port-error.log"
+      ],
+      "serverNames": [
+        "zone=castreader_developer_registration_upload:32k",
+        "api.castreader.cn"
+      ]
+    },
+    {
+      "file": "castreader",
+      "sha256": "a78ce00e3c8d9bf4e489c53d4231aa1e1d378669b7b758192e97aa1920b247de",
+      "accessLogs": [],
+      "errorLogs": [],
+      "serverNames": [
+        "api.castreader.cn",
+        "api.castreader.cn",
+        "quickread.castreader.cn",
+        "quickread.castreader.cn"
+      ]
+    }
+  ],
+  "monitorSources": [
+    {
+      "path": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f/run.mjs",
+      "sha256": "8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e"
+    },
+    {
+      "path": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f/probe-core.mjs",
+      "sha256": "51c38ca9c4a9c4b5c4f0af9dbe78510e90809eb39574f6f1ff9cff7c7e5ee964"
+    }
+  ]
+}

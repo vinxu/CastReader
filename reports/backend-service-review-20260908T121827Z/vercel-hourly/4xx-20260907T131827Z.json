@@ -1,0 +1,30 @@
+{
+  "statusQuery": "4xx",
+  "startUTC": "2026-09-07T13:18:27Z",
+  "endUTCExclusive": "2026-09-07T14:18:27Z",
+  "pages": 4,
+  "issues": [],
+  "completeReturnedPages": true,
+  "uniqueRequests": 163,
+  "coreRecords": [
+    {
+      "requestKey": "074bfd47641ddf39c5fe",
+      "observedAtUtc": "2026-09-07T13:54:58.647000Z",
+      "path": "/api/voice-clone/captioned-speech",
+      "routeGroup": "clone",
+      "status": 429,
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "domainClass": "[other_or_missing_domain]",
+      "failureCodes": [
+        "http_429_unclassified"
+      ],
+      "durationMs": 528,
+      "method": "POST"
+    }
+  ],
+  "otherStatusCounts": {
+    "404": 20,
+    "410": 136,
+    "409": 6
+  }
+}

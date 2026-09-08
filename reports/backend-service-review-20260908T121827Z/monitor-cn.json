@@ -1,0 +1,145 @@
+{
+  "aggregate": {
+    "alignmentDegradationCycles": 0,
+    "alignmentDegradationSequence": {
+      "currentConsecutiveCycles": 0,
+      "episodes": 0,
+      "maximumConsecutiveCycles": 0,
+      "recoveryEvents": []
+    },
+    "completeRemainderDecodedCycles": 274,
+    "completeRemainderDecodedRatio": 0.98917,
+    "cycles": 277,
+    "executedRequestContractCounts": {
+      "stream_false": 274,
+      "stream_omitted": 275,
+      "stream_true": 274
+    },
+    "failedRequestContractCounts": {
+      "stream_omitted": 2,
+      "stream_true": 1
+    },
+    "failureCodeCounts": {
+      "unexpected_monitor_error": 3
+    },
+    "firstSegmentAudioDurationSeconds": {
+      "max": 3.576,
+      "p50": 3.576,
+      "p95": 3.576,
+      "samples": 275
+    },
+    "largestObservedGapSeconds": 389.921,
+    "observedGapSeconds": {
+      "max": 389.921,
+      "p50": 310.505,
+      "p95": 329.255,
+      "samples": 276
+    },
+    "probeElapsedMs": {
+      "max": 85149.0,
+      "p50": 2734.0,
+      "p95": 18344.0,
+      "samples": 277
+    },
+    "regionMismatchCycles": 0,
+    "statusCounts": {
+      "healthy": 274,
+      "monitor_error": 3
+    },
+    "supplyFailureSequence": {
+      "currentConsecutiveCycles": 0,
+      "episodes": 3,
+      "maximumConsecutiveCycles": 1,
+      "recoveryEvents": [
+        {
+          "observedAtUtc": "2026-09-08T04:18:51.033Z",
+          "precedingCycles": 1,
+          "recoveredStatus": "healthy"
+        },
+        {
+          "observedAtUtc": "2026-09-08T06:23:28.743Z",
+          "precedingCycles": 1,
+          "recoveredStatus": "healthy"
+        },
+        {
+          "observedAtUtc": "2026-09-08T07:36:32.615Z",
+          "precedingCycles": 1,
+          "recoveredStatus": "healthy"
+        }
+      ]
+    },
+    "supplyOkCycles": 274,
+    "totalAudioDurationSeconds": {
+      "max": 13.44,
+      "p50": 13.44,
+      "p95": 13.44,
+      "samples": 274
+    },
+    "upstreamMetadata": [
+      {
+        "cyclesContainingVariant": 275,
+        "gateway": "vercel-r2",
+        "upstreamNode": "castreader-cn4090",
+        "upstreamRevision": "0",
+        "upstreamSource": "cn-environment"
+      }
+    ]
+  },
+  "coverage": {
+    "completeRead": true,
+    "note": "Persisted result schema does not distinguish timer from manual invocation.",
+    "originAttributionAvailable": false,
+    "selectedCycles": 277
+  },
+  "limitations": [
+    "observedAt is probe completion time, not request start time.",
+    "First-segment audio duration is not time-to-first-audio latency.",
+    "No persisted client traffic or user identity is read by this collector."
+  ],
+  "monitorRelease": {
+    "currentTarget": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+    "files": 9,
+    "treeSha256": "7a2c0b1f0715d4db766a26fe84a5899a1c77b3107f2119d0907d766cef12236a"
+  },
+  "probeStarted": false,
+  "productionModified": false,
+  "query": {
+    "endExclusive": "2026-09-08T12:18:27Z",
+    "startInclusive": "2026-09-07T12:18:27Z"
+  },
+  "readAtUtc": "2026-09-08T12:23:02.153274Z",
+  "readOnly": true,
+  "region": "cn",
+  "schema": "castreader.monitor-window-readback.v2",
+  "source": {
+    "conflictingObservedAt": [],
+    "exactDuplicatesSkipped": 0,
+    "firstAvailableObservedAt": "2026-09-05T15:58:13.669Z",
+    "firstSelectedObservedAt": "2026-09-07T12:22:52.973Z",
+    "invalidResults": [],
+    "lastAvailableObservedAt": "2026-09-08T12:17:12.430Z",
+    "lastSelectedObservedAt": "2026-09-08T12:17:12.430Z",
+    "lastSelectedToWindowEndSeconds": 74.57,
+    "resultFilesScanned": 792,
+    "resultsDirectory": "/var/lib/castreader-core-audio-monitor/cn/results",
+    "uniqueResultCycles": 792,
+    "validResultFiles": 792,
+    "windowStartToFirstSelectedSeconds": 265.973
+  },
+  "systemd": {
+    "service": {
+      "ActiveState": "activating",
+      "ExecMainStatus": "0",
+      "MainPID": "2634913",
+      "Result": "success",
+      "SubState": "start"
+    },
+    "timer": {
+      "ActiveState": "active",
+      "LastTriggerUSec": "Tue 2026-09-08 20:22:26 CST",
+      "NextElapseUSecRealtime": "",
+      "SubState": "running",
+      "UnitFileState": "enabled"
+    }
+  }
+}

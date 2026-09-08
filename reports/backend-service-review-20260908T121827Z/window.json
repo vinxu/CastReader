@@ -1,0 +1,15 @@
+{
+  "startUTC": "2026-09-07T12:18:27Z",
+  "endUTCExclusive": "2026-09-08T12:18:27Z",
+  "seconds": 86400,
+  "scope": [
+    "global_tts",
+    "cn_tts",
+    "global_clone",
+    "cn_clone",
+    "global_quickread",
+    "cn_quickread"
+  ],
+  "readOnly": true,
+  "productionModified": false
+}

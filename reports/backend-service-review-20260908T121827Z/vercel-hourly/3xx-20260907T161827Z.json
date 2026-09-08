@@ -1,0 +1,15 @@
+{
+  "statusQuery": "3xx",
+  "startUTC": "2026-09-07T16:18:27Z",
+  "endUTCExclusive": "2026-09-07T17:18:27Z",
+  "pages": 1,
+  "issues": [],
+  "completeReturnedPages": true,
+  "uniqueRequests": 16,
+  "coreRecords": [],
+  "otherStatusCounts": {
+    "307": 8,
+    "301": 6,
+    "304": 2
+  }
+}

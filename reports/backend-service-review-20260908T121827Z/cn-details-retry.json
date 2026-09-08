@@ -1,0 +1,16 @@
+{
+  "collectionFailed": true,
+  "exitCode": 1,
+  "errorClasses": [],
+  "collectorFrames": [
+    [
+      "43",
+      "<module>"
+    ],
+    [
+      "526",
+      "run"
+    ]
+  ],
+  "matches": []
+}

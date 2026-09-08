@@ -1,0 +1,19 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "rows": [
+    {
+      "messageSha256": "9f212d5a1b8c3e1e9e72aab7ea0458a51f2c4cba080b47bd2b5548b08ef9b6fe",
+      "technicalTokenShape": [
+        "[redacted]",
+        "returned",
+        "[redacted]",
+        "invalid",
+        "json",
+        "[redacted]"
+      ],
+      "sourceMatches": []
+    }
+  ]
+}

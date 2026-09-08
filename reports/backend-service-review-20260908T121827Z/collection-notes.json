@@ -1,0 +1,55 @@
+{
+  "productionModified": false,
+  "notes": [
+    {
+      "collection": "Direct original adaptive collector",
+      "issue": "2,000,000 journal row bound exceeded",
+      "resolution": "streaming collector with 3,000,000 limit completed 2,042,942 rows"
+    },
+    {
+      "collection": "CN details initial journal query",
+      "issue": "legacy systemd rejected ISO timestamp format",
+      "resolution": "UTC strftime journal query succeeded"
+    },
+    {
+      "collection": "CN QuickRead HTTP accounting",
+      "issue": "zero matching route access log entries",
+      "resolution": "live Nginx config confirms access_log off; HTTP accounting remains unavailable"
+    },
+    {
+      "collection": "Vercel preset sample",
+      "issue": "100 pages reached; 4,900 unique requests only",
+      "resolution": "reported as sample, not full-day result"
+    },
+    {
+      "collection": "Vercel 4xx broad hourly scan",
+      "issue": "13 hourly shards capped",
+      "resolution": "supplemented core route keyword queries, all returned no more pages; ingestion and retention still unverified"
+    },
+    {
+      "collection": "Vercel 24h 5xx initial query",
+      "issue": "HTTPError, status not retained by original collector",
+      "resolution": "24 hourly 5xx queries completed"
+    },
+    {
+      "collection": "Vercel 5xx path review follow-up",
+      "issue": "URLError caused by local TLS handshake timeout, no output artifact",
+      "resolution": "no retry needed for known core records; successful earlier shards and targeted error details retained"
+    },
+    {
+      "collection": "Vercel paid metrics",
+      "issue": "payment_required Observability Plus required",
+      "resolution": "no purchase; no complete global ingress denominator available"
+    },
+    {
+      "collection": "Vercel rolling retention",
+      "issue": "a later query returned fewer records in the earliest hour",
+      "resolution": "earlier immutable shard snapshots retained; do not infer full ingestion from pagination completion"
+    },
+    {
+      "collection": "US clone model logs",
+      "issue": "per-service retained events begin after the fixed window start; combined tail has no recognized clone events",
+      "resolution": "complete 24h coverage not recovered; combined-log template limitation text about restoring coverage is inapplicable; coverage.coversWindowStart=false is authoritative"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rows": [
+    {
+      "messageSha256": "9f212d5a1b8c3e1e9e72aab7ea0458a51f2c4cba080b47bd2b5548b08ef9b6fe",
+      "fixedError": "deepseek_invalid_json_envelope",
+      "model": "deepseek-v4-pro"
+    }
+  ],
+  "source": {
+    "path": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn/tools/llm-provider.mjs",
+    "sha256": "7c0370aff30427bf5d85f47595c7b14c1a2dd1aff486c970f877a7926098e9d2"
+  },
+  "sourceLiteralPresent": true
+}

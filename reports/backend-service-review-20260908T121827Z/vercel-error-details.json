@@ -1,0 +1,895 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "queries": [
+    {
+      "query": [
+        "5xx",
+        "2026-09-07T20:18:27Z",
+        "2026-09-07T21:18:27Z"
+      ],
+      "hasMoreRows": false,
+      "rows": [
+        {
+          "key": "0c3de71c27cabdb97cd5",
+          "atUTC": "2026-09-07T21:15:33.455Z",
+          "path": "/api/cron/google-play-reconcile",
+          "method": "GET",
+          "status": 503,
+          "durationMs": 11023,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "error",
+              "messageSha256": "a79c6a91708d920aece79998058e4cec4ceac14eb26ef45682171f564b633f63",
+              "messageBytes": 101,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "pro"
+              ],
+              "events": []
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 10986
+            },
+            {
+              "source": "static",
+              "region": "iad1"
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ]
+        },
+        {
+          "key": "128c79baf3e1a58d018e",
+          "atUTC": "2026-09-07T20:52:40.477Z",
+          "path": "/api/captioned_speech_partly",
+          "method": "GET",
+          "status": 500,
+          "durationMs": 60018,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "info",
+              "messageSha256": "42b6e88275f93d758c0aeeab476e7e4b160c67f8decd762ca1d10381eee612a9",
+              "messageBytes": 187,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "budget"
+              ],
+              "events": [
+                {
+                  "event": "request_start",
+                  "stage": "request",
+                  "requestKey": "7f84d17db623d2b12874",
+                  "attempt": 0,
+                  "elapsedMs": 0,
+                  "attemptTimeoutMs": 20000,
+                  "budgetMs": 28000,
+                  "region": "global"
+                }
+              ]
+            },
+            {
+              "level": "info",
+              "messageSha256": "e886c4ab63f37c4e791306cf7747aaea7661d66571c40b402ff44dd0ca16bcf8",
+              "messageBytes": 170,
+              "messageTruncated": null,
+              "fixedFragments": [],
+              "events": [
+                {
+                  "event": "attempt_start",
+                  "stage": "headers",
+                  "requestKey": "7f84d17db623d2b12874",
+                  "attempt": 1,
+                  "elapsedMs": 0,
+                  "attemptTimeoutMs": 20000,
+                  "region": "global"
+                }
+              ]
+            },
+            {
+              "level": "info",
+              "messageSha256": "a06b600cfbb7aca702797abe5062e2b09856347dbaeca73c6f78e394aa36a0a8",
+              "messageBytes": 186,
+              "messageTruncated": null,
+              "fixedFragments": [],
+              "events": [
+                {
+                  "event": "upstream_headers",
+                  "stage": "headers",
+                  "requestKey": "7f84d17db623d2b12874",
+                  "attempt": 1,
+                  "elapsedMs": 513,
+                  "attemptElapsedMs": 513,
+                  "region": "global",
+                  "status": 200
+                }
+              ]
+            },
+            {
+              "level": "info",
+              "messageSha256": "ae0bceac820f84f6875547335cf98887de762f69c35bbfc47e04ae320235a52f",
+              "messageBytes": 199,
+              "messageTruncated": null,
+              "fixedFragments": [],
+              "events": [
+                {
+                  "event": "upstream_body",
+                  "stage": "body",
+                  "requestKey": "7f84d17db623d2b12874",
+                  "attempt": 1,
+                  "elapsedMs": 538,
+                  "bodyBytes": 176415,
+                  "attemptElapsedMs": 537,
+                  "region": "global",
+                  "status": 200
+                }
+              ]
+            },
+            {
+              "level": "info",
+              "messageSha256": "541589dfccbe0c55647cd8f8f4cb0ad22cc098b87a6a82a1017836c6be2a35c7",
+              "messageBytes": 166,
+              "messageTruncated": null,
+              "fixedFragments": [],
+              "events": [
+                {
+                  "event": "request_finished",
+                  "stage": "validation",
+                  "requestKey": "7f84d17db623d2b12874",
+                  "attempt": 1,
+                  "elapsedMs": 538,
+                  "region": "global",
+                  "status": 200
+                }
+              ]
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 578
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ]
+        },
+        {
+          "key": "5d65ed7264224393cd25",
+          "atUTC": "2026-09-07T20:50:23.980Z",
+          "path": "/api/captioned_speech_partly",
+          "method": "GET",
+          "status": 500,
+          "durationMs": 60021,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "info",
+              "messageSha256": "4137a83186d384679ddd26e641f73849f45e470f1f3937986a7ebc8a1f74e6b9",
+              "messageBytes": 187,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "budget",
+                "429"
+              ],
+              "events": [
+                {
+                  "event": "request_start",
+                  "stage": "request",
+                  "requestKey": "5d291ade8429a1e2cf3a",
+                  "attempt": 0,
+                  "elapsedMs": 0,
+                  "attemptTimeoutMs": 20000,
+                  "budgetMs": 28000,
+                  "region": "global"
+                }
+              ]
+            },
+            {
+              "level": "info",
+              "messageSha256": "b17c6ff74bc1fa8f566f346a37605e7ffa8cc737bfee28aef5c53ab37956d73c",
+              "messageBytes": 170,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "429"
+              ],
+              "events": [
+                {
+                  "event": "attempt_start",
+                  "stage": "headers",
+                  "requestKey": "5d291ade8429a1e2cf3a",
+                  "attempt": 1,
+                  "elapsedMs": 0,
+                  "attemptTimeoutMs": 20000,
+                  "region": "global"
+                }
+              ]
+            },
+            {
+              "level": "info",
+              "messageSha256": "bb96abb8b0ddbe6c0aa560b6e683ce6ae08059b781eed5ae808a9936c72a616c",
+              "messageBytes": 186,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "429"
+              ],
+              "events": [
+                {
+                  "event": "upstream_headers",
+                  "stage": "headers",
+                  "requestKey": "5d291ade8429a1e2cf3a",
+                  "attempt": 1,
+                  "elapsedMs": 439,
+                  "attemptElapsedMs": 439,
+                  "region": "global",
+                  "status": 200
+                }
+              ]
+            },
+            {
+              "level": "info",
+              "messageSha256": "350e216004d3971c7d231bfdfd871c22e45053be3cbd9bfb27e97ab011fc738d",
+              "messageBytes": 198,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "429"
+              ],
+              "events": [
+                {
+                  "event": "upstream_body",
+                  "stage": "body",
+                  "requestKey": "5d291ade8429a1e2cf3a",
+                  "attempt": 1,
+                  "elapsedMs": 446,
+                  "bodyBytes": 26309,
+                  "attemptElapsedMs": 446,
+                  "region": "global",
+                  "status": 200
+                }
+              ]
+            },
+            {
+              "level": "info",
+              "messageSha256": "a56076b8e4d1cbd4c3f1e11224ee375022b81742e01916c98f23c12ee185ebe7",
+              "messageBytes": 166,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "429"
+              ],
+              "events": [
+                {
+                  "event": "request_finished",
+                  "stage": "validation",
+                  "requestKey": "5d291ade8429a1e2cf3a",
+                  "attempt": 1,
+                  "elapsedMs": 446,
+                  "region": "global",
+                  "status": 200
+                }
+              ]
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 483
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ]
+        },
+        {
+          "key": "11c1f1486464210a724a",
+          "atUTC": "2026-09-07T20:45:33.189Z",
+          "path": "/api/cron/google-play-reconcile",
+          "method": "GET",
+          "status": 503,
+          "durationMs": 10930,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "error",
+              "messageSha256": "a79c6a91708d920aece79998058e4cec4ceac14eb26ef45682171f564b633f63",
+              "messageBytes": 101,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "pro"
+              ],
+              "events": []
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 10898
+            },
+            {
+              "source": "static",
+              "region": "iad1"
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ]
+        }
+      ]
+    },
+    {
+      "query": [
+        "5xx",
+        "2026-09-08T08:18:27Z",
+        "2026-09-08T09:18:27Z"
+      ],
+      "hasMoreRows": false,
+      "rows": [
+        {
+          "key": "e11e81612e809c559d2b",
+          "atUTC": "2026-09-08T09:15:33.332Z",
+          "path": "/api/cron/google-play-reconcile",
+          "method": "GET",
+          "status": 503,
+          "durationMs": 11994,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "error",
+              "messageSha256": "a79c6a91708d920aece79998058e4cec4ceac14eb26ef45682171f564b633f63",
+              "messageBytes": 101,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "pro"
+              ],
+              "events": []
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 12168
+            },
+            {
+              "source": "static",
+              "region": "iad1"
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ]
+        },
+        {
+          "key": "a72021277981716f36ef",
+          "atUTC": "2026-09-08T08:45:33.149Z",
+          "path": "/api/cron/google-play-reconcile",
+          "method": "GET",
+          "status": 503,
+          "durationMs": 10873,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "error",
+              "messageSha256": "a79c6a91708d920aece79998058e4cec4ceac14eb26ef45682171f564b633f63",
+              "messageBytes": 101,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "pro"
+              ],
+              "events": []
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 10836
+            },
+            {
+              "source": "static",
+              "region": "iad1"
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ]
+        },
+        {
+          "key": "6afd8699ee1a8fd767cd",
+          "atUTC": "2026-09-08T08:21:25.338Z",
+          "path": "/api/app/config",
+          "method": "POST",
+          "status": 500,
+          "durationMs": 518,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "error",
+              "messageSha256": "64a100bd12405dfb720fddcbf1c1862759fa2e36cd2845f14bb4a63dd27a81b9",
+              "messageBytes": 168,
+              "messageTruncated": null,
+              "fixedFragments": [],
+              "events": []
+            },
+            {
+              "level": "error",
+              "messageSha256": "5aead6af7621f9d355503106379ab543707a42ffddb67e6e81a5af769acd321b",
+              "messageBytes": 66,
+              "messageTruncated": null,
+              "fixedFragments": [],
+              "events": []
+            },
+            {
+              "level": "error",
+              "messageSha256": "1588d969a253a1363ff87ecf39737f2a17ffb7c4d0da450240ff8442248bd6e3",
+              "messageBytes": 97,
+              "messageTruncated": null,
+              "fixedFragments": [],
+              "events": []
+            },
+            {
+              "level": "error",
+              "messageSha256": "c4bcb4af2a9feb0234c1c493998b673c144def2a99ffaf5a23e2ff668df9a09d",
+              "messageBytes": 174,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "500"
+              ],
+              "events": []
+            },
+            {
+              "level": "error",
+              "messageSha256": "d14bf93efc5b4f5d8214d44999a881c24e2b8a12a365673b41e63409dd3f2f3c",
+              "messageBytes": 92,
+              "messageTruncated": null,
+              "fixedFragments": [],
+              "events": []
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 23
+            },
+            {
+              "source": "static",
+              "region": "hkg1"
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ]
+        }
+      ]
+    },
+    {
+      "query": [
+        "5xx",
+        "2026-09-07T12:18:27Z",
+        "2026-09-07T13:18:27Z"
+      ],
+      "hasMoreRows": false,
+      "rows": [
+        {
+          "key": "975d3a1e6e68abd7980e",
+          "atUTC": "2026-09-07T13:15:33.811Z",
+          "path": "/api/cron/google-play-reconcile",
+          "method": "GET",
+          "status": 503,
+          "durationMs": 12573,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "error",
+              "messageSha256": "a79c6a91708d920aece79998058e4cec4ceac14eb26ef45682171f564b633f63",
+              "messageBytes": 101,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "pro"
+              ],
+              "events": []
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 12727
+            },
+            {
+              "source": "static",
+              "region": "iad1"
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ]
+        }
+      ]
+    },
+    {
+      "query": [
+        "429",
+        "2026-09-08T09:43:00Z",
+        "2026-09-08T09:45:00Z"
+      ],
+      "hasMoreRows": false,
+      "rows": [
+        {
+          "key": "b58187346fe296791437",
+          "atUTC": "2026-09-08T09:44:10.492Z",
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": 429,
+          "durationMs": 493,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 262
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ]
+        }
+      ]
+    }
+  ],
+  "collectorSha256": "8326e79efa93575a518550f5bc0741597129b1b85f9915187b8d1bd6565c8c7e"
+}

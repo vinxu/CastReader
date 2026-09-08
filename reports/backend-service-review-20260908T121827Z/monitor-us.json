@@ -1,0 +1,122 @@
+{
+  "aggregate": {
+    "alignmentDegradationCycles": 0,
+    "alignmentDegradationSequence": {
+      "currentConsecutiveCycles": 0,
+      "episodes": 0,
+      "maximumConsecutiveCycles": 0,
+      "recoveryEvents": []
+    },
+    "completeRemainderDecodedCycles": 278,
+    "completeRemainderDecodedRatio": 1.0,
+    "cycles": 278,
+    "executedRequestContractCounts": {
+      "stream_omitted": 278,
+      "stream_true": 278
+    },
+    "failedRequestContractCounts": {},
+    "failureCodeCounts": {},
+    "firstSegmentAudioDurationSeconds": {
+      "max": 23.088,
+      "p50": 23.088,
+      "p95": 23.088,
+      "samples": 278
+    },
+    "largestObservedGapSeconds": 327.531,
+    "observedGapSeconds": {
+      "max": 327.531,
+      "p50": 310.199,
+      "p95": 320.132,
+      "samples": 277
+    },
+    "probeElapsedMs": {
+      "max": 8949.0,
+      "p50": 2688.0,
+      "p95": 6833.0,
+      "samples": 278
+    },
+    "regionMismatchCycles": 0,
+    "statusCounts": {
+      "healthy": 278
+    },
+    "supplyFailureSequence": {
+      "currentConsecutiveCycles": 0,
+      "episodes": 0,
+      "maximumConsecutiveCycles": 0,
+      "recoveryEvents": []
+    },
+    "supplyOkCycles": 278,
+    "totalAudioDurationSeconds": {
+      "max": 37.464,
+      "p50": 37.464,
+      "p95": 37.464,
+      "samples": 278
+    },
+    "upstreamMetadata": [
+      {
+        "cyclesContainingVariant": 278,
+        "gateway": "vercel-r2",
+        "upstreamNode": "castreader-us4090",
+        "upstreamRevision": "2",
+        "upstreamSource": "database"
+      }
+    ]
+  },
+  "coverage": {
+    "completeRead": true,
+    "note": "Persisted result schema does not distinguish timer from manual invocation.",
+    "originAttributionAvailable": false,
+    "selectedCycles": 278
+  },
+  "limitations": [
+    "observedAt is probe completion time, not request start time.",
+    "First-segment audio duration is not time-to-first-audio latency.",
+    "No persisted client traffic or user identity is read by this collector."
+  ],
+  "monitorRelease": {
+    "currentTarget": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+    "files": 9,
+    "treeSha256": "7a2c0b1f0715d4db766a26fe84a5899a1c77b3107f2119d0907d766cef12236a"
+  },
+  "probeStarted": false,
+  "productionModified": false,
+  "query": {
+    "endExclusive": "2026-09-08T12:18:27Z",
+    "startInclusive": "2026-09-07T12:18:27Z"
+  },
+  "readAtUtc": "2026-09-08T12:22:58.912440Z",
+  "readOnly": true,
+  "region": "us",
+  "schema": "castreader.monitor-window-readback.v2",
+  "source": {
+    "conflictingObservedAt": [],
+    "exactDuplicatesSkipped": 0,
+    "firstAvailableObservedAt": "2026-09-05T16:15:00.370Z",
+    "firstSelectedObservedAt": "2026-09-07T12:20:10.318Z",
+    "invalidResults": [],
+    "lastAvailableObservedAt": "2026-09-08T12:21:40.464Z",
+    "lastSelectedObservedAt": "2026-09-08T12:16:27.662Z",
+    "lastSelectedToWindowEndSeconds": 119.338,
+    "resultFilesScanned": 790,
+    "resultsDirectory": "/var/lib/castreader-core-audio-monitor/us/results",
+    "uniqueResultCycles": 790,
+    "validResultFiles": 790,
+    "windowStartToFirstSelectedSeconds": 103.318
+  },
+  "systemd": {
+    "service": {
+      "ActiveState": "inactive",
+      "ExecMainStatus": "0",
+      "MainPID": "0",
+      "Result": "success",
+      "SubState": "dead"
+    },
+    "timer": {
+      "ActiveState": "active",
+      "LastTriggerUSec": "Tue 2026-09-08 12:21:36 UTC",
+      "NextElapseUSecRealtime": "",
+      "SubState": "waiting",
+      "UnitFileState": "enabled"
+    }
+  }
+}

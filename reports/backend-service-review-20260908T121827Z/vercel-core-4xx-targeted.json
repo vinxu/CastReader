@@ -1,0 +1,513 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "rawContentExported": false,
+  "queries": [
+    {
+      "query": [
+        "4xx",
+        "2026-09-07T12:18:27Z",
+        "2026-09-08T12:18:27Z",
+        "captioned_speech"
+      ],
+      "hasMoreRows": false,
+      "rows": [
+        {
+          "key": "b58187346fe296791437",
+          "atUTC": "2026-09-08T09:44:10.492Z",
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": 429,
+          "durationMs": 493,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 262
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ],
+          "platformMetadata": {
+            "requestMethod": "POST",
+            "statusCode": 429,
+            "proxyEvents": [
+              {
+                "source": "static",
+                "region": "sin1"
+              }
+            ],
+            "functionEvents": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 262
+              }
+            ],
+            "events": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 262
+              }
+            ],
+            "hasFunctionCrashed": false
+          },
+          "uaClass": "browser"
+        }
+      ]
+    },
+    {
+      "query": [
+        "4xx",
+        "2026-09-07T12:18:27Z",
+        "2026-09-08T12:18:27Z",
+        "quickread"
+      ],
+      "hasMoreRows": false,
+      "rows": []
+    },
+    {
+      "query": [
+        "4xx",
+        "2026-09-07T12:18:27Z",
+        "2026-09-08T12:18:27Z",
+        "voice-clone"
+      ],
+      "hasMoreRows": false,
+      "rows": [
+        {
+          "key": "f071cda02908e5e2ec23",
+          "atUTC": "2026-09-08T08:25:17.727Z",
+          "path": "/api/mobile-auth/session",
+          "method": "POST",
+          "status": 401,
+          "durationMs": 351,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "warn",
+              "messageSha256": "a61024bfe9bfc8faaaf15bca7b946f1de74905a4c523aef12960e1fc47199043",
+              "messageBytes": 48,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "failed"
+              ],
+              "events": []
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 236
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ],
+          "platformMetadata": {
+            "requestMethod": "POST",
+            "statusCode": 401,
+            "proxyEvents": [
+              {
+                "source": "static",
+                "region": "fra1"
+              }
+            ],
+            "functionEvents": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 236
+              }
+            ],
+            "events": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 236
+              }
+            ],
+            "hasFunctionCrashed": false
+          },
+          "uaClass": "ios"
+        },
+        {
+          "key": "72b5d7de98a0de5553d1",
+          "atUTC": "2026-09-08T08:25:17.727Z",
+          "path": "/api/mobile-auth/session",
+          "method": "POST",
+          "status": 401,
+          "durationMs": 336,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "warn",
+              "messageSha256": "a61024bfe9bfc8faaaf15bca7b946f1de74905a4c523aef12960e1fc47199043",
+              "messageBytes": 48,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "failed"
+              ],
+              "events": []
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 227
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ],
+          "platformMetadata": {
+            "requestMethod": "POST",
+            "statusCode": 401,
+            "proxyEvents": [
+              {
+                "source": "static",
+                "region": "fra1"
+              }
+            ],
+            "functionEvents": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 227
+              }
+            ],
+            "events": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 227
+              }
+            ],
+            "hasFunctionCrashed": false
+          },
+          "uaClass": "ios"
+        },
+        {
+          "key": "ada402ae9b4b0c8f6ac9",
+          "atUTC": "2026-09-08T08:25:17.727Z",
+          "path": "/api/mobile-auth/session",
+          "method": "POST",
+          "status": 401,
+          "durationMs": 1170,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [
+            {
+              "level": "warn",
+              "messageSha256": "a61024bfe9bfc8faaaf15bca7b946f1de74905a4c523aef12960e1fc47199043",
+              "messageBytes": 48,
+              "messageTruncated": null,
+              "fixedFragments": [
+                "failed"
+              ],
+              "events": []
+            }
+          ],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 821
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ],
+          "platformMetadata": {
+            "requestMethod": "POST",
+            "statusCode": 401,
+            "proxyEvents": [
+              {
+                "source": "static",
+                "region": "fra1"
+              }
+            ],
+            "functionEvents": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 821
+              }
+            ],
+            "events": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 821
+              }
+            ],
+            "hasFunctionCrashed": false
+          },
+          "uaClass": "ios"
+        },
+        {
+          "key": "074bfd47641ddf39c5fe",
+          "atUTC": "2026-09-07T13:54:58.647Z",
+          "path": "/api/voice-clone/captioned-speech",
+          "method": "POST",
+          "status": 429,
+          "durationMs": 528,
+          "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+          "logs": [],
+          "eventsMetadata": [
+            {
+              "source": "serverless",
+              "region": "iad1",
+              "durationMs": 287
+            }
+          ],
+          "recordFieldNames": [
+            "branch",
+            "cache",
+            "cacheReason",
+            "callingService",
+            "clientRegion",
+            "clientUserAgent",
+            "deploymentDomain",
+            "deploymentId",
+            "domain",
+            "environment",
+            "errorCode",
+            "events",
+            "functionEvents",
+            "hasFunctionCrashed",
+            "isPrefetchRequest",
+            "isVercelTrace",
+            "logs",
+            "microfrontendsDefaultAppDeploymentId",
+            "microfrontendsMatchedPath",
+            "microfrontendsResponseReason",
+            "pprState",
+            "proxyEvents",
+            "requestDurationMs",
+            "requestId",
+            "requestMethod",
+            "requestPath",
+            "requestReferer",
+            "requestSearchParams",
+            "requestTags",
+            "resolvedDynamicPath",
+            "route",
+            "service",
+            "sessionId",
+            "statusCode",
+            "timestamp",
+            "traceId",
+            "wafAction",
+            "workflowRunId",
+            "workflowStepId"
+          ],
+          "platformMetadata": {
+            "requestMethod": "POST",
+            "statusCode": 429,
+            "proxyEvents": [
+              {
+                "source": "static",
+                "region": "sin1"
+              }
+            ],
+            "functionEvents": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 287
+              }
+            ],
+            "events": [
+              {
+                "source": "serverless",
+                "region": "iad1",
+                "durationMs": 287
+              }
+            ],
+            "hasFunctionCrashed": false
+          },
+          "uaClass": "android"
+        }
+      ]
+    },
+    {
+      "query": [
+        "4xx",
+        "2026-09-07T12:18:27Z",
+        "2026-09-08T12:18:27Z",
+        "markdown-tts"
+      ],
+      "hasMoreRows": false,
+      "rows": []
+    },
+    {
+      "query": [
+        "4xx",
+        "2026-09-07T12:18:27Z",
+        "2026-09-08T12:18:27Z",
+        "/api/tts/"
+      ],
+      "hasMoreRows": false,
+      "rows": []
+    }
+  ],
+  "collectorSha256": "f892ec0bb1cd3560d636519d262c12306cf879e1f2fe660bf425458dc63adb52"
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "atUTC": "2026-09-07T18:42:52.560214+00:00",
+    "messageSha256": "96a5ef99b26a3eca11c3c8887cd83e5b263e07241ff9ce5a380280da767105d6",
+    "fragments": [
+      "aborting with incomplete response",
+      "http2: stream closed",
+      "stream closed"
+    ],
+    "fieldNames": [
+      "duration",
+      "error",
+      "level",
+      "logger",
+      "msg",
+      "request",
+      "ts",
+      "upstream"
+    ]
+  }
+]

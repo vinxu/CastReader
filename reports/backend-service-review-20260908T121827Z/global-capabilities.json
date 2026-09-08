@@ -1,0 +1,25 @@
+{
+  "schema": "castreader.global-capabilities-identity.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "probeStarted": false,
+  "readAtUtc": "2026-09-08T12:20:04.576799Z",
+  "query": {
+    "endpoint": "https://api.castreader.ai/api/capabilities",
+    "method": "GET"
+  },
+  "coverage": {
+    "complete": true,
+    "tlsCertificateVerification": true,
+    "fieldErrors": []
+  },
+  "identity": {
+    "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+    "commitSha": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+    "region": "global"
+  },
+  "limitations": [
+    "Only deploymentId, commitSha and the published service region are retained from the response.",
+    "This identity GET performs no synthesis and does not provide a traffic denominator."
+  ]
+}

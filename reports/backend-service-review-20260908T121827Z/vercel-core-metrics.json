@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "payment_required",
+    "message": "Observability Plus is required to run this query for team castreader. It unlocks full metrics querying and extended retention. Learn more: https://vercel.com/docs/observability/observability-plus"
+  }
+}

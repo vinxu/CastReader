@@ -1,0 +1,29 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-07T12:18:27+00:00",
+    "endUTCExclusive": "2026-09-08T12:18:27+00:00"
+  },
+  "coverage": {
+    "path": "/var/log/onstart.log",
+    "fileBytes": 15753500226,
+    "scanOffset": 14679758402,
+    "firstCloneEventUTC": null,
+    "lastCloneEventUTC": null,
+    "coversWindowStart": false,
+    "sameInode": true,
+    "notTruncated": true
+  },
+  "exactDuplicateEventsSkipped": 0,
+  "events": [],
+  "warningAndRejectionEvents": [],
+  "timings": [],
+  "limitations": [
+    "Fixed structured event names only; unknown unstructured failures and HTTP delivery are not a complete ledger.",
+    "Combined log restores coverage absent from the rotated per-service log; rows are deduplicated by complete event serialization without exporting content fingerprints."
+  ],
+  "collectorSha256": "8db997105d4f74922199a50421a23ac428654f8913943e9c47d31e312ff84591"
+}
