@@ -318,3 +318,21 @@ Cold preparations of 11.3–16.7 seconds were exercised. Longest logged audio ga
 was 1,304 ms. No terminal handoff errors occurred and the old/new page-key chain
 was continuous. A physical Kokoro Explain sample is now running as the last
 release acceptance case; build 57 is still unuploaded.
+
+
+The final physical preset run using the previous ten-second budget passed
+continuous playback but still measured a 2,403 ms maximum audio gap. Cold preset
+pipelines took up to 11.8 seconds because explanation planning is also part of
+the critical path. The selected voice attachment identifies `presetVoiceSelect_zf_001`.
+The final policy therefore uses sixteen seconds for the complete Explain
+pipeline with either preset or cloned voices. This changes only the preparation
+budget; the already validated page evidence, manual-navigation and mark ownership
+gates remain the same. The affected core/Kindle/fast-lane suites passed in
+`unified-explain-window-tests.xcresult`; another physical preset sample exercises
+the final budget before upload. The replacement immutable archive is
+`CastReader-1.2.36-57-verified.xcarchive`.
+
+A scoped, read-only production check at 12:52:51 found 368 successful clone
+requests since 2026-09-08 00:00 UTC, used_ms=3,706,729, reserved_ms=0. Ledger
+actual_ms equals the bucket usage. No further quota reset, account changes or
+production server edits were made.

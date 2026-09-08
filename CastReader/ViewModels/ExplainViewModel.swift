@@ -162,9 +162,9 @@ final class ExplainViewModel: ObservableObject {
     /// visual preparation. A short final block must not collapse the lead time;
     /// unfinished blocks and fast-lane placeholder counts cannot count as zero.
     var kindlePagePreparationLeadSeconds: Double {
-        // The first cloned explanation includes authenticated generation and
-        // composition; measured cold successors take 11–13 seconds on device.
-        playbackVoiceID.hasPrefix("vc_") ? 16 : 10
+        // Budget the full cold pipeline (planning, speech, composition), not
+        // only the synthesizer. Preset explanations can also take 12 seconds.
+        16
     }
 
     var preparedLivePageAudioTail: KindleContinuousPageHandoffContract.PreparedAudioTail? {
