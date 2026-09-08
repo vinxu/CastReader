@@ -1,6 +1,6 @@
 import XCTest
 
-/// Explicitly selected only on the simulator the user has signed into Kindle.
+/// Explicitly selected only on a device the user has signed into Kindle.
 /// Never signs in, clears a shelf or copies WebKit credentials.
 final class KindleLiveAcceptanceUITests: XCTestCase {
     private func wait(_ timeout: Double, _ condition: @escaping () -> Bool, file: StaticString = #filePath, line: UInt = #line) {
@@ -130,6 +130,105 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         play.tap()
         wait(10) { play.value as? String == "Paused" }
         snapshot(app, "Eight-page-complete-paused")
+    }
+
+    func testAuthorizedKindleVoiceAndModeContinuousRead() throws {
+        let environment = ProcessInfo.processInfo.environment
+        try XCTSkipUnless(environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1")
+        let mode = try XCTUnwrap(environment["CASTREADER_ACCEPTANCE_MODE"])
+        let voice = try XCTUnwrap(environment["CASTREADER_ACCEPTANCE_VOICE"])
+        XCTAssertTrue(["read", "explain"].contains(mode))
+        XCTAssertTrue(["preset", "clone"].contains(voice))
+        let turns = Int(environment["CASTREADER_ACCEPTANCE_TURNS"] ?? "3") ?? 3
+        XCTAssertTrue((1...8).contains(turns))
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+                               "-CastReaderTTSClockDiagnostics", "-AppleLanguages", "(en)",
+                               "-interfaceLanguage", "en"]
+        app.launch()
+        let book = app.buttons["homeShelfBook.kindle.B002RKRMSY"]
+        XCTAssertTrue(book.waitForExistence(timeout: 20))
+        for _ in 0..<6 where !book.isHittable { app.swipeUp() }
+        book.tap()
+        XCTAssertTrue(app.buttons["kindleReadingSettingsButton"].waitForExistence(timeout: 60))
+        waitForPausedReader(app)
+        app.buttons["kindleModeButton_\(mode)"].tap()
+
+        func playControl() -> XCUIElement {
+            let explain = app.buttons["kindleExplainPlayPauseButton"]
+            return explain.exists ? explain : app.buttons["kindleReadPlayPauseButton"]
+        }
+        func playbackState() -> String {
+            (playControl().value as? String ?? "").lowercased()
+        }
+        // Resolve the current mode's real reading/output language before using
+        // its voice panel. This avoids selecting a voice for a stale browser
+        // language, and exercises the ordinary UI instead of injecting settings.
+        wait(60) { playControl().isEnabled && playControl().isHittable }
+        playControl().tap()
+        wait(180) { playbackState() == "playing" }
+        playControl().tap()
+        wait(15) { playbackState() == "paused" }
+        app.buttons["playbackVoiceButton"].tap()
+        let categories = app.segmentedControls["voiceBrowserCategoryPicker"]
+        XCTAssertTrue(categories.waitForExistence(timeout: 20))
+        categories.buttons[voice == "clone" ? "Created" : "Explore"].tap()
+        let selectorPrefix = voice == "clone" ? "voiceCloneApplyButton_" : "presetVoiceSelect_"
+        let selection = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", selectorPrefix)).firstMatch
+        XCTAssertTrue(selection.waitForExistence(timeout: 60))
+        snapshot(app, "\(mode)-\(voice)-voice-library")
+        XCTAssertTrue(selection.isHittable)
+        let selectedVoice = XCTAttachment(string: selection.identifier)
+        selectedVoice.name = "\(mode)-\(voice)-selected-voice"
+        selectedVoice.lifetime = .keepAlways
+        add(selectedVoice)
+        selection.tap()
+        app.buttons["playbackVoiceDoneButton"].tap()
+        wait(180) { ["paused", "playing"].contains(playbackState()) && playControl().isEnabled }
+        if playbackState() == "paused" { playControl().tap() }
+        wait(180) { playbackState() == "playing" }
+
+        let surface = app.otherElements["kindleAcceptanceState"]
+        var previous = try XCTUnwrap(surface.value as? String)
+        XCTAssertNotEqual(previous, "page=none")
+        var visited: Set<String> = [previous]
+        snapshot(app, "\(mode)-\(voice)-continuous-start")
+        if let seconds = environment["CASTREADER_ACCEPTANCE_QUIET_SECONDS"].flatMap(Double.init) {
+            XCTAssertTrue((60...900).contains(seconds))
+            // Frequent XCTest AX snapshots can stall short-word display on a
+            // physical device. Observe the app's own logs during this interval;
+            // do not query or interact with its UI until the sample has ended.
+            Thread.sleep(forTimeInterval: seconds)
+            XCTAssertEqual(playbackState(), "playing", "Continuous playback stopped during the quiet sample")
+            snapshot(app, "\(mode)-\(voice)-quiet-end")
+            playControl().tap()
+            wait(15) { playbackState() == "paused" }
+            snapshot(app, "\(mode)-\(voice)-complete-paused")
+            return
+        }
+        for number in 1...turns {
+            var pausedSince: Date?
+            wait(300) {
+                let state = playbackState()
+                if state == "paused" {
+                    if pausedSince == nil { pausedSince = Date() }
+                    XCTAssertLessThan(Date().timeIntervalSince(pausedSince!), 15,
+                                      "Playback paused without an explicit pause action")
+                } else { pausedSince = nil }
+                guard let current = surface.value as? String,
+                      current != "page=none", current != previous else { return false }
+                return state == "playing"
+            }
+            let current = try XCTUnwrap(surface.value as? String)
+            XCTAssertTrue(visited.insert(current).inserted, "Automatic reading repeated a visited page")
+            previous = current
+            snapshot(app, "\(mode)-\(voice)-turn-\(number)")
+        }
+        playControl().tap()
+        wait(15) { playbackState() == "paused" }
+        snapshot(app, "\(mode)-\(voice)-complete-paused")
     }
 
     func testAuthorizedKindleReadTurnSettingsMinimizeAndRelaunch() throws {

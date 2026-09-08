@@ -257,6 +257,7 @@ struct VoiceBrowserView: View {
                         Button("完成") {
                             if let onDone { onDone() } else { dismiss() }
                         }
+                        .accessibilityIdentifier("playbackVoiceDoneButton")
                     }
                 } else {
                     // 与首页右上角保持同一组入口：切 Tab 时书架按钮不再消失。
@@ -334,6 +335,7 @@ struct VoiceBrowserView: View {
             }
         }
         .pickerStyle(.segmented)
+        .accessibilityIdentifier("voiceBrowserCategoryPicker")
         .padding(.horizontal)
         .padding(.vertical, 10)
         .background(AppTheme.background)
@@ -841,6 +843,7 @@ private struct VoiceBrowserRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("presetVoiceSelect_\(voice.code)")
 
             Button(action: onPreview) {
                 Group {

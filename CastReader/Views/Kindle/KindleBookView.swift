@@ -519,6 +519,7 @@ struct KindleBookView: View {
                 .background(model.mode == mode ? AppTheme.surface : Color.clear, in: Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(mode == .read ? "kindleModeButton_read" : "kindleModeButton_explain")
     }
 
     private var nativeTOCOverlay: some View {
@@ -1180,6 +1181,8 @@ private struct KindleExplainPlaybackBar: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("kindleExplainPlayPauseButton")
+        .accessibilityValue(isLoading ? "loading" : (isPlaying ? "playing" : "paused"))
     }
 }
 
