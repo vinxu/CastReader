@@ -38,12 +38,12 @@ def direct(start,end):
  code=ast_constant(ROOT/'reports/backend-service-review-20260908T121827Z/collect_direct_streaming.py','REMOTE')
  return remote('us',code,{'source':(LIB/'remote_tts_gateway_snapshot.py').read_text(),'start':iso(start),'end':iso(end)},150)
 
-def vercel(start,end):
+def vercel(start,end,query_specs=None):
  project=json.loads((v.REPO/'.vercel/project.json').read_text());token=json.loads((Path.home()/'Library/Application Support/com.vercel.cli/auth.json').read_text())['token']
  opener=urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl.create_default_context()),v.NoRedirect())
  records={};queries=[]
  # Targeted error queries avoid unrelated 4xx traffic exhausting the page budget.
- for mask,search in [('5xx','')]+[('4xx',x)for x in ['captioned_speech','quickread','voice-clone','markdown-tts','/api/tts/']]:
+ for mask,search in (query_specs if query_specs is not None else [('5xx','')]+[('4xx',x)for x in ['captioned_speech','quickread','voice-clone','markdown-tts','/api/tts/']]):
   cursor=end;pages=0;issues=[];more=True
   try:
    while pages<8 and more:

@@ -1,0 +1,475 @@
+{
+  "readOnly": true,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "region": "us",
+  "window": {
+    "startUTC": "2026-09-08T13:41:13.521061Z",
+    "endUTCExclusive": "2026-09-08T14:40:32.439317Z"
+  },
+  "monitor": {
+    "schema": "castreader.monitor-window-readback.v2",
+    "region": "us",
+    "readOnly": true,
+    "probeStarted": false,
+    "productionModified": false,
+    "readAtUtc": "2026-09-08T14:40:36.170178Z",
+    "query": {
+      "startInclusive": "2026-09-08T13:41:13.521061Z",
+      "endExclusive": "2026-09-08T14:40:32.439317Z"
+    },
+    "source": {
+      "resultsDirectory": "/var/lib/castreader-core-audio-monitor/us/results",
+      "resultFilesScanned": 817,
+      "validResultFiles": 817,
+      "uniqueResultCycles": 817,
+      "exactDuplicatesSkipped": 0,
+      "invalidResults": [],
+      "conflictingObservedAt": [],
+      "firstAvailableObservedAt": "2026-09-05T16:15:00.370Z",
+      "lastAvailableObservedAt": "2026-09-08T14:37:59.105Z",
+      "firstSelectedObservedAt": "2026-09-08T13:41:15.733Z",
+      "lastSelectedObservedAt": "2026-09-08T14:37:59.105Z",
+      "windowStartToFirstSelectedSeconds": 2.212,
+      "lastSelectedToWindowEndSeconds": 153.334
+    },
+    "coverage": {
+      "completeRead": true,
+      "selectedCycles": 12,
+      "originAttributionAvailable": false,
+      "note": "Persisted result schema does not distinguish timer from manual invocation."
+    },
+    "monitorRelease": {
+      "currentTarget": "/opt/castreader-core-audio-monitor/releases/eee0a902-f877944d",
+      "files": 9,
+      "treeSha256": "1f5f9e9723ef7f30ef5d5a606249acbb5317ff1f59483c4534c77e5e40aca61c"
+    },
+    "systemd": {
+      "service": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "timer": {
+        "NextElapseUSecRealtime": "",
+        "LastTriggerUSec": "Tue 2026-09-08 14:37:56 UTC",
+        "ActiveState": "active",
+        "SubState": "waiting",
+        "UnitFileState": "enabled"
+      }
+    },
+    "aggregate": {
+      "cycles": 12,
+      "statusCounts": {
+        "healthy": 12
+      },
+      "failureCodeCounts": {},
+      "failedRequestContractCounts": {},
+      "executedRequestContractCounts": {
+        "stream_omitted": 12,
+        "stream_true": 12
+      },
+      "supplyOkCycles": 12,
+      "supplyFailureSequence": {
+        "episodes": 0,
+        "maximumConsecutiveCycles": 0,
+        "currentConsecutiveCycles": 0,
+        "recoveryEvents": []
+      },
+      "alignmentDegradationCycles": 0,
+      "alignmentDegradationSequence": {
+        "episodes": 0,
+        "maximumConsecutiveCycles": 0,
+        "currentConsecutiveCycles": 0,
+        "recoveryEvents": []
+      },
+      "regionMismatchCycles": 0,
+      "completeRemainderDecodedCycles": 12,
+      "completeRemainderDecodedRatio": 1.0,
+      "probeElapsedMs": {
+        "samples": 12,
+        "p50": 2486.0,
+        "p95": 9789.0,
+        "max": 9789.0
+      },
+      "firstSegmentAudioDurationSeconds": {
+        "samples": 12,
+        "p50": 23.088,
+        "p95": 23.088,
+        "max": 23.088
+      },
+      "totalAudioDurationSeconds": {
+        "samples": 12,
+        "p50": 37.464,
+        "p95": 37.464,
+        "max": 37.464
+      },
+      "observedGapSeconds": {
+        "samples": 11,
+        "p50": 309.534,
+        "p95": 319.639,
+        "max": 319.639
+      },
+      "largestObservedGapSeconds": 319.639,
+      "upstreamMetadata": [
+        {
+          "gateway": "vercel-r2",
+          "upstreamNode": "castreader-us4090",
+          "upstreamSource": "database",
+          "upstreamRevision": "2",
+          "cyclesContainingVariant": 12
+        }
+      ]
+    },
+    "limitations": [
+      "observedAt is probe completion time, not request start time.",
+      "First-segment audio duration is not time-to-first-audio latency.",
+      "No persisted client traffic or user identity is read by this collector."
+    ],
+    "sourceHashes": {
+      "run.mjs": "8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e",
+      "state-store.test.mjs": "fcedbd39655995cbf4a5a438b3b9ebf48ad08125a36ba84b6016c780805629b7",
+      "alert-envelope.schema.json": "369b79bdae103d4576a53beb48d482400b15410953ad4dea8990821c736e2828",
+      "probe-core.mjs": "9c6ccbd3d63e595d501152d8fc15f5cb9ac1c9db22b4ec2042f749046cb641d6",
+      "README.md": "e60ff78804fe985405363d3009a23df1ea42814354e5f9253ebe206581790495",
+      "probe-core.test.mjs": "168c7f8a98437856fcc17a00fe0da3551a20ededdba9f55a11987e44f913993e",
+      "state-store.mjs": "4f800b073d9e81e6ea59a9689e1fed4a3f6a0906c0fae0c5cbe941ef56e306c3",
+      "systemd/castreader-core-audio-monitor@.timer": "d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92",
+      "systemd/castreader-core-audio-monitor@.service": "65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916"
+    },
+    "attempts": [
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 1697,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "ea81f3ebb7c8540aa626",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T13:41:15.733Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 1002,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "70aac6c596ca599e69f9",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T13:41:15.733Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 1644,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "4eb7841807e5ca13f3f8",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T13:46:25.267Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 855,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "0ba6416a5bb09127b59f",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T13:46:25.267Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 1463,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "9ac39da8949b6af7dd90",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T13:51:27.490Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 877,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "95d8d6bbe68f83aca79a",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T13:51:27.490Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 2266,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "283f6797c694c48ac364",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T13:56:36.264Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 1125,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "9bef74be46589373270f",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T13:56:36.264Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 1472,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "b1a8e3bdde26e0f2aa92",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:01:49.283Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 905,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "d247c69afb6d1e838618",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:01:49.283Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 2531,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "cc37f3ea8816cef0f4c6",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:06:53.840Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 2048,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "be443b7aaae6068cf5b0",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:06:53.840Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 1426,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "fbf79167d4fa2ed0da5f",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:12:03.790Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 966,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "5fbc044a1883a119cb55",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:12:03.790Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 7006,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "d41b4a06ceb85d3056e3",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:17:23.429Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 2782,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "d604735f0a8e9b308777",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:17:23.429Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 1516,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "a9334c9e7bbc3f42bec3",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:22:28.993Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 806,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "0dd62eb936f7c4ec9104",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:22:28.993Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 2512,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "eeb1b7705181733e2afe",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:27:35.122Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 1109,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "a3ee70d3b92b5aff57d9",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:27:35.122Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 1508,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "9876f38ad1e31cf93f4d",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:32:48.931Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 978,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "3ee52c0f04c4a55caa96",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:32:48.931Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 1458,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "9bd916c4a2af76eba6c6",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:37:59.105Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 983,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "504056b2877795bc0bc2",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:37:59.105Z",
+        "cycleSupplyOk": true
+      }
+    ],
+    "cyclesWithMissingAttempts": 0,
+    "attemptOutcomeCounts": {
+      "complete": 24
+    },
+    "attemptCodeCounts": {},
+    "attemptsRecoveredInHealthyCycle": 0
+  },
+  "quickread": {
+    "health": {
+      "status": 200,
+      "ok": true,
+      "queue": 0,
+      "active": false,
+      "concurrency": null
+    },
+    "source": {
+      "files": [
+        {
+          "path": "/root/.pm2/logs/quickread-out.log",
+          "bytes": 3078539,
+          "sha256": "c8503e206a0d0fe0704ce8db8a5df147aed344f34fa9e709bd99bbc37f960dde"
+        },
+        {
+          "path": "/root/.pm2/logs/quickread-error.log",
+          "bytes": 47270,
+          "sha256": "138819c4a67fdd57406e6adc75efd8c639349b1bee292fcddad089ec2a443208"
+        }
+      ]
+    },
+    "coverage": {
+      "rows": 26329,
+      "parseErrors": 0,
+      "undatedErrorLines": 206
+    },
+    "providerEvents": [],
+    "providerEventCounts": {},
+    "providerFailureCodes": {},
+    "providerRecoveredRequests": 0,
+    "fixedErrorLines": []
+  },
+  "cloneHealth": null,
+  "ingress": null,
+  "monitorReleaseMatches": true
+}

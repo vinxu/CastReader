@@ -1,0 +1,265 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-08T13:41:13.521061Z",
+    "endUTCExclusive": "2026-09-08T14:40:32.439317Z"
+  },
+  "observedAtUTC": "2026-09-08T14:40:42.680768Z",
+  "source": {
+    "path": "/opt/castreader-tts-gateway/gateway.mjs",
+    "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+    "unchangedDuringRead": true
+  },
+  "systemd": {
+    "MainPID": "596392",
+    "NRestarts": "0",
+    "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+    "ActiveState": "active",
+    "SubState": "running",
+    "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service"
+  },
+  "coverage": {
+    "journalRowsRead": 87525,
+    "journalParseErrors": 0,
+    "incompleteBlocks": 0,
+    "malformedRequests": 0,
+    "complete": true,
+    "firstJournalUTC": "2026-09-08T13:41:26.963288Z",
+    "lastJournalUTC": "2026-09-08T14:40:34.437044Z",
+    "endBoundaryPaddingSeconds": 2
+  },
+  "requests": 1984,
+  "uniqueRequestKeys": 1984,
+  "exactDuplicateOccurrences": 0,
+  "statusCounts": {
+    "200": 1973,
+    "no_response": 11
+  },
+  "errorClassCounts": {
+    "downstream_closed": 11
+  },
+  "clientStatuses": [
+    {
+      "platform": "android",
+      "version": "1.0.47",
+      "status": "200",
+      "count": 659
+    },
+    {
+      "platform": "android",
+      "version": "1.0.47",
+      "status": "no_response",
+      "count": 11
+    },
+    {
+      "platform": "extension",
+      "version": "1.2.37",
+      "status": "200",
+      "count": 1314
+    }
+  ],
+  "hourlyStatuses": [
+    {
+      "hourUTC": "2026-09-08T13",
+      "status": "200",
+      "count": 605
+    },
+    {
+      "hourUTC": "2026-09-08T13",
+      "status": "no_response",
+      "count": 3
+    },
+    {
+      "hourUTC": "2026-09-08T14",
+      "status": "200",
+      "count": 1368
+    },
+    {
+      "hourUTC": "2026-09-08T14",
+      "status": "no_response",
+      "count": 8
+    }
+  ],
+  "elapsedMs": {
+    "samples": 1984,
+    "p50": 783.0,
+    "p95": 2278.0,
+    "max": 7547.0
+  },
+  "non200Records": [
+    {
+      "key": "e568c8a34915457e04f9",
+      "observedAt": "2026-09-08T13:54:17.383286Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 1733,
+      "requestBytes": 266,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "c6beabf7fc2aa94c8082",
+      "observedAt": "2026-09-08T13:54:33.284180Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 1276,
+      "requestBytes": 343,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "20bcf9fafad670da5733",
+      "observedAt": "2026-09-08T13:59:37.757076Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 1659,
+      "requestBytes": 254,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "0f0786bf5eb50eeb1fb1",
+      "observedAt": "2026-09-08T14:04:02.042330Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 2796,
+      "requestBytes": 943,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "6d84708bafc0070e8f96",
+      "observedAt": "2026-09-08T14:04:02.042330Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 563,
+      "requestBytes": 479,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "19dda4f3034e558da7af",
+      "observedAt": "2026-09-08T14:04:13.810060Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 1430,
+      "requestBytes": 648,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "da073a10c50e09d67d69",
+      "observedAt": "2026-09-08T14:04:23.108407Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 2225,
+      "requestBytes": 220,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "3c82244b1a9c3ae0be99",
+      "observedAt": "2026-09-08T14:04:25.347630Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 2129,
+      "requestBytes": 250,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "60d2579f699e63fc0883",
+      "observedAt": "2026-09-08T14:14:22.266379Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 2568,
+      "requestBytes": 1158,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "8fd925cc83a49556e07c",
+      "observedAt": "2026-09-08T14:26:45.549673Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 1733,
+      "requestBytes": 192,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    },
+    {
+      "key": "1e2045208b547153629b",
+      "observedAt": "2026-09-08T14:33:32.847614Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": null,
+      "downstreamDisconnected": true,
+      "downstreamDisconnectedFieldObserved": true,
+      "abortSource": "downstream_closed",
+      "abortStage": "upstream_headers",
+      "elapsedMs": 373,
+      "requestBytes": 419,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.47"
+    }
+  ],
+  "repeatedKeyOccurrences": [],
+  "limitations": [
+    "Counts retain separate request occurrences even if a caller repeats its request key.",
+    "Gateway early-return admission paths are not covered by its request summary logger.",
+    "Recorded HTTP200 is not proof of audio playback; no_response is not a delivered HTTP error."
+  ]
+}

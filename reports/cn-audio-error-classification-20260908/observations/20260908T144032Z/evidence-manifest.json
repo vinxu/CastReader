@@ -1,0 +1,106 @@
+{
+  "files": [
+    {
+      "path": "collect_disconnect_join.py",
+      "bytes": 2095,
+      "sha256": "f98fdc78ddbb421c22ba069424dc6673045ab0aa40b2f561a8bcbb538e12aff0"
+    },
+    {
+      "path": "cumulative-observation.json",
+      "bytes": 2096,
+      "sha256": "0daefda85694e43df06462e7aafe02b6a863dec250fdfe83086b1d3fadaef7fb"
+    },
+    {
+      "path": "inspect_cn_slow_delivery.py",
+      "bytes": 3292,
+      "sha256": "86c0c80f6fbd4cd530c8733de0f339a69ca849b0470e20e6ebee773debdf8e19"
+    },
+    {
+      "path": "notification-state.json",
+      "bytes": 800,
+      "sha256": "35b63430bfd3957dcd6199809ff3e262f1bc06ec92bd6801ef738a6f957dfeec"
+    },
+    {
+      "path": "observation-state.json",
+      "bytes": 408,
+      "sha256": "650ccdf88416bc3168fe90b53be770ec9b5eef869acfef2fcbb9dc735d09bdf3"
+    },
+    {
+      "path": "observations/20260908T144032Z/README.md",
+      "bytes": 5200,
+      "sha256": "5e0fc5bad524285ef9b287ca19c29c5e4d9e6bff699dd6c3b4c959f58de1f19e"
+    },
+    {
+      "path": "observations/20260908T144032Z/cn-slow-delivery-logs.json",
+      "bytes": 547,
+      "sha256": "142d1cb9bc491855e61968d80c0a0fd67cf7cb7c1bb55ce20cab38534e9447ad"
+    },
+    {
+      "path": "observations/20260908T144032Z/cn.json",
+      "bytes": 32066,
+      "sha256": "8bf85654fd5eeee9e2e9372b44ae9cfa30e926352fda7b8a5ebc3024f82ea45c"
+    },
+    {
+      "path": "observations/20260908T144032Z/direct.json",
+      "bytes": 7767,
+      "sha256": "4b25427cde47e67785406e58c8f58e0e456a8d70c5df5e52178fb1086309326f"
+    },
+    {
+      "path": "observations/20260908T144032Z/disconnect-proxy-join.json",
+      "bytes": 52919,
+      "sha256": "86a7a651398f2deca32fa2e00dccfcde017ad18de2a5071651c883577d8c2b64"
+    },
+    {
+      "path": "observations/20260908T144032Z/summary-initial-partial.json",
+      "bytes": 10777,
+      "sha256": "57812b06cb73da961ef152ce7ca00f10f0e679d65e6b77b14ae7b6f5c6300a60"
+    },
+    {
+      "path": "observations/20260908T144032Z/summary.json",
+      "bytes": 10741,
+      "sha256": "eae32fb6a0c0c9078253ed2569c1c23e6b37ae21e8b62b4e24a25ccce60cb222"
+    },
+    {
+      "path": "observations/20260908T144032Z/us.json",
+      "bytes": 14430,
+      "sha256": "22fefc53857f4be60d397abdbe545b688bd404e24189535f154066c879db18a2"
+    },
+    {
+      "path": "observations/20260908T144032Z/vercel-initial-partial.json",
+      "bytes": 1110,
+      "sha256": "8f12a0e297a4dd941dc4672ba56239838d41e02ac8aa206c4ad851a44c87ff65"
+    },
+    {
+      "path": "observations/20260908T144032Z/vercel-retry.json",
+      "bytes": 547,
+      "sha256": "6a0cd0c67c9ecf6442ffdb76634fcabb36f12e72b2b5621d010d7bbf3b16ba47"
+    },
+    {
+      "path": "observations/20260908T144032Z/vercel.json",
+      "bytes": 1122,
+      "sha256": "3474d59d446acd0a574b2a882ccf028c4ccadc8491ba8c233ce1ccc388f93688"
+    },
+    {
+      "path": "observe.py",
+      "bytes": 9584,
+      "sha256": "0fc73527d2bc8bffc252b02bb377f00327cb27cbf0d4a2afc44719c4f370f963"
+    },
+    {
+      "path": "repair_vercel_snapshot.py",
+      "bytes": 2551,
+      "sha256": "7b0791601b3d2f7ed74cc2d897b2c70101f06f52564ee750470f58ef7f94ab67"
+    },
+    {
+      "path": "test_observe_queries.py",
+      "bytes": 1918,
+      "sha256": "8d2e1473da3175f0103ed51bc078fee200196e10a7f3bdea61e435c15ff99f6a"
+    }
+  ],
+  "readOnly": true,
+  "productionModified": false,
+  "sourceTests": {
+    "command": "python3 -B reports/cn-audio-error-classification-20260908/test_observe_queries.py",
+    "passed": 2,
+    "failed": 0
+  }
+}

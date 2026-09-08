@@ -1,0 +1,349 @@
+{
+  "window": {
+    "startUTC": "2026-09-08T13:41:13.521061Z",
+    "endUTCExclusive": "2026-09-08T14:40:32.439317Z",
+    "fixedObservationEndUTC": "2026-09-09T13:23:48.837754Z"
+  },
+  "readOnly": true,
+  "sources": {
+    "cn": {
+      "monitorCycles": 12,
+      "monitorStatusCounts": {
+        "healthy": 12
+      },
+      "monitorFailureCodes": {},
+      "attemptOutcomeCounts": {
+        "complete": 36
+      },
+      "attemptFailureCodes": {},
+      "attemptsRecoveredInHealthyCycle": 0,
+      "cyclesWithMissingAttempts": 0,
+      "timerActive": "active",
+      "monitorReleaseMatches": true,
+      "quickreadHealth": {
+        "status": 200,
+        "ok": true,
+        "queue": 0,
+        "active": 0,
+        "concurrency": 3
+      },
+      "quickreadProviderEvents": {
+        "attempt_start": 17,
+        "request_finished": 17
+      },
+      "quickreadProviderFailureCodes": {},
+      "quickreadProviderRecoveredRequests": 0,
+      "quickreadErrorLines": [],
+      "quickreadUndatedErrorLines": 0,
+      "quickreadReleaseMatches": true,
+      "cloneHealth": {
+        "httpStatus": 200,
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "submitted": 435,
+        "completed": 435,
+        "failed": 0,
+        "expired": 0,
+        "counterScope": "since worker startup, not this window"
+      },
+      "ingressCounts": [
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": 200,
+          "count": 90
+        },
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": 499,
+          "count": 1
+        },
+        {
+          "path": "/api/voice-clone/captioned-speech",
+          "method": "POST",
+          "status": 200,
+          "count": 188
+        }
+      ],
+      "ingressNon200": [
+        {
+          "atUTC": "2026-09-08T13:54:04Z",
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": 499,
+          "lineKey": "94c430334e747a29508a"
+        }
+      ]
+    },
+    "us": {
+      "monitorCycles": 12,
+      "monitorStatusCounts": {
+        "healthy": 12
+      },
+      "monitorFailureCodes": {},
+      "attemptOutcomeCounts": {
+        "complete": 24
+      },
+      "attemptFailureCodes": {},
+      "attemptsRecoveredInHealthyCycle": 0,
+      "cyclesWithMissingAttempts": 0,
+      "timerActive": "active",
+      "monitorReleaseMatches": true,
+      "quickreadHealth": {
+        "status": 200,
+        "ok": true,
+        "queue": 0,
+        "active": false,
+        "concurrency": null
+      },
+      "quickreadProviderEvents": {},
+      "quickreadProviderFailureCodes": {},
+      "quickreadProviderRecoveredRequests": 0,
+      "quickreadErrorLines": [],
+      "quickreadUndatedErrorLines": 206
+    },
+    "direct": {
+      "collectionFailed": null,
+      "statusCounts": {
+        "200": 1973,
+        "no_response": 11
+      },
+      "errorClassCounts": {
+        "downstream_closed": 11
+      },
+      "coverage": {
+        "journalRowsRead": 87525,
+        "journalParseErrors": 0,
+        "incompleteBlocks": 0,
+        "malformedRequests": 0,
+        "complete": true,
+        "firstJournalUTC": "2026-09-08T13:41:26.963288Z",
+        "lastJournalUTC": "2026-09-08T14:40:34.437044Z",
+        "endBoundaryPaddingSeconds": 2
+      },
+      "non200Records": [
+        {
+          "key": "e568c8a34915457e04f9",
+          "observedAt": "2026-09-08T13:54:17.383286Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 1733,
+          "requestBytes": 266,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "c6beabf7fc2aa94c8082",
+          "observedAt": "2026-09-08T13:54:33.284180Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 1276,
+          "requestBytes": 343,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "20bcf9fafad670da5733",
+          "observedAt": "2026-09-08T13:59:37.757076Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 1659,
+          "requestBytes": 254,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "0f0786bf5eb50eeb1fb1",
+          "observedAt": "2026-09-08T14:04:02.042330Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 2796,
+          "requestBytes": 943,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "6d84708bafc0070e8f96",
+          "observedAt": "2026-09-08T14:04:02.042330Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 563,
+          "requestBytes": 479,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "19dda4f3034e558da7af",
+          "observedAt": "2026-09-08T14:04:13.810060Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 1430,
+          "requestBytes": 648,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "da073a10c50e09d67d69",
+          "observedAt": "2026-09-08T14:04:23.108407Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 2225,
+          "requestBytes": 220,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "3c82244b1a9c3ae0be99",
+          "observedAt": "2026-09-08T14:04:25.347630Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 2129,
+          "requestBytes": 250,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "60d2579f699e63fc0883",
+          "observedAt": "2026-09-08T14:14:22.266379Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 2568,
+          "requestBytes": 1158,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "8fd925cc83a49556e07c",
+          "observedAt": "2026-09-08T14:26:45.549673Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 1733,
+          "requestBytes": 192,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "1e2045208b547153629b",
+          "observedAt": "2026-09-08T14:33:32.847614Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 373,
+          "requestBytes": 419,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        }
+      ]
+    },
+    "vercel": {
+      "collectionFailed": null,
+      "completeReturnedPages": false,
+      "coreRecords": [],
+      "queries": [
+        {
+          "statusQuery": "5xx",
+          "search": "",
+          "pages": 1,
+          "issues": []
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "captioned_speech",
+          "pages": 1,
+          "issues": []
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "quickread",
+          "pages": 1,
+          "issues": []
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "voice-clone",
+          "pages": 0,
+          "issues": [
+            "URLError"
+          ]
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "markdown-tts",
+          "pages": 1,
+          "issues": []
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "/api/tts/",
+          "pages": 1,
+          "issues": []
+        }
+      ]
+    }
+  },
+  "notes": [
+    "CN HTTP log does not cover dedicated QuickRead ingress.",
+    "Direct early admission responses are a known logging blind spot.",
+    "Historical disconnects and Vercel platform errors are not claimed fixed by this release.",
+    "No observation command submits audio, modifies production or reads client telemetry."
+  ],
+  "collectionCompleteWithinAvailableSources": false
+}

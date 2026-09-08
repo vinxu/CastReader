@@ -1,0 +1,89 @@
+{
+  "window": {
+    "startUTC": "2026-09-08T13:23:48.837754Z",
+    "endUTCExclusive": "2026-09-08T14:40:32.439317Z",
+    "fixedObservationEndUTC": "2026-09-09T13:23:48.837754Z"
+  },
+  "selectedSummaries": [
+    "observations/20260908T133729Z/summary.json",
+    "observations/20260908T134113Z/summary.json",
+    "observations/20260908T144032Z/summary.json"
+  ],
+  "incompleteSummariesExcluded": [
+    "observations/20260908T133608Z/summary.json"
+  ],
+  "readOnly": true,
+  "productionModified": false,
+  "sources": {
+    "cn": {
+      "monitorStatuses": {
+        "healthy": 15
+      },
+      "attemptOutcomes": {
+        "complete": 45
+      },
+      "providerEvents": {
+        "attempt_start": 18,
+        "request_finished": 18
+      },
+      "providerFailureCodes": {},
+      "ingressStatuses": [
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": 200,
+          "count": 99
+        },
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": 499,
+          "count": 1
+        },
+        {
+          "path": "/api/voice-clone/captioned-speech",
+          "method": "POST",
+          "status": 200,
+          "count": 188
+        }
+      ]
+    },
+    "us": {
+      "monitorStatuses": {
+        "healthy": 15
+      },
+      "attemptOutcomes": {
+        "complete": 30
+      },
+      "providerEvents": {},
+      "providerFailureCodes": {},
+      "ingressStatuses": []
+    },
+    "direct": {
+      "statusCounts": {
+        "200": 2379,
+        "no_response": 18
+      },
+      "downstreamClosedOccurrences": 18,
+      "distinctClosedKeys": 18,
+      "platforms": {
+        "android": 18
+      },
+      "noResponseShareOfLoggedRequests": 0.007509,
+      "notUserPlaybackFailureRate": true
+    },
+    "vercel": {
+      "returnedCoreErrorRecords": 0,
+      "allReturnedPagesComplete": true,
+      "notAllStatusDenominator": true
+    }
+  },
+  "disconnectJoin": {
+    "matched": 18,
+    "outcomes": {
+      "cancelled": 18
+    },
+    "missingKeys": [],
+    "firstCauseConfirmed": false
+  }
+}

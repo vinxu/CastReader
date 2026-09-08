@@ -85,3 +85,8 @@ python3 -B /Users/xuxuheng/Documents/CastReader/reports/cn-audio-error-classific
 后续优先检验：是否还有错误落入泛化监控桶；响应体失败的真实 cause code；新增重试实际是否成功；最终失败是否下降；CN 解读是否出现预算内无法恢复的终止；US Direct 断开与上游完成/取消是否一致；Vercel 是否重现核心 500/429。
 
 数据边界：CN 专用 QuickRead Nginx access_log 仍关闭，无法从该来源统计完整 HTTP 状态；Direct 提前 admission 返回仍存在日志盲点；US 克隆模型全天明细不包含在这个轻量增量采集器中。克隆服务经已有入口错误日志及 CN 当前健康跟踪，不能据此宣称整个克隆链路零故障。若再次出现相关错误，应使用既有只读模型/代理采集器补证据。本轮没有修复这些尚未归因的问题，也没有新加任何停止朗读的检测门槛。
+
+
+## 后续观察记录
+
+- [首次定时跟进：截至北京时间 9 月 8 日 22:40](observations/20260908T144032Z/README.md)：已补齐本轮查询；累计两区各 15 轮固定探针完成，国际区累计 18 次断开均关联到代理取消。恢复分支尚无线上故障样本，性能波动继续观察。最新累计见 [cumulative-observation.json](cumulative-observation.json)。

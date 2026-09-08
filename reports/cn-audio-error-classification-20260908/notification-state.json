@@ -1,0 +1,20 @@
+{
+  "evaluatedThroughUTC": "2026-09-08T14:40:32.439317Z",
+  "notify": false,
+  "reason": "No new failure class, proven first cause, fixed-release drift, or material worsening. Existing downstream cancellations recur; delay samples remain a watch item.",
+  "windowDelta": {
+    "direct200": 1973,
+    "directClosed": 11,
+    "cnLogged499": 1,
+    "cnTts200": 90,
+    "cnClone200": 188,
+    "cnProvider200": 17
+  },
+  "watchItems": [
+    "CN fixed probe one attempt 14693ms and one 7686ms, both complete; no stage timing in existing application journal.",
+    "US fixed probe one attempt 7006ms, complete.",
+    "Recovery success rate is not estimable: no observed recoverable response-body error yet."
+  ],
+  "observationStillActive": true,
+  "fixedObservationEndUTC": "2026-09-09T13:23:48.837754Z"
+}

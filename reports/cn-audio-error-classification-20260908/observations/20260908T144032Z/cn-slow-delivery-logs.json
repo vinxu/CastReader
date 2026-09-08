@@ -1,0 +1,22 @@
+{
+  "readOnly": true,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-08T13:53:50Z",
+    "endUTCExclusive": "2026-09-08T14:13:15Z"
+  },
+  "coverage": {
+    "journalRows": 0,
+    "parseErrors": 0,
+    "firstUTC": null,
+    "lastUTC": null
+  },
+  "fixedTokenCounts": {},
+  "presetEvents": [],
+  "fixedRouteTimings": [],
+  "limitations": [
+    "Fixed-token matches do not independently prove a production error.",
+    "Absence of reviewed structured events prevents precise phase attribution."
+  ]
+}
