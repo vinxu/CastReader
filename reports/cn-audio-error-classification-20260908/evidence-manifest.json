@@ -1,0 +1,205 @@
+{
+  "scope": "initial release and first observation; later observation snapshots are additive",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 11784,
+      "sha256": "dd08e045430e290c4086452c88def1626675679090649f6555f1987337133ee8"
+    },
+    {
+      "path": "automation.json",
+      "bytes": 466,
+      "sha256": "ff50cfdde9ec64c2a5fb7075c77a2cfcbc355614331140dd710128d91e29e846"
+    },
+    {
+      "path": "cn-activate-receipt.json",
+      "bytes": 36975,
+      "sha256": "067714f7ab9b8e3bd9d61fc07d56109e8e4de171f8179962ad71f61b346a87ac"
+    },
+    {
+      "path": "cn-before.json",
+      "bytes": 4101,
+      "sha256": "46e936abf1cee82530a4746caaf063e03056ea41f2a9bc9902d62ab5ea267a89"
+    },
+    {
+      "path": "cn-candidate-tests-initial.json",
+      "bytes": 8068,
+      "sha256": "fa2f90f4d86b1516c134b6af75131893ee3a42b9878120b866d58cecde5a6ddf"
+    },
+    {
+      "path": "cn-clone-current-readback.json",
+      "bytes": 767,
+      "sha256": "58095bb36e00c45dbad3cb361530bd6095875a695e21a3acec42b1549ba9bb3d"
+    },
+    {
+      "path": "cn-monitor-release.json",
+      "bytes": 3064,
+      "sha256": "6f7dcfdc55234d17d62b0823646f3f259856eda62e49d56e977c092a0f12a272"
+    },
+    {
+      "path": "cn-route-probe.json",
+      "bytes": 412,
+      "sha256": "4437ace4b7357622f955f178424a1a593c8857c8e19dfc566896cf3cc4846fa4"
+    },
+    {
+      "path": "cn-service-readback.json",
+      "bytes": 1217,
+      "sha256": "121478688d873d94964a1e892c596e0d36813031432cce189a9f55b71ab41ac1"
+    },
+    {
+      "path": "cn-stage-failure.txt",
+      "bytes": 121,
+      "sha256": "26bdb98c928bcf794dd214029996234bddd64ebd7c161d545421858053ce7d97"
+    },
+    {
+      "path": "cn-stage-receipt.json",
+      "bytes": 35196,
+      "sha256": "ab5f3924e5a6d05919ba63708a8d26ad71d861e3f572a82b2751c0a9262d7b1a"
+    },
+    {
+      "path": "collect_disconnect_join.py",
+      "bytes": 1964,
+      "sha256": "9635f2b55196256c40ae520e4b3db9eb407be5798975864cc827455aedba24f5"
+    },
+    {
+      "path": "initial-disconnect-proxy-join.json",
+      "bytes": 37070,
+      "sha256": "70bc1eaff9370f89c31771730da3be8076d7098d8d2a3bd3634ed27657ddb917"
+    },
+    {
+      "path": "install_monitors.py",
+      "bytes": 2074,
+      "sha256": "4c8f4949bbf220388b67c12d7c69fe9b807faf5d3e715a035040c677db4dc513"
+    },
+    {
+      "path": "monitor-tests.txt",
+      "bytes": 2214,
+      "sha256": "7649aa72c7a7e0b66c302fd21b69375103a7b826779fe8c59e409a0f1a0fa3e5"
+    },
+    {
+      "path": "observation-state.json",
+      "bytes": 408,
+      "sha256": "8c8b35eff118eca67661c7a594c683ea2faad6f91c49e5f0d48b3fe5dcbcf2dc"
+    },
+    {
+      "path": "observations/20260908T133608Z/cn.json",
+      "bytes": 91,
+      "sha256": "2933d936746926b20b8c6cc7ab6356af396d36448f3cb0393a4548b55ea61b91"
+    },
+    {
+      "path": "observations/20260908T133608Z/direct.json",
+      "bytes": 1885,
+      "sha256": "750a3dd19c3e692c1c79b193970b9ea4d25e758581a632b0b8c77059940329ea"
+    },
+    {
+      "path": "observations/20260908T133608Z/summary.json",
+      "bytes": 1491,
+      "sha256": "075bf7e85a77c2bc171924b3b80d7669dc0abfeeb281b4a2508554e47eafb093"
+    },
+    {
+      "path": "observations/20260908T133608Z/us.json",
+      "bytes": 88,
+      "sha256": "a29604d4fbfa81c54edc7ba56aa8a2a1c47298c3f3e3270536f3562f54c18a78"
+    },
+    {
+      "path": "observations/20260908T133608Z/vercel.json",
+      "bytes": 98,
+      "sha256": "cb88b739e8226d3248d75879fd5d09c6164ac090113dc3f51f6ccc69e87ffdcd"
+    },
+    {
+      "path": "observations/20260908T133729Z/cn.json",
+      "bytes": 10734,
+      "sha256": "727cc482a9cce007e2df5360b49ebbad4c798c3746325a247b60a2976e088b75"
+    },
+    {
+      "path": "observations/20260908T133729Z/direct.json",
+      "bytes": 3226,
+      "sha256": "f75648f6b0e91f30be9c588e403190289349a84843b952639993bcdfc8e06429"
+    },
+    {
+      "path": "observations/20260908T133729Z/summary.json",
+      "bytes": 4978,
+      "sha256": "2d0162d72180f163c5a009cb7ccb0499fda8ba085aacbafa047c4260771c0283"
+    },
+    {
+      "path": "observations/20260908T133729Z/us.json",
+      "bytes": 8074,
+      "sha256": "617cb10dfa4e88c5a17a72d3194a3d94c866e88ccbef1dd9c7806052dae08a42"
+    },
+    {
+      "path": "observations/20260908T133729Z/vercel.json",
+      "bytes": 1083,
+      "sha256": "df01f2e3b62a762423fb16397870e3ca0317904af5d94de639884abfe598c29b"
+    },
+    {
+      "path": "observations/20260908T134113Z/cn.json",
+      "bytes": 6537,
+      "sha256": "50f42eb2149e4685124cda0ef0679b2eefad896704964caa844cf5feb6ca9f48"
+    },
+    {
+      "path": "observations/20260908T134113Z/direct.json",
+      "bytes": 4668,
+      "sha256": "513982240eca5d83340bbc68694cbd5fbf93d73dda9f4785481a0acb3eb3c6ff"
+    },
+    {
+      "path": "observations/20260908T134113Z/summary.json",
+      "bytes": 6624,
+      "sha256": "1b18139f97a53e0ac9fb300d0928cde431e1777712c9c6c5ca4e736f2dedd76d"
+    },
+    {
+      "path": "observations/20260908T134113Z/us.json",
+      "bytes": 5571,
+      "sha256": "df0e7095f01e45fb09d985a590728cc980540686bf811428580b61543fc514cf"
+    },
+    {
+      "path": "observations/20260908T134113Z/vercel.json",
+      "bytes": 1083,
+      "sha256": "24c20dfb5a142d459efae730f2c98b489e24739b1f0d1430f0b1e5e055bd3afc"
+    },
+    {
+      "path": "observe.py",
+      "bytes": 9521,
+      "sha256": "82f4fbacd078bb861663fe4075bd472bf8b2495f2e2c8819e44a2a3836779815"
+    },
+    {
+      "path": "operate_cn_release.py",
+      "bytes": 1915,
+      "sha256": "2c3ec8bc76e3295836152f693bc5b2d36ed6e62a037c2350937176b2cb19b93e"
+    },
+    {
+      "path": "probe_cn_route.py",
+      "bytes": 2189,
+      "sha256": "b8e6c17ff08e5aaa6726081bac4a7fa743b7318ca6b304eee3f4145a2fed2fff"
+    },
+    {
+      "path": "provider-tests.txt",
+      "bytes": 4445,
+      "sha256": "e7bfbc110902897d35ecb7e0575d85673ced702fe9573a3f7872539bbe24c1e6"
+    },
+    {
+      "path": "remote_cn_release.py",
+      "bytes": 7192,
+      "sha256": "18dad029a592d13a7cdb8aacb28e151137f5457bfbd7058ba49c7927d17d2812"
+    },
+    {
+      "path": "remote_monitor_release.py",
+      "bytes": 4175,
+      "sha256": "7470fa95e89cf3ba719170e173aa5c84204f11cfc969e5909a1c046d5257d8c2"
+    },
+    {
+      "path": "remote_observe.py",
+      "bytes": 9516,
+      "sha256": "ecd8c1ea40c98f8e2a5b8fd45b3933d76b17ba22b53793757b2e473b58f4de98"
+    },
+    {
+      "path": "source-commits.json",
+      "bytes": 1083,
+      "sha256": "e079a6af1c16597ae855cd1b1a76f5ec6c137132fe53c0becca80bf9c12d8fac"
+    },
+    {
+      "path": "us-monitor-release.json",
+      "bytes": 2486,
+      "sha256": "4d087cd2cc4491ef28bd3ab1d8fe5807a066870c5371b1d57e41cd41d5ac6e3f"
+    }
+  ]
+}

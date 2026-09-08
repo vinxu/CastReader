@@ -1,0 +1,33 @@
+✔ CN probe follows every remainder and validates multiple decodable segments (32.828041ms)
+✔ US probe uses its global route and follows an exact English remainder (0.9785ms)
+✔ timestamp failure degrades alignment without failing playable supply (0.78075ms)
+✔ a changed or lost remainder fails the continuity contract (0.584042ms)
+✔ a one-response success cannot claim continuous multi-segment supply (0.301292ms)
+✔ a response claiming the other service region fails supply (0.3315ms)
+✔ one transient request failure retries the same segment within the fixed budget (3.314375ms)
+✔ legacy omitted-stream failure is detected even when explicit false works (1.880042ms)
+✔ local segment limit does not attribute a failure to a successful request contract (0.95175ms)
+✔ a stalled request is aborted by the segment deadline (11.273083ms)
+✔ endpoint pin rejects cross-region and wrong-path probes before fetch (0.467583ms)
+✔ fixed US passage is long enough to force the partly compatibility path (0.179833ms)
+✔ ffmpeg progress requires a completed positive audio decode (0.203ms)
+✔ body socket loss is a supply failure with a bounded safe attempt history (1.194583ms)
+✔ successful retry keeps the initial body failure visible (0.7935ms)
+✔ body AbortError and actual malformed JSON retain separate error classes (0.459792ms)
+✔ deadline while reading a response body is a body timeout, not monitor_fault (12.134625ms)
+✔ local lock provides single flight and releases only its own token (6.9905ms)
+✔ a stale lock whose owner is gone is removed safely (2.197042ms)
+✔ supply failures alert once as warning, confirm as critical, then recover (9.356417ms)
+✔ alignment degradation is recorded separately from supply failure (2.677541ms)
+✔ retention removes expired and over-cap result files (4.592709ms)
+✔ systemd contract bounds runs, separates regional state and cannot restart production (0.962834ms)
+✔ invalid region is rejected before a lock or state file is created (0.809375ms)
+✔ the production current symlink still executes the monitor CLI (83.196333ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 212.675334

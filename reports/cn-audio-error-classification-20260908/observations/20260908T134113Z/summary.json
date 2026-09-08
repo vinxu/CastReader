@@ -1,0 +1,219 @@
+{
+  "window": {
+    "startUTC": "2026-09-08T13:37:29.943065Z",
+    "endUTCExclusive": "2026-09-08T13:41:13.521061Z",
+    "fixedObservationEndUTC": "2026-09-09T13:23:48.837754Z"
+  },
+  "readOnly": true,
+  "sources": {
+    "cn": {
+      "monitorCycles": 0,
+      "monitorStatusCounts": {},
+      "monitorFailureCodes": {},
+      "attemptOutcomeCounts": {},
+      "attemptFailureCodes": {},
+      "attemptsRecoveredInHealthyCycle": 0,
+      "cyclesWithMissingAttempts": 0,
+      "timerActive": "active",
+      "monitorReleaseMatches": true,
+      "quickreadHealth": {
+        "status": 200,
+        "ok": true,
+        "queue": 0,
+        "active": 0,
+        "concurrency": 3
+      },
+      "quickreadProviderEvents": {},
+      "quickreadProviderFailureCodes": {},
+      "quickreadProviderRecoveredRequests": 0,
+      "quickreadErrorLines": [],
+      "quickreadUndatedErrorLines": 0,
+      "quickreadReleaseMatches": true,
+      "cloneHealth": {
+        "httpStatus": 200,
+        "status": "healthy",
+        "nari_ready": true,
+        "accepting": true,
+        "busy": false,
+        "queue_depth": 0,
+        "submitted": 247,
+        "completed": 247,
+        "failed": 0,
+        "expired": 0,
+        "counterScope": "since worker startup, not this window"
+      },
+      "ingressCounts": [],
+      "ingressNon200": []
+    },
+    "us": {
+      "monitorCycles": 0,
+      "monitorStatusCounts": {},
+      "monitorFailureCodes": {},
+      "attemptOutcomeCounts": {},
+      "attemptFailureCodes": {},
+      "attemptsRecoveredInHealthyCycle": 0,
+      "cyclesWithMissingAttempts": 0,
+      "timerActive": "active",
+      "monitorReleaseMatches": true,
+      "quickreadHealth": {
+        "status": 200,
+        "ok": true,
+        "queue": 0,
+        "active": false,
+        "concurrency": null
+      },
+      "quickreadProviderEvents": {},
+      "quickreadProviderFailureCodes": {},
+      "quickreadProviderRecoveredRequests": 0,
+      "quickreadErrorLines": [],
+      "quickreadUndatedErrorLines": 206
+    },
+    "direct": {
+      "collectionFailed": null,
+      "statusCounts": {
+        "200": 77,
+        "no_response": 5
+      },
+      "errorClassCounts": {
+        "downstream_closed": 5
+      },
+      "coverage": {
+        "journalRowsRead": 3634,
+        "journalParseErrors": 0,
+        "incompleteBlocks": 0,
+        "malformedRequests": 0,
+        "complete": true,
+        "firstJournalUTC": "2026-09-08T13:37:29.653978Z",
+        "lastJournalUTC": "2026-09-08T13:40:47.483114Z",
+        "endBoundaryPaddingSeconds": 2
+      },
+      "non200Records": [
+        {
+          "key": "fd6642cdca7668bfebf1",
+          "observedAt": "2026-09-08T13:38:27.876856Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 1630,
+          "requestBytes": 286,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "25f5e0d0e9601be6268f",
+          "observedAt": "2026-09-08T13:38:30.637954Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 2491,
+          "requestBytes": 181,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "7c7c7478c5b48c3b564f",
+          "observedAt": "2026-09-08T13:38:47.316733Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 1251,
+          "requestBytes": 182,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "0a57ba93584e4e3f1a27",
+          "observedAt": "2026-09-08T13:39:27.396995Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 633,
+          "requestBytes": 376,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        },
+        {
+          "key": "a5531039fb4fe36d6630",
+          "observedAt": "2026-09-08T13:39:32.925065Z",
+          "method": "POST",
+          "path": "/api/captioned_speech_partly",
+          "status": null,
+          "downstreamDisconnected": true,
+          "downstreamDisconnectedFieldObserved": true,
+          "abortSource": "downstream_closed",
+          "abortStage": "upstream_headers",
+          "elapsedMs": 527,
+          "requestBytes": 464,
+          "clientPlatform": "android",
+          "clientVersion": "1.0.47"
+        }
+      ]
+    },
+    "vercel": {
+      "collectionFailed": null,
+      "completeReturnedPages": true,
+      "coreRecords": [],
+      "queries": [
+        {
+          "statusQuery": "5xx",
+          "search": "",
+          "pages": 1,
+          "issues": []
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "captioned_speech",
+          "pages": 1,
+          "issues": []
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "quickread",
+          "pages": 1,
+          "issues": []
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "voice-clone",
+          "pages": 1,
+          "issues": []
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "markdown-tts",
+          "pages": 1,
+          "issues": []
+        },
+        {
+          "statusQuery": "4xx",
+          "search": "/api/tts/",
+          "pages": 1,
+          "issues": []
+        }
+      ]
+    }
+  },
+  "notes": [
+    "CN HTTP log does not cover dedicated QuickRead ingress.",
+    "Direct early admission responses are a known logging blind spot.",
+    "Historical disconnects and Vercel platform errors are not claimed fixed by this release.",
+    "No observation command submits audio, modifies production or reads client telemetry."
+  ],
+  "collectionCompleteWithinAvailableSources": true
+}

@@ -1,0 +1,171 @@
+{
+  "readOnly": true,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "region": "us",
+  "window": {
+    "startUTC": "2026-09-08T13:37:29.943065Z",
+    "endUTCExclusive": "2026-09-08T13:41:13.521061Z"
+  },
+  "monitor": {
+    "schema": "castreader.monitor-window-readback.v2",
+    "region": "us",
+    "readOnly": true,
+    "probeStarted": false,
+    "productionModified": false,
+    "readAtUtc": "2026-09-08T13:41:16.903979Z",
+    "query": {
+      "startInclusive": "2026-09-08T13:37:29.943065Z",
+      "endExclusive": "2026-09-08T13:41:13.521061Z"
+    },
+    "source": {
+      "resultsDirectory": "/var/lib/castreader-core-audio-monitor/us/results",
+      "resultFilesScanned": 806,
+      "validResultFiles": 806,
+      "uniqueResultCycles": 806,
+      "exactDuplicatesSkipped": 0,
+      "invalidResults": [],
+      "conflictingObservedAt": [],
+      "firstAvailableObservedAt": "2026-09-05T16:15:00.370Z",
+      "lastAvailableObservedAt": "2026-09-08T13:41:15.733Z",
+      "firstSelectedObservedAt": null,
+      "lastSelectedObservedAt": null,
+      "windowStartToFirstSelectedSeconds": null,
+      "lastSelectedToWindowEndSeconds": null
+    },
+    "coverage": {
+      "completeRead": true,
+      "selectedCycles": 0,
+      "originAttributionAvailable": false,
+      "note": "Persisted result schema does not distinguish timer from manual invocation."
+    },
+    "monitorRelease": {
+      "currentTarget": "/opt/castreader-core-audio-monitor/releases/eee0a902-f877944d",
+      "files": 9,
+      "treeSha256": "1f5f9e9723ef7f30ef5d5a606249acbb5317ff1f59483c4534c77e5e40aca61c"
+    },
+    "systemd": {
+      "service": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "timer": {
+        "NextElapseUSecRealtime": "",
+        "LastTriggerUSec": "Tue 2026-09-08 13:41:12 UTC",
+        "ActiveState": "active",
+        "SubState": "waiting",
+        "UnitFileState": "enabled"
+      }
+    },
+    "aggregate": {
+      "cycles": 0,
+      "statusCounts": {},
+      "failureCodeCounts": {},
+      "failedRequestContractCounts": {},
+      "executedRequestContractCounts": {},
+      "supplyOkCycles": 0,
+      "supplyFailureSequence": {
+        "episodes": 0,
+        "maximumConsecutiveCycles": 0,
+        "currentConsecutiveCycles": 0,
+        "recoveryEvents": []
+      },
+      "alignmentDegradationCycles": 0,
+      "alignmentDegradationSequence": {
+        "episodes": 0,
+        "maximumConsecutiveCycles": 0,
+        "currentConsecutiveCycles": 0,
+        "recoveryEvents": []
+      },
+      "regionMismatchCycles": 0,
+      "completeRemainderDecodedCycles": 0,
+      "completeRemainderDecodedRatio": null,
+      "probeElapsedMs": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "firstSegmentAudioDurationSeconds": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "totalAudioDurationSeconds": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "observedGapSeconds": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "max": null
+      },
+      "largestObservedGapSeconds": null,
+      "upstreamMetadata": []
+    },
+    "limitations": [
+      "observedAt is probe completion time, not request start time.",
+      "First-segment audio duration is not time-to-first-audio latency.",
+      "No persisted client traffic or user identity is read by this collector."
+    ],
+    "sourceHashes": {
+      "run.mjs": "8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e",
+      "state-store.test.mjs": "fcedbd39655995cbf4a5a438b3b9ebf48ad08125a36ba84b6016c780805629b7",
+      "alert-envelope.schema.json": "369b79bdae103d4576a53beb48d482400b15410953ad4dea8990821c736e2828",
+      "probe-core.mjs": "9c6ccbd3d63e595d501152d8fc15f5cb9ac1c9db22b4ec2042f749046cb641d6",
+      "README.md": "e60ff78804fe985405363d3009a23df1ea42814354e5f9253ebe206581790495",
+      "probe-core.test.mjs": "168c7f8a98437856fcc17a00fe0da3551a20ededdba9f55a11987e44f913993e",
+      "state-store.mjs": "4f800b073d9e81e6ea59a9689e1fed4a3f6a0906c0fae0c5cbe941ef56e306c3",
+      "systemd/castreader-core-audio-monitor@.timer": "d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92",
+      "systemd/castreader-core-audio-monitor@.service": "65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916"
+    },
+    "attempts": [],
+    "cyclesWithMissingAttempts": 0,
+    "attemptOutcomeCounts": {},
+    "attemptCodeCounts": {},
+    "attemptsRecoveredInHealthyCycle": 0
+  },
+  "quickread": {
+    "health": {
+      "status": 200,
+      "ok": true,
+      "queue": 0,
+      "active": false,
+      "concurrency": null
+    },
+    "source": {
+      "files": [
+        {
+          "path": "/root/.pm2/logs/quickread-out.log",
+          "bytes": 3078019,
+          "sha256": "73b92887a74b3bf529be1ae3b4cc05d903452c6678f32216f5f5b194d341b49e"
+        },
+        {
+          "path": "/root/.pm2/logs/quickread-error.log",
+          "bytes": 47270,
+          "sha256": "138819c4a67fdd57406e6adc75efd8c639349b1bee292fcddad089ec2a443208"
+        }
+      ]
+    },
+    "coverage": {
+      "rows": 26325,
+      "parseErrors": 0,
+      "undatedErrorLines": 206
+    },
+    "providerEvents": [],
+    "providerEventCounts": {},
+    "providerFailureCodes": {},
+    "providerRecoveredRequests": 0,
+    "fixedErrorLines": []
+  },
+  "cloneHealth": null,
+  "ingress": null,
+  "monitorReleaseMatches": true
+}

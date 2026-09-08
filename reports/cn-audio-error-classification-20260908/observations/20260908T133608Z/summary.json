@@ -1,0 +1,51 @@
+{
+  "window": {
+    "startUTC": "2026-09-08T13:23:48.837754Z",
+    "endUTCExclusive": "2026-09-08T13:36:08.419781Z",
+    "fixedObservationEndUTC": "2026-09-09T13:23:48.837754Z"
+  },
+  "readOnly": true,
+  "sources": {
+    "cn": {
+      "collectionFailed": true,
+      "errorClass": "RuntimeError",
+      "rawErrorWithheld": true
+    },
+    "us": {
+      "collectionFailed": true,
+      "errorClass": "TypeError",
+      "rawErrorWithheld": true
+    },
+    "direct": {
+      "collectionFailed": null,
+      "statusCounts": {
+        "200": 249
+      },
+      "errorClassCounts": {},
+      "coverage": {
+        "journalRowsRead": 11009,
+        "journalParseErrors": 0,
+        "incompleteBlocks": 0,
+        "malformedRequests": 0,
+        "complete": true,
+        "firstJournalUTC": "2026-09-08T13:25:49.898981Z",
+        "lastJournalUTC": "2026-09-08T13:36:09.181873Z",
+        "endBoundaryPaddingSeconds": 2
+      },
+      "non200Records": []
+    },
+    "vercel": {
+      "collectionFailed": true,
+      "completeReturnedPages": null,
+      "coreRecords": null,
+      "queries": null
+    }
+  },
+  "notes": [
+    "CN HTTP log does not cover dedicated QuickRead ingress.",
+    "Direct early admission responses are a known logging blind spot.",
+    "Historical disconnects and Vercel platform errors are not claimed fixed by this release.",
+    "No observation command submits audio, modifies production or reads client telemetry."
+  ],
+  "collectionCompleteWithinAvailableSources": false
+}

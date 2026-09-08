@@ -1,0 +1,125 @@
+{
+  "unit": {
+    "MainPID": "1608646",
+    "ExecStart": "{ path=/usr/bin/node ; argv[]=/usr/bin/node server/server.mjs ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }",
+    "EnvironmentFiles": "/etc/castreader/quickread-cn.env (ignore_errors=no)",
+    "WorkingDirectory": "/opt/castreader-quickread-cn/current",
+    "ActiveState": "active",
+    "SubState": "running"
+  },
+  "currentTarget": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+  "sourceHashes": {
+    "server/server.mjs": "b155806c93c4b098bdc3f6a44ddd2d596d6a7bed5be776af171b4426197ce0b0",
+    "tools/llm-provider.mjs": "7c0370aff30427bf5d85f47595c7b14c1a2dd1aff486c970f877a7926098e9d2",
+    "tools/llm-deadline.mjs": "0066eb2a3a39e55539184b5275d6ffc6aa0e8e2d1e23cc2525bfd72a8d90bfde"
+  },
+  "dependenciesPresent": true,
+  "envPathTypes": [],
+  "serverControlSource": [
+    {
+      "line": 223,
+      "text": "setImmediate(drain);"
+    },
+    {
+      "line": 227,
+      "text": "drain();"
+    },
+    {
+      "line": 231,
+      "text": "function drain() {"
+    },
+    {
+      "line": 249,
+      "text": "setImmediate(drain);"
+    },
+    {
+      "line": 982,
+      "text": "const admission = reserveAdmission();"
+    },
+    {
+      "line": 983,
+      "text": "if (!admission) return reject(res, 503, 'server_busy');"
+    },
+    {
+      "line": 999,
+      "text": "const result = await admission.enqueue("
+    },
+    {
+      "line": 1015,
+      "text": "} finally { admission.release(); lifetime.cleanup(); }"
+    },
+    {
+      "line": 1043,
+      "text": "const admission = reserveAdmission();"
+    },
+    {
+      "line": 1044,
+      "text": "if (!admission) return reject(res, 503, 'server_busy');"
+    },
+    {
+      "line": 1056,
+      "text": "const result = await admission.enqueue("
+    },
+    {
+      "line": 1067,
+      "text": "} finally { admission.release(); lifetime.cleanup(); }"
+    },
+    {
+      "line": 1105,
+      "text": "const admission = reserveAdmission();"
+    },
+    {
+      "line": 1106,
+      "text": "if (!admission) return reject(res, 503, 'server_busy');"
+    },
+    {
+      "line": 1124,
+      "text": "const resultPromise = admission.enqueue("
+    },
+    {
+      "line": 1140,
+      "text": "} finally { admission.release(); lifetime.cleanup(); }"
+    },
+    {
+      "line": 1170,
+      "text": "const admission = reserveAdmission();"
+    },
+    {
+      "line": 1171,
+      "text": "if (!admission) return reject(res, 503, 'server_busy');"
+    },
+    {
+      "line": 1175,
+      "text": "const result = await admission.enqueue("
+    },
+    {
+      "line": 1183,
+      "text": "} finally { admission.release(); lifetime.cleanup(); }"
+    },
+    {
+      "line": 1399,
+      "text": "if (req.method === 'GET' && (path === '/health' || path === '/')) {"
+    },
+    {
+      "line": 1415,
+      "text": "log(`  GET  /health                    \u2014 queue depth`);"
+    },
+    {
+      "line": 1430,
+      "text": "process.on('SIGTERM', stopGracefully);"
+    }
+  ],
+  "monitorTarget": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+  "monitorFiles": {
+    "alert-envelope.schema.json": "369b79bdae103d4576a53beb48d482400b15410953ad4dea8990821c736e2828",
+    "state-store.test.mjs": "fcedbd39655995cbf4a5a438b3b9ebf48ad08125a36ba84b6016c780805629b7",
+    "README.md": "5e45d548351b486d50f4aad984415b5d416bbd7d50143c4585ee891f1121247f",
+    "run.mjs": "8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e",
+    "probe-core.mjs": "51c38ca9c4a9c4b5c4f0af9dbe78510e90809eb39574f6f1ff9cff7c7e5ee964",
+    "probe-core.test.mjs": "b5a0fdc40492e07d5baee1a110c575a4be4e571c2d8b946ee6886cd15d2a3af7",
+    "state-store.mjs": "4f800b073d9e81e6ea59a9689e1fed4a3f6a0906c0fae0c5cbe941ef56e306c3",
+    "systemd/castreader-core-audio-monitor@.timer": "d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92",
+    "systemd/castreader-core-audio-monitor@.service": "65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916"
+  },
+  "monitorUnit": "MainPID=0\nActiveState=inactive\nSubState=dead\n"
+}

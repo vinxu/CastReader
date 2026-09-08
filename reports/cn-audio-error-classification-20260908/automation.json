@@ -1,0 +1,12 @@
+{
+  "id": "24",
+  "name": "音频错误分类修复后24小时观察",
+  "status": "ACTIVE",
+  "kind": "heartbeat",
+  "created_at": 1788874804399,
+  "updated_at": 1788874804399,
+  "target_thread_id": "01a06667-570e-70f2-8e02-ed20755d6709",
+  "verification": "Created successfully by automation_update, then viewed in app.",
+  "fixedObservationEndUTC": "2026-09-09T13:23:48.837754Z",
+  "cadence": "hourly, maximum 24 scheduled runs; stop after fixed window report"
+}

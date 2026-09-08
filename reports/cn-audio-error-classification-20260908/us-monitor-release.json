@@ -1,0 +1,67 @@
+{
+  "region": "us",
+  "from": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+  "to": "/opt/castreader-core-audio-monitor/releases/eee0a902-f877944d",
+  "backup": "/opt/castreader-core-audio-monitor/backups/eee0a902-f877944d",
+  "backupVerified": true,
+  "testsPassed": true,
+  "sourceFiles": {
+    "run.mjs": "8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e",
+    "state-store.test.mjs": "fcedbd39655995cbf4a5a438b3b9ebf48ad08125a36ba84b6016c780805629b7",
+    "alert-envelope.schema.json": "369b79bdae103d4576a53beb48d482400b15410953ad4dea8990821c736e2828",
+    "probe-core.mjs": "9c6ccbd3d63e595d501152d8fc15f5cb9ac1c9db22b4ec2042f749046cb641d6",
+    "README.md": "e60ff78804fe985405363d3009a23df1ea42814354e5f9253ebe206581790495",
+    "probe-core.test.mjs": "168c7f8a98437856fcc17a00fe0da3551a20ededdba9f55a11987e44f913993e",
+    "state-store.mjs": "4f800b073d9e81e6ea59a9689e1fed4a3f6a0906c0fae0c5cbe941ef56e306c3",
+    "systemd/castreader-core-audio-monitor@.timer": "d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92",
+    "systemd/castreader-core-audio-monitor@.service": "65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916"
+  },
+  "beforeProtectedPIDs": {
+    "castreader-tts-gateway.service": "596392",
+    "caddy": "4980"
+  },
+  "startedUTC": "2026-09-08T13:15:44.463352+00:00",
+  "switched": true,
+  "probe": {
+    "observedAt": "2026-09-08T13:15:47.800Z",
+    "status": "healthy",
+    "supplyOk": true,
+    "failureCode": null,
+    "segmentCount": 2,
+    "elapsedMs": 3248,
+    "attemptRecords": [
+      {
+        "segmentIndex": 0,
+        "requestContract": "stream_omitted",
+        "requestKey": "9680cf8d2b057a5b4158",
+        "attempt": 1,
+        "stage": "validation",
+        "httpStatus": 200,
+        "outcome": "complete",
+        "elapsedMs": 2081
+      },
+      {
+        "segmentIndex": 1,
+        "requestContract": "stream_true",
+        "requestKey": "b4e6450c1b05daa3e87d",
+        "attempt": 1,
+        "stage": "validation",
+        "httpStatus": 200,
+        "outcome": "complete",
+        "elapsedMs": 1167
+      }
+    ]
+  },
+  "manualProbeExit": 0,
+  "status": "installed",
+  "timerAfter": {
+    "ActiveState": "active",
+    "SubState": "waiting"
+  },
+  "afterProtectedPIDs": {
+    "castreader-tts-gateway.service": "596392",
+    "caddy": "4980"
+  },
+  "currentAfter": "/opt/castreader-core-audio-monitor/releases/eee0a902-f877944d",
+  "finishedUTC": "2026-09-08T13:15:47.878990+00:00"
+}

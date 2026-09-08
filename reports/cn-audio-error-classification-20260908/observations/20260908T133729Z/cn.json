@@ -1,0 +1,345 @@
+{
+  "readOnly": true,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "region": "cn",
+  "window": {
+    "startUTC": "2026-09-08T13:23:48.837754Z",
+    "endUTCExclusive": "2026-09-08T13:37:29.943065Z"
+  },
+  "monitor": {
+    "schema": "castreader.monitor-window-readback.v2",
+    "region": "cn",
+    "readOnly": true,
+    "probeStarted": false,
+    "productionModified": false,
+    "readAtUtc": "2026-09-08T13:37:30.617512Z",
+    "query": {
+      "startInclusive": "2026-09-08T13:23:48.837754Z",
+      "endExclusive": "2026-09-08T13:37:29.943065Z"
+    },
+    "source": {
+      "resultsDirectory": "/var/lib/castreader-core-audio-monitor/cn/results",
+      "resultFilesScanned": 808,
+      "validResultFiles": 808,
+      "uniqueResultCycles": 808,
+      "exactDuplicatesSkipped": 0,
+      "invalidResults": [],
+      "conflictingObservedAt": [],
+      "firstAvailableObservedAt": "2026-09-05T15:58:13.669Z",
+      "lastAvailableObservedAt": "2026-09-08T13:36:36.913Z",
+      "firstSelectedObservedAt": "2026-09-08T13:26:06.020Z",
+      "lastSelectedObservedAt": "2026-09-08T13:36:36.913Z",
+      "windowStartToFirstSelectedSeconds": 137.182,
+      "lastSelectedToWindowEndSeconds": 53.03
+    },
+    "coverage": {
+      "completeRead": true,
+      "selectedCycles": 3,
+      "originAttributionAvailable": false,
+      "note": "Persisted result schema does not distinguish timer from manual invocation."
+    },
+    "monitorRelease": {
+      "currentTarget": "/opt/castreader-core-audio-monitor/releases/eee0a902-f877944d",
+      "files": 9,
+      "treeSha256": "1f5f9e9723ef7f30ef5d5a606249acbb5317ff1f59483c4534c77e5e40aca61c"
+    },
+    "systemd": {
+      "service": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "timer": {
+        "NextElapseUSecRealtime": "",
+        "LastTriggerUSec": "Tue 2026-09-08 21:36:29 CST",
+        "ActiveState": "active",
+        "SubState": "waiting",
+        "UnitFileState": "enabled"
+      }
+    },
+    "aggregate": {
+      "cycles": 3,
+      "statusCounts": {
+        "healthy": 3
+      },
+      "failureCodeCounts": {},
+      "failedRequestContractCounts": {},
+      "executedRequestContractCounts": {
+        "stream_false": 3,
+        "stream_omitted": 3,
+        "stream_true": 3
+      },
+      "supplyOkCycles": 3,
+      "supplyFailureSequence": {
+        "episodes": 0,
+        "maximumConsecutiveCycles": 0,
+        "currentConsecutiveCycles": 0,
+        "recoveryEvents": []
+      },
+      "alignmentDegradationCycles": 0,
+      "alignmentDegradationSequence": {
+        "episodes": 0,
+        "maximumConsecutiveCycles": 0,
+        "currentConsecutiveCycles": 0,
+        "recoveryEvents": []
+      },
+      "regionMismatchCycles": 0,
+      "completeRemainderDecodedCycles": 3,
+      "completeRemainderDecodedRatio": 1.0,
+      "probeElapsedMs": {
+        "samples": 3,
+        "p50": 7144.0,
+        "p95": 9452.0,
+        "max": 9452.0
+      },
+      "firstSegmentAudioDurationSeconds": {
+        "samples": 3,
+        "p50": 3.576,
+        "p95": 3.576,
+        "max": 3.576
+      },
+      "totalAudioDurationSeconds": {
+        "samples": 3,
+        "p50": 13.44,
+        "p95": 13.44,
+        "max": 13.44
+      },
+      "observedGapSeconds": {
+        "samples": 2,
+        "p50": 313.212,
+        "p95": 317.681,
+        "max": 317.681
+      },
+      "largestObservedGapSeconds": 317.681,
+      "upstreamMetadata": [
+        {
+          "gateway": "vercel-r2",
+          "upstreamNode": "castreader-cn4090",
+          "upstreamSource": "cn-environment",
+          "upstreamRevision": "0",
+          "cyclesContainingVariant": 3
+        }
+      ]
+    },
+    "limitations": [
+      "observedAt is probe completion time, not request start time.",
+      "First-segment audio duration is not time-to-first-audio latency.",
+      "No persisted client traffic or user identity is read by this collector."
+    ],
+    "sourceHashes": {
+      "alert-envelope.schema.json": "369b79bdae103d4576a53beb48d482400b15410953ad4dea8990821c736e2828",
+      "state-store.test.mjs": "fcedbd39655995cbf4a5a438b3b9ebf48ad08125a36ba84b6016c780805629b7",
+      "README.md": "e60ff78804fe985405363d3009a23df1ea42814354e5f9253ebe206581790495",
+      "run.mjs": "8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e",
+      "probe-core.mjs": "9c6ccbd3d63e595d501152d8fc15f5cb9ac1c9db22b4ec2042f749046cb641d6",
+      "probe-core.test.mjs": "168c7f8a98437856fcc17a00fe0da3551a20ededdba9f55a11987e44f913993e",
+      "state-store.mjs": "4f800b073d9e81e6ea59a9689e1fed4a3f6a0906c0fae0c5cbe941ef56e306c3",
+      "systemd/castreader-core-audio-monitor@.timer": "d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92",
+      "systemd/castreader-core-audio-monitor@.service": "65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916"
+    },
+    "attempts": [
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 4301,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "4632773a8662987b8dfc",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T13:26:06.020Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 829,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "a44157701fcbde8cd2e0",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T13:26:06.020Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 1117,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "d311700f3028f13f9ef8",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T13:26:06.020Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 3635,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "05367d1f6372262e11cb",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T13:31:19.232Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 5153,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "6bca11b90f414478c2b1",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T13:31:19.232Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 664,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "65646c1aacd325c63244",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T13:31:19.232Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 3392,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "3b449dfed50e5e49720d",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T13:36:36.913Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 2071,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "666a4367513bbff9bec5",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T13:36:36.913Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 1680,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "31a57e3ca251d26e4268",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T13:36:36.913Z",
+        "cycleSupplyOk": true
+      }
+    ],
+    "cyclesWithMissingAttempts": 0,
+    "attemptOutcomeCounts": {
+      "complete": 9
+    },
+    "attemptCodeCounts": {},
+    "attemptsRecoveredInHealthyCycle": 0
+  },
+  "quickread": {
+    "health": {
+      "status": 200,
+      "ok": true,
+      "queue": 0,
+      "active": 0,
+      "concurrency": 3
+    },
+    "source": {
+      "current": "/opt/castreader-quickread-cn/releases/20260908-cn-response-recovery-1660a11",
+      "providerSha256": "5680e8938c008a15ff6c7efd9abea0e1122ef898b2d97765d718508270d5314f",
+      "serverSha256": "b155806c93c4b098bdc3f6a44ddd2d596d6a7bed5be776af171b4426197ce0b0"
+    },
+    "coverage": {
+      "rows": 2,
+      "parseErrors": 0
+    },
+    "providerEvents": [
+      {
+        "atUTC": "2026-09-08T13:31:37.501322Z",
+        "source": "quickread-provider",
+        "region": "cn",
+        "provider": "deepseek",
+        "event": "attempt_start",
+        "stage": "headers",
+        "elapsedMs": 1,
+        "attempt": 1,
+        "requestKey": "dc106bceab0e83fe2a4b"
+      },
+      {
+        "atUTC": "2026-09-08T13:31:39.531792Z",
+        "source": "quickread-provider",
+        "region": "cn",
+        "provider": "deepseek",
+        "event": "request_finished",
+        "stage": "validation",
+        "elapsedMs": 2031,
+        "attempt": 1,
+        "httpStatus": 200,
+        "recovered": false,
+        "requestKey": "dc106bceab0e83fe2a4b"
+      }
+    ],
+    "providerEventCounts": {
+      "attempt_start": 1,
+      "request_finished": 1
+    },
+    "providerFailureCodes": {},
+    "providerRecoveredRequests": 0,
+    "fixedErrorLines": []
+  },
+  "ingress": {
+    "counts": [
+      {
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 200,
+        "count": 9
+      }
+    ],
+    "non200": [],
+    "sources": [
+      {
+        "path": "/var/log/nginx/access.log.1",
+        "bytes": 4442956,
+        "sha256": "cfdc24ae23cb16a2680cfa783cbb2eca7eaa29a68e5370084c7a8a6cc61debf0",
+        "firstUTC": "2026-09-06T16:00:02Z",
+        "lastUTC": "2026-09-07T15:59:55Z"
+      },
+      {
+        "path": "/var/log/nginx/access.log",
+        "bytes": 4338726,
+        "sha256": "5b518f1813efb016d3462d0aec9d8c22390ead1a2ee9a22a223cc1934529c577",
+        "firstUTC": "2026-09-07T16:00:02Z",
+        "lastUTC": "2026-09-08T13:37:23Z"
+      }
+    ],
+    "unparsedCoreLines": 0,
+    "limitations": [
+      "CN QuickRead dedicated ingress has access_log off; its HTTP status totals are not covered.",
+      "HTTP 200 does not prove complete playback; 499 is a logged downstream disconnect."
+    ]
+  },
+  "monitorReleaseMatches": true,
+  "quickreadReleaseMatches": true
+}

@@ -1,0 +1,69 @@
+{
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-08T13:23:48.837754Z",
+    "endUTCExclusive": "2026-09-08T13:36:08.419781Z"
+  },
+  "observedAtUTC": "2026-09-08T13:36:13.107440Z",
+  "source": {
+    "path": "/opt/castreader-tts-gateway/gateway.mjs",
+    "sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+    "unchangedDuringRead": true
+  },
+  "systemd": {
+    "MainPID": "596392",
+    "NRestarts": "0",
+    "ExecMainStartTimestamp": "Mon 2026-09-07 03:21:28 UTC",
+    "ActiveState": "active",
+    "SubState": "running",
+    "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service"
+  },
+  "coverage": {
+    "journalRowsRead": 11009,
+    "journalParseErrors": 0,
+    "incompleteBlocks": 0,
+    "malformedRequests": 0,
+    "complete": true,
+    "firstJournalUTC": "2026-09-08T13:25:49.898981Z",
+    "lastJournalUTC": "2026-09-08T13:36:09.181873Z",
+    "endBoundaryPaddingSeconds": 2
+  },
+  "requests": 249,
+  "uniqueRequestKeys": 249,
+  "exactDuplicateOccurrences": 0,
+  "statusCounts": {
+    "200": 249
+  },
+  "errorClassCounts": {},
+  "clientStatuses": [
+    {
+      "platform": "extension",
+      "version": "1.2.37",
+      "status": "200",
+      "count": 249
+    }
+  ],
+  "hourlyStatuses": [
+    {
+      "hourUTC": "2026-09-08T13",
+      "status": "200",
+      "count": 249
+    }
+  ],
+  "elapsedMs": {
+    "samples": 249,
+    "p50": 761.0,
+    "p95": 1976.0,
+    "max": 3025.0
+  },
+  "non200Records": [],
+  "repeatedKeyOccurrences": [],
+  "limitations": [
+    "Counts retain separate request occurrences even if a caller repeats its request key.",
+    "Gateway early-return admission paths are not covered by its request summary logger.",
+    "Recorded HTTP200 is not proof of audio playback; no_response is not a delivered HTTP error."
+  ]
+}

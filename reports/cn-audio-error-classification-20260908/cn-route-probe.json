@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "region": "cn",
+  "startedUTC": "2026-09-08T13:31:37.494453+00:00",
+  "finishedUTC": "2026-09-08T13:31:39.533573+00:00",
+  "path": "/api/quickread/fast-block0",
+  "httpStatus": 200,
+  "elapsedMs": 2039,
+  "narrationCharacters": 69,
+  "responseSha256": "20137dcb30acc35005ad3730af2e6d60997c405ae9a0a1163abe44ef5b8efa83",
+  "userContent": false,
+  "ttsRequested": false,
+  "localHTTPOnly": true
+}

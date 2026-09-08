@@ -1,0 +1,1112 @@
+{
+  "schema": "castreader.us-proxy-event-window.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawUserDataExported": false,
+  "window": {
+    "startUTC": "2026-09-08T13:23:48.837754+00:00",
+    "endUTCExclusive": "2026-09-08T13:41:13.521061+00:00",
+    "productionActiveFromUTC": "2026-09-07T06:59:28.071711+00:00"
+  },
+  "collectedAtUTC": "2026-09-08T13:42:41.540664+00:00",
+  "collectionStartedAtUTC": "2026-09-08T13:42:39.365431+00:00",
+  "identityAndCoverageVerified": true,
+  "runtime": {
+    "verified": true,
+    "issues": [],
+    "identity": {
+      "currentEnabled": true,
+      "currentModel": {
+        "expectedVersion": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e",
+        "fixedReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+        "internalPort": 18880,
+        "listenerProcessIds": [
+          507638
+        ],
+        "listenerProcesses": [
+          {
+            "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+            "exe": "/venv/main/bin/python3.12",
+            "parentPid": 262,
+            "pid": 507638,
+            "startTicks": "554888220"
+          }
+        ],
+        "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+        "runtimeSourceBytes": 49675,
+        "runtimeSourceRelativePath": "api/src/inference/kokoro_v1.py",
+        "runtimeSourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+        "slot": "green",
+        "stateEnabled": true,
+        "stateReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+        "stateReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+        "supervisorCwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+        "supervisorPid": 507638,
+        "supervisorProcess": {
+          "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+          "exe": "/venv/main/bin/python3.12",
+          "parentPid": 262,
+          "pid": 507638,
+          "startTicks": "554888220"
+        },
+        "supervisorProgram": "castreader-tts-r133-green",
+        "supervisorState": "RUNNING"
+      },
+      "currentReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+      "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "currentSlot": "green",
+      "listenerProcessIds": [
+        509279
+      ],
+      "processIds": [
+        509279
+      ],
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 10,
+      "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+      "sourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+    },
+    "health": {
+      "active": {
+        "blue": 0,
+        "green": 0
+      },
+      "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "currentSlot": "green",
+      "drainTrusted": true,
+      "ok": true,
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 10
+    },
+    "proxyProcess": {
+      "pid": 509279,
+      "parentPid": 262,
+      "startTicks": "554914253",
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+      "exe": "/venv/main/bin/python3.12"
+    },
+    "estimatedProcessStartUTC": "2026-09-07T06:36:37.530000+00:00",
+    "supervisorEvents": [
+      {
+        "atUTC": "2026-09-07T06:36:36.922Z",
+        "stage": "stopped"
+      },
+      {
+        "atUTC": "2026-09-07T06:36:37.658Z",
+        "stage": "spawned"
+      },
+      {
+        "atUTC": "2026-09-07T06:36:42.686Z",
+        "stage": "success"
+      }
+    ],
+    "productionCoverageStartsAtUTC": "2026-09-07T06:59:28.071711+00:00"
+  },
+  "coverage": {
+    "complete": true,
+    "issues": [],
+    "filePath": "/var/log/onstart.log",
+    "fileBytesAtRead": 15775425854,
+    "fileInode": 2167399091,
+    "scanStartOffset": 15708316990,
+    "bytesScanned": 67108864,
+    "firstAnyStructuredUTC": "2026-09-08T09:01:25.656293+00:00",
+    "lastAnyStructuredUTC": "2026-09-08T13:42:37.293067+00:00",
+    "firstProxyEventUTC": "2026-09-08T09:01:25.656293+00:00",
+    "lastProxyEventUTC": "2026-09-08T13:42:37.293067+00:00",
+    "scannedProxyEventCount": 141569,
+    "unexpectedReleaseEvents": 0,
+    "unexpectedRoutingIdentityEvents": 0
+  },
+  "counts": {
+    "stages": {
+      "request_received": 2059,
+      "request_body_read": 2059,
+      "flight_created": 2059,
+      "upstream_connect_started": 2059,
+      "upstream_connected": 2059,
+      "upstream_headers": 2051,
+      "upstream_first_body": 2051,
+      "upstream_complete": 2051,
+      "request_finished": 2058,
+      "upstream_cancelled": 7
+    },
+    "phases": {
+      "admission": 4118,
+      "inbound_body": 2059,
+      "connect": 4118,
+      "response_headers": 2051,
+      "response_body": 2051,
+      "response_complete": 2051,
+      "completion": 2058,
+      "cancellation": 7
+    },
+    "finishedOutcomes": {
+      "complete": 2051,
+      "cancelled": 7
+    },
+    "finishedReportedStatuses": {
+      "200": 2051
+    },
+    "receivedAttempts": {
+      "1": 2059
+    },
+    "failureScopesAndLastObservedPhases": {},
+    "errorClasses": {}
+  },
+  "coalescing": {
+    "sharedProducersCreated": 2059,
+    "callersJoined": 0,
+    "independentCallers": 0,
+    "joinFractionOfSharedAdmissions": 0.0,
+    "joinFractionOfAllAdmissions": 0.0,
+    "denominatorNote": "Admission events in this window, not a completed-request cohort."
+  },
+  "stageTimingMilliseconds": {
+    "request_body_read.elapsedMs": {
+      "n": 2059,
+      "median": 0.052,
+      "p95": 0.094,
+      "max": 0.303
+    },
+    "upstream_connected.connectMs": {
+      "n": 2059,
+      "median": 0.257,
+      "p95": 0.335,
+      "max": 0.977
+    },
+    "upstream_headers.elapsedMs": {
+      "n": 2051,
+      "median": 471.246,
+      "p95": 1818.789,
+      "max": 5663.001
+    },
+    "upstream_first_body.elapsedMs": {
+      "n": 2051,
+      "median": 471.447,
+      "p95": 1818.885,
+      "max": 5663.091
+    },
+    "upstream_complete.elapsedMs": {
+      "n": 2051,
+      "median": 471.494,
+      "p95": 1819.431,
+      "max": 5663.66
+    },
+    "request_finished.elapsedMs": {
+      "n": 2058,
+      "median": 472.837,
+      "p95": 1828.891,
+      "max": 5687.306
+    }
+  },
+  "failureEvents": [],
+  "failureEventsTruncated": false,
+  "anonymousRequestsTruncated": false,
+  "events": [],
+  "eventsIncluded": false,
+  "eventsTruncated": false,
+  "limitations": [
+    "Runtime identity is checked at collection time; event rows contain release/slot/revision but no PID or source SHA.",
+    "Candidate and production used the same release ID; collection rejects windows before the confirmed production time.",
+    "Process-start/Supervisor timestamps are retained as earlier startup evidence, never as the production-coverage start.",
+    "An upstream body completion proves HTTP bytes completed, not decoded audio quality or client playback completion.",
+    "connect/header/body phases cannot separate ASGI queue, language lock, G2P and model inference time.",
+    "Reused connections emit no connect-start/connect-end events; upstream_request_created alone does not locate a transport stall.",
+    "Shared producer failures and shared caller failures are distinct observations of the same underlying failure.",
+    "Client cancellation and upstream cancellation after final subscriber departure are reported separately from failures.",
+    "Requests crossing the window boundary or reusing the same anonymous key may lack a unique full lifecycle.",
+    "No-event windows or a zero merge rate are not proof of user playback reliability; logs may be delayed before persistence."
+  ],
+  "anonymousRequestsTotal": 2059,
+  "targetRequests": [
+    {
+      "requestKey": "b192f4a5062889cce0e3",
+      "attempt": 1,
+      "firstUTC": "2026-09-08T13:37:22.541051+00:00",
+      "lastUTC": "2026-09-08T13:37:23.751997+00:00",
+      "receivedEvents": 1,
+      "phases": [
+        "admission",
+        "cancellation",
+        "completion",
+        "connect",
+        "inbound_body"
+      ],
+      "flightKeys": [
+        "dbe41e6b3ef60eba77c5"
+      ],
+      "outcomes": {
+        "cancelled": 1
+      },
+      "ambiguousRepeatedRequestKey": false
+    },
+    {
+      "requestKey": "066c04c269f457edeed7",
+      "attempt": 1,
+      "firstUTC": "2026-09-08T13:37:23.998951+00:00",
+      "lastUTC": "2026-09-08T13:37:25.178881+00:00",
+      "receivedEvents": 1,
+      "phases": [
+        "admission",
+        "cancellation",
+        "completion",
+        "connect",
+        "inbound_body"
+      ],
+      "flightKeys": [
+        "adbfdd96bc63d51ae29f"
+      ],
+      "outcomes": {
+        "cancelled": 1
+      },
+      "ambiguousRepeatedRequestKey": false
+    },
+    {
+      "requestKey": "fd6642cdca7668bfebf1",
+      "attempt": 1,
+      "firstUTC": "2026-09-08T13:38:26.251863+00:00",
+      "lastUTC": "2026-09-08T13:38:27.880614+00:00",
+      "receivedEvents": 1,
+      "phases": [
+        "admission",
+        "cancellation",
+        "completion",
+        "connect",
+        "inbound_body"
+      ],
+      "flightKeys": [
+        "0b205b82ccc46d3ae645"
+      ],
+      "outcomes": {
+        "cancelled": 1
+      },
+      "ambiguousRepeatedRequestKey": false
+    },
+    {
+      "requestKey": "25f5e0d0e9601be6268f",
+      "attempt": 1,
+      "firstUTC": "2026-09-08T13:38:28.150538+00:00",
+      "lastUTC": "2026-09-08T13:38:30.639967+00:00",
+      "receivedEvents": 1,
+      "phases": [
+        "admission",
+        "cancellation",
+        "completion",
+        "connect",
+        "inbound_body"
+      ],
+      "flightKeys": [
+        "a9292b6a43079e65bd59"
+      ],
+      "outcomes": {
+        "cancelled": 1
+      },
+      "ambiguousRepeatedRequestKey": false
+    },
+    {
+      "requestKey": "7c7c7478c5b48c3b564f",
+      "attempt": 1,
+      "firstUTC": "2026-09-08T13:38:46.071222+00:00",
+      "lastUTC": "2026-09-08T13:38:47.320841+00:00",
+      "receivedEvents": 1,
+      "phases": [
+        "admission",
+        "cancellation",
+        "completion",
+        "connect",
+        "inbound_body"
+      ],
+      "flightKeys": [
+        "1b82e8dbfae839123242"
+      ],
+      "outcomes": {
+        "cancelled": 1
+      },
+      "ambiguousRepeatedRequestKey": false
+    },
+    {
+      "requestKey": "0a57ba93584e4e3f1a27",
+      "attempt": 1,
+      "firstUTC": "2026-09-08T13:39:26.769041+00:00",
+      "lastUTC": "2026-09-08T13:39:27.400834+00:00",
+      "receivedEvents": 1,
+      "phases": [
+        "admission",
+        "cancellation",
+        "completion",
+        "connect",
+        "inbound_body"
+      ],
+      "flightKeys": [
+        "bf74955a9863e923b906"
+      ],
+      "outcomes": {
+        "cancelled": 1
+      },
+      "ambiguousRepeatedRequestKey": false
+    },
+    {
+      "requestKey": "a5531039fb4fe36d6630",
+      "attempt": 1,
+      "firstUTC": "2026-09-08T13:39:32.402012+00:00",
+      "lastUTC": "2026-09-08T13:39:32.928647+00:00",
+      "receivedEvents": 1,
+      "phases": [
+        "admission",
+        "cancellation",
+        "completion",
+        "connect",
+        "inbound_body"
+      ],
+      "flightKeys": [
+        "2b9795ae32f27d67c2cf"
+      ],
+      "outcomes": {
+        "cancelled": 1
+      },
+      "ambiguousRepeatedRequestKey": false
+    }
+  ],
+  "targetEvents": [
+    {
+      "stage": "request_received",
+      "phase": "admission",
+      "timeUnix": 1788874642.5410507,
+      "atUTC": "2026-09-08T13:37:22.541051+00:00",
+      "requestKey": "b192f4a5062889cce0e3",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "request_body_read",
+      "phase": "inbound_body",
+      "timeUnix": 1788874642.5411339,
+      "atUTC": "2026-09-08T13:37:22.541134+00:00",
+      "requestKey": "b192f4a5062889cce0e3",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 586,
+      "elapsedMs": 0.08
+    },
+    {
+      "stage": "flight_created",
+      "phase": "admission",
+      "timeUnix": 1788874642.541219,
+      "atUTC": "2026-09-08T13:37:22.541219+00:00",
+      "requestKey": "b192f4a5062889cce0e3",
+      "flightKey": "dbe41e6b3ef60eba77c5",
+      "upstreamRequestKey": "dbe41e6b3ef60eba77c5",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 586
+    },
+    {
+      "stage": "upstream_connect_started",
+      "phase": "connect",
+      "timeUnix": 1788874642.5414052,
+      "atUTC": "2026-09-08T13:37:22.541405+00:00",
+      "requestKey": "b192f4a5062889cce0e3",
+      "flightKey": "dbe41e6b3ef60eba77c5",
+      "upstreamRequestKey": "dbe41e6b3ef60eba77c5",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "upstream_connected",
+      "phase": "connect",
+      "timeUnix": 1788874642.5417397,
+      "atUTC": "2026-09-08T13:37:22.541740+00:00",
+      "requestKey": "b192f4a5062889cce0e3",
+      "flightKey": "dbe41e6b3ef60eba77c5",
+      "upstreamRequestKey": "dbe41e6b3ef60eba77c5",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "connectMs": 0.333
+    },
+    {
+      "stage": "upstream_cancelled",
+      "phase": "cancellation",
+      "timeUnix": 1788874643.7518456,
+      "atUTC": "2026-09-08T13:37:23.751846+00:00",
+      "requestKey": "b192f4a5062889cce0e3",
+      "flightKey": "dbe41e6b3ef60eba77c5",
+      "upstreamRequestKey": "dbe41e6b3ef60eba77c5",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "responseBytes": 0
+    },
+    {
+      "stage": "request_finished",
+      "phase": "completion",
+      "timeUnix": 1788874643.7519972,
+      "atUTC": "2026-09-08T13:37:23.751997+00:00",
+      "requestKey": "b192f4a5062889cce0e3",
+      "flightKey": "dbe41e6b3ef60eba77c5",
+      "upstreamRequestKey": "dbe41e6b3ef60eba77c5",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "elapsedMs": 1210.942,
+      "outcome": "cancelled"
+    },
+    {
+      "stage": "request_received",
+      "phase": "admission",
+      "timeUnix": 1788874643.9989514,
+      "atUTC": "2026-09-08T13:37:23.998951+00:00",
+      "requestKey": "066c04c269f457edeed7",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "request_body_read",
+      "phase": "inbound_body",
+      "timeUnix": 1788874643.9989934,
+      "atUTC": "2026-09-08T13:37:23.998993+00:00",
+      "requestKey": "066c04c269f457edeed7",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 181,
+      "elapsedMs": 0.04
+    },
+    {
+      "stage": "flight_created",
+      "phase": "admission",
+      "timeUnix": 1788874643.9990394,
+      "atUTC": "2026-09-08T13:37:23.999039+00:00",
+      "requestKey": "066c04c269f457edeed7",
+      "flightKey": "adbfdd96bc63d51ae29f",
+      "upstreamRequestKey": "adbfdd96bc63d51ae29f",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 181
+    },
+    {
+      "stage": "upstream_connect_started",
+      "phase": "connect",
+      "timeUnix": 1788874643.99915,
+      "atUTC": "2026-09-08T13:37:23.999150+00:00",
+      "requestKey": "066c04c269f457edeed7",
+      "flightKey": "adbfdd96bc63d51ae29f",
+      "upstreamRequestKey": "adbfdd96bc63d51ae29f",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "upstream_connected",
+      "phase": "connect",
+      "timeUnix": 1788874643.9993289,
+      "atUTC": "2026-09-08T13:37:23.999329+00:00",
+      "requestKey": "066c04c269f457edeed7",
+      "flightKey": "adbfdd96bc63d51ae29f",
+      "upstreamRequestKey": "adbfdd96bc63d51ae29f",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "connectMs": 0.177
+    },
+    {
+      "stage": "upstream_cancelled",
+      "phase": "cancellation",
+      "timeUnix": 1788874645.1787417,
+      "atUTC": "2026-09-08T13:37:25.178742+00:00",
+      "requestKey": "066c04c269f457edeed7",
+      "flightKey": "adbfdd96bc63d51ae29f",
+      "upstreamRequestKey": "adbfdd96bc63d51ae29f",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "responseBytes": 0
+    },
+    {
+      "stage": "request_finished",
+      "phase": "completion",
+      "timeUnix": 1788874645.1788812,
+      "atUTC": "2026-09-08T13:37:25.178881+00:00",
+      "requestKey": "066c04c269f457edeed7",
+      "flightKey": "adbfdd96bc63d51ae29f",
+      "upstreamRequestKey": "adbfdd96bc63d51ae29f",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "elapsedMs": 1179.922,
+      "outcome": "cancelled"
+    },
+    {
+      "stage": "request_received",
+      "phase": "admission",
+      "timeUnix": 1788874706.2518628,
+      "atUTC": "2026-09-08T13:38:26.251863+00:00",
+      "requestKey": "fd6642cdca7668bfebf1",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "request_body_read",
+      "phase": "inbound_body",
+      "timeUnix": 1788874706.2519448,
+      "atUTC": "2026-09-08T13:38:26.251945+00:00",
+      "requestKey": "fd6642cdca7668bfebf1",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 284,
+      "elapsedMs": 0.075
+    },
+    {
+      "stage": "flight_created",
+      "phase": "admission",
+      "timeUnix": 1788874706.252035,
+      "atUTC": "2026-09-08T13:38:26.252035+00:00",
+      "requestKey": "fd6642cdca7668bfebf1",
+      "flightKey": "0b205b82ccc46d3ae645",
+      "upstreamRequestKey": "0b205b82ccc46d3ae645",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 284
+    },
+    {
+      "stage": "upstream_connect_started",
+      "phase": "connect",
+      "timeUnix": 1788874706.2522404,
+      "atUTC": "2026-09-08T13:38:26.252240+00:00",
+      "requestKey": "fd6642cdca7668bfebf1",
+      "flightKey": "0b205b82ccc46d3ae645",
+      "upstreamRequestKey": "0b205b82ccc46d3ae645",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "upstream_connected",
+      "phase": "connect",
+      "timeUnix": 1788874706.252576,
+      "atUTC": "2026-09-08T13:38:26.252576+00:00",
+      "requestKey": "fd6642cdca7668bfebf1",
+      "flightKey": "0b205b82ccc46d3ae645",
+      "upstreamRequestKey": "0b205b82ccc46d3ae645",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "connectMs": 0.335
+    },
+    {
+      "stage": "upstream_cancelled",
+      "phase": "cancellation",
+      "timeUnix": 1788874707.8804698,
+      "atUTC": "2026-09-08T13:38:27.880470+00:00",
+      "requestKey": "fd6642cdca7668bfebf1",
+      "flightKey": "0b205b82ccc46d3ae645",
+      "upstreamRequestKey": "0b205b82ccc46d3ae645",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "responseBytes": 0
+    },
+    {
+      "stage": "request_finished",
+      "phase": "completion",
+      "timeUnix": 1788874707.8806138,
+      "atUTC": "2026-09-08T13:38:27.880614+00:00",
+      "requestKey": "fd6642cdca7668bfebf1",
+      "flightKey": "0b205b82ccc46d3ae645",
+      "upstreamRequestKey": "0b205b82ccc46d3ae645",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "elapsedMs": 1628.745,
+      "outcome": "cancelled"
+    },
+    {
+      "stage": "request_received",
+      "phase": "admission",
+      "timeUnix": 1788874708.1505384,
+      "atUTC": "2026-09-08T13:38:28.150538+00:00",
+      "requestKey": "25f5e0d0e9601be6268f",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "request_body_read",
+      "phase": "inbound_body",
+      "timeUnix": 1788874708.150621,
+      "atUTC": "2026-09-08T13:38:28.150621+00:00",
+      "requestKey": "25f5e0d0e9601be6268f",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 179,
+      "elapsedMs": 0.077
+    },
+    {
+      "stage": "flight_created",
+      "phase": "admission",
+      "timeUnix": 1788874708.1506941,
+      "atUTC": "2026-09-08T13:38:28.150694+00:00",
+      "requestKey": "25f5e0d0e9601be6268f",
+      "flightKey": "a9292b6a43079e65bd59",
+      "upstreamRequestKey": "a9292b6a43079e65bd59",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 179
+    },
+    {
+      "stage": "upstream_connect_started",
+      "phase": "connect",
+      "timeUnix": 1788874708.1508636,
+      "atUTC": "2026-09-08T13:38:28.150864+00:00",
+      "requestKey": "25f5e0d0e9601be6268f",
+      "flightKey": "a9292b6a43079e65bd59",
+      "upstreamRequestKey": "a9292b6a43079e65bd59",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "upstream_connected",
+      "phase": "connect",
+      "timeUnix": 1788874708.1511695,
+      "atUTC": "2026-09-08T13:38:28.151170+00:00",
+      "requestKey": "25f5e0d0e9601be6268f",
+      "flightKey": "a9292b6a43079e65bd59",
+      "upstreamRequestKey": "a9292b6a43079e65bd59",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "connectMs": 0.305
+    },
+    {
+      "stage": "upstream_cancelled",
+      "phase": "cancellation",
+      "timeUnix": 1788874710.639865,
+      "atUTC": "2026-09-08T13:38:30.639865+00:00",
+      "requestKey": "25f5e0d0e9601be6268f",
+      "flightKey": "a9292b6a43079e65bd59",
+      "upstreamRequestKey": "a9292b6a43079e65bd59",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "responseBytes": 0
+    },
+    {
+      "stage": "request_finished",
+      "phase": "completion",
+      "timeUnix": 1788874710.639967,
+      "atUTC": "2026-09-08T13:38:30.639967+00:00",
+      "requestKey": "25f5e0d0e9601be6268f",
+      "flightKey": "a9292b6a43079e65bd59",
+      "upstreamRequestKey": "a9292b6a43079e65bd59",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "elapsedMs": 2489.426,
+      "outcome": "cancelled"
+    },
+    {
+      "stage": "request_received",
+      "phase": "admission",
+      "timeUnix": 1788874726.0712223,
+      "atUTC": "2026-09-08T13:38:46.071222+00:00",
+      "requestKey": "7c7c7478c5b48c3b564f",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "request_body_read",
+      "phase": "inbound_body",
+      "timeUnix": 1788874726.0712688,
+      "atUTC": "2026-09-08T13:38:46.071269+00:00",
+      "requestKey": "7c7c7478c5b48c3b564f",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 180,
+      "elapsedMs": 0.044
+    },
+    {
+      "stage": "flight_created",
+      "phase": "admission",
+      "timeUnix": 1788874726.071332,
+      "atUTC": "2026-09-08T13:38:46.071332+00:00",
+      "requestKey": "7c7c7478c5b48c3b564f",
+      "flightKey": "1b82e8dbfae839123242",
+      "upstreamRequestKey": "1b82e8dbfae839123242",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 180
+    },
+    {
+      "stage": "upstream_connect_started",
+      "phase": "connect",
+      "timeUnix": 1788874726.0714612,
+      "atUTC": "2026-09-08T13:38:46.071461+00:00",
+      "requestKey": "7c7c7478c5b48c3b564f",
+      "flightKey": "1b82e8dbfae839123242",
+      "upstreamRequestKey": "1b82e8dbfae839123242",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "upstream_connected",
+      "phase": "connect",
+      "timeUnix": 1788874726.0716558,
+      "atUTC": "2026-09-08T13:38:46.071656+00:00",
+      "requestKey": "7c7c7478c5b48c3b564f",
+      "flightKey": "1b82e8dbfae839123242",
+      "upstreamRequestKey": "1b82e8dbfae839123242",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "connectMs": 0.193
+    },
+    {
+      "stage": "upstream_cancelled",
+      "phase": "cancellation",
+      "timeUnix": 1788874727.3206975,
+      "atUTC": "2026-09-08T13:38:47.320698+00:00",
+      "requestKey": "7c7c7478c5b48c3b564f",
+      "flightKey": "1b82e8dbfae839123242",
+      "upstreamRequestKey": "1b82e8dbfae839123242",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "responseBytes": 0
+    },
+    {
+      "stage": "request_finished",
+      "phase": "completion",
+      "timeUnix": 1788874727.3208413,
+      "atUTC": "2026-09-08T13:38:47.320841+00:00",
+      "requestKey": "7c7c7478c5b48c3b564f",
+      "flightKey": "1b82e8dbfae839123242",
+      "upstreamRequestKey": "1b82e8dbfae839123242",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "elapsedMs": 1249.613,
+      "outcome": "cancelled"
+    },
+    {
+      "stage": "request_received",
+      "phase": "admission",
+      "timeUnix": 1788874766.7690406,
+      "atUTC": "2026-09-08T13:39:26.769041+00:00",
+      "requestKey": "0a57ba93584e4e3f1a27",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "request_body_read",
+      "phase": "inbound_body",
+      "timeUnix": 1788874766.769093,
+      "atUTC": "2026-09-08T13:39:26.769093+00:00",
+      "requestKey": "0a57ba93584e4e3f1a27",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 374,
+      "elapsedMs": 0.05
+    },
+    {
+      "stage": "flight_created",
+      "phase": "admission",
+      "timeUnix": 1788874766.7691612,
+      "atUTC": "2026-09-08T13:39:26.769161+00:00",
+      "requestKey": "0a57ba93584e4e3f1a27",
+      "flightKey": "bf74955a9863e923b906",
+      "upstreamRequestKey": "bf74955a9863e923b906",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 374
+    },
+    {
+      "stage": "upstream_connect_started",
+      "phase": "connect",
+      "timeUnix": 1788874766.7692962,
+      "atUTC": "2026-09-08T13:39:26.769296+00:00",
+      "requestKey": "0a57ba93584e4e3f1a27",
+      "flightKey": "bf74955a9863e923b906",
+      "upstreamRequestKey": "bf74955a9863e923b906",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "upstream_connected",
+      "phase": "connect",
+      "timeUnix": 1788874766.7695673,
+      "atUTC": "2026-09-08T13:39:26.769567+00:00",
+      "requestKey": "0a57ba93584e4e3f1a27",
+      "flightKey": "bf74955a9863e923b906",
+      "upstreamRequestKey": "bf74955a9863e923b906",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "connectMs": 0.27
+    },
+    {
+      "stage": "upstream_cancelled",
+      "phase": "cancellation",
+      "timeUnix": 1788874767.4006898,
+      "atUTC": "2026-09-08T13:39:27.400690+00:00",
+      "requestKey": "0a57ba93584e4e3f1a27",
+      "flightKey": "bf74955a9863e923b906",
+      "upstreamRequestKey": "bf74955a9863e923b906",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "responseBytes": 0
+    },
+    {
+      "stage": "request_finished",
+      "phase": "completion",
+      "timeUnix": 1788874767.4008336,
+      "atUTC": "2026-09-08T13:39:27.400834+00:00",
+      "requestKey": "0a57ba93584e4e3f1a27",
+      "flightKey": "bf74955a9863e923b906",
+      "upstreamRequestKey": "bf74955a9863e923b906",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "elapsedMs": 631.785,
+      "outcome": "cancelled"
+    },
+    {
+      "stage": "request_received",
+      "phase": "admission",
+      "timeUnix": 1788874772.4020116,
+      "atUTC": "2026-09-08T13:39:32.402012+00:00",
+      "requestKey": "a5531039fb4fe36d6630",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "request_body_read",
+      "phase": "inbound_body",
+      "timeUnix": 1788874772.4020615,
+      "atUTC": "2026-09-08T13:39:32.402061+00:00",
+      "requestKey": "a5531039fb4fe36d6630",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 462,
+      "elapsedMs": 0.048
+    },
+    {
+      "stage": "flight_created",
+      "phase": "admission",
+      "timeUnix": 1788874772.402128,
+      "atUTC": "2026-09-08T13:39:32.402128+00:00",
+      "requestKey": "a5531039fb4fe36d6630",
+      "flightKey": "2b9795ae32f27d67c2cf",
+      "upstreamRequestKey": "2b9795ae32f27d67c2cf",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "bodyBytes": 462
+    },
+    {
+      "stage": "upstream_connect_started",
+      "phase": "connect",
+      "timeUnix": 1788874772.4022577,
+      "atUTC": "2026-09-08T13:39:32.402258+00:00",
+      "requestKey": "a5531039fb4fe36d6630",
+      "flightKey": "2b9795ae32f27d67c2cf",
+      "upstreamRequestKey": "2b9795ae32f27d67c2cf",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1
+    },
+    {
+      "stage": "upstream_connected",
+      "phase": "connect",
+      "timeUnix": 1788874772.4024773,
+      "atUTC": "2026-09-08T13:39:32.402477+00:00",
+      "requestKey": "a5531039fb4fe36d6630",
+      "flightKey": "2b9795ae32f27d67c2cf",
+      "upstreamRequestKey": "2b9795ae32f27d67c2cf",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "connectMs": 0.218
+    },
+    {
+      "stage": "upstream_cancelled",
+      "phase": "cancellation",
+      "timeUnix": 1788874772.9284892,
+      "atUTC": "2026-09-08T13:39:32.928489+00:00",
+      "requestKey": "a5531039fb4fe36d6630",
+      "flightKey": "2b9795ae32f27d67c2cf",
+      "upstreamRequestKey": "2b9795ae32f27d67c2cf",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "responseBytes": 0
+    },
+    {
+      "stage": "request_finished",
+      "phase": "completion",
+      "timeUnix": 1788874772.9286473,
+      "atUTC": "2026-09-08T13:39:32.928647+00:00",
+      "requestKey": "a5531039fb4fe36d6630",
+      "flightKey": "2b9795ae32f27d67c2cf",
+      "upstreamRequestKey": "2b9795ae32f27d67c2cf",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+      "slot": "green",
+      "revision": 10,
+      "attempt": 1,
+      "elapsedMs": 526.628,
+      "outcome": "cancelled"
+    }
+  ],
+  "missingTargetKeys": [],
+  "anonymousRequestExportScope": "Direct non-200/closed requests only; aggregate counts cover the complete selected proxy window.",
+  "expectedIdentity": {
+    "currentReceiptSha256": "1dc8978ded20f913fc027dac9f76b36f401c6a1896cd97ad527e2f6de4a12def",
+    "currentReleaseId": "20260907-kokoro-japanese-numbers-us-r135",
+    "currentSlot": "green",
+    "modelProcess": {
+      "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+      "pid": 507638,
+      "startTicks": "554888220"
+    },
+    "modelSourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+    "process": {
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+      "pid": 509279,
+      "startTicks": "554914253"
+    },
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 10,
+    "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
+    "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+    "sourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+  },
+  "modelExpectation": {
+    "releaseId": "20260907-kokoro-japanese-numbers-us-r135",
+    "releasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-japanese-numbers-us-r135",
+    "slot": "green",
+    "sourceRelativePath": "api/src/inference/kokoro_v1.py",
+    "sourceSha256": "3adcebeaa45924c01521ee31b6cc39857241e5d28fe662eb69537e660124b810",
+    "version": "8d4e18bd82c75e0c13c94cc0074da62f9c0f9a5e"
+  }
+}

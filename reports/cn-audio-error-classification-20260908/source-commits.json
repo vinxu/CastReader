@@ -1,0 +1,30 @@
+[
+  {
+    "name": "monitor",
+    "repo": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-audio-error-classification-20260908",
+    "commit": "eee0a902bcf2f10000e66c26ab41cc9717d4456d",
+    "files": [
+      "scripts/core-audio-monitor/probe-core.mjs",
+      "scripts/core-audio-monitor/probe-core.test.mjs",
+      "scripts/core-audio-monitor/README.md"
+    ]
+  },
+  {
+    "name": "provider",
+    "repo": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-cn-llm-recovery-20260908",
+    "commit": "cb83df7975fa77c74b69faa80ca636d2ee3ddc90",
+    "files": [
+      "scripts/video-pipeline/tools/llm-provider.mjs",
+      "scripts/video-pipeline/tools/llm-provider.test.mjs",
+      "scripts/video-pipeline/deployments/20260908-cn-response-recovery/README.md"
+    ]
+  },
+  {
+    "name": "provider-runtime-test-fixture",
+    "repo": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-cn-llm-recovery-20260908",
+    "commit": "1660a118fa176b65d4275b332e464d0b0fe02c41",
+    "files": [
+      "scripts/video-pipeline/tools/llm-deadline.test.mjs"
+    ]
+  }
+]

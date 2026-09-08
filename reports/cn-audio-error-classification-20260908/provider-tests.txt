@@ -1,0 +1,40 @@
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"868c8558cb73a9565553","event":"attempt_start","elapsedMs":0,"attempt":1,"stage":"headers"}
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"868c8558cb73a9565553","event":"attempt_failed","elapsedMs":81,"attempt":1,"stage":"headers","code":"DEEPSEEK_REQUEST_ABORTED","httpStatus":null,"errorName":"TimeoutError","transportCode":null,"recoveryScheduled":false}
+✔ one absolute budget aborts a hanging provider fetch (82.415459ms)
+✔ the same deadline kills a hanging curl child (83.132458ms)
+✔ nested retries inherit the original deadline instead of resetting it (122.551125ms)
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"c3659f13277db62c8f9e","event":"attempt_start","elapsedMs":0,"attempt":1,"stage":"headers"}
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"c3659f13277db62c8f9e","event":"request_finished","elapsedMs":2,"attempt":1,"stage":"validation","httpStatus":200,"recovered":false}
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"e4e8c4b4a1ee2d462166","event":"attempt_start","elapsedMs":0,"attempt":1,"stage":"headers"}
+✔ CN runtime is pinned to DeepSeek and cannot inherit a foreign fallback (1.638291ms)
+✔ global runtime preserves the existing model and fallback behavior (0.173875ms)
+✔ CN startup fails closed when its server-only DeepSeek key is absent (0.246041ms)
+✔ quickread.castreader.cn startup fails closed unless region is exactly cn (0.1665ms)
+✔ DeepSeek JSON request uses env-only auth, exact model, and disabled thinking (3.031417ms)
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"e4e8c4b4a1ee2d462166","event":"attempt_failed","elapsedMs":20,"attempt":1,"stage":"headers","code":"DEEPSEEK_REQUEST_FAILED","httpStatus":null,"errorName":"Error","transportCode":null,"recoveryScheduled":false}
+✔ DeepSeek JSON does not forward a 307 redirect (29.112959ms)
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"049f17b9df26ea8c58eb","event":"attempt_start","elapsedMs":0,"attempt":1,"stage":"headers"}
+✔ DeepSeek stream does not forward a 307 redirect (3.101291ms)
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"049f17b9df26ea8c58eb","event":"attempt_failed","elapsedMs":1,"attempt":1,"stage":"headers","code":"DEEPSEEK_REQUEST_FAILED","httpStatus":null,"errorName":"Error","transportCode":null,"recoveryScheduled":false}
+✔ DeepSeek JSON does not forward a 308 redirect (1.699042ms)
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"232a57217772ff26f395","event":"attempt_start","elapsedMs":0,"attempt":1,"stage":"headers"}
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"232a57217772ff26f395","event":"attempt_failed","elapsedMs":1,"attempt":1,"stage":"headers","code":"DEEPSEEK_REQUEST_FAILED","httpStatus":null,"errorName":"Error","transportCode":null,"recoveryScheduled":false}
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"2f16ab43ab16914c5efb","event":"attempt_start","elapsedMs":0,"attempt":1,"stage":"headers"}
+{"source":"quickread-provider","region":"cn","provider":"deepseek","requestKey":"2f16ab43ab16914c5efb","event":"attempt_failed","elapsedMs":0,"attempt":1,"stage":"headers","code":"DEEPSEEK_REQUEST_FAILED","httpStatus":null,"errorName":"Error","transportCode":null,"recoveryScheduled":false}
+✔ DeepSeek stream does not forward a 308 redirect (1.966291ms)
+✔ DeepSeek streaming accumulates SSE content for early block delivery (0.985708ms)
+✔ DeepSeek errors do not reflect upstream response bodies or credentials (0.691417ms)
+✔ JSON body transport failure recovers once at the same provider with one original deadline (101.54025ms)
+✔ persistent body transport failure is bounded at two attempts and classified (101.939666ms)
+✔ actual invalid JSON is distinct from a body abort and is not retried (0.449625ms)
+✔ body read preserves caller cancellation and the existing LLM deadline (0.50225ms)
+✔ existing deadline prevents recovery from starting a fresh request (21.907542ms)
+✔ diagnostic sink failure never fails a valid explanation (0.476291ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 399.209

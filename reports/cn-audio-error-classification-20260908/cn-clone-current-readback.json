@@ -1,0 +1,32 @@
+{
+  "castreader-cn-clone-raw-tunnel.service": {
+    "MainPID": "2651639",
+    "Result": "success",
+    "NRestarts": "0",
+    "LoadState": "loaded",
+    "ActiveState": "active",
+    "SubState": "running",
+    "ActiveEnterTimestamp": "Tue 2026-09-08 21:20:34 CST"
+  },
+  "castreader-voice-api-tunnel.service": {
+    "MainPID": "2532570",
+    "Result": "success",
+    "NRestarts": "0",
+    "LoadState": "loaded",
+    "ActiveState": "active",
+    "SubState": "running",
+    "ActiveEnterTimestamp": "Tue 2026-09-08 13:31:27 CST"
+  },
+  "cloneHealth": {
+    "httpStatus": 200,
+    "status": "healthy",
+    "nari_ready": true,
+    "accepting": true,
+    "busy": false,
+    "queue_depth": 0,
+    "submitted": 247,
+    "completed": 247,
+    "failed": 0,
+    "expired": 0
+  }
+}
