@@ -1,5 +1,38 @@
 # iOS 1.2.36 (57) iPhone acceptance — 2026-09-08
 
+## Final status — submitted September 8, 2026, 13:25:19 CST
+
+**1.2.36 (57) is WAITING_FOR_REVIEW.** Both the App Store version and Review
+Submission were read back in that state. Release behavior is AFTER_APPROVAL.
+This is a submitted candidate, not an approved or live release.
+
+- App Store version: `61cb7c4e-f502-4f78-8802-1f05e12f12aa`.
+- Build: `5142613c-fd37-41b7-8780-548829772744`, VALID / APP_STORE_ELIGIBLE.
+- Review submission: `09072df4-4019-48af-80b0-bd37a63685f0`.
+- Submitted: `2026-09-08T05:25:19.936Z` (13:25:19.936 Asia/Shanghai).
+- Application source: `dfa8346db9092adfba8ad4d7fbd3249e3f7f2ff2`.
+- Uploaded archive: `build/appstore-1.2.36-57/CastReader-1.2.36-57-verified.xcarchive`.
+- Full suite: 1,477 tests, seven conditional skips, zero failures. The final
+  preparation-budget change then passed all 82 affected tests.
+- Final quiet iPhone samples: clone Read seven turns (maximum logged audio gap
+  754 ms), clone Explain eight turns (1,304 ms), Kokoro Explain eight turns
+  (1,384 ms). Page-key chains remained continuous; no terminal handoff error or
+  unexplained automatic stop occurred in these samples.
+- Manual Next/Previous during a held old page passed in both Read and Explain
+  on the logged-in simulator. The earlier 11:55 phone-call interruption is
+  retained as interrupted evidence, not an uninterrupted passing sample.
+- Eleven locales retain their live titles, subtitles, descriptions, keywords,
+  support/marketing URLs and promotional-text values. Only What's New changed.
+  Nine locales retain five completed APP_IPHONE_67 screenshots each; zh-Hant
+  and es-MX retain primary-locale screenshot fallback.
+- No production TTS server changes or additional quota reset were made during
+  final acceptance or submission. Both test devices ended paused.
+
+The following sections retain the chronological investigation, including old
+pending states and superseded archives. This final status and the final archive
+above are authoritative for the submitted build.
+
+
 ## Candidate and authorization
 
 - App Store Connect readback: live 1.2.35, `READY_FOR_SALE`, attached build 56,
@@ -336,3 +369,73 @@ A scoped, read-only production check at 12:52:51 found 368 successful clone
 requests since 2026-09-08 00:00 UTC, used_ms=3,706,729, reserved_ms=0. Ledger
 actual_ms equals the bucket usage. No further quota reset, account changes or
 production server edits were made.
+
+
+### Final acceptance and App Store upload
+
+`iphone-preset-explain-16s.xcresult` passed six quiet minutes on the iPhone
+(13:01:09–13:07:09), with eight committed automatic turns and a continuous
+old/new page chain. Longest logged audio gap was 1,384 ms. Twenty-two held-page
+marks had nonempty anchor rectangles. Together with the clone test (1,304 ms
+maximum), the final policy passed both speech modes on the real device.
+
+The final source commit is `dfa8346db9092adfba8ad4d7fbd3249e3f7f2ff2`.
+The final archive is
+`build/appstore-1.2.36-57/CastReader-1.2.36-57-verified.xcarchive`; its main binary
+SHA-256 is `0c03d87dc3b9fd6deb27b029037a264cee72071be3fa3fe6f453b41527110fce`.
+Official Xcode export/upload completed successfully at 13:10:27. Apple build
+processing is pending; upload alone is not a review submission.
+
+The new App Store version ID is `61cb7c4e-f502-4f78-8802-1f05e12f12aa`;
+pending App Info is `89737793-2b86-40bb-9055-fd36e52776bb`, compared with live
+baseline `75498bac-ab20-4f71-9bed-51e0a923c58b`. All eleven What's New entries
+were updated without App Info, description, keyword or screenshot writes.
+Inherited review details are present and complete, and release behavior remains
+AFTER_APPROVAL. Final build binding, audit and Review Submission are pending.
+
+
+### Submission receipts and metadata audit correction
+
+Apple processed build `5142613c-fd37-41b7-8780-548829772744` as VALID and
+APP_STORE_ELIGIBLE. Its pre-release version is 1.2.36, and it was attached to
+App Store version `61cb7c4e-f502-4f78-8802-1f05e12f12aa` before submission.
+
+The first metadata audit incorrectly required a nonempty `promotionalText`.
+A scoped comparison showed that all eleven live 1.2.35 locales also have this
+optional field blank. Descriptions, keywords, support and marketing URLs were
+identical. Apple's product-page and platform-version references were downloaded
+for evidence; Promotional Text is a separate, optional field with a 170-character
+limit. No promotional copy was added to work around the audit.
+
+The reusable audit now reports absent promotional-text locales explicitly and
+rejects a non-string or longer-than-170-character supplied value. Required
+localization checks remain enabled. Three focused fixtures passed: blank
+optional copy accepted, missing required description rejected, overlong
+promotional copy rejected. The original helper and a precise patch are retained
+with the acceptance receipts. This helper-only correction does not change the
+archived application source.
+
+Readback confirmed all eleven What's New values exactly match
+`docs/AppStore-Whats-New-1.2.36.json`. The corrected full pre-submission audit
+returned zero errors. Review submission contains exactly one item pointing to
+the intended version. Final review submission and version states were both
+WAITING_FOR_REVIEW at 13:25:19 CST, with AFTER_APPROVAL release behavior.
+
+Receipts under `build/appstore-1.2.36-57/`:
+
+- `archive-verified-manifest.json`, `upload-verified.log`
+- `build-processing-result.json`, `build-binding-result.json`
+- `inherited-metadata-comparison.json`, `metadata-final-readback.json`
+- `pre-submit-audit.json` (historical incorrect optional-field failure)
+- `release-ops-promotional-field-fix.patch`, `release-audit-field-regression.json`
+- `pre-submit-audit-verified.json`, `post-submit-audit.json`
+- `submit-review-dry-run.json`, `submit-review-result.json`
+
+Screenshot fallback in zh-Hant/es-MX, the seven conditional unit skips, and
+sample-bounded timing measurements remain explicitly documented limitations.
+There is no unresolved release-blocking issue in this acceptance record.
+
+The post-submission audit independently read back WAITING_FOR_REVIEW, the exact
+VALID / APP_STORE_ELIGIBLE build, unchanged titles, 11 locales and 45 complete
+localized screenshots, with zero errors. A final SHA-256 comparison of all 176
+manifested application source files found no changes after archive creation.
