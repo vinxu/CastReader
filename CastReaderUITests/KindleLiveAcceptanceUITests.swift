@@ -91,6 +91,47 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         super.tearDown()
     }
 
+    func testAuthorizedKindleEightPageContinuousRead() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1")
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+                               "-CastReaderTTSClockDiagnostics", "-AppleLanguages", "(en)",
+                               "-interfaceLanguage", "en"]
+        app.launch()
+        let book = app.buttons["homeShelfBook.kindle.B002RKRMSY"]
+        XCTAssertTrue(book.waitForExistence(timeout: 20))
+        for _ in 0..<6 where !book.isHittable { app.swipeUp() }
+        XCTAssertTrue(book.isHittable)
+        book.tap()
+        let play = app.buttons["kindleReadPlayPauseButton"]
+        XCTAssertTrue(play.waitForExistence(timeout: 60))
+        waitForPausedReader(app)
+        play.tap()
+        wait(90) { play.value as? String == "Playing" }
+        let surface = app.otherElements["kindleAcceptanceState"]
+        let first = try XCTUnwrap(surface.value as? String)
+        XCTAssertNotEqual(first, "page=none")
+        var previous = first
+        var visited: Set<String> = [first]
+        snapshot(app, "Eight-page-start")
+        for number in 1...8 {
+            wait(180) {
+                guard let current = surface.value as? String,
+                      current != "page=none", current != previous else { return false }
+                return play.value as? String == "Playing"
+            }
+            let current = try XCTUnwrap(surface.value as? String)
+            XCTAssertTrue(visited.insert(current).inserted, "Automatic reading must not repeat a visited page")
+            previous = current
+            snapshot(app, "Eight-page-turn-\(number)")
+        }
+        play.tap()
+        wait(10) { play.value as? String == "Paused" }
+        snapshot(app, "Eight-page-complete-paused")
+    }
+
     func testAuthorizedKindleReadTurnSettingsMinimizeAndRelaunch() throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1",
                           "Live acceptance requires the user's authorized Kindle session")

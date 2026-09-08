@@ -109,9 +109,61 @@ Artifacts are in ignored `build/direct-tts/` (local book logs are not committed)
   6 conditional skips, zero failures. Includes another successful real
   multilingual transport probe and the metadata/raster WebKit regression.
 
-The simulator has an Amazon/Kindle session but its CastReader settings show
-Sign In / Sign Up. Real authenticated clone voice playback needs that separate
-account login; unit coverage must not be represented as real clone acceptance.
+At the initial audit, the simulator had an Amazon/Kindle session but its
+CastReader settings showed Sign In / Sign Up. The user subsequently signed in
+and requested the eight-page run below. Neither preset playback nor unit
+coverage should be represented as real authenticated clone voice acceptance.
+
+## Signed-in eight-page acceptance, 2026-09-08
+
+The user's existing iPhone 17 Pro simulator ran the final candidate, still
+1.2.35 (56), using the selected Heart preset and the same Kindle book. The
+installed debug binary matched the built candidate by SHA-256. The app was
+briefly relaunched to enable timestamp-clock diagnostics; no login data was
+cleared and no voice, font or reading preference was changed by this test.
+
+`testAuthorizedKindleEightPageContinuousRead` passed in 378.563 seconds:
+eight automatic page transitions, nine distinct visible page identities, and
+an explicit successful pause at the end. The test did not press next-page
+controls. Reading began from the saved position, rather than resetting the
+book to the start of a page.
+
+Local evidence is in `build/direct-tts/logged-in-eight-pages/`:
+
+- `preset.xcresult`: one test passed, zero failures or skips, with page-state
+  and screenshot attachments.
+- `preset-summary.json` and `preset-kindle.log`: eight prepared-page OCR cache
+  hits, zero misses. Across 46 alignment events, all 939 timestamp entries
+  mapped; no skipped clock indexes or nonmonotonic alignment was recorded.
+  These are alignment entries, including streaming recomputation, not a count
+  of unique spoken words or an acoustic transcription of the entire run.
+- `preset-transport-only.log`: 57 synthesis responses, deduplicated by request
+  ID for the test app process, all direct `tts.castreader.ai` HTTP 200 with
+  `fallback=false`.
+
+Continuous playback and timestamp alignment passed this sample. Page handoff
+latency is **not yet consistently seamless**. Turns 6 and 7 found that warmed
+audio belonged to a different speculative held page than the actual confirmed
+next page. The correct page already had OCR cached, but its opening audio had
+to be synthesized after confirmation. Identity checks correctly rejected the
+other page's audio; playback resumed with the confirmed page's first highlight.
+
+| Turn | Preparation stage | Estimated wait after previous audio end |
+| --- | ---: | ---: |
+| 1–5, 8 | 1,031–1,190 ms | 131–430 ms |
+| 6 | 2,089 ms | 829 ms |
+| 7 | 2,121 ms | 912 ms |
+
+The estimated waits subtract the logged remaining audio time at the tail
+trigger from elapsed time to the audio handoff boundary. They are not direct
+measurements of acoustic silence. Total preparation time includes work while
+the old page is still playing. A verbose simulator log stream was active for
+most of the sample, so these are instrumented simulator timings.
+
+The remaining issue is next-page audio candidate selection, not missing TTS
+timestamps or an OCR cache miss. Held-image ordering is speculative and must
+not replace confirmed visible-page identity. This test adds no production
+code changes; clone playback and other devices remain outside this sample.
 
 ## Reproduction
 
@@ -134,3 +186,8 @@ simulator. It checks manual next/previous, rotation, settings and restored
 preferences, two automatic page turns and process relaunch. Set the expected
 installed version with `CASTREADER_TEST_APP_VERSION`; it does not sign in or
 clear user data.
+
+`KindleLiveAcceptanceUITests/testAuthorizedKindleEightPageContinuousRead`
+uses the same opt-in environment and authorized simulator. It preserves the
+selected voice, enables clock diagnostics, observes eight automatic changes
+without repeated page identities, and pauses playback after the eighth turn.
