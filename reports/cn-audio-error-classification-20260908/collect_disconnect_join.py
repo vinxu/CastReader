@@ -4,7 +4,8 @@ import argparse,ast,json,subprocess,shlex
 HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];MON=ROOT/'reports/audio-playback-recovery-rollout-20260907/monitoring'
 parser=argparse.ArgumentParser();parser.add_argument('--snapshot',required=True);args=parser.parse_args()
 folder=Path(args.snapshot).resolve();folder.relative_to(HERE/'observations')
-window=json.loads((folder/'summary.json').read_text())['window'];targets=set()
+window_file=folder/('summary.json' if (folder/'summary.json').exists()else 'direct.json')
+window=json.loads(window_file.read_text())['window'];targets=set()
 v=json.loads((folder/'direct.json').read_text())
 for row in v.get('non200Records',[]):targets.add(row['key'])
 identity=json.loads((MON.parent/'model-r135/proxy-monitor-identity.json').read_text())

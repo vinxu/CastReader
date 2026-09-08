@@ -90,3 +90,4 @@ python3 -B /Users/xuxuheng/Documents/CastReader/reports/cn-audio-error-classific
 ## 后续观察记录
 
 - [首次定时跟进：截至北京时间 9 月 8 日 22:40](observations/20260908T144032Z/README.md)：已补齐本轮查询；累计两区各 15 轮固定探针完成，国际区累计 18 次断开均关联到代理取消。恢复分支尚无线上故障样本，性能波动继续观察。最新累计见 [cumulative-observation.json](cumulative-observation.json)。
+- [第二次定时跟进：截至北京时间 9 月 8 日 23:42](observations/20260908T154203Z/README.md)：国际区同版本 Android 下游关闭比例由 1.64% 升至 3.71%，同期同区上游等待 P95 上升；新出现的 21 次均关联到代理取消，累计 39 次，最初触发原因仍未确认。两区固定供给探针本轮仍全部完成。

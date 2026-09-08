@@ -1,0 +1,93 @@
+{
+  "window": {
+    "startUTC": "2026-09-08T13:23:48.837754Z",
+    "endUTCExclusive": "2026-09-08T15:42:03.759333Z",
+    "fixedObservationEndUTC": "2026-09-09T13:23:48.837754Z"
+  },
+  "selectedSummaries": [
+    "observations/20260908T133729Z/summary.json",
+    "observations/20260908T134113Z/summary.json",
+    "observations/20260908T144032Z/summary.json",
+    "observations/20260908T154203Z/summary.json"
+  ],
+  "incompleteSummariesExcluded": [
+    "observations/20260908T133608Z/summary.json"
+  ],
+  "readOnly": true,
+  "productionModified": false,
+  "sources": {
+    "cn": {
+      "monitorStatuses": {
+        "healthy": 27
+      },
+      "attemptOutcomes": {
+        "complete": 81
+      },
+      "providerEvents": {
+        "attempt_start": 18,
+        "request_finished": 18
+      },
+      "providerFailureCodes": {},
+      "ingressStatuses": [
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": 200,
+          "count": 384
+        },
+        {
+          "path": "/api/captioned_speech_partly",
+          "method": "POST",
+          "status": 499,
+          "count": 1
+        },
+        {
+          "path": "/api/voice-clone/captioned-speech",
+          "method": "POST",
+          "status": 200,
+          "count": 188
+        }
+      ]
+    },
+    "us": {
+      "monitorStatuses": {
+        "healthy": 27
+      },
+      "attemptOutcomes": {
+        "complete": 54
+      },
+      "providerEvents": {},
+      "providerFailureCodes": {},
+      "ingressStatuses": []
+    },
+    "direct": {
+      "statusCounts": {
+        "200": 3630,
+        "no_response": 39
+      },
+      "downstreamClosedOccurrences": 39,
+      "distinctClosedKeys": 39,
+      "platforms": {
+        "android": 39
+      },
+      "noResponseShareOfLoggedRequests": 0.01063,
+      "notUserPlaybackFailureRate": true
+    },
+    "vercel": {
+      "returnedCoreErrorRecords": 0,
+      "allReturnedPagesComplete": true,
+      "notAllStatusDenominator": true
+    }
+  },
+  "disconnectJoin": {
+    "matched": 39,
+    "linkageUnit": "distinct anonymous request key; HTTP counts above retain separate occurrences",
+    "outcomes": {
+      "cancelled": 39
+    },
+    "missingKeys": [],
+    "repeatedDirectKeys": [],
+    "ambiguousProxyKeys": [],
+    "firstCauseConfirmed": false
+  }
+}

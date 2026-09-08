@@ -1,0 +1,81 @@
+{
+  "files": [
+    {
+      "path": "collect_disconnect_join.py",
+      "bytes": 2173,
+      "sha256": "6fa6781a19ac7723464da5f673a15d1d1d66f69ae00b27c19b5b6a1ea3287b31"
+    },
+    {
+      "path": "cumulative-observation.json",
+      "bytes": 2306,
+      "sha256": "c9de1a134cff6e2505b9851822c09bf938cea5fde386ed194faa51fdba4701d7"
+    },
+    {
+      "path": "notification-state.json",
+      "bytes": 1227,
+      "sha256": "197ad38d7e3740008f9a4d4fe1cdb538555d3e167ac08b6a9c6d6c1156453abc"
+    },
+    {
+      "path": "observation-state.json",
+      "bytes": 408,
+      "sha256": "6c7d1594e24a0fb84bc99aa63fb8dcb369d85f32e340e5626ad5771186bbac3d"
+    },
+    {
+      "path": "observations/20260908T154203Z/README.md",
+      "bytes": 5158,
+      "sha256": "a5dfa973706502c12f8a9e8f426f7b296197899558fcb50a845d187ba3c01f38"
+    },
+    {
+      "path": "observations/20260908T154203Z/cn.json",
+      "bytes": 19760,
+      "sha256": "4d17a49b5743b394de9639e892656766227223fcf0a87c112b2670d83250e20f"
+    },
+    {
+      "path": "observations/20260908T154203Z/comparative-findings.json",
+      "bytes": 6085,
+      "sha256": "1af27b3a677bcc4d4d4827ca9ae22cf984c5044deda6b41e79e9693d3cf7fd4a"
+    },
+    {
+      "path": "observations/20260908T154203Z/cumulative.json",
+      "bytes": 2306,
+      "sha256": "c9de1a134cff6e2505b9851822c09bf938cea5fde386ed194faa51fdba4701d7"
+    },
+    {
+      "path": "observations/20260908T154203Z/direct.json",
+      "bytes": 12596,
+      "sha256": "297f3785d7866c5acb518681c101d2c2093053d0db97dcd1378178c2dc7b40dc"
+    },
+    {
+      "path": "observations/20260908T154203Z/disconnect-proxy-join.json",
+      "bytes": 92327,
+      "sha256": "19c883913c78002858a46699922a076932b74ac649d12f66d9fc2f74fa949501"
+    },
+    {
+      "path": "observations/20260908T154203Z/notification.json",
+      "bytes": 1227,
+      "sha256": "197ad38d7e3740008f9a4d4fe1cdb538555d3e167ac08b6a9c6d6c1156453abc"
+    },
+    {
+      "path": "observations/20260908T154203Z/summary.json",
+      "bytes": 15590,
+      "sha256": "c3e81fb28f2e18af34728849e81460d54f5fb415472fc7d44e338e58151832fa"
+    },
+    {
+      "path": "observations/20260908T154203Z/us.json",
+      "bytes": 14434,
+      "sha256": "7e4eb05c3324eb424b306fa20f88b22f6fd037b0e72cbcd74cf8e16b055f95f6"
+    },
+    {
+      "path": "observations/20260908T154203Z/vercel.json",
+      "bytes": 1083,
+      "sha256": "1fe9f9bca714427c0c4756e29f3ef65ee3f31fa0798929e3696801e852d9f362"
+    },
+    {
+      "path": "rebuild_cumulative.py",
+      "bytes": 4257,
+      "sha256": "e22a74cc3524db8a58367e81959ae3091021d200ad556ecc650b0c107f17a081"
+    }
+  ],
+  "readOnly": true,
+  "productionModified": false
+}

@@ -1,0 +1,227 @@
+{
+  "previous": {
+    "window": {
+      "startUTC": "2026-09-08T13:41:13.521061Z",
+      "endUTCExclusive": "2026-09-08T14:40:32.439317Z"
+    },
+    "directStatuses": {
+      "200": 1973,
+      "no_response": 11
+    },
+    "androidRequests": 670,
+    "androidClosed": 11,
+    "androidClosedFraction": 0.016417910447761194,
+    "directLatencyMs": {
+      "samples": 1984,
+      "p50": 783.0,
+      "p95": 2278.0,
+      "max": 7547.0
+    },
+    "proxyTimingsMs": {
+      "request_body_read.elapsedMs": {
+        "n": 3543,
+        "median": 0.054,
+        "p95": 0.094,
+        "max": 0.247
+      },
+      "upstream_connected.connectMs": {
+        "n": 3539,
+        "median": 0.259,
+        "p95": 0.333,
+        "max": 2.42
+      },
+      "upstream_headers.elapsedMs": {
+        "n": 3528,
+        "median": 730.626,
+        "p95": 2164.002,
+        "max": 7495.98
+      },
+      "upstream_first_body.elapsedMs": {
+        "n": 3528,
+        "median": 730.774,
+        "p95": 2164.07,
+        "max": 7496.063
+      },
+      "upstream_complete.elapsedMs": {
+        "n": 3528,
+        "median": 730.81,
+        "p95": 2164.548,
+        "max": 7497.065
+      },
+      "request_finished.elapsedMs": {
+        "n": 3543,
+        "median": 732.717,
+        "p95": 2176.515,
+        "max": 7497.463
+      }
+    },
+    "proxyIdentityVerified": true,
+    "matchedDisconnects": 11,
+    "missingKeys": [],
+    "proxyCounts": {
+      "stages": {
+        "request_received": 3543,
+        "request_body_read": 3543,
+        "flight_created": 3539,
+        "upstream_connect_started": 3539,
+        "upstream_connected": 3539,
+        "upstream_headers": 3528,
+        "upstream_first_body": 3528,
+        "upstream_complete": 3528,
+        "request_finished": 3543,
+        "upstream_cancelled": 11,
+        "flight_joined": 4
+      },
+      "phases": {
+        "admission": 7082,
+        "inbound_body": 3543,
+        "connect": 7078,
+        "response_headers": 3528,
+        "response_body": 3528,
+        "response_complete": 3528,
+        "completion": 3543,
+        "cancellation": 11,
+        "coalescing": 4
+      },
+      "finishedOutcomes": {
+        "complete": 3532,
+        "cancelled": 11
+      },
+      "finishedReportedStatuses": {
+        "200": 3532
+      },
+      "receivedAttempts": {
+        "1": 3543
+      },
+      "failureScopesAndLastObservedPhases": {},
+      "errorClasses": {}
+    },
+    "proxyFailureEvents": 0
+  },
+  "current": {
+    "window": {
+      "startUTC": "2026-09-08T14:40:32.439317Z",
+      "endUTCExclusive": "2026-09-08T15:42:03.759333Z"
+    },
+    "directStatuses": {
+      "200": 1251,
+      "no_response": 21
+    },
+    "androidRequests": 566,
+    "androidClosed": 21,
+    "androidClosedFraction": 0.037102473498233215,
+    "directLatencyMs": {
+      "samples": 1272,
+      "p50": 1087.0,
+      "p95": 3160.0,
+      "max": 7508.0
+    },
+    "proxyTimingsMs": {
+      "request_body_read.elapsedMs": {
+        "n": 3702,
+        "median": 0.058,
+        "p95": 0.096,
+        "max": 0.344
+      },
+      "upstream_connected.connectMs": {
+        "n": 3700,
+        "median": 0.263,
+        "p95": 0.337,
+        "max": 1.132
+      },
+      "upstream_headers.elapsedMs": {
+        "n": 3678,
+        "median": 809.338,
+        "p95": 2655.811,
+        "max": 7461.182
+      },
+      "upstream_first_body.elapsedMs": {
+        "n": 3678,
+        "median": 809.416,
+        "p95": 2656.118,
+        "max": 7461.538
+      },
+      "upstream_complete.elapsedMs": {
+        "n": 3678,
+        "median": 809.692,
+        "p95": 2656.696,
+        "max": 7462.145
+      },
+      "request_finished.elapsedMs": {
+        "n": 3701,
+        "median": 818.132,
+        "p95": 2661.123,
+        "max": 7462.553
+      }
+    },
+    "proxyIdentityVerified": true,
+    "matchedDisconnects": 21,
+    "missingKeys": [],
+    "proxyCounts": {
+      "stages": {
+        "request_received": 3702,
+        "request_body_read": 3702,
+        "flight_created": 3700,
+        "upstream_connect_started": 3700,
+        "upstream_connected": 3700,
+        "upstream_headers": 3678,
+        "upstream_first_body": 3678,
+        "upstream_complete": 3678,
+        "request_finished": 3701,
+        "upstream_cancelled": 21,
+        "flight_joined": 2
+      },
+      "phases": {
+        "admission": 7402,
+        "inbound_body": 3702,
+        "connect": 7400,
+        "response_headers": 3678,
+        "response_body": 3678,
+        "response_complete": 3678,
+        "completion": 3701,
+        "cancellation": 21,
+        "coalescing": 2
+      },
+      "finishedOutcomes": {
+        "complete": 3680,
+        "cancelled": 21
+      },
+      "finishedReportedStatuses": {
+        "200": 3680
+      },
+      "receivedAttempts": {
+        "1": 3702
+      },
+      "failureScopesAndLastObservedPhases": {},
+      "errorClasses": {}
+    },
+    "proxyFailureEvents": 0
+  },
+  "observedAndroidClosedFractionRatio": 2.2598779312560233,
+  "currentDisconnectMinutesUTC": {
+    "2026-09-08T14:50": 1,
+    "2026-09-08T14:55": 1,
+    "2026-09-08T15:02": 3,
+    "2026-09-08T15:03": 1,
+    "2026-09-08T15:05": 5,
+    "2026-09-08T15:06": 1,
+    "2026-09-08T15:07": 1,
+    "2026-09-08T15:09": 2,
+    "2026-09-08T15:10": 4,
+    "2026-09-08T15:13": 1,
+    "2026-09-08T15:20": 1
+  },
+  "targetConnectMs": {
+    "samples": 21,
+    "median": 0.262,
+    "max": 0.524
+  },
+  "findings": [
+    "All 21 new Direct downstream closures match same-region proxy cancellations; no recorded upstream HTTP or model errors.",
+    "Android 1.0.47 logged no-response fraction increased from 11/670 to 21/566. This is a request-level observation, not a user failure rate.",
+    "Same-region proxy-to-model connection p95 remains approximately 0.3ms; wait to upstream headers p95 increased from 2164.002ms to 2655.811ms.",
+    "The affected requests ended before response headers. Existing evidence cannot separate user cancellation, client cancellation, network closure, or delay-induced cancellation; correlation does not identify the original cause."
+  ],
+  "productionModified": false,
+  "rawUserDataExported": false
+}

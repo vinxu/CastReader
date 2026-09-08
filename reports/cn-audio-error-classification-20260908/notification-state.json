@@ -1,19 +1,29 @@
 {
-  "evaluatedThroughUTC": "2026-09-08T14:40:32.439317Z",
-  "notify": false,
-  "reason": "No new failure class, proven first cause, fixed-release drift, or material worsening. Existing downstream cancellations recur; delay samples remain a watch item.",
+  "evaluatedThroughUTC": "2026-09-08T15:42:03.759333Z",
+  "notify": true,
+  "reason": "Android 1.0.47 logged downstream-closure share increased from 11/670 to 21/566 while same-region upstream-header p95 increased from 2164.002ms to 2655.811ms. First cancellation cause remains unconfirmed.",
   "windowDelta": {
-    "direct200": 1973,
-    "directClosed": 11,
-    "cnLogged499": 1,
-    "cnTts200": 90,
-    "cnClone200": 188,
-    "cnProvider200": 17
+    "direct200": 1251,
+    "directClosed": 21,
+    "android200": 545,
+    "androidClosed": 21,
+    "cnLogged499": 0,
+    "cnTts200": 285,
+    "cnProviderEvents": 0
+  },
+  "cumulativeDirectClosed": 39,
+  "proxyMatchedCurrent": 21,
+  "proxyMatchedCumulative": 39,
+  "lastAlertMetrics": {
+    "throughUTC": "2026-09-08T15:42:03.759333Z",
+    "androidClosedFraction": 0.037102473498233215,
+    "upstreamHeaderP95Ms": 2655.811,
+    "directClosed": 21
   },
   "watchItems": [
-    "CN fixed probe one attempt 14693ms and one 7686ms, both complete; no stage timing in existing application journal.",
-    "US fixed probe one attempt 7006ms, complete.",
-    "Recovery success rate is not estimable: no observed recoverable response-body error yet."
+    "Same-region proxy connection timing remained short; additional observed wait was before response headers.",
+    "Cancelled is not a model error; the initial cause may still be caller or network and is not identified by backend events.",
+    "No observed recoverable CN response-body failure yet; recovery success rate remains unavailable."
   ],
   "observationStillActive": true,
   "fixedObservationEndUTC": "2026-09-09T13:23:48.837754Z"

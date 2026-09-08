@@ -1,0 +1,52 @@
+{
+  "readOnly": true,
+  "rawContentExported": false,
+  "window": {
+    "startUTC": "2026-09-08T14:40:32.439317Z",
+    "endUTCExclusive": "2026-09-08T15:42:03.759333Z"
+  },
+  "queries": [
+    {
+      "statusQuery": "5xx",
+      "search": "",
+      "pages": 1,
+      "issues": []
+    },
+    {
+      "statusQuery": "4xx",
+      "search": "captioned_speech",
+      "pages": 1,
+      "issues": []
+    },
+    {
+      "statusQuery": "4xx",
+      "search": "quickread",
+      "pages": 1,
+      "issues": []
+    },
+    {
+      "statusQuery": "4xx",
+      "search": "voice-clone",
+      "pages": 1,
+      "issues": []
+    },
+    {
+      "statusQuery": "4xx",
+      "search": "markdown-tts",
+      "pages": 1,
+      "issues": []
+    },
+    {
+      "statusQuery": "4xx",
+      "search": "/api/tts/",
+      "pages": 1,
+      "issues": []
+    }
+  ],
+  "completeReturnedPages": true,
+  "coreRecords": [],
+  "limitations": [
+    "Returned 5xx and targeted 4xx request logs only; not a complete all-status denominator.",
+    "Backend 200 and healthy fixed probes do not prove client playback."
+  ]
+}

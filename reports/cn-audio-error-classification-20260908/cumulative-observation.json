@@ -1,13 +1,14 @@
 {
   "window": {
     "startUTC": "2026-09-08T13:23:48.837754Z",
-    "endUTCExclusive": "2026-09-08T14:40:32.439317Z",
+    "endUTCExclusive": "2026-09-08T15:42:03.759333Z",
     "fixedObservationEndUTC": "2026-09-09T13:23:48.837754Z"
   },
   "selectedSummaries": [
     "observations/20260908T133729Z/summary.json",
     "observations/20260908T134113Z/summary.json",
-    "observations/20260908T144032Z/summary.json"
+    "observations/20260908T144032Z/summary.json",
+    "observations/20260908T154203Z/summary.json"
   ],
   "incompleteSummariesExcluded": [
     "observations/20260908T133608Z/summary.json"
@@ -17,10 +18,10 @@
   "sources": {
     "cn": {
       "monitorStatuses": {
-        "healthy": 15
+        "healthy": 27
       },
       "attemptOutcomes": {
-        "complete": 45
+        "complete": 81
       },
       "providerEvents": {
         "attempt_start": 18,
@@ -32,7 +33,7 @@
           "path": "/api/captioned_speech_partly",
           "method": "POST",
           "status": 200,
-          "count": 99
+          "count": 384
         },
         {
           "path": "/api/captioned_speech_partly",
@@ -50,10 +51,10 @@
     },
     "us": {
       "monitorStatuses": {
-        "healthy": 15
+        "healthy": 27
       },
       "attemptOutcomes": {
-        "complete": 30
+        "complete": 54
       },
       "providerEvents": {},
       "providerFailureCodes": {},
@@ -61,15 +62,15 @@
     },
     "direct": {
       "statusCounts": {
-        "200": 2379,
-        "no_response": 18
+        "200": 3630,
+        "no_response": 39
       },
-      "downstreamClosedOccurrences": 18,
-      "distinctClosedKeys": 18,
+      "downstreamClosedOccurrences": 39,
+      "distinctClosedKeys": 39,
       "platforms": {
-        "android": 18
+        "android": 39
       },
-      "noResponseShareOfLoggedRequests": 0.007509,
+      "noResponseShareOfLoggedRequests": 0.01063,
       "notUserPlaybackFailureRate": true
     },
     "vercel": {
@@ -79,11 +80,14 @@
     }
   },
   "disconnectJoin": {
-    "matched": 18,
+    "matched": 39,
+    "linkageUnit": "distinct anonymous request key; HTTP counts above retain separate occurrences",
     "outcomes": {
-      "cancelled": 18
+      "cancelled": 39
     },
     "missingKeys": [],
+    "repeatedDirectKeys": [],
+    "ambiguousProxyKeys": [],
     "firstCauseConfirmed": false
   }
 }

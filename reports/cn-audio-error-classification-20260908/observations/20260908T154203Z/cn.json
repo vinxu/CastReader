@@ -1,0 +1,654 @@
+{
+  "readOnly": true,
+  "synthesisStarted": false,
+  "rawContentExported": false,
+  "region": "cn",
+  "window": {
+    "startUTC": "2026-09-08T14:40:32.439317Z",
+    "endUTCExclusive": "2026-09-08T15:42:03.759333Z"
+  },
+  "monitor": {
+    "schema": "castreader.monitor-window-readback.v2",
+    "region": "cn",
+    "readOnly": true,
+    "probeStarted": false,
+    "productionModified": false,
+    "readAtUtc": "2026-09-08T15:42:04.596757Z",
+    "query": {
+      "startInclusive": "2026-09-08T14:40:32.439317Z",
+      "endExclusive": "2026-09-08T15:42:03.759333Z"
+    },
+    "source": {
+      "resultsDirectory": "/var/lib/castreader-core-audio-monitor/cn/results",
+      "resultFilesScanned": 832,
+      "validResultFiles": 832,
+      "uniqueResultCycles": 832,
+      "exactDuplicatesSkipped": 0,
+      "invalidResults": [],
+      "conflictingObservedAt": [],
+      "firstAvailableObservedAt": "2026-09-05T15:58:13.669Z",
+      "lastAvailableObservedAt": "2026-09-08T15:40:24.393Z",
+      "firstSelectedObservedAt": "2026-09-08T14:43:55.956Z",
+      "lastSelectedObservedAt": "2026-09-08T15:40:24.393Z",
+      "windowStartToFirstSelectedSeconds": 203.517,
+      "lastSelectedToWindowEndSeconds": 99.366
+    },
+    "coverage": {
+      "completeRead": true,
+      "selectedCycles": 12,
+      "originAttributionAvailable": false,
+      "note": "Persisted result schema does not distinguish timer from manual invocation."
+    },
+    "monitorRelease": {
+      "currentTarget": "/opt/castreader-core-audio-monitor/releases/eee0a902-f877944d",
+      "files": 9,
+      "treeSha256": "1f5f9e9723ef7f30ef5d5a606249acbb5317ff1f59483c4534c77e5e40aca61c"
+    },
+    "systemd": {
+      "service": {
+        "MainPID": "0",
+        "Result": "success",
+        "ExecMainStatus": "0",
+        "ActiveState": "inactive",
+        "SubState": "dead"
+      },
+      "timer": {
+        "NextElapseUSecRealtime": "",
+        "LastTriggerUSec": "Tue 2026-09-08 23:40:21 CST",
+        "ActiveState": "active",
+        "SubState": "waiting",
+        "UnitFileState": "enabled"
+      }
+    },
+    "aggregate": {
+      "cycles": 12,
+      "statusCounts": {
+        "healthy": 12
+      },
+      "failureCodeCounts": {},
+      "failedRequestContractCounts": {},
+      "executedRequestContractCounts": {
+        "stream_false": 12,
+        "stream_omitted": 12,
+        "stream_true": 12
+      },
+      "supplyOkCycles": 12,
+      "supplyFailureSequence": {
+        "episodes": 0,
+        "maximumConsecutiveCycles": 0,
+        "currentConsecutiveCycles": 0,
+        "recoveryEvents": []
+      },
+      "alignmentDegradationCycles": 0,
+      "alignmentDegradationSequence": {
+        "episodes": 0,
+        "maximumConsecutiveCycles": 0,
+        "currentConsecutiveCycles": 0,
+        "recoveryEvents": []
+      },
+      "regionMismatchCycles": 0,
+      "completeRemainderDecodedCycles": 12,
+      "completeRemainderDecodedRatio": 1.0,
+      "probeElapsedMs": {
+        "samples": 12,
+        "p50": 2627.0,
+        "p95": 6190.0,
+        "max": 6190.0
+      },
+      "firstSegmentAudioDurationSeconds": {
+        "samples": 12,
+        "p50": 3.576,
+        "p95": 3.576,
+        "max": 3.576
+      },
+      "totalAudioDurationSeconds": {
+        "samples": 12,
+        "p50": 13.44,
+        "p95": 13.44,
+        "max": 13.44
+      },
+      "observedGapSeconds": {
+        "samples": 11,
+        "p50": 307.987,
+        "p95": 315.256,
+        "max": 315.256
+      },
+      "largestObservedGapSeconds": 315.256,
+      "upstreamMetadata": [
+        {
+          "gateway": "vercel-r2",
+          "upstreamNode": "castreader-cn4090",
+          "upstreamSource": "cn-environment",
+          "upstreamRevision": "0",
+          "cyclesContainingVariant": 12
+        }
+      ]
+    },
+    "limitations": [
+      "observedAt is probe completion time, not request start time.",
+      "First-segment audio duration is not time-to-first-audio latency.",
+      "No persisted client traffic or user identity is read by this collector."
+    ],
+    "sourceHashes": {
+      "alert-envelope.schema.json": "369b79bdae103d4576a53beb48d482400b15410953ad4dea8990821c736e2828",
+      "state-store.test.mjs": "fcedbd39655995cbf4a5a438b3b9ebf48ad08125a36ba84b6016c780805629b7",
+      "README.md": "e60ff78804fe985405363d3009a23df1ea42814354e5f9253ebe206581790495",
+      "run.mjs": "8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e",
+      "probe-core.mjs": "9c6ccbd3d63e595d501152d8fc15f5cb9ac1c9db22b4ec2042f749046cb641d6",
+      "probe-core.test.mjs": "168c7f8a98437856fcc17a00fe0da3551a20ededdba9f55a11987e44f913993e",
+      "state-store.mjs": "4f800b073d9e81e6ea59a9689e1fed4a3f6a0906c0fae0c5cbe941ef56e306c3",
+      "systemd/castreader-core-audio-monitor@.timer": "d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92",
+      "systemd/castreader-core-audio-monitor@.service": "65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916"
+    },
+    "attempts": [
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 3040,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "99603bf0a882d928b521",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:43:55.956Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 1602,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "b764f05515f66e7fc185",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:43:55.956Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 1547,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "87617fcd082385e0f5ea",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T14:43:55.956Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 454,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "a809a23dd8590969f480",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:49:02.577Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 866,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "fbf25cec7b5abba162ee",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:49:02.577Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 1135,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "5227558ff6c3412ab1a2",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T14:49:02.577Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 448,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "2f77405b9378c0e94aa7",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:54:05.763Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 885,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "76fe3e5ef5f31a996395",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:54:05.763Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 1589,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "7f67b1f7705842895ca0",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T14:54:05.763Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 454,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "56b11380231901a94624",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T14:59:18.170Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 1088,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "8ea3f544ad8e4e141962",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T14:59:18.170Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 833,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "468aada6c7e57ca8c1ec",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T14:59:18.170Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 485,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "7a45eb6d9170a497ff16",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T15:04:26.157Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 1772,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "b3fd87f533ef65a34614",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T15:04:26.157Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 742,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "a66d0b84cf2be0c5512b",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T15:04:26.157Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 446,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "abfd907d8155b4b5b7c0",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T15:09:38.504Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 1934,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "b02447394f24dbf5eef1",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T15:09:38.504Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 742,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "28d113cf0c3e1ffa7f7d",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T15:09:38.504Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 480,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "ba730866e5215e9d3d2c",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T15:14:52.395Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 900,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "878b01140f9d0874e86d",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T15:14:52.395Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 1247,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "6120101d28294b0099ac",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T15:14:52.395Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 963,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "71a41d0ca006f3837fdd",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T15:19:53.999Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 760,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "8d3fe8ee675703d9a2bc",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T15:19:53.999Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 846,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "1d2dacf7e0fbce5eb4b2",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T15:19:53.999Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 453,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "f10dbf8ad9155a28d579",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T15:25:09.255Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 882,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "420650f9331977d9c6d5",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T15:25:09.255Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 957,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "82f7141ea2bf7cdd01d3",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T15:25:09.255Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 470,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "e3a8a55f09bac3569f92",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T15:30:18.321Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 868,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "8770dcd7727b1641550d",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T15:30:18.321Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 1102,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "e80d74777802fb45e8cc",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T15:30:18.321Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 462,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "d4311c8939e0b4575612",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T15:35:22.518Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 1907,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "391dbc4058ccf3ffe077",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T15:35:22.518Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 369,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "7c41be5dd5578a46e737",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T15:35:22.518Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 0,
+        "attempt": 1,
+        "elapsedMs": 646,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "82a80a94fab8ee1541c4",
+        "requestContract": "stream_omitted",
+        "observedAt": "2026-09-08T15:40:24.393Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 1,
+        "attempt": 1,
+        "elapsedMs": 1031,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "9c2f457ce9f88f2c877a",
+        "requestContract": "stream_true",
+        "observedAt": "2026-09-08T15:40:24.393Z",
+        "cycleSupplyOk": true
+      },
+      {
+        "segmentIndex": 2,
+        "attempt": 1,
+        "elapsedMs": 1113,
+        "httpStatus": 200,
+        "stage": "validation",
+        "outcome": "complete",
+        "requestKey": "0abfc8c0318b91ff77c2",
+        "requestContract": "stream_false",
+        "observedAt": "2026-09-08T15:40:24.393Z",
+        "cycleSupplyOk": true
+      }
+    ],
+    "cyclesWithMissingAttempts": 0,
+    "attemptOutcomeCounts": {
+      "complete": 36
+    },
+    "attemptCodeCounts": {},
+    "attemptsRecoveredInHealthyCycle": 0
+  },
+  "quickread": {
+    "health": {
+      "status": 200,
+      "ok": true,
+      "queue": 0,
+      "active": 0,
+      "concurrency": 3
+    },
+    "source": {
+      "current": "/opt/castreader-quickread-cn/releases/20260908-cn-response-recovery-1660a11",
+      "providerSha256": "5680e8938c008a15ff6c7efd9abea0e1122ef898b2d97765d718508270d5314f",
+      "serverSha256": "b155806c93c4b098bdc3f6a44ddd2d596d6a7bed5be776af171b4426197ce0b0"
+    },
+    "coverage": {
+      "rows": 0,
+      "parseErrors": 0
+    },
+    "providerEvents": [],
+    "providerEventCounts": {},
+    "providerFailureCodes": {},
+    "providerRecoveredRequests": 0,
+    "fixedErrorLines": []
+  },
+  "cloneHealth": {
+    "httpStatus": 200,
+    "status": "healthy",
+    "nari_ready": true,
+    "accepting": true,
+    "busy": false,
+    "queue_depth": 0,
+    "submitted": 451,
+    "completed": 451,
+    "failed": 0,
+    "expired": 0,
+    "counterScope": "since worker startup, not this window"
+  },
+  "ingress": {
+    "counts": [
+      {
+        "path": "/api/captioned_speech_partly",
+        "method": "POST",
+        "status": 200,
+        "count": 285
+      }
+    ],
+    "non200": [],
+    "sources": [
+      {
+        "path": "/var/log/nginx/access.log.1",
+        "bytes": 4442956,
+        "sha256": "cfdc24ae23cb16a2680cfa783cbb2eca7eaa29a68e5370084c7a8a6cc61debf0",
+        "firstUTC": "2026-09-06T16:00:02Z",
+        "lastUTC": "2026-09-07T15:59:55Z"
+      },
+      {
+        "path": "/var/log/nginx/access.log",
+        "bytes": 4827590,
+        "sha256": "c7014d82651ed6ab3e4d74df5543f82391ac080033eee14f9f82f96c5c18db88",
+        "firstUTC": "2026-09-07T16:00:02Z",
+        "lastUTC": "2026-09-08T15:42:01Z"
+      }
+    ],
+    "unparsedCoreLines": 0,
+    "limitations": [
+      "CN QuickRead dedicated ingress has access_log off; its HTTP status totals are not covered.",
+      "HTTP 200 does not prove complete playback; 499 is a logged downstream disconnect."
+    ]
+  },
+  "monitorReleaseMatches": true,
+  "quickreadReleaseMatches": true
+}
