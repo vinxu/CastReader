@@ -164,4 +164,81 @@ final class KindlePrefetchHorizonTests: XCTestCase {
         XCTAssertEqual(fixture.requests.count, 2)
         XCTAssertTrue(vm.dbgKindlePrefetchIndices.isEmpty)
     }
+
+    func testSlowNextSentenceIsRequestedBeforeAnyFartherParagraph() async throws {
+        let texts = (0..<5).map { "Ordered paragraph \($0)." }
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: input == texts[0] ? 0.2 : 0.4),
+                      delay: input == texts[1] ? 0.8 : 0)
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: document(texts), audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        vm.dbgGenerate(0)
+        try await waitUntil { vm.isWaitingForPlayableAudio && audio.currentSegment?.paragraphIndex == 0 }
+        XCTAssertEqual(fixture.requests, Array(texts.prefix(2)), "Distant paragraphs must not compete while the next sentence is pending")
+        XCTAssertNotNil(audio.currentSegment, "A retained, completed segment must not hide loading")
+        XCTAssertFalse(audio.hasPlayableAudio)
+        try await waitUntil { vm.isFinished }
+        XCTAssertFalse(vm.isWaitingForPlayableAudio)
+        XCTAssertEqual(fixture.requests, texts)
+    }
+
+    func testSpeedReplanCannotStartPrefetchBeforeCurrentSentenceHasAudio() async throws {
+        let texts = ["Current sentence first.", "The following sentence."]
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: 1), delay: input == texts[0] ? 0.4 : 0)
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: document(texts), audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        vm.dbgGenerate(0)
+        await vm.dbgPreloadNext(after: 0)
+        XCTAssertTrue(vm.dbgKindlePrefetchIndices.isEmpty)
+        try await waitUntil { vm.dbgKindleReadyIndices == [1] }
+        XCTAssertEqual(fixture.requests, texts)
+    }
+
+    func testShrinkingWindowPreservesCompletedAudioAndDoesNotGenerateItAgain() async throws {
+        let texts = (0..<9).map { "Cached paragraph \($0)." }
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: input == texts[0] ? 20 : 0.4))
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: document(texts), audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        vm.dbgGenerate(0)
+        try await waitUntil { vm.dbgKindleReadyIndices.count == 8 }
+        audio.setPlaybackRate(0.05)
+        await vm.dbgPreloadNext(after: 0)
+        XCTAssertEqual(vm.dbgKindleReadyIndices, Array(1...8))
+        audio.setPlaybackRate(2)
+        await vm.dbgPreloadNext(after: 0)
+        XCTAssertEqual(fixture.requests, texts)
+    }
+
+    func testShrinkingWindowKeepsFutureInFlightRequestUntilItCompletes() async throws {
+        let texts = (0..<5).map { "Retained paragraph \($0)." }
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: input == texts[0] ? 20 : 0.4),
+                      delay: input == texts[3] ? 0.5 : 0)
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: document(texts), audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        vm.dbgGenerate(0)
+        try await waitUntil { fixture.requests.contains(texts[3]) }
+        audio.setPlaybackRate(0.05)
+        await vm.dbgPreloadNext(after: 0)
+        try await waitUntil { vm.dbgKindleReadyIndices.contains(3) }
+        XCTAssertFalse(fixture.requests.contains(texts[4]))
+        audio.setPlaybackRate(2)
+        await vm.dbgPreloadNext(after: 0)
+        try await waitUntil { vm.dbgKindleReadyIndices.contains(4) }
+        XCTAssertEqual(fixture.requests, texts, "In-flight audio must survive the shrink/expand cycle")
+    }
 }

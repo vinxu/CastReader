@@ -472,6 +472,23 @@ enum KindleViewportPresentationPolicy {
     }
 }
 
+/// Capture the native presentation actually on screen, never an older SwiftUI
+/// preference (which can still describe the previous orientation).
+struct KindlePlayerOverlayViewport: Equatable {
+    let surfaceSize: CGSize
+    let crop: KindleViewportCrop
+    let fit: KindleViewportPresentationFit
+
+    @MainActor init?(webView: WKWebView) {
+        guard let host = webView.superview as? KindleWebViewContainer,
+              host.bounds.width > 4, host.bounds.height > 4,
+              host.bounds.width.isFinite, host.bounds.height.isFinite else { return nil }
+        surfaceSize = host.bounds.size
+        crop = host.crop
+        fit = host.presentationFit
+    }
+}
+
 final class KindleWebViewContainer: UIView {
     let webView: WKWebView
     var crop: KindleViewportCrop = .identity {

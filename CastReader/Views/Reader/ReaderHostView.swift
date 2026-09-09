@@ -1641,8 +1641,16 @@ private extension View {
 }
 
 enum ReaderRunLog {
+    #if DEBUG
+    private static let lock = NSLock()
+    #endif
+
     static func write(_ message: String) {
         #if DEBUG
+        // Player, scheduler and URLSession metrics arrive on different queues.
+        // Serialize seek+append so concurrent request traces cannot overwrite.
+        lock.lock()
+        defer { lock.unlock() }
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss.SSS"
         let line = "\(formatter.string(from: Date())) \(message)\n"

@@ -161,6 +161,30 @@ final class OwnedAPIRedirectDelegate: NSObject, URLSessionTaskDelegate, @uncheck
         self.rejectsEveryRedirect = rejectsEveryRedirect
     }
 
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    didFinishCollecting metrics: URLSessionTaskMetrics) {
+        #if DEBUG
+        guard let request = task.originalRequest,
+              request.url?.path == "/api/captioned_speech_partly",
+              request.value(forHTTPHeaderField: "X-CastReader-Platform") == "ios",
+              let requestID = request.value(forHTTPHeaderField: "X-Request-ID") else { return }
+        func milliseconds(_ start: Date?, _ end: Date?) -> Int {
+            guard let start, let end else { return -1 }
+            return Int(max(0, end.timeIntervalSince(start)) * 1_000)
+        }
+        for (index, part) in metrics.transactionMetrics.enumerated() {
+            ReaderRunLog.write(
+                "TTS network request=\(requestID) transaction=\(index) " +
+                "protocol=\(part.networkProtocolName ?? "unknown") reused=\(part.isReusedConnection) " +
+                "setupMs=\(milliseconds(part.fetchStartDate, part.requestStartDate)) " +
+                "firstByteMs=\(milliseconds(part.requestStartDate, part.responseStartDate)) " +
+                "downloadMs=\(milliseconds(part.responseStartDate, part.responseEndDate)) " +
+                "totalMs=\(Int(metrics.taskInterval.duration * 1_000))"
+            )
+        }
+        #endif
+    }
+
     func urlSession(
         _ session: URLSession,
         task: URLSessionTask,

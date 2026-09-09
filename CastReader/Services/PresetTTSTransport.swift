@@ -125,6 +125,7 @@ enum PresetTTSTransport {
     private static func log(_ message: String) {
         #if DEBUG
         NSLog("CR_TTS_TRANSPORT %@", message)
+        ReaderRunLog.write("TTS transport \(message)")
         #endif
     }
 }

@@ -6,6 +6,291 @@ import WebKit
 
 @MainActor
 final class KindleWebViewContainerTests: XCTestCase {
+    func testExplainInkKeepsNativePathWeightAndOpacityAcrossLiveRedraw() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        try await installMarkPage(in: fixture.webView)
+        let web = fixture.webView
+        let canvas = try await markJSON(web, payload: ["paragraphIndex": 0, "canvasOnly": true])
+        XCTAssertEqual(canvas["ok"] as? Bool, true)
+        let width = try XCTUnwrap(canvas["width"] as? Double)
+        let height = try XCTUnwrap(canvas["height"] as? Double)
+        let size = CGSize(width: width, height: height)
+        let rects = [CGRect(x: 30, y: 80, width: 185, height: 22),
+                     CGRect(x: 30, y: 110, width: 135, height: 22)]
+        let actions = ["circle", "underline", "highlight", "number", "wave", "strike", "star"]
+        for weight in ["primary", "secondary", "tertiary"] {
+            for action in actions {
+                let ink = HandwrittenMark.stroke(action: action, rects: rects,
+                                                 seed: 0xFEDCBA9876543210, n: 3, weight: weight)
+                let data = ink.svgPayload(canvasSize: size)
+                var payload: [String: Any] = ["paragraphIndex": 0, "id": "fixture-mark", "animate": true,
+                    "canvasKey": canvas["key"]!, "canvasWidth": width, "canvasHeight": height, "ink": data]
+                _ = try await web.evaluateJavaScript("window.__crKindleLiveClearMarks()")
+                let drawn = try await markJSON(web, payload: payload)
+                XCTAssertEqual(drawn["ok"] as? Bool, true, "\(action)/\(weight)")
+                let animated = try await markPathAttributes(web)
+                XCTAssertEqual(animated["d"] as? String, data["path"] as? String)
+                XCTAssertEqual(animated["width"] as? Double, Double(ink.lineWidth))
+                XCTAssertEqual(animated["opacity"] as? Double, ink.opacity)
+                XCTAssertEqual(animated["vectorEffect"] as? String, "",
+                               "The page viewBox must carry the same point-sized ink through presentation scaling")
+                _ = try await web.evaluateJavaScript("window.__crKindleLiveClearMarks()")
+                payload["animate"] = false
+                let redrawn = try await markJSON(web, payload: payload)
+                XCTAssertEqual(redrawn["ok"] as? Bool, true)
+                let settled = try await markPathAttributes(web)
+                XCTAssertEqual(NSDictionary(dictionary: animated), NSDictionary(dictionary: settled),
+                               "Settling/redrawing \(action)/\(weight) must not change the native stroke")
+            }
+        }
+    }
+
+    func testExplainInkRejectsPageOrGeometryChangedBeforeDraw() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        try await installMarkPage(in: fixture.webView)
+        let canvas = try await markJSON(fixture.webView, payload: ["paragraphIndex": 0, "canvasOnly": true])
+        let width = try XCTUnwrap(canvas["width"] as? Double)
+        let height = try XCTUnwrap(canvas["height"] as? Double)
+        let ink = HandwrittenMark.stroke(action: "circle", rects: [CGRect(x: 30, y: 80, width: 120, height: 22)], seed: 42)
+        var payload: [String: Any] = ["paragraphIndex": 0, "id": "stale-mark", "animate": false,
+            "canvasKey": "previous-page", "canvasWidth": width, "canvasHeight": height,
+            "ink": ink.svgPayload(canvasSize: CGSize(width: width, height: height))]
+        let wrongPage = try await markJSON(fixture.webView, payload: payload)
+        XCTAssertEqual(wrongPage["reason"] as? String, "mark-canvas-changed")
+        payload["canvasKey"] = canvas["key"]
+        payload["canvasWidth"] = width + 10
+        let wrongFit = try await markJSON(fixture.webView, payload: payload)
+        XCTAssertEqual(wrongFit["reason"] as? String, "mark-canvas-changed")
+        let count = try await fixture.webView.evaluateJavaScript("document.querySelectorAll('[data-cr-mark-id]').length")
+        XCTAssertEqual(count as? Int, 0)
+    }
+
+    func testExplainLiveAndNativeHoldHaveSameVisibleInk() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        fixture.container.presentationFit = KindleViewportPresentationFit(scale: 0.8, translationX: 15, translationY: 20)
+        fixture.container.layoutIfNeeded()
+        try await installMarkPage(in: fixture.webView)
+        let canvas = try await markJSON(fixture.webView, payload: ["paragraphIndex": 0, "canvasOnly": true])
+        let width = try XCTUnwrap(canvas["width"] as? Double)
+        let height = try XCTUnwrap(canvas["height"] as? Double)
+        let size = CGSize(width: width * 0.8, height: height * 0.8)
+        let actions = ["circle", "underline", "highlight"]
+        let rects = actions.indices.map { [CGRect(x: 30, y: 70 + $0 * 75, width: 170, height: 22)] }
+        for i in actions.indices {
+            let ink = HandwrittenMark.stroke(action: actions[i], rects: rects[i], seed: UInt64(i + 17))
+            let result = try await markJSON(fixture.webView, payload: ["paragraphIndex": 0, "id": "visual-\(i)",
+                "animate": false, "canvasKey": canvas["key"]!, "canvasWidth": width, "canvasHeight": height,
+                "ink": ink.svgPayload(canvasSize: size)])
+            XCTAssertEqual(result["ok"] as? Bool, true)
+        }
+        let rawBounds = try await fixture.webView.evaluateJavaScript("""
+        (function(){var r=window.__crKindleProbe.liveOverlay.getBoundingClientRect();
+          return {x:r.left,y:r.top,width:r.width,height:r.height};})()
+        """)
+        let bounds = try XCTUnwrap(rawBounds as? [String: Double])
+        let config = WKSnapshotConfiguration()
+        config.rect = CGRect(x: bounds["x"]!, y: bounds["y"]!, width: width, height: height)
+        let webImage: UIImage = try await withCheckedThrowingContinuation { continuation in
+            fixture.webView.takeSnapshot(with: config) { image, error in
+                if let image { continuation.resume(returning: image) }
+                else { continuation.resume(throwing: error ?? NSError(domain: "MarkSnapshot", code: 1)) }
+            }
+        }
+        let root = ZStack(alignment: .topLeading) {
+            Color.white
+            ForEach(actions.indices, id: \.self) { i in
+                MarkInkView(rects: rects[i], action: actions[i], seed: UInt64(i + 17), n: nil,
+                            animateOnAppear: false)
+            }
+        }.frame(width: size.width, height: size.height).ignoresSafeArea()
+        let host = UIHostingController(rootView: root)
+        host.view.frame = CGRect(origin: .zero, size: size)
+        fixture.window.addSubview(host.view)
+        defer { host.view.removeFromSuperview() }
+        host.view.layoutIfNeeded()
+        try await Task.sleep(nanoseconds: 200_000_000)
+        let format = UIGraphicsImageRendererFormat(); format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: size, format: format)
+        let live = renderer.image { _ in webImage.draw(in: CGRect(origin: .zero, size: size)) }
+        let native = renderer.image { _ in host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true) }
+        for (name, image) in [("explain-live-svg", live), ("explain-native-hold", native)] {
+            let attachment = XCTAttachment(image: image); attachment.name = name; attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        // Compare orange coverage per tool; black page text is deliberately
+        // ignored. A 6.5 -> 2.4 stroke switch would exceed this tolerance widely.
+        for i in actions.indices {
+            let band = CGRect(x: 0, y: 50 + i * 75, width: Int(size.width), height: 65)
+            let liveMass = orangeCoverage(live, band: band)
+            let nativeMass = orangeCoverage(native, band: band)
+            XCTAssertGreaterThan(nativeMass, 20, "\(actions[i]) must really render on the native hold")
+            XCTAssertEqual(liveMass / max(nativeMass, 1), 1, accuracy: 0.08,
+                           "\(actions[i]) must retain visible ink thickness/opacity when switching renderers")
+        }
+    }
+
+    private func orangeCoverage(_ image: UIImage, band: CGRect) -> Double {
+        guard let cg = image.cgImage else { return 0 }
+        let width = cg.width, height = cg.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let mass: Double = pixels.withUnsafeMutableBytes { bytes in
+            let context = CGContext(data: bytes.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                                    bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+            context.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
+            let p = bytes.bindMemory(to: UInt8.self)
+            var total = 0.0
+            for y in max(0, Int(band.minY))..<min(height, Int(band.maxY)) {
+                for x in max(0, Int(band.minX))..<min(width, Int(band.maxX)) {
+                    let offset = (y * width + x) * 4
+                    total += Double(max(0, Int(p[offset]) - Int(p[offset + 1]))) / 255
+                }
+            }
+            return total
+        }
+        return mass
+    }
+
+    private func installMarkPage(in web: WKWebView) async throws {
+        // Production Kindle pages are blob images; use the same discovery path.
+        _ = try await web.evaluateJavaScript("""
+        (function(){var page=document.getElementById('page'), raw=atob(page.src.split(',')[1]);
+          var bytes=new Uint8Array(raw.length);for(var i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+          page.src=URL.createObjectURL(new Blob([bytes],{type:'image/png'}));return true;})()
+        """)
+        for _ in 0..<50 {
+            if (try await web.evaluateJavaScript("document.getElementById('page').complete") as? Bool) == true { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        _ = try await web.evaluateJavaScript(KindleWebScripts.pageCaptureBootstrap + ";true")
+        let result = try await web.evaluateJavaScript("""
+        window.__crKindleLiveSetPage({key:'',paragraphs:[{id:0,text:'sample text',words:[
+          {text:'sample',bboxNorm:{x:0.1,y:0.7,width:0.2,height:0.05}},
+          {text:'text',bboxNorm:{x:0.3,y:0.7,width:0.1,height:0.05}}
+        ]}]})
+        """)
+        let json = try XCTUnwrap(result as? String)
+        let response = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+        XCTAssertEqual(response["ok"] as? Bool, true, json)
+    }
+
+    private func markJSON(_ web: WKWebView, payload: [String: Any]) async throws -> [String: Any] {
+        let json = String(decoding: try JSONSerialization.data(withJSONObject: payload), as: UTF8.self)
+        let result = try await web.evaluateJavaScript("window.__crKindleLiveShowMark(\(json))")
+        let response = try XCTUnwrap(result as? String)
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: Data(response.utf8)) as? [String: Any])
+    }
+
+    private func markPathAttributes(_ web: WKWebView) async throws -> [String: Any] {
+        let result = try await web.evaluateJavaScript("""
+        (function(){var p=document.querySelector('[data-cr-mark-id] path');return {
+          d:p.getAttribute('d'), width:Number(p.getAttribute('stroke-width')),
+          opacity:Number(p.getAttribute('opacity')), color:p.getAttribute('stroke'),
+          vectorEffect:p.getAttribute('vector-effect')||'', viewBox:p.parentElement.getAttribute('viewBox')
+        };})()
+        """)
+        return try XCTUnwrap(result as? [String: Any])
+    }
+
+    func testFailedCoverKeepsLiveHighlightAndDefersRepeatedTicksUntilAudioBoundary() {
+        var preparation = KindleReadVisualPreparation()
+        XCTAssertTrue(preparation.begin(atAudioBoundary: false))
+        XCTAssertFalse(preparation.suppressesLiveHighlight, "The visible old page owns highlights while a cover is being captured")
+        // A boundary arriving during capture must be retried after it finishes.
+        XCTAssertFalse(preparation.begin(atAudioBoundary: true))
+        preparation.finishCapture(succeeded: false)
+        for _ in 0..<408 {
+            XCTAssertFalse(preparation.begin(atAudioBoundary: false))
+            XCTAssertFalse(preparation.suppressesLiveHighlight)
+        }
+        XCTAssertTrue(preparation.begin(atAudioBoundary: true), "Deferring early work must not deadlock the concrete queue gate")
+        XCTAssertTrue(preparation.suppressesLiveHighlight)
+        preparation = KindleReadVisualPreparation()
+        XCTAssertTrue(preparation.begin(atAudioBoundary: false), "The next page gets its own capture attempt")
+        preparation.finishCapture(succeeded: true)
+        XCTAssertTrue(preparation.suppressesLiveHighlight, "Only a successful cover may own the old tail before the audio boundary")
+    }
+
+    func testRejectedMaskedSnapshotRestoresSameLiveHighlightNode() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        try await installLiveHighlight(in: fixture.webView)
+        let lease = try XCTUnwrap(KindleVisualHoldViewportLease(
+            webView: fixture.webView, surfaceSize: fixture.container.bounds.size
+        ))
+        var ownershipChecks = 0
+        let image = await lease.snapshotExcludingLiveHighlight {
+            ownershipChecks += 1
+            // Reject after the asynchronous mask installation, as a resize or
+            // page change can do before WebKit dispatches the snapshot.
+            return ownershipChecks == 1
+        }
+        XCTAssertNil(image)
+        XCTAssertGreaterThan(ownershipChecks, 1)
+        try await assertLiveHighlightRestored(in: fixture.webView)
+    }
+
+    func testCancelledMaskedSnapshotRestoresSameLiveHighlightNode() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        try await installLiveHighlight(in: fixture.webView)
+        let lease = try XCTUnwrap(KindleVisualHoldViewportLease(
+            webView: fixture.webView, surfaceSize: fixture.container.bounds.size
+        ))
+        var capture: Task<UIImage?, Never>?
+        var ownershipChecks = 0
+        capture = Task { @MainActor in
+            await lease.snapshotExcludingLiveHighlight {
+                ownershipChecks += 1
+                if ownershipChecks == 2 { capture?.cancel() }
+                return true
+            }
+        }
+        let image = await capture?.value
+        XCTAssertNil(image)
+        XCTAssertGreaterThan(ownershipChecks, 1)
+        try await assertLiveHighlightRestored(in: fixture.webView)
+    }
+
+    func testSuccessfulMaskedSnapshotRestoresLiveHighlightAndRemovesMask() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        try await installLiveHighlight(in: fixture.webView)
+        let lease = try XCTUnwrap(KindleVisualHoldViewportLease(
+            webView: fixture.webView, surfaceSize: fixture.container.bounds.size
+        ))
+        let image = await lease.snapshotExcludingLiveHighlight { true }
+        XCTAssertNotNil(image)
+        try await assertLiveHighlightRestored(in: fixture.webView)
+    }
+
+    private func installLiveHighlight(in webView: WKWebView) async throws {
+        _ = try await webView.evaluateJavaScript("""
+        (function(){
+          var word = document.createElement('div');
+          word.id = 'castreader-kindle-live-word';
+          word.style.cssText = 'position:absolute;left:70px;top:100px;width:90px;height:20px;background:orange';
+          document.body.appendChild(word);
+          window.originalHighlightNode = word;
+        })()
+        """)
+    }
+
+    private func assertLiveHighlightRestored(in webView: WKWebView) async throws {
+        let result = try await webView.evaluateJavaScript("""
+        (function(){
+          var word = document.getElementById('castreader-kindle-live-word');
+          return !!word && word === window.originalHighlightNode &&
+            getComputedStyle(word).visibility === 'visible' &&
+            document.querySelectorAll('style[id^="cr-kindle-snapshot-mask-"]').length === 0;
+        })()
+        """)
+        XCTAssertEqual(result as? Bool, true, "A failed/cancelled cover must leave the existing live word or sentence visible")
+    }
+
     func testTransientZeroSurfaceRetainsNativeFrameAndCSSViewport() async throws {
         let fixture = try await ContainerFixture.make()
         defer { fixture.close() }

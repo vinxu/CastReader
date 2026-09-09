@@ -88,7 +88,11 @@ private struct KindleExplainVisualHoldView: View {
     @ObservedObject var owner: ExplainViewModel
 
     var body: some View {
-        let resolver = PhotoAnchorResolver(document: state.document, fitted: state.imageRect)
+        // Author paths in page-local points, exactly as the live SVG renderer.
+        // Apply the page origin after drawing so number placement and jitter do
+        // not change when a live page becomes a native hold.
+        let resolver = PhotoAnchorResolver(document: state.document,
+                                           fitted: CGRect(origin: .zero, size: state.imageRect.size))
         ZStack(alignment: .topLeading) {
             Image(uiImage: state.image)
                 .resizable()
@@ -100,6 +104,7 @@ private struct KindleExplainVisualHoldView: View {
                     action: mark.action, seed: mark.seed, n: mark.n, weight: mark.weight,
                     animateOnAppear: !state.initiallyDrawnMarks.contains(mark.id)
                 )
+                .offset(x: state.imageRect.minX, y: state.imageRect.minY)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -236,7 +241,7 @@ struct KindleBookView: View {
         }
         .onPreferenceChange(KindleReaderSurfaceSizePreferenceKey.self) { size in
             guard playbackCenter.isPresented else { return }
-            if model.isNativeTOCPresented || model.isKindleTOCVisible || playbackVoicePanel.isPresented {
+            if model.isNativeTOCPresented || model.isKindleTOCVisible || model.playerOverlayViewport != nil {
                 return
             }
             let previous = readerSurfaceSize
@@ -306,8 +311,8 @@ struct KindleBookView: View {
             GeometryReader { proxy in
                 let webSize = KindleReaderSurfaceContract.renderSize(
                     measured: proxy.size,
-                    stable: readerSurfaceSize,
-                    isPlayerOverlayPresented: playbackVoicePanel.isPresented
+                    stable: model.playerOverlayViewport?.surfaceSize ?? proxy.size,
+                    isPlayerOverlayPresented: model.playerOverlayViewport != nil
                 )
                 let crop = model.effectiveViewportCrop(forSurfaceSize: webSize)
                 KindleWebView(
@@ -873,7 +878,7 @@ private struct KindleReadPlaybackBar: View {
     private var isLoading: Bool {
         voiceSwitch.progress != nil ||
             isPreparing ||
-            (vm.status.isLoadingOrStreaming && !vm.isPlaying && !vm.canResumePlayback)
+            vm.isWaitingForPlayableAudio
     }
 
     var body: some View {
@@ -1296,7 +1301,7 @@ private struct KindleLandscapeReadOverlay: View {
     private var isLoading: Bool {
         voiceSwitch.progress != nil ||
             isPreparing ||
-            (vm.status.isLoadingOrStreaming && !vm.isPlaying && !vm.canResumePlayback)
+            vm.isWaitingForPlayableAudio
     }
 
     var body: some View {
@@ -2318,6 +2323,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var continuousReadAudioGateReleasePresented = false
     private var continuousReadAudioGateReleaseTask: Task<Void, Never>?
     private var continuousReadTurnFailureCount = 0
+    private var continuousReadVisualPreparation = KindleReadVisualPreparation()
     /// Semantic page actions are non-idempotent. Once attempted, visual/cache
     /// staging may retry, but the React paired action may not be sent again.
     private var continuousReadSemanticTurnAttempted = false
@@ -2385,6 +2391,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var isReaderSurfaceAttached = false
     private var isReaderPresented = false
     private var isPlayerControlOverlayPresented = false
+    @Published private(set) var playerOverlayViewport: KindlePlayerOverlayViewport?
+    private var playerOverlaySubscription: AnyCancellable?
+    private var playerOverlayDismissTask: Task<Void, Never>?
     private var isApplicationActive = true
     private var needsForegroundVisualResync = false
     private var lastConfirmedTurnFingerprint: String?
@@ -2450,10 +2459,22 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func setPlayerControlOverlayPresented(_ presented: Bool) {
-        guard isPlayerControlOverlayPresented != presented else { return }
+        guard isPlayerControlOverlayPresented != presented ||
+              (presented && playerOverlayViewport == nil && isReaderPresented && isReaderSurfaceAttached) else { return }
         isPlayerControlOverlayPresented = presented
+        playerOverlayDismissTask?.cancel()
+        playerOverlayDismissTask = nil
         clearExternalMismatchState()
         if presented {
+            if isReaderSurfaceAttached, isReaderPresented,
+               let visible = KindlePlayerOverlayViewport(webView: webView) {
+                // @Published emits before the panel request is installed, so
+                // capture and reconcile all three values before SwiftUI lays it out.
+                readerSurfaceSize = visible.surfaceSize
+                viewportCrop = visible.crop
+                viewportPresentationFit = visible.fit
+                playerOverlayViewport = visible
+            }
             suppressExternalPageChangeUntil = .distantFuture
             KindleRunLog.write("KINDLE player overlay begin stableSurface=\(Self.sizeLog(readerSurfaceSize))")
         } else {
@@ -2461,6 +2482,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             // interpreting transient geometry or candidate order as a page turn.
             suppressExternalPageChangeUntil = Date().addingTimeInterval(1.5)
             KindleRunLog.write("KINDLE player overlay end grace=1.5 stableSurface=\(Self.sizeLog(readerSurfaceSize))")
+            playerOverlayDismissTask = Task { @MainActor [weak self] in
+                do { try await Task.sleep(nanoseconds: 600_000_000) } catch { return }
+                guard let self, !self.isPlayerControlOverlayPresented else { return }
+                self.playerOverlayViewport = nil
+                self.playerOverlayDismissTask = nil
+            }
         }
     }
 
@@ -2487,7 +2514,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func notePlaybackLayoutChange(reason: String) {
         guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
-        guard !isPlayerControlOverlayPresented else {
+        guard !isPlayerControlOverlayPresented, playerOverlayViewport == nil else {
             KindleRunLog.write("KINDLE layout ignored reason=\(reason) source=player-overlay")
             return
         }
@@ -2512,7 +2539,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             width: max(1, size.width.rounded(.toNearestOrAwayFromZero)),
             height: max(1, size.height.rounded(.toNearestOrAwayFromZero))
         )
-        guard !isPlayerControlOverlayPresented, !isReadingSettingsPresented else {
+        guard !isPlayerControlOverlayPresented, playerOverlayViewport == nil, !isReadingSettingsPresented else {
             KindleRunLog.write("KINDLE viewport crop keep-current reason=player-overlay surface=\(Self.sizeLog(normalized))")
             return
         }
@@ -2551,6 +2578,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func effectiveViewportCrop(forSurfaceSize size: CGSize) -> KindleViewportCrop {
+        if let snapshot = playerOverlayViewport { return snapshot.crop }
         if isAmazonCookieConsentVisible {
             return KindleCookieConsentViewportPolicy.effectiveCrop(
                 normalCrop: viewportCrop,
@@ -2586,6 +2614,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func effectiveViewportPresentationFit(forSurfaceSize size: CGSize) -> KindleViewportPresentationFit {
+        if let snapshot = playerOverlayViewport { return snapshot.fit }
         guard !isAmazonCookieConsentVisible else { return .identity }
         if isPlayerControlOverlayPresented || isReadingSettingsPresented || isNativeTOCPresented || isKindleTOCVisible {
             return viewportPresentationFit
@@ -2624,7 +2653,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func noteReaderLayoutChange(reason: String) {
         guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
-        guard !isPlayerControlOverlayPresented else {
+        guard !isPlayerControlOverlayPresented, playerOverlayViewport == nil else {
             KindleRunLog.write("KINDLE reader layout ignored reason=\(reason) source=player-overlay")
             return
         }
@@ -3200,6 +3229,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
         }
         super.init()
+        // Do not hop to RunLoop.main here: receiving the will-set publication
+        // synchronously is what prevents the first panel frame from resizing WK.
+        playerOverlaySubscription = PlaybackVoicePanelCenter.shared.$request
+            .map { $0 != nil }
+            .removeDuplicates()
+            .sink { [weak self] presented in
+                self?.setPlayerControlOverlayPresented(presented)
+            }
         staleBookRecoveryAttempted = staleRecoveryAlreadyAttempted
         nativeTOCEntries = Self.loadCachedNativeTOCEntries(for: resolvedBook)
         if !nativeTOCEntries.isEmpty {
@@ -3245,6 +3282,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// Every path that stops owning a reader must call this. Do not move any of
     /// it back into `deinit`.
     func destroy() {
+        playerOverlaySubscription?.cancel()
+        playerOverlaySubscription = nil
+        playerOverlayDismissTask?.cancel()
+        playerOverlayDismissTask = nil
+        playerOverlayViewport = nil
         resetReaderControlsForNavigation()
         resetViewportPresentation(reason: "destroy")
         stopAll()
@@ -3487,7 +3529,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         _ operation: KindleCookieConsentPipelineOperation,
         reason: String
     ) -> Bool {
-        let allowed = !isReadingSettingsPresented && !isApplyingReadingSettings && KindleCookieConsentPipelinePolicy.allows(
+        let playerOverlayBlocksLayout = operation == .layoutRepair &&
+            (isPlayerControlOverlayPresented || playerOverlayViewport != nil)
+        let allowed = !playerOverlayBlocksLayout && !isReadingSettingsPresented && !isApplyingReadingSettings && KindleCookieConsentPipelinePolicy.allows(
             operation,
             isConsentVisible: isAmazonCookieConsentVisible
         )
@@ -5755,7 +5799,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         surfaceSize: CGSize
     ) {
         guard !isNativeTOCPresented, !isKindleTOCVisible, !isReadingSettingsPresented,
-              !isPlayerControlOverlayPresented, !isAmazonCookieConsentVisible,
+              !isPlayerControlOverlayPresented, playerOverlayViewport == nil, !isAmazonCookieConsentVisible,
               libraryRecoveryWebView == nil, !isNavigating, isReaderSurfaceAttached,
               webView.window != nil, webView.navigationDelegate === self,
               abs(surfaceSize.width - readerSurfaceSize.width) <= 1,
@@ -5782,7 +5826,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                       abs(self.readerSurfaceSize.width - surfaceSize.width) <= 1,
                       abs(self.readerSurfaceSize.height - surfaceSize.height) <= 1,
                       !self.isNativeTOCPresented, !self.isKindleTOCVisible, !self.isReadingSettingsPresented,
-                      !self.isPlayerControlOverlayPresented, !self.isAmazonCookieConsentVisible,
+                      !self.isPlayerControlOverlayPresented, self.playerOverlayViewport == nil, !self.isAmazonCookieConsentVisible,
                       self.libraryRecoveryWebView == nil, !self.isNavigating, self.isReaderSurfaceAttached,
                       self.webView.window != nil, self.webView.navigationDelegate === self,
                       abs(self.webView.bounds.width - canonical.width) <= 2,
@@ -9517,6 +9561,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadAudioGateReleaseTask = nil
         continuousReadVisualHoldImage = nil
         continuousReadVisualHoldHighlightRectsNorm = []
+        continuousReadVisualPreparation = KindleReadVisualPreparation()
         continuousReadTurnFailureCount = 0
         continuousReadSemanticTurnAttempted = false
         continuousReadConfirmedTargetKey = nil
@@ -9615,7 +9660,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if KindleContinuousPageHandoffContract.shouldBeginPagePreparation(
             tail, playbackRate: AudioPlayerService.shared.playbackRate
         ) {
-            guard continuousReadTurnTask == nil else { return }
+            guard continuousReadTurnTask == nil,
+                  continuousReadVisualPreparation.canPrepareEarly else { return }
             let rate = max(0.25, Double(AudioPlayerService.shared.playbackRate))
             KindleRunLog.write(
                 "KINDLE read continuous tail-threshold serial=\(handoff.serial) " +
@@ -9630,10 +9676,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard readerOperationAllowed(.automaticPageTurn, reason: trigger) else { return }
         guard continuousReadTurnTask == nil,
               let handoff = continuousReadHandoff,
-              handoff.serial == serial else { return }
+              handoff.serial == serial,
+              continuousReadVisualPreparation.begin(atAudioBoundary: trigger != "tail-lead") else { return }
         suppressExternalPageChangeUntil = Date().addingTimeInterval(6)
         clearExternalMismatchState()
-        cancelLiveHighlightTasks()
         KindleRunLog.write(
             "KINDLE read continuous visual-turn begin trigger=\(trigger) serial=\(serial) " +
             "old=\(Self.keyLog(handoff.oldKey)) target=\(Self.keyLog(handoff.target.page.key))"
@@ -9642,15 +9688,21 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             guard let self else { return }
             if trigger == "tail-lead" {
                 let captured = await self.captureContinuousReadVisualHold(serial: serial)
-                guard self.continuousReadHandoff?.serial == serial else { return }
+                guard !Task.isCancelled, self.continuousReadHandoff?.serial == serial else { return }
+                self.continuousReadVisualPreparation.finishCapture(succeeded: captured)
                 if !captured {
                     // Without a cover, an early semantic action would expose the
                     // next page while the previous sentence is still audible.
                     // Fall back to doing the real turn at the queue boundary.
                     self.continuousReadTurnTask = nil
                     KindleRunLog.write(
-                        "KINDLE read continuous visual-turn deferred serial=\(serial) reason=hold-capture-failed"
+                        "KINDLE read continuous visual-turn deferred serial=\(serial) reason=hold-capture-failed retry=audio-boundary highlight=preserved"
                     )
+                    self.restoreContinuousReadLiveHighlight()
+                    // The queue gate may have run while WebKit was capturing.
+                    // Wake that concrete held item instead of waiting for a
+                    // playback tick that can no longer arrive at the boundary.
+                    AudioPlayerService.shared.resumeGatedSegmentIfPossible()
                     return
                 }
                 // Let SwiftUI publish the held frame before changing Kindle's
@@ -9684,6 +9736,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func stageContinuousReadPage(_ handoff: KindleContinuousReadHandoff) async throws {
+        guard !Task.isCancelled, continuousReadHandoff?.serial == handoff.serial else {
+            throw CancellationError()
+        }
+        continuousReadVisualPreparation.beginStaging()
+        cancelLiveHighlightTasks()
         let started = ProcessInfo.processInfo.systemUptime
         func mark(_ stage: String) {
             KindleRunLog.write("KINDLE_HANDOFF serial=\(handoff.serial) stage=\(stage) elapsedMs=\(Int((ProcessInfo.processInfo.systemUptime - started) * 1000))")
@@ -9855,12 +9912,19 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         #if DEBUG
         debugPreparedHeldPageKey = nil
         #endif
-        guard continuousReadHandoff?.serial == serial,
-              webView.window != nil else { return false }
+        func failed(_ reason: String) -> Bool {
+            KindleRunLog.write("KINDLE read continuous visual-hold unavailable serial=\(serial) reason=\(reason)")
+            return false
+        }
+        guard continuousReadHandoff?.serial == serial else { return failed("handoff-changed") }
+        guard webView.window != nil else { return failed("webview-detached") }
 
         let surface = readerSurfaceSize
-        guard surface.width > 40, surface.height > 40 else { return false }
-        guard let viewportLease = KindleVisualHoldViewportLease(webView: webView, surfaceSize: surface) else { return false }
+        guard surface.width > 40, surface.height > 40 else { return failed("surface-size") }
+        var leaseFailure = "viewport-lease"
+        guard let viewportLease = KindleVisualHoldViewportLease(
+            webView: webView, surfaceSize: surface, onFailure: { leaseFailure = $0 }
+        ) else { return failed(leaseFailure) }
         let fit = viewportLease.fit
         let canonical = viewportLease.canonical
         let expectedBook = book.id
@@ -9890,7 +9954,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             pageRect = measured.currentPage
             pageCount = measured.pages.count
         }
-        guard retainsCaptureOwnership() else { return false }
+        guard retainsCaptureOwnership() else { return failed("ownership-before-capture") }
         let paintedPage = pageRect.map { fit.applying(to: $0) }
 
         // Prefer the lossless page raster already used for OCR. Unlike a
@@ -9915,16 +9979,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // Snapshot the canonical viewport, then apply the same native mapping
         // as the live WKWebView. This also preserves the second visible page.
         let rect = viewportLease.webBounds
-        // Snapshot fallback: remove the DOM word first so the static frame does
-        // not retain a stale second highlight under the native moving one.
-        _ = try? await evaluateJSON(
-            "window.__crKindleLiveClearWord && window.__crKindleLiveClearWord()"
-        )
+        // Temporarily mask the word only for the snapshot. Never delete the
+        // live highlight: a rejected snapshot must reveal the latest position.
         // Reject a changed transform before dispatch and after WKWebView's
         // asynchronous snapshot. Falling back to the audio boundary is safer
         // than covering the live page with an image using a stale mapping.
-        guard let image = await viewportLease.snapshot(isOwnerCurrent: retainsCaptureOwnership),
-              retainsCaptureOwnership() else { return false }
+        guard let image = await viewportLease.snapshotExcludingLiveHighlight(isOwnerCurrent: retainsCaptureOwnership) else {
+            return failed(retainsCaptureOwnership() ? "snapshot-unavailable" : "ownership-during-snapshot")
+        }
+        guard retainsCaptureOwnership() else { return failed("ownership-after-snapshot") }
         continuousReadVisualHoldImageRect = fit.applying(to: canonical)
         continuousReadVisualHoldHighlightContentRect = paintedPage
         continuousReadVisualHoldImage = image
@@ -10234,6 +10297,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadAudioGateReleaseTask = nil
         continuousReadVisualHoldImage = nil
         continuousReadVisualHoldHighlightRectsNorm = []
+        continuousReadVisualPreparation = KindleReadVisualPreparation()
         continuousReadTurnFailureCount = 0
         continuousReadSemanticTurnAttempted = false
         continuousReadConfirmedTargetKey = nil
@@ -10442,6 +10506,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadAudioGateReleaseTask = nil
         continuousReadVisualHoldImage = nil
         continuousReadVisualHoldHighlightRectsNorm = []
+        continuousReadVisualPreparation = KindleReadVisualPreparation()
         continuousReadTurnFailureCount = 0
         continuousReadSemanticTurnAttempted = false
         continuousReadConfirmedTargetKey = nil
@@ -12475,7 +12540,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             paragraphIndex: startIndex,
             text: chunks[startIndex].text,
             language: prepared.document.language,
-            voiceOverride: voiceID
+            voiceOverride: voiceID,
+            presetPriority: .speculative
         )
         guard !Task.isCancelled, preloadEpoch == epoch else { throw CancellationError() }
         guard AppSettings.shared.voice(for: prepared.document.language) == voiceID else {
@@ -12725,7 +12791,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         paragraphIndex: Int,
         text: String,
         language: String,
-        voiceOverride: String? = nil
+        voiceOverride: String? = nil,
+        presetPriority: PresetTTSRequestScheduler.Priority = .interactive
     ) async throws -> [AudioSegment] {
         try requireReaderOperation(.ttsPreparation, reason: "detached-tts")
         let voice = voiceOverride ?? AppSettings.shared.voice(for: language)
@@ -12734,7 +12801,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             text: text,
             voice: voice,
             speed: 1.0,
-            language: language
+            language: language,
+            presetPriority: presetPriority
         )
     }
 
@@ -12745,7 +12813,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private var isContinuousReadVisualTransition: Bool {
         continuousReadHandoff != nil &&
-            (continuousReadTurnTask != nil || continuousReadStagedPage != nil)
+            continuousReadVisualPreparation.suppressesLiveHighlight
+    }
+
+    private func restoreContinuousReadLiveHighlight() {
+        guard mode == .read, !isContinuousReadVisualTransition,
+              let owner = readVM, owner.currentParagraphIndex >= 0,
+              let range = owner.photoHighlightWordRange
+                ?? owner.photoHighlightWordIndex.map({ $0..<($0 + 1) }),
+              !range.isEmpty else { return }
+        if range.count > 1 {
+            enqueueHighlightWordRange(paragraphIndex: owner.currentParagraphIndex, range: range)
+        } else {
+            enqueueHighlightWord(paragraphIndex: owner.currentParagraphIndex, wordIndex: range.lowerBound)
+        }
     }
 
     private func enqueueHighlightWord(paragraphIndex: Int, wordIndex: Int) {
@@ -13006,8 +13087,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             if let n = mark.n { payload["n"] = n }
             if let weight = mark.weight { payload["weight"] = weight }
             if let role = mark.role { payload["role"] = role }
-            if let json = try? jsonString(payload) {
+            if let owner = explainVM,
+               let json = await markDrawingPayload(payload, mark: mark, owner: owner) {
                 let result = try? await evaluateJSON("window.__crKindleLiveShowMark && window.__crKindleLiveShowMark(\(json))")
+                guard explainVM === owner, mode == .explain, explainVisualHold == nil else { return }
                 if result?["ok"] as? Bool == true {
                     shownMarkIds.insert(markId)
                     animatedMarkIds.insert(markId)
@@ -13022,6 +13105,35 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 }
             }
         }
+    }
+
+    private func markDrawingPayload(_ payload: [String: Any], mark: ResolvedMark,
+                                    owner: ExplainViewModel) async -> String? {
+        var geometryPayload = payload
+        geometryPayload["canvasOnly"] = true
+        guard let geometryJSON = try? jsonString(geometryPayload) else { return nil }
+        let epoch = preloadEpoch
+        let fit = (webView.superview as? KindleWebViewContainer)?.presentationFit ?? viewportPresentationFit
+        guard let canvas = try? await evaluateJSON(
+            "window.__crKindleLiveShowMark && window.__crKindleLiveShowMark(\(geometryJSON))"
+        ), canvas["ok"] as? Bool == true,
+           explainVM === owner, mode == .explain, explainVisualHold == nil, preloadEpoch == epoch,
+           fit == ((webView.superview as? KindleWebViewContainer)?.presentationFit ?? viewportPresentationFit),
+           let key = canvas["key"] as? String,
+           let width = canvas["width"] as? Double, let height = canvas["height"] as? Double,
+           width.isFinite, height.isFinite, width > 0, height > 0 else { return nil }
+        let size = CGSize(width: width * fit.scale, height: height * fit.scale)
+        let resolver = PhotoAnchorResolver(document: owner.document, fitted: CGRect(origin: .zero, size: size))
+        let rects = resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange)
+        guard !rects.isEmpty else { return nil }
+        let ink = HandwrittenMark.stroke(action: mark.action, rects: rects, seed: mark.seed,
+                                         n: mark.n, weight: mark.weight)
+        var drawingPayload = payload
+        drawingPayload["canvasKey"] = key
+        drawingPayload["canvasWidth"] = width
+        drawingPayload["canvasHeight"] = height
+        drawingPayload["ink"] = ink.svgPayload(canvasSize: size)
+        return try? jsonString(drawingPayload)
     }
 
     private func scrollToMark(payloadJSON: String, mark: ResolvedMark, route: KindleRenderRoute?) async {
@@ -14655,22 +14767,32 @@ struct KindleVisualHoldViewportLease {
     let fit: KindleViewportPresentationFit
     let canonical: CGRect
 
-    init?(webView: WKWebView, surfaceSize: CGSize) {
-        guard let host = webView.superview as? KindleWebViewContainer,
-              let window = webView.window, host.window === window,
-              surfaceSize.width > 40, surfaceSize.height > 40,
+    init?(webView: WKWebView, surfaceSize: CGSize, onFailure: (String) -> Void = { _ in }) {
+        guard let host = webView.superview as? KindleWebViewContainer else {
+            onFailure("viewport-host"); return nil
+        }
+        guard let window = webView.window, host.window === window else {
+            onFailure("viewport-window"); return nil
+        }
+        guard surfaceSize.width > 40, surfaceSize.height > 40,
               abs(host.bounds.width - surfaceSize.width) <= 1,
               abs(host.bounds.height - surfaceSize.height) <= 1,
-              webView.bounds.width > 40, webView.bounds.height > 40 else { return nil }
+              webView.bounds.width > 40, webView.bounds.height > 40 else {
+            onFailure("viewport-size surface=\(surfaceSize) host=\(host.bounds.size) web=\(webView.bounds.size)"); return nil
+        }
         let canonical = KindleViewportPresentationPolicy.canonicalFrame(surfaceSize: host.bounds.size, crop: host.crop)
         let fit = host.presentationFit
         let expectedCenter = CGPoint(x: canonical.midX * fit.scale + fit.translationX,
                                      y: canonical.midY * fit.scale + fit.translationY)
         guard abs(webView.bounds.width - canonical.width) <= 1,
-              abs(webView.bounds.height - canonical.height) <= 1, fit.isValid,
-              abs(webView.center.x - expectedCenter.x) <= 0.01,
+              abs(webView.bounds.height - canonical.height) <= 1, fit.isValid else {
+            onFailure("viewport-canonical web=\(webView.bounds.size) canonical=\(canonical.size) fitValid=\(fit.isValid)"); return nil
+        }
+        guard abs(webView.center.x - expectedCenter.x) <= 0.01,
               abs(webView.center.y - expectedCenter.y) <= 0.01,
-              webView.transform == CGAffineTransform(scaleX: fit.scale, y: fit.scale) else { return nil }
+              webView.transform == CGAffineTransform(scaleX: fit.scale, y: fit.scale) else {
+            onFailure("viewport-transform center=\(webView.center) expected=\(expectedCenter) transform=\(webView.transform) scale=\(fit.scale)"); return nil
+        }
         self.webView = webView
         self.host = host
         self.window = window
@@ -14689,6 +14811,31 @@ struct KindleVisualHoldViewportLease {
             webView.center == webCenter && webView.transform == webTransform &&
             host.crop == crop && host.presentationFit == fit &&
             KindleViewportPresentationPolicy.canonicalFrame(surfaceSize: host.bounds.size, crop: host.crop) == canonical
+    }
+
+    /// A private CSS mask leaves the live word/range node intact, including
+    /// updates received while WebKit captures. Cleanup always runs, even if
+    /// the capture is cancelled or loses its viewport/page owner. Removing
+    /// only this mask cannot clear a newer page's highlight.
+    func snapshotExcludingLiveHighlight(isOwnerCurrent: () -> Bool) async -> UIImage? {
+        guard !Task.isCancelled, isCurrent, isOwnerCurrent() else { return nil }
+        let maskID = "cr-kindle-snapshot-mask-" + UUID().uuidString
+        let installed = try? await webView.evaluateJavaScript("""
+        (function(){
+          var mask = document.createElement('style');
+          mask.id = '\(maskID)';
+          mask.textContent = '#castreader-kindle-live-word { visibility: hidden !important; }';
+          (document.head || document.documentElement).appendChild(mask);
+          return true;
+        })()
+        """)
+        guard installed as? Bool == true else { return nil }
+        let image = await snapshot(isOwnerCurrent: isOwnerCurrent)
+        _ = try? await webView.evaluateJavaScript("""
+        (function(){ var mask = document.getElementById('\(maskID)'); if (mask) mask.remove(); })()
+        """)
+        guard !Task.isCancelled, isCurrent, isOwnerCurrent() else { return nil }
+        return image
     }
 
     func snapshot(isOwnerCurrent: () -> Bool) async -> UIImage? {

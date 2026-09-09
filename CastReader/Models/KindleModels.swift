@@ -294,6 +294,31 @@ enum KindlePlaybackLifecycleContract {
 /// next page's first utterance must both be complete before audio is appended.
 /// Kindle may stage its WebView during the old tail, but the held old-page frame
 /// is not released until both the spoken boundary and new surface are ready.
+/// Preparing a cover does not transfer ownership of the still-visible page.
+/// A failed cover is attempted only once per handoff; the audio boundary may
+/// still start staging, including when it arrived during the capture.
+struct KindleReadVisualPreparation {
+    enum Phase { case idle, capturing, waitingForAudioBoundary, staging }
+    private(set) var phase: Phase = .idle
+
+    var suppressesLiveHighlight: Bool { phase == .staging }
+    var canPrepareEarly: Bool { phase == .idle }
+
+    mutating func begin(atAudioBoundary: Bool) -> Bool {
+        guard phase != .capturing,
+              atAudioBoundary || canPrepareEarly else { return false }
+        phase = atAudioBoundary ? .staging : .capturing
+        return true
+    }
+
+    mutating func finishCapture(succeeded: Bool) {
+        guard phase == .capturing else { return }
+        phase = succeeded ? .staging : .waitingForAudioBoundary
+    }
+
+    mutating func beginStaging() { phase = .staging }
+}
+
 enum KindleContinuousPageHandoffContract {
     struct PreparedAudioTail {
         let remainingAudioSeconds: Double

@@ -160,11 +160,13 @@ actor APIService: VoiceCloneSTSCredentialProviding {
 
     private let session: URLSession
     private let ttsSessions: [ServiceRoute: URLSession]
+    private let presetScheduler: PresetTTSRequestScheduler
     private let cloneTTSSession: URLSession
     private let decoder: JSONDecoder
     private let mobileSessionProvider: any MobileSessionProviding
 
     private init() {
+        self.presetScheduler = .shared
         // APIService APIs use explicit bearer credentials (or are intentionally
         // anonymous). Keep them isolated from Better Auth's shared cookie jar so
         // an account/route cookie can never shadow the request's explicit auth.
@@ -204,9 +206,11 @@ actor APIService: VoiceCloneSTSCredentialProviding {
     init(
         session: URLSession,
         ttsSessions: [ServiceRoute: URLSession]? = nil,
+        presetScheduler: PresetTTSRequestScheduler = PresetTTSRequestScheduler(),
         mobileSessionProvider: any MobileSessionProviding = MobileSessionStore.shared
     ) {
         self.session = session
+        self.presetScheduler = presetScheduler
         self.ttsSessions = ttsSessions ?? Dictionary(
             uniqueKeysWithValues: ServiceRoute.allCases.map { ($0, session) }
         )
@@ -593,7 +597,8 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         language: String = Constants.TTS.defaultLanguage,
         includeVoiceCode: Bool = true,
         priority: TTSRequestPriority = .interactive,
-        requestID: String? = nil
+        requestID: String? = nil,
+        presetPriority: PresetTTSRequestScheduler.Priority? = nil
     ) async throws -> TTSResponse {
         // Preset compute follows the frozen account region, but uses its own
         // anonymous transport. Clone authorization remains on the account API.
@@ -646,14 +651,17 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         }
 
         let route = ComputeRouting.current
-        return try await PresetTTSTransport.generate(
-            input: inputText,
-            voice: resolvedVoice,
-            body: bodyData,
-            route: route,
-            requestID: requestID ?? UUID().uuidString,
-            session: ttsSessions[route] ?? session
-        )
+        let networkRequestID = requestID ?? UUID().uuidString
+        let transportSession = ttsSessions[route] ?? session
+        return try await presetScheduler.run(
+            priority: presetPriority ?? (priority == .interactive ? .interactive : .readAhead),
+            requestID: networkRequestID
+        ) {
+            try await PresetTTSTransport.generate(
+                input: inputText, voice: resolvedVoice, body: bodyData,
+                route: route, requestID: networkRequestID, session: transportSession
+            )
+        }
     }
 
     private func requestClonedVoiceTTS(

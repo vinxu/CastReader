@@ -3358,6 +3358,9 @@ final class ReadAloudViewModel: ObservableObject {
     private func preloadKindleHorizon(after index: Int) {
         guard ownsAudioQueue,
               let session = audioSessionToken,
+              // Settings publishers can fire before foreground synthesis.
+              // Protect first audio before admitting any read-ahead work.
+              segmentsByParagraph[index]?.isEmpty == false,
               let position = readableIndices.firstIndex(of: index),
               canStartAudio(persistentYouTubeCacheHit: false) else { return }
         let candidates = readableIndices.dropFirst(position + 1).map { next in
@@ -3374,10 +3377,11 @@ final class ReadAloudViewModel: ObservableObject {
             )
         }
         let selection = KindleParagraphPrefetchHorizon.select(candidates, speed: Double(audio.playbackRate))
-        let selected = Set(selection.indices)
-        // Retire work outside the current window. Each callback also carries a
-        // unique producer id, so a late cancelled response cannot refill it.
-        for key in Array(kindlePrefetchOwners.keys) where !selected.contains(key) {
+        // Estimated duration can expand or shrink the window on every READY.
+        // Keep still-needed work and complete audio through those replans. Only
+        // retire a paragraph once playback has actually passed it; context/voice
+        // changes still invalidate everything through clearPrefetch().
+        for key in Array(kindlePrefetchOwners.keys) where key <= index {
             kindlePrefetchTasks.removeValue(forKey: key)?.cancel()
             kindlePrefetchOwners.removeValue(forKey: key)
             kindlePrefetchedSegments.removeValue(forKey: key)
@@ -3388,8 +3392,14 @@ final class ReadAloudViewModel: ObservableObject {
             "seconds=\(String(format: "%.2f", selection.estimatedSeconds)) extraChars=\(selection.additionalCharacters)"
         )
         #endif
-        for next in selection.indices where kindlePrefetchOwners[next] == nil
-            && !kindlePrefetchFailures.contains(next) {
+        // Fill the lead-time window in reading order, one paragraph at a time.
+        // A window of eight candidates is a cache target, not eight concurrent
+        // synthesis/download requests. The shared transport budget also includes
+        // lower-priority next-page work.
+        if kindlePrefetchTasks.isEmpty,
+           let next = selection.indices.first(where: {
+               kindlePrefetchOwners[$0] == nil && !kindlePrefetchFailures.contains($0)
+           }) {
             startKindleHorizonPrefetch(next, session: session)
         }
         synchronizeKindleNextPrefetch(after: index)
@@ -3437,7 +3447,7 @@ final class ReadAloudViewModel: ObservableObject {
                       self.kindlePrefetchOwners[index] == producerID else { return }
                 self.kindlePrefetchTasks.removeValue(forKey: index)
                 self.kindlePrefetchFailures.insert(index)
-                self.synchronizeKindleNextPrefetch(after: self.currentParagraphIndex)
+                self.preloadNext(after: self.currentParagraphIndex)
                 ReaderRunLog.write("READ prefetch failed para=\(index) epoch=\(epoch) source=kindle-horizon")
             }
         }

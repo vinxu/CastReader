@@ -10,6 +10,59 @@ import SwiftUI
 
 enum HandwrittenMark {
 
+    /// The same path and ink are used during drawing, native page holds and
+    /// WebKit display. Animation changes only how much of this path is visible.
+    struct Stroke {
+        let path: Path
+        let lineWidth: CGFloat
+        let opacity: Double
+        let duration: Double
+
+        func svgPayload(canvasSize: CGSize) -> [String: Any] {
+            var commands: [String] = []
+            func point(_ p: CGPoint) -> String { "\(p.x) \(p.y)" }
+            path.forEach { element in
+                switch element {
+                case .move(let p): commands.append("M \(point(p))")
+                case .line(let p): commands.append("L \(point(p))")
+                case .quadCurve(let p, let c): commands.append("Q \(point(c)) \(point(p))")
+                case .curve(let p, let c1, let c2): commands.append("C \(point(c1)) \(point(c2)) \(point(p))")
+                case .closeSubpath: commands.append("Z")
+                }
+            }
+            return ["path": commands.joined(separator: " "), "lineWidth": lineWidth,
+                    "opacity": opacity, "durationMs": duration * 1_000,
+                    "width": canvasSize.width, "height": canvasSize.height]
+        }
+    }
+
+    static func stroke(action: String, rects: [CGRect], seed: UInt64,
+                       n: Int? = nil, weight: String? = nil) -> Stroke {
+        let path: Path
+        let width: CGFloat
+        let opacity: Double
+        switch action {
+        case "highlight":
+            path = highlightPath(over: rects, seed: seed)
+            width = (rects.map(\.height).max() ?? 18) * 0.85; opacity = 0.35
+        case "circle":
+            path = circlePath(around: rects, seed: seed); width = 2.4; opacity = 0.85
+        case "number":
+            path = numberPath(near: rects, n: n ?? 1, seed: seed); width = 2.5; opacity = 0.9
+        case "wave":
+            path = wavePath(over: rects, seed: seed); width = 2.2; opacity = 0.9
+        case "strike":
+            path = strikePath(over: rects, seed: seed); width = 2.2; opacity = 0.85
+        case "star":
+            path = starPath(near: rects, seed: seed); width = 2.2; opacity = 0.9
+        default:
+            path = underlinePath(over: rects, seed: seed)
+            width = action == "underline" ? 2.4 : 2.2; opacity = 0.85
+        }
+        return Stroke(path: path, lineWidth: width * weightMultiplier(weight),
+                      opacity: opacity, duration: duration(action: action, rects: rects))
+    }
+
     /// 重要度（weight）→ 笔触粗细倍率（P1 轴 1「划得准·分层」：核心论点粗笔 / 支撑细节细线）。
     /// 后端未给 weight 时返回 1.0（与历史一致，零回归）。
     static func weightMultiplier(_ weight: String?) -> CGFloat {

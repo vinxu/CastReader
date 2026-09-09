@@ -163,6 +163,7 @@ actor TTSService {
         includeVoiceCode: Bool = true,
         speaker: String? = nil,
         cloneRequestID: String? = nil,
+        presetPriority: PresetTTSRequestScheduler.Priority = .readAhead,
         onSegmentReady: ((AudioSegment) async -> Void)? = nil
     ) async throws -> [AudioSegment] {
         var segmentIndex = 0
@@ -180,6 +181,9 @@ actor TTSService {
             var remainingText = requestUnit
             while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
                 try Task.checkCancellation()
+                let networkRequestID = cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex)
+                    ?? UUID().uuidString
+                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=\(presetPriority)")
                 let response = try await api.generateTTS(
                     text: remainingText,
                     voice: resolvedVoice,
@@ -187,10 +191,8 @@ actor TTSService {
                     language: language,
                     includeVoiceCode: includeVoiceCode,
                     priority: .prefetch,
-                    requestID: cloneSubrequestID(
-                        base: cloneRequestID,
-                        segmentIndex: segmentIndex
-                    )
+                    requestID: networkRequestID,
+                    presetPriority: presetPriority
                 )
                 try Task.checkCancellation()
                 guard let audioData = Data(base64Encoded: response.audio) else {
@@ -272,17 +274,16 @@ actor TTSService {
             guard currentRequestId == requestId else { throw TTSError.cancelled }
             do {
                 ttsDebugLog("[TTSService] 📊 Cloud TTS request #\(segmentIndex): \(remainingText.prefix(50))...")
-
+                let networkRequestID = cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex)
+                    ?? UUID().uuidString
+                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=interactive")
                 let response = try await api.generateTTS(
                     text: remainingText,
                     voice: voice,
                     speed: speed,
                     language: language,
                     includeVoiceCode: includeVoiceCode,
-                    requestID: cloneSubrequestID(
-                        base: cloneRequestID,
-                        segmentIndex: segmentIndex
-                    )
+                    requestID: networkRequestID
                 )
 
                 try Task.checkCancellation()

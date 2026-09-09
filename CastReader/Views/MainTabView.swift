@@ -277,6 +277,7 @@ struct MainTabView: View {
             // This keeps ReaderHost/Kindle WKWebView geometry completely stable
             // while the user previews or switches voices.
             PlaybackVoicePanelOverlay(center: playbackVoicePanel)
+                .animation(.spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
                 .zIndex(100)
 
             if studyBoostRouter.isPresented {
@@ -338,7 +339,6 @@ struct MainTabView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
         .animation(.spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
-        .animation(.spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
         .animation(.spring(response: 0.38, dampingFraction: 0.9), value: studyBoostRouter.isPresented)
         .animation(
             .spring(response: 0.34, dampingFraction: 0.9),

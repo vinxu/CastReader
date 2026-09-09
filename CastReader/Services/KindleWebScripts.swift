@@ -4948,7 +4948,7 @@ enum KindleWebScripts {
     static let pageCaptureBootstrap = """
     (function() {
       \(uiSemanticHelpers)
-      var crKindleInstallVersion = 44;
+      var crKindleInstallVersion = 45;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -8780,86 +8780,6 @@ enum KindleWebScripts {
         svg.setAttribute('height', String(h));
         return svg;
       }
-      function crKindleMulberry32(seed) {
-        var s = (Number(seed || 1) >>> 0);
-        return function() {
-          s = (s + 0x6d2b79f5) >>> 0;
-          var t = Math.imul(s ^ (s >>> 15), 1 | s);
-          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-      }
-      function crKindleJitter(v, amp, rng) {
-        return Number(v || 0) + (rng() - 0.5) * Number(amp || 0);
-      }
-      function crKindleHandDrawnLine(x0, y0, x1, y1, waviness, rng) {
-        var dx = x1 - x0, dy = y1 - y0;
-        var len = Math.sqrt(dx * dx + dy * dy);
-        var segments = Math.max(4, Math.round(len / 30));
-        var d = 'M ' + crKindleJitter(x0, 3, rng).toFixed(1) + ' ' + crKindleJitter(y0, waviness, rng).toFixed(1);
-        for (var i = 1; i <= segments; i++) {
-          var t = i / segments;
-          var x = x0 + dx * t;
-          var y = y0 + dy * t + (rng() - 0.5) * waviness * 2;
-          var cpx = x0 + dx * (t - 0.5 / segments) + (rng() - 0.5) * 8;
-          var cpy = y0 + dy * (t - 0.5 / segments) + (rng() - 0.5) * waviness * 2;
-          d += ' Q ' + cpx.toFixed(1) + ' ' + cpy.toFixed(1) + ' ' + x.toFixed(1) + ' ' + y.toFixed(1);
-        }
-        return d;
-      }
-      function crKindleHandDrawnLoop(cx, cy, rx, ry, n, rng) {
-        var pts = [];
-        var count = Math.max(8, Number(n || 12));
-        var over = Math.max(1, Math.round(count * 0.12));
-        for (var i = 0; i <= count + over; i++) {
-          var a = (i / count) * Math.PI * 2;
-          var rjx = rx * (1 + (rng() - 0.5) * 0.15);
-          var rjy = ry * (1 + (rng() - 0.5) * 0.15);
-          pts.push({ x: cx + Math.cos(a) * rjx, y: cy + Math.sin(a) * rjy });
-        }
-        var d = 'M ' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1);
-        for (var j = 1; j < pts.length; j++) {
-          var prev = pts[j - 1], cur = pts[j];
-          var cpx1 = prev.x + (cur.x - prev.x) * 0.4 + (rng() - 0.5) * 6;
-          var cpy1 = prev.y + (cur.y - prev.y) * 0.1 + (rng() - 0.5) * 6;
-          var cpx2 = prev.x + (cur.x - prev.x) * 0.6 + (rng() - 0.5) * 6;
-          var cpy2 = prev.y + (cur.y - prev.y) * 0.9 + (rng() - 0.5) * 6;
-          d += ' C ' + cpx1.toFixed(1) + ' ' + cpy1.toFixed(1) + ',' + cpx2.toFixed(1) + ' ' + cpy2.toFixed(1) + ',' + cur.x.toFixed(1) + ' ' + cur.y.toFixed(1);
-        }
-        return d;
-      }
-      function crKindleHandDrawnDigit(digit, cx, cy, size, rng) {
-        function j(v, amp) { return crKindleJitter(v, amp == null ? 0.7 : amp, rng).toFixed(1); }
-        var h = size, w = size * 0.58;
-        var T = cy - h / 2, B = cy + h / 2, L = cx - w / 2, R = cx + w / 2, My = cy;
-        switch ((((Number(digit || 0) % 10) + 10) % 10)) {
-          case 1: return 'M ' + j(cx-w*0.28) + ' ' + j(T+h*0.22) + ' Q ' + j(cx-w*0.06) + ' ' + j(T+h*0.05) + ' ' + j(cx) + ' ' + j(T) + ' Q ' + j(cx) + ' ' + j(My) + ' ' + j(cx) + ' ' + j(B);
-          case 2: return 'M ' + j(L+w*0.08) + ' ' + j(T+h*0.24) + ' Q ' + j(cx-w*0.05) + ' ' + j(T-h*0.02) + ' ' + j(cx+w*0.2) + ' ' + j(T) + ' Q ' + j(R+w*0.05) + ' ' + j(T+h*0.12) + ' ' + j(cx+w*0.1) + ' ' + j(My+h*0.05) + ' Q ' + j(cx-w*0.1) + ' ' + j(My+h*0.22) + ' ' + j(L) + ' ' + j(B) + ' L ' + j(R) + ' ' + j(B);
-          case 3: return 'M ' + j(L+w*0.05) + ' ' + j(T+h*0.08) + ' Q ' + j(cx+w*0.35) + ' ' + j(T-h*0.02) + ' ' + j(cx+w*0.1) + ' ' + j(My-h*0.02) + ' Q ' + j(R+w*0.05) + ' ' + j(My+h*0.04) + ' ' + j(cx+w*0.1) + ' ' + j(My+h*0.24) + ' Q ' + j(cx-w*0.2) + ' ' + j(B+h*0.02) + ' ' + j(L) + ' ' + j(B-h*0.1);
-          case 4: return 'M ' + j(cx+w*0.12) + ' ' + j(T) + ' Q ' + j(L-w*0.05) + ' ' + j(My+h*0.08) + ' ' + j(L-w*0.08) + ' ' + j(My+h*0.14) + ' L ' + j(R+w*0.05) + ' ' + j(My+h*0.14) + ' M ' + j(cx+w*0.18) + ' ' + j(T+h*0.15) + ' Q ' + j(cx+w*0.18) + ' ' + j(My) + ' ' + j(cx+w*0.18) + ' ' + j(B);
-          case 5: return 'M ' + j(R) + ' ' + j(T+h*0.02) + ' L ' + j(L+w*0.08) + ' ' + j(T) + ' Q ' + j(L+w*0.02) + ' ' + j(My-h*0.05) + ' ' + j(L+w*0.05) + ' ' + j(My+h*0.05) + ' Q ' + j(cx+w*0.4) + ' ' + j(My-h*0.04) + ' ' + j(cx+w*0.3) + ' ' + j(My+h*0.18) + ' Q ' + j(cx+w*0.1) + ' ' + j(B+h*0.04) + ' ' + j(L) + ' ' + j(B-h*0.08);
-          case 6: return 'M ' + j(cx+w*0.28) + ' ' + j(T) + ' Q ' + j(L-w*0.02) + ' ' + j(My-h*0.08) + ' ' + j(L) + ' ' + j(My+h*0.12) + ' Q ' + j(L-w*0.02) + ' ' + j(B) + ' ' + j(cx) + ' ' + j(B) + ' Q ' + j(R+w*0.02) + ' ' + j(B) + ' ' + j(R) + ' ' + j(My+h*0.14) + ' Q ' + j(R-w*0.05) + ' ' + j(My) + ' ' + j(L+w*0.12) + ' ' + j(My+h*0.14);
-          case 7: return 'M ' + j(L) + ' ' + j(T) + ' L ' + j(R) + ' ' + j(T) + ' Q ' + j(cx+w*0.05) + ' ' + j(My) + ' ' + j(cx-w*0.12) + ' ' + j(B);
-          case 8: return crKindleHandDrawnLoop(cx, cy - h * 0.26, w * 0.4, h * 0.24, 10, rng) + ' ' + crKindleHandDrawnLoop(cx, cy + h * 0.26, w * 0.48, h * 0.26, 10, rng);
-          case 9: return crKindleHandDrawnLoop(cx, cy - h * 0.2, w * 0.46, h * 0.28, 10, rng) + ' M ' + j(cx+w*0.4) + ' ' + j(My-h*0.18) + ' Q ' + j(cx+w*0.28) + ' ' + j(My+h*0.2) + ' ' + j(cx-w*0.05) + ' ' + j(B);
-          case 0: return crKindleHandDrawnLoop(cx, cy, w * 0.5, h * 0.48, 12, rng);
-          default: return crKindleHandDrawnLoop(cx, cy, w * 0.5, h * 0.48, 12, rng);
-        }
-      }
-      function crKindleMarkDuration(action, rect) {
-        var span = action === 'circle'
-          ? Math.PI * (Number(rect.width || 0) + Number(rect.height || 0)) * 0.35
-          : action === 'number'
-            ? Math.max(40, Number(rect.height || 0) * 1.4)
-            : Number(rect.width || 0);
-        return Math.max(450, Math.min(2200, span * 3.5));
-      }
-      function crKindleMarkStroke(weight, fallback) {
-        var base = Number(fallback || 6);
-        if (weight === 'primary') return base * 1.12;
-        if (weight === 'tertiary') return base * 0.76;
-        return base;
-      }
       function crKindleDrawAnimatedPath(parent, d, stroke, strokeWidth, opacity, duration, delay, fill, extraStyle, animate) {
         var shouldAnimate = animate !== false;
         var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -8870,7 +8790,6 @@ enum KindleWebScripts {
         path.setAttribute('stroke-linecap', 'round');
         path.setAttribute('stroke-linejoin', 'round');
         path.setAttribute('opacity', String(opacity == null ? 1 : opacity));
-        path.setAttribute('vector-effect', 'non-scaling-stroke');
         path.style.cssText = (extraStyle || '');
         parent.appendChild(path);
         var len = 180;
@@ -8882,7 +8801,7 @@ enum KindleWebScripts {
           try { path.getBoundingClientRect(); } catch (e) {}
           requestAnimationFrame(function() {
             requestAnimationFrame(function() {
-              path.style.transition = 'stroke-dashoffset ' + Math.round(duration || 700) + 'ms cubic-bezier(0.62,0,0.22,1) ' + Math.round(delay || 0) + 'ms, opacity 180ms ease';
+              path.style.transition = 'stroke-dashoffset ' + Math.round(duration || 700) + 'ms ease-out ' + Math.round(delay || 0) + 'ms';
               path.style.strokeDashoffset = '0';
             });
           });
@@ -8893,68 +8812,20 @@ enum KindleWebScripts {
         }
         return path;
       }
-      function crKindleDrawHandMark(svg, group, rects, data) {
-        var action = String(data.action || 'highlight');
-        var weight = String(data.weight || '');
-        var seed = Number(data.seed || Date.now()) >>> 0;
-        var animate = data.animate !== false;
-        var union = crKindleUnion(rects);
-        if (!union) return;
-        var stroke = 'rgba(253,95,1,0.92)';
-        var fillStroke = 'rgba(253,95,1,0.55)';
-        if (action === 'circle') {
-          var rngCircle = crKindleMulberry32(seed + 17);
-          var cx = union.left + union.width / 2;
-          var cy = union.top + union.height / 2;
-          var dCircle = crKindleHandDrawnLoop(cx, cy, Math.max(10, union.width / 2 + 7), Math.max(9, union.height / 2 + 5), 14, rngCircle);
-          crKindleDrawAnimatedPath(group, dCircle, stroke, crKindleMarkStroke(weight, 6.5), 0.92, crKindleMarkDuration(action, union), 0, 'none', '', animate);
-          return;
-        }
-        if (action === 'number') {
-          var rngNumber = crKindleMulberry32(seed + 29);
-          var first = rects[0] || union;
-          var lineH = Math.max(14, Number(first.height || union.height || 14));
-          var r = Math.min(lineH * 0.6, 16);
-          var cxn = Number(first.left || union.left || 0) - r * 1.5;
-          if (cxn - r < 4) cxn = Number(first.left || union.left || 0) + r * 0.35;
-          var cyn = Number(first.top || union.top || 0) + lineH / 2;
-          var kk = 0.5523;
-          function jr(v) { return crKindleJitter(v, 0.9, rngNumber).toFixed(1); }
-          var x0 = cxn - r, x1 = cxn + r, y0 = cyn - r, y1 = cyn + r;
-          var dNumCircle =
-            'M ' + jr(cxn) + ' ' + jr(y0) + ' C ' + jr(cxn + r * kk) + ' ' + jr(y0) + ' ' + jr(x1) + ' ' + jr(cyn - r * kk) + ' ' + jr(x1) + ' ' + jr(cyn) +
-            ' C ' + jr(x1) + ' ' + jr(cyn + r * kk) + ' ' + jr(cxn + r * kk) + ' ' + jr(y1) + ' ' + jr(cxn) + ' ' + jr(y1) +
-            ' C ' + jr(cxn - r * kk) + ' ' + jr(y1) + ' ' + jr(x0) + ' ' + jr(cyn + r * kk) + ' ' + jr(x0) + ' ' + jr(cyn) +
-            ' C ' + jr(x0) + ' ' + jr(cyn - r * kk) + ' ' + jr(cxn - r * kk) + ' ' + jr(y0) + ' ' + jr(cxn + r * 0.5) + ' ' + jr(y0 + r * 0.15);
-          var draw = crKindleMarkDuration(action, union);
-          crKindleDrawAnimatedPath(group, dNumCircle, stroke, 2.5, 0.9, Math.round(draw * 0.5), 0, 'none', '', animate);
-          var dDigit = crKindleHandDrawnDigit(Number(data.n || 1) >= 1 ? Number(data.n || 1) : 1, cxn, cyn, r * 1.12, rngNumber);
-          crKindleDrawAnimatedPath(group, dDigit, stroke, 2.5, 0.95, Math.round(draw * 0.5), Math.round(draw * 0.5), 'none', '', animate);
-          var dUnderline = '';
-          rects.forEach(function(rect) {
-            var uy = rect.top + rect.height + 3;
-            dUnderline += crKindleHandDrawnLine(rect.left - 2, uy, rect.left + rect.width + 4, uy, 1.5, rngNumber) + ' ';
-          });
-          if (dUnderline.trim()) {
-            crKindleDrawAnimatedPath(group, dUnderline.trim(), stroke, 2.5, 0.9, Math.round(draw * 0.7), 0, 'none', '', animate);
-          }
-          return;
-        }
-        rects.forEach(function(rect, i) {
-          var rng = crKindleMulberry32(seed + i * 9973 + 101);
-          var duration = crKindleMarkDuration(action, rect);
-          var delay = i * 110;
-          if (action === 'underline') {
-            var uy = rect.top + rect.height - Math.max(1.5, rect.height * 0.08);
-            var ud = crKindleHandDrawnLine(rect.left - 1, uy, rect.left + rect.width + 1, uy, Math.max(3, rect.height * 0.12), rng);
-            crKindleDrawAnimatedPath(group, ud, stroke, crKindleMarkStroke(weight, 5.2), 0.94, duration, delay, 'none', '', animate);
-          } else {
-            var hy = rect.top + rect.height * 0.58;
-            var hd = crKindleHandDrawnLine(rect.left - 2, hy, rect.left + rect.width + 2, hy, Math.max(4, rect.height * 0.12), rng);
-            var sw = crKindleMarkStroke(weight, Math.max(8, Math.min(18, rect.height * 0.78)));
-            crKindleDrawAnimatedPath(group, hd, fillStroke, sw, 0.42, duration, delay, 'none', 'mix-blend-mode:multiply;', animate);
-          }
-        });
+      function crKindleDrawHandMark(svg, group, data) {
+        // Geometry, weight and opacity are authored by HandwrittenMark on iOS,
+        // exactly as on the native page hold. This nested viewBox maps points to
+        // the live page, including its CSS and native presentation transforms.
+        var ink = data.ink;
+        var canvas = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        canvas.setAttribute('width', '100%');
+        canvas.setAttribute('height', '100%');
+        canvas.setAttribute('viewBox', '0 0 ' + ink.width + ' ' + ink.height);
+        canvas.setAttribute('preserveAspectRatio', 'none');
+        canvas.style.overflow = 'visible';
+        group.appendChild(canvas);
+        crKindleDrawAnimatedPath(canvas, ink.path, '#FD5F01', ink.lineWidth,
+          ink.opacity, ink.durationMs, 0, 'none', '', data.animate !== false);
       }
       window.__crKindleLiveShowMark = function(payload) {
         try {
@@ -8968,25 +8839,24 @@ enum KindleWebScripts {
           if (!state || state.stale) return JSON.stringify({ ok:false, reason:'captured-page-not-visible', key:expectedKey });
           var layer = window.__crKindleProbe.liveOverlay;
           if (!layer) return JSON.stringify({ ok:false, reason:'no-overlay', key:expectedKey });
+          var bounds = layer.getBoundingClientRect();
+          if (data.canvasOnly) return JSON.stringify({ ok:true, key:expectedKey, width:bounds.width, height:bounds.height });
+          // Reject a page/fit change between the geometry read and the draw.
+          if (data.canvasKey !== expectedKey || Math.abs(data.canvasWidth - bounds.width) > 0.5 ||
+              Math.abs(data.canvasHeight - bounds.height) > 0.5)
+            return JSON.stringify({ ok:false, reason:'mark-canvas-changed' });
+          var ink = data.ink;
+          if (!ink || !ink.path || !(ink.width > 0) || !(ink.height > 0) || !(ink.lineWidth > 0))
+            return JSON.stringify({ ok:false, reason:'no-native-mark-ink' });
           if (data.id && layer.querySelector('[data-cr-mark-id="' + data.id + '"]')) return JSON.stringify({ ok:true, duplicate:true });
-          var words = crKindleWordsForRange(para, Number(data.charStart || 0), Number(data.charEnd || 0));
-          if (!words.length && para.words) words = para.words;
-          var rects = crKindleLineUnions(words.map(function(word) { return crKindleNormRectInOverlay(word.bboxNorm); }).filter(Boolean));
-          if (!rects.length) {
-            rects = crKindleParagraphFragmentRects(para, crKindleNormRectInOverlay);
-            if (!rects.length) {
-              var fallback = crKindleNormRectInOverlay(crKindleParagraphNormRect(para));
-              if (fallback) rects = [fallback];
-            }
-          }
           var svg = crKindleMarkSvg(layer);
           if (!svg) return JSON.stringify({ ok:false, reason:'no-mark-svg', key:expectedKey });
           var group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
           group.classList.add('cr-kindle-live-mark-group');
           if (data.id) group.setAttribute('data-cr-mark-id', data.id);
           svg.appendChild(group);
-          crKindleDrawHandMark(svg, group, rects, data);
-          return JSON.stringify({ ok:true, rects:rects.length });
+          crKindleDrawHandMark(svg, group, data);
+          return JSON.stringify({ ok:true, renderer:'shared-native-ink' });
         } catch (e) {
           return JSON.stringify({ ok:false, reason:String(e) });
         }

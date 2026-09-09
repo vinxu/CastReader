@@ -51,6 +51,7 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
     }
 
     override func tearDown() {
+        PlaybackVoicePanelCenter.shared.dismiss()
         model?.webView.configuration.userContentController.removeScriptMessageHandler(forName: "fixtureLightLock")
         model?.destroy()
         model?.webView.removeFromSuperview()
@@ -61,6 +62,90 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         previousKeyWindow?.makeKey()
         previousKeyWindow = nil
         super.tearDown()
+    }
+
+    func testVoicePanelRetainsActualReadViewportThroughDismissal() async throws {
+        try await assertVoicePanelKeepsViewport(mode: .read)
+    }
+
+    func testVoicePanelRetainsActualExplainViewportThroughDismissal() async throws {
+        try await assertVoicePanelKeepsViewport(mode: .explain)
+    }
+
+    private func assertVoicePanelKeepsViewport(mode: ReaderMode) async throws {
+        let center = PlaybackVoicePanelCenter.shared
+        center.dismiss()
+        try await loadFixture(initializeControls: false)
+        model.mode = mode
+        let crop = KindleViewportCrop(scale: 1.25, heightScale: 1.2, offsetX: -48.75, offsetY: -60)
+        let fit = KindleViewportPresentationFit(scale: 0.9, translationX: 12, translationY: 8)
+        let container = KindleWebViewContainer(webView: model.webView, crop: crop, presentationFit: fit)
+        let actualSize = CGSize(width: 390, height: 650)
+        container.frame = CGRect(origin: .zero, size: actualSize)
+        window.rootViewController!.view.addSubview(container)
+        container.layoutIfNeeded()
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        try await Task.sleep(nanoseconds: 150_000_000)
+        _ = try await model.webView.evaluateJavaScript("window.panelResizes=0;window.addEventListener('resize',()=>panelResizes++);true")
+        let before = try await voiceViewportMetrics()
+        let webBounds = model.webView.bounds
+        let webCenter = model.webView.center
+        let webTransform = model.webView.transform
+
+        // Present is synchronous. The snapshot must exist before any panel body
+        // can lay out, even if prior model/preferences describe another orientation.
+        center.present(language: "en")
+        let held = try XCTUnwrap(model.playerOverlayViewport)
+        XCTAssertEqual(held.surfaceSize, actualSize)
+        XCTAssertEqual(held.crop, crop)
+        XCTAssertEqual(held.fit, fit)
+        let staleLandscape = CGSize(width: 814, height: 297)
+        XCTAssertNotEqual(held.surfaceSize, staleLandscape)
+
+        func applyPanelLayoutProposal() {
+            let measured = CGSize(width: 414, height: 380)
+            let size = KindleReaderSurfaceContract.renderSize(
+                measured: measured, stable: model.playerOverlayViewport?.surfaceSize ?? measured,
+                isPlayerOverlayPresented: model.playerOverlayViewport != nil)
+            container.frame.size = size
+            container.crop = model.effectiveViewportCrop(forSurfaceSize: size)
+            container.presentationFit = model.effectiveViewportPresentationFit(forSurfaceSize: size)
+            container.layoutIfNeeded()
+        }
+        applyPanelLayoutProposal()
+        center.dismiss()
+        XCTAssertNotNil(model.playerOverlayViewport, "Dismissing request must not release geometry during the panel animation")
+        applyPanelLayoutProposal()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        center.present(language: "en")
+        applyPanelLayoutProposal()
+        try await Task.sleep(nanoseconds: 650_000_000)
+        XCTAssertNotNil(model.playerOverlayViewport, "An earlier dismissal must not unfreeze a reopened panel")
+        applyPanelLayoutProposal()
+        XCTAssertEqual(model.webView.bounds, webBounds)
+        XCTAssertEqual(model.webView.center, webCenter)
+        XCTAssertEqual(model.webView.transform, webTransform)
+        let during = try await voiceViewportMetrics()
+        XCTAssertEqual(NSDictionary(dictionary: before), NSDictionary(dictionary: during),
+                       "Opening/closing voice UI must not resize, replace, navigate or reload the web document")
+        center.dismiss()
+        try await Task.sleep(nanoseconds: 650_000_000)
+        XCTAssertNil(model.playerOverlayViewport)
+        let resumedSize = KindleReaderSurfaceContract.renderSize(measured: actualSize, stable: staleLandscape,
+                                                                 isPlayerOverlayPresented: false)
+        container.frame.size = resumedSize
+        container.layoutIfNeeded()
+        let after = try await voiceViewportMetrics()
+        XCTAssertEqual(NSDictionary(dictionary: before), NSDictionary(dictionary: after))
+    }
+
+    private func voiceViewportMetrics() async throws -> [String: Any] {
+        let value = try await model.webView.evaluateJavaScript("""
+        ({width:innerWidth,height:innerHeight,resizes:panelResizes,
+          documentID:fixtureLoadID,url:location.href,history:history.length})
+        """)
+        return try XCTUnwrap(value as? [String: Any])
     }
 
     func testEarlyAaDoesNotPresentOrCancelRealBootstrapAndSyncObserverStillRuns() async throws {
