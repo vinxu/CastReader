@@ -676,6 +676,25 @@ enum KindleExternalNavigationContract {
     }
 }
 
+/// A user's page choice is durable even before they listen. Keep its request
+/// identity until audio on that chosen page replaces it with an exact cursor.
+/// Pixel/text fingerprints survive ephemeral Kindle blob URLs without storing
+/// the book's text or mistaking speculative preloads for navigation.
+struct KindleNavigationPosition: Codable, Equatable {
+    let id: UUID
+    let updatedAt: Date
+    var pageKey: String?
+    var pixelFingerprint: String?
+    var pageTextHash: String?
+    var progressLabel: String?
+    var readerURL: String?
+
+    init(id: UUID = UUID(), updatedAt: Date = Date()) {
+        self.id = id
+        self.updatedAt = updatedAt
+    }
+}
+
 /// Cross-platform semantic contract for resuming Kindle audio from a sentence-level anchor.
 /// `charOffset` is a UTF-16 offset so Swift, Kotlin, and JavaScript can exchange it safely.
 struct KindleListeningAnchor: Codable, Equatable {

@@ -34,6 +34,7 @@ final class ResumeCoordinator {
     func open(itemID: String?, mode: ReaderMode = .read, autoplay: Bool = false,
               entryPoint: String,
               progress: @escaping (CloudHistoryReopenProgress) -> Void = { _ in }) async throws -> ContentResumeResult {
+        let started = Date()
         let request = UUID()
         requestID = request
         let playerGeneration = player.presentationGeneration
@@ -90,7 +91,11 @@ final class ResumeCoordinator {
         }
         try validate()
         let needsOCR = record.sourceKind == .photo && document.paragraphs.isEmpty
-        player.open(document, mode: mode, autoplay: autoplay && !needsOCR, analyticsContext: context)
+        player.open(document, mode: mode, autoplay: autoplay && !needsOCR, analyticsContext: context,
+                    reusingLocalPayload: !record.requiresRemoteReopen && LocalDocumentCache.supports(record.sourceKind))
+        if LocalDocumentCache.supports(record.sourceKind) {
+            ReaderRunLog.write("LOCAL resume presented source=\(record.sourceKindRaw) seconds=\(Date().timeIntervalSince(started))")
+        }
         let instanceID = player.session?.instanceID
         if needsOCR {
             // Preserve the request/account ownership through deferred Vision.

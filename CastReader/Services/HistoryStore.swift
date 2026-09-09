@@ -266,6 +266,8 @@ final class HistoryStore: ObservableObject {
     private var projectionRefreshTask: Task<Void, Never>?
     private var knownCheckpointFiles: [String: [URL]]? = nil
     private var coverTasks: [UUID: Task<Void, Never>] = [:]
+    private var parsedCacheTasks: [String: Task<Void, Never>] = [:]
+    private var parsedCacheRequests: [String: UUID] = [:]
     private let performsCoverWork: Bool
     private let coverDataLoader: @Sendable (URL) async -> Data?
 
@@ -374,6 +376,7 @@ final class HistoryStore: ObservableObject {
         // boundary. Keep live progress writers valid until an actual switch.
         guard activeScope?.directory.standardizedFileURL != directory.standardizedFileURL else { return }
         invalidateCoverWork()
+        invalidateParsedCacheWork()
         resetProgressCache()
         records = []
         let scope = ActiveStorageScope(token: UUID(), directory: directory)
@@ -397,6 +400,7 @@ final class HistoryStore: ObservableObject {
     func deactivateAccountScope() {
         guard case .accountScoped = storageConfiguration else { return }
         invalidateCoverWork()
+        invalidateParsedCacheWork()
         resetProgressCache()
         activeScope = nil
         records = []
@@ -451,6 +455,95 @@ final class HistoryStore: ObservableObject {
 
     private func isCurrent(_ scope: ActiveStorageScope) -> Bool {
         activeScope?.token == scope.token
+    }
+
+    private func invalidateParsedCacheWork(id: String? = nil) {
+        if let id {
+            parsedCacheTasks.removeValue(forKey: id)?.cancel()
+            parsedCacheRequests[id] = nil
+        } else {
+            parsedCacheTasks.values.forEach { $0.cancel() }
+            parsedCacheTasks.removeAll()
+            parsedCacheRequests.removeAll()
+        }
+    }
+
+    private func removeParsedCache(_ id: String, in scope: ActiveStorageScope) {
+        invalidateParsedCacheWork(id: id)
+        try? FileManager.default.removeItem(at: LocalDocumentCache.url(id: id, in: scope.directory))
+    }
+
+    private func cacheParsedDocument(_ document: ReadingDocument, fingerprint: String,
+                                     in scope: ActiveStorageScope) {
+        invalidateParsedCacheWork(id: document.id)
+        guard LocalDocumentCache.supports(document.sourceKind), !document.paragraphs.isEmpty else { return }
+        let request = UUID()
+        parsedCacheRequests[document.id] = request
+        parsedCacheTasks[document.id] = Task { @MainActor [weak self] in
+            let worker = Task.detached(priority: .utility) {
+                try LocalDocumentCache.prepare(document: document, fingerprint: fingerprint)
+            }
+            let temporary = try? await withTaskCancellationHandler {
+                try await worker.value
+            } onCancel: { worker.cancel() }
+            defer {
+                if let temporary { try? FileManager.default.removeItem(at: temporary) }
+                if self?.parsedCacheRequests[document.id] == request {
+                    self?.parsedCacheRequests[document.id] = nil
+                    self?.parsedCacheTasks[document.id] = nil
+                }
+            }
+            guard !Task.isCancelled, let self, self.isCurrent(scope),
+                  self.parsedCacheRequests[document.id] == request,
+                  self.records.contains(where: {
+                      $0.id == document.id && !$0.requiresRemoteReopen && $0.contentFingerprint == fingerprint
+                  }), let temporary else { return }
+            LocalDocumentCache.publish(temporary, to: LocalDocumentCache.url(id: document.id, in: scope.directory))
+        }
+    }
+
+    private func reopenParsedDocument(_ record: HistoryRecord, in scope: ActiveStorageScope) async throws -> ReadingDocument? {
+        // An import already has the parsed result; finish its small cache write
+        // instead of starting another full-book parse during a quick reopen.
+        await parsedCacheTasks[record.id]?.value
+        try Task.checkCancellation()
+        guard isCurrent(scope), records.contains(record) else { return nil }
+        let payload = payloadURL(record.id, in: scope)
+        let cache = LocalDocumentCache.url(id: record.id, in: scope.directory)
+        let worker = Task.detached(priority: .userInitiated) {
+            try await LocalDocumentCache.load(record: record, payloadURL: payload, cacheURL: cache)
+        }
+        let loaded = try await withTaskCancellationHandler {
+            try await worker.value
+        } onCancel: { worker.cancel() }
+        defer {
+            if let temporary = loaded?.preparedSnapshot { try? FileManager.default.removeItem(at: temporary) }
+        }
+        try Task.checkCancellation()
+        guard isCurrent(scope), records.contains(record), let loaded else { return nil }
+        if let temporary = loaded.preparedSnapshot { LocalDocumentCache.publish(temporary, to: cache) }
+        else { try? FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: cache.path) }
+        if let index = records.firstIndex(where: { $0.id == record.id }),
+           records[index].contentFingerprint != loaded.fingerprint {
+            records[index].contentFingerprint = loaded.fingerprint
+            save(in: scope)
+        }
+        return loaded.document
+    }
+
+    /// A verified local resume changes recency, not the original file bytes.
+    /// Avoid rewriting and rehashing an entire book on MainActor after loading.
+    func recordReopenedLocalDocument(_ document: ReadingDocument) {
+        guard LocalDocumentCache.supports(document.sourceKind), document.origin == nil,
+              document.persistencePolicy == .localPayload,
+              let index = records.firstIndex(where: {
+                  $0.id == document.id && $0.sourceKind == document.sourceKind && !$0.requiresRemoteReopen
+              }) else { record(document); return }
+        var record = records.remove(at: index)
+        record.lastOpenedAt = Date()
+        record.language = document.language
+        records.insert(record, at: 0)
+        save()
     }
 
     var progressBoundaryToken: UUID? { activeScope?.token }
@@ -856,6 +949,7 @@ final class HistoryStore: ObservableObject {
             try? FileManager.default.removeItem(at: payloadURL(doc.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(doc.id, in: scope))
             try? FileManager.default.removeItem(at: ocrSnapshotURL(doc.id, in: scope))
+            removeParsedCache(doc.id, in: scope)
         }
 
         let now = Date()
@@ -891,6 +985,12 @@ final class HistoryStore: ObservableObject {
         records.removeAll { $0.id == doc.id }
         records.insert(rec, at: 0)
         save(in: scope)
+
+        if LocalDocumentCache.supports(doc.sourceKind),
+           resolvedPersistencePolicy == .localPayload,
+           let fingerprint = rec.contentFingerprint {
+            cacheParsedDocument(doc, fingerprint: fingerprint, in: scope)
+        }
 
         if performsCoverWork,
            !rec.isRemoteReference,
@@ -1035,6 +1135,7 @@ final class HistoryStore: ObservableObject {
         try? FileManager.default.removeItem(at: payloadURL(id, in: scope))
         try? FileManager.default.removeItem(at: coverFileURL(id, in: scope))
         try? FileManager.default.removeItem(at: ocrSnapshotURL(id, in: scope))
+        removeParsedCache(id, in: scope)
         removeReadingCheckpoints(id, in: scope)
         save(in: scope)
     }
@@ -1049,6 +1150,7 @@ final class HistoryStore: ObservableObject {
             try? FileManager.default.removeItem(at: payloadURL(record.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(record.id, in: scope))
             try? FileManager.default.removeItem(at: ocrSnapshotURL(record.id, in: scope))
+            removeParsedCache(record.id, in: scope)
             removeReadingCheckpoints(record.id, in: scope)
         }
         records.removeAll { $0.sourceKind == sourceKind }
@@ -1061,6 +1163,7 @@ final class HistoryStore: ObservableObject {
             try? FileManager.default.removeItem(at: payloadURL(r.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(r.id, in: scope))
             try? FileManager.default.removeItem(at: ocrSnapshotURL(r.id, in: scope))
+            removeParsedCache(r.id, in: scope)
             removeReadingCheckpoints(r.id, in: scope)
         }
         records.removeAll()
@@ -1397,16 +1500,8 @@ final class HistoryStore: ObservableObject {
             let built = DocumentBuilder.fromPlainText(text, title: rec.title)
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .text,
                                    language: built.language, paragraphs: built.paragraphs)
-        case .pdf:
-            guard let data = localPayloadData(rec.id) else { return nil }
-            guard let built = try await DocumentBuilder.fromPDFWithOCR(
-                data: data,
-                title: rec.title,
-                fallbackTitle: rec.title
-            ) else { return nil }
-            guard isCurrent(scope), records.contains(rec) else { return nil }
-            return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .pdf, language: built.language,
-                                   paragraphs: built.paragraphs, fileData: data)
+        case .pdf, .epub:
+            return try await reopenParsedDocument(rec, in: scope)
         case .docx:
             guard let data = localPayloadData(rec.id) else { return nil }
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .docx,
@@ -1418,12 +1513,6 @@ final class HistoryStore: ObservableObject {
             let built = DocumentBuilder.fromPlainText(text, title: rec.title)
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .text,
                                    language: built.language, paragraphs: built.paragraphs)
-        case .epub:
-            // EPUB 原生重开：从字节重新解析为段落（像 PDF），而非旧 WebView 的空 paragraphs（否则白屏）
-            guard let data = localPayloadData(rec.id),
-                  let built = DocumentBuilder.fromEPUB(data: data, title: rec.title) else { return nil }
-            return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .epub, language: built.language,
-                                   paragraphs: built.paragraphs, fileData: data)
         case .photo:
             guard let data = localPayloadData(rec.id) else { return nil }
             // 识别过的照片直接用快照重开。真机上重跑一次采集管线要 6.7 秒

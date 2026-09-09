@@ -905,16 +905,6 @@ private struct KindleReadPlaybackBar: View {
             .accessibilityIdentifier("kindleReadPlayPauseButton")
             .accessibilityValue(isLoading ? "loading" : (vm.isPlaying ? "playing" : "paused"))
         }
-        .safeAreaInset(edge: .top, spacing: 8) {
-            if let notice = vm.resumeNotice {
-                Text(notice)
-                    .font(.footnote)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(12)
-                    .frame(maxWidth: 420)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-            }
-        }
     }
 
     private var playbackStatus: String {
@@ -2248,7 +2238,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var automaticAppReviewContinuationGeneration: UInt64?
     private var cancellables = Set<AnyCancellable>()
     private var playbackCancellables = Set<AnyCancellable>()
-    private let store = KindleLibraryStore.shared
+    private let store: KindleLibraryStore
+    private let historyStore: HistoryStore
+    private let positionStorageGeneration: UUID
+    private var activeReadNavigationID: UUID?
+    private var userGestureNavigation: (gesture: String, position: UUID)?
     private let analyticsContext: AnalyticsContentContext
 
     /// One reader WebView is bound to one concrete book identity. Storefront
@@ -2388,6 +2382,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     // remain the default and the fixture never needs an Amazon or TTS request.
     var startDocumentPreparationForTesting: (() async throws -> ReadingDocument)?
     var syncDialogReadinessForTesting: (() async throws -> Void)?
+    var readSpeechGeneratorForTesting: (any ParagraphSpeechGenerating)?
     #endif
     private var pendingPersistentAnchor: KindleListeningAnchor?
     private var listeningAnchorPersistTask: Task<Void, Never>?
@@ -3099,8 +3094,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         book: KindleBook,
         staleRecoveryAlreadyAttempted: Bool = false,
         openIntent: KindleOpenIntent = .present,
-        websiteDataStore: WKWebsiteDataStore? = nil
+        websiteDataStore: WKWebsiteDataStore? = nil,
+        libraryStore: KindleLibraryStore = .shared,
+        historyStore: HistoryStore = .shared
     ) {
+        self.store = libraryStore
+        self.historyStore = historyStore
+        self.positionStorageGeneration = libraryStore.positionStorageGeneration
         var resolvedBook = book
         if KindleStorefront.entry(id: resolvedBook.storefrontID) == nil {
             resolvedBook.storefrontID = KindleStorefront.entry(url: URL(string: book.readerURL))?.id
@@ -3381,11 +3381,26 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             )
         case "kindle-user-page-gesture":
             let direction = payload["direction"] as? String ?? "unknown"
+            guard sourceWebView === webView,
+                  sourceContentController === webView.configuration.userContentController,
+                  !isKindleSyncDialogVisible else { return }
+            let shouldResume = shouldResumeAfterUserPageTurn
+            let navigation = beginUserNavigation(reason: "swipe-\(direction)")
+            if let gesture = payload["gestureID"] as? String, let navigation {
+                userGestureNavigation = (gesture, navigation.id)
+            }
+            if !shouldResume {
+                stopPlaybackForPageTurn(reason: "paused-swipe", clearLiveOverlay: true)
+                cancelInFlightProcessingForManualPageTurn(reason: "paused-swipe")
+                statusText = ""
+                return
+            }
             guard shouldResumeAfterUserPageTurn,
                   !isPageTurnResuming,
                   !isAdvancingLivePage,
                   let oldKey = livePageKey?.nilIfEmpty else {
-                KindleRunLog.write("KINDLE user page gesture ignored direction=\(direction) active=\(shouldResumeAfterUserPageTurn ? "Y" : "N")")
+                let audio = AudioPlayerService.shared
+                KindleRunLog.write("KINDLE user page gesture ignored direction=\(direction) active=\(shouldResumeAfterUserPageTurn ? "Y" : "N") bookMatch=\(audio.currentBookId == book.id ? "Y" : "N") playing=\(audio.isPlaying ? "Y" : "N") resuming=\(isPageTurnResuming ? "Y" : "N") advancing=\(isAdvancingLivePage ? "Y" : "N") livePage=\(livePageKey?.nilIfEmpty == nil ? "N" : "Y")")
                 return
             }
             KindleRunLog.write("KINDLE user page gesture direction=\(direction) old=\(Self.keyLog(oldKey))")
@@ -3395,6 +3410,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 reason: "kindle-swipe-\(direction)",
                 force: true
             )
+        case "kindle-user-page-settled":
+            guard sourceWebView === webView,
+                  sourceContentController === webView.configuration.userContentController,
+                  !isKindleSyncDialogVisible,
+                  let navigation = userGestureNavigation,
+                  payload["gestureID"] as? String == navigation.gesture else { return }
+            confirmUserNavigation(id: navigation.position, state: payload)
         case "toc-click", "toc-after-click", "toc-close", "toc-close-error":
             if isNativeTOCBridgeJumping {
                 KindleRunLog.write("KINDLE toc event ignored-bridge-jump type=\(type) text=\(Self.keyLog(payload["text"] as? String ?? ""))")
@@ -3685,7 +3707,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if let cloudLocation = event.cloudLocation { kindleSyncCloudLocation = cloudLocation }
 
         if let choice = event.choice {
-            if choice.rawValue == "yes" { needsColdListeningPageRestore = false }
+            // Both choices select a page: Yes selects Amazon's location; No
+            // selects the currently displayed one. Neither may restore an older
+            // CastReader listening cursor over that explicit decision.
+            _ = beginUserNavigation(reason: "sync-choice-\(choice.rawValue)")
             statusText = AppLocalized("正在应用 Kindle 阅读位置…")
             KindleRunLog.write("KINDLE sync dialog choice=\(choice.rawValue) local=\(kindleSyncLocalLocation ?? -1) cloud=\(kindleSyncCloudLocation ?? -1)")
             return
@@ -3769,6 +3794,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             do {
                 try await self.prepareAfterSyncDialog(retainsOwnership: retainsResolutionOwnership)
                 guard retainsResolutionOwnership() else { return }
+                if let navigation = self.store.navigationPositions[self.book.id] {
+                    await self.captureUserNavigation(id: navigation.id)
+                    guard retainsResolutionOwnership() else { return }
+                }
                 self.resetLiveSession(clearPlaybackCenter: false, preservingStartIntent: true)
                 // The old capture may still be returning from Vision/WK when
                 // the dialog has settled. Let that specific start unwind its
@@ -4030,6 +4059,90 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard let anchor = pendingPersistentAnchor else { return }
         pendingPersistentAnchor = nil
         persistListeningAnchor(anchor, reason: reason)
+    }
+
+    @discardableResult
+    private func beginUserNavigation(reason: String) -> KindleNavigationPosition? {
+        flushListeningAnchor(reason: "before-user-navigation")
+        needsColdListeningPageRestore = false
+        userGestureNavigation = nil
+        readVM?.discardReadingResumeForConfirmedNavigation()
+        let position = store.beginNavigation(bookID: book.id, boundary: positionStorageGeneration)
+        KindleRunLog.write("KINDLE user position intent reason=\(reason) saved=\(position == nil ? "N" : "Y")")
+        return position
+    }
+
+    private func confirmUserNavigation(id: UUID, state: [String: Any], document: ReadingDocument? = nil) {
+        guard let key = (state["key"] as? String)?.nilIfEmpty,
+              let pixels = (state["pixelFingerprint"] as? String)?.nilIfEmpty,
+              store.positionStorageGeneration == positionStorageGeneration,
+              store.confirmNavigation(bookID: book.id, id: id, pageKey: key, pixelFingerprint: pixels,
+                  pageTextHash: document.map { KindleListeningAnchorResolver.pageTextHash(paragraphs: $0.paragraphs) },
+                  progressLabel: state["progress"] as? String, readerURL: state["url"] as? String) else { return }
+        book.lastReadPageKey = key
+        if let url = state["url"] as? String { book.lastReadURL = url }
+        if let progress = state["progress"] as? String, !progress.isEmpty { book.progressLabel = progress }
+        historyStore.recordKindleBook(book)
+        KindleRunLog.write("KINDLE user position confirmed key=\(Self.keyLog(key)) request=\(id.uuidString.prefix(8))")
+    }
+
+    private func captureUserNavigation(id: UUID) async {
+        guard let state = try? await evaluateJSON("window.__crKindleState && window.__crKindleState()") else { return }
+        confirmUserNavigation(id: id, state: state)
+    }
+
+    private func restoreColdNavigationPosition(_ position: KindleNavigationPosition) async {
+        guard needsColdListeningPageRestore, !isKindleSyncDialogVisible,
+              store.positionStorageGeneration == positionStorageGeneration else { return }
+        func stillCurrent() -> Bool {
+            !Task.isCancelled && needsColdListeningPageRestore && !isKindleSyncDialogVisible &&
+                store.navigationPositions[book.id]?.id == position.id &&
+                store.positionStorageGeneration == positionStorageGeneration
+        }
+        // Even a close before the settled-page callback must not resurrect an
+        // older listening cursor over the user's navigation intent.
+        guard position.pixelFingerprint != nil || position.pageTextHash != nil else {
+            needsColdListeningPageRestore = false
+            return
+        }
+        do {
+            try await ensureCaptureScriptInstalled(reason: "cold-user-position")
+            let initialKey = await currentVisibleKindlePageKey()
+            let directions: [KindlePageTurnDirection] = Array(repeating: .previous, count: 4)
+                + Array(repeating: .next, count: 8)
+            for step in 0...directions.count {
+                guard stillCurrent() else { return }
+                try await waitForKindleImageStable()
+                guard stillCurrent() else { return }
+                let state = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
+                guard stillCurrent() else { return }
+                var matches = position.pixelFingerprint != nil &&
+                    state["pixelFingerprint"] as? String == position.pixelFingerprint
+                if !matches, let hash = position.pageTextHash {
+                    let page = try await captureVisiblePage(pageIndex: 0)
+                    guard stillCurrent() else { return }
+                    matches = KindleListeningAnchorResolver.pageTextHash(paragraphs: makeLiveDocument(from: page).paragraphs) == hash
+                }
+                if matches {
+                    confirmUserNavigation(id: position.id, state: state)
+                    pendingCaptureKey = state["key"] as? String
+                    needsColdListeningPageRestore = false
+                    KindleRunLog.write("KINDLE user position restored steps=\(step) key=\(Self.keyLog(pendingCaptureKey ?? ""))")
+                    return
+                }
+                guard step < directions.count else { break }
+                _ = try await requestKindlePageTurnTarget(directions[step], oldKey: state["key"] as? String ?? "")
+            }
+            if stillCurrent() {
+                _ = await restorePlaybackKeyVisibility(initialKey, reason: "user-position-search-rollback", maxSteps: 2)
+            }
+        } catch {
+            KindleRunLog.write("KINDLE user position restore deferred error=\(error.localizedDescription)")
+        }
+        if stillCurrent() {
+            needsColdListeningPageRestore = false
+            KindleRunLog.write("KINDLE user position uses visible page reason=location-unavailable")
+        }
     }
 
     func reload() {
@@ -6058,6 +6171,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @discardableResult
     func startCurrentMode() async throws -> KindlePlaybackStartOutcome {
         try requireReaderOperation(.ttsPreparation, reason: "start-current-mode")
+        if isKindleSyncDialogVisible,
+           (try? await evaluate("window.__crKindleSyncDialogVisible && window.__crKindleSyncDialogVisible()")) as? Bool == false {
+            finishKindleSyncDialog(reason: "play-probe-hidden")
+        }
         if let existing = pendingPlaybackStart, playbackStartIsCurrent(existing) {
             return .deferred // Repeated Play while preparing coalesces; it is not Pause.
         }
@@ -6112,11 +6229,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// durable content key before OCR builds a new paragraph index; the generic
     /// resume checkpoint then verifies the paragraph and seeks the saved word.
     private func restoreColdListeningPageIfNeeded() async {
+        if let position = store.navigationPositions[book.id] {
+            await restoreColdNavigationPosition(position)
+            return
+        }
         guard needsColdListeningPageRestore, !isKindleSyncDialogVisible,
               readerOperationAllowed(.capture, reason: "cold-resume"),
               let anchor = store.listeningAnchor(for: book.id), anchor.bookId == book.id,
               anchor.schemaVersion == KindleListeningAnchor.currentSchemaVersion,
-              let checkpoint = HistoryStore.shared.readingCheckpoint(for: book.id) else { return }
+              let checkpoint = historyStore.readingCheckpoint(for: book.id) else { return }
         guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
         try? await ensureCaptureScriptInstalled(reason: "cold-resume")
         guard !Task.isCancelled else { return }
@@ -6230,8 +6351,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   Self.keyLog(livePageKey ?? ""))
             #endif
             if vm.resumeNotice != nil {
-                return .deferred
-            } else if vm.hasPendingReadingResume {
+                // Play is an explicit request to read the visible page even
+                // when an old exact cursor cannot be relocated there.
+                vm.discardReadingResumeForConfirmedNavigation()
+                KindleRunLog.write("KINDLE play uses current page reason=old-cursor-unavailable")
+            }
+            if vm.hasPendingReadingResume {
                 vm.ensurePlaying()
             } else if start > 0 {
                 vm.jump(to: start)
@@ -6368,9 +6493,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE page turn blocked sync-dialog direction=\(direction.logName)")
             return
         }
-        needsColdListeningPageRestore = false
         let resumeMode = pendingManualPageResumeMode ?? mode
         let shouldResume = shouldResumeAfterUserPageTurn
+        let navigation = beginUserNavigation(reason: "button-\(direction.logName)")
         KindleRunLog.write("KINDLE page turn requested \(direction.logName) mode=\(mode.rawValue) resume=\(shouldResume)")
         if shouldResume {
             activeManualTurnShouldResume = true
@@ -6392,11 +6517,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         pendingManualTurnShouldResume = false
         activeManualTurnShouldResume = false
         stopPageKeyWatcher()
+        stopPlaybackForPageTurn(reason: "paused-page-turn")
+        cancelInFlightProcessingForManualPageTurn(reason: "paused-page-turn")
 
         do {
             try await ensureCaptureScriptInstalled(reason: "dispatch-only-\(direction.logName)")
             let oldKey = await currentVisibleKindlePageKey()
             let target = try await requestKindlePageTurnTarget(direction, oldKey: oldKey)
+            if let navigation, let state = target.result["confirmedState"] as? [String: Any] {
+                confirmUserNavigation(id: navigation.id, state: state)
+            }
             let result = target.result
             let strategy = result["strategy"] as? String ?? ""
             KindleRunLog.write("KINDLE page turn dispatch-only result \(direction.logName) old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(target.targetKey)) strategy=\(strategy) tried=\(String(describing: result["tried"] ?? result["fallbackTried"] ?? "")) reason=\(String(describing: result["reason"] ?? ""))")
@@ -6430,6 +6560,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return false
         }
         let fallbackOldKey = livePageKey
+        let positionID = store.navigationPositions[book.id]?.id
         let heldPage = heldPageForManualNavigation
         let reason = "manual-\(direction.logName)"
         // Stop the old page before any WebView readiness/geometry await. Audio,
@@ -6483,6 +6614,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 direction, oldKey: oldKey, heldPage: heldPage
             )
             guard !Task.isCancelled, preloadEpoch == navigationEpoch else { return false }
+            if let positionID, let state = turnTarget.result["confirmedState"] as? [String: Any] {
+                confirmUserNavigation(id: positionID, state: state)
+            }
             let turnResult = turnTarget.result
             let strategy = turnResult["strategy"] as? String ?? ""
             KindleRunLog.write("KINDLE page turn only \(direction.logName) old=\(Self.keyLog(oldKey)) visibleOld=\(Self.keyLog(visibleOldKey)) target=\(Self.keyLog(turnTarget.targetKey)) strategy=\(strategy) tried=\(String(describing: turnResult["tried"] ?? turnResult["fallbackTried"] ?? "")) resume=\(shouldResumeAfterTurn)")
@@ -6671,6 +6805,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
             guard !Task.isCancelled, preloadEpoch == epoch else { return }
             self.mode = resumeMode
+            if let navigation = store.navigationPositions[book.id], let pixels = prepared.page.pixelFingerprint {
+                confirmUserNavigation(id: navigation.id, state: [
+                    "key": prepared.page.key, "pixelFingerprint": pixels,
+                    "progress": prepared.page.progress ?? "", "url": prepared.page.url ?? book.effectiveReaderURL
+                ], document: prepared.document)
+            }
             let singlePageDoc = try await activatePreparedNextPage(
                 prepared,
                 oldKey: activationOldKey,
@@ -6911,6 +7051,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 result["targetKey"] = targetKey
                 result["afterFingerprint"] = fingerprint
                 result["stableVisualSamples"] = stableSamples
+                result["confirmedState"] = state
                 lastConfirmedTurnFingerprint = fingerprint
                 KindleRunLog.write("KINDLE_TURN_CONFIRM progress=\(String(describing: progress)) before=\(beforeFingerprint?.prefix(18) ?? "") after=\(fingerprint?.prefix(18) ?? "") stable=\(stableSamples) accepted=Y")
                 return (targetKey, result)
@@ -7674,6 +7815,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private var shouldResumeAfterUserPageTurn: Bool {
+        if mode == .read, readVM?.isPlaybackPausedByUser == true { return false }
         if pendingManualPageResumeMode != nil || activeManualTurnShouldResume {
             return true
         }
@@ -8132,12 +8274,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         )
         activeReadPageSession = session
         consumedReadPageGeneration = nil
+        var speechGenerator: (any ParagraphSpeechGenerating)? = nil
+        #if DEBUG
+        speechGenerator = readSpeechGeneratorForTesting
+        #endif
         let vm = ReadAloudViewModel(
             document: document,
             analyticsContext: analyticsContext,
-            analyticsSessionCoordinator: readAnalyticsSessionCoordinator
+            analyticsSessionCoordinator: readAnalyticsSessionCoordinator,
+            historyStore: historyStore,
+            speechGenerator: speechGenerator
         )
         vm.configurePlaybackMetadata(id: book.id, title: book.title, coverURL: book.coverURL)
+        activeReadNavigationID = store.navigationPositions[book.id]?.id
+        if activeReadNavigationID != nil { vm.discardReadingResumeForConfirmedNavigation() }
         bindReadPageFinished(vm, session: session)
         KindleRunLog.write(
             "KINDLE read session installed generation=\(session.generation) " +
@@ -8221,7 +8371,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private func recordPlaybackStart(language: String) {
         store.markOpened(book)
-        HistoryStore.shared.recordKindleBook(book, language: language)
+        historyStore.recordKindleBook(book, language: language)
     }
 
     func refocusPlaybackPosition(reason: String) async {
@@ -8731,7 +8881,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func persistListeningAnchor(_ anchor: KindleListeningAnchor, reason: String) {
-        store.saveListeningAnchor(anchor)
+        guard store.positionStorageGeneration == positionStorageGeneration,
+              store.saveListeningAnchor(anchor, navigationID: activeReadNavigationID) else { return }
         lastListeningAnchorPersistedAt = Date()
         KindleRunLog.write("KINDLE audiobook anchor saved reason=\(reason) book=\(Self.keyLog(anchor.bookId)) key=\(Self.keyLog(anchor.pageKey)) hash=\(anchor.pageTextHash.prefix(12)) p=\(anchor.paragraphIndex) w=\(anchor.wordIndex ?? -1) offset=\(anchor.charOffset) schema=\(anchor.schemaVersion) reader=\(anchor.readerImplementationVersion)")
     }

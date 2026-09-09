@@ -312,6 +312,7 @@ struct HomeView: View {
     @State private var isProcessingPDF = false
     @State private var cloudHistoryProgress: CloudHistoryReopenProgress?
     @State private var cloudHistoryTask: Task<Void, Never>?
+    @State private var isOpeningLocalDocument = false
     @State private var cloudHistoryAttemptID: UUID?
     @State private var accountScopedImportTask: Task<Void, Never>?
     @State private var isLoadingProProducts = false
@@ -1318,13 +1319,15 @@ struct HomeView: View {
     }
 
     private func reopen(_ rec: HistoryRecord) {
-        guard cloudHistoryProgress == nil else { return }
+        guard cloudHistoryProgress == nil, !isOpeningLocalDocument else { return }
         cloudHistoryTask?.cancel()
+        isOpeningLocalDocument = !rec.requiresRemoteReopen && LocalDocumentCache.supports(rec.sourceKind)
         let attemptID = UUID()
         cloudHistoryAttemptID = attemptID
         cloudHistoryTask = Task { @MainActor in
             defer {
                 if cloudHistoryAttemptID == attemptID {
+                    isOpeningLocalDocument = false
                     cloudHistoryProgress = nil
                     cloudHistoryTask = nil
                     cloudHistoryAttemptID = nil
@@ -1495,7 +1498,7 @@ struct HomeView: View {
                 Text(processingStatusText)
                     .foregroundColor(.white)
                     .font(.subheadline)
-                if cloudHistoryProgress != nil {
+                if cloudHistoryProgress != nil || isOpeningLocalDocument {
                     Button(CloudLocalized("取消"), role: .cancel) {
                         cancelCloudHistoryReopen()
                     }
@@ -1509,6 +1512,7 @@ struct HomeView: View {
     }
 
     private func cancelCloudHistoryReopen() {
+        isOpeningLocalDocument = false
         cloudHistoryTask?.cancel()
         cloudHistoryTask = nil
         cloudHistoryAttemptID = nil
@@ -1517,10 +1521,11 @@ struct HomeView: View {
 
     private var isProcessingContent: Bool {
         captureVM.isProcessing || isProcessingPDF
-            || cloudHistoryProgress != nil
+            || cloudHistoryProgress != nil || isOpeningLocalDocument
     }
 
     private var processingStatusText: String {
+        if isOpeningLocalDocument { return AppLocalized("正在打开…") }
         guard let progress = cloudHistoryProgress else {
             return AppLocalized("识别中…")
         }

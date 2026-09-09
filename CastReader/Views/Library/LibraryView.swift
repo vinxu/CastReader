@@ -15,6 +15,7 @@ struct LibraryView: View {
     @ObservedObject private var history = HistoryStore.shared
     @ObservedObject private var cloudStorage = CloudStorageCenter.shared
     @State private var opening = false
+    @State private var openingSourceKind: ReadingSourceKind?
     @State private var openingMessage = ""
     @State private var openingProgress: CloudHistoryReopenProgress?
     @State private var openingTask: Task<Void, Never>?
@@ -216,7 +217,7 @@ struct LibraryView: View {
                             .font(.caption)
                             .foregroundStyle(AppTheme.mutedForeground)
                     }
-                    if openingProgress != nil {
+                    if openingProgress != nil || LocalDocumentCache.supports(openingSourceKind ?? .text) {
                         Button(CloudLocalized("取消"), role: .cancel) {
                             cancelOpening()
                         }
@@ -316,14 +317,16 @@ struct LibraryView: View {
         let attemptID = UUID()
         openingAttemptID = attemptID
         opening = true
+        openingSourceKind = rec.sourceKind
         openingProgress = rec.requiresRemoteReopen ? .validatingAccount : nil
         openingMessage = rec.requiresRemoteReopen
             ? CloudLocalized("正在连接账号…")
-            : ""
+            : (LocalDocumentCache.supports(rec.sourceKind) ? AppLocalized("正在打开…") : "")
         openingTask = Task { @MainActor in
             defer {
                 if openingAttemptID == attemptID {
                     opening = false
+                    openingSourceKind = nil
                     openingMessage = ""
                     openingProgress = nil
                     openingTask = nil
@@ -358,6 +361,7 @@ struct LibraryView: View {
         openingTask = nil
         openingAttemptID = nil
         opening = false
+        openingSourceKind = nil
         openingMessage = ""
         openingProgress = nil
     }

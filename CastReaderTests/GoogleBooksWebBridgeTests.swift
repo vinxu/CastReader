@@ -30,12 +30,15 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         let checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: [target])
             .checkpoint(sourceKind: .kobo, paragraphIndex: 0, audio: nil))
         XCTAssertTrue(history.saveReadingCheckpoint(checkpoint, for: document.id, boundary: history.progressBoundaryToken))
+        let storedCheckpoint = try XCTUnwrap(history.readingCheckpoint(for: document.id))
+        XCTAssertEqual(storedCheckpoint.activity?.listenedSeconds, 0)
+        XCTAssertEqual(storedCheckpoint.activity?.revision, 1)
         document.paragraphs = []
         let read = ReadAloudViewModel(document: document, historyStore: history)
         let explain = ExplainViewModel(document: document)
         let bridge = WebReaderBridge()
         bridge.configure(expectsDynamicWebContent: true, livePlatform: .kobo,
-            bookID: document.id, readerURL: url, openingCheckpoint: checkpoint)
+            bookID: document.id, readerURL: url, openingCheckpoint: storedCheckpoint)
         bridge.attach(readVM: read, explainVM: explain)
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
@@ -79,7 +82,7 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         }
         await fulfillment(of: [booted], timeout: 3)
         XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
-        XCTAssertEqual(history.readingCheckpoint(for: document.id), checkpoint)
+        XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
         _ = try await web.callAsyncJavaScript("window.emitPage(text, 'saved-page')", arguments: ["text": target.text], in: nil, contentWorld: .page)
         for _ in 0..<80 where read.stagedLiveWebParagraphTexts.isEmpty {
             try await Task.sleep(nanoseconds: 25_000_000)
@@ -88,7 +91,7 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         XCTAssertEqual(read.currentParagraphIndex, 0)
         XCTAssertNil(read.resumeNotice)
         XCTAssertFalse(read.isPlaying)
-        XCTAssertEqual(history.readingCheckpoint(for: document.id), checkpoint)
+        XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
     }
 
     func testCanonicalShellLocationReachesProgressWithoutReaderFrameID() async throws {

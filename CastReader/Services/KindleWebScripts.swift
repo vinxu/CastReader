@@ -5154,6 +5154,10 @@ enum KindleWebScripts {
           }
         } catch (_) {}
       }
+      window.__crKindleSyncDialogVisible = function() {
+        crKindleCheckSyncDialog();
+        return !!crKindleSyncDialogCandidate();
+      };
       try {
         if (window.__crKindleSyncDialogTimer) clearInterval(window.__crKindleSyncDialogTimer);
         window.__crKindleSyncDialogTimer = setInterval(crKindleCheckSyncDialog, 250);
@@ -6211,6 +6215,31 @@ enum KindleWebScripts {
         if (window.__crKindleUserPageGestureObserverInstalled) return;
         window.__crKindleUserPageGestureObserverInstalled = true;
         var start = null;
+        var gestureSerial = 0;
+        function rememberSettledPage(serial, beforeFingerprint) {
+          var previous = '', stable = 0, attempts = 0;
+          function sample() {
+            if (serial !== gestureSerial || !window.__crKindleState) return;
+            try {
+              var state = JSON.parse(window.__crKindleState());
+              var fingerprint = String(state.pixelFingerprint || '');
+              if (fingerprint && fingerprint === previous) stable++; else stable = 0;
+              previous = fingerprint;
+              // Amazon can keep the old image visible while fetching the
+              // next one. A repeated old frame is not navigation evidence.
+              if (stable >= 1 && beforeFingerprint && fingerprint !== beforeFingerprint &&
+                  state.key && !crKindleSyncDialogCandidate()) {
+                crKindlePostNative('kindle-user-page-settled', {
+                  gestureID:String(serial), key:state.key, pixelFingerprint:fingerprint,
+                  progress:state.progress || '', url:state.url || ''
+                });
+                return;
+              }
+            } catch (_) {}
+            if (++attempts < 40) setTimeout(sample, 150);
+          }
+          setTimeout(sample, 150);
+        }
         function begin(e) {
           try {
             var touch = e && e.touches && e.touches.length === 1 ? e.touches[0] : null;
@@ -6223,7 +6252,9 @@ enum KindleWebScripts {
               start = null;
               return;
             }
-            start = { x:Number(touch.clientX || 0), y:Number(touch.clientY || 0), at:crKindleNow() };
+            var before = window.__crKindleState ? JSON.parse(window.__crKindleState()) : {};
+            start = { x:Number(touch.clientX || 0), y:Number(touch.clientY || 0), at:crKindleNow(),
+                      fingerprint:String(before.pixelFingerprint || '') };
           } catch (_) { start = null; }
         }
         function finish(e) {
@@ -6236,12 +6267,15 @@ enum KindleWebScripts {
             var dy = Number(touch.clientY || 0) - first.y;
             var elapsed = crKindleNow() - first.at;
             if (elapsed > 1400 || Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+            var serial = ++gestureSerial;
             crKindlePostNative('kindle-user-page-gesture', {
+              gestureID:String(serial),
               direction:dx < 0 ? 'left' : 'right',
               dx:Math.round(dx),
               dy:Math.round(dy),
               elapsed:elapsed
             });
+            rememberSettledPage(serial, first.fingerprint);
           } catch (_) { start = null; }
         }
         try { document.addEventListener('touchstart', begin, { capture:true, passive:true }); } catch (_) {}

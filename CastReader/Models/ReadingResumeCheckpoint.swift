@@ -81,7 +81,7 @@ struct ReadingResumeAudioCursor: Codable, Equatable {
     }
 }
 
-struct ReadingResumeDocumentIndex {
+struct ReadingResumeDocumentIndex: Codable, Equatable {
     let fingerprints: [String]
     let readable: Set<Int>
     let fingerprint: String

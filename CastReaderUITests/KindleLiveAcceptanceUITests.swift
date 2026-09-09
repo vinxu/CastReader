@@ -106,6 +106,60 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         super.tearDown()
     }
 
+    func testAuthorizedKindleColdResumeThenManualPageTurns() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1",
+                          "Requires the user's authorized Kindle shelf and an existing listening checkpoint")
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+                               "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.terminate()
+        app.launch()
+        let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.kindle.")).firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 20))
+        for _ in 0..<6 where !book.isHittable { app.swipeUp() }
+        XCTAssertTrue(book.isHittable)
+        book.tap()
+        waitForPausedReader(app)
+        let play = app.buttons["kindleReadPlayPauseButton"]
+        let surface = app.otherElements["kindleAcceptanceState"]
+        play.tap()
+        wait(90) { play.value as? String == "Playing" &&
+            (surface.value as? String)?.hasPrefix("page=") == true &&
+            surface.value as? String != "page=none" }
+        snapshot(app, "Kindle-cold-resume-playing")
+
+        func swipe(left: Bool) {
+            let from = app.coordinate(withNormalizedOffset: CGVector(dx: left ? 0.8 : 0.2, dy: 0.45))
+            let to = app.coordinate(withNormalizedOffset: CGVector(dx: left ? 0.2 : 0.8, dy: 0.45))
+            from.press(forDuration: 0.05, thenDragTo: to)
+        }
+        for action in ["swipe-left", "swipe-right", "next", "previous", "rapid-left"] {
+            let before = surface.value as? String
+            switch action {
+            case "swipe-left": swipe(left: true)
+            case "swipe-right": swipe(left: false)
+            case "rapid-left": swipe(left: true); swipe(left: true)
+            default:
+                let button = app.buttons[action == "next" ? "kindleNextPageButton" : "kindlePreviousPageButton"]
+                wait(10) { button.isHittable && button.isEnabled }
+                button.tap()
+            }
+            var readySince: Date?
+            wait(25) {
+                let page = surface.value as? String
+                guard let page, page != "page=none", page != before,
+                      play.value as? String == "Playing" else { readySince = nil; return false }
+                if readySince == nil { readySince = Date() }
+                return Date().timeIntervalSince(readySince!) > 2
+            }
+            snapshot(app, "Kindle-cold-resume-" + action)
+        }
+        play.tap()
+        wait(10) { play.value as? String == "Paused" }
+        snapshot(app, "Kindle-manual-turns-complete-paused")
+    }
+
     func testAuthorizedKindleEightPageContinuousRead() throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1")
         continueAfterFailure = false

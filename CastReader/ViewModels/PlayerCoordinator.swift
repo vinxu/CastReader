@@ -77,8 +77,10 @@ final class PlayerCoordinator: ObservableObject {
         mode: ReaderMode = .read,
         autoplay: Bool = false,
         scenario: String? = nil,
-        analyticsContext suppliedAnalyticsContext: AnalyticsContentContext? = nil
+        analyticsContext suppliedAnalyticsContext: AnalyticsContentContext? = nil,
+        reusingLocalPayload: Bool = false
     ) {
+        let openStarted = Date()
         presentationGeneration = UUID()
         let document = historyStore.canonicalDocument(incomingDocument)
         KindlePlaybackCenter.shared.close()
@@ -144,7 +146,11 @@ final class PlayerCoordinator: ObservableObject {
         self.mode = mode
         updateOrientationForExpandedReader(document)
         isReaderPresented = true
-        historyStore.record(document)
+        if reusingLocalPayload { historyStore.recordReopenedLocalDocument(document) }
+        else { historyStore.record(document) }
+        if LocalDocumentCache.supports(document.sourceKind) {
+            ReaderRunLog.write("LOCAL player prepared source=\(document.sourceKind.rawValue) seconds=\(Date().timeIntervalSince(openStarted))")
+        }
         if autoplay, let s = session {
             // web/docx/epub 源段落由 WebView 异步提取，autoplay 交给 WebReaderBridge.onRendered 段落就绪后按 mode 启动；
             // 此处立即 start 会用空段落请求后端（解读 HTTP 400 / 朗读无内容）。

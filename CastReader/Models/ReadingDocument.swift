@@ -177,7 +177,12 @@ struct ReadingDocument: Identifiable, Equatable {
     var title: String
     var sourceKind: ReadingSourceKind
     var language: String                 // "en"/"zh"… 决定 TTS 与 Vision 识别语言
-    var paragraphs: [ReadingParagraph]
+    var paragraphs: [ReadingParagraph] {
+        didSet { precomputedResumeIndex = nil }
+    }
+    /// Derived from these exact paragraphs; cached local documents avoid a
+    /// second full-book scan on MainActor. Any paragraph mutation invalidates it.
+    var precomputedResumeIndex: ReadingResumeDocumentIndex? = nil
     var imageData: Data? = nil           // 仅 photo（JPEG）
     var imagePixelSize: CGSize? = nil    // 仅 photo，原图像素尺寸
     var sourceURL: String? = nil         // 上传得到的 COS URL；纯拍摄为 synthetic

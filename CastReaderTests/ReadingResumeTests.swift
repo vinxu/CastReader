@@ -537,6 +537,50 @@ final class ReadingResumeTests: XCTestCase {
         XCTAssertEqual(ReadAloudViewModel(document: doc, historyStore: fresh).currentParagraphIndex, 0)
     }
 
+    func testPreactivatedKindleColdResumeBindsStableBookBeforeSpeech() async throws {
+        let store = HistoryStore(directory: directory)
+        let saved = document(.kindle, id: "kindle-stable-book")
+        store.record(saved)
+        try save(store, doc: saved)
+        var page = saved
+        page.id = "fresh-page-uuid"
+        let vm = ReadAloudViewModel(document: page, historyStore: store,
+            speechGenerator: ResumeTestSpeech(segments: [segment(0, text: saved.paragraphs[1].text)],
+                                             initialDelayNanoseconds: 150_000_000))
+        vm.configurePlaybackMetadata(id: saved.id, title: saved.title, coverURL: nil)
+        defer { vm.stop(); vm.deactivate() }
+        XCTAssertTrue(vm.hasPendingReadingResume)
+        // Kindle preactivates the VM before choosing the saved-position entry.
+        // A previous content identity must never survive that new ownership.
+        AudioPlayerService.shared.setBook(id: "previous-content", title: "Previous", chapterTitle: nil, coverUrl: nil)
+        vm.activate()
+        vm.ensurePlaying()
+        XCTAssertEqual(AudioPlayerService.shared.currentBookId, saved.id,
+                       "Bind identity while TTS is pending, before page gestures can arrive")
+        try await waitUntil("Cold resume must play the remembered paragraph") {
+            vm.status.isReady && vm.isPlaying && AudioPlayerService.shared.hasAudibleProgress
+        }
+        XCTAssertEqual(vm.currentParagraphIndex, 1)
+        XCTAssertEqual(AudioPlayerService.shared.currentBookId, saved.id,
+                       "A playing Kindle page must still be recognized after TTS leaves loading state")
+        XCTAssertTrue(vm.shouldResumeAfterManualLivePageTurn)
+    }
+
+    func testPreactivatedKindleParagraphJumpBindsStableBook() async throws {
+        let page = document(.kindle, id: "jump-page-uuid")
+        let vm = ReadAloudViewModel(document: page, historyStore: HistoryStore(directory: directory),
+            speechGenerator: ResumeTestSpeech(segments: [segment(0, text: page.paragraphs[1].text)]))
+        vm.configurePlaybackMetadata(id: "kindle-jump-book", title: page.title, coverURL: nil)
+        defer { vm.stop(); vm.deactivate() }
+        AudioPlayerService.shared.setBook(id: "previous-content", title: "Previous", chapterTitle: nil, coverUrl: nil)
+        vm.activate()
+        vm.jump(to: 1)
+        try await waitUntil("Preactivated jump must play") {
+            vm.status.isReady && vm.isPlaying && AudioPlayerService.shared.hasAudibleProgress
+        }
+        XCTAssertEqual(AudioPlayerService.shared.currentBookId, "kindle-jump-book")
+    }
+
     func testConfirmedKindlePageTurnDiscardsOldPageResumeBeforeWarmPlayback() async throws {
         let store = HistoryStore(directory: directory)
         let old = document(.kindle, id: "kindle-stable-book")

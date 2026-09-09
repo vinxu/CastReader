@@ -20,6 +20,8 @@ final class KindleLibraryStore: ObservableObject {
     @Published private(set) var accountEmail: String?
     @Published private(set) var boundStorefrontID = KindleStorefront.us.id
     @Published private(set) var listeningAnchors: [String: KindleListeningAnchor] = [:]
+    @Published private(set) var navigationPositions: [String: KindleNavigationPosition] = [:]
+    private(set) var positionStorageGeneration = UUID()
     @Published var isRefreshing = false
     @Published var lastError: String?
 
@@ -29,6 +31,7 @@ final class KindleLibraryStore: ObservableObject {
         static let accountLabel = "kindle.library.account.label.v1"
         static let accountEmail = "kindle.library.account.email.v1"
         static let listeningAnchors = "kindle.listening.anchors.v1"
+        static let navigationPositions = "kindle.navigation.positions.v1"
         static let boundStorefront = "kindle.library.bound-storefront.v1"
         static let authoritativeStorefront = "kindle.library.bound-storefront-authoritative.v1"
     }
@@ -289,9 +292,43 @@ final class KindleLibraryStore: ObservableObject {
         listeningAnchors[bookID] != nil
     }
 
-    func saveListeningAnchor(_ anchor: KindleListeningAnchor) {
+    @discardableResult
+    func saveListeningAnchor(_ anchor: KindleListeningAnchor, navigationID: UUID? = nil) -> Bool {
+        guard hasActiveStorage else { return false }
+        if let navigation = navigationPositions[anchor.bookId] {
+            guard navigation.id == navigationID else { return false }
+            navigationPositions[anchor.bookId] = nil
+        }
         listeningAnchors[anchor.bookId] = anchor
         save()
+        return true
+    }
+
+    @discardableResult
+    func beginNavigation(bookID: String, boundary: UUID) -> KindleNavigationPosition? {
+        guard hasActiveStorage, positionStorageGeneration == boundary else { return nil }
+        let position = KindleNavigationPosition()
+        navigationPositions[bookID] = position
+        save()
+        return position
+    }
+
+    @discardableResult
+    func confirmNavigation(bookID: String, id: UUID, pageKey: String?, pixelFingerprint: String?,
+                           pageTextHash: String? = nil, progressLabel: String?, readerURL: String?) -> Bool {
+        guard let pageKey, !pageKey.isEmpty, let pixelFingerprint, !pixelFingerprint.isEmpty,
+              var position = navigationPositions[bookID], position.id == id else { return false }
+        // A newer visible page invalidates the older page's OCR hash.
+        if position.pageKey != pageKey { position.pageTextHash = nil }
+        position.pageKey = pageKey
+        position.pixelFingerprint = pixelFingerprint
+        position.pageTextHash = pageTextHash ?? position.pageTextHash
+        position.progressLabel = progressLabel ?? position.progressLabel
+        position.readerURL = readerURL ?? position.readerURL
+        navigationPositions[bookID] = position
+        updateProgress(bookID: bookID, pageKey: pageKey, url: readerURL, progressLabel: progressLabel)
+        save()
+        return true
     }
 
     func removeListeningAnchor(for bookID: String) {
@@ -338,6 +375,7 @@ final class KindleLibraryStore: ObservableObject {
         accountLabel = nil
         accountEmail = nil
         listeningAnchors.removeAll()
+        navigationPositions.removeAll()
         lastError = nil
         save()
     }
@@ -375,6 +413,10 @@ final class KindleLibraryStore: ObservableObject {
         if let anchorData = defaults.data(forKey: storageKey(Storage.listeningAnchors)),
            let decodedAnchors = try? JSONDecoder.kindle.decode([String: KindleListeningAnchor].self, from: anchorData) {
             listeningAnchors = decodedAnchors
+        }
+        if let data = defaults.data(forKey: storageKey(Storage.navigationPositions)),
+           let positions = try? JSONDecoder.kindle.decode([String: KindleNavigationPosition].self, from: data) {
+            navigationPositions = positions
         }
         let decoded: [KindleBook]
         if let data = defaults.data(forKey: storageKey(Storage.books)),
@@ -454,6 +496,9 @@ final class KindleLibraryStore: ObservableObject {
         if let anchorData = try? JSONEncoder.kindle.encode(listeningAnchors) {
             defaults.set(anchorData, forKey: storageKey(Storage.listeningAnchors))
         }
+        if let data = try? JSONEncoder.kindle.encode(navigationPositions) {
+            defaults.set(data, forKey: storageKey(Storage.navigationPositions))
+        }
         if let data = try? JSONEncoder.kindle.encode(books) {
             defaults.set(data, forKey: storageKey(Storage.books))
         }
@@ -474,6 +519,8 @@ final class KindleLibraryStore: ObservableObject {
         accountEmail = nil
         boundStorefrontID = KindleStorefront.us.id
         listeningAnchors = [:]
+        navigationPositions = [:]
+        positionStorageGeneration = UUID()
         isRefreshing = false
         lastError = nil
         hasAuthoritativeStorefrontBinding = false

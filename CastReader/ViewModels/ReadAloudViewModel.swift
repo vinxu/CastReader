@@ -775,6 +775,10 @@ final class ReadAloudViewModel: ObservableObject {
         }
         let token = audio.claimPlaybackSession(owner: .readAloud)
         audioSessionToken = token
+        // A restored page may be activated before ensurePlaying()/jump(),
+        // bypassing start(). Bind the book whenever we claim its audio session;
+        // Kindle's page-turn watcher also uses this identity after TTS is ready.
+        applyPlaybackMetadata()
         isPlaying = false
         isBuffering = false
         return token
@@ -1373,15 +1377,13 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func recomputeReadableIndices() {
-        resumeDocumentIndex = ReadingResumeDocumentIndex(paragraphs: paras)
-        readableIndices = paras.enumerated()
-            .filter {
-                $0.element.type.isReadable &&
-                    SpeechTextSanitizer.containsSpeakableContent(
-                        $0.element.resolvedSpeechText
-                    )
-            }
-            .map { $0.offset }
+        if webParagraphs == nil, let cached = document.precomputedResumeIndex,
+           cached.fingerprints.count == paras.count {
+            resumeDocumentIndex = cached
+        } else {
+            resumeDocumentIndex = ReadingResumeDocumentIndex(paragraphs: paras)
+        }
+        readableIndices = resumeDocumentIndex.readable.sorted()
     }
 
     /// .web：注入 WebView extractor 提取的正文段落，准备朗读。

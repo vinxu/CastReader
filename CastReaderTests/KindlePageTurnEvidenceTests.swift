@@ -390,6 +390,65 @@ final class KindlePageTurnEvidenceTests: XCTestCase {
         }
     }
 
+    @MainActor
+    func testSwipeWaitsForChangedPixelsBeforeSavingDelayedPage() async throws {
+        let fixture = try await TurnWebFixture.make()
+        defer { fixture.close() }
+        let messages = NavigationMessageRecorder()
+        fixture.webView.configuration.userContentController.add(messages, name: "castReaderKindle")
+        defer { fixture.webView.configuration.userContentController.removeScriptMessageHandler(forName: "castReaderKindle") }
+        _ = try await fixture.webView.evaluateJavaScript(Self.swipeFixtureScript)
+        let old = try await fixture.state()
+        _ = try await fixture.webView.evaluateJavaScript("emitSwipe(-100); setTimeout(()=>drawPage(102),900); true")
+        try await Task.sleep(nanoseconds: 600_000_000)
+        XCTAssertEqual(messages.gestures.count, 1)
+        XCTAssertTrue(messages.settled.isEmpty, "Stable old pixels while Amazon is loading are not a new position")
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        let current = try await fixture.state()
+        XCTAssertNotEqual(old["pixelFingerprint"] as? String, current["pixelFingerprint"] as? String)
+        XCTAssertEqual(messages.settled.count, 1)
+        XCTAssertEqual(messages.settled.last?["pixelFingerprint"] as? String, current["pixelFingerprint"] as? String)
+    }
+
+    @MainActor
+    func testRapidOppositeSwipesOnlySaveLatestSettledPage() async throws {
+        let fixture = try await TurnWebFixture.make()
+        defer { fixture.close() }
+        let messages = NavigationMessageRecorder()
+        fixture.webView.configuration.userContentController.add(messages, name: "castReaderKindle")
+        defer { fixture.webView.configuration.userContentController.removeScriptMessageHandler(forName: "castReaderKindle") }
+        _ = try await fixture.webView.evaluateJavaScript(Self.swipeFixtureScript)
+        _ = try await fixture.webView.evaluateJavaScript("""
+        emitSwipe(-100);
+        setTimeout(()=>drawPage(102),100);
+        setTimeout(()=>emitSwipe(100),220);
+        setTimeout(()=>drawPage(103),700);
+        true
+        """)
+        try await Task.sleep(nanoseconds: 1_400_000_000)
+        let current = try await fixture.state()
+        XCTAssertEqual(messages.gestures.compactMap { $0["direction"] as? String }, ["left", "right"])
+        XCTAssertEqual(messages.settled.count, 1)
+        XCTAssertEqual(messages.settled.last?["gestureID"] as? String, "2")
+        XCTAssertEqual(messages.settled.last?["pixelFingerprint"] as? String, current["pixelFingerprint"] as? String)
+    }
+
+    private static let swipeFixtureScript = """
+    window.__crKindleProbe.pageModeLocked=true;
+    window.emitSwipe=function(dx) {
+      const target=document.getElementById('page');
+      function emit(type, points, changed) {
+        const event=new Event(type,{bubbles:true});
+        Object.defineProperty(event,'touches',{value:points});
+        Object.defineProperty(event,'changedTouches',{value:changed});
+        target.dispatchEvent(event);
+      }
+      emit('touchstart',[{clientX:200,clientY:300}],[]);
+      emit('touchend',[],[{clientX:200+dx,clientY:300}]);
+    };
+    true
+    """
+
     private func attachGeometryEvidence(_ geometry: [String: Any], name: String) {
         guard let data = try? JSONSerialization.data(withJSONObject: geometry, options: [.prettyPrinted, .sortedKeys]),
               let text = String(data: data, encoding: .utf8) else { return }
@@ -588,5 +647,15 @@ private final class TurnWebFixture {
             try await Task.sleep(nanoseconds: 25_000_000)
         }
         throw NSError(domain: "TurnWebFixture.unchangedPixels", code: 2)
+    }
+}
+
+@MainActor
+private final class NavigationMessageRecorder: NSObject, WKScriptMessageHandler {
+    private(set) var messages: [[String: Any]] = []
+    var gestures: [[String: Any]] { messages.filter { $0["type"] as? String == "kindle-user-page-gesture" } }
+    var settled: [[String: Any]] { messages.filter { $0["type"] as? String == "kindle-user-page-settled" } }
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if let body = message.body as? [String: Any] { messages.append(body) }
     }
 }

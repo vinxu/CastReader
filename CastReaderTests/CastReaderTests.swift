@@ -150,7 +150,10 @@ class CastReaderTests: XCTestCase {
         XCTAssertEqual(SystemContinueContract.record(in: records, itemID: nil)?.id, "latest")
         XCTAssertEqual(SystemContinueContract.record(in: records, itemID: "older")?.id, "older")
         XCTAssertNil(SystemContinueContract.record(in: records, itemID: "missing"))
-        XCTAssertNil(SystemContinueContract.record(in: records, itemID: "kindle"))
+        XCTAssertEqual(SystemContinueContract.record(in: records, itemID: "kindle")?.id, "kindle",
+                       "The unified catalog routes explicitly selected Kindle records too")
+        XCTAssertNil(SystemContinueContract.record(in: records.filter { $0.id != "kindle" }, itemID: "kindle"),
+                     "A removed Kindle item must not fall back to another recent document")
     }
 
     func testHistoryRecordPersistsReadingPositionAcrossEncodeDecode() throws {
