@@ -31,4 +31,40 @@ App、Share Extension、Widget 的 Debug/Release 版本保持一致。预检通�
 
 - 完整翻译校验发现缺少“收听状态”及“正在恢复朗读位置…”的意大利语、巴西葡萄牙语；已补齐九语。原始全量单测 1580 项，7 项 opt-in 跳过，4 个测试方法产生 5 条失败断言；失败日志保留，修正后重跑目标测试和受影响完整测试组。
 
-最终测试、归档、上传和审核回执在发布完成后补充。
+## 已完成的发布检查
+
+- 单元检查：原始全量 1580 项。四个失败方法修正后，4 项目标复测、147 项受影响完整测试组（1 跳过）均无失败。合并结果 1573 项通过、7 项原有 opt-in 跳过、0 遗留失败。
+- Release 归档签名与版本核验通过，三个产品均为 1.2.37 / 58；最低 iOS 17.6；非豁免加密声明 false。归档是开发签名，Xcode 官方 App Store export/upload 流程执行分发重签名。
+- 正式包扫描通过：34 项书架测试标记和额外的进度测试启动标记均未出现在 Release 包；Debug 正对照有效。
+- Xcode 上传成功；Build `609387b6-78b6-4ad2-bb93-9eede523e476` 达到 VALID / APP_STORE_ELIGIBLE。
+- 商店版本 `e7f30c6a-f42a-4702-9a7f-8525577e00f8`，待提交 App Info `533af389-b786-4148-8dd0-239ea489b1bd`。
+- 11 语 What's New 写入且逐字回读一致。App Info、其他版本文案、45 张截图保持不变，2 个地区使用主语言截图回退。
+- 审核资料与当前内容版权声明保留；预审计无错误；正式提交 dry-run 已通过。
+- 完整界面回归：101 项，84 通过、17 项原有 opt-in 跳过、0 失败；xcodebuild TEST SUCCEEDED，xcresult 独立汇总 Passed。百章 EPUB、各类长篇内容、后台/旋转/迷你播放器/冷启动，以及首页/文库/通知恢复最新停止点均通过。
+- 已正式提交审核，版本与审核单均回读为 WAITING_FOR_REVIEW。
+
+## 验证范围与保留限制
+
+- 单元检查中的 7 项原有 opt-in/live 测试未启用；此次未借跳过测试绕开失败。界面测试中的账号依赖场景同样按现有 opt-in 条件执行，最终跳过清单保留在 UI 结果中。
+- 实机 Kindle 的 Yes/No、暂停上一页/下一页、退出与冷启动后播放已在本次开发周期验证。物理手指横向滑动未通过镜像工具复测；延迟和连续反向滑动用真实 WKWebView 事件及原生消息链验证。
+- 不将本次发布回归表述为所有平台、所有真实账号和所有网络条件已穷尽验证；保留具体测试和实机证据边界。
+- 非阻断商店情况：推广文案原本为空，保持原样；zh-Hant、es-MX 截图沿用主语言回退。价格、订阅、地区、隐私、年龄分级及法律声明未调整。
+
+## 归档与证据路径
+
+- 发布源 commit：`b6dd4d7`。
+- Archive：`/Users/xuxuheng/Documents/.worktrees/CastReader-reading-resume-real-libraries-20260909/build/CastReader-1.2.37-58.xcarchive`。
+- 完整发布回执：`/Users/xuxuheng/Documents/CastReader/reports/ios-release-1.2.37-20260910`。
+- 单元结果：`/tmp/CastReader-1.2.37-Unit-Tests.xcresult`；补充回归：`/tmp/CastReader-1.2.37-Affected-Suites.xcresult`。
+- 完整界面结果：`/tmp/CastReader-1.2.37-UI-Tests.xcresult`。
+
+## 正式提交回执
+
+- 版本：1.2.37 / Build 58，处理状态 VALID / APP_STORE_ELIGIBLE。
+- Version ID：`e7f30c6a-f42a-4702-9a7f-8525577e00f8`。
+- Review Submission ID：`1892139e-5041-4c14-a56a-91e06822759b`。
+- 提交时间：2026-09-10 01:55:53（Asia/Shanghai）；API 原值 `2026-09-09T17:55:53.655Z`。
+- 审核单状态：`WAITING_FOR_REVIEW`；版本状态：`WAITING_FOR_REVIEW`。审核单包含且仅包含本次 1.2.37 版本。
+- 发布方式：`AFTER_APPROVAL`，审核通过后自动发布；当前尚未上线。
+- 提交后独立审计 `audit-after-review.json`：0 错误；版本仍为 WAITING_FOR_REVIEW，Build 58 为 VALID；名称保留检查通过，11 语资料、截图及审核资料可读。
+- 原始回执：`review-submitted.json`。完整单元初次失败、修复后目标与整组回归、完整 UI 结果均独立保留，没有覆盖失败证据。
