@@ -86,11 +86,11 @@ final class ResumeReminderPolicyTests: XCTestCase {
 
     func testGlobalIntervalDefersInsteadOfDropping() {
         // 常规锚点（最后收听 20h 前 → +24h = 4h 后，抬到最小提前量 6h）早于全局频控点时，
-        // 顺延到距上一条 20h，而不是直接放弃。
+        // 顺延到距上一条 24h，而不是直接放弃。
         let lastAny = base.addingTimeInterval(-2 * 3600)
         let c = candidate(lastListenedAgo: 20 * 3600)
         let fire = policy.fireDate(now: base, candidate: c, sentForDoc: [], lastSentAny: lastAny)
-        XCTAssertEqual(fire, lastAny.addingTimeInterval(20 * 3600))
+        XCTAssertEqual(fire, lastAny.addingTimeInterval(24 * 3600))
     }
 
     func testGlobalIntervalDoesNotPullFiringEarlier() {

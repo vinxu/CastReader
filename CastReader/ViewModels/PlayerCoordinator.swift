@@ -35,13 +35,28 @@ struct DeferredAutoplayGate: Equatable {
 @MainActor
 final class PlayerCoordinator: ObservableObject {
     private static let orientationOwner = "document-player"
+    private let historyStore: HistoryStore
+    lazy var resume = ResumeCoordinator(player: self, history: historyStore)
+    private(set) var presentationGeneration = UUID()
+
+    private let speechGenerator: any ParagraphSpeechGenerating
+
+    init(historyStore: HistoryStore = .shared,
+         speechGenerator: any ParagraphSpeechGenerating = TTSService.shared) {
+        self.historyStore = historyStore
+        self.speechGenerator = speechGenerator
+    }
 
     /// 一次播放会话：一个文档配一对 VM。会话存活期间播放不断，跨阅读器开合、跨 Tab。
     struct Session: Identifiable {
-        /// Rendering/playback identity. Cloud revisions intentionally create a
+        /// Content/playback identity. Cloud revisions intentionally create a
         /// new session while retaining the stable remote document ID in
         /// `document.id` for History and playback metadata.
         let id: String
+        /// A close/reopen can be coalesced into one SwiftUI update. The new VM
+        /// must receive a fresh UIViewRepresentable coordinator even when the
+        /// content key is unchanged; minimizing keeps this instance intact.
+        let instanceID = UUID()
         let document: ReadingDocument
         let analyticsContext: AnalyticsContentContext
         let readVM: ReadAloudViewModel
@@ -58,12 +73,14 @@ final class PlayerCoordinator: ObservableObject {
     /// 打开文档：新文档建会话（先停掉旧会话播放），同文档复用；展开完整阅读器；autoplay 时立即开播（剪贴板快捷入口用）。
     /// scenario：从首页场景入口进入时的 content_type（注入 ExplainViewModel 驱动「划什么/怎么批」+ 深度预设）；nil = 通用。
     func open(
-        _ document: ReadingDocument,
+        _ incomingDocument: ReadingDocument,
         mode: ReaderMode = .read,
         autoplay: Bool = false,
         scenario: String? = nil,
         analyticsContext suppliedAnalyticsContext: AnalyticsContentContext? = nil
     ) {
+        presentationGeneration = UUID()
+        let document = historyStore.canonicalDocument(incomingDocument)
         KindlePlaybackCenter.shared.close()
         if document.sourceKind != .youtube {
             YouTubeTranscriptService.shared.releaseWarmSession()
@@ -87,7 +104,9 @@ final class PlayerCoordinator: ObservableObject {
             ProductAnalytics.shared.contentReady(analyticsContext, document: document)
             let readVM = ReadAloudViewModel(
                 document: document,
-                analyticsContext: analyticsContext
+                analyticsContext: analyticsContext,
+                historyStore: historyStore,
+                speechGenerator: speechGenerator
             )
             let explainVM = ExplainViewModel(
                 document: document,
@@ -104,9 +123,6 @@ final class PlayerCoordinator: ObservableObject {
                 title: document.title,
                 coverURL: document.coverURL
             )
-            if let resumeIndex = HistoryStore.shared.resumeParagraphIndex(for: document.id) {
-                readVM.restoreReadingPosition(resumeIndex)
-            }
             session = Session(id: document.contentSessionKey,
                               document: document,
                               analyticsContext: analyticsContext,
@@ -128,7 +144,7 @@ final class PlayerCoordinator: ObservableObject {
         self.mode = mode
         updateOrientationForExpandedReader(document)
         isReaderPresented = true
-        HistoryStore.shared.record(document)   // 进文库历史（新增/置顶；纯本地、不上云）
+        historyStore.record(document)
         if autoplay, let s = session {
             // web/docx/epub 源段落由 WebView 异步提取，autoplay 交给 WebReaderBridge.onRendered 段落就绪后按 mode 启动；
             // 此处立即 start 会用空段落请求后端（解读 HTTP 400 / 朗读无内容）。
@@ -139,7 +155,7 @@ final class PlayerCoordinator: ObservableObject {
                     s.explainVM.requestAutoplayWhenWebReady()
                 }
             } else {
-                if mode == .read { s.readVM.start() } else { s.explainVM.start() }
+                if mode == .read { s.readVM.ensurePlaying() } else { s.explainVM.start() }
             }
         }
     }
@@ -149,7 +165,8 @@ final class PlayerCoordinator: ObservableObject {
     /// 只在「同一份文档、且当前还没有段落」时生效：段落一旦存在，会话里
     /// 就可能已经有播放位置和解读 mark，替换会把它们抹掉。会话 id 保持不变，
     /// 所以 ReaderHostView 不重建，页面上的图片不会闪。
-    func upgradeSessionContent(_ document: ReadingDocument) {
+    func upgradeSessionContent(_ incomingDocument: ReadingDocument) {
+        let document = historyStore.canonicalDocument(incomingDocument)
         guard let current = session,
               current.document.id == document.id,
               current.document.paragraphs.isEmpty,
@@ -158,7 +175,9 @@ final class PlayerCoordinator: ObservableObject {
         current.explainVM.stop()
         let readVM = ReadAloudViewModel(
             document: document,
-            analyticsContext: current.analyticsContext
+            analyticsContext: current.analyticsContext,
+            historyStore: historyStore,
+            speechGenerator: speechGenerator
         )
         let explainVM = ExplainViewModel(
             document: document,
@@ -175,9 +194,6 @@ final class PlayerCoordinator: ObservableObject {
             title: document.title,
             coverURL: document.coverURL
         )
-        if let resumeIndex = HistoryStore.shared.resumeParagraphIndex(for: document.id) {
-            readVM.restoreReadingPosition(resumeIndex)
-        }
         session = Session(
             id: current.id,
             document: document,
@@ -186,11 +202,12 @@ final class PlayerCoordinator: ObservableObject {
             explainVM: explainVM
         )
         ProductAnalytics.shared.contentReady(current.analyticsContext, document: document)
-        HistoryStore.shared.record(document)
+        historyStore.record(document)
     }
 
     /// 收起阅读器（不停播放）→ Mini Player 接管。
     func minimize() {
+        session?.readVM.flushReadingProgress()
         guard let document = session?.document else { return }
         if Self.isPortraitOnly(document.sourceKind) {
             // Portrait-only in both the full reader and the Mini Player: the
@@ -216,6 +233,7 @@ final class PlayerCoordinator: ObservableObject {
     ///   caption-language switch. The kept-alive document is exactly what makes
     ///   the next switch fast, so it must outlive that internal churn.
     func close(releasingYouTubeWarmSession: Bool = true) {
+        presentationGeneration = UUID()
         // The YouTube extractor may be holding a hidden document alive so
         // caption-language switches stay fast. Nothing justifies that once the
         // reader it belonged to is gone.

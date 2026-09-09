@@ -108,12 +108,14 @@ struct YouTubeListenRequest: Identifiable, Equatable {
     let reference: YouTubeVideoReference
     let entry: YouTubeListenEntry
     let pendingItemID: UUID?
+    let autoplay: Bool
 
     init?(
         id: UUID = UUID(),
         rawURL: String,
         entry: YouTubeListenEntry,
-        pendingItemID: UUID? = nil
+        pendingItemID: UUID? = nil,
+        autoplay: Bool = true
     ) {
         guard let reference = YouTubeURLParser.parse(rawURL) else { return nil }
         self.id = id
@@ -121,6 +123,7 @@ struct YouTubeListenRequest: Identifiable, Equatable {
         self.reference = reference
         self.entry = entry
         self.pendingItemID = pendingItemID
+        self.autoplay = autoplay
     }
 }
 
@@ -168,7 +171,8 @@ final class YouTubeRouteCenter: ObservableObject {
     func open(
         _ rawURL: String,
         entry: YouTubeListenEntry,
-        pendingItemID explicitPendingItemID: UUID? = nil
+        pendingItemID explicitPendingItemID: UUID? = nil,
+        autoplay: Bool = true
     ) -> Bool {
         guard let reference = YouTubeURLParser.parse(rawURL) else {
             return false
@@ -195,7 +199,8 @@ final class YouTubeRouteCenter: ObservableObject {
         guard let request = YouTubeListenRequest(
             rawURL: rawURL,
             entry: entry,
-            pendingItemID: pendingItemID
+            pendingItemID: pendingItemID,
+            autoplay: autoplay
         ) else { return false }
         if let pendingItemID {
             inFlightPendingItemID = pendingItemID

@@ -19,6 +19,131 @@ import WebKit
 @MainActor
 final class GoogleBooksWebBridgeTests: XCTestCase {
 
+    func testKoboLaggingProviderBookmarkFindsSavedPageBeforeLoadingVM() async throws {
+        let url = "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"
+        let target = ReadingParagraph(id: 0, text: "This is the exact saved listening paragraph.")
+        var document = ReadingDocument(id: "kobo-lagging-fixture", title: "Kobo resume fixture",
+            sourceKind: .kobo, language: "en", paragraphs: [target], sourceURL: url)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let history = HistoryStore(directory: directory)
+        history.record(document)
+        let checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: [target])
+            .checkpoint(sourceKind: .kobo, paragraphIndex: 0, audio: nil))
+        XCTAssertTrue(history.saveReadingCheckpoint(checkpoint, for: document.id, boundary: history.progressBoundaryToken))
+        document.paragraphs = []
+        let read = ReadAloudViewModel(document: document, historyStore: history)
+        let explain = ExplainViewModel(document: document)
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .kobo,
+            bookID: document.id, readerURL: url, openingCheckpoint: checkpoint)
+        bridge.attach(readVM: read, explainVM: explain)
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        configuration.userContentController.add(bridge, name: WebReaderBridge.handlerName)
+        let web = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 700), configuration: configuration)
+        bridge.webView = web
+        let window: UIWindow
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            window = UIWindow(windowScene: scene)
+        } else { window = UIWindow(frame: web.frame) }
+        window.frame = web.frame
+        window.rootViewController = UIViewController()
+        window.rootViewController?.view.addSubview(web)
+        window.isHidden = false
+        hostingWindows.append(window)
+        defer {
+            read.stop()
+            configuration.userContentController.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+            web.stopLoading()
+            try? FileManager.default.removeItem(at: directory)
+        }
+        let booted = expectation(description: "first intermediate page held while requesting next page")
+        configuration.userContentController.addUserScript(WKUserScript(source: """
+        window.turns = 0;
+        window.CastReaderKobo = { nextPage: () => { window.turns++; return true; } };
+        window.CR = {};
+        window.emitPage = function (text, signature) {
+          window.webkit.messageHandlers.castreader.postMessage({type:'rendered', payload:{
+            source:'kobo', reason:'initial', signature:signature, frameSessionID:'kobo-resume-owner',
+            language:'en', paragraphs:[{text:text, paragraphIndex:0}]
+          }});
+        };
+        window.emitPage('An earlier provider page.', 'earlier-page');
+        """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        web.loadHTMLString("<html><body>Reader fixture</body></html>", baseURL: URL(string: url))
+        Task { @MainActor in
+            for _ in 0..<80 {
+                if (try? await web.evaluateJavaScript("window.turns")) as? Int == 1 { booted.fulfill(); return }
+                try? await Task.sleep(nanoseconds: 25_000_000)
+            }
+        }
+        await fulfillment(of: [booted], timeout: 3)
+        XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+        XCTAssertEqual(history.readingCheckpoint(for: document.id), checkpoint)
+        _ = try await web.callAsyncJavaScript("window.emitPage(text, 'saved-page')", arguments: ["text": target.text], in: nil, contentWorld: .page)
+        for _ in 0..<80 where read.stagedLiveWebParagraphTexts.isEmpty {
+            try await Task.sleep(nanoseconds: 25_000_000)
+        }
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [target.text])
+        XCTAssertEqual(read.currentParagraphIndex, 0)
+        XCTAssertNil(read.resumeNotice)
+        XCTAssertFalse(read.isPlaying)
+        XCTAssertEqual(history.readingCheckpoint(for: document.id), checkpoint)
+    }
+
+    func testCanonicalShellLocationReachesProgressWithoutReaderFrameID() async throws {
+        let url = "https://play.google.com/books/reader?id=b_40EQAAQBAJ&pg=GBS.PT4"
+        let document = ReadingDocument(id: "location-bridge-fixture", title: "Location fixture",
+                                       sourceKind: .googleBooks, language: "en", paragraphs: [], sourceURL: url)
+        let read = ReadAloudViewModel(document: document)
+        let explain = ExplainViewModel(document: document)
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .googleBooks,
+                         bookID: document.id, readerURL: url)
+        bridge.attach(readVM: read, explainVM: explain)
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        configuration.userContentController.add(bridge, name: WebReaderBridge.handlerName)
+        let web = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 700), configuration: configuration)
+        bridge.webView = web
+        let window: UIWindow
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            window = UIWindow(windowScene: scene)
+        } else { window = UIWindow(frame: web.frame) }
+        window.frame = web.frame
+        window.rootViewController = UIViewController()
+        window.rootViewController?.view.addSubview(web)
+        window.isHidden = false
+        hostingWindows.append(window)
+        defer {
+            configuration.userContentController.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+            web.stopLoading()
+        }
+        let accepted = expectation(description: "trusted shell progress reaches native persistence")
+        var locations: [String] = []
+        bridge.onGoogleBooksLocationRecordedForTesting = { value in
+            locations.append(value)
+            accepted.fulfill()
+        }
+        configuration.userContentController.addUserScript(WKUserScript(source: """
+        window.webkit.messageHandlers.castreader.postMessage({type:'googleBooksLocation', payload:{
+          href:'\(url)', signature:'committed-reader-page'
+        }});
+        """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        web.loadHTMLString("<html><body>Location fixture</body></html>", baseURL: URL(string: url))
+        await fulfillment(of: [accepted], timeout: 3)
+        XCTAssertEqual(locations, [url])
+        let rejected = expectation(description: "another volume cannot replace this book's anchor")
+        rejected.isInverted = true
+        bridge.onGoogleBooksLocationRecordedForTesting = { _ in rejected.fulfill() }
+        _ = try await web.evaluateJavaScript("""
+        window.webkit.messageHandlers.castreader.postMessage({type:'googleBooksLocation', payload:{
+          href:'https://play.google.com/books/reader?id=QrpAEQAAQBAJ&pg=GBS.PT8', signature:'other-volume'
+        }}); true;
+        """)
+        await fulfillment(of: [rejected], timeout: 0.3)
+    }
+
     private static let fixtureAPINames = [
         "__fixtureManualIntent",
         "__fixtureBeginManualSwipe",
@@ -265,6 +390,7 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
 
     private final class Inbox: NSObject, WKScriptMessageHandler {
         var messages: [(type: String, payload: [String: Any])] = []
+        var renderedEvents: [(frame: GoogleBooksScriptMessageFrame, payload: [String: Any])] = []
         var onMessage: ((String, [String: Any]) -> Void)?
         func userContentController(
             _ userContentController: WKUserContentController,
@@ -273,6 +399,17 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
             guard let body = message.body as? [String: Any],
                   let type = body["type"] as? String else { return }
             let payload = body["payload"] as? [String: Any] ?? [:]
+            if type == "rendered" {
+                let info = message.frameInfo
+                let origin = info.securityOrigin
+                renderedEvents.append((GoogleBooksScriptMessageFrame(
+                    isMainFrame: info.isMainFrame,
+                    securityScheme: origin.protocol,
+                    securityHost: origin.host,
+                    securityPort: origin.port,
+                    requestURL: info.request.url?.absoluteString
+                ), payload))
+            }
             messages.append((type, payload))
             onMessage?(type, payload)
         }
@@ -1815,7 +1952,7 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
     }
 
     /// 真实 play.google.com 冒烟（需要网络，默认跳过）：
-    ///   CASTREADER_NETWORK_SMOKE=1 xcodebuild test -only-testing:CastReaderTests/GoogleBooksWebBridgeTests/testRealPlayBooksShellInstallsRelayOnly
+    ///   TEST_RUNNER_CASTREADER_NETWORK_SMOKE=1 xcodebuild test -only-testing:CastReaderTests/GoogleBooksWebBridgeTests/testRealPlayBooksShellInstallsRelayOnly
     /// 只验证注入分流：主帧必须装上转发壳，且**绝不**把阅读器 UI 当正文上报。
     /// 未登录时 Google 会显示「Can't open this book」，这条断言依然成立。
     func testRealPlayBooksShellInstallsRelayOnly() async throws {
@@ -1837,11 +1974,20 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         ) as? Bool
         XCTAssertEqual(hasRelay, true, "主帧必须安装 window.CR 转发壳")
 
-        let renderedFromShell = inbox.messages.filter { $0.type == "rendered" }
+        // The bundle runs in every frame. Google also creates auxiliary frames
+        // whose generic extractor may emit rendered; production rejects those
+        // at WebReaderBridge's frame boundary. Keep main-frame silence as an
+        // independent assertion, then apply that same boundary to book events.
+        let renderedFromShell = inbox.renderedEvents.filter { $0.frame.isMainFrame }
+        XCTAssertTrue(renderedFromShell.isEmpty, "主帧转发壳不得提取阅读器 UI")
+        let accepted = inbox.renderedEvents.filter {
+            GoogleBooksWebAccessPolicy.allowsScriptMessage(type: "rendered", from: $0.frame)
+        }
         XCTAssertTrue(
-            renderedFromShell.allSatisfy { ($0.payload["source"] as? String) == "google-books" },
-            "阅读器 UI 被当成正文提取了：\(renderedFromShell.map { $0.payload["reason"] ?? "?" })"
+            accepted.allSatisfy { ($0.payload["source"] as? String) == "google-books" },
+            "受信任的阅读帧必须使用 Google Books 正文适配器"
         )
+        print("GOOGLE_SHELL_SMOKE mainRendered=\(renderedFromShell.count) acceptedReaderRendered=\(accepted.count) rejectedAuxiliaryRendered=\(inbox.renderedEvents.count - accepted.count - renderedFromShell.count)")
     }
 
     func testHighlightUsesTheVisibleParagraphOffset() async throws {

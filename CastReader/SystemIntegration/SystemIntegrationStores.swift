@@ -14,15 +14,15 @@ final class ContinueSnapshotStore: @unchecked Sendable {
     )
 
     private enum Storage {
-        // v2 intentionally drops stale v1 snapshots after the cloud feature
-        // was paused, so a widget cannot expose a remote item before the app
-        // has launched and rebuilt the filtered projection.
-        static let snapshotsKey = "systemIntegration.continueSnapshots.v2"
+        // v3 drops open-history snapshots until the app publishes the unified
+        // progress projection. An old cached card must not masquerade as a stop.
+        static let snapshotsKey = "systemIntegration.continueSnapshots.v3"
         static let maximumCount = 8
 
-        // Keep the system surface aligned with HomeContinueContract without
-        // importing the app-only ReadingSourceKind model into extension targets.
-        static let excludedSourceKinds: Set<String> = [
+        // The app publishes only qualified catalog entries. The extension
+        // validates known source types, without a second source exclusion list.
+        static let sourceKinds: Set<String> = [
+            "text", "photo", "pdf", "epub", "docx", "web", "youtube",
             "kindle", "weread", "google_books", "kobo", "oreilly"
         ]
     }
@@ -78,7 +78,7 @@ final class ContinueSnapshotStore: @unchecked Sendable {
         }
 
         // Re-apply the contract while reading so a stale value written by an
-        // older build cannot leak a connected-library item into Siri/widgets.
+        // older build cannot expose an unsupported source in Siri/widgets.
         return Array(
             decoded
                 .filter(Self.isEligible)
@@ -91,7 +91,7 @@ final class ContinueSnapshotStore: @unchecked Sendable {
         let sourceKind = snapshot.sourceKind
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
-        return !Storage.excludedSourceKinds.contains(sourceKind)
+        return Storage.sourceKinds.contains(sourceKind)
     }
 
     private static func isOrderedBefore(_ lhs: ContinueSnapshot, _ rhs: ContinueSnapshot) -> Bool {
@@ -130,6 +130,8 @@ private enum SystemActionAccountBoundary {
 }
 
 final class SystemActionStore: @unchecked Sendable {
+    static var currentAccountBoundary: String { SystemActionAccountBoundary.current }
+
     static let shared = SystemActionStore(
         sharedDefaults: UserDefaults(suiteName: CastReaderSystemIntegration.appGroupIdentifier)
     )

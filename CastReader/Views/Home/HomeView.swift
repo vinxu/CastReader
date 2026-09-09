@@ -256,6 +256,7 @@ struct HomeView: View {
     @ObservedObject private var growthLoop = GrowthLoopConversionCoordinator.shared
 
     init(
+        history: HistoryStore = .shared,
         shareInboxUnreadCount: Int = 0,
         isSurfaceActive: Bool = true,
         onOpenShareInbox: @escaping () -> Void = {},
@@ -263,6 +264,7 @@ struct HomeView: View {
         onRequestLibraryConnection: @escaping (BoundLibraryOnboardingSource) -> Void,
         onOpenVoiceBrowser: @escaping (VoiceBrowserLaunchRequest) -> Void = { _ in }
     ) {
+        self._history = ObservedObject(wrappedValue: history)
         self.shareInboxUnreadCount = shareInboxUnreadCount
         self.isSurfaceActive = isSurfaceActive
         self.onOpenShareInbox = onOpenShareInbox
@@ -826,9 +828,7 @@ struct HomeView: View {
     }
 
     private var continueRecords: [HistoryRecord] {
-        history.visibleRecords.filter {
-            HomeContinueContract.includes($0.sourceKind)
-        }
+        ContentCatalog(history: history).continuing.map(\.record)
     }
 
     private var libraryOnboardingReminder: some View {
@@ -944,10 +944,19 @@ struct HomeView: View {
 
     private var continueSection: some View {
         VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
-            Text("继续看").font(.headline).foregroundColor(AppTheme.foreground)
+            HStack {
+                Text("继续听").font(.headline).foregroundColor(AppTheme.foreground)
+                Spacer()
+                NavigationLink(destination: LibraryView(history: history)) {
+                    Text("查看全部")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppTheme.primary)
+                }
+                .accessibilityIdentifier("homeContinueViewAll")
+            }
             HomeHorizontalRail {
                 ForEach(continueRecords.prefix(8)) { rec in
-                    ContinueCard(record: rec) { reopen(rec) }
+                    ContinueCard(record: rec, positionLabel: ContentCatalog(history: history).item(id: rec.id)?.positionLabel) { reopen(rec) }
                 }
             }
         }
@@ -1321,71 +1330,24 @@ struct HomeView: View {
                     cloudHistoryAttemptID = nil
                 }
             }
-            let context = ProductAnalytics.shared.beginContentIntent(
-                source: .history,
-                format: AnalyticsContentFormat(rec.sourceKind),
-                entryPoint: "history_resume",
-                intendedMode: "read"
-            )
-            if rec.requiresRemoteReopen {
-                cloudHistoryProgress = .validatingAccount
-                do {
-                    let result = try await CloudHistoryReopenService().reopen(
-                        rec,
-                        mode: .read,
-                        analyticsContext: context
-                    ) { progress in
+            if rec.requiresRemoteReopen { cloudHistoryProgress = .validatingAccount }
+            do {
+                let result = try await coordinator.resume.open(itemID: rec.id,
+                    entryPoint: "history_resume", progress: { progress in
                         Task { @MainActor in
                             guard cloudHistoryAttemptID == attemptID else { return }
                             cloudHistoryProgress = progress
                         }
-                    }
-                    guard !Task.isCancelled,
-                          cloudHistoryAttemptID == attemptID else { return }
-                    coordinator.open(result.document, analyticsContext: context)
-                    if CloudHistoryFailurePresentation.contentChanged(
-                        record: rec,
-                        result: result
-                    ) {
-                        notice = CloudLocalized("云端文件已更新，已加载最新版本")
-                    }
-                } catch {
-                    guard !Task.isCancelled,
-                          cloudHistoryAttemptID == attemptID else { return }
-                    cloudHistoryFailure = CloudHistoryFailurePresentation.make(
-                        record: rec,
-                        error: error
-                    )
-                }
-                return
-            }
-
-            // 照片：本地原图早就在手上，页面立刻开；文字识别在页内后台补。
-            // 命中快照时 instant 文档已经是完整结果，一步到位。
-            if rec.sourceKind == .photo, let instant = history.instantPhotoDocument(rec) {
-                guard !Task.isCancelled,
-                      cloudHistoryAttemptID == attemptID else { return }
-                coordinator.open(instant, analyticsContext: context)
-                if instant.paragraphs.isEmpty {
-                    Task { @MainActor in
-                        guard let recognized = await history.recognizePhoto(rec) else { return }
-                        coordinator.upgradeSessionContent(recognized)
-                    }
-                }
-                return
-            }
-
-            do {
-                if let doc = try await history.reopen(rec) {
-                    guard !Task.isCancelled,
-                          cloudHistoryAttemptID == attemptID else { return }
-                    coordinator.open(doc, analyticsContext: context)
-                }
+                    })
+                guard !Task.isCancelled, cloudHistoryAttemptID == attemptID else { return }
+                if result.contentChanged { notice = CloudLocalized("云端文件已更新，已加载最新版本") }
             } catch is CancellationError {
                 return
             } catch {
                 guard cloudHistoryAttemptID == attemptID else { return }
-                notice = error.localizedDescription
+                if rec.requiresRemoteReopen {
+                    cloudHistoryFailure = CloudHistoryFailurePresentation.make(record: rec, error: error)
+                } else { notice = error.localizedDescription }
             }
         }
     }
@@ -2202,18 +2164,21 @@ private struct ScenarioCard: View {
 
 private struct ContinueCard: View {
     let record: HistoryRecord
+    let positionLabel: String?
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            ContinueCardContent(record: record)
+            ContinueCardContent(record: record, positionLabel: positionLabel)
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("continue-item-" + record.id)
     }
 }
 
 private struct ContinueCardContent: View {
     let record: HistoryRecord
+    let positionLabel: String?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -2253,6 +2218,12 @@ private struct ContinueCardContent: View {
                 .frame(minHeight: 38, alignment: .topLeading)
                 .padding(.horizontal, HomeLayout.compactCardPadding)
                 .padding(.vertical, HomeLayout.mediaToTextGap)
+            if let positionLabel {
+                Text(positionLabel)
+                    .font(.caption2).foregroundColor(AppTheme.mutedForeground)
+                    .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, HomeLayout.compactCardPadding).padding(.bottom, 10)
+            }
         }
         .frame(width: cardWidth)
         .background(AppTheme.surface)

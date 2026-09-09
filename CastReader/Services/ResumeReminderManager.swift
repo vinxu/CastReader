@@ -42,7 +42,7 @@ struct ResumeReminderPolicy {
     /// 同一内容两次提醒的最小间隔。
     var perDocCooldown: TimeInterval = 7 * 24 * 3600
     /// 全局任意两条提醒的最小间隔（≤1 条/天）。
-    var globalMinInterval: TimeInterval = 20 * 3600
+    var globalMinInterval: TimeInterval = 24 * 3600
     /// 请求通知权限所需的累计有效收听秒数。
     var permissionPromptThreshold: Double = 180
 
@@ -87,17 +87,17 @@ enum ResumeReminderDeepLink {
     static let continueAction = "continue_reading"
 
     static func userInfo(documentID: String) -> [AnyHashable: Any] {
-        [actionKey: continueAction, itemIDKey: documentID]
+        [actionKey: continueAction, itemIDKey: documentID,
+         "accountBoundary": SystemActionStore.currentAccountBoundary]
     }
 
     static func action(from userInfo: [AnyHashable: Any]) -> SystemAction? {
-        guard userInfo[actionKey] as? String == continueAction else { return nil }
-        let itemID = (userInfo[itemIDKey] as? String)?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        return .continueReading(
-            itemID: itemID?.isEmpty == false ? itemID : nil,
-            mode: .read
-        )
+        guard userInfo[actionKey] as? String == continueAction,
+              let boundary = userInfo["accountBoundary"] as? String,
+              boundary == SystemActionStore.currentAccountBoundary,
+              let itemID = (userInfo[itemIDKey] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !itemID.isEmpty else { return nil }
+        return .continueReading(itemID: itemID, mode: .read)
     }
 }
 
@@ -220,14 +220,8 @@ final class ResumeReminderManager {
               !documentID.isEmpty else { return }
         let now = Date()
         state.totalListenedSeconds += seconds
-        var doc = state.perDoc[documentID] ?? ResumeReminderDocState(
-            title: title, listenedSeconds: 0, lastListenedAt: now
-        )
-        doc.listenedSeconds += seconds
-        doc.lastListenedAt = now
-        if !title.isEmpty { doc.title = title }
-        state.perDoc[documentID] = doc
-        trimTrackedDocs()
+        // Per-item listening facts now belong to the atomic checkpoint.
+        // Keep only the global permission meter and delivery frequency here.
 
         if !state.didRequestPermission,
            state.totalListenedSeconds >= policy.permissionPromptThreshold {
@@ -288,56 +282,60 @@ final class ResumeReminderManager {
     // MARK: 调度
 
     private func scheduleIfEligible() {
-        guard let storageID = activeStorageID else { return }
+        guard appInBackground, let storageID = activeStorageID else { return }
         let expectedGeneration = scopeGeneration
         let now = Date()
-        let candidates = state.perDoc.map { id, doc in
-            ResumeReminderCandidate(
-                id: id, title: doc.title,
-                listenedSeconds: doc.listenedSeconds, lastListenedAt: doc.lastListenedAt
-            )
+        let candidates = ContentCatalog(history: .shared).continuing.compactMap { item -> ResumeReminderCandidate? in
+            guard item.availability.permitsReminder else { return nil }
+            return ResumeReminderCandidate(id: item.id, title: item.record.title,
+                listenedSeconds: item.checkpoint?.activity?.listenedSeconds ?? 0,
+                lastListenedAt: item.lastListenedAt ?? .distantPast)
         }
-        guard let candidate = ResumeReminderPolicy.pick(candidates),
-              let fire = policy.fireDate(
-                  now: now,
-                  candidate: candidate,
-                  sentForDoc: state.sentAt[candidate.id] ?? [],
-                  lastSentAny: state.lastSentAt
-              ) else { return }
+        // Filter policy-ineligible items first, so a completed/capped recent
+        // item cannot suppress a different qualified reading task.
+        let qualified = candidates.compactMap { candidate -> (ResumeReminderCandidate, Date)? in
+            guard let fire = policy.fireDate(now: now, candidate: candidate,
+                sentForDoc: state.sentAt[candidate.id] ?? [], lastSentAny: state.lastSentAt) else { return nil }
+            return (candidate, fire)
+        }
+        guard let (candidate, fire) = qualified.max(by: { $0.0.lastListenedAt < $1.0.lastListenedAt }) else { return }
+        let accountBoundary = SystemActionStore.currentAccountBoundary
 
         let requestIdentifier = Self.requestPrefix + storageID + "." + candidate.id
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             guard settings.authorizationStatus == .authorized else { return }
-            let content = UNMutableNotificationContent()
-            content.title = candidate.title.isEmpty ? AppLocalized("继续听") : candidate.title
-            content.body = AppLocalized("上次还没听完，接着听？")
-            content.sound = .default
-            content.userInfo = ResumeReminderDeepLink.userInfo(documentID: candidate.id)
-            let trigger = UNTimeIntervalNotificationTrigger(
-                timeInterval: max(60, fire.timeIntervalSince(now)), repeats: false
-            )
-            let request = UNNotificationRequest(
-                identifier: requestIdentifier,
-                content: content,
-                trigger: trigger
-            )
-            let callbackCenter = UNUserNotificationCenter.current()
-            callbackCenter.removeAllPendingNotificationRequests()   // 同时只保留一条
-            callbackCenter.add(request) { error in
-                guard error == nil else { return }
-                Task { @MainActor in
-                    guard self.scopeGeneration == expectedGeneration,
-                          self.activeStorageID == storageID else { return }
-                    self.markScheduled(
-                        docID: candidate.id,
-                        fireAt: fire,
-                        daysSinceLastRead: max(
-                            0,
-                            Int(fire.timeIntervalSince(candidate.lastListenedAt) / 86_400)
-                        )
-                    )
+            Task { @MainActor in
+                @MainActor func isCurrentCandidate() -> Bool {
+                    guard self.appInBackground, self.scopeGeneration == expectedGeneration,
+                          self.activeStorageID == storageID,
+                          SystemActionStore.currentAccountBoundary == accountBoundary,
+                          let current = ContentCatalog(history: .shared).item(id: candidate.id) else { return false }
+                    return current.canContinue && current.availability.permitsReminder
+                        && current.lastListenedAt == candidate.lastListenedAt
                 }
+                guard isCurrentCandidate() else { return }
+                let content = UNMutableNotificationContent()
+                content.title = AppLocalized("继续听")
+                content.body = AppLocalized("上次还没听完，接着听？")
+                content.sound = .default
+                content.userInfo = ResumeReminderDeepLink.userInfo(documentID: candidate.id)
+                let request = UNNotificationRequest(identifier: requestIdentifier, content: content,
+                    trigger: UNTimeIntervalNotificationTrigger(timeInterval: max(60, fire.timeIntervalSinceNow), repeats: false))
+                // Only replace this feature's requests, leaving unrelated
+                // system notifications untouched.
+                let pending = await center.pendingNotificationRequests()
+                center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(Self.requestPrefix) })
+                guard isCurrentCandidate() else { return }
+                do {
+                    try await center.add(request)
+                    guard isCurrentCandidate() else {
+                        center.removePendingNotificationRequests(withIdentifiers: [requestIdentifier])
+                        return
+                    }
+                    self.markScheduled(docID: candidate.id, fireAt: fire,
+                        daysSinceLastRead: max(0, Int(fire.timeIntervalSince(candidate.lastListenedAt) / 86_400)))
+                } catch { return }
             }
         }
     }
@@ -396,8 +394,17 @@ final class ResumeReminderManager {
         return "\(Self.stateKey).account.\(activeStorageID)"
     }
 
+    func invalidateCandidate(_ id: String) {
+        guard let storageID = activeStorageID else { return }
+        let identifier = Self.requestPrefix + storageID + "." + id
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+    }
+
     private func clearPendingNotifications() {
-        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        let center = UNUserNotificationCenter.current()
+        center.getPendingNotificationRequests { pending in
+            center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix(Self.requestPrefix) })
+        }
     }
 
     private static func isValidStorageID(_ value: String) -> Bool {

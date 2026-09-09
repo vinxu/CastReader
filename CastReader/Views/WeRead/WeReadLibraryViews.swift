@@ -279,7 +279,7 @@ private struct WeReadBookRailCard: View {
         VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             WeReadCoverView(urlString: book.coverURL).frame(width:96,height:144).clipShape(RoundedRectangle(cornerRadius:8)).overlay(RoundedRectangle(cornerRadius:8).stroke(AppTheme.border.opacity(0.65),lineWidth:1))
             Text(book.title).font(.caption.weight(.semibold)).foregroundColor(AppTheme.foreground).lineLimit(2).frame(width:104,height:34,alignment:.topLeading)
-            Text(book.displayProgress).font(.caption2).foregroundColor(AppTheme.mutedForeground).lineLimit(1).frame(width:104,alignment:.leading)
+            LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress).font(.caption2).foregroundColor(AppTheme.mutedForeground).lineLimit(1).frame(width:104,alignment:.leading)
         }.frame(width:108,alignment:.topLeading)
     }
 }
@@ -293,7 +293,7 @@ private struct WeReadLibraryRow: View {
                 VStack(alignment:.leading,spacing:6) {
                     Text(book.title).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.foreground).lineLimit(2)
                     Text(book.displayAuthor).font(.caption).foregroundColor(AppTheme.mutedForeground).lineLimit(1)
-                    Text(book.displayProgress).font(.caption2).foregroundColor(AppTheme.mutedForeground).lineLimit(1)
+                    LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress).font(.caption2).foregroundColor(AppTheme.mutedForeground).lineLimit(1)
                 }; Spacer(minLength:4)
             }.contentShape(Rectangle()).onTapGesture(perform:open)
             Image(systemName:"chevron.right").font(.caption.weight(.semibold)).foregroundColor(AppTheme.mutedForeground.opacity(0.8)).frame(width:28)

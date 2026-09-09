@@ -969,6 +969,43 @@ actor OCRService {
         languages: [String],
         language: String?
     ) async throws -> [LineBox] {
+        // Vision downsamples very tall screenshots, making otherwise readable
+        // letters too small. Recognize overlapping strips at their original
+        // scale and map every word back to the single full-image coordinate space.
+        guard cgImage.height > max(2400, cgImage.width * 3) else {
+            return try await recognizeWholeImageLines(cgImage: cgImage, languages: languages, language: language)
+        }
+        let width = cgImage.width, height = cgImage.height
+        let coreHeight = max(800, min(1600, width * 2)), overlap = 120
+        var result: [LineBox] = []
+        for top in stride(from: 0, to: height, by: coreHeight) {
+            try Task.checkCancellation()
+            let bottom = min(height, top + coreHeight)
+            let cropTop = max(0, top - overlap), cropBottom = min(height, bottom + overlap)
+            let crop = CGRect(x: 0, y: cropTop, width: width, height: cropBottom - cropTop)
+            guard let strip = cgImage.cropping(to: crop) else { throw OCRError.noCGImage }
+            let lines = try await recognizeWholeImageLines(cgImage: strip, languages: languages, language: language)
+            func map(_ box: CGRect) -> CGRect {
+                CGRect(x: box.minX, y: (CGFloat(height - cropBottom) + box.minY * crop.height) / CGFloat(height),
+                       width: box.width, height: box.height * crop.height / CGFloat(height))
+            }
+            for line in lines {
+                let centerFromTop = CGFloat(cropTop) + (1 - line.bbox.midY) * crop.height
+                // Each overlap belongs to exactly one strip, avoiding duplicate
+                // spoken lines and preserving stable paragraph IDs on reimport.
+                guard centerFromTop >= CGFloat(top), centerFromTop < CGFloat(bottom) else { continue }
+                result.append(LineBox(text: line.text, bbox: map(line.bbox),
+                    words: line.words.map { WordBox(text: $0.text, bbox: map($0.bbox)) }))
+            }
+        }
+        return result
+    }
+
+    private func recognizeWholeImageLines(
+        cgImage: CGImage,
+        languages: [String],
+        language: String?
+    ) async throws -> [LineBox] {
         try Task.checkCancellation()
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate

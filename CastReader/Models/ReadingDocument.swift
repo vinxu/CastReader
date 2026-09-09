@@ -173,7 +173,7 @@ struct ReadingParagraph: Identifiable, Equatable {
 // MARK: - Document
 
 struct ReadingDocument: Identifiable, Equatable {
-    let id: String
+    var id: String
     var title: String
     var sourceKind: ReadingSourceKind
     var language: String                 // "en"/"zh"… 决定 TTS 与 Vision 识别语言

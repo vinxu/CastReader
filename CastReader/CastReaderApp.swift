@@ -154,6 +154,12 @@ struct RootAuthGate: View {
             // Debug builds; release builds always use the normal auth gate.
             if ProcessInfo.processInfo.arguments.contains("-CastReaderKindleSettingsFixture") {
                 KindleReadingSettingsFixtureView()
+            } else if ReadingResumeScenario.isEnabled {
+                ReadingResumeScenarioFixtureView()
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderUnifiedCatalogFixture") {
+                UnifiedCatalogAcceptanceView()
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderResumeMVPFixture") {
+                ReadingResumeMVPFixtureView()
             } else if ProcessInfo.processInfo.arguments.contains("-CastReaderKoboShelfFixture")
                 || ProcessInfo.processInfo.arguments.contains("-CastReaderKoboLoginFixture")
                 || ProcessInfo.processInfo.arguments.contains("-CastReaderKoboBlankFixture")

@@ -11,6 +11,8 @@ import SwiftUI
 
 struct LibrarySourcesSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var player: PlayerCoordinator
+    @ObservedObject private var kindle = KindlePlaybackCenter.shared
 
     var body: some View {
         NavigationView {
@@ -22,6 +24,12 @@ struct LibrarySourcesSheet: View {
                 }
         }
         .navigationViewStyle(.stack)
+        .onChange(of: player.isReaderPresented) { _, presented in
+            if presented { dismiss() }
+        }
+        .onChange(of: kindle.isPresented) { _, presented in
+            if presented { dismiss() }
+        }
     }
 }
 
@@ -401,5 +409,21 @@ struct LibrarySourcesView: View {
                 await oreillyStore.disconnectAccount()
             }
         }
+    }
+}
+
+/// Provider percentages may be absent even after local listening. All shelf
+/// surfaces use the same durable checkpoint to expose their continue action.
+struct LibraryListeningProgressLabel: View {
+    let bookID: String
+    let providerProgress: String
+    @ObservedObject private var history = HistoryStore.shared
+
+    var body: some View {
+        Text(ContentCatalog(history: history).item(id: bookID).map { item in
+            item.state == .completed ? item.state.label : (item.checkpoint != nil ? AppLocalized("继续听") : providerProgress)
+        } ?? providerProgress)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
     }
 }

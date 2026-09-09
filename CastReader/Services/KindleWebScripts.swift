@@ -799,6 +799,19 @@ enum KindleWebScripts {
         if (crKindleUITextMatches(kind, text)) structural += 45;
         return structural;
       }
+      // A sync decision owns its own native recovery. Its location/go-to text
+      // must not also create a manual-navigation event at document capture time.
+      function crKindleUIIsSyncDialogTarget(target) {
+        try {
+          var el = target && (target.nodeType === 1 ? target : target.parentElement);
+          while (el && el !== document.body && el !== document.documentElement) {
+            if (crKindleUIStructureScore(el, 'sync-dialog') >= 190 ||
+                crKindleUITextMatches('sync-dialog', crKindleUIText(el))) return true;
+            el = el.parentElement || (el.getRootNode && el.getRootNode().host);
+          }
+        } catch (_) {}
+        return false;
+      }
       function crKindleUIIsVisible(el) {
         if (!el || !el.getBoundingClientRect) return false;
         try {
@@ -4405,7 +4418,7 @@ enum KindleWebScripts {
     static let pageModeLockBootstrap = """
     (function() {
       \(uiSemanticHelpers)
-      var crKindlePageModeLockVersion = 8;
+      var crKindlePageModeLockVersion = 9;
       window.__crKindleProbe = window.__crKindleProbe || {};
       window.__crKindleProbe.pageModeLocked = !!window.__crKindleProbe.pageModeLocked;
       window.__crKindleProbe.programmaticScrollUntil = Number(window.__crKindleProbe.programmaticScrollUntil || 0);
@@ -4719,6 +4732,7 @@ enum KindleWebScripts {
       function crKindleNavigationClick(e) {
         try {
           if (!window.__crKindleProbe || !window.__crKindleProbe.pageModeLocked) return;
+          if (crKindleUIIsSyncDialogTarget(e && e.target)) return;
           if (!crKindleLooksLikeNavigationTarget(e && e.target)) return;
           var now = crKindleNow();
           if (now - Number(window.__crKindleProbe.navigationAt || 0) < 220) return;
@@ -4948,7 +4962,7 @@ enum KindleWebScripts {
     static let pageCaptureBootstrap = """
     (function() {
       \(uiSemanticHelpers)
-      var crKindleInstallVersion = 45;
+      var crKindleInstallVersion = 46;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -5458,6 +5472,7 @@ enum KindleWebScripts {
       function crKindleNavigationClick(e) {
         try {
           if (!window.__crKindleProbe || !window.__crKindleProbe.pageModeLocked) return;
+          if (crKindleUIIsSyncDialogTarget(e && e.target)) return;
           if (crKindleLooksLikeNavigationTarget(e && e.target)) {
             crKindleMarkNavigationIntent('kindle-navigation-ui');
           }

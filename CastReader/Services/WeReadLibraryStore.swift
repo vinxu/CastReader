@@ -150,9 +150,9 @@ final class WeReadLibraryStore: ObservableObject {
 
     func markOpened(_ book: WeReadBook) { update(book.id) { $0.lastOpenedAt = Date() } }
 
-    func updateProgress(bookID: String, readerURL: String, fingerprint: String, progressLabel: String?) {
+    func updateProgress(bookID: String, readerURL: String, fingerprint: String, progressLabel: String?, chapterUID: String? = nil, chapterOffset: Int? = nil) {
         guard WeReadBookValidator.usableReaderURL(readerURL) != nil else { return }
-        anchors[bookID] = WeReadReadingAnchor(bookID: bookID, readerURL: readerURL, pageFingerprint: fingerprint, progressLabel: progressLabel, updatedAt: Date())
+        anchors[bookID] = WeReadReadingAnchor(bookID: bookID, readerURL: readerURL, pageFingerprint: fingerprint, progressLabel: progressLabel, updatedAt: Date(), chapterUID: chapterUID, chapterOffset: chapterOffset)
         update(bookID) { book in
             book.lastOpenedAt = Date()
             book.lastReaderURL = readerURL

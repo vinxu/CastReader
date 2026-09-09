@@ -40,6 +40,8 @@ struct HistoryRecord: Identifiable, Codable, Equatable {
     /// libraries (Kindle/WeRead/…) keep their own anchors and YouTube resumes
     /// by time above, so both stay nil here.
     var lastParagraphIndex: Int? = nil
+    var contentFingerprint: String? = nil
+    var archivedAt: Date? = nil
 
     var sourceKind: ReadingSourceKind { ReadingSourceKind(rawValue: sourceKindRaw) ?? .text }
 
@@ -78,6 +80,7 @@ struct CloudHistoryReference: Equatable, Sendable {
 // initializer while allowing every pre-cloud index.json to load unchanged.
 extension HistoryRecord {
     private enum CodingKeys: String, CodingKey {
+        case contentFingerprint, archivedAt
         case id
         case title
         case sourceKindRaw
@@ -108,6 +111,8 @@ extension HistoryRecord {
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         lastOpenedAt = try container.decode(Date.self, forKey: .lastOpenedAt)
         coverPath = try container.decodeIfPresent(String.self, forKey: .coverPath)
+        contentFingerprint = try? container.decodeIfPresent(String.self, forKey: .contentFingerprint)
+        archivedAt = try? container.decodeIfPresent(Date.self, forKey: .archivedAt)
         // Provider enums evolve independently from an installed app. Keep a
         // future-provider record in the library as an inert remote reference
         // instead of allowing one unknown enum value to reject the whole
@@ -180,20 +185,15 @@ extension HistoryRecord {
         try container.encodeIfPresent(youtubeProgressFraction, forKey: .youtubeProgressFraction)
         try container.encodeIfPresent(youtubeResumeStartMs, forKey: .youtubeResumeStartMs)
         try container.encodeIfPresent(lastParagraphIndex, forKey: .lastParagraphIndex)
+        try container.encodeIfPresent(contentFingerprint, forKey: .contentFingerprint)
+        try container.encodeIfPresent(archivedAt, forKey: .archivedAt)
     }
 }
 
-/// Home has dedicated rails for Kindle and WeRead, so neither source may also
-/// appear in Continue.  The full local history remains available in Library.
+/// Source routing is supported across the catalog. Continue qualification
+/// additionally requires a real checkpoint, independent of provider shelves.
 enum HomeContinueContract {
-    static func includes(_ sourceKind: ReadingSourceKind) -> Bool {
-        sourceKind != .kindle
-            && sourceKind != .weread
-            && sourceKind != .googleBooks
-            && sourceKind != .kobo
-            && sourceKind != .oreilly
-            && sourceKind != .youtube
-    }
+    static func includes(_ sourceKind: ReadingSourceKind) -> Bool { true }
 }
 
 /// A release-level visibility contract for cloud-backed history. Pausing the
@@ -238,7 +238,7 @@ final class HistoryStore: ObservableObject {
     @Published private(set) var records: [HistoryRecord] = []
 
     var visibleRecords: [HistoryRecord] {
-        records.filter { HistoryVisibilityContract.includes($0) }
+        records.filter { $0.archivedAt == nil && HistoryVisibilityContract.includes($0) }
     }
 
     private enum StorageConfiguration {
@@ -259,6 +259,12 @@ final class HistoryStore: ObservableObject {
 
     private let storageConfiguration: StorageConfiguration
     private var activeScope: ActiveStorageScope?
+    private var checkpointCache: [URL: ReadingResumeCheckpoint] = [:]
+    private var checkpointReads: Set<URL> = []
+    private var pendingListeningSeconds: [URL: Double] = [:]
+    private var lastProjectionRefresh = Date.distantPast
+    private var projectionRefreshTask: Task<Void, Never>?
+    private var knownCheckpointFiles: [String: [URL]]? = nil
     private var coverTasks: [UUID: Task<Void, Never>] = [:]
     private let performsCoverWork: Bool
     private let coverDataLoader: @Sendable (URL) async -> Data?
@@ -364,7 +370,11 @@ final class HistoryStore: ObservableObject {
 #endif
 
     private func activate(directory: URL) {
+        // Refreshing credentials for the same account is not a new privacy
+        // boundary. Keep live progress writers valid until an actual switch.
+        guard activeScope?.directory.standardizedFileURL != directory.standardizedFileURL else { return }
         invalidateCoverWork()
+        resetProgressCache()
         records = []
         let scope = ActiveStorageScope(token: UUID(), directory: directory)
         activeScope = scope
@@ -387,6 +397,7 @@ final class HistoryStore: ObservableObject {
     func deactivateAccountScope() {
         guard case .accountScoped = storageConfiguration else { return }
         invalidateCoverWork()
+        resetProgressCache()
         activeScope = nil
         records = []
         if performsCoverWork {
@@ -440,6 +451,236 @@ final class HistoryStore: ObservableObject {
 
     private func isCurrent(_ scope: ActiveStorageScope) -> Bool {
         activeScope?.token == scope.token
+    }
+
+    var progressBoundaryToken: UUID? { activeScope?.token }
+
+    private func checkpointURL(_ id: String, mode: String, variant: String? = nil, in scope: ActiveStorageScope) -> URL {
+        let suffix = variant.map { "." + ReadingResumeContract.fingerprint($0) } ?? ""
+        return scope.directory.appendingPathComponent("\(ReadingResumeContract.fingerprint(id))\(suffix).\(mode).resume.json", isDirectory: false)
+    }
+
+    private func removeReadingCheckpoints(_ id: String, in scope: ActiveStorageScope) {
+        let key = ReadingResumeContract.fingerprint(id)
+        let prefix = key + "."
+        checkpointCache = checkpointCache.filter { !$0.key.lastPathComponent.hasPrefix(prefix) }
+        checkpointReads = checkpointReads.filter { !$0.lastPathComponent.hasPrefix(prefix) }
+        pendingListeningSeconds = pendingListeningSeconds.filter { !$0.key.lastPathComponent.hasPrefix(prefix) }
+        knownCheckpointFiles?[key] = nil
+        if performsCoverWork { ResumeReminderManager.shared.invalidateCandidate(id) }
+        let urls = (try? FileManager.default.contentsOfDirectory(at: scope.directory, includingPropertiesForKeys: nil)) ?? []
+        for url in urls where url.lastPathComponent.hasPrefix(prefix) && url.lastPathComponent.hasSuffix(".read.resume.json") {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    func hasReadingCheckpoint(for id: String, variant: String? = nil) -> Bool {
+        guard let scope = activeScope, records.contains(where: { $0.id == id }) else { return false }
+        return FileManager.default.fileExists(atPath: checkpointURL(id, mode: "read", variant: variant, in: scope).path)
+    }
+
+    func hasLocalResource(for id: String) -> Bool {
+        guard let scope = activeScope else { return false }
+        return FileManager.default.fileExists(atPath: payloadURL(id, in: scope).path)
+    }
+
+    private func resetProgressCache() {
+        checkpointCache.removeAll()
+        checkpointReads.removeAll()
+        pendingListeningSeconds.removeAll()
+        knownCheckpointFiles = nil
+        projectionRefreshTask?.cancel()
+        projectionRefreshTask = nil
+        lastProjectionRefresh = .distantPast
+    }
+
+    private func cachedCheckpoint(at url: URL) -> ReadingResumeCheckpoint? {
+        if checkpointReads.contains(url) { return checkpointCache[url] }
+        checkpointReads.insert(url)
+        guard let data = try? Data(contentsOf: url), data.count <= 16_384,
+              var value = try? JSONDecoder().decode(ReadingResumeCheckpoint.self, from: data),
+              value.isValid else { return nil }
+        // Invalid optional statistics must never destroy a valid old locator.
+        if value.activity?.isValid == false { value.activity = nil }
+        checkpointCache[url] = value
+        return value
+    }
+
+    func readingCheckpoint(for id: String, variant: String? = nil) -> ReadingResumeCheckpoint? {
+        guard let scope = activeScope, let record = records.first(where: { $0.id == id }) else { return nil }
+        let url = checkpointURL(id, mode: "read", variant: variant, in: scope)
+        // Opening a reader verifies durable storage again. Catalog rendering
+        // may use the cache, but a stale cached locator cannot hide disk damage.
+        checkpointReads.remove(url)
+        checkpointCache[url] = nil
+        guard let value = cachedCheckpoint(at: url), value.sourceKind == record.sourceKind else { return nil }
+        return value
+    }
+
+    private func latestCheckpointEntry(for id: String) -> (URL, ReadingResumeCheckpoint)? {
+        guard let scope = activeScope, let record = records.first(where: { $0.id == id }) else { return nil }
+        if knownCheckpointFiles == nil {
+            let files = (try? FileManager.default.contentsOfDirectory(at: scope.directory,
+                includingPropertiesForKeys: nil))?.filter { $0.lastPathComponent.hasSuffix(".read.resume.json") } ?? []
+            // Foundation may enumerate /private/var while the writer uses
+            // /var. Rebuild under the writer's directory so the same file has
+            // one cache identity on both simulator and physical devices.
+            let canonicalFiles = files.map {
+                scope.directory.appendingPathComponent($0.lastPathComponent, isDirectory: false)
+            }
+            knownCheckpointFiles = Dictionary(grouping: canonicalFiles) { String($0.lastPathComponent.prefix(64)) }
+        }
+        return (knownCheckpointFiles?[ReadingResumeContract.fingerprint(id)] ?? [])
+            .compactMap { url -> (URL, ReadingResumeCheckpoint)? in
+                guard let value = cachedCheckpoint(at: url), value.sourceKind == record.sourceKind else { return nil }
+                return (url, value)
+            }.max { ($0.1.activity?.lastListenedAt ?? $0.1.updatedAt) < ($1.1.activity?.lastListenedAt ?? $1.1.updatedAt) }
+    }
+
+    func latestReadingCheckpoint(for id: String) -> ReadingResumeCheckpoint? { latestCheckpointEntry(for: id)?.1 }
+
+    func recordListening(seconds: Double, for id: String, boundary: UUID?, variant: String? = nil) {
+        guard seconds.isFinite, seconds > 0, seconds <= 2.01,
+              let scope = activeScope, scope.token == boundary, records.contains(where: { $0.id == id }) else { return }
+        let url = checkpointURL(id, mode: "read", variant: variant, in: scope)
+        pendingListeningSeconds[url, default: 0] += seconds
+    }
+
+    /// One atomic record contains the verified locator and its activity facts.
+    /// Existing locator JSON remains decodable; optional metadata migrates lazily.
+    @discardableResult
+    func saveReadingCheckpoint(_ value: ReadingResumeCheckpoint, for id: String, boundary: UUID?, variant: String? = nil) -> Bool {
+        guard value.isValid, let scope = activeScope, scope.token == boundary,
+              records.contains(where: { $0.id == id && $0.sourceKind == value.sourceKind }) else { return false }
+        let destination = checkpointURL(id, mode: "read", variant: variant, in: scope)
+        let previous = cachedCheckpoint(at: destination)
+        var committed = value
+        var activity = previous?.activity ?? ReadingProgressActivity(lastListenedAt: value.updatedAt)
+        let delta = pendingListeningSeconds[destination] ?? 0
+        activity.listenedSeconds += delta
+        if delta > 0 { activity.completedAt = nil }
+        if delta > 0 || previous == nil { activity.lastListenedAt = value.updatedAt }
+        activity.revision += 1
+        committed.activity = activity
+        do {
+            try JSONEncoder().encode(committed).write(to: destination, options: .atomic)
+            pendingListeningSeconds[destination] = nil
+            checkpointReads.insert(destination)
+            checkpointCache[destination] = committed
+            if previous == nil { knownCheckpointFiles = nil }
+            refreshProgressProjection()
+            return true
+        } catch {
+            ReaderRunLog.write("READ checkpoint write failed")
+            return false
+        }
+    }
+
+    @discardableResult
+    func setReadingCompleted(_ completed: Bool, for id: String) -> Bool {
+        guard let (url, original) = latestCheckpointEntry(for: id) else { return false }
+        var value = original
+        var activity = value.activity ?? ReadingProgressActivity(lastListenedAt: value.updatedAt)
+        activity.completedAt = completed ? Date() : nil
+        activity.revision += 1
+        value.activity = activity
+        do {
+            try JSONEncoder().encode(value).write(to: url, options: .atomic)
+            checkpointCache[url] = value
+            refreshProgressProjection(immediate: true)
+            if performsCoverWork { ResumeReminderManager.shared.invalidateCandidate(id) }
+            return true
+        } catch { return false }
+    }
+
+    func setArchived(_ archived: Bool, for id: String) {
+        guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+        records[index].archivedAt = archived ? Date() : nil
+        save()
+        if performsCoverWork { ResumeReminderManager.shared.invalidateCandidate(id) }
+    }
+
+    /// Called at explicit pause/close/minimize boundaries after the atomic save.
+    func flushProgressProjection() { refreshProgressProjection(immediate: true) }
+
+    private func refreshProgressProjection(immediate: Bool = false) {
+        let delay = max(0, 15 - Date().timeIntervalSince(lastProjectionRefresh))
+        if immediate || delay == 0 {
+            projectionRefreshTask?.cancel()
+            projectionRefreshTask = nil
+            lastProjectionRefresh = Date()
+            objectWillChange.send()
+            if performsCoverWork { syncContinueSnapshots() }
+        } else if projectionRefreshTask == nil {
+            let boundary = progressBoundaryToken
+            projectionRefreshTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                guard !Task.isCancelled, let self, self.progressBoundaryToken == boundary else { return }
+                self.refreshProgressProjection(immediate: true)
+            }
+        }
+    }
+
+    /// All normal open paths pass through PlayerCoordinator. Reimporting the
+    /// same local payload must reuse its History identity and saved position.
+    func canonicalDocument(_ document: ReadingDocument) -> ReadingDocument {
+        guard !document.sourceKind.isLiveWebLibrary, document.sourceKind != .kindle,
+              document.sourceKind != .youtube, document.origin == nil,
+              !records.contains(where: { $0.id == document.id }),
+              let fingerprint = Self.contentFingerprint(for: document) else { return document }
+        backfillContentFingerprints(matching: document)
+        guard let prior = records.first(where: {
+                  !$0.isRemoteReference && $0.sourceKind == document.sourceKind
+                      && $0.contentFingerprint == fingerprint
+              }) else { return document }
+        var canonical = document
+        canonical.id = prior.id
+        canonical.contentSessionKey = prior.resolvedContentSessionKey
+        return canonical
+    }
+
+    /// Upgrade old entries only when importing that kind again. File-size
+    /// filtering avoids hashing every large book on launch or every resume.
+    private func backfillContentFingerprints(matching document: ReadingDocument) {
+        guard let scope = activeScope else { return }
+        let incomingSize: Int?
+        switch document.sourceKind {
+        case .epub, .pdf, .docx: incomingSize = document.fileData?.count
+        case .photo: incomingSize = document.imageData?.count
+        case .text: incomingSize = document.fullText.utf8.count
+        default: incomingSize = nil
+        }
+        var changed = false
+        for index in records.indices where records[index].contentFingerprint == nil
+            && !records[index].isRemoteReference && records[index].sourceKind == document.sourceKind {
+            if document.sourceKind == .web, let url = records[index].sourceURL {
+                records[index].contentFingerprint = ReadingResumeContract.fingerprint(url)
+                changed = true
+            } else if let incomingSize {
+                let url = payloadURL(records[index].id, in: scope)
+                guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+                      (attributes[.size] as? NSNumber)?.intValue == incomingSize,
+                      let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { continue }
+                if document.sourceKind == .text, let text = String(data: data, encoding: .utf8) {
+                    records[index].contentFingerprint = ReadingResumeContract.fingerprint(text)
+                } else {
+                    records[index].contentFingerprint = ReadingResumeContract.fingerprint(data)
+                }
+                changed = true
+            }
+        }
+        if changed { save(in: scope) }
+    }
+
+    private static func contentFingerprint(for document: ReadingDocument) -> String? {
+        guard document.origin == nil, document.persistencePolicy == .localPayload else { return nil }
+        switch document.sourceKind {
+        case .epub, .pdf, .docx: return document.fileData.map(ReadingResumeContract.fingerprint)
+        case .photo: return document.imageData.map(ReadingResumeContract.fingerprint)
+        case .text: return ReadingResumeContract.fingerprint(document.fullText)
+        case .web: return document.sourceURL.map(ReadingResumeContract.fingerprint)
+        default: return nil
+        }
     }
 
     /// 写入照片 OCR 快照。识别结果没有词级 bbox（例如失败兜底）时不落盘，
@@ -572,19 +813,11 @@ final class HistoryStore: ObservableObject {
     /// of recent local history. Original documents remain in the app's private
     /// Documents directory and are reopened by the containing app.
     private func syncContinueSnapshots() {
-        let snapshots = records
-            .filter {
-                HomeContinueContract.includes($0.sourceKind)
-                    && HistoryVisibilityContract.includes($0)
-            }
-            .map {
-                ContinueSnapshot(
-                    id: $0.id,
-                    title: $0.title,
-                    sourceKind: $0.sourceKindRaw,
-                    updatedAt: $0.lastOpenedAt
-                )
-            }
+        let snapshots = ContentCatalog(history: self).continuing.prefix(8).map { item in
+            ContinueSnapshot(id: item.id, title: item.record.title,
+                sourceKind: item.record.sourceKindRaw, updatedAt: item.lastListenedAt ?? .distantPast,
+                positionLabel: item.positionLabel)
+        }
         ContinueSnapshotStore.shared.replace(with: snapshots)
         WidgetCenter.shared.reloadTimelines(ofKind: "CastReaderContinueWidget")
     }
@@ -652,6 +885,8 @@ final class HistoryStore: ObservableObject {
         rec.coverPath = rec.isRemoteReference || doc.sourceKind == .youtube
             ? nil
             : existing?.coverPath
+        rec.archivedAt = existing?.archivedAt
+        rec.contentFingerprint = Self.contentFingerprint(for: doc) ?? existing?.contentFingerprint
         if let t = existing?.title, !t.isEmpty, rec.coverPath != nil { rec.title = t }  // 已抓到真实标题则保留
         records.removeAll { $0.id == doc.id }
         records.insert(rec, at: 0)
@@ -770,6 +1005,7 @@ final class HistoryStore: ObservableObject {
             lastOpenedAt: now
         )
         rec.coverPath = existing?.coverPath
+        rec.archivedAt = existing?.archivedAt
         records.removeAll { $0.id == book.id }
         records.insert(rec, at: 0)
         save(in: scope)
@@ -799,6 +1035,7 @@ final class HistoryStore: ObservableObject {
         try? FileManager.default.removeItem(at: payloadURL(id, in: scope))
         try? FileManager.default.removeItem(at: coverFileURL(id, in: scope))
         try? FileManager.default.removeItem(at: ocrSnapshotURL(id, in: scope))
+        removeReadingCheckpoints(id, in: scope)
         save(in: scope)
     }
 
@@ -812,6 +1049,7 @@ final class HistoryStore: ObservableObject {
             try? FileManager.default.removeItem(at: payloadURL(record.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(record.id, in: scope))
             try? FileManager.default.removeItem(at: ocrSnapshotURL(record.id, in: scope))
+            removeReadingCheckpoints(record.id, in: scope)
         }
         records.removeAll { $0.sourceKind == sourceKind }
         save(in: scope)
@@ -823,6 +1061,7 @@ final class HistoryStore: ObservableObject {
             try? FileManager.default.removeItem(at: payloadURL(r.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(r.id, in: scope))
             try? FileManager.default.removeItem(at: ocrSnapshotURL(r.id, in: scope))
+            removeReadingCheckpoints(r.id, in: scope)
         }
         records.removeAll()
         save(in: scope)

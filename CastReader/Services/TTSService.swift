@@ -88,7 +88,52 @@ struct TTSContinuation: Equatable, Sendable {
 
 // MARK: - TTS Service
 
-actor TTSService {
+protocol ParagraphSpeechGenerating {
+    func generateTTSForParagraph(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double,
+        language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        continuation: TTSContinuation?, onCheckpoint: ((TTSContinuation) async -> Void)?,
+        onSegmentReady: @escaping (AudioSegment) async -> Void
+    ) async throws
+
+    func generatePrefetchSegments(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double,
+        language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        onSegmentReady: ((AudioSegment) async -> Void)?
+    ) async throws -> [AudioSegment]
+}
+
+extension ParagraphSpeechGenerating {
+    func generateTTSForParagraph(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double,
+        language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        onSegmentReady: @escaping (AudioSegment) async -> Void
+    ) async throws {
+        try await generateTTSForParagraph(
+            paragraphIndex: paragraphIndex, text: text, voice: voice, speed: speed,
+            language: language, includeVoiceCode: includeVoiceCode, speaker: speaker,
+            cloneRequestID: cloneRequestID, continuation: nil, onCheckpoint: nil,
+            onSegmentReady: onSegmentReady
+        )
+    }
+
+    func generatePrefetchSegments(
+        paragraphIndex: Int, text: String, voice: String? = nil, speed: Double = 1,
+        language: String = "en", includeVoiceCode: Bool = true, speaker: String? = nil,
+        cloneRequestID: String? = nil, onSegmentReady: ((AudioSegment) async -> Void)? = nil
+    ) async throws -> [AudioSegment] {
+        var segments: [AudioSegment] = []
+        try await generateTTSForParagraph(paragraphIndex: paragraphIndex, text: text, voice: voice,
+            speed: speed, language: language, includeVoiceCode: includeVoiceCode, speaker: speaker,
+            cloneRequestID: cloneRequestID) { segment in
+                segments.append(segment)
+                await onSegmentReady?(segment)
+            }
+        return segments
+    }
+}
+
+actor TTSService: ParagraphSpeechGenerating {
     static let shared = TTSService()
 
     private var currentRequestId: UUID?

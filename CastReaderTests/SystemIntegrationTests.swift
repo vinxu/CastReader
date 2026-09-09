@@ -178,9 +178,8 @@ final class SystemIntegrationTests: XCTestCase {
         )
     }
 
-    /// Home gives Kindle and WeRead their own rails, so Continue must not repeat
-    /// them — the same contract has to hold on the Siri and widget surfaces.
-    func testConnectedLibrarySourcesNeverReachTheSystemSurfaces() {
+    /// Unified Continue supports the same stable identities as provider shelves.
+    func testAllConnectedLibrarySourcesReachUnifiedSystemSurfaces() {
         let store = ContinueSnapshotStore(defaults: defaults)
         store.replace(with: [
             snapshot("a", sourceKind: "text"),
@@ -192,7 +191,7 @@ final class SystemIntegrationTests: XCTestCase {
             snapshot("g", sourceKind: "pdf")
         ])
 
-        XCTAssertEqual(store.snapshots().map(\.id).sorted(), ["a", "g"])
+        XCTAssertEqual(store.snapshots().map(\.id).sorted(), ["a", "b", "c", "d", "e", "f", "g"])
     }
 
     func testSnapshotsAreDeduplicatedKeepingTheNewest() {
@@ -226,8 +225,8 @@ final class SystemIntegrationTests: XCTestCase {
 
     /// An older build could have written an entry that today's contract excludes.
     func testStoredValuesAreFilteredAgainWhenRead() throws {
-        let stale = [snapshot("legacy", sourceKind: "kindle"), snapshot("ok")]
-        defaults.set(try JSONEncoder().encode(stale), forKey: "systemIntegration.continueSnapshots.v2")
+        let stale = [snapshot("legacy", sourceKind: "unsupported"), snapshot("ok")]
+        defaults.set(try JSONEncoder().encode(stale), forKey: "systemIntegration.continueSnapshots.v3")
 
         XCTAssertEqual(ContinueSnapshotStore(defaults: defaults).snapshots().map(\.id), ["ok"])
     }

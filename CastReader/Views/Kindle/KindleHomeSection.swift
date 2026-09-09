@@ -130,7 +130,7 @@ private struct KindleBookRailCard: View {
                 .lineLimit(2)
                 .frame(width: 104, height: 34, alignment: .topLeading)
 
-            Text(book.displayProgress)
+            LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress)
                 .font(.caption2)
                 .foregroundColor(AppTheme.mutedForeground)
                 .lineLimit(1)

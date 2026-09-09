@@ -351,6 +351,45 @@ final class KindlePageTurnEvidenceTests: XCTestCase {
                        "Speculative capture must preserve the current visible page")
     }
 
+    @MainActor
+    func testSyncDecisionsNeverAlsoEmitManualNavigationWithEitherBootstrap() async throws {
+        for includeLightBootstrap in [false, true] {
+            let fixture = try await TurnWebFixture.make()
+            defer { fixture.close() }
+            if includeLightBootstrap {
+                _ = try await fixture.webView.evaluateJavaScript(KindleWebScripts.pageModeLockBootstrap)
+            }
+            for choice in ["No", "Yes"] {
+                let result = try await fixture.webView.evaluateJavaScript("""
+                (() => {
+                  __crKindleProbe.pageModeLocked=true;
+                  __crKindleProbe.navigationSeq=0;
+                  __crKindleProbe.navigationAt=0;
+                  const dialog=document.createElement('section');
+                  dialog.setAttribute('role','dialog');
+                  dialog.innerHTML='<h2>Most Recent Page Read</h2><p>You are on location 1792. Go to location 1787?</p><button id="syncChoice"><span>\(choice)</span></button>';
+                  document.body.appendChild(dialog);
+                  dialog.querySelector('button').onclick=()=>dialog.remove();
+                  dialog.querySelector('span').click();
+                  const syncSequence=__crKindleProbe.navigationSeq;
+                  const toc=document.createElement('nav');
+                  toc.innerHTML='<button><span>Chapter 20</span></button>';
+                  document.body.appendChild(toc);
+                  toc.querySelector('span').click();
+                  const tocSequence=__crKindleProbe.navigationSeq;
+                  toc.remove();
+                  return {syncSequence,tocSequence,dialogRemoved:!dialog.isConnected};
+                })()
+                """) as? [String: Any]
+                XCTAssertEqual(result?["dialogRemoved"] as? Bool, true)
+                XCTAssertEqual(result?["syncSequence"] as? Int, 0,
+                               "\(choice), light=\(includeLightBootstrap): one decision must not restart at page zero")
+                XCTAssertEqual(result?["tocSequence"] as? Int, 1,
+                               "Real chapter navigation must still be observed")
+            }
+        }
+    }
+
     private func attachGeometryEvidence(_ geometry: [String: Any], name: String) {
         guard let data = try? JSONSerialization.data(withJSONObject: geometry, options: [.prettyPrinted, .sortedKeys]),
               let text = String(data: data, encoding: .utf8) else { return }

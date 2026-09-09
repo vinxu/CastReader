@@ -19,12 +19,16 @@ struct ContinueSnapshot: Codable, Equatable, Hashable, Sendable, Identifiable {
     let title: String
     let sourceKind: String
     let updatedAt: Date
+    var positionLabel: String? = nil
+    var accountBoundary: String? = nil
 
-    init(id: String, title: String, sourceKind: String, updatedAt: Date) {
+    init(id: String, title: String, sourceKind: String, updatedAt: Date, positionLabel: String? = nil) {
         self.id = id
         self.title = title
         self.sourceKind = sourceKind
         self.updatedAt = updatedAt
+        self.positionLabel = positionLabel
+        self.accountBoundary = SystemActionStore.currentAccountBoundary
     }
 }
 
@@ -113,11 +117,18 @@ struct ReadingItemEntity: AppEntity, Codable, Equatable, Hashable, Sendable {
     let sourceKind: String
     let updatedAt: Date
 
+    var accountBoundary: String? = nil
+
+    var belongsToCurrentAccount: Bool {
+        accountBoundary == SystemActionStore.currentAccountBoundary
+    }
+
     init(snapshot: ContinueSnapshot) {
         id = snapshot.id
         title = snapshot.title
         sourceKind = snapshot.sourceKind
         updatedAt = snapshot.updatedAt
+        accountBoundary = snapshot.accountBoundary
     }
 
     var displayRepresentation: DisplayRepresentation {

@@ -36,8 +36,19 @@ enum EpubImageDecoder {
 }
 
 /// 持有各段 ReaderUITextView 引用（供解读 mark 取矩形）。非 ObservableObject，避免触发刷新循环。
-private final class TextViewRegistry {
-    var map: [Int: ReaderUITextView] = [:]
+final class TextViewRegistry {
+    private final class Entry {
+        weak var view: ReaderUITextView?
+        init(_ view: ReaderUITextView?) { self.view = view }
+    }
+    private var entries: [Int: Entry] = [:]
+    subscript(index: Int) -> ReaderUITextView? {
+        get { entries[index]?.view }
+        set {
+            entries[index] = Entry(newValue)
+            if entries.count > 100 { entries = entries.filter { $0.value.view != nil } }
+        }
+    }
 }
 
 struct TextReaderView: View {
@@ -55,13 +66,25 @@ struct TextReaderView: View {
                 LazyVStack(alignment: .leading, spacing: 18) {
                     ForEach(document.paragraphs) { para in
                         paragraphRow(para).id(para.id)
+                            .accessibilityIdentifier("readerParagraph.\(para.id)")
                     }
                 }
                 .padding(20)
             }
             .onChange(of: readVM.currentParagraphIndex) { idx in
                 guard mode == .read, readVM.autoScrollEnabled, idx >= 0 else { return }
-                withAnimation(.easeInOut(duration: 0.35)) { proxy.scrollTo(idx, anchor: UnitPoint(x: 0.5, y: 0.30)) }
+                refocus(proxy)
+            }
+            .onChange(of: readVM.highlightRange) { _ in
+                if mode == .read { refocus(proxy) }
+            }
+            .onChange(of: readVM.processedDisplayText) { _ in
+                // Streaming can change a huge lazy row's measured height and
+                // evict it from the viewport. Reacquire the row, then the word.
+                if mode == .read { DispatchQueue.main.async { refocus(proxy) } }
+            }
+            .onAppear {
+                DispatchQueue.main.async { refocus(proxy) }
             }
             .onChange(of: explainVM.scrollTarget) { target in
                 guard mode == .explain, target >= 0 else { return }
@@ -78,8 +101,10 @@ struct TextReaderView: View {
         case .read:
             guard readVM.autoScrollEnabled, readVM.currentParagraphIndex >= 0 else { return }
             ReaderRunLog.write("TEXT refocus read para=\(readVM.currentParagraphIndex) token=\(refocusToken)")
-            withAnimation(.easeInOut(duration: 0.35)) {
-                proxy.scrollTo(readVM.currentParagraphIndex, anchor: UnitPoint(x: 0.5, y: 0.30))
+            if registry[readVM.currentParagraphIndex]?.revealFocusInReader() == true { return }
+            proxy.scrollTo(readVM.currentParagraphIndex, anchor: .top)
+            DispatchQueue.main.async {
+                registry[readVM.currentParagraphIndex]?.revealFocusInReader()
             }
         case .explain:
             let target = explainVM.activeMarks.last?.paragraphIndex ?? explainVM.scrollTarget
@@ -122,7 +147,9 @@ struct TextReaderView: View {
             isCurrent: mode == .read ? isCurrent : true,
             fontSize: fontSize(for: para.type),
             highlightColor: readVM.highlightUIColor,
-            onReady: { tv in registry.map[para.id] = tv }
+            readerViewportRange: isCurrent && readVM.autoScrollEnabled
+                ? (readVM.highlightRange ?? readVM.initialResumeViewportRange) : nil,
+            onReady: { tv in registry[para.id] = tv }
         )
         .overlay(alignment: .topLeading) { markOverlay(for: para) }
         .contentShape(Rectangle())
@@ -133,7 +160,7 @@ struct TextReaderView: View {
 
     @ViewBuilder
     private func markOverlay(for para: ReadingParagraph) -> some View {
-        if mode == .explain, let tv = registry.map[para.id] {
+        if mode == .explain, let tv = registry[para.id] {
             ForEach(explainVM.activeMarks.filter { $0.paragraphIndex == para.id }) { mark in
                 if let ns = nsRange(mark.charRange, in: para.text) {
                     let rects = tv.rects(forCharRange: ns)

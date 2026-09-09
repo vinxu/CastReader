@@ -1155,7 +1155,7 @@ enum WeReadWebScripts {
         if(bounds.length&&innerWidth>0){const left=hr.left+Math.min(...bounds.map(b=>b.x)),right=hr.left+Math.max(...bounds.map(b=>b.x+b.width));post('wereadViewport',{contentLeftRatio:Math.max(0,left/innerWidth),contentRightRatio:Math.min(1,right/innerWidth)});}
         if(lastFingerprint&&fingerprint!==lastFingerprint){clearHighlight();clearMarks();post('wereadPageChanging',{reason,previousFingerprint:lastFingerprint,nextFingerprint:fingerprint,canvasEpoch:snapshot.epoch});}
         if(fingerprint===lastFingerprint){restoreVisualState();post('wereadLayoutStable',{reason,fingerprint,canvasEpoch:snapshot.epoch});return;}const previousFingerprint=lastFingerprint;lastFingerprint=fingerprint;wordState={para:-1,seg:-1,cursor:0,last:-1};
-        const speechParagraphs=speechPayloads(visible);post('wereadPage',{reason,previousFingerprint,fingerprint,contentFingerprint,layoutFingerprint,columnFingerprint:columns,canvasEpoch:snapshot.epoch,geometrySource:visible[0]?.geometrySource||'unknown',mappedGlyphs:visible.reduce((n,p)=>n+(p.entries?.length||0),0),progressLabel:progress,readerURL:location.href,title:clean(document.title),paragraphs:speechParagraphs});publishPreview(snapshot,host,fingerprint,speechParagraphs);post('wereadLayoutStable',{reason,fingerprint,canvasEpoch:snapshot.epoch});
+        const speechParagraphs=speechPayloads(visible);post('wereadPage',{reason,previousFingerprint,fingerprint,contentFingerprint,layoutFingerprint,columnFingerprint:columns,canvasEpoch:snapshot.epoch,geometrySource:visible[0]?.geometrySource||'unknown',mappedGlyphs:visible.reduce((n,p)=>n+(p.entries?.length||0),0),progressLabel:progress,readerURL:location.href,readerPosition:window.CastReaderWeReadTOC?.readerPosition?.(visible[0]?.sourceLayoutFingerprint)||null,title:clean(document.title),paragraphs:speechParagraphs});publishPreview(snapshot,host,fingerprint,speechParagraphs);post('wereadLayoutStable',{reason,fingerprint,canvasEpoch:snapshot.epoch});
       }
 
       function range(el,start,end){const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let pos=0,a=null,b=null,n;while((n=w.nextNode())){const next=pos+n.nodeValue.length;if(!a&&start>=pos&&start<=next)a={n,o:start-pos};if(end>=pos&&end<=next){b={n,o:end-pos};break;}pos=next;}if(!a||!b)return null;const r=document.createRange();r.setStart(a.n,Math.max(0,a.o));r.setEnd(b.n,Math.max(0,b.o));return r;}
@@ -1252,6 +1252,31 @@ enum WeReadWebScripts {
       let chapters = [];
       let loading = null;
       let chapterInfosRequest = null;
+      let initialReaderMetadata = null;
+      let initialReaderPath = '';
+      let initialReaderLayout = '';
+      function retainReaderMetadata(state) {
+        const reader = state?.reader ?? state?.sState?.reader;
+        if (!reader) return;
+        const chapter = reader.currentChapter ?? reader.chapter ?? reader.chapterInfo;
+        // The hydration script is transient. Retain navigation metadata only;
+        // never retain its account object, credentials, or chapter body.
+        initialReaderMetadata = {
+          bookId: reader.bookId,
+          progress: reader.progress ? {
+            chapterUid: reader.progress.chapterUid,
+            chapterOffset: reader.progress.chapterOffset,
+            offset: reader.progress.offset,
+          } : null,
+          chapterUid: reader.chapterUid ?? reader.currentChapterUid,
+          chapterIdx: reader.chapterIdx ?? reader.currentChapterIdx,
+          currentChapter: chapter ? {
+            chapterUid: chapter.chapterUid ?? chapter.uid,
+            chapterIdx: chapter.chapterIdx ?? chapter.idx,
+          } : null,
+        };
+        initialReaderPath = location.pathname;
+      }
       const diagnose = (stage, payload = {}) => post('wereadTOCDiagnostic', { stage, ...payload });
 
       function normalize(array) {
@@ -1385,7 +1410,33 @@ enum WeReadWebScripts {
         return [];
       }
 
+      function serializedInitialState(source) {
+        const assignment = /(?:window\.)?__INITIAL_STATE__\s*=\s*/.exec(source);
+        if (!assignment) return null;
+        const start = assignment.index + assignment[0].length;
+        if (source[start] !== '{') return null;
+        let depth = 0, quoted = false, escaped = false;
+        for (let index = start; index < source.length; index++) {
+          const character = source[index];
+          if (quoted) {
+            if (escaped) escaped = false;
+            else if (character === '\\') escaped = true;
+            else if (character === '"') quoted = false;
+            continue;
+          }
+          if (character === '"') quoted = true;
+          else if (character === '{') depth++;
+          else if (character === '}' && --depth === 0) {
+            // SSR appends an IIFE that removes its script element. Only parse
+            // the balanced JSON object; never evaluate that trailing code.
+            return JSON.parse(source.slice(start, index + 1));
+          }
+        }
+        return null;
+      }
+
       function initialStateCatalog() {
+        retainReaderMetadata(window.__INITIAL_STATE__);
         const direct = [
           window.__INITIAL_STATE__?.reader?.chapterInfos,
           window.__INITIAL_STATE__?.sState?.reader?.chapterInfos,
@@ -1409,12 +1460,10 @@ enum WeReadWebScripts {
         // exact payload instead of probing unrelated APIs.
         for (const script of Array.from(document.scripts || [])) {
           const source = script.textContent || '';
-          const marker = 'window.__INITIAL_STATE__=';
-          const markerIndex = source.indexOf(marker);
-          if (markerIndex < 0) continue;
-          const json = source.slice(markerIndex + marker.length).trim().replace(/;\s*$/, '');
+          if (!source.includes('__INITIAL_STATE__')) continue;
           try {
-            const state = JSON.parse(json);
+            const state = serializedInitialState(source);
+            retainReaderMetadata(state);
             const parsed = normalize(
               state?.reader?.chapterInfos ?? state?.sState?.reader?.chapterInfos ?? []
             );
@@ -1436,7 +1485,8 @@ enum WeReadWebScripts {
       }
 
       function readerState() {
-        return window.__INITIAL_STATE__?.reader || window.__INITIAL_STATE__?.readerState || {};
+        return window.__INITIAL_STATE__?.reader || window.__INITIAL_STATE__?.readerState ||
+          (initialReaderPath === location.pathname ? initialReaderMetadata : null) || {};
       }
 
       function collectBookIDs(
@@ -1876,7 +1926,7 @@ enum WeReadWebScripts {
       }
 
       async function load() {
-        if (uidCount(chapters) > 0) publish('memory');
+        if (uidCount(chapters) > 0) { publish('memory'); return true; }
         const stateCatalog = initialStateCatalog();
         if (uidCount(stateCatalog) > 0) {
           installCatalog(stateCatalog, 'initial-state');
@@ -2098,7 +2148,76 @@ enum WeReadWebScripts {
         return { reader, visited: visited.size, roots: roots.length };
       }
 
+      let cachedVue2Reader = null;
+      function discoverVue2Reader() {
+        if (cachedVue2Reader?.$el?.isConnected) return cachedVue2Reader;
+        const queue = Array.from(document.querySelectorAll('*')).slice(0, 12000)
+          .map(node => node.__vue__).filter(Boolean);
+        const visited = new Set();
+        while (queue.length && visited.size < 6000) {
+          const component = queue.shift();
+          if (!component || visited.has(component)) continue;
+          visited.add(component);
+          if (typeof component.changeChapter === 'function' &&
+              (typeof component.scrollTo === 'function' || typeof component.changePage === 'function')) {
+            cachedVue2Reader = component;
+            diagnose('vue2-navigation-found', { roots: visited.size,
+              responseKeys: ['scrollTo','computeProgressData','changePage'].filter(key => typeof component[key] === 'function') });
+            return component;
+          }
+          queue.push(...(component.$children || []));
+          if (component.$parent) queue.push(component.$parent);
+        }
+        diagnose('vue2-navigation-missing', { roots: visited.size });
+        return null;
+      }
+
+      function readerPosition(pageLayoutIdentity) {
+        const reader = discoverVue2Reader();
+        if (reader && typeof reader.computeProgressData === 'function') {
+          try {
+            const progress = reader.computeProgressData({ computeSummary: false, computeProgress: false });
+            const chapterUID = clean(reader.currentChapter?.chapterUid);
+            const chapterOffset = Number(progress?.offset);
+            if (chapterUID && Number.isSafeInteger(chapterOffset) && chapterOffset >= 0)
+              return { chapterUID, chapterOffset };
+          } catch (_) {}
+        }
+        const current = currentChapter();
+        // Bind transient SSR identity to its verified chapter layout. A later
+        // chapter can replace that layout without changing the canonical URL.
+        const layout = clean(pageLayoutIdentity);
+        if (!layout || !current.uid) return null;
+        if (!initialReaderLayout) initialReaderLayout = layout;
+        if (layout !== initialReaderLayout) return null;
+        return { chapterUID: current.uid };
+      }
+
+      function resumeDiagnostics() {
+        const current = currentChapter();
+        return JSON.stringify({ chapterUID: current.uid, chapterIndex: current.index,
+          serverProgress: initialReaderMetadata?.progress ?? null,
+          canvases: document.querySelectorAll('canvas').length,
+          catalogRows: document.querySelectorAll('.readerCatalog_list li').length,
+          buttons: Array.from(document.querySelectorAll('button')).slice(-20).map(node => ({
+            label: clean(node.textContent).slice(0,24), className: String(node.className).slice(0,80)
+          })), readyState: document.readyState });
+      }
+
+      function restorePosition(target) {
+        const reader = discoverVue2Reader();
+        if (!reader || typeof reader.scrollTo !== 'function') return false;
+        const chapterUID = clean(reader.currentChapter?.chapterUid);
+        const chapterOffset = Number(target?.chapterOffset);
+        if (!chapterUID || chapterUID !== clean(target?.chapterUID) ||
+            !Number.isSafeInteger(chapterOffset) || chapterOffset < 0) return false;
+        reader.scrollTo({ chapterOffset });
+        return true;
+      }
+
       function readerComponent() {
+        const vue2 = discoverVue2Reader();
+        if (vue2) return vue2;
         const vue3 = discoverVueReader();
         if (vue3.reader) {
           diagnose('reader-component-found', {
@@ -2262,6 +2381,8 @@ enum WeReadWebScripts {
             row.textContent
           ),
         });
+        initialReaderMetadata = null;
+        initialReaderLayout = '';
         row.dispatchEvent(new MouseEvent('click', {
           bubbles: true,
           cancelable: true,
@@ -2279,7 +2400,37 @@ enum WeReadWebScripts {
         return true;
       }
 
-      window.CastReaderWeReadTOC = { load, jump, installNativeCatalog };
+      window.CastReaderWeReadTOC = { load, jump, installNativeCatalog, readerPosition, restorePosition, resumeDiagnostics };
+      // The SSR script removes itself in the same task in which it assigns
+      // state. Timer probes can miss both it and state consumed by hydration.
+      // Mutation records retain removed nodes, so capture metadata from those
+      // records without changing the site's global properties or execution.
+      const initialStateObserver = new MutationObserver(records => {
+        for (const record of records) {
+          for (const node of [...record.addedNodes, ...record.removedNodes]) {
+            const scripts = node.nodeName === 'SCRIPT' ? [node]
+              : Array.from(node.querySelectorAll?.('script') || []);
+            for (const script of scripts) {
+              const source = script.textContent || '';
+              if (!source.includes('__INITIAL_STATE__')) continue;
+              try {
+                const state = serializedInitialState(source);
+                retainReaderMetadata(state);
+                const parsed = normalize(state?.reader?.chapterInfos ?? state?.sState?.reader?.chapterInfos ?? []);
+                diagnose('transient-state', { chapters: parsed.length, responseKeys: Object.keys(state || {}).slice(0, 16),
+                  dataKeys: Object.keys(state?.reader || {}).slice(0, 16) });
+                if (uidCount(parsed) > 0) {
+                  installCatalog(parsed, 'transient-initial-state');
+                  initialStateObserver.disconnect();
+                  return;
+                }
+              } catch (_) {}
+            }
+          }
+        }
+      });
+      initialStateObserver.observe(document, { childList: true, subtree: true });
+      setTimeout(() => initialStateObserver.disconnect(), 15000);
       const initial = initialStateCatalog();
       if (initial.length) {
         installCatalog(initial, 'initial-state');

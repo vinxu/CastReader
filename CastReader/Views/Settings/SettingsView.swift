@@ -45,10 +45,12 @@ struct SettingsView: View {
     @State private var serviceRouteRefreshMessage: String?
 
     init(
+        history: HistoryStore = .shared,
         shareInboxUnreadCount: Int = 0,
         onOpenShareInbox: (() -> Void)? = nil,
         onRequestLibraryOnboarding: ((Bool) -> Void)? = nil
     ) {
+        self._history = ObservedObject(wrappedValue: history)
         self.shareInboxUnreadCount = shareInboxUnreadCount
         self.onOpenShareInbox = onOpenShareInbox
         self.onRequestLibraryOnboarding = onRequestLibraryOnboarding
@@ -408,7 +410,7 @@ struct SettingsView: View {
     private var librarySection: some View {
         Section {
             NavigationLink {
-                LibraryView()
+                LibraryView(history: history, onResumePresented: { dismiss() })
             } label: {
                 HStack {
                     Image(systemName: "books.vertical.fill").foregroundColor(AppTheme.primary)

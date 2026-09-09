@@ -392,6 +392,8 @@ struct ReaderHostView: View {
     @State private var refocusToken = 0
     @State private var refocusTask: Task<Void, Never>?
     @State private var pendingModeSwitch: PendingReaderModeSwitch?
+    @State private var showKoboSessionRecovery = false
+    @State private var didRestoreKoboSession = false
 
     private struct PendingReaderModeSwitch {
         let target: ReaderMode
@@ -456,6 +458,9 @@ struct ReaderHostView: View {
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
+        // A transient WKWebView search keyboard must not repaginate a live reader
+        // or leave the native playback bar stranded at the old keyboard top.
+        .ignoresSafeArea(.keyboard, edges: document.sourceKind.isWebRendered ? .bottom : [])
         .onAppear { scheduleRefocusBurst(reason: "appear") }
         .onDisappear {
             refocusTask?.cancel()
@@ -476,6 +481,7 @@ struct ReaderHostView: View {
             if phase == .active, coordinator.isReaderPresented {
                 scheduleRefocusBurst(reason: "foreground")
             } else if phase != .active {
+                readVM.flushReadingProgress()
                 readVM.flushYouTubeProgressForLifecycle()
             }
         }
@@ -526,6 +532,23 @@ struct ReaderHostView: View {
                 ),
                 analyticsSurface: "reader"
             )
+        }
+        .onChange(of: liveWebPageTurn.needsKoboSessionRecovery) { needed in
+            guard needed, document.sourceKind == .kobo else { return }
+            didRestoreKoboSession = false
+            showKoboSessionRecovery = true
+        }
+        .sheet(isPresented: $showKoboSessionRecovery, onDismiss: {
+            liveWebPageTurn.needsKoboSessionRecovery = false
+            if didRestoreKoboSession {
+                liveWebPageTurn.retryReader()
+            } else {
+                koboStore.reportError(AppLocalized("Kobo 阅读会话暂时失效。请重试打开；仍失败时再重新登录 Kobo。"))
+            }
+        }) {
+            KoboLibraryConnectView(readerBookID: document.id) {
+                didRestoreKoboSession = true
+            }
         }
     }
 
@@ -911,11 +934,8 @@ struct ReaderHostView: View {
                 .accessibilityIdentifier("koboReaderRetryButton")
                 Button {
                     koboStore.clearError()
-                    NotificationCenter.default.post(
-                        name: .castReaderKoboRebindRequested,
-                        object: nil
-                    )
-                    coordinator.close()
+                    didRestoreKoboSession = false
+                    showKoboSessionRecovery = true
                 } label: {
                     Text(AppLocalized("重新登录"))
                         .font(.subheadline.weight(.semibold))
@@ -1221,7 +1241,7 @@ private struct ReadControlBar: View {
     }
 
     private var rawWaiting: Bool {
-        !vm.isPlaying && (vm.isWaitingForPlayableAudio || vm.isBuffering)
+        !vm.isPlaybackPausedByUser && !vm.isPlaying && (vm.isWaitingForPlayableAudio || vm.isBuffering)
     }
 
     var body: some View {
@@ -1252,8 +1272,11 @@ private struct ReadControlBar: View {
                         .buttonStyle(.plain)
                     }
                     Button {
-                        guard presentationState != .waiting else { return }
-                        vm.togglePlayPause()
+                        if presentationState == .waiting {
+                            vm.pausePlayback()
+                        } else {
+                            vm.togglePlayPause()
+                        }
                     } label: {
                         ReaderPrimaryPlaybackButtonContent(
                             icon: playButtonIcon(for: presentationState),
@@ -1261,7 +1284,6 @@ private struct ReadControlBar: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .disabled(presentationState == .waiting)
                     .accessibilityIdentifier("readPlayPauseButton")
                     .accessibilityLabel(Text(playbackStatus(for: presentationState)))
                     .accessibilityValue(Text(presentationState == .playing ? "playing" : "paused"))
@@ -1280,6 +1302,18 @@ private struct ReadControlBar: View {
                     }
                 }
                 .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+        .safeAreaInset(edge: .top, spacing: 8) {
+            if let notice = vm.resumeNotice {
+                Text(notice)
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(12)
+                    .frame(maxWidth: 420)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("readingResumeNotice")
             }
         }
     }
@@ -1311,7 +1345,7 @@ private struct ReadControlBar: View {
         case .retry:
             return .retry
         case .waiting:
-            return .loading
+            return .pause
         case .paused:
             return .play
         }
@@ -1333,7 +1367,7 @@ private struct ReaderLandscapeReadOverlay: View {
     }
 
     private var rawWaiting: Bool {
-        !vm.isPlaying && (vm.isWaitingForPlayableAudio || vm.isBuffering)
+        !vm.isPlaybackPausedByUser && !vm.isPlaying && (vm.isWaitingForPlayableAudio || vm.isBuffering)
     }
 
     var body: some View {
@@ -1357,8 +1391,11 @@ private struct ReaderLandscapeReadOverlay: View {
                         }
                     }
                     Button {
-                        guard presentationState != .waiting else { return }
-                        vm.togglePlayPause()
+                        if presentationState == .waiting {
+                            vm.pausePlayback()
+                        } else {
+                            vm.togglePlayPause()
+                        }
                     } label: {
                         ReaderPrimaryPlaybackButtonContent(
                             icon: playButtonIcon(for: presentationState),
@@ -1366,7 +1403,6 @@ private struct ReaderLandscapeReadOverlay: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .disabled(presentationState == .waiting)
                     .accessibilityIdentifier("readPlayPauseButton")
                     .accessibilityLabel(Text(playbackStatus(for: presentationState)))
                     .accessibilityValue(Text(presentationState == .playing ? "playing" : "paused"))
@@ -1410,6 +1446,18 @@ private struct ReaderLandscapeReadOverlay: View {
                 .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
             }
         }
+        .safeAreaInset(edge: .top, spacing: 8) {
+            if let notice = vm.resumeNotice {
+                Text(notice)
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(12)
+                    .frame(maxWidth: 420)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("readingResumeNotice")
+            }
+        }
     }
 
     private func playbackStatus(
@@ -1428,7 +1476,7 @@ private struct ReaderLandscapeReadOverlay: View {
     ) -> ReaderPrimaryPlaybackButtonIcon {
         switch presentationState {
         case .playing: return .pause
-        case .waiting: return .loading
+        case .waiting: return .pause
         case .retry: return .retry
         case .paused: return .play
         }

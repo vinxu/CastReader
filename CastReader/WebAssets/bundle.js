@@ -68,10 +68,10 @@ var __CRWeb = (() => {
   ));
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-  // node_modules/underscore/modules/_setup.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_setup.js
   var VERSION, root, ArrayProto, ObjProto, SymbolProto, push, slice, toString, hasOwnProperty2, supportsArrayBuffer, supportsDataView, nativeIsArray, nativeKeys, nativeCreate, nativeIsView, _isNaN, _isFinite, hasEnumBug, nonEnumerableProps, MAX_ARRAY_INDEX;
   var init_setup = __esm({
-    "node_modules/underscore/modules/_setup.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_setup.js"() {
       VERSION = "1.13.8";
       root = typeof self == "object" && self.self === self && self || typeof global == "object" && global.global === global && global || Function("return this")() || {};
       ArrayProto = Array.prototype;
@@ -102,7 +102,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/restArguments.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/restArguments.js
   function restArguments(func, startIndex) {
     startIndex = startIndex == null ? func.length - 1 : +startIndex;
     return function() {
@@ -127,58 +127,58 @@ var __CRWeb = (() => {
     };
   }
   var init_restArguments = __esm({
-    "node_modules/underscore/modules/restArguments.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/restArguments.js"() {
     }
   });
 
-  // node_modules/underscore/modules/isObject.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isObject.js
   function isObject2(obj2) {
     var type2 = typeof obj2;
     return type2 === "function" || type2 === "object" && !!obj2;
   }
   var init_isObject = __esm({
-    "node_modules/underscore/modules/isObject.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isObject.js"() {
     }
   });
 
-  // node_modules/underscore/modules/isNull.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isNull.js
   function isNull(obj2) {
     return obj2 === null;
   }
   var init_isNull = __esm({
-    "node_modules/underscore/modules/isNull.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isNull.js"() {
     }
   });
 
-  // node_modules/underscore/modules/isUndefined.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isUndefined.js
   function isUndefined(obj2) {
     return obj2 === void 0;
   }
   var init_isUndefined = __esm({
-    "node_modules/underscore/modules/isUndefined.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isUndefined.js"() {
     }
   });
 
-  // node_modules/underscore/modules/isBoolean.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isBoolean.js
   function isBoolean(obj2) {
     return obj2 === true || obj2 === false || toString.call(obj2) === "[object Boolean]";
   }
   var init_isBoolean = __esm({
-    "node_modules/underscore/modules/isBoolean.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isBoolean.js"() {
       init_setup();
     }
   });
 
-  // node_modules/underscore/modules/isElement.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isElement.js
   function isElement(obj2) {
     return !!(obj2 && obj2.nodeType === 1);
   }
   var init_isElement = __esm({
-    "node_modules/underscore/modules/isElement.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isElement.js"() {
     }
   });
 
-  // node_modules/underscore/modules/_tagTester.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_tagTester.js
   function tagTester(name) {
     var tag = "[object " + name + "]";
     return function(obj2) {
@@ -186,78 +186,78 @@ var __CRWeb = (() => {
     };
   }
   var init_tagTester = __esm({
-    "node_modules/underscore/modules/_tagTester.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_tagTester.js"() {
       init_setup();
     }
   });
 
-  // node_modules/underscore/modules/isString.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isString.js
   var isString_default;
   var init_isString = __esm({
-    "node_modules/underscore/modules/isString.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isString.js"() {
       init_tagTester();
       isString_default = tagTester("String");
     }
   });
 
-  // node_modules/underscore/modules/isNumber.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isNumber.js
   var isNumber_default;
   var init_isNumber = __esm({
-    "node_modules/underscore/modules/isNumber.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isNumber.js"() {
       init_tagTester();
       isNumber_default = tagTester("Number");
     }
   });
 
-  // node_modules/underscore/modules/isDate.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isDate.js
   var isDate_default;
   var init_isDate = __esm({
-    "node_modules/underscore/modules/isDate.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isDate.js"() {
       init_tagTester();
       isDate_default = tagTester("Date");
     }
   });
 
-  // node_modules/underscore/modules/isRegExp.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isRegExp.js
   var isRegExp_default;
   var init_isRegExp = __esm({
-    "node_modules/underscore/modules/isRegExp.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isRegExp.js"() {
       init_tagTester();
       isRegExp_default = tagTester("RegExp");
     }
   });
 
-  // node_modules/underscore/modules/isError.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isError.js
   var isError_default;
   var init_isError = __esm({
-    "node_modules/underscore/modules/isError.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isError.js"() {
       init_tagTester();
       isError_default = tagTester("Error");
     }
   });
 
-  // node_modules/underscore/modules/isSymbol.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isSymbol.js
   var isSymbol_default;
   var init_isSymbol = __esm({
-    "node_modules/underscore/modules/isSymbol.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isSymbol.js"() {
       init_tagTester();
       isSymbol_default = tagTester("Symbol");
     }
   });
 
-  // node_modules/underscore/modules/isArrayBuffer.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isArrayBuffer.js
   var isArrayBuffer_default;
   var init_isArrayBuffer = __esm({
-    "node_modules/underscore/modules/isArrayBuffer.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isArrayBuffer.js"() {
       init_tagTester();
       isArrayBuffer_default = tagTester("ArrayBuffer");
     }
   });
 
-  // node_modules/underscore/modules/isFunction.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isFunction.js
   var isFunction, nodelist, isFunction_default;
   var init_isFunction = __esm({
-    "node_modules/underscore/modules/isFunction.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isFunction.js"() {
       init_tagTester();
       init_setup();
       isFunction = tagTester("Function");
@@ -271,19 +271,19 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/_hasObjectTag.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_hasObjectTag.js
   var hasObjectTag_default;
   var init_hasObjectTag = __esm({
-    "node_modules/underscore/modules/_hasObjectTag.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_hasObjectTag.js"() {
       init_tagTester();
       hasObjectTag_default = tagTester("Object");
     }
   });
 
-  // node_modules/underscore/modules/_stringTagBug.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_stringTagBug.js
   var hasDataViewBug, isIE11;
   var init_stringTagBug = __esm({
-    "node_modules/underscore/modules/_stringTagBug.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_stringTagBug.js"() {
       init_setup();
       init_hasObjectTag();
       hasDataViewBug = supportsDataView && (!/\[native code\]/.test(String(DataView)) || hasObjectTag_default(new DataView(new ArrayBuffer(8))));
@@ -291,13 +291,13 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/isDataView.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isDataView.js
   function alternateIsDataView(obj2) {
     return obj2 != null && isFunction_default(obj2.getInt8) && isArrayBuffer_default(obj2.buffer);
   }
   var isDataView, isDataView_default;
   var init_isDataView = __esm({
-    "node_modules/underscore/modules/isDataView.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isDataView.js"() {
       init_tagTester();
       init_isFunction();
       init_isArrayBuffer();
@@ -307,30 +307,30 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/isArray.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isArray.js
   var isArray_default;
   var init_isArray = __esm({
-    "node_modules/underscore/modules/isArray.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isArray.js"() {
       init_setup();
       init_tagTester();
       isArray_default = nativeIsArray || tagTester("Array");
     }
   });
 
-  // node_modules/underscore/modules/_has.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_has.js
   function has(obj2, key) {
     return obj2 != null && hasOwnProperty2.call(obj2, key);
   }
   var init_has = __esm({
-    "node_modules/underscore/modules/_has.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_has.js"() {
       init_setup();
     }
   });
 
-  // node_modules/underscore/modules/isArguments.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isArguments.js
   var isArguments, isArguments_default;
   var init_isArguments = __esm({
-    "node_modules/underscore/modules/isArguments.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isArguments.js"() {
       init_tagTester();
       init_has();
       isArguments = tagTester("Arguments");
@@ -345,40 +345,40 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/isFinite.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isFinite.js
   function isFinite2(obj2) {
     return !isSymbol_default(obj2) && _isFinite(obj2) && !isNaN(parseFloat(obj2));
   }
   var init_isFinite = __esm({
-    "node_modules/underscore/modules/isFinite.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isFinite.js"() {
       init_setup();
       init_isSymbol();
     }
   });
 
-  // node_modules/underscore/modules/isNaN.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isNaN.js
   function isNaN2(obj2) {
     return isNumber_default(obj2) && _isNaN(obj2);
   }
   var init_isNaN = __esm({
-    "node_modules/underscore/modules/isNaN.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isNaN.js"() {
       init_setup();
       init_isNumber();
     }
   });
 
-  // node_modules/underscore/modules/constant.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/constant.js
   function constant(value) {
     return function() {
       return value;
     };
   }
   var init_constant = __esm({
-    "node_modules/underscore/modules/constant.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/constant.js"() {
     }
   });
 
-  // node_modules/underscore/modules/_createSizePropertyCheck.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_createSizePropertyCheck.js
   function createSizePropertyCheck(getSizeProperty) {
     return function(collection) {
       var sizeProperty = getSizeProperty(collection);
@@ -386,48 +386,48 @@ var __CRWeb = (() => {
     };
   }
   var init_createSizePropertyCheck = __esm({
-    "node_modules/underscore/modules/_createSizePropertyCheck.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_createSizePropertyCheck.js"() {
       init_setup();
     }
   });
 
-  // node_modules/underscore/modules/_shallowProperty.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_shallowProperty.js
   function shallowProperty(key) {
     return function(obj2) {
       return obj2 == null ? void 0 : obj2[key];
     };
   }
   var init_shallowProperty = __esm({
-    "node_modules/underscore/modules/_shallowProperty.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_shallowProperty.js"() {
     }
   });
 
-  // node_modules/underscore/modules/_getByteLength.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_getByteLength.js
   var getByteLength_default;
   var init_getByteLength = __esm({
-    "node_modules/underscore/modules/_getByteLength.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_getByteLength.js"() {
       init_shallowProperty();
       getByteLength_default = shallowProperty("byteLength");
     }
   });
 
-  // node_modules/underscore/modules/_isBufferLike.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_isBufferLike.js
   var isBufferLike_default;
   var init_isBufferLike = __esm({
-    "node_modules/underscore/modules/_isBufferLike.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_isBufferLike.js"() {
       init_createSizePropertyCheck();
       init_getByteLength();
       isBufferLike_default = createSizePropertyCheck(getByteLength_default);
     }
   });
 
-  // node_modules/underscore/modules/isTypedArray.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isTypedArray.js
   function isTypedArray(obj2) {
     return nativeIsView ? nativeIsView(obj2) && !isDataView_default(obj2) : isBufferLike_default(obj2) && typedArrayPattern.test(toString.call(obj2));
   }
   var typedArrayPattern, isTypedArray_default;
   var init_isTypedArray = __esm({
-    "node_modules/underscore/modules/isTypedArray.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isTypedArray.js"() {
       init_setup();
       init_isDataView();
       init_constant();
@@ -437,16 +437,16 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/_getLength.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_getLength.js
   var getLength_default;
   var init_getLength = __esm({
-    "node_modules/underscore/modules/_getLength.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_getLength.js"() {
       init_shallowProperty();
       getLength_default = shallowProperty("length");
     }
   });
 
-  // node_modules/underscore/modules/_collectNonEnumProps.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_collectNonEnumProps.js
   function emulatedSet(keys2) {
     var hash = {};
     for (var l2 = keys2.length, i = 0; i < l2; ++i) hash[keys2[i]] = true;
@@ -475,14 +475,14 @@ var __CRWeb = (() => {
     }
   }
   var init_collectNonEnumProps = __esm({
-    "node_modules/underscore/modules/_collectNonEnumProps.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_collectNonEnumProps.js"() {
       init_setup();
       init_isFunction();
       init_has();
     }
   });
 
-  // node_modules/underscore/modules/keys.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/keys.js
   function keys(obj2) {
     if (!isObject2(obj2)) return [];
     if (nativeKeys) return nativeKeys(obj2);
@@ -492,7 +492,7 @@ var __CRWeb = (() => {
     return keys2;
   }
   var init_keys = __esm({
-    "node_modules/underscore/modules/keys.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/keys.js"() {
       init_isObject();
       init_setup();
       init_has();
@@ -500,7 +500,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/isEmpty.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isEmpty.js
   function isEmpty(obj2) {
     if (obj2 == null) return true;
     var length = getLength_default(obj2);
@@ -508,7 +508,7 @@ var __CRWeb = (() => {
     return getLength_default(keys(obj2)) === 0;
   }
   var init_isEmpty = __esm({
-    "node_modules/underscore/modules/isEmpty.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isEmpty.js"() {
       init_getLength();
       init_isArray();
       init_isString();
@@ -517,7 +517,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/isMatch.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isMatch.js
   function isMatch(object2, attrs) {
     var _keys = keys(attrs), length = _keys.length;
     if (object2 == null) return !length;
@@ -529,19 +529,19 @@ var __CRWeb = (() => {
     return true;
   }
   var init_isMatch = __esm({
-    "node_modules/underscore/modules/isMatch.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isMatch.js"() {
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/underscore.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/underscore.js
   function _(obj2) {
     if (obj2 instanceof _) return obj2;
     if (!(this instanceof _)) return new _(obj2);
     this._wrapped = obj2;
   }
   var init_underscore = __esm({
-    "node_modules/underscore/modules/underscore.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/underscore.js"() {
       init_setup();
       _.VERSION = VERSION;
       _.prototype.value = function() {
@@ -554,7 +554,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/_toBufferView.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_toBufferView.js
   function toBufferView(bufferSource) {
     return new Uint8Array(
       bufferSource.buffer || bufferSource,
@@ -563,12 +563,12 @@ var __CRWeb = (() => {
     );
   }
   var init_toBufferView = __esm({
-    "node_modules/underscore/modules/_toBufferView.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_toBufferView.js"() {
       init_getByteLength();
     }
   });
 
-  // node_modules/underscore/modules/isEqual.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isEqual.js
   function isEqual(a, b) {
     var todo = [{ a, b }];
     var aStack = [], bStack = [];
@@ -668,7 +668,7 @@ var __CRWeb = (() => {
   }
   var tagDataView;
   var init_isEqual = __esm({
-    "node_modules/underscore/modules/isEqual.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isEqual.js"() {
       init_underscore();
       init_setup();
       init_getByteLength();
@@ -683,7 +683,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/allKeys.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/allKeys.js
   function allKeys(obj2) {
     if (!isObject2(obj2)) return [];
     var keys2 = [];
@@ -692,14 +692,14 @@ var __CRWeb = (() => {
     return keys2;
   }
   var init_allKeys = __esm({
-    "node_modules/underscore/modules/allKeys.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/allKeys.js"() {
       init_isObject();
       init_setup();
       init_collectNonEnumProps();
     }
   });
 
-  // node_modules/underscore/modules/_methodFingerprint.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_methodFingerprint.js
   function ie11fingerprint(methods) {
     var length = getLength_default(methods);
     return function(obj2) {
@@ -714,7 +714,7 @@ var __CRWeb = (() => {
   }
   var forEachName, hasName, commonInit, mapTail, mapMethods, weakMapMethods, setMethods;
   var init_methodFingerprint = __esm({
-    "node_modules/underscore/modules/_methodFingerprint.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_methodFingerprint.js"() {
       init_getLength();
       init_isFunction();
       init_allKeys();
@@ -728,10 +728,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/isMap.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isMap.js
   var isMap_default;
   var init_isMap = __esm({
-    "node_modules/underscore/modules/isMap.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isMap.js"() {
       init_tagTester();
       init_stringTagBug();
       init_methodFingerprint();
@@ -739,10 +739,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/isWeakMap.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isWeakMap.js
   var isWeakMap_default;
   var init_isWeakMap = __esm({
-    "node_modules/underscore/modules/isWeakMap.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isWeakMap.js"() {
       init_tagTester();
       init_stringTagBug();
       init_methodFingerprint();
@@ -750,10 +750,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/isSet.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isSet.js
   var isSet_default;
   var init_isSet = __esm({
-    "node_modules/underscore/modules/isSet.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isSet.js"() {
       init_tagTester();
       init_stringTagBug();
       init_methodFingerprint();
@@ -761,16 +761,16 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/isWeakSet.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/isWeakSet.js
   var isWeakSet_default;
   var init_isWeakSet = __esm({
-    "node_modules/underscore/modules/isWeakSet.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/isWeakSet.js"() {
       init_tagTester();
       isWeakSet_default = tagTester("WeakSet");
     }
   });
 
-  // node_modules/underscore/modules/values.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/values.js
   function values(obj2) {
     var _keys = keys(obj2);
     var length = _keys.length;
@@ -781,12 +781,12 @@ var __CRWeb = (() => {
     return values2;
   }
   var init_values = __esm({
-    "node_modules/underscore/modules/values.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/values.js"() {
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/pairs.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/pairs.js
   function pairs(obj2) {
     var _keys = keys(obj2);
     var length = _keys.length;
@@ -797,12 +797,12 @@ var __CRWeb = (() => {
     return pairs2;
   }
   var init_pairs = __esm({
-    "node_modules/underscore/modules/pairs.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/pairs.js"() {
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/invert.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/invert.js
   function invert(obj2) {
     var result2 = {};
     var _keys = keys(obj2);
@@ -812,12 +812,12 @@ var __CRWeb = (() => {
     return result2;
   }
   var init_invert = __esm({
-    "node_modules/underscore/modules/invert.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/invert.js"() {
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/functions.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/functions.js
   function functions(obj2) {
     var names = [];
     for (var key in obj2) {
@@ -826,12 +826,12 @@ var __CRWeb = (() => {
     return names.sort();
   }
   var init_functions = __esm({
-    "node_modules/underscore/modules/functions.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/functions.js"() {
       init_isFunction();
     }
   });
 
-  // node_modules/underscore/modules/_createAssigner.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_createAssigner.js
   function createAssigner(keysFunc, defaults2) {
     return function(obj2) {
       var length = arguments.length;
@@ -848,41 +848,41 @@ var __CRWeb = (() => {
     };
   }
   var init_createAssigner = __esm({
-    "node_modules/underscore/modules/_createAssigner.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_createAssigner.js"() {
     }
   });
 
-  // node_modules/underscore/modules/extend.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/extend.js
   var extend_default;
   var init_extend = __esm({
-    "node_modules/underscore/modules/extend.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/extend.js"() {
       init_createAssigner();
       init_allKeys();
       extend_default = createAssigner(allKeys);
     }
   });
 
-  // node_modules/underscore/modules/extendOwn.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/extendOwn.js
   var extendOwn_default;
   var init_extendOwn = __esm({
-    "node_modules/underscore/modules/extendOwn.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/extendOwn.js"() {
       init_createAssigner();
       init_keys();
       extendOwn_default = createAssigner(keys);
     }
   });
 
-  // node_modules/underscore/modules/defaults.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/defaults.js
   var defaults_default;
   var init_defaults = __esm({
-    "node_modules/underscore/modules/defaults.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/defaults.js"() {
       init_createAssigner();
       init_allKeys();
       defaults_default = createAssigner(allKeys, true);
     }
   });
 
-  // node_modules/underscore/modules/_baseCreate.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_baseCreate.js
   function ctor() {
     return function() {
     };
@@ -897,72 +897,72 @@ var __CRWeb = (() => {
     return result2;
   }
   var init_baseCreate = __esm({
-    "node_modules/underscore/modules/_baseCreate.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_baseCreate.js"() {
       init_isObject();
       init_setup();
     }
   });
 
-  // node_modules/underscore/modules/create.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/create.js
   function create(prototype, props) {
     var result2 = baseCreate(prototype);
     if (props) extendOwn_default(result2, props);
     return result2;
   }
   var init_create = __esm({
-    "node_modules/underscore/modules/create.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/create.js"() {
       init_baseCreate();
       init_extendOwn();
     }
   });
 
-  // node_modules/underscore/modules/clone.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/clone.js
   function clone(obj2) {
     if (!isObject2(obj2)) return obj2;
     return isArray_default(obj2) ? obj2.slice() : extend_default({}, obj2);
   }
   var init_clone = __esm({
-    "node_modules/underscore/modules/clone.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/clone.js"() {
       init_isObject();
       init_isArray();
       init_extend();
     }
   });
 
-  // node_modules/underscore/modules/tap.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/tap.js
   function tap(obj2, interceptor) {
     interceptor(obj2);
     return obj2;
   }
   var init_tap = __esm({
-    "node_modules/underscore/modules/tap.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/tap.js"() {
     }
   });
 
-  // node_modules/underscore/modules/toPath.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/toPath.js
   function toPath(path5) {
     return isArray_default(path5) ? path5 : [path5];
   }
   var init_toPath = __esm({
-    "node_modules/underscore/modules/toPath.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/toPath.js"() {
       init_underscore();
       init_isArray();
       _.toPath = toPath;
     }
   });
 
-  // node_modules/underscore/modules/_toPath.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_toPath.js
   function toPath2(path5) {
     return _.toPath(path5);
   }
   var init_toPath2 = __esm({
-    "node_modules/underscore/modules/_toPath.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_toPath.js"() {
       init_underscore();
       init_toPath();
     }
   });
 
-  // node_modules/underscore/modules/_deepGet.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_deepGet.js
   function deepGet(obj2, path5) {
     var length = path5.length;
     for (var i = 0; i < length; i++) {
@@ -972,24 +972,24 @@ var __CRWeb = (() => {
     return length ? obj2 : void 0;
   }
   var init_deepGet = __esm({
-    "node_modules/underscore/modules/_deepGet.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_deepGet.js"() {
     }
   });
 
-  // node_modules/underscore/modules/get.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/get.js
   function get(object2, path5, defaultValue2) {
     var value = deepGet(object2, toPath2(path5));
     return isUndefined(value) ? defaultValue2 : value;
   }
   var init_get = __esm({
-    "node_modules/underscore/modules/get.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/get.js"() {
       init_toPath2();
       init_deepGet();
       init_isUndefined();
     }
   });
 
-  // node_modules/underscore/modules/has.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/has.js
   function has2(obj2, path5) {
     path5 = toPath2(path5);
     var length = path5.length;
@@ -1001,22 +1001,22 @@ var __CRWeb = (() => {
     return !!length;
   }
   var init_has2 = __esm({
-    "node_modules/underscore/modules/has.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/has.js"() {
       init_has();
       init_toPath2();
     }
   });
 
-  // node_modules/underscore/modules/identity.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/identity.js
   function identity(value) {
     return value;
   }
   var init_identity = __esm({
-    "node_modules/underscore/modules/identity.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/identity.js"() {
     }
   });
 
-  // node_modules/underscore/modules/matcher.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/matcher.js
   function matcher(attrs) {
     attrs = extendOwn_default({}, attrs);
     return function(obj2) {
@@ -1024,13 +1024,13 @@ var __CRWeb = (() => {
     };
   }
   var init_matcher = __esm({
-    "node_modules/underscore/modules/matcher.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/matcher.js"() {
       init_extendOwn();
       init_isMatch();
     }
   });
 
-  // node_modules/underscore/modules/property.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/property.js
   function property(path5) {
     path5 = toPath2(path5);
     return function(obj2) {
@@ -1038,13 +1038,13 @@ var __CRWeb = (() => {
     };
   }
   var init_property = __esm({
-    "node_modules/underscore/modules/property.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/property.js"() {
       init_deepGet();
       init_toPath2();
     }
   });
 
-  // node_modules/underscore/modules/_optimizeCb.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_optimizeCb.js
   function optimizeCb(func, context, argCount) {
     if (context === void 0) return func;
     switch (argCount == null ? 3 : argCount) {
@@ -1067,11 +1067,11 @@ var __CRWeb = (() => {
     };
   }
   var init_optimizeCb = __esm({
-    "node_modules/underscore/modules/_optimizeCb.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_optimizeCb.js"() {
     }
   });
 
-  // node_modules/underscore/modules/_baseIteratee.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_baseIteratee.js
   function baseIteratee(value, context, argCount) {
     if (value == null) return identity;
     if (isFunction_default(value)) return optimizeCb(value, context, argCount);
@@ -1079,7 +1079,7 @@ var __CRWeb = (() => {
     return property(value);
   }
   var init_baseIteratee = __esm({
-    "node_modules/underscore/modules/_baseIteratee.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_baseIteratee.js"() {
       init_identity();
       init_isFunction();
       init_isObject();
@@ -1090,32 +1090,32 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/iteratee.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/iteratee.js
   function iteratee(value, context) {
     return baseIteratee(value, context, Infinity);
   }
   var init_iteratee = __esm({
-    "node_modules/underscore/modules/iteratee.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/iteratee.js"() {
       init_underscore();
       init_baseIteratee();
       _.iteratee = iteratee;
     }
   });
 
-  // node_modules/underscore/modules/_cb.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_cb.js
   function cb(value, context, argCount) {
     if (_.iteratee !== iteratee) return _.iteratee(value, context);
     return baseIteratee(value, context, argCount);
   }
   var init_cb = __esm({
-    "node_modules/underscore/modules/_cb.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_cb.js"() {
       init_underscore();
       init_baseIteratee();
       init_iteratee();
     }
   });
 
-  // node_modules/underscore/modules/mapObject.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/mapObject.js
   function mapObject(obj2, iteratee2, context) {
     iteratee2 = cb(iteratee2, context);
     var _keys = keys(obj2), length = _keys.length, results = {};
@@ -1126,21 +1126,21 @@ var __CRWeb = (() => {
     return results;
   }
   var init_mapObject = __esm({
-    "node_modules/underscore/modules/mapObject.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/mapObject.js"() {
       init_cb();
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/noop.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/noop.js
   function noop() {
   }
   var init_noop = __esm({
-    "node_modules/underscore/modules/noop.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/noop.js"() {
     }
   });
 
-  // node_modules/underscore/modules/propertyOf.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/propertyOf.js
   function propertyOf(obj2) {
     if (obj2 == null) return noop;
     return function(path5) {
@@ -1148,13 +1148,13 @@ var __CRWeb = (() => {
     };
   }
   var init_propertyOf = __esm({
-    "node_modules/underscore/modules/propertyOf.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/propertyOf.js"() {
       init_noop();
       init_get();
     }
   });
 
-  // node_modules/underscore/modules/times.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/times.js
   function times(n, iteratee2, context) {
     var accum = Array(Math.max(0, n));
     iteratee2 = optimizeCb(iteratee2, context, 1);
@@ -1162,12 +1162,12 @@ var __CRWeb = (() => {
     return accum;
   }
   var init_times = __esm({
-    "node_modules/underscore/modules/times.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/times.js"() {
       init_optimizeCb();
     }
   });
 
-  // node_modules/underscore/modules/random.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/random.js
   function random(min2, max2) {
     if (max2 == null) {
       max2 = min2;
@@ -1176,21 +1176,21 @@ var __CRWeb = (() => {
     return min2 + Math.floor(Math.random() * (max2 - min2 + 1));
   }
   var init_random = __esm({
-    "node_modules/underscore/modules/random.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/random.js"() {
     }
   });
 
-  // node_modules/underscore/modules/now.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/now.js
   var now_default;
   var init_now = __esm({
-    "node_modules/underscore/modules/now.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/now.js"() {
       now_default = Date.now || function() {
         return (/* @__PURE__ */ new Date()).getTime();
       };
     }
   });
 
-  // node_modules/underscore/modules/_createEscaper.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_createEscaper.js
   function createEscaper(map2) {
     var escaper = function(match) {
       return map2[match];
@@ -1204,15 +1204,15 @@ var __CRWeb = (() => {
     };
   }
   var init_createEscaper = __esm({
-    "node_modules/underscore/modules/_createEscaper.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_createEscaper.js"() {
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/_escapeMap.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_escapeMap.js
   var escapeMap_default;
   var init_escapeMap = __esm({
-    "node_modules/underscore/modules/_escapeMap.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_escapeMap.js"() {
       escapeMap_default = {
         "&": "&amp;",
         "<": "&lt;",
@@ -1224,40 +1224,40 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/escape.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/escape.js
   var escape_default;
   var init_escape = __esm({
-    "node_modules/underscore/modules/escape.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/escape.js"() {
       init_createEscaper();
       init_escapeMap();
       escape_default = createEscaper(escapeMap_default);
     }
   });
 
-  // node_modules/underscore/modules/_unescapeMap.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_unescapeMap.js
   var unescapeMap_default;
   var init_unescapeMap = __esm({
-    "node_modules/underscore/modules/_unescapeMap.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_unescapeMap.js"() {
       init_invert();
       init_escapeMap();
       unescapeMap_default = invert(escapeMap_default);
     }
   });
 
-  // node_modules/underscore/modules/unescape.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/unescape.js
   var unescape_default;
   var init_unescape = __esm({
-    "node_modules/underscore/modules/unescape.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/unescape.js"() {
       init_createEscaper();
       init_unescapeMap();
       unescape_default = createEscaper(unescapeMap_default);
     }
   });
 
-  // node_modules/underscore/modules/templateSettings.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/templateSettings.js
   var templateSettings_default;
   var init_templateSettings = __esm({
-    "node_modules/underscore/modules/templateSettings.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/templateSettings.js"() {
       init_underscore();
       templateSettings_default = _.templateSettings = {
         evaluate: /<%([\s\S]+?)%>/g,
@@ -1267,7 +1267,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/template.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/template.js
   function escapeChar(match) {
     return "\\" + escapes[match];
   }
@@ -1319,7 +1319,7 @@ var __CRWeb = (() => {
   }
   var noMatch, escapes, escapeRegExp, bareIdentifier;
   var init_template = __esm({
-    "node_modules/underscore/modules/template.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/template.js"() {
       init_defaults();
       init_underscore();
       init_templateSettings();
@@ -1337,7 +1337,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/result.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/result.js
   function result(obj2, path5, fallback) {
     path5 = toPath2(path5);
     var length = path5.length;
@@ -1355,37 +1355,37 @@ var __CRWeb = (() => {
     return obj2;
   }
   var init_result = __esm({
-    "node_modules/underscore/modules/result.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/result.js"() {
       init_isFunction();
       init_toPath2();
     }
   });
 
-  // node_modules/underscore/modules/uniqueId.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/uniqueId.js
   function uniqueId(prefix) {
     var id = ++idCounter + "";
     return prefix ? prefix + id : id;
   }
   var idCounter;
   var init_uniqueId = __esm({
-    "node_modules/underscore/modules/uniqueId.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/uniqueId.js"() {
       idCounter = 0;
     }
   });
 
-  // node_modules/underscore/modules/chain.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/chain.js
   function chain(obj2) {
     var instance = _(obj2);
     instance._chain = true;
     return instance;
   }
   var init_chain = __esm({
-    "node_modules/underscore/modules/chain.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/chain.js"() {
       init_underscore();
     }
   });
 
-  // node_modules/underscore/modules/_executeBound.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_executeBound.js
   function executeBound(sourceFunc, boundFunc, context, callingContext, args) {
     if (!(callingContext instanceof boundFunc)) return sourceFunc.apply(context, args);
     var self2 = baseCreate(sourceFunc.prototype);
@@ -1394,16 +1394,16 @@ var __CRWeb = (() => {
     return self2;
   }
   var init_executeBound = __esm({
-    "node_modules/underscore/modules/_executeBound.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_executeBound.js"() {
       init_baseCreate();
       init_isObject();
     }
   });
 
-  // node_modules/underscore/modules/partial.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/partial.js
   var partial, partial_default;
   var init_partial = __esm({
-    "node_modules/underscore/modules/partial.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/partial.js"() {
       init_restArguments();
       init_executeBound();
       init_underscore();
@@ -1425,10 +1425,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/bind.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/bind.js
   var bind_default;
   var init_bind = __esm({
-    "node_modules/underscore/modules/bind.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/bind.js"() {
       init_restArguments();
       init_isFunction();
       init_executeBound();
@@ -1442,17 +1442,17 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/_isArrayLike.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_isArrayLike.js
   var isArrayLike_default;
   var init_isArrayLike = __esm({
-    "node_modules/underscore/modules/_isArrayLike.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_isArrayLike.js"() {
       init_createSizePropertyCheck();
       init_getLength();
       isArrayLike_default = createSizePropertyCheck(getLength_default);
     }
   });
 
-  // node_modules/underscore/modules/_flatten.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_flatten.js
   function flatten(input, depth, strict) {
     if (!depth && depth !== 0) depth = Infinity;
     var output = [], idx = 0, i = 0, length = getLength_default(input) || 0, stack = [];
@@ -1480,7 +1480,7 @@ var __CRWeb = (() => {
     return output;
   }
   var init_flatten = __esm({
-    "node_modules/underscore/modules/_flatten.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_flatten.js"() {
       init_getLength();
       init_isArrayLike();
       init_isArray();
@@ -1488,10 +1488,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/bindAll.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/bindAll.js
   var bindAll_default;
   var init_bindAll = __esm({
-    "node_modules/underscore/modules/bindAll.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/bindAll.js"() {
       init_restArguments();
       init_flatten();
       init_bind();
@@ -1508,7 +1508,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/memoize.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/memoize.js
   function memoize(func, hasher) {
     var memoize2 = function(key) {
       var cache = memoize2.cache;
@@ -1520,15 +1520,15 @@ var __CRWeb = (() => {
     return memoize2;
   }
   var init_memoize = __esm({
-    "node_modules/underscore/modules/memoize.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/memoize.js"() {
       init_has();
     }
   });
 
-  // node_modules/underscore/modules/delay.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/delay.js
   var delay_default;
   var init_delay = __esm({
-    "node_modules/underscore/modules/delay.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/delay.js"() {
       init_restArguments();
       delay_default = restArguments(function(func, wait, args) {
         return setTimeout(function() {
@@ -1538,10 +1538,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/defer.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/defer.js
   var defer_default;
   var init_defer = __esm({
-    "node_modules/underscore/modules/defer.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/defer.js"() {
       init_partial();
       init_delay();
       init_underscore();
@@ -1549,7 +1549,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/throttle.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/throttle.js
   function throttle(func, wait, options) {
     var timeout, context, args, result2;
     var previous = 0;
@@ -1587,12 +1587,12 @@ var __CRWeb = (() => {
     return throttled;
   }
   var init_throttle = __esm({
-    "node_modules/underscore/modules/throttle.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/throttle.js"() {
       init_now();
     }
   });
 
-  // node_modules/underscore/modules/debounce.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/debounce.js
   function debounce(func, wait, immediate) {
     var timeout, previous, args, result2, context;
     var later = function() {
@@ -1622,34 +1622,34 @@ var __CRWeb = (() => {
     return debounced;
   }
   var init_debounce = __esm({
-    "node_modules/underscore/modules/debounce.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/debounce.js"() {
       init_restArguments();
       init_now();
     }
   });
 
-  // node_modules/underscore/modules/wrap.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/wrap.js
   function wrap(func, wrapper) {
     return partial_default(wrapper, func);
   }
   var init_wrap = __esm({
-    "node_modules/underscore/modules/wrap.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/wrap.js"() {
       init_partial();
     }
   });
 
-  // node_modules/underscore/modules/negate.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/negate.js
   function negate(predicate) {
     return function() {
       return !predicate.apply(this, arguments);
     };
   }
   var init_negate = __esm({
-    "node_modules/underscore/modules/negate.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/negate.js"() {
     }
   });
 
-  // node_modules/underscore/modules/compose.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/compose.js
   function compose() {
     var args = arguments;
     var start = args.length - 1;
@@ -1661,11 +1661,11 @@ var __CRWeb = (() => {
     };
   }
   var init_compose = __esm({
-    "node_modules/underscore/modules/compose.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/compose.js"() {
     }
   });
 
-  // node_modules/underscore/modules/after.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/after.js
   function after(times2, func) {
     return function() {
       if (--times2 < 1) {
@@ -1674,11 +1674,11 @@ var __CRWeb = (() => {
     };
   }
   var init_after = __esm({
-    "node_modules/underscore/modules/after.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/after.js"() {
     }
   });
 
-  // node_modules/underscore/modules/before.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/before.js
   function before(times2, func) {
     var memo;
     return function() {
@@ -1690,21 +1690,21 @@ var __CRWeb = (() => {
     };
   }
   var init_before = __esm({
-    "node_modules/underscore/modules/before.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/before.js"() {
     }
   });
 
-  // node_modules/underscore/modules/once.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/once.js
   var once_default;
   var init_once = __esm({
-    "node_modules/underscore/modules/once.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/once.js"() {
       init_partial();
       init_before();
       once_default = partial_default(before, 2);
     }
   });
 
-  // node_modules/underscore/modules/findKey.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/findKey.js
   function findKey(obj2, predicate, context) {
     predicate = cb(predicate, context);
     var _keys = keys(obj2), key;
@@ -1714,13 +1714,13 @@ var __CRWeb = (() => {
     }
   }
   var init_findKey = __esm({
-    "node_modules/underscore/modules/findKey.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/findKey.js"() {
       init_cb();
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/_createPredicateIndexFinder.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_createPredicateIndexFinder.js
   function createPredicateIndexFinder(dir) {
     return function(array, predicate, context) {
       predicate = cb(predicate, context);
@@ -1733,31 +1733,31 @@ var __CRWeb = (() => {
     };
   }
   var init_createPredicateIndexFinder = __esm({
-    "node_modules/underscore/modules/_createPredicateIndexFinder.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_createPredicateIndexFinder.js"() {
       init_cb();
       init_getLength();
     }
   });
 
-  // node_modules/underscore/modules/findIndex.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/findIndex.js
   var findIndex_default;
   var init_findIndex = __esm({
-    "node_modules/underscore/modules/findIndex.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/findIndex.js"() {
       init_createPredicateIndexFinder();
       findIndex_default = createPredicateIndexFinder(1);
     }
   });
 
-  // node_modules/underscore/modules/findLastIndex.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/findLastIndex.js
   var findLastIndex_default;
   var init_findLastIndex = __esm({
-    "node_modules/underscore/modules/findLastIndex.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/findLastIndex.js"() {
       init_createPredicateIndexFinder();
       findLastIndex_default = createPredicateIndexFinder(-1);
     }
   });
 
-  // node_modules/underscore/modules/sortedIndex.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/sortedIndex.js
   function sortedIndex(array, obj2, iteratee2, context) {
     iteratee2 = cb(iteratee2, context, 1);
     var value = iteratee2(obj2);
@@ -1770,13 +1770,13 @@ var __CRWeb = (() => {
     return low;
   }
   var init_sortedIndex = __esm({
-    "node_modules/underscore/modules/sortedIndex.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/sortedIndex.js"() {
       init_cb();
       init_getLength();
     }
   });
 
-  // node_modules/underscore/modules/_createIndexFinder.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_createIndexFinder.js
   function createIndexFinder(dir, predicateFind, sortedIndex2) {
     return function(array, item, idx) {
       var i = 0, length = getLength_default(array);
@@ -1801,17 +1801,17 @@ var __CRWeb = (() => {
     };
   }
   var init_createIndexFinder = __esm({
-    "node_modules/underscore/modules/_createIndexFinder.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_createIndexFinder.js"() {
       init_getLength();
       init_setup();
       init_isNaN();
     }
   });
 
-  // node_modules/underscore/modules/indexOf.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/indexOf.js
   var indexOf_default;
   var init_indexOf = __esm({
-    "node_modules/underscore/modules/indexOf.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/indexOf.js"() {
       init_sortedIndex();
       init_findIndex();
       init_createIndexFinder();
@@ -1819,42 +1819,42 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/lastIndexOf.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/lastIndexOf.js
   var lastIndexOf_default;
   var init_lastIndexOf = __esm({
-    "node_modules/underscore/modules/lastIndexOf.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/lastIndexOf.js"() {
       init_findLastIndex();
       init_createIndexFinder();
       lastIndexOf_default = createIndexFinder(-1, findLastIndex_default);
     }
   });
 
-  // node_modules/underscore/modules/find.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/find.js
   function find(obj2, predicate, context) {
     var keyFinder = isArrayLike_default(obj2) ? findIndex_default : findKey;
     var key = keyFinder(obj2, predicate, context);
     if (key !== void 0 && key !== -1) return obj2[key];
   }
   var init_find = __esm({
-    "node_modules/underscore/modules/find.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/find.js"() {
       init_isArrayLike();
       init_findIndex();
       init_findKey();
     }
   });
 
-  // node_modules/underscore/modules/findWhere.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/findWhere.js
   function findWhere(obj2, attrs) {
     return find(obj2, matcher(attrs));
   }
   var init_findWhere = __esm({
-    "node_modules/underscore/modules/findWhere.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/findWhere.js"() {
       init_find();
       init_matcher();
     }
   });
 
-  // node_modules/underscore/modules/each.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/each.js
   function each(obj2, iteratee2, context) {
     iteratee2 = optimizeCb(iteratee2, context);
     var i, length;
@@ -1871,14 +1871,14 @@ var __CRWeb = (() => {
     return obj2;
   }
   var init_each = __esm({
-    "node_modules/underscore/modules/each.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/each.js"() {
       init_optimizeCb();
       init_isArrayLike();
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/map.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/map.js
   function map(obj2, iteratee2, context) {
     iteratee2 = cb(iteratee2, context);
     var _keys = !isArrayLike_default(obj2) && keys(obj2), length = (_keys || obj2).length, results = Array(length);
@@ -1889,14 +1889,14 @@ var __CRWeb = (() => {
     return results;
   }
   var init_map = __esm({
-    "node_modules/underscore/modules/map.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/map.js"() {
       init_cb();
       init_isArrayLike();
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/_createReduce.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_createReduce.js
   function createReduce(dir) {
     var reducer = function(obj2, iteratee2, memo, initial2) {
       var _keys = !isArrayLike_default(obj2) && keys(obj2), length = (_keys || obj2).length, index = dir > 0 ? 0 : length - 1;
@@ -1916,32 +1916,32 @@ var __CRWeb = (() => {
     };
   }
   var init_createReduce = __esm({
-    "node_modules/underscore/modules/_createReduce.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_createReduce.js"() {
       init_isArrayLike();
       init_keys();
       init_optimizeCb();
     }
   });
 
-  // node_modules/underscore/modules/reduce.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/reduce.js
   var reduce_default;
   var init_reduce = __esm({
-    "node_modules/underscore/modules/reduce.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/reduce.js"() {
       init_createReduce();
       reduce_default = createReduce(1);
     }
   });
 
-  // node_modules/underscore/modules/reduceRight.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/reduceRight.js
   var reduceRight_default;
   var init_reduceRight = __esm({
-    "node_modules/underscore/modules/reduceRight.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/reduceRight.js"() {
       init_createReduce();
       reduceRight_default = createReduce(-1);
     }
   });
 
-  // node_modules/underscore/modules/filter.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/filter.js
   function filter(obj2, predicate, context) {
     var results = [];
     predicate = cb(predicate, context);
@@ -1951,25 +1951,25 @@ var __CRWeb = (() => {
     return results;
   }
   var init_filter = __esm({
-    "node_modules/underscore/modules/filter.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/filter.js"() {
       init_cb();
       init_each();
     }
   });
 
-  // node_modules/underscore/modules/reject.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/reject.js
   function reject(obj2, predicate, context) {
     return filter(obj2, negate(cb(predicate)), context);
   }
   var init_reject = __esm({
-    "node_modules/underscore/modules/reject.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/reject.js"() {
       init_filter();
       init_negate();
       init_cb();
     }
   });
 
-  // node_modules/underscore/modules/every.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/every.js
   function every(obj2, predicate, context) {
     predicate = cb(predicate, context);
     var _keys = !isArrayLike_default(obj2) && keys(obj2), length = (_keys || obj2).length;
@@ -1980,14 +1980,14 @@ var __CRWeb = (() => {
     return true;
   }
   var init_every = __esm({
-    "node_modules/underscore/modules/every.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/every.js"() {
       init_cb();
       init_isArrayLike();
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/some.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/some.js
   function some(obj2, predicate, context) {
     predicate = cb(predicate, context);
     var _keys = !isArrayLike_default(obj2) && keys(obj2), length = (_keys || obj2).length;
@@ -1998,31 +1998,31 @@ var __CRWeb = (() => {
     return false;
   }
   var init_some = __esm({
-    "node_modules/underscore/modules/some.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/some.js"() {
       init_cb();
       init_isArrayLike();
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/contains.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/contains.js
   function contains(obj2, item, fromIndex, guard) {
     if (!isArrayLike_default(obj2)) obj2 = values(obj2);
     if (typeof fromIndex != "number" || guard) fromIndex = 0;
     return indexOf_default(obj2, item, fromIndex) >= 0;
   }
   var init_contains = __esm({
-    "node_modules/underscore/modules/contains.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/contains.js"() {
       init_isArrayLike();
       init_values();
       init_indexOf();
     }
   });
 
-  // node_modules/underscore/modules/invoke.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/invoke.js
   var invoke_default;
   var init_invoke = __esm({
-    "node_modules/underscore/modules/invoke.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/invoke.js"() {
       init_restArguments();
       init_isFunction();
       init_map();
@@ -2052,29 +2052,29 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/pluck.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/pluck.js
   function pluck(obj2, key) {
     return map(obj2, property(key));
   }
   var init_pluck = __esm({
-    "node_modules/underscore/modules/pluck.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/pluck.js"() {
       init_map();
       init_property();
     }
   });
 
-  // node_modules/underscore/modules/where.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/where.js
   function where(obj2, attrs) {
     return filter(obj2, matcher(attrs));
   }
   var init_where = __esm({
-    "node_modules/underscore/modules/where.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/where.js"() {
       init_filter();
       init_matcher();
     }
   });
 
-  // node_modules/underscore/modules/max.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/max.js
   function max(obj2, iteratee2, context) {
     var result2 = -Infinity, lastComputed = -Infinity, value, computed;
     if (iteratee2 == null || typeof iteratee2 == "number" && typeof obj2[0] != "object" && obj2 != null) {
@@ -2098,7 +2098,7 @@ var __CRWeb = (() => {
     return result2;
   }
   var init_max = __esm({
-    "node_modules/underscore/modules/max.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/max.js"() {
       init_isArrayLike();
       init_values();
       init_cb();
@@ -2106,7 +2106,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/min.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/min.js
   function min(obj2, iteratee2, context) {
     var result2 = Infinity, lastComputed = Infinity, value, computed;
     if (iteratee2 == null || typeof iteratee2 == "number" && typeof obj2[0] != "object" && obj2 != null) {
@@ -2130,7 +2130,7 @@ var __CRWeb = (() => {
     return result2;
   }
   var init_min = __esm({
-    "node_modules/underscore/modules/min.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/min.js"() {
       init_isArrayLike();
       init_values();
       init_cb();
@@ -2138,7 +2138,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/toArray.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/toArray.js
   function toArray(obj2) {
     if (!obj2) return [];
     if (isArray_default(obj2)) return slice.call(obj2);
@@ -2150,7 +2150,7 @@ var __CRWeb = (() => {
   }
   var reStrSymbol;
   var init_toArray = __esm({
-    "node_modules/underscore/modules/toArray.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/toArray.js"() {
       init_isArray();
       init_setup();
       init_isString();
@@ -2162,7 +2162,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/sample.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/sample.js
   function sample(obj2, n, guard) {
     if (n == null || guard) {
       if (!isArrayLike_default(obj2)) obj2 = values(obj2);
@@ -2181,7 +2181,7 @@ var __CRWeb = (() => {
     return sample2.slice(0, n);
   }
   var init_sample = __esm({
-    "node_modules/underscore/modules/sample.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/sample.js"() {
       init_isArrayLike();
       init_values();
       init_getLength();
@@ -2190,17 +2190,17 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/shuffle.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/shuffle.js
   function shuffle(obj2) {
     return sample(obj2, Infinity);
   }
   var init_shuffle = __esm({
-    "node_modules/underscore/modules/shuffle.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/shuffle.js"() {
       init_sample();
     }
   });
 
-  // node_modules/underscore/modules/sortBy.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/sortBy.js
   function sortBy(obj2, iteratee2, context) {
     var index = 0;
     iteratee2 = cb(iteratee2, context);
@@ -2221,14 +2221,14 @@ var __CRWeb = (() => {
     }), "value");
   }
   var init_sortBy = __esm({
-    "node_modules/underscore/modules/sortBy.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/sortBy.js"() {
       init_cb();
       init_pluck();
       init_map();
     }
   });
 
-  // node_modules/underscore/modules/_group.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_group.js
   function group(behavior, partition) {
     return function(obj2, iteratee2, context) {
       var result2 = partition ? [[], []] : {};
@@ -2241,16 +2241,16 @@ var __CRWeb = (() => {
     };
   }
   var init_group = __esm({
-    "node_modules/underscore/modules/_group.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_group.js"() {
       init_cb();
       init_each();
     }
   });
 
-  // node_modules/underscore/modules/groupBy.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/groupBy.js
   var groupBy_default;
   var init_groupBy = __esm({
-    "node_modules/underscore/modules/groupBy.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/groupBy.js"() {
       init_group();
       init_has();
       groupBy_default = group(function(result2, value, key) {
@@ -2260,10 +2260,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/indexBy.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/indexBy.js
   var indexBy_default;
   var init_indexBy = __esm({
-    "node_modules/underscore/modules/indexBy.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/indexBy.js"() {
       init_group();
       indexBy_default = group(function(result2, value, key) {
         result2[key] = value;
@@ -2271,10 +2271,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/countBy.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/countBy.js
   var countBy_default;
   var init_countBy = __esm({
-    "node_modules/underscore/modules/countBy.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/countBy.js"() {
       init_group();
       init_has();
       countBy_default = group(function(result2, value, key) {
@@ -2284,10 +2284,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/partition.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/partition.js
   var partition_default;
   var init_partition = __esm({
-    "node_modules/underscore/modules/partition.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/partition.js"() {
       init_group();
       partition_default = group(function(result2, value, pass) {
         result2[pass ? 0 : 1].push(value);
@@ -2295,31 +2295,31 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/size.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/size.js
   function size(obj2) {
     if (obj2 == null) return 0;
     return isArrayLike_default(obj2) ? obj2.length : keys(obj2).length;
   }
   var init_size = __esm({
-    "node_modules/underscore/modules/size.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/size.js"() {
       init_isArrayLike();
       init_keys();
     }
   });
 
-  // node_modules/underscore/modules/_keyInObj.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_keyInObj.js
   function keyInObj(value, key, obj2) {
     return key in obj2;
   }
   var init_keyInObj = __esm({
-    "node_modules/underscore/modules/_keyInObj.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_keyInObj.js"() {
     }
   });
 
-  // node_modules/underscore/modules/pick.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/pick.js
   var pick_default;
   var init_pick = __esm({
-    "node_modules/underscore/modules/pick.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/pick.js"() {
       init_restArguments();
       init_isFunction();
       init_optimizeCb();
@@ -2347,10 +2347,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/omit.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/omit.js
   var omit_default;
   var init_omit = __esm({
-    "node_modules/underscore/modules/omit.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/omit.js"() {
       init_restArguments();
       init_isFunction();
       init_negate();
@@ -2374,74 +2374,74 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/initial.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/initial.js
   function initial(array, n, guard) {
     return slice.call(array, 0, Math.max(0, array.length - (n == null || guard ? 1 : n)));
   }
   var init_initial = __esm({
-    "node_modules/underscore/modules/initial.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/initial.js"() {
       init_setup();
     }
   });
 
-  // node_modules/underscore/modules/first.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/first.js
   function first(array, n, guard) {
     if (array == null || array.length < 1) return n == null || guard ? void 0 : [];
     if (n == null || guard) return array[0];
     return initial(array, array.length - n);
   }
   var init_first = __esm({
-    "node_modules/underscore/modules/first.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/first.js"() {
       init_initial();
     }
   });
 
-  // node_modules/underscore/modules/rest.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/rest.js
   function rest(array, n, guard) {
     return slice.call(array, n == null || guard ? 1 : n);
   }
   var init_rest = __esm({
-    "node_modules/underscore/modules/rest.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/rest.js"() {
       init_setup();
     }
   });
 
-  // node_modules/underscore/modules/last.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/last.js
   function last(array, n, guard) {
     if (array == null || array.length < 1) return n == null || guard ? void 0 : [];
     if (n == null || guard) return array[array.length - 1];
     return rest(array, Math.max(0, array.length - n));
   }
   var init_last = __esm({
-    "node_modules/underscore/modules/last.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/last.js"() {
       init_rest();
     }
   });
 
-  // node_modules/underscore/modules/compact.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/compact.js
   function compact(array) {
     return filter(array, Boolean);
   }
   var init_compact = __esm({
-    "node_modules/underscore/modules/compact.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/compact.js"() {
       init_filter();
     }
   });
 
-  // node_modules/underscore/modules/flatten.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/flatten.js
   function flatten2(array, depth) {
     return flatten(array, depth, false);
   }
   var init_flatten2 = __esm({
-    "node_modules/underscore/modules/flatten.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/flatten.js"() {
       init_flatten();
     }
   });
 
-  // node_modules/underscore/modules/difference.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/difference.js
   var difference_default;
   var init_difference = __esm({
-    "node_modules/underscore/modules/difference.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/difference.js"() {
       init_restArguments();
       init_flatten();
       init_filter();
@@ -2455,10 +2455,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/without.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/without.js
   var without_default;
   var init_without = __esm({
-    "node_modules/underscore/modules/without.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/without.js"() {
       init_restArguments();
       init_difference();
       without_default = restArguments(function(array, otherArrays) {
@@ -2467,7 +2467,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/uniq.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/uniq.js
   function uniq(array, isSorted, iteratee2, context) {
     if (!isBoolean(isSorted)) {
       context = iteratee2;
@@ -2494,7 +2494,7 @@ var __CRWeb = (() => {
     return result2;
   }
   var init_uniq = __esm({
-    "node_modules/underscore/modules/uniq.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/uniq.js"() {
       init_isBoolean();
       init_cb();
       init_getLength();
@@ -2502,10 +2502,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/union.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/union.js
   var union_default;
   var init_union = __esm({
-    "node_modules/underscore/modules/union.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/union.js"() {
       init_restArguments();
       init_uniq();
       init_flatten();
@@ -2515,7 +2515,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/intersection.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/intersection.js
   function intersection(array) {
     var result2 = [];
     var argsLength = arguments.length;
@@ -2531,13 +2531,13 @@ var __CRWeb = (() => {
     return result2;
   }
   var init_intersection = __esm({
-    "node_modules/underscore/modules/intersection.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/intersection.js"() {
       init_getLength();
       init_contains();
     }
   });
 
-  // node_modules/underscore/modules/unzip.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/unzip.js
   function unzip(array) {
     var length = array && max(array, getLength_default).length || 0;
     var result2 = Array(length);
@@ -2547,24 +2547,24 @@ var __CRWeb = (() => {
     return result2;
   }
   var init_unzip = __esm({
-    "node_modules/underscore/modules/unzip.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/unzip.js"() {
       init_max();
       init_getLength();
       init_pluck();
     }
   });
 
-  // node_modules/underscore/modules/zip.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/zip.js
   var zip_default;
   var init_zip = __esm({
-    "node_modules/underscore/modules/zip.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/zip.js"() {
       init_restArguments();
       init_unzip();
       zip_default = restArguments(unzip);
     }
   });
 
-  // node_modules/underscore/modules/object.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/object.js
   function object(list, values2) {
     var result2 = {};
     for (var i = 0, length = getLength_default(list); i < length; i++) {
@@ -2577,12 +2577,12 @@ var __CRWeb = (() => {
     return result2;
   }
   var init_object = __esm({
-    "node_modules/underscore/modules/object.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/object.js"() {
       init_getLength();
     }
   });
 
-  // node_modules/underscore/modules/range.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/range.js
   function range(start, stop, step) {
     if (stop == null) {
       stop = start || 0;
@@ -2599,11 +2599,11 @@ var __CRWeb = (() => {
     return range2;
   }
   var init_range = __esm({
-    "node_modules/underscore/modules/range.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/range.js"() {
     }
   });
 
-  // node_modules/underscore/modules/chunk.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/chunk.js
   function chunk(array, count) {
     if (count == null || count < 1) return [];
     var result2 = [];
@@ -2614,22 +2614,22 @@ var __CRWeb = (() => {
     return result2;
   }
   var init_chunk = __esm({
-    "node_modules/underscore/modules/chunk.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/chunk.js"() {
       init_setup();
     }
   });
 
-  // node_modules/underscore/modules/_chainResult.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/_chainResult.js
   function chainResult(instance, obj2) {
     return instance._chain ? _(obj2).chain() : obj2;
   }
   var init_chainResult = __esm({
-    "node_modules/underscore/modules/_chainResult.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/_chainResult.js"() {
       init_underscore();
     }
   });
 
-  // node_modules/underscore/modules/mixin.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/mixin.js
   function mixin(obj2) {
     each(functions(obj2), function(name) {
       var func = _[name] = obj2[name];
@@ -2642,7 +2642,7 @@ var __CRWeb = (() => {
     return _;
   }
   var init_mixin = __esm({
-    "node_modules/underscore/modules/mixin.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/mixin.js"() {
       init_underscore();
       init_each();
       init_functions();
@@ -2651,10 +2651,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/underscore-array-methods.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/underscore-array-methods.js
   var underscore_array_methods_default;
   var init_underscore_array_methods = __esm({
-    "node_modules/underscore/modules/underscore-array-methods.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/underscore-array-methods.js"() {
       init_underscore();
       init_each();
       init_setup();
@@ -2684,7 +2684,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/index.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/index.js
   var modules_exports = {};
   __export(modules_exports, {
     VERSION: () => VERSION,
@@ -2835,7 +2835,7 @@ var __CRWeb = (() => {
     zip: () => zip_default
   });
   var init_modules = __esm({
-    "node_modules/underscore/modules/index.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/index.js"() {
       init_setup();
       init_restArguments();
       init_isObject();
@@ -2965,10 +2965,10 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/index-default.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/index-default.js
   var _2, index_default_default;
   var init_index_default = __esm({
-    "node_modules/underscore/modules/index-default.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/index-default.js"() {
       init_modules();
       init_modules();
       _2 = mixin(modules_exports);
@@ -2977,7 +2977,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/underscore/modules/index-all.js
+  // ../../../CastReader/WebReader/node_modules/underscore/modules/index-all.js
   var index_all_exports = {};
   __export(index_all_exports, {
     VERSION: () => VERSION,
@@ -3128,15 +3128,15 @@ var __CRWeb = (() => {
     zip: () => zip_default
   });
   var init_index_all = __esm({
-    "node_modules/underscore/modules/index-all.js"() {
+    "../../../CastReader/WebReader/node_modules/underscore/modules/index-all.js"() {
       init_index_default();
       init_modules();
     }
   });
 
-  // node_modules/bluebird/js/release/es5.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/es5.js
   var require_es5 = __commonJS({
-    "node_modules/bluebird/js/release/es5.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/es5.js"(exports2, module2) {
       var isES5 = function() {
         "use strict";
         return this === void 0;
@@ -3219,9 +3219,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/util.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/util.js
   var require_util = __commonJS({
-    "node_modules/bluebird/js/release/util.js"(exports, module) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/util.js"(exports, module) {
       "use strict";
       var es5 = require_es5();
       var canEvaluate = typeof navigator == "undefined";
@@ -3550,9 +3550,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/schedule.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/schedule.js
   var require_schedule = __commonJS({
-    "node_modules/bluebird/js/release/schedule.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/schedule.js"(exports2, module2) {
       "use strict";
       var util = require_util();
       var schedule;
@@ -3616,9 +3616,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/queue.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/queue.js
   var require_queue = __commonJS({
-    "node_modules/bluebird/js/release/queue.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/queue.js"(exports2, module2) {
       "use strict";
       function arrayMove(src, srcIndex, dst, dstIndex, len) {
         for (var j = 0; j < len; ++j) {
@@ -3684,9 +3684,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/async.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/async.js
   var require_async = __commonJS({
-    "node_modules/bluebird/js/release/async.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/async.js"(exports2, module2) {
       "use strict";
       var firstLineError;
       try {
@@ -3836,9 +3836,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/errors.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/errors.js
   var require_errors = __commonJS({
-    "node_modules/bluebird/js/release/errors.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/errors.js"(exports2, module2) {
       "use strict";
       var es52 = require_es5();
       var Objectfreeze = es52.freeze;
@@ -3952,9 +3952,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/thenables.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/thenables.js
   var require_thenables = __commonJS({
-    "node_modules/bluebird/js/release/thenables.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/thenables.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, INTERNAL) {
         var util = require_util();
@@ -4035,9 +4035,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/promise_array.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/promise_array.js
   var require_promise_array = __commonJS({
-    "node_modules/bluebird/js/release/promise_array.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/promise_array.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, INTERNAL, tryConvertToPromise, apiRejection, Proxyable) {
         var util = require_util();
@@ -4205,9 +4205,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/context.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/context.js
   var require_context = __commonJS({
-    "node_modules/bluebird/js/release/context.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/context.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2) {
         var longStackTraces = false;
@@ -4281,9 +4281,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/debuggability.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/debuggability.js
   var require_debuggability = __commonJS({
-    "node_modules/bluebird/js/release/debuggability.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/debuggability.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, Context) {
         var getDomain = Promise2._getDomain;
@@ -5109,9 +5109,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/finally.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/finally.js
   var require_finally = __commonJS({
-    "node_modules/bluebird/js/release/finally.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/finally.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, tryConvertToPromise) {
         var util = require_util();
@@ -5220,9 +5220,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/catch_filter.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/catch_filter.js
   var require_catch_filter = __commonJS({
-    "node_modules/bluebird/js/release/catch_filter.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/catch_filter.js"(exports2, module2) {
       "use strict";
       module2.exports = function(NEXT_FILTER) {
         var util = require_util();
@@ -5264,9 +5264,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/nodeback.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/nodeback.js
   var require_nodeback = __commonJS({
-    "node_modules/bluebird/js/release/nodeback.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/nodeback.js"(exports2, module2) {
       "use strict";
       var util = require_util();
       var maybeWrapAsError2 = util.maybeWrapAsError;
@@ -5321,9 +5321,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/method.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/method.js
   var require_method = __commonJS({
-    "node_modules/bluebird/js/release/method.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/method.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, INTERNAL, tryConvertToPromise, apiRejection, debug) {
         var util = require_util();
@@ -5385,9 +5385,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/bind.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/bind.js
   var require_bind = __commonJS({
-    "node_modules/bluebird/js/release/bind.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/bind.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, INTERNAL, tryConvertToPromise, debug) {
         var calledBind = false;
@@ -5456,9 +5456,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/cancel.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/cancel.js
   var require_cancel = __commonJS({
-    "node_modules/bluebird/js/release/cancel.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/cancel.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, PromiseArray, apiRejection, debug) {
         var util = require_util();
@@ -5573,9 +5573,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/direct_resolve.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/direct_resolve.js
   var require_direct_resolve = __commonJS({
-    "node_modules/bluebird/js/release/direct_resolve.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/direct_resolve.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2) {
         function returner() {
@@ -5643,9 +5643,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/synchronous_inspection.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/synchronous_inspection.js
   var require_synchronous_inspection = __commonJS({
-    "node_modules/bluebird/js/release/synchronous_inspection.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/synchronous_inspection.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2) {
         function PromiseInspection(promise) {
@@ -5729,9 +5729,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/join.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/join.js
   var require_join = __commonJS({
-    "node_modules/bluebird/js/release/join.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/join.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, PromiseArray, tryConvertToPromise, INTERNAL, async, getDomain) {
         var util = require_util();
@@ -5846,9 +5846,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/map.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/map.js
   var require_map = __commonJS({
-    "node_modules/bluebird/js/release/map.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/map.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, PromiseArray, apiRejection, tryConvertToPromise, INTERNAL, debug) {
         var getDomain = Promise2._getDomain;
@@ -5997,9 +5997,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/call_get.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/call_get.js
   var require_call_get = __commonJS({
-    "node_modules/bluebird/js/release/call_get.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/call_get.js"(exports2, module2) {
       "use strict";
       var cr = Object.create;
       if (cr) {
@@ -6111,9 +6111,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/using.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/using.js
   var require_using = __commonJS({
-    "node_modules/bluebird/js/release/using.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/using.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, apiRejection, tryConvertToPromise, createContext, INTERNAL, debug) {
         var util = require_util();
@@ -6321,9 +6321,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/timers.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/timers.js
   var require_timers = __commonJS({
-    "node_modules/bluebird/js/release/timers.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/timers.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, INTERNAL, debug) {
         var util = require_util();
@@ -6420,9 +6420,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/generators.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/generators.js
   var require_generators = __commonJS({
-    "node_modules/bluebird/js/release/generators.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/generators.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, apiRejection, INTERNAL, tryConvertToPromise, Proxyable, debug) {
         var errors = require_errors();
@@ -6636,9 +6636,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/nodeify.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/nodeify.js
   var require_nodeify = __commonJS({
-    "node_modules/bluebird/js/release/nodeify.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/nodeify.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2) {
         var util = require_util();
@@ -6693,9 +6693,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/promisify.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/promisify.js
   var require_promisify = __commonJS({
-    "node_modules/bluebird/js/release/promisify.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/promisify.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, INTERNAL) {
         var THIS = {};
@@ -6963,9 +6963,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/props.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/props.js
   var require_props = __commonJS({
-    "node_modules/bluebird/js/release/props.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/props.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, PromiseArray, tryConvertToPromise, apiRejection) {
         var util = require_util();
@@ -7078,9 +7078,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/race.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/race.js
   var require_race = __commonJS({
-    "node_modules/bluebird/js/release/race.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/race.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, INTERNAL, tryConvertToPromise, apiRejection) {
         var util = require_util();
@@ -7123,9 +7123,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/reduce.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/reduce.js
   var require_reduce = __commonJS({
-    "node_modules/bluebird/js/release/reduce.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/reduce.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, PromiseArray, apiRejection, tryConvertToPromise, INTERNAL, debug) {
         var getDomain = Promise2._getDomain;
@@ -7280,9 +7280,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/settle.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/settle.js
   var require_settle = __commonJS({
-    "node_modules/bluebird/js/release/settle.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/settle.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, PromiseArray, debug) {
         var PromiseInspection = Promise2.PromiseInspection;
@@ -7323,9 +7323,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/some.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/some.js
   var require_some = __commonJS({
-    "node_modules/bluebird/js/release/some.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/some.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, PromiseArray, apiRejection) {
         var util = require_util();
@@ -7451,9 +7451,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/filter.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/filter.js
   var require_filter = __commonJS({
-    "node_modules/bluebird/js/release/filter.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/filter.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, INTERNAL) {
         var PromiseMap = Promise2.map;
@@ -7467,9 +7467,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/each.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/each.js
   var require_each = __commonJS({
-    "node_modules/bluebird/js/release/each.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/each.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2, INTERNAL) {
         var PromiseReduce = Promise2.reduce;
@@ -7494,9 +7494,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/any.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/any.js
   var require_any = __commonJS({
-    "node_modules/bluebird/js/release/any.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/any.js"(exports2, module2) {
       "use strict";
       module2.exports = function(Promise2) {
         var SomePromiseArray = Promise2._SomePromiseArray;
@@ -7518,9 +7518,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/bluebird/js/release/promise.js
+  // ../../../CastReader/WebReader/node_modules/bluebird/js/release/promise.js
   var require_promise = __commonJS({
-    "node_modules/bluebird/js/release/promise.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/bluebird/js/release/promise.js"(exports2, module2) {
       "use strict";
       module2.exports = function() {
         var makeSelfResolutionError = function() {
@@ -8200,9 +8200,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/promises.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/promises.js
   var require_promises = __commonJS({
-    "node_modules/mammoth/lib/promises.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/promises.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var bluebird = require_promise()();
       exports2.defer = defer2;
@@ -8242,9 +8242,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/documents.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/documents.js
   var require_documents = __commonJS({
-    "node_modules/mammoth/lib/documents.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/documents.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var types = exports2.types = {
         document: "document",
@@ -8477,9 +8477,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/results.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/results.js
   var require_results = __commonJS({
-    "node_modules/mammoth/lib/results.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/results.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       exports2.Result = Result;
       exports2.success = success;
@@ -8541,9 +8541,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/base64-js/index.js
+  // ../../../CastReader/WebReader/node_modules/base64-js/index.js
   var require_base64_js = __commonJS({
-    "node_modules/base64-js/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/base64-js/index.js"(exports2) {
       "use strict";
       exports2.byteLength = byteLength;
       exports2.toByteArray = toByteArray;
@@ -8642,9 +8642,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/jszip/dist/jszip.min.js
+  // ../../../CastReader/WebReader/node_modules/jszip/dist/jszip.min.js
   var require_jszip_min = __commonJS({
-    "node_modules/jszip/dist/jszip.min.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/jszip/dist/jszip.min.js"(exports2, module2) {
       !function(e) {
         if ("object" == typeof exports2 && "undefined" != typeof module2) module2.exports = e();
         else if ("function" == typeof define && define.amd) define([], e);
@@ -11008,9 +11008,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/zipfile.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/zipfile.js
   var require_zipfile = __commonJS({
-    "node_modules/mammoth/lib/zipfile.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/zipfile.js"(exports2) {
       var base64js = require_base64_js();
       var JSZip2 = require_jszip_min();
       exports2.openArrayBuffer = openArrayBuffer;
@@ -11075,9 +11075,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/xml/nodes.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/xml/nodes.js
   var require_nodes = __commonJS({
-    "node_modules/mammoth/lib/xml/nodes.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/xml/nodes.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       exports2.Element = Element2;
       exports2.element = function(name, attributes, children) {
@@ -11140,9 +11140,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/@xmldom/xmldom/lib/conventions.js
+  // ../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/conventions.js
   var require_conventions = __commonJS({
-    "node_modules/@xmldom/xmldom/lib/conventions.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/conventions.js"(exports2) {
       "use strict";
       function find2(list, predicate, ac) {
         if (ac === void 0) {
@@ -11279,9 +11279,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/@xmldom/xmldom/lib/dom.js
+  // ../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom.js
   var require_dom = __commonJS({
-    "node_modules/@xmldom/xmldom/lib/dom.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom.js"(exports2) {
       var conventions = require_conventions();
       var find2 = conventions.find;
       var NAMESPACE = conventions.NAMESPACE;
@@ -12830,9 +12830,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/@xmldom/xmldom/lib/entities.js
+  // ../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/entities.js
   var require_entities = __commonJS({
-    "node_modules/@xmldom/xmldom/lib/entities.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/entities.js"(exports2) {
       "use strict";
       var freeze = require_conventions().freeze;
       exports2.XML_ENTITIES = freeze({
@@ -14973,9 +14973,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/@xmldom/xmldom/lib/sax.js
+  // ../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/sax.js
   var require_sax = __commonJS({
-    "node_modules/@xmldom/xmldom/lib/sax.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/sax.js"(exports2) {
       var NAMESPACE = require_conventions().NAMESPACE;
       var nameStartChar = /[A-Z_a-z\xC0-\xD6\xD8-\xF6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/;
       var nameChar = new RegExp("[\\-\\.0-9" + nameStartChar.source.slice(1, -1) + "\\u00B7\\u0300-\\u036F\\u203F-\\u2040]");
@@ -15562,9 +15562,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/@xmldom/xmldom/lib/dom-parser.js
+  // ../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom-parser.js
   var require_dom_parser = __commonJS({
-    "node_modules/@xmldom/xmldom/lib/dom-parser.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom-parser.js"(exports2) {
       var conventions = require_conventions();
       var dom = require_dom();
       var entities = require_entities();
@@ -15778,9 +15778,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/@xmldom/xmldom/lib/index.js
+  // ../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/index.js
   var require_lib = __commonJS({
-    "node_modules/@xmldom/xmldom/lib/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/index.js"(exports2) {
       var dom = require_dom();
       exports2.DOMImplementation = dom.DOMImplementation;
       exports2.XMLSerializer = dom.XMLSerializer;
@@ -15788,9 +15788,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/xml/xmldom.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/xml/xmldom.js
   var require_xmldom = __commonJS({
-    "node_modules/mammoth/lib/xml/xmldom.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/xml/xmldom.js"(exports2) {
       var xmldom = require_lib();
       var dom = require_dom();
       function parseFromString(string) {
@@ -15812,9 +15812,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/xml/reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/xml/reader.js
   var require_reader = __commonJS({
-    "node_modules/mammoth/lib/xml/reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/xml/reader.js"(exports2) {
       var promises = require_promises();
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var xmldom = require_xmldom();
@@ -15874,9 +15874,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/Utility.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/Utility.js
   var require_Utility = __commonJS({
-    "node_modules/xmlbuilder/lib/Utility.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/Utility.js"(exports2, module2) {
       (function() {
         var assign, getValue, isArray, isEmpty2, isFunction2, isObject3, isPlainObject, slice2 = [].slice, hasProp = {}.hasOwnProperty;
         assign = function() {
@@ -15945,9 +15945,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLAttribute.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLAttribute.js
   var require_XMLAttribute = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLAttribute.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLAttribute.js"(exports2, module2) {
       (function() {
         var XMLAttribute;
         module2.exports = XMLAttribute = function() {
@@ -15984,9 +15984,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLElement.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLElement.js
   var require_XMLElement = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLElement.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLElement.js"(exports2, module2) {
       (function() {
         var XMLAttribute, XMLElement, XMLNode, getValue, isFunction2, isObject3, ref, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16095,9 +16095,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLCData.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLCData.js
   var require_XMLCData = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLCData.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLCData.js"(exports2, module2) {
       (function() {
         var XMLCData, XMLNode, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16133,9 +16133,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLComment.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLComment.js
   var require_XMLComment = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLComment.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLComment.js"(exports2, module2) {
       (function() {
         var XMLComment, XMLNode, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16171,9 +16171,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLDeclaration.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDeclaration.js
   var require_XMLDeclaration = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLDeclaration.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDeclaration.js"(exports2, module2) {
       (function() {
         var XMLDeclaration, XMLNode, isObject3, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16217,9 +16217,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLDTDAttList.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDTDAttList.js
   var require_XMLDTDAttList = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLDTDAttList.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDTDAttList.js"(exports2, module2) {
       (function() {
         var XMLDTDAttList, XMLNode, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16274,9 +16274,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLDTDEntity.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDTDEntity.js
   var require_XMLDTDEntity = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLDTDEntity.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDTDEntity.js"(exports2, module2) {
       (function() {
         var XMLDTDEntity, XMLNode, isObject3, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16336,9 +16336,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLDTDElement.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDTDElement.js
   var require_XMLDTDElement = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLDTDElement.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDTDElement.js"(exports2, module2) {
       (function() {
         var XMLDTDElement, XMLNode, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16378,9 +16378,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLDTDNotation.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDTDNotation.js
   var require_XMLDTDNotation = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLDTDNotation.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDTDNotation.js"(exports2, module2) {
       (function() {
         var XMLDTDNotation, XMLNode, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16422,9 +16422,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLDocType.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDocType.js
   var require_XMLDocType = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLDocType.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDocType.js"(exports2, module2) {
       (function() {
         var XMLDTDAttList, XMLDTDElement, XMLDTDEntity, XMLDTDNotation, XMLDocType, XMLNode, isObject3, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16521,9 +16521,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLRaw.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLRaw.js
   var require_XMLRaw = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLRaw.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLRaw.js"(exports2, module2) {
       (function() {
         var XMLNode, XMLRaw, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16559,9 +16559,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLText.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLText.js
   var require_XMLText = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLText.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLText.js"(exports2, module2) {
       (function() {
         var XMLNode, XMLText, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16597,9 +16597,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLProcessingInstruction.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLProcessingInstruction.js
   var require_XMLProcessingInstruction = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLProcessingInstruction.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLProcessingInstruction.js"(exports2, module2) {
       (function() {
         var XMLNode, XMLProcessingInstruction, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16638,9 +16638,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLDummy.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDummy.js
   var require_XMLDummy = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLDummy.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDummy.js"(exports2, module2) {
       (function() {
         var XMLDummy, XMLNode, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -16673,9 +16673,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLNode.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLNode.js
   var require_XMLNode = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLNode.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLNode.js"(exports2, module2) {
       (function() {
         var XMLCData, XMLComment, XMLDeclaration, XMLDocType, XMLDummy, XMLElement, XMLNode, XMLProcessingInstruction, XMLRaw, XMLText, getValue, isEmpty2, isFunction2, isObject3, ref, hasProp = {}.hasOwnProperty;
         ref = require_Utility(), isObject3 = ref.isObject, isFunction2 = ref.isFunction, isEmpty2 = ref.isEmpty, getValue = ref.getValue;
@@ -17087,9 +17087,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLStringifier.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLStringifier.js
   var require_XMLStringifier = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLStringifier.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLStringifier.js"(exports2, module2) {
       (function() {
         var XMLStringifier, bind = function(fn, me) {
           return function() {
@@ -17225,9 +17225,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLWriterBase.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLWriterBase.js
   var require_XMLWriterBase = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLWriterBase.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLWriterBase.js"(exports2, module2) {
       (function() {
         var XMLWriterBase, hasProp = {}.hasOwnProperty;
         module2.exports = XMLWriterBase = function() {
@@ -17313,9 +17313,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLStringWriter.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLStringWriter.js
   var require_XMLStringWriter = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLStringWriter.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLStringWriter.js"(exports2, module2) {
       (function() {
         var XMLCData, XMLComment, XMLDTDAttList, XMLDTDElement, XMLDTDEntity, XMLDTDNotation, XMLDeclaration, XMLDocType, XMLDummy, XMLElement, XMLProcessingInstruction, XMLRaw, XMLStringWriter, XMLText, XMLWriterBase, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -17633,9 +17633,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLDocument.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDocument.js
   var require_XMLDocument = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLDocument.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDocument.js"(exports2, module2) {
       (function() {
         var XMLDocument, XMLNode, XMLStringWriter, XMLStringifier, isPlainObject, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -17685,9 +17685,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLDocumentCB.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDocumentCB.js
   var require_XMLDocumentCB = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLDocumentCB.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLDocumentCB.js"(exports2, module2) {
       (function() {
         var XMLAttribute, XMLCData, XMLComment, XMLDTDAttList, XMLDTDElement, XMLDTDEntity, XMLDTDNotation, XMLDeclaration, XMLDocType, XMLDocumentCB, XMLElement, XMLProcessingInstruction, XMLRaw, XMLStringWriter, XMLStringifier, XMLText, getValue, isFunction2, isObject3, isPlainObject, ref, hasProp = {}.hasOwnProperty;
         ref = require_Utility(), isObject3 = ref.isObject, isFunction2 = ref.isFunction, isPlainObject = ref.isPlainObject, getValue = ref.getValue;
@@ -18042,9 +18042,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/XMLStreamWriter.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLStreamWriter.js
   var require_XMLStreamWriter = __commonJS({
-    "node_modules/xmlbuilder/lib/XMLStreamWriter.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/XMLStreamWriter.js"(exports2, module2) {
       (function() {
         var XMLCData, XMLComment, XMLDTDAttList, XMLDTDElement, XMLDTDEntity, XMLDTDNotation, XMLDeclaration, XMLDocType, XMLDummy, XMLElement, XMLProcessingInstruction, XMLRaw, XMLStreamWriter, XMLText, XMLWriterBase, extend2 = function(child, parent2) {
           for (var key in parent2) {
@@ -18309,9 +18309,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/xmlbuilder/lib/index.js
+  // ../../../CastReader/WebReader/node_modules/xmlbuilder/lib/index.js
   var require_lib2 = __commonJS({
-    "node_modules/xmlbuilder/lib/index.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/xmlbuilder/lib/index.js"(exports2, module2) {
       (function() {
         var XMLDocument, XMLDocumentCB, XMLStreamWriter, XMLStringWriter, assign, isFunction2, ref;
         ref = require_Utility(), assign = ref.assign, isFunction2 = ref.isFunction;
@@ -18357,9 +18357,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/xml/writer.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/xml/writer.js
   var require_writer = __commonJS({
-    "node_modules/mammoth/lib/xml/writer.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/xml/writer.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var xmlbuilder = require_lib2();
       exports2.writeString = writeString;
@@ -18410,9 +18410,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/xml/index.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/xml/index.js
   var require_xml = __commonJS({
-    "node_modules/mammoth/lib/xml/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/xml/index.js"(exports2) {
       var nodes = require_nodes();
       exports2.Element = nodes.Element;
       exports2.element = nodes.element;
@@ -18423,9 +18423,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/office-xml-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/office-xml-reader.js
   var require_office_xml_reader = __commonJS({
-    "node_modules/mammoth/lib/docx/office-xml-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/office-xml-reader.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var promises = require_promises();
       var xml = require_xml();
@@ -18484,9 +18484,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/dingbat-to-unicode/dist/dingbats.js
+  // ../../../CastReader/WebReader/node_modules/dingbat-to-unicode/dist/dingbats.js
   var require_dingbats = __commonJS({
-    "node_modules/dingbat-to-unicode/dist/dingbats.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/dingbat-to-unicode/dist/dingbats.js"(exports2) {
       "use strict";
       Object.defineProperty(exports2, "__esModule", { value: true });
       var dingbats = [
@@ -19556,9 +19556,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/dingbat-to-unicode/dist/index.js
+  // ../../../CastReader/WebReader/node_modules/dingbat-to-unicode/dist/index.js
   var require_dist = __commonJS({
-    "node_modules/dingbat-to-unicode/dist/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/dingbat-to-unicode/dist/index.js"(exports2) {
       "use strict";
       var __importDefault = exports2 && exports2.__importDefault || function(mod) {
         return mod && mod.__esModule ? mod : { "default": mod };
@@ -19606,9 +19606,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/transforms.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/transforms.js
   var require_transforms = __commonJS({
-    "node_modules/mammoth/lib/transforms.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/transforms.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       exports2.paragraph = paragraph;
       exports2.run = run;
@@ -19663,9 +19663,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/uris.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/uris.js
   var require_uris = __commonJS({
-    "node_modules/mammoth/lib/docx/uris.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/uris.js"(exports2) {
       exports2.uriToZipEntryName = uriToZipEntryName;
       exports2.replaceFragment = replaceFragment;
       function uriToZipEntryName(base, uri) {
@@ -19685,9 +19685,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/body-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/body-reader.js
   var require_body_reader = __commonJS({
-    "node_modules/mammoth/lib/docx/body-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/body-reader.js"(exports2) {
       exports2.createBodyReader = createBodyReader;
       exports2._readNumberingProperties = readNumberingProperties;
       var dingbatToUnicode = require_dist();
@@ -20360,9 +20360,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/document-xml-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/document-xml-reader.js
   var require_document_xml_reader = __commonJS({
-    "node_modules/mammoth/lib/docx/document-xml-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/document-xml-reader.js"(exports2) {
       exports2.DocumentXmlReader = DocumentXmlReader;
       var documents = require_documents();
       var Result = require_results().Result;
@@ -20388,9 +20388,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/relationships-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/relationships-reader.js
   var require_relationships_reader = __commonJS({
-    "node_modules/mammoth/lib/docx/relationships-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/relationships-reader.js"(exports2) {
       exports2.readRelationships = readRelationships;
       exports2.defaultValue = new Relationships([]);
       exports2.Relationships = Relationships;
@@ -20432,9 +20432,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/content-types-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/content-types-reader.js
   var require_content_types_reader = __commonJS({
-    "node_modules/mammoth/lib/docx/content-types-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/content-types-reader.js"(exports2) {
       exports2.readContentTypesFromXml = readContentTypesFromXml;
       var fallbackContentTypes = {
         "png": "png",
@@ -20489,9 +20489,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/numbering-xml.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/numbering-xml.js
   var require_numbering_xml = __commonJS({
-    "node_modules/mammoth/lib/docx/numbering-xml.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/numbering-xml.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       exports2.readNumberingXml = readNumberingXml;
       exports2.Numbering = Numbering;
@@ -20586,9 +20586,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/styles-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/styles-reader.js
   var require_styles_reader = __commonJS({
-    "node_modules/mammoth/lib/docx/styles-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/styles-reader.js"(exports2) {
       exports2.readStylesXml = readStylesXml;
       exports2.Styles = Styles;
       exports2.defaultStyles = new Styles({}, {});
@@ -20654,9 +20654,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/notes-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/notes-reader.js
   var require_notes_reader = __commonJS({
-    "node_modules/mammoth/lib/docx/notes-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/notes-reader.js"(exports2) {
       var documents = require_documents();
       var Result = require_results().Result;
       exports2.createFootnotesReader = createReader.bind(exports2, "footnote");
@@ -20680,9 +20680,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/comments-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/comments-reader.js
   var require_comments_reader = __commonJS({
-    "node_modules/mammoth/lib/docx/comments-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/comments-reader.js"(exports2) {
       var documents = require_documents();
       var Result = require_results().Result;
       function createCommentsReader(bodyReader) {
@@ -20709,9 +20709,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/browser/docx/files.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/browser/docx/files.js
   var require_files = __commonJS({
-    "node_modules/mammoth/browser/docx/files.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/browser/docx/files.js"(exports2) {
       var promises = require_promises();
       exports2.Files = Files;
       function Files() {
@@ -20725,9 +20725,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/docx-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/docx-reader.js
   var require_docx_reader = __commonJS({
-    "node_modules/mammoth/lib/docx/docx-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/docx-reader.js"(exports2) {
       exports2.read = read;
       exports2._findPartPaths = findPartPaths;
       var promises = require_promises();
@@ -20934,9 +20934,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/docx/style-map.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/docx/style-map.js
   var require_style_map = __commonJS({
-    "node_modules/mammoth/lib/docx/style-map.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/docx/style-map.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var promises = require_promises();
       var xml = require_xml();
@@ -21000,9 +21000,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/html/ast.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/html/ast.js
   var require_ast = __commonJS({
-    "node_modules/mammoth/lib/html/ast.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/html/ast.js"(exports2) {
       var htmlPaths = require_html_paths();
       function nonFreshElement(tagName, attributes, children) {
         return elementWithTag(
@@ -21048,9 +21048,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/html/simplify.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/html/simplify.js
   var require_simplify = __commonJS({
-    "node_modules/mammoth/lib/html/simplify.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/html/simplify.js"(exports2, module2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var ast = require_ast();
       function simplify(nodes) {
@@ -21125,9 +21125,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/html/index.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/html/index.js
   var require_html = __commonJS({
-    "node_modules/mammoth/lib/html/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/html/index.js"(exports2) {
       var ast = require_ast();
       exports2.freshElement = ast.freshElement;
       exports2.nonFreshElement = ast.nonFreshElement;
@@ -21165,9 +21165,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/styles/html-paths.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/styles/html-paths.js
   var require_html_paths = __commonJS({
-    "node_modules/mammoth/lib/styles/html-paths.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/styles/html-paths.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var html = require_html();
       exports2.topLevelElement = topLevelElement;
@@ -21233,9 +21233,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/images.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/images.js
   var require_images = __commonJS({
-    "node_modules/mammoth/lib/images.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/images.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var promises = require_promises();
       var Html = require_html();
@@ -21263,9 +21263,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/writers/html-writer.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/writers/html-writer.js
   var require_html_writer = __commonJS({
-    "node_modules/mammoth/lib/writers/html-writer.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/writers/html-writer.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       exports2.writer = writer;
       function writer(options) {
@@ -21393,9 +21393,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/writers/markdown-writer.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/writers/markdown-writer.js
   var require_markdown_writer = __commonJS({
-    "node_modules/mammoth/lib/writers/markdown-writer.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/writers/markdown-writer.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       function symmetricMarkdownElement(end) {
         return markdownElement(end, end);
@@ -21534,9 +21534,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/writers/index.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/writers/index.js
   var require_writers = __commonJS({
-    "node_modules/mammoth/lib/writers/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/writers/index.js"(exports2) {
       var htmlWriter = require_html_writer();
       var markdownWriter = require_markdown_writer();
       exports2.writer = writer;
@@ -21551,9 +21551,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/document-to-html.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/document-to-html.js
   var require_document_to_html = __commonJS({
-    "node_modules/mammoth/lib/document-to-html.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/document-to-html.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var promises = require_promises();
       var documents = require_documents();
@@ -21971,9 +21971,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/raw-text.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/raw-text.js
   var require_raw_text = __commonJS({
-    "node_modules/mammoth/lib/raw-text.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/raw-text.js"(exports2) {
       var documents = require_documents();
       function convertElementToRawText(element) {
         if (element.type === "text") {
@@ -21989,9 +21989,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/TokenIterator.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/TokenIterator.js
   var require_TokenIterator = __commonJS({
-    "node_modules/lop/lib/TokenIterator.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/TokenIterator.js"(exports2, module2) {
       var TokenIterator = module2.exports = function(tokens, startIndex) {
         this._tokens = tokens;
         this._startIndex = startIndex || 0;
@@ -22016,9 +22016,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/parser.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/parser.js
   var require_parser = __commonJS({
-    "node_modules/lop/lib/parser.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/parser.js"(exports2) {
       var TokenIterator = require_TokenIterator();
       exports2.Parser = function(options) {
         var parseTokens = function(parser, tokens) {
@@ -22031,9 +22031,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/option/index.js
+  // ../../../CastReader/WebReader/node_modules/option/index.js
   var require_option = __commonJS({
-    "node_modules/option/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/option/index.js"(exports2) {
       exports2.none = /* @__PURE__ */ Object.create({
         value: function() {
           throw new Error("Called value on none");
@@ -22111,9 +22111,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/parsing-results.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/parsing-results.js
   var require_parsing_results = __commonJS({
-    "node_modules/lop/lib/parsing-results.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/parsing-results.js"(exports2, module2) {
       module2.exports = {
         failure: function(errors, remaining) {
           if (errors.length < 1) {
@@ -22209,9 +22209,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/errors.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/errors.js
   var require_errors2 = __commonJS({
-    "node_modules/lop/lib/errors.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/errors.js"(exports2) {
       exports2.error = function(options) {
         return new Error2(options);
       };
@@ -22233,9 +22233,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/lazy-iterators.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/lazy-iterators.js
   var require_lazy_iterators = __commonJS({
-    "node_modules/lop/lib/lazy-iterators.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/lazy-iterators.js"(exports2) {
       var fromArray = exports2.fromArray = function(array) {
         var index = 0;
         var hasNext = function() {
@@ -22313,9 +22313,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/rules.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/rules.js
   var require_rules = __commonJS({
-    "node_modules/lop/lib/rules.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/rules.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var options = require_option();
       var results = require_parsing_results();
@@ -22598,9 +22598,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/StringSource.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/StringSource.js
   var require_StringSource = __commonJS({
-    "node_modules/lop/lib/StringSource.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/StringSource.js"(exports2, module2) {
       var StringSource = module2.exports = function(string, description) {
         var self2 = {
           asString: function() {
@@ -22649,9 +22649,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/Token.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/Token.js
   var require_Token = __commonJS({
-    "node_modules/lop/lib/Token.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/Token.js"(exports2, module2) {
       module2.exports = function(name, value, source) {
         this.name = name;
         this.value = value;
@@ -22662,9 +22662,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/bottom-up.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/bottom-up.js
   var require_bottom_up = __commonJS({
-    "node_modules/lop/lib/bottom-up.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/bottom-up.js"(exports2) {
       var rules = require_rules();
       var results = require_parsing_results();
       exports2.parser = function(name, prefixRules, infixRuleBuilders) {
@@ -22777,9 +22777,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/lib/regex-tokeniser.js
+  // ../../../CastReader/WebReader/node_modules/lop/lib/regex-tokeniser.js
   var require_regex_tokeniser = __commonJS({
-    "node_modules/lop/lib/regex-tokeniser.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/lop/lib/regex-tokeniser.js"(exports2) {
       var Token = require_Token();
       var StringSource = require_StringSource();
       exports2.RegexTokeniser = RegexTokeniser;
@@ -22842,9 +22842,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lop/index.js
+  // ../../../CastReader/WebReader/node_modules/lop/index.js
   var require_lop = __commonJS({
-    "node_modules/lop/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/lop/index.js"(exports2) {
       exports2.Parser = require_parser().Parser;
       exports2.rules = require_rules();
       exports2.errors = require_errors2();
@@ -22865,9 +22865,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/styles/document-matchers.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/styles/document-matchers.js
   var require_document_matchers = __commonJS({
-    "node_modules/mammoth/lib/styles/document-matchers.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/styles/document-matchers.js"(exports2) {
       exports2.paragraph = paragraph;
       exports2.run = run;
       exports2.table = table2;
@@ -22947,9 +22947,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/styles/parser/tokeniser.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/styles/parser/tokeniser.js
   var require_tokeniser = __commonJS({
-    "node_modules/mammoth/lib/styles/parser/tokeniser.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/styles/parser/tokeniser.js"(exports2) {
       var lop = require_lop();
       var RegexTokeniser = lop.RegexTokeniser;
       exports2.tokenise = tokenise;
@@ -22980,9 +22980,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/style-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/style-reader.js
   var require_style_reader = __commonJS({
-    "node_modules/mammoth/lib/style-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/style-reader.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var lop = require_lop();
       var documentMatchers = require_document_matchers();
@@ -23313,9 +23313,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/options-reader.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/options-reader.js
   var require_options_reader = __commonJS({
-    "node_modules/mammoth/lib/options-reader.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/options-reader.js"(exports2) {
       exports2.readOptions = readOptions;
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var defaultStyleMap = exports2._defaultStyleMap = [
@@ -23409,9 +23409,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/browser/unzip.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/browser/unzip.js
   var require_unzip = __commonJS({
-    "node_modules/mammoth/browser/unzip.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/browser/unzip.js"(exports2) {
       var promises = require_promises();
       var zipfile = require_zipfile();
       exports2.openZip = openZip;
@@ -23425,9 +23425,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/underline.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/underline.js
   var require_underline = __commonJS({
-    "node_modules/mammoth/lib/underline.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/underline.js"(exports2) {
       var htmlPaths = require_html_paths();
       var Html = require_html();
       exports2.element = element;
@@ -23439,9 +23439,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/mammoth/lib/index.js
+  // ../../../CastReader/WebReader/node_modules/mammoth/lib/index.js
   var require_lib3 = __commonJS({
-    "node_modules/mammoth/lib/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/mammoth/lib/index.js"(exports2) {
       var _3 = (init_index_all(), __toCommonJS(index_all_exports));
       var docxReader = require_docx_reader();
       var docxStyleMap = require_style_map();
@@ -23531,9 +23531,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/type/value/is.js
+  // ../../../CastReader/WebReader/node_modules/type/value/is.js
   var require_is = __commonJS({
-    "node_modules/type/value/is.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/type/value/is.js"(exports2, module2) {
       "use strict";
       var _undefined = void 0;
       module2.exports = function(value) {
@@ -23542,9 +23542,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/type/object/is.js
+  // ../../../CastReader/WebReader/node_modules/type/object/is.js
   var require_is2 = __commonJS({
-    "node_modules/type/object/is.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/type/object/is.js"(exports2, module2) {
       "use strict";
       var isValue = require_is();
       var possibleTypes = {
@@ -23560,9 +23560,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/type/prototype/is.js
+  // ../../../CastReader/WebReader/node_modules/type/prototype/is.js
   var require_is3 = __commonJS({
-    "node_modules/type/prototype/is.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/type/prototype/is.js"(exports2, module2) {
       "use strict";
       var isObject3 = require_is2();
       module2.exports = function(value) {
@@ -23577,9 +23577,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/type/function/is.js
+  // ../../../CastReader/WebReader/node_modules/type/function/is.js
   var require_is4 = __commonJS({
-    "node_modules/type/function/is.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/type/function/is.js"(exports2, module2) {
       "use strict";
       var isPrototype = require_is3();
       module2.exports = function(value) {
@@ -23597,9 +23597,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/type/plain-function/is.js
+  // ../../../CastReader/WebReader/node_modules/type/plain-function/is.js
   var require_is5 = __commonJS({
-    "node_modules/type/plain-function/is.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/type/plain-function/is.js"(exports2, module2) {
       "use strict";
       var isFunction2 = require_is4();
       var classRe = /^\s*class[\s{/}]/;
@@ -23612,9 +23612,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/object/assign/is-implemented.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/assign/is-implemented.js
   var require_is_implemented = __commonJS({
-    "node_modules/es5-ext/object/assign/is-implemented.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/assign/is-implemented.js"(exports2, module2) {
       "use strict";
       module2.exports = function() {
         var assign = Object.assign, obj2;
@@ -23626,9 +23626,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/object/keys/is-implemented.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/keys/is-implemented.js
   var require_is_implemented2 = __commonJS({
-    "node_modules/es5-ext/object/keys/is-implemented.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/keys/is-implemented.js"(exports2, module2) {
       "use strict";
       module2.exports = function() {
         try {
@@ -23641,18 +23641,18 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/function/noop.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/function/noop.js
   var require_noop = __commonJS({
-    "node_modules/es5-ext/function/noop.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/function/noop.js"(exports2, module2) {
       "use strict";
       module2.exports = function() {
       };
     }
   });
 
-  // node_modules/es5-ext/object/is-value.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/is-value.js
   var require_is_value = __commonJS({
-    "node_modules/es5-ext/object/is-value.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/is-value.js"(exports2, module2) {
       "use strict";
       var _undefined = require_noop()();
       module2.exports = function(val) {
@@ -23661,9 +23661,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/object/keys/shim.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/keys/shim.js
   var require_shim = __commonJS({
-    "node_modules/es5-ext/object/keys/shim.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/keys/shim.js"(exports2, module2) {
       "use strict";
       var isValue = require_is_value();
       var keys2 = Object.keys;
@@ -23673,17 +23673,17 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/object/keys/index.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/keys/index.js
   var require_keys = __commonJS({
-    "node_modules/es5-ext/object/keys/index.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/keys/index.js"(exports2, module2) {
       "use strict";
       module2.exports = require_is_implemented2()() ? Object.keys : require_shim();
     }
   });
 
-  // node_modules/es5-ext/object/valid-value.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/valid-value.js
   var require_valid_value = __commonJS({
-    "node_modules/es5-ext/object/valid-value.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/valid-value.js"(exports2, module2) {
       "use strict";
       var isValue = require_is_value();
       module2.exports = function(value) {
@@ -23693,9 +23693,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/object/assign/shim.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/assign/shim.js
   var require_shim2 = __commonJS({
-    "node_modules/es5-ext/object/assign/shim.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/assign/shim.js"(exports2, module2) {
       "use strict";
       var keys2 = require_keys();
       var value = require_valid_value();
@@ -23720,17 +23720,17 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/object/assign/index.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/assign/index.js
   var require_assign = __commonJS({
-    "node_modules/es5-ext/object/assign/index.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/assign/index.js"(exports2, module2) {
       "use strict";
       module2.exports = require_is_implemented()() ? Object.assign : require_shim2();
     }
   });
 
-  // node_modules/es5-ext/object/normalize-options.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/normalize-options.js
   var require_normalize_options = __commonJS({
-    "node_modules/es5-ext/object/normalize-options.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/normalize-options.js"(exports2, module2) {
       "use strict";
       var isValue = require_is_value();
       var forEach = Array.prototype.forEach;
@@ -23750,9 +23750,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/string/#/contains/is-implemented.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/string/#/contains/is-implemented.js
   var require_is_implemented3 = __commonJS({
-    "node_modules/es5-ext/string/#/contains/is-implemented.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/string/#/contains/is-implemented.js"(exports2, module2) {
       "use strict";
       var str = "razdwatrzy";
       module2.exports = function() {
@@ -23762,9 +23762,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/string/#/contains/shim.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/string/#/contains/shim.js
   var require_shim3 = __commonJS({
-    "node_modules/es5-ext/string/#/contains/shim.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/string/#/contains/shim.js"(exports2, module2) {
       "use strict";
       var indexOf = String.prototype.indexOf;
       module2.exports = function(searchString) {
@@ -23773,17 +23773,17 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/string/#/contains/index.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/string/#/contains/index.js
   var require_contains = __commonJS({
-    "node_modules/es5-ext/string/#/contains/index.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/string/#/contains/index.js"(exports2, module2) {
       "use strict";
       module2.exports = require_is_implemented3()() ? String.prototype.contains : require_shim3();
     }
   });
 
-  // node_modules/d/index.js
+  // ../../../CastReader/WebReader/node_modules/d/index.js
   var require_d = __commonJS({
-    "node_modules/d/index.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/d/index.js"(exports2, module2) {
       "use strict";
       var isValue = require_is();
       var isPlainFunction = require_is5();
@@ -23844,9 +23844,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/es5-ext/object/valid-callable.js
+  // ../../../CastReader/WebReader/node_modules/es5-ext/object/valid-callable.js
   var require_valid_callable = __commonJS({
-    "node_modules/es5-ext/object/valid-callable.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/es5-ext/object/valid-callable.js"(exports2, module2) {
       "use strict";
       module2.exports = function(fn) {
         if (typeof fn !== "function") throw new TypeError(fn + " is not a function");
@@ -23855,9 +23855,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/event-emitter/index.js
+  // ../../../CastReader/WebReader/node_modules/event-emitter/index.js
   var require_event_emitter = __commonJS({
-    "node_modules/event-emitter/index.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/event-emitter/index.js"(exports2, module2) {
       "use strict";
       var d = require_d();
       var callable = require_valid_callable();
@@ -23976,9 +23976,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/epubjs/node_modules/@xmldom/xmldom/lib/conventions.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/conventions.js
   var require_conventions2 = __commonJS({
-    "node_modules/epubjs/node_modules/@xmldom/xmldom/lib/conventions.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/conventions.js"(exports2) {
       "use strict";
       function find2(list, predicate, ac) {
         if (ac === void 0) {
@@ -24103,9 +24103,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom.js
   var require_dom2 = __commonJS({
-    "node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom.js"(exports2) {
       var conventions = require_conventions2();
       var find2 = conventions.find;
       var NAMESPACE = conventions.NAMESPACE;
@@ -25517,9 +25517,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/epubjs/node_modules/@xmldom/xmldom/lib/entities.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/entities.js
   var require_entities2 = __commonJS({
-    "node_modules/epubjs/node_modules/@xmldom/xmldom/lib/entities.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/entities.js"(exports2) {
       "use strict";
       var freeze = require_conventions2().freeze;
       exports2.XML_ENTITIES = freeze({
@@ -27660,9 +27660,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/epubjs/node_modules/@xmldom/xmldom/lib/sax.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/sax.js
   var require_sax2 = __commonJS({
-    "node_modules/epubjs/node_modules/@xmldom/xmldom/lib/sax.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/sax.js"(exports2) {
       var NAMESPACE = require_conventions2().NAMESPACE;
       var nameStartChar = /[A-Z_a-z\xC0-\xD6\xD8-\xF6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/;
       var nameChar = new RegExp("[\\-\\.0-9" + nameStartChar.source.slice(1, -1) + "\\u00B7\\u0300-\\u036F\\u203F-\\u2040]");
@@ -28241,9 +28241,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom-parser.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom-parser.js
   var require_dom_parser2 = __commonJS({
-    "node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom-parser.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom-parser.js"(exports2) {
       var conventions = require_conventions2();
       var dom = require_dom2();
       var entities = require_entities2();
@@ -28450,9 +28450,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/epubjs/node_modules/@xmldom/xmldom/lib/index.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/index.js
   var require_lib4 = __commonJS({
-    "node_modules/epubjs/node_modules/@xmldom/xmldom/lib/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/index.js"(exports2) {
       var dom = require_dom2();
       exports2.DOMImplementation = dom.DOMImplementation;
       exports2.XMLSerializer = dom.XMLSerializer;
@@ -28460,9 +28460,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/path-webpack/path.js
+  // ../../../CastReader/WebReader/node_modules/path-webpack/path.js
   var require_path = __commonJS({
-    "node_modules/path-webpack/path.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/path-webpack/path.js"(exports2, module2) {
       "use strict";
       if (!process2) {
         process2 = {
@@ -28894,9 +28894,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/marks-pane/lib/svg.js
+  // ../../../CastReader/WebReader/node_modules/marks-pane/lib/svg.js
   var require_svg = __commonJS({
-    "node_modules/marks-pane/lib/svg.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/marks-pane/lib/svg.js"(exports2) {
       "use strict";
       Object.defineProperty(exports2, "__esModule", {
         value: true
@@ -28911,9 +28911,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/marks-pane/lib/events.js
+  // ../../../CastReader/WebReader/node_modules/marks-pane/lib/events.js
   var require_events = __commonJS({
-    "node_modules/marks-pane/lib/events.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/marks-pane/lib/events.js"(exports2) {
       "use strict";
       Object.defineProperty(exports2, "__esModule", {
         value: true
@@ -28991,9 +28991,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/marks-pane/lib/marks.js
+  // ../../../CastReader/WebReader/node_modules/marks-pane/lib/marks.js
   var require_marks = __commonJS({
-    "node_modules/marks-pane/lib/marks.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/marks-pane/lib/marks.js"(exports2) {
       "use strict";
       Object.defineProperty(exports2, "__esModule", {
         value: true
@@ -29304,9 +29304,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/isObject.js
+  // ../../../CastReader/WebReader/node_modules/lodash/isObject.js
   var require_isObject = __commonJS({
-    "node_modules/lodash/isObject.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/isObject.js"(exports2, module2) {
       function isObject3(value) {
         var type2 = typeof value;
         return value != null && (type2 == "object" || type2 == "function");
@@ -29315,17 +29315,17 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/_freeGlobal.js
+  // ../../../CastReader/WebReader/node_modules/lodash/_freeGlobal.js
   var require_freeGlobal = __commonJS({
-    "node_modules/lodash/_freeGlobal.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/_freeGlobal.js"(exports2, module2) {
       var freeGlobal = typeof global == "object" && global && global.Object === Object && global;
       module2.exports = freeGlobal;
     }
   });
 
-  // node_modules/lodash/_root.js
+  // ../../../CastReader/WebReader/node_modules/lodash/_root.js
   var require_root = __commonJS({
-    "node_modules/lodash/_root.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/_root.js"(exports2, module2) {
       var freeGlobal = require_freeGlobal();
       var freeSelf = typeof self == "object" && self && self.Object === Object && self;
       var root2 = freeGlobal || freeSelf || Function("return this")();
@@ -29333,9 +29333,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/now.js
+  // ../../../CastReader/WebReader/node_modules/lodash/now.js
   var require_now = __commonJS({
-    "node_modules/lodash/now.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/now.js"(exports2, module2) {
       var root2 = require_root();
       var now = function() {
         return root2.Date.now();
@@ -29344,9 +29344,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/_trimmedEndIndex.js
+  // ../../../CastReader/WebReader/node_modules/lodash/_trimmedEndIndex.js
   var require_trimmedEndIndex = __commonJS({
-    "node_modules/lodash/_trimmedEndIndex.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/_trimmedEndIndex.js"(exports2, module2) {
       var reWhitespace = /\s/;
       function trimmedEndIndex(string) {
         var index = string.length;
@@ -29358,9 +29358,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/_baseTrim.js
+  // ../../../CastReader/WebReader/node_modules/lodash/_baseTrim.js
   var require_baseTrim = __commonJS({
-    "node_modules/lodash/_baseTrim.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/_baseTrim.js"(exports2, module2) {
       var trimmedEndIndex = require_trimmedEndIndex();
       var reTrimStart = /^\s+/;
       function baseTrim(string) {
@@ -29370,18 +29370,18 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/_Symbol.js
+  // ../../../CastReader/WebReader/node_modules/lodash/_Symbol.js
   var require_Symbol = __commonJS({
-    "node_modules/lodash/_Symbol.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/_Symbol.js"(exports2, module2) {
       var root2 = require_root();
       var Symbol2 = root2.Symbol;
       module2.exports = Symbol2;
     }
   });
 
-  // node_modules/lodash/_getRawTag.js
+  // ../../../CastReader/WebReader/node_modules/lodash/_getRawTag.js
   var require_getRawTag = __commonJS({
-    "node_modules/lodash/_getRawTag.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/_getRawTag.js"(exports2, module2) {
       var Symbol2 = require_Symbol();
       var objectProto = Object.prototype;
       var hasOwnProperty3 = objectProto.hasOwnProperty;
@@ -29408,9 +29408,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/_objectToString.js
+  // ../../../CastReader/WebReader/node_modules/lodash/_objectToString.js
   var require_objectToString = __commonJS({
-    "node_modules/lodash/_objectToString.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/_objectToString.js"(exports2, module2) {
       var objectProto = Object.prototype;
       var nativeObjectToString = objectProto.toString;
       function objectToString(value) {
@@ -29420,9 +29420,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/_baseGetTag.js
+  // ../../../CastReader/WebReader/node_modules/lodash/_baseGetTag.js
   var require_baseGetTag = __commonJS({
-    "node_modules/lodash/_baseGetTag.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/_baseGetTag.js"(exports2, module2) {
       var Symbol2 = require_Symbol();
       var getRawTag = require_getRawTag();
       var objectToString = require_objectToString();
@@ -29439,9 +29439,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/isObjectLike.js
+  // ../../../CastReader/WebReader/node_modules/lodash/isObjectLike.js
   var require_isObjectLike = __commonJS({
-    "node_modules/lodash/isObjectLike.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/isObjectLike.js"(exports2, module2) {
       function isObjectLike(value) {
         return value != null && typeof value == "object";
       }
@@ -29449,9 +29449,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/isSymbol.js
+  // ../../../CastReader/WebReader/node_modules/lodash/isSymbol.js
   var require_isSymbol = __commonJS({
-    "node_modules/lodash/isSymbol.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/isSymbol.js"(exports2, module2) {
       var baseGetTag = require_baseGetTag();
       var isObjectLike = require_isObjectLike();
       var symbolTag = "[object Symbol]";
@@ -29462,9 +29462,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/toNumber.js
+  // ../../../CastReader/WebReader/node_modules/lodash/toNumber.js
   var require_toNumber = __commonJS({
-    "node_modules/lodash/toNumber.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/toNumber.js"(exports2, module2) {
       var baseTrim = require_baseTrim();
       var isObject3 = require_isObject();
       var isSymbol = require_isSymbol();
@@ -29495,9 +29495,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/debounce.js
+  // ../../../CastReader/WebReader/node_modules/lodash/debounce.js
   var require_debounce = __commonJS({
-    "node_modules/lodash/debounce.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/debounce.js"(exports2, module2) {
       var isObject3 = require_isObject();
       var now = require_now();
       var toNumber = require_toNumber();
@@ -29589,9 +29589,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/lodash/throttle.js
+  // ../../../CastReader/WebReader/node_modules/lodash/throttle.js
   var require_throttle = __commonJS({
-    "node_modules/lodash/throttle.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/lodash/throttle.js"(exports2, module2) {
       var debounce3 = require_debounce();
       var isObject3 = require_isObject();
       var FUNC_ERROR_TEXT = "Expected a function";
@@ -29614,9 +29614,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/jszip/dist/jszip.js
+  // ../../../CastReader/WebReader/node_modules/jszip/dist/jszip.js
   var require_jszip = __commonJS({
-    "node_modules/jszip/dist/jszip.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/jszip/dist/jszip.js"(exports2, module2) {
       (function(f) {
         if (typeof exports2 === "object" && typeof module2 !== "undefined") {
           module2.exports = f();
@@ -37119,9 +37119,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // node_modules/localforage/dist/localforage.js
+  // ../../../CastReader/WebReader/node_modules/localforage/dist/localforage.js
   var require_localforage = __commonJS({
-    "node_modules/localforage/dist/localforage.js"(exports2, module2) {
+    "../../../CastReader/WebReader/node_modules/localforage/dist/localforage.js"(exports2, module2) {
       (function(f) {
         if (typeof exports2 === "object" && typeof module2 !== "undefined") {
           module2.exports = f();
@@ -39264,7 +39264,7 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../MyProject/readout-desktop/src/extractors/utils/shadow-dom-utils.ts
+  // ../../../MyProject/readout-desktop/src/extractors/utils/shadow-dom-utils.ts
   var MAX_SHADOW_DEPTH = 5;
   var MAX_SAMPLE = 100;
   function hasShadowContent() {
@@ -39347,7 +39347,7 @@ var __CRWeb = (() => {
     }
   };
 
-  // ../../MyProject/readout-desktop/src/extractors/visible-text-block-extractor.ts
+  // ../../../MyProject/readout-desktop/src/extractors/visible-text-block-extractor.ts
   var _pageHasShadowContent = false;
   var SKIP_TAGS = /* @__PURE__ */ new Set([
     "SCRIPT",
@@ -40444,7 +40444,7 @@ var __CRWeb = (() => {
     walkForBR(root2);
     if (currentParts.length > 0) flushSegment();
     applyPendingBrRun();
-    return candidates.filter((segment) => segment.text.length >= 5);
+    return candidates;
   }
   function dedupeBrSplitSegments(segments, seen, originalText) {
     const originalKey = originalText.substring(0, 100);
@@ -40457,6 +40457,12 @@ var __CRWeb = (() => {
       splitSeen.add(key);
       seen.add(key);
       retained.push(segment);
+    }
+    if (retained.length === 0 && segments.length > 0) {
+      const representative = segments[0];
+      const key = representative.text.substring(0, 100);
+      seen.add(key);
+      retained.push(representative);
     }
     return retained;
   }
@@ -40596,7 +40602,7 @@ var __CRWeb = (() => {
     return totalChars > 0 ? linkChars / totalChars : 0;
   }
   function extractZones() {
-    var _a, _d, _e;
+    var _a, _b, _e, _f;
     console.log("[extractZones v2026-04-24b] entry", { url: location.href });
     if (!document.body) {
       window.__castreaderLastExtraction = { timestamp: Date.now(), url: location.href, earlyReturn: "no_body" };
@@ -40761,6 +40767,7 @@ var __CRWeb = (() => {
     }
     const MEGA_THRESHOLD = 2e3;
     const expandedBlocks = [];
+    const brSourceBlocksByGroup = /* @__PURE__ */ new Map();
     let brSplitGroupCounter = 0;
     for (const block of allBlocks) {
       if (block.text.length <= MEGA_THRESHOLD) {
@@ -40769,10 +40776,43 @@ var __CRWeb = (() => {
       }
       const splitGroupId = `br-${brSplitGroupCounter++}`;
       const pendingSegments = collectBrSplitSegments(block.element, splitGroupId);
+      const branchScopedPendingSegments = pendingSegments.map((pending) => {
+        const parents2 = pending.parents.filter((parent2) => block.element.contains(parent2));
+        let splitScope = block.element;
+        if (parents2.length > 0) {
+          let common = parents2[0];
+          for (let i = 1; i < parents2.length && common; i++) {
+            while (common && !common.contains(parents2[i])) common = common.parentElement;
+          }
+          if (common && block.element.contains(common)) {
+            while (common !== block.element && common.parentElement && common.parentElement !== block.element && block.element.contains(common.parentElement)) {
+              common = common.parentElement;
+            }
+            splitScope = common;
+          }
+        }
+        return __spreadProps(__spreadValues({}, pending), { splitScope });
+      });
+      const scopeSegmentCounts = /* @__PURE__ */ new Map();
+      for (const pending of branchScopedPendingSegments) {
+        scopeSegmentCounts.set(
+          pending.splitScope,
+          (scopeSegmentCounts.get(pending.splitScope) || 0) + 1
+        );
+      }
+      const scopedPendingSegments = branchScopedPendingSegments.map((pending) => __spreadProps(__spreadValues({}, pending), {
+        // Old BR pages often wrap every visual line in its own SPAN/FONT. A
+        // one-segment wrapper is formatting, not enough evidence of a separate
+        // content branch; fold it back to the mega root so a legitimate short
+        // row can follow neighboring score projections. Multi-segment branches
+        // such as article-body/related-posts retain their independent scope.
+        splitScope: pending.splitScope !== block.element && (scopeSegmentCounts.get(pending.splitScope) || 0) < 2 ? block.element : pending.splitScope
+      }));
       const segments = [];
-      for (const pending of pendingSegments) {
-        const { text: seg, parents: parents2, textNodes } = pending;
+      for (const pending of scopedPendingSegments) {
+        const { text: seg, textNodes } = pending;
         let anchor = block.element;
+        const parents2 = textNodes.map((textNode) => textNode.parentElement).filter((parent2) => !!parent2);
         let lca = null;
         if (parents2.length > 0) {
           lca = parents2[0];
@@ -40784,32 +40824,38 @@ var __CRWeb = (() => {
           }
           if (lca && !block.element.contains(lca)) lca = null;
         }
-        const lcaText = lca ? (lca.innerText || "").length : 0;
-        const lcaTooCoarse = !!lca && lcaText > seg.length * 3 && lcaText > 500;
-        if (lcaTooCoarse && lca && textNodes.length >= 1) {
+        const normalizedSegment = seg.replace(/\s+/g, " ").trim();
+        let exactAnchor = ((_b = textNodes[0]) == null ? void 0 : _b.parentElement) || null;
+        while (exactAnchor && block.element.contains(exactAnchor)) {
+          const containsEveryTextNode = textNodes.every((textNode) => exactAnchor.contains(textNode));
+          const normalizedAnchor = (exactAnchor.textContent || "").replace(/\s+/g, " ").trim();
+          if (containsEveryTextNode && normalizedAnchor === normalizedSegment) break;
+          if (exactAnchor === block.element) {
+            exactAnchor = null;
+            break;
+          }
+          exactAnchor = exactAnchor.parentElement;
+        }
+        if (exactAnchor) {
+          anchor = exactAnchor;
+        } else if (lca && textNodes.length >= 1) {
           try {
-            const outerSiblings = [];
-            const seenSib = /* @__PURE__ */ new Set();
-            for (const tn of textNodes) {
-              let cur = tn;
-              while (cur && cur.parentNode !== lca) cur = cur.parentNode;
-              if (cur && !seenSib.has(cur)) {
-                seenSib.add(cur);
-                outerSiblings.push(cur);
-              }
+            const firstTextNode = textNodes[0];
+            const lastTextNode = textNodes[textNodes.length - 1];
+            const range2 = document.createRange();
+            range2.setStartBefore(firstTextNode);
+            range2.setEndAfter(lastTextNode);
+            const contents = range2.extractContents();
+            for (const clonedWithId of Array.from(contents.querySelectorAll("[id]"))) {
+              const liveOwner = document.getElementById(clonedWithId.id);
+              if (liveOwner && liveOwner !== clonedWithId) clonedWithId.removeAttribute("id");
             }
-            if (outerSiblings.length > 0) {
-              const span = document.createElement("span");
-              span.setAttribute("data-castreader-br-seg", "1");
-              span.style.cssText = "all: unset; display: inline;";
-              lca.insertBefore(span, outerSiblings[0]);
-              for (const sib of outerSiblings) {
-                span.appendChild(sib);
-              }
-              anchor = span;
-            } else {
-              anchor = lca;
-            }
+            const span = document.createElement("span");
+            span.setAttribute("data-castreader-br-seg", "1");
+            span.style.cssText = "all: unset; display: inline;";
+            span.appendChild(contents);
+            range2.insertNode(span);
+            anchor = span;
           } catch (e) {
             anchor = lca;
           }
@@ -40818,21 +40864,36 @@ var __CRWeb = (() => {
         }
         segments.push(__spreadProps(__spreadValues({}, pending), { el: anchor }));
       }
-      if (segments.length >= 3) {
-        const retainedSegments = dedupeBrSplitSegments(segments, seen, block.text);
+      const sourceBlocks = segments.map((segment) => {
+        const rect = segment.el.getBoundingClientRect();
+        return {
+          text: segment.text,
+          element: segment.el,
+          rect: rect.width > 0 || rect.height > 0 ? rect : block.rect,
+          source: segment.source,
+          splitGroupId: segment.splitGroupId,
+          splitIndex: segment.splitIndex,
+          splitScope: segment.splitScope,
+          brRunBefore: segment.brRunBefore,
+          brRunAfter: segment.brRunAfter
+        };
+      });
+      const scoringSegments = sourceBlocks.filter((segment) => segment.text.length >= 5);
+      if (sourceBlocks.length >= 3 && scoringSegments.length > 0) {
+        brSourceBlocksByGroup.set(splitGroupId, sourceBlocks);
+        const scoringByScope = /* @__PURE__ */ new Map();
+        for (const scoringSegment of scoringSegments) {
+          const scope = scoringSegment.splitScope || block.element;
+          const scoped = scoringByScope.get(scope) || [];
+          scoped.push(scoringSegment);
+          scoringByScope.set(scope, scoped);
+        }
+        const retainedSegments = Array.from(scoringByScope.values()).flatMap((scoped) => dedupeBrSplitSegments(scoped, seen, block.text)).sort((left, right) => {
+          var _a2, _b2;
+          return ((_a2 = left.splitIndex) != null ? _a2 : 0) - ((_b2 = right.splitIndex) != null ? _b2 : 0);
+        });
         for (const segment of retainedSegments) {
-          const rect = segment.el.getBoundingClientRect();
-          const useRect = rect.width > 0 || rect.height > 0 ? rect : block.rect;
-          expandedBlocks.push({
-            text: segment.text,
-            element: segment.el,
-            rect: useRect,
-            source: segment.source,
-            splitGroupId: segment.splitGroupId,
-            splitIndex: segment.splitIndex,
-            brRunBefore: segment.brRunBefore,
-            brRunAfter: segment.brRunAfter
-          });
+          expandedBlocks.push(segment);
         }
       } else {
         expandedBlocks.push(block);
@@ -40895,10 +40956,27 @@ var __CRWeb = (() => {
         else droppedByDedup.add(j);
       }
     }
-    const finalBlocks = annotated.filter((_3, i) => !droppedByDedup.has(i)).map((_b) => {
-      var _c = _b, { norm: _norm } = _c, rest2 = __objRest(_c, ["norm"]);
+    const finalBlocks = annotated.filter((_3, i) => !droppedByDedup.has(i)).map((_c) => {
+      var _d = _c, { norm: _norm } = _d, rest2 = __objRest(_d, ["norm"]);
       return rest2;
     });
+    for (const splitGroupId of brSourceBlocksByGroup.keys()) {
+      const projections = expandedBlocks.filter(
+        (block) => block.splitGroupId === splitGroupId
+      );
+      const scopes = new Set(projections.map((projection) => projection.splitScope));
+      for (const splitScope of scopes) {
+        if (finalBlocks.some(
+          (block) => block.splitGroupId === splitGroupId && block.splitScope === splitScope
+        )) {
+          continue;
+        }
+        const witness = projections.find(
+          (projection) => projection.splitScope === splitScope
+        );
+        if (witness) finalBlocks.push(witness);
+      }
+    }
     if (window.__castreaderDebugZones) {
       console.log(
         `[Zones] Phase 1.9 dedup: ${expandedBlocks.length} \u2192 ${finalBlocks.length} blocks (dropped ${droppedByDedup.size})`
@@ -40976,7 +41054,14 @@ var __CRWeb = (() => {
         }
       }
       if (colBlocks.length > 0) {
-        columns.push({ bandLeft, bandRight, blocks: colBlocks, textLength: textLen, peakVal: peak.val });
+        columns.push({
+          bandLeft,
+          bandRight,
+          assignmentRight: bandLeftMax,
+          blocks: colBlocks,
+          textLength: textLen,
+          peakVal: peak.val
+        });
       }
     }
     columns.sort((a, b) => a.bandLeft - b.bandLeft);
@@ -41281,21 +41366,94 @@ var __CRWeb = (() => {
       }
     }
     const selectedSet = new Set(selectedZoneIds);
-    const selectedBlocks = [];
+    const selectedScoreBlocks = [];
     for (const zone of zones) {
       if (selectedSet.has(zone.id)) {
-        selectedBlocks.push(...zone.blocks);
+        selectedScoreBlocks.push(...zone.blocks);
       }
     }
-    selectedBlocks.sort((a, b) => {
-      const ay = a.rect.top + scrollY;
-      const by = b.rect.top + scrollY;
+    const selectedBrScoreKeys = new Set(
+      selectedScoreBlocks.filter(
+        (block) => block.source === "br-split" && block.splitGroupId !== void 0 && block.splitIndex !== void 0
+      ).map((block) => `${block.splitGroupId}:${block.splitIndex}`)
+    );
+    const brProjectionByGroup = /* @__PURE__ */ new Map();
+    for (let column = 0; column < columns.length; column++) {
+      for (const block of columns[column].blocks) {
+        if (block.source !== "br-split" || block.splitGroupId === void 0 || block.splitIndex === void 0) {
+          continue;
+        }
+        const entries = brProjectionByGroup.get(block.splitGroupId) || [];
+        entries.push({
+          splitIndex: block.splitIndex,
+          splitScope: block.splitScope,
+          column,
+          selected: selectedBrScoreKeys.has(`${block.splitGroupId}:${block.splitIndex}`)
+        });
+        brProjectionByGroup.set(block.splitGroupId, entries);
+      }
+    }
+    const sourceColumn = (block) => {
+      const strictColumn = columns.findIndex(
+        (column) => block.rect.left >= column.bandLeft && block.rect.left < column.assignmentRight
+      );
+      if (strictColumn >= 0) return strictColumn;
+      return columns.findIndex(
+        (column) => block.rect.left >= column.bandLeft - 1 && block.rect.left < column.bandRight + 1
+      );
+    };
+    const selectedUnits = [];
+    const restoredBrGroups = /* @__PURE__ */ new Set();
+    for (const block of selectedScoreBlocks) {
+      if (block.source === "br-split" && block.splitGroupId) {
+        if (restoredBrGroups.has(block.splitGroupId)) continue;
+        const sourceBlocks = brSourceBlocksByGroup.get(block.splitGroupId);
+        if (sourceBlocks) {
+          restoredBrGroups.add(block.splitGroupId);
+          const projections = brProjectionByGroup.get(block.splitGroupId) || [];
+          const restored = sourceBlocks.filter((sourceBlock) => {
+            var _a2;
+            const column = sourceColumn(sourceBlock);
+            if (column < 0) return false;
+            let sameColumn = projections.filter(
+              (projection) => projection.column === column
+            );
+            if (sameColumn.length === 0) return false;
+            const sameScope = sameColumn.filter(
+              (projection) => projection.splitScope === sourceBlock.splitScope
+            );
+            if (sourceBlock.splitScope && sameScope.length === 0) return false;
+            if (sameScope.length > 0) sameColumn = sameScope;
+            const sourceIndex = (_a2 = sourceBlock.splitIndex) != null ? _a2 : 0;
+            sameColumn.sort(
+              (left, right) => Math.abs(left.splitIndex - sourceIndex) - Math.abs(right.splitIndex - sourceIndex) || left.splitIndex - right.splitIndex
+            );
+            return sameColumn[0].selected;
+          }).sort((left, right) => {
+            var _a2, _b2;
+            return ((_a2 = left.splitIndex) != null ? _a2 : 0) - ((_b2 = right.splitIndex) != null ? _b2 : 0);
+          });
+          if (restored.length > 0) {
+            selectedUnits.push({ anchor: restored[0], blocks: restored });
+          } else {
+            selectedUnits.push({ anchor: block, blocks: [block] });
+          }
+          continue;
+        }
+      }
+      selectedUnits.push({ anchor: block, blocks: [block] });
+    }
+    selectedUnits.sort((a, b) => {
+      const ay = a.anchor.rect.top + scrollY;
+      const by = b.anchor.rect.top + scrollY;
       if (Math.abs(ay - by) > 5) return ay - by;
-      return a.rect.left - b.rect.left;
+      return a.anchor.rect.left - b.anchor.rect.left;
     });
+    const selectedBlocks = selectedUnits.flatMap((unit) => unit.blocks);
     const containerBlockIndices = /* @__PURE__ */ new Set();
     for (let i = 0; i < selectedBlocks.length; i++) {
       const b = selectedBlocks[i];
+      if (b.source === "br-split") continue;
       if (b.text.length < 100) continue;
       let containCount = 0;
       for (let j = 0; j < selectedBlocks.length; j++) {
@@ -41313,7 +41471,11 @@ var __CRWeb = (() => {
     for (let i = 0; i < selectedBlocks.length; i++) {
       if (containerBlockIndices.has(i)) continue;
       const b = selectedBlocks[i];
-      const isHeading = /^H[1-6]$/.test(((_d = b.element) == null ? void 0 : _d.tagName) || "");
+      if (b.source === "br-split") {
+        dedupedBlocks.push(b);
+        continue;
+      }
+      const isHeading = /^H[1-6]$/.test(((_e = b.element) == null ? void 0 : _e.tagName) || "");
       if (b.text.length < 80 && !isHeading) {
         let isDuplicate = false;
         for (let j = Math.max(0, i - 3); j < Math.min(selectedBlocks.length, i + 4); j++) {
@@ -41353,7 +41515,7 @@ var __CRWeb = (() => {
     paragraphs = anchorParagraphsToTitle(paragraphs);
     console.log(`[Castreader] Zone: ${allBlocks.length} raw \u2192 ${finalBlocks.length} blocks \u2192 ${columns.length} cols \u2192 ${zones.length} zones \u2192 ${paragraphs.length} paragraphs`);
     for (let i = 0; i < Math.min(5, paragraphs.length); i++) {
-      console.log(`  P${i}: "${paragraphs[i].text.substring(0, 80)}..." tag=${(_e = paragraphs[i].element) == null ? void 0 : _e.tagName}`);
+      console.log(`  P${i}: "${paragraphs[i].text.substring(0, 80)}..." tag=${(_f = paragraphs[i].element) == null ? void 0 : _f.tagName}`);
     }
     for (const z of zones) {
       const sel = selectedSet.has(z.id) ? "\u2605" : " ";
@@ -41373,7 +41535,7 @@ var __CRWeb = (() => {
         url: location.href,
         columns: columns.map((c, i) => ({ index: i, bandLeft: c.bandLeft, bandRight: c.bandRight })),
         zones: zones.map((z) => {
-          var _a2, _b;
+          var _a2, _b2;
           const c = z.container;
           const cls = c && typeof c.className === "string" ? c.className : "";
           return {
@@ -41391,7 +41553,7 @@ var __CRWeb = (() => {
             bounds: z.bounds,
             scoreTrace: z.scoreTrace,
             firstBlockText: ((_a2 = z.blocks[0]) == null ? void 0 : _a2.text.slice(0, 100)) || "",
-            lastBlockText: ((_b = z.blocks[z.blocks.length - 1]) == null ? void 0 : _b.text.slice(0, 100)) || "",
+            lastBlockText: ((_b2 = z.blocks[z.blocks.length - 1]) == null ? void 0 : _b2.text.slice(0, 100)) || "",
             // Full block list — enables position-in-zone diagnosis (e.g., why
             // was H1 skipped? because it sits at block #14 after 13 breadcrumb
             // links? or because it's missing entirely?). Truncate each text to
@@ -41562,7 +41724,7 @@ var __CRWeb = (() => {
     }
   }
 
-  // ../../MyProject/readout-desktop/src/extractors/weixin.ts
+  // ../../../MyProject/readout-desktop/src/extractors/weixin.ts
   var SKIP_TAGS2 = ["SCRIPT", "STYLE", "NOSCRIPT", "SVG", "IFRAME", "VIDEO"];
   var VIDEO_PATTERNS = [
     "\u89C6\u9891\u53F7",
@@ -41859,7 +42021,7 @@ var __CRWeb = (() => {
     }
   };
 
-  // ../../MyProject/readout-desktop/src/ui/handwritten-marks.ts
+  // ../../../MyProject/readout-desktop/src/ui/handwritten-marks.ts
   var MARK_EASE = "cubic-bezier(0.62, 0.0, 0.22, 1)";
   function mulberry32(seed) {
     let s = seed >>> 0;
@@ -42140,7 +42302,7 @@ var __CRWeb = (() => {
     return { show, clear, setColor };
   }
 
-  // ../../MyProject/readout-desktop/src/shared/highlight-palette.ts
+  // ../../../MyProject/readout-desktop/src/shared/highlight-palette.ts
   var DEFAULT_HIGHLIGHT_COLOR = "#F26522";
   function normalizeHighlightColor(hex) {
     if (typeof hex === "string") {
@@ -42161,10 +42323,10 @@ var __CRWeb = (() => {
   // src/cr-bridge.ts
   var import_mammoth = __toESM(require_lib3(), 1);
 
-  // node_modules/epubjs/src/book.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/book.js
   var import_event_emitter10 = __toESM(require_event_emitter());
 
-  // node_modules/epubjs/src/utils/core.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/core.js
   var core_exports = {};
   __export(core_exports, {
     RangeObject: () => RangeObject,
@@ -42697,7 +42859,7 @@ var __CRWeb = (() => {
     }
   };
 
-  // node_modules/epubjs/src/utils/path.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/path.js
   var import_path_webpack = __toESM(require_path());
   var Path = class {
     constructor(pathString) {
@@ -42777,7 +42939,7 @@ var __CRWeb = (() => {
   };
   var path_default = Path;
 
-  // node_modules/epubjs/src/utils/url.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/url.js
   var import_path_webpack2 = __toESM(require_path());
   var Url = class {
     constructor(urlString, baseString) {
@@ -42858,7 +43020,7 @@ var __CRWeb = (() => {
   };
   var url_default = Url;
 
-  // node_modules/epubjs/src/epubcfi.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/epubcfi.js
   var ELEMENT_NODE2 = 1;
   var TEXT_NODE2 = 3;
   var DOCUMENT_NODE = 9;
@@ -43631,7 +43793,7 @@ var __CRWeb = (() => {
   };
   var epubcfi_default = EpubCFI;
 
-  // node_modules/epubjs/src/utils/hook.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/hook.js
   var Hook = class {
     constructor(context) {
       this.context = context || this;
@@ -43696,7 +43858,7 @@ var __CRWeb = (() => {
   };
   var hook_default = Hook;
 
-  // node_modules/epubjs/src/utils/replacements.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/replacements.js
   function replaceBase(doc, section) {
     var base;
     var head;
@@ -43799,7 +43961,7 @@ var __CRWeb = (() => {
     return content;
   }
 
-  // node_modules/epubjs/src/utils/request.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/request.js
   function request(url, type2, withCredentials, headers) {
     var supportsURL = typeof window != "undefined" ? window.URL : false;
     var BLOB_RESPONSE = supportsURL ? "blob" : "arraybuffer";
@@ -43903,7 +44065,7 @@ var __CRWeb = (() => {
   }
   var request_default = request;
 
-  // node_modules/epubjs/src/section.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/section.js
   var import_xmldom2 = __toESM(require_lib4());
   var Section = class {
     constructor(item, hooks) {
@@ -44166,7 +44328,7 @@ var __CRWeb = (() => {
   };
   var section_default = Section;
 
-  // node_modules/epubjs/src/spine.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/spine.js
   var Spine = class {
     constructor() {
       this.spineItems = [];
@@ -44381,7 +44543,7 @@ var __CRWeb = (() => {
   };
   var spine_default = Spine;
 
-  // node_modules/epubjs/src/utils/queue.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/queue.js
   var Queue = class {
     constructor(context) {
       this._q = [];
@@ -44529,7 +44691,7 @@ var __CRWeb = (() => {
   };
   var queue_default = Queue;
 
-  // node_modules/epubjs/src/utils/constants.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/constants.js
   var EPUBJS_VERSION = "0.3";
   var DOM_EVENTS = ["keydown", "keyup", "keypressed", "mouseup", "mousedown", "mousemove", "click", "touchend", "touchstart", "touchmove"];
   var EVENTS = {
@@ -44590,7 +44752,7 @@ var __CRWeb = (() => {
     }
   };
 
-  // node_modules/epubjs/src/locations.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/locations.js
   var import_event_emitter = __toESM(require_event_emitter());
   var Locations = class {
     constructor(spine, request2, pause) {
@@ -44968,7 +45130,7 @@ var __CRWeb = (() => {
   (0, import_event_emitter.default)(Locations.prototype);
   var locations_default = Locations;
 
-  // node_modules/epubjs/src/container.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/container.js
   var import_path_webpack3 = __toESM(require_path());
   var Container = class {
     constructor(containerDocument) {
@@ -45004,7 +45166,7 @@ var __CRWeb = (() => {
   };
   var container_default = Container;
 
-  // node_modules/epubjs/src/packaging.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/packaging.js
   var Packaging = class {
     constructor(packageDocument) {
       this.manifest = {};
@@ -45284,7 +45446,7 @@ var __CRWeb = (() => {
   };
   var packaging_default = Packaging;
 
-  // node_modules/epubjs/src/navigation.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/navigation.js
   var Navigation = class {
     constructor(xml) {
       this.toc = [];
@@ -45571,7 +45733,7 @@ var __CRWeb = (() => {
   };
   var navigation_default = Navigation;
 
-  // node_modules/epubjs/src/utils/mime.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/mime.js
   var table = {
     "application": {
       "ecmascript": ["es", "ecma"],
@@ -45733,7 +45895,7 @@ var __CRWeb = (() => {
   }
   var mime_default = { lookup };
 
-  // node_modules/epubjs/src/resources.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/resources.js
   var import_path_webpack4 = __toESM(require_path());
   var Resources = class {
     constructor(manifest, options) {
@@ -45972,7 +46134,7 @@ var __CRWeb = (() => {
   };
   var resources_default = Resources;
 
-  // node_modules/epubjs/src/pagelist.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/pagelist.js
   var PageList = class {
     constructor(xml) {
       this.pages = [];
@@ -46177,10 +46339,10 @@ var __CRWeb = (() => {
   };
   var pagelist_default = PageList;
 
-  // node_modules/epubjs/src/rendition.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/rendition.js
   var import_event_emitter8 = __toESM(require_event_emitter());
 
-  // node_modules/epubjs/src/layout.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/layout.js
   var import_event_emitter2 = __toESM(require_event_emitter());
   var Layout = class {
     constructor(settings) {
@@ -46368,7 +46530,7 @@ var __CRWeb = (() => {
   (0, import_event_emitter2.default)(Layout.prototype);
   var layout_default = Layout;
 
-  // node_modules/epubjs/src/themes.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/themes.js
   var Themes = class {
     constructor(rendition) {
       this.rendition = rendition;
@@ -46600,10 +46762,10 @@ var __CRWeb = (() => {
   };
   var themes_default = Themes;
 
-  // node_modules/epubjs/src/contents.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/contents.js
   var import_event_emitter3 = __toESM(require_event_emitter());
 
-  // node_modules/epubjs/src/mapping.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/mapping.js
   var Mapping = class {
     constructor(layout, direction, axis, dev = false) {
       this.layout = layout;
@@ -46985,7 +47147,7 @@ var __CRWeb = (() => {
   };
   var mapping_default = Mapping;
 
-  // node_modules/epubjs/src/contents.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/contents.js
   var hasNavigator = typeof navigator !== "undefined";
   var isChrome = hasNavigator && /Chrome/.test(navigator.userAgent);
   var isWebkit = hasNavigator && !isChrome && /AppleWebKit/.test(navigator.userAgent);
@@ -47957,7 +48119,7 @@ var __CRWeb = (() => {
   (0, import_event_emitter3.default)(Contents.prototype);
   var contents_default = Contents;
 
-  // node_modules/epubjs/src/annotations.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/annotations.js
   var import_event_emitter4 = __toESM(require_event_emitter());
   var Annotations = class {
     constructor(rendition) {
@@ -48197,7 +48359,7 @@ var __CRWeb = (() => {
   (0, import_event_emitter4.default)(Annotation.prototype);
   var annotations_default = Annotations;
 
-  // node_modules/epubjs/src/managers/views/iframe.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/managers/views/iframe.js
   var import_event_emitter5 = __toESM(require_event_emitter());
   var import_marks_pane = __toESM(require_marks());
   var IframeView = class {
@@ -48799,10 +48961,10 @@ var __CRWeb = (() => {
   (0, import_event_emitter5.default)(IframeView.prototype);
   var iframe_default = IframeView;
 
-  // node_modules/epubjs/src/managers/default/index.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/managers/default/index.js
   var import_event_emitter6 = __toESM(require_event_emitter());
 
-  // node_modules/epubjs/src/utils/scrolltype.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/utils/scrolltype.js
   function scrollType() {
     var type2 = "reverse";
     var definer = createDefiner();
@@ -48848,7 +49010,7 @@ var __CRWeb = (() => {
     return definer;
   }
 
-  // node_modules/epubjs/src/managers/helpers/stage.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/managers/helpers/stage.js
   var import_throttle2 = __toESM(require_throttle());
   var Stage = class {
     constructor(_options) {
@@ -49118,7 +49280,7 @@ var __CRWeb = (() => {
   };
   var stage_default = Stage;
 
-  // node_modules/epubjs/src/managers/helpers/views.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/managers/helpers/views.js
   var Views = class {
     constructor(container) {
       this.container = container;
@@ -49251,7 +49413,7 @@ var __CRWeb = (() => {
   };
   var views_default = Views;
 
-  // node_modules/epubjs/src/managers/default/index.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/managers/default/index.js
   var DefaultViewManager = class {
     constructor(options) {
       this.name = "default";
@@ -49991,7 +50153,7 @@ var __CRWeb = (() => {
   (0, import_event_emitter6.default)(DefaultViewManager.prototype);
   var default_default = DefaultViewManager;
 
-  // node_modules/epubjs/src/managers/helpers/snap.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/managers/helpers/snap.js
   var import_event_emitter7 = __toESM(require_event_emitter());
   var PI_D2 = Math.PI / 2;
   var EASING_EQUATIONS = {
@@ -50246,7 +50408,7 @@ var __CRWeb = (() => {
   (0, import_event_emitter7.default)(Snap.prototype);
   var snap_default = Snap;
 
-  // node_modules/epubjs/src/managers/continuous/index.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/managers/continuous/index.js
   var import_debounce2 = __toESM(require_debounce());
   var ContinuousViewManager = class extends default_default {
     constructor(options) {
@@ -50670,7 +50832,7 @@ var __CRWeb = (() => {
   };
   var continuous_default = ContinuousViewManager;
 
-  // node_modules/epubjs/src/rendition.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/rendition.js
   var Rendition = class {
     constructor(book, options) {
       this.settings = extend(this.settings || {}, {
@@ -51387,7 +51549,7 @@ var __CRWeb = (() => {
   (0, import_event_emitter8.default)(Rendition.prototype);
   var rendition_default = Rendition;
 
-  // node_modules/epubjs/src/archive.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/archive.js
   var import_jszip = __toESM(require_jszip());
   var Archive = class {
     constructor() {
@@ -51589,7 +51751,7 @@ var __CRWeb = (() => {
   };
   var archive_default = Archive;
 
-  // node_modules/epubjs/src/store.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/store.js
   var import_event_emitter9 = __toESM(require_event_emitter());
   var import_localforage = __toESM(require_localforage());
   var Store = class {
@@ -51887,7 +52049,7 @@ var __CRWeb = (() => {
   (0, import_event_emitter9.default)(Store.prototype);
   var store_default = Store;
 
-  // node_modules/epubjs/src/displayoptions.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/displayoptions.js
   var DisplayOptions = class {
     constructor(displayOptionsDocument) {
       this.interactive = "";
@@ -51943,7 +52105,7 @@ var __CRWeb = (() => {
   };
   var displayoptions_default = DisplayOptions;
 
-  // node_modules/epubjs/src/book.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/book.js
   var CONTAINER_PATH = "META-INF/container.xml";
   var IBOOKS_DISPLAY_OPTIONS_PATH = "META-INF/com.apple.ibooks.display-options.xml";
   var INPUT_TYPE = {
@@ -52460,7 +52622,7 @@ var __CRWeb = (() => {
   (0, import_event_emitter10.default)(Book.prototype);
   var book_default = Book;
 
-  // node_modules/epubjs/src/epub.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/epub.js
   function ePub(url, options) {
     return new book_default(url, options);
   }
@@ -52475,7 +52637,7 @@ var __CRWeb = (() => {
   ePub.utils = core_exports;
   var epub_default = ePub;
 
-  // node_modules/epubjs/src/index.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/src/index.js
   var src_default = epub_default;
 
   // src/cr-bridge.ts
@@ -52553,6 +52715,29 @@ var __CRWeb = (() => {
     const markRenderer = createMarkRenderer((i) => paraElements.get(i), color);
     const overlayNodes = /* @__PURE__ */ new Set();
     const overlayDocuments = /* @__PURE__ */ new Set();
+    let autoScroll = true;
+    let lastPaintedRange = null;
+    function revealRange(range2) {
+      if (CR.disableScroll || !autoScroll) return;
+      const doc = range2.startContainer.ownerDocument;
+      const win = doc == null ? void 0 : doc.defaultView;
+      if (!win) return;
+      let ancestor = range2.startContainer.parentElement;
+      while (ancestor && ancestor !== (doc == null ? void 0 : doc.body)) {
+        const style = win.getComputedStyle(ancestor);
+        if (/(auto|scroll)/.test(style.overflowY) && ancestor.scrollHeight > ancestor.clientHeight) {
+          const word = range2.getBoundingClientRect(), box = ancestor.getBoundingClientRect();
+          if (word.top < box.top + 24 || word.bottom > box.bottom - 24) {
+            ancestor.scrollTop += word.top - box.top - ancestor.clientHeight * 0.3;
+          }
+        }
+        ancestor = ancestor.parentElement;
+      }
+      const rect = range2.getBoundingClientRect();
+      if (rect.top < win.innerHeight * 0.18 || rect.bottom > win.innerHeight * 0.78) {
+        win.scrollBy({ top: rect.top - win.innerHeight * 0.3, behavior: "instant" });
+      }
+    }
     const post = (type2, payload = {}) => {
       var _a2, _b, _c;
       try {
@@ -52563,6 +52748,7 @@ var __CRWeb = (() => {
     };
     const log = (message) => post("log", { message });
     function clearOverlay() {
+      lastPaintedRange = null;
       overlayNodes.forEach((node) => {
         try {
           node.remove();
@@ -52580,6 +52766,8 @@ var __CRWeb = (() => {
     }
     function paintOverlay(range2, el) {
       clearOverlay();
+      lastPaintedRange = { range: range2, el };
+      revealRange(range2);
       const ownerDocument = range2.startContainer.ownerDocument || (el == null ? void 0 : el.ownerDocument) || document;
       const ownerWindow = ownerDocument.defaultView;
       const host = ownerDocument.body || ownerDocument.documentElement;
@@ -52849,6 +53037,10 @@ var __CRWeb = (() => {
           wcSeg = -1;
         }
         if (arg.segSeq !== wcSeg) {
+          if (arg.segSeq !== wcSeg + 1 && arg.segmentTexts) {
+            const priorWords = arg.segmentTexts.flatMap((text) => text.match(/\S+/g) || []);
+            paraCursor = buildWordRanges(el, priorWords, paraOffsets.get(arg.paragraphIndex) || 0).cursor;
+          }
           wcSeg = arg.segSeq;
           const built = buildWordRanges(el, arg.words || [], paraCursor);
           wcRanges = built.ranges;
@@ -52864,6 +53056,7 @@ var __CRWeb = (() => {
       },
       clearHighlight() {
         clearOverlay();
+        lastPaintedRange = null;
         wcPara = -1;
         wcSeg = -1;
         paraCursor = 0;
@@ -52879,11 +53072,19 @@ var __CRWeb = (() => {
         else clearOverlay();
       },
       scrollTo(arg) {
-        var _a2;
         if (CR.disableScroll) return;
-        (_a2 = paraElements.get(arg.paragraphIndex)) == null ? void 0 : _a2.scrollIntoView({ block: "center", behavior: "auto" });
+        const el = paraElements.get(arg.paragraphIndex);
+        if (!el) return;
+        const base = paraOffsets.get(arg.paragraphIndex) || 0;
+        const range2 = typeof arg.charStart === "number" && typeof arg.charEnd === "number" ? charRangeInElement(el, arg.charStart + base, arg.charEnd + base) : (lastPaintedRange == null ? void 0 : lastPaintedRange.el) === el ? lastPaintedRange.range : null;
+        if (range2) {
+          if ((lastPaintedRange == null ? void 0 : lastPaintedRange.el) === el && lastPaintedRange.range === range2) {
+            paintOverlay(range2, el);
+          } else revealRange(range2);
+        } else el.scrollIntoView({ block: "center", behavior: "auto" });
       },
-      setAutoScroll(_arg) {
+      setAutoScroll(arg) {
+        autoScroll = arg.enabled;
       },
       showMark(arg) {
         const base = paraOffsets.get(arg.paragraphIndex) || 0;

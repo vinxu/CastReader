@@ -173,6 +173,9 @@ private struct MediumContinueView: View {
                     .lineLimit(2)
             }
 
+            if let positionLabel = item.positionLabel {
+                Text(positionLabel).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }
             Spacer(minLength: 0)
 
             HStack(spacing: 10) {
@@ -186,6 +189,7 @@ private struct MediumContinueView: View {
                     )
                 )
 
+                if !["kindle", "youtube"].contains(item.sourceKind) {
                 WidgetIntentButton(
                     titleKey: "widget_explain",
                     systemImage: "sparkles",
@@ -195,6 +199,7 @@ private struct MediumContinueView: View {
                         mode: .explain
                     )
                 )
+                }
             }
         }
         .padding(14)

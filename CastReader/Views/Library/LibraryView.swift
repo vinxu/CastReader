@@ -22,7 +22,14 @@ struct LibraryView: View {
     @State private var notice: String?
     @State private var cloudFailure: CloudHistoryFailurePresentation?
     @State private var searchText = ""
+    @State private var selectedProgress: ContentListeningState? = nil
     @State private var selectedKind: ReadingSourceKind? = nil   // nil = 全部
+    private let onResumePresented: () -> Void
+
+    init(history: HistoryStore = .shared, onResumePresented: @escaping () -> Void = {}) {
+        _history = ObservedObject(wrappedValue: history)
+        self.onResumePresented = onResumePresented
+    }
 
     // 类型筛选固定展示顺序（只展示实际出现过的类型）。
     static let kindOrder: [ReadingSourceKind] = [
@@ -43,7 +50,7 @@ struct LibraryView: View {
             let textOK = q.isEmpty
                 || rec.title.localizedCaseInsensitiveContains(q)
                 || (rec.sourceURL?.localizedCaseInsensitiveContains(q) ?? false)
-            return kindOK && textOK
+            return kindOK && textOK && (selectedProgress == nil || ContentCatalog(history: history).item(id: rec.id)?.state == selectedProgress)
         }
     }
 
@@ -130,6 +137,13 @@ struct LibraryView: View {
             emptyState
         } else {
             VStack(spacing: 0) {
+                Picker(AppLocalized("收听状态"), selection: $selectedProgress) {
+                    Text(AppLocalized("全部")).tag(ContentListeningState?.none)
+                    ForEach(ContentListeningState.allCases, id: \.self) { state in
+                        Text(state.label).tag(Optional(state))
+                    }
+                }
+                .pickerStyle(.segmented).padding(.horizontal).padding(.vertical, 8)
                 if availableKinds.count > 1 { categoryBar }
                 if filtered.isEmpty {
                     noResultState
@@ -150,6 +164,7 @@ struct LibraryView: View {
                     Button { open(rec) } label: {
                         HistoryRow(
                             record: rec,
+                            positionLabel: ContentCatalog(history: history).item(id: rec.id)?.positionLabel,
                             connectionState: rec.origin.map {
                                 cloudStorage.state(for: $0.provider)
                             },
@@ -159,6 +174,14 @@ struct LibraryView: View {
                         )
                     }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("library-item-" + rec.id)
+                        .contextMenu {
+                            if let item = ContentCatalog(history: history).item(id: rec.id), item.checkpoint != nil {
+                                Button(item.state == .completed ? AppLocalized("标记为进行中") : AppLocalized("标记完成")) {
+                                    ContentProgressRepository(history: history).markCompleted(item.state != .completed, itemID: rec.id)
+                                }
+                            }
+                        }
                         .disabled(opening)
                 }
                 .onDelete { offsets in
@@ -289,19 +312,6 @@ struct LibraryView: View {
 
     private func open(_ rec: HistoryRecord) {
         guard !opening else { return }
-        if rec.sourceKind == .youtube {
-            guard let sourceURL = rec.sourceURL,
-                  YouTubeRouteCenter.shared.open(
-                    sourceURL,
-                    entry: .history
-                  ) else {
-                notice = AppLocalized("这不是有效的 YouTube 视频链接")
-                return
-            }
-            // MainTabView owns the unified cache/progress/quota route. Keeping
-            // Library on that route avoids a second, non-resuming reader path.
-            return
-        }
         openingTask?.cancel()
         let attemptID = UUID()
         openingAttemptID = attemptID
@@ -320,70 +330,25 @@ struct LibraryView: View {
                     openingAttemptID = nil
                 }
             }
-            let context = ProductAnalytics.shared.beginContentIntent(
-                source: .history,
-                format: AnalyticsContentFormat(rec.sourceKind),
-                entryPoint: "library_history_reopen",
-                intendedMode: "read"
-            )
-            if rec.requiresRemoteReopen {
-                do {
-                    let result = try await CloudHistoryReopenService().reopen(
-                        rec,
-                        mode: .read,
-                        analyticsContext: context
-                    ) { progress in
+            do {
+                let result = try await coordinator.resume.open(itemID: rec.id,
+                    entryPoint: "library_history_reopen", progress: { progress in
                         Task { @MainActor in
                             guard openingAttemptID == attemptID else { return }
                             openingProgress = progress
                             openingMessage = cloudHistoryProgressLabel(progress)
                         }
-                    }
-                    guard !Task.isCancelled,
-                          openingAttemptID == attemptID else { return }
-                    coordinator.open(result.document, analyticsContext: context)
-                    if CloudHistoryFailurePresentation.contentChanged(
-                        record: rec,
-                        result: result
-                    ) {
-                        notice = CloudLocalized("云端文件已更新，已加载最新版本")
-                    }
-                } catch {
-                    guard !Task.isCancelled,
-                          openingAttemptID == attemptID else { return }
-                    cloudFailure = CloudHistoryFailurePresentation.make(
-                        record: rec,
-                        error: error
-                    )
-                }
-                return
-            }
-
-            // 与首页「继续看」同一条约定：照片先开页面，识别在页内后台补。
-            if rec.sourceKind == .photo, let instant = history.instantPhotoDocument(rec) {
-                guard !Task.isCancelled,
-                      openingAttemptID == attemptID else { return }
-                coordinator.open(instant, analyticsContext: context)
-                if instant.paragraphs.isEmpty {
-                    Task { @MainActor in
-                        guard let recognized = await history.recognizePhoto(rec) else { return }
-                        coordinator.upgradeSessionContent(recognized)
-                    }
-                }
-                return
-            }
-
-            do {
-                if let doc = try await history.reopen(rec) {
-                    guard !Task.isCancelled,
-                          openingAttemptID == attemptID else { return }
-                    coordinator.open(doc, analyticsContext: context)
-                }
+                    })
+                guard !Task.isCancelled, openingAttemptID == attemptID else { return }
+                if result.contentChanged { notice = CloudLocalized("云端文件已更新，已加载最新版本") }
+                onResumePresented()
             } catch is CancellationError {
                 return
             } catch {
                 guard openingAttemptID == attemptID else { return }
-                notice = error.localizedDescription
+                if rec.requiresRemoteReopen {
+                    cloudFailure = CloudHistoryFailurePresentation.make(record: rec, error: error)
+                } else { notice = error.localizedDescription }
             }
         }
     }
@@ -421,6 +386,7 @@ struct LibraryView: View {
 
 private struct HistoryRow: View {
     let record: HistoryRecord
+    let positionLabel: String?
     let connectionState: CloudConnectionState?
     let providerIsConfigured: Bool
 
@@ -432,6 +398,9 @@ private struct HistoryRow: View {
                 Text(record.title).font(.subheadline.weight(.medium))
                     .foregroundColor(AppTheme.foreground).lineLimit(2)
                 Text("\(sourceLabel) · \(relativeTime)").font(.caption).foregroundColor(AppTheme.mutedForeground)
+                if let positionLabel {
+                    Text(positionLabel).font(.caption2).foregroundColor(AppTheme.mutedForeground).lineLimit(2)
+                }
                 if let remoteStatus {
                     Text(remoteStatus)
                         .font(.caption2)

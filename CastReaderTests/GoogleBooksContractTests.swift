@@ -1915,8 +1915,8 @@ final class GoogleBooksContractTests: XCTestCase {
         XCTAssertTrue(ReadingSourceKind.googleBooks.isLiveWebLibrary)
         XCTAssertFalse(ReadingSourceKind.googleBooks.isOCRImageRendered)
         XCTAssertFalse(ReadingSourceKind.googleBooks.isNativeTextRendered)
-        // 绑定书库有独立书架条，不进「继续阅读」。
-        XCTAssertFalse(HomeContinueContract.includes(.googleBooks))
+        // 已听过的绑定内容也由统一进度目录进入「继续听」。
+        XCTAssertTrue(HomeContinueContract.includes(.googleBooks))
     }
 
     func testLibraryFilterIncludesEveryBoundReaderSource() {

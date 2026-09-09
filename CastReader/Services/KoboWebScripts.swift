@@ -13,6 +13,51 @@ enum KoboWebScripts {
         URL(string: "https://www.kobo.com/sg/en/library/books")!
     static let homeURL = shelfURL
 
+    /// Invoke Kobo's real shelf handler, which also establishes its reading
+    /// service session. Reconstructing the final URL skips that operation.
+    static func activateReader(bookUUID: String) -> String? {
+        guard KoboBookValidator.isValidBookUUID(bookUUID) else { return nil }
+        return """
+        (function () {
+          var expected = '\(bookUUID.lowercased())';
+          var nodes = document.querySelectorAll('a[href],button[data-href]');
+          for (var node of nodes) {
+            var raw = node.href || node.getAttribute('data-href') || '';
+            try {
+              var url = new URL(raw, location.href);
+              if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443')) continue;
+              var path = url.pathname.replace(/\\/$/, '').toLowerCase();
+              var isReader = url.hostname === 'readnow.kobo.com' && path === '/' + expected;
+              var isShelfAction = url.hostname === 'www.kobo.com' && path === '/readnow/' + expected;
+              if (!isReader && !isShelfAction) continue;
+              if (node.closest('[hidden],[inert],[aria-hidden="true"]')) continue;
+              var style = getComputedStyle(node);
+              if (style.display === 'none' || style.visibility === 'hidden' || !node.getClientRects().length) continue;
+              node.scrollIntoView({block:'center'});
+              node.click();
+              return true;
+            } catch (_) {}
+          }
+          return false;
+        })();
+        """
+    }
+
+    /// Confirm the official reader's session material, then return to the
+    /// original reader to validate real content and the saved position. Loading
+    /// a second copy of the whole book in this connection sheet can hang.
+    /// Only a Boolean leaves WebKit; no credential or book text is returned.
+    static let readerSessionReady = #"""
+    (function () {
+      if (location.protocol !== 'https:' || location.hostname !== 'readnow.kobo.com') return false;
+      var entry = document.cookie.split(/;\s*/).find(function (part) { return part.indexOf('sessionId=') === 0; });
+      if (!entry) return false;
+      // Matches the official session service's sessionId=sessionid=<UUID> shape.
+      var value = entry.slice('sessionId='.length).split('=')[1] || '';
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+    })();
+    """#
+
     /// Kobo renders the sign-in affordance dynamically and may select Google,
     /// Rakuten or email login. Prefer its current same-session destination.
     static let currentPageSignInURL = #"""

@@ -23,9 +23,14 @@ enum LiveWebPageTurnDirection: String {
 @MainActor
 final class LiveWebPageTurnController: ObservableObject {
     private weak var bridge: WebReaderBridge?
+    @Published var needsKoboSessionRecovery = false
 
     fileprivate func attach(_ bridge: WebReaderBridge) {
         self.bridge = bridge
+        bridge.onKoboSessionRequired = { [weak self] in self?.needsKoboSessionRecovery = true }
+#if DEBUG
+        bridge.injectKoboMissingSessionForAcceptanceIfRequested()
+#endif
     }
 
     func turn(_ direction: LiveWebPageTurnDirection) {
@@ -389,6 +394,12 @@ struct WebReaderView: UIViewRepresentable {
 
         let isDarkMode = colorScheme == .dark
         let loadAction = {
+#if DEBUG
+            if ReadingResumeScenario.isEnabled, document.sourceKind == .web {
+                webView.loadHTMLString(ReadingResumeScenario.webHTML, baseURL: URL(string: "https://resume-scenario.invalid/article"))
+                return
+            }
+#endif
             // 网址源：直接加载网页（保留原排版）。
             if (
                 document.sourceKind == .web

@@ -3035,9 +3035,9 @@ final class LocalizationCatalogTests: XCTestCase {
         ))
     }
 
-    func testDedicatedBookRailsDoNotDuplicateInHomeContinue() {
-        XCTAssertFalse(HomeContinueContract.includes(.kindle))
-        XCTAssertFalse(HomeContinueContract.includes(.weread))
+    func testUnifiedContinueIncludesConnectedLibraries() {
+        XCTAssertTrue(HomeContinueContract.includes(.kindle))
+        XCTAssertTrue(HomeContinueContract.includes(.weread))
         XCTAssertTrue(HomeContinueContract.includes(.web))
         XCTAssertTrue(HomeContinueContract.includes(.pdf))
     }
@@ -3856,6 +3856,114 @@ final class LocalizationCatalogTests: XCTestCase {
                 }
             }
         }
+    }
+}
+
+@MainActor
+final class WeReadTOCWebTests: XCTestCase {
+    private final class Messages: NSObject, WKScriptMessageHandler {
+        var catalogs: [[String: Any]] = []
+        func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard let body = message.body as? [String: Any],
+                  body["type"] as? String == "wereadTOC",
+                  let payload = body["payload"] as? [String: Any] else { return }
+            catalogs.append(payload)
+        }
+    }
+
+    func testSSRWithTrailingCleanupPreservesAllStableChapterIDsWithoutExecutingCode() async throws {
+        let catalog = (0..<108).map { index in
+            ["chapterUid": "uid-\(index)", "chapterIdx": index,
+             "title": index == 80 ? "Escaped \\\" } { chapter" : "Chapter \(index)"] as [String: Any]
+        }
+        let state = try JSONSerialization.data(withJSONObject: ["reader": ["chapterInfos": catalog]])
+        let json = try XCTUnwrap(String(data: state, encoding: .utf8))
+        let source = "window.__INITIAL_STATE__ = \(json);(function(){window.trailingCodeExecuted=true;}());"
+        let results = try await readCatalog(source: source)
+        let entries = try XCTUnwrap(results.payload?["entries"] as? [[String: Any]])
+        XCTAssertEqual(entries.count, 108)
+        XCTAssertEqual(entries[80]["chapterUID"] as? String, "uid-80")
+        XCTAssertEqual(entries[80]["title"] as? String, catalog[80]["title"] as? String)
+        XCTAssertFalse(results.executed, "Parsing SSR metadata must never execute its script")
+    }
+
+    func testSSRRemovedDuringHydrationStillProvidesStableChapterIdentity() async throws {
+        let results = try await readCatalog(source:
+            #"window.__INITIAL_STATE__={"reader":{"chapterInfos":[{"chapterUid":"uid-80","chapterIdx":80,"title":"Chapter 80"}]}};(function(){window.trailingCodeExecuted=true;}());"#, transient: true)
+        let entries = try XCTUnwrap(results.payload?["entries"] as? [[String: Any]])
+        XCTAssertEqual(entries.first?["chapterUID"] as? String, "uid-80")
+        XCTAssertFalse(results.executed)
+    }
+
+    func testTransientSSRRetainsChapterIdentityWithoutInventingAnOffset() async throws {
+        let results = try await readCatalog(source:
+            #"window.__INITIAL_STATE__={"reader":{"currentChapter":{"chapterUid":162,"chapterIdx":77},"chapterInfos":[{"chapterUid":162,"chapterIdx":77,"title":"Chapter 78"}]}};"#, transient: true)
+        XCTAssertEqual(results.position?["chapterUID"] as? String, "162")
+        XCTAssertNil(results.position?["chapterOffset"])
+        XCTAssertFalse(results.executed)
+    }
+
+    func testVue2DescendantProvidesOfficialOffsetAndRejectsWrongChapter() async throws {
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800))
+        webView.loadHTMLString("<html><body><div id='app'><div id='reader'>Ready</div></div></body></html>", baseURL: URL(string: "https://weread.qq.com/web/reader/testbook"))
+        for _ in 0..<100 {
+            if (try? await webView.evaluateJavaScript("!!document.getElementById('reader')")) as? Bool == true { break }
+            try await Task.sleep(nanoseconds: 30_000_000)
+        }
+        _ = try await webView.evaluateJavaScript("""
+          const reader = { $el: document.getElementById('reader'), currentChapter: { chapterUid: 162 },
+            changeChapter() {}, computeProgressData() { return { offset: 8042 }; },
+            scrollTo(target) { window.restoredOffset = target.chapterOffset; } };
+          document.getElementById('reader').__vue__ = { $children: [reader] };
+          """)
+        _ = try await webView.evaluateJavaScript(WeReadWebScripts.tocBridge)
+        let position = try await webView.evaluateJavaScript("window.CastReaderWeReadTOC.readerPosition()") as? [String: Any]
+        XCTAssertEqual(position?["chapterUID"] as? String, "162")
+        XCTAssertEqual(position?["chapterOffset"] as? Int, 8042)
+        let rejected = try await webView.evaluateJavaScript("window.CastReaderWeReadTOC.restorePosition({chapterUID:'other',chapterOffset:4000})") as? Bool
+        XCTAssertEqual(rejected, false)
+        let accepted = try await webView.evaluateJavaScript("window.CastReaderWeReadTOC.restorePosition({chapterUID:'162',chapterOffset:4000})") as? Bool
+        XCTAssertEqual(accepted, true)
+        let offset = try await webView.evaluateJavaScript("window.restoredOffset") as? Int
+        XCTAssertEqual(offset, 4000)
+    }
+
+    func testIncompleteSSRDoesNotPublishInventedChapterIdentity() async throws {
+        let results = try await readCatalog(source:
+            #"window.__INITIAL_STATE__={"reader":{"chapterInfos":[{"chapterUid":"not-complete","title":"Chapter }"}]};window.trailingCodeExecuted=true;"#)
+        XCTAssertNil(results.payload)
+        XCTAssertFalse(results.executed)
+    }
+
+    private func readCatalog(source: String, transient: Bool = false) async throws -> (payload: [String: Any]?, executed: Bool, position: [String: Any]?) {
+        let messages = Messages()
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController.add(messages, name: "castreader")
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: configuration)
+        let window = UIWindow(frame: webView.frame)
+        let controller = UIViewController()
+        window.rootViewController = controller
+        controller.view.addSubview(webView)
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true; configuration.userContentController.removeScriptMessageHandler(forName: "castreader") }
+        let embeddedSource = transient ? "" : source
+        webView.loadHTMLString("<html><body><script type='application/json'>\(embeddedSource)</script><p>Ready</p></body></html>", baseURL: URL(string: "https://weread.qq.com/web/reader/testbook"))
+        for _ in 0..<100 {
+            if (try? await webView.evaluateJavaScript("document.body?.textContent.includes('Ready')")) as? Bool == true { break }
+            try await Task.sleep(nanoseconds: 30_000_000)
+        }
+        _ = try await webView.evaluateJavaScript(WeReadWebScripts.tocBridge)
+        if transient {
+            let encoded = try JSONEncoder().encode(source)
+            let quoted = try XCTUnwrap(String(data: encoded, encoding: .utf8))
+            _ = try await webView.evaluateJavaScript("const s=document.createElement('script');s.type='application/json';s.textContent=\(quoted);document.body.appendChild(s);s.remove();")
+        }
+        try await Task.sleep(nanoseconds: 200_000_000)
+        let executed = try await webView.evaluateJavaScript("window.trailingCodeExecuted === true") as? Bool ?? false
+        let position = try await webView.evaluateJavaScript("window.CastReaderWeReadTOC.readerPosition('initial-layout')") as? [String: Any]
+        let changed = try await webView.evaluateJavaScript("window.CastReaderWeReadTOC.readerPosition('different-chapter-layout')") as? [String: Any]
+        XCTAssertNil(changed, "Transient SSR identity cannot label a different chapter after hydration")
+        return (messages.catalogs.last, executed, position)
     }
 }
 

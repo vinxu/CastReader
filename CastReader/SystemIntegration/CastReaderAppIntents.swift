@@ -119,6 +119,9 @@ struct ContinueInCastReaderIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
+        // A previously rendered widget/shortcut must not resolve an old
+        // account's item ID inside a newly selected account.
+        if let item, !item.belongsToCurrentAccount { return .result() }
         SystemActionStore.shared.enqueue(
             .continueReading(itemID: item?.id, mode: mode),
             origin: castReaderSystemActionOrigin

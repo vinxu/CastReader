@@ -246,7 +246,7 @@ struct MainTabView: View {
             // View 永不重建 → 收起再展开保留滚动位置、UITextView registry、解读 mark（根治重建丢状态）。
             if let s = coordinator.session {
                 ReaderHostView(readVM: s.readVM, explainVM: s.explainVM, coordinator: coordinator, document: s.document)
-                    .id(s.id)   // 仅换文档（session 变）才重建；同文档收起/展开不重建
+                    .id(s.instanceID)   // 新 VM 重建桥接；收起/展开仍保留同一会话
                     .offset(y: coordinator.isReaderPresented ? 0 : UIScreen.main.bounds.height)
                     .transition(.move(edge: .bottom))   // 首次 open / close 时从底部滑入滑出
                     .animation(.spring(response: 0.4, dampingFraction: 0.9), value: coordinator.isReaderPresented)
@@ -819,6 +819,8 @@ struct MainTabView: View {
         )
         let startedAt = Date()
 
+        let openingGeneration = coordinator.presentationGeneration
+        let openingAccount = HistoryStore.shared.progressBoundaryToken
         youtubeExtractionTask = Task { @MainActor in
             do {
                 // Fresh TTS starts only after the final paragraph/resume target
@@ -827,7 +829,9 @@ struct MainTabView: View {
                 // delayed first sound and could probe the wrong resume paragraph.
                 let result = try await resolveYouTubeTranscript(for: request)
                 try Task.checkCancellation()
-                guard activeYouTubeRequestID == request.id else { return }
+                guard activeYouTubeRequestID == request.id,
+                      coordinator.presentationGeneration == openingGeneration,
+                      HistoryStore.shared.progressBoundaryToken == openingAccount else { throw CancellationError() }
 
                 if !result.cacheHit {
                     ProductAnalytics.shared.track(
@@ -871,15 +875,17 @@ struct MainTabView: View {
                     request: request,
                     contentSessionKey: document.contentSessionKey
                 )
-                let didStart = await startYouTubePlayback(
-                    request: request,
-                    transcript: result.transcript,
-                    cacheKey: result.cacheKey,
-                    durableAcceptance: durableAcceptance
-                )
-                guard didStart else {
-                    youtubeRouteCenter.releaseWithoutAcknowledgement(request)
-                    throw CancellationError()
+                if request.autoplay {
+                    let didStart = await startYouTubePlayback(
+                        request: request,
+                        transcript: result.transcript,
+                        cacheKey: result.cacheKey,
+                        durableAcceptance: durableAcceptance
+                    )
+                    guard didStart else {
+                        youtubeRouteCenter.releaseWithoutAcknowledgement(request)
+                        throw CancellationError()
+                    }
                 }
                 cacheYouTubeThumbnailIfNeeded(
                     result.transcript.metadata.thumbnailURL,
@@ -1045,6 +1051,17 @@ struct MainTabView: View {
         let explicitStart = request.entry == .history
             ? nil
             : request.reference.startSeconds
+        // The unified checkpoint locates the saved word before regeneration.
+        // Keep explicit timestamp links as deliberate navigation; ordinary
+        // reopens must not turn an accurate cursor into a paragraph-start jump.
+        if explicitStart == nil, readVM.hasPendingReadingResume {
+            guard armYouTubePlaybackAcceptance(
+                request: request, readVM: readVM, contentSessionKey: contentSessionKey,
+                durableAcceptance: durableAcceptance
+            ) else { return false }
+            readVM.ensurePlaying()
+            return true
+        }
         let savedProgress: YouTubePlaybackProgress?
         if explicitStart == nil, let cache = YouTubeCacheProvider.shared {
             // Transcript selection/store already touched this entry. Resume
@@ -1433,78 +1450,21 @@ struct MainTabView: View {
             )
 
         case .continueReading(let itemID, let intentMode):
-            guard let record = SystemContinueContract.record(
-                in: HistoryStore.shared.records,
-                itemID: itemID
-            ) else {
-                openQuickImportFromSystemAction()
+            do {
+                _ = try await coordinator.resume.open(itemID: itemID, mode: intentMode.readerMode,
+                    autoplay: true, entryPoint: "app_intent_continue")
+            } catch is CancellationError {
                 return
-            }
-
-            let mode = intentMode.readerMode
-            let analyticsContext = ProductAnalytics.shared.beginContentIntent(
-                source: .history,
-                format: AnalyticsContentFormat(record.sourceKind),
-                entryPoint: "app_intent_continue",
-                intendedMode: mode == .read ? "read" : "explain"
-            )
-            let document: ReadingDocument
-            if record.requiresRemoteReopen {
-                guard Constants.Features.cloudStorageEnabled else {
-                    openQuickImportFromSystemAction()
-                    return
-                }
-                do {
-                    document = try await CloudHistoryReopenService().reopen(
-                        record,
-                        mode: mode,
-                        analyticsContext: analyticsContext
-                    ).document
-                } catch {
-                    ProductAnalytics.shared.contentFailed(
-                        analyticsContext,
-                        stage: "cloud_reopen",
-                        code: "cloud_history_reopen_failed"
-                    )
-                    if let failure = CloudHistoryFailurePresentation.make(
-                        record: record,
-                        error: error
-                    ) {
-                        systemCloudFailureMode = intentMode
-                        systemCloudFailure = failure
-                    }
-                    return
-                }
-            } else {
-                do {
-                    guard let reopened = try await HistoryStore.shared.reopen(record) else {
-                        ProductAnalytics.shared.contentFailed(
-                            analyticsContext,
-                            stage: "reopen",
-                            code: "missing_history_payload"
-                        )
-                        openQuickImportFromSystemAction()
-                        return
-                    }
-                    document = reopened
-                } catch is CancellationError {
-                    return
-                } catch {
-                    ProductAnalytics.shared.contentFailed(
-                        analyticsContext,
-                        stage: "reopen",
-                        code: "history_reopen_failed"
-                    )
-                    openQuickImportFromSystemAction()
-                    return
+            } catch {
+                if let itemID, let record = HistoryStore.shared.records.first(where: { $0.id == itemID }),
+                   record.requiresRemoteReopen,
+                   let failure = CloudHistoryFailurePresentation.make(record: record, error: error) {
+                    systemCloudFailureMode = intentMode
+                    systemCloudFailure = failure
+                } else {
+                    systemActionNotice = error.localizedDescription
                 }
             }
-            coordinator.open(
-                document,
-                mode: mode,
-                autoplay: true,
-                analyticsContext: analyticsContext
-            )
         }
     }
 

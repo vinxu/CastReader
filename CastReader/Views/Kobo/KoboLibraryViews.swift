@@ -130,6 +130,11 @@ private struct KoboRailCard: View {
                 .foregroundColor(AppTheme.foreground)
                 .lineLimit(2)
                 .frame(width: 92, height: 34, alignment: .topLeading)
+            LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress)
+                .font(.caption2)
+                .foregroundColor(AppTheme.mutedForeground)
+                .lineLimit(1)
+                .frame(width: 92, alignment: .leading)
         }
     }
 }
@@ -254,11 +259,15 @@ struct KoboCoverView: View {
 struct KoboLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: KoboLibrarySyncViewModel
+    private let onReaderSessionReady: (() -> Void)?
 
     init(
         analyticsSession: AnalyticsLibraryConnectionSession? = nil,
-        entryTapAlreadyTracked: Bool = false
+        entryTapAlreadyTracked: Bool = false,
+        readerBookID: String? = nil,
+        onReaderSessionReady: (() -> Void)? = nil
     ) {
+        self.onReaderSessionReady = onReaderSessionReady
         let session = analyticsSession ?? AnalyticsLibraryConnectionSession(
             source: .kobo,
             entryPoint: "kobo_connect"
@@ -266,7 +275,8 @@ struct KoboLibraryConnectView: View {
         _model = StateObject(
             wrappedValue: KoboLibrarySyncViewModel(
                 analyticsSession: session,
-                entryTapAlreadyTracked: entryTapAlreadyTracked
+                entryTapAlreadyTracked: entryTapAlreadyTracked,
+                readerBookID: readerBookID
             )
         )
     }
@@ -315,6 +325,11 @@ struct KoboLibraryConnectView: View {
                 model.loadIfNeeded()
             }
             .onDisappear { model.closeConnection() }
+            .onChange(of: model.didRestoreReaderSession) { ready in
+                guard ready else { return }
+                onReaderSessionReady?()
+                dismiss()
+            }
         }
         .navigationViewStyle(.stack)
     }
@@ -425,6 +440,7 @@ final class KoboLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDe
     @Published private(set) var errorText: String?
     @Published private(set) var popupWebView: WKWebView?
     @Published private(set) var canGoBack = false
+    @Published private(set) var didRestoreReaderSession = false
 
     let webView: WKWebView
     var isWorking: Bool { bindingPhase == .opening || bindingPhase == .scanning }
@@ -438,6 +454,8 @@ final class KoboLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDe
     private let storageBoundary: UUID?
     private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
     private let fixtureKind: String?
+    private let readerBookID: String?
+    private var readerEntryActivated = false
     private var didLoad = false
     private var isClosed = false
     private var flowGeneration = 0
@@ -462,7 +480,8 @@ final class KoboLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDe
         self.init(analyticsSession: AnalyticsLibraryConnectionSession(source: .kobo, entryPoint: "kobo_connect"), entryTapAlreadyTracked: false)
     }
 
-    init(analyticsSession: AnalyticsLibraryConnectionSession, entryTapAlreadyTracked: Bool) {
+    init(analyticsSession: AnalyticsLibraryConnectionSession, entryTapAlreadyTracked: Bool, readerBookID: String? = nil) {
+        self.readerBookID = readerBookID
         let configuration = WKWebViewConfiguration()
 #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
@@ -501,7 +520,8 @@ final class KoboLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDe
     }
 
     private func configure(_ view: WKWebView) {
-        view.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
+        view.customUserAgent = readerEntryActivated
+            ? LiveWebPlatformID.kobo.userAgent : GoogleBooksWebScripts.mobileSafariUserAgent
         view.navigationDelegate = self
         view.uiDelegate = self
 #if DEBUG
@@ -611,7 +631,7 @@ final class KoboLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDe
             statusText = AppLocalized("Kobo 内容暂时无法打开，请重试。")
             detailText = AppLocalized("重新加载")
         }
-        if phase == .authenticating || phase == .failed {
+        if phase == .authenticating || phase == .failed || phase == .synced {
             webView.isUserInteractionEnabled = true
             popupWebView?.isUserInteractionEnabled = true
         }
@@ -918,6 +938,23 @@ final class KoboLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDe
         var lastDiagnostic = ""
         while isCurrent(generation) {
             let view = activeWebView
+            if readerEntryActivated, let readerBookID, let book = store.book(for: readerBookID),
+               KoboBookValidator.usableResumeURL(view.url?.absoluteString, expecting: book.bookUUID) != nil {
+                let ready = await evaluate(KoboWebScripts.readerSessionReady, in: view, purpose: "reader_session_ready")
+                guard isCurrent(generation), view === activeWebView else { return }
+                if ready as? Bool == true {
+                    didRestoreReaderSession = true
+                    log("reader session material available; returning to validate original reader", view: view)
+                    return
+                }
+                blankSince = blankSince ?? ProcessInfo.processInfo.systemUptime
+                if ProcessInfo.processInfo.systemUptime - (blankSince ?? 0) > 30 {
+                    fail("reader_session_not_ready"); return
+                }
+                statusText = AppLocalized("正在恢复朗读位置…")
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                continue
+            }
             let raw = await evaluate(KoboWebScripts.bindingPageProbe, in: view, purpose: "binding_probe")
             guard isCurrent(generation), view === activeWebView else { return }
             let now = ProcessInfo.processInfo.systemUptime
@@ -1032,6 +1069,29 @@ final class KoboLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDe
                 snapshot = snapshot.map(applyingResolvedAccount)
             }
             let decision = policy.observe(snapshot, now: ProcessInfo.processInfo.systemUptime)
+            if let readerBookID, !readerEntryActivated, let snapshot, snapshot.authenticated,
+               let book = snapshot.books.first(where: { $0.id == readerBookID }) {
+                guard let expected = store.accountIdentity, snapshot.account?.identity == expected,
+                      store.book(for: readerBookID)?.bookUUID == book.bookUUID,
+                      let script = KoboWebScripts.activateReader(bookUUID: book.bookUUID) else {
+                    fail("reader_account_changed"); return
+                }
+                readerEntryActivated = true
+                isScanningShelf = false
+                awaitingAutomaticPageChange = false
+                webView.isUserInteractionEnabled = true
+                webView.configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
+                // The shelf supports mobile Safari; its reading service needs
+                // the same desktop shell as the real playback WebView. Keep
+                // the actual official click handler and shared cookie store.
+                webView.customUserAgent = LiveWebPlatformID.kobo.userAgent
+                statusText = AppLocalized("正在恢复朗读位置…")
+                let activated = await evaluate(script, in: webView, purpose: "reader_entry_action")
+                webView.configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
+                // A real navigation invalidates this scan generation.
+                if isCurrent(generation), activated as? Bool != true { fail("reader_entry_unavailable") }
+                return
+            }
             awaitingAutomaticPageChange = policy.isAwaitingPageChange
             // Only proven shelf pages can be locked while collecting. Never
             // lock an authentication form based on a prior snapshot.
@@ -1046,6 +1106,7 @@ final class KoboLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDe
                 if let clicked = clicked as? Bool, !clicked { fail("page_action_unavailable"); return }
                 log("shelf page action=\(decision == .advancePage ? "next" : "first") completedPages=\(policy.completedPageCount) books=\(policy.collectedBookCount)", view: webView)
             case .complete:
+                if readerBookID != nil { fail("reader_book_not_on_shelf"); return }
                 guard KoboShelfSyncContract.canCommit(bookCount: policy.books.count, account: policy.account, reachedEnd: policy.completeTraversal, stableEndPasses: policy.stableEndPasses, completeTraversal: policy.completeTraversal) else {
                     fail("whole_shelf_unverified"); return
                 }

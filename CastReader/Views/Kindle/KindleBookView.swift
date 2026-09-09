@@ -660,6 +660,7 @@ struct KindleBookView: View {
                     isPreparing: model.isPlaybackPreparing,
                     compact: usesCompactPlaybackBar,
                     start: { startCurrentMode() },
+                    pause: { model.pauseReadPlayback() },
                     previousPage: { previousPage() },
                     nextPage: { nextPage() },
                     showTOC: { showTOC() }
@@ -711,6 +712,7 @@ struct KindleBookView: View {
                 vm: vm,
                 isPreparing: model.isPlaybackPreparing,
                 start: { startCurrentMode() },
+                    pause: { model.pauseReadPlayback() },
                 previousPage: { previousPage() },
                 nextPage: { nextPage() },
                 showTOC: { showTOC() }
@@ -871,14 +873,15 @@ private struct KindleReadPlaybackBar: View {
     let isPreparing: Bool
     let compact: Bool
     let start: () -> Void
+    let pause: () -> Void
     let previousPage: () -> Void
     let nextPage: () -> Void
     let showTOC: () -> Void
 
     private var isLoading: Bool {
-        voiceSwitch.progress != nil ||
+        !vm.isPlaybackPausedByUser && (voiceSwitch.progress != nil ||
             isPreparing ||
-            vm.isWaitingForPlayableAudio
+            vm.isWaitingForPlayableAudio)
     }
 
     var body: some View {
@@ -892,16 +895,25 @@ private struct KindleReadPlaybackBar: View {
             nextPage: nextPage,
             showTOC: showTOC
         ) {
-            Button(action: start) {
+            Button(action: { if isLoading { pause() } else { start() } }) {
                 KindlePlayButtonContent(
-                    isLoading: isLoading,
-                    isPlaying: vm.isPlaying,
+                    isLoading: false,
+                    isPlaying: vm.isPlaying || isLoading,
                     size: compact ? 44 : 52
                 )
             }
-            .disabled(isLoading)
             .accessibilityIdentifier("kindleReadPlayPauseButton")
             .accessibilityValue(isLoading ? "loading" : (vm.isPlaying ? "playing" : "paused"))
+        }
+        .safeAreaInset(edge: .top, spacing: 8) {
+            if let notice = vm.resumeNotice {
+                Text(notice)
+                    .font(.footnote)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(12)
+                    .frame(maxWidth: 420)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
         }
     }
 
@@ -1294,14 +1306,15 @@ private struct KindleLandscapeReadOverlay: View {
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isPreparing: Bool
     let start: () -> Void
+    let pause: () -> Void
     let previousPage: () -> Void
     let nextPage: () -> Void
     let showTOC: () -> Void
 
     private var isLoading: Bool {
-        voiceSwitch.progress != nil ||
+        !vm.isPlaybackPausedByUser && (voiceSwitch.progress != nil ||
             isPreparing ||
-            vm.isWaitingForPlayableAudio
+            vm.isWaitingForPlayableAudio)
     }
 
     var body: some View {
@@ -1317,15 +1330,14 @@ private struct KindleLandscapeReadOverlay: View {
                 nextPage: nextPage,
                 showTOC: showTOC
             ) {
-                Button(action: start) {
+                Button(action: { if isLoading { pause() } else { start() } }) {
                     KindlePlayButtonContent(
-                        isLoading: isLoading,
-                        isPlaying: vm.isPlaying,
+                        isLoading: false,
+                        isPlaying: vm.isPlaying || isLoading,
                         size: 44
                     )
                 }
-                .disabled(isLoading)
-            }
+                }
         }
     }
 }
@@ -2346,6 +2358,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var bridgedNextResumeByPageKey: [String: Int] = [:]
     private var refocusWordRoutes: [String: KindleRenderRoute] = [:]
     private var playbackAnchor: KindlePlaybackAnchor?
+    private var needsColdListeningPageRestore = true
     private let continueListeningGate = KindleAutoplayRequestGate()
     private var pendingAutoplayRequestID: UUID?
     private var onboardingAutoplayRetryCount = 0
@@ -3672,6 +3685,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if let cloudLocation = event.cloudLocation { kindleSyncCloudLocation = cloudLocation }
 
         if let choice = event.choice {
+            if choice.rawValue == "yes" { needsColdListeningPageRestore = false }
             statusText = AppLocalized("正在应用 Kindle 阅读位置…")
             KindleRunLog.write("KINDLE sync dialog choice=\(choice.rawValue) local=\(kindleSyncLocalLocation ?? -1) cloud=\(kindleSyncCloudLocation ?? -1)")
             return
@@ -5036,6 +5050,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         isReadingSettingsPresented = false
         // The range can reflow across page boundaries. Re-capture on the next
         // explicit Play; old paragraph indices are no longer valid evidence.
+        needsColdListeningPageRestore = true
         liveDocument = nil
         livePage = nil
         livePageKey = nil
@@ -5239,6 +5254,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private func jumpToNativeTOCEntry(_ entry: KindleTOCEntry, epoch: UInt64) async {
         guard nativeTOCEpoch == epoch else { return }
+        needsColdListeningPageRestore = false
         isNativeTOCBridgeJumping = true
         defer { isNativeTOCBridgeJumping = false }
         nativeTOCError = nil
@@ -6086,7 +6102,66 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         #if DEBUG
         if let prepare = startDocumentPreparationForTesting { return try await prepare() }
         #endif
+        if mode == .read {
+            await restoreColdListeningPageIfNeeded()
+        }
         return try await ensureLiveDocument(force: true)
+    }
+
+    /// Amazon may reopen its prefetched page after process death. Resolve the
+    /// durable content key before OCR builds a new paragraph index; the generic
+    /// resume checkpoint then verifies the paragraph and seeks the saved word.
+    private func restoreColdListeningPageIfNeeded() async {
+        guard needsColdListeningPageRestore, !isKindleSyncDialogVisible,
+              readerOperationAllowed(.capture, reason: "cold-resume"),
+              let anchor = store.listeningAnchor(for: book.id), anchor.bookId == book.id,
+              anchor.schemaVersion == KindleListeningAnchor.currentSchemaVersion,
+              let checkpoint = HistoryStore.shared.readingCheckpoint(for: book.id) else { return }
+        guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
+        try? await ensureCaptureScriptInstalled(reason: "cold-resume")
+        guard !Task.isCancelled else { return }
+        if await restorePlaybackKeyVisibility(anchor.pageKey, reason: "cold-resume", maxSteps: 2) {
+            needsColdListeningPageRestore = false
+            pendingCaptureKey = anchor.pageKey
+            KindleRunLog.write("KINDLE cold-resume page restored=true source=live-key")
+            return
+        }
+        // Kindle raster/blob keys may change across process launches. Search
+        // only adjacent rendered pages, verifying the whole normalized source
+        // hash before accepting any page; never use an estimated page number.
+        // This handles a provider's one-page-ahead prefetch bookmark without
+        // crawling an entire long book or silently choosing a nearby sentence.
+        let originalKey = await currentVisibleKindlePageKey()
+        let directions: [KindlePageTurnDirection] = Array(repeating: .previous, count: 4)
+            + Array(repeating: .next, count: 8)
+        for step in 0...directions.count {
+            guard !Task.isCancelled, needsColdListeningPageRestore,
+                  AccountContentIsolation.isCurrent(boundary), !isKindleSyncDialogVisible,
+                  readerOperationAllowed(.capture, reason: "cold-resume-search") else { return }
+            do {
+                try await waitForKindleImageStable()
+                let candidate = try await captureVisiblePage(pageIndex: 0)
+                let document = makeLiveDocument(from: candidate)
+                let hash = KindleListeningAnchorResolver.pageTextHash(paragraphs: document.paragraphs)
+                let relocated = ReadingResumeContract.relocatedKindleCheckpoint(checkpoint, paragraphs: document.paragraphs)
+                if hash == anchor.pageTextHash || relocated != nil {
+                    needsColdListeningPageRestore = false
+                    pendingCaptureKey = candidate.key
+                    KindleRunLog.write("KINDLE cold-resume page restored=true source=\(hash == anchor.pageTextHash ? "text-hash" : "word-context") steps=\(step) key=\(Self.keyLog(candidate.key))")
+                    return
+                }
+                guard step < directions.count else { break }
+                statusText = AppLocalized("正在恢复朗读位置…")
+                _ = try await requestKindlePageTurnTarget(directions[step], oldKey: candidate.key)
+            } catch {
+                KindleRunLog.write("KINDLE cold-resume search interrupted step=\(step) error=\(error.localizedDescription)")
+                break
+            }
+        }
+        if !Task.isCancelled, AccountContentIsolation.isCurrent(boundary), needsColdListeningPageRestore {
+            _ = await restorePlaybackKeyVisibility(originalKey, reason: "cold-resume-rollback", maxSteps: 2)
+        }
+        KindleRunLog.write("KINDLE cold-resume page restored=false source=text-hash")
     }
 
     private func startCurrentMode(request: PendingPlaybackStart) async throws -> KindlePlaybackStartOutcome {
@@ -6154,7 +6229,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   start,
                   Self.keyLog(livePageKey ?? ""))
             #endif
-            if start > 0 {
+            if vm.resumeNotice != nil {
+                return .deferred
+            } else if vm.hasPendingReadingResume {
+                vm.ensurePlaying()
+            } else if start > 0 {
                 vm.jump(to: start)
             } else {
                 vm.start()
@@ -6289,6 +6368,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE page turn blocked sync-dialog direction=\(direction.logName)")
             return
         }
+        needsColdListeningPageRestore = false
         let resumeMode = pendingManualPageResumeMode ?? mode
         let shouldResume = shouldResumeAfterUserPageTurn
         KindleRunLog.write("KINDLE page turn requested \(direction.logName) mode=\(mode.rawValue) resume=\(shouldResume)")
@@ -7548,6 +7628,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         KindleRunLog.write("KINDLE page turn stop old-playback reason=\(reason)")
     }
 
+    func pauseReadPlayback() {
+        guard mode == .read else { return }
+        cancelInFlightProcessingForManualPageTurn(reason: "user-pause")
+        readVM?.pausePlayback()
+    }
+
     private func cancelInFlightProcessingForManualPageTurn(reason: String) {
         cancelPendingPlaybackStart(reason: reason)
         readerLayoutRepairTask?.cancel()
@@ -8541,7 +8627,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         charRange _: Range<Int>?,
         pageKey rawPageKey: String?
     ) {
-        guard let pageKey = rawPageKey?.trimmingCharacters(in: .whitespacesAndNewlines),
+        let audio = AudioPlayerService.shared
+        guard audio.currentBookId == book.id, audio.hasAudibleProgress,
+              !audio.isBuffering, audio.isPlaying,
+              let pageKey = rawPageKey?.trimmingCharacters(in: .whitespacesAndNewlines),
               !pageKey.isEmpty,
               let page = livePage,
               page.key == pageKey || livePageKey == pageKey else { return }
@@ -9458,6 +9547,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     ) -> Bool {
         guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return false }
         guard mode == .read, let vm = readVM else { return false }
+        vm.discardReadingResumeForConfirmedNavigation()
         let readableIDs = document.paragraphs
             .filter { $0.type.isReadable && SpeechTextSanitizer.containsSpeakableContent($0.text) }
             .map(\.id)

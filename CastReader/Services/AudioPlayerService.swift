@@ -315,6 +315,12 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     // MARK: - Published Properties
     @Published var isPlaying = false
+    /// Query the player at lifecycle boundaries instead of the last 100 ms UI tick.
+    var playbackPosition: Double {
+        let value = player?.currentTime().seconds ?? currentTime
+        return value.isFinite && value >= 0 ? value : currentTime
+    }
+
     @Published var currentTime: Double = 0
     @Published var duration: Double = 0
     @Published var playbackRate: Float = 1.0
@@ -1366,6 +1372,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     func startQueuedSegment(
         id: String,
         progress: Double,
+        initialTime: Double? = nil,
         autoPlay: Bool,
         session token: AudioPlaybackSessionToken? = nil
     ) -> Bool {
@@ -1377,6 +1384,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         return playSegment(
             at: index,
             initialProgress: min(0.98, max(0, progress)),
+            initialTime: initialTime,
             autoPlayWhenReady: autoPlay
         )
     }
@@ -1443,6 +1451,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         if recordsUserIntent { isExplicitlyPaused = true }
         playbackRequested = false
         player?.pause()
+        currentTime = playbackPosition
         isPlaying = false
         updateNowPlayingInfo()
     }
@@ -1709,6 +1718,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     private func playSegment(
         at index: Int,
         initialProgress: Double? = nil,
+        initialTime: Double? = nil,
         autoPlayWhenReady: Bool = true,
         recoveryPosition: Double? = nil
     ) -> Bool {
@@ -1781,7 +1791,7 @@ class AudioPlayerService: NSObject, ObservableObject {
             playAudio(
                 from: staged,
                 initialProgress: initialProgress,
-                initialSeconds: recoveryPosition,
+                initialSeconds: recoveryPosition ?? initialTime,
                 autoPlayWhenReady: autoPlayWhenReady,
                 expectedSession: expectedSession
             )
@@ -1806,7 +1816,7 @@ class AudioPlayerService: NSObject, ObservableObject {
             playAudio(
                 from: tempURL,
                 initialProgress: initialProgress,
-                initialSeconds: recoveryPosition,
+                initialSeconds: recoveryPosition ?? initialTime,
                 autoPlayWhenReady: autoPlayWhenReady,
                 expectedSession: expectedSession
             )
@@ -1875,23 +1885,22 @@ class AudioPlayerService: NSObject, ObservableObject {
                     if seconds.isFinite && seconds > 0 {
                         self.duration = seconds
                     }
-                    guard !self.playbackSuspendedByInterruption else {
-                        self.player?.pause()
-                        self.isPlaying = false
-                        self.updateNowPlayingInfo()
-                        print("Audio ready but suspended by interruption; waiting for user resume")
-                        return
-                    }
                     if (initialProgress != nil || initialSeconds != nil), seconds.isFinite, seconds > 0 {
+                        self.isBuffering = true
                         let requestedSeconds = initialSeconds ?? seconds * min(0.98, max(0, initialProgress ?? 0))
-                        let targetSeconds = min(max(0, seconds - 0.001), max(0, requestedSeconds))
+                        let targetSeconds = min(max(0, seconds - 0.001), max(0, requestedSeconds.isFinite ? requestedSeconds : 0))
                         let target = CMTime(seconds: targetSeconds, preferredTimescale: 600)
                         let expectedItem = self.playerItem
-                        self.player?.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak expectedItem] _ in
+                        self.player?.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak expectedItem] completed in
                             DispatchQueue.main.async {
                                 guard let self,
                                       expectedItem === self.playerItem,
                                       self.currentItemCanPublishPlaybackState() else { return }
+                                guard completed, let expectedItem else {
+                                    if let expectedItem { self.reportPlaybackFailure(for: expectedItem, stage: .resume, error: nil) }
+                                    return
+                                }
+                                self.isBuffering = false
                                 self.progressEvidence = AudioPlaybackProgressEvidence()
                                 self.hasAudibleProgress = false
                                 self.isSeekingInitialPosition = false
@@ -1907,7 +1916,7 @@ class AudioPlayerService: NSObject, ObservableObject {
                                 print("Audio restored at \(targetSeconds)s / \(seconds)s")
                             }
                         }
-                    } else if self.playbackRequested {
+                    } else if self.playbackRequested && !self.playbackSuspendedByInterruption {
                         self.isSeekingInitialPosition = false
                         self.player?.playImmediately(atRate: self.playbackRate)
                         self.isPlaying = true

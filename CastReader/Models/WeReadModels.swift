@@ -63,6 +63,8 @@ struct WeReadReadingAnchor: Codable, Equatable {
     var pageFingerprint: String
     var progressLabel: String?
     var updatedAt: Date
+    var chapterUID: String? = nil
+    var chapterOffset: Int? = nil
 }
 
 /// Stable, metadata-only table-of-contents entry captured from the signed-in
@@ -731,6 +733,18 @@ struct WeReadPageSpeechBoundary: Equatable {
 
     var isCrossPage: Bool {
         paragraphIndex >= 0 && visibleUTF16Offset > 0 && speechUTF16Length > visibleUTF16Offset
+    }
+
+    func removingPrefix(_ length: Int, from paragraph: Int) -> Self {
+        guard paragraph == paragraphIndex, length > 0 else { return self }
+        return Self(
+            paragraphIndex: paragraphIndex,
+            visibleUTF16Offset: max(0, visibleUTF16Offset - length),
+            speechUTF16Length: max(0, speechUTF16Length - length),
+            sourceLayoutFingerprint: sourceLayoutFingerprint,
+            sourceParagraphIndex: sourceParagraphIndex,
+            sourceSpeechEnd: sourceSpeechEnd
+        )
     }
 }
 

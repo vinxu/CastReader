@@ -160,6 +160,52 @@ final class KoboBindingFlowContractTests: XCTestCase {
 
 @MainActor
 final class KoboBindingPageWebTests: XCTestCase {
+    func testReaderSessionRefreshActivatesOnlyTheRequestedOfficialBookHandler() async throws {
+        let wanted = "f0000001-1111-4111-8111-000000000001"
+        let other = "f0000002-1111-4111-8111-000000000002"
+        let view = try await load("""
+        <a onclick="window.chosen='wrong-host';return false" href="https://readnow.kobo.com.evil.example/\(wanted)">Forged</a>
+        <a onclick="window.chosen='wrong-book';return false" href="https://readnow.kobo.com/\(other)">Other book</a>
+        <a hidden onclick="window.chosen='hidden';return false" href="https://readnow.kobo.com/\(wanted)">Hidden</a>
+        <a onclick="window.chosen='official';return false" href="https://readnow.kobo.com/\(wanted)?backref_url=shelf&amp;locale=en">Read Now</a>
+        """)
+        let script = try XCTUnwrap(KoboWebScripts.activateReader(bookUUID: wanted))
+        let activated = try await view.evaluateJavaScript(script)
+        XCTAssertEqual(activated as? Bool, true)
+        let chosen = try await view.evaluateJavaScript("window.chosen")
+        XCTAssertEqual(chosen as? String, "official")
+        XCTAssertNil(KoboWebScripts.activateReader(bookUUID: "';alert(1)//"))
+    }
+
+    func testReaderSessionRefreshDoesNotGuessWhenTheBookIsAbsent() async throws {
+        let view = try await load("<a href='https://www.kobo.com/sg/en/library/books'>My library</a>")
+        let script = try XCTUnwrap(KoboWebScripts.activateReader(bookUUID: "f0000001-1111-4111-8111-000000000001"))
+        let activated = try await view.evaluateJavaScript(script)
+        XCTAssertEqual(activated as? Bool, false)
+        let ready = try await view.evaluateJavaScript(KoboWebScripts.readerSessionReady)
+        XCTAssertEqual(ready as? Bool, false)
+    }
+
+    func testReaderSessionMaterialRequiresOfficialReaderAndValidCookieWithoutReturningIt() async throws {
+        let view = try await load("<p>Loading</p>",
+            baseURL: URL(string: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001")!)
+        _ = try await view.evaluateJavaScript("Object.defineProperty(document, 'cookie', { configurable: true, get: () => window.syntheticCookie || '' }); true;")
+        for value in ["", "sessionId=", "sessionId=broken", "sessionId=sessionid=broken"] {
+            _ = try await view.callAsyncJavaScript("window.syntheticCookie = value", arguments: ["value": value], in: nil, contentWorld: .page)
+            let result = try await view.evaluateJavaScript(KoboWebScripts.readerSessionReady)
+            XCTAssertEqual(result as? Bool, false)
+        }
+        let cookie = "unrelated=1; sessionId=sessionid=f0000001-1111-4111-8111-000000000001"
+        _ = try await view.callAsyncJavaScript("window.syntheticCookie = value", arguments: ["value": cookie], in: nil, contentWorld: .page)
+        let result = try await view.evaluateJavaScript(KoboWebScripts.readerSessionReady)
+        XCTAssertEqual(result as? Bool, true)
+        XCTAssertFalse(String(describing: result).contains("f0000001"))
+        let shelf = try await load("<p>Account</p>")
+        _ = try await shelf.callAsyncJavaScript("Object.defineProperty(document, 'cookie', { get: () => value })", arguments: ["value": cookie], in: nil, contentWorld: .page)
+        let wrongHost = try await shelf.evaluateJavaScript(KoboWebScripts.readerSessionReady)
+        XCTAssertEqual(wrongHost as? Bool, false)
+    }
+
     private final class NavigationWaiter: NSObject, WKNavigationDelegate {
         var continuation: CheckedContinuation<Void, Error>?
 
@@ -525,7 +571,7 @@ final class KoboBindingPageWebTests: XCTestCase {
         return try XCTUnwrap(value as? [String: Any])
     }
 
-    private func load(_ body: String) async throws -> WKWebView {
+    private func load(_ body: String, baseURL: URL = KoboWebScripts.shelfURL) async throws -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
         let view = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 700), configuration: configuration)
@@ -537,7 +583,7 @@ final class KoboBindingPageWebTests: XCTestCase {
             waiter.continuation = continuation
             view.loadHTMLString(
                 "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body>\(body)</body></html>",
-                baseURL: KoboWebScripts.shelfURL
+                baseURL: baseURL
             )
         }
         return view
