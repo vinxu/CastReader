@@ -1,0 +1,205 @@
+{
+  "date": "2026-09-13",
+  "sourceParent": "7e5f04516004a418045feba9d41c77889a6415e0",
+  "releaseAncestor": "b6dd4d7",
+  "captureBuild": "image-only-v18",
+  "device": "iPhone 15 Pro Max",
+  "book": "A Journey to the Centre of the Earth",
+  "integrity": {
+    "pages": 427,
+    "logicalResourceBytes": 208724855,
+    "uniqueImages": 427,
+    "textCharacters": 0,
+    "imageOnlyPages": 427,
+    "sourceMinimum": 0,
+    "sourceMaximum": 480607,
+    "savedStart": 0,
+    "savedEnd": 480607,
+    "continuous": true,
+    "allResourceHashesVerified": true,
+    "coversWholeBook": true,
+    "status": "complete",
+    "originalPositionRestored": true,
+    "readingPosition": {
+      "page": 249,
+      "paragraphID": 1,
+      "sentenceStart": 0,
+      "voiceID": ""
+    }
+  },
+  "performance": {
+    "oldAll": {
+      "firstPage": 1,
+      "lastPage": 427,
+      "intervals": 426,
+      "elapsedSeconds": 3183.9440500736237,
+      "medianSeconds": 4.34949654340744,
+      "p90Seconds": 5.384698987007141
+    },
+    "newAll": {
+      "firstPage": 1,
+      "lastPage": 427,
+      "intervals": 426,
+      "elapsedSeconds": 131.00220501422882,
+      "medianSeconds": 0.3106110095977783,
+      "p90Seconds": 0.3511539697647095
+    },
+    "oldContinuous": {
+      "firstPage": 240,
+      "lastPage": 427,
+      "intervals": 187,
+      "elapsedSeconds": 846.0031909942627,
+      "medianSeconds": 4.3096489906311035,
+      "p90Seconds": 5.701573014259338
+    },
+    "newMatchedContinuous": {
+      "firstPage": 240,
+      "lastPage": 427,
+      "intervals": 187,
+      "elapsedSeconds": 64.68702602386475,
+      "medianSeconds": 0.3149139881134033,
+      "p90Seconds": 0.4129539728164673
+    },
+    "newTotalSeconds": 139.3248679637909,
+    "matchedSpeedup": 13.078406026614207
+  },
+  "imageComparison": {
+    "allowedChangedPixelFraction": 0.001,
+    "allowedChannelDelta": 1,
+    "allPagesEquivalent": true,
+    "byteIdentical": 2,
+    "maximumChangedPixelFraction": 2.3054489285426106e-05,
+    "maximumChannelDelta": 1,
+    "newPages": 427,
+    "oldPages": 427,
+    "pixelIdentical": 2,
+    "pixelMismatches": [],
+    "sourcePositionMismatches": [],
+    "visuallyEquivalentPages": 427
+  },
+  "negativeImageComparison": {
+    "deliberatelyReplacedPage": 250,
+    "detected": true,
+    "exitCode": 1
+  },
+  "downloadOCRCalls": 0,
+  "initialSnapshotOCRCharacters": 0,
+  "firstPlayback": {
+    "complete": true,
+    "errorCode": "",
+    "firstSpeechMilliseconds": 57,
+    "networkHint": true,
+    "page": 249,
+    "preparingSpeech": false,
+    "rangeCallbacks": 20,
+    "recognitionCount": 2,
+    "savedPages": 427,
+    "scene": "active",
+    "state": "speaking",
+    "unit": 1,
+    "version": 1,
+    "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+  },
+  "pausedAfterAutomaticNextPage": {
+    "complete": true,
+    "errorCode": "",
+    "firstSpeechMilliseconds": 39,
+    "networkHint": true,
+    "page": 250,
+    "preparingSpeech": false,
+    "rangeCallbacks": 133,
+    "recognitionCount": 3,
+    "savedPages": 427,
+    "scene": "active",
+    "state": "paused",
+    "unit": 8,
+    "version": 1,
+    "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+  },
+  "humanVoiceConfirmation": "pending",
+  "airplaneModeAcceptance": "pending",
+  "tests": [
+    {
+      "run": "regression-v18",
+      "tests": 136,
+      "failures": 0
+    },
+    {
+      "run": "ocr-and-bridge-v18",
+      "tests": 44,
+      "failures": 0
+    },
+    {
+      "run": "final-v19",
+      "tests": 24,
+      "failures": 0
+    }
+  ],
+  "testCountsMayOverlap": true,
+  "sourceHashes": {
+    "CastReader/Views/Kindle/KindleBookView.swift": "839049aaba0a6bacb30c4356ccd383c5b981f02af142a2c992747b634e0dd71d",
+    "CastReader/Services/KindleWebScripts.swift": "d524cca4e760e95663aeb556c64a846154fd89235a788cb9a70d2216d0236f45",
+    "CastReader/Services/KindleOfflineSourceScript.swift": "bad76b8e82b91797ae34b5ff46de3796a613fb2e71f2645d999be2903ba7ae7f",
+    "CastReader/Services/KindleOfflineOCRService.swift": "f0cea93ec9964d3ebfdbf04570a134b0e6472829fd94baba9cf8c60af5bc5bab"
+  },
+  "coldOpenAfterInstall": {
+    "complete": true,
+    "errorCode": "",
+    "firstSpeechMilliseconds": -1,
+    "generation": "8A86F15B-DC0D-403F-83D0-B4BC350136AE",
+    "networkHint": true,
+    "page": 250,
+    "preparingSpeech": false,
+    "rangeCallbacks": 0,
+    "recognitionCount": 0,
+    "savedPages": 427,
+    "scene": "active",
+    "state": "paused",
+    "unit": 8,
+    "version": 1,
+    "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+  },
+  "finalDeviceBuild": {
+    "run": "image-only-v20",
+    "result": "TEST BUILD SUCCEEDED",
+    "installed": true
+  },
+  "diagnosticCrash": {
+    "build": "v19",
+    "cause": "UUID was passed directly to JSONSerialization in DEBUG diagnostics",
+    "fixedIn": "v20",
+    "fix": "Serialize uuidString and validate JSON object first",
+    "realDeviceColdOpenRetested": true
+  },
+  "ocrCacheReuse": {
+    "ocrCachedPages": [
+      250,
+      251,
+      252,
+      253
+    ],
+    "sidecars": 4,
+    "page300HasOCRCache": false
+  },
+  "preparedUnrecognizedPageForAirplaneTest": {
+    "complete": true,
+    "errorCode": "",
+    "firstSpeechMilliseconds": 30,
+    "generation": "8A86F15B-DC0D-403F-83D0-B4BC350136AE",
+    "networkHint": true,
+    "page": 299,
+    "preparingSpeech": false,
+    "rangeCallbacks": 55,
+    "recognitionCount": 1,
+    "savedPages": 427,
+    "scene": "active",
+    "state": "idle",
+    "unit": 0,
+    "version": 1,
+    "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+  },
+  "finalReleaseBuild": {
+    "run": "image-only-v20",
+    "result": "BUILD SUCCEEDED"
+  }
+}

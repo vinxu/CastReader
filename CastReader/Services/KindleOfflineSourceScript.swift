@@ -129,6 +129,15 @@ enum KindleOfflineSourceScript {
         if(!state.metadata||!Number.isSafeInteger(position)||position<state.metadata.minimum||position>state.metadata.maximum)return false;
         const c=context();if(!c.navigation)return false;c.navigation.moveToPosition(position);return true;
       };
+      window.__crOfflineSourceAdvance=(position,previousEnd)=>{
+        if(!state.metadata||!Number.isSafeInteger(position)||position<state.metadata.minimum||position>state.metadata.maximum)return false;
+        const c=context();if(!c.navigation)return false;
+        const range=c.navigation.state?.pagePositionRange;
+        if(Number.isSafeInteger(previousEnd)&&range?.endPosition+1===previousEnd&&!c.loading) {
+          c.navigation.nextPage();
+        } else { c.navigation.moveToPosition(position); }
+        return true;
+      };
     })();
     """#
 }

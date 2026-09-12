@@ -7309,6 +7309,29 @@ enum KindleWebScripts {
           } : null
         };
       }
+      // Offline downloads consume the reader's original image bytes. This path
+      // does not draw another canvas, prepare OCR or change live read overlays.
+      window.__crKindleOfflineImageIdentity = function() {
+        var c = currentReadingCandidate();
+        if (!c || !c.img || !c.img.complete || !(c.img.naturalWidth > 0)) return '';
+        return String(c.key || '') + ':' + c.img.naturalWidth + ':' + c.img.naturalHeight;
+      };
+      window.__crKindleOfflineImage = async function() {
+        var c = currentReadingCandidate();
+        if (!c || !c.img || !c.img.complete || !(c.img.naturalWidth > 0)) throw new Error('offline-image-not-ready');
+        var identity = window.__crKindleOfflineImageIdentity();
+        var key = keyForUrl(c.img.currentSrc || c.img.src) || String(c.key || '').replace(/^content-/, '');
+        var liveUrl = window.__crKindleProbe.keyToLiveUrl.get(key);
+        if (!liveUrl) throw new Error('offline-original-image-unavailable');
+        var blob = await (await fetch(liveUrl)).blob();
+        if (!blob.type.startsWith('image/') || blob.size <= 0 || blob.size > 20 * 1024 * 1024) throw new Error('offline-invalid-image');
+        var image = await new Promise(function(resolve, reject) {
+          var reader = new FileReader(); reader.onload = function() { resolve(reader.result); };
+          reader.onerror = reject; reader.readAsDataURL(blob);
+        });
+        if (identity !== window.__crKindleOfflineImageIdentity()) throw new Error('offline-image-changed');
+        return JSON.stringify({image:image, identity:identity, originalBytes:blob.size});
+      };
       window.__crKindleCurrentPageSnapshot = function(maxWidth, quality) {
         try {
           var c = currentReadingCandidate();

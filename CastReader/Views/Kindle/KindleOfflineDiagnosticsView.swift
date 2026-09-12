@@ -131,11 +131,19 @@ struct KindleOfflineDiagnosticsView: View {
     @State private var captured: ReadingDocument?
     @State private var busy = false
     @State private var showSpeech = false
+    @State private var showImageBenchmark = false
+    @StateObject private var imageBenchmark = KindleOfflineDownloadCoordinator(store: .imageBenchmark)
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("图片缓存速度验证") {
+                    Button("重新采集整本图片（独立副本）") { showImageBenchmark = true }
+                        .accessibilityIdentifier("kindleOfflineImageBenchmark")
+                    Text("保留原离线书。验证副本使用同一下载流程，下载时不识别文字。")
+                        .font(.footnote)
+                }
                 Section("当前页本机朗读") {
                     Text("捕获实际可见页并在本机 OCR，不自动翻页。")
                     Button("识别当前页并试听") {
@@ -187,6 +195,9 @@ struct KindleOfflineDiagnosticsView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
             .sheet(isPresented: $showSpeech) {
                 if let captured { SystemSpeechAcceptanceView(document: captured) }
+            }
+            .sheet(isPresented: $showImageBenchmark) {
+                KindleOfflineDownloadView(model: model, download: imageBenchmark)
             }
         }
     }

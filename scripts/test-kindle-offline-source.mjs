@@ -18,7 +18,7 @@ const bytes=tar({'metadata.json':{firstPositionId:0,lastPositionId:100,coverPosi
   'manifest.json':{asin:'B000000001',revision:'test'},'page_data_0_1.json':pages});
 const calls=[];
 const navigation={state:{currentPosition:3,pagePositionRange:{startPosition:3,endPosition:100}},
-  readerState:{isRendererLoading:false},nextPage(){},moveToPosition(position){calls.push(position);}};
+  readerState:{isRendererLoading:false},nextPage(){calls.push('next');},moveToPosition(position){calls.push(position);}};
 const root={stateNode:{}};root.stateNode.current=root;
 const readingCalls=[];
 const readingService={startReading(){},stillReading(payload){readingCalls.push(payload);return Promise.resolve();},doneReading(payload){readingCalls.push(payload);return Promise.resolve();}};
@@ -44,6 +44,12 @@ assert.equal(result.page.words,20);assert.equal(result.metadata.maximum,100);
 assert.equal(result.layout.width,'432');assert.equal(result.layout.startingPosition,undefined);
 assert.equal(sandbox.__crOfflineSourceMove(53),true);assert.deepEqual(calls,[53]);
 assert.equal(sandbox.__crOfflineSourceMove(101),false);assert.equal(sandbox.__crOfflineSourceMove(-1),false);
+navigation.state.pagePositionRange={startPosition:1,endPosition:1};
+assert.equal(sandbox.__crOfflineSourceAdvance(3,2),true);
+assert.equal(calls.at(-1),'next','sequential capture uses normal nextPage');
+assert.equal(sandbox.__crOfflineSourceAdvance(41,40),true);
+assert.equal(calls.at(-1),41,'resume away from download position relocates once');
+assert.equal(sandbox.__crOfflineSourceAdvance(101,100),false);
 assert.equal(sandbox.__crOfflineProgressGuard(true,'B000000001'),true);
 await readingService.stillReading({asin:'B000000001',readingPosition:99});
 assert.equal(readingCalls.length,0,'download cannot publish a furthest-read position');

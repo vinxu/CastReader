@@ -5,13 +5,14 @@ struct KindleOfflineDownloadView: View {
     @ObservedObject var model: KindleBookViewModel
     @ObservedObject var download: KindleOfflineDownloadCoordinator
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
                     Text(model.offlineSourceBook.title).font(.headline)
-                    Text("将整本书的页面和文字保存到这台 iPhone。保存完成后，可以在飞行模式下阅读，并使用本机系统声音朗读。")
+                    Text("将整本书的页面图片保存到这台 iPhone。保存后可以离线阅读；点击播放时，在手机本机准备并朗读文字，无需联网。")
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
                 Section {
@@ -45,7 +46,7 @@ struct KindleOfflineDownloadView: View {
                 if let book = download.book, !book.pages.isEmpty, let scope = KindleOfflineContext.currentScope {
                     Section {
                         NavigationLink(book.status == .complete ? "打开离线书籍" : "阅读已保存内容") {
-                            KindleOfflineBookReaderView(book: book, scope: scope)
+                            KindleOfflineBookReaderView(book: book, scope: scope, store: download.store)
                         }.accessibilityIdentifier("offlineDownloadOpenBook").disabled(download.isRunning)
                     }
                 }
@@ -62,6 +63,7 @@ struct KindleOfflineDownloadView: View {
             }
         }
         .onDisappear { download.pause() }
+        .onChange(of: scenePhase) { if $0 != .active { download.pause() } }
         .interactiveDismissDisabled(download.isRunning)
     }
 }

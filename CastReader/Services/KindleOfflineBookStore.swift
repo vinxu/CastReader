@@ -30,6 +30,9 @@ struct KindleOfflineBook: Codable, Identifiable, Equatable {
         let ordinal: Int
         let position: KindleOfflineSourcePosition
         let resource: KindleOfflinePageStore.SavedPage
+        // Absent in v1 downloads whose OCR was already committed with the image.
+        var requiresOCR: Bool?
+        var sourceWordCount: Int?
     }
     struct ReadingPosition: Codable, Equatable {
         var page = 0
@@ -74,6 +77,11 @@ struct KindleOfflineBook: Codable, Identifiable, Equatable {
 /// image/OCR store; the manifest never loads the images of other pages.
 actor KindleOfflineBookStore {
     static let shared = KindleOfflineBookStore()
+    #if DEBUG
+    static let imageBenchmark = KindleOfflineBookStore(root: FileManager.default.urls(
+        for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("KindleOfflineImageBenchmark-v1", isDirectory: true))
+    #endif
     enum Failure: Error { case invalidIdentity, corruptManifest, staleGeneration, discontinuousPage, incompleteBook }
     private let root: URL
     init(root: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -123,7 +131,8 @@ actor KindleOfflineBookStore {
     }
 
     func append(document: ReadingDocument, position: KindleOfflineSourcePosition,
-                to expected: KindleOfflineBook, scope: String) async throws -> KindleOfflineBook {
+                to expected: KindleOfflineBook, scope: String, requiresOCR: Bool = false,
+                sourceWordCount: Int? = nil) async throws -> KindleOfflineBook {
         var book = try current(expected, scope: scope)
         guard position.isValid, book.status != .complete else { throw Failure.discontinuousPage }
         if let last = book.pages.last {
@@ -139,7 +148,8 @@ actor KindleOfflineBookStore {
         let fresh = try current(expected, scope: scope)
         guard fresh.pages.count == ordinal else { throw Failure.staleGeneration }
         book = fresh
-        book.pages.append(.init(ordinal: ordinal, position: position, resource: resource))
+        book.pages.append(.init(ordinal: ordinal, position: position, resource: resource,
+            requiresOCR: requiresOCR, sourceWordCount: sourceWordCount))
         if book.hasLocalReadingPosition != true, let original = book.originalPosition,
            position.start <= original.start, position.end >= original.start {
             book.readingPosition.page = ordinal
@@ -156,6 +166,21 @@ actor KindleOfflineBookStore {
         guard book.pages.indices.contains(ordinal) else { throw Failure.incompleteBook }
         let (_, document) = try await pageRepository(book, scope: scope).open(book.pages[ordinal].resource.id, scope: book.id)
         return document
+    }
+
+    func cachedSpeechPage(book expected: KindleOfflineBook, ordinal: Int, scope: String) async throws -> ReadingDocument? {
+        let book = try current(expected, scope: scope)
+        guard book.pages.indices.contains(ordinal) else { throw Failure.incompleteBook }
+        let page = book.pages[ordinal]
+        if page.requiresOCR != true { return try await openPage(book: book, ordinal: ordinal, scope: scope) }
+        return try await pageRepository(book, scope: scope).recognition(for: page.resource, language: book.language, scope: book.id)
+    }
+
+    func saveSpeechPage(_ document: ReadingDocument, book expected: KindleOfflineBook, ordinal: Int, scope: String) async throws {
+        let book = try current(expected, scope: scope)
+        guard book.pages.indices.contains(ordinal) else { throw Failure.incompleteBook }
+        try await pageRepository(book, scope: scope).saveRecognition(document, for: book.pages[ordinal].resource,
+            language: book.language, scope: book.id)
     }
 
     func finish(_ expected: KindleOfflineBook, scope: String) async throws -> KindleOfflineBook {

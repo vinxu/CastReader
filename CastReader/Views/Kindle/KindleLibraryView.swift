@@ -34,6 +34,8 @@ struct KindleLibraryView: View {
                     Label("本机离线书籍", systemImage: "arrow.down.circle")
                 }.accessibilityIdentifier("kindleOfflineLibrary")
                 #if DEBUG
+                NavigationLink("图片缓存验证副本") { KindleOfflineLibraryView(store: .imageBenchmark) }
+                    .accessibilityIdentifier("kindleOfflineImageBenchmarkLibrary")
                 NavigationLink("已保存页面 · 离线测试") { KindleOfflinePageListView() }
                     .accessibilityIdentifier("kindleOfflineSavedPages")
                 #endif

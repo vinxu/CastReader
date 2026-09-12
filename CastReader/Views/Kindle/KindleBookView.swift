@@ -7871,6 +7871,30 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         throw KindleBookError.captureFailed("offline-source-not-stable")
     }
 
+    private func waitForOfflineImage(target: Int, previousIdentity: String) async throws -> OfflineSourceEvidence {
+        var prior: KindleOfflineSourcePosition?, priorImage = ""
+        var sameImageSince: Date?
+        for _ in 0..<400 {
+            try Task.checkCancellation()
+            try requireOfflineCapture()
+            if let source = try? await readOfflineSourceEvidence(), source.position.start <= target, source.position.end >= target,
+               let identity = try? await evaluate("window.__crKindleOfflineImageIdentity()") as? String, !identity.isEmpty {
+                if source.position == prior && identity == priorImage {
+                    // Normal sequential flips hit already-prefetched images.
+                    // Identical-image pages retain the conservative layout check.
+                    if identity != previousIdentity { return source }
+                    if let since = sameImageSince, Date().timeIntervalSince(since) >= 0.6 {
+                        try await waitForKindleImageStable()
+                        return try await readOfflineSourceEvidence()
+                    }
+                } else { sameImageSince = Date() }
+                prior = source.position; priorImage = identity
+            } else { prior = nil; priorImage = ""; sameImageSince = nil }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        throw KindleBookError.captureFailed("offline-image-not-ready")
+    }
+
     func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
         guard offlineCaptureOriginal == nil, let scope = KindleOfflineContext.currentScope else { throw KindleBookError.busy }
         cancelInFlightProcessingForManualPageTurn(reason: "offline-book-download")
@@ -7909,30 +7933,32 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func captureOfflineBookPage(after previous: KindleOfflineSourcePosition?) async throws -> KindleOfflineCapturedPage {
         try requireOfflineCapture()
         guard let original = offlineCaptureOriginal else { throw CancellationError() }
+        let started = Date()
         let target = previous.map { $0.end + 1 } ?? original.minimum
-        guard (try await evaluate("window.__crOfflineSourceMove(\(target))") as? Bool) == true else { throw KindleBookError.invalidPayload }
-        let before = try await waitForOfflineSource(target: target)
+        let previousIdentity = (try? await evaluate("window.__crKindleOfflineImageIdentity()") as? String) ?? ""
+        let end = previous.map { String($0.end) } ?? "null"
+        guard (try await evaluate("window.__crOfflineSourceAdvance(\(target), \(end))") as? Bool) == true else { throw KindleBookError.invalidPayload }
+        let before = try await waitForOfflineImage(target: target, previousIdentity: previousIdentity)
+        let readyAt = Date()
         guard before.position.layoutID == original.layoutID else { throw KindleOfflineBookStore.Failure.staleGeneration }
         if let previous { guard before.position.follows(previous) else { throw KindleOfflineBookStore.Failure.discontinuousPage } }
         else { guard before.position.isFirst else { throw KindleOfflineBookStore.Failure.discontinuousPage } }
-        try await waitForKindleImageStable()
         try requireOfflineCapture()
-        let payload = try await evaluateJSON("window.__crKindleCurrentPageSnapshot && window.__crKindleCurrentPageSnapshot(\(Self.ocrCaptureJavaScriptArguments))")
-        guard payload["ok"] as? Bool == true, let dataURL = payload["image"] as? String,
-              let imageData = Self.decodeDataURL(dataURL), UIImage(data: imageData) != nil else { throw KindleBookError.badImage }
-        let document: ReadingDocument
-        do { document = makeDocument(from: [try await makeCapturedPage(from: payload, pageIndex: 0)]) }
-        catch OCRError.noText where before.words == 0 {
-            document = ReadingDocument(title: book.title, sourceKind: .kindle, language: book.language ?? "en",
-                paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, pageIndex: 0, imageData: imageData)])
-        }
+        let raw = try await webView.callAsyncJavaScript("return await window.__crKindleOfflineImage();",
+            arguments: [:], in: nil, contentWorld: .page)
+        guard let value = raw as? String, let bytes = value.data(using: .utf8),
+              let payload = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
+              let dataURL = payload["image"] as? String, let imageData = Self.decodeDataURL(dataURL) else { throw KindleBookError.badImage }
+        let document = ReadingDocument(title: book.title, sourceKind: .kindle, language: book.language ?? "en",
+            paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, pageIndex: 0, imageData: imageData)])
         try requireOfflineCapture()
         let after = try await readOfflineSourceEvidence()
         guard after.position == before.position else { throw KindleOfflineBookStore.Failure.discontinuousPage }
         let position = KindleOfflineSourcePosition(start: before.position.start, end: before.position.end,
             minimum: before.position.minimum, maximum: before.position.maximum, layoutID: before.position.layoutID,
             fingerprint: KindleOfflinePageStore.digest(imageData))
-        return KindleOfflineCapturedPage(position: position, document: document)
+        KindleRunLog.write("KINDLE_OFFLINE_IMAGE start=\(position.start) end=\(position.end) bytes=\(imageData.count) readyMs=\(Int(readyAt.timeIntervalSince(started)*1000)) transferMs=\(Int(Date().timeIntervalSince(readyAt)*1000)) ocr=0")
+        return KindleOfflineCapturedPage(position: position, document: document, requiresOCR: true, sourceWordCount: before.words)
     }
 
     func endOfflineBookCapture() async -> Bool {

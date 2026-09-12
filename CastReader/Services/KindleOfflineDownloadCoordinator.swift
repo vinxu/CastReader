@@ -4,6 +4,8 @@ import UIKit
 struct KindleOfflineCapturedPage {
     let position: KindleOfflineSourcePosition
     let document: ReadingDocument
+    var requiresOCR = false
+    var sourceWordCount: Int?
 }
 
 @MainActor
@@ -20,7 +22,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
     @Published private(set) var isRunning = false
     @Published private(set) var phase = "准备保存整本书"
     @Published private(set) var error: String?
-    private let store: KindleOfflineBookStore
+    let store: KindleOfflineBookStore
     private var task: Task<Void, Never>?
     private var runID = UUID()
 
@@ -65,7 +67,8 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                         let captured = try await source.captureOfflineBookPage(after: book.pages.last?.position)
                         try Task.checkCancellation()
                         guard stillAuthorized(), self.runID == run else { throw CancellationError() }
-                        book = try await self.store.append(document: captured.document, position: captured.position, to: book, scope: scope)
+                        book = try await self.store.append(document: captured.document, position: captured.position,
+                            to: book, scope: scope, requiresOCR: captured.requiresOCR, sourceWordCount: captured.sourceWordCount)
                         self.book = book
                     }
                     self.phase = "正在校验整本书…"

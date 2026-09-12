@@ -150,6 +150,34 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         XCTAssertEqual(book.readingPosition, cursor)
         XCTAssertEqual(book.pages.count, 4)
     }
+
+    func testImagesCompleteWithoutOCRAndRecognitionIsAnIndependentReusableCache() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        var raw = document(); raw.paragraphs.removeAll { $0.type != .image }
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 1))
+        book = try await store.append(document: raw, position: position(0, total: 1), to: book, scope: scope,
+            requiresOCR: true, sourceWordCount: 12)
+        book = try await store.finish(book, scope: scope)
+        XCTAssertEqual(book.status, .complete)
+        let notRecognized = try await store.cachedSpeechPage(book: book, ordinal: 0, scope: scope)
+        XCTAssertNil(notRecognized)
+        let imageOnly = try await store.openPage(book: book, ordinal: 0, scope: scope)
+        XCTAssertFalse(imageOnly.paragraphs.contains { $0.type.isReadable })
+        let originalResource = book.pages[0].resource
+        try await store.saveSpeechPage(document(), book: book, ordinal: 0, scope: scope)
+        let reopened = KindleOfflineBookStore(root: root)
+        let cached = try await reopened.cachedSpeechPage(book: book, ordinal: 0, scope: scope)
+        XCTAssertTrue(cached?.paragraphs.contains { !$0.text.isEmpty } == true)
+        let fresh = try await reopened.load(id: book.id, scope: scope)
+        XCTAssertEqual(fresh?.pages[0].resource, originalResource)
+        XCTAssertEqual(fresh?.status, .complete)
+        let resources = try FileManager.default.subpathsOfDirectory(atPath: root.path)
+        let sidecar = try XCTUnwrap(resources.first { $0.hasSuffix(".ocr") })
+        try Data("damaged".utf8).write(to: root.appendingPathComponent(sidecar))
+        let damagedCache = try await reopened.cachedSpeechPage(book: book, ordinal: 0, scope: scope)
+        XCTAssertNil(damagedCache)
+        _ = try await reopened.openPage(book: book, ordinal: 0, scope: scope)
+    }
 }
 
 @MainActor
@@ -175,6 +203,19 @@ private final class OfflineSourceFixture: KindleOfflineBookSource {
 
 @MainActor
 final class KindleOfflineBookReaderTests: XCTestCase {
+    private final class Recognizer: KindleOfflineRecognizing {
+        var calls = 0
+        var delay: Duration = .milliseconds(1)
+        var shouldFail = false
+        func recognize(_ page: ReadingDocument, sourceWordCount: Int?) async throws -> ReadingDocument {
+            calls += 1
+            try await Task.sleep(for: delay)
+            if shouldFail { throw OCRError.noText }
+            var result = page
+            result.paragraphs.append(ReadingParagraph(id: 1, text: "Recognized only when listening.", pageIndex: 0))
+            return result
+        }
+    }
     private final class Driver: SystemSpeechDriving {
         var onEvent: ((SystemSpeechDriverEvent) -> Void)?
         var requests: [SystemSpeechRequest] = []
@@ -183,6 +224,96 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         func pause() -> Bool { true }
         func resume() -> Bool { true }
         func stop() {}
+    }
+
+    private func imageBook(root: URL) async throws -> (KindleOfflineBookStore, KindleOfflineBook, String) {
+        let store = KindleOfflineBookStore(root: root), scope = KindleOfflinePageStore.digest("lazy-reader")
+        let source = KindleBook(id: "lazy-reader", title: "Lazy reader", author: "Test",
+            readerURL: "https://read.amazon.com/?asin=B000000001", progressLabel: "", lastSyncedAt: Date())
+        let position = KindleOfflineSourcePosition(start: 0, end: 99, minimum: 0, maximum: 99, layoutID: "fixture", fingerprint: "first")
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 20, height: 20)).pngData { context in
+            UIColor.white.setFill(); context.fill(CGRect(x: 0, y: 0, width: 20, height: 20))
+        }
+        let doc = ReadingDocument(title: "Lazy reader", sourceKind: .kindle, language: "en-US",
+            paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, imageData: image)])
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position)
+        book = try await store.append(document: doc, position: position, to: book, scope: scope, requiresOCR: true, sourceWordCount: 10)
+        book = try await store.finish(book, scope: scope)
+        return (store, book, scope)
+    }
+
+    func testRealLocalOCRRecognizesSavedImageWithoutOnlineReader() async throws {
+        let bytes = UIGraphicsImageRenderer(size: CGSize(width: 1100, height: 500)).pngData { context in
+            UIColor.white.setFill(); context.fill(CGRect(x: 0, y: 0, width: 1100, height: 500))
+            ("A journey begins today.\nWe can read this page offline." as NSString).draw(
+                in: CGRect(x: 60, y: 70, width: 980, height: 360),
+                withAttributes: [.font: UIFont.systemFont(ofSize: 48), .foregroundColor: UIColor.black])
+        }
+        let page = ReadingDocument(title: "Local OCR fixture", sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, imageData: bytes)])
+        let recognized = try await KindleOfflineOCRService().recognize(page, sourceWordCount: 11)
+        let text = recognized.paragraphs.map(\.text).joined(separator: " ").lowercased()
+        XCTAssertTrue(text.contains("journey")); XCTAssertTrue(text.contains("offline"))
+        XCTAssertEqual(recognized.paragraphs.first?.imageData, bytes)
+        XCTAssertEqual(recognized.paragraphs.map(\.id), Array(recognized.paragraphs.indices))
+        XCTAssertTrue(recognized.paragraphs.dropFirst().contains { !$0.words.isEmpty })
+    }
+
+    func testOpeningAnImageBookDoesNotOCRAndPlaybackRecognitionSurvivesColdReopen() async throws {
+        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        let recognizer = Recognizer(), driver = Driver()
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true }, recognizer: recognizer)
+        await model.open()
+        XCTAssertEqual(recognizer.calls, 0)
+        XCTAssertTrue(driver.requests.isEmpty)
+        XCTAssertTrue(model.speech.units.isEmpty)
+        model.play()
+        let deadline = Date().addingTimeInterval(3)
+        while driver.requests.isEmpty, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(recognizer.calls, 1)
+        XCTAssertEqual(driver.requests.first?.text, "Recognized only when listening.")
+        model.pause(); model.close()
+        let coldRecognizer = Recognizer(), coldDriver = Driver()
+        let cold = KindleOfflineBookReaderModel(book: book, scope: scope, store: KindleOfflineBookStore(root: root),
+            speech: SystemSpeechPlaybackService(driver: coldDriver), scopeValidator: { true }, recognizer: coldRecognizer)
+        await cold.open(); cold.play()
+        XCTAssertEqual(coldRecognizer.calls, 0)
+        XCTAssertEqual(coldDriver.requests.first?.text, "Recognized only when listening.")
+        cold.close()
+    }
+
+    func testFailedRecognitionKeepsImageAndPauseDuringRetryCannotStartAudio() async throws {
+        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        let recognizer = Recognizer(), driver = Driver(); recognizer.shouldFail = true
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true }, recognizer: recognizer)
+        await model.open(); model.play()
+        while model.preparingSpeech { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertNotNil(model.error); XCTAssertTrue(driver.requests.isEmpty)
+        _ = try await store.openPage(book: book, ordinal: 0, scope: scope)
+        recognizer.shouldFail = false; recognizer.delay = .milliseconds(150)
+        model.play()
+        while recognizer.calls < 2 { try await Task.sleep(for: .milliseconds(10)) }
+        model.pause()
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertTrue(driver.requests.isEmpty)
+        XCTAssertFalse(model.preparingSpeech)
+        model.play()
+        let retryDeadline = Date().addingTimeInterval(2)
+        while recognizer.calls < 3, Date() < retryDeadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(recognizer.calls, 3)
+        AudioPlayerService.shared.stopSystemSpeechForLibraryBoundary()
+        try await Task.sleep(for: .milliseconds(200))
+        XCTAssertTrue(driver.requests.isEmpty)
+        XCTAssertFalse(model.preparingSpeech)
+        model.close()
     }
 
     func testSystemSpeechContinuesAcrossSavedImageOnlyPagesAndRestoresCheckpoint() async throws {

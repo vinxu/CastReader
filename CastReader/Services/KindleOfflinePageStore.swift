@@ -31,6 +31,13 @@ actor KindleOfflinePageStore {
         var pages: [SavedPage] = []
     }
 
+    private struct Recognition: Codable {
+        let version: Int
+        let imageHash: String
+        let language: String
+        let snapshotHash: String
+    }
+
     private let root: URL
     init(root: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("KindleOfflinePages", isDirectory: true)) { self.root = root }
@@ -96,6 +103,36 @@ actor KindleOfflinePageStore {
               let page = try readIndex(directory).pages.first(where: { $0.id == pageID }),
               page.snapshotHash == checkpoint.snapshotHash else { throw Failure.invalidPage }
         try write(JSONEncoder().encode(checkpoint), to: directory.appendingPathComponent(page.id + ".position"))
+    }
+
+    /// Recognition is a rebuildable sidecar. Original image/page records and
+    /// whole-book completion never depend on OCR having run.
+    func recognition(for page: SavedPage, language: String, scope: String) throws -> ReadingDocument? {
+        let directory = try directory(scope: scope, create: false)
+        let url = directory.appendingPathComponent(page.id + ".ocr")
+        guard let data = try? readLimited(url, limit: 4096),
+              let cached = try? JSONDecoder().decode(Recognition.self, from: data),
+              cached.version == 1, cached.imageHash == page.imageHash, cached.language == language,
+              Self.validDigest(cached.snapshotHash),
+              let bytes = try? readLimited(directory.appendingPathComponent(cached.snapshotHash + ".page"), limit: 2 * 1_024 * 1_024),
+              Self.digest(bytes) == cached.snapshotHash,
+              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: bytes), snapshot.version == 1 else { return nil }
+        let image = try readLimited(directory.appendingPathComponent(page.imageHash + ".image"), limit: 20 * 1_024 * 1_024)
+        guard Self.digest(image) == page.imageHash else { throw Failure.corruptPage }
+        return snapshot.document(id: page.id, title: page.title, image: image)
+    }
+
+    func saveRecognition(_ document: ReadingDocument, for page: SavedPage, language: String, scope: String) throws {
+        guard let image = document.paragraphs.first(where: { $0.type == .image })?.imageData,
+              Self.digest(image) == page.imageHash else { throw Failure.invalidPage }
+        let directory = try directory(scope: scope, create: false)
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        let bytes = try encoder.encode(Snapshot(document: document))
+        guard bytes.count <= 2 * 1_024 * 1_024 else { throw Failure.oversizedPage }
+        let digest = Self.digest(bytes)
+        try write(bytes, to: directory.appendingPathComponent(digest + ".page"))
+        try write(encoder.encode(Recognition(version: 1, imageHash: page.imageHash, language: language,
+            snapshotHash: digest)), to: directory.appendingPathComponent(page.id + ".ocr"))
     }
 
     func checkpoint(pageID: String, scope: String) throws -> Checkpoint? {

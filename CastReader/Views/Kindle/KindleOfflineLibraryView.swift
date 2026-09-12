@@ -8,7 +8,10 @@ struct KindleOfflineLibraryView: View {
     @ObservedObject private var auth = AuthService.shared
     @State private var books: [KindleOfflineBook] = []
     @State private var error: String?
+    let store: KindleOfflineBookStore
     private var scope: String? { KindleOfflineContext.currentScope }
+
+    init(store: KindleOfflineBookStore = .shared) { self.store = store }
 
     var body: some View {
         List {
@@ -20,7 +23,7 @@ struct KindleOfflineLibraryView: View {
             if let scope {
                 ForEach(books) { book in
                     NavigationLink {
-                        KindleOfflineBookReaderView(book: book, scope: scope)
+                        KindleOfflineBookReaderView(book: book, scope: scope, store: store)
                     } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(book.title).font(.headline)
@@ -38,7 +41,7 @@ struct KindleOfflineLibraryView: View {
             books = []; error = nil
             guard let scope else { error = "请先连接 Kindle 账号。"; return }
             do {
-                let result = try await KindleOfflineBookStore.shared.list(scope: scope)
+                let result = try await store.list(scope: scope)
                 guard scope == self.scope else { return }
                 books = result
             } catch { self.error = "本机书籍列表读取失败，已保存的文件仍保留。" }
@@ -52,6 +55,8 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     @Published private(set) var document: ReadingDocument?
     @Published private(set) var pageIndex = 0
     @Published private(set) var loading = false
+    @Published private(set) var preparingSpeech = false
+    private(set) var recognitionCount = 0
     @Published private(set) var error: String?
     @Published var voiceID = ""
     @Published private(set) var voices: [SystemSpeechVoice] = []
@@ -59,6 +64,15 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     private let scopeValidator: @MainActor () -> Bool
     private let scope: String
     private let store: KindleOfflineBookStore
+    private let recognizer: any KindleOfflineRecognizing
+    private struct RecognitionTask {
+        let id: UUID
+        let task: Task<ReadingDocument, Error>
+    }
+    private var recognitionTasks: [Int: RecognitionTask] = [:]
+    private var preparationTask: Task<Void, Never>?
+    private var playbackRequest = UUID()
+    private var pendingResume: KindleOfflineBook.ReadingPosition?
     private var generation = UUID()
     private var advancing = false
     private var closed = false
@@ -67,9 +81,11 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     private var observers: Set<AnyCancellable> = []
 
     init(book: KindleOfflineBook, scope: String, store: KindleOfflineBookStore = .shared,
-         speech: SystemSpeechPlaybackService? = nil, scopeValidator: (@MainActor () -> Bool)? = nil) {
+         speech: SystemSpeechPlaybackService? = nil, scopeValidator: (@MainActor () -> Bool)? = nil,
+         recognizer: (any KindleOfflineRecognizing)? = nil) {
         self.book = book; self.scope = scope; self.store = store
         self.speech = speech ?? SystemSpeechPlaybackService()
+        self.recognizer = recognizer ?? KindleOfflineOCRService()
         self.scopeValidator = scopeValidator ?? { scope == KindleOfflineContext.currentScope }
         AuthService.shared.$account.sink { [weak self] _ in self?.validateScope() }.store(in: &observers)
         KindleLibraryStore.shared.objectWillChange.sink { [weak self] _ in
@@ -93,27 +109,119 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             voiceID = voices.first(where: { $0.id == book.readingPosition.voiceID })?.id ?? voices.first?.id ?? ""
             speech.connectPlayback(title: book.title)
             speech.onCheckpoint = { [weak self] unit, _ in self?.checkpoint(unit) }
+            speech.onPlayRequested = { [weak self] in self?.play() }
+            speech.onPlaybackInterrupted = { [weak self] in self?.cancelPreparation() }
             await loadPage(min(book.readingPosition.page, max(0, book.pages.count - 1)), resume: book.readingPosition, automatically: false)
         } catch { self.error = "书籍索引读取失败。" }
     }
 
-    func play() {
-        guard scopeIsCurrent, !closed, !loading else { validateScope(); return }
-        if speech.units.isEmpty || speech.state == .finished && pageIndex + 1 < book.pages.count {
-            Task {
+    func play() { beginPlayback(automatically: false) }
+
+    func pause() {
+        cancelPreparation()
+        speech.pause()
+    }
+
+    private func cancelPreparation() {
+        playbackRequest = UUID()
+        preparationTask?.cancel(); preparationTask = nil
+        recognitionTasks.values.forEach { $0.task.cancel() }; recognitionTasks.removeAll()
+        preparingSpeech = false
+    }
+
+    private func beginPlayback(automatically: Bool) {
+        guard scopeIsCurrent, !closed, !loading, !preparingSpeech else { validateScope(); return }
+        if automatically {
+            guard speech.canContinueAutomatically else { return }
+        } else { speech.prepareForUserPlayback() }
+        if !speech.units.isEmpty, !(speech.state == .finished && pageIndex + 1 < book.pages.count) {
+            if automatically { speech.playAutomatically() } else { speech.play() }
+            prefetchNextPage()
+            return
+        }
+        let request = UUID(); playbackRequest = request
+        preparingSpeech = true; error = nil
+        preparationTask = Task { [weak self] in
+            guard let self else { return }
+            defer { if self.playbackRequest == request { self.preparingSpeech = false; self.preparationTask = nil } }
+            do {
                 if self.speech.state == .finished, self.pageIndex + 1 < self.book.pages.count {
                     await self.loadPage(self.pageIndex + 1, resume: nil, automatically: false)
                 }
-                while self.speech.units.isEmpty, !self.closed, self.scopeIsCurrent, self.pageIndex + 1 < self.book.pages.count {
-                    let oldPage = self.pageIndex
-                    await self.loadPage(oldPage + 1, resume: nil, automatically: false)
-                    if self.pageIndex == oldPage { return }
+                while !Task.isCancelled, self.playbackRequest == request, !self.closed, self.scopeIsCurrent {
+                    let index = self.pageIndex
+                    let doc = try await self.recognizedPage(at: index)
+                    try Task.checkCancellation()
+                    guard self.playbackRequest == request, self.pageIndex == index, self.scopeIsCurrent,
+                          self.speech.canContinueAutomatically else { return }
+                    self.installDocument(doc, resume: self.pendingResume)
+                    if !self.speech.units.isEmpty {
+                        self.speech.playAutomatically()
+                        self.prefetchNextPage()
+                        return
+                    }
+                    guard index + 1 < self.book.pages.count else { self.error = "这一页没有可朗读文字。"; return }
+                    await self.loadPage(index + 1, resume: nil, automatically: false)
+                    guard self.pageIndex != index else { return }
                 }
-                if !self.speech.units.isEmpty, !self.closed, self.scopeIsCurrent { self.speech.play() }
+            } catch is CancellationError {
+                // Pause, page change and closing never start speech after OCR returns.
+            } catch {
+                if self.playbackRequest == request, !self.closed {
+                    self.speech.stop()
+                    self.error = "这一页文字识别未完成，图片已保存在手机。请点击播放重试。"
+                }
             }
-            return
         }
-        speech.play()
+    }
+
+    private func recognizedPage(at index: Int) async throws -> ReadingDocument {
+        if let task = recognitionTasks[index] { return try await task.task.value }
+        let id = UUID()
+        let task = Task { @MainActor [self] in
+            if let cached = try await store.cachedSpeechPage(book: book, ordinal: index, scope: scope) { return cached }
+            let raw = try await store.openPage(book: book, ordinal: index, scope: scope)
+            try Task.checkCancellation()
+            guard scopeIsCurrent, !closed else { throw CancellationError() }
+            recognitionCount += 1
+            let recognized = try await recognizer.recognize(raw, sourceWordCount: book.pages[index].sourceWordCount)
+            try Task.checkCancellation()
+            guard scopeIsCurrent, !closed else { throw CancellationError() }
+            try await store.saveSpeechPage(recognized, book: book, ordinal: index, scope: scope)
+            return recognized
+        }
+        recognitionTasks[index] = RecognitionTask(id: id, task: task)
+        do { return try await task.value }
+        catch {
+            if recognitionTasks[index]?.id == id { recognitionTasks.removeValue(forKey: index) }
+            throw error
+        }
+    }
+
+    private func prefetchNextPage() {
+        guard speech.state == .speaking || speech.state == .preparing, pageIndex + 1 < book.pages.count else { return }
+        let next = pageIndex + 1
+        let request = playbackRequest
+        for index in Array(recognitionTasks.keys) where index != pageIndex && index != next {
+            recognitionTasks.removeValue(forKey: index)?.task.cancel()
+        }
+        // A one-page lookahead begins only after a user starts listening.
+        Task { [weak self] in
+            guard let self, !self.closed, self.playbackRequest == request, self.scopeIsCurrent,
+                  self.speech.canContinueAutomatically,
+                  self.speech.state == .speaking || self.speech.state == .preparing else { return }
+            _ = try? await self.recognizedPage(at: next)
+        }
+    }
+
+    private func installDocument(_ doc: ReadingDocument, resume: KindleOfflineBook.ReadingPosition?) {
+        document = doc
+        let units = doc.paragraphs.filter(\.type.isReadable).flatMap { SystemSpeechTextPlan.units(paragraphID: $0.id, text: $0.text) }
+        speech.load(units, voiceID: voiceID)
+        if let resume, let sentence = units.firstIndex(where: { $0.paragraphID == resume.paragraphID && $0.sourceRange.location == resume.sentenceStart }) {
+            speech.seek(to: sentence, autoplay: false)
+        }
+        if !units.isEmpty { pendingResume = nil }
     }
 
     func changeVoice(_ id: String) {
@@ -123,11 +231,13 @@ final class KindleOfflineBookReaderModel: ObservableObject {
 
     func selectPage(_ index: Int) {
         guard book.pages.indices.contains(index), !loading else { return }
+        cancelPreparation()
         Task { await loadPage(index, resume: nil, automatically: false) }
     }
 
     func close() {
         guard !closed else { return }
+        cancelPreparation()
         speech.closePlayback()
         closed = true
         generation = UUID()
@@ -144,23 +254,21 @@ final class KindleOfflineBookReaderModel: ObservableObject {
         speech.stop()
         defer { if generation == run { loading = false; advancing = false } }
         do {
-            let doc = try await store.openPage(book: book, ordinal: index, scope: scope)
+            let cached = try await store.cachedSpeechPage(book: book, ordinal: index, scope: scope)
+            let doc: ReadingDocument
+            if let cached { doc = cached }
+            else { doc = try await store.openPage(book: book, ordinal: index, scope: scope) }
             guard generation == run, !closed, scopeIsCurrent else { return }
-            document = doc
             pageIndex = index
-            let units = doc.paragraphs.filter(\.type.isReadable).flatMap { SystemSpeechTextPlan.units(paragraphID: $0.id, text: $0.text) }
-            speech.load(units, voiceID: voiceID)
-            if let resume, let sentence = units.firstIndex(where: { $0.paragraphID == resume.paragraphID && $0.sourceRange.location == resume.sentenceStart }) {
-                speech.seek(to: sentence, autoplay: false)
-            }
+            pendingResume = resume
+            installDocument(doc, resume: resume)
+            let units = speech.units
             error = nil
             loading = false
             if let unit = units.first { checkpoint(units.indices.contains(speech.currentUnitIndex) ? units[speech.currentUnitIndex] : unit) }
-            else { saveCursor(paragraphID: 0, sentenceStart: 0) }
+            else { saveCursor(paragraphID: resume?.paragraphID ?? (book.pages[index].requiresOCR == true ? 1 : 0), sentenceStart: resume?.sentenceStart ?? 0) }
             if automatically, speech.canContinueAutomatically {
-                if units.isEmpty {
-                    await loadPage(index + 1, resume: nil, automatically: true)
-                } else { speech.playAutomatically() }
+                beginPlayback(automatically: true)
             }
         } catch { self.error = "这一页文件缺失或损坏，请联网修复下载。其他已保存页面仍可阅读。" }
     }
@@ -198,8 +306,8 @@ final class KindleOfflineBookReaderModel: ObservableObject {
 @MainActor
 struct KindleOfflineBookReaderView: View {
     @StateObject private var model: KindleOfflineBookReaderModel
-    init(book: KindleOfflineBook, scope: String) {
-        _model = StateObject(wrappedValue: KindleOfflineBookReaderModel(book: book, scope: scope))
+    init(book: KindleOfflineBook, scope: String, store: KindleOfflineBookStore = .shared) {
+        _model = StateObject(wrappedValue: KindleOfflineBookReaderModel(book: book, scope: scope, store: store))
     }
     var body: some View {
         KindleOfflineBookReaderContent(model: model, speech: model.speech)
@@ -236,12 +344,12 @@ private struct KindleOfflineBookReaderContent: View {
                     .disabled(model.pageIndex + 1 >= model.book.pages.count || model.loading)
             }
             HStack {
-                Button(speech.state == .speaking || speech.state == .preparing ? "暂停" : "播放") {
-                    if speech.state == .speaking || speech.state == .preparing { speech.pause() }
+                Button(model.preparingSpeech || speech.state == .speaking || speech.state == .preparing ? "暂停" : "播放") {
+                    if model.preparingSpeech || speech.state == .speaking || speech.state == .preparing { model.pause() }
                     else { model.play() }
                 }.accessibilityIdentifier("offlineBookPlay")
-                Button("上一句") { speech.seek(to: max(0, speech.currentUnitIndex - 1), autoplay: false) }
-                Button("下一句") { speech.seek(to: speech.currentUnitIndex + 1, autoplay: false) }
+                Button("上一句") { model.pause(); speech.seek(to: max(0, speech.currentUnitIndex - 1), autoplay: false) }.disabled(speech.units.isEmpty)
+                Button("下一句") { model.pause(); speech.seek(to: speech.currentUnitIndex + 1, autoplay: false) }.disabled(speech.units.isEmpty)
                 ReaderMoreButton()
             }.buttonStyle(.bordered)
             Picker("本机声音", selection: $model.voiceID) {
@@ -256,6 +364,7 @@ private struct KindleOfflineBookReaderContent: View {
             if let error = model.error { Text(error).font(.footnote).foregroundStyle(.red) }
             if speech.errorCode != nil { Text("系统朗读暂时不可用，请切换本机声音后重试。").font(.footnote).foregroundStyle(.red) }
             if model.loading { ProgressView("正在读取本机页面…") }
+            if model.preparingSpeech { ProgressView("正在本机识别文字…") }
             if let document = model.document {
                 ScrollViewReader { proxy in
                     ScrollView {
@@ -296,6 +405,8 @@ private struct KindleOfflineBookReaderContent: View {
             Button("取消", role: .cancel) {}
         } message: { Text("1 – \(model.book.pages.count)") }
         .onChange(of: speech.state) { _ in saveDiagnostic() }
+        .onChange(of: model.loading) { _ in saveDiagnostic() }
+        .onChange(of: model.preparingSpeech) { _ in saveDiagnostic() }
         .onChange(of: speech.callbackCount) { count in if count % 10 == 0 { saveDiagnostic() } }
         .onChange(of: scenePhase) { _ in saveDiagnostic() }
     }
@@ -313,15 +424,17 @@ private struct KindleOfflineBookReaderContent: View {
 
     private func saveDiagnostic() {
         #if DEBUG
-        let record: [String: Any] = ["version": 1, "bookID": model.book.id,
+        let record: [String: Any] = ["version": 1, "bookID": model.book.id, "generation": model.book.generation.uuidString,
             "complete": model.book.status == .complete, "savedPages": model.book.pages.count,
             "page": model.pageIndex, "unit": speech.currentUnitIndex,
             "state": speech.state.rawValue, "rangeCallbacks": speech.callbackCount,
+            "recognitionCount": model.recognitionCount, "preparingSpeech": model.preparingSpeech,
             "firstSpeechMilliseconds": speech.firstSpeechMilliseconds ?? -1,
             "voiceID": model.voiceID, "networkHint": network.isOnline,
             "scene": scenePhase == .active ? "active" : "background",
             "errorCode": speech.errorCode ?? ""]
-        guard let data = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]),
+        guard JSONSerialization.isValidJSONObject(record),
+              let data = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]),
               let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
         try? data.write(to: root.appendingPathComponent("kindle-offline-book-speech.json"), options: .atomic)
         #endif

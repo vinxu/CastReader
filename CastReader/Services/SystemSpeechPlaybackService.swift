@@ -100,6 +100,8 @@ final class SystemSpeechPlaybackService: ObservableObject {
     private(set) var units: [SystemSpeechUnit] = []
     private(set) var generation = UUID()
     var onCheckpoint: ((SystemSpeechUnit, NSRange?) -> Void)?
+    var onPlayRequested: (() -> Void)?
+    var onPlaybackInterrupted: (() -> Void)?
 
     private let driver: any SystemSpeechDriving
     private let now: () -> TimeInterval
@@ -139,8 +141,11 @@ final class SystemSpeechPlaybackService: ObservableObject {
         guard let audio else { return }
         if let audioToken, audio.isPlaybackSessionActive(audioToken) { return }
         audioToken = audio.attachSystemSpeech(.init(title: playbackTitle,
-            play: Self.onMain { [weak self] in self?.play() }, pause: Self.onMain { [weak self] in self?.pause() },
-            stop: Self.onMain { [weak self] in self?.stop() },
+            play: Self.onMain { [weak self] in
+                guard let self else { return }
+                if let action = self.onPlayRequested { action() } else { self.play() }
+            }, pause: Self.onMain { [weak self] in self?.onPlaybackInterrupted?(); self?.pause() },
+            stop: Self.onMain { [weak self] in self?.onPlaybackInterrupted?(); self?.stop() },
             next: Self.onMain { [weak self] in guard let self else { return }; self.seek(to: self.currentUnitIndex + 1, autoplay: true) },
             previous: Self.onMain { [weak self] in guard let self else { return }; self.seek(to: max(0, self.currentUnitIndex - 1), autoplay: true) }))
     }
@@ -194,6 +199,12 @@ final class SystemSpeechPlaybackService: ObservableObject {
             return
         }
         begin(at: state == .finished ? 0 : currentUnitIndex)
+    }
+
+    func prepareForUserPlayback() {
+        claimPlaybackIfNeeded()
+        audio?.sleepTimer.resumeByUser()
+        if units.isEmpty { state = .preparing }
     }
 
     /// Page continuation is never a user gesture: it must not reclaim an
