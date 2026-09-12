@@ -124,6 +124,9 @@ struct KindleBookView: View {
     @StateObject private var model: KindleBookViewModel
     @State private var refocusTask: Task<Void, Never>?
     @State private var readerSurfaceSize: CGSize = .zero
+    #if DEBUG
+    @State private var showOfflineDiagnostics = false
+    #endif
 
     init(book: KindleBook) {
         _model = StateObject(wrappedValue: KindleBookViewModel(book: book))
@@ -209,6 +212,9 @@ struct KindleBookView: View {
                 changeFont: { model.changeReaderFont(by: $0) }
             )
         }
+        #if DEBUG
+        .sheet(isPresented: $showOfflineDiagnostics) { KindleOfflineDiagnosticsView(model: model) }
+        #endif
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -531,6 +537,15 @@ struct KindleBookView: View {
                 .foregroundColor(AppTheme.foreground)
 
             Spacer(minLength: 8)
+
+            #if DEBUG
+            Button {
+                model.prepareOfflineDiagnostics()
+                showOfflineDiagnostics = true
+            } label: { Image(systemName: "flask").frame(width: 32, height: 34) }
+            .accessibilityLabel("离线能力诊断")
+            .accessibilityIdentifier("kindleOfflineDiagnostics")
+            #endif
 
             HStack(spacing: 2) {
                 kindleModeButton(.read, title: AppLocalized("朗读"))
@@ -2120,6 +2135,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var readingSettingsSessionActive = false
     private var readingSettingsCloseInProgress = false
     #if DEBUG
+    private let offlineProbeSession = KindleOfflineProbeSession()
+    private var offlineDiagnosticPageKey: String?
     @Published private var debugPreparedHeldPageKey: String?
     var debugHeldPageNavigation: String {
         guard let held = heldPageForManualNavigation, let target = debugPreparedHeldPageKey else { return "none" }
@@ -7781,6 +7798,48 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         KindleRunLog.write("KINDLE page turn stop old-playback reason=\(reason)")
     }
+
+    #if DEBUG
+    func prepareOfflineDiagnostics() {
+        cancelInFlightProcessingForManualPageTurn(reason: "offline-diagnostic")
+        stopPlaybackForPageTurn(reason: "offline-diagnostic")
+        stopFollowing()
+    }
+
+    func captureOfflineDiagnosticPage() async throws -> ReadingDocument {
+        guard !isPreparing else { throw KindleBookError.busy }
+        prepareOfflineDiagnostics()
+        isPreparing = true
+        defer { isPreparing = false }
+        let generation = readerControlsNavigationGeneration
+        _ = try await ensureCaptureScriptInstalled(reason: "offline-diagnostic")
+        try await waitForPageReady()
+        try await waitForKindleImageStable()
+        let page = try await captureVisiblePage(pageIndex: 0)
+        guard generation == readerControlsNavigationGeneration else { throw CancellationError() }
+        offlineDiagnosticPageKey = page.key
+        return makeDocument(from: [page])
+    }
+
+    func saveCurrentOfflinePage() async throws -> KindleOfflinePageStore.SavedPage {
+        guard let scope = KindleOfflineContext.currentScope,
+              let boundary = AccountContentIsolation.captureBoundaryToken() else { throw KindleBookError.invalidPayload }
+        let document = try await captureOfflineDiagnosticPage()
+        guard AccountContentIsolation.isCurrent(boundary), scope == KindleOfflineContext.currentScope,
+              let key = offlineDiagnosticPageKey else { throw CancellationError() }
+        let saved = try await KindleOfflinePageStore.shared.save(document: document, pageKey: book.id + ":" + key, scope: scope)
+        guard AccountContentIsolation.isCurrent(boundary), scope == KindleOfflineContext.currentScope else { throw CancellationError() }
+        return saved
+    }
+
+    func runOfflinePageFlipDiagnostic(_ command: String) async throws -> String {
+        guard KindleStorefront.matches(url: webView.url) else { throw KindleBookError.invalidPayload }
+        return try await offlineProbeSession.run(command) { [weak self] script in
+            guard let self else { throw CancellationError() }
+            return try await self.evaluate(script)
+        }
+    }
+    #endif
 
     func pauseReadPlayback() {
         guard mode == .read else { return }

@@ -1,0 +1,85 @@
+{
+  "recordedAt": "2026-09-12T23:20:23.266553+08:00",
+  "baseline": "5f863c4ba9692ab51c9cf1ee318cad63a17d2c92",
+  "stageCompletion": {
+    "P0": false,
+    "P1": false,
+    "P2": false,
+    "P3": false,
+    "P4": false
+  },
+  "checks": {
+    "selectedRegression": {
+      "passed": true,
+      "tests": 165,
+      "failures": 0,
+      "log": "/tmp/CastReaderKindleOfflineP1Regression.log"
+    },
+    "audioSessionRegression": {
+      "passed": true,
+      "tests": 32,
+      "failures": 0,
+      "log": "/tmp/CastReaderKindleOfflineSessionTests.log"
+    },
+    "deviceV4": {
+      "passed": true,
+      "log": "/tmp/CastReaderKindleOfflineDeviceBuild-v4.log"
+    },
+    "releaseCompile": {
+      "passed": true,
+      "configuration": "Release",
+      "signing": false,
+      "log": "/tmp/CastReaderKindleOfflineReleaseBuild.log"
+    }
+  },
+  "physicalDevice": {
+    "model": "iPhone 15 Pro Max",
+    "savedPage": {
+      "confirmedPages": 1,
+      "bytes": 531126,
+      "ocrParagraphs": 7,
+      "ocrWords": 209,
+      "imageDigestValid": true,
+      "snapshotDigestValid": true
+    },
+    "speechV3": {
+      "state": "speaking",
+      "unit": 6,
+      "rangeCallbacks": 110,
+      "firstSpeechMilliseconds": 50,
+      "voiceID": "com.apple.voice.super-compact.en-US.Samantha",
+      "networkIsOnlineHint": true,
+      "errorCode": "",
+      "syntheticFixture": false,
+      "version": 1
+    },
+    "shortBackgroundV4": {
+      "state": "finished",
+      "unit": 10,
+      "rangeCallbacks": 91,
+      "firstSpeechMilliseconds": 50,
+      "voiceID": "com.apple.voice.super-compact.en-US.Samantha",
+      "networkIsOnlineHint": true,
+      "errorCode": "",
+      "syntheticFixture": false,
+      "version": 1
+    },
+    "coldResumeV4": {
+      "sentenceNumber": 8,
+      "totalSentences": 11,
+      "paragraphID": 4,
+      "sentenceStart": 0,
+      "restoredPaused": true,
+      "initialScrollVerifiedByUI": true
+    },
+    "strictOfflineColdStart": "pending",
+    "longLockScreen": "pending"
+  },
+  "sourceSHA256": {
+    "CastReader/Services/SystemSpeechPlaybackService.swift": "6ca41fabfd4cdecdf066935d415043c6c7f57255b905b5d201ef24296f436ead",
+    "CastReader/Services/AudioPlayerService.swift": "889021599f70a992a2399bbe1553177e5ffc2ecc97562ea60c7f41567bb97c55",
+    "CastReader/Services/KindleOfflinePageStore.swift": "0795b922d19dce0dc7627e5d06247a1673f2a6aefc07898821fbc1aa0f9ce63a",
+    "CastReader/Views/Kindle/KindleOfflinePageListView.swift": "13586315bf00fabd13d173ea2f75f326343f89db3cfbde9c5e6eea2f7f7fa7ab",
+    "CastReader/Views/Kindle/KindleBookView.swift": "14b2e2e225897d48bd7f4cb80cc85cfd6c71700535af4709a48bf3b30910a770"
+  }
+}

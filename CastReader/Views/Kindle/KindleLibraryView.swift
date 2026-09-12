@@ -30,6 +30,10 @@ struct KindleLibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 controls
+                #if DEBUG
+                NavigationLink("已保存页面 · 离线测试") { KindleOfflinePageListView() }
+                    .accessibilityIdentifier("kindleOfflineSavedPages")
+                #endif
                 if visibleBooks.isEmpty {
                     emptyState
                 } else {

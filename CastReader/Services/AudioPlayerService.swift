@@ -15,6 +15,16 @@ enum AudioPlaybackOwner: String, Equatable, Sendable {
     case readAloud
     case explain
     case kindleBackgroundProbe
+    case systemSpeech
+}
+
+struct AudioExternalPlaybackControls {
+    let title: String
+    let play: () -> Void
+    let pause: () -> Void
+    let stop: () -> Void
+    let next: () -> Void
+    let previous: () -> Void
 }
 
 struct AudioPlaybackSessionToken: Equatable, Hashable, Sendable {
@@ -313,6 +323,52 @@ struct AudioPlaybackOwnershipState: Equatable {
 class AudioPlayerService: NSObject, ObservableObject {
     static let shared = AudioPlayerService()
     let sleepTimer = PlaybackSleepTimer()
+    private var externalPlayback: (token: AudioPlaybackSessionToken, controls: AudioExternalPlaybackControls)?
+
+    /// Shares ownership, interruption, sleep and remote controls with system
+    /// speech while keeping AVPlayer's segment/timestamp pipeline intact.
+    func attachSystemSpeech(_ controls: AudioExternalPlaybackControls) -> AudioPlaybackSessionToken {
+        let token = claimPlaybackSession(owner: .systemSpeech)
+        _ = clearQueue(session: token)
+        externalPlayback = (token, controls)
+        cancelArtworkLoad()
+        currentBookId = nil
+        currentBookTitle = nil
+        currentChapterTitle = nil
+        currentCaption = nil
+        currentCoverUrl = nil
+        currentCoverImage = nil
+        setExternalSeekCommands(enabled: false)
+        updateNowPlayingInfo()
+        return token
+    }
+
+    func publishSystemSpeech(token: AudioPlaybackSessionToken, speaking: Bool, preparing: Bool) {
+        guard externalPlayback?.token == token, isPlaybackSessionActive(token) else { return }
+        isPlaying = speaking
+        isBuffering = preparing
+        updateNowPlayingInfo()
+    }
+
+    private func detachExternalPlayback() {
+        guard let previous = externalPlayback else { return }
+        externalPlayback = nil
+        previous.controls.stop()
+        setExternalSeekCommands(enabled: true)
+    }
+
+    func stopSystemSpeechForLibraryBoundary() {
+        guard externalPlayback != nil else { return }
+        stop()
+        clearNowPlayingInfo()
+    }
+
+    private func setExternalSeekCommands(enabled: Bool) {
+        let commands = MPRemoteCommandCenter.shared()
+        commands.skipForwardCommand.isEnabled = enabled
+        commands.skipBackwardCommand.isEnabled = enabled
+        commands.changePlaybackPositionCommand.isEnabled = enabled
+    }
     private var readerAppearanceHold: (id: UUID, session: AudioPlaybackSessionToken?, resume: AudioPlaybackResumeHandle?)?
 
     /// Layout changes must not race a late TTS item or an automatic page turn.
@@ -480,6 +536,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// switches.
     @discardableResult
     func claimPlaybackSession(owner: AudioPlaybackOwner) -> AudioPlaybackSessionToken {
+        detachExternalPlayback()
         suspendQueueForOwnershipChange()
         let token = playbackOwnership.claim(owner)
         ReaderRunLog.write(
@@ -490,6 +547,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     func releasePlaybackSession(_ token: AudioPlaybackSessionToken) {
         guard playbackOwnership.activeSession == token else { return }
+        detachExternalPlayback()
         suspendQueueForOwnershipChange()
         playbackOwnership.release(token)
         ReaderRunLog.write(
@@ -503,6 +561,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     func transferActiveQueueSession(
         to owner: AudioPlaybackOwner
     ) -> AudioPlaybackSessionToken? {
+        guard externalPlayback == nil else { return nil }
         guard let token = playbackOwnership.transferActiveQueue(to: owner) else {
             return nil
         }
@@ -698,7 +757,9 @@ class AudioPlayerService: NSObject, ObservableObject {
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .spokenAudio, options: [.allowAirPlay, .allowBluetoothA2DP])
+            // Playback provides AirPlay/A2DP output implicitly. The explicit
+            // allowAirPlay option is valid only for playAndRecord.
+            try session.setCategory(.playback, mode: .spokenAudio, options: [])
             try session.setActive(true)
 
             // 监听音频中断（来电、其他 app 播放等）
@@ -886,6 +947,15 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     func updateNowPlayingInfo() {
+        if let externalPlayback {
+            // Speech callbacks provide text ranges, not a reliable duration.
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+                MPMediaItemPropertyTitle: externalPlayback.controls.title,
+                MPMediaItemPropertyArtist: "CastReader",
+                MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0
+            ]
+            return
+        }
         var nowPlayingInfo = [String: Any]()
 
         // Title - use chapter title if available, otherwise book title
@@ -1438,6 +1508,11 @@ class AudioPlayerService: NSObject, ObservableObject {
     @discardableResult
     func play(session token: AudioPlaybackSessionToken? = nil) -> Bool {
         guard permitsAutomaticPlayback() else { return false }
+        if let externalPlayback {
+            guard token == externalPlayback.token, isPlaybackSessionActive(externalPlayback.token) else { return false }
+            externalPlayback.controls.play()
+            return true
+        }
         guard playbackOwnership.permitsPlayback(requestedBy: token) else {
             return false
         }
@@ -1495,6 +1570,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private func pauseRegardlessOfOwnership(recordsUserIntent: Bool = true) {
+        externalPlayback?.controls.pause()
         if recordsUserIntent { isExplicitlyPaused = true }
         playbackRequested = false
         player?.pause()
@@ -1518,6 +1594,11 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     @discardableResult
     func pause(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        if let externalPlayback {
+            guard token == externalPlayback.token, isPlaybackSessionActive(externalPlayback.token) else { return false }
+            pauseRegardlessOfOwnership()
+            return true
+        }
         guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
         pauseRegardlessOfOwnership()
         return true
@@ -1535,6 +1616,12 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     @discardableResult
     func togglePlayPause(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        if let externalPlayback {
+            guard token == externalPlayback.token, isPlaybackSessionActive(externalPlayback.token) else { return false }
+            if isPlaying || isBuffering { return pause(session: token) }
+            sleepTimer.resumeByUser()
+            return play(session: token)
+        }
         guard playbackOwnership.permitsPlayback(requestedBy: token) else {
             return false
         }
@@ -1579,6 +1666,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private func stop(preservingPrestagedIDs: Set<String>) {
+        detachExternalPlayback()
         print("🔊 stop(): Stopping playback, player=\(player != nil ? "exists" : "nil")")
         removeTimeObserver()
         player?.pause()
@@ -1626,6 +1714,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         to time: Double,
         session token: AudioPlaybackSessionToken? = nil
     ) -> Bool {
+        guard externalPlayback == nil else { return false }
         guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
         guard time.isFinite else { return false }
         if currentItemDrained, duration.isFinite, duration > 0, time < duration,
@@ -1661,6 +1750,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     func setPlaybackRate(_ rate: Float) {
+        guard externalPlayback == nil else { return }
         playbackRate = rate
         if isPlaying, permitsAutomaticPlayback() {
             player?.playImmediately(atRate: rate)
@@ -1692,6 +1782,11 @@ class AudioPlayerService: NSObject, ObservableObject {
         automatically: Bool = false
     ) -> Bool {
         guard permitsAutomaticPlayback() else { return false }
+        if let externalPlayback {
+            guard !automatically, token == externalPlayback.token, isPlaybackSessionActive(externalPlayback.token) else { return false }
+            externalPlayback.controls.next()
+            return true
+        }
         guard !hasTerminalPlaybackFailure else { return false }
         let effectiveSession: AudioPlaybackSessionToken?
         if let token {
@@ -1755,6 +1850,11 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     @discardableResult
     func previousSegment(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        if let externalPlayback {
+            guard token == externalPlayback.token, isPlaybackSessionActive(externalPlayback.token), permitsAutomaticPlayback() else { return false }
+            externalPlayback.controls.previous()
+            return true
+        }
         guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
         if currentSegmentIndex > 0 {
             return playSegment(at: currentSegmentIndex - 1)
@@ -2087,6 +2187,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private func syncPlaybackStateFromPlayer(reason: String) {
+        guard externalPlayback == nil else { return }
         guard let player else {
             if isPlaying {
                 isPlaying = false

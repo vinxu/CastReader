@@ -22,4 +22,4 @@ git ls-files --others --exclude-standard CastReader CastReaderTests CastReaderUI
   while IFS= read -r integration_file; do shasum -a 256 "$integration_file"; done
 if [ "${1:---check}" = --check ]; then exit 0; fi
 if [ "$1" != --device ]; then printf '%s\n' 'Usage: bash scripts/build-reader-more-integration.sh [--check|--device]' >&2; exit 2; fi
-xcodebuild -workspace "$integration_root/CastReader.xcworkspace" -scheme CastReader   -destination 'platform=iOS,id=00008130-001C64800C60001C'   -derivedDataPath /tmp/CastReaderReleaseIntegratedDevice build-for-testing   DEVELOPMENT_TEAM=KQW6UNZE8J -allowProvisioningUpdates
+xcodebuild -workspace "$integration_root/CastReader.xcworkspace" -scheme CastReader   -destination 'platform=iOS,id=00008130-001C64800C60001C'   -derivedDataPath "${CASTREADER_DEVICE_DERIVED_DATA:-/tmp/CastReaderReleaseIntegratedDevice}" build-for-testing   DEVELOPMENT_TEAM=KQW6UNZE8J -allowProvisioningUpdates

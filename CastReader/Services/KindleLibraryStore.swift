@@ -97,6 +97,23 @@ final class KindleLibraryStore: ObservableObject {
         KindleStorefront.entry(id: boundStorefrontID) ?? .us
     }
 
+    /// Local binding identity survives relaunches but is retired on explicit
+    /// disconnect or a failed-session rebind, including accounts without email.
+    var offlineContentBindingID: String? {
+        guard hasActiveStorage else { return nil }
+        let key = storageKey("kindle.offline.binding.v1.\(boundStorefrontID)")
+        if let existing = defaults.string(forKey: key), UUID(uuidString: existing) != nil { return existing }
+        guard hasConnected else { return nil }
+        let value = UUID().uuidString
+        defaults.set(value, forKey: key)
+        return value
+    }
+
+    private func retireOfflineContentBinding() {
+        AudioPlayerService.shared.stopSystemSpeechForLibraryBoundary()
+        defaults.removeObject(forKey: storageKey("kindle.offline.binding.v1.\(boundStorefrontID)"))
+    }
+
     var orderedStorefrontCandidates: [KindleStorefront] {
         let selected = AppLanguageManager.shared.selectedLanguage
         let language = selected == .system
@@ -369,6 +386,7 @@ final class KindleLibraryStore: ObservableObject {
     }
 
     func disconnectLocalCache() {
+        retireOfflineContentBinding()
         books.removeAll()
         hasConnected = false
         hasAuthoritativeStorefrontBinding = false
@@ -391,6 +409,7 @@ final class KindleLibraryStore: ObservableObject {
     /// the anchors are keyed by book id, so reading positions survive a failure
     /// the user did not ask for.
     func markSessionExpiredForRebind() async {
+        retireOfflineContentBinding()
         let expiredStorefront = boundStorefront
         books.removeAll()
         hasConnected = false
@@ -554,6 +573,7 @@ final class KindleLibraryStore: ObservableObject {
         let label = account.label?.trimmingCharacters(in: .whitespacesAndNewlines)
         let email = account.email?.trimmingCharacters(in: .whitespacesAndNewlines)
         if let email, !email.isEmpty {
+            if let old = accountEmail, old.lowercased() != email.lowercased() { retireOfflineContentBinding() }
             accountEmail = email
         }
         if let label, !label.isEmpty {
