@@ -473,7 +473,7 @@ struct MainTabView: View {
             requestLibraryConnection(.oreilly, entryPoint: "reader_reconnect")
         }
         .onChange(of: kindleCenter.isPresented) { isPresented in
-            if isPresented { coordinator.close() }
+            if isPresented { coordinator.close(preservingSleepTimer: true) }
         }
         .onChange(of: growthLoop.softOffer?.id) { _ in
             guard let offer = growthLoop.softOffer,
@@ -1216,7 +1216,7 @@ struct MainTabView: View {
            coordinator.session?.id != document.contentSessionKey {
             // Same video, different track: keep the warm document, it is what
             // makes the *next* switch fast.
-            coordinator.close(releasingYouTubeWarmSession: false)
+            coordinator.close(releasingYouTubeWarmSession: false, preservingSleepTimer: true)
         }
         coordinator.open(document, mode: .read, autoplay: false)
         guard let session = coordinator.session,
@@ -1659,7 +1659,7 @@ struct MainTabView: View {
             id: book.id,
             title: book.title,
             sourceKind: .weread,
-            language: Constants.TTS.defaultLanguage,
+            language: book.initialReadingLanguage,
             paragraphs: [],
             sourceURL: book.effectiveReaderURL,
             coverURL: book.coverURL

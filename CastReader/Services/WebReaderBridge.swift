@@ -649,6 +649,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private func requestWeReadUserPage(
         _ direction: LiveWebPageTurnDirection
     ) {
+        if readVM?.isPreparingReadablePage == true { readVM?.pausePlayback() }
         guard !pendingWeReadTurn,
               !pendingWeReadManualTurn,
               !pendingWeReadTOCJump,
@@ -706,6 +707,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         self.explainVM = explainVM
 
         if isWeRead {
+            rememberedReadingLanguage = readVM.document.language
+            readVM.prepareReadableWebPage = { [weak self] in
+                await self?.prepareWeReadOpeningPage() ?? false
+            }
             readVM.onAppReviewReadSessionInvalidated = { [weak self] in
                 guard let self else { return }
                 let shouldSuppressPendingTurn =
@@ -936,6 +941,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 )
                 return
             }
+            if self.livePlatform == .googleBooks, let webView = message.webView {
+                ReaderWebAppearanceCenter.shared.registerReaderFrame(frameInfo, in: webView)
+            }
             self.handle(body)
         }
     }
@@ -1137,6 +1145,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                let right = Self.double(msg.payload["contentRightRatio"]) {
                 onWeReadViewport?(left, right)
             }
+        case "wereadNonTextPage":
+            receiveWeReadNonTextPage()
         case "wereadExtractionState":
             let layouts = Int(Self.double(msg.payload["layouts"]) ?? 0)
             let calls = Int(Self.double(msg.payload["fillTextCalls"]) ?? 0)
@@ -1144,7 +1154,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             let width = Int(Self.double(msg.payload["innerWidth"]) ?? 0)
             let height = Int(Self.double(msg.payload["innerHeight"]) ?? 0)
             ReaderRunLog.write(
-                "WEREAD extraction pending layouts=\(layouts) fillText=\(calls) draws=\(draws) css=\(width)x\(height)"
+                "WEREAD extraction pending layouts=\(layouts) fillText=\(calls) draws=\(draws) css=\(width)x\(height) opening=\(msg.payload["openingPage"] ?? [:])"
             )
         case "wereadLayoutStable":
             finishWeReadLayoutIfStable(msg.payload)
@@ -1414,6 +1424,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func jumpToWeReadTOCEntry(_ entry: WeReadTOCEntry) {
+        if readVM?.isPreparingReadablePage == true { readVM?.pausePlayback() }
         guard isWeRead, didInit, let webView else {
             weReadTOCController?.failJump()
             return
@@ -1508,6 +1519,85 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         if shouldResumeRead, isReadMode { readVM?.start() }
         if shouldResumeExplain, !isReadMode { explainVM?.start() }
         ReaderRunLog.write("WEREAD toc jump failed reason=\(reason)")
+    }
+
+    /// A cover is a navigation surface, not the previous chapter's audio.
+    private func receiveWeReadNonTextPage() {
+        guard isWeRead else { return }
+        finishWeReadEntryRecoveryIfNeeded()
+        let hadText = readVM?.hasReadableWebContent == true
+        if hadText {
+            if isReadMode {
+                readVM?.pausePlayback()
+                readVM?.replaceLiveWebPage([], autoplay: false)
+                explainVM?.stageInactiveLiveWebPage([])
+            } else {
+                explainVM?.replaceLiveWebPage([], autoplay: false)
+                readVM?.stageInactiveLiveWebPage([])
+            }
+        }
+        cancelWeReadContinuousHandoff(reason: "non-text-page")
+        invalidateWeReadPreview(reason: "non-text-page")
+        invalidateWeReadExplainPrefetch(reason: "non-text-page")
+        pendingWeReadTurn = false
+        pendingWeReadManualTurn = false
+        resumeReadAfterWeReadTurn = false
+        resumeExplainAfterWeReadTurn = false
+        pendingWeReadActionID = ""
+        pendingWeReadBoundaryTurn = nil
+        activeWeReadCarry = nil
+        weReadTurnTimeout?.cancel()
+        weReadManualIntentTimeout?.cancel()
+        lastWeReadFingerprint = ""
+        lastWeReadEvidence = nil
+        ReaderRunLog.write("WEREAD non-text surface cleared-stale-page=\(hadText)")
+    }
+
+    private func prepareWeReadOpeningPage() async -> Bool {
+        guard isWeRead, isReadMode, let webView else { return false }
+        let boundary = AccountContentIsolation.captureBoundaryToken()
+        ReaderRunLog.write("WEREAD opening playback requested")
+        var lastProbeState = ""
+        let ready = await WeReadOpeningPlayback.prepare(
+            probe: { [weak self] in
+                guard let self else { return .unavailable }
+                if self.readVM?.hasReadableWebContent == true,
+                   !self.isWeReadInitialPlaybackPending { return .ready }
+                let value = try? await webView.evaluateJavaScript(
+                    "(() => { const r = window.CastReaderWeRead; const s = r?.snapshot?.(); return {...(r?.openingPageState?.() ?? {kind:'waiting'}), fingerprint:s?.fingerprint ?? '', extracted:s?.ready ?? false}; })()"
+                )
+                guard let state = value as? [String: Any] else { return .waiting }
+                let diagnostic = ["kind", "reason", "identity", "fingerprint", "extracted"].map { "\($0)=\(state[$0] ?? "-")" }.joined(separator: " ")
+                if diagnostic != lastProbeState {
+                    lastProbeState = diagnostic
+                    ReaderRunLog.write("WEREAD opening probe \(diagnostic)")
+                }
+                switch state["kind"] as? String {
+                case "cover":
+                    return .cover(state["identity"] as? String ?? "")
+                case "unavailable": return .unavailable
+                default: return .waiting
+                }
+            },
+            advance: { identity in
+                guard let data = try? JSONEncoder().encode(identity),
+                      let json = String(data: data, encoding: .utf8) else { return false }
+                let result = try? await webView.evaluateJavaScript(
+                    "window.CastReaderWeRead?.advanceOpeningPage?.(\(json)) === true"
+                )
+                ReaderRunLog.write("WEREAD opening advance accepted=\((result as? Bool) == true)")
+                return (result as? Bool) == true
+            },
+            allowed: { [weak self] in
+                guard let self else { return false }
+                return self.isReadMode && self.webView === webView &&
+                    !self.pendingWeReadTOCJump &&
+                    AccountContentIsolation.captureBoundaryToken() == boundary &&
+                    AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback()
+            }
+        )
+        ReaderRunLog.write("WEREAD opening playback ready=\(ready)")
+        return ready
     }
 
     /// Commit a canvas page only when the visible-surface fingerprint changed.
@@ -6530,6 +6620,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                   !Task.isCancelled,
                   self.lastWeReadFingerprint.isEmpty,
                   self.webView?.url?.absoluteString == expected else { return }
+            if let webView = self.webView,
+               (try? await webView.evaluateJavaScript(WeReadWebScripts.hasUsableNonTextReaderSurface)) as? Bool == true {
+                guard !Task.isCancelled, webView.url?.absoluteString == expected else { return }
+                self.finishWeReadEntryRecoveryIfNeeded()
+                ReaderRunLog.write("WEREAD entry retained usable cover/appearance without text")
+                return
+            }
+            guard !Task.isCancelled, self.lastWeReadFingerprint.isEmpty,
+                  self.webView?.url?.absoluteString == expected else { return }
             self.webView?.evaluateJavaScript("window.CastReaderWeReadTOC?.resumeDiagnostics?.()") { value, _ in
                 if let value = value as? String {
                     ReaderRunLog.write("WEREAD readiness diagnostic \(value.prefix(1800))")
@@ -6569,6 +6668,19 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     func webView(
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction,
+        preferences: WKWebpagePreferences,
+        decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void
+    ) {
+        if isWeRead { preferences.preferredContentMode = .desktop }
+        // Preserve the existing provider navigation security policy below.
+        self.webView(webView, decidePolicyFor: navigationAction) { policy in
+            decisionHandler(policy, preferences)
+        }
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
     ) {
         guard let livePlatform else {
@@ -6601,6 +6713,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         _ webView: WKWebView,
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
+        ReaderWebAppearanceCenter.shared.resetReaderFrame(in: webView)
         updateHomeValidationReadiness()
     }
 
@@ -6647,6 +6760,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         // Amazon-session snapshot taken from the WeRead side, written into the
         // Kindle probe log so both readers share one timeline. Observation only.
         KindleSessionProbe.logCookies(reason: "weread-didFinish")
+        #if DEBUG
+        Task { @MainActor [weak webView] in
+            guard let webView else { return }
+            for delay: UInt64 in [0, 2_000_000_000] {
+                if delay > 0 { try? await Task.sleep(nanoseconds: delay) }
+                if let snapshot = try? await webView.evaluateJavaScript(ReaderWebAppearanceCenter.presentationProbe) {
+                    ReaderRunLog.write("WEREAD presentation contentMode=\(webView.configuration.defaultWebpagePreferences.preferredContentMode.rawValue) delay=\(delay) snapshot=\(snapshot)")
+                }
+            }
+        }
+        #endif
         // The layout width was fixed before navigation, so revealing the
         // native reader here can no longer expose a second-width flash. Do not
         // keep an opaque app-side cover up while geometry/TTS indexing runs.

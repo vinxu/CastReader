@@ -28,11 +28,20 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed, file: file, line: line)
     }
 
+    private func openReadingSettings(_ app: XCUIApplication) {
+        let appearance = app.buttons["readerAppearanceMenuItem"]
+        if !appearance.exists {
+            app.buttons["readerMoreButton"].tap()
+        }
+        XCTAssertTrue(appearance.waitForExistence(timeout: 5))
+        appearance.tap()
+    }
+
     private func waitForPausedReader(_ app: XCUIApplication) {
         var readySince: Date?
         wait(60) {
             let play = app.buttons["kindleReadPlayPauseButton"]
-            let settings = app.buttons["kindleReadingSettingsButton"]
+            let settings = app.buttons["readerMoreButton"]
             let loading = app.webViews.descendants(matching: .any)
                 .matching(NSPredicate(format: "label == %@", "Loading content")).firstMatch
             // During the reader's presentation iOS can publish controls with
@@ -62,8 +71,8 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
             // After the wait helper chooses No, make one new explicit request;
             // a displayed error is retained and cannot pass this readiness gate.
             if !done.exists, !app.staticTexts["Most Recent Page Read"].exists {
-                let settings = app.buttons["kindleReadingSettingsButton"]
-                if settings.isHittable && settings.isEnabled { settings.tap() }
+                let settings = app.buttons["readerMoreButton"]
+                if settings.isHittable && settings.isEnabled { self.openReadingSettings(app) }
             }
             let ready = done.exists && font.exists && Double(font.label) != nil &&
                 (app.buttons["kindleFontIncrease"].isEnabled || app.buttons["kindleFontDecrease"].isEnabled) &&
@@ -225,7 +234,7 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
             return false
         }
         book.tap()
-        XCTAssertTrue(app.buttons["kindleReadingSettingsButton"].waitForExistence(timeout: 60))
+        XCTAssertTrue(app.buttons["readerMoreButton"].waitForExistence(timeout: 60))
         waitForPausedReader(app)
         app.buttons["kindleModeButton_\(mode)"].tap()
 
@@ -387,9 +396,9 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         wait(90) { play.value as? String == "Playing" }
         snapshot(app, "Kindle-live-portrait-restored")
 
-        let readingSettings = app.buttons["kindleReadingSettingsButton"]
+        let readingSettings = app.buttons["readerMoreButton"]
         wait(60) { readingSettings.isEnabled && readingSettings.isHittable }
-        readingSettings.tap()
+        openReadingSettings(app)
         let font = app.staticTexts["kindleFontValue"]
         waitForReadingSettingsReady(app)
         let initialFont = font.label
@@ -443,9 +452,9 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         XCTAssertTrue(restoredBook.waitForExistence(timeout: 20))
         for _ in 0..<6 where !restoredBook.isHittable { app.swipeUp() }
         restoredBook.tap()
-        XCTAssertTrue(app.buttons["kindleReadingSettingsButton"].waitForExistence(timeout: 60))
+        XCTAssertTrue(app.buttons["readerMoreButton"].waitForExistence(timeout: 60))
         wait(60) { readingSettings.isEnabled && readingSettings.isHittable }
-        readingSettings.tap()
+        openReadingSettings(app)
         waitForReadingSettingsReady(app)
         XCTAssertEqual(font.label, changedFont, "The native font must survive process relaunch")
         XCTAssertNotEqual(skip.value as? String, initialSkip)
@@ -470,7 +479,7 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         app.buttons["kindleMinimizeButton"].tap()
         let settings = app.buttons["settingsGearButton"]
         XCTAssertTrue(settings.waitForExistence(timeout: 10))
-        settings.tap()
+        openReadingSettings(app)
         let version = app.descendants(matching: .any)["settingsAppVersion"].firstMatch
         for _ in 0..<8 where !version.isHittable { app.swipeUp() }
         XCTAssertTrue(version.isHittable)
@@ -494,11 +503,11 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         for _ in 0..<6 where !book.isHittable { app.swipeUp() }
         let bookID = book.identifier
         book.tap()
-        let settings = app.buttons["kindleReadingSettingsButton"]
+        let settings = app.buttons["readerMoreButton"]
         wait(60) { settings.isEnabled && settings.isHittable }
         // Keep this focused on native font commit. Rotation is exercised by
         // the complete read/turn/settings/minimize/relaunch acceptance flow.
-        settings.tap()
+        openReadingSettings(app)
         let font = app.staticTexts["kindleFontValue"]
         waitForReadingSettingsReady(app)
         let before = try XCTUnwrap(Double(font.label))
@@ -519,7 +528,7 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
             wait(30) { app.frame.height > app.frame.width && settings.isEnabled && settings.isHittable }
             snapshot(app, "Kindle-font-portrait-after-change")
         }
-        settings.tap()
+        openReadingSettings(app)
         waitForReadingSettingsReady(app)
         XCTAssertEqual(Double(font.label), target, "Native font must survive closing its settings menu")
         snapshot(app,"Kindle-font-preserved-after-close")
@@ -532,7 +541,7 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         for _ in 0..<6 where !restoredBook.isHittable { app.swipeUp() }
         restoredBook.tap()
         wait(60) { settings.isEnabled && settings.isHittable }
-        settings.tap()
+        openReadingSettings(app)
         waitForReadingSettingsReady(app)
         XCTAssertEqual(Double(font.label), target, "Native font must survive process relaunch")
         snapshot(app,"Kindle-font-preserved-after-relaunch")

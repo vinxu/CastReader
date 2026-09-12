@@ -1302,6 +1302,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     func togglePlayPause() {
+        audio.sleepTimer.resumeByUser()
         liveWebTurnIntentSuspended = false
         if audio.hasTerminalPlaybackFailure {
             recoverPlaybackAfterOwnershipChange()

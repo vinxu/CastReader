@@ -63,6 +63,7 @@ private struct MiniPlayerBar: View {
     }
 
     private func onPlayTap() {
+        audio.sleepTimer.resumeByUser()
         if isFinished {
             if isExplain { explainVM.replay() } else { readVM.start() }
         } else if isExplain {

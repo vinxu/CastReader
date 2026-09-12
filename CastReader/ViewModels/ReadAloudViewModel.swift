@@ -686,6 +686,10 @@ final class ReadAloudViewModel: ObservableObject {
     private var webParagraphs: [ReadingParagraph]? = nil
     private var webLanguage: String? = nil
     private var deferredWebAutoplay = DeferredAutoplayGate()
+    var prepareReadableWebPage: (() async -> Bool)?
+    private var readablePageTask: Task<Void, Never>?
+    var isPreparingReadablePage: Bool { readablePageTask != nil }
+    var hasReadableWebContent: Bool { !readableIndices.isEmpty }
     private var preferredLiveWebStartIndex: Int?
     /// History-restored start position for own-content documents. Consumed by
     /// the first `start()`; a manual paragraph tap (`jump`) simply ignores it.
@@ -1049,7 +1053,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// item from a drained queue.
     var isWaitingForPlayableAudio: Bool {
         guard !isPlaybackPausedByUser, !isPlaying, !isFinished else { return false }
-        if isBuffering { return true }
+        if isBuffering || isPreparingReadablePage { return true }
         return (status.isLoading || status.isStreaming)
             && !audio.hasPlayableAudio
     }
@@ -1363,11 +1367,40 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     deinit {
+        readablePageTask?.cancel()
         generationTask?.cancel()
         listenCapRefreshTask?.cancel()
         accessRetryTask?.cancel()
         prefetchPromotionTask?.cancel()
         prefetchTask?.cancel()
+    }
+
+    private func cancelReadablePagePreparation() {
+        readablePageTask?.cancel()
+        readablePageTask = nil
+    }
+
+    private func prepareOpeningWebPage() -> Bool {
+        guard let prepareReadableWebPage else { return false }
+        guard readablePageTask == nil else { return true }
+        status = .loading
+        readablePageTask = Task { @MainActor [weak self] in
+            let ready = await prepareReadableWebPage()
+            guard !Task.isCancelled, let self else { return }
+            self.readablePageTask = nil
+            guard !self.isPlaybackPausedByUser,
+                  self.audio.sleepTimer.permitsAutomaticPlayback() else {
+                self.status = .pending
+                return
+            }
+            guard ready, self.hasReadableWebContent else {
+                self.status = .error(AppLocalized("无可朗读内容"))
+                return
+            }
+            self.status = .pending
+            self.start()
+        }
+        return true
     }
 
     private func invalidateAccessRetry() {
@@ -2321,6 +2354,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// 退出激活（切到解读模式时调用）：必须停掉生成/预取，否则流式生成的新 segment 经 loadSegment 会自动
     /// 重新 playSegment（首段未播放时），导致「切到解读后朗读还在响」。
     func deactivate() {
+        cancelReadablePagePreparation()
         flushReadingProgress()
         retainReadingCursorForQueueRebuild()
         // The initial quota refresh happens before `activate()`. Invalidate it
@@ -2369,11 +2403,12 @@ final class ReadAloudViewModel: ObservableObject {
     // MARK: - Start / control
 
     func start() {
+        guard audio.sleepTimer.permitsAutomaticPlayback() else { return }
         start(allowAccessRefresh: true)
     }
 
     private func start(allowAccessRefresh: Bool) {
-        guard resumeNotice == nil else { return }
+        guard resumeNotice == nil, readablePageTask == nil else { return }
         isPlaybackPausedByUser = false
         if currentParagraphIndex >= 0, ownsAudioQueue,
            audio.currentSegment != nil || status.isLoading || status.isStreaming {
@@ -2381,7 +2416,10 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         liveWebTurnIntentSuspended = false
-        guard !readableIndices.isEmpty else { status = .error(AppLocalized("无可朗读内容")); return }
+        guard !readableIndices.isEmpty else {
+            if !prepareOpeningWebPage() { status = .error(AppLocalized("无可朗读内容")) }
+            return
+        }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
             self?.start(allowAccessRefresh: true)
         }) {
@@ -2427,6 +2465,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// A pause also owns audio that has not arrived yet. Keep the request and
     /// checkpoint, but prevent late segments or page commits from restarting it.
     func pausePlayback() {
+        cancelReadablePagePreparation()
         isPlaybackPausedByUser = true
         liveWebTurnIntentSuspended = true
         invalidateAccessRetry()
@@ -2437,6 +2476,8 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     func togglePlayPause() {
+        if isPreparingReadablePage { pausePlayback(); return }
+        audio.sleepTimer.resumeByUser()
         guard resumeNotice == nil else { return }
         isPlaybackPausedByUser = false
         liveWebTurnIntentSuspended = false
@@ -2502,6 +2543,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// Reattaching while audio is playing or TTS is still loading must not pause
     /// playback or start a duplicate generation request.
     func ensurePlaying() {
+        guard audio.sleepTimer.permitsAutomaticPlayback() else { return }
         guard resumeNotice == nil else { return }
         isPlaybackPausedByUser = false
         liveWebTurnIntentSuspended = false
@@ -2944,6 +2986,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// UI call sites can safely ignore it because the VM retains the lane tail.
     @discardableResult
     func stop() -> Task<Void, Never>? {
+        cancelReadablePagePreparation()
         flushReadingProgress()
         retainReadingCursorForQueueRebuild()
         if !isFinished,

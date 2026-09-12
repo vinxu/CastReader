@@ -20,6 +20,33 @@ import XCTest
 
 final class ReadingLanguageTests: XCTestCase {
 
+    func testShortChineseCopyrightPageDoesNotFallBackToEnglish() {
+        let page = "版权信息 书名：茶花女 作者：小仲马 译者：钟仪 出版时间：2026年 品牌方：上海铭书文化传播有限公司"
+        XCTAssertLessThan(LanguageDetector.evidence(for: page).readableCharacterCount, 120)
+        XCTAssertEqual(ReadingLanguagePolicy.confidentLanguage(for: page), "zh")
+        XCTAssertEqual(ReadingLanguagePolicy.resolve(userOverride: nil,
+            confidentDetection: ReadingLanguagePolicy.confidentLanguage(for: page),
+            remembered: "en").language, "zh")
+    }
+
+    func testDistinctScriptStillRequiresMoreThanATitleAndUserOverrideWins() {
+        XCTAssertNil(ReadingLanguagePolicy.confidentLanguage(for: "茶花女"))
+        let text = "今天走在回家的路上，看到门前的树叶都变黄了。"
+        XCTAssertEqual(ReadingLanguagePolicy.confidentLanguage(for: text), "zh")
+        XCTAssertEqual(ReadingLanguagePolicy.resolve(userOverride: "it",
+            confidentDetection: ReadingLanguagePolicy.confidentLanguage(for: text),
+            remembered: "zh").language, "it")
+    }
+
+    func testCoverTitleIsOnlyAProvisionalLanguageHint() {
+        let hint = ReadingLanguagePolicy.initialLanguage(title: "茶花女", remembered: "en")
+        XCTAssertEqual(hint, "zh")
+        XCTAssertEqual(ReadingLanguagePolicy.initialLanguage(title: "III", remembered: "it"), "it")
+        XCTAssertEqual(ReadingLanguagePolicy.resolve(userOverride: nil,
+            confidentDetection: ReadingLanguagePolicy.confidentLanguage(for: englishControl),
+            remembered: hint).language, "en")
+    }
+
     // MARK: - Fixtures
 
     /// Pinocchio, 1883 (public domain) — a full page of ordinary Italian prose.
@@ -431,14 +458,16 @@ final class ReadingLanguageTests: XCTestCase {
             language: "en",
             paragraphs: [ReadingParagraph(id: 0, text: englishControl, type: .paragraph)]
         )
+        let expectedEnglishVoice = AppSettings.shared.voice(for: "en")
+        let expectedItalianVoice = AppSettings.shared.voice(for: "it")
         let vm = ReadAloudViewModel(document: document)
         XCTAssertEqual(vm.playbackLanguage, "en")
-        XCTAssertEqual(AppSettings.shared.voice(for: vm.playbackLanguage), "af_heart")
+        XCTAssertEqual(AppSettings.shared.voice(for: vm.playbackLanguage), expectedEnglishVoice)
 
         vm.correctReadingLanguage("it-IT")
 
         XCTAssertEqual(vm.playbackLanguage, "it")
-        XCTAssertEqual(AppSettings.shared.voice(for: vm.playbackLanguage), "if_sara")
+        XCTAssertEqual(AppSettings.shared.voice(for: vm.playbackLanguage), expectedItalianVoice)
     }
 
     /// A correction is about this book, not this page: re-extracting the next page

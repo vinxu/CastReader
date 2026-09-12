@@ -69,7 +69,7 @@ struct WeReadHomeSection: View {
             id: book.id,
             title: book.title,
             sourceKind: .weread,
-            language: Constants.TTS.defaultLanguage,
+            language: book.initialReadingLanguage,
             paragraphs: [],
             sourceURL: book.effectiveReaderURL,
             coverURL: book.coverURL
@@ -258,7 +258,7 @@ struct WeReadLibraryView: View {
             id: book.id,
             title: book.title,
             sourceKind: .weread,
-            language: Constants.TTS.defaultLanguage,
+            language: book.initialReadingLanguage,
             paragraphs: [],
             sourceURL: book.effectiveReaderURL,
             coverURL: book.coverURL

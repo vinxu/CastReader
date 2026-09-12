@@ -130,6 +130,8 @@ struct ReaderTextView: UIViewRepresentable {
     /// 是否当前段落（非当前段落整体淡化）。
     var isCurrent: Bool = true
     var fontSize: CGFloat = 18
+    var lineSpacing: CGFloat = 8
+    var usesSerif: Bool = true
     var highlightColor: UIColor = UIColor(red: 253/255, green: 95/255, blue: 1/255, alpha: 0.5)
     /// The normal reader owns scrolling at the paragraph level. The compact
     /// onboarding sample opts into an internal viewport so longer locales keep
@@ -165,7 +167,7 @@ struct ReaderTextView: UIViewRepresentable {
         let base = UIColor(AppTheme.foreground)
         let color = isCurrent ? base : base.withAlphaComponent(0.55)
         let para = NSMutableParagraphStyle()
-        para.lineSpacing = 8
+        para.lineSpacing = lineSpacing
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font(),
             .foregroundColor: color,
@@ -180,6 +182,8 @@ struct ReaderTextView: UIViewRepresentable {
     }
 
     private func font() -> UIFont {
-        UIFont(name: "Georgia", size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+        usesSerif
+            ? (UIFont(name: "Georgia", size: fontSize) ?? UIFont.systemFont(ofSize: fontSize))
+            : UIFont.systemFont(ofSize: fontSize)
     }
 }

@@ -10,6 +10,7 @@ import SwiftUI
 import UIKit
 
 struct YouTubeListenView: View {
+    @ObservedObject private var appearance = ReaderAppearanceSettings.shared
     let document: ReadingDocument
     @ObservedObject var readVM: ReadAloudViewModel
     let refocusToken: Int
@@ -166,7 +167,9 @@ struct YouTubeListenView: View {
                     text: displayedText,
                     highlightRange: isCurrent ? readVM.highlightRange : nil,
                     isCurrent: isCurrent,
-                    fontSize: 18,
+                    fontSize: appearance.textSize,
+                    lineSpacing: appearance.lineSpacing,
+                    usesSerif: appearance.usesSerif,
                     highlightColor: readVM.highlightUIColor,
                     readerViewportRange: isCurrent && followsPlayback
                         ? (readVM.highlightRange ?? readVM.initialResumeViewportRange) : nil,

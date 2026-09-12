@@ -83,7 +83,7 @@ final class PlayerCoordinator: ObservableObject {
         let openStarted = Date()
         presentationGeneration = UUID()
         let document = historyStore.canonicalDocument(incomingDocument)
-        KindlePlaybackCenter.shared.close()
+        KindlePlaybackCenter.shared.close(preservingSleepTimer: true)
         if document.sourceKind != .youtube {
             YouTubeTranscriptService.shared.releaseWarmSession()
         }
@@ -238,7 +238,8 @@ final class PlayerCoordinator: ObservableObject {
     ///   only a step in swapping to another session for the *same* video — a
     ///   caption-language switch. The kept-alive document is exactly what makes
     ///   the next switch fast, so it must outlive that internal churn.
-    func close(releasingYouTubeWarmSession: Bool = true) {
+    func close(releasingYouTubeWarmSession: Bool = true, preservingSleepTimer: Bool = false) {
+        if !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
         presentationGeneration = UUID()
         // The YouTube extractor may be holding a hidden document alive so
         // caption-language switches stay fast. Nothing justifies that once the

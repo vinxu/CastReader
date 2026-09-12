@@ -1431,7 +1431,7 @@ final class HistoryStore: ObservableObject {
                 id: rec.id,
                 title: latestBook?.title ?? rec.title,
                 sourceKind: .weread,
-                language: rec.language,
+                language: ReadingLanguagePolicy.initialLanguage(title: latestBook?.title ?? rec.title, remembered: rec.language),
                 paragraphs: [],
                 sourceURL: url,
                 coverURL: latestBook?.coverURL

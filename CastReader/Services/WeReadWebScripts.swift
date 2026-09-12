@@ -16,6 +16,22 @@ enum WeReadWebScripts {
 
     static let desktopUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
+    /// A real cover / native Aa panel is usable navigation UI even when it has
+    /// no extractable chapter text. Do not send it back to the shelf on timeout.
+    static let hasUsableNonTextReaderSurface = #"""
+    (() => {
+      if (location.hostname !== 'weread.qq.com' || !/^\/web\/reader\//.test(location.pathname)) return false;
+      if (!document.body.classList.contains('wr_page_reader')) return false;
+      if (!document.querySelector('button.readerControls_item.fontSizeButton')) return false;
+      // The live reader copies its cover into a canvas and hides the source
+      // DOM. Its rendered pager remains visible (observed on the iPhone).
+      return Array.from(document.querySelectorAll('.horizontalReaderCoverPage, .reader-font-control-panel-wrapper, button.renderTarget_pager_button')).some(el => {
+        const r = el.getBoundingClientRect(), style = getComputedStyle(el);
+        return r.width > 20 && r.height > 20 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0;
+      });
+    })()
+    """#
+
     /// WeRead currently mounts two QR sign-in implementations in the same
     /// official modal. QuickWxLogin completes inside WeChat's own browser, so
     /// its cookies cannot return to CastReader's WKWebView after a same-phone
@@ -1035,7 +1051,7 @@ enum WeReadWebScripts {
       const hash=s=>{let h=2166136261,v=String(s||'').toLowerCase();for(let i=0;i<v.length;i++){h^=v.charCodeAt(i);h=Math.imul(h,16777619);}return(h>>>0).toString(16);};
       const cssProps=['font-family','font-size','font-weight','font-style','font-kerning','font-feature-settings','letter-spacing','word-spacing','line-height','text-indent','text-align','word-break','overflow-wrap','white-space','text-transform','direction','writing-mode'];
       const selectors='.preRenderContainer,.wr_preRenderContainer,.renderTargetContainer,.readerChapterContent,.wr_readerContent,[class*=preRender],[class*=readerContent],[class*=ReaderContent]';
-      let layouts=[],visible=[],layer=null,lastFingerprint='',lastPreviewKey='',lastExtractionState='',timer=0,stableTimer=0,stableCandidate='',turnID=0,color='#FD5F01',wordState={para:-1,seg:-1,cursor:0,last:-1},currentHighlight=null,currentMarks=new Map();
+      let layouts=[],visible=[],layer=null,lastNonTextIdentity='',lastFingerprint='',lastPreviewKey='',lastExtractionState='',timer=0,stableTimer=0,stableCandidate='',turnID=0,color='#FD5F01',wordState={para:-1,seg:-1,cursor:0,last:-1},currentHighlight=null,currentMarks=new Map();
       const root=()=>document.querySelector('.wr_canvasContainer,[class*=canvasContainer]')||document.querySelector('.wr_readerContent,[class*=readerContent]')||document.body;
       const points=text=>{const a=[];for(let i=0;i<text.length;){const cp=text.codePointAt(i),ch=String.fromCodePoint(cp);a.push({ch,start:i,end:i+ch.length});i+=ch.length;}return a;};
       const compact=text=>points(text).filter(v=>!(/\s/u.test(v.ch)));
@@ -1150,7 +1166,7 @@ enum WeReadWebScripts {
       function rebuild(items,host){const l=ensureLayer(host);l.innerHTML='';items.forEach((p,i)=>{const e=document.createElement('div'),b=p.bounds;e.dataset.crWereadPara=String(i);e.textContent=p.text;e.style.cssText=`position:absolute;left:${b.x}px;top:${b.y}px;width:${Math.max(1,b.width)}px;height:${Math.max(1,b.height)}px;color:transparent;background:transparent;pointer-events:none;overflow:hidden;box-sizing:border-box;margin:0;padding:0;${p.style||''}`;l.appendChild(e);p.el=e;});}
       function schedule(reason){clearTimeout(timer);timer=setTimeout(()=>publish(reason),240);}
       function publish(reason){
-        const host=root(),snapshot=window.__castReaderWeReadCanvas?.snapshot?.()||{calls:[],draws:[],epoch:0,columnFingerprint:''};if(!host)return;const next=choose(snapshot,host);if(!next.length){const state=`${layouts.length}:${(snapshot.calls||[]).length}:${(snapshot.draws||[]).length}:${Math.round(innerWidth)}x${Math.round(innerHeight)}`;if(state!==lastExtractionState){lastExtractionState=state;post('wereadExtractionState',{reason,layouts:layouts.length,fillTextCalls:(snapshot.calls||[]).length,draws:(snapshot.draws||[]).length,innerWidth,innerHeight,devicePixelRatio});}return;}lastExtractionState='';
+        const host=root(),snapshot=window.__castReaderWeReadCanvas?.snapshot?.()||{calls:[],draws:[],epoch:0,columnFingerprint:''};if(!host)return;const next=choose(snapshot,host);if(!next.length){const opening=openingPageState();if(opening.kind==='cover'&&opening.identity!==lastNonTextIdentity){lastNonTextIdentity=opening.identity;visible=[];lastFingerprint='';lastPreviewKey='';clearHighlight();clearMarks();post('wereadNonTextPage',{identity:opening.identity});}const state=`${layouts.length}:${(snapshot.calls||[]).length}:${(snapshot.draws||[]).length}:${Math.round(innerWidth)}x${Math.round(innerHeight)}`;if(state!==lastExtractionState){lastExtractionState=state;post('wereadExtractionState',{reason,openingPage:opening,layouts:layouts.length,fillTextCalls:(snapshot.calls||[]).length,draws:(snapshot.draws||[]).length,innerWidth,innerHeight,devicePixelRatio});}return;}lastExtractionState='';lastNonTextIdentity='';
         const progress=clean(Array.from(document.querySelectorAll('[class*=progress],[class*=Progress],.renderTarget_pager,[class*=readerFooter]')).map(e=>e.innerText).join(' ')).slice(0,120),layoutFingerprint=hash((snapshot.calls||[]).map(c=>`${c.text}:${Math.round(c.x)}:${Math.round(c.y)}:${Math.round(c.tx)}`).join('|')),columns=snapshot.columnFingerprint||'',contentFingerprint=hash(next.map(p=>p.text).join('|')),fingerprint=hash(`${contentFingerprint}|${columns}|${location.pathname}`),geometryFingerprint=hash(next.flatMap(p=>p.entries||[]).map(e=>`${e.charStart}:${Math.round(e.bbox.x)}:${Math.round(e.bbox.y)}`).join('|')),candidate=`${fingerprint}|${layoutFingerprint}|${geometryFingerprint}|${snapshot.epoch}`;if(candidate!==stableCandidate){stableCandidate=candidate;clearTimeout(stableTimer);stableTimer=setTimeout(()=>publish(reason),120);return;}stableCandidate='';visible=next;rebuild(visible,host);const hr=host.getBoundingClientRect(),bounds=visible.map(p=>p.bounds);
         if(bounds.length&&innerWidth>0){const left=hr.left+Math.min(...bounds.map(b=>b.x)),right=hr.left+Math.max(...bounds.map(b=>b.x+b.width));post('wereadViewport',{contentLeftRatio:Math.max(0,left/innerWidth),contentRightRatio:Math.min(1,right/innerWidth)});}
         if(lastFingerprint&&fingerprint!==lastFingerprint){clearHighlight();clearMarks();post('wereadPageChanging',{reason,previousFingerprint:lastFingerprint,nextFingerprint:fingerprint,canvasEpoch:snapshot.epoch});}
@@ -1192,8 +1208,41 @@ enum WeReadWebScripts {
       function highlightWord(a){const p=visible[a.paragraphIndex];if(!p){clearHighlight();return;}if(wordState.para!==a.paragraphIndex)wordState={para:a.paragraphIndex,seg:a.segSeq,cursor:0,last:-1};const word=String((a.words||[])[a.wordIndex]||'').trim();if(!word)return;if(a.segSeq<wordState.seg||a.wordIndex<wordState.last)wordState.cursor=0;let at=p.text.toLocaleLowerCase().indexOf(word.toLocaleLowerCase(),wordState.cursor),length=word.length;if(at<0){const stripped=word.replace(/^[\s.,!?;:'“”‘’()\[\]]+|[\s.,!?;:'“”‘’()\[\]]+$/g,'');if(stripped.length>1){at=p.text.toLocaleLowerCase().indexOf(stripped.toLocaleLowerCase(),wordState.cursor);length=stripped.length;}}if(at>=0){wordState.cursor=at+length;currentHighlight={kind:'range',paragraphIndex:a.paragraphIndex,charStart:at,charEnd:at+length};applyHighlight(currentHighlight);}wordState.seg=a.segSeq;wordState.last=a.wordIndex;}
       window.CR={init(){wordState={para:-1,seg:-1,cursor:0,last:-1};clearHighlight();currentMarks.clear();},setActive(a){if(!a.active)clearHighlight();},setColor(a){if(a?.hex)color=a.hex;},clearHighlight,highlightRange(a){const resolved=resolveSegmentRange(visible[a.paragraphIndex],a);if(Array.isArray(a.segmentTexts)&&a.segmentTexts.length&&!resolved){clearHighlight();return;}currentHighlight={...a,kind:'range',charStart:resolved?.start??a.charStart,charEnd:resolved?.end??a.charEnd};applyHighlight(currentHighlight);},highlightWord,scrollTo:scrollToParagraph,clearMarks,showMark};
       function pageButton(direction){const next=direction==='next',label=next?'下一页':'上一页',selectors=next?['.renderTarget_pager_button_right','.renderTarget_pager .renderTarget_pager_button:last-of-type','.readerFooter_button:last-child','.readerFooter .nextBtn']:['.renderTarget_pager_button_left','.renderTarget_pager .renderTarget_pager_button:first-of-type','.readerFooter_button:first-child','.readerFooter .prevBtn'];for(const sel of selectors){const candidate=document.querySelector(sel);if(candidate&&clean(candidate.textContent)===label&&!candidate.disabled&&candidate.getAttribute('aria-disabled')!=='true')return candidate;}return Array.from(document.querySelectorAll('.renderTarget_pager button,button[class*=footer],button[class*=Footer]')).find(e=>clean(e.textContent)===label&&!e.disabled&&e.getAttribute('aria-disabled')!=='true')||null;}
+      function openingControlVisible(e){
+        if(!e)return false;const r=e.getBoundingClientRect();
+        if(r.width<=1||r.height<=1||r.right<=0||r.bottom<=0||r.left>=innerWidth||r.top>=innerHeight)return false;
+        for(let n=e;n instanceof Element;n=n.parentElement){const s=getComputedStyle(n);if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0)return false;}
+        return true;
+      }
+      function openingPageButton(direction){
+        const label=direction==='next'?'下一页':'上一页';
+        return Array.from(document.querySelectorAll('button.renderTarget_pager_button,.renderTarget_pager button,.readerFooter button'))
+          .find(e=>clean(e.textContent)===label&&!e.disabled&&e.getAttribute('aria-disabled')!=='true'&&openingControlVisible(e))||null;
+      }
+      function openingPageState(){
+        if(location.hostname!=='weread.qq.com'||!/^\/web\/reader\//.test(location.pathname)||!document.body.classList.contains('wr_page_reader'))return{kind:'waiting'};
+        const shown=openingControlVisible;
+        // An open native panel/dialog owns interaction. Do not click through it.
+        if(window.__crWeReadAppearance||Array.from(document.querySelectorAll('[role=dialog],.font-panel-content,.wr_dialog')).some(shown))return{kind:'waiting',reason:'panel-open'};
+        const snapshot=window.__castReaderWeReadCanvas?.snapshot?.()||{calls:[],draws:[],epoch:0,columnFingerprint:''};
+        if(choose(snapshot,root()).length)return{kind:'reading'};
+        const cover=document.querySelector('.horizontalReaderCoverPage'),next=openingPageButton('next'),prev=openingPageButton('prev');
+        // ReaderFlyleaf (the provider's current cover UI) has separate book-info
+        // and book-intro pages. The legacy cover node is always hidden. Identify
+        // the actually visible flyleaf child, including its clipping/ancestors,
+        // so its second page is not confused with an unpainted chapter.
+        const flyleaf=Array.from(document.querySelectorAll('.wr_flyleaf_page_bookInfo,.wr_flyleaf_page_bookIntro'))
+          .filter(shown).sort((a,b)=>{const area=e=>{const r=e.getBoundingClientRect();return Math.max(0,Math.min(r.right,innerWidth)-Math.max(r.left,0))*Math.max(0,Math.min(r.bottom,innerHeight)-Math.max(r.top,0));};return area(b)-area(a);})[0];
+        if(flyleaf)return{kind:shown(next)?'cover':'unavailable',identity:hash(location.pathname+'|'+flyleaf.className+'|'+clean(flyleaf.textContent)),reason:'visible-flyleaf'};
+        // A hidden cover source is only authoritative at the opening boundary
+        // (no Previous control). It must not classify a slow body paint as a cover.
+        if(!cover||(!shown(cover)&&shown(prev)))return{kind:'waiting',reason:!cover?'no-cover':'previous-visible',hasCover:!!cover,previous:shown(prev),next:shown(next)};
+        const identity=hash(location.pathname+'|'+clean(cover.textContent));
+        return{kind:shown(next)?'cover':'unavailable',identity};
+      }
+      function advanceOpeningPage(identity){const state=openingPageState();if(state.kind!=='cover'||state.identity!==identity)return false;const button=openingPageButton('next');if(!button)return false;button.click();schedule('opening-next');return true;}
       function turnPage(direction,manual){const button=pageButton(direction);if(!button){if(!manual)post('wereadTurnRejected',{reason:`${direction}-page-not-found`});else post('log',{message:`native ${direction} page control not found`});return false;}clearHighlight();clearMarks();const canvasEpoch=window.__castReaderWeReadCanvas?.snapshot?.().epoch||0;if(manual){post('wereadPageChanging',{reason:'manual-intent',intent:'native-control',direction:direction==='next'?'next':'previous',previousFingerprint:lastFingerprint,canvasEpoch});}else{const id=`wr-${Date.now()}-${++turnID}`;post('wereadTurnRequested',{actionID:id,fingerprint:lastFingerprint,canvasEpoch});}button.click();return true;}
-      window.CastReaderWeRead={nextPage(){return turnPage('next',false);},userPage(direction){return turnPage(direction==='prev'?'prev':'next',true);},snapshot(){schedule('manual');return{fingerprint:lastFingerprint,ready:!!visible.length};},relayout(a){clearHighlight();clearMarks();stableCandidate='';lastPreviewKey='';const reason=String(a?.reason||'orientation');try{window.dispatchEvent(new Event('resize'));}catch(_){}schedule(reason);setTimeout(()=>schedule(reason+'-settled'),360);return true;},resumeAfterForeground(a){restoreVisualState();schedule(String(a?.reason||'foreground'));return true;}};
+      window.CastReaderWeRead={openingPageState,advanceOpeningPage,nextPage(){return turnPage('next',false);},userPage(direction){return turnPage(direction==='prev'?'prev':'next',true);},snapshot(){schedule('manual');return{fingerprint:lastFingerprint,ready:!!visible.length};},relayout(a){clearHighlight();clearMarks();stableCandidate='';lastPreviewKey='';const reason=String(a?.reason||'orientation');try{window.dispatchEvent(new Event('resize'));}catch(_){}schedule(reason);setTimeout(()=>schedule(reason+'-settled'),360);return true;},resumeAfterForeground(a){restoreVisualState();schedule(String(a?.reason||'foreground'));return true;}};
       // Measuring every character of every pre-render paragraph is expensive.
       // The old observer repeated that full pass for each mutation record,
       // blocking WeRead's own paint and making the native cover look like a

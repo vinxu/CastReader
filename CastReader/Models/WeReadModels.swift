@@ -46,6 +46,13 @@ struct WeReadBook: Identifiable, Codable, Equatable {
     var lastPageFingerprint: String?
     var lastReaderURL: String?
 
+    @MainActor var initialReadingLanguage: String {
+        ReadingLanguagePolicy.initialLanguage(
+            title: title,
+            remembered: HistoryStore.shared.records.first { $0.id == id }?.language
+        )
+    }
+
     var displayAuthor: String {
         author.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? AppLocalized("未知作者") : author
     }

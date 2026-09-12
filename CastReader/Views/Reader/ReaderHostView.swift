@@ -160,6 +160,7 @@ struct ReaderPrimaryPlaybackButtonContent: View {
 /// remains true it deliberately refuses to accept transient `.paused` values
 /// caused by `isPlaying` dropping at a segment boundary.
 struct ReaderDebouncedWaitingPresentation<Presentation: Equatable, Content: View>: View {
+    @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     let stablePresentation: Presentation
     let rawWaiting: Bool
     let waitingPresentation: Presentation
@@ -213,7 +214,8 @@ struct ReaderDebouncedWaitingPresentation<Presentation: Equatable, Content: View
     }
 
     private var displayedPresentation: Presentation {
-        ReaderPlaybackWaitingDebounceContract.resolve(
+        if sleepTimer.requiresExplicitResume { return stablePresentation }
+        return ReaderPlaybackWaitingDebounceContract.resolve(
             rawWaiting: rawWaiting,
             waitingHasExceededDelay: waitingHasExceededDelay,
             previousStablePresentation: previousStablePresentation,
@@ -395,6 +397,16 @@ struct ReaderHostView: View {
     @State private var showKoboSessionRecovery = false
     @State private var didRestoreKoboSession = false
 
+    private var appearanceSource: ReaderAppearanceSource {
+        switch document.sourceKind {
+        case .photo, .pdf: return .fixedLayout
+        case .web, .docx: return .webText
+        case .googleBooks, .kobo, .oreilly, .weread:
+            return .web { await ReaderWebAppearanceCenter.shared.open(documentID: document.id) }
+        default: return .text
+        }
+    }
+
     private struct PendingReaderModeSwitch {
         let target: ReaderMode
         let shouldContinuePlayback: Bool
@@ -458,6 +470,7 @@ struct ReaderHostView: View {
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
+        .environment(\.readerAppearanceSource, appearanceSource)
         // A transient WKWebView search keyboard must not repaginate a live reader
         // or leave the native playback bar stranded at the old keyboard top.
         .ignoresSafeArea(.keyboard, edges: document.sourceKind.isWebRendered ? .bottom : [])
@@ -1166,6 +1179,7 @@ struct ReaderPlaybackConsole<PlaybackControls: View>: View {
 
             voiceControl
             SpeedMenu(style: .compact)
+            ReaderMoreButton()
         }
     }
 
@@ -1442,6 +1456,7 @@ private struct ReaderLandscapeReadOverlay: View {
                         )
                     }
                     SpeedMenu()
+                    ReaderMoreButton()
                 }
                 .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
             }
@@ -1534,6 +1549,7 @@ private struct ReaderLandscapeExplainOverlay: View {
                         }
                         PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
                         SpeedMenu()
+                        ReaderMoreButton()
                     }
                     .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
                 }
@@ -1611,6 +1627,7 @@ private struct ReaderLandscapeExplainOverlay: View {
     private func performExplainAction(
         for presentationState: ReaderExplainPlaybackPresentationState
     ) {
+        AudioPlayerService.shared.sleepTimer.resumeByUser()
         switch presentationState {
         case .start, .retry:
             vm.start()

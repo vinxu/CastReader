@@ -896,7 +896,7 @@ struct HomeView: View {
                     id: book.id,
                     title: book.title,
                     sourceKind: .weread,
-                    language: Constants.TTS.defaultLanguage,
+                    language: book.initialReadingLanguage,
                     paragraphs: [],
                     sourceURL: book.effectiveReaderURL
                 )

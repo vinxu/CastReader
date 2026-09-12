@@ -52,6 +52,7 @@ final class TextViewRegistry {
 }
 
 struct TextReaderView: View {
+    @ObservedObject private var appearance = ReaderAppearanceSettings.shared
     let document: ReadingDocument
     @ObservedObject var readVM: ReadAloudViewModel
     @ObservedObject var explainVM: ExplainViewModel
@@ -59,6 +60,7 @@ struct TextReaderView: View {
     let refocusToken: Int
 
     @State private var registry = TextViewRegistry()
+    @State private var layoutRevision = 0
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -92,6 +94,15 @@ struct TextReaderView: View {
             }
             .onChange(of: refocusToken) { _ in
                 refocus(proxy)
+            }
+            .onChange(of: appearance.textSize) { _ in
+                DispatchQueue.main.async { layoutRevision += 1; refocus(proxy) }
+            }
+            .onChange(of: appearance.lineSpacing) { _ in
+                DispatchQueue.main.async { layoutRevision += 1; refocus(proxy) }
+            }
+            .onChange(of: appearance.usesSerif) { _ in
+                DispatchQueue.main.async { layoutRevision += 1; refocus(proxy) }
             }
         }
     }
@@ -146,12 +157,14 @@ struct TextReaderView: View {
             highlightRange: isCurrent ? readVM.highlightRange : nil,
             isCurrent: mode == .read ? isCurrent : true,
             fontSize: fontSize(for: para.type),
+            lineSpacing: appearance.lineSpacing,
+            usesSerif: appearance.usesSerif,
             highlightColor: readVM.highlightUIColor,
             readerViewportRange: isCurrent && readVM.autoScrollEnabled
                 ? (readVM.highlightRange ?? readVM.initialResumeViewportRange) : nil,
             onReady: { tv in registry[para.id] = tv }
         )
-        .overlay(alignment: .topLeading) { markOverlay(for: para) }
+        .overlay(alignment: .topLeading) { markOverlay(for: para).id(layoutRevision) }
         .contentShape(Rectangle())
         .onTapGesture {
             if mode == .read { readVM.jump(to: para.id) }
@@ -176,9 +189,10 @@ struct TextReaderView: View {
     }
 
     private func fontSize(for type: ReadingParagraphType) -> CGFloat {
+        let scale = appearance.textSize / 18
         switch type {
-        case .heading(let l): return l <= 1 ? 24 : (l == 2 ? 21 : 19)
-        default: return 18
+        case .heading(let l): return (l <= 1 ? 24 : (l == 2 ? 21 : 19)) * scale
+        default: return appearance.textSize
         }
     }
 

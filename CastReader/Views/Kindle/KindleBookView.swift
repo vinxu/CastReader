@@ -183,6 +183,10 @@ struct KindleBookView: View {
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
+        .environment(\.readerAppearanceSource, .web {
+            model.openReadingSettings()
+            return model.isReadingSettingsPresented
+        })
         // Let Kindle finish mounting its native font controls before the
         // SwiftUI sheet occludes the WKWebView. The model already owns the
         // operation and pauses playback throughout this preparation.
@@ -528,16 +532,6 @@ struct KindleBookView: View {
 
             Spacer(minLength: 8)
 
-            Button { model.openReadingSettings() } label: {
-                Image(systemName: "textformat.size")
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityLabel(AppLocalized("阅读设置"))
-            .accessibilityIdentifier("kindleReadingSettingsButton")
-            .disabled(!model.readerControlsReady || model.isNavigating || model.isPreparing || model.isApplyingReadingSettings
-                || model.isPageTurnResuming || model.isNativeTOCLoading
-                || model.isKindleSyncDialogVisible || model.isAmazonCookieConsentVisible)
-
             HStack(spacing: 2) {
                 kindleModeButton(.read, title: AppLocalized("朗读"))
                 kindleModeButton(.explain, title: AppLocalized("解读"))
@@ -733,6 +727,7 @@ struct KindleBookView: View {
     }
 
     private func startCurrentMode() {
+        AudioPlayerService.shared.sleepTimer.resumeByUser()
         Task {
             do {
                 model.playbackErrorText = nil
@@ -868,6 +863,7 @@ private struct KindleEmptyPlaybackBar: View {
 }
 
 private struct KindleReadPlaybackBar: View {
+    @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ReadAloudViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isPreparing: Bool
@@ -879,7 +875,8 @@ private struct KindleReadPlaybackBar: View {
     let showTOC: () -> Void
 
     private var isLoading: Bool {
-        !vm.isPlaybackPausedByUser && (voiceSwitch.progress != nil ||
+        if sleepTimer.requiresExplicitResume { return false }
+        return !vm.isPlaybackPausedByUser && (voiceSwitch.progress != nil ||
             isPreparing ||
             vm.isWaitingForPlayableAudio)
     }
@@ -1089,6 +1086,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
             )
             voiceControl(showsLabel: false)
             SpeedMenu(style: .compact)
+            ReaderMoreButton()
         }
     }
 
@@ -1124,6 +1122,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
 }
 
 private struct KindleExplainPlaybackBar: View {
+    @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ExplainViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let compact: Bool
@@ -1178,6 +1177,9 @@ private struct KindleExplainPlaybackBar: View {
 
     @ViewBuilder
     private var centerControl: some View {
+        if sleepTimer.requiresExplicitResume {
+            playButton(isLoading: false, isPlaying: false) { vm.ensurePlaying() }
+        } else {
         switch vm.status {
         case .idle:
             if isContinuingPage {
@@ -1220,10 +1222,14 @@ private struct KindleExplainPlaybackBar: View {
                 .buttonStyle(.plain)
             }
         }
+        }
     }
 
     private func playButton(isLoading: Bool, isPlaying: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            sleepTimer.resumeByUser()
+            action()
+        } label: {
             KindlePlayButtonContent(
                 isLoading: isLoading,
                 isPlaying: isPlaying,
@@ -1292,6 +1298,7 @@ private struct KindleLandscapeEmptyOverlay: View {
 }
 
 private struct KindleLandscapeReadOverlay: View {
+    @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ReadAloudViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isPreparing: Bool
@@ -1302,7 +1309,8 @@ private struct KindleLandscapeReadOverlay: View {
     let showTOC: () -> Void
 
     private var isLoading: Bool {
-        !vm.isPlaybackPausedByUser && (voiceSwitch.progress != nil ||
+        if sleepTimer.requiresExplicitResume { return false }
+        return !vm.isPlaybackPausedByUser && (voiceSwitch.progress != nil ||
             isPreparing ||
             vm.isWaitingForPlayableAudio)
     }
@@ -1774,6 +1782,7 @@ struct KindleMiniPlayerView: View {
                 }
 
                 Button {
+                    audio.sleepTimer.resumeByUser()
                     Task { try? await model.startCurrentMode() }
                 } label: {
                     Group {
@@ -1911,7 +1920,8 @@ final class KindlePlaybackCenter: ObservableObject {
         isPresented = false
     }
 
-    func close() {
+    func close(preservingSleepTimer: Bool = false) {
+        if !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
         let active = model
         model = nil
         isPresented = false
@@ -3564,6 +3574,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         _ operation: KindleCookieConsentPipelineOperation,
         reason: String
     ) -> Bool {
+        if operation == .automaticPageTurn,
+           !AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback() { return false }
         let playerOverlayBlocksLayout = operation == .layoutRepair &&
             (isPlayerControlOverlayPresented || playerOverlayViewport != nil)
         let allowed = !playerOverlayBlocksLayout && !isReadingSettingsPresented && !isApplyingReadingSettings && KindleCookieConsentPipelinePolicy.allows(
@@ -6170,6 +6182,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     @discardableResult
     func startCurrentMode() async throws -> KindlePlaybackStartOutcome {
+        guard AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback() else { return .deferred }
         try requireReaderOperation(.ttsPreparation, reason: "start-current-mode")
         if isKindleSyncDialogVisible,
            (try? await evaluate("window.__crKindleSyncDialogVisible && window.__crKindleSyncDialogVisible()")) as? Bool == false {

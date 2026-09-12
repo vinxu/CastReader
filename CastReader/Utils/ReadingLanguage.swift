@@ -50,14 +50,31 @@ enum ReadingLanguagePolicy {
 
     /// 这一页**自己**看清楚了吗？看不清返回 nil，交由上层沿用本书语言。
     static func confidentLanguage(in evidence: LanguageDetector.Evidence) -> String? {
+        // A Chinese copyright page or a large-font viewport is often only
+        // 20–80 characters. Script evidence does not need the Latin-language
+        // prose floor; retain that floor for ambiguous names/headings/URLs.
+        let scriptIsDecisive = ["zh", "ja", "hi"].contains(evidence.language)
+            && evidence.confidence >= 0.90
+        let minimumCharacters = scriptIsDecisive ? 12 : minimumReadableCharacters
         guard evidence.confidence >= minimumConfidence,
-              evidence.readableCharacterCount >= minimumReadableCharacters,
+              evidence.readableCharacterCount >= minimumCharacters,
               !evidence.language.isEmpty else { return nil }
         return SupportedTTSLanguage.canonicalCode(evidence.language)
     }
 
     static func confidentLanguage(for text: String) -> String? {
         confidentLanguage(in: LanguageDetector.evidence(for: text))
+    }
+
+    /// A provisional hint for an empty live reader, never a user override.
+    /// Clear body evidence replaces it as soon as extraction completes.
+    static func initialLanguage(title: String, remembered: String?) -> String {
+        let evidence = LanguageDetector.evidence(for: title)
+        if ["zh", "ja", "hi"].contains(evidence.language),
+           evidence.confidence >= 0.90, evidence.readableCharacterCount >= 2 {
+            return evidence.language
+        }
+        return normalized(remembered) ?? "en"
     }
 
     /// 三级证据，**用户的显式选择永远排第一**：
