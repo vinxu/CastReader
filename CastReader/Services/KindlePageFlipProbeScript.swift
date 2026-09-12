@@ -2,6 +2,197 @@
 import Foundation
 
 extension KindleWebScripts {
+    static let offlineSourceNavigation = #"""
+    (() => {
+      let navigation = null, loading = true;
+      for (const node of document.querySelectorAll('#kr-renderer,#kr-chevron-left,#kr-chevron-right,#kr-scrubber-bar')) {
+        const key=Object.keys(node).find(k=>/^__react(Fiber|InternalInstance)\$/.test(k));
+        let fiber=key&&node[key];
+        let root=fiber; while(root?.return)root=root.return;
+        if(root?.stateNode?.current&&root!==root.stateNode.current) fiber=fiber?.alternate||fiber;
+        for(let depth=0;fiber&&depth<64;depth++,fiber=fiber.return) {
+          const value=fiber.memoizedProps?.value;
+          if(typeof value?.readerState?.isRendererLoading==='boolean') loading=value.readerState.isRendererLoading;
+          if(typeof value?.moveToPosition==='function'&&typeof value?.nextPage==='function') navigation=value;
+        }
+      }
+      if(!navigation) return null;
+      const bar=document.querySelector('#kr-scrubber-bar');
+      return {navigation, loading, minimum:Number(bar?.min),maximum:Number(bar?.max),
+        current:navigation.state?.currentPosition,range:navigation.state?.pagePositionRange};
+    })()
+    """#
+
+    static let offlineRendererProbeInstall = #"""
+    (() => {
+      const seen = new Set(); let service = null, navigation = null;
+      for (const node of document.querySelectorAll('#kr-renderer,#kr-chevron-left,#kr-chevron-right,#kr-scrubber-bar')) {
+        const key = Object.keys(node).find(k => /^__react(Fiber|InternalInstance)\$/.test(k));
+        let fiber = key && node[key];
+        let root=fiber; while(root?.return)root=root.return;
+        if(root?.stateNode?.current&&root!==root.stateNode.current) fiber=fiber?.alternate||fiber;
+        for (let depth = 0; fiber && depth < 64; depth++, fiber = fiber.return) {
+          if (seen.has(fiber)) continue; seen.add(fiber);
+          const props = fiber.memoizedProps;
+          if (typeof props?.renderingService?.renderBookUsingToken === 'function') service = props.renderingService;
+          if (typeof props?.value?.moveToPosition === 'function' && typeof props?.value?.nextPage === 'function') navigation = props.value;
+        }
+      }
+      if (!service || !navigation) return JSON.stringify({ok:false, reason:'renderer-unavailable'});
+      if (window.__crOfflineRendererProbe?.service === service) return JSON.stringify({ok:true, originalPosition:window.__crOfflineRendererProbe.originalPosition});
+      function shape(value, depth = 0) {
+        if (value == null) return null;
+        if (typeof value === 'number' || typeof value === 'boolean') return value;
+        if (typeof value === 'string') {
+          if (/^-?\d+(\.\d+)?$/.test(value)) return Number(value);
+          if (/^[\w/-]{1,100}\.(png|jpe?g|svg|json)$/.test(value)) return value;
+          return {type:'string', length:value.length};
+        }
+        if (typeof value === 'function') return 'function/' + value.length;
+        if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) return {type:value.constructor.name, bytes:value.byteLength};
+        if (value instanceof Blob) return {type:'Blob', bytes:value.size};
+        if (depth > 4) return {type:'object'};
+        if (Array.isArray(value)) return {type:'array', length:value.length, first:shape(value[0],depth+1)};
+        const out = {};
+        for (const key of Object.keys(value).slice(0,60)) {
+          if (/token|secret|auth|cookie|email|user|account/i.test(key)) continue;
+          const d = Object.getOwnPropertyDescriptor(value,key);
+          if (d && 'value' in d) out[key] = shape(d.value,depth+1);
+        }
+        return out;
+      }
+      function archiveShape(buffer) {
+        const bytes = new Uint8Array(buffer), decoder = new TextDecoder(); let offset=0; const entries=[];
+        while(offset+512<=bytes.length && entries.length<100) {
+          const name=decoder.decode(bytes.slice(offset,offset+100)).replace(/\0.*$/,'');
+          if(!name) break;
+          const size=parseInt(decoder.decode(bytes.slice(offset+124,offset+136)).replace(/\0.*$/,'').trim(),8);
+          if(!Number.isSafeInteger(size)||size<0||offset+512+size>bytes.length) break;
+          const row={name,size};
+          if(/\.json$/i.test(name)&&size<4000000) {
+            try {
+              const data=JSON.parse(decoder.decode(bytes.slice(offset+512,offset+512+size))); row.shape=shape(data);
+              if(/tokens/i.test(name)&&Array.isArray(data)) row.pages=data.map(page=>{
+                const starts=[],ends=[]; let nodes=0;
+                function walk(v){ if(!v||typeof v!=='object'||nodes++>100000)return; if(Number.isFinite(v.startPositionId))starts.push(v.startPositionId); if(Number.isFinite(v.endPositionId))ends.push(v.endPositionId); if(Array.isArray(v))v.forEach(walk);else Object.keys(v).forEach(k=>walk(v[k])); }
+                walk(page);
+                return {pageIndex:page.pageIndex,minimum:starts.length?Math.min(...starts):null,maximum:ends.length?Math.max(...ends):null,top:shape({...page,children:undefined})};
+              });
+            } catch(_) {}
+          }
+          entries.push(row); offset+=512+Math.ceil(size/512)*512;
+        }
+        return {bytes:bytes.length,entries};
+      }
+      const original = service.renderBookUsingToken;
+      const probe = {service, originalPosition:navigation.state.currentPosition, report:{ok:true, responses:0}};
+      probe.restore = () => navigation.moveToPosition(probe.originalPosition);
+      probe.begin = () => navigation.moveToPosition(0);
+      service.renderBookUsingToken = async function(request, provider) {
+        const response = await original.call(this,request,provider);
+        probe.request = request; probe.provider = provider; probe.response = response;
+        probe.report = {ok:true,responses:probe.report.responses+1,request:shape(request),response:shape(response),responseType:{constructor:response?.constructor?.name,tag:Object.prototype.toString.call(response),methods:Object.getOwnPropertyNames(Object.getPrototypeOf(response)||{}).filter(k=>typeof response[k]==='function')}};
+        if(response instanceof Response) {
+          const buffer=await response.clone().arrayBuffer();
+          probe.buffer=buffer; probe.report.response={type:'Response',status:response.status,archive:archiveShape(buffer)};
+        }
+        probe.report.complete = true;
+        return response;
+      };
+      window.__crOfflineRendererProbe = probe;
+      return JSON.stringify({ok:true, originalPosition:probe.originalPosition});
+    })()
+    """#
+
+    /// Read only: numeric navigation bounds and callable property names. No
+    /// content, credentials, response bodies or URLs leave the reader.
+    static let offlineSourceCapabilities = #"""
+    (() => {
+      const rows = [], seen = new Set(), imageRows = [], serviceRows = [];
+      let navigationState = null, rendererMethods = {};
+      function fields(value, depth = 0) {
+        if (!value || typeof value !== 'object' || depth > 2) return {};
+        const out = {};
+        Object.keys(value).slice(0, 100).forEach(key => {
+          if (!/^[a-zA-Z_][a-zA-Z0-9_]{0,60}$/.test(key) || /token|secret|auth|cookie|email|user|account|url|href|text|title|children/i.test(key)) return;
+          const descriptor = Object.getOwnPropertyDescriptor(value, key);
+          if (!descriptor || !('value' in descriptor)) return;
+          const v = descriptor.value;
+          if (typeof v === 'number' && Number.isFinite(v) || typeof v === 'boolean') out[key] = v;
+          else if (typeof v === 'function') out[key] = 'function/' + v.length;
+          else if (typeof v === 'string' && /^(ltr|rtl|vertical|horizontal|paginated|scroll)$/.test(v)) out[key] = v;
+          else if (Array.isArray(v)) out[key] = {arrayLength:v.length};
+          else if (v && typeof v === 'object' && /page|position|location|progress|render|book|state|value|context/i.test(key)) out[key] = fields(v, depth + 1);
+        });
+        return out;
+      }
+      for (const node of document.querySelectorAll('#kr-renderer,#kr-chevron-left,#kr-chevron-right,#kr-scrubber-bar,ion-range,[role="slider"],.kg-full-page-img,img[src^="blob:"]')) {
+        const fiberKey = Object.keys(node).find(k => /^__react(Fiber|InternalInstance)\$/.test(k));
+        let fiber = fiberKey && node[fiberKey], depth = 0;
+        let root=fiber; while(root?.return)root=root.return;
+        if(root?.stateNode?.current&&root!==root.stateNode.current) fiber=fiber?.alternate||fiber;
+        while (fiber && depth++ < 50 && rows.length < 80) {
+          if (!seen.has(fiber)) {
+            seen.add(fiber);
+            const context = fiber.memoizedProps?.value;
+            if (typeof context?.moveToPosition === 'function' && typeof context?.nextPage === 'function') {
+              navigationState = fields(context.state);
+              for(const method of ['moveToPosition','moveToLocation','moveToPage']) rendererMethods['navigation.'+method]=String(context[method]).slice(0,3000);
+            }
+            const service = fiber.memoizedProps?.renderingService;
+            if (service) {
+              let prototype = service;
+              for (let level = 0; prototype && level < 3; level++, prototype = Object.getPrototypeOf(prototype)) {
+                for (const key of Object.getOwnPropertyNames(prototype)) {
+                  if (key === 'constructor' || !/render|page|position|location|metadata/i.test(key)) continue;
+                  const descriptor = Object.getOwnPropertyDescriptor(prototype, key);
+                  if (typeof descriptor?.value === 'function') rendererMethods[key] = String(descriptor.value).slice(0, 2400);
+                }
+              }
+            }
+            const props = fiber.memoizedProps || {};
+            if(depth<10) {
+              const methods={};
+              for(const key of Object.keys(props)) {
+                const value=props[key];
+                if(/render|image|page|raster|canvas/i.test(key)) {
+                  if(typeof value==='function') methods[key]=String(value).slice(0,2200);
+                  else if(value&&typeof value==='object'&&!Array.isArray(value)) {
+                    let prototype=value; const names=[];
+                    for(let level=0;prototype&&level<2;level++,prototype=Object.getPrototypeOf(prototype)) {
+                      for(const method of Object.getOwnPropertyNames(prototype)) {
+                        if(method==='constructor')continue;
+                        const d=Object.getOwnPropertyDescriptor(prototype,method);
+                        if(typeof d?.value==='function')names.push(method);
+                      }
+                    }
+                    if(names.length)methods[key]=names;
+                  }
+                }
+              }
+              if(Object.keys(methods).length) serviceRows.push({depth,methods});
+            }
+            const values = fields(props);
+            if (Object.keys(values).length) rows.push({depth, component:typeof fiber.type === 'string' ? fiber.type : 'component', fields:values});
+          }
+          fiber = fiber.return;
+        }
+      }
+      let match = window.__crKindleFindPaginationActions?.();
+      const controls = [...document.querySelectorAll('#kr-scrubber-bar,ion-range,[role="slider"],#kr-chevron-left,#kr-chevron-right')].slice(0, 12).map(el => {
+        const value = {tag:el.tagName, id:el.id, disabled:el.disabled === true || el.getAttribute('aria-disabled') === 'true'};
+        for (const key of ['min','max','value','step']) {
+          const v = el[key] ?? el.getAttribute(key);
+          if (v !== null && v !== '' && Number.isFinite(Number(v))) value[key] = Number(v);
+        }
+        return value;
+      });
+      return JSON.stringify({version:1, chromeLocked:document.documentElement.classList.contains('cr-kindle-page-mode-locked'),
+        navigationState, rendererMethods, serviceRows,
+        scripts:[...document.scripts].filter(s=>s.src).map(s=>{const u=new URL(s.src);return u.origin+u.pathname;}), pagination:fields(match?.props || window.__crKindleTurnCapability?.props), controls, rows});
+    })()
+    """#
+
     static let pageFlipProbeRingCapacity = 1_500
     static let pageFlipProbeDrainLimit = 100
 

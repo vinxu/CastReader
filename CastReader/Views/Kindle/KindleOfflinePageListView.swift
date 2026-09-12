@@ -1,4 +1,3 @@
-#if DEBUG
 import AVFoundation
 import Combine
 import SwiftUI
@@ -12,6 +11,7 @@ enum KindleOfflineContext {
     }
 }
 
+#if DEBUG
 @MainActor
 struct KindleOfflinePageFixture: View {
     @State private var ready = false

@@ -97,8 +97,8 @@ final class KindleLibraryStore: ObservableObject {
         KindleStorefront.entry(id: boundStorefrontID) ?? .us
     }
 
-    /// Local binding identity survives relaunches but is retired on explicit
-    /// disconnect or a failed-session rebind, including accounts without email.
+    /// Local content survives an expired network session. Only an explicit
+    /// disconnect or a confirmed new binding retires its identity.
     var offlineContentBindingID: String? {
         guard hasActiveStorage else { return nil }
         let key = storageKey("kindle.offline.binding.v1.\(boundStorefrontID)")
@@ -109,8 +109,17 @@ final class KindleLibraryStore: ObservableObject {
         return value
     }
 
+    private var offlineRebindPendingKey: String { storageKey("kindle.offline.rebind-pending.v1.\(boundStorefrontID)") }
+
+    private func confirmOfflineBinding() {
+        if defaults.bool(forKey: offlineRebindPendingKey) {
+            retireOfflineContentBinding()
+        }
+    }
+
     private func retireOfflineContentBinding() {
         AudioPlayerService.shared.stopSystemSpeechForLibraryBoundary()
+        defaults.removeObject(forKey: offlineRebindPendingKey)
         defaults.removeObject(forKey: storageKey("kindle.offline.binding.v1.\(boundStorefrontID)"))
     }
 
@@ -218,6 +227,7 @@ final class KindleLibraryStore: ObservableObject {
                 existingByID[incoming.id] = incoming
             }
         }
+        confirmOfflineBinding()
         let wasConnected = hasConnected
         books = Array(existingByID.values).sorted {
             ($0.lastOpenedAt ?? $0.lastSyncedAt) > ($1.lastOpenedAt ?? $1.lastSyncedAt)
@@ -261,6 +271,7 @@ final class KindleLibraryStore: ObservableObject {
     /// Keeping this state distinct from "not signed in" lets Home surface the
     /// storefront recovery path instead of sending the user through login again.
     func markConnectedWithEmptyShelf(account: KindleAccountInfo? = nil) {
+        confirmOfflineBinding()
         let wasConnected = hasConnected
         books.removeAll()
         hasConnected = true
@@ -409,7 +420,7 @@ final class KindleLibraryStore: ObservableObject {
     /// the anchors are keyed by book id, so reading positions survive a failure
     /// the user did not ask for.
     func markSessionExpiredForRebind() async {
-        retireOfflineContentBinding()
+        defaults.set(true, forKey: offlineRebindPendingKey)
         let expiredStorefront = boundStorefront
         books.removeAll()
         hasConnected = false

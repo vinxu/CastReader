@@ -148,6 +148,8 @@ struct KindleBookView: View {
         usesCompactPlaybackBar ? 44 : 52
     }
 
+    @State private var showOfflineDownload = false
+
     init(model: KindleBookViewModel) {
         _model = StateObject(wrappedValue: model)
     }
@@ -211,6 +213,10 @@ struct KindleBookView: View {
                 ),
                 changeFont: { model.changeReaderFont(by: $0) }
             )
+        }
+        .environment(\.readerOfflineAction, ReaderOfflineAction(title: "离线保存整本书", open: { showOfflineDownload = true }))
+        .sheet(isPresented: $showOfflineDownload) {
+            KindleOfflineDownloadView(model: model, download: model.offlineDownload)
         }
         #if DEBUG
         .sheet(isPresented: $showOfflineDiagnostics) { KindleOfflineDiagnosticsView(model: model) }
@@ -2110,7 +2116,7 @@ private struct KindleNativeTOCPanel: View {
 }
 
 @MainActor
-final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegate, WKScriptMessageHandler {
+final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegate, WKScriptMessageHandler, KindleOfflineBookSource {
     @Published var book: KindleBook
     @Published var isPreparing = false
     @Published var statusText = ""
@@ -2131,6 +2137,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var readerFontMaximum: Double = 0
     private var readingSettingsTask: Task<Void, Never>?
     private var readingSettingsRevision: UInt64 = 0
+    let offlineDownload = KindleOfflineDownloadCoordinator()
+    private var offlineCaptureOriginal: KindleOfflineSourcePosition?
+    private var offlineCaptureNavigationGeneration: UInt64?
+    private var offlineCaptureScope: String?
     private var suppressReadingSettingsCloseAfterSync = false
     private var readingSettingsSessionActive = false
     private var readingSettingsCloseInProgress = false
@@ -2529,6 +2539,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func setApplicationActive(_ active: Bool) {
         guard isApplicationActive != active else { return }
         isApplicationActive = active
+        if !active { offlineDownload.pause() }
         KindleRunLog.write("KINDLE lifecycle appActive=\(active ? "Y" : "N")")
         if active, needsForegroundVisualResync {
             KindleRunLog.write("KINDLE lifecycle visual-resync pending reason=app-active")
@@ -3154,6 +3165,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         config.websiteDataStore = websiteDataStore ?? CommercialWebSession.websiteDataStore
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         let userContentController = WKUserContentController()
+        userContentController.addUserScript(WKUserScript(
+            source: KindleWebScripts.restrictedToKnownStorefronts(KindleOfflineSourceScript.bootstrap),
+            injectionTime: .atDocumentStart, forMainFrameOnly: true, in: .page))
         // These are the only scripts that must run before Amazon's renderer:
         // metadata wraps fetch, the small blob hook captures pre-rendered page
         // images before Kindle revokes their original object URLs, and the
@@ -3322,6 +3336,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// Every path that stops owning a reader must call this. Do not move any of
     /// it back into `deinit`.
     func destroy() {
+        offlineDownload.pause()
         playerOverlaySubscription?.cancel()
         playerOverlaySubscription = nil
         playerOverlayDismissTask?.cancel()
@@ -7799,6 +7814,142 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         KindleRunLog.write("KINDLE page turn stop old-playback reason=\(reason)")
     }
 
+    var offlineSourceBook: KindleBook { book }
+
+    private struct OfflineSourceEvidence {
+        let position: KindleOfflineSourcePosition
+        let words: Int
+    }
+
+    private func readOfflineSourceEvidence() async throws -> OfflineSourceEvidence {
+        let value = try await evaluateJSON("window.__crOfflineSourceRead && window.__crOfflineSourceRead()")
+        guard value["loading"] as? Bool == false,
+              let asin = value["asin"] as? String, asin == expectedReaderASIN,
+              let revision = value["revision"] as? String, !revision.isEmpty,
+              let metadata = value["metadata"] as? [String: Any],
+              let minimum = Self.int(from: metadata["minimum"]), let maximum = Self.int(from: metadata["maximum"]),
+              minimum >= 0, maximum > minimum, maximum < Int.max,
+              let start = Self.int(from: value["start"]), let end = Self.int(from: value["end"]),
+              Self.int(from: value["current"]) == start,
+              let page = value["page"] as? [String: Any], Self.int(from: page["start"]) == start,
+              let rawEnd = Self.int(from: page["end"]), rawEnd < Int.max,
+              end == rawEnd,
+              let words = Self.int(from: page["words"]), words >= 0,
+              let layout = value["layout"] as? [String: Any], layout["width"] != nil, layout["height"] != nil else {
+            throw KindleBookError.invalidPayload
+        }
+        // Kindle's first sentinel is position zero; the cover glyph starts at
+        // one. The renderer metadata explicitly associates that sentinel with
+        // the cover. All subsequent pages retain their exact source bounds.
+        let isCover = Self.int(from: metadata["cover"]) == minimum && start <= minimum + 1
+        let normalizedStart = isCover ? minimum : start
+        let layoutData = try JSONSerialization.data(withJSONObject: ["asin": asin, "revision": revision, "layout": layout], options: [.sortedKeys])
+        let position = KindleOfflineSourcePosition(start: normalizedStart, end: min(maximum, end + 1), minimum: minimum, maximum: maximum,
+            layoutID: KindleOfflinePageStore.digest(layoutData), fingerprint: "source-\(start)-\(end)")
+        guard position.isValid else { throw KindleBookError.invalidPayload }
+        return OfflineSourceEvidence(position: position, words: words)
+    }
+
+    private func waitForOfflineSource(target: Int? = nil) async throws -> OfflineSourceEvidence {
+        var previous: KindleOfflineSourcePosition?, stable = 0
+        for _ in 0..<100 {
+            try Task.checkCancellation()
+            if let evidence = try? await readOfflineSourceEvidence(),
+               target.map({ evidence.position.start <= $0 && evidence.position.end >= $0 }) ?? true {
+                stable = previous == evidence.position ? stable + 1 : 0
+                previous = evidence.position
+                if stable >= 3 { return evidence }
+            } else { previous = nil; stable = 0 }
+            try await Task.sleep(for: .milliseconds(200))
+        }
+        #if DEBUG
+        if let raw = try? await evaluate("window.__crOfflineSourceRead && window.__crOfflineSourceRead()") as? String,
+           let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+            try? Data(raw.utf8).write(to: root.appendingPathComponent("kindle-offline-source-timeout.json"), options: .atomic)
+        }
+        #endif
+        throw KindleBookError.captureFailed("offline-source-not-stable")
+    }
+
+    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
+        guard offlineCaptureOriginal == nil, let scope = KindleOfflineContext.currentScope else { throw KindleBookError.busy }
+        cancelInFlightProcessingForManualPageTurn(reason: "offline-book-download")
+        stopPlaybackForPageTurn(reason: "offline-book-download")
+        stopFollowing()
+        stopPageKeyWatcher()
+        _ = try await ensureCaptureScriptInstalled(reason: "offline-book-download")
+        try await waitForPageReady()
+        let observed = try await waitForOfflineSource()
+        if let interruptedPosition {
+            guard interruptedPosition.layoutID == observed.position.layoutID,
+                  interruptedPosition.minimum == observed.position.minimum,
+                  interruptedPosition.maximum == observed.position.maximum else { throw KindleOfflineBookStore.Failure.staleGeneration }
+        }
+        let original = interruptedPosition ?? observed.position
+        let asinJSON = try jsonString([expectedReaderASIN ?? ""])
+        guard (try await evaluate("window.__crOfflineProgressGuard(true, (\(asinJSON))[0])") as? Bool) == true else {
+            throw KindleBookError.captureFailed("offline-progress-guard-unavailable")
+        }
+        offlineCaptureOriginal = original
+        offlineCaptureScope = scope
+        offlineCaptureNavigationGeneration = readerControlsNavigationGeneration
+        if interruptedPosition != nil {
+            guard (try await evaluate("window.__crOfflineSourceMove(\(original.start))") as? Bool) == true else { throw KindleBookError.invalidPayload }
+            _ = try await waitForOfflineSource(target: original.start)
+        }
+        return original
+    }
+
+    private func requireOfflineCapture() throws {
+        guard offlineCaptureOriginal != nil, offlineCaptureScope == KindleOfflineContext.currentScope,
+              offlineCaptureNavigationGeneration == readerControlsNavigationGeneration else { throw CancellationError() }
+        try requireReaderOperation(.capture, reason: "offline-book-capture")
+    }
+
+    func captureOfflineBookPage(after previous: KindleOfflineSourcePosition?) async throws -> KindleOfflineCapturedPage {
+        try requireOfflineCapture()
+        guard let original = offlineCaptureOriginal else { throw CancellationError() }
+        let target = previous.map { $0.end + 1 } ?? original.minimum
+        guard (try await evaluate("window.__crOfflineSourceMove(\(target))") as? Bool) == true else { throw KindleBookError.invalidPayload }
+        let before = try await waitForOfflineSource(target: target)
+        guard before.position.layoutID == original.layoutID else { throw KindleOfflineBookStore.Failure.staleGeneration }
+        if let previous { guard before.position.follows(previous) else { throw KindleOfflineBookStore.Failure.discontinuousPage } }
+        else { guard before.position.isFirst else { throw KindleOfflineBookStore.Failure.discontinuousPage } }
+        try await waitForKindleImageStable()
+        try requireOfflineCapture()
+        let payload = try await evaluateJSON("window.__crKindleCurrentPageSnapshot && window.__crKindleCurrentPageSnapshot(\(Self.ocrCaptureJavaScriptArguments))")
+        guard payload["ok"] as? Bool == true, let dataURL = payload["image"] as? String,
+              let imageData = Self.decodeDataURL(dataURL), UIImage(data: imageData) != nil else { throw KindleBookError.badImage }
+        let document: ReadingDocument
+        do { document = makeDocument(from: [try await makeCapturedPage(from: payload, pageIndex: 0)]) }
+        catch OCRError.noText where before.words == 0 {
+            document = ReadingDocument(title: book.title, sourceKind: .kindle, language: book.language ?? "en",
+                paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, pageIndex: 0, imageData: imageData)])
+        }
+        try requireOfflineCapture()
+        let after = try await readOfflineSourceEvidence()
+        guard after.position == before.position else { throw KindleOfflineBookStore.Failure.discontinuousPage }
+        let position = KindleOfflineSourcePosition(start: before.position.start, end: before.position.end,
+            minimum: before.position.minimum, maximum: before.position.maximum, layoutID: before.position.layoutID,
+            fingerprint: KindleOfflinePageStore.digest(imageData))
+        return KindleOfflineCapturedPage(position: position, document: document)
+    }
+
+    func endOfflineBookCapture() async -> Bool {
+        guard let original = offlineCaptureOriginal else { return true }
+        defer {
+            offlineCaptureOriginal = nil; offlineCaptureScope = nil; offlineCaptureNavigationGeneration = nil
+            webView.evaluateJavaScript("window.__crOfflineProgressGuard && window.__crOfflineProgressGuard(false)", completionHandler: nil)
+        }
+        guard offlineCaptureScope == KindleOfflineContext.currentScope,
+              offlineCaptureNavigationGeneration == readerControlsNavigationGeneration else { return false }
+        do {
+            guard (try await evaluate("window.__crOfflineSourceMove(\(original.start))") as? Bool) == true else { return false }
+            let restored = try await waitForOfflineSource(target: original.start)
+            return restored.position.start == original.start && restored.position.end == original.end
+        } catch { return false }
+    }
+
     #if DEBUG
     func prepareOfflineDiagnostics() {
         cancelInFlightProcessingForManualPageTurn(reason: "offline-diagnostic")
@@ -7832,8 +7983,65 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return saved
     }
 
+    private func offlineDiagnosticMove(to position: Int) async throws {
+        let script = """
+        (() => { const context = \(KindleWebScripts.offlineSourceNavigation);
+          if (!context || \(position) < context.minimum || \(position) > context.maximum) return false;
+          context.navigation.moveToPosition(\(position)); return true; })()
+        """
+        guard (try await evaluate(script) as? Bool) == true else { throw KindleBookError.invalidPayload }
+        var stable = 0
+        for _ in 0..<100 {
+            try await Task.sleep(for: .milliseconds(200))
+            let state = try await evaluateJSON("JSON.stringify((() => { const c = \(KindleWebScripts.offlineSourceNavigation); return c ? {current:c.current,range:c.range,loading:c.loading} : {}; })())")
+            let range = state["range"] as? [String: Any] ?? [:]
+            let start = Self.int(from: range["startPosition"]), end = Self.int(from: range["endPosition"])
+            if let start, let end, (start <= position || position == 0 && start == 1), end >= position,
+               Self.int(from: state["current"]) == start, state["loading"] as? Bool == false {
+                stable += 1
+                if stable >= 5 { return }
+            } else { stable = 0 }
+        }
+        throw KindleBookError.invalidPayload
+    }
+
     func runOfflinePageFlipDiagnostic(_ command: String) async throws -> String {
         guard KindleStorefront.matches(url: webView.url) else { throw KindleBookError.invalidPayload }
+        if command.hasPrefix("jump:"), let position = Int(command.dropFirst(5)), position >= 0 {
+            prepareOfflineDiagnostics()
+            try await offlineDiagnosticMove(to: position)
+            return "已确认源阅读位置：\(position)"
+        }
+        if command == "renderer" {
+            prepareOfflineDiagnostics()
+            let installed = try await evaluateJSON(KindleWebScripts.offlineRendererProbeInstall)
+            guard Self.boolValue(installed["ok"]) else { throw KindleBookError.invalidPayload }
+            guard let originalPosition = Self.int(from: installed["originalPosition"]) else { throw KindleBookError.invalidPayload }
+            try await offlineDiagnosticMove(to: 0)
+            var report: [String: Any] = [:]
+            for _ in 0..<40 {
+                try await Task.sleep(for: .milliseconds(250))
+                report = try await evaluateJSON("JSON.stringify(window.__crOfflineRendererProbe.report)")
+                if Self.boolValue(report["complete"]) { break }
+            }
+            let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("KindleOfflineDiagnostics", isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]).write(
+                to: directory.appendingPathComponent("renderer-capabilities.json"), options: .atomic)
+            try await offlineDiagnosticMove(to: originalPosition)
+            return "源渲染页面请求已记录，已确认返回原位置。"
+        }
+        if command == "source" {
+            guard let result = try await evaluate(KindleWebScripts.offlineSourceCapabilities) as? String else {
+                throw KindleBookError.invalidPayload
+            }
+            let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("KindleOfflineDiagnostics", isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try Data(result.utf8).write(to: directory.appendingPathComponent("source-capabilities.json"), options: .atomic)
+            return "整书定位能力已记录到本机。"
+        }
         return try await offlineProbeSession.run(command) { [weak self] script in
             guard let self else { throw CancellationError() }
             return try await self.evaluate(script)

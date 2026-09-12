@@ -150,7 +150,7 @@ final class SystemSpeechPlaybackService: ObservableObject {
           else { DispatchQueue.main.async { action() } } }
     }
 
-    private var canContinueAutomatically: Bool {
+    var canContinueAutomatically: Bool {
         guard let audio else { return true }
         guard let audioToken, audio.isPlaybackSessionActive(audioToken) else { return false }
         return audio.sleepTimer.permitsAutomaticPlayback()
@@ -194,6 +194,14 @@ final class SystemSpeechPlaybackService: ObservableObject {
             return
         }
         begin(at: state == .finished ? 0 : currentUnitIndex)
+    }
+
+    /// Page continuation is never a user gesture: it must not reclaim an
+    /// output taken by another reader or clear an expired sleep timer.
+    func playAutomatically() {
+        guard canContinueAutomatically, !units.isEmpty, !voiceID.isEmpty,
+              state != .speaking, state != .preparing else { return }
+        begin(at: currentUnitIndex)
     }
 
     func pause() {

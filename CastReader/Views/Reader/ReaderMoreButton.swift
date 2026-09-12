@@ -1,5 +1,21 @@
 import SwiftUI
 
+struct ReaderOfflineAction {
+    let title: String
+    let open: () -> Void
+}
+
+private struct ReaderOfflineActionKey: EnvironmentKey {
+    static let defaultValue: ReaderOfflineAction? = nil
+}
+
+extension EnvironmentValues {
+    var readerOfflineAction: ReaderOfflineAction? {
+        get { self[ReaderOfflineActionKey.self] }
+        set { self[ReaderOfflineActionKey.self] = newValue }
+    }
+}
+
 enum ReaderMoreFormatting {
     static func stopTime(_ date: Date, locale: Locale) -> String {
         date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(locale))
@@ -8,6 +24,7 @@ enum ReaderMoreFormatting {
 
 struct ReaderMoreButton: View {
     @Environment(\.readerAppearanceSource) private var appearanceSource
+    @Environment(\.readerOfflineAction) private var offlineAction
     @ObservedObject private var timer = AudioPlayerService.shared.sleepTimer
     @State private var panel: Panel?
     @State private var settingsUnavailable = false
@@ -19,6 +36,11 @@ struct ReaderMoreButton: View {
 
     var body: some View {
         Menu {
+            if let offlineAction {
+                Button(action: offlineAction.open) {
+                    Label(offlineAction.title, systemImage: "arrow.down.circle")
+                }.accessibilityIdentifier("readerOfflineMenuItem")
+            }
             Button { panel = .timer } label: {
                 Label(timer.isActive
                     ? AppLocalized("定时停止") + " · " + timer.countdown

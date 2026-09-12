@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "package": "v16 internal device build",
+  "sourceParent": "3b6ef7f",
+  "appSourceHashes": {
+    "CastReader/Services/KindleOfflineSourceScript.swift": "1b24eff4c6626bdad6f32ba9449b213cc4279507a4b24dc35cf7af13bb1eed82",
+    "CastReader/Services/KindleOfflineDownloadCoordinator.swift": "75ce6deb3d7385ab32427647efacb9c907199686f987a74e58ac2f16769805f3",
+    "CastReader/Services/KindleOfflineBookStore.swift": "d7c21c4748844e2282ac8aa77468e203956a74ca461298740711039922242399",
+    "CastReader/Services/SystemSpeechPlaybackService.swift": "3320e957932a73d371f3307f9c925c6584ebeb5d56cf9516aecb90006fd70d60",
+    "CastReader/Services/KindleLibraryStore.swift": "f1235a188bb944111ec9e9b76518139cb399c772eb994891bcd5597eb7b4b45e",
+    "CastReader/Views/Kindle/KindleBookView.swift": "fd2367dfec65ba77a8ac61eb746d0039837c4808a1809101bd61dc88693993c2",
+    "CastReader/Views/Kindle/KindleOfflineDownloadView.swift": "08e26d4ce4bdca1ccff8555f9a4c96a0e5039afb2f5a86b286ee8f5bee593747",
+    "CastReader/Views/Kindle/KindleOfflineLibraryView.swift": "241024481e4dee164c6fbceb4eeab8f7a2b5b59497376bb0f1654ceb79d49d39",
+    "CastReader/Views/Reader/ReaderMoreButton.swift": "248ce374d24f3a982e29b4b3efb9ba32718c6635fefa9f7aeae7e462d6f93684",
+    "CastReader/Views/Kindle/KindleLibraryView.swift": "aecd0d14adcde329dd1d642c0ff49a08115061237e5030f5915a18d10b351842",
+    "CastReader.xcodeproj/project.pbxproj": "01305ba58bc09652e0f9f167b5897885c460454a93a8c51ea67c066746bf393a"
+  },
+  "checks": {
+    "releaseBuild": "passed",
+    "deviceTestBuild": "passed",
+    "regressionBatches": [
+      {
+        "count": 90,
+        "failures": 0
+      },
+      {
+        "count": 98,
+        "failures": 0
+      }
+    ],
+    "finalCoreRerun": {
+      "count": 20,
+      "failures": 0
+    },
+    "sourceBridgeNodeTests": "passed",
+    "finalBaselineSourceCheck": "passed"
+  },
+  "realBook": {
+    "pages": 427,
+    "logicalResourceBytes": 226262271,
+    "uniqueImages": 427,
+    "textCharacters": 479651,
+    "imageOnlyPages": 0,
+    "sourceMinimum": 0,
+    "sourceMaximum": 480607,
+    "savedStart": 0,
+    "savedEnd": 480607,
+    "continuous": true,
+    "allResourceHashesVerified": true,
+    "coversWholeBook": true,
+    "status": "complete",
+    "originalPositionRestored": true,
+    "readingPosition": {
+      "page": 249,
+      "paragraphID": 1,
+      "sentenceStart": 0,
+      "voiceID": ""
+    },
+    "completedAtLocal": "2026-09-13 02:05 +08:00"
+  },
+  "airplaneMode": {
+    "status": "awaiting physical-device confirmation",
+    "enabledFromMirroringAtLocal": "2026-09-13 02:13 +08:00",
+    "mirroringResult": "Connection Interrupted after flight-mode switch enabled",
+    "humanInstructionsSent": true,
+    "coldOpenAndAudibilityPassed": false
+  },
+  "nativeReader": {
+    "initialPage": 250,
+    "automaticallyAdvancedToPage": 251,
+    "pausedSentence": 2,
+    "coldLaunchRestoredPage": 251,
+    "coldLaunchRestoredSentence": 2,
+    "coldLaunchState": "paused",
+    "lastPageOpened": 427,
+    "lastPageSpeechFinishedWithoutWrap": true,
+    "voice": "Samantha (en-US)",
+    "humanAudibilityInThisRun": "not yet confirmed"
+  }
+}

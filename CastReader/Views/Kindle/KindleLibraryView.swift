@@ -30,6 +30,9 @@ struct KindleLibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 controls
+                NavigationLink { KindleOfflineLibraryView() } label: {
+                    Label("本机离线书籍", systemImage: "arrow.down.circle")
+                }.accessibilityIdentifier("kindleOfflineLibrary")
                 #if DEBUG
                 NavigationLink("已保存页面 · 离线测试") { KindleOfflinePageListView() }
                     .accessibilityIdentifier("kindleOfflineSavedPages")

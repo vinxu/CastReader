@@ -127,6 +127,7 @@ struct SystemSpeechAcceptanceView: View {
 struct KindleOfflineDiagnosticsView: View {
     @ObservedObject var model: KindleBookViewModel
     @State private var status = "探针只观察当前页面。请先开始采样，再回到 Kindle 手动打开 Page Flip。"
+    @State private var sourcePosition = ""
     @State private var captured: ReadingDocument?
     @State private var busy = false
     @State private var showSpeech = false
@@ -158,6 +159,15 @@ struct KindleOfflineDiagnosticsView: View {
                     NavigationLink("已保存页面") { KindleOfflinePageListView() }
                 }
                 Section("Page Flip 旁观探针") {
+                    HStack {
+                        TextField("源位置", text: $sourcePosition).keyboardType(.numberPad)
+                        Button("定位") { run("jump:" + sourcePosition) }.disabled(Int(sourcePosition) == nil)
+                    }
+
+                    Button("验证整书源页面") { run("renderer") }
+                        .accessibilityIdentifier("kindleOfflineRendererCapabilities")
+                    Button("读取整书定位能力") { run("source") }
+                        .accessibilityIdentifier("kindleOfflineSourceCapabilities")
                     Button("开始采样") { run("start") }
                         .accessibilityIdentifier("kindleOfflineProbeStart")
                     Button("读取采样") { run("poll") }

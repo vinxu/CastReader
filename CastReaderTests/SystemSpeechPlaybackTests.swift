@@ -199,4 +199,33 @@ final class SystemSpeechPlaybackTests: XCTestCase {
         XCTAssertNil(service.errorCode)
         XCTAssertEqual(driver.requests.last?.rate, 0.6)
     }
+
+    func testAutomaticNextPageCannotClearSleepDeadlineOrReclaimAnotherReader() async throws {
+        let driver = Driver()
+        let speech = SystemSpeechPlaybackService(driver: driver)
+        let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let first = SystemSpeechTextPlan.units(paragraphID: 1, text: "The first saved page.")
+        let second = SystemSpeechTextPlan.units(paragraphID: 2, text: "The next saved page.")
+        speech.load(first, voiceID: "local")
+        speech.connectPlayback(title: "Offline book", audio: audio)
+        speech.play()
+        driver.emit(.started(driver.requests[0].id))
+        driver.emit(.finished(driver.requests[0].id))
+        audio.sleepTimer.start(after: 0.01)
+        try await Task.sleep(for: .milliseconds(25))
+        audio.sleepTimer.checkDeadline()
+        speech.load(second, voiceID: "local")
+        let count = driver.requests.count
+        speech.playAutomatically()
+        XCTAssertEqual(driver.requests.count, count)
+        XCTAssertTrue(audio.sleepTimer.requiresExplicitResume)
+        speech.play()
+        XCTAssertGreaterThan(driver.requests.count, count)
+        _ = audio.claimPlaybackSession(owner: .explain)
+        speech.load(first, voiceID: "local")
+        let afterTransfer = driver.requests.count
+        speech.playAutomatically()
+        XCTAssertEqual(driver.requests.count, afterTransfer)
+        speech.closePlayback()
+    }
 }
