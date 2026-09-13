@@ -34,7 +34,7 @@ struct KindleLibraryView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "arrow.down.circle.fill").font(.title2)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("离线书籍").font(.subheadline.weight(.semibold))
+                            Text("已下载").font(.subheadline.weight(.semibold))
                             Text("已下载的书，无需联网即可打开").font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)

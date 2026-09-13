@@ -219,7 +219,7 @@ struct KindleBookView: View {
             guard playbackCenter.consumeOfflineDownloadRequest(for: model.offlineSourceBook.id) else { return }
             showOfflineDownload = true
         }
-        .sheet(isPresented: $showOfflineDownload) {
+        .sheet(isPresented: $showOfflineDownload, onDismiss: { KindleOfflinePlaybackCenter.shared.presentAfterDownload() }) {
             KindleOfflineDownloadView(model: model, download: model.offlineDownload)
         }
         #if DEBUG
@@ -1905,6 +1905,7 @@ final class KindlePlaybackCenter: ObservableObject {
     }
 
     func open(book: KindleBook, intent: KindleOpenIntent = .present) {
+        KindleOfflinePlaybackCenter.shared.stop(preservingSleepTimer: true)
         AppOrientationLock.unlock(owner: Self.orientationOwner)
         if let active = model, active.isSameBook(as: book) {
             active.refreshMetadata(from: book)

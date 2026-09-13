@@ -12,18 +12,12 @@ struct KindleOfflineLibraryView: View {
     @State private var error: String?
     @State private var query = ""
     @State private var deletion: Deletion?
-    @State private var reading: ReadingSession?
-    @State private var pendingResume: ReadingSession?
+    @ObservedObject private var playback = KindleOfflinePlaybackCenter.shared
     let store: KindleOfflineBookStore
     private let scopeProvider: @MainActor () -> String?
     private let continueDownload: ((KindleOfflineBook) -> Void)?
     private var scope: String? { scopeProvider() }
     private struct Deletion: Identifiable { let id: String; let title: String; let scope: String }
-    private struct ReadingSession: Identifiable {
-        let id = UUID()
-        let book: KindleOfflineBook
-        let scope: String
-    }
 
     init(store: KindleOfflineBookStore = .shared,
          scopeProvider: @escaping @MainActor () -> String? = { KindleOfflineContext.currentScope },
@@ -52,13 +46,17 @@ struct KindleOfflineLibraryView: View {
             } else if let scope, loadedScope == scope {
                 Section {
                     Label("保存在这台设备，无需联网即可打开", systemImage: "iphone")
-                        .font(.footnote).foregroundStyle(.secondary)
+                        .font(.footnote).foregroundStyle(.teal)
                     Text("\(books.count) 本 · \(ByteCountFormatter.string(fromByteCount: Int64(books.reduce(0) { $0 + $1.byteCount }), countStyle: .file))")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 ForEach(filtered) { book in
                     Section {
-                        Button { reading = .init(book: book, scope: scope) } label: { bookLabel(book) }
+                        Button {
+                            playback.open(book: book, scope: scope, store: store,
+                                scopeValidator: { scope == scopeProvider() },
+                                continueDownload: { resume(book, expectedScope: scope) })
+                        } label: { bookLabel(book) }
                         .buttonStyle(.plain)
                         .disabled(book.pages.isEmpty)
                         .accessibilityIdentifier("offlineLibraryBook.\(book.sourceBookID)")
@@ -86,25 +84,8 @@ struct KindleOfflineLibraryView: View {
             }
         }
         .reservesMiniPlayerSpace()
-        .navigationTitle("离线书籍").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("已下载").navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, prompt: "搜索离线书名或作者")
-        // Match the download screen's reader presentation so the root online
-        // mini player and tab controls cannot cover local playback controls.
-        .fullScreenCover(item: $reading, onDismiss: {
-            guard let request = pendingResume else { return }
-            pendingResume = nil
-            resume(request.book, expectedScope: request.scope)
-        }) { session in
-            NavigationStack {
-                KindleOfflineBookReaderView(book: session.book, scope: session.scope, store: store,
-                    scopeValidator: { session.scope == scopeProvider() },
-                    continueDownload: { pendingResume = session; reading = nil })
-                    .toolbar { ToolbarItem(placement: .cancellationAction) {
-                        Button("关闭") { reading = nil }.accessibilityIdentifier("offlineBookClose")
-                    } }
-            }
-        }
-        .onChange(of: scope) { _, _ in pendingResume = nil; reading = nil }
         .task(id: scope) { await refresh() }
         .refreshable { await refresh() }
         .onReceive(NotificationCenter.default.publisher(for: KindleOfflineBookStore.didChange).receive(on: RunLoop.main)) { notification in
@@ -129,15 +110,15 @@ struct KindleOfflineLibraryView: View {
 
     private func bookLabel(_ book: KindleOfflineBook) -> some View {
         HStack(spacing: 14) {
-            Image(systemName: book.status == .complete ? "book.closed.fill" : "arrow.down.book.fill")
-                .font(.title2).foregroundStyle(AppTheme.primary)
-                .frame(width: 52, height: 72).background(AppTheme.primary.opacity(0.1), in: RoundedRectangle(cornerRadius: 9))
+            Image(systemName: "book.closed.fill")
+                .font(.title2).foregroundStyle(book.status == .complete ? Color.teal : Color.orange)
+                .frame(width: 52, height: 72).background((book.status == .complete ? Color.teal : Color.orange).opacity(0.1), in: RoundedRectangle(cornerRadius: 9))
             VStack(alignment: .leading, spacing: 5) {
                 Text(book.title).font(.headline).lineLimit(2)
                 if !book.author.isEmpty { Text(book.author).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
                 Label(book.status == .complete ? AppLocalized("整本已保存 · \(book.pages.count) 页") : AppLocalized("未完成 · 已保存 \(book.pages.count) 页"),
                       systemImage: book.status == .complete ? "checkmark.circle.fill" : "pause.circle")
-                    .font(.caption).foregroundStyle(book.status == .complete ? AppTheme.primary : .secondary)
+                    .font(.caption).foregroundStyle(book.status == .complete ? Color.teal : Color.orange)
                 if book.hasLocalReadingPosition == true {
                     Text("上次读到第 \(book.readingPosition.page + 1) 页").font(.caption).foregroundStyle(.secondary)
                 }

@@ -8,6 +8,7 @@ import WebKit
 struct KindleOfflineFlowFixture: View {
     @StateObject private var reader: KindleBookViewModel
     @StateObject private var download: KindleOfflineDownloadCoordinator
+    @ObservedObject private var offline = KindleOfflinePlaybackCenter.shared
     @State private var presented = false
     @State private var route: [String] = []
     @State private var loaded = false
@@ -27,14 +28,18 @@ struct KindleOfflineFlowFixture: View {
 
     var body: some View {
         NavigationStack(path: $route) {
-            List {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                OfflineDownloadsEntryCard(store: download.store, scopeProvider: { scope })
+                NavigationLink("打开正在读的书", value: "reader").accessibilityIdentifier("offlineFlowOnlineBook")
+                NavigationLink("离线书籍", value: "library").accessibilityIdentifier("libraryOfflineBooks")
                 Section {
                     Text("模拟器验收 · 本地合成书").font(.caption).foregroundStyle(.secondary)
                     Text("相同的保存、书架、阅读与系统朗读界面；没有 Kindle 网络请求。")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                NavigationLink("打开正在读的书", value: "reader").accessibilityIdentifier("offlineFlowOnlineBook")
-                NavigationLink("离线书籍", value: "library").accessibilityIdentifier("libraryOfflineBooks")
+
+                }.padding(16)
             }.navigationTitle("文库")
                 .navigationDestination(for: String.self) { destination in
                     if destination == "library" {
@@ -50,7 +55,9 @@ struct KindleOfflineFlowFixture: View {
                             .environment(\.readerOfflineAction, ReaderOfflineAction(title: "离线保存整本书", open: { presented = true }))
                     }
                 }
-                .sheet(isPresented: $presented) {
+                .sheet(isPresented: $presented, onDismiss: {
+                    offline.presentAfterDownload(continueDownload: { presented = true })
+                }) {
                     KindleOfflineDownloadView(model: reader, download: download, fixtureStart: {
                         download.start(source: source, scope: scope, stillAuthorized: { true })
                     }, fixtureScope: scope)
@@ -72,7 +79,11 @@ struct KindleOfflineFlowFixture: View {
                 }
         }.preferredColorScheme(UserDefaults.standard.string(forKey: "CastReaderFixtureAppearance") == "Dark" ? .dark : nil)
         .overlay(alignment: .bottom) {
-            if ProcessInfo.processInfo.arguments.contains("-CastReaderOfflineFixtureMiniPlayer") {
+            if offline.showsMiniPlayer { KindleOfflineMiniPlayer(center: offline).padding(.bottom, 68) }
+        }
+        .overlay { KindleOfflinePlaybackSurface(center: offline) }
+        .overlay(alignment: .bottom) {
+            if offline.model == nil && ProcessInfo.processInfo.arguments.contains("-CastReaderOfflineFixtureMiniPlayer") {
                 // Reproduce MainTabView's persistent online player overlay.
                 Button("在线会话 · 已暂停") {}.padding(20)
                     .frame(maxWidth: .infinity).background(.regularMaterial)

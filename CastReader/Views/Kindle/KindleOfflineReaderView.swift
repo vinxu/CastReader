@@ -67,15 +67,8 @@ private struct KindleOfflinePageZoom: UIViewRepresentable {
 
 @MainActor
 struct KindleOfflineBookReaderView: View {
-    @StateObject private var model: KindleOfflineBookReaderModel
-    private let continueDownload: (() -> Void)?
-
-    init(book: KindleOfflineBook, scope: String, store: KindleOfflineBookStore = .shared,
-         scopeValidator: (@MainActor () -> Bool)? = nil, continueDownload: (() -> Void)? = nil) {
-        _model = StateObject(wrappedValue: KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
-            scopeValidator: scopeValidator))
-        self.continueDownload = continueDownload
-    }
+    @ObservedObject var model: KindleOfflineBookReaderModel
+    var continueDownload: (() -> Void)? = nil
 
     var body: some View {
         KindleOfflineBookReaderContent(model: model, speech: model.speech, continueDownload: continueDownload)
@@ -83,8 +76,7 @@ struct KindleOfflineBookReaderView: View {
             .environment(\.readerOfflineAction, nil)
             .environment(\.readerAppearanceSource, .text)
             .navigationTitle(model.book.title).navigationBarTitleDisplayMode(.inline)
-            .task { await model.open() }
-            .onDisappear { model.close() }
+            .onDisappear { model.persistCurrentPosition() }
     }
 }
 

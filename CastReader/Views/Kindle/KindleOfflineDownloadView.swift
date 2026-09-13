@@ -13,7 +13,7 @@ struct KindleOfflineDownloadView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmStop = false
     @State private var closeAfterStopping = false
-    @State private var readerPresented = false
+
     private var scope: String? {
         #if DEBUG
         if let fixtureScope { return fixtureScope }
@@ -84,19 +84,6 @@ struct KindleOfflineDownloadView: View {
             }
         } message: {
             Text("已保存的页面会保留，下次可以继续。停止后会先恢复原阅读位置。")
-        }
-        .fullScreenCover(isPresented: $readerPresented) {
-            if let book = download.book, let scope {
-                NavigationStack {
-                    KindleOfflineBookReaderView(book: book, scope: scope, store: download.store,
-                        scopeValidator: { scope == self.scope }, continueDownload: { readerPresented = false })
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("关闭") { readerPresented = false }.accessibilityIdentifier("offlineBookClose")
-                            }
-                        }
-                }
-            }
         }
         .onDisappear { download.pause(reason: .closing) }
         .onChange(of: scenePhase) {
@@ -185,11 +172,16 @@ struct KindleOfflineDownloadView: View {
 
     @ViewBuilder private var localReadingLinks: some View {
         if let book = download.book, !book.pages.isEmpty, scope != nil {
-            Button(book.status == .complete ? AppLocalized("打开离线书籍") : AppLocalized("阅读已保存内容")) { readerPresented = true }
+            Button(book.status == .complete ? AppLocalized("打开离线书籍") : AppLocalized("阅读已保存内容")) {
+                guard let scope else { return }
+                KindleOfflinePlaybackCenter.shared.prepareAfterDownload(book: book, scope: scope,
+                    store: download.store, scopeValidator: { scope == self.scope })
+                dismiss()
+            }
                 .buttonStyle(.borderedProminent).tint(AppTheme.primary).controlSize(.large)
                 .accessibilityIdentifier("offlineDownloadOpenBook")
         }
-        Text("以后可从“文库 → 离线书籍”或 Kindle 书架再次打开。")
+        Text("以后可从首页“已下载”直接打开，无需等待 Kindle 加载。")
             .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
     }
 

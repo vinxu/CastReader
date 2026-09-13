@@ -15,6 +15,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     @Published var speechRate = Double(AVSpeechUtteranceDefaultSpeechRate)
     @Published var voiceID = ""
     @Published private(set) var voices: [SystemSpeechVoice] = []
+    var onClosed: (() -> Void)?
     let speech: SystemSpeechPlaybackService
     private let scopeValidator: @MainActor () -> Bool
     private let scope: String
@@ -59,9 +60,16 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     private func refreshSavedBook() async {
         guard !closed, scopeIsCurrent else { return }
         let run = generation
-        guard let fresh = try? await store.load(id: book.id, scope: scope),
-              run == generation, !closed, scopeIsCurrent, fresh.generation == book.generation else { return }
-        book = fresh
+        do {
+            let fresh = try await store.load(id: book.id, scope: scope)
+            guard run == generation, !closed, scopeIsCurrent else { return }
+            guard let fresh, fresh.generation == book.generation else { close(); return }
+            book = fresh
+        } catch {
+            guard run == generation, !closed else { return }
+            pause()
+            self.error = AppLocalized("书籍索引读取失败，请返回离线书籍重新打开。")
+        }
     }
 
     private var scopeIsCurrent: Bool { scopeValidator() }
@@ -87,11 +95,14 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             }
             guard generation == run, !closed, !Task.isCancelled, scopeIsCurrent else { validateScope(); return }
             book = fresh
-            voices = SystemSpeechPlaybackService.voices(language: book.language)
+            let available = await SystemSpeechPlaybackService.availableVoices(language: book.language)
+            guard generation == run, !closed, !Task.isCancelled, scopeIsCurrent else { validateScope(); return }
+            voices = available
             voiceID = voices.first(where: { $0.id == book.readingPosition.voiceID })?.id ?? voices.first?.id ?? ""
             speechRate = min(0.65, max(0.3, book.readingPosition.speechRate ?? Double(AVSpeechUtteranceDefaultSpeechRate)))
             speech.setRate(Float(speechRate))
             speech.connectPlayback(title: book.title)
+            speech.onPlaybackDetached = { [weak self] in self?.close() }
             speech.onCheckpoint = { [weak self] unit, _ in self?.checkpoint(unit) }
             speech.onPlayRequested = { [weak self] in self?.play() }
             speech.onPlaybackInterrupted = { [weak self] in self?.wantsPlayback = false; self?.cancelPreparation() }
@@ -259,11 +270,14 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     func close() {
         guard !closed else { return }
         wantsPlayback = false
-        cancelPreparation()
-        speech.closePlayback()
+        persistCurrentPosition()
         closed = true
+        cancelPreparation()
+        speech.onPlaybackDetached = nil
+        speech.closePlayback()
         loading = false
         generation = UUID()
+        onClosed?()
     }
 
     private func loadPage(_ index: Int, resume: KindleOfflineBook.ReadingPosition?, automatically: Bool) async {

@@ -50,7 +50,7 @@ enum SystemSpeechTextPlan {
     }
 }
 
-struct SystemSpeechVoice: Identifiable, Equatable {
+struct SystemSpeechVoice: Identifiable, Equatable, Sendable {
     let id: String
     let name: String
     let language: String
@@ -103,6 +103,7 @@ final class SystemSpeechPlaybackService: ObservableObject {
     var onCheckpoint: ((SystemSpeechUnit, NSRange?) -> Void)?
     var onPlayRequested: (() -> Void)?
     var onPlaybackInterrupted: (() -> Void)?
+    var onPlaybackDetached: (() -> Void)?
 
     private let driver: any SystemSpeechDriving
     private let now: () -> TimeInterval
@@ -152,7 +153,7 @@ final class SystemSpeechPlaybackService: ObservableObject {
                 guard let self else { return }
                 if let action = self.onPlayRequested { action() } else { self.play() }
             }, pause: Self.onMain { [weak self] in self?.onPlaybackInterrupted?(); self?.pause() },
-            stop: Self.onMain { [weak self] in self?.onPlaybackInterrupted?(); self?.stop() },
+            stop: Self.onMain { [weak self] in self?.onPlaybackInterrupted?(); self?.stop(); self?.onPlaybackDetached?() },
             next: Self.onMain { [weak self] in guard let self else { return }; self.seek(to: self.currentUnitIndex + 1, autoplay: true) },
             previous: Self.onMain { [weak self] in guard let self else { return }; self.seek(to: max(0, self.currentUnitIndex - 1), autoplay: true) }))
     }
@@ -168,7 +169,11 @@ final class SystemSpeechPlaybackService: ObservableObject {
         return audio.sleepTimer.permitsAutomaticPlayback()
     }
 
-    static func voices(language: String) -> [SystemSpeechVoice] {
+    static func availableVoices(language: String) async -> [SystemSpeechVoice] {
+        await Task.detached(priority: .userInitiated) { voices(language: language) }.value
+    }
+
+    nonisolated static func voices(language: String) -> [SystemSpeechVoice] {
         let requested = language.replacingOccurrences(of: "_", with: "-").lowercased()
         let primary = requested.split(separator: "-").first.map(String.init) ?? requested
         let preferredID = AVSpeechSynthesisVoice(language: language.replacingOccurrences(of: "_", with: "-"))?.identifier

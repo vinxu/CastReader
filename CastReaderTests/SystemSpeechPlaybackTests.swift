@@ -4,8 +4,8 @@ import AVFoundation
 
 @MainActor
 final class SystemSpeechPlaybackTests: XCTestCase {
-    func testAvailableReadingVoicesExcludeEffectsAndPreferSystemDefault() throws {
-        let voices = SystemSpeechPlaybackService.voices(language: "en-US")
+    func testAvailableReadingVoicesExcludeEffectsAndPreferSystemDefault() async throws {
+        let voices = await SystemSpeechPlaybackService.availableVoices(language: "en-US")
         guard !voices.isEmpty else { throw XCTSkip("No English system voice installed in this test runtime") }
         for value in voices {
             let voice = try XCTUnwrap(AVSpeechSynthesisVoice(identifier: value.id))
@@ -228,7 +228,8 @@ final class SystemSpeechPlaybackTests: XCTestCase {
     }
 
     func testNativeSpeechRateChangesActualDurationAndActiveUtterance() async throws {
-        let voice = try XCTUnwrap(SystemSpeechPlaybackService.voices(language: "en-US").first)
+        let available = await SystemSpeechPlaybackService.availableVoices(language: "en-US")
+        let voice = try XCTUnwrap(available.first)
         let speech = SystemSpeechPlaybackService()
         defer { speech.stop() }
         let text = "One small step changes the reading speed. Every word stays in its original order."

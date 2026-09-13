@@ -1,0 +1,176 @@
+{
+  "date": "2026-09-13",
+  "worktree": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912",
+  "releaseAncestor": "b6dd4d7",
+  "parentCommit": "82cb88fd97d1b3601c95284c1dd3a1a348cbad34",
+  "sourceFileSHA256": {
+    "CastReader.xcodeproj/project.pbxproj": "7a2c395b104f9bfccf17a7499cb8ead7c75df6a6f720d720356c9ad82deffc8f",
+    "CastReader/Localizable.xcstrings": "d880f464f1dced2f4e0c20c0a37b91c530afdb819b97ae406300183bf271f243",
+    "CastReader/Services/SystemSpeechPlaybackService.swift": "ae6f3db01f25ac485c5b824595b12bd095f6e9976cebc4f4c1226e5cb854ed2d",
+    "CastReader/ViewModels/PlayerCoordinator.swift": "f5b0e644fc691c5ea2821c586973fc2848c81c5165d8a5cb3737efb4b33ea1a1",
+    "CastReader/Views/Home/HomeView.swift": "fc501cc6a0bf4ef79dd3dbfcbb68bdb2e31727b03b715f810749c919d4ec0cb7",
+    "CastReader/Views/Kindle/KindleBookView.swift": "b65e11cc686f2268e5fd20deae191c081f459dcf72fe71239a8c36ecbf2cd801",
+    "CastReader/Views/Kindle/KindleHomeSection.swift": "7fb77704bb9bad36f39cacf3aeb954ce5191456bcd96bc1b3584906fc0b7374d",
+    "CastReader/Views/Kindle/KindleLibraryView.swift": "0d2945e6d66a1c59a5c2c0863220dd0c6671ee92680a968624da61a2547aa71a",
+    "CastReader/Views/Kindle/KindleOfflineDownloadView.swift": "1de2e88114b8b992bce66193edf6ebb001bd1a7022ba61f7b2681629e347d468",
+    "CastReader/Views/Kindle/KindleOfflineFlowFixture.swift": "4c55c9aebda22eac2a69717a37612ebc585830dedb99bda18c61a070a47c5333",
+    "CastReader/Views/Kindle/KindleOfflineLibraryScreen.swift": "19a9c75529821482a2e38fb7929606108ac6f381ecd9c8be52da367c9ca0ca64",
+    "CastReader/Views/Kindle/KindleOfflineLibraryView.swift": "e0d57848f62c0b0a07c982cf0f6c3cf8c2cc35c500c5f4d789661f0bd8dbd58e",
+    "CastReader/Views/Kindle/KindleOfflineReaderView.swift": "9b7e1751cd486807a906fde2b0322458cb37df577fb4d9dd80582b7b856ce30f",
+    "CastReader/Views/Library/LibraryView.swift": "ade3c1352c86b700ae847065edc98f1f2a1df5a4f99870093c8446d2fae0e159",
+    "CastReader/Views/MainTabView.swift": "3fd5377cafbd2d9c2553578c092b8c8a94324e6369142d157ac99b8fd99b04c8",
+    "CastReader/Views/Kindle/KindleOfflinePlaybackCenter.swift": "bc558a3a13de727bcb849f775f83871a201eed61da26ca832e9ced6e233069da",
+    "CastReader/Views/Kindle/OfflineDownloadsEntryCard.swift": "29c63dc26aa2e4c948151203e47551d726140e32494242891e43acd9d30c6602"
+  },
+  "unitTests": {
+    "CastReaderTests.KindleOfflineBookReaderTests/testAccountBoundaryClosesMinimizedSession": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testChangingSessionBeforeDownloadDismissalCancelsPendingReader": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testChapterSequenceRejectsDuplicateAndLateSpeechCallbacks": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testCloseAndReopenRestoresPageVoiceAndRateWithoutStartingSpeech": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testDeletingActiveLocalCopyClosesMiniPlayer": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testEmptyOCRDoesNotSilentlySkipToNextChapter": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testFailedRecognitionKeepsImageAndPauseDuringRetryCannotStartAudio": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testLateOCRCannotReplaceTheSelectedChapter": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testMinimizedSessionContinuesPagesInOrderAndRejectsDuplicates": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testMiniPlayerRetainsSpeechWordAndModelAcrossRepeatedExpansion": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testMissingNextPageNeverReplaysPreviousPageUnderItsNewPageNumber": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testOpeningAnImageBookDoesNotOCRAndPlaybackRecognitionSurvivesColdReopen": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testOpeningOnlineOwnerClosesOfflineSessionWithoutStoppingNewOwner": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testPauseRevokesAlreadyQueuedAutomaticPageAdvance": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testRealLocalOCRRecognizesSavedImageWithoutOnlineReader": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testReopeningDeletedCopyClearsOldDocumentAndPlayback": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testStopDuringOCRNeverRestartsHiddenSpeech": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testStoppingBeforeOpenTaskCannotClaimPlaybackLater": "passed",
+    "CastReaderTests.KindleOfflineBookReaderTests/testSystemSpeechContinuesAcrossSavedImageOnlyPagesAndRestoresCheckpoint": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testActualRangesOnlyAndRateChangeRequeuesCurrentWord": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testAudioSessionFailureCanRetryWithoutLeavingQueuedSpeech": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testAutomaticNextPageCannotClearSleepDeadlineOrReclaimAnotherReader": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testAvailableReadingVoicesExcludeEffectsAndPreferSystemDefault": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testCompletionInFlightAfterPauseCannotSkipOrRefill": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testLongSentenceBoundKeepsEveryNonWhitespaceCharacter": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testNativeSpeechRateChangesActualDurationAndActiveUtterance": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testNewPlaybackOwnerAndAccountBoundaryStopSystemSpeech": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testPauseBeforeFirstCallbackCannotAutostart": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testQueueRemainsBoundedAndRefillsOnCompletion": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testRateChangesRetainCurrentWordAcrossEmojiRapidChangesAndPause": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testSharedSleepTimerPausesSystemSpeechAndRequiresExplicitPlay": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testSourceOffsetsSurviveEmojiCJKAndLeadingWhitespace": "passed",
+    "CastReaderTests.SystemSpeechPlaybackTests/testStopAndSeekRejectAllOldCallbacks": "passed"
+  },
+  "uiTestsLatestResults": {
+    "CastReaderUITests.KindleOfflineFlowUITests/testCachedSentenceRestoresVisibleParagraphWithoutAutoplay": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui2.log"
+    },
+    "CastReaderUITests.KindleOfflineFlowUITests/testDownloadedEntryAndPersistentMiniPlayer": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui4.log"
+    },
+    "CastReaderUITests.KindleOfflineFlowUITests/testEnglishReaderAndLandscapePageRemainComplete": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui2.log"
+    },
+    "CastReaderUITests.KindleOfflineFlowUITests/testFailedDownloadRetainsPagesAndCanResume": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui2.log"
+    },
+    "CastReaderUITests.KindleOfflineFlowUITests/testLargeTextDownloadAndReaderControlsRemainReachable": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui5.log"
+    },
+    "CastReaderUITests.KindleOfflineFlowUITests/testLibraryReaderCoversRootMiniPlayerAndReturnsToLibrary": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui3.log"
+    },
+    "CastReaderUITests.KindleOfflineFlowUITests/testPartialEndContinueCancelAndLocalDeletion": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui2.log"
+    },
+    "CastReaderUITests.KindleOfflineFlowUITests/testRateSelectionChangesTheSpeakingUtteranceWhilePlaying": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui2.log"
+    },
+    "CastReaderUITests.KindleOfflineFlowUITests/testSaveReadOCRSpeechSettingsAndResumeAfterRelaunch": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui2.log"
+    },
+    "CastReaderUITests.KindleOfflineFlowUITests/testTallOriginalPageFitsAbovePlayerAndZoomStartsWithWholePage": {
+      "status": "passed",
+      "log": "/tmp/offline-mini-ui2.log"
+    }
+  },
+  "uniqueUnitPasses": 33,
+  "uniqueUIPasses": 10,
+  "device": {
+    "model": "iPhone 15 Pro Max",
+    "version": "1.2.38 (59)",
+    "install": "success",
+    "binarySHA256": {
+      "CastReader": "52dd746a5dc4b77c6f99f9624b92b2300e71ef4ea3eda520f3472d7aa694001f",
+      "CastReader.debug.dylib": "acfbd9b364659bcce77e86b60b0c9cc7f32b10815cffd200e545665bf6076095"
+    },
+    "interactiveAcceptance": "passed: production Home > Downloaded > existing 427-page book > play > minimize > Home > pause > expand > resume > minimize > stop",
+    "strictAirplaneMode": "not tested in this iteration; physical UI verification used available network",
+    "physicalChecks": {
+      "homeEntry": "Downloaded, 3 complete books; production Home first screen",
+      "library": "734 / 55 / 427 saved pages displayed from existing device data",
+      "reader": "page 253 of 427 opened locally",
+      "minimizedPlayback": "speaking callbacks advanced 30 to 110, same page and active rate 0.5",
+      "pauseAndExpand": "paused at unit 9 with 158 callbacks; page and visible word highlight retained on expansion",
+      "stop": "After resuming, playback naturally advanced to page 254. Explicit X removed the Mini Player; diagnostics confirmed idle and no error."
+    },
+    "speechSnapshots": {
+      "playing": {
+        "state": "speaking",
+        "page": 252,
+        "unit": 2,
+        "rangeCallbacks": 30,
+        "activeSpeechRate": 0.5,
+        "selectedSpeechRate": 0.5,
+        "errorCode": "",
+        "scene": "active"
+      },
+      "minimized": {
+        "state": "speaking",
+        "page": 252,
+        "unit": 7,
+        "rangeCallbacks": 110,
+        "activeSpeechRate": 0.5,
+        "selectedSpeechRate": 0.5,
+        "errorCode": "",
+        "scene": "active"
+      },
+      "paused": {
+        "state": "paused",
+        "page": 252,
+        "unit": 9,
+        "rangeCallbacks": 158,
+        "activeSpeechRate": 0.5,
+        "selectedSpeechRate": 0.5,
+        "errorCode": "",
+        "scene": "active"
+      },
+      "stopped": {
+        "state": "idle",
+        "page": 253,
+        "unit": 1,
+        "rangeCallbacks": 25,
+        "activeSpeechRate": -1,
+        "selectedSpeechRate": 0.5,
+        "errorCode": "",
+        "scene": "active"
+      }
+    }
+  },
+  "xcresults": [
+    "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_20-06-39-+0800.xcresult",
+    "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_19-58-39-+0800.xcresult",
+    "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_20-07-31-+0800.xcresult",
+    "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_20-10-24-+0800.xcresult",
+    "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_20-12-48-+0800.xcresult"
+  ],
+  "additionalDeviceCoverage": {
+    "iPhone SE (3rd generation), iOS 26.5": "large accessibility text, download, local reading and completion passed",
+    "iPhone 17 Pro, iOS 26.5": "mini player and large accessibility text passed"
+  }
+}

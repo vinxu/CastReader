@@ -80,6 +80,7 @@ final class PlayerCoordinator: ObservableObject {
         analyticsContext suppliedAnalyticsContext: AnalyticsContentContext? = nil,
         reusingLocalPayload: Bool = false
     ) {
+        KindleOfflinePlaybackCenter.shared.stop(preservingSleepTimer: true)
         let openStarted = Date()
         presentationGeneration = UUID()
         let document = historyStore.canonicalDocument(incomingDocument)

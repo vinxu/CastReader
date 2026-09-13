@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "收起阅读器" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"收起阅读器"}},"en":{"stringUnit":{"state":"translated","value":"Minimize Reader"}}}},
+    "继续播放，在迷你播放器中控制朗读" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"继续播放，在迷你播放器中控制朗读"}},"en":{"stringUnit":{"state":"translated","value":"Keep listening with the mini player"}}}},
+    "停止朗读" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"停止朗读"}},"en":{"stringUnit":{"state":"translated","value":"Stop Reading"}}}},
+    "离线 · 第 %lld 页" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"离线 · 第 %lld 页"}},"en":{"stringUnit":{"state":"translated","value":"Offline · Page %lld"}}}},
+    "%lld 本" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"%lld 本"}},"en":{"stringUnit":{"state":"translated","value":"%lld books"}}}},
+    "保存在本机，没网也能读和听" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"保存在本机，没网也能读和听"}},"en":{"stringUnit":{"state":"translated","value":"On this device. Read and listen offline."}}}},
+    "当前无网络，打开本机书籍" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"当前无网络，打开本机书籍"}},"en":{"stringUnit":{"state":"translated","value":"You’re offline. Open your saved books."}}}},
+    "%lld 本尚未下载完成" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"%lld 本尚未下载完成"}},"en":{"stringUnit":{"state":"translated","value":"%lld downloads are incomplete"}}}},
+    "点此检查本机副本" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"点此检查本机副本"}},"en":{"stringUnit":{"state":"translated","value":"Tap to check saved copies"}}}},
+    "以后可从首页“已下载”直接打开，无需等待 Kindle 加载。" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"以后可从首页“已下载”直接打开，无需等待 Kindle 加载。"}},"en":{"stringUnit":{"state":"translated","value":"Open Downloaded on Home next time. No need to wait for Kindle."}}}},
     "离线阅读 · 部分" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"离线阅读 · 部分"}},"en":{"stringUnit":{"state":"translated","value":"Offline · Partial"}}}},
     "离线书籍" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"离线书籍"}},"en":{"stringUnit":{"state":"translated","value":"Offline Books"}}}},
     "离线阅读" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"离线阅读"}},"en":{"stringUnit":{"state":"translated","value":"Offline Reading"}}}},

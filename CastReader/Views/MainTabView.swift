@@ -90,6 +90,7 @@ struct MainTabView: View {
 
     @StateObject private var coordinator = PlayerCoordinator()
     @StateObject private var kindleCenter = KindlePlaybackCenter.shared
+    @StateObject private var offlineCenter = KindleOfflinePlaybackCenter.shared
     @StateObject private var clipboard = ClipboardImportViewModel()
     @StateObject private var importRouter = ImportRouter()
     @StateObject private var voiceCloneAccess = VoiceCloneAccessCoordinator.shared
@@ -163,7 +164,8 @@ struct MainTabView: View {
                 HomeView(
                     shareInboxUnreadCount: shareInboxUnreadCount,
                     isSurfaceActive: selectedTab == 0
-                        && !coordinator.isReaderPresented,
+                        && !coordinator.isReaderPresented
+                        && !offlineCenter.isPresented,
                     onOpenShareInbox: {
                         reloadShareInbox(showWhenPending: false)
                         markShareInboxSeen()
@@ -229,7 +231,11 @@ struct MainTabView: View {
 
             // Mini Player 悬浮在 tab bar 上方（有会话且阅读器收起时）
             if !importRouter.hideMainChrome {
-                if coordinator.showsMiniPlayer {
+                if offlineCenter.showsMiniPlayer {
+                    KindleOfflineMiniPlayer(center: offlineCenter)
+                        .padding(.bottom, Self.miniPlayerBottomPadding)
+                        .background(miniPlayerTopReporter)
+                } else if coordinator.showsMiniPlayer {
                     MiniPlayerView(coordinator: coordinator)
                         .padding(.bottom, Self.miniPlayerBottomPadding)
                         .background(miniPlayerTopReporter)
@@ -266,6 +272,9 @@ struct MainTabView: View {
                     .animation(.spring(response: 0.4, dampingFraction: 0.9), value: kindleCenter.isPresented)
                     .zIndex(11)
             }
+
+            KindleOfflinePlaybackSurface(center: offlineCenter)
+                .zIndex(12)
 
             GrowthTrialOfferOverlay(
                 coordinator: growthLoop,
@@ -329,6 +338,13 @@ struct MainTabView: View {
         .onPreferenceChange(TabContentBottomKey.self) { value in
             tabContentBottom = value
             publishOverlap()
+        }
+        .onAppear {
+            offlineCenter.beforeOpen = { [weak coordinator] in
+                coordinator?.close(preservingSleepTimer: true)
+                KindlePlaybackCenter.shared.close(preservingSleepTimer: true)
+                importRouter.hideMainChrome = false
+            }
         }
         .environmentObject(coordinator)
         .environmentObject(importRouter)
@@ -670,7 +686,7 @@ struct MainTabView: View {
             appIsActive: scenePhase == .active,
             isHome: selectedTab == 0,
             playbackIsQuiescent: audioPlayer.isQuiescentForReviewPrompt,
-            readerIsHidden: !coordinator.isReaderPresented,
+            readerIsHidden: !coordinator.isReaderPresented && !offlineCenter.isPresented,
             kindleReaderIsHidden: !kindleCenter.isPresented,
             importChromeIsVisible: !importRouter.hideMainChrome,
             homeIsIdle: !homeBlocksReviewPresentation
@@ -692,6 +708,7 @@ struct MainTabView: View {
         playbackVoicePanel.dismiss()
         if coordinator.isReaderPresented { coordinator.minimize() }
         if kindleCenter.isPresented { kindleCenter.minimize() }
+        if offlineCenter.isPresented { offlineCenter.minimize() }
         selectedTab = 0
         studyBoostRouter.dismiss()
         DispatchQueue.main.async {
@@ -1503,6 +1520,7 @@ struct MainTabView: View {
     private func openQuickImportFromSystemAction() {
         if coordinator.isReaderPresented { coordinator.minimize() }
         if kindleCenter.isPresented { kindleCenter.minimize() }
+        if offlineCenter.isPresented { offlineCenter.minimize() }
         DispatchQueue.main.async {
             importRouter.openQuickImport()
         }

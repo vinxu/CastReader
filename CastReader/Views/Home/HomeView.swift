@@ -331,6 +331,7 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: HomeLayout.sectionGap) {
+                    OfflineDownloadsEntryCard()
                     if libraryOnboarding.shouldShowReminder {
                         libraryOnboardingReminder
                     }

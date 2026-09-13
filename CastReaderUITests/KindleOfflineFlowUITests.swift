@@ -71,6 +71,37 @@ final class KindleOfflineFlowUITests: XCTestCase {
         wait { self.app.buttons["offlineBookPageStatus"].label.contains("第 \(page) /") }
     }
 
+    func testDownloadedEntryAndPersistentMiniPlayer() {
+        launch(partial: true)
+        tap("homeDownloads")
+        tap("offlineLibraryBook.offline-flow-book", timeout: 20)
+        tap("offlineBookPlay")
+        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
+        let page = app.buttons["offlineBookPageStatus"].label
+        tap("offlineBookClose")
+        wait { self.app.buttons["offlineMiniPlay"].exists && self.app.buttons["offlineMiniPlay"].label == "暂停" }
+        XCTAssertFalse(app.buttons["offlineBookPlay"].isHittable)
+        capture("30-offline-mini-keeps-playing")
+        tap("offlineMiniPlay")
+        wait { self.app.buttons["offlineMiniPlay"].exists && self.app.buttons["offlineMiniPlay"].label == "播放" }
+        tap("BackButton")
+        XCTAssertTrue(app.buttons["homeDownloads"].isHittable)
+        XCTAssertTrue(app.buttons["offlineMiniExpand"].isHittable)
+        capture("31-home-downloads-and-mini")
+        tap("offlineMiniExpand")
+        XCTAssertEqual(app.buttons["offlineBookPageStatus"].label, page)
+        XCTAssertEqual(app.buttons["offlineBookPlay"].label, "播放")
+        tap("offlineBookPlay")
+        wait { self.app.buttons["offlineBookPlay"].label == "暂停" }
+        tap("offlineBookClose")
+        tap("offlineMiniStop")
+        wait { !self.app.buttons["offlineMiniPlay"].exists }
+        tap("homeDownloads")
+        tap("offlineLibraryBook.offline-flow-book")
+        XCTAssertEqual(app.buttons["offlineBookPlay"].label, "播放")
+        capture("32-reopen-after-explicit-stop")
+    }
+
     func testSaveReadOCRSpeechSettingsAndResumeAfterRelaunch() {
         launch()
         tap("libraryOfflineBooks")
@@ -114,7 +145,6 @@ final class KindleOfflineFlowUITests: XCTestCase {
         jump(to: 5)
         capture("09-chapter-page-five")
         tap("offlineBookClose")
-        tap("offlineDownloadClose")
         tap("BackButton")
         tap("libraryOfflineBooks")
         tap("offlineLibraryBook.offline-flow-book")
@@ -193,7 +223,8 @@ final class KindleOfflineFlowUITests: XCTestCase {
         capture("21-reader-covers-root-mini-player")
         tap("offlineBookClose")
         XCTAssertTrue(app.buttons["offlineLibraryBook.offline-flow-book"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.buttons["offlineFixtureRootMiniPlayer"].isHittable)
+        XCTAssertTrue(app.buttons["offlineMiniExpand"].isHittable)
+        XCTAssertFalse(app.buttons["offlineFixtureRootMiniPlayer"].exists)
     }
 
     func testRateSelectionChangesTheSpeakingUtteranceWhilePlaying() {
@@ -242,7 +273,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
     func testEnglishReaderAndLandscapePageRemainComplete() {
         launch(partial: true, tallPage: true, english: true)
         tap("libraryOfflineBooks")
-        XCTAssertTrue(app.navigationBars["Offline Books"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.navigationBars["Downloaded"].waitForExistence(timeout: 8))
         tap("offlineLibraryBook.offline-flow-book", timeout: 20)
         XCTAssertTrue(app.images["offlineBookSavedImage"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["offlineBookSpeechStatus"].label, "Tap play to start reading")

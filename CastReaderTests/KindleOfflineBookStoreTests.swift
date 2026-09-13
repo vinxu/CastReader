@@ -534,8 +534,172 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         return (store, try await store.finish(book, scope: scope), scope)
     }
 
+    private func waitForSession(_ center: KindleOfflinePlaybackCenter) async throws {
+        let end = Date().addingTimeInterval(4)
+        while center.model?.pageImage == nil, Date() < end { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertNotNil(center.model?.pageImage)
+    }
+
+    func testMiniPlayerRetainsSpeechWordAndModelAcrossRepeatedExpansion() async throws {
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await orderedBook(root: root, texts: ["One two three four."])
+        let center = KindleOfflinePlaybackCenter(), driver = Driver()
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true })
+        center.open(book: book, scope: scope, store: store, scopeValidator: { true }, makeModel: { model })
+        defer { center.stop() }
+        try await waitForSession(center)
+        model.play()
+        while driver.requests.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        let request = try XCTUnwrap(driver.requests.first)
+        driver.onEvent?(.started(request.id))
+        driver.onEvent?(.range(request.id, NSRange(location: 4, length: 3)))
+        let token = AudioPlayerService.shared.activePlaybackSession
+        for _ in 0..<5 {
+            center.minimize()
+            XCTAssertTrue(center.showsMiniPlayer)
+            XCTAssertEqual(model.speech.state, .speaking)
+            center.open(book: book, scope: scope, store: store, scopeValidator: { true })
+            XCTAssertTrue(center.model === model)
+            XCTAssertTrue(center.isPresented)
+        }
+        XCTAssertEqual(driver.requests.count, 1, "Minimizing/expanding cannot requeue speech")
+        XCTAssertEqual(model.speech.highlightRange, NSRange(location: 4, length: 3))
+        XCTAssertEqual(AudioPlayerService.shared.activePlaybackSession, token)
+        center.minimize(); model.pause(); center.expand()
+        XCTAssertEqual(model.speech.state, .paused)
+        center.stop()
+        XCTAssertNil(center.model)
+        driver.onEvent?(.finished(request.id))
+        XCTAssertNil(center.model, "Late speech must not resurrect a stopped mini player")
+    }
+
+    func testMinimizedSessionContinuesPagesInOrderAndRejectsDuplicates() async throws {
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let text = ["Chapter one.", "Chapter two.", "Chapter three."]
+        let (store, book, scope) = try await orderedBook(root: root, texts: text.map { Optional($0) })
+        let driver = Driver(), center = KindleOfflinePlaybackCenter()
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true })
+        center.open(book: book, scope: scope, store: store, scopeValidator: { true }, makeModel: { model })
+        defer { center.stop() }
+        try await waitForSession(center); model.play(); center.minimize()
+        for index in text.indices {
+            let end = Date().addingTimeInterval(3)
+            while driver.requests.count <= index, Date() < end { try await Task.sleep(for: .milliseconds(10)) }
+            guard driver.requests.indices.contains(index) else { return XCTFail("Missing page \(index)") }
+            XCTAssertTrue(center.showsMiniPlayer)
+            XCTAssertEqual(model.pageIndex, index)
+            let id = driver.requests[index].id
+            driver.onEvent?(.started(id)); driver.onEvent?(.finished(id)); driver.onEvent?(.finished(id))
+        }
+        try await Task.sleep(for: .milliseconds(30))
+        XCTAssertEqual(driver.requests.map(\.text), text)
+        center.expand()
+        XCTAssertEqual(model.pageIndex, 2)
+        XCTAssertEqual(model.speech.state, .finished)
+    }
+
+    func testAccountBoundaryClosesMinimizedSession() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        var valid = true
+        let center = KindleOfflinePlaybackCenter()
+        center.open(book: book, scope: scope, store: store, scopeValidator: { valid })
+        defer { center.stop() }
+        try await waitForSession(center); center.minimize()
+        valid = false
+        KindleLibraryStore.shared.objectWillChange.send()
+        let end = Date().addingTimeInterval(3)
+        while center.model != nil, Date() < end { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertNil(center.model)
+        center.expand()
+        XCTAssertFalse(center.isPresented)
+    }
+
+    func testOpeningOnlineOwnerClosesOfflineSessionWithoutStoppingNewOwner() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        let center = KindleOfflinePlaybackCenter()
+        center.open(book: book, scope: scope, store: store, scopeValidator: { true })
+        try await waitForSession(center)
+        center.minimize()
+        let audio = AudioPlayerService.shared
+        let token = audio.claimPlaybackSession(owner: .readAloud)
+        defer { audio.releasePlaybackSession(token) }
+        XCTAssertNil(center.model)
+        XCTAssertFalse(center.showsMiniPlayer)
+        XCTAssertTrue(audio.isPlaybackSessionActive(token))
+        center.stop()
+        XCTAssertTrue(audio.isPlaybackSessionActive(token))
+    }
+
+    func testDeletingActiveLocalCopyClosesMiniPlayer() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        let center = KindleOfflinePlaybackCenter()
+        center.open(book: book, scope: scope, store: store, scopeValidator: { true })
+        defer { center.stop() }
+        try await waitForSession(center); center.minimize()
+        try await store.remove(id: book.id, scope: scope)
+        let end = Date().addingTimeInterval(3)
+        while center.model != nil, Date() < end { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertNil(center.model)
+    }
+
+    func testStopDuringOCRNeverRestartsHiddenSpeech() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        let center = KindleOfflinePlaybackCenter(), driver = Driver(), recognizer = Recognizer()
+        recognizer.delay = .milliseconds(300)
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true }, recognizer: recognizer)
+        center.open(book: book, scope: scope, store: store, scopeValidator: { true }, makeModel: { model })
+        try await waitForSession(center); model.play(); center.minimize()
+        try await Task.sleep(for: .milliseconds(40))
+        center.stop()
+        try await Task.sleep(for: .milliseconds(400))
+        XCTAssertTrue(driver.requests.isEmpty)
+        XCTAssertNil(center.model)
+    }
+
+    func testChangingSessionBeforeDownloadDismissalCancelsPendingReader() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        let center = KindleOfflinePlaybackCenter()
+        center.prepareAfterDownload(book: book, scope: scope, store: store, scopeValidator: { true })
+        center.stop(preservingSleepTimer: true)
+        center.presentAfterDownload()
+        await Task.yield()
+        XCTAssertNil(center.model)
+        XCTAssertFalse(center.isPresented)
+    }
+
+    func testStoppingBeforeOpenTaskCannotClaimPlaybackLater() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        let center = KindleOfflinePlaybackCenter()
+        center.open(book: book, scope: scope, store: store, scopeValidator: { true })
+        center.stop()
+        let token = AudioPlayerService.shared.claimPlaybackSession(owner: .readAloud)
+        defer { AudioPlayerService.shared.releasePlaybackSession(token) }
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertNil(center.model)
+        XCTAssertTrue(AudioPlayerService.shared.isPlaybackSessionActive(token))
+    }
+
     func testChapterSequenceRejectsDuplicateAndLateSpeechCallbacks() async throws {
-        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let texts = ["Chapter one first page.", "Chapter one second page.", "Chapter two first page.",
@@ -564,7 +728,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
     }
 
     func testEmptyOCRDoesNotSilentlySkipToNextChapter() async throws {
-        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let (store, book, scope) = try await orderedBook(root: root, texts: [nil, "The next chapter."])
@@ -600,7 +764,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
     }
 
     func testLateOCRCannotReplaceTheSelectedChapter() async throws {
-        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let (store, book, scope) = try await orderedBook(root: root, texts: [nil, "The selected chapter."])
@@ -621,7 +785,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
     }
 
     func testPauseRevokesAlreadyQueuedAutomaticPageAdvance() async throws {
-        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let (store, book, scope) = try await orderedBook(root: root, texts: ["First page.", "Second page.", "Third page."])
@@ -643,7 +807,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
     }
 
     func testCloseAndReopenRestoresPageVoiceAndRateWithoutStartingSpeech() async throws {
-        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let (store, book, scope) = try await orderedBook(root: root, texts: ["First page.", "Second page."])
@@ -667,7 +831,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
     }
 
     func testMissingNextPageNeverReplaysPreviousPageUnderItsNewPageNumber() async throws {
-        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let (store, book, scope) = try await orderedBook(root: root, texts: ["First page.", "Second page."])
@@ -720,7 +884,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
     }
 
     func testOpeningAnImageBookDoesNotOCRAndPlaybackRecognitionSurvivesColdReopen() async throws {
-        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let (store, book, scope) = try await imageBook(root: root)
@@ -747,7 +911,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
     }
 
     func testFailedRecognitionKeepsImageAndPauseDuringRetryCannotStartAudio() async throws {
-        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English voice unavailable") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let (store, book, scope) = try await imageBook(root: root)
@@ -777,7 +941,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
     }
 
     func testSystemSpeechContinuesAcrossSavedImageOnlyPagesAndRestoresCheckpoint() async throws {
-        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English system voice unavailable") }
+        guard (await SystemSpeechPlaybackService.availableVoices(language: "en-US")).isEmpty == false else { throw XCTSkip("English system voice unavailable") }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let store = KindleOfflineBookStore(root: root), scope = KindleOfflinePageStore.digest("reader-fixture")

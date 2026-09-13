@@ -37,6 +37,7 @@
 		0E888A2F97A2C94769F61364 /* KindleOfflineOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19C696BF56DC2D16E3117C34 /* KindleOfflineOCRService.swift */; };
 		0F42FDE5990EDD63834170A6 /* KoboContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3905510F9015271DBA3CD0D /* KoboContractTests.swift */; };
 		0F9D6E56B915FA5DB4D0537C /* ReadingResumeCheckpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 503BAE67D5C11770714B5B72 /* ReadingResumeCheckpoint.swift */; };
+		101E4D375DB6E35CC07DB94F /* KindleOfflinePlaybackCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F3D82F116FCA2156DE0831D /* KindleOfflinePlaybackCenter.swift */; };
 		10757E43FA45D96BC7F380DC /* KoboModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F8E038E798D5F3D55349ED /* KoboModels.swift */; };
 		10CA302D247691B44165D574 /* DocumentImportPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02ED8C503898C9BDB962CC80 /* DocumentImportPipeline.swift */; };
 		12789698AE4E5FABD007E1DE /* CloudStorageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF1BA6923CD47F6015FDB93 /* CloudStorageViews.swift */; };
@@ -103,6 +104,7 @@
 		53A51A9FBF12662A9D5DE0B0 /* KindleOfflineBookStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7DE1871ADE557008666868E /* KindleOfflineBookStoreTests.swift */; };
 		53BF17A0AE0C00C86E7C930E /* KindlePrefetchHorizonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA3559B028A98D135F4544A /* KindlePrefetchHorizonTests.swift */; };
 		55C94E5A63B58FF7013C4ACC /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 144EE6CDB40D731B0BBC9411 /* APIService.swift */; };
+		569E30EB915FA2F8E80F0F9F /* OfflineDownloadsEntryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ABFCB12FA08FDAC7E34A31F /* OfflineDownloadsEntryCard.swift */; };
 		574FDD44C7D16765246A2831 /* ReadingDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8E1F3F9B55D193AB2EE331 /* ReadingDocument.swift */; };
 		57ABF89A132D57AA22021DDF /* OCRTokenGeometryCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57B54CB5453E596A8FF73D5 /* OCRTokenGeometryCoverageTests.swift */; };
 		5A843BB0FE575CEE18DDDE37 /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020D39909BD79A47A92C8DE8 /* LanguageDetector.swift */; };
@@ -383,6 +385,7 @@
 		0C5E70E862463DD9F23F6EE2 /* MarkdownModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownModels.swift; sourceTree = "<group>"; };
 		0D3FF0C61F5D24BFD2A11B52 /* SystemSpeechPlaybackService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemSpeechPlaybackService.swift; sourceTree = "<group>"; };
 		0E9A4D22FBC8181B8BC35EE1 /* KindleLiveAcceptanceUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleLiveAcceptanceUITests.swift; sourceTree = "<group>"; };
+		0F3D82F116FCA2156DE0831D /* KindleOfflinePlaybackCenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleOfflinePlaybackCenter.swift; sourceTree = "<group>"; };
 		0F4072910566C52D50BB0F09 /* CloudConnectionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudConnectionStore.swift; sourceTree = "<group>"; };
 		0F770C2C6D6D9B89F5CFA774 /* CastReaderShareExtension.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = CastReaderShareExtension.entitlements; sourceTree = "<group>"; };
 		0FDB7AA65B14A77CE8F3746D /* KindleModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleModels.swift; sourceTree = "<group>"; };
@@ -531,6 +534,7 @@
 		768995DE8D8D4557614322AB /* Quickread.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Quickread.swift; sourceTree = "<group>"; };
 		78FA7FC77BA953B5F7817B91 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7A7A389E0E6992130E23E8CB /* StableDeviceID.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StableDeviceID.swift; sourceTree = "<group>"; };
+		7ABFCB12FA08FDAC7E34A31F /* OfflineDownloadsEntryCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OfflineDownloadsEntryCard.swift; sourceTree = "<group>"; };
 		7C02A0DA8EAECC475D1D7997 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		7C88E28EE75CE23E818E0B55 /* KindleOfflineDownloadView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleOfflineDownloadView.swift; sourceTree = "<group>"; };
 		7E19618CAF086604516D4494 /* LocalDocumentCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocalDocumentCache.swift; sourceTree = "<group>"; };
@@ -1318,6 +1322,8 @@
 				29FAA0552E5ED18BF08C1D2D /* KindleOfflineLibraryScreen.swift */,
 				D36647F03CA0F67EE25B6A83 /* KindleOfflineReaderView.swift */,
 				715093941F2D1FF9748BDD97 /* KindleOfflineFlowFixture.swift */,
+				0F3D82F116FCA2156DE0831D /* KindleOfflinePlaybackCenter.swift */,
+				7ABFCB12FA08FDAC7E34A31F /* OfflineDownloadsEntryCard.swift */,
 			);
 			path = Kindle;
 			sourceTree = "<group>";
@@ -1740,6 +1746,8 @@
 				6ABF616B60082C0B03986DCA /* KindleOfflineLibraryScreen.swift in Sources */,
 				E616B3A3DC6C93CBE9F389ED /* KindleOfflineReaderView.swift in Sources */,
 				977BE3DBEC2FF08BBD29C641 /* KindleOfflineFlowFixture.swift in Sources */,
+				101E4D375DB6E35CC07DB94F /* KindleOfflinePlaybackCenter.swift in Sources */,
+				569E30EB915FA2F8E80F0F9F /* OfflineDownloadsEntryCard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
