@@ -101,16 +101,49 @@ final class KindleOfflineBookStoreTests: XCTestCase {
             book = try await store.append(document: document(), position: position(page, total: 3), to: book, scope: scope)
         }
         book = try await store.finish(book, scope: scope)
+        let url = root.appendingPathComponent(scope).appendingPathComponent(book.id + ".book")
+        let originalBytes = try Data(contentsOf: url)
+        let modified = try XCTUnwrap(FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate])
+        book = try JSONDecoder().decode(KindleOfflineBook.self, from: originalBytes)
         let original = book.pages
         // Correct ordinal/range and intact image hashes are insufficient when
         // a page is accidentally wired to another page's saved resource.
-        book.pages[1] = .init(ordinal: 1, position: original[1].position, resource: original[2].resource)
-        book.pages[2] = .init(ordinal: 2, position: original[2].position, resource: original[1].resource)
+        book.pages[1] = .init(ordinal: 1, position: original[1].position, resource: original[2].resource,
+                              requiresOCR: original[1].requiresOCR, sourceWordCount: original[1].sourceWordCount)
+        book.pages[2] = .init(ordinal: 2, position: original[2].position, resource: original[1].resource,
+                              requiresOCR: original[2].requiresOCR, sourceWordCount: original[2].sourceWordCount)
         XCTAssertTrue(book.coversWholeBook)
-        let url = root.appendingPathComponent(scope).appendingPathComponent(book.id + ".book")
-        try JSONEncoder().encode(book).write(to: url, options: .atomic)
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        let changedBytes = try encoder.encode(book)
+        XCTAssertEqual(changedBytes.count, originalBytes.count)
+        try changedBytes.write(to: url, options: .atomic)
+        try FileManager.default.setAttributes([.modificationDate: modified], ofItemAtPath: url.path)
         do { _ = try await store.load(id: book.id, scope: scope); XCTFail("Swapped resources were accepted") }
         catch KindleOfflineBookStore.Failure.corruptManifest {} catch { XCTFail("Unexpected error: \(error)") }
+        try originalBytes.write(to: url, options: .atomic)
+        let restored = try await store.load(id: book.id, scope: scope)
+        XCTAssertEqual(restored?.pages, original)
+    }
+
+    func testWarmManifestObservesExternalCheckpointAndCannotResurrectRemovedFile() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 2))
+        for page in 0..<2 { book = try await store.append(document: document(), position: position(page, total: 2), to: book, scope: scope) }
+        book = try await store.finish(book, scope: scope)
+        let url = root.appendingPathComponent(scope).appendingPathComponent(book.id + ".book")
+        let originalBytes = try Data(contentsOf: url)
+        var edited = try JSONDecoder().decode(KindleOfflineBook.self, from: originalBytes)
+        edited.readingPosition.page = 1
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        let changed = try encoder.encode(edited)
+        XCTAssertEqual(changed.count, originalBytes.count)
+        try changed.write(to: url, options: .atomic)
+        let refreshed = try await store.load(id: book.id, scope: scope)
+        XCTAssertEqual(refreshed?.readingPosition.page, 1)
+        try FileManager.default.removeItem(at: url)
+        do { try await store.saveReadingPosition(edited.readingPosition, book: book, scope: scope); XCTFail("Deleted manifest was recreated") }
+        catch KindleOfflineBookStore.Failure.staleGeneration {} catch { XCTFail("Unexpected error: \(error)") }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
     }
 
     func testSharedNormalizedBoundaryIsValidButInteriorOverlapIsNot() {

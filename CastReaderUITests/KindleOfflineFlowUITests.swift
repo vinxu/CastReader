@@ -10,11 +10,12 @@ final class KindleOfflineFlowUITests: XCTestCase {
         super.tearDown()
     }
 
-    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false) {
+    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false, miniPlayer: Bool = false) {
         app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(zh-Hans)", "-interfaceLanguage", "zh-Hans"]
         if partial { app.launchArguments.append("-CastReaderOfflineFixturePartial") }
         if failure { app.launchArguments.append("-CastReaderOfflineFixtureFailure") }
         if resumeViewport { app.launchArguments.append("-CastReaderOfflineFixtureResumeViewport") }
+        if miniPlayer { app.launchArguments.append("-CastReaderOfflineFixtureMiniPlayer") }
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL", "-CastReaderFixtureAppearance", "Dark"] }
         app.launchEnvironment["CASTREADER_OFFLINE_FIXTURE_ID"] = UUID().uuidString
         app.launchEnvironment["CASTREADER_OFFLINE_FIXTURE_DELAY"] = partial ? "900" : "600"
@@ -147,10 +148,13 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("offlineDownloadClose")
         app.alerts.buttons["停止并关闭"].tap()
         wait { !self.app.buttons["offlineDownloadClose"].exists }
-        // Returning from a modal must reopen the same reader model for interaction.
+        // Continuing dismisses the independent reader before opening download.
+        // After cancellation the library can reopen its saved reading position.
+        tap("offlineLibraryBook.offline-flow-book")
+        wait { self.app.buttons["offlineBookPageStatus"].label.contains("第 3 /") }
         tap("offlineBookPreviousPage")
         wait { self.app.buttons["offlineBookPageStatus"].label.contains("第 2 /") }
-        tap("BackButton")
+        tap("offlineBookClose")
         tap("offlineLibraryResume.offline-flow-book")
         tap("offlineDownloadStart")
         wait(40) { self.app.staticTexts["offlineDownloadStatus"].label == "整本已保存" }
@@ -169,6 +173,24 @@ final class KindleOfflineFlowUITests: XCTestCase {
         app.alerts.buttons["删除本机副本"].tap()
         XCTAssertTrue(app.staticTexts["还没有离线书籍"].waitForExistence(timeout: 10))
         capture("14-deleted-local-copy")
+    }
+
+    func testLibraryReaderCoversRootMiniPlayerAndReturnsToLibrary() {
+        launch(partial: true, miniPlayer: true)
+        tap("libraryOfflineBooks")
+        XCTAssertTrue(app.buttons["offlineFixtureRootMiniPlayer"].isHittable)
+        tap("offlineLibraryBook.offline-flow-book", timeout: 20)
+        XCTAssertTrue(app.buttons["offlineBookClose"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["offlineFixtureRootMiniPlayer"].isHittable)
+        tap("offlineBookVoice")
+        tap("offlineBookVoiceDone")
+        tap("offlineBookRate")
+        app.buttons["1.2×"].tap()
+        XCTAssertEqual(app.buttons["offlineBookRate"].value as? String, "1.2×")
+        capture("21-reader-covers-root-mini-player")
+        tap("offlineBookClose")
+        XCTAssertTrue(app.buttons["offlineLibraryBook.offline-flow-book"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["offlineFixtureRootMiniPlayer"].isHittable)
     }
 
     func testFailedDownloadRetainsPagesAndCanResume() {

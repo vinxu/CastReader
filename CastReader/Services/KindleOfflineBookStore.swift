@@ -85,10 +85,18 @@ actor KindleOfflineBookStore {
     #if DEBUG
     static let imageBenchmark = KindleOfflineBookStore(root: FileManager.default.urls(
         for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("KindleOfflineImageBenchmark-v5", isDirectory: true))
+        .appendingPathComponent("KindleOfflineImageBenchmark-v6", isDirectory: true))
     #endif
     enum Failure: Error { case invalidIdentity, corruptManifest, staleGeneration, discontinuousPage, incompleteBook }
     private let root: URL
+    // One manifest only: reuse validation only when the actual file bytes are
+    // identical. File size/mtime alone cannot detect swapped page references.
+    private struct ValidatedManifest {
+        let url: URL
+        let bytes: Data
+        let book: KindleOfflineBook
+    }
+    private var validatedManifest: ValidatedManifest?
     init(root: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("KindleOfflineBooks", isDirectory: true)) { self.root = root }
 
@@ -108,6 +116,7 @@ actor KindleOfflineBookStore {
     func remove(id: String, scope: String) throws {
         defer { notifyChange(scope: scope) }
         let manifest = try manifestURL(id: id, scope: scope)
+        if validatedManifest?.url == manifest { validatedManifest = nil }
         if FileManager.default.fileExists(atPath: manifest.path) { try FileManager.default.removeItem(at: manifest) }
         let resources = try scopeDirectory(scope, create: false).appendingPathComponent(id, isDirectory: true)
         if FileManager.default.fileExists(atPath: resources.path) { try FileManager.default.removeItem(at: resources) }
@@ -286,15 +295,23 @@ actor KindleOfflineBookStore {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
         let bytes = try encoder.encode(book)
         guard bytes.count <= 8 * 1_024 * 1_024 else { throw Failure.corruptManifest }
-        try bytes.write(to: directory.appendingPathComponent(book.id + ".book"),
+        let url = directory.appendingPathComponent(book.id + ".book")
+        try bytes.write(to: url,
             options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        // Private mutations start with current(), then either preserve the
+        // verified page chain or append one checked source/resource pair.
+        // Publish the reusable value only after the atomic write succeeds.
+        validatedManifest = .init(url: url, bytes: bytes, book: book)
     }
 
     private func read(_ url: URL) throws -> KindleOfflineBook {
         guard (try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max) <= 8 * 1_024 * 1_024 else {
             throw Failure.corruptManifest
         }
-        let book = try JSONDecoder().decode(KindleOfflineBook.self, from: Data(contentsOf: url))
+        let bytes = try Data(contentsOf: url)
+        guard bytes.count <= 8 * 1_024 * 1_024 else { throw Failure.corruptManifest }
+        if let cached = validatedManifest, cached.url == url, cached.bytes == bytes { return cached.book }
+        let book = try JSONDecoder().decode(KindleOfflineBook.self, from: bytes)
         guard book.version == 1, validID(book.id), book.id == url.deletingPathExtension().lastPathComponent,
               book.pages.isEmpty || book.coverageIsContinuous,
               book.status != .complete || book.coversWholeBook else { throw Failure.corruptManifest }
@@ -306,6 +323,7 @@ actor KindleOfflineBookStore {
                 throw Failure.corruptManifest
             }
         }
+        validatedManifest = .init(url: url, bytes: bytes, book: book)
         return book
     }
 

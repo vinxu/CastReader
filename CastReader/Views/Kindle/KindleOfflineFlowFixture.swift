@@ -71,6 +71,14 @@ struct KindleOfflineFlowFixture: View {
                     }
                 }
         }.preferredColorScheme(UserDefaults.standard.string(forKey: "CastReaderFixtureAppearance") == "Dark" ? .dark : nil)
+        .overlay(alignment: .bottom) {
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderOfflineFixtureMiniPlayer") {
+                // Reproduce MainTabView's persistent online player overlay.
+                Button("在线会话 · 已暂停") {}.padding(20)
+                    .frame(maxWidth: .infinity).background(.regularMaterial)
+                    .padding(.bottom, 68).accessibilityIdentifier("offlineFixtureRootMiniPlayer")
+            }
+        }
     }
 
     private func seedSavedViewport() async {

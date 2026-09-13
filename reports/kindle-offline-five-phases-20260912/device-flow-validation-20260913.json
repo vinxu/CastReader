@@ -1,0 +1,397 @@
+{
+  "date": "2026-09-13",
+  "parentCommit": "358efa8d16cab631ea7ba2e3a3a510c898bc8c6b",
+  "releaseAncestor": "b6dd4d7",
+  "deviceModel": "iPhone 15 Pro Max",
+  "releaseSubmission": false,
+  "wholeBookRuns": [
+    {
+      "label": "beforeManifestCache",
+      "elapsedSeconds": 189.53463399410248,
+      "audit": {
+        "pages": 427,
+        "logicalResourceBytes": 208724822,
+        "uniqueImages": 427,
+        "textCharacters": 0,
+        "imageOnlyPages": 427,
+        "sourceMinimum": 0,
+        "sourceMaximum": 480607,
+        "savedStart": 0,
+        "savedEnd": 480607,
+        "continuous": true,
+        "allResourceHashesVerified": true,
+        "coversWholeBook": true,
+        "status": "complete",
+        "originalPositionRestored": true,
+        "readingPosition": {
+          "page": 248,
+          "paragraphID": 1,
+          "sentenceStart": 0,
+          "voiceID": ""
+        }
+      },
+      "timing": {
+        "pages": 427,
+        "captureTotalMs": 168153,
+        "saveTotalMs": 16952,
+        "captureMedianMs": 273,
+        "saveMedianMs": 40,
+        "saveFirst50MedianMs": 9.0,
+        "saveLast53MedianMs": 74,
+        "capturesOver2Seconds": 15,
+        "maxCaptureMs": 3869
+      },
+      "imageComparison": {
+        "allowedChangedPixelFraction": 0.001,
+        "allowedChannelDelta": 1,
+        "allPagesEquivalent": true,
+        "byteIdentical": 1,
+        "maximumChangedPixelFraction": 3.133969637237611e-05,
+        "maximumChannelDelta": 1,
+        "newPages": 427,
+        "oldPages": 427,
+        "pixelIdentical": 1,
+        "pixelMismatches": [],
+        "sourcePositionMismatches": [],
+        "visuallyEquivalentPages": 427
+      },
+      "usesIndependentTestCopy": true
+    },
+    {
+      "label": "afterManifestCache",
+      "elapsedSeconds": 239.26059901714325,
+      "audit": {
+        "pages": 427,
+        "logicalResourceBytes": 208725676,
+        "uniqueImages": 427,
+        "textCharacters": 0,
+        "imageOnlyPages": 427,
+        "sourceMinimum": 0,
+        "sourceMaximum": 480607,
+        "savedStart": 0,
+        "savedEnd": 480607,
+        "continuous": true,
+        "allResourceHashesVerified": true,
+        "coversWholeBook": true,
+        "status": "complete",
+        "originalPositionRestored": true,
+        "readingPosition": {
+          "page": 248,
+          "paragraphID": 1,
+          "sentenceStart": 0,
+          "voiceID": ""
+        }
+      },
+      "timing": {
+        "pages": 427,
+        "captureTotalMs": 231337,
+        "saveTotalMs": 3859,
+        "captureMedianMs": 354,
+        "saveMedianMs": 9,
+        "saveFirst50MedianMs": 5.0,
+        "saveLast53MedianMs": 12,
+        "capturesOver2Seconds": 28,
+        "maxCaptureMs": 4262
+      },
+      "imageComparison": {
+        "allowedChangedPixelFraction": 0.001,
+        "allowedChannelDelta": 1,
+        "allPagesEquivalent": true,
+        "byteIdentical": 1,
+        "maximumChangedPixelFraction": 2.7016979631358716e-05,
+        "maximumChannelDelta": 1,
+        "newPages": 427,
+        "oldPages": 427,
+        "pixelIdentical": 1,
+        "pixelMismatches": [],
+        "sourcePositionMismatches": [],
+        "visuallyEquivalentPages": 427
+      },
+      "usesIndependentTestCopy": true
+    }
+  ],
+  "comparisonLimit": "Same source/layout/device, but live Kindle/network/cache readiness varied; these are not controlled speed experiments.",
+  "originalBookPreserved": {
+    "sameGeneration": true,
+    "all427PageRecordsUnchanged": true
+  },
+  "productionEntryCancelResume": {
+    "entry": "More > Save whole book offline",
+    "partialPages": 43,
+    "statusAfterCancel": "paused",
+    "originalPositionRestoredAfterCancel": true,
+    "committedPrefixUnchanged": true,
+    "sameGeneration": true,
+    "finalAudit": {
+      "pages": 55,
+      "logicalResourceBytes": 26812310,
+      "uniqueImages": 55,
+      "textCharacters": 0,
+      "imageOnlyPages": 55,
+      "sourceMinimum": 0,
+      "sourceMaximum": 56300,
+      "savedStart": 0,
+      "savedEnd": 56300,
+      "continuous": true,
+      "allResourceHashesVerified": true,
+      "coversWholeBook": true,
+      "status": "complete",
+      "originalPositionRestored": true,
+      "readingPosition": {
+        "page": 42,
+        "paragraphID": 1,
+        "sentenceStart": 0,
+        "speechRate": 0.5,
+        "voiceID": "com.apple.voice.super-compact.it-IT.Alice"
+      }
+    },
+    "libraryDisplayedLastPage": 43,
+    "libraryReopenedPage": 43
+  },
+  "deviceSpeech": {
+    "freshImageBeforeOCR": {
+      "complete": true,
+      "errorCode": "",
+      "firstSpeechMilliseconds": -1,
+      "networkHint": true,
+      "page": 248,
+      "preparingSpeech": false,
+      "rangeCallbacks": 0,
+      "recognitionCount": 0,
+      "savedPages": 427,
+      "scene": "active",
+      "state": "idle",
+      "unit": 0,
+      "version": 1,
+      "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+    },
+    "freshImageWhileSpeaking": {
+      "complete": true,
+      "errorCode": "",
+      "firstSpeechMilliseconds": 66,
+      "networkHint": true,
+      "page": 248,
+      "preparingSpeech": false,
+      "rangeCallbacks": 140,
+      "recognitionCount": 2,
+      "savedPages": 427,
+      "scene": "active",
+      "state": "speaking",
+      "unit": 11,
+      "version": 1,
+      "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+    },
+    "backgroundWhileSpeaking": {
+      "complete": true,
+      "errorCode": "",
+      "firstSpeechMilliseconds": 47,
+      "networkHint": true,
+      "page": 253,
+      "preparingSpeech": false,
+      "rangeCallbacks": 60,
+      "recognitionCount": 7,
+      "savedPages": 427,
+      "scene": "background",
+      "state": "speaking",
+      "unit": 2,
+      "version": 1,
+      "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+    },
+    "foregroundReturnVisiblePage": 254,
+    "currentRunAcousticConfirmation": "pending",
+    "strictAirplaneMode": "pending repeat on confirmed local reader",
+    "italianFreshPage": {
+      "complete": true,
+      "errorCode": "",
+      "firstSpeechMilliseconds": 37,
+      "networkHint": true,
+      "page": 42,
+      "preparingSpeech": false,
+      "rangeCallbacks": 120,
+      "recognitionCount": 2,
+      "savedPages": 55,
+      "scene": "active",
+      "state": "speaking",
+      "unit": 6,
+      "version": 1,
+      "voiceID": "com.apple.voice.super-compact.it-IT.Alice"
+    },
+    "flightReadyPage": {
+      "complete": true,
+      "errorCode": "",
+      "firstSpeechMilliseconds": 37,
+      "networkHint": true,
+      "page": 46,
+      "preparingSpeech": false,
+      "rangeCallbacks": 144,
+      "recognitionCount": 2,
+      "savedPages": 55,
+      "scene": "active",
+      "state": "idle",
+      "unit": 0,
+      "version": 1,
+      "voiceID": "com.apple.voice.super-compact.it-IT.Alice"
+    },
+    "firstPhysicalFlightAttempt": {
+      "result": "not accepted",
+      "userReport": "Playback had no response; user noticed the online reader was displayed.",
+      "evidence": "Local diagnostic remained unchanged at idle page 47; after reconnect the visible reader had Read Aloud/Explain tabs; online log reported voice service unavailable.",
+      "classification": "Incorrect route reached during attempted offline acceptance; not evidence of successful offline speech or a diagnosed local TTS engine failure.",
+      "backgroundReturnRetest": "Local reader page 47 remained visible after Home > app icon return; route-switch trigger not yet established."
+    }
+  },
+  "regression": {
+    "cacheUnitSummary": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "982F22E5-53B0-46F8-8CC8-55D055F22D49",
+            "deviceName": "CastReader iOS Direct TTS QA",
+            "modelName": "iPhone 17 Pro",
+            "osBuildNumber": "23F77",
+            "osVersion": "26.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 0,
+          "failedTests": 0,
+          "passedTests": 50,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "Test Scheme Action"
+          }
+        }
+      ],
+      "environmentDescription": "CastReader · Built with macOS 26.2",
+      "expectedFailures": 0,
+      "failedTests": 0,
+      "finishTime": 1789293127.399,
+      "passedTests": 50,
+      "result": "Passed",
+      "skippedTests": 0,
+      "startTime": 1789293091.46,
+      "statistics": [],
+      "testFailures": [],
+      "title": "Test - CastReader",
+      "topInsights": [
+        {
+          "category": "Longest Test Runs",
+          "impact": "44% of duration",
+          "text": "2 longest test runs with outlier durations exceeding 2.52s (three standard deviations)"
+        }
+      ],
+      "totalTestCount": 50
+    },
+    "preModalUISummary": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "982F22E5-53B0-46F8-8CC8-55D055F22D49",
+            "deviceName": "CastReader iOS Direct TTS QA",
+            "modelName": "iPhone 17 Pro",
+            "osBuildNumber": "23F77",
+            "osVersion": "26.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 0,
+          "failedTests": 0,
+          "passedTests": 5,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "Test Scheme Action"
+          }
+        }
+      ],
+      "environmentDescription": "CastReader · Built with macOS 26.2",
+      "expectedFailures": 0,
+      "failedTests": 0,
+      "finishTime": 1789293751.278,
+      "passedTests": 5,
+      "result": "Passed",
+      "skippedTests": 0,
+      "startTime": 1789293404.907,
+      "statistics": [],
+      "testFailures": [],
+      "title": "Test - CastReader",
+      "topInsights": [],
+      "totalTestCount": 5
+    },
+    "finalModalUI": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "982F22E5-53B0-46F8-8CC8-55D055F22D49",
+            "deviceName": "CastReader iOS Direct TTS QA",
+            "modelName": "iPhone 17 Pro",
+            "osBuildNumber": "23F77",
+            "osVersion": "26.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 0,
+          "failedTests": 0,
+          "passedTests": 6,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "Test Scheme Action"
+          }
+        }
+      ],
+      "environmentDescription": "CastReader · Built with macOS 26.2",
+      "expectedFailures": 0,
+      "failedTests": 0,
+      "finishTime": 1789294862.238,
+      "passedTests": 6,
+      "result": "Passed",
+      "skippedTests": 0,
+      "startTime": 1789294468.264,
+      "statistics": [],
+      "testFailures": [],
+      "title": "Test - CastReader",
+      "topInsights": [],
+      "totalTestCount": 6
+    },
+    "harnessCorrection": "First cache test attempt rejected exchanged resources correctly but failed the same-length fixture assertion; preserved requiresOCR/sourceWordCount to make the external rewrite length match. Rerun: 50 passed.",
+    "latestTotalPassed": 56,
+    "miniPlayerScreenshot": {
+      "path": "reports/kindle-offline-five-phases-20260912/offline-flow-ui/21-reader-covers-root-mini-player.png",
+      "sha256": "a112a110d071c9c900ac34a316aec2736cc9f04da90f4ba5da3d51ab4ab689c7",
+      "source": "synthetic simulator regression fixture, not device evidence"
+    }
+  },
+  "deviceUIBug": {
+    "found": "Root online mini player overlaps offline transport after a Library NavigationLink opens the local reader.",
+    "fix": "Present library reader in a fullScreenCover, matching download-to-reader. Defer resume routing until dismissal.",
+    "deviceRetest": "passed: existing online mini player visible on library; opening Donna Paola restores 43/55 in a full-screen reader with unobscured playback, voice and rate controls; Alice voice picker and rate menu were operated; fresh OCR/speech/highlight succeeded."
+  },
+  "sourceSHA256": {
+    "CastReader/Services/KindleOfflineBookStore.swift": "a162a197addb081b86b25ae5b8e766fdc58cd4ae0ff85aaaf0bc848c7ab3a96e",
+    "CastReader/Views/Kindle/KindleOfflineLibraryScreen.swift": "68882481ff99b4932c169d2cf020a0d7d0a2350fb6fa7bd8e0734124a8fe339a",
+    "CastReader/Views/Kindle/KindleOfflineFlowFixture.swift": "0a3d516bd722f49cdd4a93beba43a3eb20a962d44f98d249d6812f1813ed38ec",
+    "CastReaderTests/KindleOfflineBookStoreTests.swift": "24e37e29dc86084616773bdfca53f27b27ce2c0d79e291565651b81cb00eaaa4",
+    "CastReaderUITests/KindleOfflineFlowUITests.swift": "5d9df951e80c162ebaf3bea923253fe73e1eb23253fb5e267fbbc30a50772293"
+  },
+  "limitations": [
+    "30–60 second target not met for the 427-page book.",
+    "Strict airplane mode with Wi-Fi off and current-run acoustic confirmation remain pending.",
+    "No full phone-lock audio test; app-background speech was tested through Mirroring."
+  ],
+  "builds": {
+    "release": {
+      "result": "BUILD SUCCEEDED",
+      "log": "/tmp/CastReaderOfflineFlow-Modal-Release.log",
+      "codeSigning": false
+    },
+    "device": {
+      "result": "TEST BUILD SUCCEEDED",
+      "log": "/tmp/CastReaderOfflineFlow-Modal-Device.log",
+      "installed": true,
+      "binarySHA256": "9fcedf901a30538a23d2f8ae279828610d9a5300247f3480963458f9ebd1b3f2",
+      "baselineLog": "/tmp/CastReaderOfflineFlow-Modal-Baseline.log"
+    }
+  }
+}

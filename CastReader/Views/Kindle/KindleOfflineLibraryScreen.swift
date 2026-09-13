@@ -12,11 +12,18 @@ struct KindleOfflineLibraryView: View {
     @State private var error: String?
     @State private var query = ""
     @State private var deletion: Deletion?
+    @State private var reading: ReadingSession?
+    @State private var pendingResume: ReadingSession?
     let store: KindleOfflineBookStore
     private let scopeProvider: @MainActor () -> String?
     private let continueDownload: ((KindleOfflineBook) -> Void)?
     private var scope: String? { scopeProvider() }
     private struct Deletion: Identifiable { let id: String; let title: String; let scope: String }
+    private struct ReadingSession: Identifiable {
+        let id = UUID()
+        let book: KindleOfflineBook
+        let scope: String
+    }
 
     init(store: KindleOfflineBookStore = .shared,
          scopeProvider: @escaping @MainActor () -> String? = { KindleOfflineContext.currentScope },
@@ -51,11 +58,8 @@ struct KindleOfflineLibraryView: View {
                 }
                 ForEach(filtered) { book in
                     Section {
-                        NavigationLink {
-                            KindleOfflineBookReaderView(book: book, scope: scope, store: store,
-                                scopeValidator: { scope == scopeProvider() },
-                                continueDownload: { resume(book, expectedScope: scope) })
-                        } label: { bookLabel(book) }
+                        Button { reading = .init(book: book, scope: scope) } label: { bookLabel(book) }
+                        .buttonStyle(.plain)
                         .disabled(book.pages.isEmpty)
                         .accessibilityIdentifier("offlineLibraryBook.\(book.sourceBookID)")
                         if book.status != .complete {
@@ -83,6 +87,23 @@ struct KindleOfflineLibraryView: View {
         }
         .navigationTitle("离线书籍").navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, prompt: "搜索离线书名或作者")
+        // Match the download screen's reader presentation so the root online
+        // mini player and tab controls cannot cover local playback controls.
+        .fullScreenCover(item: $reading, onDismiss: {
+            guard let request = pendingResume else { return }
+            pendingResume = nil
+            resume(request.book, expectedScope: request.scope)
+        }) { session in
+            NavigationStack {
+                KindleOfflineBookReaderView(book: session.book, scope: session.scope, store: store,
+                    scopeValidator: { session.scope == scopeProvider() },
+                    continueDownload: { pendingResume = session; reading = nil })
+                    .toolbar { ToolbarItem(placement: .cancellationAction) {
+                        Button("关闭") { reading = nil }.accessibilityIdentifier("offlineBookClose")
+                    } }
+            }
+        }
+        .onChange(of: scope) { _, _ in pendingResume = nil; reading = nil }
         .task(id: scope) { await refresh() }
         .refreshable { await refresh() }
         .onReceive(NotificationCenter.default.publisher(for: KindleOfflineBookStore.didChange).receive(on: RunLoop.main)) { notification in
