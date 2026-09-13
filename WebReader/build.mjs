@@ -59,3 +59,5 @@ console.log(`✅ built ${APP_OUT} (production, minify=${minify}, fixture APIs ab
 await buildBundle(XCTEST_OUT, true)
 assertFixtureAPIMembership(XCTEST_OUT, true)
 console.log(`✅ built ${XCTEST_OUT} (CastReaderTests only, fixture APIs present)`)
+
+await import('./build-ao3.mjs')

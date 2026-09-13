@@ -1492,6 +1492,25 @@ final class ReadAloudViewModel: ObservableObject {
         status = .pending
     }
 
+    // Kept separate from the shared player: a blocked AO3 document must not
+    // restart through its toolbar, mini player, or a delayed access retry.
+    var webContentBlockMessage: String?
+
+    func invalidateAO3Content(message: String) {
+        guard document.sourceKind == .web, AO3PageUpdate.isAO3URL(document.sourceURL) else { return }
+        deactivate()
+        segmentsByParagraph.removeAll(keepingCapacity: false)
+        stageInactiveLiveWebPage([])
+        webContentBlockMessage = message
+        status = .error(message)
+    }
+
+    private func requireWebContentReady() -> Bool {
+        guard let message = webContentBlockMessage else { return true }
+        status = .error(message)
+        return false
+    }
+
     var stagedLiveWebParagraphTexts: [String] {
         webParagraphs?.map(\.text) ?? []
     }
@@ -2403,11 +2422,13 @@ final class ReadAloudViewModel: ObservableObject {
     // MARK: - Start / control
 
     func start() {
+        guard requireWebContentReady() else { return }
         guard audio.sleepTimer.permitsAutomaticPlayback() else { return }
         start(allowAccessRefresh: true)
     }
 
     private func start(allowAccessRefresh: Bool) {
+        guard requireWebContentReady() else { return }
         guard resumeNotice == nil, readablePageTask == nil else { return }
         isPlaybackPausedByUser = false
         if currentParagraphIndex >= 0, ownsAudioQueue,
@@ -2476,6 +2497,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     func togglePlayPause() {
+        guard requireWebContentReady() else { return }
         if isPreparingReadablePage { pausePlayback(); return }
         audio.sleepTimer.resumeByUser()
         guard resumeNotice == nil else { return }
@@ -2543,6 +2565,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// Reattaching while audio is playing or TTS is still loading must not pause
     /// playback or start a duplicate generation request.
     func ensurePlaying() {
+        guard requireWebContentReady() else { return }
         guard audio.sleepTimer.permitsAutomaticPlayback() else { return }
         guard resumeNotice == nil else { return }
         isPlaybackPausedByUser = false
@@ -2638,10 +2661,12 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// 点击段落跳读。
     func jump(to paragraphIndex: Int) {
+        guard requireWebContentReady() else { return }
         jump(to: paragraphIndex, allowAccessRefresh: true)
     }
 
     private func jump(to paragraphIndex: Int, allowAccessRefresh: Bool) {
+        guard requireWebContentReady() else { return }
         guard readableIndices.contains(paragraphIndex) else { return }
         flushReadingProgress()
         pendingReadingAudioCursor = nil

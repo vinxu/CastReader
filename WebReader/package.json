@@ -5,6 +5,7 @@
   "description": "把 Chrome 扩展 readout-desktop 的纯 DOM 高亮/标注 JS 编译成可注入 WKWebView 的 bundle",
   "scripts": {
     "build": "node build.mjs",
+    "build:ao3": "node build-ao3.mjs",
     "test:kobo": "node kobo-fixture-test.mjs"
   },
   "devDependencies": {

@@ -262,6 +262,24 @@ final class ExplainViewModel: ObservableObject {
         status = .idle
     }
 
+    // Kept separate from the shared player: a blocked AO3 document must not
+    // restart through its toolbar, mini player, or a delayed access retry.
+    var webContentBlockMessage: String?
+
+    func invalidateAO3Content(message: String) {
+        guard document.sourceKind == .web, AO3PageUpdate.isAO3URL(document.sourceURL) else { return }
+        deactivate()
+        stageInactiveLiveWebPage([])
+        webContentBlockMessage = message
+        status = .error(message)
+    }
+
+    private func requireWebContentReady() -> Bool {
+        guard let message = webContentBlockMessage else { return true }
+        status = .error(message)
+        return false
+    }
+
     var stagedLiveWebParagraphTexts: [String] {
         doc.paragraphs.map(\.text)
     }
@@ -945,6 +963,7 @@ final class ExplainViewModel: ObservableObject {
     // MARK: - Start
 
     func start() {
+        guard requireWebContentReady() else { return }
         start(allowAccessRefresh: true)
     }
 
@@ -952,6 +971,7 @@ final class ExplainViewModel: ObservableObject {
         allowAccessRefresh: Bool,
         reusingStartedSession: Bool = false
     ) {
+        guard requireWebContentReady() else { return }
         liveWebTurnIntentSuspended = false
         ReaderRunLog.write(
             "EXPLAIN start requested status=\(statusLogValue) " +
@@ -1302,6 +1322,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     func togglePlayPause() {
+        guard requireWebContentReady() else { return }
         audio.sleepTimer.resumeByUser()
         liveWebTurnIntentSuspended = false
         if audio.hasTerminalPlaybackFailure {
@@ -1322,6 +1343,7 @@ final class ExplainViewModel: ObservableObject {
     /// `ensurePlaying`. It never pauses an active explanation and reuses cached
     /// audio when possible.
     func ensurePlaying() {
+        guard requireWebContentReady() else { return }
         liveWebTurnIntentSuspended = false
         if ownsAudioQueue, audio.isPlaying { return }
 
@@ -1425,6 +1447,7 @@ final class ExplainViewModel: ObservableObject {
 
     /// 重新播放已解读完的内容：复用缓存块（不重新调后端 LLM、不耗额度），从第一块重头播。
     func replay() {
+        guard requireWebContentReady() else { return }
         liveWebTurnIntentSuspended = false
         if replayBlocks.isEmpty {
             // 兼容旧会话/短文：若还没形成完整轨道，就把当前批缓存作为兜底；全新会话则普通开始。

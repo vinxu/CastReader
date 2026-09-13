@@ -51,6 +51,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var cancellables = Set<AnyCancellable>()
     private var didInit = false
     private var didAutoStart = false
+    private var isAO3 = false
+    private var ao3DocumentID: String?
+    private var ao3RetiredDocuments = Set<String>()
+    private var ao3Signature = ""
+    private var ao3PageKey: String?
+    private var ao3Blocked = true
+    private var ao3ResumeRead = false
+    private var ao3ResumeExplain = false
+    private var ao3ResumeText: String?
     private var isWeReadInitialPlaybackPending = false
     private var weReadInitialPlaybackTask: Task<Void, Never>?
     private var isReadMode = true        // 当前模式；onRendered 自动开播据此决定启动朗读还是解读
@@ -440,6 +449,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         openingCheckpoint: ReadingResumeCheckpoint? = nil
     ) {
         self.expectsDynamicWebContent = expectsDynamicWebContent
+        self.isAO3 = expectsDynamicWebContent && AO3PageUpdate.isAO3URL(readerURL)
+        self.ao3PageKey = AO3PageUpdate.pageKey(readerURL)
         self.isWeRead = isWeRead
         self.livePlatform = livePlatform
         self.liveBookID = bookID
@@ -706,6 +717,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         self.readVM = readVM
         self.explainVM = explainVM
 
+        if isAO3 {
+            // Reopening a minimized reader must preserve the user's paused
+            // state; the new WebView is not a new automatic-play request.
+            if !readVM.stagedLiveWebParagraphTexts.isEmpty { didAutoStart = true }
+            ao3Blocked = false
+            invalidateAO3Content(message: AppLocalized("请先在网页中完成 AO3 提示，再继续"))
+        }
+
         if isWeRead {
             rememberedReadingLanguage = readVM.document.language
             readVM.prepareReadableWebPage = { [weak self] in
@@ -923,6 +942,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let messageType = (body as? [String: Any])?["type"] as? String
         Task { @MainActor [weak self] in
             guard let self else { return }
+            if self.isAO3 && (!frame.isMainFrame || !AO3PageUpdate.isAO3URL(frame.requestURL)) { return }
             if let platform = self.livePlatform,
                !platform.allowsScriptMessage(type: messageType, frame: frame) {
                 let path = frame.requestURL.flatMap { URL(string: $0) }?.path ?? ""
@@ -1020,6 +1040,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
             let raw = msg.payload["paragraphs"] as? [[String: Any]] ?? []
             let paras = raw.compactMap { WebRenderedParagraph($0) }
+            if isAO3 {
+                receiveAO3Rendered(paras, payload: msg.payload)
+                return
+            }
             print("[WebReader] 📄 rendered paragraphs=\(paras.count)")
             receiveRendered(paras)
         case "googleBooksTurnRequested":
@@ -1181,6 +1205,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
             NSLog("CRDBG WeRead semantic turn rejected %@", "\(msg.payload)")
         case "paragraphTapped":
+            if isAO3 && ao3Blocked { return }
             if let i = msg.payload["paragraphIndex"] as? Int { readVM?.jump(to: i) }
         case "log":
             let message = "\(msg.payload["message"] ?? "")"
@@ -1235,6 +1260,73 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         extractionRetryTask?.cancel()
         extractionRetryTask = nil
         onRendered(paras)
+    }
+
+    private func invalidateAO3Content(message: String) {
+        if !ao3Blocked || didInit {
+            ao3ResumeRead = readVM?.shouldResumeAfterManualLivePageTurn == true
+            ao3ResumeExplain = explainVM?.shouldResumeAfterManualLivePageTurn == true
+            if let vm = readVM, vm.currentParagraphIndex >= 0,
+               vm.currentParagraphIndex < vm.stagedLiveWebParagraphTexts.count {
+                ao3ResumeText = vm.stagedLiveWebParagraphTexts[vm.currentParagraphIndex]
+            }
+        }
+        ao3Blocked = true
+        didInit = false
+        extractionRetryTask?.cancel()
+        extractionRetryTask = nil
+        readVM?.invalidateAO3Content(message: message)
+        explainVM?.invalidateAO3Content(message: message)
+        call("clearHighlight")
+        call("clearMarks")
+    }
+
+    private func receiveAO3Rendered(_ paras: [WebRenderedParagraph], payload: [String: Any]) {
+        guard let update = AO3PageUpdate(payload, currentURL: webView?.url?.absoluteString),
+              !ao3RetiredDocuments.contains(update.documentID) else { return }
+        if let active = ao3DocumentID, active != update.documentID { return }
+        ao3DocumentID = update.documentID
+        if let notice = update.notice {
+            invalidateAO3Content(message: notice)
+            return
+        }
+        guard !paras.isEmpty,
+              paras.enumerated().allSatisfy({ $0.offset == $0.element.paragraphIndex && !$0.element.text.isEmpty }) else { return }
+        let changedPage = ao3PageKey != update.pageKey
+        if didInit && (changedPage || ao3Signature != update.signature) {
+            invalidateAO3Content(message: AppLocalized("暂时无法读取 AO3 正文，请在网页中重试"))
+        }
+        if changedPage { ao3ResumeText = nil }
+        ao3PageKey = update.pageKey
+        if didInit && !ao3Blocked && ao3Signature == update.signature {
+            // Same prose, new DOM nodes (e.g. bfcache/page re-render). Rebind
+            // highlights without restarting the active audio generation.
+            call("init", ["segments": paras.map { ["paragraphIndex": $0.paragraphIndex, "text": $0.text] as [String: Any] },
+                          "color": AppSettings.shared.highlightColorHex])
+            return
+        }
+        ao3Blocked = false
+        ao3Signature = update.signature
+        readVM?.webContentBlockMessage = nil
+        explainVM?.webContentBlockMessage = nil
+        readVM?.status = .pending
+        explainVM?.status = .idle
+        onRendered(paras, allowAutoStart: false)
+        if let text = ao3ResumeText, let index = paras.firstIndex(where: { $0.text == text }) {
+            readVM?.restoreReadingPosition(index)
+        }
+        let resumeRead = ao3ResumeRead
+        let resumeExplain = ao3ResumeExplain
+        ao3ResumeRead = false
+        ao3ResumeExplain = false
+        ao3ResumeText = nil
+        // Auto Play is an opening-page preference, not permission to restart
+        // every time a website overlay disappears after the user paused.
+        defer { didAutoStart = true }
+        guard AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback() else { return }
+        if resumeRead && isReadMode { readVM?.ensurePlaying() }
+        else if resumeExplain && !isReadMode { explainVM?.ensurePlaying() }
+        else { startAutoPlaybackIfNeeded() }
     }
 
     private func receiveWeReadTOC(_ payload: [String: Any]) {
@@ -6713,6 +6805,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         _ webView: WKWebView,
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
+        if isAO3 {
+            if let id = ao3DocumentID { ao3RetiredDocuments.insert(id) }
+            ao3DocumentID = nil
+            invalidateAO3Content(message: AppLocalized("暂时无法读取 AO3 正文，请在网页中重试"))
+        }
         ReaderWebAppearanceCenter.shared.resetReaderFrame(in: webView)
         updateHomeValidationReadiness()
     }

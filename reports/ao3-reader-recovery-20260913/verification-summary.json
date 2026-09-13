@@ -1,0 +1,57 @@
+{
+  "date": "2026-09-13",
+  "baseline": "5f863c4ba9692ab51c9cf1ee318cad63a17d2c92",
+  "bundle_sha256": "11bfe6c4ef06f8fa58cd66cca240748f5c48797d7fcff22c2cdfdfc62298e63b",
+  "chapters": [
+    {
+      "url": "https://archiveofourown.org/works/86539701/chapters/228985126",
+      "source_html_sha256": "59cfd5c8e3548298fb239e633c997c58a2ab0d594d39b08fc3499367fcdc48da",
+      "blocked_rendered": 0,
+      "restored_paragraphs": 216,
+      "selected_chapter_paragraphs": 216,
+      "selected_terms_paragraphs": 0,
+      "full_text_array_matches_source": true
+    },
+    {
+      "url": "https://archiveofourown.org/works/86539701/chapters/231697481",
+      "source_html_sha256": "45213bec2c0c9f55c4befa1d213f041fafd4ce8e6adca74e8cf1c7d9e22cb89c",
+      "blocked_rendered": 0,
+      "restored_paragraphs": 311,
+      "selected_chapter_paragraphs": 311,
+      "selected_terms_paragraphs": 0,
+      "full_text_array_matches_source": true
+    },
+    {
+      "url": "https://archiveofourown.org/works/85592371/chapters/227434811",
+      "source_html_sha256": "38a1d510bbece0fb48cca8121fd17f990404301284578be496c161c1c304c2d6",
+      "blocked_rendered": 0,
+      "restored_paragraphs": 357,
+      "selected_chapter_paragraphs": 357,
+      "selected_terms_paragraphs": 0,
+      "full_text_array_matches_source": true
+    }
+  ],
+  "validation": {
+    "reader_regression": {
+      "total": 117,
+      "passed": 116,
+      "skipped": 1,
+      "failed": 0,
+      "result": "AO3-and-reader-final.xcresult"
+    },
+    "packed_bundle_regression": {
+      "total": 12,
+      "passed": 12,
+      "skipped": 0,
+      "failed": 0,
+      "result": "AO3-packed-bundle.xcresult"
+    },
+    "packed_real_chapters": {
+      "total": 1,
+      "passed": 1,
+      "chapters": 3,
+      "failed": 0,
+      "result": "AO3-real-chapters-packed.xcresult"
+    }
+  }
+}
