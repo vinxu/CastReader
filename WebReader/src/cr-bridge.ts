@@ -257,6 +257,7 @@ export function initBridge(deps: CRDeps): void {
     wcSeg = -1
     wcRanges = []
     paraCursor = 0
+    for (const element of extractedParaElements.values()) element.removeAttribute('data-cr-para')
     paraElements.clear()
     extractedParaElements.clear()
     paraOffsets.clear()

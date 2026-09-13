@@ -314,7 +314,7 @@ struct WebReaderView: UIViewRepresentable {
                     forMainFrameOnly: true
                 ))
             }
-        } else if let js = Self.loadBundleJS() {
+        } else if let js = Self.loadBundleJS(readerURL: document.sourceURL) {
             controller.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         }
 
@@ -482,12 +482,13 @@ struct WebReaderView: UIViewRepresentable {
         context.coordinator.refocusIfNeeded(refocusToken, readMode: mode == .read)
     }
 
-    /// 读取 app bundle 内 WebAssets/bundle.js 作为注入脚本源。
-    static func loadBundleJS() -> String? {
-        let url = Bundle.main.url(forResource: "bundle", withExtension: "js", subdirectory: "WebAssets")
-            ?? Bundle.main.url(forResource: "bundle", withExtension: "js")
+    /// AO3 使用独立脚本；其他网页保留通用正文提取脚本。
+    static func loadBundleJS(readerURL: String? = nil) -> String? {
+        let name = AO3PageUpdate.isAO3URL(readerURL) ? "ao3-bundle" : "bundle"
+        let url = Bundle.main.url(forResource: name, withExtension: "js", subdirectory: "WebAssets")
+            ?? Bundle.main.url(forResource: name, withExtension: "js")
         guard let url = url, let js = try? String(contentsOf: url, encoding: .utf8) else {
-            print("[WebReader] ⚠️ WebAssets/bundle.js not found in app bundle")
+            print("[WebReader] ⚠️ WebAssets/\(name).js not found in app bundle")
             return nil
         }
         return js

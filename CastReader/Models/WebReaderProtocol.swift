@@ -41,6 +41,47 @@ struct WebRenderedParagraph {
     }
 }
 
+/// AO3 has a replaceable chapter and a delayed, blocking site notice. Generic
+/// paragraph-count heuristics cannot distinguish its notice from prose.
+struct AO3PageUpdate {
+    enum State: String { case ready, notice, unavailable }
+    let state: State
+    let documentID: String
+    let pageKey: String
+    let signature: String
+
+    static func isAO3URL(_ raw: String?) -> Bool {
+        guard let raw, let url = URL(string: raw),
+              ["https", "http"].contains(url.scheme?.lowercased() ?? ""),
+              let host = url.host?.lowercased() else { return false }
+        return ["archiveofourown.org", "www.archiveofourown.org", "archiveofourown.com",
+                "www.archiveofourown.com", "archiveofourown.net", "www.archiveofourown.net", "ao3.org"].contains(host)
+    }
+
+    static func pageKey(_ raw: String?) -> String? {
+        guard isAO3URL(raw), let raw, var url = URLComponents(string: raw) else { return nil }
+        url.fragment = nil
+        return url.string
+    }
+
+    init?(_ payload: [String: Any], currentURL: String?) {
+        guard payload["source"] as? String == "ao3",
+              let state = (payload["state"] as? String).flatMap(State.init(rawValue:)),
+              let id = payload["documentID"] as? String, !id.isEmpty,
+              let key = Self.pageKey(payload["url"] as? String), key == Self.pageKey(currentURL),
+              let signature = payload["signature"] as? String else { return nil }
+        self.state = state; self.documentID = id; self.pageKey = key; self.signature = signature
+    }
+
+    var notice: String? {
+        switch state {
+        case .ready: return nil
+        case .notice: return AppLocalized("请先在网页中完成 AO3 提示，再继续")
+        case .unavailable: return AppLocalized("暂时无法读取 AO3 正文，请在网页中重试")
+        }
+    }
+}
+
 /// native→JS 的当前朗读高亮指令（.web 源）：高亮 DOM 段落内某句的字符范围（句级，随朗读推进）。
 struct WebHighlightCmd: Equatable {
     let paragraphIndex: Int            // DOM 段落（data-cr-para）

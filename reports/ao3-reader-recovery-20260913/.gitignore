@@ -1,0 +1,4 @@
+*.xcresult/
+*.log
+evidence/
+real-page-harness/
