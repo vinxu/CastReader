@@ -206,7 +206,6 @@ final class KindleReadingSettingsUITests: XCTestCase {
                 // native control. The row can be hittable while the control
                 // sits below the screen in a long accessibility-size label.
                 let nativeSwitch = toggle.descendants(matching: .switch).firstMatch
-                XCTAssertTrue(nativeSwitch.waitForExistence(timeout: 5))
                 for _ in 0..<8 {
                     if isControlFullyVisible(nativeSwitch, in: app) { break }
                     // A full swipe can overshoot this control on an SE-size
@@ -215,12 +214,15 @@ final class KindleReadingSettingsUITests: XCTestCase {
                     let form = app.collectionViews.firstMatch
                     let top = max(app.frame.minY + 44, app.navigationBars.firstMatch.frame.maxY)
                     let bottom = app.frame.maxY - 44
-                    let frame = nativeSwitch.frame
+                    // Form may not create the offscreen switch until it is
+                    // scrolled into view, especially with Japanese AXXXL text.
+                    let frame = nativeSwitch.exists ? nativeSwitch.frame : .zero
                     let distance = frame.height > 0
                         ? min(180, max(-180, (top + bottom) / 2 - frame.midY)) : -180
                     let start = form.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
                     start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: distance)))
                 }
+                XCTAssertTrue(nativeSwitch.waitForExistence(timeout: 5))
                 attachScreen(app, name: caseName + "-before-toggle", includeHierarchy: true)
                 XCTAssertTrue(isControlFullyVisible(nativeSwitch, in: app), "Native switch is not fully visible: \(nativeSwitch.frame)")
                 XCTAssertEqual(nativeSwitch.value as? String, "1", "Each fixture must begin enabled")
