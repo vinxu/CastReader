@@ -1,0 +1,22 @@
+[
+  {
+    "requested": "https://castreader.com/en/privacy-policy",
+    "finalURL": "https://castreader.com/privacy-policy",
+    "status": 200
+  },
+  {
+    "requested": "https://castreader.com/en/terms-of-service",
+    "finalURL": "https://castreader.com/terms-of-service",
+    "status": 200
+  },
+  {
+    "requested": "https://castreader.com/zh/privacy-policy",
+    "finalURL": "https://castreader.com/zh/privacy-policy",
+    "status": 200
+  },
+  {
+    "requested": "https://castreader.com/zh/terms-of-service",
+    "finalURL": "https://castreader.com/zh/terms-of-service",
+    "status": 200
+  }
+]

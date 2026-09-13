@@ -1,0 +1,60 @@
+{
+  "ipa": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/build/CastReader-1.2.39-60-AppStore.ipa",
+  "ipaSHA256": "b60a0fe73caa7c9da822466a6ca6c4d8a803e8435b2e69c01bb2c1d7c6ac1343",
+  "ipaBytes": 40388141,
+  "archive": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/build/CastReader-1.2.39-60.xcarchive",
+  "sourceCommit": "64c2dbd934d34e7b000c8def1a4c8ee5dc94ab23",
+  "components": [
+    {
+      "bundle": "com.same.castreader",
+      "version": "1.2.39",
+      "build": "60",
+      "minimumOS": "17.6",
+      "getTaskAllow": false,
+      "authorities": [
+        "Apple Distribution: Shanghai Baozi Information Technology Co., Ltd. (KQW6UNZE8J)",
+        "Apple Worldwide Developer Relations Certification Authority",
+        "Apple Root CA"
+      ],
+      "signatureValid": true,
+      "deviceLimitedProfile": false,
+      "enterpriseProfile": false
+    },
+    {
+      "bundle": "com.same.castreader.ShareExtension",
+      "version": "1.2.39",
+      "build": "60",
+      "minimumOS": "17.6",
+      "getTaskAllow": false,
+      "authorities": [
+        "Apple Distribution: Shanghai Baozi Information Technology Co., Ltd. (KQW6UNZE8J)",
+        "Apple Worldwide Developer Relations Certification Authority",
+        "Apple Root CA"
+      ],
+      "signatureValid": true,
+      "deviceLimitedProfile": false,
+      "enterpriseProfile": false
+    },
+    {
+      "bundle": "com.same.castreader.Widget",
+      "version": "1.2.39",
+      "build": "60",
+      "minimumOS": "17.6",
+      "getTaskAllow": false,
+      "authorities": [
+        "Apple Distribution: Shanghai Baozi Information Technology Co., Ltd. (KQW6UNZE8J)",
+        "Apple Worldwide Developer Relations Certification Authority",
+        "Apple Root CA"
+      ],
+      "signatureValid": true,
+      "deviceLimitedProfile": false,
+      "enterpriseProfile": false
+    }
+  ],
+  "usesNonExemptEncryption": false,
+  "webReaderResourcesMatchArchive": {
+    "ao3-bundle.js": "11bfe6c4ef06f8fa58cd66cca240748f5c48797d7fcff22c2cdfdfc62298e63b",
+    "bundle.js": "3b281ed480c60d82192b911bacee3cd8258487de2e899dca226f435520c920bc"
+  },
+  "status": "passed"
+}

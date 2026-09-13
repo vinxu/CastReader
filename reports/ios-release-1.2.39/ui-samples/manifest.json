@@ -1,0 +1,16 @@
+{
+  "sourceResult": "/tmp/CastReader-1.2.39-small-targeted.xcresult",
+  "images": {
+    "pause-after-page-transition-small.png": "0EE4E97E-B536-4752-A692-F7562648F81F.png",
+    "portuguese-accessibility-footer-start.png": "F7115779-B086-4987-B5E9-F7CD5B73BFF0.png",
+    "portuguese-accessibility-footer-end.png": "D80A8AB1-DF3F-45BA-AA6D-D8938F3DA161.png",
+    "hindi-sleep-specific-time.png": "CF386F1E-1C4E-4B48-8236-DDCCFC6F5449.png"
+  },
+  "note": "Synthetic UI fixtures; screenshots show pause at page transition, scrollable accessibility footer edges and Specific Time start control. The initial small run still had one test-navigation failure; the later large-targeted run passes after scrolling materializes the lazy switch.",
+  "additionalFinalOfflineEvidence": {
+    "file": "mini-player-with-local-cover.png",
+    "sourceResult": "/tmp/CastReader-1.2.39-offline-final.xcresult",
+    "test": "KindleOfflineFlowUITests/testSettingsDownloadsEntryAndPersistentMiniPlayer()",
+    "note": "Shared production mini player running inside the synthetic offline test host; surrounding root links are the test harness, not the shipping library screen."
+  }
+}

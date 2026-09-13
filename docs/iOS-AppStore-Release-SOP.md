@@ -46,6 +46,10 @@ Skill 路径：`/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store
 10. 用 `submit_review.rb` 先 dry-run、再 `--execute`；脚本恢复已有审核单并确保只有一个版本项，避免重复提交。旧 `appStoreVersionSubmissions` 创建接口不可用。
 11. 回读版本和审核单，二者进入 `WAITING_FOR_REVIEW` 或后续状态才算完成。
 
+### 上传后构建暂不可见
+
+Xcode 确认上传成功后，Build 可能暂未出现在 `/v1/builds`。`buildUploads` 集合返回 403 不代表单条记录不可读：1.2.39 发布时，从本次 Xcode `ContentDelivery.log` 的结构化 `buildUploads` 响应提取上传 ID 后，`GET /v1/buildUploads/<id>` 可正常读取。只提取 ID、版本、Build 与 `attributes.state`，不得输出日志中的认证信息。等待该记录 `attributes.state.state == COMPLETE`，同时确认精确 Build 为 `VALID / APP_STORE_ELIGIBLE`；若记录出现错误则先处理错误，不因 Build 暂不可见重复上传。
+
 ## 标准命令入口
 
 ```bash

@@ -1,0 +1,64 @@
+{
+  "project": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912",
+  "workspace": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/CastReader.xcworkspace",
+  "marketingVersion": "1.2.39",
+  "buildNumber": "60",
+  "releaseTargets": [
+    {
+      "target": "CastReader",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.39",
+      "buildNumber": "60"
+    },
+    {
+      "target": "CastReader",
+      "configuration": "Release",
+      "marketingVersion": "1.2.39",
+      "buildNumber": "60"
+    },
+    {
+      "target": "CastReader Share Extension",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.39",
+      "buildNumber": "60"
+    },
+    {
+      "target": "CastReader Share Extension",
+      "configuration": "Release",
+      "marketingVersion": "1.2.39",
+      "buildNumber": "60"
+    },
+    {
+      "target": "CastReader Widget",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.39",
+      "buildNumber": "60"
+    },
+    {
+      "target": "CastReader Widget",
+      "configuration": "Release",
+      "marketingVersion": "1.2.39",
+      "buildNumber": "60"
+    }
+  ],
+  "locales": [
+    "en-US",
+    "zh-Hans",
+    "ja",
+    "es-ES",
+    "fr-FR",
+    "pt-BR",
+    "it",
+    "hi",
+    "de-DE",
+    "zh-Hant",
+    "es-MX"
+  ],
+  "metadata": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/docs/CastReader-AppStore-Metadata-11-Languages-1.2.20.md",
+  "whatsNew": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/docs/AppStore-Whats-New-1.2.39.json",
+  "appStoreConnectKeyMode": "600",
+  "xcode": [
+    "Xcode 26.6",
+    "Build version 17F113"
+  ]
+}

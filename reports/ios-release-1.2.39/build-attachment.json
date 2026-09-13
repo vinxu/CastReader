@@ -1,0 +1,11 @@
+{
+  "versionID": "97b00cc5-b9eb-4bcf-9425-78e1faffc8c3",
+  "buildID": "67c9e63f-f4d5-417f-9d96-297fb92c33fc",
+  "version": "1.2.39",
+  "build": "60",
+  "platform": "IOS",
+  "processingState": "VALID",
+  "buildAudienceType": "APP_STORE_ELIGIBLE",
+  "usesNonExemptEncryption": false,
+  "attachedBuildMatches": true
+}

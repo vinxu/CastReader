@@ -1,0 +1,16 @@
+{
+  "locales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "readbackMatches": true
+}

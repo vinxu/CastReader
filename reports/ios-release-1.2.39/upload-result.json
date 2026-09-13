@@ -1,0 +1,13 @@
+{
+  "exitCode": 0,
+  "uploadSucceeded": true,
+  "exportSucceeded": true,
+  "log": "/tmp/CastReader-1.2.39-60-upload.log",
+  "logSHA256": "9b017f1f08e4ad8048018deb70bf6351e9fe60b055884657a3acff062e737caf",
+  "confirmationLines": [
+    "2026-09-14 00:18:07.997 xcodebuild[66260:7812034] Progress 100%: Uploaded package is processing.",
+    "2026-09-14 00:18:08.000 xcodebuild[66260:7812034] Progress 100%: Upload succeeded.",
+    "** EXPORT SUCCEEDED **"
+  ],
+  "warnings": []
+}

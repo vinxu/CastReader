@@ -1,11 +1,12 @@
 # AGENTS.md
 
-## 本地真机包的基线校验（2026-09-11）
+## 打包与本地真机包的基线校验（2026-09-14）
 
-- 当前已验证的 iOS 1.2.37 发布源码为提交 `b6dd4d7`；对应工作树：
-  `/Users/xuxuheng/Documents/.worktrees/CastReader-reading-resume-real-libraries-20260909`。
-- 主目录的 `codex/adaptive-voice-clone-denoise` 工作树不是该发布基线。不得仅因当前目录或更大的 Build 号就在此打包覆盖真机，也不得整文件覆盖发布分支。
-- 本轮“更多 / Aa / 睡眠定时”只在上述发布工作树增量整合。打包前运行该工作树的 `bash scripts/build-reader-more-integration.sh --check`；真机包运行同脚本的 `--device`。
+- 本次已提交 App Store、等待审核的 iOS 1.2.39（60）应用源码为 `64c2dbd934d34e7b000c8def1a4c8ee5dc94ab23`；工作树：
+  `/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912`，分支 `codex/kindle-offline-five-phases-20260912`。后续 UI 测试和发布文档提交不改变该包的应用源码。
+- 候选包包括 Kindle 离线功能和 AO3 修复合并 `d58e296`，并保留已验证发布祖先 `b6dd4d7` 和 1.2.38 集成快照 `5f863c4`。上传、提审状态及签名/测试证据见 `docs/iOS-1.2.39-Release-Report.md`；候选包或等待审核均不等于已经上线。
+- 主目录的 `codex/adaptive-voice-clone-denoise` 工作树不是该构建基线。不得仅因当前目录或更大的 Build 号就在此打包覆盖真机，也不得整文件覆盖发布分支。
+- 后续离线、AO3、“更多 / Aa / 睡眠定时”增量整合从上述候选工作树继续。打包前运行该工作树的 `bash scripts/build-reader-more-integration.sh --check`；真机包运行同脚本的 `--device`。本次没有覆盖用户手机安装。
 - 后续发布更新时，以已验证的新发布提交更新本节，核对祖先关系、源码差异、独立 DerivedData 与回归结果后再安装；版本号不是源码基线证据。
 - 本轮至少保留 Kindle 位置恢复、手动翻页确认、预热书架遮挡、原生字号重排、WeRead/Kobo 恢复和播放器失败恢复的发布版实现。不得用旧工作树的新功能实现替换这些子系统。
 
@@ -187,9 +188,11 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 7. API 字段类型可能不一致/为 null → Model 用可选 + 自定义解码；解码失败先打印原始响应 + `error`（含 codingPath）。
 8. 含空格的 URL 必须 `addingPercentEncoding` 否则 `URL(string:)` 返回 nil。
 
-## TTS 引擎 — 仅云端（本地 Kokoro/FluidAudio 已移除）
+## TTS 引擎 — 云端朗读与 Kindle 离线系统朗读
 
-曾有本地 Kokoro CoreML 引擎（FluidAudio/FluidAudioTTS + ESpeakNG 多语言发音字典），为减小包体积（约 -35MB，包 45M→10M）已**整体移除**——现仅云端 TTS（`TTSService` → `APIService.generateTTS` 单声道流式）。`AudioSegment.isWavFormat` 字段保留但恒为 false（云端均 mp3）。如需恢复本地/离线引擎，参考 git 历史的 `LocalTTSService` / `ModelDownloadService` / `TTSModelSettingsView` 及 `TTSProvider` 路由 + SPM FluidAudio 依赖。
+常规在线朗读使用云端 TTS（`TTSService` → `APIService.generateTTS` 单声道流式）。原本地 Kokoro/FluidAudio CoreML 引擎已整体移除；不要为了 Kindle 离线功能重新引入这些依赖。`AudioSegment.isWavFormat` 字段保留，云端音频仍为 mp3。
+
+Kindle 离线书由 `KindleOfflineBookReaderModel` 配合 `SystemSpeechPlaybackService` 使用原生 `AVSpeechSynthesizer`。下载只保存整本页图、封面与顺序清单；朗读时按需用端上 Vision OCR 识别，不能把 OCR 加回下载串行流程。入口在播放器“更多”中保存、设置的“离线书籍”中读取。中文/日文按句子高亮，英文按词高亮；收起阅读器保留迷你播放器。跨页期间暂停能力以模型的 `canPausePlayback` 为准，不能仅用瞬时语音状态或页面 loading 状态禁用暂停。
 
 ## TTS 文本渲染 — 直接渲染 TTS 文本，不映射回原文
 

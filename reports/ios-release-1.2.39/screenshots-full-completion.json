@@ -1,0 +1,12 @@
+{
+  "locales": 11,
+  "titlesAndSubtitlesUnchanged": true,
+  "allScreenshotsComplete": true,
+  "completeScreenshots": 45,
+  "fallbackLocales": [
+    "es-MX",
+    "zh-Hant"
+  ],
+  "attachedBuild": "60",
+  "errors": []
+}

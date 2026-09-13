@@ -1,0 +1,4 @@
+Integration source: /Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912
+Release baseline: b6dd4d7
+HEAD: e7b72bc42656562de9cdf75609cb39e41c72953b
+Tracked patch SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  -

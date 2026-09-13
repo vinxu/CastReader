@@ -1,0 +1,22 @@
+{
+  "readable": true,
+  "id": "67c9e63f-f4d5-417f-9d96-297fb92c33fc",
+  "attributes": {
+    "cfBundleShortVersionString": "1.2.39",
+    "cfBundleVersion": "60",
+    "createdDate": "2026-09-13T09:04:35-07:00",
+    "state": {
+      "errors": [
+
+      ],
+      "warnings": [
+
+      ],
+      "infos": [
+
+      ],
+      "state": "PROCESSING"
+    },
+    "uploadedDate": "2026-09-13T09:18:06-07:00"
+  }
+}

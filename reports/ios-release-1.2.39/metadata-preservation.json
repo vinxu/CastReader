@@ -1,0 +1,38 @@
+{
+  "errors": [
+
+  ],
+  "reviewDetailsPresent": true,
+  "primaryScreenshots": [
+    {
+      "name": "01-kindle.png",
+      "state": "COMPLETE",
+      "checksum": "c57a59c4eca88d74cb36f4c95317fd4d",
+      "localMatch": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/AppStoreAssets/6.9-inch/final-approved-six/01-kindle.png"
+    },
+    {
+      "name": "02-read-aloud.png",
+      "state": "COMPLETE",
+      "checksum": "c8ef5bfd6366530fe8aed626a5c9d520",
+      "localMatch": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/AppStoreAssets/6.9-inch/final-approved-six/02-read-aloud.png"
+    },
+    {
+      "name": "03-explain.png",
+      "state": "COMPLETE",
+      "checksum": "12a545cb2eb039d74045a0e115299167",
+      "localMatch": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/AppStoreAssets/6.9-inch/final-approved-six/03-explain.png"
+    },
+    {
+      "name": "04-import.png",
+      "state": "COMPLETE",
+      "checksum": "0a238763aa099c36bdb31ad96f93b491",
+      "localMatch": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/AppStoreAssets/6.9-inch/final-approved-six/04-import.png"
+    },
+    {
+      "name": "05-voices.png",
+      "state": "COMPLETE",
+      "checksum": "425a83378797b5f64428a6f146da4a4b",
+      "localMatch": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/AppStoreAssets/6.9-inch/final-approved-six/05-voices.png"
+    }
+  ]
+}

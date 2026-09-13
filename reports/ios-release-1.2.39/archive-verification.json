@@ -1,0 +1,59 @@
+{
+  "archive": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/build/CastReader-1.2.39-60.xcarchive",
+  "sourceCommit": "64c2dbd934d34e7b000c8def1a4c8ee5dc94ab23",
+  "components": [
+    {
+      "bundle": "com.same.castreader",
+      "version": "1.2.39",
+      "build": "60",
+      "minimumOS": "17.6",
+      "entitlements": {
+        "application-identifier": "KQW6UNZE8J.com.same.castreader",
+        "com.apple.developer.applesignin": [
+          "Default"
+        ],
+        "com.apple.developer.team-identifier": "KQW6UNZE8J",
+        "com.apple.security.application-groups": [
+          "group.com.same.castreader"
+        ],
+        "get-task-allow": true,
+        "keychain-access-groups": [
+          "KQW6UNZE8J.com.same.castreader"
+        ]
+      }
+    },
+    {
+      "bundle": "com.same.castreader.ShareExtension",
+      "version": "1.2.39",
+      "build": "60",
+      "minimumOS": "17.6",
+      "entitlements": {
+        "application-identifier": "KQW6UNZE8J.com.same.castreader.ShareExtension",
+        "com.apple.developer.team-identifier": "KQW6UNZE8J",
+        "com.apple.security.application-groups": [
+          "group.com.same.castreader"
+        ],
+        "get-task-allow": true
+      }
+    },
+    {
+      "bundle": "com.same.castreader.Widget",
+      "version": "1.2.39",
+      "build": "60",
+      "minimumOS": "17.6",
+      "entitlements": {
+        "application-identifier": "KQW6UNZE8J.com.same.castreader.Widget",
+        "com.apple.developer.team-identifier": "KQW6UNZE8J",
+        "com.apple.security.application-groups": [
+          "group.com.same.castreader"
+        ],
+        "get-task-allow": true
+      }
+    }
+  ],
+  "usesNonExemptEncryption": false,
+  "ao3BundleMatches": true,
+  "genericWebBundleUnchanged": true,
+  "ao3AndOfflineStatusNineLocales": true,
+  "appSHA256": "bd58ee54d8871865d5baed79748fd16a9992da264d009f17ce6028be226b279e"
+}

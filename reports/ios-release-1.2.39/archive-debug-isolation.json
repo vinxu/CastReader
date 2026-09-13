@@ -1,0 +1,10 @@
+{
+  "app": "/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912/build/CastReader-1.2.39-60.xcarchive/Products/Applications/CastReader.app",
+  "version": "1.2.39",
+  "build": "60",
+  "filesScanned": 123,
+  "markersChecked": 50,
+  "debugPositiveControlsPassed": true,
+  "releaseMatches": [],
+  "passed": true
+}

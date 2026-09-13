@@ -1,0 +1,61 @@
+{
+  "source": "Official Xcode upload log; snapshots captured during this upload, not a current API read",
+  "receipts": [
+    {
+      "id": null,
+      "type": "buildUploads",
+      "attributes": {
+        "cfBundleVersion": "60",
+        "cfBundleShortVersionString": "1.2.39"
+      }
+    },
+    {
+      "id": "67c9e63f-f4d5-417f-9d96-297fb92c33fc",
+      "type": "buildUploads",
+      "attributes": {
+        "state": {
+          "errors": [],
+          "warnings": [],
+          "infos": [],
+          "state": "AWAITING_UPLOAD"
+        },
+        "cfBundleVersion": "60",
+        "cfBundleShortVersionString": "1.2.39",
+        "createdDate": "2026-09-13T09:04:35.467-07:00",
+        "uploadedDate": null
+      }
+    },
+    {
+      "id": "67c9e63f-f4d5-417f-9d96-297fb92c33fc",
+      "type": "buildUploads",
+      "attributes": {
+        "state": {
+          "errors": [],
+          "warnings": [],
+          "infos": [],
+          "state": "AWAITING_UPLOAD"
+        },
+        "cfBundleVersion": "60",
+        "cfBundleShortVersionString": "1.2.39",
+        "createdDate": "2026-09-13T09:04:35-07:00",
+        "uploadedDate": null
+      }
+    },
+    {
+      "id": "67c9e63f-f4d5-417f-9d96-297fb92c33fc",
+      "type": "buildUploads",
+      "attributes": {
+        "state": {
+          "errors": [],
+          "warnings": [],
+          "infos": [],
+          "state": "PROCESSING"
+        },
+        "cfBundleVersion": "60",
+        "cfBundleShortVersionString": "1.2.39",
+        "createdDate": "2026-09-13T09:04:35-07:00",
+        "uploadedDate": "2026-09-13T09:18:06-07:00"
+      }
+    }
+  ]
+}
