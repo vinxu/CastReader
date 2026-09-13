@@ -80,7 +80,7 @@ actor KindleOfflineBookStore {
     #if DEBUG
     static let imageBenchmark = KindleOfflineBookStore(root: FileManager.default.urls(
         for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("KindleOfflineImageBenchmark-v1", isDirectory: true))
+        .appendingPathComponent("KindleOfflineImageBenchmark-v4", isDirectory: true))
     #endif
     enum Failure: Error { case invalidIdentity, corruptManifest, staleGeneration, discontinuousPage, incompleteBook }
     private let root: URL

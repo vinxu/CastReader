@@ -7881,9 +7881,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func waitForOfflineImage(target: Int, previousIdentity: String) async throws -> OfflineSourceEvidence {
         var prior: KindleOfflineSourcePosition?, priorImage = ""
         var sameImageSince: Date?
+        let started = ProcessInfo.processInfo.systemUptime
+        var recoveryAttempted = false
         for _ in 0..<400 {
             try Task.checkCancellation()
             try requireOfflineCapture()
+            if !recoveryAttempted, ProcessInfo.processInfo.systemUptime - started >= 1 {
+                recoveryAttempted = true
+                if (try? await evaluate("window.__crOfflineSourceRecover && window.__crOfflineSourceRecover(\(target))") as? Bool) == true {
+                    KindleRunLog.write("KINDLE_OFFLINE_RESEEK target=\(target) reason=idle-before-target")
+                }
+            }
             if let source = try? await readOfflineSourceEvidence(includeImageIdentity: true),
                source.position.start <= target, source.position.end >= target, !source.imageIdentity.isEmpty {
                 let identity = source.imageIdentity
@@ -7900,7 +7908,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             } else { prior = nil; priorImage = ""; sameImageSince = nil }
             try await Task.sleep(for: .milliseconds(50))
         }
-        throw KindleBookError.captureFailed("offline-image-not-ready")
+        #if DEBUG
+        if let raw = try? await evaluateJSON("window.__crOfflineSourceRead && window.__crOfflineSourceRead()") {
+            let page = raw["page"] as? [String: Any]
+            KindleRunLog.write("KINDLE_OFFLINE_NOT_READY target=\(target) start=\(Self.int(from: raw["start"]) ?? -1) end=\(Self.int(from: raw["end"]) ?? -1) loading=\(raw["loading"] as? Bool ?? true) metadataPage=\(page != nil) imageSeen=\(!priorImage.isEmpty)")
+        }
+        #endif
+        throw KindleOfflineCaptureFailure.pageNotReady
     }
 
     func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {

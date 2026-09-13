@@ -138,6 +138,14 @@ enum KindleOfflineSourceScript {
         } else { c.navigation.moveToPosition(position); }
         return true;
       };
+      window.__crOfflineSourceRecover=position=>{
+        if(!state.metadata||!Number.isSafeInteger(position)||position<state.metadata.minimum||position>state.metadata.maximum)return false;
+        const c=context(),range=c.navigation?.state?.pagePositionRange;
+        // A fast nextPage may be ignored while the reader is finishing its
+        // prior turn. Only re-seek when it is idle and still before the target.
+        if(!c.navigation||c.loading||!Number.isSafeInteger(range?.endPosition)||range.endPosition>=position)return false;
+        c.navigation.moveToPosition(position);return true;
+      };
     })();
     """#
 }

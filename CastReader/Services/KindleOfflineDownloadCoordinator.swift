@@ -8,6 +8,8 @@ struct KindleOfflineCapturedPage {
     var sourceWordCount: Int?
 }
 
+enum KindleOfflineCaptureFailure: Error { case pageNotReady }
+
 @MainActor
 protocol KindleOfflineBookSource: AnyObject {
     var offlineSourceBook: KindleBook { get }
@@ -99,7 +101,8 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                 var book = try await self.store.prepare(source: source.offlineSourceBook, scope: scope, originalPosition: original)
                 self.book = book
                 var estimate = KindleOfflineDownloadEstimate()
-                estimate.record(fraction: book.downloadFraction, at: ProcessInfo.processInfo.systemUptime)
+                // The first captured page can include a one-time seek from the
+                // reading position. Start throughput samples after it commits.
                 if book.status != .complete {
                     // There is deliberately no page budget. The source's final
                     // position and a continuous range chain define completion.
@@ -110,7 +113,8 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                         self.activity = .saving
                         self.phase = "正在保存第 \(book.pages.count + 1) 页…"
                         let started = ProcessInfo.processInfo.systemUptime
-                        let captured = try await source.captureOfflineBookPage(after: book.pages.last?.position)
+                        let captured = try await self.captureWithRetry(source: source, after: book.pages.last?.position,
+                            ordinal: book.pages.count + 1, stillAuthorized: stillAuthorized)
                         let capturedAt = ProcessInfo.processInfo.systemUptime
                         try Task.checkCancellation()
                         guard stillAuthorized(), self.runID == run else { throw CancellationError() }
@@ -172,6 +176,26 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
         let pending = task
         pause(reason: reason)
         await pending?.value
+    }
+
+    private func captureWithRetry(source: any KindleOfflineBookSource, after previous: KindleOfflineSourcePosition?,
+                                  ordinal: Int, stillAuthorized: @MainActor () -> Bool) async throws -> KindleOfflineCapturedPage {
+        for attempt in 0...2 {
+            try Task.checkCancellation()
+            guard stillAuthorized() else { throw CancellationError() }
+            do { return try await source.captureOfflineBookPage(after: previous) }
+            catch KindleOfflineCaptureFailure.pageNotReady {
+                try Task.checkCancellation()
+                guard attempt < 2 else { throw KindleOfflineCaptureFailure.pageNotReady }
+                // Re-request the same uncommitted source range. The source's
+                // exact move/advance guard prevents a retry from skipping a page.
+                phase = "正在重试第 \(ordinal) 页（\(attempt + 1)/2）…"
+                estimatedRemainingSeconds = nil
+                KindleRunLog.write("KINDLE_OFFLINE_RETRY page=\(ordinal) attempt=\(attempt + 1) reason=page-not-ready")
+                try await Task.sleep(for: .milliseconds(250 * (attempt + 1)))
+            }
+        }
+        throw KindleOfflineCaptureFailure.pageNotReady
     }
 
     private static func message(for error: Error) -> String {

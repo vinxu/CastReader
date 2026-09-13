@@ -1,0 +1,221 @@
+{
+  "date": "2026-09-13",
+  "sourceParent": "8fb5672207086c2e12d606e71ac387219830f051",
+  "device": "iPhone 15 Pro Max",
+  "book": "A Journey to the Centre of the Earth",
+  "interactions": {
+    "cancelPages": 69,
+    "closePages": 175,
+    "backgroundPages": 209,
+    "completePages": 427,
+    "allEarlierRecordsPreserved": true,
+    "sameGeneration": true,
+    "allOriginalPositionsRestored": true,
+    "originalSourceStart": 279829,
+    "originalSourceEnd": 280973
+  },
+  "multiPauseIntegrity": {
+    "pages": 427,
+    "logicalResourceBytes": 208724836,
+    "uniqueImages": 427,
+    "textCharacters": 0,
+    "imageOnlyPages": 427,
+    "sourceMinimum": 0,
+    "sourceMaximum": 480607,
+    "savedStart": 0,
+    "savedEnd": 480607,
+    "continuous": true,
+    "allResourceHashesVerified": true,
+    "coversWholeBook": true,
+    "status": "complete",
+    "originalPositionRestored": true,
+    "readingPosition": {
+      "page": 249,
+      "paragraphID": 1,
+      "sentenceStart": 0,
+      "voiceID": ""
+    }
+  },
+  "multiPauseImageComparison": {
+    "allowedChangedPixelFraction": 0.001,
+    "allowedChannelDelta": 1,
+    "allPagesEquivalent": true,
+    "byteIdentical": 1,
+    "maximumChangedPixelFraction": 2.1973810100171756e-05,
+    "maximumChannelDelta": 1,
+    "newPages": 427,
+    "oldPages": 427,
+    "pixelIdentical": 1,
+    "pixelMismatches": [],
+    "sourcePositionMismatches": [],
+    "visuallyEquivalentPages": 427
+  },
+  "failedUninterruptedRun": {
+    "build": "v25",
+    "savedPages": 103,
+    "attemptedPage": 104,
+    "status": "failed",
+    "originalPositionRestored": true,
+    "durationThroughCleanupSeconds": 56.95579195022583,
+    "lastPageCaptureMilliseconds": 79,
+    "waitAfterLastPageSecondsApproximately": 25,
+    "rootCause": "Readiness timeout inferred from duration; detailed source evidence unavailable in v25"
+  },
+  "fixes": [
+    "Exclude initial page seek from remaining-time estimate",
+    "At most two retries of the same uncommitted page for readiness timeout",
+    "Re-seek same target once if reader remains idle before it; never interrupt a loading renderer"
+  ],
+  "tests": [
+    {
+      "run": "v25",
+      "tests": 12,
+      "failures": 0
+    },
+    {
+      "run": "v26",
+      "tests": 21,
+      "failures": 0
+    }
+  ],
+  "countsMayOverlap": true,
+  "strictAirplaneModeAcceptance": {
+    "status": "pending-human-confirmation",
+    "preparedPageOneBased": 250,
+    "savedPageHadOCR": false,
+    "voice": "Samantha en-US",
+    "procedure": "Enable airplane mode and disable Wi-Fi, start first OCR/TTS on page 250, confirm sound and synchronized highlight, restore network. Strict radio-off test disconnects Mirroring."
+  },
+  "recoveryRun": {
+    "build": "v26",
+    "pages": 427,
+    "status": "complete",
+    "originalPositionRestored": true,
+    "previous103RecordsUnchanged": true,
+    "sameGeneration": true,
+    "idleTargetRecoveries": 1,
+    "readinessTimeoutRetries": 0
+  },
+  "sourceHashes": {
+    "CastReader/Services/KindleOfflineDownloadCoordinator.swift": "36fdf0431707fb3aba2aa8d8660958a57dea092a9dda7b92f8febf60aba2d4a3",
+    "CastReader/Services/KindleOfflineSourceScript.swift": "182b3ec9cea146623fb577414264a15affb6838db391c8819ba4e801f61a68a5",
+    "CastReader/Services/KindleOfflineBookStore.swift": "f40fe29ce805ef391417a815fedada710bb7fc2fb1661ec63894d060882e67a9",
+    "CastReader/Views/Kindle/KindleBookView.swift": "75847a1d8c3a9d622718f97f37eacef6eb3d6b38d1ab8e77f09e692a6870d361",
+    "CastReader/Views/Kindle/KindleOfflineDownloadView.swift": "565ec7bd07a07db1f7f37cf6afb312d07b464c15cf63b83824ea49a5e2e7e19c",
+    "CastReader/Services/KindleWebScripts.swift": "d832f17a271727e0c1a76bfd2fee0ca90bacc0ba98d5d14019adf78761b2b202"
+  },
+  "finalDeviceBuild": {
+    "run": "v27",
+    "result": "TEST BUILD SUCCEEDED",
+    "installed": true
+  },
+  "finalReleaseBuild": {
+    "run": "v27",
+    "result": "BUILD SUCCEEDED"
+  },
+  "finalUninterruptedUIStart": "2026-09-13T02:51:39.039Z",
+  "finalUninterruptedRun": {
+    "build": "v27",
+    "manifestElapsedSeconds": 169.17697203159332,
+    "uiStartToFinalManifestSeconds": 169.873904,
+    "firstToLastPageSeconds": 162.53284692764282,
+    "medianPageIntervalSeconds": 0.3380810022354126,
+    "priorSingleRunSeconds": 139.325,
+    "targetSeconds": [
+      30,
+      60
+    ],
+    "targetMet": false,
+    "idleTargetRecoveries": 0,
+    "readinessTimeoutRetries": 0,
+    "readinessTimeouts": 0,
+    "conditions": "Same iPhone, book and layout; Wi-Fi, charging, iPhone Mirroring; fresh local destination, source/network caches not cleared; single runs are not controlled cold-cache comparisons",
+    "timings": {
+      "pages": 427,
+      "uniquePages": 427,
+      "medianCaptureMs": 326,
+      "medianSaveMs": 13,
+      "totalCaptureSeconds": 142.549,
+      "totalSaveSeconds": 5.612,
+      "slowest": [
+        [
+          1,
+          2749,
+          6
+        ],
+        [
+          190,
+          2435,
+          13
+        ],
+        [
+          196,
+          2231,
+          12
+        ],
+        [
+          7,
+          1782,
+          5
+        ],
+        [
+          382,
+          1107,
+          20
+        ]
+      ]
+    },
+    "captureBreakdown": {
+      "pages": 427,
+      "medianReadyMs": 322,
+      "totalReadySeconds": 140.415,
+      "medianTransferMs": 3,
+      "totalTransferSeconds": 1.643,
+      "downloadOCRTotal": 0
+    },
+    "integrity": {
+      "pages": 427,
+      "logicalResourceBytes": 208725261,
+      "uniqueImages": 427,
+      "textCharacters": 0,
+      "imageOnlyPages": 427,
+      "sourceMinimum": 0,
+      "sourceMaximum": 480607,
+      "savedStart": 0,
+      "savedEnd": 480607,
+      "continuous": true,
+      "allResourceHashesVerified": true,
+      "coversWholeBook": true,
+      "status": "complete",
+      "originalPositionRestored": true,
+      "readingPosition": {
+        "page": 249,
+        "paragraphID": 1,
+        "sentenceStart": 0,
+        "voiceID": ""
+      }
+    },
+    "imageComparison": {
+      "allowedChangedPixelFraction": 0.001,
+      "allowedChannelDelta": 1,
+      "allPagesEquivalent": true,
+      "byteIdentical": 2,
+      "maximumChangedPixelFraction": 2.1613583705086972e-05,
+      "maximumChannelDelta": 1,
+      "newPages": 427,
+      "oldPages": 427,
+      "pixelIdentical": 2,
+      "pixelMismatches": [],
+      "sourcePositionMismatches": [],
+      "visuallyEquivalentPages": 427
+    }
+  },
+  "javascriptChecks": {
+    "source": "passed",
+    "image": "passed"
+  },
+  "diagnosticTransferFailure": {
+    "appAffected": false,
+    "description": "One host live-log copy timed out; final log and full image copy succeeded after download. Not counted as an app download failure."
+  }
+}
