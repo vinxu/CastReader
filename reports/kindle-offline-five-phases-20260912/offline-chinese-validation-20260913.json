@@ -1,0 +1,69 @@
+{
+  "device": "iPhone 15 Pro Max",
+  "appVersion": "1.2.38 (59)",
+  "releaseAncestor": "b6dd4d7",
+  "baseCommit": "a5e4274",
+  "installedDebugDylibSHA256": "f1a28896b59f997e4a037784945751d46c74691544c760f8a22db1e5e63fb1f6",
+  "before": {
+    "manifestLanguage": "en",
+    "shelfLanguagePresent": false,
+    "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+  },
+  "playing": {
+    "state": "speaking",
+    "page": 18,
+    "unit": 2,
+    "rangeCallbacks": 30,
+    "voiceID": "com.apple.voice.compact.zh-TW.Meijia",
+    "documentLanguage": "zh-Hant",
+    "recognizedLanguage": "zh-Hant",
+    "recognitionCount": 2,
+    "savedPages": 734,
+    "complete": true,
+    "errorCode": "",
+    "firstSpeechMilliseconds": 163
+  },
+  "minimized": {
+    "state": "speaking",
+    "page": 19,
+    "unit": 11,
+    "rangeCallbacks": 180,
+    "voiceID": "com.apple.voice.compact.zh-TW.Meijia",
+    "documentLanguage": "zh-Hant",
+    "recognizedLanguage": "zh-Hant",
+    "recognitionCount": 3,
+    "savedPages": 734,
+    "complete": true,
+    "errorCode": "",
+    "firstSpeechMilliseconds": 124
+  },
+  "reopened": {
+    "state": "paused",
+    "page": 19,
+    "unit": 12,
+    "rangeCallbacks": 0,
+    "voiceID": "com.apple.voice.compact.zh-TW.Meijia",
+    "documentLanguage": "zh-Hant",
+    "recognizedLanguage": "zh-Hant",
+    "recognitionCount": 0,
+    "savedPages": 734,
+    "complete": true,
+    "errorCode": "",
+    "firstSpeechMilliseconds": -1
+  },
+  "integrity": {
+    "pageCount": 734,
+    "allPageRecordsUnchanged": true,
+    "generationUnchanged": true,
+    "status": "complete"
+  },
+  "strictAirplaneModeRetested": false,
+  "auditoryFeedback": "pending",
+  "tests": {
+    "corePassed": 58,
+    "coreFailures": 0,
+    "uiPassed": 3,
+    "uiFailures": 0,
+    "uiResultBundle": "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_20-43-40-+0800.xcresult"
+  }
+}

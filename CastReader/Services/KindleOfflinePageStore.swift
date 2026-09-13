@@ -123,16 +123,19 @@ actor KindleOfflinePageStore {
 
     /// Recognition is a rebuildable sidecar. Original image/page records and
     /// whole-book completion never depend on OCR having run.
-    func recognition(for page: SavedPage, language: String, scope: String) throws -> ReadingDocument? {
+    func recognition(for page: SavedPage, scope: String) throws -> ReadingDocument? {
         let directory = try directory(scope: scope, create: false)
         let url = directory.appendingPathComponent(page.id + ".ocr")
         guard let data = try? readLimited(url, limit: 4096),
               let cached = try? JSONDecoder().decode(Recognition.self, from: data),
-              cached.version == 1, cached.imageHash == page.imageHash, cached.language == language,
+              // v1 forced unknown books through English OCR. Rebuild just this
+              // sidecar; each v2 page owns its detected language and original image.
+              cached.version == 2, cached.imageHash == page.imageHash,
               Self.validDigest(cached.snapshotHash),
               let bytes = try? readLimited(directory.appendingPathComponent(cached.snapshotHash + ".page"), limit: 2 * 1_024 * 1_024),
               Self.digest(bytes) == cached.snapshotHash,
-              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: bytes), snapshot.version == 1 else { return nil }
+              let snapshot = try? JSONDecoder().decode(Snapshot.self, from: bytes), snapshot.version == 1,
+              snapshot.language == cached.language else { return nil }
         let image = try readLimited(directory.appendingPathComponent(page.imageHash + ".image"), limit: 20 * 1_024 * 1_024)
         guard Self.digest(image) == page.imageHash else { throw Failure.corruptPage }
         return snapshot.document(id: page.id, title: page.title, image: image)
@@ -147,7 +150,7 @@ actor KindleOfflinePageStore {
         guard bytes.count <= 2 * 1_024 * 1_024 else { throw Failure.oversizedPage }
         let digest = Self.digest(bytes)
         try write(bytes, to: directory.appendingPathComponent(digest + ".page"))
-        try write(encoder.encode(Recognition(version: 1, imageHash: page.imageHash, language: language,
+        try write(encoder.encode(Recognition(version: 2, imageHash: page.imageHash, language: language,
             snapshotHash: digest)), to: directory.appendingPathComponent(page.id + ".ocr"))
     }
 

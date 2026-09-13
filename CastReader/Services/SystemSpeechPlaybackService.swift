@@ -174,9 +174,17 @@ final class SystemSpeechPlaybackService: ObservableObject {
     }
 
     nonisolated static func voices(language: String) -> [SystemSpeechVoice] {
-        let requested = language.replacingOccurrences(of: "_", with: "-").lowercased()
+        // Script tags describe the page, not a spoken dialect. Both Chinese
+        // scripts default to Mandarin; never choose an arbitrary zh-HK voice.
+        let locale: String
+        switch language.replacingOccurrences(of: "_", with: "-").lowercased() {
+        case "zh", "zh-hans": locale = "zh-CN"
+        case "zh-hant": locale = "zh-TW"
+        default: locale = language
+        }
+        let requested = locale.replacingOccurrences(of: "_", with: "-").lowercased()
         let primary = requested.split(separator: "-").first.map(String.init) ?? requested
-        let preferredID = AVSpeechSynthesisVoice(language: language.replacingOccurrences(of: "_", with: "-"))?.identifier
+        let preferredID = AVSpeechSynthesisVoice(language: locale.replacingOccurrences(of: "_", with: "-"))?.identifier
         return AVSpeechSynthesisVoice.speechVoices()
             .filter { $0.language.lowercased().split(separator: "-").first.map(String.init) == primary }
             .filter { !$0.voiceTraits.contains(.isNoveltyVoice) && !$0.voiceTraits.contains(.isPersonalVoice) }

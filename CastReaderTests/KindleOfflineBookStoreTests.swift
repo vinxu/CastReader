@@ -309,6 +309,51 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         _ = try await reopened.openPage(book: book, ordinal: 0, scope: scope)
     }
 
+    func testOldWrongLanguageOCRIsDiscardedWithoutChangingImagesOrPageOrder() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        var raw = document(); raw.paragraphs.removeAll { $0.type != .image }
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 1))
+        book = try await store.append(document: raw, position: position(0, total: 1), to: book, scope: scope,
+            requiresOCR: true, sourceWordCount: 12)
+        book = try await store.finish(book, scope: scope)
+        try await store.saveSpeechPage(document(), book: book, ordinal: 0, scope: scope)
+        let sidecar = try XCTUnwrap(try FileManager.default.subpathsOfDirectory(atPath: root.path).first { $0.hasSuffix(".ocr") })
+        let url = root.appendingPathComponent(sidecar)
+        var old = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        old["version"] = 1
+        try JSONSerialization.data(withJSONObject: old).write(to: url)
+        let reopened = KindleOfflineBookStore(root: root)
+        let cached = try await reopened.cachedSpeechPage(book: book, ordinal: 0, scope: scope)
+        XCTAssertNil(cached)
+        let imageOnly = try await reopened.openPage(book: book, ordinal: 0, scope: scope)
+        XCTAssertEqual(imageOnly.paragraphs.first?.imageData, raw.paragraphs.first?.imageData)
+        let fresh = try await reopened.load(id: book.id, scope: scope)
+        XCTAssertEqual(fresh?.pages, book.pages)
+        XCTAssertEqual(fresh?.status, .complete)
+    }
+
+    func testEnglishFrontMatterDoesNotForceChinesePagesOrInvalidateTheirCache() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        var raw = document(); raw.paragraphs.removeAll { $0.type != .image }
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 2))
+        for index in 0..<2 {
+            book = try await store.append(document: raw, position: position(index, total: 2), to: book, scope: scope,
+                requiresOCR: true, sourceWordCount: 12)
+        }
+        book = try await store.finish(book, scope: scope)
+        try await store.saveSpeechPage(document(), book: book, ordinal: 0, scope: scope)
+        let next = try await store.openPage(book: book, ordinal: 1, scope: scope)
+        XCTAssertEqual(next.language, "und", "A new page still needs language detection")
+        var chinese = document(); chinese.language = "zh-Hant"
+        chinese.paragraphs[1] = ReadingParagraph(id: 1, text: "這是正文的中文內容。", pageIndex: 0)
+        try await store.saveSpeechPage(chinese, book: book, ordinal: 1, scope: scope)
+        let first = try await store.cachedSpeechPage(book: book, ordinal: 0, scope: scope)
+        let second = try await store.cachedSpeechPage(book: book, ordinal: 1, scope: scope)
+        XCTAssertEqual(first?.language, "en-US")
+        XCTAssertEqual(second?.language, "zh-Hant")
+        XCTAssertEqual(second?.paragraphs[1].text, chinese.paragraphs[1].text)
+    }
+
     func testCancelWaitsForRestorationKeepsCommittedPagesAndCanResume() async throws {
         let source = OfflineSourceFixture(book: self.source, document: document())
         source.captureDelay = .milliseconds(60)
@@ -476,13 +521,16 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         var delay: Duration = .milliseconds(1)
         var shouldFail = false
         var returnEmpty = false
+        var language = "en-US"
+        var text = "Recognized only when listening."
         func recognize(_ page: ReadingDocument, sourceWordCount: Int?) async throws -> ReadingDocument {
             calls += 1
             try await Task.sleep(for: delay)
             if shouldFail { throw OCRError.noText }
             if returnEmpty { return page }
             var result = page
-            result.paragraphs.append(ReadingParagraph(id: 1, text: "Recognized only when listening.", pageIndex: 0))
+            result.language = language
+            result.paragraphs.append(ReadingParagraph(id: 1, text: text, pageIndex: 0))
             return result
         }
     }
@@ -758,6 +806,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         func complete() {
             guard var page, let continuation else { return }
             self.continuation = nil
+            page.language = "en-US"
             page.paragraphs.append(ReadingParagraph(id: 1, text: "An old chapter returned late."))
             continuation.resume(returning: page)
         }
@@ -873,7 +922,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
                 in: CGRect(x: 60, y: 70, width: 980, height: 360),
                 withAttributes: [.font: UIFont.systemFont(ofSize: 48), .foregroundColor: UIColor.black])
         }
-        let page = ReadingDocument(title: "Local OCR fixture", sourceKind: .kindle, language: "en",
+        let page = ReadingDocument(title: "Local OCR fixture", sourceKind: .kindle, language: "und",
             paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, imageData: bytes)])
         let recognized = try await KindleOfflineOCRService().recognize(page, sourceWordCount: 11)
         let text = recognized.paragraphs.map(\.text).joined(separator: " ").lowercased()
@@ -881,6 +930,61 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         XCTAssertEqual(recognized.paragraphs.first?.imageData, bytes)
         XCTAssertEqual(recognized.paragraphs.map(\.id), Array(recognized.paragraphs.indices))
         XCTAssertTrue(recognized.paragraphs.dropFirst().contains { !$0.words.isEmpty })
+    }
+
+    func testLocalOCRDetectsSimplifiedAndTraditionalChineseWithoutShelfLanguage() async throws {
+        for (language, text, expected) in [
+            ("zh-Hans", "我们一起读书，听见中文的声音。\n离线阅读不需要网络。", "离线阅读"),
+            ("zh-Hant", "我們一起讀書，聽見中文的聲音。\n離線閱讀不需要網路。", "離線閱讀")
+        ] {
+            let bytes = UIGraphicsImageRenderer(size: CGSize(width: 1100, height: 500)).pngData { context in
+                UIColor.white.setFill(); context.fill(CGRect(x: 0, y: 0, width: 1100, height: 500))
+                (text as NSString).draw(in: CGRect(x: 60, y: 70, width: 980, height: 360),
+                    withAttributes: [.font: UIFont.systemFont(ofSize: 48), .foregroundColor: UIColor.black])
+            }
+            let raw = ReadingDocument(title: "Offline fixture", sourceKind: .kindle, language: "und",
+                paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, imageData: bytes)])
+            let doc = try await KindleOfflineOCRService().recognize(raw, sourceWordCount: 28)
+            XCTAssertEqual(doc.language, language)
+            XCTAssertTrue(doc.fullText.contains(expected), "The original Chinese script must survive OCR")
+            XCTAssertEqual(doc.paragraphs.first?.imageData, bytes)
+            XCTAssertTrue(doc.paragraphs.dropFirst().allSatisfy { !$0.words.isEmpty })
+        }
+    }
+
+    func testChineseDetectionReplacesEnglishVoiceAndSurvivesColdReopen() async throws {
+        let voices = await SystemSpeechPlaybackService.availableVoices(language: "zh-Hant")
+        guard !voices.isEmpty else { throw XCTSkip("Chinese voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        var cursor = book.readingPosition; cursor.voiceID = "com.apple.voice.super-compact.en-US.Samantha"
+        try await store.saveReadingPosition(cursor, book: book, scope: scope)
+        let recognizer = Recognizer(), driver = Driver()
+        recognizer.language = "zh-Hant"; recognizer.text = "離線閱讀中文書籍。"
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true }, recognizer: recognizer)
+        await model.open()
+        XCTAssertEqual(recognizer.calls, 0)
+        XCTAssertTrue(model.speech.units.isEmpty)
+        model.play()
+        let deadline = Date().addingTimeInterval(5)
+        while driver.requests.isEmpty, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(driver.requests.first?.text, recognizer.text)
+        XCTAssertTrue(voices.contains { $0.id == driver.requests.first?.voiceID })
+        model.close()
+        let saved = try await store.load(id: book.id, scope: scope)
+        let fresh = try XCTUnwrap(saved)
+        XCTAssertEqual(fresh.recognizedLanguage, "zh-Hant")
+        XCTAssertEqual(fresh.pages, book.pages, "Language repair must not replace or reorder downloaded images")
+        let coldRecognizer = Recognizer(), coldDriver = Driver()
+        let cold = KindleOfflineBookReaderModel(book: fresh, scope: scope, store: KindleOfflineBookStore(root: root),
+            speech: SystemSpeechPlaybackService(driver: coldDriver), scopeValidator: { true }, recognizer: coldRecognizer)
+        defer { cold.close() }
+        await cold.open(); cold.play()
+        XCTAssertEqual(coldRecognizer.calls, 0)
+        XCTAssertEqual(coldDriver.requests.first?.text, recognizer.text)
+        XCTAssertTrue(cold.voices.allSatisfy { $0.language.hasPrefix("zh-") })
     }
 
     func testOpeningAnImageBookDoesNotOCRAndPlaybackRecognitionSurvivesColdReopen() async throws {

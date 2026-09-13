@@ -143,7 +143,10 @@ private final class KindleOfflineFlowSource: KindleOfflineBookSource {
             failedAttempts += 1
             throw KindleOfflineCaptureFailure.pageNotReady
         }
-        let text = "Chapter \(index / 4 + 1)\n\nPage \(index + 1). The little journey continues.\n\nWe save this page on the phone. We can read and listen without a network. Each page follows the page before it."
+        let chinese = ProcessInfo.processInfo.arguments.contains("-CastReaderOfflineFixtureChinese")
+        let text = chinese
+            ? "第\(index + 1)頁\n\n我們一起讀書，聽見中文的聲音。\n\n離線閱讀不需要網路。這本書已經保存在手機裡，每一頁都按照原來的順序繼續朗讀。"
+            : "Chapter \(index / 4 + 1)\n\nPage \(index + 1). The little journey continues.\n\nWe save this page on the phone. We can read and listen without a network. Each page follows the page before it."
         let tall = ProcessInfo.processInfo.arguments.contains("-CastReaderOfflineFixtureTallPage")
         let size = CGSize(width: 800, height: tall ? 2400 : 1100)
         let image = UIGraphicsImageRenderer(size: size).pngData { context in

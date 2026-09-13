@@ -385,7 +385,11 @@ private struct KindleOfflineBookReaderContent: View {
             List {
                 Section { Text("这些声音由本机系统提供。选择常规声音可获得更自然的离线朗读。").font(.footnote).foregroundStyle(.secondary) }
                 if model.voices.isEmpty {
-                    Text("本机尚无适合此书的声音，请联网准备系统声音后重新打开此书。")
+                    if speech.units.isEmpty {
+                        Text("播放时会在本机识别文字并匹配朗读声音。")
+                    } else {
+                        Text("本机尚无适合此书的声音，请联网准备系统声音后重新打开此书。")
+                    }
                 }
                 ForEach(model.voices) { voice in
                     Button {
@@ -468,6 +472,7 @@ private struct KindleOfflineBookReaderContent: View {
             "rangeCallbacks": speech.callbackCount, "recognitionCount": model.recognitionCount,
             "preparingSpeech": model.preparingSpeech, "firstSpeechMilliseconds": speech.firstSpeechMilliseconds ?? -1,
             "voiceID": model.voiceID, "networkHint": network.isOnline,
+            "documentLanguage": model.document?.language ?? "", "recognizedLanguage": model.book.recognizedLanguage ?? "",
             "selectedSpeechRate": model.speechRate, "activeSpeechRate": speech.activeRate ?? -1,
             "scene": scenePhase == .active ? "active" : "background", "errorCode": speech.errorCode ?? ""]
         guard let data = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]),

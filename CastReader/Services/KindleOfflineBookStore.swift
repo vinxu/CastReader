@@ -53,6 +53,9 @@ struct KindleOfflineBook: Codable, Identifiable, Equatable {
     let createdAt: Date
     var updatedAt: Date
     var language: String
+    // Learned from local OCR, independent of missing/unreliable shelf metadata.
+    // Nil also migrates pre-language-detection downloads without replacing images.
+    var recognizedLanguage: String?
     var status: Status
     var pages: [Page]
     var originalPosition: KindleOfflineSourcePosition?
@@ -157,7 +160,7 @@ actor KindleOfflineBookStore {
         }
         let now = Date()
         var book = KindleOfflineBook(id: id, sourceBookID: source.id, title: source.title, author: source.author,
-            generation: UUID(), createdAt: now, updatedAt: now, language: source.language ?? "en",
+            generation: UUID(), createdAt: now, updatedAt: now, language: source.language ?? "und",
             status: .preparing, pages: [], originalPosition: originalPosition)
         book.sourceBook = source
         try persist(book, scope: scope)
@@ -188,7 +191,7 @@ actor KindleOfflineBookStore {
            position.start <= original.start, position.end >= original.start {
             book.readingPosition.page = ordinal
         }
-        book.language = document.language
+        if book.recognizedLanguage == nil { book.language = document.language }
         book.status = .preparing
         book.lastError = nil
         try persist(book, scope: scope)
@@ -199,7 +202,11 @@ actor KindleOfflineBookStore {
         let book = try current(expected, scope: scope)
         guard book.pages.indices.contains(ordinal) else { throw Failure.incompleteBook }
         let (_, document) = try await pageRepository(book, scope: scope).open(book.pages[ordinal].resource.id, scope: book.id)
-        return document
+        var result = document
+        // A cover/copyright page can differ from the following chapter. The
+        // last recognized language must not force every new image into it.
+        if book.pages[ordinal].requiresOCR == true { result.language = "und" }
+        return result
     }
 
     func cachedSpeechPage(book expected: KindleOfflineBook, ordinal: Int, scope: String) async throws -> ReadingDocument? {
@@ -207,7 +214,7 @@ actor KindleOfflineBookStore {
         guard book.pages.indices.contains(ordinal) else { throw Failure.incompleteBook }
         let page = book.pages[ordinal]
         if page.requiresOCR != true { return try await openPage(book: book, ordinal: ordinal, scope: scope) }
-        let cached = try await pageRepository(book, scope: scope).recognition(for: page.resource, language: book.language, scope: book.id)
+        let cached = try await pageRepository(book, scope: scope).recognition(for: page.resource, scope: book.id)
         if let cached, page.sourceWordCount != 0, !Self.hasRecognizedText(cached) { return nil }
         return cached
     }
@@ -218,8 +225,19 @@ actor KindleOfflineBookStore {
         if book.pages[ordinal].requiresOCR == true, book.pages[ordinal].sourceWordCount != 0, !Self.hasRecognizedText(document) {
             throw OCRError.noText
         }
+        if Self.hasRecognizedText(document), KindleLanguageContract.normalize(document.language) == nil {
+            throw OCRError.unsupportedLanguages([document.language])
+        }
         try await pageRepository(book, scope: scope).saveRecognition(document, for: book.pages[ordinal].resource,
-            language: book.language, scope: book.id)
+            language: document.language, scope: book.id)
+        var fresh = try current(expected, scope: scope)
+        if Self.hasRecognizedText(document), KindleLanguageContract.normalize(document.language) != nil,
+           fresh.recognizedLanguage != document.language {
+            fresh.recognizedLanguage = document.language
+            fresh.language = document.language
+            try persist(fresh, scope: scope)
+            notifyChange(scope: scope)
+        }
     }
 
     private static func hasRecognizedText(_ document: ReadingDocument) -> Bool {

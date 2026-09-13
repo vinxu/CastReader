@@ -7993,7 +7993,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard let value = raw as? String, let bytes = value.data(using: .utf8),
               let payload = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
               let dataURL = payload["image"] as? String, let imageData = Self.decodeDataURL(dataURL) else { throw KindleBookError.badImage }
-        let document = ReadingDocument(title: book.title, sourceKind: .kindle, language: book.language ?? "en",
+        let document = ReadingDocument(title: book.title, sourceKind: .kindle, language: book.language ?? "und",
             paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, pageIndex: 0, imageData: imageData)])
         try requireOfflineCapture()
         guard let sourceEvidence = payload["source"] as? [String: Any] else { throw KindleBookError.invalidPayload }

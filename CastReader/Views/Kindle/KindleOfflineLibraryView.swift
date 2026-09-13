@@ -15,6 +15,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     @Published var speechRate = Double(AVSpeechUtteranceDefaultSpeechRate)
     @Published var voiceID = ""
     @Published private(set) var voices: [SystemSpeechVoice] = []
+    private var voiceLanguage: String?
     var onClosed: (() -> Void)?
     let speech: SystemSpeechPlaybackService
     private let scopeValidator: @MainActor () -> Bool
@@ -95,10 +96,8 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             }
             guard generation == run, !closed, !Task.isCancelled, scopeIsCurrent else { validateScope(); return }
             book = fresh
-            let available = await SystemSpeechPlaybackService.availableVoices(language: book.language)
-            guard generation == run, !closed, !Task.isCancelled, scopeIsCurrent else { validateScope(); return }
-            voices = available
-            voiceID = voices.first(where: { $0.id == book.readingPosition.voiceID })?.id ?? voices.first?.id ?? ""
+            voices = []; voiceLanguage = nil
+            voiceID = book.readingPosition.voiceID
             speechRate = min(0.65, max(0.3, book.readingPosition.speechRate ?? Double(AVSpeechUtteranceDefaultSpeechRate)))
             speech.setRate(Float(speechRate))
             speech.connectPlayback(title: book.title)
@@ -111,7 +110,6 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     }
 
     func play() {
-        guard !voices.isEmpty else { error = AppLocalized("这台设备尚无适合此书的声音。请联网下载系统声音后重试。"); return }
         wantsPlayback = true
         beginPlayback(automatically: false)
     }
@@ -135,6 +133,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             guard wantsPlayback, speech.canContinueAutomatically else { return }
         } else { speech.prepareForUserPlayback() }
         if !speech.units.isEmpty, !(speech.state == .finished && pageIndex + 1 < book.pages.count) {
+            guard hasMatchingVoice else { return }
             if automatically { speech.playAutomatically() } else { speech.play() }
             prefetchNextPage()
             return
@@ -154,8 +153,13 @@ final class KindleOfflineBookReaderModel: ObservableObject {
                     try Task.checkCancellation()
                     guard self.playbackRequest == request, self.pageIndex == index, self.scopeIsCurrent,
                           self.wantsPlayback, self.speech.canContinueAutomatically else { return }
+                    guard await self.prepareVoice(for: doc) else { return }
+                    try Task.checkCancellation()
+                    guard self.playbackRequest == request, self.pageIndex == index, self.wantsPlayback,
+                          self.speech.canContinueAutomatically else { return }
                     self.installDocument(doc, resume: self.pendingResume)
                     if !self.speech.units.isEmpty {
+                        guard self.hasMatchingVoice else { return }
                         self.speech.playAutomatically()
                         self.prefetchNextPage()
                         return
@@ -230,6 +234,27 @@ final class KindleOfflineBookReaderModel: ObservableObject {
         if !units.isEmpty { pendingResume = nil }
     }
 
+    private var hasMatchingVoice: Bool {
+        guard !voices.isEmpty, voices.contains(where: { $0.id == voiceID }) else {
+            wantsPlayback = false
+            error = AppLocalized("这台设备尚无适合此书的声音。请联网下载系统声音后重试。")
+            return false
+        }
+        return true
+    }
+
+    private func prepareVoice(for doc: ReadingDocument) async -> Bool {
+        guard doc.paragraphs.contains(where: { $0.type.isReadable && !$0.text.isEmpty }) else { return true }
+        guard voiceLanguage != doc.language else { return true }
+        let run = generation
+        let available = await SystemSpeechPlaybackService.availableVoices(language: doc.language)
+        guard run == generation, !closed, !Task.isCancelled, scopeIsCurrent else { return false }
+        voices = available
+        voiceID = available.first(where: { $0.id == voiceID })?.id ?? available.first?.id ?? ""
+        voiceLanguage = doc.language
+        return true
+    }
+
     func changeVoice(_ id: String) {
         guard scopeIsCurrent, !closed, voices.contains(where: { $0.id == id }) else { validateScope(); return }
         voiceID = id
@@ -298,6 +323,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             if let cached { doc = cached }
             else { doc = try await store.openPage(book: book, ordinal: index, scope: scope) }
             guard generation == run, !closed, scopeIsCurrent else { return }
+            guard await prepareVoice(for: doc), generation == run, !closed, scopeIsCurrent else { return }
             pageIndex = index
             pendingResume = resume
             installDocument(doc, resume: resume)

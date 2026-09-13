@@ -11,7 +11,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         super.tearDown()
     }
 
-    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false, miniPlayer: Bool = false, tallPage: Bool = false, english: Bool = false) {
+    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false, miniPlayer: Bool = false, tallPage: Bool = false, english: Bool = false, chinese: Bool = false) {
         app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(zh-Hans)", "-interfaceLanguage", "zh-Hans"]
         if english { app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(en)", "-interfaceLanguage", "en"] }
         if partial { app.launchArguments.append("-CastReaderOfflineFixturePartial") }
@@ -19,6 +19,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         if resumeViewport { app.launchArguments.append("-CastReaderOfflineFixtureResumeViewport") }
         if miniPlayer { app.launchArguments.append("-CastReaderOfflineFixtureMiniPlayer") }
         if tallPage { app.launchArguments.append("-CastReaderOfflineFixtureTallPage") }
+        if chinese { app.launchArguments.append("-CastReaderOfflineFixtureChinese") }
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL", "-CastReaderFixtureAppearance", "Dark"] }
         app.launchEnvironment["CASTREADER_OFFLINE_FIXTURE_ID"] = UUID().uuidString
         app.launchEnvironment["CASTREADER_OFFLINE_FIXTURE_DELAY"] = partial ? "900" : "600"
@@ -76,7 +77,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("homeDownloads")
         tap("offlineLibraryBook.offline-flow-book", timeout: 20)
         tap("offlineBookPlay")
-        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
+        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].exists && self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
         let page = app.buttons["offlineBookPageStatus"].label
         tap("offlineBookClose")
         wait { self.app.buttons["offlineMiniPlay"].exists && self.app.buttons["offlineMiniPlay"].label == "暂停" }
@@ -100,6 +101,33 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("offlineLibraryBook.offline-flow-book")
         XCTAssertEqual(app.buttons["offlineBookPlay"].label, "播放")
         capture("32-reopen-after-explicit-stop")
+    }
+
+    func testChineseImageDownloadDetectsLanguageAndKeepsPlayingInMiniPlayer() {
+        launch(chinese: true)
+        openDownloadFromMore()
+        tap("offlineDownloadStart")
+        wait(35) { self.app.staticTexts["offlineDownloadStatus"].label == "整本已保存" }
+        tap("offlineDownloadOpenBook")
+        XCTAssertTrue(app.images["offlineBookSavedImage"].waitForExistence(timeout: 10))
+        tap("offlineBookPlay")
+        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].exists && self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
+        XCTAssertNotEqual(app.buttons["offlineBookVoice"].value as? String, "Samantha")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@",
+            "offlineBookParagraph.", "中文")).firstMatch.exists)
+        capture("40-chinese-local-ocr-and-speech")
+        tap("offlineBookPlay")
+        tap("offlineBookVoice")
+        XCTAssertTrue(app.staticTexts["zh-TW"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["en-US"].exists)
+        tap("offlineBookVoiceDone")
+        tap("offlineBookPlay")
+        tap("offlineBookClose")
+        wait { self.app.buttons["offlineMiniPlay"].label == "暂停" }
+        tap("offlineMiniPlay")
+        tap("offlineMiniExpand")
+        XCTAssertEqual(app.buttons["offlineBookPlay"].label, "播放")
+        capture("41-chinese-mini-player-return")
     }
 
     func testSaveReadOCRSpeechSettingsAndResumeAfterRelaunch() {
@@ -127,7 +155,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("offlineBookZoomClose")
         tap("offlineBookPlay")
         wait(25) { self.app.segmentedControls["offlineBookDisplayMode"].exists }
-        wait { self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
+        wait { self.app.staticTexts["offlineBookSpeechStatus"].exists && self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
         capture("06-ocr-system-speech")
         tap("offlineBookPlay")
         tap("offlineBookVoice")
@@ -157,7 +185,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("offlineLibraryBook.offline-flow-book")
         wait { self.app.buttons["offlineBookPageStatus"].label.contains("第 5 /") }
         tap("offlineBookPlay")
-        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
+        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].exists && self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
         capture("11-relaunch-offline-speech")
     }
 
@@ -233,7 +261,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("offlineLibraryBook.offline-flow-book", timeout: 20)
         tap("offlineBookRate"); app.buttons["0.7×"].tap()
         tap("offlineBookPlay")
-        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
+        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].exists && self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
         wait { self.app.staticTexts["offlineBookSpeechStatus"].value as? String == "0.7×" }
         tap("offlineBookRate"); app.buttons["1.3×"].tap()
         wait { self.app.staticTexts["offlineBookSpeechStatus"].value as? String == "1.3×" }
@@ -350,7 +378,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         jump(to: 12)
         XCTAssertFalse(app.buttons["offlineBookNextPage"].isEnabled)
         tap("offlineBookPlay")
-        wait(45) { self.app.staticTexts["offlineBookSpeechStatus"].label.contains("整本朗读完成") }
+        wait(45) { self.app.staticTexts["offlineBookSpeechStatus"].exists && self.app.staticTexts["offlineBookSpeechStatus"].label.contains("整本朗读完成") }
         capture("17-book-finished")
     }
 }
