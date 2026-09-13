@@ -904,7 +904,10 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         await model.open(); model.play()
         let first = try XCTUnwrap(driver.requests.first)
         driver.onEvent?(.started(first.id)); driver.onEvent?(.finished(first.id))
+        XCTAssertEqual(model.speech.state, .finished)
+        XCTAssertTrue(model.canPausePlayback, "The reader and mini player must still offer Pause between pages")
         model.pause() // The page continuation Task has been queued but has not run.
+        XCTAssertFalse(model.canPausePlayback, "The user's pause must immediately revoke the queued continuation")
         try await Task.sleep(for: .milliseconds(80))
         XCTAssertEqual(model.pageIndex, 0)
         XCTAssertEqual(driver.requests.map(\.text), ["First page."])

@@ -33,7 +33,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     private var generation = UUID()
     private var advancing = false
     private var closed = false
-    private var wantsPlayback = false
+    @Published private var wantsPlayback = false
     private var checkpointTask: Task<Void, Never>?
     private var lastCheckpoint: KindleOfflineBook.ReadingPosition?
     private var observers: Set<AnyCancellable> = []
@@ -112,6 +112,14 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     func play() {
         wantsPlayback = true
         beginPlayback(automatically: false)
+    }
+
+    /// Finishing a page does not finish the listening session. Keep Pause
+    /// available while the next page is queued or loading, including the gap
+    /// where the speech driver has already returned to finished/idle.
+    var canPausePlayback: Bool {
+        preparingSpeech || speech.state == .speaking || speech.state == .preparing
+            || (wantsPlayback && (advancing || loading))
     }
 
     func pause() {

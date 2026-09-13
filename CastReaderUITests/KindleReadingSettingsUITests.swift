@@ -56,16 +56,29 @@ final class KindleReadingSettingsUITests: XCTestCase {
                     // tree, so scroll the actual Form even before it exists.
                     for _ in 0..<6 {
                         if isTextFullyVisibleInForm(footer, form: form, app: app) { break }
+                        if footer.exists, let viewport = footerViewport(form: form, app: app),
+                           footer.frame.height > viewport.height { break }
                         form.swipeUp()
                     }
                     let name = "Kindle-settings-\(description.language)-\(appearance)-AXXXL-footnote-footer"
                     attachScreen(app, name: name, includeHierarchy: true)
                     XCTAssertTrue(footer.exists, "Missing complete localized footnote description")
                     XCTAssertEqual(footer.label, description.text)
-                    XCTAssertTrue(
-                        isTextFullyVisibleInForm(footer, form: form, app: app),
-                        "Footer must fit fully below navigation and above the measured safe-content bottom: footer=\(footer.frame), form=\(form.frame), screen=\(app.frame), bottomProbe=\(effectiveAppearance.frame)"
-                    )
+                    if let viewport = footerViewport(form: form, app: app), footer.frame.height > viewport.height {
+                        // At maximum Dynamic Type on an SE, the full paragraph
+                        // is taller than the viewport. Prove that both ends
+                        // are readable by scrolling, keeping the full label.
+                        XCTAssertTrue(scrollFooterEdge(footer, topEdge: true, form: form, app: app))
+                        attachScreen(app, name: name + "-start", includeHierarchy: true)
+                        XCTAssertTrue(scrollFooterEdge(footer, topEdge: false, form: form, app: app))
+                        attachScreen(app, name: name + "-end", includeHierarchy: true)
+                        XCTAssertEqual(footer.label, description.text)
+                    } else {
+                        XCTAssertTrue(
+                            isTextFullyVisibleInForm(footer, form: form, app: app),
+                            "Footer must fit fully below navigation and above the measured safe-content bottom: footer=\(footer.frame), form=\(form.frame), screen=\(app.frame), bottomProbe=\(effectiveAppearance.frame)"
+                        )
+                    }
                     XCTAssertTrue(app.buttons["kindleReadingSettingsDone"].isHittable)
                     app.terminate()
                 }
@@ -74,11 +87,36 @@ final class KindleReadingSettingsUITests: XCTestCase {
     }
 
     private func isTextFullyVisibleInForm(_ text: XCUIElement, form: XCUIElement, app: XCUIApplication) -> Bool {
-        let bottomProbe = app.otherElements["kindleFixtureColorScheme"]
-        guard text.exists, form.exists, bottomProbe.exists else { return false }
+        guard text.exists, let viewport = footerViewport(form: form, app: app) else { return false }
         let frame = text.frame
+        return frame.width > 0 && frame.height > 0 &&
+            frame.minX >= viewport.minX && frame.maxX <= viewport.maxX &&
+            frame.minY >= viewport.minY - 0.5 && frame.maxY <= viewport.maxY + 0.5
+    }
+
+    private func scrollFooterEdge(_ text: XCUIElement, topEdge: Bool, form: XCUIElement, app: XCUIApplication) -> Bool {
+        for _ in 0..<10 {
+            guard text.exists, let viewport = footerViewport(form: form, app: app) else { return false }
+            let frame = text.frame
+            let edge = topEdge ? frame.minY : frame.maxY
+            let edgeBand = min(100, viewport.height / 3)
+            let lower = topEdge ? viewport.minY : viewport.maxY - edgeBand
+            let upper = topEdge ? viewport.minY + edgeBand : viewport.maxY
+            if frame.width > 0, frame.minX >= viewport.minX, frame.maxX <= viewport.maxX,
+               edge >= lower, edge <= upper { return true }
+            let target = topEdge ? viewport.minY + 8 : viewport.maxY - 8
+            let distance = min(180, max(-180, target - edge))
+            let start = form.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: distance)))
+        }
+        return false
+    }
+
+    private func footerViewport(form: XCUIElement, app: XCUIApplication) -> CGRect? {
+        let bottomProbe = app.otherElements["kindleFixtureColorScheme"]
+        guard form.exists, bottomProbe.exists else { return nil }
         let visibleForm = form.frame.intersection(app.frame)
-        guard !visibleForm.isNull, !visibleForm.isEmpty else { return false }
+        guard !visibleForm.isNull, !visibleForm.isEmpty else { return nil }
         let top = max(visibleForm.minY, app.navigationBars.firstMatch.frame.maxY)
         // The DEBUG fixture's 1-point appearance probe is anchored to the
         // settings view's safe-content bottom, outside the scrolling Form.
@@ -87,13 +125,9 @@ final class KindleReadingSettingsUITests: XCTestCase {
         // text. Keep this stricter than merely accepting the screen's bottom.
         let probeFrame = bottomProbe.frame
         guard probeFrame.height > 0, probeFrame.height <= 2,
-              probeFrame.minY >= top, probeFrame.maxY <= visibleForm.maxY else { return false }
+              probeFrame.minY >= top, probeFrame.maxY <= visibleForm.maxY else { return nil }
         let bottom = min(visibleForm.maxY, probeFrame.maxY)
-        return frame.width > 0 && frame.height > 0 &&
-            frame.minX >= visibleForm.minX && frame.maxX <= visibleForm.maxX &&
-            // Accessibility may round the footer and fixed probe on opposite
-            // sides of a physical pixel (840.333 vs 840 in the 3x fixture).
-            frame.minY >= top - 0.5 && frame.maxY <= bottom + 0.5
+        return CGRect(x: visibleForm.minX, y: top, width: visibleForm.width, height: bottom - top)
     }
 
     private func isControlFullyVisible(_ control: XCUIElement, in app: XCUIApplication) -> Bool {
@@ -173,9 +207,19 @@ final class KindleReadingSettingsUITests: XCTestCase {
                 // sits below the screen in a long accessibility-size label.
                 let nativeSwitch = toggle.descendants(matching: .switch).firstMatch
                 XCTAssertTrue(nativeSwitch.waitForExistence(timeout: 5))
-                for _ in 0..<5 {
+                for _ in 0..<8 {
                     if isControlFullyVisible(nativeSwitch, in: app) { break }
-                    app.collectionViews.firstMatch.swipeUp()
+                    // A full swipe can overshoot this control on an SE-size
+                    // screen. Move toward the measured visible center and
+                    // correct in either direction without relaxing visibility.
+                    let form = app.collectionViews.firstMatch
+                    let top = max(app.frame.minY + 44, app.navigationBars.firstMatch.frame.maxY)
+                    let bottom = app.frame.maxY - 44
+                    let frame = nativeSwitch.frame
+                    let distance = frame.height > 0
+                        ? min(180, max(-180, (top + bottom) / 2 - frame.midY)) : -180
+                    let start = form.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                    start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: distance)))
                 }
                 attachScreen(app, name: caseName + "-before-toggle", includeHierarchy: true)
                 XCTAssertTrue(isControlFullyVisible(nativeSwitch, in: app), "Native switch is not fully visible: \(nativeSwitch.frame)")

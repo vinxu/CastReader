@@ -131,7 +131,7 @@ private struct KindleOfflineMiniPlayerBar: View {
     @ObservedObject var speech: SystemSpeechPlaybackService
     let expand: () -> Void
     let stop: () -> Void
-    private var playing: Bool { model.preparingSpeech || speech.state == .preparing || speech.state == .speaking }
+    private var playing: Bool { model.canPausePlayback }
     var body: some View {
         HStack(spacing: 2) {
             Button(action: expand) {
@@ -153,7 +153,7 @@ private struct KindleOfflineMiniPlayerBar: View {
                     Image(systemName: playing ? "pause.fill" : "play.fill")
                         .font(.title3).frame(width: 44, height: 44)
                 }
-            }.buttonStyle(.plain).disabled(model.loading)
+            }.buttonStyle(.plain).disabled(model.loading && !playing)
                 .accessibilityLabel(playing ? AppLocalized("暂停") : AppLocalized("播放"))
                 .accessibilityIdentifier("offlineMiniPlay")
             Button(action: stop) {

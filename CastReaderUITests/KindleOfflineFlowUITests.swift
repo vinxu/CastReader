@@ -407,6 +407,8 @@ final class KindleOfflineFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读"))
         capture("22-active-rate-change")
         tap("offlineBookPlay")
+        wait { self.app.buttons["offlineBookPlay"].label == "播放" }
+        capture("22-paused-before-minimize")
         tap("offlineBookClose")
         tap("offlineLibraryBook.offline-flow-book")
         XCTAssertEqual(app.buttons["offlineBookRate"].value as? String, "1.3×")

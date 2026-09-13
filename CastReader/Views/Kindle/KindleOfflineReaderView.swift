@@ -99,7 +99,7 @@ private struct KindleOfflineBookReaderContent: View {
     @State private var showImageZoom = false
     @State private var refocus = 0
 
-    private var playing: Bool { model.preparingSpeech || speech.state == .speaking || speech.state == .preparing }
+    private var playing: Bool { model.canPausePlayback }
     private var hasText: Bool { model.document?.paragraphs.contains { $0.type.isReadable && !$0.text.isEmpty } == true }
     private var voiceName: String { model.voices.first(where: { $0.id == model.voiceID })?.name ?? AppLocalized("本机声音") }
     private var rateLabel: String { String(format: "%.1f×", locale: AppLanguageManager.shared.locale, model.speechRate / Double(AVSpeechUtteranceDefaultSpeechRate)) }
@@ -313,7 +313,7 @@ private struct KindleOfflineBookReaderContent: View {
                 Image(systemName: playing ? "pause.fill" : "play.fill")
                     .font(.system(size: 24, weight: .semibold)).foregroundStyle(.white)
                     .frame(width: 52, height: 52).background(AppTheme.primary, in: Circle())
-            }.disabled(model.loading || model.document == nil)
+            }.disabled((model.loading || model.document == nil) && !playing)
                 .accessibilityLabel(playing ? Text("暂停") : Text("播放")).accessibilityIdentifier("offlineBookPlay")
             Spacer(minLength: 0)
             transport("下一句", icon: "forward.end", id: "offlineBookNextSentence", disabled: speech.units.isEmpty || speech.currentUnitIndex + 1 >= speech.units.count) {

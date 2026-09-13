@@ -99,8 +99,13 @@ final class SleepTimerUITests: XCTestCase {
             XCTAssertTrue(customMode.isHittable)
             customMode.buttons.element(boundBy: 1).tap()
             XCTAssertTrue(app.datePickers["sleepTimerStopTimePicker"].waitForExistence(timeout: 5))
+            let startCustom = app.buttons["sleepTimerStartCustom"]
+            for _ in 0..<4 {
+                if startCustom.exists && startCustom.isHittable { break }
+                app.collectionViews.firstMatch.swipeUp()
+            }
             attach(app, "sleep-timer-stop-time-\(language)")
-            XCTAssertTrue(app.buttons["sleepTimerStartCustom"].isHittable)
+            XCTAssertTrue(startCustom.isHittable)
             app.buttons["readerSettingsDone"].tap()
             app.terminate()
         }
