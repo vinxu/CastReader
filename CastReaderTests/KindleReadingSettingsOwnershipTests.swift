@@ -86,7 +86,27 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         container.layoutIfNeeded()
         model.setReaderSurfaceAttached(true)
         model.setReaderPresented(true)
-        try await Task.sleep(nanoseconds: 150_000_000)
+        // WK receives the native crop/fit bounds asynchronously. Establish the
+        // intended viewport before comparing panel transitions; a fixed 150 ms
+        // can snapshot the previous 390x700 viewport under compiler/test load.
+        let viewportDeadline = Date().addingTimeInterval(3)
+        var viewportReady = false
+        while Date() < viewportDeadline {
+            let size = try await model.webView.evaluateJavaScript("({width:innerWidth,height:innerHeight})") as? [String: Double]
+            if let size, abs((size["width"] ?? 0) - model.webView.bounds.width) <= 1,
+               abs((size["height"] ?? 0) - model.webView.bounds.height) <= 1 {
+                viewportReady = true
+                break
+            }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        XCTAssertTrue(viewportReady, "The fixture must reach its cropped viewport before the panel test")
+        // innerWidth can update before the corresponding queued resize event.
+        // Drain render frames before installing the transition-only listener.
+        _ = try await model.webView.callAsyncJavaScript("""
+          await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+          return true;
+        """, arguments: [:], in: nil, contentWorld: .page)
         _ = try await model.webView.evaluateJavaScript("window.panelResizes=0;window.addEventListener('resize',()=>panelResizes++);true")
         let before = try await voiceViewportMetrics()
         let webBounds = model.webView.bounds
@@ -130,7 +150,12 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         XCTAssertEqual(NSDictionary(dictionary: before), NSDictionary(dictionary: during),
                        "Opening/closing voice UI must not resize, replace, navigate or reload the web document")
         center.dismiss()
-        try await Task.sleep(nanoseconds: 650_000_000)
+        // The production dismissal has a 600 ms minimum animation delay. Wait
+        // for its result instead of giving the main actor only 50 ms of slack.
+        let dismissalDeadline = Date().addingTimeInterval(2)
+        while model.playerOverlayViewport != nil, Date() < dismissalDeadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
         XCTAssertNil(model.playerOverlayViewport)
         let resumedSize = KindleReaderSurfaceContract.renderSize(measured: actualSize, stable: staleLandscape,
                                                                  isPlayerOverlayPresented: false)

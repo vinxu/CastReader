@@ -160,6 +160,9 @@ final class KindleOfflineBookReaderModel: ObservableObject {
                         self.prefetchNextPage()
                         return
                     }
+                    if self.book.pages[index].requiresOCR == true, self.book.pages[index].sourceWordCount != 0 {
+                        throw OCRError.noText
+                    }
                     guard index + 1 < self.book.pages.count else { self.error = "这一页没有可朗读文字。"; return }
                     await self.loadPage(index + 1, resume: nil, automatically: false)
                     guard self.pageIndex != index else { return }

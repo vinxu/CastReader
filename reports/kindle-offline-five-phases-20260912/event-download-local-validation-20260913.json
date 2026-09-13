@@ -1,0 +1,209 @@
+{
+  "date": "2026-09-13",
+  "sourceParent": "5f226ea",
+  "releaseAncestor": "b6dd4d7",
+  "implemented": [
+    "Reject interior overlap, duplicate, skipped and reversed ranges",
+    "Verify saved resource binding to generation, ordinal and source range",
+    "Do not cache or silently skip empty OCR on a page without trusted zero-word evidence",
+    "Web-process readiness promise with mutation/load wakeups, unchanged 50 ms stable confirmation and 600 ms identical-image fallback",
+    "Offline-only element discovery cache with fresh image identity and geometry"
+  ],
+  "sourceHashes": {
+    "CastReader/Services/KindleOfflineBookStore.swift": "113c9bd77e778d14ce31287dff48a3d17ac4900a2f47d6972d4be3ecd93ab7cb",
+    "CastReader/Services/KindleOfflineSourceScript.swift": "e70dc857a833b828fa519dd278b3d717f566053b000c41a47f931246cc63b6fb",
+    "CastReader/Services/KindleWebScripts.swift": "6f896416c337cb50c2727fce0d23195a65d015f8096aac63a2a7da349aa26b1f",
+    "CastReader/Views/Kindle/KindleBookView.swift": "15e539ad95d9fbde45a708bc05473c86fd72faf2ce5d2d4bc2d06e58c65f7ece",
+    "CastReader/Views/Kindle/KindleOfflineLibraryView.swift": "17b6c30224c136a7caae365f1b8173fc5a428306c1c46023e7dc3c4b7e7a097e"
+  },
+  "javascriptChecks": {
+    "waitFaults": "passed",
+    "candidateCache": "passed",
+    "sourceObservation": "passed",
+    "originalImageBytes": "passed"
+  },
+  "independentManifestFaults": {
+    "cases": [
+      "missing middle",
+      "missing end",
+      "interior overlap",
+      "duplicate page",
+      "wrong order",
+      "swapped image references"
+    ],
+    "allRejected": true,
+    "identicalImageOccurrencesPreserved": true
+  },
+  "priorDeviceCopyCompatibility": {
+    "CastReaderKindleOfflineWholeBook-v16": {
+      "pages": 427,
+      "logicalResourceBytes": 226262271,
+      "uniqueImages": 427,
+      "textCharacters": 479651,
+      "imageOnlyPages": 0,
+      "sourceMinimum": 0,
+      "sourceMaximum": 480607,
+      "savedStart": 0,
+      "savedEnd": 480607,
+      "continuous": true,
+      "allResourceHashesVerified": true,
+      "coversWholeBook": true,
+      "status": "complete",
+      "originalPositionRestored": true,
+      "readingPosition": {
+        "page": 249,
+        "paragraphID": 1,
+        "sentenceStart": 0,
+        "voiceID": ""
+      }
+    },
+    "CastReaderKindleImageOnlyFull-v18": {
+      "pages": 427,
+      "logicalResourceBytes": 208724855,
+      "uniqueImages": 427,
+      "textCharacters": 0,
+      "imageOnlyPages": 427,
+      "sourceMinimum": 0,
+      "sourceMaximum": 480607,
+      "savedStart": 0,
+      "savedEnd": 480607,
+      "continuous": true,
+      "allResourceHashesVerified": true,
+      "coversWholeBook": true,
+      "status": "complete",
+      "originalPositionRestored": true,
+      "readingPosition": {
+        "page": 249,
+        "paragraphID": 1,
+        "sentenceStart": 0,
+        "voiceID": ""
+      }
+    },
+    "CastReaderKindleForegroundControls-FinalFull-v27": {
+      "pages": 427,
+      "logicalResourceBytes": 208725261,
+      "uniqueImages": 427,
+      "textCharacters": 0,
+      "imageOnlyPages": 427,
+      "sourceMinimum": 0,
+      "sourceMaximum": 480607,
+      "savedStart": 0,
+      "savedEnd": 480607,
+      "continuous": true,
+      "allResourceHashesVerified": true,
+      "coversWholeBook": true,
+      "status": "complete",
+      "originalPositionRestored": true,
+      "readingPosition": {
+        "page": 249,
+        "paragraphID": 1,
+        "sentenceStart": 0,
+        "voiceID": ""
+      }
+    }
+  },
+  "tests": [
+    {
+      "run": "v28",
+      "tests": 29,
+      "failures": 0
+    },
+    {
+      "run": "v29",
+      "tests": 48,
+      "failures": 0
+    },
+    {
+      "run": "v30",
+      "tests": 84,
+      "failures": 1,
+      "failedTest": "testVoicePanelRetainsActualExplainViewportThroughDismissal"
+    },
+    {
+      "run": "isolated-viewport-v30",
+      "tests": 1,
+      "failures": 3,
+      "observation": "Initial web viewport still 390x700 while native crop bounds later reached 488x780; fixed 650 ms wait also saw deferred dismissal incomplete"
+    },
+    {
+      "run": "settings-v31",
+      "tests": 30,
+      "failures": 4,
+      "failedTests": 2,
+      "observation": "The native crop dimensions were current, but the initial queued resize event had not yet fired when the transition-only listener was installed."
+    },
+    {
+      "run": "settings-v32",
+      "tests": 30,
+      "failures": 0
+    },
+    {
+      "run": "v33",
+      "tests": 65,
+      "failures": 0,
+      "suites": [
+        "KindleOfflineBookReaderTests",
+        "KindleOfflineBookStoreTests",
+        "KindleOfflinePageStoreTests",
+        "KindlePageFlipProbeScriptTests",
+        "KindleReadingSettingsOwnershipTests"
+      ]
+    },
+    {
+      "run": "v34",
+      "tests": 19,
+      "failures": 0,
+      "suites": [
+        "KindleNavigationPositionTests",
+        "SystemSpeechPlaybackTests"
+      ]
+    }
+  ],
+  "settingsFixtureAdjustment": "Wait for the intended native crop dimensions and drain two render frames before registering the transition-only resize listener; wait for dismissal completion with a bounded 2 second deadline. All original behavior assertions retained. Production panel behavior unchanged.",
+  "finalSettingsRegression": {
+    "run": "v33",
+    "tests": 30,
+    "failures": 0
+  },
+  "deviceBuild": {
+    "run": "v30",
+    "result": "TEST BUILD SUCCEEDED",
+    "installed": false
+  },
+  "releaseBuild": {
+    "run": "v30",
+    "result": "BUILD SUCCEEDED"
+  },
+  "newDeviceTiming": {
+    "status": "pending",
+    "reason": "User asked to finish local tests first and connect the phone later",
+    "priorSeconds": 169.17697203159332,
+    "targetSeconds": [
+      30,
+      60
+    ],
+    "improvementClaimed": false
+  },
+  "strictAirplaneModeAcceptance": "pending-human-confirmation",
+  "countsMayOverlap": true,
+  "finalLocalRegression": {
+    "runs": [
+      "v33",
+      "v34"
+    ],
+    "uniqueTests": 84,
+    "failures": 0,
+    "skipped": 0
+  },
+  "logs": {
+    "v28": "/tmp/CastReaderKindleEventDownload-v28.log",
+    "v29": "/tmp/CastReaderKindleEventDownload-v29.log",
+    "v30": "/tmp/CastReaderKindleEventDownload-v30.log",
+    "Settings-v31": "/tmp/CastReaderKindleEventDownload-Settings-v31.log",
+    "Settings-v32": "/tmp/CastReaderKindleEventDownload-Settings-v32.log",
+    "v33": "/tmp/CastReaderKindleEventDownload-v33.log",
+    "v34": "/tmp/CastReaderKindleEventDownload-v34.log",
+    "DeviceBuild-v30": "/tmp/CastReaderKindleEventDownload-DeviceBuild-v30.log",
+    "ReleaseBuild-v30": "/tmp/CastReaderKindleEventDownload-ReleaseBuild-v30.log"
+  }
+}

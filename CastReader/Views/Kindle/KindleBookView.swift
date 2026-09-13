@@ -7879,42 +7879,43 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func waitForOfflineImage(target: Int, previousIdentity: String) async throws -> OfflineSourceEvidence {
-        var prior: KindleOfflineSourcePosition?, priorImage = ""
-        var sameImageSince: Date?
-        let started = ProcessInfo.processInfo.systemUptime
-        var recoveryAttempted = false
-        for _ in 0..<400 {
-            try Task.checkCancellation()
-            try requireOfflineCapture()
-            if !recoveryAttempted, ProcessInfo.processInfo.systemUptime - started >= 1 {
-                recoveryAttempted = true
-                if (try? await evaluate("window.__crOfflineSourceRecover && window.__crOfflineSourceRecover(\(target))") as? Bool) == true {
-                    KindleRunLog.write("KINDLE_OFFLINE_RESEEK target=\(target) reason=idle-before-target")
-                }
+        try Task.checkCancellation()
+        try requireOfflineCapture()
+        let token = UUID().uuidString
+        let result = try await withTaskCancellationHandler {
+            try await webView.callAsyncJavaScript("return await window.__crOfflineWaitForImage(target, previousIdentity, token);",
+                arguments: ["target": target, "previousIdentity": previousIdentity, "token": token], in: nil, contentWorld: .page)
+        } onCancel: { [weak self] in
+            Task { @MainActor in
+                self?.webView.evaluateJavaScript("window.__crOfflineCancelWait && window.__crOfflineCancelWait('\(token)')", completionHandler: nil)
             }
-            if let source = try? await readOfflineSourceEvidence(includeImageIdentity: true),
-               source.position.start <= target, source.position.end >= target, !source.imageIdentity.isEmpty {
-                let identity = source.imageIdentity
-                if source.position == prior && identity == priorImage {
-                    // Normal sequential flips hit already-prefetched images.
-                    // Identical-image pages retain the conservative layout check.
-                    if identity != previousIdentity { return source }
-                    if let since = sameImageSince, Date().timeIntervalSince(since) >= 0.6 {
-                        try await waitForKindleImageStable()
-                        return try await readOfflineSourceEvidence(includeImageIdentity: true)
-                    }
-                } else { sameImageSince = Date() }
-                prior = source.position; priorImage = identity
-            } else { prior = nil; priorImage = ""; sameImageSince = nil }
-            try await Task.sleep(for: .milliseconds(50))
         }
-        #if DEBUG
-        if let raw = try? await evaluateJSON("window.__crOfflineSourceRead && window.__crOfflineSourceRead()") {
-            let page = raw["page"] as? [String: Any]
-            KindleRunLog.write("KINDLE_OFFLINE_NOT_READY target=\(target) start=\(Self.int(from: raw["start"]) ?? -1) end=\(Self.int(from: raw["end"]) ?? -1) loading=\(raw["loading"] as? Bool ?? true) metadataPage=\(page != nil) imageSeen=\(!priorImage.isEmpty)")
+        try Task.checkCancellation()
+        try requireOfflineCapture()
+        guard let json = result as? String,
+              let value = try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any],
+              let status = value["status"] as? String else { throw KindleBookError.invalidPayload }
+        if let metrics = value["metrics"] as? [String: Any] {
+            KindleRunLog.write("KINDLE_OFFLINE_WAIT target=\(target) checks=\(Self.int(from: metrics["checks"]) ?? -1) loadingChecks=\(Self.int(from: metrics["loadingChecks"]) ?? -1) elapsedMs=\(Self.int(from: metrics["elapsedMs"]) ?? -1) recovered=\(metrics["recovered"] as? Bool ?? false) status=\(status)")
         }
-        #endif
-        throw KindleOfflineCaptureFailure.pageNotReady
+        if status == "cancelled" { throw CancellationError() }
+        if status == "timeout" { throw KindleOfflineCaptureFailure.pageNotReady }
+        guard status == "ready" || status == "same-image", let raw = value["source"] as? [String: Any] else {
+            throw KindleBookError.invalidPayload
+        }
+        var source = try parseOfflineSourceEvidence(raw)
+        if status == "same-image" {
+            try await waitForKindleImageStable()
+            let confirmed = try await readOfflineSourceEvidence(includeImageIdentity: true)
+            guard confirmed.position == source.position, confirmed.imageIdentity == source.imageIdentity else {
+                throw KindleOfflineBookStore.Failure.discontinuousPage
+            }
+            source = confirmed
+        }
+        guard source.position.start <= target, source.position.end >= target, !source.imageIdentity.isEmpty else {
+            throw KindleOfflineBookStore.Failure.discontinuousPage
+        }
+        return source
     }
 
     func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
@@ -7992,7 +7993,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard let original = offlineCaptureOriginal else { return true }
         defer {
             offlineCaptureOriginal = nil; offlineCaptureScope = nil; offlineCaptureNavigationGeneration = nil
-            webView.evaluateJavaScript("window.__crOfflineProgressGuard && window.__crOfflineProgressGuard(false)", completionHandler: nil)
+            webView.evaluateJavaScript("window.__crOfflineProgressGuard && window.__crOfflineProgressGuard(false); window.__crKindleOfflineResetCandidates && window.__crKindleOfflineResetCandidates();", completionHandler: nil)
         }
         guard offlineCaptureScope == KindleOfflineContext.currentScope,
               offlineCaptureNavigationGeneration == readerControlsNavigationGeneration else { return false }

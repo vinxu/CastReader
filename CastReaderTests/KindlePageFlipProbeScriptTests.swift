@@ -52,6 +52,71 @@ final class KindlePageFlipProbeScriptTests: XCTestCase {
         throw NSError(domain: "PageFlipFixture", code: 1)
     }
 
+    private func installOfflineImageFixture() async throws {
+        try await load()
+        _ = try await web.evaluateJavaScript(KindleOfflineSourceScript.bootstrap)
+        _ = try await web.evaluateJavaScript(KindleWebScripts.pageCaptureBootstrap)
+        _ = try await web.callAsyncJavaScript("""
+          document.body.innerHTML='<div id="kr-renderer"><img id="fixture-image" style="width:330px;height:450px"></div>';
+          window.fixtureSource={asin:'B000000001',revision:'fixture',layout:{width:390,height:700},
+            metadata:{minimum:0,maximum:100,cover:0},start:3,end:19,current:3,page:{start:3,end:19,words:10},loading:false};
+          window.__crOfflineSourceRead=()=>JSON.stringify(window.fixtureSource);
+          window.__crOfflineSourceRecover=()=>false;
+          window.setFixtureImage=async color=>{
+            const canvas=document.createElement('canvas');canvas.width=40;canvas.height=60;
+            const ctx=canvas.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,40,60);
+            const blob=await new Promise(resolve=>canvas.toBlob(resolve));
+            const img=document.getElementById('fixture-image');
+            await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=URL.createObjectURL(blob);});
+          };
+          await window.setFixtureImage('red');
+          await new Promise(resolve=>setTimeout(resolve,50));
+          return true;
+        """, arguments: [:], in: nil, contentWorld: .page)
+    }
+
+    func testOfflineEventWaitUsesRealWebKitAndCapturesTheConfirmedImage() async throws {
+        try await installOfflineImageFixture()
+        let output = try await web.callAsyncJavaScript("""
+          const oldIdentity=window.__crKindleOfflineImageIdentity();
+          window.fixtureSource={...window.fixtureSource,start:20,end:39,current:20,page:{start:20,end:39,words:10},loading:true};
+          const pending=window.__crOfflineWaitForImage(21,oldIdentity,'native-bridge-fixture');
+          setTimeout(async()=>{await window.setFixtureImage('blue');window.fixtureSource.loading=false;},30);
+          const ready=JSON.parse(await pending);
+          const image=JSON.parse(await window.__crKindleOfflineImage());
+          window.__crKindleOfflineResetCandidates();
+          return JSON.stringify({ready,image,oldIdentity});
+        """, arguments: [:], in: nil, contentWorld: .page)
+        let value = try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(output as? String).utf8)) as! [String: Any]
+        let ready = try XCTUnwrap(value["ready"] as? [String: Any])
+        let image = try XCTUnwrap(value["image"] as? [String: Any])
+        let source = try XCTUnwrap(image["source"] as? [String: Any])
+        XCTAssertEqual(ready["status"] as? String, "ready")
+        XCTAssertEqual(source["start"] as? Int, 20)
+        XCTAssertNotEqual(image["identity"] as? String, value["oldIdentity"] as? String)
+        XCTAssertEqual(image["identity"] as? String, (ready["source"] as? [String: Any])?["imageIdentity"] as? String)
+        XCTAssertTrue((image["image"] as? String)?.hasPrefix("data:image/png;base64,") == true)
+    }
+
+    func testOfflineWebKitCancellationDoesNotCancelTheNextRequest() async throws {
+        try await installOfflineImageFixture()
+        let output = try await web.callAsyncJavaScript("""
+          window.fixtureSource.loading=true;
+          const pending=window.__crOfflineWaitForImage(4,'old','cancel-fixture');
+          setTimeout(()=>window.__crOfflineCancelWait('cancel-fixture'),20);
+          const cancelled=JSON.parse(await pending);
+          window.fixtureSource.loading=false;
+          const next=window.__crOfflineWaitForImage(4,'old','next-fixture');
+          window.__crOfflineCancelWait('cancel-fixture');
+          const ready=JSON.parse(await next);
+          window.__crKindleOfflineResetCandidates();
+          return JSON.stringify({cancelled:cancelled.status,next:ready.status});
+        """, arguments: [:], in: nil, contentWorld: .page)
+        let value = try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(output as? String).utf8)) as! [String: String]
+        XCTAssertEqual(value["cancelled"], "cancelled")
+        XCTAssertEqual(value["next"], "ready")
+    }
+
     private func response(_ command: String) async throws -> KindlePageFlipProbe.PollResponse {
         let value = try await web.evaluateJavaScript(command)
         let text = try XCTUnwrap(value as? String)

@@ -30,9 +30,15 @@ def verify(manifest_path, partial=False):
         assert first["minimum"] <= position["start"] <= position["end"] <= first["maximum"]
         if previous:
             assert previous["start"] < position["start"] <= previous["end"] + 1, "Source position gap"
+            assert position["start"] >= previous["end"], "Source pages overlap beyond a shared boundary"
             assert previous["end"] < position["end"], "Page does not advance"
         previous = position
         resource = page["resource"]
+        page_key = f'{manifest["generation"]}:{ordinal}:{position["start"]}:{position["end"]}'
+        key_hash = hashlib.sha256(page_key.encode()).hexdigest()
+        assert resource["pageKeyHash"] == key_hash, "Resource belongs to a different source page"
+        resource_key = f'{key_hash}:{resource["imageHash"]}:{resource["snapshotHash"]}'
+        assert resource["id"] == hashlib.sha256(resource_key.encode()).hexdigest(), "Resource identity mismatch"
         assert indexed.get(resource["id"]) == resource, "Resource missing from page index"
         sizes = []
         for key, suffix in (("imageHash", ".image"), ("snapshotHash", ".page")):

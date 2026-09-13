@@ -68,6 +68,62 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         XCTAssertNotEqual(reopened?.status, .complete)
     }
 
+    func testDuplicateSkippedReversedAndOverlappingPagesDoNotChangeCommittedSequence() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 5))
+        for page in 0..<2 {
+            book = try await store.append(document: document(), position: position(page, total: 5), to: book, scope: scope)
+        }
+        let committed = book.pages
+        let overlapping = KindleOfflineSourcePosition(start: 15, end: 29, minimum: 0, maximum: 49,
+            layoutID: "layout", fingerprint: "different-image-but-overlapping-source")
+        for invalid in [position(1, total: 5), position(3, total: 5), position(0, total: 5), overlapping] {
+            do {
+                _ = try await store.append(document: document(), position: invalid, to: book, scope: scope)
+                XCTFail("Invalid page entered the committed sequence: \(invalid.start)")
+            } catch KindleOfflineBookStore.Failure.discontinuousPage {} catch { XCTFail("Unexpected error: \(error)") }
+            let reopened = try await store.load(id: book.id, scope: scope)
+            XCTAssertEqual(reopened?.pages, committed)
+            XCTAssertNotEqual(reopened?.status, .complete)
+        }
+        // A late duplicate cannot prevent normal continuation from page two.
+        for page in 2..<5 {
+            book = try await store.append(document: document(), position: position(page, total: 5), to: book, scope: scope)
+        }
+        book = try await store.finish(book, scope: scope)
+        XCTAssertEqual(book.pages.map(\.position.start), [0, 10, 20, 30, 40])
+    }
+
+    func testExchangedImageResourcesCannotPassAsCorrectPageOrder() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 3))
+        for page in 0..<3 {
+            book = try await store.append(document: document(), position: position(page, total: 3), to: book, scope: scope)
+        }
+        book = try await store.finish(book, scope: scope)
+        let original = book.pages
+        // Correct ordinal/range and intact image hashes are insufficient when
+        // a page is accidentally wired to another page's saved resource.
+        book.pages[1] = .init(ordinal: 1, position: original[1].position, resource: original[2].resource)
+        book.pages[2] = .init(ordinal: 2, position: original[2].position, resource: original[1].resource)
+        XCTAssertTrue(book.coversWholeBook)
+        let url = root.appendingPathComponent(scope).appendingPathComponent(book.id + ".book")
+        try JSONEncoder().encode(book).write(to: url, options: .atomic)
+        do { _ = try await store.load(id: book.id, scope: scope); XCTFail("Swapped resources were accepted") }
+        catch KindleOfflineBookStore.Failure.corruptManifest {} catch { XCTFail("Unexpected error: \(error)") }
+    }
+
+    func testSharedNormalizedBoundaryIsValidButInteriorOverlapIsNot() {
+        func range(_ start: Int, _ end: Int) -> KindleOfflineSourcePosition {
+            .init(start: start, end: end, minimum: 0, maximum: 100, layoutID: "layout", fingerprint: "same")
+        }
+        XCTAssertTrue(range(3, 20).follows(range(0, 2)), "Cover boundary")
+        XCTAssertTrue(range(20, 30).follows(range(3, 20)), "Shared normalized endpoint")
+        XCTAssertTrue(range(21, 30).follows(range(3, 20)), "Inclusive adjacent ranges")
+        XCTAssertFalse(range(19, 30).follows(range(3, 20)), "No interior overlap")
+        XCTAssertFalse(range(22, 30).follows(range(3, 20)), "No missing positions")
+    }
+
     func testDifferentLayoutAndAccountCannotAdoptSavedPages() async throws {
         let store = KindleOfflineBookStore(root: root)
         var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 3))
@@ -344,10 +400,12 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         var calls = 0
         var delay: Duration = .milliseconds(1)
         var shouldFail = false
+        var returnEmpty = false
         func recognize(_ page: ReadingDocument, sourceWordCount: Int?) async throws -> ReadingDocument {
             calls += 1
             try await Task.sleep(for: delay)
             if shouldFail { throw OCRError.noText }
+            if returnEmpty { return page }
             var result = page
             result.paragraphs.append(ReadingParagraph(id: 1, text: "Recognized only when listening.", pageIndex: 0))
             return result
@@ -377,6 +435,114 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         book = try await store.append(document: doc, position: position, to: book, scope: scope, requiresOCR: true, sourceWordCount: 10)
         book = try await store.finish(book, scope: scope)
         return (store, book, scope)
+    }
+
+    private func orderedBook(root: URL, texts: [String?]) async throws -> (KindleOfflineBookStore, KindleOfflineBook, String) {
+        let store = KindleOfflineBookStore(root: root), scope = KindleOfflinePageStore.digest("ordered-reader")
+        let source = KindleBook(id: "ordered-reader", title: "Ordered chapters", author: "Test",
+            readerURL: "https://read.amazon.com/?asin=B000000001", progressLabel: "", lastSyncedAt: Date())
+        func position(_ index: Int) -> KindleOfflineSourcePosition {
+            .init(start: index * 10, end: index * 10 + 9, minimum: 0, maximum: texts.count * 10 - 1,
+                layoutID: "fixture", fingerprint: "page-\(index)")
+        }
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0))
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 20, height: 20)).pngData { context in
+            UIColor.white.setFill(); context.fill(CGRect(x: 0, y: 0, width: 20, height: 20))
+        }
+        for (index, text) in texts.enumerated() {
+            var paragraphs = [ReadingParagraph(id: 0, text: "", type: .image, imageData: image)]
+            if let text { paragraphs.append(ReadingParagraph(id: 1, text: text)) }
+            let doc = ReadingDocument(title: "Ordered chapters", sourceKind: .kindle, language: "en-US", paragraphs: paragraphs)
+            book = try await store.append(document: doc, position: position(index), to: book, scope: scope,
+                requiresOCR: text == nil, sourceWordCount: 10)
+        }
+        return (store, try await store.finish(book, scope: scope), scope)
+    }
+
+    func testChapterSequenceRejectsDuplicateAndLateSpeechCallbacks() async throws {
+        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let texts = ["Chapter one first page.", "Chapter one second page.", "Chapter two first page.",
+                     "Chapter two second page.", "Chapter three first page.", "Chapter three last page."]
+        let (store, book, scope) = try await orderedBook(root: root, texts: texts.map { Optional($0) })
+        let driver = Driver()
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true })
+        defer { model.close() }
+        await model.open(); model.play()
+        for index in texts.indices {
+            let deadline = Date().addingTimeInterval(3)
+            while driver.requests.count <= index, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+            guard driver.requests.indices.contains(index) else { return XCTFail("Stopped before page \(index)") }
+            XCTAssertEqual(model.pageIndex, index)
+            XCTAssertEqual(driver.requests[index].text, texts[index])
+            for prior in driver.requests.prefix(index) {
+                driver.onEvent?(.started(prior.id)); driver.onEvent?(.finished(prior.id))
+            }
+            XCTAssertEqual(model.pageIndex, index, "Late callbacks cannot return to another chapter")
+            let request = driver.requests[index]
+            driver.onEvent?(.started(request.id)); driver.onEvent?(.finished(request.id)); driver.onEvent?(.finished(request.id))
+        }
+        try await Task.sleep(for: .milliseconds(50))
+        XCTAssertEqual(driver.requests.map(\.text), texts, "Every page is enqueued once in source order")
+    }
+
+    func testEmptyOCRDoesNotSilentlySkipToNextChapter() async throws {
+        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await orderedBook(root: root, texts: [nil, "The next chapter."])
+        let recognizer = Recognizer(), driver = Driver(); recognizer.returnEmpty = true
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true }, recognizer: recognizer)
+        defer { model.close() }
+        await model.open(); model.play()
+        let deadline = Date().addingTimeInterval(3)
+        while model.preparingSpeech, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertNotNil(model.error); XCTAssertEqual(model.pageIndex, 0); XCTAssertTrue(driver.requests.isEmpty)
+        recognizer.returnEmpty = false; model.play()
+        let retryDeadline = Date().addingTimeInterval(3)
+        while driver.requests.isEmpty, Date() < retryDeadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(recognizer.calls, 2, "An empty OCR result cannot poison the retry cache")
+        XCTAssertEqual(driver.requests.first?.text, "Recognized only when listening.")
+        XCTAssertEqual(model.pageIndex, 0)
+    }
+
+    private final class DeferredRecognizer: KindleOfflineRecognizing {
+        var continuation: CheckedContinuation<ReadingDocument, Error>?
+        var page: ReadingDocument?
+        func recognize(_ page: ReadingDocument, sourceWordCount: Int?) async throws -> ReadingDocument {
+            self.page = page
+            return try await withCheckedThrowingContinuation { continuation = $0 }
+        }
+        func complete() {
+            guard var page, let continuation else { return }
+            self.continuation = nil
+            page.paragraphs.append(ReadingParagraph(id: 1, text: "An old chapter returned late."))
+            continuation.resume(returning: page)
+        }
+    }
+
+    func testLateOCRCannotReplaceTheSelectedChapter() async throws {
+        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await orderedBook(root: root, texts: [nil, "The selected chapter."])
+        let recognizer = DeferredRecognizer(), driver = Driver()
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true }, recognizer: recognizer)
+        defer { recognizer.complete(); model.close() }
+        await model.open(); model.play()
+        let deadline = Date().addingTimeInterval(3)
+        while recognizer.continuation == nil, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertNotNil(recognizer.continuation)
+        model.selectPage(1)
+        while model.pageIndex != 1 || model.loading, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        model.play(); recognizer.complete()
+        try await Task.sleep(for: .milliseconds(50))
+        XCTAssertEqual(model.pageIndex, 1)
+        XCTAssertEqual(driver.requests.map(\.text), ["The selected chapter."])
     }
 
     func testRealLocalOCRRecognizesSavedImageWithoutOnlineReader() async throws {

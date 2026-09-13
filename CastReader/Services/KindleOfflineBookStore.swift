@@ -20,7 +20,9 @@ struct KindleOfflineSourcePosition: Codable, Equatable {
     func follows(_ previous: Self) -> Bool {
         isValid && previous.isValid && layoutID == previous.layoutID &&
             minimum == previous.minimum && maximum == previous.maximum &&
-            start > previous.start && end > previous.end && start <= previous.end + 1
+            // Source adapters may share a normalized boundary or use adjacent
+            // inclusive ranges. Interior overlap is never a next page.
+            start > previous.start && end > previous.end && start >= previous.end && start <= previous.end + 1
     }
 }
 
@@ -80,7 +82,7 @@ actor KindleOfflineBookStore {
     #if DEBUG
     static let imageBenchmark = KindleOfflineBookStore(root: FileManager.default.urls(
         for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("KindleOfflineImageBenchmark-v4", isDirectory: true))
+        .appendingPathComponent("KindleOfflineImageBenchmark-v5", isDirectory: true))
     #endif
     enum Failure: Error { case invalidIdentity, corruptManifest, staleGeneration, discontinuousPage, incompleteBook }
     private let root: URL
@@ -173,14 +175,23 @@ actor KindleOfflineBookStore {
         guard book.pages.indices.contains(ordinal) else { throw Failure.incompleteBook }
         let page = book.pages[ordinal]
         if page.requiresOCR != true { return try await openPage(book: book, ordinal: ordinal, scope: scope) }
-        return try await pageRepository(book, scope: scope).recognition(for: page.resource, language: book.language, scope: book.id)
+        let cached = try await pageRepository(book, scope: scope).recognition(for: page.resource, language: book.language, scope: book.id)
+        if let cached, page.sourceWordCount != 0, !Self.hasRecognizedText(cached) { return nil }
+        return cached
     }
 
     func saveSpeechPage(_ document: ReadingDocument, book expected: KindleOfflineBook, ordinal: Int, scope: String) async throws {
         let book = try current(expected, scope: scope)
         guard book.pages.indices.contains(ordinal) else { throw Failure.incompleteBook }
+        if book.pages[ordinal].requiresOCR == true, book.pages[ordinal].sourceWordCount != 0, !Self.hasRecognizedText(document) {
+            throw OCRError.noText
+        }
         try await pageRepository(book, scope: scope).saveRecognition(document, for: book.pages[ordinal].resource,
             language: book.language, scope: book.id)
+    }
+
+    private static func hasRecognizedText(_ document: ReadingDocument) -> Bool {
+        document.paragraphs.contains { $0.type.isReadable && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
     func finish(_ expected: KindleOfflineBook, scope: String) async throws -> KindleOfflineBook {
@@ -257,6 +268,14 @@ actor KindleOfflineBookStore {
         guard book.version == 1, validID(book.id), book.id == url.deletingPathExtension().lastPathComponent,
               book.pages.isEmpty || book.coverageIsContinuous,
               book.status != .complete || book.coversWholeBook else { throw Failure.corruptManifest }
+        for page in book.pages {
+            let key = "\(book.generation.uuidString):\(page.ordinal):\(page.position.start):\(page.position.end)"
+            let keyHash = KindleOfflinePageStore.digest(key)
+            guard page.resource.pageKeyHash == keyHash,
+                  page.resource.id == KindleOfflinePageStore.digest(keyHash + ":" + page.resource.imageHash + ":" + page.resource.snapshotHash) else {
+                throw Failure.corruptManifest
+            }
+        }
         return book
     }
 

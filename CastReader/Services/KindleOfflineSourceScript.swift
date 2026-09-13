@@ -146,6 +146,66 @@ enum KindleOfflineSourceScript {
         if(!c.navigation||c.loading||!Number.isSafeInteger(range?.endPosition)||range.endPosition>=position)return false;
         c.navigation.moveToPosition(position);return true;
       };
+      // Keep page confirmation in the web process. Events wake the same
+      // verifier; they never advance a page or count as readiness themselves.
+      let imageWait=null;
+      const cancelledWaits=new Set();
+      window.__crOfflineCancelWait=token=>{
+        cancelledWaits.add(token);
+        while(cancelledWaits.size>16)cancelledWaits.delete(cancelledWaits.values().next().value);
+        if(imageWait?.token===token)imageWait.finish('cancelled');
+      };
+      window.__crOfflineWaitForImage=(target,previousIdentity,token)=>new Promise(resolve=>{
+        if(imageWait){resolve(JSON.stringify({status:'busy'}));return;}
+        if(cancelledWaits.has(token)){resolve(JSON.stringify({status:'cancelled'}));return;}
+        let timer=null,observer=null,done=false,signature='',stableSince=0,recovered=false;
+        const started=performance.now(),metrics={checks:0,loadingChecks:0,recovered:false};
+        const finish=(status,source)=>{
+          if(done)return;done=true;
+          clearTimeout(timer);observer?.disconnect();document.removeEventListener('load',wake,true);
+          if(imageWait?.token===token)imageWait=null;
+          resolve(JSON.stringify({status,source,metrics:{...metrics,elapsedMs:Math.round(performance.now()-started)}}));
+        };
+        const wake=()=>{if(!done){clearTimeout(timer);timer=setTimeout(check,0);}};
+        const check=()=>{
+          if(done)return;
+          try {
+          const now=performance.now();metrics.checks++;
+          if(now-started>=25000){finish('timeout');return;}
+          if(!recovered&&now-started>=1000){
+            recovered=true;metrics.recovered=window.__crOfflineSourceRecover(target)===true;
+          }
+          let source=null;
+          try {source=JSON.parse(window.__crOfflineSourceRead());}catch(_){}
+          if(source?.loading===true)metrics.loadingChecks++;
+          const page=source?.page,meta=source?.metadata;
+          const cover=meta&&meta.cover===meta.minimum&&source.start<=meta.minimum+1;
+          const valid=source?.loading===false&&source.current===source.start&&page?.start===source.start&&page?.end===source.end&&
+            Number.isSafeInteger(source.start)&&Number.isSafeInteger(source.end)&&Number.isSafeInteger(meta?.maximum)&&
+            (source.start<=target||cover&&target===meta.minimum)&&source.end+1>=target;
+          let delay=50;
+          if(valid){
+            const identity=window.__crKindleOfflineImageIdentity();
+            if(identity){
+              source.imageIdentity=identity;
+              const next=JSON.stringify([source.asin,source.revision,source.layout,meta,source.start,source.end,identity]);
+              if(next!==signature){signature=next;stableSince=now;}
+              // Preserve the existing 50 ms confirmation and the conservative
+              // identical-image fallback; faster notification is not weaker proof.
+              const required=identity===previousIdentity?600:50;
+              if(now-stableSince>=required){finish(identity===previousIdentity?'same-image':'ready',source);return;}
+              delay=Math.min(50,Math.max(1,required-(now-stableSince)));
+            }else {signature='';stableSince=0;}
+          }else {signature='';stableSince=0;}
+          timer=setTimeout(check,delay);
+          } catch (_) { finish('invalid-source'); }
+        };
+        imageWait={token,finish};
+        observer=new MutationObserver(wake);
+        observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['src','srcset','style','class']});
+        document.addEventListener('load',wake,true);
+        check();
+      });
     })();
     """#
 }

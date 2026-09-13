@@ -6549,16 +6549,41 @@ enum KindleWebScripts {
           return m ? m[1] : '';
         } catch (e) { return ''; }
       }
-      function candidates() {
+      var offlineCandidateElements = null, offlineCandidateObserver = null;
+      window.__crKindleOfflineResetCandidates = function() {
+        if (offlineCandidateObserver) offlineCandidateObserver.disconnect();
+        offlineCandidateObserver = null; offlineCandidateElements = null;
+      };
+      function offlineElements() {
+        if (!offlineCandidateObserver) {
+          offlineCandidateObserver = new MutationObserver(function() { offlineCandidateElements = null; });
+          offlineCandidateObserver.observe(document.documentElement, {
+            subtree:true, childList:true, attributes:true, attributeFilter:['src','srcset','style','class']
+          });
+        }
+        if (!offlineCandidateElements) {
+          // Re-discover surfaces on mutations, not on every readiness sample.
+          // Geometry and the current image identity are still read each time.
+          offlineCandidateElements = {
+            images:Array.from(document.querySelectorAll('img')),
+            backgrounds:Array.from(document.querySelectorAll('*')).filter(function(el) { return !!blobUrlFromBackground(el); })
+          };
+        }
+        return offlineCandidateElements;
+      }
+      function candidates(offline) {
         var out = [];
-        Array.from(document.querySelectorAll('img')).forEach(function(img) {
+        var elements = offline ? offlineElements() : null;
+        (elements ? elements.images : Array.from(document.querySelectorAll('img'))).forEach(function(img) {
+          if (img.isConnected === false) return;
           if (!img.src || img.src.indexOf('blob:') !== 0) return;
           var rect = imageElementContentRect(img);
           var content = keyForUrl(img.src) || '';
           var key = stableImageKey(img.src, img);
           out.push({ kind:'dom-img', el:img, img:img, src:img.src, key:key, contentKey:content, rect:rect, visible:visibleArea(rect), bandVisible:readingBandArea(rect), nw:img.naturalWidth||0, nh:img.naturalHeight||0 });
         });
-        Array.from(document.querySelectorAll('*')).forEach(function(el) {
+        (elements ? elements.backgrounds : Array.from(document.querySelectorAll('*'))).forEach(function(el) {
+          if (el.isConnected === false) return;
           var url = blobUrlFromBackground(el);
           if (!url) return;
           var content = keyForUrl(url);
@@ -7182,8 +7207,8 @@ enum KindleWebScripts {
         }
         return best;
       }
-      function currentReadingCandidate() {
-        var list = candidates();
+      function currentReadingCandidate(offline) {
+        var list = candidates(offline);
         if (!list.length) return null;
         var anchorX = Math.max(1, Number(innerWidth || document.documentElement.clientWidth || 1)) * 0.5;
         var anchorY = Math.max(1, Number(innerHeight || document.documentElement.clientHeight || 1)) * 0.36;
@@ -7312,12 +7337,12 @@ enum KindleWebScripts {
       // Offline downloads consume the reader's original image bytes. This path
       // does not draw another canvas, prepare OCR or change live read overlays.
       window.__crKindleOfflineImageIdentity = function() {
-        var c = currentReadingCandidate();
+        var c = currentReadingCandidate(true);
         if (!c || !c.img || !c.img.complete || !(c.img.naturalWidth > 0)) return '';
         return String(c.key || '') + ':' + c.img.naturalWidth + ':' + c.img.naturalHeight;
       };
       window.__crKindleOfflineImage = async function() {
-        var c = currentReadingCandidate();
+        var c = currentReadingCandidate(true);
         if (!c || !c.img || !c.img.complete || !(c.img.naturalWidth > 0)) throw new Error('offline-image-not-ready');
         var identity = window.__crKindleOfflineImageIdentity();
         var key = keyForUrl(c.img.currentSrc || c.img.src) || String(c.key || '').replace(/^content-/, '');
