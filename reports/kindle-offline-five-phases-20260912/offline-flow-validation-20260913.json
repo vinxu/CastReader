@@ -1,0 +1,172 @@
+{
+  "date": "2026-09-13",
+  "parentCommit": "21cbaf614d704f3da2640925da3df6fc675b7725",
+  "releaseAncestor": "b6dd4d7",
+  "simulatorUDID": "982F22E5-53B0-46F8-8CC8-55D055F22D49",
+  "simulatorOS": "iOS 26.5",
+  "tests": {
+    "passed": 152,
+    "failed": 0,
+    "skipped": 0,
+    "unitRegression": 147,
+    "ui": [
+      {
+        "name": "testCachedSentenceRestoresVisibleParagraphWithoutAutoplay",
+        "seconds": 13.922
+      },
+      {
+        "name": "testFailedDownloadRetainsPagesAndCanResume",
+        "seconds": 36.468
+      },
+      {
+        "name": "testLargeTextDownloadAndReaderControlsRemainReachable",
+        "seconds": 56.841
+      },
+      {
+        "name": "testPartialEndContinueCancelAndLocalDeletion",
+        "seconds": 68.717
+      },
+      {
+        "name": "testSaveReadOCRSpeechSettingsAndResumeAfterRelaunch",
+        "seconds": 122.675
+      }
+    ],
+    "xcresult": "/tmp/CastReaderOfflineFlow-Final-v7.xcresult"
+  },
+  "releaseBuild": {
+    "result": "BUILD SUCCEEDED",
+    "log": "/tmp/CastReaderOfflineFlow-Release-v2.log",
+    "signing": false,
+    "debugFixtureMarkersAbsent": true
+  },
+  "baselineCheckLog": "/tmp/CastReaderOfflineFlow-Baseline-final.log",
+  "scriptChecks": {
+    "eventWait": "passed",
+    "candidateCache": "passed",
+    "sourceBinding": "passed",
+    "originalImageBytes": "passed",
+    "manifestInjectedFaultsRejected": 6
+  },
+  "implementationHashes": {
+    "CastReader.xcodeproj/project.pbxproj": "932167d05cee05287d0ea5ff973b1651a08106f4747b3b8ea7b2f0a642e84541",
+    "CastReader/CastReaderApp.swift": "206443006e7e6e7f46f0dfad9a13217e2554d0a69c7ec4374488906cb10318b5",
+    "CastReader/Services/KindleOfflineBookStore.swift": "c1a02301f46f45fa9bd811dddfa791b2cbd93ec78a7e556cff3b506bcbbd9aec",
+    "CastReader/Views/Kindle/KindleBookView.swift": "1ca63dcd2410fa56e03a9fd0286e80eda31dab05a658dcab6dc1d48a77d50fe9",
+    "CastReader/Views/Kindle/KindleOfflineDiagnosticsView.swift": "0450bca16ef429bbdb95fe47e9c96901c03c0760f285949c29815a9ff9260328",
+    "CastReader/Views/Kindle/KindleOfflineDownloadView.swift": "4c1b5235fef5dc8a07a2bb02c627658af827fd684e8e2b9d5b3c5fdac98d9c5a",
+    "CastReader/Views/Kindle/KindleOfflineFlowFixture.swift": "1b5be0dcb0877f6b4a1fc92b6decf1a5b7a189843d6ac6f187535bfea557f586",
+    "CastReader/Views/Kindle/KindleOfflineLibraryScreen.swift": "345b3ea9ee7fdf165c2c9f1d4434bfcd838f271a58763332db7db4fe360dea80",
+    "CastReader/Views/Kindle/KindleOfflineLibraryView.swift": "68550814e71b24ccd49314323ba39be09b78b7d95bbfed320543da75b459ec2b",
+    "CastReader/Views/Kindle/KindleOfflineReaderView.swift": "ef8e787226691a51118b34dda352192380285878f4fa4bf8c8e07f7810354d15",
+    "CastReader/Views/Library/LibraryView.swift": "a6aa4f12e6222720fd6c6762f01c03ebca1cbe6f8537c0f74c9bd4f1b065b28e",
+    "CastReaderTests/KindleOfflineBookStoreTests.swift": "a7baa86fe89c01b011e12371157f65214ca40c72ecee89e9099f02997b2efdc2",
+    "CastReaderUITests/KindleOfflineFlowUITests.swift": "720cdffda6268d529d2ac36820fbfcfcd973f21bd581fbaba4a6672e73df287d"
+  },
+  "syntheticBookAudits": [
+    {
+      "pages": 12,
+      "logicalResourceBytes": 1906723,
+      "uniqueImages": 12,
+      "textCharacters": 0,
+      "imageOnlyPages": 12,
+      "sourceMinimum": 0,
+      "sourceMaximum": 119,
+      "savedStart": 0,
+      "savedEnd": 119,
+      "continuous": true,
+      "allResourceHashesVerified": true,
+      "coversWholeBook": true,
+      "status": "complete",
+      "originalPositionRestored": true,
+      "readingPosition": {
+        "page": 4,
+        "paragraphID": 1,
+        "sentenceStart": 0,
+        "speechRate": 0.6,
+        "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+      },
+      "manifestPath": "/Users/xuxuheng/Library/Developer/CoreSimulator/Devices/982F22E5-53B0-46F8-8CC8-55D055F22D49/data/Containers/Data/Application/EEE5AE82-7FA2-4520-BE1D-2400356AF6B7/Library/Application Support/OfflineFlowFixture/80bbf418813d30524e73616d125183350ae0cbfa5cf4a23623646b4309066de8/7fa5c73903e879fd2924abbde16e7848c3f0d08b7fc2c4d4fa6557c186a8583a/06948df295bf87852001432e5d38651414728339501cedb3d06a582c78dc9d72.book"
+    },
+    {
+      "pages": 12,
+      "logicalResourceBytes": 1906723,
+      "uniqueImages": 12,
+      "textCharacters": 0,
+      "imageOnlyPages": 12,
+      "sourceMinimum": 0,
+      "sourceMaximum": 119,
+      "savedStart": 0,
+      "savedEnd": 119,
+      "continuous": true,
+      "allResourceHashesVerified": true,
+      "coversWholeBook": true,
+      "status": "complete",
+      "originalPositionRestored": true,
+      "readingPosition": {
+        "page": 11,
+        "paragraphID": 2,
+        "sentenceStart": 113,
+        "speechRate": 0.5,
+        "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+      },
+      "manifestPath": "/Users/xuxuheng/Library/Developer/CoreSimulator/Devices/982F22E5-53B0-46F8-8CC8-55D055F22D49/data/Containers/Data/Application/EEE5AE82-7FA2-4520-BE1D-2400356AF6B7/Library/Application Support/OfflineFlowFixture/47ec583ce6594edfe0c1a134d2a8c6cf87d3dcea59d15700f684084f6d298cbf/7fa5c73903e879fd2924abbde16e7848c3f0d08b7fc2c4d4fa6557c186a8583a/06948df295bf87852001432e5d38651414728339501cedb3d06a582c78dc9d72.book"
+    },
+    {
+      "pages": 12,
+      "logicalResourceBytes": 1906723,
+      "uniqueImages": 12,
+      "textCharacters": 0,
+      "imageOnlyPages": 12,
+      "sourceMinimum": 0,
+      "sourceMaximum": 119,
+      "savedStart": 0,
+      "savedEnd": 119,
+      "continuous": true,
+      "allResourceHashesVerified": true,
+      "coversWholeBook": true,
+      "status": "complete",
+      "originalPositionRestored": true,
+      "readingPosition": {
+        "page": 0,
+        "paragraphID": 1,
+        "sentenceStart": 0,
+        "speechRate": 0.5,
+        "voiceID": "com.apple.voice.super-compact.en-US.Samantha"
+      },
+      "manifestPath": "/Users/xuxuheng/Library/Developer/CoreSimulator/Devices/982F22E5-53B0-46F8-8CC8-55D055F22D49/data/Containers/Data/Application/EEE5AE82-7FA2-4520-BE1D-2400356AF6B7/Library/Application Support/OfflineFlowFixture/b424133cf9aeeb09bb49688264b0ae7ea5da6110bf839d8f3a9106e9cef90e1c/7fa5c73903e879fd2924abbde16e7848c3f0d08b7fc2c4d4fa6557c186a8583a/06948df295bf87852001432e5d38651414728339501cedb3d06a582c78dc9d72.book"
+    }
+  ],
+  "screenshots": {
+    "20-resumed-sentence-visible": {
+      "file": "reports/kindle-offline-five-phases-20260912/offline-flow-ui/20-resumed-sentence-visible.png",
+      "sha256": "650d6851fb751c73bea65b5d942d7763b65b8d158a979d078a8b72b282cd0bdd",
+      "test": "KindleOfflineFlowUITests/testCachedSentenceRestoresVisibleParagraphWithoutAutoplay()"
+    },
+    "16-large-text-reader": {
+      "file": "reports/kindle-offline-five-phases-20260912/offline-flow-ui/16-large-text-reader.png",
+      "sha256": "6b5e7aa2b989e48c36890dc671a1bae68e729a182a1eac84daf6b2c3512f2082",
+      "test": "KindleOfflineFlowUITests/testLargeTextDownloadAndReaderControlsRemainReachable()"
+    },
+    "13-delete-confirmation": {
+      "file": "reports/kindle-offline-five-phases-20260912/offline-flow-ui/13-delete-confirmation.png",
+      "sha256": "5fdd7b38365a28e69e60074e3f241b47910ac59b753424d63f8311fa270740a9",
+      "test": "KindleOfflineFlowUITests/testPartialEndContinueCancelAndLocalDeletion()"
+    },
+    "06-ocr-system-speech": {
+      "file": "reports/kindle-offline-five-phases-20260912/offline-flow-ui/06-ocr-system-speech.png",
+      "sha256": "ef9abffe03ded7575e32c14c1fb829e93e463bd93e3f648c364dd844f9f31045",
+      "test": "KindleOfflineFlowUITests/testSaveReadOCRSpeechSettingsAndResumeAfterRelaunch()"
+    },
+    "03-download-progress": {
+      "file": "reports/kindle-offline-five-phases-20260912/offline-flow-ui/03-download-progress.png",
+      "sha256": "c17f27049a820e7d91c6e3ec34215ece1ad5b610b2e22a096d7c483db59e4043",
+      "test": "KindleOfflineFlowUITests/testSaveReadOCRSpeechSettingsAndResumeAfterRelaunch()"
+    }
+  },
+  "limitations": [
+    "UI uses a local synthetic source with production screens, store, Vision OCR and system speech.",
+    "No new device install or physical-device acceptance.",
+    "Real Kindle acquisition speed, strict airplane mode and acoustic/highlight acceptance remain pending.",
+    "Fixture artificial delays are not download speed evidence."
+  ]
+}

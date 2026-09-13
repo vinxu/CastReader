@@ -62,6 +62,11 @@ struct LibraryView: View {
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索标题或网址")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink { KindleOfflineLibraryView() } label: {
+                        Label("离线书籍", systemImage: "arrow.down.circle")
+                    }.accessibilityIdentifier("libraryOfflineBooks")
+                }
                 ToolbarItem(placement: .primaryAction) {
                     NavigationLink(destination: LibrarySourcesView()) {
                         Image(systemName: "books.vertical")

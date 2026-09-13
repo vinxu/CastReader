@@ -215,6 +215,10 @@ struct KindleBookView: View {
             )
         }
         .environment(\.readerOfflineAction, ReaderOfflineAction(title: "离线保存整本书", open: { showOfflineDownload = true }))
+        .task(id: playbackCenter.offlineDownloadRequestID) {
+            guard playbackCenter.consumeOfflineDownloadRequest(for: model.offlineSourceBook.id) else { return }
+            showOfflineDownload = true
+        }
         .sheet(isPresented: $showOfflineDownload) {
             KindleOfflineDownloadView(model: model, download: model.offlineDownload)
         }
@@ -1879,12 +1883,26 @@ final class KindlePlaybackCenter: ObservableObject {
 
     @Published private(set) var model: KindleBookViewModel?
     @Published var isPresented = false
+    @Published private(set) var offlineDownloadRequestID: UUID?
+    private var offlineDownloadBookID: String?
 
     var showsMiniPlayer: Bool {
         model != nil && !isPresented
     }
 
     private init() {}
+
+    func openOfflineDownload(book: KindleBook) {
+        offlineDownloadBookID = book.id
+        open(book: book)
+        offlineDownloadRequestID = UUID()
+    }
+
+    func consumeOfflineDownloadRequest(for bookID: String) -> Bool {
+        guard offlineDownloadRequestID != nil, offlineDownloadBookID == bookID, isPresented else { return false }
+        offlineDownloadBookID = nil
+        return true
+    }
 
     func open(book: KindleBook, intent: KindleOpenIntent = .present) {
         AppOrientationLock.unlock(owner: Self.orientationOwner)

@@ -41,6 +41,7 @@ struct KindleOfflineBook: Codable, Identifiable, Equatable {
         var paragraphID = 1
         var sentenceStart = 0
         var voiceID = ""
+        var speechRate: Double?
     }
 
     var version = 1
@@ -59,6 +60,7 @@ struct KindleOfflineBook: Codable, Identifiable, Equatable {
     var lastError: String?
     var readingPosition = ReadingPosition()
     var hasLocalReadingPosition: Bool?
+    var sourceBook: KindleBook?
 
     var downloadFraction: Double {
         guard let position = pages.last?.position, position.maximum > position.minimum else { return 0 }
@@ -79,6 +81,7 @@ struct KindleOfflineBook: Codable, Identifiable, Equatable {
 /// image/OCR store; the manifest never loads the images of other pages.
 actor KindleOfflineBookStore {
     static let shared = KindleOfflineBookStore()
+    static let didChange = Notification.Name("KindleOfflineBooksDidChange")
     #if DEBUG
     static let imageBenchmark = KindleOfflineBookStore(root: FileManager.default.urls(
         for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -100,6 +103,24 @@ actor KindleOfflineBookStore {
             .sorted { $0.updatedAt > $1.updatedAt }
     }
 
+    /// Remove only this account's local copy. Invalidate the manifest first so
+    /// a late OCR/checkpoint task cannot recreate a deleted generation.
+    func remove(id: String, scope: String) throws {
+        defer { notifyChange(scope: scope) }
+        let manifest = try manifestURL(id: id, scope: scope)
+        if FileManager.default.fileExists(atPath: manifest.path) { try FileManager.default.removeItem(at: manifest) }
+        let resources = try scopeDirectory(scope, create: false).appendingPathComponent(id, isDirectory: true)
+        if FileManager.default.fileExists(atPath: resources.path) { try FileManager.default.removeItem(at: resources) }
+    }
+
+    func unreadableBookIDs(scope: String) throws -> [String] {
+        let directory = try scopeDirectory(scope, create: false)
+        guard FileManager.default.fileExists(atPath: directory.path) else { return [] }
+        return try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "book" && validID($0.deletingPathExtension().lastPathComponent) }
+            .filter { (try? read($0)) == nil }.map { $0.deletingPathExtension().lastPathComponent }.sorted()
+    }
+
     func load(id: String, scope: String) throws -> KindleOfflineBook? {
         let url = try manifestURL(id: id, scope: scope)
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
@@ -115,6 +136,7 @@ actor KindleOfflineBookStore {
                first.position.layoutID != originalPosition.layoutID || first.position.maximum != originalPosition.maximum {
                 throw Failure.staleGeneration
             }
+            prior.sourceBook = source
             if prior.status != .complete {
                 prior.originalPosition = originalPosition
                 prior.originalPositionRestored = false
@@ -125,9 +147,10 @@ actor KindleOfflineBookStore {
             return prior
         }
         let now = Date()
-        let book = KindleOfflineBook(id: id, sourceBookID: source.id, title: source.title, author: source.author,
+        var book = KindleOfflineBook(id: id, sourceBookID: source.id, title: source.title, author: source.author,
             generation: UUID(), createdAt: now, updatedAt: now, language: source.language ?? "en",
             status: .preparing, pages: [], originalPosition: originalPosition)
+        book.sourceBook = source
         try persist(book, scope: scope)
         return book
     }
@@ -208,6 +231,7 @@ actor KindleOfflineBookStore {
         book.status = .complete
         book.lastError = nil
         try persist(book, scope: scope)
+        notifyChange(scope: scope)
         return book
     }
 
@@ -220,6 +244,7 @@ actor KindleOfflineBookStore {
         book.lastError = error
         if let originalRestored { book.originalPositionRestored = originalRestored }
         try persist(book, scope: scope)
+        notifyChange(scope: scope)
         return book
     }
 
@@ -232,6 +257,11 @@ actor KindleOfflineBookStore {
         book.readingPosition = value
         book.hasLocalReadingPosition = true
         try persist(book, scope: scope)
+        notifyChange(scope: scope)
+    }
+
+    private func notifyChange(scope: String) {
+        NotificationCenter.default.post(name: Self.didChange, object: self, userInfo: ["scope": scope])
     }
 
     private func current(_ expected: KindleOfflineBook, scope: String) throws -> KindleOfflineBook {

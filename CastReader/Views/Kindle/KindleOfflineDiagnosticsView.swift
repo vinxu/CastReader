@@ -239,7 +239,7 @@ struct KindleOfflineDownloadFixture: View {
             .sheet(isPresented: $presented) {
                 KindleOfflineDownloadView(model: model, download: download, fixtureStart: {
                     download.start(source: source, scope: scope, stillAuthorized: { true })
-                })
+                }, fixtureScope: scope)
             }
     }
 }

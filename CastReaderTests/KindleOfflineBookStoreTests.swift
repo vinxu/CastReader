@@ -124,6 +124,47 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         XCTAssertFalse(range(22, 30).follows(range(3, 20)), "No missing positions")
     }
 
+    func testDeletingOneLocalCopyRejectsLateWritesAndPreservesOtherAccounts() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 2))
+        book = try await store.append(document: document(), position: position(0, total: 2), to: book, scope: scope)
+        let otherScope = KindleOfflinePageStore.digest("another-account")
+        let other = try await store.prepare(source: source, scope: otherScope, originalPosition: position(0, total: 2))
+        XCTAssertEqual(book.sourceBook?.id, source.id)
+        try await store.remove(id: book.id, scope: scope)
+        let deleted = try await store.load(id: book.id, scope: scope)
+        XCTAssertNil(deleted)
+        let retained = try await store.load(id: other.id, scope: otherScope)
+        XCTAssertNotNil(retained)
+        do {
+            try await store.saveReadingPosition(.init(), book: book, scope: scope)
+            XCTFail("A late cursor must not recreate the deleted manifest")
+        } catch KindleOfflineBookStore.Failure.staleGeneration {} catch { XCTFail("Unexpected error: \(error)") }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent(scope).appendingPathComponent(book.id).path))
+    }
+
+    func testCorruptManifestIsReportedForRepairInsteadOfLookingLikeAnEmptyLibrary() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        let book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 2))
+        let url = root.appendingPathComponent(scope).appendingPathComponent(book.id + ".book")
+        try Data("broken manifest".utf8).write(to: url)
+        let damaged = try await store.unreadableBookIDs(scope: scope)
+        XCTAssertEqual(damaged, [book.id])
+        try await store.remove(id: book.id, scope: scope)
+        let repaired = try await store.unreadableBookIDs(scope: scope)
+        XCTAssertTrue(repaired.isEmpty)
+    }
+
+    func testOfflineResumeEntryTargetsOnlyTheRequestedBookOnce() {
+        let center = KindlePlaybackCenter.shared
+        defer { center.close() }
+        center.openOfflineDownload(book: source)
+        XCTAssertTrue(center.isPresented)
+        XCTAssertFalse(center.consumeOfflineDownloadRequest(for: "different-book"))
+        XCTAssertTrue(center.consumeOfflineDownloadRequest(for: source.id))
+        XCTAssertFalse(center.consumeOfflineDownloadRequest(for: source.id))
+    }
+
     func testDifferentLayoutAndAccountCannotAdoptSavedPages() async throws {
         let store = KindleOfflineBookStore(root: root)
         var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 3))
@@ -543,6 +584,88 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(model.pageIndex, 1)
         XCTAssertEqual(driver.requests.map(\.text), ["The selected chapter."])
+    }
+
+    func testPauseRevokesAlreadyQueuedAutomaticPageAdvance() async throws {
+        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await orderedBook(root: root, texts: ["First page.", "Second page.", "Third page."])
+        let driver = Driver()
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true })
+        defer { model.close() }
+        await model.open(); model.play()
+        let first = try XCTUnwrap(driver.requests.first)
+        driver.onEvent?(.started(first.id)); driver.onEvent?(.finished(first.id))
+        model.pause() // The page continuation Task has been queued but has not run.
+        try await Task.sleep(for: .milliseconds(80))
+        XCTAssertEqual(model.pageIndex, 0)
+        XCTAssertEqual(driver.requests.map(\.text), ["First page."])
+        model.play()
+        let deadline = Date().addingTimeInterval(3)
+        while driver.requests.count < 2, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(driver.requests.map(\.text), ["First page.", "Second page."])
+    }
+
+    func testCloseAndReopenRestoresPageVoiceAndRateWithoutStartingSpeech() async throws {
+        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await orderedBook(root: root, texts: ["First page.", "Second page."])
+        let driver = Driver()
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true })
+        defer { model.close() }
+        await model.open(); model.selectPage(1)
+        let deadline = Date().addingTimeInterval(3)
+        while model.pageIndex != 1 || model.loading, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        let voice = try XCTUnwrap(model.voices.last)
+        model.changeVoice(voice.id); model.changeRate(0.6); model.close()
+        await model.open()
+        XCTAssertEqual(model.pageIndex, 1)
+        XCTAssertEqual(model.voiceID, voice.id)
+        XCTAssertEqual(model.speechRate, 0.6)
+        XCTAssertTrue(driver.requests.isEmpty)
+        model.play()
+        XCTAssertEqual(driver.requests.first?.text, "Second page.")
+        XCTAssertEqual(driver.requests.first?.rate, 0.6)
+    }
+
+    func testMissingNextPageNeverReplaysPreviousPageUnderItsNewPageNumber() async throws {
+        guard !SystemSpeechPlaybackService.voices(language: "en-US").isEmpty else { throw XCTSkip("English voice unavailable") }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await orderedBook(root: root, texts: ["First page.", "Second page."])
+        let file = root.appendingPathComponent(scope).appendingPathComponent(book.id)
+            .appendingPathComponent(book.generation.uuidString).appendingPathComponent(book.id)
+            .appendingPathComponent(book.pages[1].resource.snapshotHash + ".page")
+        try FileManager.default.removeItem(at: file)
+        let driver = Driver()
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true })
+        defer { model.close() }
+        await model.open(); model.selectPage(1)
+        let deadline = Date().addingTimeInterval(3)
+        while model.error == nil, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(model.pageIndex, 1); XCTAssertNil(model.document)
+        XCTAssertTrue(model.speech.units.isEmpty)
+        model.play(); try await Task.sleep(for: .milliseconds(50))
+        XCTAssertTrue(driver.requests.isEmpty)
+    }
+
+    func testReopeningDeletedCopyClearsOldDocumentAndPlayback() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await orderedBook(root: root, texts: ["First page.", "Second page."])
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: Driver()), scopeValidator: { true })
+        defer { model.close() }
+        await model.open(); XCTAssertNotNil(model.document)
+        model.close(); try await store.remove(id: book.id, scope: scope)
+        await model.open()
+        XCTAssertNil(model.document); XCTAssertTrue(model.speech.units.isEmpty)
+        XCTAssertNotNil(model.error); XCTAssertFalse(model.loading)
     }
 
     func testRealLocalOCRRecognizesSavedImageWithoutOnlineReader() async throws {

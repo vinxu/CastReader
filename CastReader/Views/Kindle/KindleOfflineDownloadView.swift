@@ -6,12 +6,20 @@ struct KindleOfflineDownloadView: View {
     @ObservedObject var download: KindleOfflineDownloadCoordinator
     #if DEBUG
     var fixtureStart: (() -> Void)? = nil
+    var fixtureScope: String? = nil
     #endif
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var confirmStop = false
     @State private var closeAfterStopping = false
+    @State private var readerPresented = false
+    private var scope: String? {
+        #if DEBUG
+        if let fixtureScope { return fixtureScope }
+        #endif
+        return KindleOfflineContext.currentScope
+    }
 
     private var complete: Bool { download.book?.status == .complete && !download.isRunning }
     private var fraction: Double { complete ? 1 : min(0.99, download.book?.downloadFraction ?? 0) }
@@ -29,10 +37,20 @@ struct KindleOfflineDownloadView: View {
                             .font(.footnote).foregroundStyle(.red)
                             .accessibilityIdentifier("offlineDownloadError")
                     }
-                    controls
+                    if scope == nil {
+                        Text("请先连接 Kindle 账号，再保存这本书。").font(.footnote).foregroundStyle(.secondary)
+                    }
                     if !complete { foregroundNotice }
-                    if !download.isRunning { localReadingLinks }
                 }.padding(24)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 12) {
+                    Divider()
+                    controls
+                    if !download.isRunning { localReadingLinks }
+                }.padding(.horizontal, 24).padding(.bottom, 12)
+                    .frame(maxWidth: .infinity).background(AppTheme.background)
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility1)
             }
             .background(AppTheme.background)
             .navigationTitle("保存整本书").navigationBarTitleDisplayMode(.inline)
@@ -46,7 +64,7 @@ struct KindleOfflineDownloadView: View {
                 }
             }
             .task {
-                if let scope = KindleOfflineContext.currentScope {
+                if let scope {
                     await download.refresh(sourceBookID: model.offlineSourceBook.id, scope: scope)
                 }
             }
@@ -66,6 +84,19 @@ struct KindleOfflineDownloadView: View {
             }
         } message: {
             Text("已保存的页面会保留，下次可以继续。停止后会先恢复原阅读位置。")
+        }
+        .fullScreenCover(isPresented: $readerPresented) {
+            if let book = download.book, let scope {
+                NavigationStack {
+                    KindleOfflineBookReaderView(book: book, scope: scope, store: download.store,
+                        scopeValidator: { scope == self.scope }, continueDownload: { readerPresented = false })
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("关闭") { readerPresented = false }.accessibilityIdentifier("offlineBookClose")
+                            }
+                        }
+                }
+            }
         }
         .onDisappear { download.pause(reason: .closing) }
         .onChange(of: scenePhase) {
@@ -113,7 +144,7 @@ struct KindleOfflineDownloadView: View {
                         .accessibilityIdentifier("offlineDownloadEstimate")
                 }
             } else {
-                Text(complete ? "整本已保存到这台 iPhone，可离线阅读。" : "保存页面图片，朗读时再在本机识别文字。")
+                Text(complete ? "整本已保存到这台设备，可离线阅读和朗读。" : download.book?.lastError ?? "保存整本书的页面图片，朗读时再在本机识别文字。")
                     .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
         }.padding(24).frame(maxWidth: .infinity)
@@ -132,12 +163,13 @@ struct KindleOfflineDownloadView: View {
                 #if DEBUG
                 if let fixtureStart { fixtureStart(); return }
                 #endif
-                guard let scope = KindleOfflineContext.currentScope,
+                guard let scope,
                       let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
                 download.start(source: model, scope: scope) {
                     AccountContentIsolation.isCurrent(boundary) && KindleOfflineContext.currentScope == scope
                 }
             }.buttonStyle(.borderedProminent).tint(AppTheme.primary).controlSize(.large)
+                .disabled(scope == nil)
                 .accessibilityIdentifier("offlineDownloadStart")
         }
     }
@@ -152,12 +184,13 @@ struct KindleOfflineDownloadView: View {
     }
 
     @ViewBuilder private var localReadingLinks: some View {
-        if let book = download.book, !book.pages.isEmpty, let scope = KindleOfflineContext.currentScope {
-            NavigationLink(book.status == .complete ? "打开离线书籍" : "阅读已保存内容") {
-                KindleOfflineBookReaderView(book: book, scope: scope, store: download.store)
-            }.accessibilityIdentifier("offlineDownloadOpenBook")
+        if let book = download.book, !book.pages.isEmpty, scope != nil {
+            Button(book.status == .complete ? "打开离线书籍" : "阅读已保存内容") { readerPresented = true }
+                .buttonStyle(.borderedProminent).tint(AppTheme.primary).controlSize(.large)
+                .accessibilityIdentifier("offlineDownloadOpenBook")
         }
-        NavigationLink("本机离线书籍") { KindleOfflineLibraryView() }
+        Text("以后可从“文库 → 离线书籍”或 Kindle 书架再次打开。")
+            .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
     }
 
     private var statusTitle: String {
