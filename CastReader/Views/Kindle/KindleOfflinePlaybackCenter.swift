@@ -136,9 +136,7 @@ private struct KindleOfflineMiniPlayerBar: View {
         HStack(spacing: 2) {
             Button(action: expand) {
                 HStack(spacing: 10) {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.title2).foregroundStyle(.teal)
-                        .frame(width: 38, height: 44)
+                    KindleOfflineCoverImage(book: model.book, width: 32, height: 44, load: model.localCoverData)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(model.book.title).font(.subheadline.weight(.semibold)).lineLimit(1)
                         Text("离线 · 第 \(model.pageIndex + 1) 页")
@@ -166,7 +164,7 @@ private struct KindleOfflineMiniPlayerBar: View {
         }
         .padding(.horizontal, 8).padding(.vertical, 6)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(.teal.opacity(0.25), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(.blue.opacity(0.25), lineWidth: 1))
         .shadow(color: .black.opacity(0.08), radius: 8, y: 3)
         .padding(.horizontal, 12)
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)

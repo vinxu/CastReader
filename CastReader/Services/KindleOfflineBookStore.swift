@@ -1,4 +1,6 @@
 import Foundation
+import ImageIO
+import UIKit
 
 /// Source positions are renderer coordinates, independent of Kindle's rounded
 /// location labels and of the number of images in the live prefetch window.
@@ -27,6 +29,11 @@ struct KindleOfflineSourcePosition: Codable, Equatable {
 }
 
 struct KindleOfflineBook: Codable, Identifiable, Equatable {
+    struct Cover: Codable, Equatable {
+        let hash: String
+        let byteCount: Int
+        let fromShelf: Bool
+    }
     enum Status: String, Codable { case preparing, paused, verifying, complete, failed }
     struct Page: Codable, Equatable {
         let ordinal: Int
@@ -56,6 +63,7 @@ struct KindleOfflineBook: Codable, Identifiable, Equatable {
     // Learned from local OCR, independent of missing/unreliable shelf metadata.
     // Nil also migrates pre-language-detection downloads without replacing images.
     var recognizedLanguage: String?
+    var cover: Cover?
     var status: Status
     var pages: [Page]
     var originalPosition: KindleOfflineSourcePosition?
@@ -69,7 +77,7 @@ struct KindleOfflineBook: Codable, Identifiable, Equatable {
         guard let position = pages.last?.position, position.maximum > position.minimum else { return 0 }
         return min(1, max(0, Double(position.end - position.minimum) / Double(position.maximum - position.minimum)))
     }
-    var byteCount: Int { pages.reduce(0) { $0 + $1.resource.byteCount } }
+    var byteCount: Int { pages.reduce(cover?.byteCount ?? 0) { $0 + $1.resource.byteCount } }
     var coverageIsContinuous: Bool {
         guard let first = pages.first, first.ordinal == 0, first.position.isValid, first.position.isFirst else { return false }
         for index in pages.indices.dropFirst() {
@@ -244,6 +252,87 @@ actor KindleOfflineBookStore {
         document.paragraphs.contains { $0.type.isReadable && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
+    func coverData(book expected: KindleOfflineBook, scope: String) throws -> Data? {
+        let book = try current(expected, scope: scope)
+        guard let cover = book.cover, validID(cover.hash), (1...1_024_000).contains(cover.byteCount) else { return nil }
+        let url = try coverDirectory(book, scope: scope).appendingPathComponent(cover.hash + ".jpg")
+        guard (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) == cover.byteCount,
+              let data = try? Data(contentsOf: url), KindleOfflinePageStore.digest(data) == cover.hash else { return nil }
+        return data
+    }
+
+    @discardableResult
+    func saveCover(_ data: Data, fromShelf: Bool, book expected: KindleOfflineBook, scope: String) throws -> KindleOfflineBook {
+        var book = try current(expected, scope: scope)
+        if !fromShelf, book.cover?.fromShelf == true, try coverData(book: book, scope: scope) != nil { return book }
+        guard data.count <= 8 * 1_024 * 1_024,
+              let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: 600
+              ] as CFDictionary),
+              let bytes = UIImage(cgImage: thumbnail).jpegData(compressionQuality: 0.85),
+              bytes.count <= 1_024_000 else { throw KindleOfflinePageStore.Failure.invalidPage }
+        let directory = try coverDirectory(book, scope: scope)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+            attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication])
+        let hash = KindleOfflinePageStore.digest(bytes)
+        try bytes.write(to: directory.appendingPathComponent(hash + ".jpg"),
+            options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        book.cover = .init(hash: hash, byteCount: bytes.count, fromShelf: fromShelf)
+        try persist(book, scope: scope, updateRecency: false)
+        notifyChange(scope: scope)
+        return book
+    }
+
+    /// Promote a shelf cover into durable storage. A saved first page is a
+    /// network-free fallback; neither path OCRs or changes the page sequence.
+    func ensureCover(book expected: KindleOfflineBook, scope: String, coverURL: String? = nil,
+                     allowNetwork: Bool = false) async throws {
+        var book = try current(expected, scope: scope)
+        let existing = try coverData(book: book, scope: scope)
+        if existing != nil, book.cover?.fromShelf == true { return }
+        if let raw = coverURL ?? book.sourceBook?.coverURL,
+           let url = URL(string: raw), ["https", "http"].contains(url.scheme?.lowercased() ?? ""),
+           let routed = OwnedAPIRedirectPolicy.routedResponseURL(url) {
+            if let image = ImageCache.shared.get(routed.absoluteString) ?? ImageCache.shared.get(raw),
+               let data = image.jpegData(compressionQuality: 0.9) {
+                try saveCover(data, fromShelf: true, book: book, scope: scope)
+                return
+            }
+            if allowNetwork {
+                let session = OwnedAPIURLSession.makeExplicitCredentialSession(route: ServiceRouting.current,
+                    requestTimeout: 4, resourceTimeout: 6)
+                defer { session.invalidateAndCancel() }
+                do {
+                    let (file, response) = try await session.download(from: routed)
+                    defer { try? FileManager.default.removeItem(at: file) }
+                    try Task.checkCancellation()
+                    if let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode),
+                       (try file.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max) <= 8 * 1_024 * 1_024 {
+                        try saveCover(Data(contentsOf: file), fromShelf: true, book: book, scope: scope)
+                        return
+                    }
+                } catch is CancellationError { throw CancellationError() }
+                catch { try Task.checkCancellation() }
+            }
+        }
+        try Task.checkCancellation()
+        guard existing == nil else { return }
+        book = try current(expected, scope: scope)
+        guard !book.pages.isEmpty else { return }
+        let first = try await openPage(book: book, ordinal: 0, scope: scope)
+        guard let image = first.paragraphs.first(where: { $0.type == .image })?.imageData else { return }
+        try Task.checkCancellation()
+        try saveCover(image, fromShelf: false, book: book, scope: scope)
+    }
+
+    private func coverDirectory(_ book: KindleOfflineBook, scope: String) throws -> URL {
+        try scopeDirectory(scope, create: false).appendingPathComponent(book.id, isDirectory: true)
+            .appendingPathComponent(book.generation.uuidString, isDirectory: true).appendingPathComponent("cover", isDirectory: true)
+    }
+
     func finish(_ expected: KindleOfflineBook, scope: String) async throws -> KindleOfflineBook {
         var book = try current(expected, scope: scope)
         guard book.coversWholeBook else { throw Failure.incompleteBook }
@@ -305,9 +394,9 @@ actor KindleOfflineBookStore {
         return KindleOfflinePageStore(root: directory)
     }
 
-    private func persist(_ value: KindleOfflineBook, scope: String) throws {
+    private func persist(_ value: KindleOfflineBook, scope: String, updateRecency: Bool = true) throws {
         var book = value
-        book.updatedAt = Date()
+        if updateRecency { book.updatedAt = Date() }
         let directory = try scopeDirectory(scope, create: true)
         guard validID(book.id) else { throw Failure.invalidIdentity }
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]

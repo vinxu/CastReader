@@ -354,6 +354,65 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         XCTAssertEqual(second?.paragraphs[1].text, chinese.paragraphs[1].text)
     }
 
+    func testCoverPersistsAcrossReopenWithoutChangingBookPagesAndCannotLeakAcrossScopes() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 1))
+        book = try await store.append(document: document(), position: position(0, total: 1), to: book, scope: scope)
+        book = try await store.finish(book, scope: scope)
+        let cover = UIGraphicsImageRenderer(size: CGSize(width: 400, height: 600)).pngData { context in
+            UIColor.systemBlue.setFill(); context.fill(CGRect(x: 0, y: 0, width: 400, height: 600))
+        }
+        let saved = try await store.saveCover(cover, fromShelf: true, book: book, scope: scope)
+        let cold = KindleOfflineBookStore(root: root)
+        let data = try await cold.coverData(book: book, scope: scope)
+        let image = try XCTUnwrap(data.flatMap(UIImage.init(data:)))
+        XCTAssertEqual(image.size.width / image.size.height, 2.0 / 3.0, accuracy: 0.01)
+        XCTAssertEqual(saved.pages, book.pages)
+        XCTAssertEqual(saved.generation, book.generation)
+        XCTAssertEqual(saved.status, .complete)
+        XCTAssertEqual(saved.cover?.fromShelf, true)
+        XCTAssertGreaterThan(saved.byteCount, book.byteCount)
+        do { _ = try await cold.coverData(book: book, scope: KindleOfflinePageStore.digest("other-account")); XCTFail("Cross-account cover") } catch {}
+        try await cold.remove(id: book.id, scope: scope)
+        do { try await cold.saveCover(cover, fromShelf: true, book: book, scope: scope); XCTFail("A late cover resurrected a deleted book") } catch {}
+    }
+
+    func testLegacyCoverBackfillUsesSavedFirstPageWithoutNetworkOrOCR() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 1))
+        var raw = document(); raw.paragraphs.removeAll { $0.type != .image }
+        book = try await store.append(document: raw, position: position(0, total: 1), to: book, scope: scope, requiresOCR: true)
+        book = try await store.finish(book, scope: scope)
+        try await store.ensureCover(book: book, scope: scope, allowNetwork: false)
+        let bytes = try await store.coverData(book: book, scope: scope)
+        XCTAssertNotNil(bytes)
+        let saved = try await store.load(id: book.id, scope: scope)
+        XCTAssertEqual(saved?.cover?.fromShelf, false)
+        XCTAssertEqual(saved?.pages, book.pages)
+        XCTAssertFalse(try FileManager.default.subpathsOfDirectory(atPath: root.path).contains { $0.hasSuffix(".ocr") })
+        let files = try FileManager.default.subpathsOfDirectory(atPath: root.path)
+        let file = try XCTUnwrap(files.first { $0.hasSuffix(".jpg") })
+        try Data("corrupt".utf8).write(to: root.appendingPathComponent(file))
+        let corrupt = try await store.coverData(book: book, scope: scope)
+        XCTAssertNil(corrupt)
+        try await store.ensureCover(book: book, scope: scope, allowNetwork: false)
+        let repaired = try await store.coverData(book: book, scope: scope)
+        XCTAssertEqual(repaired, bytes)
+        let url = "https://offline-cover-test.invalid/\(UUID().uuidString).jpg"
+        let shelfCover = UIGraphicsImageRenderer(size: CGSize(width: 200, height: 300)).image { context in
+            UIColor.systemBlue.setFill(); context.fill(CGRect(x: 0, y: 0, width: 200, height: 300))
+        }
+        ImageCache.shared.set(url, image: shelfCover)
+        let beforeUpgrade = try await store.load(id: book.id, scope: scope)
+        try await store.ensureCover(book: book, scope: scope, coverURL: url, allowNetwork: false)
+        let upgraded = try await store.load(id: book.id, scope: scope)
+        XCTAssertEqual(upgraded?.cover?.fromShelf, true)
+        XCTAssertEqual(upgraded?.updatedAt, beforeUpgrade?.updatedAt, "Backfilling covers must not reorder the library")
+        _ = try await store.saveCover(try XCTUnwrap(raw.paragraphs.first?.imageData), fromShelf: false, book: book, scope: scope)
+        let afterLateFallback = try await store.load(id: book.id, scope: scope)
+        XCTAssertEqual(afterLateFallback?.cover, upgraded?.cover, "A late first-page fallback must not overwrite the real cover")
+    }
+
     func testCancelWaitsForRestorationKeepsCommittedPagesAndCanResume() async throws {
         let source = OfflineSourceFixture(book: self.source, document: document())
         source.captureDelay = .milliseconds(60)

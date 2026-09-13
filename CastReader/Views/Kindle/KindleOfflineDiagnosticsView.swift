@@ -98,7 +98,7 @@ struct SystemSpeechAcceptanceView: View {
         }
         voices = SystemSpeechPlaybackService.voices(language: language)
         voiceID = voices.first?.id ?? ""
-        speech.load(paragraphs.flatMap { SystemSpeechTextPlan.units(paragraphID: $0.id, text: $0.text) }, voiceID: voiceID)
+        speech.load(paragraphs.flatMap { SystemSpeechTextPlan.units(paragraphID: $0.id, text: $0.text) }, voiceID: voiceID, language: language)
         speech.connectPlayback(title: document?.title ?? "系统语音测试")
     }
 

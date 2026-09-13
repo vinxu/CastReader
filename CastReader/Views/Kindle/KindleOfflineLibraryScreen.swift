@@ -16,13 +16,16 @@ struct KindleOfflineLibraryView: View {
     let store: KindleOfflineBookStore
     private let scopeProvider: @MainActor () -> String?
     private let continueDownload: ((KindleOfflineBook) -> Void)?
+    private let onReaderPresented: (() -> Void)?
     private var scope: String? { scopeProvider() }
     private struct Deletion: Identifiable { let id: String; let title: String; let scope: String }
 
     init(store: KindleOfflineBookStore = .shared,
          scopeProvider: @escaping @MainActor () -> String? = { KindleOfflineContext.currentScope },
+         onReaderPresented: (() -> Void)? = nil,
          continueDownload: ((KindleOfflineBook) -> Void)? = nil) {
         self.store = store; self.scopeProvider = scopeProvider; self.continueDownload = continueDownload
+        self.onReaderPresented = onReaderPresented
     }
 
     private var filtered: [KindleOfflineBook] {
@@ -46,7 +49,7 @@ struct KindleOfflineLibraryView: View {
             } else if let scope, loadedScope == scope {
                 Section {
                     Label("保存在这台设备，无需联网即可打开", systemImage: "iphone")
-                        .font(.footnote).foregroundStyle(.teal)
+                        .font(.footnote).foregroundStyle(.blue)
                     Text("\(books.count) 本 · \(ByteCountFormatter.string(fromByteCount: Int64(books.reduce(0) { $0 + $1.byteCount }), countStyle: .file))")
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -56,6 +59,7 @@ struct KindleOfflineLibraryView: View {
                             playback.open(book: book, scope: scope, store: store,
                                 scopeValidator: { scope == scopeProvider() },
                                 continueDownload: { resume(book, expectedScope: scope) })
+                            onReaderPresented?()
                         } label: { bookLabel(book) }
                         .buttonStyle(.plain)
                         .disabled(book.pages.isEmpty)
@@ -85,7 +89,8 @@ struct KindleOfflineLibraryView: View {
         }
         .reservesMiniPlayerSpace()
         .navigationTitle("已下载").navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $query, prompt: "搜索离线书名或作者")
+        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索离线书名或作者")
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .task(id: scope) { await refresh() }
         .refreshable { await refresh() }
         .onReceive(NotificationCenter.default.publisher(for: KindleOfflineBookStore.didChange).receive(on: RunLoop.main)) { notification in
@@ -110,15 +115,15 @@ struct KindleOfflineLibraryView: View {
 
     private func bookLabel(_ book: KindleOfflineBook) -> some View {
         HStack(spacing: 14) {
-            Image(systemName: "book.closed.fill")
-                .font(.title2).foregroundStyle(book.status == .complete ? Color.teal : Color.orange)
-                .frame(width: 52, height: 72).background((book.status == .complete ? Color.teal : Color.orange).opacity(0.1), in: RoundedRectangle(cornerRadius: 9))
+            KindleOfflineCoverImage(book: book, width: 64, height: 94, prepare: { await prepareCover(book) }) {
+                await loadCover(book)
+            }
             VStack(alignment: .leading, spacing: 5) {
                 Text(book.title).font(.headline).lineLimit(2)
                 if !book.author.isEmpty { Text(book.author).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
                 Label(book.status == .complete ? AppLocalized("整本已保存 · \(book.pages.count) 页") : AppLocalized("未完成 · 已保存 \(book.pages.count) 页"),
                       systemImage: book.status == .complete ? "checkmark.circle.fill" : "pause.circle")
-                    .font(.caption).foregroundStyle(book.status == .complete ? Color.teal : Color.orange)
+                    .font(.caption).foregroundStyle(book.status == .complete ? Color.blue : Color.orange)
                 if book.hasLocalReadingPosition == true {
                     Text("上次读到第 \(book.readingPosition.page + 1) 页").font(.caption).foregroundStyle(.secondary)
                 }
@@ -127,6 +132,20 @@ struct KindleOfflineLibraryView: View {
             Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 .accessibilityHidden(true)
         }.padding(.vertical, 4)
+    }
+
+    private func loadCover(_ book: KindleOfflineBook) async -> Data? {
+        guard let expected = scope, loadedScope == expected else { return nil }
+        let cached = try? await store.coverData(book: book, scope: expected)
+        guard scope == expected, !Task.isCancelled else { return nil }
+        return cached
+    }
+
+    private func prepareCover(_ book: KindleOfflineBook) async {
+        guard let expected = scope, loadedScope == expected else { return }
+        let source = library.boundBooks.first { $0.id == book.sourceBookID }
+        try? await store.ensureCover(book: book, scope: expected, coverURL: source?.coverURL,
+            allowNetwork: NetworkReachability.shared.isOnline)
     }
 
     private func refresh() async {
@@ -155,5 +174,44 @@ struct KindleOfflineLibraryView: View {
             error = AppLocalized("请先在 Kindle 书架同步这本书，再从“更多”继续离线保存。"); return
         }
         KindlePlaybackCenter.shared.openOfflineDownload(book: source)
+        onReaderPresented?()
+    }
+}
+
+/// Reads durable local bytes, never an AsyncImage URL that can disappear offline.
+struct KindleOfflineCoverImage: View {
+    let book: KindleOfflineBook
+    let width: CGFloat
+    let height: CGFloat
+    var prepare: (@MainActor () async -> Void)? = nil
+    let load: @MainActor () async -> Data?
+    @State private var image: UIImage?
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image).resizable().scaledToFit()
+                    .accessibilityIdentifier("offlineCover.\(book.sourceBookID)")
+            } else {
+                Image(systemName: "book.closed.fill").font(.title2).foregroundStyle(.blue)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.blue.opacity(0.08))
+            }
+        }.frame(width: width, height: height)
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(.primary.opacity(0.08), lineWidth: 0.5))
+            .accessibilityLabel(Text(book.title))
+            .task(id: "\(book.id):\(book.generation):\(book.cover?.hash ?? "")") {
+                let bytes = await load()
+                guard !Task.isCancelled else { return }
+                image = bytes.flatMap(UIImage.init(data:))
+                // Show an existing fallback immediately, then upgrade it when
+                // the real shelf cover becomes available again.
+                if let prepare {
+                    await prepare()
+                    let fresh = await load()
+                    guard !Task.isCancelled else { return }
+                    image = fresh.flatMap(UIImage.init(data:))
+                }
+            }
     }
 }

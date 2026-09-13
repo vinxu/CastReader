@@ -473,6 +473,7 @@ private struct KindleOfflineBookReaderContent: View {
             "preparingSpeech": model.preparingSpeech, "firstSpeechMilliseconds": speech.firstSpeechMilliseconds ?? -1,
             "voiceID": model.voiceID, "networkHint": network.isOnline,
             "documentLanguage": model.document?.language ?? "", "recognizedLanguage": model.book.recognizedLanguage ?? "",
+            "highlightStart": speech.highlightRange?.location ?? -1, "highlightLength": speech.highlightRange?.length ?? 0,
             "selectedSpeechRate": model.speechRate, "activeSpeechRate": speech.activeRate ?? -1,
             "scene": scenePhase == .active ? "active" : "background", "errorCode": speech.errorCode ?? ""]
         guard let data = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]),

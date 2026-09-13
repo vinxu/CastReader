@@ -227,7 +227,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             pageImage = UIImage(data: bytes)
         }
         let units = doc.paragraphs.filter(\.type.isReadable).flatMap { SystemSpeechTextPlan.units(paragraphID: $0.id, text: $0.text) }
-        speech.load(units, voiceID: voiceID)
+        speech.load(units, voiceID: voiceID, language: doc.language)
         if let resume, let sentence = units.firstIndex(where: { $0.paragraphID == resume.paragraphID && $0.sourceRange.location == resume.sentenceStart }) {
             speech.seek(to: sentence, autoplay: false)
         }
@@ -272,6 +272,13 @@ final class KindleOfflineBookReaderModel: ObservableObject {
     func persistCurrentPosition() {
         if speech.units.indices.contains(speech.currentUnitIndex) { checkpoint(speech.units[speech.currentUnitIndex]) }
         else { saveCursor(paragraphID: pendingResume?.paragraphID ?? 1, sentenceStart: pendingResume?.sentenceStart ?? 0) }
+    }
+
+    func localCoverData() async -> Data? {
+        guard scopeIsCurrent, !closed else { return nil }
+        try? await store.ensureCover(book: book, scope: scope)
+        guard scopeIsCurrent, !closed, !Task.isCancelled else { return nil }
+        return try? await store.coverData(book: book, scope: scope)
     }
 
     func retryPage() {

@@ -12,28 +12,31 @@ struct OfflineDownloadsEntryCard: View {
     @State private var readFailed = false
     let store: KindleOfflineBookStore
     let scopeProvider: @MainActor () -> String?
+    var onReaderPresented: (() -> Void)? = nil
     init(store: KindleOfflineBookStore = .shared,
-         scopeProvider: @escaping @MainActor () -> String? = { KindleOfflineContext.currentScope }) {
+         scopeProvider: @escaping @MainActor () -> String? = { KindleOfflineContext.currentScope },
+         onReaderPresented: (() -> Void)? = nil) {
         self.store = store; self.scopeProvider = scopeProvider
+        self.onReaderPresented = onReaderPresented
     }
     private var currentBooks: [KindleOfflineBook] { loadedScope == scopeProvider() ? books : [] }
     private var completeCount: Int { currentBooks.filter { $0.status == .complete }.count }
     private var partialCount: Int { currentBooks.count - completeCount }
     var body: some View {
         NavigationLink {
-            KindleOfflineLibraryView(store: store, scopeProvider: scopeProvider)
+            KindleOfflineLibraryView(store: store, scopeProvider: scopeProvider, onReaderPresented: onReaderPresented)
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: "arrow.down.circle.fill")
-                    .font(.system(size: 28, weight: .medium)).foregroundStyle(.teal)
+                    .font(.system(size: 28, weight: .medium)).foregroundStyle(.blue)
                     .frame(width: 50, height: 54)
-                    .background(.teal.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+                    .background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
                 VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 8) {
-                        Text("已下载").font(.headline).foregroundStyle(AppTheme.foreground)
+                        Text("离线书籍").font(.headline).foregroundStyle(AppTheme.foreground)
                             .lineLimit(1).minimumScaleFactor(0.8)
                         if completeCount > 0 {
-                            Text("\(completeCount) 本").font(.caption.weight(.medium)).foregroundStyle(.teal)
+                            Text("\(completeCount) 本").font(.caption.weight(.medium)).foregroundStyle(.blue)
                         }
                     }
                     Text(network.isOnline ? "保存在本机，没网也能读和听" : "当前无网络，打开本机书籍")
@@ -46,14 +49,11 @@ struct OfflineDownloadsEntryCard: View {
                     }
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             }
             .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-            .background(AppTheme.card, in: RoundedRectangle(cornerRadius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 20).stroke(.teal.opacity(0.28), lineWidth: 1))
             .contentShape(RoundedRectangle(cornerRadius: 20))
         }
-        .buttonStyle(.plain).accessibilityIdentifier("homeDownloads")
+        .buttonStyle(.plain).accessibilityIdentifier("settingsDownloads")
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .task(id: scopeProvider()) { await refresh() }
         .onReceive(NotificationCenter.default.publisher(for: KindleOfflineBookStore.didChange).receive(on: RunLoop.main)) { notification in

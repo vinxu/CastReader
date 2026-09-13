@@ -11,7 +11,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         super.tearDown()
     }
 
-    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false, miniPlayer: Bool = false, tallPage: Bool = false, english: Bool = false, chinese: Bool = false) {
+    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false, miniPlayer: Bool = false, tallPage: Bool = false, english: Bool = false, chinese: Bool = false, japanese: Bool = false) {
         app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(zh-Hans)", "-interfaceLanguage", "zh-Hans"]
         if english { app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(en)", "-interfaceLanguage", "en"] }
         if partial { app.launchArguments.append("-CastReaderOfflineFixturePartial") }
@@ -20,6 +20,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         if miniPlayer { app.launchArguments.append("-CastReaderOfflineFixtureMiniPlayer") }
         if tallPage { app.launchArguments.append("-CastReaderOfflineFixtureTallPage") }
         if chinese { app.launchArguments.append("-CastReaderOfflineFixtureChinese") }
+        if japanese { app.launchArguments.append("-CastReaderOfflineFixtureJapanese") }
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL", "-CastReaderFixtureAppearance", "Dark"] }
         app.launchEnvironment["CASTREADER_OFFLINE_FIXTURE_ID"] = UUID().uuidString
         app.launchEnvironment["CASTREADER_OFFLINE_FIXTURE_DELAY"] = partial ? "900" : "600"
@@ -33,12 +34,16 @@ final class KindleOfflineFlowUITests: XCTestCase {
     }
 
     private func tap(_ id: String, timeout: TimeInterval = 10) {
-        XCTAssertTrue(app.buttons.matching(identifier: id).firstMatch.waitForExistence(timeout: timeout), "Missing \(id)")
+        // Form rows outside the viewport may not exist yet at accessibility
+        // sizes. Scroll to materialize them before declaring a control missing.
+        _ = app.buttons.matching(identifier: id).firstMatch.waitForExistence(timeout: timeout)
         // Presented sheets leave the underlying navigation bar in the AX tree.
         // Select the visible product control, not the hidden copy underneath.
         for _ in 0..<5 {
             if visibleButton(id).isHittable { break }
-            app.scrollViews.firstMatch.swipeUp()
+            if app.collectionViews.firstMatch.exists && app.collectionViews.firstMatch.isHittable {
+                app.collectionViews.firstMatch.swipeUp()
+            } else { app.scrollViews.firstMatch.swipeUp() }
         }
         XCTAssertTrue(visibleButton(id).isHittable, "Not reachable: \(id)")
         visibleButton(id).tap()
@@ -72,9 +77,20 @@ final class KindleOfflineFlowUITests: XCTestCase {
         wait { self.app.buttons["offlineBookPageStatus"].label.contains("第 \(page) /") }
     }
 
-    func testDownloadedEntryAndPersistentMiniPlayer() {
+    private func openDownloadsFromSettings() {
+        tap("settingsGearButton")
+        XCTAssertTrue(app.buttons["settingsProLink"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["settingsDownloads"].exists)
+        XCTAssertGreaterThan(app.buttons["settingsDownloads"].frame.minY, app.buttons["settingsProLink"].frame.maxY)
+        capture("50-settings-blue-offline-entry")
+        tap("settingsDownloads")
+    }
+
+    func testSettingsDownloadsEntryAndPersistentMiniPlayer() {
         launch(partial: true)
-        tap("homeDownloads")
+        XCTAssertFalse(app.buttons["settingsDownloads"].exists)
+        openDownloadsFromSettings()
+        capture("51-local-book-cover")
         tap("offlineLibraryBook.offline-flow-book", timeout: 20)
         tap("offlineBookPlay")
         wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].exists && self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
@@ -85,8 +101,8 @@ final class KindleOfflineFlowUITests: XCTestCase {
         capture("30-offline-mini-keeps-playing")
         tap("offlineMiniPlay")
         wait { self.app.buttons["offlineMiniPlay"].exists && self.app.buttons["offlineMiniPlay"].label == "播放" }
-        tap("BackButton")
-        XCTAssertTrue(app.buttons["homeDownloads"].isHittable)
+        XCTAssertTrue(app.buttons["settingsGearButton"].isHittable)
+        XCTAssertFalse(app.buttons["settingsDownloads"].exists)
         XCTAssertTrue(app.buttons["offlineMiniExpand"].isHittable)
         capture("31-home-downloads-and-mini")
         tap("offlineMiniExpand")
@@ -97,7 +113,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("offlineBookClose")
         tap("offlineMiniStop")
         wait { !self.app.buttons["offlineMiniPlay"].exists }
-        tap("homeDownloads")
+        openDownloadsFromSettings()
         tap("offlineLibraryBook.offline-flow-book")
         XCTAssertEqual(app.buttons["offlineBookPlay"].label, "播放")
         capture("32-reopen-after-explicit-stop")
@@ -128,6 +144,41 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("offlineMiniExpand")
         XCTAssertEqual(app.buttons["offlineBookPlay"].label, "播放")
         capture("41-chinese-mini-player-return")
+    }
+
+    func testJapaneseOfflineReadingUsesSentenceHighlightAndJapaneseVoice() {
+        launch(partial: true, japanese: true)
+        tap("libraryOfflineBooks")
+        tap("offlineLibraryBook.offline-flow-book", timeout: 20)
+        tap("offlineBookPlay")
+        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].exists && self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@",
+            "offlineBookParagraph.", "日本語")).firstMatch.exists)
+        capture("52-japanese-clause-highlight")
+        tap("offlineBookPlay")
+        tap("offlineBookVoice")
+        XCTAssertTrue(app.staticTexts["ja-JP"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["en-US"].exists)
+        tap("offlineBookVoiceDone")
+    }
+
+    func testLargeSettingsOfflineEntryOpensLocalBook() {
+        launch(partial: true, large: true)
+        XCTAssertFalse(app.buttons["settingsDownloads"].exists)
+        tap("settingsGearButton")
+        tap("settingsDownloads")
+        let cover = app.images["offlineCover.offline-flow-book"].firstMatch
+        XCTAssertTrue(cover.waitForExistence(timeout: 10))
+        XCTAssertTrue(cover.isHittable)
+        XCTAssertTrue(app.frame.contains(cover.frame), "The whole cover must remain visible at large text sizes")
+        if app.searchFields.firstMatch.exists {
+            XCTAssertFalse(app.searchFields.firstMatch.frame.intersects(cover.frame))
+        }
+        capture("53-large-settings-local-library")
+        tap("offlineLibraryBook.offline-flow-book", timeout: 20)
+        XCTAssertTrue(app.buttons["offlineBookPlay"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["offlineBookPlay"].isHittable)
+        XCTAssertFalse(app.buttons["settingsCloseButton"].isHittable)
     }
 
     func testSaveReadOCRSpeechSettingsAndResumeAfterRelaunch() {

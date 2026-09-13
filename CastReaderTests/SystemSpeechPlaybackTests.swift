@@ -200,6 +200,53 @@ final class SystemSpeechPlaybackTests: XCTestCase {
         XCTAssertEqual(driver.requests.last?.rate, 0.6)
     }
 
+    func testChineseClauseHighlightStaysStableAndRateUsesActualSpeechCursor() throws {
+        let driver = Driver()
+        let speech = SystemSpeechPlaybackService(driver: driver)
+        let text = "第一小句，第二小句。"
+        let unit = SystemSpeechUnit(paragraphID: 3, sourceRange: NSRange(location: 8, length: text.utf16.count), text: text)
+        speech.load([unit], voiceID: "local", language: "zh-Hant")
+        speech.play()
+        let old = try XCTUnwrap(driver.requests.first?.id)
+        driver.emit(.started(old))
+        let first = (text as NSString).range(of: "第一小句，")
+        let expected = NSRange(location: 8 + first.location, length: first.length)
+        XCTAssertEqual(speech.highlightRange, expected)
+        driver.emit(.range(old, NSRange(location: 0, length: 1)))
+        driver.emit(.range(old, NSRange(location: 2, length: 1)))
+        XCTAssertEqual(speech.highlightRange, expected, "Individual character callbacks must not flash individual CJK glyphs")
+        speech.setRate(0.6)
+        let replacement = try XCTUnwrap(driver.requests.last)
+        XCTAssertEqual(replacement.text, (text as NSString).substring(from: 2), "Changing rate must not restart the whole highlighted clause")
+        driver.emit(.started(replacement.id))
+        XCTAssertEqual(speech.highlightRange, expected)
+        let second = (text as NSString).range(of: "第二小句。")
+        driver.emit(.range(replacement.id, NSRange(location: second.location - 2, length: 1)))
+        XCTAssertEqual(speech.highlightRange, NSRange(location: 8 + second.location, length: second.length))
+        driver.emit(.range(old, NSRange(location: 0, length: 1)))
+        XCTAssertEqual(speech.highlightRange?.location, 8 + second.location)
+    }
+
+    func testJapaneseClausesIncludeQuotesAndRespectUTF16Offsets() throws {
+        let text = "「ゆっくり😀読みます。」次の文も、順番に読みます。"
+        let unit = SystemSpeechUnit(paragraphID: 1, sourceRange: NSRange(location: 11, length: text.utf16.count), text: text)
+        let first = (text as NSString).range(of: "「ゆっくり😀読みます。」")
+        let next = (text as NSString).range(of: "次の文も、")
+        XCTAssertEqual(SystemSpeechTextPlan.clauseRange(at: 4, in: unit), NSRange(location: 11, length: first.length))
+        XCTAssertEqual(SystemSpeechTextPlan.clauseRange(at: next.location + 1, in: unit),
+            NSRange(location: 11 + next.location, length: next.length))
+        XCTAssertTrue(SystemSpeechTextPlan.usesClauseHighlight(language: "ja-JP"))
+        XCTAssertTrue(SystemSpeechTextPlan.usesClauseHighlight(language: "zh-Hans"))
+        XCTAssertFalse(SystemSpeechTextPlan.usesClauseHighlight(language: "en-US"))
+        XCTAssertNil(SystemSpeechTextPlan.clauseRange(at: text.utf16.count, in: unit))
+        let driver = Driver()
+        let reader = SystemSpeechPlaybackService(driver: driver)
+        reader.load([unit], voiceID: "local", language: "ja-JP"); reader.play()
+        let id = try XCTUnwrap(driver.requests.first?.id)
+        driver.emit(.started(id)); driver.emit(.range(id, NSRange(location: 3, length: 1)))
+        XCTAssertEqual(reader.highlightRange, NSRange(location: 11, length: first.length))
+    }
+
     func testRateChangesRetainCurrentWordAcrossEmojiRapidChangesAndPause() {
         let driver = Driver()
         let speech = SystemSpeechPlaybackService(driver: driver)

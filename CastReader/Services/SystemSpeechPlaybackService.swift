@@ -48,6 +48,42 @@ enum SystemSpeechTextPlan {
               spokenRange.length <= unit.text.utf16.count - spokenRange.location else { return nil }
         return NSRange(location: unit.sourceRange.location + spokenRange.location, length: spokenRange.length)
     }
+
+    static func usesClauseHighlight(language: String) -> Bool {
+        ["zh", "ja"].contains(KindleLanguageContract.normalize(language) ?? "")
+    }
+
+    /// Display spans are separate from the synthesizer's precise resume cursor.
+    /// Punctuation and closing quotes stay with the clause they finish.
+    static func clauseRange(at offset: Int, in unit: SystemSpeechUnit) -> NSRange? {
+        guard offset >= 0, offset < unit.text.utf16.count else { return nil }
+        let text = unit.text
+        let delimiters = Set("，、；：。！？,;:!?\n…")
+        let closers = Set("”’」』）》〉】\"')]")
+        var start = text.startIndex
+        while start < text.endIndex {
+            var end = start
+            while end < text.endIndex {
+                let character = text[end]
+                end = text.index(after: end)
+                if delimiters.contains(character) {
+                    while end < text.endIndex, closers.contains(text[end]) || delimiters.contains(text[end]) {
+                        end = text.index(after: end)
+                    }
+                    break
+                }
+            }
+            let full = NSRange(start..<end, in: text)
+            if NSLocationInRange(offset, full) {
+                var trimmed = start
+                while trimmed < end, text[trimmed].isWhitespace { trimmed = text.index(after: trimmed) }
+                let range = NSRange(trimmed..<end, in: text)
+                return range.length > 0 ? NSRange(location: unit.sourceRange.location + range.location, length: range.length) : nil
+            }
+            start = end
+        }
+        return nil
+    }
 }
 
 struct SystemSpeechVoice: Identifiable, Equatable, Sendable {
@@ -99,6 +135,7 @@ final class SystemSpeechPlaybackService: ObservableObject {
     @Published private(set) var errorCode: String?
     @Published private(set) var activeRate: Float?
     private(set) var units: [SystemSpeechUnit] = []
+    private var clauseHighlight = false
     private(set) var generation = UUID()
     var onCheckpoint: ((SystemSpeechUnit, NSRange?) -> Void)?
     var onPlayRequested: (() -> Void)?
@@ -199,10 +236,11 @@ final class SystemSpeechPlaybackService: ObservableObject {
             .map { SystemSpeechVoice(id: $0.identifier, name: $0.name, language: $0.language) }
     }
 
-    func load(_ units: [SystemSpeechUnit], voiceID: String) {
+    func load(_ units: [SystemSpeechUnit], voiceID: String, language: String = "en") {
         stop()
         self.units = units
         self.voiceID = voiceID
+        clauseHighlight = SystemSpeechTextPlan.usesClauseHighlight(language: language)
         currentUnitIndex = 0
         highlightRange = nil
         highlightedParagraphID = nil
@@ -281,9 +319,6 @@ final class SystemSpeechPlaybackService: ObservableObject {
         guard units.indices.contains(currentUnitIndex), state != .finished else { return }
         // Utterance rates are fixed when enqueued. Replace the queue, retaining
         // the current word so changing speed cannot skip text or replay a long sentence.
-        if let range = highlightRange {
-            restartOffset = max(0, range.location - units[currentUnitIndex].sourceRange.location)
-        }
         let offset = restartOffset
         invalidateQueue()
         requiresRequeue = true
@@ -371,7 +406,7 @@ final class SystemSpeechPlaybackService: ObservableObject {
             restartOffset = entry.offset
             activeRate = entry.rate
             highlightedParagraphID = units[index].paragraphID
-            highlightRange = nil
+            highlightRange = clauseHighlight ? SystemSpeechTextPlan.clauseRange(at: entry.offset, in: units[index]) : nil
             state = .speaking
             if firstSpeechMilliseconds == nil { firstSpeechMilliseconds = Int((now() - requestedAt) * 1000) }
             startWatchdog?.cancel()
@@ -382,8 +417,13 @@ final class SystemSpeechPlaybackService: ObservableObject {
                   range.location <= units[entry.index].text.utf16.count - entry.offset,
                   let source = SystemSpeechTextPlan.sourceRange(
                     NSRange(location: entry.offset + range.location, length: range.length), in: units[entry.index]) else { return }
-            highlightRange = source
-            highlightedParagraphID = units[entry.index].paragraphID
+            restartOffset = source.location - units[entry.index].sourceRange.location
+            let displayRange = clauseHighlight
+                ? SystemSpeechTextPlan.clauseRange(at: restartOffset, in: units[entry.index]) : source
+            if highlightRange != displayRange { highlightRange = displayRange }
+            if highlightedParagraphID != units[entry.index].paragraphID {
+                highlightedParagraphID = units[entry.index].paragraphID
+            }
             callbackCount += 1
             checkpoint()
         case .finished(let id):

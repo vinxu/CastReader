@@ -10,6 +10,7 @@ struct KindleOfflineFlowFixture: View {
     @StateObject private var download: KindleOfflineDownloadCoordinator
     @ObservedObject private var offline = KindleOfflinePlaybackCenter.shared
     @State private var presented = false
+    @State private var showSettings = false
     @State private var route: [String] = []
     @State private var loaded = false
     private let source: KindleOfflineFlowSource
@@ -30,7 +31,7 @@ struct KindleOfflineFlowFixture: View {
         NavigationStack(path: $route) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                OfflineDownloadsEntryCard(store: download.store, scopeProvider: { scope })
+                Button("账号与设置") { showSettings = true }.accessibilityIdentifier("settingsGearButton")
                 NavigationLink("打开正在读的书", value: "reader").accessibilityIdentifier("offlineFlowOnlineBook")
                 NavigationLink("离线书籍", value: "library").accessibilityIdentifier("libraryOfflineBooks")
                 Section {
@@ -78,6 +79,9 @@ struct KindleOfflineFlowFixture: View {
                     }
                 }
         }.preferredColorScheme(UserDefaults.standard.string(forKey: "CastReaderFixtureAppearance") == "Dark" ? .dark : nil)
+        .sheet(isPresented: $showSettings) {
+            SettingsView(offlineStore: download.store, offlineScopeProvider: { scope })
+        }
         .overlay(alignment: .bottom) {
             if offline.showsMiniPlayer { KindleOfflineMiniPlayer(center: offline).padding(.bottom, 68) }
         }
@@ -116,8 +120,19 @@ struct KindleOfflineFlowFixture: View {
 
 @MainActor
 private final class KindleOfflineFlowSource: KindleOfflineBookSource {
-    let offlineSourceBook = KindleBook(id: "offline-flow-book", title: "The Little Journey", author: "CastReader 本地测试书",
-        readerURL: "https://read.amazon.com/?asin=B000000001", progressLabel: "", language: "en-US", lastSyncedAt: Date())
+    let offlineSourceBook: KindleBook
+    init() {
+        let coverURL = "https://offline-fixture.invalid/cover.jpg"
+        let bytes = UIGraphicsImageRenderer(size: CGSize(width: 400, height: 600)).pngData { context in
+            UIColor.systemBlue.setFill(); context.fill(CGRect(x: 0, y: 0, width: 400, height: 600))
+            ("THE LITTLE\nJOURNEY" as NSString).draw(in: CGRect(x: 35, y: 90, width: 330, height: 300),
+                withAttributes: [.font: UIFont.boldSystemFont(ofSize: 48), .foregroundColor: UIColor.white])
+        }
+        if let image = UIImage(data: bytes) { ImageCache.shared.set(coverURL, image: image, data: bytes) }
+        offlineSourceBook = KindleBook(id: "offline-flow-book", title: "The Little Journey", author: "CastReader 本地测试书",
+            coverURL: coverURL, readerURL: "https://read.amazon.com/?asin=B000000001", progressLabel: "",
+            language: "en-US", lastSyncedAt: Date())
+    }
     private let pageCount = 12
     private var failedAttempts = 0
     private var captureSession = 0
@@ -144,8 +159,10 @@ private final class KindleOfflineFlowSource: KindleOfflineBookSource {
             throw KindleOfflineCaptureFailure.pageNotReady
         }
         let chinese = ProcessInfo.processInfo.arguments.contains("-CastReaderOfflineFixtureChinese")
+        let japanese = ProcessInfo.processInfo.arguments.contains("-CastReaderOfflineFixtureJapanese")
         let text = chinese
             ? "第\(index + 1)頁\n\n我們一起讀書，聽見中文的聲音。\n\n離線閱讀不需要網路。這本書已經保存在手機裡，每一頁都按照原來的順序繼續朗讀。"
+            : japanese ? "第\(index + 1)ページ\n\n少しずつ読みましょう。\n\n日本語の文章を、文や節ごとに読み上げます。この本は端末に保存されているので、インターネットがなくても読むことができます。"
             : "Chapter \(index / 4 + 1)\n\nPage \(index + 1). The little journey continues.\n\nWe save this page on the phone. We can read and listen without a network. Each page follows the page before it."
         let tall = ProcessInfo.processInfo.arguments.contains("-CastReaderOfflineFixtureTallPage")
         let size = CGSize(width: 800, height: tall ? 2400 : 1100)

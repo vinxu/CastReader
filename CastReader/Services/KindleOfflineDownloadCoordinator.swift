@@ -58,6 +58,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
     @Published private(set) var error: String?
     let store: KindleOfflineBookStore
     private var task: Task<Void, Never>?
+    private var coverTask: Task<Void, Never>?
     private var runID = UUID()
     private var stopReason: StopReason?
 
@@ -90,6 +91,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                 AppOrientationLock.unlock(owner: orientationOwner)
             }
             var capturedSession = false
+            defer { self.coverTask?.cancel(); self.coverTask = nil }
             do {
                 guard stillAuthorized() else { throw CancellationError() }
                 let prior = try await self.store.load(id: KindleOfflineBookStore.bookID(source.offlineSourceBook.id), scope: scope)
@@ -100,6 +102,11 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                 guard stillAuthorized(), self.runID == run else { throw CancellationError() }
                 var book = try await self.store.prepare(source: source.offlineSourceBook, scope: scope, originalPosition: original)
                 self.book = book
+                let coverBook = book
+                let coverURL = source.offlineSourceBook.coverURL
+                self.coverTask = Task {
+                    try? await self.store.ensureCover(book: coverBook, scope: scope, coverURL: coverURL, allowNetwork: true)
+                }
                 var estimate = KindleOfflineDownloadEstimate()
                 // The first captured page can include a one-time seek from the
                 // reading position. Start throughput samples after it commits.
@@ -132,8 +139,15 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                     book = try await self.store.finish(book, scope: scope)
                     self.book = book
                 }
+                // A slow/unavailable cover host never delays page capture. A
+                // local first-page thumbnail is always ready before completion.
+                self.coverTask?.cancel()
+                try? await self.store.ensureCover(book: book, scope: scope)
+                book = (try? await self.store.load(id: book.id, scope: scope)) ?? book
+                self.book = book
                 self.phase = AppLocalized("整本已保存 · \(book.pages.count) 页")
             } catch {
+                self.coverTask?.cancel()
                 let paused = Task.isCancelled || error is CancellationError
                 let message = paused ? (self.stopReason?.message ?? "已暂停，已保存页面会保留。") : Self.message(for: error)
                 if let book = self.book {
@@ -167,6 +181,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
     func pause(reason: StopReason = .user) {
         guard isRunning, !isStopping, activity != .restoring else { return }
         stopReason = reason
+        coverTask?.cancel()
         isStopping = true; estimatedRemainingSeconds = nil
         phase = AppLocalized("正在停止下载…")
         task?.cancel()

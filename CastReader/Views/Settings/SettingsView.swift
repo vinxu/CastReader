@@ -11,6 +11,8 @@ struct SettingsView: View {
     private let shareInboxUnreadCount: Int
     private let onOpenShareInbox: (() -> Void)?
     private let onRequestLibraryOnboarding: ((Bool) -> Void)?
+    private let offlineStore: KindleOfflineBookStore
+    private let offlineScopeProvider: @MainActor () -> String?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -46,11 +48,15 @@ struct SettingsView: View {
 
     init(
         history: HistoryStore = .shared,
+        offlineStore: KindleOfflineBookStore = .shared,
+        offlineScopeProvider: @escaping @MainActor () -> String? = { KindleOfflineContext.currentScope },
         shareInboxUnreadCount: Int = 0,
         onOpenShareInbox: (() -> Void)? = nil,
         onRequestLibraryOnboarding: ((Bool) -> Void)? = nil
     ) {
         self._history = ObservedObject(wrappedValue: history)
+        self.offlineStore = offlineStore
+        self.offlineScopeProvider = offlineScopeProvider
         self.shareInboxUnreadCount = shareInboxUnreadCount
         self.onOpenShareInbox = onOpenShareInbox
         self.onRequestLibraryOnboarding = onRequestLibraryOnboarding
@@ -67,9 +73,15 @@ struct SettingsView: View {
         NavigationView {
             Form {
                 accountSection
+                proSection
+                Section {
+                    OfflineDownloadsEntryCard(store: offlineStore, scopeProvider: offlineScopeProvider,
+                        onReaderPresented: { dismiss() })
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 14))
+                        .listRowBackground(Color.blue.opacity(0.07))
+                }
                 languageSection
                 connectedServicesSection
-                proSection
                 librarySection
                 playbackSection
                 voiceSection

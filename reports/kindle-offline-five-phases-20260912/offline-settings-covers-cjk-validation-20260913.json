@@ -1,0 +1,746 @@
+{
+  "date": "2026-09-13",
+  "release_ancestor": "b6dd4d7",
+  "source_parent": "58a73a24eca18076df64165b40c0f2c8fcf9ca50",
+  "branch": "codex/kindle-offline-five-phases-20260912",
+  "unique_core_tests": 62,
+  "unique_ui_flows": 5,
+  "test_runs": [
+    {
+      "log": "/tmp/offline-settings-cover-tests.log",
+      "test_cases_passed": [
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testAccountBoundaryClosesMinimizedSession",
+          "seconds": 0.161
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testChangingSessionBeforeDownloadDismissalCancelsPendingReader",
+          "seconds": 0.019
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testChapterSequenceRejectsDuplicateAndLateSpeechCallbacks",
+          "seconds": 0.437
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testChineseDetectionReplacesEnglishVoiceAndSurvivesColdReopen",
+          "seconds": 0.218
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testCloseAndReopenRestoresPageVoiceAndRateWithoutStartingSpeech",
+          "seconds": 0.191
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testDeletingActiveLocalCopyClosesMiniPlayer",
+          "seconds": 0.074
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testEmptyOCRDoesNotSilentlySkipToNextChapter",
+          "seconds": 0.229
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testFailedRecognitionKeepsImageAndPauseDuringRetryCannotStartAudio",
+          "seconds": 0.582
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testLateOCRCannotReplaceTheSelectedChapter",
+          "seconds": 0.211
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testLocalOCRDetectsSimplifiedAndTraditionalChineseWithoutShelfLanguage",
+          "seconds": 7.971
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testMinimizedSessionContinuesPagesInOrderAndRejectsDuplicates",
+          "seconds": 0.185
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testMiniPlayerRetainsSpeechWordAndModelAcrossRepeatedExpansion",
+          "seconds": 0.094
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testMissingNextPageNeverReplaysPreviousPageUnderItsNewPageNumber",
+          "seconds": 0.17
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testOpeningAnImageBookDoesNotOCRAndPlaybackRecognitionSurvivesColdReopen",
+          "seconds": 0.164
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testOpeningOnlineOwnerClosesOfflineSessionWithoutStoppingNewOwner",
+          "seconds": 0.049
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testPauseRevokesAlreadyQueuedAutomaticPageAdvance",
+          "seconds": 0.216
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testRealLocalOCRRecognizesSavedImageWithoutOnlineReader",
+          "seconds": 9.376
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testReopeningDeletedCopyClearsOldDocumentAndPlayback",
+          "seconds": 0.098
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testStopDuringOCRNeverRestartsHiddenSpeech",
+          "seconds": 0.508
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testStoppingBeforeOpenTaskCannotClaimPlaybackLater",
+          "seconds": 0.172
+        },
+        {
+          "suite": "KindleOfflineBookReaderTests",
+          "test": "testSystemSpeechContinuesAcrossSavedImageOnlyPagesAndRestoresCheckpoint",
+          "seconds": 0.296
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCancelDuringPreparationAndFailedRestoreRemainSafeToClose",
+          "seconds": 0.034
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCancelWaitsForRestorationKeepsCommittedPagesAndCanResume",
+          "seconds": 0.514
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCannotCallPartialOrSkippedRangeACompleteBook",
+          "seconds": 0.009
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCoordinatorContinuesPastThirteenPagesAndResumesAfterSourceFailure",
+          "seconds": 0.203
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCorruptManifestIsReportedForRepairInsteadOfLookingLikeAnEmptyLibrary",
+          "seconds": 0.005
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCoverPersistsAcrossReopenWithoutChangingBookPagesAndCannotLeakAcrossScopes",
+          "seconds": 0.037
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testDeletingOneLocalCopyRejectsLateWritesAndPreservesOtherAccounts",
+          "seconds": 0.031
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testDifferentLayoutAndAccountCannotAdoptSavedPages",
+          "seconds": 0.008
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testDuplicateSkippedReversedAndOverlappingPagesDoNotChangeCommittedSequence",
+          "seconds": 0.036
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testEnglishFrontMatterDoesNotForceChinesePagesOrInvalidateTheirCache",
+          "seconds": 0.021
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testExchangedImageResourcesCannotPassAsCorrectPageOrder",
+          "seconds": 0.024
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testExpiredNetworkSessionKeepsLocalBindingUntilConfirmedRebind",
+          "seconds": 0.017
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testFirstPageSeekDoesNotInflateRemainingTime",
+          "seconds": 4.317
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testImagesCompleteWithoutOCRAndRecognitionIsAnIndependentReusableCache",
+          "seconds": 0.019
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testLegacyCoverBackfillUsesSavedFirstPageWithoutNetworkOrOCR",
+          "seconds": 0.022
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testOfflineResumeEntryTargetsOnlyTheRequestedBookOnce",
+          "seconds": 0.129
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testOldWrongLanguageOCRIsDiscardedWithoutChangingImagesOrPageOrder",
+          "seconds": 0.104
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testReadinessRetriesAreBoundedAndRemainCancellable",
+          "seconds": 0.804
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testReadinessTimeoutRetriesTheSameUncommittedPage",
+          "seconds": 0.445
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testReadingPositionDoesNotOverwriteDownloadProgress",
+          "seconds": 0.019
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testRelaunchRetainsOriginalReadingPositionFromInterruptedDownload",
+          "seconds": 0.018
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testRemainingTimeUsesOnlyNewProgressAfterResume",
+          "seconds": 0.001
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testSharedNormalizedBoundaryIsValidButInteriorOverlapIsNot",
+          "seconds": 0.001
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testThreeHundredPagesResumeAndCompleteWithoutPrefetchLimitOrImageDeduplication",
+          "seconds": 2.155
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testWarmManifestObservesExternalCheckpointAndCannotResurrectRemovedFile",
+          "seconds": 0.013
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testActualRangesOnlyAndRateChangeRequeuesCurrentWord",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testAudioSessionFailureCanRetryWithoutLeavingQueuedSpeech",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testAutomaticNextPageCannotClearSleepDeadlineOrReclaimAnotherReader",
+          "seconds": 0.03
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testAvailableReadingVoicesExcludeEffectsAndPreferSystemDefault",
+          "seconds": 0.043
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testChineseClauseHighlightStaysStableAndRateUsesActualSpeechCursor",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testCompletionInFlightAfterPauseCannotSkipOrRefill",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testJapaneseClausesIncludeQuotesAndRespectUTF16Offsets",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testLongSentenceBoundKeepsEveryNonWhitespaceCharacter",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testNativeSpeechRateChangesActualDurationAndActiveUtterance",
+          "seconds": 10.409
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testNewPlaybackOwnerAndAccountBoundaryStopSystemSpeech",
+          "seconds": 0.007
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testPauseBeforeFirstCallbackCannotAutostart",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testQueueRemainsBoundedAndRefillsOnCompletion",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testRateChangesRetainCurrentWordAcrossEmojiRapidChangesAndPause",
+          "seconds": 0.074
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testSharedSleepTimerPausesSystemSpeechAndRequiresExplicitPlay",
+          "seconds": 0.029
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testSourceOffsetsSurviveEmojiCJKAndLeadingWhitespace",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testStopAndSeekRejectAllOldCallbacks",
+          "seconds": 0.001
+        },
+        {
+          "suite": "KindleOfflineFlowUITests",
+          "test": "testChineseImageDownloadDetectsLanguageAndKeepsPlayingInMiniPlayer",
+          "seconds": 59.108
+        },
+        {
+          "suite": "KindleOfflineFlowUITests",
+          "test": "testRateSelectionChangesTheSpeakingUtteranceWhilePlaying",
+          "seconds": 51.312
+        },
+        {
+          "suite": "KindleOfflineFlowUITests",
+          "test": "testSettingsDownloadsEntryAndPersistentMiniPlayer",
+          "seconds": 64.097
+        }
+      ],
+      "failures": [],
+      "result_bundle": "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_21-35-11-+0800.xcresult"
+    },
+    {
+      "log": "/tmp/offline-settings-cover-se-tests.log",
+      "test_cases_passed": [
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCancelDuringPreparationAndFailedRestoreRemainSafeToClose",
+          "seconds": 0.035
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCancelWaitsForRestorationKeepsCommittedPagesAndCanResume",
+          "seconds": 0.522
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCannotCallPartialOrSkippedRangeACompleteBook",
+          "seconds": 0.011
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCoordinatorContinuesPastThirteenPagesAndResumesAfterSourceFailure",
+          "seconds": 0.199
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCorruptManifestIsReportedForRepairInsteadOfLookingLikeAnEmptyLibrary",
+          "seconds": 0.006
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCoverPersistsAcrossReopenWithoutChangingBookPagesAndCannotLeakAcrossScopes",
+          "seconds": 0.031
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testDeletingOneLocalCopyRejectsLateWritesAndPreservesOtherAccounts",
+          "seconds": 0.04
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testDifferentLayoutAndAccountCannotAdoptSavedPages",
+          "seconds": 0.007
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testDuplicateSkippedReversedAndOverlappingPagesDoNotChangeCommittedSequence",
+          "seconds": 0.028
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testEnglishFrontMatterDoesNotForceChinesePagesOrInvalidateTheirCache",
+          "seconds": 0.025
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testExchangedImageResourcesCannotPassAsCorrectPageOrder",
+          "seconds": 0.02
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testExpiredNetworkSessionKeepsLocalBindingUntilConfirmedRebind",
+          "seconds": 0.017
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testFirstPageSeekDoesNotInflateRemainingTime",
+          "seconds": 4.296
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testImagesCompleteWithoutOCRAndRecognitionIsAnIndependentReusableCache",
+          "seconds": 0.018
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testLegacyCoverBackfillUsesSavedFirstPageWithoutNetworkOrOCR",
+          "seconds": 0.04
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testOfflineResumeEntryTargetsOnlyTheRequestedBookOnce",
+          "seconds": 0.165
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testOldWrongLanguageOCRIsDiscardedWithoutChangingImagesOrPageOrder",
+          "seconds": 0.053
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testReadinessRetriesAreBoundedAndRemainCancellable",
+          "seconds": 0.813
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testReadinessTimeoutRetriesTheSameUncommittedPage",
+          "seconds": 0.616
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testReadingPositionDoesNotOverwriteDownloadProgress",
+          "seconds": 0.032
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testRelaunchRetainsOriginalReadingPositionFromInterruptedDownload",
+          "seconds": 0.022
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testRemainingTimeUsesOnlyNewProgressAfterResume",
+          "seconds": 0.001
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testSharedNormalizedBoundaryIsValidButInteriorOverlapIsNot",
+          "seconds": 0.001
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testThreeHundredPagesResumeAndCompleteWithoutPrefetchLimitOrImageDeduplication",
+          "seconds": 2.938
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testWarmManifestObservesExternalCheckpointAndCannotResurrectRemovedFile",
+          "seconds": 0.021
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testActualRangesOnlyAndRateChangeRequeuesCurrentWord",
+          "seconds": 0.005
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testAudioSessionFailureCanRetryWithoutLeavingQueuedSpeech",
+          "seconds": 0.002
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testAutomaticNextPageCannotClearSleepDeadlineOrReclaimAnotherReader",
+          "seconds": 0.032
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testAvailableReadingVoicesExcludeEffectsAndPreferSystemDefault",
+          "seconds": 0.139
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testChineseClauseHighlightStaysStableAndRateUsesActualSpeechCursor",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testCompletionInFlightAfterPauseCannotSkipOrRefill",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testJapaneseClausesIncludeQuotesAndRespectUTF16Offsets",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testLongSentenceBoundKeepsEveryNonWhitespaceCharacter",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testNativeSpeechRateChangesActualDurationAndActiveUtterance",
+          "seconds": 10.687
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testNewPlaybackOwnerAndAccountBoundaryStopSystemSpeech",
+          "seconds": 0.012
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testPauseBeforeFirstCallbackCannotAutostart",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testQueueRemainsBoundedAndRefillsOnCompletion",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testRateChangesRetainCurrentWordAcrossEmojiRapidChangesAndPause",
+          "seconds": 0.002
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testSharedSleepTimerPausesSystemSpeechAndRequiresExplicitPlay",
+          "seconds": 0.03
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testSourceOffsetsSurviveEmojiCJKAndLeadingWhitespace",
+          "seconds": 0.001
+        },
+        {
+          "suite": "SystemSpeechPlaybackTests",
+          "test": "testStopAndSeekRejectAllOldCallbacks",
+          "seconds": 0.001
+        },
+        {
+          "suite": "KindleOfflineFlowUITests",
+          "test": "testChineseImageDownloadDetectsLanguageAndKeepsPlayingInMiniPlayer",
+          "seconds": 57.133
+        },
+        {
+          "suite": "KindleOfflineFlowUITests",
+          "test": "testJapaneseOfflineReadingUsesSentenceHighlightAndJapaneseVoice",
+          "seconds": 29.267
+        },
+        {
+          "suite": "KindleOfflineFlowUITests",
+          "test": "testSettingsDownloadsEntryAndPersistentMiniPlayer",
+          "seconds": 58.766
+        }
+      ],
+      "failures": [
+        "Test Case '-[CastReaderUITests.KindleOfflineFlowUITests testLargeSettingsOfflineEntryOpensLocalBook]' failed (18.292 seconds)."
+      ],
+      "result_bundle": "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_21-48-42-+0800.xcresult"
+    },
+    {
+      "log": "/tmp/offline-settings-cover-last-tests.log",
+      "test_cases_passed": [
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCancelDuringPreparationAndFailedRestoreRemainSafeToClose",
+          "seconds": 0.036
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCancelWaitsForRestorationKeepsCommittedPagesAndCanResume",
+          "seconds": 0.544
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCannotCallPartialOrSkippedRangeACompleteBook",
+          "seconds": 0.01
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCoordinatorContinuesPastThirteenPagesAndResumesAfterSourceFailure",
+          "seconds": 0.2
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCorruptManifestIsReportedForRepairInsteadOfLookingLikeAnEmptyLibrary",
+          "seconds": 0.006
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testCoverPersistsAcrossReopenWithoutChangingBookPagesAndCannotLeakAcrossScopes",
+          "seconds": 0.031
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testDeletingOneLocalCopyRejectsLateWritesAndPreservesOtherAccounts",
+          "seconds": 0.038
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testDifferentLayoutAndAccountCannotAdoptSavedPages",
+          "seconds": 0.007
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testDuplicateSkippedReversedAndOverlappingPagesDoNotChangeCommittedSequence",
+          "seconds": 0.027
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testEnglishFrontMatterDoesNotForceChinesePagesOrInvalidateTheirCache",
+          "seconds": 0.022
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testExchangedImageResourcesCannotPassAsCorrectPageOrder",
+          "seconds": 0.02
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testExpiredNetworkSessionKeepsLocalBindingUntilConfirmedRebind",
+          "seconds": 0.014
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testFirstPageSeekDoesNotInflateRemainingTime",
+          "seconds": 4.269
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testImagesCompleteWithoutOCRAndRecognitionIsAnIndependentReusableCache",
+          "seconds": 0.018
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testLegacyCoverBackfillUsesSavedFirstPageWithoutNetworkOrOCR",
+          "seconds": 0.032
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testOfflineResumeEntryTargetsOnlyTheRequestedBookOnce",
+          "seconds": 0.117
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testOldWrongLanguageOCRIsDiscardedWithoutChangingImagesOrPageOrder",
+          "seconds": 0.045
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testReadinessRetriesAreBoundedAndRemainCancellable",
+          "seconds": 0.792
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testReadinessTimeoutRetriesTheSameUncommittedPage",
+          "seconds": 0.433
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testReadingPositionDoesNotOverwriteDownloadProgress",
+          "seconds": 0.019
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testRelaunchRetainsOriginalReadingPositionFromInterruptedDownload",
+          "seconds": 0.019
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testRemainingTimeUsesOnlyNewProgressAfterResume",
+          "seconds": 0.001
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testSharedNormalizedBoundaryIsValidButInteriorOverlapIsNot",
+          "seconds": 0.001
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testThreeHundredPagesResumeAndCompleteWithoutPrefetchLimitOrImageDeduplication",
+          "seconds": 2.218
+        },
+        {
+          "suite": "KindleOfflineBookStoreTests",
+          "test": "testWarmManifestObservesExternalCheckpointAndCannotResurrectRemovedFile",
+          "seconds": 0.015
+        },
+        {
+          "suite": "KindleOfflineFlowUITests",
+          "test": "testLargeSettingsOfflineEntryOpensLocalBook",
+          "seconds": 30.328
+        }
+      ],
+      "failures": [],
+      "result_bundle": "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_21-54-04-+0800.xcresult"
+    },
+    {
+      "log": "/tmp/offline-settings-cover-layout-tests.log",
+      "test_cases_passed": [
+        {
+          "suite": "KindleOfflineFlowUITests",
+          "test": "testLargeSettingsOfflineEntryOpensLocalBook",
+          "seconds": 33.853
+        },
+        {
+          "suite": "KindleOfflineFlowUITests",
+          "test": "testSettingsDownloadsEntryAndPersistentMiniPlayer",
+          "seconds": 59.527
+        }
+      ],
+      "failures": [],
+      "result_bundle": "/tmp/CastReaderOfflinePolish/Logs/Test/Test-CastReader-2026.09.13_22-00-23-+0800.xcresult"
+    }
+  ],
+  "build": {
+    "baseline_check": "passed",
+    "device_build": "passed",
+    "log": "/tmp/offline-settings-cover-device-final.log",
+    "bundle_id": "com.same.castreader",
+    "version": "1.2.38",
+    "build": "59",
+    "debug_dylib_sha256": "b68f8e04e0adc38f38492ce0ba832c4fff65ad95d9f3f3ea4b61a8ec435c0c05"
+  },
+  "device_install": {
+    "success": true,
+    "existing_app_updated": true,
+    "books_deleted": false,
+    "raw_result": "/tmp/offline-settings-cover-accepted-install.json"
+  },
+  "limitations": [
+    "Current-task phone visual acceptance pending: iPhone Mirroring reported active phone use/timeouts.",
+    "Strict airplane-mode acceptance was not repeated in this iteration.",
+    "Legacy cover recovery uses saved first page if shelf image is unavailable; can upgrade to shelf cover when online."
+  ],
+  "environment_recovery": "An earlier runner-launch failure occurred when CoreSimulator exited; the existing SE simulator was rebooted and relevant tests rerun. The large-settings test helper was fixed to scroll lazy Form rows; screenshot review then drove the final library typography/search layout fix."
+}

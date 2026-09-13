@@ -137,7 +137,7 @@ final class KindleOfflineSavedPageModel: ObservableObject {
             let units = document.paragraphs.filter(\.type.isReadable).flatMap {
                 SystemSpeechTextPlan.units(paragraphID: $0.id, text: $0.text)
             }
-            speech.load(units, voiceID: voiceID)
+            speech.load(units, voiceID: voiceID, language: document.language)
             if let saved, let index = units.firstIndex(where: { $0.paragraphID == saved.paragraphID && $0.sourceRange.location == saved.sentenceStart }) {
                 speech.seek(to: index, autoplay: false)
             }
