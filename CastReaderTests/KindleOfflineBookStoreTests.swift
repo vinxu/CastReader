@@ -354,7 +354,7 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         XCTAssertTrue(source.requestedPages.isEmpty)
         XCTAssertEqual(source.cleanupCount, 1)
         XCTAssertNotNil(download.error, "Failed restoration must stay visible instead of silently dismissing")
-        XCTAssertTrue(download.phase.contains("已暂停"))
+        XCTAssertEqual(download.phase, KindleOfflineDownloadCoordinator.StopReason.background.message)
     }
 
     func testReadinessTimeoutRetriesTheSameUncommittedPage() async throws {
@@ -381,10 +381,11 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         XCTAssertEqual(download.book?.status, .failed)
         download.start(source: source, scope: scope, stillAuthorized: { true })
         let deadline = Date().addingTimeInterval(5)
-        while !download.phase.contains("正在重试"), download.isRunning, Date() < deadline {
+        let retryPhase = AppLocalized("正在重试第 \(4) 页（\(1)/2）…")
+        while download.phase != retryPhase, download.isRunning, Date() < deadline {
             try await Task.sleep(for: .milliseconds(5))
         }
-        XCTAssertTrue(download.phase.contains("正在重试"))
+        XCTAssertEqual(download.phase, retryPhase)
         let requestsBeforeCancel = source.requestedPages.count
         await download.stopAndWait()
         XCTAssertEqual(source.requestedPages.count, requestsBeforeCancel)

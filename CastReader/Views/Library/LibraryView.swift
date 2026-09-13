@@ -65,6 +65,7 @@ struct LibraryView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     NavigationLink { KindleOfflineLibraryView() } label: {
                         Label("离线书籍", systemImage: "arrow.down.circle")
+                            .labelStyle(.titleAndIcon).font(.subheadline)
                     }.accessibilityIdentifier("libraryOfflineBooks")
                 }
                 ToolbarItem(placement: .primaryAction) {

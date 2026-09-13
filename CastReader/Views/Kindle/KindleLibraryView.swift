@@ -31,7 +31,15 @@ struct KindleLibraryView: View {
             VStack(alignment: .leading, spacing: 16) {
                 controls
                 NavigationLink { KindleOfflineLibraryView() } label: {
-                    Label("本机离线书籍", systemImage: "arrow.down.circle")
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.down.circle.fill").font(.title2)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("离线书籍").font(.subheadline.weight(.semibold))
+                            Text("已下载的书，无需联网即可打开").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right").font(.caption)
+                    }.padding(14).background(AppTheme.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
                 }.accessibilityIdentifier("kindleOfflineLibrary")
                 #if DEBUG
                 NavigationLink("图片缓存验证副本") { KindleOfflineLibraryView(store: .imageBenchmark) }
@@ -50,6 +58,7 @@ struct KindleLibraryView: View {
             }
             .padding(18)
         }
+        .reservesMiniPlayerSpace()
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle("Kindle 书架")
         .navigationBarTitleDisplayMode(.inline)

@@ -69,7 +69,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
         guard !scopeIsCurrent else { return }
         close()
         document = nil; pageImage = nil
-        error = "账号已切换，请从当前账号的离线书籍重新打开。"
+        error = AppLocalized("账号已切换，请从当前账号的离线书籍重新打开。")
     }
 
     func open() async {
@@ -83,7 +83,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
         defer { if generation == run { loading = false } }
         do {
             guard let fresh = try await store.load(id: book.id, scope: scope) else {
-                error = "本机副本已删除，请返回离线书籍。"; return
+                error = AppLocalized("本机副本已删除，请返回离线书籍。"); return
             }
             guard generation == run, !closed, !Task.isCancelled, scopeIsCurrent else { validateScope(); return }
             book = fresh
@@ -96,11 +96,11 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             speech.onPlayRequested = { [weak self] in self?.play() }
             speech.onPlaybackInterrupted = { [weak self] in self?.wantsPlayback = false; self?.cancelPreparation() }
             await loadPage(min(book.readingPosition.page, max(0, book.pages.count - 1)), resume: book.readingPosition, automatically: false)
-        } catch { if generation == run, !closed { self.error = "书籍索引读取失败，请返回离线书籍重新打开。" } }
+        } catch { if generation == run, !closed { self.error = AppLocalized("书籍索引读取失败，请返回离线书籍重新打开。") } }
     }
 
     func play() {
-        guard !voices.isEmpty else { error = "这台设备尚无适合此书的声音。请联网下载系统声音后重试。"; return }
+        guard !voices.isEmpty else { error = AppLocalized("这台设备尚无适合此书的声音。请联网下载系统声音后重试。"); return }
         wantsPlayback = true
         beginPlayback(automatically: false)
     }
@@ -152,7 +152,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
                     if self.book.pages[index].requiresOCR == true, self.book.pages[index].sourceWordCount != 0 {
                         throw OCRError.noText
                     }
-                    guard index + 1 < self.book.pages.count else { self.error = "这一页没有可朗读文字。"; return }
+                    guard index + 1 < self.book.pages.count else { self.error = AppLocalized("这一页没有可朗读文字。"); return }
                     await self.loadPage(index + 1, resume: nil, automatically: false)
                     guard self.pageIndex != index else { return }
                 }
@@ -161,7 +161,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             } catch {
                 if self.playbackRequest == request, !self.closed {
                     self.speech.stop()
-                    self.error = "这一页文字识别未完成，图片已保存在手机。请点击播放重试。"
+                    self.error = AppLocalized("这一页文字识别未完成，图片已保存在手机。请点击播放重试。")
                 }
             }
         }
@@ -268,7 +268,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
 
     private func loadPage(_ index: Int, resume: KindleOfflineBook.ReadingPosition?, automatically: Bool) async {
         guard scopeIsCurrent, !closed, book.pages.indices.contains(index) else {
-            if index >= book.pages.count && book.status != .complete { error = "已到已保存内容的末尾。请联网继续下载整本书。" }
+            if index >= book.pages.count && book.status != .complete { error = AppLocalized("已到已保存内容的末尾。请联网继续下载整本书。") }
             advancing = false
             return
         }
@@ -298,7 +298,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
         } catch {
             if generation == run, !closed, scopeIsCurrent {
                 wantsPlayback = false
-                self.error = "这一页文件缺失或损坏，请重新保存此书。其他已保存页面仍可阅读。"
+                self.error = AppLocalized("这一页文件缺失或损坏，请重新保存此书。其他已保存页面仍可阅读。")
             }
         }
     }
@@ -314,7 +314,7 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             checkpointTask = Task { [weak self] in
                 await previous?.value
                 do { try await store.saveReadingPosition(value, book: book, scope: scope) }
-                catch { self?.lastCheckpoint = nil; self?.error = "朗读位置未能保存，请检查本机空间。" }
+                catch { self?.lastCheckpoint = nil; self?.error = AppLocalized("朗读位置未能保存，请检查本机空间。") }
             }
         }
     }

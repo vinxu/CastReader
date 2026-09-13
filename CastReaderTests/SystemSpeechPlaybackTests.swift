@@ -179,7 +179,7 @@ final class SystemSpeechPlaybackTests: XCTestCase {
         service.closePlayback()
     }
 
-    func testActualRangesOnlyAndRateChangeRepeatsCurrentSentence() {
+    func testActualRangesOnlyAndRateChangeRequeuesCurrentWord() {
         let driver = Driver()
         var time = 10.0
         let service = SystemSpeechPlaybackService(driver: driver, now: { time })
@@ -198,6 +198,67 @@ final class SystemSpeechPlaybackTests: XCTestCase {
         driver.emit(.cancelled(old))
         XCTAssertNil(service.errorCode)
         XCTAssertEqual(driver.requests.last?.rate, 0.6)
+    }
+
+    func testRateChangesRetainCurrentWordAcrossEmojiRapidChangesAndPause() {
+        let driver = Driver()
+        let speech = SystemSpeechPlaybackService(driver: driver)
+        let text = "Hello 👋 world again."
+        let word = (text as NSString).range(of: "world")
+        speech.load([SystemSpeechUnit(paragraphID: 9, sourceRange: NSRange(location: 11, length: text.utf16.count), text: text)], voiceID: "local")
+        speech.play()
+        let old = driver.requests[0].id
+        driver.emit(.started(old)); driver.emit(.range(old, word))
+        speech.setRate(0.65)
+        let superseded = driver.requests.last!.id
+        speech.setRate(0.4)
+        let current = driver.requests.last!
+        XCTAssertEqual(current.text, "world again.")
+        XCTAssertEqual(current.rate, 0.4)
+        driver.emit(.finished(old)); driver.emit(.cancelled(superseded))
+        driver.emit(.started(current.id)); driver.emit(.range(current.id, NSRange(location: 0, length: 5)))
+        XCTAssertEqual(speech.highlightRange, NSRange(location: 11 + word.location, length: 5))
+        XCTAssertEqual(speech.activeRate, 0.4)
+        speech.pause(); speech.setRate(0.6)
+        XCTAssertEqual(speech.state, .paused)
+        speech.play()
+        XCTAssertEqual(driver.requests.last?.text, "world again.")
+        XCTAssertEqual(driver.resumed, 0)
+        XCTAssertNil(speech.errorCode)
+    }
+
+    func testNativeSpeechRateChangesActualDurationAndActiveUtterance() async throws {
+        let voice = try XCTUnwrap(SystemSpeechPlaybackService.voices(language: "en-US").first)
+        let speech = SystemSpeechPlaybackService()
+        defer { speech.stop() }
+        let text = "One small step changes the reading speed. Every word stays in its original order."
+        let unit = SystemSpeechUnit(paragraphID: 0, sourceRange: NSRange(location: 0, length: text.utf16.count), text: text)
+        func waitUntil(_ condition: () -> Bool) async throws {
+            let deadline = ProcessInfo.processInfo.systemUptime + 25
+            while !condition(), ProcessInfo.processInfo.systemUptime < deadline {
+                try await Task.sleep(for: .milliseconds(20))
+            }
+            XCTAssertTrue(condition(), "Native speech stalled: \(speech.state), \(speech.errorCode ?? "none")")
+        }
+        func duration(rate: Float) async throws -> Double {
+            speech.load([unit], voiceID: voice.id); speech.setRate(rate); speech.play()
+            try await waitUntil { speech.state == .speaking }
+            XCTAssertEqual(speech.activeRate, rate)
+            let began = ProcessInfo.processInfo.systemUptime
+            try await waitUntil { speech.state == .finished }
+            return ProcessInfo.processInfo.systemUptime - began
+        }
+        let slow = try await duration(rate: 0.35)
+        let fast = try await duration(rate: 0.65)
+        XCTAssertGreaterThan(slow, fast * 1.25, "Changing native rate must change real speaking duration")
+        print("OFFLINE_NATIVE_RATE slowMs=\(Int(slow * 1000)) fastMs=\(Int(fast * 1000))")
+        speech.load([unit], voiceID: voice.id); speech.setRate(0.35); speech.play()
+        try await waitUntil { speech.callbackCount >= 3 }
+        let location = try XCTUnwrap(speech.highlightRange).location
+        speech.setRate(0.65)
+        try await waitUntil { speech.activeRate == 0.65 && speech.state == .speaking && speech.highlightRange != nil }
+        XCTAssertGreaterThanOrEqual(try XCTUnwrap(speech.highlightRange).location, location)
+        XCTAssertEqual(speech.currentUnitIndex, 0)
     }
 
     func testAutomaticNextPageCannotClearSleepDeadlineOrReclaimAnotherReader() async throws {

@@ -72,6 +72,10 @@ struct KindleHomeSection: View {
                     .foregroundColor(AppTheme.mutedForeground)
             }
             Spacer()
+            NavigationLink(destination: KindleOfflineLibraryView()) {
+                Text("离线").font(.subheadline.weight(.semibold)).foregroundStyle(AppTheme.primary)
+                    .frame(minHeight: 44)
+            }.accessibilityLabel("离线书籍").accessibilityIdentifier("homeKindleOfflineBooks")
             NavigationLink(destination: KindleLibraryView()) {
                 Text("查看全部")
                     .font(.subheadline.weight(.semibold))

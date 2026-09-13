@@ -74,7 +74,7 @@ struct KindleOfflineDownloadView: View {
         .interactiveDismissDisabled(download.isRunning)
         .alert("停止下载？", isPresented: $confirmStop) {
             Button("继续下载", role: .cancel) {}
-            Button(closeAfterStopping ? "停止并关闭" : "取消本次下载", role: .destructive) {
+            Button(closeAfterStopping ? AppLocalized("停止并关闭") : AppLocalized("取消本次下载"), role: .destructive) {
                 let closing = closeAfterStopping
                 Task { @MainActor in
                     await download.stopAndWait(reason: closing ? .closing : .user)
@@ -119,7 +119,7 @@ struct KindleOfflineDownloadView: View {
                     .font(.system(size: 36, weight: .medium)).foregroundStyle(AppTheme.primary)
                     .symbolEffect(.pulse, options: .repeating, isActive: download.isRunning && !reduceMotion)
             }.frame(width: 112, height: 112).padding(.top, 8).accessibilityHidden(true)
-            Text(statusTitle).font(.title3.weight(.semibold))
+            Text(LocalizedStringKey(statusTitle)).font(.title3.weight(.semibold))
                 .accessibilityIdentifier("offlineDownloadStatus")
             if let book = download.book {
                 VStack(spacing: 8) {
@@ -144,7 +144,7 @@ struct KindleOfflineDownloadView: View {
                         .accessibilityIdentifier("offlineDownloadEstimate")
                 }
             } else {
-                Text(complete ? "整本已保存到这台设备，可离线阅读和朗读。" : download.book?.lastError ?? "保存整本书的页面图片，朗读时再在本机识别文字。")
+                Text(complete ? AppLocalized("整本已保存到这台设备，可离线阅读和朗读。") : download.book?.lastError ?? AppLocalized("保存整本书的页面图片，朗读时再在本机识别文字。"))
                     .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
         }.padding(24).frame(maxWidth: .infinity)
@@ -153,13 +153,13 @@ struct KindleOfflineDownloadView: View {
 
     @ViewBuilder private var controls: some View {
         if download.isRunning {
-            Button(download.activity == .restoring ? "正在恢复阅读位置…" : download.isStopping ? "正在停止下载…" : "取消下载") {
+            Button(download.activity == .restoring ? AppLocalized("正在恢复阅读位置…") : download.isStopping ? AppLocalized("正在停止下载…") : AppLocalized("取消下载")) {
                 requestStop(closing: false)
             }.buttonStyle(.bordered).controlSize(.large)
                 .disabled(download.isStopping || download.activity == .restoring)
                 .accessibilityIdentifier("offlineDownloadCancel")
         } else if !complete {
-            Button(download.book?.pages.isEmpty == false ? "继续下载整本书" : "开始保存整本书") {
+            Button(download.book?.pages.isEmpty == false ? AppLocalized("继续下载整本书") : AppLocalized("开始保存整本书")) {
                 #if DEBUG
                 if let fixtureStart { fixtureStart(); return }
                 #endif
@@ -185,7 +185,7 @@ struct KindleOfflineDownloadView: View {
 
     @ViewBuilder private var localReadingLinks: some View {
         if let book = download.book, !book.pages.isEmpty, scope != nil {
-            Button(book.status == .complete ? "打开离线书籍" : "阅读已保存内容") { readerPresented = true }
+            Button(book.status == .complete ? AppLocalized("打开离线书籍") : AppLocalized("阅读已保存内容")) { readerPresented = true }
                 .buttonStyle(.borderedProminent).tint(AppTheme.primary).controlSize(.large)
                 .accessibilityIdentifier("offlineDownloadOpenBook")
         }
@@ -209,10 +209,10 @@ struct KindleOfflineDownloadView: View {
     }
 
     private var remainingTime: String {
-        guard let seconds = download.estimatedRemainingSeconds else { return "正在估算剩余时间…" }
-        if seconds < 60 { return "预计还需约 \(seconds) 秒" }
+        guard let seconds = download.estimatedRemainingSeconds else { return AppLocalized("正在估算剩余时间…") }
+        if seconds < 60 { return AppLocalized("预计还需约 \(seconds) 秒") }
         let minutes = seconds / 60, remainder = seconds % 60
-        return remainder == 0 ? "预计还需约 \(minutes) 分钟" : "预计还需约 \(minutes) 分 \(remainder) 秒"
+        return remainder == 0 ? AppLocalized("预计还需约 \(minutes) 分钟") : AppLocalized("预计还需约 \(minutes) 分 \(remainder) 秒")
     }
 
     private func requestStop(closing: Bool) {

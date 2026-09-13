@@ -13,6 +13,11 @@ private struct KindleOfflinePageZoom: UIViewRepresentable {
         view.accessibilityValue = "100%"
         view.addSubview(view.imageView)
         view.imageView.image = image
+        view.imageView.contentMode = .scaleAspectFit
+        view.imageView.isAccessibilityElement = true
+        view.imageView.accessibilityTraits = .image
+        view.imageView.accessibilityLabel = AppLocalized("原页面")
+        view.imageView.accessibilityIdentifier = "offlineBookZoomImage"
         let doubleTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.doubleTap(_:)))
         doubleTap.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTap)
@@ -29,15 +34,22 @@ private struct KindleOfflinePageZoom: UIViewRepresentable {
             guard bounds.size != viewport, bounds.width > 0, let image = imageView.image else { return }
             viewport = bounds.size
             setZoomScale(1, animated: false)
-            imageView.frame = CGRect(x: 0, y: 0, width: bounds.width,
-                                     height: bounds.width * image.size.height / max(1, image.size.width))
+            let fitted = AVMakeRect(aspectRatio: image.size, insideRect: CGRect(origin: .zero, size: bounds.size))
+            imageView.frame = CGRect(origin: .zero, size: fitted.size)
             contentSize = imageView.frame.size
-            contentOffset = .zero
+            centerImage()
+            contentOffset = CGPoint(x: -contentInset.left, y: -contentInset.top)
+        }
+        func centerImage() {
+            let horizontal = max(0, (bounds.width - contentSize.width) / 2)
+            let vertical = max(0, (bounds.height - contentSize.height) / 2)
+            contentInset = UIEdgeInsets(top: vertical, left: horizontal, bottom: vertical, right: horizontal)
         }
     }
     final class Coordinator: NSObject, UIScrollViewDelegate {
         func viewForZooming(in scrollView: UIScrollView) -> UIView? { (scrollView as? Canvas)?.imageView }
         func scrollViewDidZoom(_ scrollView: UIScrollView) {
+            (scrollView as? Canvas)?.centerImage()
             scrollView.accessibilityValue = "\(Int(scrollView.zoomScale * 100))%"
         }
         @objc func doubleTap(_ gesture: UITapGestureRecognizer) {
@@ -85,8 +97,10 @@ private struct KindleOfflineBookReaderContent: View {
     @ObservedObject private var network = NetworkReachability.shared
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showVoicePicker = false
     @State private var showPagePicker = false
+    @State private var showRatePicker = false
     @State private var pageInput = ""
     @State private var originalPage = false
     @State private var enlargedImage: UIImage?
@@ -95,17 +109,26 @@ private struct KindleOfflineBookReaderContent: View {
 
     private var playing: Bool { model.preparingSpeech || speech.state == .speaking || speech.state == .preparing }
     private var hasText: Bool { model.document?.paragraphs.contains { $0.type.isReadable && !$0.text.isEmpty } == true }
-    private var voiceName: String { model.voices.first(where: { $0.id == model.voiceID })?.name ?? "本机声音" }
+    private var voiceName: String { model.voices.first(where: { $0.id == model.voiceID })?.name ?? AppLocalized("本机声音") }
     private var rateLabel: String { String(format: "%.1f×", model.speechRate / Double(AVSpeechUtteranceDefaultSpeechRate)) }
 
     var body: some View {
         VStack(spacing: 0) {
             pageHeader
+            if hasText {
+                Picker("阅读显示", selection: $originalPage) {
+                    Text("朗读文本").tag(false)
+                    Text("原页面").tag(true)
+                }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.bottom, 8)
+                    .accessibilityIdentifier("offlineBookDisplayMode")
+            }
             Divider()
-            readingBody
-                .frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
-            playbackBar
+            readingBody.frame(maxWidth: .infinity, maxHeight: .infinity)
+            if model.reachedSavedEnd || model.book.status != .complete && model.pageIndex + 1 == model.book.pages.count {
+                savedEndNotice
+            }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { playbackBar }
         .background(AppTheme.background)
         .toolbar { ToolbarItem(placement: .primaryAction) { ReaderMoreButton() } }
         .environment(\.readerAppearanceSource, originalPage || !hasText ? .fixedLayout : .text)
@@ -122,137 +145,136 @@ private struct KindleOfflineBookReaderContent: View {
         }
         .sheet(isPresented: $showVoicePicker) { voicePicker }
         .sheet(isPresented: $showPagePicker) { pagePicker }
+        .sheet(isPresented: $showRatePicker) { ratePicker }
         .onChange(of: scenePhase) { _, phase in
             model.persistCurrentPosition()
             if phase == .active { refocus += 1 }
             saveDiagnostic()
         }
         .onChange(of: speech.state) { _, _ in saveDiagnostic() }
+        .onChange(of: speech.activeRate) { _, _ in saveDiagnostic() }
+        .onChange(of: model.speechRate) { _, _ in saveDiagnostic() }
         .onChange(of: model.loading) { _, _ in saveDiagnostic() }
         .onChange(of: model.preparingSpeech) { _, _ in saveDiagnostic() }
         .onChange(of: speech.callbackCount) { _, count in if count % 10 == 0 { saveDiagnostic() } }
     }
 
     private var pageHeader: some View {
-        HStack(spacing: 12) {
-            Group {
-                if dynamicTypeSize.isAccessibilitySize {
-                    Image(systemName: model.book.status == .complete ? "checkmark.circle" : "pause.circle")
-                } else {
-                    Label(model.book.status == .complete ? "整本离线" : "部分已保存", systemImage: "checkmark.circle")
-                }
-            }.font(.caption).foregroundStyle(AppTheme.primary)
-                .accessibilityLabel(model.book.status == .complete ? "整本离线" : "部分已保存")
+        HStack(spacing: 8) {
+            Label(model.book.status == .complete ? AppLocalized("离线阅读") : AppLocalized("离线阅读 · 部分"), systemImage: "arrow.down.circle.fill")
+                .font(.subheadline.weight(.medium)).foregroundStyle(AppTheme.primary)
+                .lineLimit(1).minimumScaleFactor(0.85)
+                .accessibilityLabel(model.book.status == .complete ? Text("整本离线") : Text("部分已保存"))
                 .accessibilityIdentifier("offlineBookNetworkStatus")
             Spacer(minLength: 4)
             Button {
                 pageInput = String(model.pageIndex + 1); showPagePicker = true
             } label: {
-                Text(dynamicTypeSize.isAccessibilitySize ? "\(model.pageIndex + 1) / \(model.book.pages.count)" : "第 \(model.pageIndex + 1) / \(model.book.pages.count) 页")
-                    .font(.subheadline.monospacedDigit()).lineLimit(1)
+                Text("\(model.pageIndex + 1) / \(model.book.pages.count)").monospacedDigit()
                 Image(systemName: "chevron.down").font(.caption2)
-            }.frame(minHeight: 44).disabled(model.loading || model.book.pages.isEmpty)
+            }.font(.subheadline).frame(minHeight: 44)
+                .disabled(model.loading || model.book.pages.isEmpty)
                 .accessibilityLabel("第 \(model.pageIndex + 1) / \(model.book.pages.count) 页")
                 .accessibilityIdentifier("offlineBookPageStatus")
-        }.padding(.horizontal, 20).frame(minHeight: 44)
+            Button(action: openImageZoom) {
+                Image(systemName: "arrow.up.left.and.arrow.down.right").frame(width: 44, height: 44)
+            }.disabled(model.pageImage == nil)
+                .accessibilityLabel("放大原页面").accessibilityIdentifier("offlineBookZoom")
+        }.padding(.leading, 16).padding(.trailing, 4)
             .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 
     private var readingBody: some View {
+        VStack(spacing: 8) {
+            if let error = model.error {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(error, systemImage: "exclamationmark.circle").font(.subheadline)
+                    Button(model.document == nil ? AppLocalized("重新读取本页") : AppLocalized("重试朗读")) {
+                        if model.document == nil { model.retryPage() } else { model.play() }
+                    }.buttonStyle(.bordered).accessibilityIdentifier("offlineBookRetry")
+                }.padding(16).foregroundStyle(.red)
+                    .accessibilityElement(children: .contain).accessibilityIdentifier("offlineBookError")
+            }
+            if model.loading {
+                ProgressView("正在读取本机页面…").frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let document = model.document {
+                if originalPage || !hasText { savedImage(document) }
+                else { textPage(document) }
+            } else { Spacer(minLength: 0) }
+        }
+    }
+
+    private func textPage(_ document: ReadingDocument) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    if model.loading { ProgressView("正在读取本机页面…").frame(maxWidth: .infinity).padding(.top, 30) }
-                    if let error = model.error {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Label(error, systemImage: "exclamationmark.circle").font(.subheadline)
-                            Button(model.document == nil ? "重新读取本页" : "重试朗读") {
-                                if model.document == nil { model.retryPage() } else { model.play() }
-                            }.buttonStyle(.bordered).accessibilityIdentifier("offlineBookRetry")
-                        }.foregroundStyle(.red).accessibilityElement(children: .contain).accessibilityIdentifier("offlineBookError")
-                    }
-                    if let document = model.document {
-                        if hasText {
-                            Picker("阅读显示", selection: $originalPage) {
-                                Text("朗读文本").tag(false)
-                                Text("原页面").tag(true)
-                            }.pickerStyle(.segmented).accessibilityIdentifier("offlineBookDisplayMode")
-                        }
-                        if originalPage || !hasText {
-                            savedImage(document)
-                            if !hasText, !model.preparingSpeech {
-                                Text("页面已保存在本机。点击播放即可离线识别并朗读。").font(.footnote).foregroundStyle(.secondary)
-                            }
-                        } else {
-                            ForEach(document.paragraphs.filter { $0.type != .image }) { paragraph in
-                                Text(highlighted(paragraph))
-                                    .font(.system(size: appearance.textSize, design: appearance.usesSerif ? .serif : .default))
-                                    .lineSpacing(appearance.lineSpacing).id(paragraph.id)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .accessibilityIdentifier("offlineBookParagraph.\(paragraph.id)")
-                            }
-                        }
-                    }
-                    if model.reachedSavedEnd || model.book.status != .complete && model.pageIndex + 1 == model.book.pages.count {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Label(model.book.status == .complete ? "已读完整本书" : "已到已保存内容的末尾",
-                                  systemImage: model.book.status == .complete ? "checkmark.seal" : "arrow.down.circle")
-                                .font(.headline)
-                            if model.book.status != .complete {
-                                Text("剩余页面尚未下载。联网继续保存后，可从这里接着读。").font(.footnote).foregroundStyle(.secondary)
-                                if let continueDownload {
-                                    Button("继续下载整本书") { model.pause(); continueDownload() }
-                                        .buttonStyle(.borderedProminent).tint(AppTheme.primary)
-                                        .accessibilityIdentifier("offlineBookContinueDownload")
-                                }
-                            } else {
-                                Button("从第一页重新阅读") { model.selectPage(0) }.buttonStyle(.bordered)
-                            }
-                        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
-                            .background(AppTheme.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
-                            .accessibilityElement(children: .contain).accessibilityIdentifier("offlineBookEnd")
+                    ForEach(document.paragraphs.filter { $0.type != .image }) { paragraph in
+                        Text(highlighted(paragraph))
+                            .font(.system(size: appearance.textSize, design: appearance.usesSerif ? .serif : .default))
+                            .lineSpacing(appearance.lineSpacing).id(paragraph.id)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityIdentifier("offlineBookParagraph.\(paragraph.id)")
                     }
                 }.padding(20)
-            }
-            .id(model.pageIndex)
+            }.id(model.pageIndex)
             .task(id: speech.highlightedParagraphID) {
-                // A cached sentence can already be selected when this body
-                // mounts. Restore its viewport as well as subsequent changes.
                 await Task.yield()
-                if !Task.isCancelled, scenePhase == .active, !originalPage,
+                if !Task.isCancelled, scenePhase == .active,
                    let id = speech.highlightedParagraphID { proxy.scrollTo(id, anchor: .center) }
             }
-            .onChange(of: originalPage) { _, showOriginal in if !showOriginal { refocus += 1 } }
             .onChange(of: refocus) { _, _ in
-                if !originalPage, let id = speech.highlightedParagraphID { withAnimation { proxy.scrollTo(id, anchor: .center) } }
+                if let id = speech.highlightedParagraphID { withAnimation { proxy.scrollTo(id, anchor: .center) } }
             }
         }
     }
 
+    private var savedEndNotice: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(model.book.status == .complete ? AppLocalized("已读完整本书") : AppLocalized("已到已保存内容的末尾"))
+                .font(.subheadline.weight(.semibold))
+            if model.book.status != .complete, let continueDownload {
+                Button("继续下载整本书") { model.pause(); continueDownload() }
+                    .buttonStyle(.bordered).tint(AppTheme.primary)
+                    .accessibilityIdentifier("offlineBookContinueDownload")
+            } else if model.book.status == .complete {
+                Button("从第一页重新阅读") { model.selectPage(0) }.buttonStyle(.bordered)
+            }
+        }.padding(.horizontal, 16).padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppTheme.primary.opacity(0.06))
+            .accessibilityElement(children: .contain).accessibilityIdentifier("offlineBookEnd")
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+    }
+
+    private func openImageZoom() {
+        guard let image = model.pageImage else { return }
+        model.pause(); enlargedImage = image; showImageZoom = true
+    }
+
     @ViewBuilder private func savedImage(_ document: ReadingDocument) -> some View {
         if let image = model.pageImage {
-            Button {
-                model.pause(); enlargedImage = image; showImageZoom = true
-            } label: { Label("放大原页面", systemImage: "plus.magnifyingglass") }
-                .font(.subheadline).frame(minHeight: 44).accessibilityIdentifier("offlineBookZoom")
-            Image(uiImage: image).resizable().scaledToFit()
-                .overlay {
-                    GeometryReader { geometry in
-                        let rects = originalHighlightRects(document, size: geometry.size)
+            GeometryReader { geometry in
+                let available = CGRect(origin: .zero, size: CGSize(width: max(1, geometry.size.width - 24), height: max(1, geometry.size.height - 16)))
+                let fitted = AVMakeRect(aspectRatio: image.size, insideRect: available)
+                Image(uiImage: image).resizable().frame(width: fitted.width, height: fitted.height)
+                    .overlay {
+                        let rects = originalHighlightRects(document, size: fitted.size)
                         ForEach(rects.indices, id: \.self) { index in
                             RoundedRectangle(cornerRadius: 3).fill(.orange.opacity(0.4))
                                 .frame(width: rects[index].width, height: rects[index].height)
                                 .position(x: rects[index].midX, y: rects[index].midY)
                         }
-                    }.allowsHitTesting(false)
-                }
-                .accessibilityLabel("已保存的第 \(model.pageIndex + 1) 页原图")
-                .accessibilityIdentifier("offlineBookSavedImage")
+                    }
+                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                    .onTapGesture(perform: openImageZoom)
+                    .accessibilityLabel("已保存的第 \(model.pageIndex + 1) 页原图")
+                    .accessibilityIdentifier("offlineBookSavedImage")
+            }
         }
     }
 
     private var playbackBar: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 2) {
             Divider()
             if model.preparingSpeech {
                 HStack(spacing: 8) { ProgressView().controlSize(.small); Text("正在本机识别文字…") }
@@ -260,57 +282,110 @@ private struct KindleOfflineBookReaderContent: View {
             } else if speech.errorCode != nil {
                 Text("系统声音暂不可用，请切换本机声音后重试。").font(.caption).foregroundStyle(.red)
             } else {
-                Text(dynamicTypeSize.isAccessibilitySize ? playbackStatus : "\(playbackStatus) · 本机朗读，无需网络")
+                Text(LocalizedStringKey(playbackStatus))
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2).padding(.top, 6)
                     .accessibilityIdentifier("offlineBookSpeechStatus")
+                    .accessibilityValue(speech.activeRate.map { String(format: "%.1f×", $0 / AVSpeechUtteranceDefaultSpeechRate) } ?? "")
             }
-            HStack(spacing: 0) {
-                transport("上一页", icon: "chevron.left", id: "offlineBookPreviousPage", disabled: model.loading || model.pageIndex == 0) {
-                    model.selectPage(model.pageIndex - 1)
-                }
-                Spacer(minLength: 0)
-                transport("上一句", icon: "backward.end", id: "offlineBookPreviousSentence", disabled: speech.units.isEmpty || speech.currentUnitIndex == 0) {
-                    model.pause(); speech.seek(to: speech.currentUnitIndex - 1, autoplay: false)
-                }
-                Spacer(minLength: 0)
-                Button { if playing { model.pause() } else { model.play() } } label: {
-                    Image(systemName: playing ? "pause.fill" : "play.fill")
-                        .font(.system(size: 24, weight: .semibold)).foregroundStyle(.white)
-                        .frame(width: 58, height: 58).background(AppTheme.primary, in: Circle())
-                }.disabled(model.loading || model.document == nil)
-                    .accessibilityLabel(playing ? "暂停" : "播放").accessibilityIdentifier("offlineBookPlay")
-                Spacer(minLength: 0)
-                transport("下一句", icon: "forward.end", id: "offlineBookNextSentence", disabled: speech.units.isEmpty || speech.currentUnitIndex + 1 >= speech.units.count) {
-                    model.pause(); speech.seek(to: speech.currentUnitIndex + 1, autoplay: false)
-                }
-                Spacer(minLength: 0)
-                transport("下一页", icon: "chevron.right", id: "offlineBookNextPage", disabled: model.loading || model.pageIndex + 1 >= model.book.pages.count) {
-                    model.selectPage(model.pageIndex + 1)
-                }
-            }.padding(.horizontal, 20)
-            HStack {
-                Button { showVoicePicker = true } label: {
-                    if dynamicTypeSize.isAccessibilitySize { Image(systemName: "waveform").frame(width: 44, height: 44) }
-                    else { Label(voiceName, systemImage: "waveform").lineLimit(1) }
-                }.frame(minHeight: 44).accessibilityLabel("本机声音").accessibilityValue(voiceName)
-                    .accessibilityIdentifier("offlineBookVoice")
-                Spacer(minLength: 8)
-                Button { refocus += 1 } label: { Image(systemName: "scope").frame(width: 44, height: 36) }
-                    .accessibilityLabel("回到朗读位置").accessibilityIdentifier("offlineBookRefocus")
-                Spacer(minLength: 8)
-                Menu {
-                    ForEach([0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65], id: \.self) { rate in
-                        Button(String(format: "%.1f×", rate / Double(AVSpeechUtteranceDefaultSpeechRate))) { model.changeRate(rate) }
-                    }
-                } label: { Text(rateLabel).monospacedDigit().frame(minWidth: 44, minHeight: 36) }
-                .accessibilityLabel("朗读速度").accessibilityValue(rateLabel).accessibilityIdentifier("offlineBookRate")
-            }.font(.subheadline).padding(.horizontal, 24)
+            if verticalSizeClass == .compact {
+                HStack(spacing: 8) {
+                    transportControls
+                    voiceButton
+                    refocusButton
+                    rateButton
+                }.font(.subheadline).padding(.horizontal, 16)
+            } else {
+                transportControls.padding(.horizontal, 20)
+                HStack {
+                    voiceButton
+                    Spacer(minLength: 8)
+                    refocusButton
+                    Spacer(minLength: 8)
+                    rateButton
+                }.font(.subheadline).padding(.horizontal, 24)
+            }
         }.padding(.bottom, 4).background(AppTheme.card).dynamicTypeSize(...DynamicTypeSize.accessibility1)
+    }
+
+    private var transportControls: some View {
+        HStack(spacing: 0) {
+            transport("上一页", icon: "chevron.left", id: "offlineBookPreviousPage", disabled: model.loading || model.pageIndex == 0) {
+                model.selectPage(model.pageIndex - 1)
+            }
+            Spacer(minLength: 0)
+            transport("上一句", icon: "backward.end", id: "offlineBookPreviousSentence", disabled: speech.units.isEmpty || speech.currentUnitIndex == 0) {
+                model.pause(); speech.seek(to: speech.currentUnitIndex - 1, autoplay: false)
+            }
+            Spacer(minLength: 0)
+            Button { if playing { model.pause() } else { model.play() } } label: {
+                Image(systemName: playing ? "pause.fill" : "play.fill")
+                    .font(.system(size: 24, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 52, height: 52).background(AppTheme.primary, in: Circle())
+            }.disabled(model.loading || model.document == nil)
+                .accessibilityLabel(playing ? Text("暂停") : Text("播放")).accessibilityIdentifier("offlineBookPlay")
+            Spacer(minLength: 0)
+            transport("下一句", icon: "forward.end", id: "offlineBookNextSentence", disabled: speech.units.isEmpty || speech.currentUnitIndex + 1 >= speech.units.count) {
+                model.pause(); speech.seek(to: speech.currentUnitIndex + 1, autoplay: false)
+            }
+            Spacer(minLength: 0)
+            transport("下一页", icon: "chevron.right", id: "offlineBookNextPage", disabled: model.loading || model.pageIndex + 1 >= model.book.pages.count) {
+                model.selectPage(model.pageIndex + 1)
+            }
+        }
+    }
+
+    private var voiceButton: some View {
+        Button { showVoicePicker = true } label: {
+            if dynamicTypeSize.isAccessibilitySize || verticalSizeClass == .compact {
+                Image(systemName: "waveform").frame(width: 44, height: 44)
+            } else { Label(voiceName, systemImage: "waveform").lineLimit(1) }
+        }.frame(minHeight: 44).accessibilityLabel("本机声音").accessibilityValue(voiceName)
+            .accessibilityIdentifier("offlineBookVoice")
+    }
+
+    private var refocusButton: some View {
+        Button { refocus += 1 } label: { Image(systemName: "scope").frame(width: 44, height: 44) }
+            .accessibilityLabel("回到朗读位置").accessibilityIdentifier("offlineBookRefocus")
+    }
+
+    private var rateButton: some View {
+        Button { showRatePicker = true } label: {
+            Text(rateLabel).monospacedDigit().fontWeight(.semibold).frame(minWidth: 54, minHeight: 44)
+                .background(AppTheme.primary.opacity(0.08), in: Capsule())
+        }.accessibilityLabel("朗读速度").accessibilityValue(rateLabel).accessibilityIdentifier("offlineBookRate")
     }
 
     private func transport(_ title: String, icon: String, id: String, disabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) { Image(systemName: icon).font(.system(size: 20)).frame(width: 44, height: 48) }
-            .disabled(disabled).accessibilityLabel(title).accessibilityIdentifier(id)
+            .disabled(disabled).accessibilityLabel(LocalizedStringKey(title)).accessibilityIdentifier(id)
+    }
+
+    private var ratePicker: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    Text(rateLabel).font(.system(size: 34, weight: .semibold, design: .rounded)).monospacedDigit()
+                    Slider(value: Binding(get: { model.speechRate }, set: { model.changeRate($0) }), in: 0.3...0.65, step: 0.05)
+                        .frame(minHeight: 44)
+                        .accessibilityLabel("朗读速度").accessibilityIdentifier("offlineBookRateSlider")
+                    HStack { Text("更慢"); Spacer(); Text("更快") }.font(.caption).foregroundStyle(.secondary)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 10) {
+                        ForEach([0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65], id: \.self) { rate in
+                            let label = String(format: "%.1f×", rate / Double(AVSpeechUtteranceDefaultSpeechRate))
+                            Button { model.changeRate(rate); showRatePicker = false } label: {
+                                Text(label).frame(maxWidth: .infinity, minHeight: 48)
+                                    .foregroundStyle(AppTheme.primary)
+                                    .background(abs(model.speechRate - rate) < 0.001 ? AppTheme.primary.opacity(0.15) : AppTheme.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
+                            }.buttonStyle(.plain)
+                                .accessibilityAddTraits(abs(model.speechRate - rate) < 0.001 ? .isSelected : [])
+                        }
+                    }
+                }.padding(20)
+            }.navigationTitle("朗读速度").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { showRatePicker = false }.accessibilityIdentifier("offlineBookRateDone")
+                } }
+        }.presentationDetents([.height(390), .large])
     }
 
     private var voicePicker: some View {
@@ -341,17 +416,24 @@ private struct KindleOfflineBookReaderContent: View {
             Form {
                 Section("跳转页码") {
                     TextField("页码", text: $pageInput).keyboardType(.numberPad).accessibilityIdentifier("offlineBookPageInput")
-                    Text("可阅读第 1–\(model.book.pages.count) 页\(model.book.status == .complete ? "" : "，其余页面尚未下载")")
+                    Text("可阅读第 1–\(model.book.pages.count) 页")
                         .font(.footnote).foregroundStyle(.secondary)
+                    if model.book.status != .complete {
+                        Text("其余页面尚未下载").font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
-                Button("跳转") {
-                    guard let page = Int(pageInput), (1...max(1, model.book.pages.count)).contains(page) else { return }
-                    model.selectPage(page - 1); showPagePicker = false
-                }.disabled(Int(pageInput).map { !(1...max(1, model.book.pages.count)).contains($0) } ?? true)
-                    .accessibilityIdentifier("offlineBookPageGo")
             }.navigationTitle("跳转页码").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { showPagePicker = false } } }
-        }.presentationDetents([.medium, .large])
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("取消") { showPagePicker = false } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("跳转") {
+                            guard let page = Int(pageInput), (1...max(1, model.book.pages.count)).contains(page) else { return }
+                            model.selectPage(page - 1); showPagePicker = false
+                        }.disabled(Int(pageInput).map { !(1...max(1, model.book.pages.count)).contains($0) } ?? true)
+                            .accessibilityIdentifier("offlineBookPageGo")
+                    }
+                }
+        }.presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large])
     }
 
     private var playbackStatus: String {
@@ -394,6 +476,7 @@ private struct KindleOfflineBookReaderContent: View {
             "rangeCallbacks": speech.callbackCount, "recognitionCount": model.recognitionCount,
             "preparingSpeech": model.preparingSpeech, "firstSpeechMilliseconds": speech.firstSpeechMilliseconds ?? -1,
             "voiceID": model.voiceID, "networkHint": network.isOnline,
+            "selectedSpeechRate": model.speechRate, "activeSpeechRate": speech.activeRate ?? -1,
             "scene": scenePhase == .active ? "active" : "background", "errorCode": speech.errorCode ?? ""]
         guard let data = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]),
               let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }

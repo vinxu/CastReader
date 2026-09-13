@@ -97,6 +97,7 @@ final class SystemSpeechPlaybackService: ObservableObject {
     @Published private(set) var callbackCount = 0
     @Published private(set) var firstSpeechMilliseconds: Int?
     @Published private(set) var errorCode: String?
+    @Published private(set) var activeRate: Float?
     private(set) var units: [SystemSpeechUnit] = []
     private(set) var generation = UUID()
     var onCheckpoint: ((SystemSpeechUnit, NSRange?) -> Void)?
@@ -105,7 +106,13 @@ final class SystemSpeechPlaybackService: ObservableObject {
 
     private let driver: any SystemSpeechDriving
     private let now: () -> TimeInterval
-    private var queued: [UUID: Int] = [:]
+    private struct QueuedSpeech {
+        let index: Int
+        let offset: Int
+        let rate: Float
+    }
+    private var queued: [UUID: QueuedSpeech] = [:]
+    private var restartOffset = 0
     private var nextIndex = 0
     private var voiceID = ""
     private var rate = AVSpeechUtteranceDefaultSpeechRate
@@ -198,7 +205,8 @@ final class SystemSpeechPlaybackService: ObservableObject {
             state = .speaking
             return
         }
-        begin(at: state == .finished ? 0 : currentUnitIndex)
+        begin(at: state == .finished ? 0 : currentUnitIndex,
+              offset: state == .finished ? 0 : restartOffset)
     }
 
     func prepareForUserPlayback() {
@@ -234,12 +242,15 @@ final class SystemSpeechPlaybackService: ObservableObject {
         invalidateQueue()
         state = .idle
         requiresRequeue = true
+        restartOffset = 0
+        activeRate = nil
     }
 
     func seek(to index: Int, autoplay: Bool) {
         guard units.indices.contains(index) else { return }
         invalidateQueue()
         currentUnitIndex = index
+        restartOffset = 0
         highlightRange = nil
         highlightedParagraphID = units[index].paragraphID
         state = .paused
@@ -250,9 +261,21 @@ final class SystemSpeechPlaybackService: ObservableObject {
 
     func setRate(_ newRate: Float) {
         guard newRate.isFinite else { return }
+        let bounded = min(AVSpeechUtteranceMaximumSpeechRate, max(AVSpeechUtteranceMinimumSpeechRate, newRate))
+        guard bounded != rate else { return }
         let wasPlaying = state == .speaking || state == .preparing
-        rate = min(AVSpeechUtteranceMaximumSpeechRate, max(AVSpeechUtteranceMinimumSpeechRate, newRate))
-        if !units.isEmpty { seek(to: currentUnitIndex, autoplay: wasPlaying) }
+        rate = bounded
+        guard units.indices.contains(currentUnitIndex), state != .finished else { return }
+        // Utterance rates are fixed when enqueued. Replace the queue, retaining
+        // the current word so changing speed cannot skip text or replay a long sentence.
+        if let range = highlightRange {
+            restartOffset = max(0, range.location - units[currentUnitIndex].sourceRange.location)
+        }
+        let offset = restartOffset
+        invalidateQueue()
+        requiresRequeue = true
+        state = .paused
+        if wasPlaying { begin(at: currentUnitIndex, offset: offset) }
     }
 
     func setVoice(_ identifier: String) {
@@ -262,16 +285,18 @@ final class SystemSpeechPlaybackService: ObservableObject {
         if !units.isEmpty { seek(to: currentUnitIndex, autoplay: wasPlaying) }
     }
 
-    private func begin(at index: Int) {
+    private func begin(at index: Int, offset: Int = 0) {
         guard units.indices.contains(index) else { return }
         guard canContinueAutomatically else { pause(); return }
         invalidateQueue()
         currentUnitIndex = index
+        restartOffset = offset
         highlightRange = nil
         highlightedParagraphID = units[index].paragraphID
         nextIndex = index
         callbackCount = 0
         firstSpeechMilliseconds = nil
+        activeRate = nil
         errorCode = nil
         requestedAt = now()
         state = .preparing
@@ -306,9 +331,15 @@ final class SystemSpeechPlaybackService: ObservableObject {
         while queued.count < 3, nextIndex < units.count {
             let index = nextIndex
             let id = UUID()
-            queued[id] = index
+            let unit = units[index]
+            let offset = index == currentUnitIndex ? restartOffset : 0
+            guard offset >= 0, offset < unit.text.utf16.count,
+                  let suffix = Range(NSRange(location: offset, length: unit.text.utf16.count - offset), in: unit.text) else {
+                throw NSError(domain: "SystemSpeech", code: 2)
+            }
+            queued[id] = QueuedSpeech(index: index, offset: offset, rate: rate)
             nextIndex += 1
-            try driver.speak(SystemSpeechRequest(id: id, text: units[index].text, voiceID: voiceID, rate: rate))
+            try driver.speak(SystemSpeechRequest(id: id, text: String(unit.text[suffix]), voiceID: voiceID, rate: rate))
         }
     }
 
@@ -321,8 +352,11 @@ final class SystemSpeechPlaybackService: ObservableObject {
                 requiresRequeue = true
                 return
             }
-            guard let index = queued[id], state == .preparing || state == .speaking else { return }
+            guard let entry = queued[id], state == .preparing || state == .speaking else { return }
+            let index = entry.index
             currentUnitIndex = index
+            restartOffset = entry.offset
+            activeRate = entry.rate
             highlightedParagraphID = units[index].paragraphID
             highlightRange = nil
             state = .speaking
@@ -330,10 +364,13 @@ final class SystemSpeechPlaybackService: ObservableObject {
             startWatchdog?.cancel()
             checkpoint()
         case .range(let id, let range):
-            guard let index = queued[id], state == .speaking, index == currentUnitIndex,
-                  let source = SystemSpeechTextPlan.sourceRange(range, in: units[index]) else { return }
+            guard let entry = queued[id], state == .speaking, entry.index == currentUnitIndex,
+                  range.location != NSNotFound, range.location >= 0,
+                  range.location <= units[entry.index].text.utf16.count - entry.offset,
+                  let source = SystemSpeechTextPlan.sourceRange(
+                    NSRange(location: entry.offset + range.location, length: range.length), in: units[entry.index]) else { return }
             highlightRange = source
-            highlightedParagraphID = units[index].paragraphID
+            highlightedParagraphID = units[entry.index].paragraphID
             callbackCount += 1
             checkpoint()
         case .finished(let id):
@@ -346,7 +383,8 @@ final class SystemSpeechPlaybackService: ObservableObject {
                 checkpoint()
                 return
             }
-            guard let index = queued.removeValue(forKey: id), state == .speaking || state == .preparing else { return }
+            guard let entry = queued.removeValue(forKey: id), state == .speaking || state == .preparing else { return }
+            let index = entry.index
             if index + 1 == units.count {
                 state = .finished
                 checkpoint()

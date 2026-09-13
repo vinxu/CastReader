@@ -7,20 +7,23 @@ final class KindleOfflineFlowUITests: XCTestCase {
     override func tearDown() {
         if app.state == .runningForeground { capture("offline-flow-final") }
         app.terminate()
+        XCUIDevice.shared.orientation = .portrait
         super.tearDown()
     }
 
-    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false, miniPlayer: Bool = false) {
+    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false, miniPlayer: Bool = false, tallPage: Bool = false, english: Bool = false) {
         app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(zh-Hans)", "-interfaceLanguage", "zh-Hans"]
+        if english { app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(en)", "-interfaceLanguage", "en"] }
         if partial { app.launchArguments.append("-CastReaderOfflineFixturePartial") }
         if failure { app.launchArguments.append("-CastReaderOfflineFixtureFailure") }
         if resumeViewport { app.launchArguments.append("-CastReaderOfflineFixtureResumeViewport") }
         if miniPlayer { app.launchArguments.append("-CastReaderOfflineFixtureMiniPlayer") }
+        if tallPage { app.launchArguments.append("-CastReaderOfflineFixtureTallPage") }
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL", "-CastReaderFixtureAppearance", "Dark"] }
         app.launchEnvironment["CASTREADER_OFFLINE_FIXTURE_ID"] = UUID().uuidString
         app.launchEnvironment["CASTREADER_OFFLINE_FIXTURE_DELAY"] = partial ? "900" : "600"
         app.launch()
-        XCTAssertTrue(app.buttons["libraryOfflineBooks"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["offlineFlowOnlineBook"].waitForExistence(timeout: 15))
     }
 
     private func visibleButton(_ id: String) -> XCUIElement {
@@ -46,7 +49,7 @@ final class KindleOfflineFlowUITests: XCTestCase {
     }
 
     private func capture(_ name: String) {
-        let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
         let tree = XCTAttachment(string: app.debugDescription); tree.name = name + "-accessibility"; tree.lifetime = .keepAlways; add(tree)
     }
 
@@ -191,6 +194,87 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("offlineBookClose")
         XCTAssertTrue(app.buttons["offlineLibraryBook.offline-flow-book"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["offlineFixtureRootMiniPlayer"].isHittable)
+    }
+
+    func testRateSelectionChangesTheSpeakingUtteranceWhilePlaying() {
+        launch(partial: true)
+        tap("libraryOfflineBooks")
+        tap("offlineLibraryBook.offline-flow-book", timeout: 20)
+        tap("offlineBookRate"); app.buttons["0.7×"].tap()
+        tap("offlineBookPlay")
+        wait(25) { self.app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读") }
+        wait { self.app.staticTexts["offlineBookSpeechStatus"].value as? String == "0.7×" }
+        tap("offlineBookRate"); app.buttons["1.3×"].tap()
+        wait { self.app.staticTexts["offlineBookSpeechStatus"].value as? String == "1.3×" }
+        XCTAssertTrue(app.staticTexts["offlineBookSpeechStatus"].label.contains("正在朗读"))
+        capture("22-active-rate-change")
+        tap("offlineBookPlay")
+        tap("offlineBookClose")
+        tap("offlineLibraryBook.offline-flow-book")
+        XCTAssertEqual(app.buttons["offlineBookRate"].value as? String, "1.3×")
+        XCTAssertEqual(app.buttons["offlineBookPlay"].label, "播放")
+    }
+
+    func testTallOriginalPageFitsAbovePlayerAndZoomStartsWithWholePage() {
+        launch(partial: true, tallPage: true)
+        tap("libraryOfflineBooks")
+        tap("offlineLibraryBook.offline-flow-book", timeout: 20)
+        let page = app.images["offlineBookSavedImage"]
+        XCTAssertTrue(page.waitForExistence(timeout: 10))
+        XCTAssertGreaterThanOrEqual(page.frame.minY, app.buttons["offlineBookPageStatus"].frame.maxY)
+        XCTAssertLessThanOrEqual(page.frame.maxY, app.staticTexts["offlineBookSpeechStatus"].frame.minY)
+        XCTAssertEqual(page.frame.width / page.frame.height, 1.0 / 3.0, accuracy: 0.02)
+        XCTAssertLessThan(app.buttons["offlineBookRate"].frame.maxY - app.staticTexts["offlineBookSpeechStatus"].frame.minY, 150)
+        capture("23-entire-tall-page-visible")
+        tap("offlineBookZoom")
+        let canvas = app.scrollViews["offlineBookZoomCanvas"]
+        let enlarged = app.images["offlineBookZoomImage"]
+        XCTAssertTrue(enlarged.waitForExistence(timeout: 8))
+        XCTAssertTrue(canvas.frame.insetBy(dx: -1, dy: -1).contains(enlarged.frame))
+        XCTAssertEqual(enlarged.frame.width / enlarged.frame.height, 1.0 / 3.0, accuracy: 0.02)
+        capture("24-zoom-entire-page")
+        canvas.doubleTap(); wait { canvas.value as? String != "100%" }
+        canvas.doubleTap(); wait { canvas.value as? String == "100%" }
+        XCTAssertTrue(canvas.frame.insetBy(dx: -1, dy: -1).contains(enlarged.frame))
+        tap("offlineBookZoomClose")
+    }
+
+    func testEnglishReaderAndLandscapePageRemainComplete() {
+        launch(partial: true, tallPage: true, english: true)
+        tap("libraryOfflineBooks")
+        XCTAssertTrue(app.navigationBars["Offline Books"].waitForExistence(timeout: 8))
+        tap("offlineLibraryBook.offline-flow-book", timeout: 20)
+        XCTAssertTrue(app.images["offlineBookSavedImage"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["offlineBookSpeechStatus"].label, "Tap play to start reading")
+        XCTAssertEqual(app.buttons["offlineBookRate"].label, "Reading Speed")
+        XCTAssertEqual(app.buttons["offlineBookPageStatus"].label, "Page 1 of 3")
+        tap("offlineBookRate")
+        XCTAssertTrue(app.navigationBars["Reading Speed"].exists)
+        let rates = ["0.6×", "0.7×", "0.8×", "0.9×", "1.0×", "1.1×", "1.2×", "1.3×"]
+        wait {
+            rates.allSatisfy { label in
+                let button = self.app.buttons[label]
+                return button.isHittable && button.frame.height >= 44 && button.frame.maxY <= self.app.frame.maxY
+            }
+        }
+        capture("25-english-speed-picker")
+        app.buttons["1.0×"].tap()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        wait { self.app.frame.width > self.app.frame.height }
+        let image = app.images["offlineBookSavedImage"]
+        XCTAssertGreaterThan(image.frame.height, 60)
+        XCTAssertEqual(image.frame.width / image.frame.height, 1.0 / 3.0, accuracy: 0.02)
+        XCTAssertGreaterThanOrEqual(image.frame.minY, app.buttons["offlineBookPageStatus"].frame.maxY)
+        XCTAssertLessThanOrEqual(image.frame.maxY, app.staticTexts["offlineBookSpeechStatus"].frame.minY)
+        for id in ["offlineBookPlay", "offlineBookVoice", "offlineBookRate", "offlineBookZoom"] {
+            XCTAssertTrue(app.buttons[id].isHittable)
+        }
+        capture("26-landscape-entire-page")
+        tap("offlineBookNextPage"); tap("offlineBookNextPage")
+        XCTAssertTrue(app.buttons["offlineBookContinueDownload"].waitForExistence(timeout: 8))
+        XCTAssertGreaterThan(image.frame.height, 40, "The partial-end banner must leave room for the page")
+        XCTAssertLessThanOrEqual(image.frame.maxY, app.buttons["offlineBookContinueDownload"].frame.minY)
+        capture("27-landscape-partial-end")
     }
 
     func testFailedDownloadRetainsPagesAndCanResume() {

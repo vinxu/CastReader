@@ -85,6 +85,7 @@ struct KindleOfflineLibraryView: View {
                 }
             }
         }
+        .reservesMiniPlayerSpace()
         .navigationTitle("离线书籍").navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, prompt: "搜索离线书名或作者")
         // Match the download screen's reader presentation so the root online
@@ -117,7 +118,7 @@ struct KindleOfflineLibraryView: View {
                 Task {
                     guard scope == item.scope else { return }
                     do { try await store.remove(id: item.id, scope: item.scope); await refresh() }
-                    catch { self.error = "未能完全删除本机副本，请检查设备存储后重试。" }
+                    catch { self.error = AppLocalized("未能完全删除本机副本，请检查设备存储后重试。") }
                 }
             }
             Button("取消", role: .cancel) {}
@@ -134,13 +135,16 @@ struct KindleOfflineLibraryView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(book.title).font(.headline).lineLimit(2)
                 if !book.author.isEmpty { Text(book.author).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
-                Label(book.status == .complete ? "整本已保存 · \(book.pages.count) 页" : "未完成 · 已保存 \(book.pages.count) 页",
+                Label(book.status == .complete ? AppLocalized("整本已保存 · \(book.pages.count) 页") : AppLocalized("未完成 · 已保存 \(book.pages.count) 页"),
                       systemImage: book.status == .complete ? "checkmark.circle.fill" : "pause.circle")
                     .font(.caption).foregroundStyle(book.status == .complete ? AppTheme.primary : .secondary)
                 if book.hasLocalReadingPosition == true {
                     Text("上次读到第 \(book.readingPosition.page + 1) 页").font(.caption).foregroundStyle(.secondary)
                 }
             }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                .accessibilityHidden(true)
         }.padding(.vertical, 4)
     }
 
@@ -158,7 +162,7 @@ struct KindleOfflineLibraryView: View {
         } catch {
             guard expected == scope, refreshID == request, !Task.isCancelled else { return }
             books = []; unreadableIDs = []; loadedScope = expected; loading = false
-            self.error = "本机书籍列表读取失败，已保存的文件仍保留。"
+            self.error = AppLocalized("本机书籍列表读取失败，已保存的文件仍保留。")
         }
     }
 
@@ -167,7 +171,7 @@ struct KindleOfflineLibraryView: View {
         KindleRunLog.write("KINDLE_OFFLINE_ROUTE resume fixture=\(continueDownload != nil)")
         if let continueDownload { continueDownload(book); return }
         guard let source = library.boundBooks.first(where: { $0.id == book.sourceBookID }) ?? book.sourceBook else {
-            error = "请先在 Kindle 书架同步这本书，再从“更多”继续离线保存。"; return
+            error = AppLocalized("请先在 Kindle 书架同步这本书，再从“更多”继续离线保存。"); return
         }
         KindlePlaybackCenter.shared.openOfflineDownload(book: source)
     }

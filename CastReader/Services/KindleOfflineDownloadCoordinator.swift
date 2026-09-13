@@ -44,8 +44,8 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
         case user, background, closing
         var message: String {
             switch self {
-            case .user, .closing: return "已取消本次下载，已保存页面会保留。"
-            case .background: return "已暂停。请保持此页面在前台，已保存页面会保留。"
+            case .user, .closing: return AppLocalized("已取消本次下载，已保存页面会保留。")
+            case .background: return AppLocalized("已暂停。请保持此页面在前台，已保存页面会保留。")
             }
         }
     }
@@ -54,7 +54,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
     @Published private(set) var isStopping = false
     @Published private(set) var activity = Activity.idle
     @Published private(set) var estimatedRemainingSeconds: Int?
-    @Published private(set) var phase = "准备保存整本书"
+    @Published private(set) var phase = AppLocalized("准备保存整本书")
     @Published private(set) var error: String?
     let store: KindleOfflineBookStore
     private var task: Task<Void, Never>?
@@ -68,7 +68,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
         do {
             let saved = try await store.load(id: KindleOfflineBookStore.bookID(sourceBookID), scope: scope)
             if !isRunning { book = saved }
-        } catch { if !isRunning { self.error = "本机下载记录读取失败。" } }
+        } catch { if !isRunning { self.error = AppLocalized("本机下载记录读取失败。") } }
     }
 
     func start(source: any KindleOfflineBookSource, scope: String, stillAuthorized: @escaping @MainActor () -> Bool) {
@@ -78,7 +78,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
         isStopping = false; stopReason = nil; activity = .preparing
         estimatedRemainingSeconds = nil
         error = nil
-        phase = "正在确认整本书的页范围…"
+        phase = AppLocalized("正在确认整本书的页范围…")
         task = Task { [weak self, source] in
             guard let self else { return }
             let priorIdleTimer = UIApplication.shared.isIdleTimerDisabled
@@ -111,7 +111,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                         guard stillAuthorized(), self.runID == run else { throw CancellationError() }
                         if book.coversWholeBook { break }
                         self.activity = .saving
-                        self.phase = "正在保存第 \(book.pages.count + 1) 页…"
+                        self.phase = AppLocalized("正在保存第 \(book.pages.count + 1) 页…")
                         let started = ProcessInfo.processInfo.systemUptime
                         let captured = try await self.captureWithRetry(source: source, after: book.pages.last?.position,
                             ordinal: book.pages.count + 1, stillAuthorized: stillAuthorized)
@@ -128,11 +128,11 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                     }
                     self.activity = .verifying
                     self.estimatedRemainingSeconds = nil
-                    self.phase = "正在校验整本书…"
+                    self.phase = AppLocalized("正在校验整本书…")
                     book = try await self.store.finish(book, scope: scope)
                     self.book = book
                 }
-                self.phase = "整本已保存 · \(book.pages.count) 页"
+                self.phase = AppLocalized("整本已保存 · \(book.pages.count) 页")
             } catch {
                 let paused = Task.isCancelled || error is CancellationError
                 let message = paused ? (self.stopReason?.message ?? "已暂停，已保存页面会保留。") : Self.message(for: error)
@@ -146,7 +146,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                 let outcome = self.phase
                 self.activity = .restoring
                 self.estimatedRemainingSeconds = nil
-                self.phase = "正在恢复原阅读位置…"
+                self.phase = AppLocalized("正在恢复原阅读位置…")
                 // Cleanup must still run after cancellation. The source owns
                 // its session and checks its account/reader generation itself.
                 let restored = await Task { @MainActor in await source.endOfflineBookCapture() }.value
@@ -154,7 +154,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                     self.book = (try? await self.store.setStatus(book.status, error: book.lastError,
                         book: book, scope: scope, originalRestored: restored)) ?? book
                 }
-                if !restored { self.error = "下载记录已保留，返回在线阅读时请确认原阅读位置。" }
+                if !restored { self.error = AppLocalized("下载记录已保留，返回在线阅读时请确认原阅读位置。") }
                 self.phase = outcome
             }
             if self.runID == run {
@@ -168,7 +168,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
         guard isRunning, !isStopping, activity != .restoring else { return }
         stopReason = reason
         isStopping = true; estimatedRemainingSeconds = nil
-        phase = "正在停止下载…"
+        phase = AppLocalized("正在停止下载…")
         task?.cancel()
     }
 
@@ -189,7 +189,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
                 guard attempt < 2 else { throw KindleOfflineCaptureFailure.pageNotReady }
                 // Re-request the same uncommitted source range. The source's
                 // exact move/advance guard prevents a retry from skipping a page.
-                phase = "正在重试第 \(ordinal) 页（\(attempt + 1)/2）…"
+                phase = AppLocalized("正在重试第 \(ordinal) 页（\(attempt + 1)/2）…")
                 estimatedRemainingSeconds = nil
                 KindleRunLog.write("KINDLE_OFFLINE_RETRY page=\(ordinal) attempt=\(attempt + 1) reason=page-not-ready")
                 try await Task.sleep(for: .milliseconds(250 * (attempt + 1)))
@@ -201,15 +201,15 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
     private static func message(for error: Error) -> String {
         if let failure = error as? KindleOfflineBookStore.Failure {
             switch failure {
-            case .discontinuousPage, .incompleteBook: return "页面范围未能连续确认，下载已停止，已有内容保留。"
-            case .staleGeneration: return "书籍版式已变化，请恢复下载时的版式后继续。"
-            case .invalidIdentity: return "账号已变化，请重新打开当前账号的书籍。"
-            case .corruptManifest: return "本机下载记录校验失败。"
+            case .discontinuousPage, .incompleteBook: return AppLocalized("页面范围未能连续确认，下载已停止，已有内容保留。")
+            case .staleGeneration: return AppLocalized("书籍版式已变化，请恢复下载时的版式后继续。")
+            case .invalidIdentity: return AppLocalized("账号已变化，请重新打开当前账号的书籍。")
+            case .corruptManifest: return AppLocalized("本机下载记录校验失败。")
             }
         }
         if (error as NSError).domain == NSCocoaErrorDomain && (error as NSError).code == NSFileWriteOutOfSpaceError {
-            return "手机空间不足，已保存页面保留，释放空间后可以继续。"
+            return AppLocalized("手机空间不足，已保存页面保留，释放空间后可以继续。")
         }
-        return "本页暂时无法保存。请确认网络和 Kindle 页面正常后继续下载，已有页面会保留。"
+        return AppLocalized("本页暂时无法保存。请确认网络和 Kindle 页面正常后继续下载，已有页面会保留。")
     }
 }
