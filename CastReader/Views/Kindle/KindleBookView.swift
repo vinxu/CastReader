@@ -2539,7 +2539,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func setApplicationActive(_ active: Bool) {
         guard isApplicationActive != active else { return }
         isApplicationActive = active
-        if !active { offlineDownload.pause() }
+        if !active { offlineDownload.pause(reason: .background) }
         KindleRunLog.write("KINDLE lifecycle appActive=\(active ? "Y" : "N")")
         if active, needsForegroundVisualResync {
             KindleRunLog.write("KINDLE lifecycle visual-resync pending reason=app-active")
@@ -7819,10 +7819,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private struct OfflineSourceEvidence {
         let position: KindleOfflineSourcePosition
         let words: Int
+        let imageIdentity: String
     }
 
-    private func readOfflineSourceEvidence() async throws -> OfflineSourceEvidence {
-        let value = try await evaluateJSON("window.__crOfflineSourceRead && window.__crOfflineSourceRead()")
+    private func readOfflineSourceEvidence(includeImageIdentity: Bool = false) async throws -> OfflineSourceEvidence {
+        let script = includeImageIdentity
+            ? "JSON.stringify({...JSON.parse(window.__crOfflineSourceRead()), imageIdentity:window.__crKindleOfflineImageIdentity()})"
+            : "window.__crOfflineSourceRead && window.__crOfflineSourceRead()"
+        return try parseOfflineSourceEvidence(await evaluateJSON(script))
+    }
+
+    private func parseOfflineSourceEvidence(_ value: [String: Any]) throws -> OfflineSourceEvidence {
         guard value["loading"] as? Bool == false,
               let asin = value["asin"] as? String, asin == expectedReaderASIN,
               let revision = value["revision"] as? String, !revision.isEmpty,
@@ -7847,7 +7854,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let position = KindleOfflineSourcePosition(start: normalizedStart, end: min(maximum, end + 1), minimum: minimum, maximum: maximum,
             layoutID: KindleOfflinePageStore.digest(layoutData), fingerprint: "source-\(start)-\(end)")
         guard position.isValid else { throw KindleBookError.invalidPayload }
-        return OfflineSourceEvidence(position: position, words: words)
+        return OfflineSourceEvidence(position: position, words: words, imageIdentity: value["imageIdentity"] as? String ?? "")
     }
 
     private func waitForOfflineSource(target: Int? = nil) async throws -> OfflineSourceEvidence {
@@ -7877,15 +7884,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         for _ in 0..<400 {
             try Task.checkCancellation()
             try requireOfflineCapture()
-            if let source = try? await readOfflineSourceEvidence(), source.position.start <= target, source.position.end >= target,
-               let identity = try? await evaluate("window.__crKindleOfflineImageIdentity()") as? String, !identity.isEmpty {
+            if let source = try? await readOfflineSourceEvidence(includeImageIdentity: true),
+               source.position.start <= target, source.position.end >= target, !source.imageIdentity.isEmpty {
+                let identity = source.imageIdentity
                 if source.position == prior && identity == priorImage {
                     // Normal sequential flips hit already-prefetched images.
                     // Identical-image pages retain the conservative layout check.
                     if identity != previousIdentity { return source }
                     if let since = sameImageSince, Date().timeIntervalSince(since) >= 0.6 {
                         try await waitForKindleImageStable()
-                        return try await readOfflineSourceEvidence()
+                        return try await readOfflineSourceEvidence(includeImageIdentity: true)
                     }
                 } else { sameImageSince = Date() }
                 prior = source.position; priorImage = identity
@@ -7935,9 +7943,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard let original = offlineCaptureOriginal else { throw CancellationError() }
         let started = Date()
         let target = previous.map { $0.end + 1 } ?? original.minimum
-        let previousIdentity = (try? await evaluate("window.__crKindleOfflineImageIdentity()") as? String) ?? ""
         let end = previous.map { String($0.end) } ?? "null"
-        guard (try await evaluate("window.__crOfflineSourceAdvance(\(target), \(end))") as? Bool) == true else { throw KindleBookError.invalidPayload }
+        // Read the old image and advance in one WebKit round trip. Property
+        // evaluation order preserves the identity from before the page turn.
+        let advance = try await evaluateJSON("JSON.stringify({identity:window.__crKindleOfflineImageIdentity(), advanced:window.__crOfflineSourceAdvance(\(target), \(end))})")
+        guard advance["advanced"] as? Bool == true, let previousIdentity = advance["identity"] as? String else { throw KindleBookError.invalidPayload }
         let before = try await waitForOfflineImage(target: target, previousIdentity: previousIdentity)
         let readyAt = Date()
         guard before.position.layoutID == original.layoutID else { throw KindleOfflineBookStore.Failure.staleGeneration }
@@ -7952,8 +7962,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let document = ReadingDocument(title: book.title, sourceKind: .kindle, language: book.language ?? "en",
             paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, pageIndex: 0, imageData: imageData)])
         try requireOfflineCapture()
-        let after = try await readOfflineSourceEvidence()
-        guard after.position == before.position else { throw KindleOfflineBookStore.Failure.discontinuousPage }
+        guard let sourceEvidence = payload["source"] as? [String: Any] else { throw KindleBookError.invalidPayload }
+        let after = try parseOfflineSourceEvidence(sourceEvidence)
+        guard after.position == before.position, payload["identity"] as? String == before.imageIdentity else {
+            throw KindleOfflineBookStore.Failure.discontinuousPage
+        }
         let position = KindleOfflineSourcePosition(start: before.position.start, end: before.position.end,
             minimum: before.position.minimum, maximum: before.position.maximum, layoutID: before.position.layoutID,
             fingerprint: KindleOfflinePageStore.digest(imageData))

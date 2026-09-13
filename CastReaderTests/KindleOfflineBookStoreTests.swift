@@ -178,6 +178,69 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         XCTAssertNil(damagedCache)
         _ = try await reopened.openPage(book: book, ordinal: 0, scope: scope)
     }
+
+    func testCancelWaitsForRestorationKeepsCommittedPagesAndCanResume() async throws {
+        let source = OfflineSourceFixture(book: self.source, document: document())
+        source.captureDelay = .milliseconds(60)
+        source.cleanupDelay = .milliseconds(150)
+        let download = KindleOfflineDownloadCoordinator(store: KindleOfflineBookStore(root: root))
+        let originalIdleSetting = UIApplication.shared.isIdleTimerDisabled
+        download.start(source: source, scope: scope, stillAuthorized: { true })
+        let deadline = Date().addingTimeInterval(5)
+        while source.requestedPages.count < 3, Date() < deadline { try await Task.sleep(for: .milliseconds(5)) }
+        XCTAssertEqual(source.requestedPages, [0, 1, 2])
+        let stop = Task { await download.stopAndWait(reason: .closing) }
+        try await Task.sleep(for: .milliseconds(25))
+        XCTAssertTrue(download.isRunning, "Reader must stay locked while restoring the original page")
+        XCTAssertTrue(download.isStopping)
+        XCTAssertEqual(download.activity, .restoring)
+        // Repeated stop/start taps must not create another capture or cleanup.
+        download.pause()
+        download.start(source: source, scope: scope, stillAuthorized: { true })
+        await stop.value
+        XCTAssertFalse(download.isRunning)
+        XCTAssertEqual(source.cleanupCount, 1)
+        XCTAssertEqual(download.book?.pages.count, 2)
+        XCTAssertEqual(download.book?.status, .paused)
+        XCTAssertEqual(download.book?.originalPositionRestored, true)
+        XCTAssertEqual(UIApplication.shared.isIdleTimerDisabled, originalIdleSetting)
+        source.captureDelay = .zero; source.cleanupDelay = .zero
+        download.start(source: source, scope: scope, stillAuthorized: { true })
+        try await waitUntilStopped(download)
+        XCTAssertEqual(download.book?.status, .complete)
+        XCTAssertEqual(download.book?.pages.count, 37)
+        XCTAssertEqual(source.requestedPages.filter { $0 == 0 }.count, 1)
+    }
+
+    func testCancelDuringPreparationAndFailedRestoreRemainSafeToClose() async throws {
+        let source = OfflineSourceFixture(book: self.source, document: document())
+        source.beginDelay = .milliseconds(150)
+        source.restoreSucceeds = false
+        let download = KindleOfflineDownloadCoordinator(store: KindleOfflineBookStore(root: root))
+        download.start(source: source, scope: scope, stillAuthorized: { true })
+        try await Task.sleep(for: .milliseconds(20))
+        await download.stopAndWait(reason: .background)
+        XCTAssertFalse(download.isRunning)
+        XCTAssertTrue(source.requestedPages.isEmpty)
+        XCTAssertEqual(source.cleanupCount, 1)
+        XCTAssertNotNil(download.error, "Failed restoration must stay visible instead of silently dismissing")
+        XCTAssertTrue(download.phase.contains("已暂停"))
+    }
+
+    func testRemainingTimeUsesOnlyNewProgressAfterResume() {
+        var estimate = KindleOfflineDownloadEstimate()
+        estimate.record(fraction: 0.6, at: 100)
+        estimate.record(fraction: 0.62, at: 101)
+        XCTAssertNil(estimate.remainingSeconds)
+        estimate.record(fraction: 0.64, at: 102)
+        estimate.record(fraction: 0.66, at: 103)
+        XCTAssertEqual(estimate.remainingSeconds, 25)
+        estimate.record(fraction: .nan, at: 104)
+        estimate.record(fraction: 0.5, at: 105)
+        XCTAssertEqual(estimate.remainingSeconds, 25)
+        estimate.record(fraction: 0.68, at: 120)
+        XCTAssertGreaterThan(estimate.remainingSeconds ?? 0, 25, "A stall must increase the remaining-time estimate")
+    }
 }
 
 @MainActor
@@ -187,18 +250,30 @@ private final class OfflineSourceFixture: KindleOfflineBookSource {
     var failAtPage: Int?
     var cleanupCount = 0
     var requestedPages: [Int] = []
+    var beginDelay: Duration = .zero
+    var captureDelay: Duration = .zero
+    var cleanupDelay: Duration = .zero
+    var restoreSucceeds = true
     init(book: KindleBook, document: ReadingDocument) { offlineSourceBook = book; self.document = document }
     private func position(_ page: Int) -> KindleOfflineSourcePosition {
         .init(start: page * 10, end: page * 10 + 9, minimum: 0, maximum: 369, layoutID: "fixture", fingerprint: "page-\(page)")
     }
-    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition { interruptedPosition ?? position(20) }
+    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
+        if beginDelay != .zero { try await Task.sleep(for: beginDelay) }
+        return interruptedPosition ?? position(20)
+    }
     func captureOfflineBookPage(after: KindleOfflineSourcePosition?) async throws -> KindleOfflineCapturedPage {
         let page = after.map { ($0.end + 1) / 10 } ?? 0
         requestedPages.append(page)
+        if captureDelay != .zero { try await Task.sleep(for: captureDelay) }
         if page == failAtPage { throw URLError(.networkConnectionLost) }
         return .init(position: position(page), document: document)
     }
-    func endOfflineBookCapture() async -> Bool { cleanupCount += 1; return true }
+    func endOfflineBookCapture() async -> Bool {
+        cleanupCount += 1
+        if cleanupDelay != .zero { try? await Task.sleep(for: cleanupDelay) }
+        return restoreSucceeds
+    }
 }
 
 @MainActor

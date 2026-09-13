@@ -189,10 +189,7 @@ actor KindleOfflineBookStore {
         book.status = .verifying
         try persist(book, scope: scope)
         let repository = try pageRepository(book, scope: scope)
-        for page in book.pages {
-            try Task.checkCancellation()
-            _ = try await repository.open(page.resource.id, scope: book.id)
-        }
+        try await repository.verify(book.pages.map(\.resource), scope: book.id)
         try Task.checkCancellation()
         let fresh = try current(expected, scope: scope)
         guard fresh.pages == book.pages else { throw Failure.staleGeneration }

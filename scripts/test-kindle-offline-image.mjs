@@ -17,6 +17,7 @@ class Reader {
   }
 }
 const sandbox = { window: null, FileReader: Reader,
+  __crOfflineSourceRead: () => JSON.stringify({start:100, end:199, loading:false}),
   currentReadingCandidate: () => candidate, keyForUrl: () => 'key',
   __crKindleProbe: { keyToLiveUrl: new Map([['key', 'blob:retained-image']]) },
   document: { createElement() { throw Error('Offline capture must not re-encode a canvas'); } },
@@ -27,6 +28,7 @@ vm.runInNewContext(code, sandbox);
 const saved = JSON.parse(await sandbox.__crKindleOfflineImage());
 assert.deepEqual(Buffer.from(saved.image.split(',')[1], 'base64'), bytes);
 assert.equal(saved.originalBytes, bytes.length);
+assert.deepEqual(saved.source, {start:100, end:199, loading:false});
 sandbox.fetch = async () => { img.naturalWidth += 1; return { blob: async () => blob }; };
 await assert.rejects(sandbox.__crKindleOfflineImage(), /offline-image-changed/);
 sandbox.__crKindleProbe.keyToLiveUrl.clear();

@@ -88,6 +88,22 @@ actor KindleOfflinePageStore {
         let directory = try directory(scope: scope, create: false)
         guard let page = try readIndex(directory).pages.first(where: { $0.id == id }),
               Self.validDigest(page.imageHash), Self.validDigest(page.snapshotHash) else { throw Failure.invalidPage }
+        return try open(page, directory: directory)
+    }
+
+    /// One index read for a whole-book verification; every resource still gets
+    /// the same hash, image and snapshot checks as an ordinary page open.
+    func verify(_ pages: [SavedPage], scope: String) throws {
+        let directory = try directory(scope: scope, create: false)
+        let indexed = Dictionary(uniqueKeysWithValues: try readIndex(directory).pages.map { ($0.id, $0) })
+        for page in pages {
+            try Task.checkCancellation()
+            guard indexed[page.id] == page else { throw Failure.corruptPage }
+            _ = try open(page, directory: directory)
+        }
+    }
+
+    private func open(_ page: SavedPage, directory: URL) throws -> (SavedPage, ReadingDocument) {
         let image = try readLimited(directory.appendingPathComponent(page.imageHash + ".image"), limit: 20 * 1_024 * 1_024)
         let bytes = try readLimited(directory.appendingPathComponent(page.snapshotHash + ".page"), limit: 2 * 1_024 * 1_024)
         guard Self.digest(image) == page.imageHash, Self.digest(bytes) == page.snapshotHash,

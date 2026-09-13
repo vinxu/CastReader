@@ -1,6 +1,7 @@
 #if DEBUG
 import AVFoundation
 import SwiftUI
+import WebKit
 
 @MainActor
 struct SystemSpeechAcceptanceView: View {
@@ -209,6 +210,65 @@ struct KindleOfflineDiagnosticsView: View {
             do { status = try await model.runOfflinePageFlipDiagnostic(command) }
             catch { status = "采样未完成，请确认 Kindle 正文页面已加载。" }
         }
+    }
+}
+/// Isolated UI acceptance fixture. It exercises the real coordinator and sheet
+/// with synthetic images; its duration is never a Kindle speed benchmark.
+@MainActor
+struct KindleOfflineDownloadFixture: View {
+    @StateObject private var model: KindleBookViewModel
+    @StateObject private var download: KindleOfflineDownloadCoordinator
+    @State private var presented = false
+    private let source: OfflineDownloadUIFixtureSource
+    private let scope = KindleOfflinePageStore.digest("offline-download-ui-fixture")
+
+    init() {
+        let source = OfflineDownloadUIFixtureSource()
+        self.source = source
+        _model = StateObject(wrappedValue: KindleBookViewModel(book: source.offlineSourceBook, websiteDataStore: .nonPersistent()))
+        _download = StateObject(wrappedValue: KindleOfflineDownloadCoordinator(store: KindleOfflineBookStore(
+            root: FileManager.default.temporaryDirectory.appendingPathComponent("OfflineDownloadUI-" + UUID().uuidString))))
+    }
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Text("本地合成测试书 · 仅验证交互，不代表真实下载速度")
+            Button("打开下载面板") { presented = true }
+                .accessibilityIdentifier("offlineFixtureOpen")
+        }.padding()
+            .sheet(isPresented: $presented) {
+                KindleOfflineDownloadView(model: model, download: download, fixtureStart: {
+                    download.start(source: source, scope: scope, stillAuthorized: { true })
+                })
+            }
+    }
+}
+
+@MainActor
+private final class OfflineDownloadUIFixtureSource: KindleOfflineBookSource {
+    let offlineSourceBook = KindleBook(id: "offline-ui-fixture", title: "离线下载交互测试（本地测试书）", author: "Test",
+        readerURL: "https://read.amazon.com/?asin=B000000001", progressLabel: "", lastSyncedAt: Date())
+    private lazy var image = UIGraphicsImageRenderer(size: CGSize(width: 24, height: 36)).pngData { context in
+        UIColor.white.setFill(); context.fill(CGRect(x: 0, y: 0, width: 24, height: 36))
+    }
+    private func position(_ ordinal: Int) -> KindleOfflineSourcePosition {
+        .init(start: ordinal * 10, end: ordinal * 10 + 9, minimum: 0, maximum: 2399,
+            layoutID: "fixture", fingerprint: "fixture-\(ordinal)")
+    }
+    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
+        try await Task.sleep(for: .milliseconds(800))
+        return interruptedPosition ?? position(100)
+    }
+    func captureOfflineBookPage(after previous: KindleOfflineSourcePosition?) async throws -> KindleOfflineCapturedPage {
+        try await Task.sleep(for: .milliseconds(250))
+        return KindleOfflineCapturedPage(position: position(previous.map { ($0.end + 1) / 10 } ?? 0),
+            document: ReadingDocument(title: offlineSourceBook.title, sourceKind: .kindle, language: "en-US",
+                paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, pageIndex: 0, imageData: image)]),
+            requiresOCR: true, sourceWordCount: 0)
+    }
+    func endOfflineBookCapture() async -> Bool {
+        try? await Task.sleep(for: .milliseconds(800))
+        return true
     }
 }
 #endif

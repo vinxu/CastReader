@@ -7330,7 +7330,8 @@ enum KindleWebScripts {
           reader.onerror = reject; reader.readAsDataURL(blob);
         });
         if (identity !== window.__crKindleOfflineImageIdentity()) throw new Error('offline-image-changed');
-        return JSON.stringify({image:image, identity:identity, originalBytes:blob.size});
+        var source = JSON.parse(window.__crOfflineSourceRead());
+        return JSON.stringify({image:image, identity:identity, originalBytes:blob.size, source:source});
       };
       window.__crKindleCurrentPageSnapshot = function(maxWidth, quality) {
         try {

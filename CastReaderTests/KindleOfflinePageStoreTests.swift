@@ -84,10 +84,16 @@ final class KindleOfflinePageStoreTests: XCTestCase {
         let image = root.appendingPathComponent(scope).appendingPathComponent(page.imageHash + ".image")
         try Data("corrupt".utf8).write(to: image)
         do { _ = try await store.open(page.id, scope: scope); XCTFail("corrupt image opened") } catch {}
+        do { try await store.verify([page], scope: scope); XCTFail("corrupt image verified") } catch {}
         let repaired = try await store.save(document: doc, pageKey: "book:1", scope: scope)
         XCTAssertEqual(repaired.id, page.id)
         let (_, opened) = try await store.open(page.id, scope: scope)
         XCTAssertEqual(opened.paragraphs, doc.paragraphs)
+        try await store.verify([page], scope: scope)
+        do {
+            try await store.verify([page], scope: KindleOfflinePageStore.digest("missing-book"))
+            XCTFail("missing page verified")
+        } catch {}
     }
 
     func testOrphanFilesNeverCountAsSavedPagesAndExplicitSavesAreNotEvicted() async throws {
