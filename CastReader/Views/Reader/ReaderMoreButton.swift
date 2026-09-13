@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ReaderOfflineAction {
-    let title: String
+    let title: String.LocalizationValue
     let open: () -> Void
 }
 
@@ -38,7 +38,7 @@ struct ReaderMoreButton: View {
         Menu {
             if let offlineAction {
                 Button(action: offlineAction.open) {
-                    Label(offlineAction.title, systemImage: "arrow.down.circle")
+                    Label(AppLocalized(offlineAction.title), systemImage: "arrow.down.circle")
                 }.accessibilityIdentifier("readerOfflineMenuItem")
             }
             Button { panel = .timer } label: {

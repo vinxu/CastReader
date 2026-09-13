@@ -42,10 +42,12 @@ struct KindleLibraryView: View {
                     }.padding(14).background(AppTheme.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 16))
                 }.accessibilityIdentifier("kindleOfflineLibrary")
                 #if DEBUG
-                NavigationLink("图片缓存验证副本") { KindleOfflineLibraryView(store: .imageBenchmark) }
-                    .accessibilityIdentifier("kindleOfflineImageBenchmarkLibrary")
-                NavigationLink("已保存页面 · 离线测试") { KindleOfflinePageListView() }
-                    .accessibilityIdentifier("kindleOfflineSavedPages")
+                if DistributionTestingPolicy.showsDebugPanels {
+                    NavigationLink("图片缓存验证副本") { KindleOfflineLibraryView(store: .imageBenchmark) }
+                        .accessibilityIdentifier("kindleOfflineImageBenchmarkLibrary")
+                    NavigationLink("已保存页面 · 离线测试") { KindleOfflinePageListView() }
+                        .accessibilityIdentifier("kindleOfflineSavedPages")
+                }
                 #endif
                 if visibleBooks.isEmpty {
                     emptyState

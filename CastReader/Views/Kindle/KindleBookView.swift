@@ -549,12 +549,14 @@ struct KindleBookView: View {
             Spacer(minLength: 8)
 
             #if DEBUG
-            Button {
-                model.prepareOfflineDiagnostics()
-                showOfflineDiagnostics = true
-            } label: { Image(systemName: "flask").frame(width: 32, height: 34) }
-            .accessibilityLabel("离线能力诊断")
-            .accessibilityIdentifier("kindleOfflineDiagnostics")
+            if DistributionTestingPolicy.showsDebugPanels {
+                Button {
+                    model.prepareOfflineDiagnostics()
+                    showOfflineDiagnostics = true
+                } label: { Image(systemName: "flask").frame(width: 32, height: 34) }
+                .accessibilityLabel("离线能力诊断")
+                .accessibilityIdentifier("kindleOfflineDiagnostics")
+            }
             #endif
 
             HStack(spacing: 2) {

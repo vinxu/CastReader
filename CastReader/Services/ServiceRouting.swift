@@ -19,6 +19,16 @@ import Foundation
 /// an overwrite install, so production authorization must come from the signed
 /// distribution environment rather than an account, email or stored value.
 enum DistributionTestingPolicy {
+    /// Development installs should show the same navigation as the public app.
+    /// Diagnostic UI is opt-in for an individual Xcode launch, never persisted.
+    static var showsDebugPanels: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("-CastReaderShowDebugPanels")
+        #else
+        return false
+        #endif
+    }
+
     static let internalDistributionControlsInfoKey =
         "CastReaderInternalDistributionControlsEnabled"
     static let allowPersistedOverridesLaunchArgument =

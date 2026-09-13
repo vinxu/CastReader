@@ -39,7 +39,7 @@ struct OfflineDownloadsEntryCard: View {
                             Text("\(completeCount) 本").font(.caption.weight(.medium)).foregroundStyle(.blue)
                         }
                     }
-                    Text(network.isOnline ? "保存在本机，没网也能读和听" : "当前无网络，打开本机书籍")
+                    Text(network.isOnline ? AppLocalized("保存在本机，没网也能读和听") : AppLocalized("当前无网络，打开本机书籍"))
                         .font(.caption).foregroundStyle(AppTheme.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
                     if partialCount > 0 {

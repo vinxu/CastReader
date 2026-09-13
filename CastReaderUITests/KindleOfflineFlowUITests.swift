@@ -11,9 +11,13 @@ final class KindleOfflineFlowUITests: XCTestCase {
         super.tearDown()
     }
 
-    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false, miniPlayer: Bool = false, tallPage: Bool = false, english: Bool = false, chinese: Bool = false, japanese: Bool = false) {
+    private func launch(partial: Bool = false, large: Bool = false, failure: Bool = false, resumeViewport: Bool = false, miniPlayer: Bool = false, tallPage: Bool = false, english: Bool = false, chinese: Bool = false, japanese: Bool = false, interfaceLanguage: String? = nil) {
         app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(zh-Hans)", "-interfaceLanguage", "zh-Hans"]
         if english { app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(en)", "-interfaceLanguage", "en"] }
+        if let interfaceLanguage {
+            // Keep the system in English to catch copy that ignores the app's language.
+            app.launchArguments = ["-CastReaderOfflineFlowFixture", "-AppleLanguages", "(en)", "-interfaceLanguage", interfaceLanguage]
+        }
         if partial { app.launchArguments.append("-CastReaderOfflineFixturePartial") }
         if failure { app.launchArguments.append("-CastReaderOfflineFixtureFailure") }
         if resumeViewport { app.launchArguments.append("-CastReaderOfflineFixtureResumeViewport") }
@@ -64,6 +68,90 @@ final class KindleOfflineFlowUITests: XCTestCase {
         tap("readerMoreButton")
         tap("readerOfflineMenuItem")
         XCTAssertTrue(app.buttons["offlineDownloadStart"].waitForExistence(timeout: 10))
+    }
+
+    private func localizedOfflineFlow(_ language: String, menu: String, download: String, books: String, display: String, large: Bool = false) {
+        launch(partial: true, large: large, interfaceLanguage: language)
+        tap("offlineFlowOnlineBook")
+        tap("readerMoreButton")
+        XCTAssertEqual(app.buttons["readerOfflineMenuItem"].label, menu)
+        tap("readerOfflineMenuItem")
+        XCTAssertTrue(app.navigationBars[download].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["offlineDownloadStart"].isHittable)
+        XCTAssertTrue(app.buttons["offlineDownloadOpenBook"].isHittable)
+        if large && language == "de" {
+            XCTAssertGreaterThan(app.buttons["offlineDownloadOpenBook"].frame.height, 70,
+                "The long German action must wrap to a second line instead of being truncated")
+        }
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", books)).firstMatch.exists)
+        capture("localized-\(language)-download")
+        tap("offlineDownloadClose")
+        app.navigationBars.buttons.firstMatch.tap()
+        tap("settingsGearButton")
+        if large {
+            for _ in 0..<5 {
+                if app.buttons["settingsDownloads"].isHittable { break }
+                app.collectionViews.firstMatch.swipeUp()
+            }
+        }
+        XCTAssertEqual(app.staticTexts[books].firstMatch.label, books)
+        tap("settingsDownloads")
+        let cover = app.images["offlineCover.offline-flow-book"].firstMatch
+        XCTAssertTrue(cover.waitForExistence(timeout: 10))
+        XCTAssertTrue(cover.isHittable)
+        capture("localized-\(language)-library")
+        tap("offlineLibraryBook.offline-flow-book")
+        XCTAssertTrue(app.buttons["offlineBookPlay"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["offlineBookPlay"].isHittable)
+        XCTAssertTrue(app.buttons["offlineBookZoom"].isHittable)
+        XCTAssertTrue(app.images["offlineBookSavedImage"].exists)
+        if language == "de" || language == "fr" {
+            XCTAssertEqual(app.buttons["offlineBookRate"].value as? String, "1,0×")
+            tap("offlineBookZoom")
+            XCTAssertEqual(app.images["offlineBookZoomImage"].label, display)
+            tap("offlineBookZoomClose")
+        }
+        XCTAssertFalse(app.buttons["kindleOfflineDiagnostics"].exists)
+        capture("localized-\(language)-reader")
+    }
+
+    func testOfflineLocalizationEnglish() { localizedOfflineFlow("en", menu: "Save Entire Book Offline", download: "Save Entire Book", books: "Offline Books", display: "Original Page") }
+    func testOfflineLocalizationChinese() { localizedOfflineFlow("zh-Hans", menu: "离线保存整本书", download: "保存整本书", books: "离线书籍", display: "原页面") }
+    func testOfflineLocalizationJapanese() { localizedOfflineFlow("ja", menu: "本全体をオフライン保存", download: "本全体を保存", books: "オフラインの本", display: "元のページ") }
+    func testOfflineLocalizationSpanish() { localizedOfflineFlow("es", menu: "Guardar libro completo sin conexión", download: "Guardar libro completo", books: "Libros sin conexión", display: "Página original") }
+    func testOfflineLocalizationFrench() { localizedOfflineFlow("fr", menu: "Enregistrer le livre hors ligne", download: "Enregistrer le livre entier", books: "Livres hors ligne", display: "Page d’origine") }
+    func testOfflineLocalizationGerman() { localizedOfflineFlow("de", menu: "Ganzes Buch offline speichern", download: "Ganzes Buch speichern", books: "Offline-Bücher", display: "Originalseite") }
+    func testOfflineLocalizationPortuguese() { localizedOfflineFlow("pt-BR", menu: "Salvar livro inteiro offline", download: "Salvar livro inteiro", books: "Livros offline", display: "Página original") }
+    func testOfflineLocalizationItalian() { localizedOfflineFlow("it", menu: "Salva l’intero libro offline", download: "Salva l’intero libro", books: "Libri offline", display: "Pagina originale") }
+    func testOfflineLocalizationHindi() { localizedOfflineFlow("hi", menu: "पूरी किताब ऑफ़लाइन सहेजें", download: "पूरी किताब सहेजें", books: "ऑफ़लाइन किताबें", display: "मूल पन्ना") }
+
+    func testLargeGermanOfflineLocalization() { localizedOfflineFlow("de", menu: "Ganzes Buch offline speichern", download: "Ganzes Buch speichern", books: "Offline-Bücher", display: "Originalseite", large: true) }
+
+    func testOldDownloadMessageUsesNewAppLanguage() {
+        launch(partial: true)
+        openDownloadFromMore()
+        XCTAssertTrue(app.staticTexts["上次下载未完成，已保存页面会保留。可以继续下载。"].exists)
+        app.terminate()
+        app.launchArguments = ["-CastReaderOfflineFlowFixture", "-CastReaderOfflineFixturePartial", "-AppleLanguages", "(zh-Hans)", "-interfaceLanguage", "en"]
+        app.launch()
+        XCTAssertTrue(app.buttons["offlineFlowOnlineBook"].waitForExistence(timeout: 15))
+        openDownloadFromMore()
+        XCTAssertTrue(app.staticTexts["The previous download did not finish. Saved pages are kept, and you can continue."].exists)
+        XCTAssertFalse(app.staticTexts["上次下载未完成，已保存页面会保留。可以继续下载。"].exists)
+        XCTAssertTrue(app.buttons["offlineDownloadOpenBook"].isHittable)
+        capture("resumed-download-new-language")
+    }
+
+    func testSettingsHidesDebugPanelsWithoutOptIn() {
+        launch(partial: true)
+        tap("settingsGearButton")
+        for _ in 0..<8 { app.collectionViews.firstMatch.swipeUp() }
+        for label in ["调试", "模拟 Pro 解锁", "重置书库首次引导", "内部测试 · 区域与网络"] {
+            XCTAssertFalse(app.staticTexts[label].exists)
+        }
+        XCTAssertFalse(app.switches["模拟 Pro 解锁"].exists)
+        XCTAssertFalse(app.buttons["settingsRegionOverride"].exists)
+        capture("settings-no-debug-panels")
     }
 
     private func jump(to page: Int) {

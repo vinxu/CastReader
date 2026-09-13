@@ -102,7 +102,7 @@ private struct KindleOfflineBookReaderContent: View {
     private var playing: Bool { model.preparingSpeech || speech.state == .speaking || speech.state == .preparing }
     private var hasText: Bool { model.document?.paragraphs.contains { $0.type.isReadable && !$0.text.isEmpty } == true }
     private var voiceName: String { model.voices.first(where: { $0.id == model.voiceID })?.name ?? AppLocalized("本机声音") }
-    private var rateLabel: String { String(format: "%.1f×", model.speechRate / Double(AVSpeechUtteranceDefaultSpeechRate)) }
+    private var rateLabel: String { String(format: "%.1f×", locale: AppLanguageManager.shared.locale, model.speechRate / Double(AVSpeechUtteranceDefaultSpeechRate)) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -277,7 +277,7 @@ private struct KindleOfflineBookReaderContent: View {
                 Text(LocalizedStringKey(playbackStatus))
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2).padding(.top, 6)
                     .accessibilityIdentifier("offlineBookSpeechStatus")
-                    .accessibilityValue(speech.activeRate.map { String(format: "%.1f×", $0 / AVSpeechUtteranceDefaultSpeechRate) } ?? "")
+                    .accessibilityValue(speech.activeRate.map { String(format: "%.1f×", locale: AppLanguageManager.shared.locale, $0 / AVSpeechUtteranceDefaultSpeechRate) } ?? "")
             }
             if verticalSizeClass == .compact {
                 HStack(spacing: 8) {
@@ -363,7 +363,7 @@ private struct KindleOfflineBookReaderContent: View {
                     HStack { Text("更慢"); Spacer(); Text("更快") }.font(.caption).foregroundStyle(.secondary)
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 10) {
                         ForEach([0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65], id: \.self) { rate in
-                            let label = String(format: "%.1f×", rate / Double(AVSpeechUtteranceDefaultSpeechRate))
+                            let label = String(format: "%.1f×", locale: AppLanguageManager.shared.locale, rate / Double(AVSpeechUtteranceDefaultSpeechRate))
                             Button { model.changeRate(rate); showRatePicker = false } label: {
                                 Text(label).frame(maxWidth: .infinity, minHeight: 48)
                                     .foregroundStyle(AppTheme.primary)

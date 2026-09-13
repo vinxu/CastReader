@@ -82,7 +82,7 @@ struct KindleOfflineLibraryView: View {
                     Section {
                         Label("有一份本机副本无法读取", systemImage: "exclamationmark.triangle")
                         Text("可以删除损坏的副本，再从 Kindle 重新保存。").font(.footnote).foregroundStyle(.secondary)
-                        Button("删除损坏副本", role: .destructive) { deletion = .init(id: id, title: "无法读取的书籍", scope: scope) }
+                        Button("删除损坏副本", role: .destructive) { deletion = .init(id: id, title: AppLocalized("无法读取的书籍"), scope: scope) }
                     }
                 }
             }

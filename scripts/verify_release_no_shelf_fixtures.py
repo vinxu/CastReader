@@ -22,6 +22,14 @@ MARKERS = [
     "castreader.googlebooks.hundred-shelf-fixture.v1",
     "-CastReaderKindleSettingsFixture", "KindleReadingSettingsFixtureView",
     "-CastReaderFixtureAppearance", "kindleFixtureColorScheme",
+    "-CastReaderShowDebugPanels", "kindleOfflineDiagnostics",
+    "kindleOfflineImageBenchmarkLibrary", "kindleOfflineSavedPages",
+    "KindleOfflineDiagnosticsView", "KindleOfflinePageFixture",
+    "KindleOfflineFlowFixture", "KindleBackgroundProbeSheet",
+    "WeReadDesktopProbeView", "-CastReaderOfflineFlowFixture",
+    "-CastReaderOfflineFixturePartial", "-CastReaderOfflineFixtureChinese",
+    "-CastReaderOfflineFixtureJapanese", "-CastReaderOfflineFixtureFailure",
+    "-CastReaderOfflineFixtureResumeViewport", "-CastReaderKindleFontDiagnostics",
 ]
 
 def inspect(root):

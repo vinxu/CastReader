@@ -149,7 +149,7 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
             } catch {
                 self.coverTask?.cancel()
                 let paused = Task.isCancelled || error is CancellationError
-                let message = paused ? (self.stopReason?.message ?? "已暂停，已保存页面会保留。") : Self.message(for: error)
+                let message = paused ? (self.stopReason?.message ?? AppLocalized("已暂停，已保存页面会保留。")) : Self.message(for: error)
                 if let book = self.book {
                     self.book = (try? await self.store.setStatus(paused ? .paused : .failed, error: message, book: book, scope: scope)) ?? book
                 }

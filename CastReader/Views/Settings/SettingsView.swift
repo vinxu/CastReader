@@ -105,7 +105,7 @@ struct SettingsView: View {
                     internalRegionSection
                 }
                 #if DEBUG
-                debugSection
+                if DistributionTestingPolicy.showsDebugPanels { debugSection }
                 #endif
             }
             .navigationTitle("设置")
@@ -654,7 +654,8 @@ struct SettingsView: View {
     private var showsInternalRegionSwitcher: Bool {
         // Route controls are a build/distribution testing capability, not an
         // account entitlement. A production account must never unlock them.
-        ServiceRouting.allowsLocalOverride || AppRegion.overrideRegion != nil
+        DistributionTestingPolicy.showsDebugPanels &&
+            (ServiceRouting.allowsLocalOverride || AppRegion.overrideRegion != nil)
     }
 
     private var internalRegionSection: some View {

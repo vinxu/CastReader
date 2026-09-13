@@ -69,6 +69,7 @@ struct KindleOfflineDownloadView: View {
                 }
             }
         }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
         .interactiveDismissDisabled(download.isRunning)
@@ -131,7 +132,7 @@ struct KindleOfflineDownloadView: View {
                         .accessibilityIdentifier("offlineDownloadEstimate")
                 }
             } else {
-                Text(complete ? AppLocalized("整本已保存到这台设备，可离线阅读和朗读。") : download.book?.lastError ?? AppLocalized("保存整本书的页面图片，朗读时再在本机识别文字。"))
+                Text(complete ? AppLocalized("整本已保存到这台设备，可离线阅读和朗读。") : download.book?.lastError != nil ? AppLocalized("上次下载未完成，已保存页面会保留。可以继续下载。") : AppLocalized("保存整本书的页面图片，朗读时再在本机识别文字。"))
                     .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
         }.padding(24).frame(maxWidth: .infinity)
@@ -140,13 +141,15 @@ struct KindleOfflineDownloadView: View {
 
     @ViewBuilder private var controls: some View {
         if download.isRunning {
-            Button(download.activity == .restoring ? AppLocalized("正在恢复阅读位置…") : download.isStopping ? AppLocalized("正在停止下载…") : AppLocalized("取消下载")) {
+            Button {
                 requestStop(closing: false)
+            } label: {
+                actionLabel(download.activity == .restoring ? AppLocalized("正在恢复阅读位置…") : download.isStopping ? AppLocalized("正在停止下载…") : AppLocalized("取消下载"))
             }.buttonStyle(.bordered).controlSize(.large)
                 .disabled(download.isStopping || download.activity == .restoring)
                 .accessibilityIdentifier("offlineDownloadCancel")
         } else if !complete {
-            Button(download.book?.pages.isEmpty == false ? AppLocalized("继续下载整本书") : AppLocalized("开始保存整本书")) {
+            Button {
                 #if DEBUG
                 if let fixtureStart { fixtureStart(); return }
                 #endif
@@ -155,6 +158,8 @@ struct KindleOfflineDownloadView: View {
                 download.start(source: model, scope: scope) {
                     AccountContentIsolation.isCurrent(boundary) && KindleOfflineContext.currentScope == scope
                 }
+            } label: {
+                actionLabel(download.book?.pages.isEmpty == false ? AppLocalized("继续下载整本书") : AppLocalized("开始保存整本书"))
             }.buttonStyle(.borderedProminent).tint(AppTheme.primary).controlSize(.large)
                 .disabled(scope == nil)
                 .accessibilityIdentifier("offlineDownloadStart")
@@ -172,17 +177,25 @@ struct KindleOfflineDownloadView: View {
 
     @ViewBuilder private var localReadingLinks: some View {
         if let book = download.book, !book.pages.isEmpty, scope != nil {
-            Button(book.status == .complete ? AppLocalized("打开离线书籍") : AppLocalized("阅读已保存内容")) {
+            Button {
                 guard let scope else { return }
                 KindleOfflinePlaybackCenter.shared.prepareAfterDownload(book: book, scope: scope,
                     store: download.store, scopeValidator: { scope == self.scope })
                 dismiss()
+            } label: {
+                actionLabel(book.status == .complete ? AppLocalized("打开离线书籍") : AppLocalized("阅读已保存内容"))
             }
                 .buttonStyle(.borderedProminent).tint(AppTheme.primary).controlSize(.large)
                 .accessibilityIdentifier("offlineDownloadOpenBook")
         }
-        Text("以后可从首页“已下载”直接打开，无需等待 Kindle 加载。")
+        Text("以后可从“设置”中的“离线书籍”打开，无需等待 Kindle 加载。")
             .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+    }
+
+    private func actionLabel(_ title: String) -> some View {
+        Text(title).multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity)
     }
 
     private var statusTitle: String {

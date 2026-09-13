@@ -154,7 +154,7 @@ private struct KindleOfflineMiniPlayerBar: View {
                         .font(.title3).frame(width: 44, height: 44)
                 }
             }.buttonStyle(.plain).disabled(model.loading)
-                .accessibilityLabel(playing ? "暂停" : "播放")
+                .accessibilityLabel(playing ? AppLocalized("暂停") : AppLocalized("播放"))
                 .accessibilityIdentifier("offlineMiniPlay")
             Button(action: stop) {
                 Image(systemName: "xmark").font(.body).foregroundStyle(.secondary)
