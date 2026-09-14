@@ -207,3 +207,29 @@ struct VoiceDiscoveryEdition: Codable, Equatable {
     }
 }
 
+
+/// Product storefront chooses editorial culture; reading language and service
+/// routing remain independent (including route overrides in test builds).
+enum VoiceEditorialRegion: String, CaseIterable {
+    case cn, international
+    static var current: Self { AppRegion.current == .cn ? .cn : .international }
+}
+
+struct VoiceDiscoveryCollection: Codable, Equatable, Identifiable {
+    let id: String
+    let title: [String: String]
+    let theme: VoiceDiscoveryTopic
+    let voiceIds: [String]
+    var localizedTitle: String {
+        title[AppLanguageManager.shared.selectedLanguage.resolvedLanguageCode] ?? title["en"] ?? theme.title
+    }
+    func voices(from catalog: [VoiceOption], language: String) -> [VoiceOption] {
+        let indexed = Dictionary(catalog.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var seen = Set<String>()
+        return voiceIds.prefix(2000).compactMap { id in
+            guard seen.insert(id).inserted, let voice = indexed[id], voice.enabled,
+                  voice.selectable, voice.supports(language) else { return nil }
+            return voice
+        }
+    }
+}

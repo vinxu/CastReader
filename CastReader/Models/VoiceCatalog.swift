@@ -38,6 +38,7 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
     let usagePolicy: String
     let supportedLanguages: [String]
     let sampleURLs: [String: String]
+    let previewLanguages: [String: String]
 
     var usesMonthlyGeneration: Bool { usagePolicy == "monthly_generation" || code.hasPrefix("vl_") }
 
@@ -51,6 +52,12 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
 
     func previewURL(for language: String) -> String? {
         usesMonthlyGeneration ? sampleURLs[VoiceCatalog.normalizedLanguage(language)] : sampleURL
+    }
+
+    var originalPreviewLanguageName: String? {
+        guard let language = previewLanguages.values.first else { return nil }
+        let locale = Locale(identifier: AppLanguageManager.shared.selectedLanguage.resolvedLanguageCode)
+        return locale.localizedString(forLanguageCode: language) ?? language.uppercased()
     }
 
     var id: String { code }
@@ -83,11 +90,13 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
         sampleURL: String? = nil,
         usagePolicy: String = "regular",
         supportedLanguages: [String]? = nil,
-        sampleURLs: [String: String] = [:]
+        sampleURLs: [String: String] = [:],
+        previewLanguages: [String: String] = [:]
     ) {
         self.usagePolicy = usagePolicy
         self.supportedLanguages = (supportedLanguages ?? [lang]).map(VoiceCatalog.normalizedLanguage)
         self.sampleURLs = sampleURLs
+        self.previewLanguages = previewLanguages
         self.code = code
         self.name = name
         self.isPro = isPro
@@ -162,6 +171,7 @@ struct TTSVoiceCatalogVoice: Codable, Equatable {
     var usagePolicy: String? = nil
     var supportedLanguages: [String]? = nil
     var sampleUrls: [String: String]? = nil
+    var previewLanguages: [String: String]? = nil
     let accent: String?
     let sourceModelVersion: String?
     let collection: String?
@@ -181,6 +191,8 @@ struct TTSVoiceCatalogDocument: Codable, Equatable {
     let languages: [TTSVoiceCatalogLanguage]
     let voices: [TTSVoiceCatalogVoice]
     var discovery: VoiceDiscoveryEdition? = nil
+    var collections: [VoiceDiscoveryCollection]? = nil
+    var editorialRegion: String? = nil
 
     static func decodeServerResponse(from data: Data) throws -> TTSVoiceCatalogDocument {
         let decoder = JSONDecoder()
@@ -261,7 +273,7 @@ struct TTSVoiceCatalogDocument: Codable, Equatable {
 }
 
 extension TTSVoiceCatalogDocument {
-    private enum CodingKeys: String, CodingKey { case contract, version, languages, voices, discovery }
+    private enum CodingKeys: String, CodingKey { case contract, version, languages, voices, discovery, collections, editorialRegion }
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         contract = try values.decode(String.self, forKey: .contract)
@@ -270,6 +282,8 @@ extension TTSVoiceCatalogDocument {
         voices = try values.decode([TTSVoiceCatalogVoice].self, forKey: .voices)
         // An unsupported editorial revision cannot invalidate playable voices.
         discovery = try? values.decode(VoiceDiscoveryEdition.self, forKey: .discovery)
+        collections = try? values.decode([VoiceDiscoveryCollection].self, forKey: .collections)
+        editorialRegion = try? values.decode(String.self, forKey: .editorialRegion)
     }
 }
 
@@ -317,6 +331,7 @@ private final class VoiceCatalogRuntime: @unchecked Sendable {
 enum VoiceCatalog {
     private static let runtime = VoiceCatalogRuntime()
     static var discovery: VoiceDiscoveryEdition? { runtime.read()?.discovery }
+    static var collections: [VoiceDiscoveryCollection] { runtime.read()?.collections ?? [] }
 
     // 英文 fallback 与 english-31 的 28 个 selectable v1.0 voice 对齐。
     // 头像和试听仍以网络 catalog 为准，fallback 只保留稳定选择合同字段。
@@ -555,7 +570,8 @@ enum VoiceCatalog {
             sampleURL: voice.sampleUrl,
             usagePolicy: voice.usagePolicy ?? "regular",
             supportedLanguages: voice.supportedLanguages,
-            sampleURLs: voice.sampleUrls ?? [:]
+            sampleURLs: voice.sampleUrls ?? [:],
+            previewLanguages: voice.previewLanguages ?? [:]
         )
     }
 }
@@ -577,6 +593,7 @@ final class VoiceCatalogService: ObservableObject {
     private let defaults: UserDefaults
     private let endpoint: URL
     private let cacheKey: String
+    private let editorialRegion: VoiceEditorialRegion
     private let now: () -> Date
     private var started = false
     private var lastNetworkRefreshAt: Date?
@@ -586,6 +603,7 @@ final class VoiceCatalogService: ObservableObject {
         defaults: UserDefaults = .standard,
         endpoint: URL? = nil,
         route: ServiceRoute = ComputeRouting.current,
+        editorialRegion: VoiceEditorialRegion = .current,
         now: @escaping () -> Date = Date.init
     ) {
         self.session = session ?? OwnedAPIURLSession.makeExplicitCredentialSession(
@@ -596,14 +614,15 @@ final class VoiceCatalogService: ObservableObject {
         self.defaults = defaults
         self.endpoint = endpoint
             ?? URL(
-                string: "\(route.apiGatewayBaseURL)/api/tts/mobile-catalog?contract=tts-voice-catalog-v1"
+                string: "\(route.apiGatewayBaseURL)/api/tts/mobile-catalog?contract=tts-voice-catalog-v1&region=\(editorialRegion.rawValue)"
             )!
-        self.cacheKey = Self.cacheKey(for: route)
+        self.cacheKey = Self.cacheKey(for: route, region: editorialRegion)
+        self.editorialRegion = editorialRegion
         self.now = now
     }
 
-    static func cacheKey(for route: ServiceRoute) -> String {
-        route.isolatedStorageKey(legacyCacheKey)
+    static func cacheKey(for route: ServiceRoute, region: VoiceEditorialRegion = .current) -> String {
+        route.isolatedStorageKey(legacyCacheKey) + ".editorial-" + region.rawValue
     }
 
     func start() {
@@ -645,6 +664,9 @@ final class VoiceCatalogService: ObservableObject {
                 throw VoiceCatalogError.invalidResponse
             }
             let catalog = try TTSVoiceCatalogDocument.decodeServerResponse(from: data)
+            guard catalog.editorialRegion == nil || catalog.editorialRegion == editorialRegion.rawValue else {
+                throw VoiceCatalogError.invalidResponse
+            }
             try VoiceCatalog.install(catalog)
             let record = VoiceCatalogCacheRecord(savedAt: now(), catalog: catalog)
             defaults.set(try JSONEncoder().encode(record), forKey: cacheKey)
@@ -662,6 +684,9 @@ final class VoiceCatalogService: ObservableObject {
         guard let data = defaults.data(forKey: cacheKey) else { return false }
         do {
             let record = try JSONDecoder().decode(VoiceCatalogCacheRecord.self, from: data)
+            guard record.catalog.editorialRegion == nil || record.catalog.editorialRegion == editorialRegion.rawValue else {
+                throw VoiceCatalogError.invalidResponse
+            }
             try VoiceCatalog.install(record.catalog)
             lastNetworkRefreshAt = record.savedAt
             source = .cache

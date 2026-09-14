@@ -635,7 +635,7 @@ final class VoiceCatalogTests: XCTestCase {
     }
 
     @MainActor
-    func testVoiceCatalogCacheIsIsolatedByServiceRouteWithoutChangingGlobalUpgradeKey() async throws {
+    func testVoiceCatalogCacheIsIsolatedByServiceRouteAndEditorialRegion() async throws {
         let defaults = isolatedDefaults()
         let session = URLSession(configuration: .voiceCatalogTest)
         VoiceCatalogTestURLProtocol.handler = { request in
@@ -652,11 +652,11 @@ final class VoiceCatalogTests: XCTestCase {
 
         XCTAssertEqual(
             VoiceCatalogService.cacheKey(for: .globalGateway),
-            "tts_voice_catalog_v2_nine_language_cache"
+            "tts_voice_catalog_v2_nine_language_cache.editorial-" + VoiceEditorialRegion.current.rawValue
         )
         XCTAssertEqual(
             VoiceCatalogService.cacheKey(for: .chinaGateway),
-            "tts_voice_catalog_v2_nine_language_cache.cn"
+            "tts_voice_catalog_v2_nine_language_cache.cn.editorial-" + VoiceEditorialRegion.current.rawValue
         )
 
         let endpoint = URL(string: "https://example.com/api/tts/catalog")!

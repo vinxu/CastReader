@@ -61,6 +61,39 @@ final class VoiceExploreUITests: XCTestCase {
         XCTAssertEqual(app.buttons["presetVoiceSelect_af_heart"].value as? String, "已选择")
     }
 
+    func testProductionDiscoveryOnConnectedPhone() throws {
+        #if targetEnvironment(simulator)
+        throw XCTSkip("Real device test uses the public production catalog")
+        #else
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding"]
+        app.launch()
+        let voices = app.buttons.matching(NSPredicate(format: "label IN %@", ["音色", "Voice", "Voices"])).firstMatch
+        XCTAssertTrue(voices.waitForExistence(timeout: 20)); voices.tap()
+        let feature = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == %@ OR identifier == %@", "voiceEdition_cn-stories", "voiceEdition_international-stories")).firstMatch
+        XCTAssertTrue(feature.waitForExistence(timeout: 45))
+        attach(app, "iphone-production-discovery")
+        feature.tap()
+        let preview = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voicePreview_vl_")).firstMatch
+        XCTAssertTrue(preview.waitForExistence(timeout: 10)); preview.tap()
+        expectation(for: NSPredicate(format: "value ==[c] %@", "playing"), evaluatedWith: preview)
+        waitForExpectations(timeout: 35)
+        attach(app, "iphone-production-original-preview")
+        preview.tap()
+        let quota = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voiceQuota_vl_")).firstMatch
+        XCTAssertTrue(quota.exists); quota.tap()
+        XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 5))
+        attach(app, "iphone-production-monthly-quota")
+        app.alerts.buttons.firstMatch.tap()
+        app.navigationBars.buttons.firstMatch.tap()
+        let search = app.searchFields.firstMatch
+        if !search.isHittable { app.swipeDown() }
+        XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("Calm Narrator")
+        XCTAssertTrue(app.buttons["presetVoiceSelect_vl_b5c9589c1370164a19fe"].waitForExistence(timeout: 10))
+        attach(app, "iphone-production-full-catalog-search")
+        #endif
+    }
+
     private func attach(_ app: XCUIApplication, _ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name; attachment.lifetime = .keepAlways

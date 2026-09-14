@@ -18,8 +18,12 @@ struct VoiceDiscoveryFeed: View {
     }
     private var editorialIDs: Set<String> { Set(editorial.flatMap(\.voiceIds)) }
 
+    private var collections: [VoiceDiscoveryCollection] {
+        VoiceCatalog.collections.filter { !$0.voices(from: voices, language: language).isEmpty }
+    }
     private var recommendations: [VoiceOption] {
-        VoiceDiscovery.recommended(voices, language: language, favoriteIDs: favoriteIDs, recentIDs: recentIDs, excluding: editorialIDs)
+        let curated = Set(collections.flatMap(\.voiceIds))
+        return VoiceDiscovery.recommended(curated.isEmpty ? voices : voices.filter { curated.contains($0.id) }, language: language, favoriteIDs: favoriteIDs, recentIDs: recentIDs, excluding: editorialIDs)
     }
     private var topics: [VoiceDiscoveryTopic] {
         VoiceDiscoveryTopic.allCases.filter { !VoiceDiscovery.voices(in: $0, from: voices).isEmpty }
@@ -50,7 +54,22 @@ struct VoiceDiscoveryFeed: View {
                     }
                 }
             }
-            if !topics.isEmpty {
+            if !collections.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    heading(AppLocalized("声音专题"))
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHGrid(rows: [GridItem(.fixed(106)), GridItem(.fixed(106))], spacing: 12) {
+                            ForEach(collections) { collection in
+                                NavigationLink(value: VoiceDiscoveryDestination.collection(collection.id)) {
+                                    VoiceTopicTile(topic: collection.theme,
+                                        count: collection.voices(from: voices, language: language).count,
+                                        title: collection.localizedTitle)
+                                }.buttonStyle(.plain).accessibilityIdentifier("voiceCollection_\(collection.id)")
+                            }
+                        }.padding(.horizontal)
+                    }
+                }
+            } else if !topics.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     heading(AppLocalized("声音专题"))
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -65,6 +84,7 @@ struct VoiceDiscoveryFeed: View {
                     }
                 }
             }
+            if collections.isEmpty {
             let gentle = picks(.gentle, excluding: Set(recommendations.map(\.id)))
             if !gentle.isEmpty { portraitSection(.gentle, voices: gentle) }
             let stories = picks(.stories, excluding: Set((recommendations + gentle).map(\.id)))
@@ -76,6 +96,7 @@ struct VoiceDiscoveryFeed: View {
             }
             let focus = picks(.focus, excluding: Set((recommendations + gentle + stories.prefix(3)).map(\.id)))
             if !focus.isEmpty { portraitSection(.focus, voices: focus) }
+            }
             NavigationLink(value: VoiceDiscoveryDestination.all) {
                 HStack {
                     Label(AppLocalized("浏览全部音色"), systemImage: "square.grid.2x2")
@@ -165,7 +186,7 @@ struct VoiceDiscoveryFeed: View {
     }
 }
 
-enum VoiceDiscoveryDestination: Hashable { case all, edition(String) }
+enum VoiceDiscoveryDestination: Hashable { case all, edition(String), collection(String) }
 
 /// Artwork introduces the collection. Voice identity stays in its own row,
 /// using the same catalog avatar, name and actions as every other category.
@@ -220,7 +241,13 @@ private struct VoiceEditorialVoiceRow: View {
                 HStack(spacing: 8) {
                     Text(VoiceDiscovery.subtitle(voice, chinese: appLanguage.selectedLanguage.resolvedLanguageCode == "zh"))
                         .font(.caption).foregroundStyle(AppTheme.mutedForeground).lineLimit(1)
+                    HStack(spacing: 6) {
                     VoiceUsageBadge(voice: voice)
+                    if let language = voice.originalPreviewLanguageName {
+                        Text(language + " · " + AppLocalized("试听"))
+                            .font(.system(size: 10)).foregroundStyle(AppTheme.mutedForeground).lineLimit(1)
+                    }
+                }
                 }
             }
             Button(action: onPreview) {
@@ -243,6 +270,7 @@ private struct VoiceEditorialVoiceRow: View {
 private struct VoiceTopicTile: View {
     let topic: VoiceDiscoveryTopic
     let count: Int
+    var title: String? = nil
     private var tint: Color {
         switch topic {
         case .everyday: return Color(red: 0.16, green: 0.49, blue: 0.48)
@@ -261,14 +289,14 @@ private struct VoiceTopicTile: View {
                 Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).opacity(0.5)
             }
             HStack(alignment: .firstTextBaseline) {
-                Text(topic.shortTitle).font(.headline)
+                Text(title ?? topic.shortTitle).font(.headline).lineLimit(2).minimumScaleFactor(0.85)
                 Spacer(minLength: 4)
                 Text(String(count)).font(.caption).opacity(0.7)
             }
         }.foregroundStyle(tint).padding(16).frame(width: 178, height: 106)
             .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(topic.title + " · " + VoiceBrowserLanguage.voiceCountText(count)))
+            .accessibilityLabel(Text((title ?? topic.title) + " · " + VoiceBrowserLanguage.voiceCountText(count)))
     }
 }
 
@@ -299,7 +327,13 @@ struct VoiceDiscoveryRow: View {
                 }.buttonStyle(.plain)
                     .accessibilityIdentifier("presetVoiceSelect_\(voice.id)")
                     .accessibilityValue(Text(selected ? AppLocalized("已选择") : ""))
-                VoiceUsageBadge(voice: voice)
+                HStack(spacing: 6) {
+                    VoiceUsageBadge(voice: voice)
+                    if let language = voice.originalPreviewLanguageName {
+                        Text(language + " · " + AppLocalized("试听"))
+                            .font(.system(size: 10)).foregroundStyle(AppTheme.mutedForeground).lineLimit(1)
+                    }
+                }
             }
             Button(action: onFavorite) {
                 Image(systemName: favorite ? "heart.fill" : "heart")
@@ -353,6 +387,10 @@ private struct VoicePortraitCard: View {
                 }.frame(maxWidth: .infinity, minHeight: 44)
             }.buttonStyle(.plain).accessibilityIdentifier("presetVoiceSelect_\(voice.id)")
                 .accessibilityValue(Text(selected ? AppLocalized("已选择") : ""))
+            if let language = voice.originalPreviewLanguageName {
+                Text(language + " · " + AppLocalized("试听"))
+                    .font(.system(size: 10)).foregroundStyle(AppTheme.mutedForeground).lineLimit(1)
+            }
             HStack {
                 VoiceUsageBadge(voice: voice)
                 Spacer(minLength: 0)

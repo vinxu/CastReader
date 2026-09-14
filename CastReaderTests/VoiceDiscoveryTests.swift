@@ -62,4 +62,23 @@ final class VoiceDiscoveryTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(VoiceDiscoveryModule.self, from: JSONEncoder().encode(module)), module)
     }
 
+    func testOperationalCollectionKeepsOrderMembershipAndCrossLanguageIdentity() throws {
+        let regular = voice("af_en")
+        let community = voice("vl_story", monthly: true)
+        let collection = VoiceDiscoveryCollection(id: "cn-stories", title: ["en": "Stories", "zh": "故事现场"],
+            theme: .stories, voiceIds: [community.id, regular.id, community.id, "withdrawn"])
+        XCTAssertEqual(collection.voices(from: [regular, community], language: "en").map(\.id), [community.id, regular.id])
+        XCTAssertEqual(collection.voices(from: [regular, community], language: "zh").map(\.id), [community.id])
+        XCTAssertEqual(try JSONDecoder().decode(VoiceDiscoveryCollection.self, from: JSONEncoder().encode(collection)), collection)
+    }
+
+    @MainActor
+    func testEditorialCacheIsIndependentFromServiceRoute() {
+        let cnOnGlobal = VoiceCatalogService.cacheKey(for: .globalGateway, region: .cn)
+        let internationalOnGlobal = VoiceCatalogService.cacheKey(for: .globalGateway, region: .international)
+        XCTAssertNotEqual(cnOnGlobal, internationalOnGlobal)
+        XCTAssertNotEqual(cnOnGlobal, VoiceCatalogService.cacheKey(for: .chinaGateway, region: .cn))
+        XCTAssertEqual(VoiceEditorialRegion.allCases.count, 2)
+    }
+
 }

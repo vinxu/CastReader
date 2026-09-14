@@ -250,6 +250,14 @@ struct VoiceBrowserView: View {
             .navigationDestination(for: VoiceDiscoveryDestination.self) { destination in
                 switch destination {
                 case .all: discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
+                case .collection(let id):
+                    if let collection = VoiceCatalog.collections.first(where: { $0.id == id }) {
+                        VoiceDiscoveryCollectionView(title: collection.localizedTitle,
+                            voices: collection.voices(from: sourceVoices, language: library.browserLanguage),
+                            language: library.browserLanguage, onSelect: select, onPreview: preview)
+                    } else {
+                        discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
+                    }
                 case .edition(let id):
                     if let module = VoiceCatalog.discovery?.activeModules(from: sourceVoices, language: library.browserLanguage).first(where: { $0.id == id }) {
                         VoiceDiscoveryCollectionView(title: module.localizedTitle,
