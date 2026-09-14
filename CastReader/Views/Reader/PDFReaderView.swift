@@ -102,7 +102,6 @@ struct PDFReaderView: UIViewRepresentable {
                 } else if let idx = readVM?.currentParagraphIndex, idx >= 0 {
                     ReaderRunLog.write("PDF refocus read para=\(idx)")
                     highlight(idx)
-                    revealResumeWord()
                 }
             case .explain:
                 let marks = explainVM?.activeMarks ?? []
@@ -398,29 +397,40 @@ struct PDFReaderView: UIViewRepresentable {
                     shown.append((p, ann))
                 }
             }
-            if autoScroll { pdfView.go(to: selection) }
-            revealResumeWord()
+            // The full sentence may span a screen. Focus its resume word or
+            // first glyph using the same rule as subsequent word ticks.
+            if !revealResumeWord(), let first = page.selection(for: NSRange(location: range.location, length: 1)) {
+                revealWord(first.bounds(for: page), page: page)
+            }
         }
 
-        private func revealResumeWord() {
+        @discardableResult
+        private func revealResumeWord() -> Bool {
             guard autoScroll, let vm = readVM, let range = vm.initialResumeViewportRange,
                   let doc, doc.paragraphs.indices.contains(vm.currentParagraphIndex),
-                  let pdfView, let pdfDoc = pdfView.document else { return }
+                  let pdfView, let pdfDoc = pdfView.document else { return false }
             let para = doc.paragraphs[vm.currentParagraphIndex]
             guard let pageIndex = para.pdfPageIndex, let page = pdfDoc.page(at: pageIndex),
-                  let sourceRange = Range(range, in: para.text) else { return }
+                  let sourceRange = Range(range, in: para.text) else { return false }
             let lower = para.text.distance(from: para.text.startIndex, to: sourceRange.lowerBound)
             let upper = para.text.distance(from: para.text.startIndex, to: sourceRange.upperBound)
             if let selection = pdfSelectionForMark(pdfDoc: pdfDoc, page: page, paragraph: para, charRange: lower..<upper) {
                 revealWord(selection.bounds(for: page), page: page)
+                return true
             }
+            return false
         }
 
         private func revealWord(_ rect: CGRect, page: PDFPage) {
             guard autoScroll, let pdfView, !rect.isNull else { return }
             let viewportRect = pdfView.convert(rect, from: page)
-            if !pdfView.bounds.insetBy(dx: 0, dy: pdfView.bounds.height * 0.15).contains(viewportRect) {
-                pdfView.go(to: rect.insetBy(dx: 0, dy: -45), on: page)
+            var ancestor = pdfView.documentView?.superview
+            while let view = ancestor {
+                if let scroll = view as? UIScrollView, scroll.isScrollEnabled {
+                    ReaderViewportFollow.reveal(pdfView.convert(viewportRect, to: scroll), in: scroll, source: "pdf")
+                    return
+                }
+                ancestor = view.superview
             }
         }
 
@@ -428,6 +438,7 @@ struct PDFReaderView: UIViewRepresentable {
         /// 复用句级同款 findString 路径（不依赖易错位的 characterBounds）；词矩形按句缓存，tick 高频调用仅查缓存。
         private func highlightWord(_ cmd: PDFWordHighlight) {
             guard let pdfView, let doc, let pdfDoc = pdfView.document,
+                  cmd.paragraphIndex == readVM?.currentParagraphIndex,
                   cmd.paragraphIndex >= 0, cmd.paragraphIndex < doc.paragraphs.count else { return }
             let para = doc.paragraphs[cmd.paragraphIndex]
             guard let pageIdx = para.pdfPageIndex, let page = pdfDoc.page(at: pageIdx),

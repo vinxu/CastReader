@@ -61,13 +61,18 @@ struct TextReaderView: View {
 
     @State private var registry = TextViewRegistry()
     @State private var layoutRevision = 0
+    @State private var pendingRefocus: DispatchWorkItem?
+    private struct ParagraphStart: Hashable { let index: Int }
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 18) {
+                LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(document.paragraphs) { para in
-                        paragraphRow(para).id(para.id)
+                        // This must be a direct lazy-stack child: a nested ID
+                        // cannot materialize a distant row that does not exist.
+                        Color.clear.frame(height: 0).id(ParagraphStart(index: para.id))
+                        paragraphRow(para).padding(.bottom, 18).id(para.id)
                             .accessibilityIdentifier("readerParagraph.\(para.id)")
                     }
                 }
@@ -75,48 +80,63 @@ struct TextReaderView: View {
             }
             .onChange(of: readVM.currentParagraphIndex) { idx in
                 guard mode == .read, readVM.autoScrollEnabled, idx >= 0 else { return }
-                refocus(proxy)
+                scheduleRefocus(proxy)
             }
-            .onChange(of: readVM.highlightRange) { _ in
-                if mode == .read { refocus(proxy) }
-            }
+            .onChange(of: readVM.epubNavigationParagraphIndex) { _ in scheduleRefocus(proxy) }
+            // Word ticks are handled after ReaderTextView updates its range
+            // and layout, rather than scrolling using the previous UIView state.
             .onChange(of: readVM.processedDisplayText) { _ in
                 // Streaming can change a huge lazy row's measured height and
                 // evict it from the viewport. Reacquire the row, then the word.
-                if mode == .read { DispatchQueue.main.async { refocus(proxy) } }
+                if mode == .read { scheduleRefocus(proxy) }
             }
             .onAppear {
-                DispatchQueue.main.async { refocus(proxy) }
+                scheduleRefocus(proxy)
             }
+            .onDisappear { pendingRefocus?.cancel() }
             .onChange(of: explainVM.scrollTarget) { target in
                 guard mode == .explain, target >= 0 else { return }
                 withAnimation(.easeInOut(duration: 0.45)) { proxy.scrollTo(target, anchor: UnitPoint(x: 0.5, y: 0.35)) }
             }
             .onChange(of: refocusToken) { _ in
-                refocus(proxy)
+                scheduleRefocus(proxy)
             }
             .onChange(of: appearance.textSize) { _ in
-                DispatchQueue.main.async { layoutRevision += 1; refocus(proxy) }
+                layoutRevision += 1; scheduleRefocus(proxy)
             }
             .onChange(of: appearance.lineSpacing) { _ in
-                DispatchQueue.main.async { layoutRevision += 1; refocus(proxy) }
+                layoutRevision += 1; scheduleRefocus(proxy)
             }
             .onChange(of: appearance.usesSerif) { _ in
-                DispatchQueue.main.async { layoutRevision += 1; refocus(proxy) }
+                layoutRevision += 1; scheduleRefocus(proxy)
             }
         }
+    }
+
+    private func scheduleRefocus(_ proxy: ScrollViewProxy) {
+        pendingRefocus?.cancel()
+        let work = DispatchWorkItem { refocus(proxy) }
+        pendingRefocus = work
+        DispatchQueue.main.async(execute: work)
     }
 
     private func refocus(_ proxy: ScrollViewProxy) {
         switch mode {
         case .read:
+            if let target = readVM.epubNavigationParagraphIndex {
+                proxy.scrollTo(target, anchor: .top)
+                return
+            }
             guard readVM.autoScrollEnabled, readVM.currentParagraphIndex >= 0 else { return }
             ReaderRunLog.write("TEXT refocus read para=\(readVM.currentParagraphIndex) token=\(refocusToken)")
-            if registry[readVM.currentParagraphIndex]?.revealFocusInReader() == true { return }
-            proxy.scrollTo(readVM.currentParagraphIndex, anchor: .top)
-            DispatchQueue.main.async {
-                registry[readVM.currentParagraphIndex]?.revealFocusInReader()
+            if let view = registry[readVM.currentParagraphIndex], view.window != nil {
+                // A transient missing glyph/range is layout work, not a request
+                // to abandon word positioning and jump to the paragraph top.
+                view.revealFocusInReader()
+                return
             }
+            proxy.scrollTo(ParagraphStart(index: readVM.currentParagraphIndex),
+                           anchor: UnitPoint(x: 0.5, y: ReaderViewportFollow.readingAnchor))
         case .explain:
             let target = explainVM.activeMarks.last?.paragraphIndex ?? explainVM.scrollTarget
             guard target >= 0 else { return }
@@ -160,8 +180,9 @@ struct TextReaderView: View {
             lineSpacing: appearance.lineSpacing,
             usesSerif: appearance.usesSerif,
             highlightColor: readVM.highlightUIColor,
-            readerViewportRange: isCurrent && readVM.autoScrollEnabled
-                ? (readVM.highlightRange ?? readVM.initialResumeViewportRange) : nil,
+            readerViewportRange: isCurrent && readVM.autoScrollEnabled && readVM.epubNavigationParagraphIndex == nil
+                ? (readVM.highlightRange ?? readVM.initialResumeViewportRange
+                   ?? (text.isEmpty ? nil : NSRange(location: 0, length: 1))) : nil,
             onReady: { tv in registry[para.id] = tv }
         )
         .overlay(alignment: .topLeading) { markOverlay(for: para).id(layoutRevision) }

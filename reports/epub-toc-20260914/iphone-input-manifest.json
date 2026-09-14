@@ -1,0 +1,37 @@
+[
+  {
+    "name": "08-russian-span.epub",
+    "bytes": 1126599,
+    "sha256": "2d5f00dd84fdbb841ca199866ac1624ee8c9f24c810f3b3a6ddab82107c8ea1b"
+  },
+  {
+    "name": "03-fallback-lab.epub",
+    "bytes": 1472,
+    "sha256": "90d8a9cb31ef19b3623d8bbc9c482f40fde477b0801fab540563c98484e1cbce"
+  },
+  {
+    "name": "02-ncx2-anchor-lab.epub",
+    "bytes": 1845,
+    "sha256": "f9b9aa742f879752bc8c73fa99b9f4bbaadf7da5c13f42009d21322c2dbe57c4"
+  },
+  {
+    "name": "07-trading.epub",
+    "bytes": 1353833,
+    "sha256": "a3e64d0f5f10404699f40a97aaabe966014b33c7a8e9e3956997465ec8ba4171"
+  },
+  {
+    "name": "05-ulysses.epub",
+    "bytes": 1514651,
+    "sha256": "86e5cf105c20849afb0b78a097306cdb07f27ff55972edec413a61d1962ba39c"
+  },
+  {
+    "name": "06-wanli.epub",
+    "bytes": 8485601,
+    "sha256": "7d196db2941a4a2e862504044e11078cb4374c6a8095d68580fd7e40a3a3d2ff"
+  },
+  {
+    "name": "01-nav3-anchor-lab.epub",
+    "bytes": 1939,
+    "sha256": "d40b59c1caccff3a83c4b92dccedb5cc416a179bf28446cd230b6b02bd4a8031"
+  }
+]

@@ -183,6 +183,7 @@ struct ReadingDocument: Identifiable, Equatable {
     /// Derived from these exact paragraphs; cached local documents avoid a
     /// second full-book scan on MainActor. Any paragraph mutation invalidates it.
     var precomputedResumeIndex: ReadingResumeDocumentIndex? = nil
+    var epubNavigation: EpubNavigation? = nil
     var imageData: Data? = nil           // 仅 photo（JPEG）
     var imagePixelSize: CGSize? = nil    // 仅 photo，原图像素尺寸
     var sourceURL: String? = nil         // 上传得到的 COS URL；纯拍摄为 synthetic

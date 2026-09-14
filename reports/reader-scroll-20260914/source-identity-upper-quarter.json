@@ -1,0 +1,14 @@
+{
+  "baseline": "b10d83ced9b450e63c1d5f4e021849122e2d59d0",
+  "readingAnchorFromTop": 0.25,
+  "distanceFromBottom": 0.75,
+  "lowerTriggerFromTop": 0.88,
+  "sourceSHA256": {
+    "CastReader/Views/Reader/TextReaderView.swift": "93f20394a368e7dad36edbca07bcff84ce83b609662a6973925960c76030bd6d",
+    "CastReader/Views/Reader/ReaderTextView.swift": "8f07ebc9e3a56daaef00d280b313d6232fea9d2a97dcbc28a7ae8c6fb503ba49",
+    "CastReader/Views/Reader/PDFReaderView.swift": "354eb9b92e0d25d102af0fa89fe5090419a6dc0d8f0ec6e90832db23425c2c54",
+    "CastReaderTests/ReaderViewportTests.swift": "14dd832245e3a828d776811b7c53883d81a40ea1376fa1687e384aa049208a0b",
+    "CastReader.xcodeproj/project.pbxproj": "8d5d6dc2aa4cb53f16dbd9eb730b2e435c518e33afa8012f995cfa549db90826"
+  },
+  "appDebugDylibSHA256": "4b8ee5da806defcee394d2ce92b7cd1877e8a2da1393a26666938810bbbf3a05"
+}

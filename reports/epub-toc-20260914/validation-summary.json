@@ -1,0 +1,45 @@
+{
+  "date": "2026-09-14",
+  "corpus": {
+    "uniqueInputs": 93,
+    "parsedBooks": 84,
+    "damagedZIPsRejected": 9,
+    "tocEntries": 2915,
+    "independentlyVerifiedDestinations": 2911,
+    "unavailableOriginalTargets": 4,
+    "independentMismatches": 0
+  },
+  "iphone": {
+    "filesImportedAndAccepted": 7,
+    "structuralFixtures": 3,
+    "completeBooks": 4,
+    "verified": [
+      "publisher hierarchy",
+      "exact inline and container anchors",
+      "search and cross-chapter jumps",
+      "stop old audio on TOC selection",
+      "disabled invalid links",
+      "session reopen",
+      "cold process restart"
+    ]
+  },
+  "regression": {
+    "relatedSuite": {
+      "tests": 110,
+      "passed": 109,
+      "skipped": 1,
+      "failed": 0
+    },
+    "finalEPUBSuite": {
+      "tests": 14,
+      "passed": 14,
+      "failed": 0
+    },
+    "configurableCorpusRetest": {
+      "tests": 11,
+      "passed": 11,
+      "failed": 0
+    }
+  },
+  "rawEvidence": "Generated corpus results, source books, excerpts and full run logs remain local; see the research document for reproduction."
+}

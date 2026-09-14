@@ -1,0 +1,7 @@
+# Commit the reviewable acceptance record; raw books, excerpts and run output
+# remain local and can be regenerated with the corpus test and oracle script.
+*
+!.gitignore
+!iphone-acceptance.md
+!iphone-input-manifest.json
+!validation-summary.json

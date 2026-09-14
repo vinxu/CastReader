@@ -2483,6 +2483,40 @@ final class ReadAloudViewModel: ObservableObject {
         if readableIndices.contains(paragraphIndex) { currentParagraphIndex = paragraphIndex }
     }
 
+    /// Selecting a TOC destination is browsing. Cancel old streaming work and
+    /// persist the new position even if the user never starts audio there.
+    @Published var epubNavigationParagraphIndex: Int? = nil
+
+    func navigateToEpubParagraph(_ paragraph: Int) {
+        guard document.sourceKind == .epub, paras.indices.contains(paragraph) else { return }
+        stop()
+        pendingReadingAudioCursor = nil
+        pendingResumeParagraphIndex = nil
+        resumeSourceRange = nil
+        resumeNotice = nil
+        hasObservedReadingPlayback = false
+        isPlaying = false
+        isBuffering = false
+        isPlaybackPausedByUser = true
+        isFinished = false
+        highlightRange = nil
+        processedDisplayText = nil
+        autoScrollEnabled = true
+        let readable = readableIndices.first(where: { $0 >= paragraph }) ?? readableIndices.last
+        currentParagraphIndex = readable ?? paragraph
+        pendingResumeParagraphIndex = readable
+        epubNavigationParagraphIndex = paragraph
+        if let readable, let checkpoint = resumeDocumentIndex.checkpoint(
+            sourceKind: .epub, paragraphIndex: readable, audio: nil
+        ), historyStore.saveReadingCheckpoint(checkpoint, for: readingProgressID,
+                                             boundary: progressBoundaryToken, variant: readingProgressVariant) {
+            lastReadingCheckpoint = checkpoint
+            historyStore.updateReadingPosition(documentID: readingProgressID, paragraphIndex: readable)
+            historyStore.flushProgressProjection()
+        }
+        ReaderRunLog.write("EPUB toc selected paragraph=\(paragraph) speech=\(readable ?? -1)")
+    }
+
     /// A pause also owns audio that has not arrived yet. Keep the request and
     /// checkpoint, but prevent late segments or page commits from restarting it.
     func pausePlayback() {
@@ -3246,6 +3280,7 @@ final class ReadAloudViewModel: ObservableObject {
         continuation: TTSContinuation? = nil
     ) {
         guard resumeNotice == nil, isActive, paras.indices.contains(index) else { return }
+        epubNavigationParagraphIndex = nil
         flushReadingProgress()
         if index != currentParagraphIndex {
             pendingReadingAudioCursor = nil

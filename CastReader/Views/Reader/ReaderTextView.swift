@@ -10,6 +10,65 @@
 import SwiftUI
 import UIKit
 
+/// Sentence changes, word ticks and layout recovery use the same viewport
+/// policy. A visible target stays put; an offscreen target goes directly into
+/// the reading band instead of visiting the paragraph/selection top first.
+enum ReaderViewportFollow {
+    static let readingAnchor = CGFloat(0.25)
+    private final class Motion {
+        var destinationY: CGFloat?
+        var startedAt: TimeInterval = 0
+    }
+    private static let motions = NSMapTable<UIScrollView, Motion>(keyOptions: .weakMemory, valueOptions: .strongMemory)
+
+    private static func readingBand(_ visible: CGRect) -> CGRect {
+        CGRect(x: visible.minX, y: visible.minY + visible.height * 0.18,
+               width: visible.width, height: visible.height * 0.70)
+    }
+
+    static func reveal(_ target: CGRect, in scroll: UIScrollView, source: String) {
+        let motion = motions.object(forKey: scroll) ?? Motion()
+        motions.setObject(motion, forKey: scroll)
+        guard !scroll.isDragging, !scroll.isDecelerating, !scroll.isTracking else {
+            motion.destinationY = nil
+            return
+        }
+        guard scroll.bounds.height > 0, !target.isNull, !target.isInfinite else { return }
+        let visible = scroll.bounds.inset(by: scroll.adjustedContentInset)
+        if let destination = motion.destinationY {
+            if abs(scroll.contentOffset.y - destination) <= 0.5 || Date.timeIntervalSinceReferenceDate - motion.startedAt > 0.6 {
+                motion.destinationY = nil
+            } else {
+                // UIKit exposes intermediate offsets during its animation.
+                // Check the intended destination so each new word/layout tick
+                // does not restart the same movement from an intermediate frame.
+                var projected = visible
+                projected.origin.y += destination - scroll.contentOffset.y
+                let band = readingBand(projected)
+                if target.minY >= band.minY, target.maxY <= band.maxY { return }
+            }
+        }
+        let comfortable = readingBand(visible)
+        guard target.minY < comfortable.minY || target.maxY > comfortable.maxY else { return }
+        let minY = -scroll.adjustedContentInset.top
+        let maxY = max(minY, scroll.contentSize.height - scroll.bounds.height + scroll.adjustedContentInset.bottom)
+        let y = min(maxY, max(minY, target.minY - visible.height * readingAnchor - scroll.adjustedContentInset.top))
+        if let destination = motion.destinationY, abs(destination - y) <= 0.5 { return }
+        guard abs(scroll.contentOffset.y - y) > 0.5 else { return }
+        // At the lower reading boundary, move narration to the upper quarter
+        // (75% above the bottom), leaving upcoming text visible below it.
+        // A distant restore/jump positions immediately instead of flying through
+        // many pages. Explicit TOC navigation has its own point target.
+        let animated = !UIAccessibility.isReduceMotionEnabled && abs(scroll.contentOffset.y - y) <= visible.height * 1.5
+        motion.destinationY = animated ? y : nil
+        motion.startedAt = Date.timeIntervalSinceReferenceDate
+        #if DEBUG
+        ReaderRunLog.write("VIEWPORT follow source=\(source) from=\(Int(scroll.contentOffset.y)) to=\(Int(y)) target=\(Int(target.minY)) height=\(Int(visible.height)) animated=\(animated ? "Y" : "N")")
+        #endif
+        scroll.setContentOffset(CGPoint(x: scroll.contentOffset.x, y: y), animated: animated)
+    }
+}
+
 // MARK: - ReaderRoundedBackgroundLayoutManager
 
 /// 自定义 NSLayoutManager：把 .backgroundColor 属性绘制为 4px 圆角背景（词级高亮）。
@@ -42,6 +101,7 @@ final class ReaderRoundedBackgroundLayoutManager: NSLayoutManager {
 
 final class ReaderUITextView: UITextView {
     var viewportFocusRange: NSRange?
+    private var focusScheduled = false
 
     static func make() -> ReaderUITextView {
         let storage = NSTextStorage()
@@ -69,8 +129,12 @@ final class ReaderUITextView: UITextView {
     override func layoutSubviews() {
         super.layoutSubviews()
         invalidateIntrinsicContentSize()
-        if viewportFocusRange != nil {
-            DispatchQueue.main.async { [weak self] in self?.revealFocusInReader() }
+        if viewportFocusRange != nil, !focusScheduled {
+            focusScheduled = true
+            DispatchQueue.main.async { [weak self] in
+                self?.focusScheduled = false
+                self?.revealFocusInReader()
+            }
         }
     }
 
@@ -83,16 +147,8 @@ final class ReaderUITextView: UITextView {
         var ancestor = superview
         while let view = ancestor {
             if let scroll = view as? UIScrollView, scroll.isScrollEnabled {
-                guard !scroll.isDragging, !scroll.isDecelerating, scroll.bounds.height > 0 else { return true }
                 let target = convert(rect, to: scroll)
-                let visible = scroll.bounds.inset(by: scroll.adjustedContentInset)
-                let comfortable = visible.insetBy(dx: 0, dy: visible.height * 0.18)
-                if target.minY < comfortable.minY || target.maxY > comfortable.maxY {
-                    let y = target.minY - visible.height * 0.30 - scroll.adjustedContentInset.top
-                    let minY = -scroll.adjustedContentInset.top
-                    let maxY = max(minY, scroll.contentSize.height - scroll.bounds.height + scroll.adjustedContentInset.bottom)
-                    scroll.setContentOffset(CGPoint(x: scroll.contentOffset.x, y: min(maxY, max(minY, y))), animated: false)
-                }
+                ReaderViewportFollow.reveal(target, in: scroll, source: "text")
                 return true
             }
             ancestor = view.superview
