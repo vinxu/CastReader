@@ -2,6 +2,8 @@
 
 日期：2026-09-14。工作树：`CastReader-epub-toc-20260914`，保留本轮 EPUB TOC 实现和已验证 iOS 1.2.39 发布祖先。
 
+Android 对齐见[实施规范](EPUB-TOC与朗读滚动-Android对齐实施规范-20260914.md)：Compose 单一滚动所有者、88% 触发/25% 落点、动画合并、PDF 坐标换算与逐模式验收。
+
 ## 原因
 
 原生文本的 `TextReaderView` 在段落变化、高亮变化、流式文本变化时执行段落定位；如果当前 `ReaderUITextView` 还没有高亮范围，则无条件 `scrollTo(paragraph, anchor: .top)`。与此同时，`ReaderUITextView` 在布局后按词位置把目标放到阅读区域。预取音频转正时会先清空高亮，下一次播放 tick 才提供新词，因此同一次切段先顶到顶部、再返回阅读区。重排 PDF 与 EPUB 共用此组件。
