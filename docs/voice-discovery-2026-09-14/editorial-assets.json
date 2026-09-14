@@ -1,0 +1,52 @@
+{
+  "deployment": "https://readout-cynx89jqt-castreader.vercel.app",
+  "sourceCommit": "b9e7e064",
+  "voices": 289,
+  "publicVoices": 6,
+  "originalIdentityPreserved": true,
+  "assets": [
+    {
+      "path": "/voice-library/avatars/v_04554c7370e94e483123-14632c5d8a0cfce4.jpg",
+      "bytes": 4887,
+      "sha256": "14632c5d8a0cfce4d8dabb19674f2f5b69295f832af9b2c69696c7a29a04a6b5",
+      "matchesSource": true
+    },
+    {
+      "path": "/voice-library/avatars/v_04aa5b44c43a60098e6a-8b3f4bd9a95d8cbe.jpg",
+      "bytes": 3229,
+      "sha256": "8b3f4bd9a95d8cbe9c46e2fe4577e16ac7cb9d6056e2f6ed573a5c77ac0fcbd7",
+      "matchesSource": true
+    },
+    {
+      "path": "/voice-library/avatars/v_083fdead97ec221573f3-a3d236e90b50cbed.jpg",
+      "bytes": 4519,
+      "sha256": "a3d236e90b50cbed9885f444d61f30d0ff3f5314fba006fcd8914b0bab9df337",
+      "matchesSource": true
+    },
+    {
+      "path": "/voice-library/avatars/v_1ec3457cc2e07c95b4c0-c68ea8ed42a40860.jpg",
+      "bytes": 3242,
+      "sha256": "c68ea8ed42a408605c5b68d30c13a0780b6ed2988551f28e604ca2bbdf1bc7d2",
+      "matchesSource": true
+    },
+    {
+      "path": "/voice-library/avatars/v_0108f0d191674297924c-9f56ec099157a493.png",
+      "bytes": 1952059,
+      "sha256": "9f56ec099157a49363090ce029c57667c7d84773b10ee72ef3f5d0f5c1997111",
+      "matchesSource": true
+    },
+    {
+      "path": "/voice-library/avatars/v_0bc9e4523bc1d85c758f-1a6728abd6f1faa3.jpg",
+      "bytes": 5338,
+      "sha256": "1a6728abd6f1faa308773447ed823022e0b35be6648595101659ec52591be325",
+      "matchesSource": true
+    },
+    {
+      "path": "/voice-discovery/artwork/stories-paper-world.png",
+      "bytes": 2092051,
+      "sha256": "bcf9fcb2b7326c764fcab678fbd819a74c4200e2d217a146056fbf6d3abca47a",
+      "matchesSource": true
+    }
+  ],
+  "passed": true
+}

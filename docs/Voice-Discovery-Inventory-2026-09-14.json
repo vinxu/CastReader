@@ -1,0 +1,107 @@
+{
+  "retrieved_at": "2026-09-14T12:59:48.202961+00:00",
+  "kokoro": {
+    "total": 283,
+    "languages": {
+      "en": 67,
+      "zh": 100,
+      "ja": 15,
+      "es": 20,
+      "fr": 14,
+      "pt": 16,
+      "it": 15,
+      "hi": 20,
+      "de": 16
+    },
+    "tiers": {
+      "free": 13,
+      "pro": 270
+    },
+    "statuses": {
+      "ga": 107,
+      "beta": 142,
+      "lab": 33,
+      "legacy": 1
+    },
+    "recommended": 32,
+    "long_form_best_for": 132
+  },
+  "community": {
+    "total": 1323,
+    "plus_builtins": 9,
+    "sample_languages": {
+      "es": 194,
+      "ko": 186,
+      "zh": 186,
+      "fr": 182,
+      "de": 168,
+      "pt": 188,
+      "en": 203,
+      "ru": 4,
+      "ja": 12
+    },
+    "uses_tags": {
+      "education": 239,
+      "documentaries": 58,
+      "entertainment": 52,
+      "narration": 377,
+      "conversation": 92,
+      "storytelling": 233,
+      "characters": 154,
+      "announcing": 91,
+      "gaming": 45,
+      "meditation": 5,
+      "advertising": 106,
+      "audiobooks": 1,
+      "podcasts": 7
+    },
+    "gender": {
+      "male": 861,
+      "unknown": 99,
+      "neutral": 42,
+      "female": 321
+    },
+    "no_style_or_use_tags": 382,
+    "no_use_tags": 518,
+    "description_basis": {
+      "normalized_source": 941,
+      "sample_metadata": 382
+    },
+    "distinct_normalized_names": 1147,
+    "duplicate_name_examples": [
+      [
+        "arnold",
+        13
+      ],
+      [
+        "adam",
+        10
+      ],
+      [
+        "sukuna",
+        9
+      ],
+      [
+        "gojo",
+        7
+      ],
+      [
+        "fluttershy",
+        5
+      ],
+      [
+        "hyunjin",
+        5
+      ]
+    ]
+  },
+  "sources": {
+    "community": "https://voice.castreader.com/voices/catalog.json",
+    "kokoro": "https://api.castreader.ai/api/tts/catalog"
+  },
+  "files": {
+    "community-catalog.json": "82846809fef16b4d369c39a500900283b7616a1c98d4055a5857f929890836d1",
+    "tts-catalog.json": "fcf0e29661240f57054a7787a9c98938358fa554c0c83949cd300e193ae15fef",
+    "topic-candidates.json": "06bdffa06d499074016197bdb8d7781f82a7f5699280f9ffa572ed88f9e206eb"
+  }
+}

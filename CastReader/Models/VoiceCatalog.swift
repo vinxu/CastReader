@@ -180,6 +180,7 @@ struct TTSVoiceCatalogDocument: Codable, Equatable {
     let version: String
     let languages: [TTSVoiceCatalogLanguage]
     let voices: [TTSVoiceCatalogVoice]
+    var discovery: VoiceDiscoveryEdition? = nil
 
     static func decodeServerResponse(from data: Data) throws -> TTSVoiceCatalogDocument {
         let decoder = JSONDecoder()
@@ -259,6 +260,20 @@ struct TTSVoiceCatalogDocument: Codable, Equatable {
     }
 }
 
+extension TTSVoiceCatalogDocument {
+    private enum CodingKeys: String, CodingKey { case contract, version, languages, voices, discovery }
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        contract = try values.decode(String.self, forKey: .contract)
+        version = try values.decode(String.self, forKey: .version)
+        languages = try values.decode([TTSVoiceCatalogLanguage].self, forKey: .languages)
+        voices = try values.decode([TTSVoiceCatalogVoice].self, forKey: .voices)
+        // An unsupported editorial revision cannot invalidate playable voices.
+        discovery = try? values.decode(VoiceDiscoveryEdition.self, forKey: .discovery)
+    }
+}
+
+
 private struct TTSVoiceCatalogEnvelope: Decodable {
     let data: TTSVoiceCatalogDocument?
     let catalog: TTSVoiceCatalogDocument?
@@ -301,6 +316,7 @@ private final class VoiceCatalogRuntime: @unchecked Sendable {
 
 enum VoiceCatalog {
     private static let runtime = VoiceCatalogRuntime()
+    static var discovery: VoiceDiscoveryEdition? { runtime.read()?.discovery }
 
     // 英文 fallback 与 english-31 的 28 个 selectable v1.0 voice 对齐。
     // 头像和试听仍以网络 catalog 为准，fallback 只保留稳定选择合同字段。
@@ -593,6 +609,9 @@ final class VoiceCatalogService: ObservableObject {
     func start() {
         guard !started else { return }
         started = true
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderVoiceExploreFixture") { return }
+        #endif
         _ = loadCachedCatalog()
         Task { await refresh(force: true) }
     }

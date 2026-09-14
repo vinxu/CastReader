@@ -1,0 +1,52 @@
+{
+  "deployment": "https://readout-cyabco0ct-castreader.vercel.app",
+  "checks": [
+    {
+      "catalog": 289,
+      "public": 6,
+      "edition": "candidate-20260914"
+    },
+    {
+      "preview": "en",
+      "bytes": 81261,
+      "durationMs": 10128
+    },
+    {
+      "preview": "zh",
+      "bytes": 71661,
+      "durationMs": 8928
+    },
+    {
+      "previewCharges": 0
+    },
+    {
+      "generation": "en",
+      "status": 200,
+      "voice": "vl_083fdead97ec221573f3",
+      "timestamps": 12,
+      "durationMs": 4776
+    },
+    {
+      "retrySameRequest": "en",
+      "status": 200
+    },
+    {
+      "generation": "zh",
+      "status": 200,
+      "voice": "vl_083fdead97ec221573f3",
+      "timestamps": 0,
+      "durationMs": 7344
+    },
+    {
+      "sharedBucketCount": 1,
+      "usedMs": 12120,
+      "settledRequests": 2,
+      "retryExtraCharge": 0
+    },
+    {
+      "exhaustedStatus": 429
+    }
+  ],
+  "cleanedUp": true,
+  "passed": true
+}

@@ -1,0 +1,209 @@
+import Foundation
+
+enum VoiceUsageFilter: String, CaseIterable, Identifiable {
+    case all, regular, monthly
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .all: return AppLocalized("全部音色")
+        case .regular: return AppLocalized("不使用月额度")
+        case .monthly: return AppLocalized("使用月额度")
+        }
+    }
+    func includes(_ voice: VoiceOption) -> Bool {
+        self == .all || (self == .monthly) == voice.usesMonthlyGeneration
+    }
+}
+
+enum VoiceDiscoveryTopic: String, CaseIterable, Identifiable, Hashable, Codable {
+    case everyday, focus, stories, gentle, conversation, character
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .everyday: return AppLocalized("日常伴读")
+        case .focus: return AppLocalized("把知识听明白")
+        case .stories: return AppLocalized("听见故事的画面")
+        case .gentle: return AppLocalized("温柔一点，慢慢听")
+        case .conversation: return AppLocalized("像朋友讲给你听")
+        case .character: return AppLocalized("给文字一点角色感")
+        }
+    }
+    var shortTitle: String {
+        switch self {
+        case .everyday: return AppLocalized("日常")
+        case .focus: return AppLocalized("讲解")
+        case .stories: return AppLocalized("故事")
+        case .gentle: return AppLocalized("温柔")
+        case .conversation: return AppLocalized("聊天感")
+        case .character: return AppLocalized("角色感")
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .everyday: return "headphones"
+        case .focus: return "lightbulb"
+        case .stories: return "book.closed"
+        case .gentle: return "moon.stars"
+        case .conversation: return "quote.bubble"
+        case .character: return "theatermasks"
+        }
+    }
+    var keywords: Set<String> {
+        switch self {
+        case .everyday: return ["articles", "article reading", "general reading", "long-form", "long-form reading", "narration", "balanced", "measured"]
+        case .focus: return ["education", "focused study", "study", "explanations", "explainers", "documentaries", "clear", "professional"]
+        case .stories: return ["storytelling", "stories", "narrative reading", "narrative articles", "audiobooks", "dramatic", "expressive", "literary", "narration"]
+        case .gentle: return ["warm", "gentle", "soft", "calm", "soothing", "relaxed reading"]
+        case .conversation: return ["conversation", "conversational", "friendly", "friendly narration", "approachable"]
+        case .character: return ["characters", "gaming", "playful", "dramatic", "entertainment"]
+        }
+    }
+}
+
+/// Metadata is a recall signal, not an acoustic quality verdict. Unknown voices
+/// stay searchable; technical/experimental grades never become editorial claims.
+enum VoiceDiscovery {
+    static func normalized(_ text: String) -> String {
+        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+            .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    static func features(_ voice: VoiceOption) -> Set<String> {
+        let ignored: Set<String> = ["", "male", "female", "neutral", "unknown", "recommended", "en", "zh", "ga", "pro", "free"]
+        return Set((voice.tags + voice.bestFor + [voice.collection ?? ""]).map(normalized)).subtracting(ignored)
+    }
+
+    static func topics(for voice: VoiceOption) -> [VoiceDiscoveryTopic] {
+        let values = features(voice)
+        return VoiceDiscoveryTopic.allCases.filter { !$0.keywords.isDisjoint(with: values) }
+    }
+
+    static func voices(in topic: VoiceDiscoveryTopic, from voices: [VoiceOption]) -> [VoiceOption] {
+        voices.filter { topics(for: $0).contains(topic) }
+    }
+
+    static func searchTerms(_ voice: VoiceOption) -> String {
+        let translated = styleLabels(for: voice) + topics(for: voice).flatMap { [$0.title, $0.shortTitle] }
+        return normalized((translated + voice.tags + voice.bestFor).joined(separator: " "))
+    }
+
+    static func styleLabels(for voice: VoiceOption) -> [String] {
+        let values = features(voice)
+        let labels: [(Set<String>, String.LocalizationValue)] = [
+            (["warm"], "温暖"), (["gentle", "soft"], "柔和"),
+            (["deep", "grounded", "low"], "低沉"), (["bright", "high"], "明亮"),
+            (["clear", "crisp", "articulate"], "清晰"), (["calm", "composed"], "沉稳"),
+            (["conversational", "friendly", "approachable"], "亲切"),
+            (["expressive", "dramatic"], "有表现力"), (["playful"], "俏皮"),
+            (["energetic", "cheerful", "brisk"], "轻快"),
+            (["measured", "steady", "slow"], "舒缓"), (["raspy"], "沙哑")
+        ]
+        return labels.compactMap { $0.0.isDisjoint(with: values) ? nil : AppLocalized($0.1) }
+    }
+
+    static func subtitle(_ voice: VoiceOption, chinese: Bool) -> String {
+        let styles = styleLabels(for: voice)
+        if !styles.isEmpty { return styles.prefix(2).joined(separator: " · ") }
+        let text = (chinese ? voice.descriptionZh : voice.description)?.trimmed ?? ""
+        let technical = ["解码器", "基模", "修复版", "timestamp", "decoder", "voicepack", "r109"]
+        if !text.isEmpty, !technical.contains(where: { normalized(text).contains($0) }) { return text }
+        if let topic = topics(for: voice).first { return topic.title }
+        switch voice.gender.lowercased() {
+        case "female": return AppLocalized("女声")
+        case "male": return AppLocalized("男声")
+        default: return AppLocalized("听听这个声音")
+        }
+    }
+
+    /// Stable, preference-aware and diverse. No usage counts or popularity are
+    /// invented. Limit repeats globally in the feed, not across entire collections.
+    static func recommended(_ voices: [VoiceOption], language: String,
+                            favoriteIDs: Set<String> = [], recentIDs: [String] = [],
+                            excluding: Set<String> = [], limit: Int = 6) -> [VoiceOption] {
+        let preferred = voices.filter { favoriteIDs.contains($0.id) || recentIDs.prefix(3).contains($0.id) }
+        let preferredFeatures = preferred.reduce(into: Set<String>()) { $0.formUnion(features($1)) }
+        let eligible = voices.filter {
+            $0.enabled && $0.selectable && $0.supports(language) && !excluding.contains($0.id)
+                && !["lab", "legacy"].contains($0.status)
+                && $0.previewURL(for: language) != nil
+        }
+        var scored: [(voice: VoiceOption, score: Int)] = []
+        for voice in eligible {
+            var score = voice.recommended ? 12 : 0
+            if voice.status == "ga" { score += 3 }
+            score += min(6, features(voice).intersection(preferredFeatures).count * 2)
+            if favoriteIDs.contains(voice.id) { score += 2 }
+            scored.append((voice, score))
+        }
+        scored.sort { left, right in
+            if left.score == right.score { return left.voice.id < right.voice.id }
+            return left.score > right.score
+        }
+        var remaining: [VoiceOption] = scored.map { $0.voice }
+        var result: [VoiceOption] = []
+        var seen = Set<String>()
+        while !remaining.isEmpty && result.count < limit {
+            // Prefer a different profile when scores are close; never force in
+            // an unavailable voice merely to balance engine or gender counts.
+            let index: Int
+            if let last = result.last,
+               let different = remaining.prefix(8).firstIndex(where: {
+                   $0.gender != last.gender || styleLabels(for: $0).first != styleLabels(for: last).first
+               }) { index = different } else { index = 0 }
+            let voice = remaining.remove(at: index)
+            if seen.insert(voice.id).inserted { result.append(voice) }
+        }
+        return result
+    }
+}
+
+struct VoiceDiscoveryModule: Codable, Equatable, Identifiable {
+    let id: String
+    let layout: String
+    let title: [String: String]
+    let theme: VoiceDiscoveryTopic
+    let voiceIds: [String]
+    var artworkURL: String? = nil
+
+    var localizedTitle: String {
+        title[AppLanguageManager.shared.selectedLanguage.resolvedLanguageCode] ?? title["en"] ?? theme.title
+    }
+
+    func voices(from catalog: [VoiceOption], language: String) -> [VoiceOption] {
+        var seen = Set<String>()
+        return voiceIds.compactMap { id in
+            guard seen.insert(id).inserted else { return nil }
+            return catalog.first { $0.id == id && $0.enabled && $0.selectable && $0.supports(language)
+                && $0.previewURL(for: language) != nil && !["lab", "legacy"].contains($0.status) }
+        }
+    }
+}
+
+struct VoiceDiscoveryEdition: Codable, Equatable {
+    let id: String
+    let startsAt: String
+    let endsAt: String
+    let modules: [VoiceDiscoveryModule]
+
+    func activeModules(from voices: [VoiceOption], language: String, now: Date = Date()) -> [VoiceDiscoveryModule] {
+        let parser = ISO8601DateFormatter()
+        parser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        func date(_ value: String) -> Date? {
+            if let date = parser.date(from: value) { return date }
+            return ISO8601DateFormatter().date(from: value)
+        }
+        guard let start = date(startsAt), let end = date(endsAt), start <= now && now < end else { return [] }
+        var seen = Set<String>()
+        var moduleIDs = Set<String>()
+        return modules.prefix(8).compactMap { module in
+            guard moduleIDs.insert(module.id).inserted,
+                  ["feature", "rows", "portraits"].contains(module.layout),
+                  module.title["en"]?.isEmpty == false else { return nil }
+            let ids = module.voices(from: voices, language: language).prefix(24)
+                .map(\.id).filter { seen.insert($0).inserted }
+            guard !ids.isEmpty else { return nil }
+            return VoiceDiscoveryModule(id: module.id, layout: module.layout, title: module.title, theme: module.theme, voiceIds: ids, artworkURL: module.artworkURL)
+        }
+    }
+}
+

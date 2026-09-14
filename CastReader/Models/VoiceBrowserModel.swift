@@ -103,7 +103,9 @@ enum VoiceCatalogAssetURL {
         if raw.hasPrefix("/"), !raw.hasPrefix("//"),
            let relative = URLComponents(string: raw),
            (OwnedAPIRedirectPolicy.isChinaGatewayBackedResponsePath(relative.path)
-                || relative.path.hasPrefix("/api/voice-clone/public/")) {
+                || relative.path.hasPrefix("/api/voice-clone/public/")
+                || relative.path.hasPrefix("/voice-library/avatars/")
+                || relative.path.hasPrefix("/voice-discovery/artwork/")) {
             return URL(
                 string: raw,
                 relativeTo: URL(string: route.apiGatewayBaseURL)
@@ -138,7 +140,7 @@ enum VoiceBrowserFilter {
         accent: String = "",
         recommendedOnly: Bool = false
     ) -> [VoiceOption] {
-        let query = search.trimmed.lowercased()
+        let query = VoiceDiscovery.normalized(search)
         let normalizedLanguage = VoiceCatalog.normalizedLanguage(language)
         let normalizedGender = gender.trimmed.lowercased()
         let normalizedAccent = accent.trimmed.lowercased()
@@ -172,7 +174,7 @@ enum VoiceBrowserFilter {
             ] + voice.tags + voice.bestFor)
                 .joined(separator: " ")
                 .lowercased()
-            return searchable.contains(query)
+            return VoiceDiscovery.normalized(searchable + " " + VoiceDiscovery.searchTerms(voice)).contains(query)
         }
     }
 
@@ -195,6 +197,7 @@ final class VoiceSamplePlayer: ObservableObject {
 
     @Published private(set) var playingVoiceID: String?
     @Published private(set) var loadingVoiceID: String?
+    @Published var previewError: String?
 
     private var player: AVPlayer?
     private var endObserver: NSObjectProtocol?
@@ -204,12 +207,16 @@ final class VoiceSamplePlayer: ObservableObject {
     private var sampleFileURL: URL?
 
     func toggle(voiceID: String, sampleURL: String?) {
+        previewError = nil
         if playingVoiceID == voiceID || loadingVoiceID == voiceID {
             stop()
             return
         }
         let route = ComputeRouting.current
-        guard let url = Self.validSampleURL(sampleURL, route: route) else { return }
+        guard let url = Self.validSampleURL(sampleURL, route: route) else {
+            previewError = AppLocalized("试听暂不可用，请稍后重试")
+            return
+        }
 
         stop(resumeSuspendedPlayback: false)
         VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
@@ -231,6 +238,10 @@ final class VoiceSamplePlayer: ObservableObject {
             } catch {
                 guard let self, self.sampleLoadID == loadID, self.loadingVoiceID == voiceID else { return }
                 self.stop()
+                self.previewError = AppLocalized("试听暂不可用，请稍后重试")
+                #if DEBUG
+                NSLog("[VoiceSample] download failed: %@", error.localizedDescription)
+                #endif
             }
         }
     }
@@ -255,8 +266,15 @@ final class VoiceSamplePlayer: ObservableObject {
                     self.loadingVoiceID = nil
                     self.playingVoiceID = voiceID
                     self.player?.play()
+                    #if DEBUG
+                    NSLog("[VoiceSample] playing %@", voiceID)
+                    #endif
                 case .failed:
                     self.stop()
+                    self.previewError = AppLocalized("试听暂不可用，请稍后重试")
+                    #if DEBUG
+                    NSLog("[VoiceSample] player failed: %@", item.error?.localizedDescription ?? "unknown")
+                    #endif
                 default:
                     break
                 }
@@ -293,6 +311,20 @@ final class VoiceSamplePlayer: ObservableObject {
         url: URL,
         route: ServiceRoute
     ) async throws -> URL {
+        #if DEBUG && targetEnvironment(simulator)
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderVoiceExploreFixture"),
+           let directory = ProcessInfo.processInfo.environment["CASTREADER_VOICE_FIXTURE_DIRECTORY"],
+           url.path.hasPrefix("/api/voice-clone/public/"),
+           let id = url.pathComponents.dropLast().last,
+           id.range(of: #"^vl_[a-z0-9_]+$"#, options: .regularExpression) != nil,
+           let language = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "language" })?.value,
+           ["en", "zh"].contains(language) {
+            let source = URL(fileURLWithPath: directory).appendingPathComponent("\(id)-\(language).mp3")
+            let destination = FileManager.default.temporaryDirectory.appendingPathComponent("voice-test-\(UUID().uuidString).mp3")
+            try FileManager.default.copyItem(at: source, to: destination)
+            return destination
+        }
+        #endif
         let (data, response) = try await OwnedAPIURLSession.data(from: url, route: route)
         guard let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
