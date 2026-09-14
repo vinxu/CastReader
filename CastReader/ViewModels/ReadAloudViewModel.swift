@@ -3561,7 +3561,7 @@ final class ReadAloudViewModel: ObservableObject {
         }
         guard epoch == generationEpoch, !audio.hasTerminalPlaybackFailure else { return }
         status = .streaming
-        if document.sourceKind == .kindle, !playbackVoiceID.hasPrefix("vc_") {
+        if document.sourceKind == .kindle, !VoiceOption.requiresGenerationQuota(playbackVoiceID) {
             preloadNext(after: paragraph)
         }
         // The clone worker is intentionally single-flight on one GPU. Starting
@@ -3675,7 +3675,7 @@ final class ReadAloudViewModel: ObservableObject {
     private func preloadNext(after index: Int) {
         guard isActive, !audio.hasTerminalPlaybackFailure else { return }
         if document.sourceKind == .kindle,
-           !settings.voice(for: docLanguage).hasPrefix("vc_") {
+           !VoiceOption.requiresGenerationQuota(settings.voice(for: docLanguage)) {
             preloadKindleHorizon(after: index)
             return
         }
@@ -3893,8 +3893,8 @@ final class ReadAloudViewModel: ObservableObject {
         paragraphIndex: Int,
         voice: String
     ) -> String? {
-        guard voice.hasPrefix("vc_") else { return nil }
-        let key = "\(paragraphIndex)|\(voice)"
+        guard VoiceOption.requiresGenerationQuota(voice) else { return nil }
+        let key = "\(paragraphIndex)|\(voice)|\(docLanguage)"
         if let existing = cloneRequestIDs[key] { return existing }
         let created = UUID().uuidString
         cloneRequestIDs[key] = created
@@ -3907,7 +3907,7 @@ final class ReadAloudViewModel: ObservableObject {
         matching requestID: String?
     ) {
         guard let requestID else { return }
-        let key = "\(paragraphIndex)|\(voice)"
+        let key = "\(paragraphIndex)|\(voice)|\(docLanguage)"
         guard cloneRequestIDs[key] == requestID else { return }
         cloneRequestIDs.removeValue(forKey: key)
     }

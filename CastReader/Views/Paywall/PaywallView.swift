@@ -398,10 +398,10 @@ struct ProUpsellContent: View {
 
     private let benefits: [(String, String)] = [
         ("books.vertical.fill", AppLocalized("你的整个书库，全部可听")),
-        ("infinity", AppLocalized("无限朗读时长")),
+        ("infinity", AppLocalized("常规音色 · Pro 不限时")),
         ("sparkles", AppLocalized("无限解读次数")),
         ("waveform", AppLocalized("全部预设高级音色")),
-        ("person.wave.2.fill", AppLocalized("用自己的声音朗读和解读 · 每月 120 分钟")),
+        ("person.wave.2.fill", AppLocalized("精选音色与我的声音 · 每月共 120 分钟生成额度")),
         ("hare.fill", AppLocalized("最高 3x 语速")),
     ]
 

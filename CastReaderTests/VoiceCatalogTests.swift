@@ -2,6 +2,44 @@ import XCTest
 @testable import CastReader
 
 final class VoiceCatalogTests: XCTestCase {
+    @MainActor
+    func testPublicVoiceRetainsIdentityAcrossOutputLanguagesAndUsesSharedQuota() throws {
+        defer { VoiceCatalog.resetForTesting() }
+        let base = try TTSVoiceCatalogDocument.decodeServerResponse(from: fixture("tts-voice-catalog-direct"))
+        let data = Data(#"{"id":"vl_rowan","name":"Rowan","engine":"clone","modelVersion":"v1","language":"en","locale":"en","genderPresentation":"male","tier":"pro","status":"ga","enabled":true,"selectable":true,"timestampMode":"word","usagePolicy":"monthly_generation","supportedLanguages":["en","zh","ko"],"sampleUrls":{"en":"/api/voice-clone/public/vl_rowan/preview?language=en","zh":"/api/voice-clone/public/vl_rowan/preview?language=zh","ko":"/api/voice-clone/public/vl_rowan/preview?language=ko"}}"#.utf8)
+        let publicVoice = try JSONDecoder().decode(TTSVoiceCatalogVoice.self, from: data)
+        try VoiceCatalog.install(.init(contract: base.contract, version: "public-test", languages: base.languages, voices: base.voices + [publicVoice]))
+        let voice = try XCTUnwrap(VoiceCatalog.option(for: "vl_rowan"))
+        XCTAssertTrue(voice.usesMonthlyGeneration)
+        XCTAssertTrue(VoiceOption.requiresGenerationQuota(voice.code))
+        XCTAssertTrue(VoiceOption.requiresGenerationQuota("vl_retired"), "Missing catalog must never change the authenticated route")
+        XCTAssertTrue(VoiceCatalog.voices(for: "zh").contains(voice))
+        XCTAssertEqual(VoiceBrowserFilter.apply(voices: [voice], search: "rowan", language: "zh", gender: "", tier: .all), [voice])
+        XCTAssertNotEqual(voice.previewURL(for: "en"), voice.previewURL(for: "zh"))
+        XCTAssertNil(voice.previewURL(for: "hi"), "Never play the source language as a different-language preview")
+        let settings = AppSettings(defaults: isolatedDefaults())
+        XCTAssertFalse(VoiceSelectionPolicy.select(voice, isPro: false, settings: settings, language: "zh"))
+        XCTAssertTrue(VoiceSelectionPolicy.select(voice, isPro: true, settings: settings, language: "en"))
+        VoiceSelectionPolicy.carrySelection(from: "en", to: "zh", settings: settings)
+        XCTAssertEqual(settings.voice(for: "zh"), "vl_rowan")
+        XCTAssertFalse(settings.setVoice("vl_rowan", for: "hi"))
+        var limitedVoice = publicVoice
+        limitedVoice.supportedLanguages = ["en"]
+        try VoiceCatalog.install(.init(contract: base.contract, version: "withdrawn-language", languages: base.languages, voices: base.voices + [limitedVoice]))
+        XCTAssertEqual(settings.voice(for: "zh"), "vl_rowan", "A withdrawn language must require an explicit new selection")
+        VoiceCatalog.resetForTesting()
+        XCTAssertEqual(settings.voice(for: "zh"), "vl_rowan", "Unavailable saved voice must not silently become a regular voice")
+    }
+
+    func testPublicVoiceRequiresQuotaMetadata() throws {
+        let base = try TTSVoiceCatalogDocument.decodeServerResponse(from: fixture("tts-voice-catalog-direct"))
+        let object = try JSONSerialization.jsonObject(with: fixture("tts-voice-catalog-direct")) as! [String: Any]
+        var voice = (object["voices"] as! [[String: Any]])[0]
+        voice["id"] = "vl_missing_policy"
+        let decoded = try JSONDecoder().decode(TTSVoiceCatalogVoice.self, from: JSONSerialization.data(withJSONObject: voice))
+        XCTAssertThrowsError(try TTSVoiceCatalogDocument(contract: base.contract, version: "invalid", languages: base.languages, voices: base.voices + [decoded]).validate())
+    }
+
     private func fixture(_ name: String) throws -> Data {
         let bundle = Bundle(for: Self.self)
         let url = try XCTUnwrap(bundle.url(forResource: name, withExtension: "json"))

@@ -892,10 +892,9 @@ struct VoiceCloneQuotaPresentation: Equatable {
         resetAt = capability.resetAt
 
         if let resetAt = capability.resetAt,
-           resetAt <= now,
-           capability.monthlyRemainingSeconds == 0 {
-            usedSeconds = 0
-            remainingSeconds = limit
+           resetAt <= now {
+            usedSeconds = nil
+            remainingSeconds = nil
             return
         }
 
@@ -1523,8 +1522,8 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
         switch self {
         case .signInRequired: return AppLocalized("请先登录以使用声音克隆")
         case .sessionUnavailable: return AppLocalized("声音克隆登录服务尚未就绪，请稍后再试")
-        case .proRequired: return AppLocalized("升级到 Pro 后，即可将自己的声音用于朗读和解读")
-        case .voiceNotFound: return AppLocalized("这个声音已不存在，请重新创建")
+        case .proRequired: return AppLocalized("此音色需要 CastReader Pro")
+        case .voiceNotFound: return AppLocalized("音色暂不可用，请重新选择")
         case .languageUnsupported: return AppLocalized("这个克隆音色暂不支持当前朗读语言")
         case .invalidRecording(let message): return message
         case .slotFull: return AppLocalized("声音服务正在更新，请稍后重试")
@@ -1534,16 +1533,12 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
         case .creationIdempotencyConflict:
             return AppLocalized("创建记录与当前录音不一致，请重新录制或刷新后再试")
         case .quotaExhausted(let resetAt):
-            if let resetAt {
-                let formatter = DateFormatter()
-                formatter.locale = AppLanguageManager.shared.locale
-                formatter.setLocalizedDateFormatFromTemplate("MMM d")
-                return String(
-                    format: AppLocalized("本月 120 分钟的克隆音色额度已用完，将于 %@ 自动恢复。你可以切换到预设音色继续朗读或解读。"),
-                    formatter.string(from: resetAt)
-                )
-            }
-            return AppLocalized("本月 120 分钟的克隆音色额度已用完。你可以切换到预设音色继续朗读或解读。")
+            let message = AppLocalized("本期生成额度已用完。可选择常规音色继续，当前阅读位置会保留。")
+            guard let resetAt else { return message }
+            let formatter = DateFormatter()
+            formatter.locale = AppLanguageManager.shared.locale
+            formatter.setLocalizedDateFormatFromTemplate("MMM d")
+            return message + " " + String(format: AppLocalized("下次更新：%@"), formatter.string(from: resetAt))
         case .workerBusy: return AppLocalized("声音服务繁忙，请重试")
         case .identityConflict:
             return AppLocalized("声音名称已在其他设备更新，请确认后重试")

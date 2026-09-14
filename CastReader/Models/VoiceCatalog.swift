@@ -35,6 +35,23 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
     let descriptionZh: String?
     let bestFor: [String]
     let sampleURL: String?
+    let usagePolicy: String
+    let supportedLanguages: [String]
+    let sampleURLs: [String: String]
+
+    var usesMonthlyGeneration: Bool { usagePolicy == "monthly_generation" || code.hasPrefix("vl_") }
+
+    static func requiresGenerationQuota(_ code: String) -> Bool {
+        code.hasPrefix("vc_") || code.hasPrefix("vl_")
+    }
+
+    func supports(_ language: String) -> Bool {
+        supportedLanguages.contains(VoiceCatalog.normalizedLanguage(language))
+    }
+
+    func previewURL(for language: String) -> String? {
+        usesMonthlyGeneration ? sampleURLs[VoiceCatalog.normalizedLanguage(language)] : sampleURL
+    }
 
     var id: String { code }
 
@@ -63,8 +80,14 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
         description: String? = nil,
         descriptionZh: String? = nil,
         bestFor: [String] = [],
-        sampleURL: String? = nil
+        sampleURL: String? = nil,
+        usagePolicy: String = "regular",
+        supportedLanguages: [String]? = nil,
+        sampleURLs: [String: String] = [:]
     ) {
+        self.usagePolicy = usagePolicy
+        self.supportedLanguages = (supportedLanguages ?? [lang]).map(VoiceCatalog.normalizedLanguage)
+        self.sampleURLs = sampleURLs
         self.code = code
         self.name = name
         self.isPro = isPro
@@ -136,6 +159,9 @@ struct TTSVoiceCatalogVoice: Codable, Equatable {
     let tags: [String]?
     let avatar: TTSVoiceCatalogAvatar?
     let sampleUrl: String?
+    var usagePolicy: String? = nil
+    var supportedLanguages: [String]? = nil
+    var sampleUrls: [String: String]? = nil
     let accent: String?
     let sourceModelVersion: String?
     let collection: String?
@@ -205,6 +231,19 @@ struct TTSVoiceCatalogDocument: Codable, Equatable {
                   !voice.timestampMode.trimmed.isEmpty,
                   languageCodes.contains(language),
                   voiceIDs.insert(voice.id).inserted else {
+                throw VoiceCatalogError.incompleteCatalog
+            }
+        }
+
+        guard !voices.contains(where: { $0.usagePolicy == "monthly_generation" && !$0.id.hasPrefix("vl_") }) else {
+            throw VoiceCatalogError.incompleteCatalog
+        }
+        for voice in voices where voice.id.hasPrefix("vl_") {
+            guard voice.usagePolicy == "monthly_generation", voice.tier == "pro",
+                  let supported = voice.supportedLanguages, !supported.isEmpty,
+                  supported.allSatisfy({ ["de", "en", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh"].contains($0) }),
+                  let previews = voice.sampleUrls,
+                  supported.allSatisfy({ previews[$0]?.isEmpty == false }) else {
                 throw VoiceCatalogError.incompleteCatalog
             }
         }
@@ -353,18 +392,12 @@ enum VoiceCatalog {
             }
         }
 
-        let counts = Dictionary(grouping: catalog.voices.filter(\.selectable)) {
-            normalizedLanguage($0.language)
-        }.mapValues(\.count)
-
         return SupportedTTSLanguage.allCases.compactMap { supported in
             let language = catalog.languages.first(where: {
                 normalizedLanguage($0.code) == supported.rawValue
             })
             let code = supported.rawValue
-            let count = counts[code] ?? fallbackAll.filter {
-                normalizedLanguage($0.lang) == code && $0.selectable
-            }.count
+            let count = voices(for: code).count
             guard count > 0 else { return nil }
             return VoiceCatalogLanguageOption(
                 code: code,
@@ -387,14 +420,12 @@ enum VoiceCatalog {
         guard let catalog = runtime.read() else {
             return fallbackAll.filter { normalizedLanguage($0.lang) == normalized }
         }
-        let remote = catalog.voices
-            .filter {
-                normalizedLanguage($0.language) == normalized && $0.selectable
-            }
-            .map(option(from:))
-        return remote.isEmpty
-            ? fallbackAll.filter { normalizedLanguage($0.lang) == normalized && $0.selectable }
-            : remote
+        let options = catalog.voices.map(option(from:)).filter { $0.selectable && $0.supports(normalized) }
+        let regular = options.filter { !$0.usesMonthlyGeneration }
+        let base = regular.isEmpty
+            ? fallbackAll.filter { $0.supports(normalized) && $0.selectable }
+            : regular
+        return base + (Constants.Features.voiceCloningEnabled ? options.filter(\.usesMonthlyGeneration) : [])
     }
 
     static func option(for code: String) -> VoiceOption? {
@@ -505,7 +536,10 @@ enum VoiceCatalog {
             description: voice.description,
             descriptionZh: voice.descriptionZh,
             bestFor: voice.bestFor ?? [],
-            sampleURL: voice.sampleUrl
+            sampleURL: voice.sampleUrl,
+            usagePolicy: voice.usagePolicy ?? "regular",
+            supportedLanguages: voice.supportedLanguages,
+            sampleURLs: voice.sampleUrls ?? [:]
         )
     }
 }
@@ -546,7 +580,7 @@ final class VoiceCatalogService: ObservableObject {
         self.defaults = defaults
         self.endpoint = endpoint
             ?? URL(
-                string: "\(route.apiGatewayBaseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
+                string: "\(route.apiGatewayBaseURL)/api/tts/mobile-catalog?contract=tts-voice-catalog-v1"
             )!
         self.cacheKey = Self.cacheKey(for: route)
         self.now = now
@@ -568,6 +602,9 @@ final class VoiceCatalogService: ObservableObject {
     }
 
     func refresh(force: Bool = true) async {
+#if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderVoiceExploreFixture") { return }
+#endif
         guard !isRefreshing else { return }
         if !force,
            let lastNetworkRefreshAt,

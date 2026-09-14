@@ -102,7 +102,8 @@ enum VoiceCatalogAssetURL {
 
         if raw.hasPrefix("/"), !raw.hasPrefix("//"),
            let relative = URLComponents(string: raw),
-           OwnedAPIRedirectPolicy.isChinaGatewayBackedResponsePath(relative.path) {
+           (OwnedAPIRedirectPolicy.isChinaGatewayBackedResponsePath(relative.path)
+                || relative.path.hasPrefix("/api/voice-clone/public/")) {
             return URL(
                 string: raw,
                 relativeTo: URL(string: route.apiGatewayBaseURL)
@@ -145,7 +146,7 @@ enum VoiceBrowserFilter {
         return voices.filter { voice in
             guard voice.selectable else { return false }
             if !normalizedLanguage.isEmpty,
-               VoiceCatalog.normalizedLanguage(voice.lang) != normalizedLanguage {
+               !voice.supports(normalizedLanguage) {
                 return false
             }
             if !normalizedGender.isEmpty,
@@ -199,6 +200,7 @@ final class VoiceSamplePlayer: ObservableObject {
     private var endObserver: NSObjectProtocol?
     private var statusCancellable: AnyCancellable?
     private var sampleLoadTask: Task<Void, Never>?
+    private var sampleLoadID: UUID?
     private var sampleFileURL: URL?
 
     func toggle(voiceID: String, sampleURL: String?) {
@@ -213,25 +215,27 @@ final class VoiceSamplePlayer: ObservableObject {
         VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
         VoicePreviewPlaybackCoordinator.shared.begin()
         loadingVoiceID = voiceID
+        let loadID = UUID()
+        sampleLoadID = loadID
         sampleLoadTask = Task { [weak self] in
             do {
                 let localURL = try await Self.downloadSample(url: url, route: route)
                 try Task.checkCancellation()
                 guard let self,
-                      self.loadingVoiceID == voiceID else {
+                      self.sampleLoadID == loadID, self.loadingVoiceID == voiceID else {
                     try? FileManager.default.removeItem(at: localURL)
                     return
                 }
                 self.sampleFileURL = localURL
-                self.installPlayer(voiceID: voiceID, url: localURL)
+                self.installPlayer(voiceID: voiceID, url: localURL, loadID: loadID)
             } catch {
-                guard let self, self.loadingVoiceID == voiceID else { return }
+                guard let self, self.sampleLoadID == loadID, self.loadingVoiceID == voiceID else { return }
                 self.stop()
             }
         }
     }
 
-    private func installPlayer(voiceID: String, url: URL) {
+    private func installPlayer(voiceID: String, url: URL, loadID: UUID) {
         let item = AVPlayerItem(url: url)
         let player = AVPlayer(playerItem: item)
         self.player = player
@@ -245,7 +249,7 @@ final class VoiceSamplePlayer: ObservableObject {
         statusCancellable = item.publisher(for: \.status)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] status in
-                guard let self, self.loadingVoiceID == voiceID else { return }
+                guard let self, self.sampleLoadID == loadID, self.loadingVoiceID == voiceID else { return }
                 switch status {
                 case .readyToPlay:
                     self.loadingVoiceID = nil
@@ -260,6 +264,7 @@ final class VoiceSamplePlayer: ObservableObject {
     }
 
     func stop(resumeSuspendedPlayback: Bool = true) {
+        sampleLoadID = nil
         sampleLoadTask?.cancel()
         sampleLoadTask = nil
         player?.pause()
@@ -428,14 +433,23 @@ final class VoiceLibraryStore: ObservableObject {
 }
 
 enum VoiceSelectionPolicy {
+    @MainActor
+    static func carrySelection(from sourceLanguage: String, to targetLanguage: String, settings: AppSettings) {
+        let current = settings.voice(for: sourceLanguage)
+        guard let voice = VoiceCatalog.option(for: current),
+              voice.usesMonthlyGeneration, voice.supports(targetLanguage) else { return }
+        _ = settings.setVoice(current, for: targetLanguage)
+    }
+
     /// Pro 不满足时不写入偏好；UI 刷新 Pro 后可以再次调用。
     @MainActor
     static func select(
         _ voice: VoiceOption,
         isPro: Bool,
-        settings: AppSettings
+        settings: AppSettings,
+        language: String? = nil
     ) -> Bool {
         guard voice.selectable, !voice.isPro || isPro else { return false }
-        return settings.setVoice(voice.code, for: voice.lang)
+        return settings.setVoice(voice.code, for: language ?? voice.lang)
     }
 }

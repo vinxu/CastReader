@@ -158,6 +158,19 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(samples, [0.2, 0.3, 1])
     }
 
+    func testExpiredQuotaDoesNotInventAReplenishedBalance() {
+        let now = Date()
+        for remaining in [0, 1200] {
+            let quota = VoiceCloneQuotaPresentation(capability: VoiceCloneCapability(
+                monthlyLimitSeconds: 7200, monthlyUsedSeconds: 7200 - remaining, monthlyRemainingSeconds: remaining,
+                resetAt: now.addingTimeInterval(-1)
+            ), now: now)
+            XCTAssertNil(quota.remainingSeconds)
+            XCTAssertNil(quota.usedSeconds)
+            XCTAssertNil(quota.progress)
+        }
+    }
+
     func testQuotaPresentationUsesServerCounters() {
         let presentation = VoiceCloneQuotaPresentation(
             capability: VoiceCloneCapability(
@@ -1087,10 +1100,8 @@ final class VoiceCloneTests: XCTestCase {
         let formatter = DateFormatter()
         formatter.locale = AppLanguageManager.shared.locale
         formatter.setLocalizedDateFormatFromTemplate("MMM d")
-        let expected = String(
-            format: AppLocalized("本月 120 分钟的克隆音色额度已用完，将于 %@ 自动恢复。你可以切换到预设音色继续朗读或解读。"),
-            formatter.string(from: resetAt)
-        )
+        let expected = AppLocalized("本期生成额度已用完。可选择常规音色继续，当前阅读位置会保留。") + " "
+            + String(format: AppLocalized("下次更新：%@"), formatter.string(from: resetAt))
 
         XCTAssertEqual(message, expected)
         XCTAssertNotEqual(

@@ -100,7 +100,7 @@ struct VoiceCloneCreatedView: View {
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(
-                reason: AppLocalized("免费版可创建并试听自己的声音。Pro 可将自己的声音用于朗读和解读，每月 120 分钟。"),
+                reason: AppLocalized("Pro 每月共 120 分钟生成额度"),
                 analyticsTrigger: "voice_clone_apply",
                 analyticsSurface: "voice_clone_created"
             )
@@ -359,108 +359,8 @@ struct VoiceCloneCreatedView: View {
     }
 
     private var proQuotaCard: some View {
-        let quota = store.quotaPresentation
-        return Group {
-            if let remaining = quota.remainingSeconds,
-               let used = quota.usedSeconds,
-               let progress = quota.progress {
-                let remainingPercent = quota.limitSeconds > 0
-                    ? Int((Double(remaining) / Double(quota.limitSeconds) * 100).rounded())
-                    : 0
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("克隆音色额度")
-                                .font(.subheadline.weight(.semibold))
-                            Text(quotaResetText(quota.resetAt))
-                                .font(.caption)
-                                .foregroundStyle(AppTheme.mutedForeground)
-                        }
-                        .layoutPriority(1)
-
-                        Spacer(minLength: 4)
-
-                        GeometryReader { proxy in
-                            let consumedWidth = proxy.size.width * CGFloat(progress)
-                            ZStack(alignment: .leading) {
-                                Capsule()
-                                    .fill(AppTheme.mutedForeground.opacity(0.14))
-                                if progress > 0 {
-                                    Capsule()
-                                        .fill(AppTheme.primary.opacity(0.82))
-                                        .frame(width: max(6, consumedWidth))
-                                }
-                            }
-                        }
-                        .frame(width: 92, height: 8)
-
-                        Text(
-                            store.isQuotaBlocked
-                                ? AppLocalized("已用完")
-                                : String(
-                                    format: AppLocalized("%d%% 剩余"),
-                                    max(0, remainingPercent)
-                                )
-                        )
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(store.isQuotaBlocked ? AppTheme.destructive : AppTheme.mutedForeground)
-                            .monospacedDigit()
-                            .fixedSize()
-                    }
-
-                    HStack {
-                        Text(
-                            String(
-                                format: AppLocalized("已使用 %@ 分钟"),
-                                formattedMinutes(used)
-                            )
-                        )
-                        Spacer()
-                        Text(
-                            String(
-                                format: AppLocalized("剩余 %@ / %@ 分钟"),
-                                formattedMinutes(remaining),
-                                formattedMinutes(quota.limitSeconds)
-                            )
-                        )
-                    }
-                    .font(.caption)
-                    .foregroundStyle(AppTheme.mutedForeground)
-                    .monospacedDigit()
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("克隆音色额度")
-                .accessibilityValue(String(
-                    format: AppLocalized("已使用 %@ 分钟，剩余 %@ 分钟，%@"),
-                    formattedMinutes(used),
-                    formattedMinutes(remaining),
-                    quotaResetText(quota.resetAt)
-                ))
-            } else {
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("克隆音色额度")
-                            .font(.subheadline.weight(.semibold))
-                        Text("正在同步本月用量…")
-                            .font(.caption)
-                            .foregroundStyle(AppTheme.mutedForeground)
-                    }
-                    Spacer()
-                    ProgressView().controlSize(.small)
-                }
-            }
-        }
-        .padding(.horizontal, 15)
-        .padding(.vertical, 13)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(AppTheme.surface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(AppTheme.border.opacity(0.72), lineWidth: 1)
-                )
-        )
-        .accessibilityIdentifier("voiceCloneQuotaCard")
+        VoiceGenerationQuotaSummary()
+            .accessibilityIdentifier("voiceCloneQuotaCard")
     }
 
     private func quotaResetText(_ resetAt: Date?) -> String {
@@ -482,7 +382,7 @@ struct VoiceCloneCreatedView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text("免费版可创建并试听多个自己的声音")
                     .font(.subheadline.weight(.semibold))
-                Text("升级 Pro 后可用于朗读和解读，每月 120 分钟。")
+                Text("Pro 每月共 120 分钟生成额度")
                     .font(.caption)
                     .foregroundStyle(AppTheme.mutedForeground)
             }
@@ -1485,7 +1385,7 @@ private struct VoiceCloneCreationView: View {
         )
         .sheet(isPresented: $showPaywall) {
             PaywallView(
-                reason: AppLocalized("免费版可创建并试听自己的声音。Pro 可将自己的声音用于朗读和解读，每月 120 分钟。"),
+                reason: AppLocalized("Pro 每月共 120 分钟生成额度"),
                 analyticsTrigger: "voice_clone_apply",
                 analyticsSurface: "voice_clone_complete"
             )
@@ -1533,7 +1433,7 @@ private struct VoiceCloneCreationView: View {
                 .padding(.horizontal, 28)
                 .padding(.bottom, 18)
 
-            Text("所有用户均可创建和试听声音；Pro 可用于朗读和解读，每个会员周期 120 分钟。")
+            Text("与我的声音共用生成额度，所有语言共享。试听免费。")
                 .font(.caption)
                 .foregroundStyle(AppTheme.mutedForeground)
                 .multilineTextAlignment(.center)

@@ -618,7 +618,7 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         // Clone compatibility endpoint accepts at most 600 JavaScript UTF-16
         // units. Preserve the local tail and append it to the server's own
         // continuation so a long paragraph is never silently truncated.
-        let isClonedVoice = resolvedVoice.hasPrefix("vc_")
+        let isClonedVoice = VoiceOption.requiresGenerationQuota(resolvedVoice)
         let requestChunk = isClonedVoice
             ? ClonedTTSRequestChunker.split(sanitized, maxUTF16Length: 600)
             : ClonedTTSRequestChunker.Chunk(input: sanitized, remainder: "")

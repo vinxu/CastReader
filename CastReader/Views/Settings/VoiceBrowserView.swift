@@ -244,9 +244,8 @@ struct VoiceBrowserView: View {
             .background(AppTheme.background)
             .scrollDismissesKeyboard(.interactively)
             .refreshable {
-                if tab == .created {
-                    await voiceCloneStore.refresh()
-                }
+                await catalog.refresh()
+                if Constants.Features.voiceCloningEnabled { await voiceCloneStore.refresh() }
             }
             .navigationTitle("音色")
             .navigationBarTitleDisplayMode(presentation == .tab ? .large : .inline)
@@ -290,6 +289,10 @@ struct VoiceBrowserView: View {
                 analyticsSurface: "voice_browser"
             )
         }
+        .task {
+            await catalog.refreshIfStale()
+            if Constants.Features.voiceCloningEnabled { await voiceCloneStore.refresh() }
+        }
         .onDisappear { samplePlayer.stop() }
         .onAppear {
             applyLaunchRequest(launchRequest)
@@ -331,7 +334,7 @@ struct VoiceBrowserView: View {
             Text("收藏").tag(VoiceBrowserTab.favorites)
             Text("探索").tag(VoiceBrowserTab.explore)
             if Constants.Features.voiceCloningEnabled {
-                Text("已创建").tag(VoiceBrowserTab.created)
+                Text("我的声音").tag(VoiceBrowserTab.created)
             }
         }
         .pickerStyle(.segmented)
@@ -358,23 +361,53 @@ struct VoiceBrowserView: View {
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 320)
         } else {
-            ForEach(displayedVoices) { voice in
-                VoiceBrowserRow(
-                    voice: voice,
-                    isSelected: settings.activeClonedVoiceID(for: voice.lang) == nil && settings.voice(for: voice.lang) == voice.code,
-                    isFavorite: library.isFavorite(voice.code),
-                    isSelecting: selectingVoiceID == voice.code || voiceSwitch.progress?.toVoiceID == voice.code,
-                    isPreviewing: samplePlayer.playingVoiceID == voice.code,
-                    isPreviewLoading: samplePlayer.loadingVoiceID == voice.code,
-                    onSelect: { select(voice) },
-                    onPreview: { samplePlayer.toggle(voiceID: voice.code, sampleURL: voice.sampleURL) },
-                    onToggleFavorite: { library.toggleFavorite(voice.code) }
-                )
-                .padding(.horizontal)
-
-                Divider()
-                    .padding(.leading, 74)
+            if tab == .explore {
+                voiceGroup(monthly: false)
+                voiceGroup(monthly: true)
+            } else {
+                if displayedVoices.contains(where: \.usesMonthlyGeneration) {
+                    VoiceGenerationQuotaSummary(title: "生成额度")
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                }
+                voiceRows(displayedVoices)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func voiceGroup(monthly: Bool) -> some View {
+        let voices = displayedVoices.filter { $0.usesMonthlyGeneration == monthly }
+        if !voices.isEmpty {
+            if monthly {
+                VoiceGenerationQuotaSummary(title: "精选音色")
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
+            } else {
+                Text(AppLocalized("常规音色 · Pro 不限时"))
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+            }
+            voiceRows(voices)
+        }
+    }
+
+    private func voiceRows(_ voices: [VoiceOption]) -> some View {
+        ForEach(voices) { voice in
+            VoiceBrowserRow(
+                voice: voice,
+                isSelected: settings.voice(for: library.browserLanguage) == voice.code,
+                isFavorite: library.isFavorite(voice.code),
+                isSelecting: selectingVoiceID == voice.code || voiceSwitch.progress?.toVoiceID == voice.code,
+                isPreviewing: samplePlayer.playingVoiceID == voice.code,
+                isPreviewLoading: samplePlayer.loadingVoiceID == voice.code,
+                onSelect: { select(voice) },
+                onPreview: { samplePlayer.toggle(voiceID: voice.code, sampleURL: voice.previewURL(for: library.browserLanguage)) },
+                onToggleFavorite: { library.toggleFavorite(voice.code) }
+            )
+            .padding(.horizontal)
+            Divider().padding(.leading, 74)
         }
     }
 
@@ -401,26 +434,11 @@ struct VoiceBrowserView: View {
                 .font(.title3)
                 .foregroundStyle(AppTheme.primary)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(languageControlTitle)
-                    .font(.caption)
-                    .foregroundStyle(AppTheme.mutedForeground)
-                Text(selectedLanguageName)
-                    .font(.headline)
-                    .foregroundStyle(AppTheme.foreground)
-                    .lineLimit(1)
-            }
-
+            Text(selectedLanguageName)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(AppTheme.foreground)
+                .lineLimit(1)
             Spacer()
-
-            if let language = selectedLanguage {
-                Text(VoiceBrowserLanguage.voiceCountText(language.voiceCount))
-                    .font(.subheadline)
-                    .foregroundStyle(AppTheme.mutedForeground)
-            } else if catalog.isRefreshing {
-                ProgressView()
-                    .controlSize(.small)
-            }
 
             if showsDisclosure {
                 Image(systemName: "chevron.right")
@@ -429,7 +447,7 @@ struct VoiceBrowserView: View {
             }
         }
         .padding(.horizontal, 14)
-        .frame(minHeight: 58)
+        .frame(minHeight: 44)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(AppTheme.surface)
@@ -446,17 +464,15 @@ struct VoiceBrowserView: View {
 
     private var selectedLanguageName: String {
         guard let selectedLanguage else { return library.browserLanguage.uppercased() }
-        return VoiceBrowserLanguage.displayName(
-            for: selectedLanguage,
-            locale: appLanguage.locale
-        )
+        return appLanguage.locale.localizedString(forLanguageCode: selectedLanguage.code)
+            ?? VoiceBrowserLanguage.displayName(for: selectedLanguage, locale: appLanguage.locale)
     }
 
     private var sourceVoices: [VoiceOption] {
         switch tab {
         case .recent:
             return library.recentIDs.compactMap { VoiceCatalog.option(for: $0) }
-                .filter { VoiceCatalog.normalizedLanguage($0.lang) == library.browserLanguage }
+                .filter { $0.supports(library.browserLanguage) }
         case .favorites:
             return VoiceCatalog.voices(for: library.browserLanguage)
                 .filter { library.favoriteIDs.contains($0.code) }
@@ -557,7 +573,11 @@ struct VoiceBrowserView: View {
 
     private func select(_ voice: VoiceOption) {
         guard selectingVoiceID == nil else { return }
-        if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings) {
+        if voice.usesMonthlyGeneration {
+            selectMonthlyVoice(voice)
+            return
+        }
+        if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: library.browserLanguage) {
             library.recordRecent(voice.code)
             applyReadingLanguage(of: voice)
             return
@@ -567,7 +587,7 @@ struct VoiceBrowserView: View {
         selectingVoiceID = voice.code
         Task { @MainActor in
             await pro.refresh()
-            if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings) {
+            if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: library.browserLanguage) {
                 library.recordRecent(voice.code)
                 applyReadingLanguage(of: voice)
             } else {
@@ -577,18 +597,40 @@ struct VoiceBrowserView: View {
         }
     }
 
-    /// Picking a voice from another language is the user telling us what language
-    /// this content is. The preference is stored under the voice's own language
-    /// first — `AppSettings.setVoice` refusing to file a voice under a foreign
-    /// language is the right invariant and stays — and only then does the reading
-    /// language follow, so a single re-narration lands on the voice just tapped.
-    /// Without this the pick was stored and then ignored: playback still read the
-    /// misdetected English preference, and tapping an Italian voice did nothing.
+    private func selectMonthlyVoice(_ voice: VoiceOption) {
+        let language = library.browserLanguage
+        selectingVoiceID = voice.code
+        Task { @MainActor in
+            defer { selectingVoiceID = nil }
+            if !pro.isPro { await pro.refresh() }
+            guard pro.isPro else { showPaywall = true; return }
+            guard AuthService.shared.isSignedIn else {
+                VoiceCloneAccessCoordinator.shared.prompt = .signIn
+                return
+            }
+            await voiceCloneStore.refresh()
+            guard !voiceCloneStore.isQuotaBlocked else {
+                VoiceCloneAccessCoordinator.shared.prompt = .message(
+                    AppLocalized("本期生成额度已用完。可选择常规音色继续，当前阅读位置会保留。")
+                )
+                return
+            }
+            guard voiceCloneStore.canApply else {
+                VoiceCloneAccessCoordinator.shared.prompt = .message(AppLocalized("Pro 权益正在同步，请稍后重试"))
+                return
+            }
+            guard library.browserLanguage == language,
+                  VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: language) else { return }
+            library.recordRecent(voice.code)
+            applyReadingLanguage(of: voice)
+        }
+    }
+
+    /// The selected output language owns the preference; source sample language
+    /// is metadata and never changes the content's reading language.
     private func applyReadingLanguage(of voice: VoiceOption) {
-        guard let onCorrectReadingLanguage else { return }
-        let language = VoiceCatalog.normalizedLanguage(voice.lang)
-        guard !language.isEmpty else { return }
-        onCorrectReadingLanguage(language)
+        guard voice.supports(library.browserLanguage) else { return }
+        onCorrectReadingLanguage?(library.browserLanguage)
     }
 
     /// The user picked a language in this panel. In the reader that is a statement
@@ -598,6 +640,7 @@ struct VoiceBrowserView: View {
     private func chooseLanguage(_ language: String) {
         let normalized = VoiceCatalog.normalizedLanguage(language)
         guard !normalized.isEmpty else { return }
+        VoiceSelectionPolicy.carrySelection(from: library.browserLanguage, to: normalized, settings: settings)
         languageChosenByUser = true
         library.setBrowserLanguage(normalized)
         onCorrectReadingLanguage?(normalized)
@@ -821,6 +864,10 @@ private struct VoiceBrowserRow: View {
                                     .foregroundColor(AppTheme.primary)
                             }
                         }
+                        Text(AppLocalized(voice.usesMonthlyGeneration
+                            ? "共享月额度" : "常规 · Pro 不限时"))
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(voice.usesMonthlyGeneration ? AppTheme.primary : AppTheme.mutedForeground)
                         Text(metadata)
                             .font(.caption)
                             .foregroundColor(AppTheme.mutedForeground)
@@ -844,6 +891,7 @@ private struct VoiceBrowserRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("presetVoiceSelect_\(voice.code)")
+            .accessibilityValue(Text(isSelected ? AppLocalized("已选择") : ""))
 
             Button(action: onPreview) {
                 Group {
@@ -868,6 +916,7 @@ private struct VoiceBrowserRow: View {
                     .frame(width: 32, height: 44)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("voiceFavorite_\(voice.code)")
             .accessibilityLabel(Text(isFavorite
                 ? AppLocalized("取消收藏")
                 : AppLocalized("收藏")))
@@ -877,7 +926,7 @@ private struct VoiceBrowserRow: View {
 
     private var metadata: String {
         let locale = voice.locale.isEmpty ? voice.lang.uppercased() : voice.locale
-        var values = [locale]
+        var values = voice.usesMonthlyGeneration ? [AppLocalized("多语言朗读")] : [locale]
         if voice.recommended { values.append(AppLocalized("推荐")) }
         values.append(contentsOf: voice.bestFor.prefix(2))
         if values.count == 1 { values.append(contentsOf: voice.tags.prefix(2)) }
@@ -976,12 +1025,20 @@ struct PlaybackVoiceButton: View {
             VStack(spacing: showsLabel ? 4 : 0) {
                 avatar
                     .frame(width: size, height: size)
+                    .overlay(alignment: .bottomTrailing) {
+                        if VoiceOption.requiresGenerationQuota(voiceID) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(AppTheme.primary)
+                                .background(AppTheme.background, in: Circle())
+                        }
+                    }
                     .overlay {
                         Circle()
                             .stroke(AppTheme.mutedForeground.opacity(0.16), lineWidth: 0.5)
                     }
                 if showsLabel {
-                    Text(AppLocalized("音色"))
+                    Text(AppLocalized(VoiceOption.requiresGenerationQuota(voiceID) ? "月额度音色" : "音色"))
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(AppTheme.mutedForeground)
                         .lineLimit(1)
@@ -992,7 +1049,7 @@ struct PlaybackVoiceButton: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier("playbackVoiceButton")
         .accessibilityLabel(Text(AppLocalized("音色")))
-        .accessibilityValue(Text(displayName))
+        .accessibilityValue(Text(displayName + " · " + AppLocalized(VoiceOption.requiresGenerationQuota(voiceID) ? "使用每月共享生成额度" : "常规音色 · Pro 不限时")))
     }
 
     @ViewBuilder

@@ -1039,7 +1039,7 @@ final class AppSettings: ObservableObject {
         if let clone = activeClonedVoiceID(for: normalized) { return clone }
         var preferred = selectedVoiceID(for: normalized) ?? ""
         if let option = VoiceCatalog.option(for: preferred),
-           VoiceCatalog.normalizedLanguage(option.lang) != normalized {
+           !option.usesMonthlyGeneration, !option.supports(normalized) {
             preferred = ""
         }
         return VoiceCatalog.resolvedVoice(preferred: preferred, for: language)
@@ -1052,7 +1052,7 @@ final class AppSettings: ObservableObject {
         let value = code.trimmed
         guard !normalized.isEmpty, !value.isEmpty, !value.hasPrefix("vc_") else { return false }
         if let option = VoiceCatalog.option(for: value),
-           VoiceCatalog.normalizedLanguage(option.lang) != normalized {
+           !option.supports(normalized) {
             return false
         }
 
