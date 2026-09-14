@@ -25,9 +25,17 @@
 - Initial unsigned unit run exposed seven Keychain-dependent routing failures; all passed with normal simulator signing. No source assertion was removed.
 - Eight full-suite skips: opt-in live Explain, Play Books, service routing and YouTube tests; missing user PDF fixture; three StoreKit tests requiring unavailable SKTestSession authorization. No successful real StoreKit purchase is claimed.
 - Initial UI run: growth path, onboarding and ordinary import passed (6/7); legacy Google Drive argument test failed at opening the import sheet. The unit-test simulator retained unrelated system rating state. A subsequent run had no rating window but still failed to open the sheet; clean-simulator recheck is required before treating this as environment-only.
+- Final affected UI suite on a newly created simulator `9475E77F-0547-4C29-AD35-63E0B5FD055D`: **7 passed, 0 failed, 0 skipped**, `/tmp/CastReader1240-growth-ui-clean.xcresult`. Existing Google Drive test now explicitly starts in portrait and uses system interface language; no product behavior, provider checks, or import-sheet assertion was changed. Clean-state success resolves the release gate, but does not establish the exact cause of the earlier retained-state failures.
+- Validated application source is commit `48998e72f202c606d76785e3f4cdd41206801537`; subsequent report-only commits do not change application code.
 
 ## App Store gate
 
 At preparation, 1.2.39 (60) remains `WAITING_FOR_REVIEW` (version `97b00cc5-b9eb-4bcf-9425-78e1faffc8c3`, review `d9065521-1b02-4bc9-9825-54e8871ab7e9`). Apple blocks creating 1.2.40 while that state remains. Do not withdraw it without explicit permission. Uploading a future build is allowed but does not constitute submission or availability to users.
 
 11-locale What's New is prepared in `docs/AppStore-Whats-New-1.2.40.json`. Existing listing titles/subtitles, screenshots and legal declarations are to be preserved. Metadata and review submission must be verified separately after Apple permits the new version.
+
+## Superseding user decision — commit only
+
+The user explicitly changed the scope to **commit only, combine with other features in a later release**. The in-progress local archive was interrupted before export/upload. No 1.2.40 build was uploaded, no App Store version or review submission was created, and no follow-up automation was configured. Preserve 1.2.39's existing review unchanged. The already deployed compatible backend remains in production.
+
+The 1.2.40 (61) project numbering and release notes are preparatory, not a reserved or uploaded Apple build. Reinspect App Store Connect and the current release baseline before combining subsequent work, choose numbering then, rerun the affected checks, and create a fresh archive. Do not reuse any partial local archive from this interrupted run.
