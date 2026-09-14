@@ -117,6 +117,9 @@ struct GrowthTrialOffer: Identifiable, Equatable, Sendable {
     let documentTitle: String?
     let configID: String
 
+    /// Setup is a navigation opportunity, not a subscription impression.
+    var isTrialPrompt: Bool { milestone == .listened30Seconds }
+
     var id: String {
         "\(configID)|\(milestone.rawValue)|\(source.rawValue)|\(documentID ?? "library")"
     }
@@ -358,7 +361,24 @@ final class GrowthLoopConversionCoordinator: ObservableObject {
             self.postPurchasePreview = nil
         }
         paywallTrigger = offer.milestone.analyticsTrigger
+        softOffer = nil
         isPaywallPresented = true
+    }
+
+    /// The first action delivers listening; only an actual value milestone
+    /// promotes Pro. Stale/double taps cannot reopen a dismissed offer.
+    func performPrimaryAction(
+        for offer: GrowthTrialOffer,
+        preview: (GrowthTrialOffer) -> Void
+    ) {
+        guard policy.isEnabled, !isPro(), softOffer == offer,
+              offer.configID == activeConfigID else { return }
+        if offer.isTrialPrompt {
+            presentPaywall(from: offer)
+        } else {
+            dismissSoftOffer()
+            preview(offer)
+        }
     }
 
     func dismissSoftOffer() {
@@ -395,16 +415,22 @@ final class GrowthLoopConversionCoordinator: ObservableObject {
             && Self.activationSource(for: document.sourceKind) != nil
     }
 
-    func noteOfferRendered(_ offer: GrowthTrialOffer) {
+    @discardableResult
+    func noteOfferRendered(_ offer: GrowthTrialOffer) -> Bool {
         guard offer.configID == activeConfigID,
-              !progress.renderedOfferMilestones.contains(offer.milestone) else { return }
+              softOffer == offer, !isPro(),
+              !progress.renderedOfferMilestones.contains(offer.milestone) else { return false }
         progress.renderedOfferMilestones.insert(offer.milestone)
         persistProgress()
+        // A "start reading" card contains no trial CTA. Counting it here
+        // inflated trial exposure before users had heard any content.
+        guard offer.isTrialPrompt else { return false }
         trackOnboarding(
             step: .trialOfferShown,
             result: .shown,
             source: offer.source
         )
+        return true
     }
 
     /// Called only after StoreKit verifies a transaction that began while its

@@ -388,6 +388,7 @@ actor ProBackendService {
             "analytics_anonymous_id": context.analyticsAnonymousId,
             "stable_device_id": context.stableDeviceId,
             "app_version": context.appVersion,
+            "client_platform": "ios",
         ]
         if let appBuild = context.appBuild, !appBuild.isEmpty {
             body["app_build"] = appBuild
@@ -408,6 +409,7 @@ actor ProBackendService {
         return await performAppleVerification(
             signedTransaction: signedTransaction,
             url: url,
+            context: await Self.growthClientContext(),
             canRefreshSession: true
         )
     }
@@ -415,6 +417,7 @@ actor ProBackendService {
     private func performAppleVerification(
         signedTransaction: String,
         url: URL,
+        context: GrowthClientContext,
         canRefreshSession: Bool
     ) async -> Bool {
         var token = await MobileSessionStore.shared.sessionToken()
@@ -425,17 +428,11 @@ actor ProBackendService {
             Self.debugLog("verify-apple SKIP mobile-session-missing")
             return false
         }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: [
-            "signed_transaction": signedTransaction,
-            "device_id": Self.deviceId,
-            "local_date": Self.localDay()
-        ])
         do {
+            let request = try Self.makeAppleVerificationRequest(
+                url: url, bearerToken: token, signedTransaction: signedTransaction,
+                context: context, localDate: Self.localDay()
+            )
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse else { return false }
             if http.statusCode == 401, canRefreshSession,
@@ -443,6 +440,7 @@ actor ProBackendService {
                 return await performAppleVerification(
                     signedTransaction: signedTransaction,
                     url: url,
+                    context: context,
                     canRefreshSession: false
                 )
             }
@@ -461,11 +459,32 @@ actor ProBackendService {
                 return false
             }
             Self.debugLog("verify-apple DONE pro=Y")
+            // This is a distinct result from the entitlement. A missing bridge
+            // must never turn a successful purchase into a failed purchase.
+            if let status = payload["growthIdentityStatus"] as? String,
+               ["conflict", "invalid_context", "unavailable"].contains(status) {
+                Self.debugLog("verify-apple growth-identity=\(status)")
+            }
             return true
         } catch {
             Self.debugLog("verify-apple FAIL error=\(error.localizedDescription)")
             return false
         }
+    }
+
+    static func makeAppleVerificationRequest(
+        url: URL, bearerToken: String, signedTransaction: String,
+        context: GrowthClientContext, localDate: String
+    ) throws -> URLRequest {
+        var request = try makeGrowthIdentityLinkRequest(
+            url: url, bearerToken: bearerToken, context: context
+        )
+        var body = try JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as? [String: Any] ?? [:]
+        body["signed_transaction"] = signedTransaction
+        body["device_id"] = context.stableDeviceId
+        body["local_date"] = localDate
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return request
     }
 
     /// 上报朗读秒数（增量）。cms_ 过期时不回退旧公开 user_id 合同。

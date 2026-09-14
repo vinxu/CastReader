@@ -10,6 +10,32 @@ import UIKit
 
 class CastReaderUITests: XCTestCase {
 
+    func testGrowthReadyStartsListeningBeforeTrialPaywall() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderGrowthOfferFixture", "-CastReaderDisableDebugPro",
+            "-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en"]
+        app.launch()
+        let primary = app.buttons["growthTrialOfferPrimary"]
+        XCTAssertTrue(primary.waitForExistence(timeout: 15))
+        XCTAssertEqual(primary.label, "Start reading")
+        XCTAssertFalse(app.buttons["paywallPurchaseButton"].exists)
+        primary.tap()
+        XCTAssertEqual(app.staticTexts["growthFixtureStarts"].label, "starts=1")
+        XCTAssertFalse(primary.exists)
+        XCTAssertFalse(app.buttons["paywallPurchaseButton"].exists)
+        app.buttons["growthFixture30Seconds"].tap()
+        XCTAssertTrue(primary.waitForExistence(timeout: 5))
+        XCTAssertNotEqual(primary.label, "Start reading")
+        primary.tap()
+        XCTAssertTrue(app.buttons["paywallPurchaseButton"].waitForExistence(timeout: 15))
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "growth-30s-real-paywall-synthetic-milestone"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        app.terminate()
+    }
+
     /// Explicitly opt in only after the account owner authorizes syncing the
     /// already signed-in Kobo session. This test never enters credentials or
     /// clears the shared WebKit profile, and ordinary CI skips it.
@@ -2262,6 +2288,7 @@ class CastReaderUITests: XCTestCase {
     /// Google Drive 已正式开放，不依赖历史调试参数；尚未开放的云盘仍不能
     /// 被该参数重新开启。
     func testGoogleDriveStaysEnabledAndUnreleasedProvidersStayExcludedEvenWithLegacyDebugArgument() {
+        XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
@@ -2269,6 +2296,7 @@ class CastReaderUITests: XCTestCase {
             "-CastReaderSkipLibraryOnboarding",
             "-CastReaderSkipSignInGate",
             "-CastReaderCloudUITest",
+            "-interfaceLanguage", "system",
             "-cloud.privacy.google_drive.version", "0",
             "-cloud.privacy.dropbox.version", "0",
             "-cloud.privacy.onedrive.version", "0",

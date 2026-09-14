@@ -7,6 +7,70 @@ import XCTest
 @testable import CastReader
 
 final class GrowthLoopProductTests: XCTestCase {
+    @MainActor
+    func testReadyCardStartsListeningWithoutCountingTrialExposure() throws {
+        let name = "GrowthReadyCTA.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let coordinator = GrowthLoopConversionCoordinator(
+            defaults: defaults, storefrontCountryCode: { "US" }, isPro: { false }
+        )
+        coordinator.applyServerAssignment(assignment())
+        coordinator.libraryDidSync(source: .kindle)
+        let ready = try XCTUnwrap(coordinator.softOffer)
+        XCTAssertFalse(ready.isTrialPrompt)
+        XCTAssertFalse(coordinator.noteOfferRendered(ready), "setup card is not trial exposure")
+        var starts = 0
+        coordinator.performPrimaryAction(for: ready) { _ in starts += 1 }
+        coordinator.performPrimaryAction(for: ready) { _ in starts += 1 }
+        XCTAssertEqual(starts, 1)
+        XCTAssertNil(coordinator.softOffer)
+        XCTAssertFalse(coordinator.isPaywallPresented)
+
+        let document = ReadingDocument(id: "own-book", title: "Own book", sourceKind: .epub,
+            paragraphs: [ReadingParagraph(id: 0, text: "A paragraph")])
+        for _ in 0..<30 { coordinator.recordPlayback(document: document, seconds: 1) }
+        let trial = try XCTUnwrap(coordinator.softOffer)
+        XCTAssertTrue(trial.isTrialPrompt)
+        XCTAssertTrue(coordinator.noteOfferRendered(trial))
+        XCTAssertFalse(coordinator.noteOfferRendered(trial), "render retries must not duplicate exposure")
+        coordinator.performPrimaryAction(for: trial) { _ in starts += 1 }
+        XCTAssertEqual(starts, 1, "trial action must not restart playback")
+        XCTAssertTrue(coordinator.isPaywallPresented)
+        XCTAssertNil(coordinator.softOffer, "soft prompt must not remain under a paywall")
+        coordinator.dismissPaywall()
+        XCTAssertEqual(starts, 1, "cancel must not restart or replace current content")
+        XCTAssertNil(coordinator.softOffer)
+
+        let restored = GrowthLoopConversionCoordinator(
+            defaults: defaults, storefrontCountryCode: { "US" }, isPro: { false }
+        )
+        restored.applyServerAssignment(assignment())
+        restored.contentBecameReady(document)
+        restored.recordPlayback(document: document, seconds: 1)
+        XCTAssertNil(restored.softOffer, "restart cannot re-prompt the same assignment")
+    }
+
+    @MainActor
+    func testStaleReadyActionCannotCrossAnAccountClearOrProChange() throws {
+        let name = "GrowthStaleCTA.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        var pro = false
+        let coordinator = GrowthLoopConversionCoordinator(
+            defaults: defaults, storefrontCountryCode: { "US" }, isPro: { pro }
+        )
+        coordinator.applyServerAssignment(assignment())
+        coordinator.libraryDidSync(source: .kindle)
+        let ready = try XCTUnwrap(coordinator.softOffer)
+        pro = true
+        coordinator.performPrimaryAction(for: ready) { _ in XCTFail("Pro cannot consume a stale acquisition CTA") }
+        XCTAssertFalse(coordinator.noteOfferRendered(ready))
+        pro = false
+        coordinator.clearServerAssignment()
+        coordinator.performPrimaryAction(for: ready) { _ in XCTFail("old content cannot cross an account clear") }
+    }
+
     func testOutOfOrderQuotaConsumptionResponseCannotRestorePreview() {
         XCTAssertEqual(
             QuotaManager.monotonicConsumptionProjection(

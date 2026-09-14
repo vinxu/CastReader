@@ -9,6 +9,49 @@
 import StoreKit
 import SwiftUI
 
+#if DEBUG
+/// UI-only harness: milestones are synthetic, not real listening or purchases.
+/// Neither this view nor its launch entry is included in the release binary.
+@MainActor
+struct GrowthOfferAcceptanceFixture: View {
+    @StateObject private var coordinator: GrowthLoopConversionCoordinator
+    @State private var starts = 0
+
+    init() {
+        let defaults = UserDefaults(suiteName: "GrowthUI.\(UUID().uuidString)")!
+        _coordinator = StateObject(wrappedValue: GrowthLoopConversionCoordinator(
+            defaults: defaults, storefrontCountryCode: { "US" }, isPro: { false }
+        ))
+    }
+
+    var body: some View {
+        ZStack {
+            VStack {
+                Text("starts=\(starts)").accessibilityIdentifier("growthFixtureStarts")
+                Button("Advance synthetic listening milestone") {
+                    let document = ReadingDocument(id: "growth-ui-book", title: "QA book", sourceKind: .epub,
+                        paragraphs: [ReadingParagraph(id: 0, text: "QA paragraph")])
+                    for _ in 0..<30 { coordinator.recordPlayback(document: document, seconds: 1) }
+                }.accessibilityIdentifier("growthFixture30Seconds")
+            }
+            GrowthTrialOfferOverlay(coordinator: coordinator) { _ in starts += 1 }
+        }
+        .onAppear {
+            coordinator.applyServerAssignment(GrowthProductAssignment(
+                configID: "us_growth_loop_v1", market: "US", eligible: true, killSwitch: false
+            ))
+            coordinator.libraryDidSync(source: .kindle)
+        }
+        .sheet(isPresented: Binding(
+            get: { coordinator.isPaywallPresented },
+            set: { if !$0 { coordinator.dismissPaywall() } }
+        )) {
+            PaywallView(analyticsTrigger: coordinator.paywallTrigger, analyticsSurface: "growth_ui_test")
+        }
+    }
+}
+#endif
+
 struct GrowthTrialOfferOverlay: View {
     @ObservedObject var coordinator: GrowthLoopConversionCoordinator
     let onPreview: (GrowthTrialOffer) -> Void
@@ -61,12 +104,9 @@ struct GrowthTrialOfferOverlay: View {
 
                     HStack(spacing: 10) {
                         Button {
-                            coordinator.presentPaywall(
-                                from: offer,
-                                postPurchasePreview: { onPreview(offer) }
-                            )
+                            coordinator.performPrimaryAction(for: offer, preview: onPreview)
                         } label: {
-                            Text(primaryTitle)
+                            Text(offer.isTrialPrompt ? primaryTitle : AppLocalized("开始朗读"))
                                 .font(.subheadline.weight(.bold))
                                 .frame(maxWidth: .infinity, minHeight: 42)
                         }
@@ -76,11 +116,8 @@ struct GrowthTrialOfferOverlay: View {
 
                         Button {
                             coordinator.dismissSoftOffer()
-                            onPreview(offer)
                         } label: {
-                            Text(offer.milestone == .libraryReady
-                                 ? AppLocalized("试听")
-                                 : AppLocalized("稍后"))
+                            Text(AppLocalized("稍后"))
                                 .font(.subheadline.weight(.semibold))
                                 .frame(minWidth: 68, minHeight: 42)
                         }

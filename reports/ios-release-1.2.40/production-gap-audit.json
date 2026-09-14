@@ -1,0 +1,414 @@
+{
+  "generatedAt": "2026-09-14T02:43:21.450Z",
+  "window": {
+    "from": "2026-08-31T00:00:00.000Z",
+    "to": "2026-09-09T00:00:00.000Z"
+  },
+  "readOnly": true,
+  "attribution": [
+    {
+      "campaign_id": "2144343127",
+      "country_or_region": "US",
+      "anchor_class": "EXPLICIT_NONFRESH_FIRST_OPEN",
+      "conversion_type": "Download",
+      "first_build": "53",
+      "devices": 2,
+      "attribution_received_in_window": 2,
+      "without_identity_link": 0
+    },
+    {
+      "campaign_id": "2144343127",
+      "country_or_region": "US",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Download",
+      "first_build": "51",
+      "devices": 9,
+      "attribution_received_in_window": 9,
+      "without_identity_link": 2
+    },
+    {
+      "campaign_id": "2144343127",
+      "country_or_region": "US",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Download",
+      "first_build": "52",
+      "devices": 5,
+      "attribution_received_in_window": 5,
+      "without_identity_link": 0
+    },
+    {
+      "campaign_id": "2144343127",
+      "country_or_region": "US",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Download",
+      "first_build": "53",
+      "devices": 9,
+      "attribution_received_in_window": 9,
+      "without_identity_link": 3
+    },
+    {
+      "campaign_id": "2144343127",
+      "country_or_region": "US",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Download",
+      "first_build": "54",
+      "devices": 1,
+      "attribution_received_in_window": 1,
+      "without_identity_link": 1
+    },
+    {
+      "campaign_id": "2144343127",
+      "country_or_region": "US",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Download",
+      "first_build": "56",
+      "devices": 1,
+      "attribution_received_in_window": 1,
+      "without_identity_link": 0
+    },
+    {
+      "campaign_id": "2144343127",
+      "country_or_region": "US",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Redownload",
+      "first_build": "53",
+      "devices": 2,
+      "attribution_received_in_window": 2,
+      "without_identity_link": 0
+    },
+    {
+      "campaign_id": "2144503591",
+      "country_or_region": "GB",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Download",
+      "first_build": "51",
+      "devices": 6,
+      "attribution_received_in_window": 6,
+      "without_identity_link": 2
+    },
+    {
+      "campaign_id": "2144503591",
+      "country_or_region": "GB",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Download",
+      "first_build": "52",
+      "devices": 4,
+      "attribution_received_in_window": 4,
+      "without_identity_link": 0
+    },
+    {
+      "campaign_id": "2144503591",
+      "country_or_region": "GB",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Download",
+      "first_build": "53",
+      "devices": 12,
+      "attribution_received_in_window": 12,
+      "without_identity_link": 3
+    },
+    {
+      "campaign_id": "2144503591",
+      "country_or_region": "GB",
+      "anchor_class": "FRESH_IN_WINDOW",
+      "conversion_type": "Download",
+      "first_build": "54",
+      "devices": 4,
+      "attribution_received_in_window": 4,
+      "without_identity_link": 2
+    }
+  ],
+  "payments": [
+    {
+      "storefront": "GBR",
+      "product_id": "ai.castreader.pro.yearly",
+      "zero_price_trial": false,
+      "source": "server_notification",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": true,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-03T11:37:23.000Z",
+      "last_purchase_in_window": "2026-09-03T11:37:23.000Z"
+    },
+    {
+      "storefront": "GBR",
+      "product_id": "ai.castreader.pro.yearly.v2",
+      "zero_price_trial": true,
+      "source": "verify_apple",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": false,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-13T23:31:55.000Z",
+      "last_purchase_in_window": "2026-09-13T23:31:55.000Z"
+    },
+    {
+      "storefront": "GBR",
+      "product_id": "ai.castreader.pro.monthly.v2",
+      "zero_price_trial": true,
+      "source": "verify_apple",
+      "identity_class": "TARGET_AD_LINK_PRESENT_NOT_COHORT_PROOF",
+      "chain_predates_window": false,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-13T22:24:52.000Z",
+      "last_purchase_in_window": "2026-09-13T22:24:52.000Z"
+    },
+    {
+      "storefront": "GBR",
+      "product_id": "ai.castreader.pro.yearly.v2",
+      "zero_price_trial": true,
+      "source": "server_notification",
+      "identity_class": "TARGET_AD_LINK_PRESENT_NOT_COHORT_PROOF",
+      "chain_predates_window": false,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-03T07:50:34.000Z",
+      "last_purchase_in_window": "2026-09-03T07:50:34.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly",
+      "zero_price_trial": false,
+      "source": "server_notification",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": true,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-11T15:03:31.000Z",
+      "last_purchase_in_window": "2026-09-11T15:03:31.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly.v2",
+      "zero_price_trial": false,
+      "source": "server_notification",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": false,
+      "periods": 2,
+      "users": 2,
+      "chains": 2,
+      "first_purchase_in_window": "2026-09-07T15:44:35.000Z",
+      "last_purchase_in_window": "2026-09-12T19:43:27.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly.v2",
+      "zero_price_trial": false,
+      "source": "server_notification",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": true,
+      "periods": 2,
+      "users": 2,
+      "chains": 2,
+      "first_purchase_in_window": "2026-08-31T18:13:23.000Z",
+      "last_purchase_in_window": "2026-09-01T23:58:19.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly.v2",
+      "zero_price_trial": false,
+      "source": "verify_apple",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": false,
+      "periods": 2,
+      "users": 2,
+      "chains": 2,
+      "first_purchase_in_window": "2026-09-08T13:13:03.000Z",
+      "last_purchase_in_window": "2026-09-10T00:47:57.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly.v2",
+      "zero_price_trial": false,
+      "source": "verify_apple",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": true,
+      "periods": 2,
+      "users": 2,
+      "chains": 2,
+      "first_purchase_in_window": "2026-09-01T19:07:55.000Z",
+      "last_purchase_in_window": "2026-09-03T17:54:56.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly.v2",
+      "zero_price_trial": true,
+      "source": "server_notification",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": false,
+      "periods": 4,
+      "users": 4,
+      "chains": 4,
+      "first_purchase_in_window": "2026-08-31T19:07:48.000Z",
+      "last_purchase_in_window": "2026-09-03T19:31:52.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly.v2",
+      "zero_price_trial": true,
+      "source": "verify_apple",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": false,
+      "periods": 11,
+      "users": 11,
+      "chains": 11,
+      "first_purchase_in_window": "2026-08-31T15:44:35.000Z",
+      "last_purchase_in_window": "2026-09-14T00:27:26.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.yearly.v2",
+      "zero_price_trial": false,
+      "source": "server_notification",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": false,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-07T12:12:16.000Z",
+      "last_purchase_in_window": "2026-09-07T12:12:16.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.yearly.v2",
+      "zero_price_trial": false,
+      "source": "verify_apple",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": false,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-08T20:25:46.000Z",
+      "last_purchase_in_window": "2026-09-08T20:25:46.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.yearly.v2",
+      "zero_price_trial": true,
+      "source": "server_notification",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": false,
+      "periods": 2,
+      "users": 2,
+      "chains": 2,
+      "first_purchase_in_window": "2026-09-01T06:26:54.000Z",
+      "last_purchase_in_window": "2026-09-11T22:56:34.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.yearly.v2",
+      "zero_price_trial": true,
+      "source": "verify_apple",
+      "identity_class": "IOS_LINK_NOT_TARGET_AD",
+      "chain_predates_window": false,
+      "periods": 9,
+      "users": 9,
+      "chains": 9,
+      "first_purchase_in_window": "2026-08-31T12:12:16.000Z",
+      "last_purchase_in_window": "2026-09-11T19:13:22.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly",
+      "zero_price_trial": false,
+      "source": "server_notification",
+      "identity_class": "LEGACY_DEVICE_LINK_ONLY",
+      "chain_predates_window": true,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-04T04:59:00.000Z",
+      "last_purchase_in_window": "2026-09-04T04:59:00.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly.v2",
+      "zero_price_trial": false,
+      "source": "server_notification",
+      "identity_class": "LEGACY_DEVICE_LINK_ONLY",
+      "chain_predates_window": false,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-08T14:37:40.000Z",
+      "last_purchase_in_window": "2026-09-08T14:37:40.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.monthly.v2",
+      "zero_price_trial": true,
+      "source": "verify_apple",
+      "identity_class": "LEGACY_DEVICE_LINK_ONLY",
+      "chain_predates_window": false,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-01T14:37:40.000Z",
+      "last_purchase_in_window": "2026-09-01T14:37:40.000Z"
+    },
+    {
+      "storefront": "USA",
+      "product_id": "ai.castreader.pro.yearly.v2",
+      "zero_price_trial": true,
+      "source": "server_notification",
+      "identity_class": "TARGET_AD_LINK_PRESENT_NOT_COHORT_PROOF",
+      "chain_predates_window": false,
+      "periods": 1,
+      "users": 1,
+      "chains": 1,
+      "first_purchase_in_window": "2026-09-01T03:26:33.000Z",
+      "last_purchase_in_window": "2026-09-01T03:26:33.000Z"
+    }
+  ],
+  "firstOpenStatus": [
+    {
+      "status": "attributed",
+      "campaign_scope": "2144343127",
+      "devices": 27,
+      "max_attempts": 1
+    },
+    {
+      "status": "attributed",
+      "campaign_scope": "2144503591",
+      "devices": 26,
+      "max_attempts": 1
+    },
+    {
+      "status": "attributed",
+      "campaign_scope": "OTHER_OR_UNKNOWN",
+      "devices": 6,
+      "max_attempts": 1
+    },
+    {
+      "status": "expired",
+      "campaign_scope": "OTHER_OR_UNKNOWN",
+      "devices": 9,
+      "max_attempts": 144
+    },
+    {
+      "status": "NO_PRODUCTION_TOKEN",
+      "campaign_scope": "OTHER_OR_UNKNOWN",
+      "devices": 7,
+      "max_attempts": null
+    },
+    {
+      "status": "organic",
+      "campaign_scope": "OTHER_OR_UNKNOWN",
+      "devices": 162,
+      "max_attempts": 52
+    }
+  ],
+  "limitations": [
+    "ASA installs cannot be joined individually to devices; absent opens are not proven telemetry loss.",
+    "firstOpenStatus is all-market iOS context; unknown attribution cannot be assigned to US or GB.",
+    "Payment classification is storefront-wide, not an advertising CAC denominator.",
+    "Legacy pro_device_link is mutable and is not authority to backfill an acquisition owner.",
+    "No first-open, identity, attribution, price or quality-gate records were modified."
+  ]
+}

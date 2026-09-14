@@ -221,8 +221,34 @@ final class PaymentTests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "X-Auth-Provider"), "session")
         XCTAssertEqual(body["analytics_anonymous_id"] as? String, context.analyticsAnonymousId)
         XCTAssertEqual(body["stable_device_id"] as? String, context.stableDeviceId)
+        XCTAssertEqual(body["client_platform"] as? String, "ios")
         XCTAssertNil(body["user_id"])
         XCTAssertNil(body["backend_user_id"])
+        XCTAssertNil(body["email"])
+    }
+
+    func testAppleVerificationCarriesDistinctInstallAndStableIDsWithoutClaimingAnOwner() throws {
+        let context = ProBackendService.GrowthClientContext(
+            analyticsAnonymousId: "11111111-1111-4111-8111-111111111111",
+            stableDeviceId: "22222222-2222-4222-8222-222222222222",
+            appVersion: "1.2.37", appBuild: "58", storefrontCountry: "GB"
+        )
+        let request = try ProBackendService.makeAppleVerificationRequest(
+            url: URL(string: "https://api.castreader.ai/api/pro/verify-apple")!,
+            bearerToken: "cms_test", signedTransaction: "test-jws",
+            context: context, localDate: "2026-09-14"
+        )
+        let body = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any])
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer cms_test")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "X-Auth-Provider"), "session")
+        XCTAssertEqual(body["analytics_anonymous_id"] as? String, context.analyticsAnonymousId)
+        XCTAssertEqual(body["stable_device_id"] as? String, context.stableDeviceId)
+        XCTAssertEqual(body["device_id"] as? String, context.stableDeviceId)
+        XCTAssertEqual(body["client_platform"] as? String, "ios")
+        XCTAssertEqual(body["signed_transaction"] as? String, "test-jws")
+        XCTAssertEqual(body["app_build"] as? String, "58")
+        XCTAssertNil(body["user_id"])
         XCTAssertNil(body["email"])
     }
 
