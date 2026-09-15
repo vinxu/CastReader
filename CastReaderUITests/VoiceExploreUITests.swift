@@ -187,6 +187,44 @@ final class VoiceExploreUITests: XCTestCase {
         attach(app, "everyday-preview-idle")
     }
 
+    @MainActor
+    func testPublishedCuratedVoicesMatchJapaneseAndFrench() async throws {
+        let url = URL(string: "https://api.castreader.ai/api/tts/mobile-catalog?contract=tts-voice-catalog-v1&region=international")!
+        let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 30))
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        let raw = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let catalog = (raw["data"] as? [String: Any]) ?? (raw["catalog"] as? [String: Any]) ?? raw
+        let voices = catalog["voices"] as! [[String: Any]]
+        let indexed = Dictionary(uniqueKeysWithValues: voices.map { ($0["id"] as! String, $0) })
+        let modules = (catalog["discovery"] as! [String: Any])["modules"] as! [[String: Any]]
+        let ids = modules.flatMap { $0["voiceIds"] as! [String] }
+        for language in ["ja", "fr"] {
+            let expected = ids.filter { indexed[$0]?["referenceLanguage"] as? String == language }
+            XCTAssertFalse(expected.isEmpty)
+            let app = XCUIApplication()
+            app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+                "-CastReaderVoicePreviewDiagnostics", "-AppleLanguages", "(en)", "-interfaceLanguage", "en",
+                "-voice_browser_language_v1", language]
+            app.launch()
+            let tab = app.buttons.matching(NSPredicate(format: "label IN %@", ["音色", "Voice", "Voices"])).firstMatch
+            XCTAssertTrue(tab.waitForExistence(timeout: 20)); tab.tap()
+            XCTAssertTrue(app.textFields["voiceSearchField"].waitForExistence(timeout: 20))
+            let featured = app.buttons["voiceFeaturedClones"]
+            reveal(featured, in: app); featured.tap()
+            let first = try XCTUnwrap(expected.first)
+            XCTAssertTrue(app.buttons["presetVoiceSelect_" + first].waitForExistence(timeout: 15))
+            XCTAssertFalse(app.buttons["presetVoiceSelect_" + publicID].exists, "English-source recommendation must not leak into another language")
+            let preview = app.buttons["voicePreview_" + first]
+            preview.tap()
+            let playing = expectation(for: NSPredicate(format: "value ==[c] %@", "playing"), evaluatedWith: preview)
+            await fulfillment(of: [playing], timeout: 30)
+            preview.tap()
+            XCTAssertTrue(app.staticTexts["voiceClonedSelectionNote"].exists)
+            attach(app, "published-curated-" + language)
+            app.terminate()
+        }
+    }
+
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
         for _ in 0..<8 {
             if element.exists && element.isHittable { return }

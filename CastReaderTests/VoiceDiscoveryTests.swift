@@ -248,6 +248,62 @@ extension VoiceDiscoveryTests {
 
 extension VoiceDiscoveryTests {
     @MainActor
+    func testEveryCommunitySourceLanguageGetsItsOwnCuratedPool() async throws {
+        // A multilingual CMS pool is split over bounded modules. Filtering must
+        // happen before the six-card limit, even after cycling the feed cache.
+        let languages = ["en", "zh", "ja", "de", "fr", "es", "pt", "ko", "ru"]
+        let regularLanguages = languages.filter { SupportedTTSLanguage(identifier: $0) != nil }
+        let outputLanguages = languages + ["it"]
+        var voices: [[String: Any]] = regularLanguages.map { language in
+            ["id": "default_\(language)", "name": language, "engine": "kokoro", "modelVersion": "test",
+             "language": language, "locale": language, "genderPresentation": "female", "tier": "free",
+             "status": "ga", "enabled": true, "selectable": true, "timestampMode": "word",
+             "sampleUrl": "https://example.invalid/\(language).mp3"]
+        }
+        var cloneIDs: [String] = []
+        for language in languages {
+            for index in 0..<(language == "ru" ? 4 : 6) {
+                let id = "vl_\(language)_\(index)"
+                cloneIDs.append(id)
+                voices.append([
+                    "id": id, "name": id, "engine": "clone", "modelVersion": "test",
+                    "language": ["ko", "ru"].contains(language) ? "en" : language,
+                    "referenceLanguage": language, "locale": language, "genderPresentation": "female",
+                    "tier": "pro", "status": "ga", "enabled": true, "selectable": true,
+                    "timestampMode": "sentence", "usagePolicy": "monthly_generation",
+                    "supportedLanguages": outputLanguages,
+                    "sampleUrls": Dictionary(uniqueKeysWithValues: outputLanguages.map { ($0, "https://example.invalid/\(id).mp3") }),
+                ])
+            }
+        }
+        let now = ISO8601DateFormatter().date(from: "2026-09-15T12:00:00Z")!
+        for region in ["cn", "international"] {
+            let modules: [[String: Any]] = stride(from: 0, to: cloneIDs.count, by: 24).map { start in
+                ["id": "\(region)-pool-\(start)", "layout": "rows", "theme": "stories",
+                 "title": ["en": "Curated"], "voiceIds": Array(cloneIDs[start..<min(start + 24, cloneIDs.count)])]
+            }
+            let json: [String: Any] = [
+                "contract": "tts-voice-catalog-v1", "version": "multilingual-pools", "editorialRegion": region,
+                "languages": regularLanguages.map { ["code": $0, "locale": $0, "name": $0, "status": "ga",
+                    "defaultVoice": "default_\($0)", "timestampMode": "word"] }, "voices": voices,
+                "discovery": ["id": region, "startsAt": "2026-09-15T00:00:00Z", "endsAt": "2026-09-22T00:00:00Z", "modules": modules],
+            ]
+            let document = try TTSVoiceCatalogDocument.decodeServerResponse(from: JSONSerialization.data(withJSONObject: json))
+            let snapshot = VoiceCatalogSnapshot(document: document), worker = VoiceBrowseWorker()
+            for language in languages + ["it", "hi", "ja", "en"] {
+                // Interface locale is deliberately different from voice language.
+                let request = VoiceBrowseRequest(catalogID: snapshot.id, language: language, locale: "zh")
+                let feed = try await worker.feed(request, snapshot: snapshot, now: now)
+                let expected = cloneIDs.filter { $0.hasPrefix("vl_\(language)_") }
+                XCTAssertEqual(feed.featuredClones.map(\.id), expected, "\(region) / \(language)")
+                XCTAssertTrue(feed.featuredClones.allSatisfy { $0.supports("en") && $0.supports("it") && $0.usesMonthlyGeneration })
+                XCTAssertTrue(feed.recommendations.allSatisfy { !$0.usesMonthlyGeneration })
+                XCTAssertTrue(feed.sections.flatMap(\.voices).allSatisfy { !$0.usesMonthlyGeneration })
+            }
+        }
+    }
+
+    @MainActor
     func testBrowseAllTabsSearchEveryVoiceRegardlessOfDiscoveryLanguage() async throws {
         let snapshot = try fullSnapshot(), worker = VoiceBrowseWorker()
         var request = VoiceBrowseRequest(catalogID: snapshot.id, language: "zh", locale: "en",
