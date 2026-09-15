@@ -28,6 +28,16 @@ final class VoiceDiscoveryTests: XCTestCase {
         XCTAssertTrue(VoiceBrowserFilter.apply(voices: [unknown], search: "unknown", language: "en", gender: "", tier: .all).contains(unknown))
     }
 
+    func testFavoriteFromEditorialModuleCanGuideOtherRecommendations() {
+        let favorite = voice("featured", tags: ["warm", "soft"])
+        let bright = voice("a_bright", tags: ["bright", "crisp"])
+        let similar = voice("z_soft", tags: ["warm", "soft"])
+        let picks = VoiceDiscovery.recommended([bright, similar], language: "en",
+            favoriteIDs: [favorite.id], preferenceSource: [favorite, bright, similar])
+        XCTAssertEqual(picks.first?.id, similar.id)
+        XCTAssertFalse(picks.contains(favorite))
+    }
+
     func testWeeklyEditionExpiresOfflineAndPreservesCrossLanguageIdentity() {
         let regular = voice("af_en")
         let publicVoice = voice("vl_story", tags: ["storytelling"], monthly: true)
@@ -90,7 +100,7 @@ extension VoiceDiscoveryTests {
             var item: [String: Any] = ["id": id, "name": id + suffix, "engine": monthly ? "clone" : "kokoro",
                 "modelVersion": "v1", "language": language, "locale": language, "genderPresentation": "female",
                 "tier": monthly ? "pro" : "free", "status": "ga", "enabled": true, "selectable": true,
-                "timestampMode": "word", "tags": ["warm", "storytelling"], "description": "A calm narrator"]
+                "timestampMode": "word", "sampleUrl": "https://example.invalid/preview/" + id, "tags": ["warm", "storytelling"], "description": "A calm narrator"]
             if monthly {
                 let supported = codes.filter { $0 != "hi" }
                 item["usagePolicy"] = "monthly_generation"
@@ -184,13 +194,52 @@ extension VoiceDiscoveryTests {
         let now = ISO8601DateFormatter().date(from: "2026-09-15T00:00:00Z")!
         let cnRequest = VoiceBrowseRequest(catalogID: cn.id, language: "zh", locale: "zh")
         let feed = try await worker.feed(cnRequest, snapshot: cn, now: now)
-        XCTAssertEqual(feed.sections.first?.id, "cn-stories")
-        XCTAssertEqual(feed.sections.first?.voices.map(\.id), ["vl_performance_1322"])
-        XCTAssertEqual(feed.collections.first?.count, 2)
+        XCTAssertTrue(feed.sections.isEmpty)
+        XCTAssertEqual(feed.featuredClones.map(\.id), ["vl_performance_1322"])
+        XCTAssertTrue(feed.collections.isEmpty)
         let expired = try await worker.feed(cnRequest, snapshot: cn, now: now.addingTimeInterval(7 * 86400))
         XCTAssertTrue(expired.sections.isEmpty)
+        XCTAssertTrue(expired.featuredClones.isEmpty)
         let next = try await worker.feed(.init(catalogID: international.id, language: "en", locale: "en"), snapshot: international, now: now)
         XCTAssertEqual(next.sections.first?.id, "international-stories")
-        XCTAssertEqual(next.collections.first?.count, 3)
+        XCTAssertEqual(next.collections.first?.count, 1)
+        XCTAssertEqual(next.sections.first?.voices.map(\.id), ["default_en"])
+    }
+}
+
+extension VoiceDiscoveryTests {
+    func testScenesUseExplicitChinesePurposesAndKeepTimbreSeparate() {
+        let reading = VoiceOption(code: "zf_read", name: "Reading", isPro: false, lang: "zh", gender: "female",
+                                  tags: ["low", "measured"], bestFor: ["长文阅读", "专注学习"])
+        XCTAssertEqual(VoiceDiscovery.purpose(for: reading), .stories)
+        XCTAssertFalse(VoiceDiscovery.topics(for: reading).contains(.focus), "Generic study metadata without a clarity signal must not duplicate the entire long-reading category")
+        XCTAssertTrue(VoiceListeningStyle.grounded.includes(reading))
+        let news = VoiceOption(code: "zf_news", name: "News", isPro: false, lang: "zh", gender: "female",
+                               tags: ["soft", "brisk"], bestFor: ["文章资讯", "知识讲解"])
+        XCTAssertEqual(VoiceDiscovery.purpose(for: news), .everyday)
+        XCTAssertFalse(VoiceDiscovery.topics(for: news).contains(.gentle), "Fast delivery must not become bedtime listening merely because timbre is soft")
+        let clear = voice("clear-only", tags: ["clear"])
+        XCTAssertNil(VoiceDiscovery.purpose(for: clear), "Timbre alone cannot establish educational use")
+        XCTAssertEqual(VoiceDiscoveryTopic.browseCases, [.everyday, .stories, .focus, .gentle])
+    }
+
+    @MainActor
+    func testClonePopularityCannotDisplaceRegularRecommendationsAndStyleFiltersWork() async throws {
+        let snapshot = try fullSnapshot(), worker = VoiceBrowseWorker()
+        let date = ISO8601DateFormatter().date(from: "2026-09-15T00:00:00Z")!
+        let input = VoiceBrowseRequest(catalogID: snapshot.id, language: "en", locale: "en",
+            favorites: Set((0..<100).map { "vl_performance_\($0)" }))
+        let feed = try await worker.feed(input, snapshot: snapshot, now: date)
+        XCTAssertFalse(feed.recommendations.isEmpty)
+        XCTAssertTrue(feed.recommendations.allSatisfy { !$0.usesMonthlyGeneration })
+        XCTAssertTrue(feed.sections.flatMap(\.voices).allSatisfy { !$0.usesMonthlyGeneration })
+        XCTAssertTrue(feed.fallbackSections.flatMap(\.voices).allSatisfy { !$0.usesMonthlyGeneration })
+        XCTAssertEqual(feed.featuredClones.map(\.id), ["vl_performance_1322"])
+        var filter = input; filter.style = .bright
+        let bright = try await worker.results(filter, snapshot: snapshot, vocabulary: .current)
+        XCTAssertTrue(bright.isEmpty)
+        filter.style = .gentle
+        let gentle = try await worker.results(filter, snapshot: snapshot, vocabulary: .current)
+        XCTAssertEqual(gentle.count, 1598)
     }
 }

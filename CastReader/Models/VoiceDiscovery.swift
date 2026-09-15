@@ -17,23 +17,24 @@ enum VoiceUsageFilter: String, CaseIterable, Identifiable {
 
 enum VoiceDiscoveryTopic: String, CaseIterable, Identifiable, Hashable, Codable {
     case everyday, focus, stories, gentle, conversation, character
+    static let browseCases: [Self] = [.everyday, .stories, .focus, .gentle]
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .everyday: return AppLocalized("日常伴读")
-        case .focus: return AppLocalized("把知识听明白")
-        case .stories: return AppLocalized("听见故事的画面")
-        case .gentle: return AppLocalized("温柔一点，慢慢听")
+        case .everyday: return AppLocalized("日常资讯")
+        case .focus: return AppLocalized("学习讲解")
+        case .stories: return AppLocalized("长文故事")
+        case .gentle: return AppLocalized("睡前陪伴")
         case .conversation: return AppLocalized("像朋友讲给你听")
         case .character: return AppLocalized("给文字一点角色感")
         }
     }
     var shortTitle: String {
         switch self {
-        case .everyday: return AppLocalized("日常")
-        case .focus: return AppLocalized("讲解")
-        case .stories: return AppLocalized("故事")
-        case .gentle: return AppLocalized("温柔")
+        case .everyday: return title
+        case .focus: return title
+        case .stories: return title
+        case .gentle: return title
         case .conversation: return AppLocalized("聊天感")
         case .character: return AppLocalized("角色感")
         }
@@ -50,10 +51,10 @@ enum VoiceDiscoveryTopic: String, CaseIterable, Identifiable, Hashable, Codable 
     }
     var keywords: Set<String> {
         switch self {
-        case .everyday: return ["articles", "article reading", "general reading", "long-form", "long-form reading", "narration", "balanced", "measured"]
-        case .focus: return ["education", "focused study", "study", "explanations", "explainers", "documentaries", "clear", "professional"]
-        case .stories: return ["storytelling", "stories", "narrative reading", "narrative articles", "audiobooks", "dramatic", "expressive", "literary", "narration"]
-        case .gentle: return ["warm", "gentle", "soft", "calm", "soothing", "relaxed reading"]
+        case .everyday: return ["articles", "article reading", "general reading", "news", "essays", "文章资讯", "通用阅读"]
+        case .focus: return ["education", "focused study", "study", "explanations", "explainers", "documentaries", "知识讲解", "专注学习", "学习材料"]
+        case .stories: return ["storytelling", "stories", "narrative reading", "narrative articles", "audiobooks", "dramatic", "expressive", "literary", "literature", "long-form", "long-form reading", "长文阅读"]
+        case .gentle: return ["warm", "gentle", "soft", "calm", "soothing", "relaxed reading", "measured", "slow", "meditation"]
         case .conversation: return ["conversation", "conversational", "friendly", "friendly narration", "approachable"]
         case .character: return ["characters", "gaming", "playful", "dramatic", "entertainment"]
         }
@@ -75,7 +76,16 @@ enum VoiceDiscovery {
 
     static func topics(for voice: VoiceOption) -> [VoiceDiscoveryTopic] {
         let values = features(voice)
-        return VoiceDiscoveryTopic.allCases.filter { !$0.keywords.isDisjoint(with: values) }
+        return VoiceDiscoveryTopic.allCases.filter {
+            if $0 == .focus {
+                let explicit: Set<String> = ["education", "explanations", "explainers", "documentaries", "知识讲解"]
+                let study: Set<String> = ["focused study", "study", "专注学习", "学习材料"]
+                let clarity: Set<String> = ["clear", "crisp", "articulate", "professional", "bright", "high"]
+                return !explicit.isDisjoint(with: values) || (!study.isDisjoint(with: values) && !clarity.isDisjoint(with: values))
+            }
+            if $0 == .gentle && !values.isDisjoint(with: ["brisk", "fast", "energetic", "intense"]) { return false }
+            return !$0.keywords.isDisjoint(with: values)
+        }
     }
 
     static func voices(in topic: VoiceDiscoveryTopic, from voices: [VoiceOption]) -> [VoiceOption] {
@@ -110,6 +120,9 @@ enum VoiceDiscovery {
 
     static func subtitle(_ voice: VoiceOption, chinese: Bool) -> String {
         let styles = styleLabels(for: voice)
+        if let purpose = purpose(for: voice) {
+            return ([styles.first, purpose.shortTitle].compactMap { $0 }).joined(separator: " · ")
+        }
         if !styles.isEmpty { return styles.prefix(2).joined(separator: " · ") }
         let text = (chinese ? voice.descriptionZh : voice.description)?.trimmed ?? ""
         let technical = ["解码器", "基模", "修复版", "timestamp", "decoder", "voicepack", "r109"]
@@ -122,12 +135,23 @@ enum VoiceDiscovery {
         }
     }
 
+    static func purpose(for voice: VoiceOption) -> VoiceDiscoveryTopic? {
+        // Explicit intended-use metadata takes precedence over timbre. A deep
+        // voice is not automatically a storyteller, nor a clear voice a teacher.
+        let matches = topics(for: voice)
+        for use in voice.bestFor {
+            if let topic = VoiceDiscoveryTopic.browseCases.first(where: { matches.contains($0) && $0.keywords.contains(normalized(use)) }) { return topic }
+        }
+        return VoiceDiscoveryTopic.browseCases.first { matches.contains($0) }
+    }
+
     /// Stable, preference-aware and diverse. No usage counts or popularity are
     /// invented. Limit repeats globally in the feed, not across entire collections.
     static func recommended(_ voices: [VoiceOption], language: String,
                             favoriteIDs: Set<String> = [], recentIDs: [String] = [],
-                            excluding: Set<String> = [], limit: Int = 6) -> [VoiceOption] {
-        let preferred = voices.filter { favoriteIDs.contains($0.id) || recentIDs.prefix(3).contains($0.id) }
+                            excluding: Set<String> = [], limit: Int = 6,
+                            preferenceSource: [VoiceOption]? = nil) -> [VoiceOption] {
+        let preferred = (preferenceSource ?? voices).filter { favoriteIDs.contains($0.id) || recentIDs.prefix(3).contains($0.id) }
         let preferredFeatures = preferred.reduce(into: Set<String>()) { $0.formUnion(features($1)) }
         let eligible = voices.filter {
             $0.enabled && $0.selectable && $0.supports(language) && !excluding.contains($0.id)
@@ -238,5 +262,31 @@ struct VoiceDiscoveryCollection: Codable, Equatable, Identifiable {
                   voice.selectable, voice.supports(language) else { return nil }
             return voice
         }
+    }
+}
+
+/// Listening character is a filter, separate from the purpose collections.
+enum VoiceListeningStyle: String, CaseIterable, Identifiable {
+    case all, gentle, grounded, bright, lively
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .all: return AppLocalized("全部")
+        case .gentle: return AppLocalized("柔和")
+        case .grounded: return AppLocalized("沉稳")
+        case .bright: return AppLocalized("明亮")
+        case .lively: return AppLocalized("轻快")
+        }
+    }
+    func includes(_ voice: VoiceOption) -> Bool {
+        let keys: Set<String>
+        switch self {
+        case .all: return true
+        case .gentle: keys = ["gentle", "soft", "warm", "soothing"]
+        case .grounded: keys = ["grounded", "low", "deep", "calm", "measured", "steady"]
+        case .bright: keys = ["bright", "high", "crisp"]
+        case .lively: keys = ["brisk", "energetic", "cheerful", "playful"]
+        }
+        return !keys.isDisjoint(with: VoiceDiscovery.features(voice))
     }
 }

@@ -29,6 +29,7 @@ struct VoiceBrowseRequest: Equatable {
     /// nil = entire language catalog; non-nil preserves a collection's order.
     var voiceIDs: [String]? = nil
     var topic: VoiceDiscoveryTopic? = nil
+    var style: VoiceListeningStyle = .all
 }
 
 struct VoiceFeedSection: Identifiable {
@@ -49,6 +50,7 @@ struct VoiceFeedTopic: Identifiable {
 struct VoiceFeedData {
     let sections: [VoiceFeedSection]
     let recommendations: [VoiceOption]
+    let featuredClones: [VoiceOption]
     let collections: [VoiceFeedCollection]
     let topics: [VoiceFeedTopic]
     let fallbackSections: [VoiceFeedSection]
@@ -100,8 +102,9 @@ actor VoiceBrowseWorker {
                     let styles = VoiceDiscovery.styleRules.enumerated().compactMap { pair in
                         pair.element.0.isDisjoint(with: features) ? nil : vocabulary.styles[pair.offset]
                     }
+                    let purposes = VoiceDiscovery.topics(for: voice)
                     let topics = VoiceDiscoveryTopic.allCases.enumerated().flatMap { pair in
-                        pair.element.keywords.isDisjoint(with: features) ? [] : vocabulary.topics[pair.offset]
+                        purposes.contains(pair.element) ? vocabulary.topics[pair.offset] : []
                     }
                     let raw = [voice.name, voice.id, voice.locale, voice.accent ?? "",
                                voice.description ?? "", voice.descriptionZh ?? "", voice.collection ?? ""]
@@ -117,7 +120,7 @@ actor VoiceBrowseWorker {
             if offset.isMultiple(of: 64) { try Task.checkCancellation() }
             guard voice.selectable, voice.supportedLanguages.contains(language),
                   request.includingMonthly || !voice.usesMonthlyGeneration,
-                  request.usage.includes(voice) else { continue }
+                  request.usage.includes(voice), request.style.includes(voice) else { continue }
             if !gender.isEmpty && voice.gender.trimmed.lowercased() != gender { continue }
             if !accent.isEmpty && VoiceBrowserFilter.normalizedAccentValue(for: voice) != accent { continue }
             if let topic = request.topic, !VoiceDiscovery.topics(for: voice).contains(topic) { continue }
@@ -139,25 +142,36 @@ actor VoiceBrowseWorker {
         let voices = snapshot.voices(for: request.language, includingMonthly: request.includingMonthly)
         let indexed = Dictionary(voices.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let modules = snapshot.document?.discovery?.activeModules(from: voices, language: request.language, now: now) ?? []
-        let sections = modules.map { VoiceFeedSection(module: $0, voices: $0.voiceIds.compactMap { indexed[$0] }) }
+        let regular = voices.filter { !$0.usesMonthlyGeneration }
+        let sections = modules.compactMap { module -> VoiceFeedSection? in
+            let selected = module.voiceIds.compactMap { indexed[$0] }.filter { !$0.usesMonthlyGeneration }
+            guard !selected.isEmpty else { return nil }
+            return VoiceFeedSection(module: module, voices: selected)
+        }
+        // Only operator-selected clones enter the single secondary module.
+        // Generic recommendations and stale mixed collections remain regular-only.
+        let featuredClones = Array(modules.flatMap(\.voiceIds).compactMap { indexed[$0] }
+            .filter(\.usesMonthlyGeneration).prefix(6))
         let editorialIDs = Set(modules.flatMap(\.voiceIds))
         let collections = (snapshot.document?.collections ?? []).compactMap { collection -> VoiceFeedCollection? in
             let count = Set(collection.voiceIds).reduce(0) { count, id in
-                count + (indexed[id].map { $0.enabled && $0.selectable } == true ? 1 : 0)
+                count + (indexed[id].map { $0.enabled && $0.selectable && !$0.usesMonthlyGeneration } == true ? 1 : 0)
             }
             return count == 0 ? nil : VoiceFeedCollection(collection: collection, count: count)
         }
         let curated = Set(collections.flatMap { $0.collection.voiceIds })
-        let recommendations = VoiceDiscovery.recommended(curated.isEmpty ? voices : voices.filter { curated.contains($0.id) },
-            language: request.language, favoriteIDs: request.favorites, recentIDs: request.recents, excluding: editorialIDs)
+        let curatedRegular = regular.filter { curated.contains($0.id) && !editorialIDs.contains($0.id) }
+        let recommendations = VoiceDiscovery.recommended(curatedRegular.isEmpty ? regular : curatedRegular,
+            language: request.language, favoriteIDs: request.favorites, recentIDs: request.recents,
+            excluding: editorialIDs, preferenceSource: regular)
         var topics: [VoiceFeedTopic] = [], fallback: [VoiceFeedSection] = []
         if collections.isEmpty {
             var byTopic: [VoiceDiscoveryTopic: [VoiceOption]] = [:]
-            for voice in voices {
+            for voice in regular {
                 try Task.checkCancellation()
                 for topic in VoiceDiscovery.topics(for: voice) { byTopic[topic, default: []].append(voice) }
             }
-            topics = VoiceDiscoveryTopic.allCases.compactMap { topic in
+            topics = VoiceDiscoveryTopic.browseCases.compactMap { topic in
                 guard let values = byTopic[topic], !values.isEmpty else { return nil }
                 return VoiceFeedTopic(topic: topic, count: values.count)
             }
@@ -179,7 +193,7 @@ actor VoiceBrowseWorker {
             return parser.date(from: value)
         }
         let boundaries = snapshot.document?.discovery.map { [date($0.startsAt), date($0.endsAt)].compactMap { $0 }.filter { $0 > now } } ?? []
-        let data = VoiceFeedData(sections: sections, recommendations: recommendations, collections: collections,
+        let data = VoiceFeedData(sections: sections, recommendations: recommendations, featuredClones: featuredClones, collections: collections,
             topics: topics, fallbackSections: fallback, validUntil: boundaries.min() ?? .distantFuture)
         feeds.insert((request, data), at: 0)
         if feeds.count > 4 { feeds.removeLast() }

@@ -130,6 +130,8 @@ struct VoiceBrowserView: View {
     private let onConsumeLaunchRequest: (UUID) -> Void
 
     @StateObject private var results = VoiceBrowseResults()
+    @State private var localCreationRequest: VoiceBrowserLaunchRequest?
+    @State private var styleFilter: VoiceListeningStyle = .all
     @State private var tab: VoiceBrowserTab = .explore
     @State private var searchText = ""
     @State private var genderFilter = ""
@@ -240,6 +242,9 @@ struct VoiceBrowserView: View {
             .reservesMiniPlayerSpace()
             .background(AppTheme.background)
             .scrollDismissesKeyboard(.interactively)
+            // Each browse tab starts at its own top. In particular, a creation
+            // entry from the feed footer must mount the personal-voice view.
+            .id(tab)
             .refreshable {
                 await catalog.refresh()
                 if Constants.Features.voiceCloningEnabled { await voiceCloneStore.refresh() }
@@ -251,10 +256,14 @@ struct VoiceBrowserView: View {
             .navigationDestination(for: VoiceDiscoveryDestination.self) { destination in
                 switch destination {
                 case .all: discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
+                case .featuredClones(let ids):
+                    VoiceDiscoveryCollectionView(title: AppLocalized("精选音色"), voiceIDs: ids, usageScope: .monthly,
+                        subgroupCollections: VoiceCatalog.collections.filter { !Set($0.voiceIds).isDisjoint(with: ids) },
+                        language: library.browserLanguage, onSelect: select, onPreview: preview)
                 case .collection(let id):
                     if let collection = VoiceCatalog.collections.first(where: { $0.id == id }) {
                         VoiceDiscoveryCollectionView(title: collection.localizedTitle,
-                            voiceIDs: collection.voiceIds,
+                            voiceIDs: collection.voiceIds, usageScope: .regular,
                             language: library.browserLanguage, onSelect: select, onPreview: preview)
                     } else {
                         discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
@@ -262,7 +271,7 @@ struct VoiceBrowserView: View {
                 case .edition(let id):
                     if let module = VoiceCatalog.discovery?.activeModules(from: sourceVoices, language: library.browserLanguage).first(where: { $0.id == id }) {
                         VoiceDiscoveryCollectionView(title: module.localizedTitle,
-                            voiceIDs: module.voiceIds,
+                            voiceIDs: module.voiceIds, usageScope: .regular,
                             language: library.browserLanguage, onSelect: select, onPreview: preview)
                     } else {
                         discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
@@ -377,8 +386,11 @@ struct VoiceBrowserView: View {
         if Constants.Features.voiceCloningEnabled, tab == .created {
             VoiceCloneCreatedView(
                 language: library.browserLanguage,
-                launchRequest: launchRequest,
-                onConsumeLaunchRequest: onConsumeLaunchRequest
+                launchRequest: localCreationRequest ?? launchRequest,
+                onConsumeLaunchRequest: { id in
+                    if localCreationRequest?.id == id { localCreationRequest = nil }
+                    else { onConsumeLaunchRequest(id) }
+                }
             )
                 .frame(minHeight: 360)
         } else if results.request != browseRequest {
@@ -389,11 +401,15 @@ struct VoiceBrowserView: View {
                 .frame(minHeight: 320)
         } else {
             if tab == .explore && searchText.trimmed.isEmpty && genderFilter.isEmpty
-                && tierFilter == .all && accentFilter.isEmpty && !recommendedOnly && usageFilter == .all {
+                && tierFilter == .all && accentFilter.isEmpty && !recommendedOnly && usageFilter == .all && styleFilter == .all {
                 VoiceDiscoveryFeed(snapshot: VoiceCatalog.snapshot, language: library.browserLanguage,
                     favoriteIDs: library.favoriteIDs, recentIDs: library.recentIDs,
                     selectedID: settings.voice(for: library.browserLanguage), selectingID: selectingVoiceID,
-                    onSelect: select, onPreview: preview, onFavorite: { library.toggleFavorite($0.id) })
+                    onSelect: select, onPreview: preview, onFavorite: { library.toggleFavorite($0.id) },
+                    onOpenPersonal: { tab = .created }, onCreate: { entry in
+                        localCreationRequest = VoiceBrowserLaunchRequest(creationEntry: entry)
+                        tab = .created
+                    })
             } else {
                 if displayedVoices.contains(where: \.usesMonthlyGeneration) {
                     VoiceGenerationQuotaSummary(title: "生成额度")
@@ -424,7 +440,7 @@ struct VoiceBrowserView: View {
 
     private func discoveryCollection(title: String, topic: VoiceDiscoveryTopic?) -> some View {
         VoiceDiscoveryCollectionView(title: title,
-            topic: topic,
+            topic: topic, usageScope: topic == nil ? .all : .regular,
             language: library.browserLanguage,
             onSelect: select, onPreview: preview)
     }
@@ -510,7 +526,7 @@ struct VoiceBrowserView: View {
             accent: tab == .explore ? accentFilter : "", recommendedOnly: tab == .explore && recommendedOnly,
             usage: tab == .explore ? usageFilter : .all,
             favorites: tab == .favorites ? library.favoriteIDs : [], recents: tab == .recent ? library.recentIDs : [],
-            includingMonthly: Constants.Features.voiceCloningEnabled)
+            includingMonthly: Constants.Features.voiceCloningEnabled, style: tab == .explore ? styleFilter : .all)
     }
 
     private var availableGenders: [String] {
@@ -521,6 +537,9 @@ struct VoiceBrowserView: View {
 
     private var discoveryFiltersMenu: some View {
         Menu {
+            Picker(AppLocalized("声音特点"), selection: $styleFilter) {
+                ForEach(VoiceListeningStyle.allCases) { Text($0.title).tag($0) }
+            }
             Picker(AppLocalized("使用权益"), selection: $usageFilter) {
                 ForEach(VoiceUsageFilter.allCases) { Text($0.title).tag($0) }
             }
@@ -540,12 +559,12 @@ struct VoiceBrowserView: View {
             }
             Toggle(AppLocalized("推荐"), isOn: $recommendedOnly)
             Button(AppLocalized("重置")) {
-                usageFilter = .all; genderFilter = ""; tierFilter = .all
+                styleFilter = .all; usageFilter = .all; genderFilter = ""; tierFilter = .all
                 accentFilter = ""; recommendedOnly = false
             }
         } label: {
             Image(systemName: "line.3.horizontal.decrease")
-                .foregroundStyle(usageFilter != .all || !genderFilter.isEmpty || tierFilter != .all || !accentFilter.isEmpty || recommendedOnly ? AppTheme.primary : AppTheme.foreground)
+                .foregroundStyle(styleFilter != .all || usageFilter != .all || !genderFilter.isEmpty || tierFilter != .all || !accentFilter.isEmpty || recommendedOnly ? AppTheme.primary : AppTheme.foreground)
                 .frame(width: 44, height: 44)
                 .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 16))
         }.accessibilityLabel(Text(AppLocalized("筛选")))

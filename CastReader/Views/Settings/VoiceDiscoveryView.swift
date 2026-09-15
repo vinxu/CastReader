@@ -10,6 +10,8 @@ struct VoiceDiscoveryFeed: View {
     let onSelect: (VoiceOption) -> Void
     let onPreview: (VoiceOption) -> Void
     let onFavorite: (VoiceOption) -> Void
+    let onOpenPersonal: () -> Void
+    let onCreate: (VoiceCreationEntry) -> Void
     @StateObject private var model = VoiceDiscoveryFeedModel()
     @ObservedObject private var appLanguage = AppLanguageManager.shared
 
@@ -21,14 +23,18 @@ struct VoiceDiscoveryFeed: View {
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 28) {
-            if model.request == request, let data = model.data {
+            // Keep navigation origins mounted while only preference ranking
+            // changes; otherwise favoriting a detail voice can pop its screen.
+            if model.request?.catalogID == request.catalogID,
+               model.request?.language == request.language,
+               model.request?.locale == request.locale, let data = model.data {
                 ForEach(data.sections) { editorialSection($0) }
                 if !data.recommendations.isEmpty {
                     recommendationSection(data.recommendations)
                 }
                 if !data.collections.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        heading(AppLocalized("声音专题"))
+                        heading(AppLocalized("按场景找声音"))
                         ScrollView(.horizontal, showsIndicators: false) {
                             LazyHGrid(rows: [GridItem(.fixed(106)), GridItem(.fixed(106))], spacing: 12) {
                                 ForEach(data.collections) { item in
@@ -41,7 +47,7 @@ struct VoiceDiscoveryFeed: View {
                     }
                 } else if !data.topics.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        heading(AppLocalized("声音专题"))
+                        heading(AppLocalized("按场景找声音"))
                         ScrollView(.horizontal, showsIndicators: false) {
                             LazyHGrid(rows: [GridItem(.fixed(106)), GridItem(.fixed(106))], spacing: 12) {
                                 ForEach(data.topics) { item in
@@ -53,6 +59,10 @@ struct VoiceDiscoveryFeed: View {
                     }
                 }
                 ForEach(data.fallbackSections) { editorialSection($0, fallback: true) }
+                if !data.featuredClones.isEmpty { featuredClonesSection(data.featuredClones) }
+                if Constants.Features.voiceCloningEnabled {
+                    VoiceFamiliarSection(onOpen: onOpenPersonal, onCreate: onCreate).padding(.horizontal)
+                }
                 NavigationLink(value: VoiceDiscoveryDestination.all) {
                     HStack {
                         Label(AppLocalized("浏览全部音色"), systemImage: "square.grid.2x2")
@@ -72,7 +82,7 @@ struct VoiceDiscoveryFeed: View {
     }
     private func recommendationSection(_ voices: [VoiceOption]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            heading(AppLocalized("先听这几个"))
+            heading(favoriteIDs.isEmpty && recentIDs.isEmpty ? AppLocalized("先听这几个") : AppLocalized("你可能喜欢"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(Array(stride(from: 0, to: voices.count, by: 2)), id: \.self) { start in
@@ -82,6 +92,20 @@ struct VoiceDiscoveryFeed: View {
                     }
                 }.padding(.horizontal)
             }
+        }
+    }
+    private func featuredClonesSection(_ voices: [VoiceOption]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            NavigationLink(value: VoiceDiscoveryDestination.featuredClones(voices.map(\.id))) {
+                HStack {
+                    Text(AppLocalized("精选音色")).font(.title3.weight(.bold)).foregroundStyle(AppTheme.foreground)
+                    Spacer()
+                    Image(systemName: "arrow.right").frame(width: 44, height: 32)
+                }
+                .frame(minHeight: 44).contentShape(Rectangle())
+            }.buttonStyle(.plain).padding(.horizontal).accessibilityIdentifier("voiceFeaturedClones")
+            VoiceClonedSelectionNote().padding(.horizontal)
+            ForEach(voices.prefix(3)) { row($0).padding(.horizontal) }
         }
     }
     private func editorialSection(_ section: VoiceFeedSection, fallback: Bool = false) -> some View {
@@ -141,7 +165,18 @@ struct VoicePreviewErrorPresentation: ViewModifier {
     }
 }
 
-enum VoiceDiscoveryDestination: Hashable { case all, edition(String), collection(String) }
+enum VoiceDiscoveryDestination: Hashable {
+    case all, edition(String), collection(String), featuredClones([String])
+}
+
+private struct VoiceClonedSelectionNote: View {
+    var body: some View {
+        Text(AppLocalized("克隆音色 · 多语言适用 · 生成消耗月额度"))
+            .font(.caption).foregroundStyle(AppTheme.mutedForeground)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("voiceClonedSelectionNote")
+    }
+}
 
 /// Artwork introduces the collection. Voice identity stays in its own row,
 /// using the same catalog avatar, name and actions as every other category.
@@ -396,24 +431,42 @@ struct VoiceDiscoveryCollectionView: View {
     let title: String
     var voiceIDs: [String]? = nil
     var topic: VoiceDiscoveryTopic? = nil
+    var usageScope: VoiceUsageFilter = .all
+    var subgroupCollections: [VoiceDiscoveryCollection] = []
     let language: String
     let onSelect: (VoiceOption) -> Void
     let onPreview: (VoiceOption) -> Void
     @ObservedObject private var library = VoiceLibraryStore.shared
     @ObservedObject private var settings = AppSettings.shared
+    @State private var subgroupID: String?
+    @State private var listeningStyle: VoiceListeningStyle = .all
     @State private var query = ""
     @State private var usage: VoiceUsageFilter = .all
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @StateObject private var resultModel = VoiceBrowseResults()
     private var request: VoiceBrowseRequest {
         VoiceBrowseRequest(catalogID: VoiceCatalog.snapshot.id, language: language,
-            locale: appLanguage.selectedLanguage.resolvedLanguageCode, search: query, usage: usage,
-            includingMonthly: Constants.Features.voiceCloningEnabled, voiceIDs: voiceIDs, topic: topic)
+            locale: appLanguage.selectedLanguage.resolvedLanguageCode, search: query, usage: usageScope == .all ? usage : usageScope,
+            includingMonthly: Constants.Features.voiceCloningEnabled, voiceIDs: subgroupIDs, topic: topic, style: listeningStyle)
+    }
+    private var subgroupIDs: [String]? {
+        guard let selected = subgroupCollections.first(where: { $0.id == subgroupID }) else { return voiceIDs }
+        let members = Set(selected.voiceIds)
+        return voiceIDs?.filter { members.contains($0) }
     }
     private var results: [VoiceOption] { resultModel.voices }
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
+                if usageScope == .monthly { VoiceClonedSelectionNote().frame(maxWidth: .infinity, alignment: .leading).padding() }
+                if !subgroupCollections.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            subgroupButton(AppLocalized("全部"), id: nil)
+                            ForEach(subgroupCollections) { subgroupButton($0.localizedTitle, id: $0.id) }
+                        }.padding(.horizontal).padding(.bottom, 12)
+                    }
+                }
                 if resultModel.request != request {
                     ProgressView().frame(maxWidth: .infinity, minHeight: 120)
                 } else if results.isEmpty {
@@ -436,12 +489,63 @@ struct VoiceDiscoveryCollectionView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Picker(AppLocalized("使用权益"), selection: $usage) {
-                            ForEach(VoiceUsageFilter.allCases) { Text($0.title).tag($0) }
+                        Picker(AppLocalized("声音特点"), selection: $listeningStyle) {
+                            ForEach(VoiceListeningStyle.allCases) { Text($0.title).tag($0) }
+                        }
+                        if usageScope == .all {
+                            Picker(AppLocalized("使用权益"), selection: $usage) {
+                                ForEach(VoiceUsageFilter.allCases) { Text($0.title).tag($0) }
+                            }
                         }
                     } label: { Image(systemName: "line.3.horizontal.decrease") }
-                    .accessibilityLabel(Text(AppLocalized("使用权益")))
+                    .accessibilityLabel(Text(AppLocalized("筛选")))
                 }
             }
+    }
+    private func subgroupButton(_ title: String, id: String?) -> some View {
+        Button { subgroupID = id } label: {
+            Text(title).font(.subheadline.weight(.medium)).padding(.horizontal, 14).padding(.vertical, 9)
+                .foregroundStyle(subgroupID == id ? AppTheme.primary : AppTheme.foreground)
+                .background(subgroupID == id ? AppTheme.primary.opacity(0.1) : AppTheme.surface, in: Capsule())
+        }.buttonStyle(.plain).accessibilityIdentifier("voiceIdentity_" + (id ?? "all"))
+    }
+
+}
+
+/// Only this compact section observes personal voice state, keeping account and
+/// invitation updates out of the catalog/recommendation computation path.
+private struct VoiceFamiliarSection: View {
+    let onOpen: () -> Void
+    let onCreate: (VoiceCreationEntry) -> Void
+    @ObservedObject private var store = VoiceCloneStore.shared
+    @ObservedObject private var auth = AuthService.shared
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(AppLocalized("听见熟悉的声音")).font(.title3.weight(.bold))
+            entry(title: AppLocalized("我的声音"),
+                  action: AppLocalized(auth.isSignedIn && !store.ownedVoices.isEmpty ? "查看我的声音" : "录制自己的声音"),
+                  symbol: "mic", id: "voiceFamiliarSelf") {
+                if auth.isSignedIn && !store.ownedVoices.isEmpty { onOpen() } else { onCreate(.recordMyVoice) }
+            }
+            entry(title: AppLocalized("朋友的声音"),
+                  action: AppLocalized(auth.isSignedIn && !store.invitedVoices.isEmpty ? "查看朋友的声音" : "邀请朋友录制声音"),
+                  symbol: "person.2", id: "voiceFamiliarFriend") {
+                if auth.isSignedIn && !store.invitedVoices.isEmpty { onOpen() }
+                else { onCreate(VoiceGiftFeature.isRegionEligible() ? .inviteFriend : .chooser) }
+            }
+        }
+    }
+    private func entry(title: String, action: String, symbol: String, id: String, perform: @escaping () -> Void) -> some View {
+        Button(action: perform) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol).font(.title3).foregroundStyle(AppTheme.primary).frame(width: 38, height: 42)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(AppTheme.foreground)
+                    Text(action).font(.caption).foregroundStyle(AppTheme.mutedForeground)
+                }
+                Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(AppTheme.mutedForeground)
+            }.padding(12).background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 16))
+                .contentShape(Rectangle())
+        }.buttonStyle(.plain).accessibilityIdentifier(id)
     }
 }

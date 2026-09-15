@@ -16,7 +16,12 @@ final class VoiceExploreUITests: XCTestCase {
         let weekly = app.descendants(matching: .any).matching(identifier: "voiceEdition_weekly-stories").firstMatch
         XCTAssertTrue(weekly.waitForExistence(timeout: 20))
         attach(app, "voice-discovery-feed-en")
-        weekly.tap()
+        XCTAssertTrue(app.buttons["presetVoiceSelect_am_fenrir"].exists)
+        let featured = app.buttons["voiceFeaturedClones"]
+        reveal(featured, in: app)
+        XCTAssertTrue(app.staticTexts["voiceClonedSelectionNote"].exists)
+        featured.tap()
+        XCTAssertTrue(app.navigationBars["Curated voices"].waitForExistence(timeout: 5))
         let preview = app.buttons["voicePreview_\(publicID)"]
         XCTAssertTrue(preview.waitForExistence(timeout: 5))
         preview.tap()
@@ -25,6 +30,7 @@ final class VoiceExploreUITests: XCTestCase {
         waitForExpectations(timeout: 10)
         preview.tap()
         app.buttons["voiceFavorite_\(publicID)"].tap()
+        XCTAssertTrue(app.navigationBars["Curated voices"].exists)
         app.buttons["voiceQuota_\(publicID)"].tap()
         XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.alerts.firstMatch.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "2 hours per month")).firstMatch.exists)
@@ -48,10 +54,10 @@ final class VoiceExploreUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["常规音色 · Pro 不限时"].exists)
         XCTAssertFalse(app.staticTexts["按成功生成的音频时长计量；试听和重复播放已生成的音频不扣额度。"].exists)
         attach(app, "voice-discovery-feed-zh")
-        app.swipeUp()
+        reveal(app.buttons["voiceTopic_stories"], in: app)
         attach(app, "voice-discovery-categories-zh")
-        XCTAssertTrue(app.buttons["voiceTopic_everyday"].waitForExistence(timeout: 5))
-        app.buttons["voiceTopic_everyday"].tap()
+        XCTAssertTrue(app.buttons["voiceTopic_stories"].waitForExistence(timeout: 5))
+        app.buttons["voiceTopic_stories"].tap()
         let search = app.searchFields.firstMatch
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap(); search.typeText("Heart")
@@ -104,10 +110,15 @@ final class VoiceExploreUITests: XCTestCase {
         app.launch()
         let voices = app.buttons.matching(NSPredicate(format: "label IN %@", ["音色", "Voice", "Voices"])).firstMatch
         XCTAssertTrue(voices.waitForExistence(timeout: 20)); voices.tap()
-        let feature = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == %@ OR identifier == %@", "voiceEdition_cn-stories", "voiceEdition_international-stories")).firstMatch
+        let feature = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == %@ OR identifier == %@", "voiceEdition_cn-everyday", "voiceEdition_international-everyday")).firstMatch
         XCTAssertTrue(feature.waitForExistence(timeout: 45))
         attach(app, "iphone-production-discovery")
-        feature.tap()
+        let featured = app.buttons["voiceFeaturedClones"]
+        reveal(featured, in: app); featured.tap()
+        let famous = app.buttons.matching(NSPredicate(format: "identifier == %@ OR identifier == %@", "voiceIdentity_cn-cloned-famous", "voiceIdentity_international-cloned-famous")).firstMatch
+        XCTAssertTrue(famous.waitForExistence(timeout: 10)); famous.tap()
+        XCTAssertTrue(app.staticTexts["voiceClonedSelectionNote"].exists)
+        attach(app, "iphone-production-famous-group")
         let preview = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voicePreview_vl_")).firstMatch
         XCTAssertTrue(preview.waitForExistence(timeout: 10)); preview.tap()
         expectation(for: NSPredicate(format: "value ==[c] %@", "playing"), evaluatedWith: preview)
@@ -125,6 +136,64 @@ final class VoiceExploreUITests: XCTestCase {
         XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("Calm Narrator")
         XCTAssertTrue(app.buttons["presetVoiceSelect_vl_b5c9589c1370164a19fe"].waitForExistence(timeout: 10))
         attach(app, "iphone-production-full-catalog-search")
+        #endif
+    }
+
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<8 {
+            if element.exists && element.isHittable { return }
+            app.swipeUp()
+        }
+        XCTAssertTrue(element.waitForExistence(timeout: 5))
+    }
+
+    func testFamiliarVoiceEntryLeadsToPersonalVoiceFlow() {
+        let app = launch()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "voiceEdition_weekly-stories").firstMatch.waitForExistence(timeout: 20))
+        let record = app.buttons["voiceFamiliarSelf"]
+        reveal(record, in: app)
+        XCTAssertTrue(app.buttons["voiceFamiliarFriend"].exists)
+        record.tap()
+        XCTAssertTrue(app.buttons["login.apple"].waitForExistence(timeout: 5) || app.buttons["login.email"].exists)
+        attach(app, "voice-personal-recording-entry")
+    }
+
+    func testOperatorIdentityGroupsNarrowFeaturedClones() throws {
+        #if targetEnvironment(simulator)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("VoiceGroups-" + UUID().uuidString)
+        let source = Bundle(for: Self.self).resourceURL!.appendingPathComponent("VoiceDiscovery")
+        try FileManager.default.copyItem(at: source, to: directory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("catalog.json")
+        var document = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+        let voices = document["voices"] as! [[String: Any]]
+        let cloneIDs = voices.compactMap { $0["id"] as? String }.filter { $0.hasPrefix("vl_") }
+        XCTAssertEqual(cloneIDs.count, 6)
+        var edition = document["discovery"] as! [String: Any]
+        var modules = edition["modules"] as! [[String: Any]]
+        modules[0]["voiceIds"] = ["am_fenrir"] + cloneIDs
+        edition["modules"] = modules; document["discovery"] = edition
+        let groups = [("famous", "Famous styles"), ("character", "Character voices"), ("narrators", "Natural narrators")]
+        document["collections"] = groups.enumerated().map { index, group in
+            ["id": group.0, "title": ["en": group.1], "theme": "character", "voiceIds": Array(cloneIDs[(index * 2)..<(index * 2 + 2)])] as [String: Any]
+        }
+        try JSONSerialization.data(withJSONObject: document).write(to: url)
+        let app = launch(fixtureDirectory: directory)
+        let featured = app.buttons["voiceFeaturedClones"]
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "voiceEdition_weekly-stories").firstMatch.waitForExistence(timeout: 20))
+        reveal(featured, in: app); featured.tap()
+        XCTAssertTrue(app.buttons["voiceIdentity_famous"].waitForExistence(timeout: 5))
+        app.buttons["voiceIdentity_famous"].tap()
+        XCTAssertTrue(app.buttons["presetVoiceSelect_" + cloneIDs[0]].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["presetVoiceSelect_" + cloneIDs[1]].exists)
+        XCTAssertFalse(app.buttons["presetVoiceSelect_" + cloneIDs[2]].exists)
+        app.buttons["voiceIdentity_character"].tap()
+        XCTAssertTrue(app.buttons["presetVoiceSelect_" + cloneIDs[2]].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["presetVoiceSelect_" + cloneIDs[0]].exists)
+        XCTAssertTrue(app.staticTexts["voiceClonedSelectionNote"].exists)
+        attach(app, "voice-featured-identity-groups")
+        #else
+        throw XCTSkip("Synthetic group fixture is simulator only")
         #endif
     }
 
