@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## App Store 1.2.40 送审基线（2026-09-16）
+
+- 当前已提交并回读为 `WAITING_FOR_REVIEW` 的版本为 **1.2.40（62）**，应用源码 **`5c45b75`**；工作树 `/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914`，分支 `codex/mobile-voice-explore-20260914`。归档为该工作树 `build/CastReader-1.2.40-62.xcarchive`，后续截图测试/文档提交不改变包内应用源码。
+- 包含下节音色发现、切换并发和额度修复，保留 `64c2dbd`、`633f6bb`、`ad4b885`、`a4a3ee0`、`24b28e3`、`48998e7` / `f94b41d`。另修复法语短发现页内外两层懒加载触发的布局循环；仅有界推荐内容使用 `VStack`，完整音色列表继续懒加载。
+- 发布记录及所有检测结果见 `docs/iOS-1.2.40-Release-Report.md`。后续增量集成从此基线继续，打包前运行 `bash scripts/build-voice-toc-integration.sh --check`，使用独立 DerivedData。不得从主目录旧分支打包覆盖。
+- 本次未重装用户 iPhone；下节 `9f946ac`（Build 61）仍是最后安装的开发测试源码。商店候选等待审核不代表已上线。
+
 ## 音色发现与 EPUB 目录本地集成（2026-09-15）
 
 - 当前本地 iPhone 迭代在 `/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914`，分支 `codex/mobile-voice-explore-20260914`。
@@ -9,15 +16,15 @@
 - 前轮真机应用源码 `a4a3ee0` 修复音色面板误拦只读页面稳定检查、页尾等待取消后切换丢失播放意图；保留该修复。见 `docs/voice-discovery-2026-09-14/voice-switch-page-stop-2026-09-15.md`。
 - 前轮真机应用源码 `24b28e3`：切换先建立前台准备事务，后台克隆预读等待音频就绪；重试遵守服务端准备状态、Retry-After 与总期限。保留上述全部祖先。11 项针对性测试及 224 项模拟器回归通过（部分重叠）；8 个不同真机用例通过，其中一次系统音频中断影响页尾前置条件，原样单独复测通过。17:18:35 安装、17:19:14 启动，1.2.40（61），dylib UUID `FF840347-F072-32CB-B7CF-C7344FF5DC49`。503 已定位为社区音色准备租约竞争，需要配套后端共享准备与跨实例等待修复；区域部署与实际 API 验收见 `docs/voice-discovery-2026-09-14/voice-preparation-concurrency-2026-09-15.md`。
 - 当前真机应用源码 `9f946ac`：额度查询不可用时保留已确认余额，过滤过期的额度响应，后台预读不弹出全局额度警告。158 项模拟器测试通过、3 项 StoreKit 授权相关测试跳过；2 项真机隔离状态测试通过。18:34:37 安装、18:34:39 启动，1.2.40（61），dylib UUID `05B062F6-09BE-3EFB-8D85-0AB458D7B31D`。保留 `24b28e3` 及上述全部祖先，另确认 `48998e7` / `f94b41d` 已包含。中美后端实际状态接口验证通过。证据见 `docs/voice-discovery-2026-09-14/clone-quota-unknown-2026-09-15.md`。
-- 这是本地测试集成，不代表 App Store 版本已更新。不得把目录合并提交 `487c746` 单独视为该切换问题已修复。
+- 本节记录本地测试过程；随后已基于该集成提交上节 Build 62。不得把目录合并提交 `487c746` 单独视为该切换问题已修复。
 
 ## 打包与本地真机包的基线校验（2026-09-14）
 
-- 本次已提交 App Store、等待审核的 iOS 1.2.39（60）应用源码为 `64c2dbd934d34e7b000c8def1a4c8ee5dc94ab23`；工作树：
+- 前版 iOS 1.2.39（60）应用源码为 `64c2dbd934d34e7b000c8def1a4c8ee5dc94ab23`；2026-09-16 提交新版本前已回读为 `READY_FOR_SALE`。工作树：
   `/Users/xuxuheng/Documents/.worktrees/CastReader-kindle-offline-five-phases-20260912`，分支 `codex/kindle-offline-five-phases-20260912`。后续 UI 测试和发布文档提交不改变该包的应用源码。
 - 候选包包括 Kindle 离线功能和 AO3 修复合并 `d58e296`，并保留已验证发布祖先 `b6dd4d7` 和 1.2.38 集成快照 `5f863c4`。上传、提审状态及签名/测试证据见 `docs/iOS-1.2.39-Release-Report.md`；候选包或等待审核均不等于已经上线。
 - 主目录的 `codex/adaptive-voice-clone-denoise` 工作树不是该构建基线。不得仅因当前目录或更大的 Build 号就在此打包覆盖真机，也不得整文件覆盖发布分支。
-- 后续离线、AO3、“更多 / Aa / 睡眠定时”增量整合从上述候选工作树继续。打包前运行该工作树的 `bash scripts/build-reader-more-integration.sh --check`；真机包运行同脚本的 `--device`。本次没有覆盖用户手机安装。
+- 该版离线、AO3、“更多 / Aa / 睡眠定时”实现已包含在顶部 1.2.40 送审基线中，后续增量从顶部工作树继续。原发布基线脚本仍由 `build-voice-toc-integration.sh` 调用。本次 App Store 送审没有覆盖用户手机安装。
 - 后续发布更新时，以已验证的新发布提交更新本节，核对祖先关系、源码差异、独立 DerivedData 与回归结果后再安装；版本号不是源码基线证据。
 - 本轮至少保留 Kindle 位置恢复、手动翻页确认、预热书架遮挡、原生字号重排、WeRead/Kobo 恢复和播放器失败恢复的发布版实现。不得用旧工作树的新功能实现替换这些子系统。
 

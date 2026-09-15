@@ -1,0 +1,21 @@
+{
+  "versionId": "2e51ccae-4997-4a85-a3a3-541857cbddc8",
+  "locales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "changedFields": [
+    "description",
+    "whatsNew"
+  ],
+  "otherFieldsPreserved": true
+}

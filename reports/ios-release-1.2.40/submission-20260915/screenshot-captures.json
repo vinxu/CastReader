@@ -1,0 +1,83 @@
+{
+  "hi": {
+    "path": "AppStoreAssets/1.2.40/hi/05-voices-1.2.40.png",
+    "sourceAttachment": "16922899-EAB6-4E2E-853A-5C0E7066FD90.png",
+    "width": 1290,
+    "height": 2796,
+    "sha256": "1b7b725ffc8830114a18594266820360cc38a89cec9347d33ceca6c741565d20",
+    "source": "real app + live public catalog",
+    "surface": "Hindi everyday category"
+  },
+  "it": {
+    "path": "AppStoreAssets/1.2.40/it/05-voices-1.2.40.png",
+    "sourceAttachment": "865D5157-9FD6-48F9-B1D6-90D2AEB6059C.png",
+    "width": 1290,
+    "height": 2796,
+    "sha256": "315d4ae8bde43e74613f449bbd99953cd249e3bb98e05b221837fce03cda2741",
+    "source": "real app + live public catalog",
+    "surface": "localized discovery feed"
+  },
+  "pt-BR": {
+    "path": "AppStoreAssets/1.2.40/pt-BR/05-voices-1.2.40.png",
+    "sourceAttachment": "8F86A5D5-D308-4EFA-B8C2-DE54FB62108D.png",
+    "width": 1290,
+    "height": 2796,
+    "sha256": "80d1ef116eb3927166133cb9842bf79cccfc5ae4ef73e25a40d639fff72b1ca8",
+    "source": "real app + live public catalog",
+    "surface": "localized discovery feed"
+  },
+  "de-DE": {
+    "path": "AppStoreAssets/1.2.40/de-DE/05-voices-1.2.40.png",
+    "sourceAttachment": "85A211E1-EC4A-4855-A251-18EFEE54C394.png",
+    "width": 1290,
+    "height": 2796,
+    "sha256": "9ca337dfb894934e4fb2a156b6e2727db34131c0df20b226dd202e56b00c6142",
+    "source": "real app + live public catalog",
+    "surface": "localized discovery feed"
+  },
+  "fr-FR": {
+    "path": "AppStoreAssets/1.2.40/fr-FR/05-voices-1.2.40.png",
+    "sourceAttachment": "D7198932-AC5F-438C-A49A-D70B189A7770.png",
+    "width": 1290,
+    "height": 2796,
+    "sha256": "4c360bbbea45d89cd509eed0052e2be1cf5e488b001d2ec6379ac732b12645bc",
+    "source": "real app + live public catalog",
+    "surface": "localized discovery feed"
+  },
+  "es-ES": {
+    "path": "AppStoreAssets/1.2.40/es-ES/05-voices-1.2.40.png",
+    "sourceAttachment": "AB40CB4B-4985-475A-AA9F-75B4F8870247.png",
+    "width": 1290,
+    "height": 2796,
+    "sha256": "14262ccaa7bfaed8c948fc625175ce63f98573e0a3cd66264b3ee72a4f583518",
+    "source": "real app + live public catalog",
+    "surface": "localized discovery feed"
+  },
+  "ja": {
+    "path": "AppStoreAssets/1.2.40/ja/05-voices-1.2.40.png",
+    "sourceAttachment": "54BC603B-6BF1-48E8-BBD9-33E100FB84B0.png",
+    "width": 1290,
+    "height": 2796,
+    "sha256": "82b8fba3fab16f69dd21a7fdcc95e3d7d3a00d6ae4a7e25470ed773b05cb1a0f",
+    "source": "real app + live public catalog",
+    "surface": "localized discovery feed"
+  },
+  "zh-Hans": {
+    "path": "AppStoreAssets/1.2.40/zh-Hans/05-voices-1.2.40.png",
+    "sourceAttachment": "B644DDB6-B608-46F3-B0B5-7BB80E7F93BA.png",
+    "width": 1290,
+    "height": 2796,
+    "sha256": "711facdf6aa82559fcdf6c70d241eb0a7461c3f45f7f005bc38c1f2dd9a49a3d",
+    "source": "real app + live public catalog",
+    "surface": "localized discovery feed"
+  },
+  "en-US": {
+    "path": "AppStoreAssets/1.2.40/en-US/05-voices-1.2.40.png",
+    "sourceAttachment": "DFE21FDD-E0CA-4553-A174-5845CBCB4EB6.png",
+    "width": 1290,
+    "height": 2796,
+    "sha256": "fc7230db49d1e76473c8f35f4cba093ba4020242387e6ab20fe3517db20f8092",
+    "source": "real app + live public catalog",
+    "surface": "localized discovery feed"
+  }
+}

@@ -148,6 +148,14 @@ final class VoiceExploreUITests: XCTestCase {
             let tab = app.tabBars.buttons[label]
             XCTAssertTrue(tab.waitForExistence(timeout: 20), language)
             tab.tap()
+            if language == "hi" {
+                // The live Hindi catalog currently has no operator-promoted
+                // edition. Show its actual language-specific category list,
+                // without fabricating an editorial recommendation for the store.
+                let topic = app.buttons["voiceTopic_everyday"]
+                XCTAssertTrue(topic.waitForExistence(timeout: 30))
+                topic.tap()
+            }
             let voice = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "presetVoiceSelect_")).firstMatch
             XCTAssertTrue(voice.waitForExistence(timeout: 30), language)
             if language == "en" { XCTAssertTrue(app.staticTexts[title].exists, language) }

@@ -1,0 +1,36 @@
+{
+  "cn": {
+    "voices": 1606,
+    "modules": 6,
+    "collections": 7,
+    "titleLocales": [
+      "de",
+      "en",
+      "es",
+      "fr",
+      "hi",
+      "it",
+      "ja",
+      "pt",
+      "zh"
+    ],
+    "allTitlesVerified": true
+  },
+  "international": {
+    "voices": 1606,
+    "modules": 6,
+    "collections": 7,
+    "titleLocales": [
+      "de",
+      "en",
+      "es",
+      "fr",
+      "hi",
+      "it",
+      "ja",
+      "pt",
+      "zh"
+    ],
+    "allTitlesVerified": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "mode": "dry-run",
+  "selectedSubmission": null,
+  "plannedWrites": [
+    {
+      "method": "POST",
+      "path": "/v1/reviewSubmissions"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/reviewSubmissionItems",
+      "appStoreVersionId": "2e51ccae-4997-4a85-a3a3-541857cbddc8"
+    },
+    {
+      "method": "PATCH",
+      "path": "/v1/reviewSubmissions/<id>",
+      "submitted": true
+    }
+  ]
+}

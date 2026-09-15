@@ -1,0 +1,10 @@
+{
+  "app": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/build/CastReader-1.2.40-61.xcarchive/Products/Applications/CastReader.app",
+  "version": "1.2.40",
+  "build": "61",
+  "filesScanned": 123,
+  "markersChecked": 54,
+  "debugPositiveControlsPassed": true,
+  "releaseMatches": [],
+  "passed": true
+}

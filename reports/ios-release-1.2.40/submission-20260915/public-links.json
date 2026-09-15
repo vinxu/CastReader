@@ -1,0 +1,27 @@
+[
+  {
+    "url": "https://castreader.com/en/privacy-policy",
+    "status": 200,
+    "finalURL": "https://castreader.com/privacy-policy"
+  },
+  {
+    "url": "https://castreader.com/zh/privacy-policy",
+    "status": 200,
+    "finalURL": "https://castreader.com/zh/privacy-policy"
+  },
+  {
+    "url": "https://castreader.com",
+    "status": 200,
+    "finalURL": "https://castreader.com/"
+  },
+  {
+    "url": "https://castreader.com/castreader-app",
+    "status": 200,
+    "finalURL": "https://castreader.com/castreader-app"
+  },
+  {
+    "url": "https://castreader.com/zh/castreader-app",
+    "status": 200,
+    "finalURL": "https://castreader.com/zh/castreader-app"
+  }
+]

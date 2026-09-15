@@ -1,0 +1,1242 @@
+{
+  "applicationSource": "5c45b75",
+  "archive": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/build/CastReader-1.2.40-62.xcarchive",
+  "components": [
+    {
+      "CFBundleIdentifier": "com.same.castreader",
+      "CFBundleShortVersionString": "1.2.40",
+      "CFBundleVersion": "62",
+      "MinimumOSVersion": "17.6",
+      "ITSAppUsesNonExemptEncryption": false,
+      "CastReaderInternalDistributionControlsEnabled": "NO"
+    },
+    {
+      "CFBundleIdentifier": "com.same.castreader.ShareExtension",
+      "CFBundleShortVersionString": "1.2.40",
+      "CFBundleVersion": "62",
+      "MinimumOSVersion": "17.6",
+      "ITSAppUsesNonExemptEncryption": null,
+      "CastReaderInternalDistributionControlsEnabled": null
+    },
+    {
+      "CFBundleIdentifier": "com.same.castreader.Widget",
+      "CFBundleShortVersionString": "1.2.40",
+      "CFBundleVersion": "62",
+      "MinimumOSVersion": "17.6",
+      "ITSAppUsesNonExemptEncryption": null,
+      "CastReaderInternalDistributionControlsEnabled": null
+    }
+  ],
+  "compiledCatalogKeysByLanguage": {
+    "en": 1480,
+    "zh-Hans": 1480,
+    "ja": 1480,
+    "es": 1480,
+    "fr": 1480,
+    "de": 1480,
+    "pt-BR": 1480,
+    "it": 1480,
+    "hi": 1480
+  },
+  "sourceFiles": [
+    {
+      "path": "CastReader Share Extension/CastReaderShareExtension.entitlements",
+      "sha256": "d4223bb4475cc5ae4e8ba7037c7cea0af5dfbacbabfe3198e3ef81436ebbd0da"
+    },
+    {
+      "path": "CastReader Share Extension/Info.plist",
+      "sha256": "533b987c785d0a868dda6953836208319cbc5abbebfa705f1c979c6bde812bb5"
+    },
+    {
+      "path": "CastReader Share Extension/Localizable.xcstrings",
+      "sha256": "ebfe2aba1017d2a4050c7c8e6088923c03db5fee0ab03b9815d6bb94c7b49bf7"
+    },
+    {
+      "path": "CastReader Share Extension/ShareViewController.swift",
+      "sha256": "e50175c0dd0f4f41980d874f302218305fc22fa7b8c8f746a5ae511ee07b23d3"
+    },
+    {
+      "path": "CastReader Widget/CastReaderWidget.entitlements",
+      "sha256": "d4223bb4475cc5ae4e8ba7037c7cea0af5dfbacbabfe3198e3ef81436ebbd0da"
+    },
+    {
+      "path": "CastReader Widget/CastReaderWidgetBundle.swift",
+      "sha256": "ea67bf65229c530e147dc182649bdca1524186fe8b71be11bcc65b43a506fd50"
+    },
+    {
+      "path": "CastReader Widget/ContinueReadingWidget.swift",
+      "sha256": "d2eb8a5fd636630840cecc10b59030c7b547c0cca73a95a00c094439d727147b"
+    },
+    {
+      "path": "CastReader Widget/Info.plist",
+      "sha256": "4f2b0e06624fda0c4b7f858389dcff7e1780861f08e350d8f14ac6c1cb8a3e5a"
+    },
+    {
+      "path": "CastReader Widget/Localizable.xcstrings",
+      "sha256": "133cc73b8055d1ee57232d50516ff582af4ab8ef5346840ea8027ced54e1459f"
+    },
+    {
+      "path": "CastReader.xcodeproj/project.pbxproj",
+      "sha256": "8606f8dcee9a8a879b5dfdb67232cd1b8329082a8c250b4738bb99bd0bc1245f"
+    },
+    {
+      "path": "CastReader.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "sha256": "7f3b00b5c3fdb45242d7b87e1e5c4e25d1fa8129a16c94295ecc4e8ea2235c5f"
+    },
+    {
+      "path": "CastReader.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "path": "CastReader.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "sha256": "536105c3cb1194f17b27a44cc86594184b1b67d6044f13dfd4d426a4fa660227"
+    },
+    {
+      "path": "CastReader.xcodeproj/xcshareddata/xcschemes/CastReader.xcscheme",
+      "sha256": "9dc43a9643a6cee83b2dd1168a57afb5eb668af4c8ad9bbe6e86d5d5003079da"
+    },
+    {
+      "path": "CastReader.xcodeproj/xcuserdata/chenxiaoxuan.xcuserdatad/xcschemes/xcschememanagement.plist",
+      "sha256": "a06e568fd489c42feb6e3fc1ba3243fead1bc9997541c0f37940b6bc5974449d"
+    },
+    {
+      "path": "CastReader.xcworkspace/contents.xcworkspacedata",
+      "sha256": "f7992d3647bf99fa62d5b3a3ac5d97624cab407dc8b79d77feff2780f4305f61"
+    },
+    {
+      "path": "CastReader.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "sha256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542"
+    },
+    {
+      "path": "CastReader.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "sha256": "536105c3cb1194f17b27a44cc86594184b1b67d6044f13dfd4d426a4fa660227"
+    },
+    {
+      "path": "CastReader/AppShortcuts.xcstrings",
+      "sha256": "fc20b7a91f57e02a6c13a6dcfc7a826fcc57d1af204f6a3c5ec39a3c8a1782ba"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AccentColor.colorset/Contents.json",
+      "sha256": "9af65086fa30b49252fae1a1225731691de794f7775af74d71befeb507d12b7c"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "sha256": "8679cb6b38191772699d0eadc381bf8e2e727464c825d7e415294352e80e6ef1"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
+      "sha256": "147e5b9532b28e353f5cb13ff8c6fc7ce4d03d84a2e42d72c71c2377b4cc5aa0"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-20-ipad.png",
+      "sha256": "657b326e4bd581f649f79fb91f07493242dd248aae888ffb198d7e272aa3571a"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-20@2x-ipad.png",
+      "sha256": "f6473d02c0b5a4de0f493bb222a153af71f453f8a64ec1227525a0c998433b68"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-20@2x.png",
+      "sha256": "f6473d02c0b5a4de0f493bb222a153af71f453f8a64ec1227525a0c998433b68"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-20@3x.png",
+      "sha256": "1d1755343fa4e5a8fdbc0c6019a6bdcaef5edbc4b7245273789d918c983bce7f"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-29-ipad.png",
+      "sha256": "23ecf3416ca441526eafee1b3c9f83600012c80ec14f082075ad620857a34f8a"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-29@2x-ipad.png",
+      "sha256": "7149c8103e0f23b65e5f0df8f03faac19ba98a95237fc1eec9bf6bc21ca0cd42"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-29@2x.png",
+      "sha256": "7149c8103e0f23b65e5f0df8f03faac19ba98a95237fc1eec9bf6bc21ca0cd42"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-29@3x.png",
+      "sha256": "e437867ac5624a99750b39e3a63a69e2b518911cce5f6bdbec45024e51358472"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-40-ipad.png",
+      "sha256": "f6473d02c0b5a4de0f493bb222a153af71f453f8a64ec1227525a0c998433b68"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-40@2x-ipad.png",
+      "sha256": "e399f267cd138c867764aefe37581ce7c302cdf6722e2f04b1e29d21bf461aa8"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-40@2x.png",
+      "sha256": "e399f267cd138c867764aefe37581ce7c302cdf6722e2f04b1e29d21bf461aa8"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-40@3x.png",
+      "sha256": "c836cd8c3112929878fb99bac496129a1ccb16cb9c64e639d8f7aeeff7d87dd4"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-60@2x.png",
+      "sha256": "c836cd8c3112929878fb99bac496129a1ccb16cb9c64e639d8f7aeeff7d87dd4"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-60@3x.png",
+      "sha256": "70b43bca70c3144f301153307dc7450b19dea7ead9a71fb1f918cbb1046e7544"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-76.png",
+      "sha256": "2b703465d1572c38d392773bcc35ab9a3e2cbeb9336fa3dbf9bc3ce762ff8905"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-76@2x.png",
+      "sha256": "5d0a74c5c8afb85bbe3804412e36a10aab8d53f9da4bbbfbe64d9313fdd3f962"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-83.5@2x.png",
+      "sha256": "46cce56c52087c2e5b471a47d99b378c7983caf970ce574b5b2889a920274592"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/Contents.json",
+      "sha256": "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/GoogleLogo.imageset/Contents.json",
+      "sha256": "b9447f99118101a61749872539a4942e823c65b1a6fb8d9bfa437a7ee200273b"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/GoogleLogo.imageset/google-logo@1x.png",
+      "sha256": "88c798492cfc177c524086938c7b6fe0a38bb0bffe4a93d5fdf6e0fa35d324a7"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/GoogleLogo.imageset/google-logo@2x.png",
+      "sha256": "2f34066e55412df3483d4bec8db9fb2dee00e4c05dadd520c1a357760bb09792"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/GoogleLogo.imageset/google-logo@3x.png",
+      "sha256": "6b705d4026dc4240081635c68c8761f46d83acc821f8a018d4865408e30e6d59"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/HomeVoiceCloneIllustration.imageset/Contents.json",
+      "sha256": "f8efaa7800d97ac71cd5656755addf3cba3169a64cebc0461b6c322f19e60b84"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/HomeVoiceCloneIllustration.imageset/home-voice-clone-dark.png",
+      "sha256": "e5fee5d9fa666c5a326f57ca759bb5ec36afeb4470a978b22dc143fec2d5ed43"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/HomeVoiceCloneIllustration.imageset/home-voice-clone.png",
+      "sha256": "23e6fc7ae83ed4e25cc9ae28995fde43042abf3adcc18bb3ed100a4b4054dadf"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/HomeVoiceDiscoverIllustration.imageset/Contents.json",
+      "sha256": "be9d8d1605747decbd3cde57428997726d87b6c530155b9d0ed4ab39e5dd4ba5"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/HomeVoiceDiscoverIllustration.imageset/home-voice-discover-dark.png",
+      "sha256": "aeccb1676c3b2901f8c413d093a0666c77472e6089101b5a10f302407b7775a2"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/HomeVoiceDiscoverIllustration.imageset/home-voice-discover.png",
+      "sha256": "0b78eb12db5b754f680264abb4ef7c8fedaa2a822ed5dc82161ce3871d552afe"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/HomeVoiceInviteIllustration.imageset/Contents.json",
+      "sha256": "328b052bf063713598402913399d56fbe5b22061348d15ddc4f3e40af4b3bec2"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/HomeVoiceInviteIllustration.imageset/home-voice-invite-dark.png",
+      "sha256": "571541b236c80ba67a6d7a4b9e7ae3618bf1fc1bd6bbc6500be400c3b3690a0f"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/HomeVoiceInviteIllustration.imageset/home-voice-invite.png",
+      "sha256": "828bb00da0237d38569e653e83c3c93e54f39f65e7dfc0998f8bf3e76dce526f"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/OnboardingReadAloudIllustration.imageset/Contents.json",
+      "sha256": "fc16742e5c0ad53951c0961546e507420c40d0d4687544656d315e35de0db854"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/OnboardingReadAloudIllustration.imageset/onboarding-read-aloud.png",
+      "sha256": "d639277df5076dbc80c98a7fbb9ecf46df4e8f239b10f5721825e8fc3258e845"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/VoiceStoriesEditorial.imageset/Contents.json",
+      "sha256": "2cd8adee516d98d63840d2f1650bf28a92ce45a4f4e45f62506cc9c396877399"
+    },
+    {
+      "path": "CastReader/Assets.xcassets/VoiceStoriesEditorial.imageset/stories.png",
+      "sha256": "bcf9fcb2b7326c764fcab678fbd819a74c4200e2d217a146056fbf6d3abca47a"
+    },
+    {
+      "path": "CastReader/CastReader.entitlements",
+      "sha256": "50f444f41e4b11f3d5d9ad4607c5d8e6da8b4578f9dd9a75f6c1a521c87c4d89"
+    },
+    {
+      "path": "CastReader/CastReaderApp.swift",
+      "sha256": "e30a45f1163e9c6a8101845d6bff0e0804462cc2667ce763c54062944d74ffa5"
+    },
+    {
+      "path": "CastReader/CloudStorage.xcstrings",
+      "sha256": "2e4e19fbfd1d555880cb39cb06931f3b670f901025d4999e3ed7b41e5082e0f9"
+    },
+    {
+      "path": "CastReader/Info.plist",
+      "sha256": "f883f4af4c90f382ded3118e0692f24cb6760efa66d6b8e27f18716864a4015e"
+    },
+    {
+      "path": "CastReader/InfoPlist.xcstrings",
+      "sha256": "6e5774181bb2127bf8695eb5e442176879fb2fe6b2a5bd3299f19103006ab0d6"
+    },
+    {
+      "path": "CastReader/Localizable.xcstrings",
+      "sha256": "afa75ed5dde75b975d2b98104d1c454208b00bde38568ccc337d28fe9e6dd733"
+    },
+    {
+      "path": "CastReader/MSAL-LICENSE.txt",
+      "sha256": "f3fddd32a4ab729d559026c4bb18c06461063e233a8d25f16b2c5d53cf888605"
+    },
+    {
+      "path": "CastReader/Models/AppSettings.swift",
+      "sha256": "af347d6c1e70b55c7c821dc2c535ee3f292b2ccf7412dd7333f6657b3dd3d7cc"
+    },
+    {
+      "path": "CastReader/Models/CloudStorageModels.swift",
+      "sha256": "fe0a64d22db1ce1b433dce0adc13fb8dd33c870a69c0da3f1bdda7b9542e6ce4"
+    },
+    {
+      "path": "CastReader/Models/Document.swift",
+      "sha256": "edee5f7fed8bb49946e69242d64d1b0a5a17987f8d9822c9102f9418f6b86ae3"
+    },
+    {
+      "path": "CastReader/Models/EpubNavigation.swift",
+      "sha256": "419eca134d1012f348b18e2d4bffba7ca8f20c6bc8460a24d56f504a26349688"
+    },
+    {
+      "path": "CastReader/Models/GoogleBooksDebugFixtures.swift",
+      "sha256": "770ab486a3948c5639c15f20b612a47e8977f7cdf6066bd14089fc265dbe59df"
+    },
+    {
+      "path": "CastReader/Models/GoogleBooksModels.swift",
+      "sha256": "efb057766631959a9d9fa90b722cc109eb18684197f5e394af9f680ea799e48c"
+    },
+    {
+      "path": "CastReader/Models/KindleModels.swift",
+      "sha256": "72e76bc3c20018be7fc902b3defdd9e8de644c888a8aa14b2f00ec129989c65f"
+    },
+    {
+      "path": "CastReader/Models/KindleShelfScanPolicy.swift",
+      "sha256": "e563dbbd10c52aac7f50ea58a34a078a63bc79928b59fa3f2f7386823e47536e"
+    },
+    {
+      "path": "CastReader/Models/KindleStorefront.swift",
+      "sha256": "b670a7e7b296724de284b3751298729d930ec7d236feed691b24ca21568b3151"
+    },
+    {
+      "path": "CastReader/Models/KoboBindingFlow.swift",
+      "sha256": "978ee8491ee06802ba26584b179b64c7c402a225ff22cd66edb44a76c5f09f8c"
+    },
+    {
+      "path": "CastReader/Models/KoboModels.swift",
+      "sha256": "8e256fa1890395a5ee9118807e07166b44a06fed44ce6ca8e11956f434756327"
+    },
+    {
+      "path": "CastReader/Models/MarkdownModels.swift",
+      "sha256": "5bbfb7230ac93fc0c3ad19972476b337020ded99720f61b44d5c47965d390e2f"
+    },
+    {
+      "path": "CastReader/Models/OReillyModels.swift",
+      "sha256": "0d7d79ddba295d9d6b6710b5f8c4671554be3ecac69b45a207394aa8404da988"
+    },
+    {
+      "path": "CastReader/Models/PhoneAuthModels.swift",
+      "sha256": "b3cc632639003c761689c1ae0d8d67e480687c436f05c8949d49c223bd99216e"
+    },
+    {
+      "path": "CastReader/Models/Quickread.swift",
+      "sha256": "cb52210d805adb5985bd8978d75c2eada46ed1236c7f29b06ee705cbdad32689"
+    },
+    {
+      "path": "CastReader/Models/ReaderAppearanceSettings.swift",
+      "sha256": "82f87338d6f4d47e6a814d96f1366ed68f2707ba19575819f2205609527a484e"
+    },
+    {
+      "path": "CastReader/Models/ReadingDocument.swift",
+      "sha256": "35c99b829e09079070295933c175bc5b22fd2c413adddd3d3ea98a73ef618c70"
+    },
+    {
+      "path": "CastReader/Models/ReadingResumeCheckpoint.swift",
+      "sha256": "4944ff73652a9238f949868ed7a5d4f08684747d1e8d9b4499d270f37459da4c"
+    },
+    {
+      "path": "CastReader/Models/TTSTimestamp.swift",
+      "sha256": "0f64f3820c435aa040aef22cbfb669dca12218f9520b25b71b60a887852a539e"
+    },
+    {
+      "path": "CastReader/Models/UserAccount.swift",
+      "sha256": "04528d0485ec5e8a482e2c9a7cbd84189da2bb52b4b13cff2c643f0b0ed2d9a3"
+    },
+    {
+      "path": "CastReader/Models/VoiceBrowseData.swift",
+      "sha256": "9b7137fb187487c150b42e621df86d41145d7531b7fc1eb21f9c617ccb4d34c3"
+    },
+    {
+      "path": "CastReader/Models/VoiceBrowserModel.swift",
+      "sha256": "91f6bdd740375a1d9b0b81dd12ca4928d9ab8fb49b07ab06036be233ed6607b4"
+    },
+    {
+      "path": "CastReader/Models/VoiceCatalog.swift",
+      "sha256": "dfc3394e2f34611499d608f0e57505ba1435989fd3a1114d723836e599c6de7a"
+    },
+    {
+      "path": "CastReader/Models/VoiceCloneModels.swift",
+      "sha256": "17e809827fa7f51513e600b856f2b776541a916caa0e66acc455a1e0c415fa96"
+    },
+    {
+      "path": "CastReader/Models/VoiceCloneReferenceModels.swift",
+      "sha256": "11100b858d82fdce3210d8b73d2e08ec2ae0c57673267b4a5a97f6c726e8a337"
+    },
+    {
+      "path": "CastReader/Models/VoiceCloneStore.swift",
+      "sha256": "c1a79a2c86a044609411852cbf560624038a97d88f572571599694bbba2a53c1"
+    },
+    {
+      "path": "CastReader/Models/VoiceDiscovery.swift",
+      "sha256": "684718b9e48021f3fb6aa06d94a052db51d63154815284d6c02ba65b9de26b61"
+    },
+    {
+      "path": "CastReader/Models/WeReadModels.swift",
+      "sha256": "d46ec4e9f305930088b8a33b95e930a2e59e2cdb5a904ab61de900d01c03ce63"
+    },
+    {
+      "path": "CastReader/Models/WebReaderProtocol.swift",
+      "sha256": "9f9da37a882fd0f34c316d7e606483a40d87a66da7808042f56d124edcf488d4"
+    },
+    {
+      "path": "CastReader/Models/YouTubeTranscript.swift",
+      "sha256": "481c07edbf2003044f562e7c0c8fab763317cebcf1f25636bb41bd7ec4b3c21d"
+    },
+    {
+      "path": "CastReader/Preview Content/Preview Assets.xcassets/Contents.json",
+      "sha256": "0fd49ba3c3585c709678e0046a821c3c60685ec7063720d30d3a3448be3a208b"
+    },
+    {
+      "path": "CastReader/PrivacyInfo.xcprivacy",
+      "sha256": "e83745bc386b9f2350c1d0ae592c41e5864b4243a1461bad84d64a7d955e9e63"
+    },
+    {
+      "path": "CastReader/Resources/HomeProCovers/home-pro-alice.jpg",
+      "sha256": "3bc0a559ff180c41f91afe53d8d8afd16f2aea6a9591de98b9786dddc4d00618"
+    },
+    {
+      "path": "CastReader/Resources/HomeProCovers/home-pro-dracula.jpg",
+      "sha256": "88225c56da51d30313277dd33bc5440ca9a663194fc615a8b3141dba1709ec11"
+    },
+    {
+      "path": "CastReader/Resources/HomeProCovers/home-pro-frankenstein.jpg",
+      "sha256": "0a97874ba17cc68ef3b27384a3ed8fd0d65fcd8cdf13da9588fde8623393607e"
+    },
+    {
+      "path": "CastReader/Resources/HomeProCovers/home-pro-moby-dick.jpg",
+      "sha256": "f8503af47edb6673df136206988ca803565a283ad9180b6a047532e3b0712b9d"
+    },
+    {
+      "path": "CastReader/Resources/HomeProCovers/home-pro-pride.jpg",
+      "sha256": "5a9568fc3a3a2c2543a4286c0fa6c4fe5b1fe972f6d9216b6070d05f231d8e6f"
+    },
+    {
+      "path": "CastReader/Services/APIService.swift",
+      "sha256": "086b0bef57ef57d6fe3af711aac827ad354a87c377e41475d04ac45ef8d71090"
+    },
+    {
+      "path": "CastReader/Services/AdAttributionService.swift",
+      "sha256": "b13c0c168f9c15387d6749339dbd4806b1fc83c494b5774534b1af663681e38e"
+    },
+    {
+      "path": "CastReader/Services/AppRegion.swift",
+      "sha256": "001ce994750b185935e87aa25242e1e0ac7f18dc7bb50ad7c5427b4d0e7c0fb5"
+    },
+    {
+      "path": "CastReader/Services/AppReviewPromptManager.swift",
+      "sha256": "bf0e03e42c13e644028f8f34c1e2c3bae59da7046a9cd6a5b0f09eb0767ca116"
+    },
+    {
+      "path": "CastReader/Services/AudioPlayerService.swift",
+      "sha256": "53f3305d4f04fe49e39d8b7e9a08f4dc02bd9cf208fcbbeaeda48ca2b03b0f36"
+    },
+    {
+      "path": "CastReader/Services/AuthService+Apple.swift",
+      "sha256": "d3ebb4d2bf2568db15568f528fc4ac81ab7518612e267eb2742310c9da357fe3"
+    },
+    {
+      "path": "CastReader/Services/AuthService.swift",
+      "sha256": "d05d8e7493e70a116b6846986888d4573ecee63be170ff431a6d3902ca1ab993"
+    },
+    {
+      "path": "CastReader/Services/CloudConnectionStore.swift",
+      "sha256": "12357bd19a855357c77bea5575333e34e31f428bc1fc9262fc4b7d4eeaefb27c"
+    },
+    {
+      "path": "CastReader/Services/CloudHistoryReopenService.swift",
+      "sha256": "4bdfe80db5f6f71b77b3d1cba4899a8f778329c9f099d486c56345f37363ba1d"
+    },
+    {
+      "path": "CastReader/Services/CloudImportCoordinator.swift",
+      "sha256": "24d48fc7f001f1580996185ddf7671adce4dbc5babaf6ef5c850c5a85fb4b2af"
+    },
+    {
+      "path": "CastReader/Services/CloudStorageCenter.swift",
+      "sha256": "d8f505a6893f17262800fd48f73e96060be6f446da5dedd4510661e7c663fd19"
+    },
+    {
+      "path": "CastReader/Services/CloudStorageProvider.swift",
+      "sha256": "52c1918384f34064966ca194cd6e16bd027bbb4ba8cbd3f5b91ad8add9bffd80"
+    },
+    {
+      "path": "CastReader/Services/ContentCatalog.swift",
+      "sha256": "34d198302752b27bd6dce740b715790696b39664bd33657459295e99ee129ea3"
+    },
+    {
+      "path": "CastReader/Services/DropboxProvider.swift",
+      "sha256": "747fb9b6149ee3caacd60c3dbebf334560be97393a20e83424b5cda16d829e4e"
+    },
+    {
+      "path": "CastReader/Services/EpubNativeEngine.swift",
+      "sha256": "816db31c69f9e7fda509ba1cba2989cfda324d67905610a966d165ff3859b051"
+    },
+    {
+      "path": "CastReader/Services/GoogleBooksLibraryStore.swift",
+      "sha256": "ff7d17d7ee7db877b4aa9b01759914e764f3f199fbd71621b75452bcb03c1be3"
+    },
+    {
+      "path": "CastReader/Services/GoogleBooksWebScripts.swift",
+      "sha256": "4cdb7e9aee8651654274fad1cbea936783ef84d1540cc082b9dc9128f5545f17"
+    },
+    {
+      "path": "CastReader/Services/GoogleDriveProvider.swift",
+      "sha256": "f9246711d44326be2cfd60a6c2ca4819918fb604e87bd833860ac7d623fb26f3"
+    },
+    {
+      "path": "CastReader/Services/GrowthLoopConversionCoordinator.swift",
+      "sha256": "20cd69a69d1e9b4846200fa2e094d81d2d2cc308026b2d4c89a7e7911abbdf63"
+    },
+    {
+      "path": "CastReader/Services/HistoryStore.swift",
+      "sha256": "ad54716d8ef62c3e30a636d947f52bcbb13e25987b8a7eb76158efbec445605e"
+    },
+    {
+      "path": "CastReader/Services/ImagePreprocessor.swift",
+      "sha256": "f71a5015ea7f3cd692b434e12279ea10762a8f85389e26025f7d00cede23f5fa"
+    },
+    {
+      "path": "CastReader/Services/KeychainStore.swift",
+      "sha256": "86485b11caa887f5a5fbb14d025c1ad6e3ac448234995bd0421f954da94e5d1c"
+    },
+    {
+      "path": "CastReader/Services/KindleLibraryRecoveryService.swift",
+      "sha256": "5a214c570e7fde18b6274f5316be7db4856ebfde5c88629a379e4ce6eb52bc2d"
+    },
+    {
+      "path": "CastReader/Services/KindleLibraryStore.swift",
+      "sha256": "f1235a188bb944111ec9e9b76518139cb399c772eb994891bcd5597eb7b4b45e"
+    },
+    {
+      "path": "CastReader/Services/KindleOfflineBookStore.swift",
+      "sha256": "ddeec39e21e9750909610edd2c9c312243b8808b1a0fc15d64b2a25553c822a3"
+    },
+    {
+      "path": "CastReader/Services/KindleOfflineDownloadCoordinator.swift",
+      "sha256": "a3c73e3314444b39a042e088814a70b1d9fc4b55cb6858ff889a4e0478ed4e50"
+    },
+    {
+      "path": "CastReader/Services/KindleOfflineOCRService.swift",
+      "sha256": "4e0f039d61deba8ba807587918a11691f45b1848e122babc5ca536f4c342e722"
+    },
+    {
+      "path": "CastReader/Services/KindleOfflinePageStore.swift",
+      "sha256": "24be207b936691ceb8add8af0bec9e48273521964151172f65a8b18d1bf55309"
+    },
+    {
+      "path": "CastReader/Services/KindleOfflineProbeSession.swift",
+      "sha256": "ecac7a9add0742f0c8779f554e97219c56bcfd3a4b13ef0dd9fe7aaa7b8eb9e8"
+    },
+    {
+      "path": "CastReader/Services/KindleOfflineSourceScript.swift",
+      "sha256": "e70dc857a833b828fa519dd278b3d717f566053b000c41a47f931246cc63b6fb"
+    },
+    {
+      "path": "CastReader/Services/KindlePageFlipProbe.swift",
+      "sha256": "6404d4e230f5705fcf067abcea5e156137405e7e4543475a2109e4da15979506"
+    },
+    {
+      "path": "CastReader/Services/KindlePageFlipProbeScript.swift",
+      "sha256": "d53cf62b7b0df2d9cd52a6dea4178c1a0ea0f9b9c0811e6527bf651763192d7d"
+    },
+    {
+      "path": "CastReader/Services/KindleReadingSettingsScript.swift",
+      "sha256": "9eb2fb2022bb2b03d81c486c4ba8c9c9c8d03d7dc3be3e15a6dc71f85f1baea0"
+    },
+    {
+      "path": "CastReader/Services/KindleWebScripts.swift",
+      "sha256": "6f896416c337cb50c2727fce0d23195a65d015f8096aac63a2a7da349aa26b1f"
+    },
+    {
+      "path": "CastReader/Services/KoboLibraryStore.swift",
+      "sha256": "b0b0a4c149978e8a11857d8ff17add540bc36b0823b51ddd9e037bbd4a8f8c5b"
+    },
+    {
+      "path": "CastReader/Services/KoboWebScripts.swift",
+      "sha256": "5620f8af9481f845e9664b01a2d41ca1528efb4efdf3bdb09bc6ee5caa914262"
+    },
+    {
+      "path": "CastReader/Services/LiveWebPlatform.swift",
+      "sha256": "424f86903e5c6262491145cc9f52ecf9a1521430f97c3a03bb5e4a6a7cb9ef44"
+    },
+    {
+      "path": "CastReader/Services/LocalDocumentCache.swift",
+      "sha256": "7ec23ec59f87142a13c7971b691cfa4442a8fd52f414f2289a8ebe247e9c0e53"
+    },
+    {
+      "path": "CastReader/Services/MobileSessionService.swift",
+      "sha256": "c68bf1a1dae32ae2b40a08c88d5481948c21bdbec84450876fb7a4dafc76f039"
+    },
+    {
+      "path": "CastReader/Services/OCRLayoutAnalyzer.swift",
+      "sha256": "8c629ba68135bef3437ca231e1fbf9fd647a764a3730977c66d2a39053a8f00e"
+    },
+    {
+      "path": "CastReader/Services/OCRService.swift",
+      "sha256": "50d840972f9aa639a8868dafdc5abefe0ddb97a75f6012b1b6eb5b8375622ff8"
+    },
+    {
+      "path": "CastReader/Services/OReillyLibraryStore.swift",
+      "sha256": "d7202455c30d2315d3165456ec8c34a787038f469c206843d0809e7900b20b5c"
+    },
+    {
+      "path": "CastReader/Services/OReillyWebScripts.swift",
+      "sha256": "4114a215a8314a377477f989f4597208737d09f41abed580532c33e0793f4119"
+    },
+    {
+      "path": "CastReader/Services/OneDriveProvider.swift",
+      "sha256": "c0eede9fd9c2376fa3ceb73bc69d4c7dbad184ca78c8301e55e9b657f339d4db"
+    },
+    {
+      "path": "CastReader/Services/OwnedAPINetworking.swift",
+      "sha256": "dfc8f02fb9d22fd8006dc8ae13e7f826de64c64d7d97af8ff01806b4758db7ce"
+    },
+    {
+      "path": "CastReader/Services/PhoneAuthService.swift",
+      "sha256": "1b471bf671b6349b0d29d1f7712c8986fd3690c3d167a8081e277375e944f6ad"
+    },
+    {
+      "path": "CastReader/Services/PhotoOCRCache.swift",
+      "sha256": "fc4beb9cd48a60eaa74c460d1db15f7c451d7445b1eb672e33889fab554e8445"
+    },
+    {
+      "path": "CastReader/Services/PlaybackSleepTimer.swift",
+      "sha256": "24fc80fd3198acd084e2cdb61850c81b45a698428417b3613fcd420b736f5b77"
+    },
+    {
+      "path": "CastReader/Services/PresetTTSRequestScheduler.swift",
+      "sha256": "e0fc2d6f48512eee7307d67e9664e7cae890978532db8dd8ef6257d38ad69b26"
+    },
+    {
+      "path": "CastReader/Services/PresetTTSTransport.swift",
+      "sha256": "763620249c6f8a189ef7637d430c23bb19757ec45fae1fda11fdcc28f902aef9"
+    },
+    {
+      "path": "CastReader/Services/ProBackendService.swift",
+      "sha256": "bdfb84a6af5e417c367dcf1822d96932d6fe0cd400bca62a2ad66c4d7f28cde0"
+    },
+    {
+      "path": "CastReader/Services/ProManager.swift",
+      "sha256": "5f2576fd4d74133434258bbeed843191df27c1a39a6d7ac347da07226a7570fc"
+    },
+    {
+      "path": "CastReader/Services/ProductAnalytics.swift",
+      "sha256": "aca9cced6823f57a97007ff70677ffe7a7c07583652575b00fcca5af442c990c"
+    },
+    {
+      "path": "CastReader/Services/QuickReadService.swift",
+      "sha256": "0e53cd46aa92f8fd3a0fb189d40c3745563c0bd88508d5ca6074d269e7b9134f"
+    },
+    {
+      "path": "CastReader/Services/QuotaManager.swift",
+      "sha256": "8322417479a74c529515d3711a01c51bc92999a62e983f9be2d5e0ee15f54a0a"
+    },
+    {
+      "path": "CastReader/Services/ReaderWebAppearanceCenter.swift",
+      "sha256": "98233da27b6ba835792174eefe15228f6afcc2daaf3eda221bd2e98dc083ed42"
+    },
+    {
+      "path": "CastReader/Services/ResumeCoordinator.swift",
+      "sha256": "a3c6c9759c41573613fad314f194fc91d5ceeaf4b51e2edcfeb1ca95213c98a4"
+    },
+    {
+      "path": "CastReader/Services/ResumeReminderManager.swift",
+      "sha256": "e9023a7b13f132ae32c34ac787cea88a08acbde4124cbae9ea8ad9a412793ccd"
+    },
+    {
+      "path": "CastReader/Services/ServiceRouting.swift",
+      "sha256": "7022ed87893518bf2958d20f7f5ec0433ab11b0281f81cf393dba06b22110c4e"
+    },
+    {
+      "path": "CastReader/Services/ShareInbox.swift",
+      "sha256": "8ee73ca64fce7d55e35c6967d586738ebf70b39a93f4f787b16595102a90c528"
+    },
+    {
+      "path": "CastReader/Services/StableDeviceID.swift",
+      "sha256": "17131aa83b668d8436f3fda0feb00bd5a6d7024d59fbe812b67c85816989705f"
+    },
+    {
+      "path": "CastReader/Services/SystemSpeechPlaybackService.swift",
+      "sha256": "94916010554afec09526f5e50a21764fa6a44b45ce48c3869fa074474e6d5070"
+    },
+    {
+      "path": "CastReader/Services/TTSEndpoint.swift",
+      "sha256": "438165893cbe4fd2a498bd736f5a9286dc600081a649f64f1600c4924561752a"
+    },
+    {
+      "path": "CastReader/Services/TTSService.swift",
+      "sha256": "710df30869eba935a7eef83fe1782c04aaafe0afd4437feda92cb71419d5440f"
+    },
+    {
+      "path": "CastReader/Services/VisitorService.swift",
+      "sha256": "4571404e126c817e38d8dbd83ea668d4669051c13b8b8c174c20b4a3f0e15471"
+    },
+    {
+      "path": "CastReader/Services/VoiceCloneRecorder.swift",
+      "sha256": "3ebc263ea8e9544256ac0b558a7ee5e5be11250942b956850f50e3de15dca728"
+    },
+    {
+      "path": "CastReader/Services/VoiceCloneReferencePreprocessor.swift",
+      "sha256": "1bfe25c5360a259f5b54edeeac2dc26868674c916d110be53914c1c2fbdf1909"
+    },
+    {
+      "path": "CastReader/Services/VoiceCloneService.swift",
+      "sha256": "b307618b9e7cd0e79f332b228125a0a3e8744a25cb8766cd4d5c8fbf781118cf"
+    },
+    {
+      "path": "CastReader/Services/VoiceSampleCache.swift",
+      "sha256": "67cb45e1ff803d7d40a7bc7d2d3ab4bbe28f8e1cdd1e8f3a869f5eb2148b2ef6"
+    },
+    {
+      "path": "CastReader/Services/WeReadLibraryStore.swift",
+      "sha256": "4c9be9d9b9ecf46c7495ba24d785ca3d4bedf1e9f149f44cba17cadd567952fb"
+    },
+    {
+      "path": "CastReader/Services/WeReadOpeningPlayback.swift",
+      "sha256": "2468e78aff4194f6da49cb3654ff35b089e74caba5439ae4a2314bd3808c7205"
+    },
+    {
+      "path": "CastReader/Services/WeReadWebScripts.swift",
+      "sha256": "95b517a77df476f38930c3984a6897e49af0f46d91e0374a42b6f829c5189f15"
+    },
+    {
+      "path": "CastReader/Services/WebReaderBridge.swift",
+      "sha256": "a1bc2bc901d89620596b71e3630499492a433a0a136ccb2a976a64c65888a31f"
+    },
+    {
+      "path": "CastReader/Services/YouTubeCacheStore.swift",
+      "sha256": "e77882cbfd7ba4df525182574412425c4b1fa16af6cc9ad7ab7c8d95d87f9bab"
+    },
+    {
+      "path": "CastReader/Services/YouTubeCaptionLanguageSwitcher.swift",
+      "sha256": "cf26598635515c3aa03cc9d7de4475aff2291e2b423ef9b0075ebe54591978b8"
+    },
+    {
+      "path": "CastReader/Services/YouTubeRouteCenter.swift",
+      "sha256": "3bdd2d2558e5aa3fef46e9cf51bd40661fac7df6063bc6f57153b8c59bf6c730"
+    },
+    {
+      "path": "CastReader/Services/YouTubeTranscriptService.swift",
+      "sha256": "f51f5d7516472ad1baf1d7d7aaae1fe6e38b9c02f8a9cc14925ad0c3ffff50fe"
+    },
+    {
+      "path": "CastReader/Services/YouTubeWebScripts.swift",
+      "sha256": "c7cffce968d5233e816407f2242823ad030727fed22247763128bb2e8b53bb8e"
+    },
+    {
+      "path": "CastReader/SystemIntegration/CastReaderAppIntents.swift",
+      "sha256": "d0a6260f50d0429dddeea61301d8e75924dd5fc660c24a8719982026f1d1b693"
+    },
+    {
+      "path": "CastReader/SystemIntegration/SystemIntegrationModels.swift",
+      "sha256": "40e5bc132bdbc2388cc16ff960eafab677d34396e8f39a7dbad69c2a284eddff"
+    },
+    {
+      "path": "CastReader/SystemIntegration/SystemIntegrationStores.swift",
+      "sha256": "4f5e53f1332e79a52f1fe4916df95e303ac50d0c2ec892202a8069775c9ac242"
+    },
+    {
+      "path": "CastReader/Utils/AppTheme.swift",
+      "sha256": "001331c5be8ade28e29ac334944f4ffab9627205a8203a84ed4fb1bf23afd9ef"
+    },
+    {
+      "path": "CastReader/Utils/Constants.swift",
+      "sha256": "1cad604de16ed4b5b37eed4b6c9a14cab5fe44444f9c2a11caf778bd48979c0a"
+    },
+    {
+      "path": "CastReader/Utils/DocumentBuilder.swift",
+      "sha256": "cfbe3326e0096ebf0173bbe78a15a58f930aaf7f7805e9802f645da17f065ec9"
+    },
+    {
+      "path": "CastReader/Utils/DocumentImportPipeline.swift",
+      "sha256": "48b69cac529c0f07d1afaedb2047356b7714c4cf339055ff4eecd66f9e1b4c37"
+    },
+    {
+      "path": "CastReader/Utils/EpubContentParser.swift",
+      "sha256": "8186da2b8abcb85904e814f2bc29f397f6c7a23e7c8647f8da620b7001d2069e"
+    },
+    {
+      "path": "CastReader/Utils/Extensions.swift",
+      "sha256": "88ff7aa81cc5c1fb1ba1eb5027b3bd6b9726dbd34f6b40b3770c3b22da2b9fa4"
+    },
+    {
+      "path": "CastReader/Utils/HandwrittenMark.swift",
+      "sha256": "7451c97f608d702abd79d2b91837d60b28f9509b25d09ad31957e64916a458ae"
+    },
+    {
+      "path": "CastReader/Utils/HtmlParser.swift",
+      "sha256": "42955fc16da055988c8ad7e63f6a37520a8591de91fa9bce984895ff443e026e"
+    },
+    {
+      "path": "CastReader/Utils/KindleFootnoteSpeech.swift",
+      "sha256": "f4a724fa1d05f3e087a38c49ad5786d146aba04d3437f66322e3dbceb4efc45b"
+    },
+    {
+      "path": "CastReader/Utils/LanguageDetector.swift",
+      "sha256": "65abadae5e6cb059dd88fedf57687d644f0916455d15d924615445c4c1835d72"
+    },
+    {
+      "path": "CastReader/Utils/MarkAnchoring.swift",
+      "sha256": "f60329f81ea12c059dd7cf22eff21bbaec1ce9634b742a61f62b3c4bf8eadf14"
+    },
+    {
+      "path": "CastReader/Utils/MarkdownParser.swift",
+      "sha256": "6df7505c9effa2488d2c3d6d92f4e4375eef08a93434f9fe51b66d4063b0c04b"
+    },
+    {
+      "path": "CastReader/Utils/NetworkReachability.swift",
+      "sha256": "067b54e9961fbaa9a780caa550ce641eea5415d3b310c202cc0fb5febd6b62bf"
+    },
+    {
+      "path": "CastReader/Utils/OCRTokenGeometryCoverage.swift",
+      "sha256": "6d7d21dd4a930c5fb2de56771db7000b6582daadea4c2eb36b9eaefda16018be"
+    },
+    {
+      "path": "CastReader/Utils/OCRWordAligner.swift",
+      "sha256": "6cfcb5ea0275d00e2fc4fa5ba85191ae7b51875a292c7a862cf67397b20f0a77"
+    },
+    {
+      "path": "CastReader/Utils/OCRWordInkBounds.swift",
+      "sha256": "c379a89bdb91e017ff2658dfaffbc4928fd7ce4c61d6f2432cce89e330c9fb15"
+    },
+    {
+      "path": "CastReader/Utils/ReadingAnchorResolver.swift",
+      "sha256": "a008b97d25cbf5927fc749331aef20b0887e40ccba5c39b70d729dcbfc5433fd"
+    },
+    {
+      "path": "CastReader/Utils/ReadingLanguage.swift",
+      "sha256": "c3cb5a7caffc2f642d05b93ee1af2b873b76ad1f70f26f19192737a74db9e596"
+    },
+    {
+      "path": "CastReader/Utils/SeededGenerator.swift",
+      "sha256": "0be26be79ba8f1781e131351b1d63c27ffff76c3ca099fe386dca67aa5f9cb91"
+    },
+    {
+      "path": "CastReader/Utils/UnshippedIntegrationStubs.swift",
+      "sha256": "2da28044479cec545f82ce7f0826b8a170089125efb9a0bd4ffb7e5f72e03fad"
+    },
+    {
+      "path": "CastReader/ViewModels/CaptureFlowViewModel.swift",
+      "sha256": "1f45aa1e714d078afb0cac0cb13db7c05556811ec209438bc3632a99547a33bd"
+    },
+    {
+      "path": "CastReader/ViewModels/ClipboardImportViewModel.swift",
+      "sha256": "b42567391ef7eb7874f1a0c808bd0e47d9f36a856449aaedd7ba3d83e7de5a5c"
+    },
+    {
+      "path": "CastReader/ViewModels/CloudStorageFlowViewModel.swift",
+      "sha256": "743881aab2171ba1b3c3d3e823db4fc5f4986af259b9fefe2716c98c752a9ec4"
+    },
+    {
+      "path": "CastReader/ViewModels/ExplainViewModel.swift",
+      "sha256": "0c2bc5f0d1ec1c5750568c83af70f895af443c798f59ef73d778dbab785731bb"
+    },
+    {
+      "path": "CastReader/ViewModels/ImportViewModel.swift",
+      "sha256": "0d1ecd3ed5b2dddc0217c9cdc02b9f6825270d31d5fa2173aa576dee58ac86bc"
+    },
+    {
+      "path": "CastReader/ViewModels/LibraryViewModel.swift",
+      "sha256": "32a4676defac1cb85a8924079ffd61fd55d22eb24b53d2129f4a46b15eb5a8d8"
+    },
+    {
+      "path": "CastReader/ViewModels/PlayerCoordinator.swift",
+      "sha256": "f5b0e644fc691c5ea2821c586973fc2848c81c5165d8a5cb3737efb4b33ea1a1"
+    },
+    {
+      "path": "CastReader/ViewModels/ReadAloudViewModel.swift",
+      "sha256": "19c3b334886d06114f1025133ac9d82cc631c84e0f8029e794822173f0c90d37"
+    },
+    {
+      "path": "CastReader/ViewModels/VoiceCloneAudioUploadViewModel.swift",
+      "sha256": "314b0e583ccc7ce8ba459cf68814bcb1fb25a76807b45212fac65199bcf068f6"
+    },
+    {
+      "path": "CastReader/Views/Auth/AppleSignInButton.swift",
+      "sha256": "61ab63e529b999745b3f7d78d99ae77546a92400787e733d5fea84a351e5a8e7"
+    },
+    {
+      "path": "CastReader/Views/Auth/LastUsedBubble.swift",
+      "sha256": "0e55b30a7f8735a99593dc4cdb2a50cfa28161ac4d6d7e376948336dba865086"
+    },
+    {
+      "path": "CastReader/Views/Auth/LoginView.swift",
+      "sha256": "3cdb852924dae27bcdc53abef91eab7629daefac1151fa6124eb3ab2ae127dc6"
+    },
+    {
+      "path": "CastReader/Views/Auth/PhoneSignInView.swift",
+      "sha256": "78f86dbc7122aaf7b5530270fe2bccc2d702c0432baeb219aad6db88a5641496"
+    },
+    {
+      "path": "CastReader/Views/Capture/CameraView.swift",
+      "sha256": "c5d0254c1916c2b34a67a7e00d9d018ca16fb26cd6eed470604a1224f6171702"
+    },
+    {
+      "path": "CastReader/Views/Capture/DocumentScannerView.swift",
+      "sha256": "44d69c461b492b7c05959612570befe38de8b543b1cf5f658b5078852c98336b"
+    },
+    {
+      "path": "CastReader/Views/CloudStorage/CloudStorageViews.swift",
+      "sha256": "11993dc13ca1858cddde131dedbaa4e36a6411dcf7b7267d9c8525ba93489b2a"
+    },
+    {
+      "path": "CastReader/Views/CoverThumbnail.swift",
+      "sha256": "a7c72f9d20f37cca82147db097c93d4bf97bc4d87d216ee3abeb0566382e11e0"
+    },
+    {
+      "path": "CastReader/Views/Explain/ExplainControlBar.swift",
+      "sha256": "855dfa578f845bc0bccfc173b0d5ebd7427afd3cfa1dc711c0aa5413cd15f843"
+    },
+    {
+      "path": "CastReader/Views/GoogleBooks/GoogleBooksLibraryViews.swift",
+      "sha256": "f98007523c87945d7468cd3fab3c2b99a37ab7fad2d71214f0fc0f4f3e792cfe"
+    },
+    {
+      "path": "CastReader/Views/Home/ClipboardPromptView.swift",
+      "sha256": "12133c0fd52de4fda04654b58f3e3f601e318886993424fc748f34d91eb46e3f"
+    },
+    {
+      "path": "CastReader/Views/Home/HomeProUpsellCard.swift",
+      "sha256": "942047f6469021ad02230646984e7b2a75c08c5b7f2504d76125c7f1ea6f77f8"
+    },
+    {
+      "path": "CastReader/Views/Home/HomeView.swift",
+      "sha256": "9edb5211a45fbb8fed355fe97c0a48ff07c7780fd9178a1377c708ef281c6ce4"
+    },
+    {
+      "path": "CastReader/Views/Home/StudyBoostView.swift",
+      "sha256": "a2d7cd36ccd158a317ff173141f846d0a5231058bb8ad83900b25da30c8a36ba"
+    },
+    {
+      "path": "CastReader/Views/Home/WeReadDesktopProbeView.swift",
+      "sha256": "e32887ce95e84dcdbc66fc482a9c31eb5dd92ee67b176425e9064d35dfc24f57"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleBookView.swift",
+      "sha256": "29f490f27e86fc6ac3db88eb6c36b74f744183b34cffaa019a6f2f16ad426d99"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleFirstLaunchFlowView.swift",
+      "sha256": "7050c2cced98f51caab7f18fa6577286075e5f23da8d3c831318a45967929137"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleHomeSection.swift",
+      "sha256": "7fb77704bb9bad36f39cacf3aeb954ce5191456bcd96bc1b3584906fc0b7374d"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleLibraryConnectView.swift",
+      "sha256": "a81742922cd29c798c57fd7ccbc856b74b7789cdc2eb8473c2dbd4c9d15608e3"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleLibraryView.swift",
+      "sha256": "3c4c570957450da66501d01940c910194286ad5afb68e611e63d5f269cd6f0f4"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineDiagnosticsView.swift",
+      "sha256": "df90f477f4fecee9a7612e5743caf7bde4ef706926eb1f87b24b9b00dcca9eaf"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineDownloadView.swift",
+      "sha256": "21d913320ab58241f43bbe26ba1bbdd761f54abfe8781e19739d43523400aa35"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineFlowFixture.swift",
+      "sha256": "a32e33f3418ae290e724fe483fb46ffd9e5c555df2883f078a9989c79e0bae94"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineLibraryScreen.swift",
+      "sha256": "9bad2ba59cdc64f7ca6daaf8b7309fba8a74585f34027d619517c78801429d36"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineLibraryView.swift",
+      "sha256": "7b120509a1c885afb665c5410477e8b23cf5e86ac1094b5196f9d08385023fec"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflinePageListView.swift",
+      "sha256": "dbbacd2668e3795f28fe6f0b57c751db61e51875ef7926986797bbe39adc3550"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflinePlaybackCenter.swift",
+      "sha256": "558c1a2814686606512f73b8cc625f903aa1570d8181b92b7fc5d47f68088a5a"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineReaderView.swift",
+      "sha256": "2c1e061d6132eff0a5a095954fab50440052b57e2c1d49ee2d736f479c8f1ca6"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleReadingSettingsView.swift",
+      "sha256": "c2da48baeb99ed20438f40bcc795c3ee76368b55364d01dd31963f8ab53546a8"
+    },
+    {
+      "path": "CastReader/Views/Kindle/OfflineDownloadsEntryCard.swift",
+      "sha256": "821bcfb2281a4a78c831e62a715b55a39330af4320005bfc47f487451fe219fd"
+    },
+    {
+      "path": "CastReader/Views/Kobo/KoboLibraryViews.swift",
+      "sha256": "8169a4d8744641952810e4ca1c890a8c1402c113768f0a1a7687c2485271e531"
+    },
+    {
+      "path": "CastReader/Views/Library/BoundLibraryOnboardingComponents.swift",
+      "sha256": "04f29f7b236165b6304f3e13b33c26307b3c3a5aaf28d127b648eb33a39c0ff3"
+    },
+    {
+      "path": "CastReader/Views/Library/BoundLibrarySourcesView.swift",
+      "sha256": "5325fb386767e5a4e1b81f50dcd94c28eafed86655e588237b4bb50b30634f79"
+    },
+    {
+      "path": "CastReader/Views/Library/LibraryView.swift",
+      "sha256": "ade3c1352c86b700ae847065edc98f1f2a1df5a4f99870093c8446d2fae0e159"
+    },
+    {
+      "path": "CastReader/Views/MainTabView.swift",
+      "sha256": "3fd5377cafbd2d9c2553578c092b8c8a94324e6369142d157ac99b8fd99b04c8"
+    },
+    {
+      "path": "CastReader/Views/OReilly/OReillyLibraryViews.swift",
+      "sha256": "90f8a069080ff984a5ccf60b03ecf3916ec9948563714207693cd37433c9f5cf"
+    },
+    {
+      "path": "CastReader/Views/Paywall/GrowthTrialOfferOverlay.swift",
+      "sha256": "c1b9e3ac3c535d4b228a24db3a62d5a76520f103fd15de2f3fe406149e8be42a"
+    },
+    {
+      "path": "CastReader/Views/Paywall/PaywallView.swift",
+      "sha256": "f0d011e55a667933bbb18b729dfb62695d02de3ea4deb78670fa3e418f878ccc"
+    },
+    {
+      "path": "CastReader/Views/Paywall/UpgradeView.swift",
+      "sha256": "f8c950d69fa00b3613d31bc7f99f567bde4362f115269f25dc534d1ce69ab7dd"
+    },
+    {
+      "path": "CastReader/Views/Player/MiniPlayerView.swift",
+      "sha256": "c315f05849bfbb1c58835ca7b30222a37a5bd2544e7dc3aca7f20f1e00499434"
+    },
+    {
+      "path": "CastReader/Views/Reader/EpubTOCSheet.swift",
+      "sha256": "321b318045c2d1d5dba76649449a23ffe00a5da2f70f62583b2052522e42e7a9"
+    },
+    {
+      "path": "CastReader/Views/Reader/KindleReaderView.swift",
+      "sha256": "71299cd8fc71949ff2d6414a0d2a0e46df5eeb9351949392c1e769a1149edd84"
+    },
+    {
+      "path": "CastReader/Views/Reader/MarkOverlay.swift",
+      "sha256": "baa554752e8f342e8659424196523be4c59329da8d0dc2a7f6b67733b1aedd79"
+    },
+    {
+      "path": "CastReader/Views/Reader/PDFReaderView.swift",
+      "sha256": "354eb9b92e0d25d102af0fa89fe5090419a6dc0d8f0ec6e90832db23425c2c54"
+    },
+    {
+      "path": "CastReader/Views/Reader/PhotoReaderCanvas.swift",
+      "sha256": "a22313434dda59487e6adff49645383ac9b9244539ca0684df59d4acf893a49b"
+    },
+    {
+      "path": "CastReader/Views/Reader/PhotoRegionPicker.swift",
+      "sha256": "ea5d26b4fc35f84cc23215d79daaeae2cef15375c3af2587372304f4b1581008"
+    },
+    {
+      "path": "CastReader/Views/Reader/ReaderHostView.swift",
+      "sha256": "1440c3cbf2b0c20c9421a04119695990467eeb87ef72bbe7f2acc3be78950355"
+    },
+    {
+      "path": "CastReader/Views/Reader/ReaderMoreButton.swift",
+      "sha256": "69f10f6b3533ce36e8ba6887f28ebc136714e33142c26e5121583774e227d92e"
+    },
+    {
+      "path": "CastReader/Views/Reader/ReaderTextView.swift",
+      "sha256": "8f07ebc9e3a56daaef00d280b313d6232fea9d2a97dcbc28a7ae8c6fb503ba49"
+    },
+    {
+      "path": "CastReader/Views/Reader/ReadingResumeMVPFixture.swift",
+      "sha256": "24b1d833009778e89cf94cdfd8657f24c612c36e62446b3a2a702cc528cfb37b"
+    },
+    {
+      "path": "CastReader/Views/Reader/ReadingResumeScenarioFixture.swift",
+      "sha256": "a79931621320b40f1906a77070957f1b77d0449c2bb041f07521d2f99e9493d5"
+    },
+    {
+      "path": "CastReader/Views/Reader/SleepTimerAcceptanceFixture.swift",
+      "sha256": "87bc9070f8ad0a29a5277bf3fc807e205791689c40d03da930708b7075d33c7f"
+    },
+    {
+      "path": "CastReader/Views/Reader/TextReaderView.swift",
+      "sha256": "93f20394a368e7dad36edbca07bcff84ce83b609662a6973925960c76030bd6d"
+    },
+    {
+      "path": "CastReader/Views/Reader/WebReaderView.swift",
+      "sha256": "9cb57a59677878c9a994ee73f222e84f0ed6a96719e14e76673555f60379df69"
+    },
+    {
+      "path": "CastReader/Views/Settings/SettingsView.swift",
+      "sha256": "006fb98198c5f878dd7838b0f968e231156946315148072141dc3aa4632d1432"
+    },
+    {
+      "path": "CastReader/Views/Settings/VoiceAssetImage.swift",
+      "sha256": "e0408b3eb9c64d944dbf4f4fa0dedeae8c1ac6a7a8a69601946e4e99145bb45c"
+    },
+    {
+      "path": "CastReader/Views/Settings/VoiceBrowserView.swift",
+      "sha256": "c0f7f585c6dc937b5d0df0f95568d18696ccef64a0d720b432e8640d2d2ae8ae"
+    },
+    {
+      "path": "CastReader/Views/Settings/VoiceCloneCreatedView.swift",
+      "sha256": "5457c46fb9c216d349d45e798dcb1e220ea01448a6eb5078f04d46618342b169"
+    },
+    {
+      "path": "CastReader/Views/Settings/VoiceDiscoveryView.swift",
+      "sha256": "a4687fe14bfbbd642900c35f9e004e34b40303ee1e7dad384edf479569481027"
+    },
+    {
+      "path": "CastReader/Views/Settings/VoiceGenerationQuotaSummary.swift",
+      "sha256": "be6fdee4f99292b477bc4e9717597cfb72415f88955a0f661acbe4e178fd494e"
+    },
+    {
+      "path": "CastReader/Views/Shared/BookCoverImage.swift",
+      "sha256": "bc09031e9a50a0489af97e53e515833043aaefa2f22827790f9c71fd2826f55d"
+    },
+    {
+      "path": "CastReader/Views/Shared/LoadingView.swift",
+      "sha256": "d9911cb3bf32ffb9faa9610c1d4345cfa691b2057c1946649e464409ff87b4f2"
+    },
+    {
+      "path": "CastReader/Views/WeRead/WeReadFirstLaunchFlowView.swift",
+      "sha256": "d2cff0781051fad2cd9e924e9d18b362752bbd71ed295271a0acaaff6e3119e2"
+    },
+    {
+      "path": "CastReader/Views/WeRead/WeReadLibraryViews.swift",
+      "sha256": "de2160865f328b98dce36f0bbdabf316b0324aacb35ad79c7087a1506d5264bf"
+    },
+    {
+      "path": "CastReader/Views/WeRead/WeReadOnboardingBookRecommendation.swift",
+      "sha256": "68ff95c3290b0ce5d4c058f5d841ba1ce88d7faa57af9ac3445a1ae623cdae6c"
+    },
+    {
+      "path": "CastReader/Views/YouTube/YouTubeCaptionLanguagePanel.swift",
+      "sha256": "1653feff8cf412f6fb883ea5ec1d54ee61db94fb0d41f458f9242e84a0ca5407"
+    },
+    {
+      "path": "CastReader/Views/YouTube/YouTubeExtractionOverlay.swift",
+      "sha256": "ed95243524f1b7e43e78e458e335f975e88a52dc0ea173a2a3fe38491e4b9bcc"
+    },
+    {
+      "path": "CastReader/Views/YouTube/YouTubeHomeView.swift",
+      "sha256": "af7e00d6250c7d6e8c8151adcecd3cbb323de9b4bd5f0d055b2138d6fdab27df"
+    },
+    {
+      "path": "CastReader/Views/YouTube/YouTubeListenView.swift",
+      "sha256": "f87794d43dfb686ff692e4ef994bb08e1e8cf809e09bf43cf36e052782afb5aa"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/ocr.html",
+      "sha256": "28371bfac5856401ba7a7d51010b1f7f25c9dd310a244683e501d9b6f68a59d4"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/ocr.js",
+      "sha256": "22baf0e154697c23729cd7f6a43aea8145403f30f636b6829336acac50aae6da"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-lib.js",
+      "sha256": "9b3f1139a0464127e5715230ad0cc158c1730380fac99c893fb40c58733d37fa"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/chi_sim.traineddata",
+      "sha256": "a5fcb6f0db1e1d6d8522f39db4e848f05984669172e584e8d76b6b3141e1f730"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/deu.traineddata",
+      "sha256": "19d219bbb6672c869d20a9636c6816a81eb9a71796cb93ebe0cb1530e2cdb22d"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/eng.traineddata",
+      "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/fra.traineddata",
+      "sha256": "ced037562e8c80c13122dece28dd477d399af80911a28791a66a63ac1e3445ca"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/hin.traineddata",
+      "sha256": "4c73ffc59d497c186b19d1e90f5d721d678ea6b2e277b719bee4e2af12271825"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/ita.traineddata",
+      "sha256": "b8f89e1e785118dac4d51ae042c029a64edb5c3ee42ef73027a6d412748d8827"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/jpn.traineddata",
+      "sha256": "1f5de9236d2e85f5fdf4b3c500f2d4926f8d9449f28f5394472d9e8d83b91b4d"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/jpn_vert.traineddata",
+      "sha256": "bf1e2640954691797e2dc14f38533e601b59ee37958698ae0f0b81dc6f09c71b"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/por.traineddata",
+      "sha256": "c4932b937207a9514b7514d518b931a99938c02a28a5a5a553f8599ed58b7deb"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/spa.traineddata",
+      "sha256": "6f2e04d02774a18f01bed44b1111f2cd7f3ba7ac9dc4373cd3f898a40ea6b464"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/tesseract-core-fallback.wasm",
+      "sha256": "94d9ce820d31a75814d0b4e5d099405b8738b11633bcef8c0d078a53b2b1ded2"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/tesseract-wasm/tesseract-core.wasm",
+      "sha256": "3822dc6ee83d507f2bd2f83b97a3dd5dabf3ea71a9836d951602c9054615137e"
+    },
+    {
+      "path": "CastReader/WebAssets/KindleOCR/vertical-japanese-ocr.js",
+      "sha256": "c2099be16e2ecf43025b67518d979fb0de4296b9bb8bd02a55b81ed60af1d378"
+    },
+    {
+      "path": "CastReader/WebAssets/YouTube/youtube-bridge.js",
+      "sha256": "877af9a72117d6c2afd0e303f74fe4bb03f5172e7c90ad9ac3788aeb77add02c"
+    },
+    {
+      "path": "CastReader/WebAssets/ao3-bundle.js",
+      "sha256": "11bfe6c4ef06f8fa58cd66cca240748f5c48797d7fcff22c2cdfdfc62298e63b"
+    },
+    {
+      "path": "CastReader/WebAssets/bundle.js",
+      "sha256": "3b281ed480c60d82192b911bacee3cd8258487de2e899dca226f435520c920bc"
+    }
+  ],
+  "signatureVerified": true,
+  "releaseFixtureScanPassed": true,
+  "uiRegression": "French scroll repeated 3 times passed; 8 local voice UI cases passed; live Japanese/French preview passed; real 9-language screenshot capture passed"
+}

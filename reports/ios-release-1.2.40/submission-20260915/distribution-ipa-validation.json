@@ -1,0 +1,14 @@
+{
+  "ipa": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/build/CastReader-1.2.40-62-AppStore.ipa",
+  "sha256": "b41caa6b6fb71453cd585a9d5307a7f747ce84c5a92634431bdaf30b62e6167d",
+  "bytes": 42704409,
+  "appleDistributionSigned": true,
+  "signatureVerified": true,
+  "getTaskAllow": false,
+  "provisioningType": "App Store",
+  "teamIdentifier": [
+    "KQW6UNZE8J"
+  ],
+  "profileExpiration": "2027-06-29 03:50:37",
+  "bundleVersion": "62"
+}

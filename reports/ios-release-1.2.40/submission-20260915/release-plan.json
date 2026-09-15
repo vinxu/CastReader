@@ -1,0 +1,37 @@
+{
+  "version": "1.2.40",
+  "build": "62",
+  "applicationSource": "5c45b75",
+  "archive": "build/CastReader-1.2.40-62.xcarchive",
+  "supersededUnuploadedBuild": "61",
+  "versionId": "2e51ccae-4997-4a85-a3a3-541857cbddc8",
+  "pendingAppInfoId": "8a0b4ca4-06b9-45ce-b612-fe4e9c633a41",
+  "baselineAppInfoId": "a55cc93e-30b0-4f98-86e1-c778d1ec47b1",
+  "releaseType": "AFTER_APPROVAL",
+  "titlePolicy": "preserve",
+  "status": "submitted_waiting_for_review",
+  "uploadError": {
+    "phase": "Xcode exportArchive account authentication",
+    "appleResultCode": 1100,
+    "message": "Your session has expired. Please log in.",
+    "uploaded": false,
+    "resolved": "User reauthenticated Xcode; official export/upload succeeded"
+  },
+  "buildId": "595f5ccb-14fe-4b06-9b4c-d19dfdf318d9",
+  "uploaded": true,
+  "buildProcessingState": "VALID",
+  "buildAudienceType": "APP_STORE_ELIGIBLE",
+  "reviewSubmissionId": "c11f8320-d3dc-472e-8c88-927a3458efc0",
+  "reviewSubmissionState": "WAITING_FOR_REVIEW",
+  "versionState": "WAITING_FOR_REVIEW",
+  "submittedDate": "2026-09-15T18:31:38.049Z",
+  "submittedDateAsiaShanghai": "2026-09-16T02:31:38.049+08:00",
+  "screenshotsComplete": 45,
+  "screenshotLocales": 9,
+  "screenshotFallbackLocales": [
+    "zh-Hant",
+    "es-MX"
+  ],
+  "metadataLocales": 11,
+  "archiveIPA": "build/CastReader-1.2.40-62-AppStore.ipa"
+}

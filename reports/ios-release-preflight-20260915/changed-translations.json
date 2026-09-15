@@ -1,0 +1,4526 @@
+{
+  "目录由正文结构生成": {
+    "localizations": {
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Aus der Dokumentstruktur erstelltes Inhaltsverzeichnis"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Contents generated from document structure"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Índice generado a partir de la estructura del documento"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sommaire généré à partir de la structure du document"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "दस्तावेज़ की संरचना से बनाई गई विषयसूची"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Indice generato dalla struttura del documento"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "本文の構成から生成した目次"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Índice gerado a partir da estrutura do documento"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "目录由正文结构生成"
+        }
+      }
+    }
+  },
+  "此目录位置无法打开": {
+    "localizations": {
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Diese Position ist nicht verfügbar"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "This location is unavailable"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Esta ubicación no está disponible"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cet emplacement est indisponible"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "यह स्थान उपलब्ध नहीं है"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Questa posizione non è disponibile"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "この位置は開けません"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Este local não está disponível"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "此目录位置无法打开"
+        }
+      }
+    }
+  },
+  "搜索目录": {
+    "localizations": {
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Inhaltsverzeichnis durchsuchen"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Search contents"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Buscar en el índice"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Rechercher dans le sommaire"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "विषयसूची खोजें"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cerca nell’indice"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "目次を検索"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pesquisar no índice"
+        }
+      },
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "搜索目录"
+        }
+      }
+    }
+  },
+  "朋友的声音": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "朋友的声音"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Friends’ voices"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "友達の声"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voces de amigos"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voix de mes proches"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stimmen von Freunden"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vozes de amigos"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voci degli amici"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "दोस्तों की आवाज़ें"
+        }
+      }
+    }
+  },
+  "你可能喜欢": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "你可能喜欢"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "You might like"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "あなたにおすすめ"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Te podrían gustar"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vous pourriez aimer"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Das könnte dir gefallen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Você pode gostar"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Potrebbero piacerti"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "आपको पसंद आ सकती हैं"
+        }
+      }
+    }
+  },
+  "查看朋友的声音": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "查看朋友的声音"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Open friends’ voices"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "友達の声を見る"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ver voces de amigos"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voir les voix de mes proches"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stimmen von Freunden öffnen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ver vozes de amigos"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vedi le voci degli amici"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "दोस्तों की आवाज़ें देखें"
+        }
+      }
+    }
+  },
+  "查看我的声音": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "查看我的声音"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Open my voices"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "自分の声を見る"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ver mis voces"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voir mes voix"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Meine Stimmen öffnen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ver minhas vozes"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vedi le mie voci"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "मेरी आवाज़ें देखें"
+        }
+      }
+    }
+  },
+  "听见熟悉的声音": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "听见熟悉的声音"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voices close to you"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "身近な人の声"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voces cercanas a ti"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Des voix qui vous sont proches"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vertraute Stimmen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vozes próximas de você"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voci a te vicine"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "अपनों की आवाज़ें"
+        }
+      }
+    }
+  },
+  "按场景找声音": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "按场景找声音"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Find voices by use"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "用途から声を探す"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voces para cada ocasión"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Une voix pour chaque usage"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stimmen nach Einsatz finden"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vozes para cada ocasião"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voci per ogni occasione"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "ज़रूरत के अनुसार आवाज़ खोजें"
+        }
+      }
+    }
+  },
+  "声音特点": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "声音特点"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voice style"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "声の雰囲気"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Estilo de voz"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Style de voix"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stimmcharakter"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Estilo de voz"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stile della voce"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "आवाज़ का अंदाज़"
+        }
+      }
+    }
+  },
+  "睡前陪伴": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "睡前陪伴"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Bedtime listening"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "おやすみ前に"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Para antes de dormir"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Avant de dormir"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Zum Einschlafen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Para a hora de dormir"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Prima di dormire"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सोने से पहले सुनें"
+        }
+      }
+    }
+  },
+  "学习讲解": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "学习讲解"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Study & explanations"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "学習と解説"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Estudio y explicaciones"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Étude et explications"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lernen & Erklärungen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Estudo e explicações"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Studio e spiegazioni"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "पढ़ाई और समझाइश"
+        }
+      }
+    }
+  },
+  "长文故事": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "长文故事"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Long reads & stories"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "長文と物語"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lecturas largas e historias"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Longues lectures et récits"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lange Texte & Geschichten"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Textos longos e histórias"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Letture lunghe e storie"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "लंबे लेख और कहानियाँ"
+        }
+      }
+    }
+  },
+  "日常资讯": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "日常资讯"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Everyday articles"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "日々の記事"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Artículos del día"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Articles du quotidien"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Artikel im Alltag"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Artigos do dia a dia"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Articoli quotidiani"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "रोज़मर्रा के लेख"
+        }
+      }
+    }
+  },
+  "克隆音色 · 多语言适用 · 生成消耗月额度": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "克隆音色 · 多语言适用 · 生成消耗月额度"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cloned voices · Multilingual · Generation uses monthly allowance"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "クローン音声 · 多言語対応 · 生成時に月間枠を使用"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voces clonadas · Multilingües · Generar usa el cupo mensual"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voix clonées · Multilingues · Génération décomptée du quota mensuel"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Geklonte Stimmen · Mehrsprachig · Erzeugung nutzt das Monatskontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vozes clonadas · Multilíngues · Gerar usa a cota mensal"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voci clonate · Multilingue · La generazione usa la quota mensile"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "क्लोन की गई आवाज़ें · बहुभाषी · जनरेशन में मासिक कोटा लगता है"
+        }
+      }
+    }
+  },
+  "全部音色": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "全部音色"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "All voices"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "すべての音声"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Todas las voces"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Toutes les voix"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Alle Stimmen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Todas as vozes"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Tutte le voci"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सभी आवाज़ें"
+        }
+      }
+    }
+  },
+  "不使用月额度": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "不使用月额度"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "No monthly allowance used"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "月間枠を使わない"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sin usar el cupo mensual"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sans utiliser le quota mensuel"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ohne Monatskontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sem usar a cota mensal"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Senza usare la quota mensile"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "मासिक कोटे का उपयोग नहीं"
+        }
+      }
+    }
+  },
+  "使用月额度": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "使用月额度"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Uses monthly allowance"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "月間枠を使用"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Usa el cupo mensual"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Utilise le quota mensuel"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Nutzt Monatskontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Usa a cota mensal"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Usa la quota mensile"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "मासिक कोटे का उपयोग"
+        }
+      }
+    }
+  },
+  "日常伴读": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "日常伴读"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Everyday listening"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "毎日の読み上げ"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Para cada día"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Au quotidien"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Für jeden Tag"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Para o dia a dia"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Per ogni giorno"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "हर दिन सुनें"
+        }
+      }
+    }
+  },
+  "把知识听明白": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "把知识听明白"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Listen and learn"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "聴いて学ぼう"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Escucha y aprende"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Écouter et apprendre"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Hören und lernen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ouça e aprenda"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ascolta e impara"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सुनें और सीखें"
+        }
+      }
+    }
+  },
+  "听见故事的画面": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "听见故事的画面"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stories come alive"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "物語が広がる声"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Historias que cobran vida"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Des histoires qui prennent vie"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Geschichten werden lebendig"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Histórias ganham vida"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Le storie prendono vita"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "कहानियाँ हो उठें जीवंत"
+        }
+      }
+    }
+  },
+  "温柔一点，慢慢听": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "温柔一点，慢慢听"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Slow down and unwind"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "ゆっくり、やさしく"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Baja el ritmo"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Une pause tout en douceur"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Zur Ruhe kommen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Desacelere e relaxe"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Rallenta e rilassati"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "धीरे सुनें, सुकून पाएँ"
+        }
+      }
+    }
+  },
+  "像朋友讲给你听": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "像朋友讲给你听"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Like talking with a friend"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "友だちと話すように"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Como hablar con un amigo"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Comme avec un ami"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Wie im Gespräch mit Freunden"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Como conversar com um amigo"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Come parlare con un amico"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "दोस्त से बातचीत जैसा"
+        }
+      }
+    }
+  },
+  "给文字一点角色感": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "给文字一点角色感"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voices with character"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "個性あふれる声"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voces con personalidad"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Des voix de caractère"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stimmen mit Charakter"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vozes com personalidade"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voci con carattere"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "आवाज़ों में किरदार"
+        }
+      }
+    }
+  },
+  "日常": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "日常"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Everyday"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "日常"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cotidiano"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quotidien"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Alltag"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cotidiano"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ogni giorno"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "रोज़मर्रा"
+        }
+      }
+    }
+  },
+  "讲解": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "讲解"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Learning"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "学習"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Aprendizaje"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Apprendre"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lernen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Aprendizado"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Apprendimento"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सीखना"
+        }
+      }
+    }
+  },
+  "故事": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "故事"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stories"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "物語"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Historias"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Histoires"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Geschichten"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Histórias"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Storie"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "कहानियाँ"
+        }
+      }
+    }
+  },
+  "温柔": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "温柔"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Gentle"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "やさしい"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Suave"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Douceur"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sanft"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Suave"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Dolce"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "कोमल"
+        }
+      }
+    }
+  },
+  "聊天感": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "聊天感"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Conversational"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "会話調"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Conversacional"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Conversation"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Gesprächig"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Conversação"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Conversazione"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "बातचीत"
+        }
+      }
+    }
+  },
+  "角色感": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "角色感"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Character"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "個性"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Personajes"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Personnages"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Charakter"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Personagens"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Personaggi"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "किरदार"
+        }
+      }
+    }
+  },
+  "听听这个声音": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "听听这个声音"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Give this voice a listen"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "この声を聴いてみよう"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Prueba esta voz"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Écoutez cette voix"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Diese Stimme probehören"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Experimente esta voz"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Prova questa voce"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "यह आवाज़ सुनें"
+        }
+      }
+    }
+  },
+  "先听这几个": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "先听这几个"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Start with these"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "まずはこの声から"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Empieza por estas"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "À écouter pour commencer"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Zum Einstieg"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Comece por estas"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Inizia da queste"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "इनसे शुरू करें"
+        }
+      }
+    }
+  },
+  "声音专题": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "声音专题"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voice collections"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "音声コレクション"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Colecciones de voces"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Collections de voix"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stimmensammlungen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Coleções de vozes"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Raccolte di voci"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "आवाज़ संग्रह"
+        }
+      }
+    }
+  },
+  "本周发现": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "本周发现"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "This week’s discovery"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "今週の発見"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Descubre esta semana"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "À découvrir cette semaine"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Diese Woche entdecken"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Descobertas da semana"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Da scoprire questa settimana"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "इस हफ़्ते की खोज"
+        }
+      }
+    }
+  },
+  "月额度": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "月额度"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Monthly allowance"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "月間枠"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cupo mensual"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota mensuel"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Monatskontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cota mensal"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota mensile"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "मासिक कोटा"
+        }
+      }
+    }
+  },
+  "不限时": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "不限时"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Unlimited listening"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "時間制限なし"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sin límite de tiempo"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Écoute illimitée"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Unbegrenzt hören"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Escuta ilimitada"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ascolto illimitato"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "असीमित सुनें"
+        }
+      }
+    }
+  },
+  "搜索音色或听感": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "搜索音色或听感"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Search voices or styles"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "音声や雰囲気を検索"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Busca voces o estilos"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Rechercher une voix ou un style"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stimmen oder Stile suchen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Busque vozes ou estilos"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cerca voci o stili"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "आवाज़ या शैली खोजें"
+        }
+      }
+    }
+  },
+  "使用权益": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "使用权益"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Listening allowance"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "利用枠"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Uso y límites"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Accès et quota"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Nutzung und Kontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Uso e cota"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Utilizzo e quota"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "उपयोग और कोटा"
+        }
+      }
+    }
+  },
+  "所有月额度音色与我的声音共享 2 小时/月，所有语言通用。": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "所有月额度音色与我的声音共享 2 小时/月，所有语言通用。"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "All voices with a monthly allowance and My Voices share 2 hours per month, across all languages."
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "月間枠を使うすべての音声と「マイボイス」は、全言語共通で月2時間を共有します。"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Las voces con cupo mensual y Mis voces comparten 2 horas al mes entre todos los idiomas."
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Les voix avec quota mensuel et Mes voix partagent 2 heures par mois, toutes langues confondues."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Alle Stimmen mit Monatskontingent und Meine Stimmen teilen sich 2 Stunden pro Monat, über alle Sprachen hinweg."
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "As vozes com cota mensal e Minhas vozes compartilham 2 horas por mês em todos os idiomas."
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Le voci con quota mensile e Le mie voci condividono 2 ore al mese, in tutte le lingue."
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "मासिक कोटे वाली सभी आवाज़ें और मेरी आवाज़ें, सभी भाषाओं में हर महीने 2 घंटे साझा करती हैं।"
+        }
+      }
+    }
+  },
+  "本月剩余 %lld 分钟": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "本月剩余 %lld 分钟"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%lld minutes left this month"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "今月の残り：%lld分"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quedan %lld minutos este mes"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%lld minutes restantes ce mois-ci"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Diesen Monat noch %lld Minuten"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Restam %lld minutos neste mês"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%lld minuti rimasti questo mese"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "इस महीने %lld मिनट बाकी"
+        }
+      }
+    }
+  },
+  "温暖": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "温暖"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Warm"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "温かい"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cálida"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Chaleureuse"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Warm"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Acolhedora"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Calda"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "गर्मजोशी"
+        }
+      }
+    }
+  },
+  "柔和": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "柔和"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Soft"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "柔らかい"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Suave"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Douce"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Weich"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Suave"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Morbida"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "मुलायम"
+        }
+      }
+    }
+  },
+  "低沉": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "低沉"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Deep"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "低い"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Grave"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Grave"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Tief"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Grave"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Profonda"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "गहरी"
+        }
+      }
+    }
+  },
+  "明亮": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "明亮"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Bright"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "明るい"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Brillante"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lumineuse"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Hell"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Brilhante"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Brillante"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "उजली"
+        }
+      }
+    }
+  },
+  "清晰": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "清晰"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Clear"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "明瞭"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Clara"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Claire"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Klar"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Clara"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Chiara"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "स्पष्ट"
+        }
+      }
+    }
+  },
+  "沉稳": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "沉稳"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Calm"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "落ち着いた"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Serena"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Posée"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ruhig"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Serena"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Calma"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "शांत"
+        }
+      }
+    }
+  },
+  "亲切": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "亲切"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Friendly"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "親しみやすい"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cercana"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Amicale"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Freundlich"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Amigável"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Amichevole"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "अपनापन"
+        }
+      }
+    }
+  },
+  "有表现力": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "有表现力"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Expressive"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "表情豊か"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Expresiva"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Expressive"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ausdrucksstark"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Expressiva"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Espressiva"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "भावपूर्ण"
+        }
+      }
+    }
+  },
+  "俏皮": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "俏皮"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Playful"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "お茶目"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Juguetona"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Enjouée"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Verspielt"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Divertida"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Giocosa"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "चंचल"
+        }
+      }
+    }
+  },
+  "轻快": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "轻快"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lively"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "軽やか"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Animada"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vive"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lebhaft"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Animada"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vivace"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "उत्साहपूर्ण"
+        }
+      }
+    }
+  },
+  "舒缓": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "舒缓"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Relaxed"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "ゆったり"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Relajada"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Apaisante"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Entspannt"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Relaxante"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Rilassata"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सुकून भरी"
+        }
+      }
+    }
+  },
+  "沙哑": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "沙哑"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Raspy"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "ハスキー"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ronca"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Rauque"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Rau"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Rouca"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Roca"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "खरखरी"
+        }
+      }
+    }
+  },
+  "筛选": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "筛选"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Filters"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "絞り込み"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Filtros"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Filtres"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Filter"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Filtros"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Filtri"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "फ़िल्टर"
+        }
+      }
+    }
+  },
+  "重置": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "重置"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Reset"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "リセット"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Restablecer"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Réinitialiser"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Zurücksetzen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Redefinir"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Reimposta"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "रीसेट"
+        }
+      }
+    }
+  },
+  "试听暂不可用，请稍后重试": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "试听暂不可用，请稍后重试"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Preview is unavailable. Please try again shortly."
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "現在試聴できません。しばらくしてから再試行してください。"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "La muestra no está disponible. Inténtalo de nuevo en un momento."
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "L’extrait est indisponible. Réessayez dans un instant."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Die Hörprobe ist nicht verfügbar. Bitte versuche es gleich noch einmal."
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "A prévia está indisponível. Tente novamente em instantes."
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "L’anteprima non è disponibile. Riprova tra poco."
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "अभी नमूना उपलब्ध नहीं है। थोड़ी देर में फिर कोशिश करें।"
+        }
+      }
+    }
+  },
+  "常规音色": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "常规音色"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Regular voices"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "標準音声"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voces estándar"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voix standard"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Standardstimmen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vozes padrão"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voci standard"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सामान्य आवाज़ें"
+        }
+      }
+    }
+  },
+  "精选音色": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "精选音色"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Curated voices"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "厳選音声"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voces seleccionadas"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voix sélectionnées"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ausgewählte Stimmen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vozes selecionadas"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voci selezionate"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "चुनिंदा आवाज़ें"
+        }
+      }
+    }
+  },
+  "120 分钟 / 月": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "120 分钟 / 月"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "120 min / month"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "120分 / 月"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "120 min / mes"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "120 min / mois"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "120 Min. / Monat"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "120 min / mês"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "120 min / mese"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "120 मिनट / माह"
+        }
+      }
+    }
+  },
+  "%@ / %@ 剩余": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ / %@ 剩余"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ / %@ left"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "残り %@ / %@"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ / %@ restantes"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ / %@ restants"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ / %@ übrig"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ / %@ restantes"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ / %@ rimasti"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "%@ / %@ शेष"
+        }
+      }
+    }
+  },
+  "已选择": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "已选择"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Selected"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "選択中"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Seleccionada"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sélectionnée"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ausgewählt"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Selecionada"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Selezionata"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "चयनित"
+        }
+      }
+    }
+  },
+  "生成额度": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "生成额度"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Generation allowance"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "生成枠"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cupo de generación"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota de génération"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Generierungskontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cota de geração"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota di generazione"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "जनरेशन सीमा"
+        }
+      }
+    }
+  },
+  "额度说明": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "额度说明"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "About the allowance"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "生成枠について"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Acerca del cupo"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "À propos du quota"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Über das Kontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sobre a cota"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Informazioni sulla quota"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सीमा की जानकारी"
+        }
+      }
+    }
+  },
+  "精选音色与我的声音共享，所有语言通用。": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "精选音色与我的声音共享，所有语言通用。"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Shared by curated and personal voices, across languages."
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "厳選音声と自分の声で共有。全言語共通です。"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Compartido entre voces seleccionadas y personales, en todos los idiomas."
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Partagé entre les voix sélectionnées et personnelles, toutes langues confondues."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Für ausgewählte und eigene Stimmen gemeinsam, in allen Sprachen."
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Compartilhada entre vozes selecionadas e pessoais, em todos os idiomas."
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Condivisa tra voci selezionate e personali, in tutte le lingue."
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "चुनिंदा और निजी आवाज़ों में साझा, सभी भाषाओं के लिए।"
+        }
+      }
+    }
+  },
+  "共享月额度": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "共享月额度"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Shared monthly allowance"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "月間枠を共有"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cupo mensual compartido"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota mensuel partagé"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Gemeinsames Monatskontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cota mensal compartilhada"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota mensile condivisa"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "साझा मासिक सीमा"
+        }
+      }
+    }
+  },
+  "多语言朗读": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "多语言朗读"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Multilingual reading"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "多言語読み上げ"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lectura multilingüe"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lecture multilingue"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Mehrsprachiges Vorlesen"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Leitura multilíngue"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Lettura multilingue"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "कई भाषाओं में पढ़ना"
+        }
+      }
+    }
+  },
+  "常规音色 · Pro 不限时": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "常规音色 · Pro 不限时"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Regular voices · Unlimited with Pro"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "標準音声 · Pro で時間無制限"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voces estándar · Sin límite con Pro"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voix standard · Illimité avec Pro"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Standardstimmen · Unbegrenzt mit Pro"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vozes padrão · Sem limite com Pro"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voci standard · Senza limiti con Pro"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सामान्य आवाज़ें · Pro में असीमित"
+        }
+      }
+    }
+  },
+  "精选音色与我的声音 · 每月共 120 分钟生成额度": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "精选音色与我的声音 · 每月共 120 分钟生成额度"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Curated and personal voices · 120 min of generation/month shared"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "厳選音声と自分の声 · 月120分の生成枠を共有"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voces seleccionadas y personales · 120 min de generación al mes"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voix sélectionnées et personnelles · 120 min de génération par mois"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Ausgewählte und eigene Stimmen · 120 Min. Generierung pro Monat"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Vozes selecionadas e pessoais · 120 min de geração por mês"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voci selezionate e personali · 120 min di generazione al mese"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "चुनिंदा और निजी आवाज़ें · हर महीने साझा 120 मिनट जनरेशन"
+        }
+      }
+    }
+  },
+  "与我的声音共用生成额度，所有语言共享。试听免费。": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "与我的声音共用生成额度，所有语言共享。试听免费。"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Shares generation allowance with My Voices across all languages. Previews are free."
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "自分の声と全言語で生成枠を共有。試聴は無料です。"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Comparte el cupo de generación con Mis voces en todos los idiomas. Las muestras son gratis."
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota de génération partagé avec Mes voix, toutes langues confondues. Écoute des extraits gratuite."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Gemeinsames Generierungskontingent mit Meine Stimmen für alle Sprachen. Hörproben sind kostenlos."
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Cota de geração compartilhada com Minhas vozes em todos os idiomas. Prévias gratuitas."
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota di generazione condivisa con Le mie voci in tutte le lingue. Anteprime gratuite."
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सभी भाषाओं में मेरी आवाज़ों के साथ साझा जनरेशन सीमा। नमूने मुफ़्त हैं।"
+        }
+      }
+    }
+  },
+  "音色暂不可用，请重新选择": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "音色暂不可用，请重新选择"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voice unavailable. Please choose another."
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "音声を利用できません。別の音声を選んでください。"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voz no disponible. Elige otra."
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voix indisponible. Choisissez-en une autre."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stimme nicht verfügbar. Bitte eine andere wählen."
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voz indisponível. Escolha outra."
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voce non disponibile. Scegline un’altra."
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "आवाज़ उपलब्ध नहीं है। दूसरी चुनें।"
+        }
+      }
+    }
+  },
+  "使用每月共享生成额度": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "使用每月共享生成额度"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Uses shared monthly generation allowance"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "月間の共有生成枠を使用"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Usa el cupo mensual compartido de generación"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Utilise le quota mensuel partagé de génération"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Nutzt das gemeinsame monatliche Generierungskontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Usa a cota mensal compartilhada de geração"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Usa la quota mensile condivisa di generazione"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "साझा मासिक जनरेशन सीमा का उपयोग करता है"
+        }
+      }
+    }
+  },
+  "常规 · Pro 不限时": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "常规 · Pro 不限时"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Regular · Unlimited with Pro"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "標準 · Pro で時間無制限"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Estándar · Sin límite con Pro"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Standard · Illimité avec Pro"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Standard · Unbegrenzt mit Pro"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Padrão · Sem limite com Pro"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Standard · Senza limiti con Pro"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सामान्य · Pro में असीमित"
+        }
+      }
+    }
+  },
+  "月额度音色": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "月额度音色"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Metered voice"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "月間枠の音声"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voz con cupo"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voix avec quota"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Stimme mit Kontingent"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voz com cota"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Voce con quota"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "मासिक सीमा वाली आवाज़"
+        }
+      }
+    }
+  },
+  "下次更新：%@": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "下次更新：%@"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Renews: %@"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "次回更新：%@"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Se renueva: %@"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Renouvellement : %@"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Erneuerung: %@"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Renova em: %@"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Si rinnova: %@"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "अगला नवीनीकरण: %@"
+        }
+      }
+    }
+  },
+  "生成额度正在同步": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "生成额度正在同步"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Syncing generation allowance"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "生成枠を同期中"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sincronizando el cupo de generación"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Synchronisation du quota de génération"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Generierungskontingent wird synchronisiert"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sincronizando a cota de geração"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Sincronizzazione della quota di generazione"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "जनरेशन सीमा सिंक हो रही है"
+        }
+      }
+    }
+  },
+  "Pro 每月共 120 分钟生成额度": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pro 每月共 120 分钟生成额度"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pro includes 120 min of generation/month shared"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pro は月120分の生成枠を共有"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pro incluye 120 min de generación al mes compartidos"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pro inclut 120 min de génération partagées par mois"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pro enthält 120 Min. gemeinsame Generierung pro Monat"
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pro inclui 120 min de geração compartilhados por mês"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pro include 120 min di generazione condivisi al mese"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Pro में हर महीने साझा 120 मिनट जनरेशन"
+        }
+      }
+    }
+  },
+  "按成功生成的音频时长计量；试听和重复播放已生成的音频不扣额度。": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "按成功生成的音频时长计量；试听和重复播放已生成的音频不扣额度。"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Counts successfully generated audio duration. Previews and replaying existing audio use no allowance."
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "生成に成功した音声の長さで計算。試聴と生成済み音声の再生は枠を消費しません。"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Se cuenta la duración del audio generado correctamente. Las muestras y volver a reproducir audio existente no consumen cupo."
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "La durée des fichiers audio générés avec succès est comptabilisée. Les extraits et la réécoute ne consomment aucun quota."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Gezählt wird die Dauer erfolgreich erzeugter Audios. Hörproben und erneutes Abspielen vorhandener Audios verbrauchen kein Kontingent."
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Conta a duração do áudio gerado com sucesso. Prévias e reprodução de áudio já gerado não usam a cota."
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Conta la durata dell’audio generato correttamente. Anteprime e riascolto di audio esistente non consumano quota."
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "सफलतापूर्वक बने ऑडियो की अवधि गिनी जाती है। नमूने और पहले से बने ऑडियो को दोबारा सुनना सीमा नहीं घटाता।"
+        }
+      }
+    }
+  },
+  "不足 1 分钟": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "不足 1 分钟"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Less than 1 min"
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "1分未満"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Menos de 1 min"
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Moins de 1 min"
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Weniger als 1 Min."
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Menos de 1 min"
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Meno di 1 min"
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "1 मिनट से कम"
+        }
+      }
+    }
+  },
+  "本期生成额度已用完。可选择常规音色继续，当前阅读位置会保留。": {
+    "localizations": {
+      "zh-Hans": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "本期生成额度已用完。可选择常规音色继续，当前阅读位置会保留。"
+        }
+      },
+      "en": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Generation allowance used up for this period. Choose a regular voice to continue; your reading position is saved."
+        }
+      },
+      "ja": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "今期の生成枠を使い切りました。標準音声を選んで続けられます。読書位置は保持されます。"
+        }
+      },
+      "es": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Se agotó el cupo de este período. Elige una voz estándar para continuar; tu posición está guardada."
+        }
+      },
+      "fr": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota épuisé pour cette période. Choisissez une voix standard pour continuer ; votre position est conservée."
+        }
+      },
+      "de": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Das Kontingent für diesen Zeitraum ist aufgebraucht. Wähle eine Standardstimme zum Fortfahren. Die Leseposition bleibt erhalten."
+        }
+      },
+      "pt-BR": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "A cota deste período acabou. Escolha uma voz padrão para continuar; sua posição foi salva."
+        }
+      },
+      "it": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "Quota esaurita per questo periodo. Scegli una voce standard per continuare; la posizione è salvata."
+        }
+      },
+      "hi": {
+        "stringUnit": {
+          "state": "translated",
+          "value": "इस अवधि की जनरेशन सीमा पूरी हो गई। जारी रखने के लिए सामान्य आवाज़ चुनें; पढ़ने की जगह सुरक्षित रहेगी।"
+        }
+      }
+    }
+  }
+}

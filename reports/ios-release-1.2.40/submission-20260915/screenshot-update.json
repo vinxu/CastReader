@@ -1,0 +1,258 @@
+{
+  "en-US": {
+    "setId": "ad81461c-2dc6-49ac-a266-4a85ff10f675",
+    "originalIds": [
+      "16b11ae8-e98f-43bc-bf01-44b73a1e203f",
+      "cc36d469-c7da-461f-9958-55939afdc89e",
+      "90f5fd81-80a9-4d0e-bf8e-68d4eac74a15",
+      "5eaf6c7d-9592-4c8c-9523-34c16cccc569",
+      "b134217a-0500-4782-a6db-beb53e860a5b"
+    ],
+    "originalNames": [
+      "01-kindle.png",
+      "02-read-aloud.png",
+      "03-explain.png",
+      "04-import.png",
+      "05-voices.png"
+    ],
+    "sourceMD5": "72cc6a716720d6864f6f9157e8096607",
+    "sourceSHA256": "fc7230db49d1e76473c8f35f4cba093ba4020242387e6ab20fe3517db20f8092",
+    "replacementId": "b07da781-1f6b-4df0-9777-f90029e04fa4",
+    "verifiedIds": [
+      "16b11ae8-e98f-43bc-bf01-44b73a1e203f",
+      "cc36d469-c7da-461f-9958-55939afdc89e",
+      "90f5fd81-80a9-4d0e-bf8e-68d4eac74a15",
+      "5eaf6c7d-9592-4c8c-9523-34c16cccc569",
+      "b07da781-1f6b-4df0-9777-f90029e04fa4"
+    ],
+    "complete": true
+  },
+  "zh-Hans": {
+    "setId": "4b2538cc-a513-4444-ac5d-2aa81817a16b",
+    "originalIds": [
+      "21ddd876-3616-43b0-bf8c-4be5f3cdc5d0",
+      "472c9caf-b1fd-4520-b3c7-1e9f06acda97",
+      "b7776013-43b6-4946-93c3-fe8543fe51d3",
+      "48ac5f54-e464-4bc6-aa18-7f0cf7e46047",
+      "5f517192-95bf-4662-880f-f94c30394040"
+    ],
+    "originalNames": [
+      "01-kindle-weread.png",
+      "02-read-aloud.png",
+      "03-explain.png",
+      "04-import.png",
+      "05-voices.png"
+    ],
+    "sourceMD5": "98a9542807c4daa01ceec7eeb6648f1e",
+    "sourceSHA256": "711facdf6aa82559fcdf6c70d241eb0a7461c3f45f7f005bc38c1f2dd9a49a3d",
+    "replacementId": "3aee8b2f-15d7-4053-8359-416b721ed8b9",
+    "verifiedIds": [
+      "21ddd876-3616-43b0-bf8c-4be5f3cdc5d0",
+      "472c9caf-b1fd-4520-b3c7-1e9f06acda97",
+      "b7776013-43b6-4946-93c3-fe8543fe51d3",
+      "48ac5f54-e464-4bc6-aa18-7f0cf7e46047",
+      "3aee8b2f-15d7-4053-8359-416b721ed8b9"
+    ],
+    "complete": true
+  },
+  "ja": {
+    "setId": "17afa411-31b3-47f2-b512-5538c9585804",
+    "originalIds": [
+      "1f7d0186-4f7c-49a6-8ba5-9a7c09e737f9",
+      "6ca0efb2-81cb-43e7-80f2-021f82b1db01",
+      "50e7248b-f390-49a7-96c5-78b8d25ecab8",
+      "da7144e5-e8e1-4672-9f58-164a1b4c524c",
+      "110f8f27-7722-4420-9077-ca7824cea2cb"
+    ],
+    "originalNames": [
+      "01-kindle.png",
+      "02-read-aloud.png",
+      "03-explain.png",
+      "04-import.png",
+      "05-voices.png"
+    ],
+    "sourceMD5": "071221723c7c429375550a1a34be7d09",
+    "sourceSHA256": "82b8fba3fab16f69dd21a7fdcc95e3d7d3a00d6ae4a7e25470ed773b05cb1a0f",
+    "replacementId": "8e41b04b-6eea-4e15-a039-31fa73cc063a",
+    "verifiedIds": [
+      "1f7d0186-4f7c-49a6-8ba5-9a7c09e737f9",
+      "6ca0efb2-81cb-43e7-80f2-021f82b1db01",
+      "50e7248b-f390-49a7-96c5-78b8d25ecab8",
+      "da7144e5-e8e1-4672-9f58-164a1b4c524c",
+      "8e41b04b-6eea-4e15-a039-31fa73cc063a"
+    ],
+    "complete": true
+  },
+  "es-ES": {
+    "setId": "0fb127d9-770a-47e8-b7a9-142dae38b09b",
+    "originalIds": [
+      "8710eafe-ebae-476c-ab27-eb06b790f52e",
+      "948bb8e5-979a-46f0-9a88-c9c153ec34ed",
+      "6c539de8-95d9-432a-8c1b-157486bba622",
+      "0c6cfa1b-b8c3-45d7-8af2-d23c05fac052",
+      "988ec008-a9b5-4b52-bbec-3e9622985285"
+    ],
+    "originalNames": [
+      "01-kindle.png",
+      "02-read-aloud.png",
+      "03-explain.png",
+      "04-import.png",
+      "05-voices.png"
+    ],
+    "sourceMD5": "2ca2cf0b79bc1d826d88b08549f0f742",
+    "sourceSHA256": "14262ccaa7bfaed8c948fc625175ce63f98573e0a3cd66264b3ee72a4f583518",
+    "replacementId": "30e22f7d-ad8a-44e0-a640-a1199c3fbcbb",
+    "verifiedIds": [
+      "8710eafe-ebae-476c-ab27-eb06b790f52e",
+      "948bb8e5-979a-46f0-9a88-c9c153ec34ed",
+      "6c539de8-95d9-432a-8c1b-157486bba622",
+      "0c6cfa1b-b8c3-45d7-8af2-d23c05fac052",
+      "30e22f7d-ad8a-44e0-a640-a1199c3fbcbb"
+    ],
+    "complete": true
+  },
+  "fr-FR": {
+    "setId": "93f9ca73-2d01-4c10-a97b-a9813fada522",
+    "originalIds": [
+      "bf9331ab-8539-409f-8df6-dee51a2c3007",
+      "b66528af-cda8-44e8-b449-8b07c4670083",
+      "4b28b1df-c46e-4a61-a372-6ecb334c4755",
+      "651ef64a-f6f9-4110-989a-859b56c34e11",
+      "eaed0ce7-44d1-4351-82d2-8d5dfd10f44b"
+    ],
+    "originalNames": [
+      "01-kindle.png",
+      "02-read-aloud.png",
+      "03-explain.png",
+      "04-import.png",
+      "05-voices.png"
+    ],
+    "sourceMD5": "b330976db4a3a87e15f061f14c58d625",
+    "sourceSHA256": "4c360bbbea45d89cd509eed0052e2be1cf5e488b001d2ec6379ac732b12645bc",
+    "replacementId": "fa2fc47a-ba41-442c-b69c-f6f4ee8603ad",
+    "verifiedIds": [
+      "bf9331ab-8539-409f-8df6-dee51a2c3007",
+      "b66528af-cda8-44e8-b449-8b07c4670083",
+      "4b28b1df-c46e-4a61-a372-6ecb334c4755",
+      "651ef64a-f6f9-4110-989a-859b56c34e11",
+      "fa2fc47a-ba41-442c-b69c-f6f4ee8603ad"
+    ],
+    "complete": true
+  },
+  "de-DE": {
+    "setId": "1e7222de-b977-47b8-8eb0-16e90c2b8110",
+    "originalIds": [
+      "30a2a2fd-60b9-4b02-935f-69744f3d64c1",
+      "debbd69d-0893-420a-99fa-7674d6d04717",
+      "844a6fb6-67e0-4129-a8a0-74dd7f26b231",
+      "dbd034e5-c504-4782-adcf-b6f00b69d640",
+      "360d01cf-8927-4aab-98f1-c46ffb054f4a"
+    ],
+    "originalNames": [
+      "01-kindle.png",
+      "02-read-aloud.png",
+      "03-explain.png",
+      "04-import.png",
+      "05-voices.png"
+    ],
+    "sourceMD5": "0e3ec5db82c5b907770474c2638ed28f",
+    "sourceSHA256": "9ca337dfb894934e4fb2a156b6e2727db34131c0df20b226dd202e56b00c6142",
+    "replacementId": "575b842f-fb83-48d9-8f67-57330d1c2242",
+    "verifiedIds": [
+      "30a2a2fd-60b9-4b02-935f-69744f3d64c1",
+      "debbd69d-0893-420a-99fa-7674d6d04717",
+      "844a6fb6-67e0-4129-a8a0-74dd7f26b231",
+      "dbd034e5-c504-4782-adcf-b6f00b69d640",
+      "575b842f-fb83-48d9-8f67-57330d1c2242"
+    ],
+    "complete": true
+  },
+  "pt-BR": {
+    "setId": "83949689-4d59-43f2-a53b-41def92393c9",
+    "originalIds": [
+      "d4c91783-17f7-4d2a-8e4e-b1ce138276fd",
+      "d649a036-b253-4e8d-8c15-5c270d909947",
+      "e9be4595-010a-4225-b7d6-e9b7c2707f43",
+      "9f7dd56a-0cfd-45a6-8f11-adb4f221d51d",
+      "10d60bbc-1cd2-41b5-a401-72fabbb73ee1"
+    ],
+    "originalNames": [
+      "01-kindle.png",
+      "02-read-aloud.png",
+      "03-explain.png",
+      "04-import.png",
+      "05-voices.png"
+    ],
+    "sourceMD5": "ff1effcf5198e70376f56a0c7d1d9f5a",
+    "sourceSHA256": "80d1ef116eb3927166133cb9842bf79cccfc5ae4ef73e25a40d639fff72b1ca8",
+    "replacementId": "90907c91-b80f-4d26-9f9f-83eec2789393",
+    "verifiedIds": [
+      "d4c91783-17f7-4d2a-8e4e-b1ce138276fd",
+      "d649a036-b253-4e8d-8c15-5c270d909947",
+      "e9be4595-010a-4225-b7d6-e9b7c2707f43",
+      "9f7dd56a-0cfd-45a6-8f11-adb4f221d51d",
+      "90907c91-b80f-4d26-9f9f-83eec2789393"
+    ],
+    "complete": true
+  },
+  "it": {
+    "setId": "7f72dcbd-a1f7-45ac-b7c5-47f089001d2b",
+    "originalIds": [
+      "4f72433e-36c8-4696-8444-8e40b85ed4d5",
+      "4ba1b48f-78df-4fe3-b5bf-b0112e5f6be2",
+      "49a09904-8563-4349-9ace-e29c5ccb254f",
+      "5f0444dc-3020-4e5d-a61b-a3004bb72faa",
+      "13ab0b1a-d779-4c2f-9639-428deff55cca"
+    ],
+    "originalNames": [
+      "01-kindle.png",
+      "02-read-aloud.png",
+      "03-explain.png",
+      "04-import.png",
+      "05-voices.png"
+    ],
+    "sourceMD5": "79cbf093ebbd77e7418fb87d869c50b1",
+    "sourceSHA256": "315d4ae8bde43e74613f449bbd99953cd249e3bb98e05b221837fce03cda2741",
+    "replacementId": "4628d296-1dad-4d25-accf-f8234dc0947c",
+    "abandonedUploadIds": [
+      "8408c138-c0fe-4fa3-8c26-196e981370fd"
+    ],
+    "abandonReason": "Upload stayed UPLOAD_COMPLETE with no checksum or error after more than one hour; original five screenshots still intact.",
+    "verifiedIds": [
+      "4f72433e-36c8-4696-8444-8e40b85ed4d5",
+      "4ba1b48f-78df-4fe3-b5bf-b0112e5f6be2",
+      "49a09904-8563-4349-9ace-e29c5ccb254f",
+      "5f0444dc-3020-4e5d-a61b-a3004bb72faa",
+      "4628d296-1dad-4d25-accf-f8234dc0947c"
+    ],
+    "complete": true
+  },
+  "hi": {
+    "setId": "d9c9e97b-0e15-4f39-b396-d8be17cde296",
+    "originalIds": [
+      "e72b495d-e98a-47bb-b2c7-305de3d8bb14",
+      "9620c9c7-ba53-4d01-9e1d-fca2a5601992",
+      "4367fd69-9924-4cc9-9c94-874213ca8e1b",
+      "fab990e4-b310-489c-9bc7-3fda112e3a3d",
+      "d6fbd269-87f8-4649-a96e-6a8246b33647"
+    ],
+    "originalNames": [
+      "01-kindle.png",
+      "02-read-aloud.png",
+      "03-explain.png",
+      "04-import.png",
+      "05-voices.png"
+    ],
+    "sourceMD5": "a9270cff3d709eb74dfbb7ca3462dd6f",
+    "sourceSHA256": "1b7b725ffc8830114a18594266820360cc38a89cec9347d33ceca6c741565d20",
+    "replacementId": "b5eb6a6f-cf36-4618-a854-90178d4bad1c",
+    "verifiedIds": [
+      "e72b495d-e98a-47bb-b2c7-305de3d8bb14",
+      "9620c9c7-ba53-4d01-9e1d-fca2a5601992",
+      "4367fd69-9924-4cc9-9c94-874213ca8e1b",
+      "fab990e4-b310-489c-9bc7-3fda112e3a3d",
+      "b5eb6a6f-cf36-4618-a854-90178d4bad1c"
+    ],
+    "complete": true
+  }
+}

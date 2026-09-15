@@ -1,0 +1,64 @@
+{
+  "project": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914",
+  "workspace": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReader.xcworkspace",
+  "marketingVersion": "1.2.40",
+  "buildNumber": "62",
+  "releaseTargets": [
+    {
+      "target": "CastReader",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.40",
+      "buildNumber": "62"
+    },
+    {
+      "target": "CastReader",
+      "configuration": "Release",
+      "marketingVersion": "1.2.40",
+      "buildNumber": "62"
+    },
+    {
+      "target": "CastReader Share Extension",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.40",
+      "buildNumber": "62"
+    },
+    {
+      "target": "CastReader Share Extension",
+      "configuration": "Release",
+      "marketingVersion": "1.2.40",
+      "buildNumber": "62"
+    },
+    {
+      "target": "CastReader Widget",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.40",
+      "buildNumber": "62"
+    },
+    {
+      "target": "CastReader Widget",
+      "configuration": "Release",
+      "marketingVersion": "1.2.40",
+      "buildNumber": "62"
+    }
+  ],
+  "locales": [
+    "en-US",
+    "zh-Hans",
+    "ja",
+    "es-ES",
+    "fr-FR",
+    "pt-BR",
+    "it",
+    "hi",
+    "de-DE",
+    "zh-Hant",
+    "es-MX"
+  ],
+  "metadata": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/docs/CastReader-AppStore-Metadata-11-Languages-1.2.40.md",
+  "whatsNew": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/docs/AppStore-Whats-New-1.2.40.json",
+  "appStoreConnectKeyMode": "600",
+  "xcode": [
+    "Xcode 26.6",
+    "Build version 17F113"
+  ]
+}

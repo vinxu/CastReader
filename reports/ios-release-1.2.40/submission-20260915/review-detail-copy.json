@@ -1,0 +1,34 @@
+{
+  "oldDetailId": "94f6b932-706d-4b3c-a289-1240af9e914e",
+  "newDetailId": "0eb78427-4f07-46b5-920c-24fa172dc76a",
+  "oldNotes": {
+    "present": true,
+    "length": 3474,
+    "sha256": "5c5ed6a7186081489a7305441fe0614a04f4d5064320f225bae51ae06c828810"
+  },
+  "newNotes": {
+    "present": true,
+    "length": 3474,
+    "sha256": "5c5ed6a7186081489a7305441fe0614a04f4d5064320f225bae51ae06c828810"
+  },
+  "oldFieldPresence": {
+    "contactFirstName": true,
+    "contactLastName": true,
+    "contactPhone": true,
+    "contactEmail": true,
+    "demoAccountRequired": true,
+    "demoAccountName": false,
+    "demoAccountPassword": false,
+    "notes": true
+  },
+  "newFieldPresence": {
+    "contactFirstName": true,
+    "contactLastName": true,
+    "contactPhone": true,
+    "contactEmail": true,
+    "demoAccountRequired": true,
+    "demoAccountName": false,
+    "demoAccountPassword": false,
+    "notes": true
+  }
+}
