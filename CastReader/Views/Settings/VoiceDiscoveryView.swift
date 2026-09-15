@@ -93,7 +93,7 @@ struct VoiceDiscoveryFeed: View {
                 ForEach(data.fallbackSections) { editorialSection($0, fallback: true) }
                 if !data.featuredClones.isEmpty { featuredClonesSection(data.featuredClones) }
                 if Constants.Features.voiceCloningEnabled {
-                    VoiceFamiliarSection(onOpen: onOpenPersonal, onCreate: onCreate).padding(.horizontal)
+                    VoiceFamiliarSection(language: language, onOpen: onOpenPersonal, onCreate: onCreate).padding(.horizontal)
                 }
                 NavigationLink(value: VoiceDiscoveryDestination.all) {
                     HStack {
@@ -575,23 +575,123 @@ struct VoiceDiscoveryCollectionView: View {
 /// Only this compact section observes personal voice state, keeping account and
 /// invitation updates out of the catalog/recommendation computation path.
 private struct VoiceFamiliarSection: View {
+    let language: String
     let onOpen: () -> Void
     let onCreate: (VoiceCreationEntry) -> Void
     @ObservedObject private var store = VoiceCloneStore.shared
     @ObservedObject private var auth = AuthService.shared
+    @ObservedObject private var settings = AppSettings.shared
+    @ObservedObject private var preview = VoiceClonePreviewPlayer.shared
+    @State private var selectingID: String?
+    @State private var selectionTask: Task<Void, Never>?
+    @State private var selectionOperation: UUID?
+
+    var body: some View {
+        VoiceFamiliarContent(voices: auth.isSignedIn ? store.familiarVoices : [],
+            name: store.displayName, selectedID: settings.activeClonedVoiceID(for: language),
+            selectingID: selectingID, playingID: preview.playingVoiceId, loadingID: preview.loadingVoiceId,
+            onOpen: onOpen, onCreate: onCreate, onPreview: preview.toggle, onSelect: { voice in
+                guard selectingID == nil else { return }
+                let operation = UUID()
+                selectionOperation = operation
+                selectingID = voice.id
+                selectionTask = Task { @MainActor in
+                    defer {
+                        if selectionOperation == operation {
+                            selectingID = nil; selectionOperation = nil; selectionTask = nil
+                        }
+                    }
+                    _ = await store.select(voice, for: language)
+                }
+            })
+            .onDisappear { stopInteractions() }
+            .onChange(of: language) { _ in stopInteractions() }
+            .onChange(of: auth.accountBoundaryID) { _ in stopInteractions() }
+            .alert(AppLocalized("声音克隆"), isPresented: Binding(
+                get: { store.errorMessage != nil }, set: { if !$0 { store.errorMessage = nil } }
+            )) { Button("完成") { store.errorMessage = nil } }
+            message: { Text(store.errorMessage ?? "") }
+    }
+
+    private func stopInteractions() {
+        selectionTask?.cancel(); selectionTask = nil; selectingID = nil; selectionOperation = nil
+        let ids = Set(store.familiarVoices.map(\.id))
+        if preview.playingVoiceId.map(ids.contains) == true || preview.loadingVoiceId.map(ids.contains) == true {
+            preview.stop()
+        }
+    }
+}
+
+/// Presentation stays independent of catalog ranking and account fetching.
+struct VoiceFamiliarContent: View {
+    let voices: [ClonedVoice]
+    let name: (ClonedVoice) -> String
+    let selectedID: String?
+    let selectingID: String?
+    let playingID: String?
+    let loadingID: String?
+    let onOpen: () -> Void
+    let onCreate: (VoiceCreationEntry) -> Void
+    let onPreview: (ClonedVoice) -> Void
+    let onSelect: (ClonedVoice) -> Void
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(AppLocalized("听见熟悉的声音")).font(.title3.weight(.bold))
-            entry(title: AppLocalized("我的声音"),
-                  action: AppLocalized(auth.isSignedIn && !store.ownedVoices.isEmpty ? "查看我的声音" : "录制自己的声音"),
-                  symbol: "mic", id: "voiceFamiliarSelf") {
-                if auth.isSignedIn && !store.ownedVoices.isEmpty { onOpen() } else { onCreate(.recordMyVoice) }
+            HStack {
+                Text(AppLocalized("听见熟悉的声音")).font(.title3.weight(.bold))
+                Spacer()
+                if !voices.isEmpty {
+                    Button(action: onOpen) { Image(systemName: "arrow.right").frame(width: 44, height: 44) }
+                        .buttonStyle(.plain).foregroundStyle(AppTheme.primary)
+                        .accessibilityLabel(AppLocalized("查看全部"))
+                        .accessibilityIdentifier("voiceFamiliarAll")
+                }
             }
-            entry(title: AppLocalized("朋友的声音"),
-                  action: AppLocalized(auth.isSignedIn && !store.invitedVoices.isEmpty ? "查看朋友的声音" : "邀请朋友录制声音"),
-                  symbol: "person.2", id: "voiceFamiliarFriend") {
-                if auth.isSignedIn && !store.invitedVoices.isEmpty { onOpen() }
-                else { onCreate(VoiceGiftFeature.isRegionEligible() ? .inviteFriend : .chooser) }
+            if voices.isEmpty {
+                entry(title: AppLocalized("我的声音"), action: AppLocalized("录制自己的声音"),
+                      symbol: "mic", id: "voiceFamiliarSelf") { onCreate(.recordMyVoice) }
+                entry(title: AppLocalized("朋友的声音"), action: AppLocalized("邀请朋友录制声音"),
+                      symbol: "person.2", id: "voiceFamiliarFriend") {
+                    onCreate(VoiceGiftFeature.isRegionEligible() ? .inviteFriend : .chooser)
+                }
+            } else {
+                ForEach(voices.prefix(3)) { voice in
+                    HStack(spacing: 14) {
+                        Button { onPreview(voice) } label: {
+                            ClonedVoiceAvatarView(voice: voice, size: 50, isAnimating: playingID == voice.id)
+                                .overlay(alignment: .bottomTrailing) {
+                                    ZStack {
+                                        Circle().fill(AppTheme.foreground)
+                                        if loadingID == voice.id { ProgressView().controlSize(.mini).tint(AppTheme.surface) }
+                                        else { Image(systemName: playingID == voice.id ? "stop.fill" : "play.fill")
+                                            .font(.system(size: 10, weight: .bold)).foregroundStyle(AppTheme.surface) }
+                                    }.frame(width: 24, height: 24)
+                                        .overlay(Circle().stroke(AppTheme.background, lineWidth: 2)).offset(x: 2, y: 2)
+                                }
+                        }.buttonStyle(.plain).disabled(!voice.access.capabilities.canPreview)
+                            .accessibilityLabel(AppLocalized(playingID == voice.id ? "停止试听" : "试听") + " · " + name(voice))
+                            .accessibilityValue(loadingID == voice.id ? "loading" : (playingID == voice.id ? "playing" : "stopped"))
+                            .accessibilityIdentifier("voiceFamiliarPreview_" + voice.id)
+                        Button { onSelect(voice) } label: {
+                            HStack(spacing: 10) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(name(voice)).font(.subheadline.weight(.semibold)).foregroundStyle(AppTheme.foreground).lineLimit(1)
+                                    HStack(spacing: 8) {
+                                        Text(AppLocalized(voice.isInvitedVoice ? "朋友的声音" : "我的声音"))
+                                            .foregroundStyle(AppTheme.mutedForeground)
+                                        Label(AppLocalized("月额度"), systemImage: "clock")
+                                            .foregroundStyle(AppTheme.primary)
+                                    }.font(.caption).lineLimit(1)
+                                }
+                                Spacer(minLength: 0)
+                                if selectingID == voice.id { ProgressView().controlSize(.small) }
+                                else if selectedID == voice.id { Image(systemName: "checkmark.circle.fill").foregroundStyle(AppTheme.primary) }
+                            }.frame(minHeight: 50).contentShape(Rectangle())
+                        }.buttonStyle(.plain).disabled(selectingID != nil)
+                            .accessibilityValue(selectedID == voice.id ? AppLocalized("已选择") : "")
+                            .accessibilityIdentifier("voiceFamiliarSelect_" + voice.id)
+                    }.padding(.vertical, 6)
+                }
             }
         }
     }

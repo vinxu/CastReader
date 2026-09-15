@@ -244,6 +244,35 @@ final class VoiceExploreUITests: XCTestCase {
         attach(app, "voice-personal-recording-entry")
     }
 
+    func testFamiliarVoicesShowThreeRowsAndOnlyShowCreationWhenEmpty() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderFamiliarVoicesFixture", "-CastReaderSkipSignInGate",
+            "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.launch()
+        XCTAssertTrue(app.buttons["voiceFamiliarSelect_Mia"].waitForExistence(timeout: 15))
+        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voiceFamiliarSelect_"))
+        XCTAssertEqual(rows.count, 3)
+        XCTAssertLessThan(app.buttons["voiceFamiliarSelect_Mia"].frame.minY, app.buttons["voiceFamiliarSelect_Alex"].frame.minY)
+        XCTAssertLessThan(app.buttons["voiceFamiliarSelect_Alex"].frame.minY, app.buttons["voiceFamiliarSelect_My voice"].frame.minY)
+        XCTAssertFalse(app.buttons["voiceFamiliarSelect_Older voice"].exists)
+        XCTAssertFalse(app.buttons["voiceFamiliarSelf"].exists)
+        XCTAssertFalse(app.buttons["voiceFamiliarFriend"].exists)
+        app.buttons["voiceFamiliarSelect_Mia"].tap()
+        XCTAssertFalse((app.buttons["voiceFamiliarSelect_Mia"].value as? String ?? "").isEmpty)
+        let preview = app.buttons["voiceFamiliarPreview_Alex"]
+        preview.tap(); XCTAssertEqual((preview.value as? String)?.lowercased(), "playing")
+        preview.tap(); XCTAssertEqual((preview.value as? String)?.lowercased(), "stopped")
+        app.buttons["voiceFamiliarAll"].tap()
+        XCTAssertEqual(app.staticTexts["familiarFixtureAction"].label, "all")
+        attach(app, "familiar-three-recent-voices")
+        app.buttons["Clear fixtures"].tap()
+        XCTAssertTrue(app.buttons["voiceFamiliarSelf"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["voiceFamiliarFriend"].exists)
+        XCTAssertEqual(rows.count, 0)
+        XCTAssertFalse(app.buttons["voiceFamiliarAll"].exists)
+        attach(app, "familiar-empty-recording-actions")
+    }
+
     func testOperatorIdentityGroupsNarrowFeaturedClones() throws {
         #if targetEnvironment(simulator)
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("VoiceGroups-" + UUID().uuidString)

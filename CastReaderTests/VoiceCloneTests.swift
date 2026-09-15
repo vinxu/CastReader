@@ -2,6 +2,45 @@ import XCTest
 @testable import CastReader
 
 final class VoiceCloneTests: XCTestCase {
+    func testFamiliarVoicesMixOwnAndFriendsByCreationDateAndExcludeLostAccess() {
+        let owner = ClonedVoice(voiceId: "mine", createdAt: "2026-09-15T11:00:00Z")
+        let invited = ClonedVoice(voiceId: "invited", createdAt: "2026-09-15T19:30:00+08:00", origin: .invitation)
+        let gift = ClonedVoice(voiceId: "gift", createdAt: "2026-09-15T12:00:00.123Z",
+            access: VoiceGiftAccess(kind: .gifted, status: "active", capabilities: .init(canPreview: true)))
+        let revoked = ClonedVoice(voiceId: "revoked", createdAt: "2026-09-16T00:00:00Z",
+            access: VoiceGiftAccess(kind: .gifted, status: "revoked"))
+        let failed = ClonedVoice(voiceId: "failed", createdAt: "2026-09-16T00:00:00Z", status: "failed")
+        let old = ClonedVoice(voiceId: "older", createdAt: "2026-09-10T00:00:00Z")
+        let unknownDate = ClonedVoice(voiceId: "unknown", createdAt: "invalid")
+        let input = [old, unknownDate, owner, gift, invited, gift, revoked, failed]
+        XCTAssertEqual(VoiceFamiliarSelection.latest(from: input).map(\.id), ["gift", "invited", "mine"])
+        XCTAssertEqual(VoiceFamiliarSelection.latest(from: [unknownDate, old]).map(\.id), ["older", "unknown"])
+        XCTAssertTrue(VoiceFamiliarSelection.latest(from: [revoked, failed]).isEmpty)
+        XCTAssertTrue(VoiceFamiliarSelection.latest(from: []).isEmpty)
+    }
+
+    @MainActor
+    func testFamiliarVoicesRefreshAndClearWithAccountScope() async {
+        let suite = "FamiliarVoices-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(service: service, defaults: defaults, isSignedIn: { true })
+        store.activateAccountScope(storageID: String(repeating: "a", count: 64))
+        let first = ClonedVoice(voiceId: suite, createdAt: "2026-09-15T00:00:00Z")
+        await service.enqueueImmediateList(.init(voices: [first], nextCreateAt: nil))
+        await store.refresh()
+        XCTAssertEqual(store.familiarVoices.map(\.id), [first.id])
+        let newer = ClonedVoice(voiceId: "newer", createdAt: "2026-09-15T12:00:00Z", origin: .invitation)
+        await service.enqueueImmediateList(.init(voices: [first, newer], nextCreateAt: nil))
+        await store.refresh()
+        XCTAssertEqual(store.familiarVoices.map(\.id), ["newer", first.id])
+        store.activateAccountScope(storageID: String(repeating: "b", count: 64))
+        XCTAssertTrue(store.familiarVoices.isEmpty)
+        store.deactivateAccountScope()
+        XCTAssertTrue(store.familiarVoices.isEmpty)
+    }
+
     func testCloneStartupKeepsAllTextAndBoundsOpeningAcrossLanguages() {
         let samples: [(String, String, Int)] = [
             ("en", String(repeating: "A familiar voice makes reading feel natural, even on a very busy day. ", count: 5), 120),

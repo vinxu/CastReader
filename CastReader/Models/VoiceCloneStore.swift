@@ -14,7 +14,10 @@ final class VoiceCloneStore: ObservableObject {
     }
     static let shared = VoiceCloneStore()
 
-    @Published private(set) var voices: [ClonedVoice] = []
+    @Published private(set) var voices: [ClonedVoice] = [] {
+        didSet { familiarVoices = VoiceFamiliarSelection.latest(from: voices) }
+    }
+    @Published private(set) var familiarVoices: [ClonedVoice] = []
     @Published private(set) var nextCreateAt: Date?
     @Published private(set) var isLoading = false
     @Published private(set) var isCreating = false

@@ -713,6 +713,24 @@ enum VoiceCloneOrigin: String, Equatable, Decodable {
     case invitation
 }
 
+enum VoiceFamiliarSelection {
+    /// Compute only when the account library changes, never on playback ticks.
+    /// Personal voices are multilingual, so discovery language does not hide them.
+    static func latest(from voices: [ClonedVoice]) -> [ClonedVoice] {
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let standard = ISO8601DateFormatter()
+        let candidates = voices.enumerated().compactMap { index, voice -> (Int, ClonedVoice, Date)? in
+            guard voice.access.authorizationActive else { return nil }
+            if let status = voice.status?.lowercased(), !["active", "ready"].contains(status) { return nil }
+            let date = voice.createdAt.flatMap { fractional.date(from: $0) ?? standard.date(from: $0) } ?? .distantPast
+            return (index, voice, date)
+        }.sorted { $0.2 == $1.2 ? $0.0 < $1.0 : $0.2 > $1.2 }
+        var seen = Set<String>()
+        return Array(candidates.compactMap { seen.insert($0.1.id).inserted ? $0.1 : nil }.prefix(3))
+    }
+}
+
 struct ClonedVoice: Identifiable, Equatable, Decodable {
     let voiceId: String
     let createdAt: String?

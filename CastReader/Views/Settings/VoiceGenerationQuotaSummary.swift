@@ -143,4 +143,32 @@ struct VoiceExploreAcceptanceFixture: View {
         return voice
     }
 }
+/// Uses the production presentation without creating an account or uploading a
+/// recording. Callbacks are observable UI actions, not simulated audio output.
+struct VoiceFamiliarAcceptanceFixture: View {
+    @State private var empty = false
+    @State private var selected: String?
+    @State private var preview: String?
+    @State private var action = ""
+    private let voices = [
+        ClonedVoice(voiceId: "Older voice", createdAt: "2026-09-10T00:00:00Z"),
+        ClonedVoice(voiceId: "My voice", createdAt: "2026-09-15T01:00:00Z"),
+        ClonedVoice(voiceId: "Mia", createdAt: "2026-09-15T03:00:00Z", origin: .invitation),
+        ClonedVoice(voiceId: "Alex", createdAt: "2026-09-15T02:00:00Z", origin: .invitation),
+    ]
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VoiceFamiliarContent(voices: empty ? [] : VoiceFamiliarSelection.latest(from: voices),
+                    name: { $0.id }, selectedID: selected, selectingID: nil, playingID: preview, loadingID: nil,
+                    onOpen: { action = "all" }, onCreate: { _ in action = "create" },
+                    onPreview: { preview = preview == $0.id ? nil : $0.id }, onSelect: { selected = $0.id })
+                    .padding(20)
+                Text(action).accessibilityIdentifier("familiarFixtureAction")
+            }.background(AppTheme.background)
+                .navigationTitle("Voice")
+                .toolbar { Button("Clear fixtures") { empty = true } }
+        }
+    }
+}
 #endif
