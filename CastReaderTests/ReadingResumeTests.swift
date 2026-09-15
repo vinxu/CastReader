@@ -1165,3 +1165,318 @@ extension ReadingResumeTests {
         XCTAssertEqual(voices, ["vc_personal_test", "vc_personal_test"])
     }
 }
+
+extension ReadingResumeTests {
+    private func retokenizedSegment(_ text: String = "We can't wait.",
+                                    words: [String], changedAudio: Bool = true,
+                                    index: Int = 0, paragraph: Int = 0) -> AudioSegment {
+        AudioSegment(paragraphIndex: paragraph, segmentIndex: index,
+                     audioData: wav(duration: 30, sample: changedAudio ? 7 : 0),
+                     timestamps: words.enumerated().map {
+                         TTSTimestamp(word: $0.element, startTime: Double($0.offset) * 3,
+                                      endTime: Double($0.offset) * 3 + 2)
+                     }, duration: 30, text: text, isWavFormat: true)
+    }
+
+    func testVoiceSwitchResolvesSplitAndMergedTimestampWords() throws {
+        let whole = retokenizedSegment(words: ["We", "can't", "wait."], changedAudio: false)
+        let split = retokenizedSegment(words: ["We", "can", "'t", "wait."])
+        let cursor = try XCTUnwrap(ReadingResumeContract.captureAudio(
+            segments: [whole], currentSegmentID: whole.id, time: 4))
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [split], isComplete: false),
+                       .seek(segmentIndex: 0, seconds: 3))
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [split], isComplete: true),
+                       .seek(segmentIndex: 0, seconds: 3))
+        let reverse = try XCTUnwrap(ReadingResumeContract.captureAudio(
+            segments: [split], currentSegmentID: split.id, time: 7))
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(reverse, segments: [whole], isComplete: true),
+                       .seek(segmentIndex: 0, seconds: 3))
+    }
+
+    func testActiveCloneToRegularSwitchResumesRetokenizedAudioAndClearsProgress() async throws {
+        try await exerciseRetokenizedVoiceSwitch(paused: false)
+    }
+
+    func testPausedCloneToRegularSwitchPreparesRetokenizedAudioWithoutPlaying() async throws {
+        try await exerciseRetokenizedVoiceSwitch(paused: true)
+    }
+
+    private func exerciseRetokenizedVoiceSwitch(paused: Bool) async throws {
+        let settings = AppSettings.shared, audio = AudioPlayerService.shared
+        let previous = settings.voice(for: "en")
+        settings.setVoice("vl_switch_test", for: "en")
+        let old = retokenizedSegment(words: ["We", "can't", "wait."], changedAudio: false)
+        let replacement = retokenizedSegment(words: ["We", "can", "'t", "wait."])
+        let doc = ReadingDocument(id: UUID().uuidString, title: "Switch test", sourceKind: .text,
+                                  language: "en", paragraphs: paragraphs([old.text]))
+        let store = HistoryStore(directory: directory)
+        store.record(doc)
+        let speech = VoiceRecordingSpeech([replacement])
+        let vm = ReadAloudViewModel(document: doc, historyStore: store, speechGenerator: speech)
+        defer {
+            vm.stop(); vm.deactivate()
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+        }
+        vm.startWithCachedSegments([old], paragraphIndex: 0, segmentID: old.id, progress: 4 / 30,
+                                   isReplayEligible: false)
+        try await waitUntil("Initial clone must be audible") {
+            vm.flushReadingProgress()
+            return vm.isPlaying && audio.hasAudibleProgress && !audio.isBuffering
+                && audio.playbackPosition >= 4 && store.readingCheckpoint(for: doc.id)?.audio != nil
+        }
+        if paused { vm.pausePlayback() }
+        vm.flushReadingProgress()
+        XCTAssertNotNil(store.readingCheckpoint(for: doc.id)?.audio)
+        settings.setVoice("af_nicole", for: "en")
+        try await waitUntil("Regular audio must resume and dismiss switching progress") {
+            audio.currentSegment?.audioData == replacement.audioData && VoiceSwitchStatusCenter.shared.progress == nil
+        }
+        XCTAssertNil(vm.resumeNotice)
+        if case .error = vm.status { XCTFail("Retokenization is not changed spoken content") }
+        if paused {
+            XCTAssertEqual(audio.playbackPosition, 3, accuracy: 0.1)
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertTrue(audio.isExplicitlyPaused)
+            vm.togglePlayPause()
+        }
+        try await waitUntil("The selected voice must be playable") {
+            vm.isPlaying && audio.hasAudibleProgress && vm.debugResumeFirstPlaybackSeconds != nil
+        }
+        XCTAssertEqual(try XCTUnwrap(vm.debugResumeFirstPlaybackSeconds), 3, accuracy: 0.6)
+        let voices = await speech.voices
+        XCTAssertEqual(voices, ["af_nicole"])
+    }
+}
+
+/// A producer whose completions can arrive even after cancellation, like a
+/// response already dispatched by URLSession. Tests own every release point.
+private actor ControlledVoiceSwitchSpeech: ParagraphSpeechGenerating {
+    private var pending: [String: CheckedContinuation<[AudioSegment], Error>] = [:]
+    private(set) var completed: Set<String> = []
+    func isWaiting(_ voice: String) -> Bool { pending[voice] != nil }
+    func release(_ voice: String, segments: [AudioSegment]) {
+        pending.removeValue(forKey: voice)?.resume(returning: segments)
+    }
+    func fail(_ voice: String) { pending.removeValue(forKey: voice)?.resume(throwing: URLError(.timedOut)) }
+    func cancelAll() {
+        let work = pending.values
+        pending.removeAll()
+        for continuation in work { continuation.resume(throwing: CancellationError()) }
+    }
+    func generateTTSForParagraph(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double,
+        language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        continuation: TTSContinuation?, onCheckpoint: ((TTSContinuation) async -> Void)?,
+        onSegmentReady: @escaping (AudioSegment) async -> Void
+    ) async throws {
+        let voice = voice ?? ""
+        let segments = try await withCheckedThrowingContinuation { pending[voice] = $0 }
+        for segment in segments { await onSegmentReady(segment) }
+        completed.insert(voice)
+    }
+}
+
+extension ReadingResumeTests {
+    func testRetokenizedResumeVerifiesEntireWordAcrossStreamingSegmentsAndLegacyCheckpoint() throws {
+        let old = retokenizedSegment(words: ["We", "can't", "wait."], changedAudio: false)
+        var cursor = try XCTUnwrap(ReadingResumeContract.captureAudio(segments: [old], currentSegmentID: old.id, time: 4))
+        let first = retokenizedSegment("We can", words: ["We", "can"])
+        let second = retokenizedSegment("'t wait.", words: ["'t", "wait."], index: 1)
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [first], isComplete: false), .waiting)
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [first], isComplete: true), .unavailable)
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [first, second], isComplete: true),
+                       .seek(segmentIndex: 0, seconds: 3))
+        cursor.semanticWordUTF16Length = nil
+        let legacy = try JSONDecoder().decode(ReadingResumeAudioCursor.self, from: JSONEncoder().encode(cursor))
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(legacy, segments: [first, second], isComplete: true),
+                       .seek(segmentIndex: 0, seconds: 3))
+        let changed = retokenizedSegment("We can wait.", words: ["We", "can", "wait."])
+        let missingTiming = retokenizedSegment(words: ["We", "can", "wait."])
+        let missingPrefixTiming = retokenizedSegment(words: ["can", "'t", "wait."])
+        let changedPrefix = retokenizedSegment("He can't wait.", words: ["He", "can", "'t", "wait."])
+        for fresh in [changed, missingTiming, changedPrefix] {
+            XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [fresh], isComplete: true), .unavailable)
+        }
+        // Prefix timestamps are unnecessary: text proves the prefix, while
+        // timestamps must cover the complete saved word, without gaps.
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [missingPrefixTiming], isComplete: true),
+                       .seek(segmentIndex: 0, seconds: 0))
+    }
+
+    func testRetokenizedResumeHandlesChineseAndUnicodeAfterPunctuationNormalization() throws {
+        for (text, oldWords, freshText, newWords, time, expected) in [
+            ("今天读书很好。", ["今天", "读书", "很好。"], "今天，读书很好。", ["今天", "读", "书", "很好。"], 4.0, 3.0),
+            ("We can't wait.", ["We", "can", "'t", "wait."], "We can’t wait.", ["We", "can’t", "wait."], 7.0, 3.0),
+            ("𐐀 can't wait.", ["𐐀", "can't", "wait."], "𐐀 can’t wait.", ["𐐀", "can", "’t", "wait."], 4.0, 3.0)
+        ] {
+            let old = retokenizedSegment(text, words: oldWords, changedAudio: false)
+            let cursor = try XCTUnwrap(ReadingResumeContract.captureAudio(segments: [old], currentSegmentID: old.id, time: time))
+            let fresh = retokenizedSegment(freshText, words: newWords)
+            XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [fresh], isComplete: true),
+                           .seek(segmentIndex: 0, seconds: expected))
+        }
+    }
+
+    private func waitForRequest(_ speech: ControlledVoiceSwitchSpeech, voice: String) async throws {
+        let deadline = Date().addingTimeInterval(4)
+        while Date() < deadline {
+            if await speech.isWaiting(voice) { return }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTFail("Expected a request for \(voice)")
+    }
+
+    func testRapidVoiceChangesIgnoreStaleAudioAndCompletionAndHonorPauseDuringRequest() async throws {
+        let settings = AppSettings.shared, audio = AudioPlayerService.shared
+        let previous = settings.voice(for: "en")
+        settings.setVoice("vl_switch_test", for: "en")
+        let old = retokenizedSegment(words: ["We", "can't", "wait."], changedAudio: false)
+        let stale = retokenizedSegment("We can't wait. Stale", words: ["We", "can't", "wait."])
+        let fresh = retokenizedSegment(words: ["We", "can", "'t", "wait."])
+        let doc = ReadingDocument(id: UUID().uuidString, title: "Rapid switch", sourceKind: .text,
+                                  language: "en", paragraphs: paragraphs([old.text]))
+        let store = HistoryStore(directory: directory)
+        store.record(doc)
+        let speech = ControlledVoiceSwitchSpeech()
+        let vm = ReadAloudViewModel(document: doc, historyStore: store, speechGenerator: speech)
+        defer {
+            vm.stop(); vm.deactivate()
+            Task { await speech.cancelAll() }
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+        }
+        vm.startWithCachedSegments([old], paragraphIndex: 0, segmentID: old.id, progress: 4 / 30, isReplayEligible: false)
+        try await waitUntil("Clone playback must establish a cursor") {
+            vm.flushReadingProgress()
+            return vm.isPlaying && audio.hasAudibleProgress && !audio.isBuffering
+                && audio.playbackPosition >= 4 && store.readingCheckpoint(for: doc.id)?.audio != nil
+        }
+        settings.setVoice("af_nicole", for: "en")
+        try await waitForRequest(speech, voice: "af_nicole")
+        XCTAssertNotNil(VoiceSwitchStatusCenter.shared.progress)
+        settings.setVoice("am_puck", for: "en")
+        try await waitForRequest(speech, voice: "am_puck")
+        let newest = VoiceSwitchStatusCenter.shared.progress
+        vm.pausePlayback()
+        await speech.release("af_nicole", segments: [stale])
+        // Let the stale task run through its callback, completion and defer.
+        try await Task.sleep(nanoseconds: 100_000_000)
+        XCTAssertEqual(VoiceSwitchStatusCenter.shared.progress, newest)
+        XCTAssertNil(audio.currentSegment)
+        XCTAssertFalse(audio.hasQueuedSegments)
+        await speech.release("am_puck", segments: [fresh])
+        try await waitUntil("Newest request must finish, with the replacement audio queued") {
+            VoiceSwitchStatusCenter.shared.progress == nil && audio.currentSegment?.text == fresh.text
+        }
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertTrue(audio.isExplicitlyPaused)
+        XCTAssertNil(vm.resumeNotice)
+        vm.togglePlayPause()
+        try await waitUntil("Resuming must play the latest voice") {
+            vm.isPlaying && audio.hasAudibleProgress && vm.debugResumeFirstPlaybackSeconds != nil
+        }
+        XCTAssertEqual(try XCTUnwrap(vm.debugResumeFirstPlaybackSeconds), 3, accuracy: 0.6)
+    }
+
+    func testFailedVoiceSwitchClearsProgressAndRetryRecoversTheVerifiedCursor() async throws {
+        let settings = AppSettings.shared, audio = AudioPlayerService.shared
+        let previous = settings.voice(for: "en")
+        settings.setVoice("vl_switch_test", for: "en")
+        let old = retokenizedSegment(words: ["We", "can't", "wait."], changedAudio: false)
+        let changed = retokenizedSegment("He can't wait.", words: ["He", "can", "'t", "wait."])
+        let fresh = retokenizedSegment(words: ["We", "can", "'t", "wait."])
+        let doc = ReadingDocument(id: UUID().uuidString, title: "Failure recovery", sourceKind: .text,
+                                  language: "en", paragraphs: paragraphs([old.text]))
+        let store = HistoryStore(directory: directory)
+        store.record(doc)
+        let speech = ControlledVoiceSwitchSpeech()
+        let vm = ReadAloudViewModel(document: doc, historyStore: store, speechGenerator: speech)
+        defer {
+            vm.stop(); vm.deactivate()
+            Task { await speech.cancelAll() }
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+        }
+        vm.startWithCachedSegments([old], paragraphIndex: 0, segmentID: old.id, progress: 4 / 30, isReplayEligible: false)
+        try await waitUntil("Clone playback must establish a cursor") {
+            vm.flushReadingProgress()
+            return vm.isPlaying && audio.hasAudibleProgress && !audio.isBuffering
+                && audio.playbackPosition >= 4 && store.readingCheckpoint(for: doc.id)?.audio != nil
+        }
+        settings.setVoice("af_nicole", for: "en")
+        try await waitForRequest(speech, voice: "af_nicole")
+        await speech.release("af_nicole", segments: [changed])
+        try await waitUntil("Changed content must fail visibly and end switching") {
+            vm.resumeNotice != nil && VoiceSwitchStatusCenter.shared.progress == nil
+        }
+        XCTAssertNil(audio.currentSegment)
+        XCTAssertFalse(audio.moreSegmentsExpected)
+        // Selecting another voice after alignment failure must actually request
+        // that voice instead of immediately returning behind resumeNotice.
+        settings.setVoice("am_puck", for: "en")
+        try await waitForRequest(speech, voice: "am_puck")
+        await speech.fail("am_puck")
+        try await waitUntil("A network error must also end switching") {
+            if case .error = vm.status { return VoiceSwitchStatusCenter.shared.progress == nil }
+            return false
+        }
+        XCTAssertFalse(audio.moreSegmentsExpected)
+        XCTAssertNil(audio.currentSegment)
+        vm.togglePlayPause()
+        try await waitForRequest(speech, voice: "am_puck")
+        await speech.release("am_puck", segments: [fresh])
+        try await waitUntil("Retry must resume the verified position with the chosen voice") {
+            vm.resumeNotice == nil && vm.isPlaying && audio.hasAudibleProgress && vm.debugResumeFirstPlaybackSeconds != nil
+        }
+        XCTAssertEqual(audio.currentSegment?.audioData, fresh.audioData)
+        XCTAssertEqual(try XCTUnwrap(vm.debugResumeFirstPlaybackSeconds), 3, accuracy: 0.6)
+    }
+}
+
+extension ReadingResumeTests {
+    func testCommunityPersonalAndRegularVoicesRoundTripWhileReadingKindle() async throws {
+        let settings = AppSettings.shared, audio = AudioPlayerService.shared
+        let previous = settings.voice(for: "en")
+        settings.setVoice("vl_switch_test", for: "en")
+        let whole = retokenizedSegment(words: ["We", "can't", "wait."], changedAudio: false)
+        let split = retokenizedSegment(words: ["We", "can", "'t", "wait."])
+        let doc = ReadingDocument(id: UUID().uuidString, title: "Voice round trip", sourceKind: .kindle,
+                                  language: "en", paragraphs: paragraphs([whole.text]))
+        let store = HistoryStore(directory: directory)
+        store.record(doc)
+        let speech = ControlledVoiceSwitchSpeech()
+        let vm = ReadAloudViewModel(document: doc, historyStore: store, speechGenerator: speech)
+        defer {
+            vm.stop(); vm.deactivate()
+            Task { await speech.cancelAll() }
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+        }
+        vm.startWithCachedSegments([whole], paragraphIndex: 0, segmentID: whole.id,
+                                   progress: 4 / 30, isReplayEligible: false)
+        try await waitUntil("Initial playback must persist its cursor") {
+            vm.flushReadingProgress()
+            return vm.isPlaying && audio.hasAudibleProgress && !audio.isBuffering
+                && audio.playbackPosition >= 4 && store.readingCheckpoint(for: doc.id)?.audio != nil
+        }
+        for (voice, replacement) in [("af_nicole", split), ("vc_personal_switch_test", whole),
+                                     ("af_heart", split), ("vl_switch_test", whole), ("am_puck", split)] {
+            vm.flushReadingProgress()
+            if voice.hasPrefix("vc_") { settings.setActiveClonedVoice(voice, for: "en") }
+            else { settings.setVoice(voice, for: "en") }
+            try await waitForRequest(speech, voice: voice)
+            XCTAssertNil(audio.currentSegment, "Old audio must be removed at each handoff")
+            await speech.release(voice, segments: [replacement])
+            try await waitUntil("Each voice family must resume playback and finish its transaction") {
+                vm.resumeNotice == nil && vm.isPlaying && audio.hasAudibleProgress
+                    && VoiceSwitchStatusCenter.shared.progress == nil
+                    && audio.currentSegment?.audioData == replacement.audioData
+                    && vm.debugResumeFirstPlaybackSeconds != nil
+            }
+            XCTAssertEqual(settings.voice(for: "en"), voice)
+            XCTAssertEqual(try XCTUnwrap(vm.debugResumeFirstPlaybackSeconds), 3, accuracy: 0.6)
+            if case .error = vm.status { XCTFail("Voice round trip must remain playable") }
+        }
+    }
+}

@@ -71,6 +71,7 @@ struct ReadingResumeAudioCursor: Codable, Equatable {
     var semanticOffset: Int? = nil
     var semanticPrefixFingerprint: String? = nil
     var semanticWordFingerprint: String? = nil
+    var semanticWordUTF16Length: Int? = nil
 
     var isValid: Bool {
         outputUTF16Offset >= 0 && segmentIndex >= 0
@@ -218,6 +219,7 @@ enum ReadingResumeContract {
         audio.semanticOffset = semanticPrefix.utf16.count
         audio.semanticPrefixFingerprint = fingerprint(semanticPrefix)
         audio.semanticWordFingerprint = context.wordHash
+        audio.semanticWordUTF16Length = semanticText(source.substring(with: range)).utf16.count
         var result = ReadingResumeDocumentIndex(paragraphs: paragraphs).checkpoint(
             sourceKind: .kindle, paragraphIndex: index, audio: audio, now: checkpoint.updatedAt)
         result?.visual = ReadingResumeVisualCursor(sourceFingerprint: fingerprint(paragraphs[index].text),
@@ -372,6 +374,7 @@ enum ReadingResumeContract {
             cursor.semanticOffset = semanticPrefix.utf16.count
             cursor.semanticPrefixFingerprint = fingerprint(semanticPrefix)
             cursor.semanticWordFingerprint = fingerprint(semanticText(word.timestamp.word))
+            cursor.semanticWordUTF16Length = semanticText(word.timestamp.word).utf16.count
         }
         return cursor
     }
@@ -483,10 +486,64 @@ enum ReadingResumeContract {
                             + cursor.wordFraction * (word.timestamp.endTime - word.timestamp.startTime))
                     }
                 }
-                return isComplete ? .unavailable : .waiting
+                return resolveRetokenizedAudio(cursor, segments: segments, isComplete: isComplete)
             }
             preceding += normalized
         }
-        return isComplete ? .unavailable : .waiting
+        return resolveRetokenizedAudio(cursor, segments: segments, isComplete: isComplete)
+    }
+
+    /// Engines can split or merge timestamp tokens while speaking identical
+    /// text ("can't" vs "can" + "'t", or several Chinese characters). Verify the
+    /// saved prefix AND full target word before accepting a different boundary.
+    /// Replay the first overlapping timed token; an old fractional time cannot
+    /// safely describe a differently sized token. Missing timing never guesses.
+    private static func resolveRetokenizedAudio(
+        _ cursor: ReadingResumeAudioCursor, segments: [AudioSegment], isComplete: Bool
+    ) -> ReadingResumeAudioResolution {
+        let unresolved: ReadingResumeAudioResolution = isComplete ? .unavailable : .waiting
+        guard let offset = cursor.semanticOffset, offset >= 0,
+              let prefixHash = cursor.semanticPrefixFingerprint,
+              let wordHash = cursor.semanticWordFingerprint else { return unresolved }
+        let raw = segments.map(\.text).joined() as NSString
+        let normalized = semanticText(raw as String) as NSString
+        var length = cursor.semanticWordUTF16Length
+        if length == nil, let rawLength = cursor.outputUTF16Length,
+           cursor.outputUTF16Offset <= raw.length, rawLength > 0,
+           rawLength <= raw.length - cursor.outputUTF16Offset,
+           fingerprint(raw.substring(to: cursor.outputUTF16Offset)) == cursor.outputPrefixFingerprint {
+            // Recover checkpoints written before semantic word length existed.
+            // The full normalized word hash below must still match exactly.
+            length = semanticText(raw.substring(with: NSRange(
+                location: cursor.outputUTF16Offset, length: rawLength))).utf16.count
+        }
+        guard let length, length > 0, offset <= normalized.length,
+              length <= normalized.length - offset,
+              fingerprint(normalized.substring(to: offset)) == prefixHash,
+              fingerprint(normalized.substring(with: NSRange(location: offset, length: length))) == wordHash
+        else { return unresolved }
+
+        let end = offset + length
+        var covered = offset
+        var precedingLength = 0
+        var first: (index: Int, time: Double)?
+        for (index, segment) in segments.enumerated() {
+            let text = segment.text as NSString
+            for word in timedWords(segment) {
+                let start = precedingLength + semanticText(text.substring(to: word.range.location)).utf16.count
+                let wordEnd = start + semanticText(text.substring(with: word.range)).utf16.count
+                guard wordEnd > covered else { continue }
+                guard start <= covered,
+                      word.timestamp.startTime < segment.duration,
+                      word.timestamp.endTime <= segment.duration else { return unresolved }
+                if first == nil { first = (index, word.timestamp.startTime) }
+                covered = wordEnd
+                if covered >= end, let first {
+                    return .seek(segmentIndex: first.index, seconds: first.time)
+                }
+            }
+            precedingLength += semanticText(segment.text).utf16.count
+        }
+        return unresolved
     }
 }
