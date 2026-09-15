@@ -445,8 +445,8 @@ struct VoiceUsageBadge: View {
                         .foregroundStyle(AppTheme.primary)
                         .contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityIdentifier("voiceQuota_\(voice.id)")
-            } else {
-                Text(pro.isPro ? AppLocalized("不限时") : voice.isPro ? "Pro" : AppLocalized("免费"))
+            } else if voice.isPro && !pro.isPro {
+                Text("Pro")
                     .foregroundStyle(AppTheme.mutedForeground)
             }
         }.font(.system(size: 10, weight: .medium))
