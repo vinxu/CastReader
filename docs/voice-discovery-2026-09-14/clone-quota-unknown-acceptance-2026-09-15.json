@@ -1,0 +1,99 @@
+{
+  "date": "2026-09-15",
+  "issue": "Unknown clone allowance incorrectly represented as exhausted",
+  "source": {
+    "global": "00ef5c566d830fe42266eb1bb6746fb741437a3c",
+    "cn": "2251845f60d96ba4a2d4dc9368714dcb549b6771",
+    "ios": "9f946ac42c2952f7ca4dced49f937f22f3e84b1c"
+  },
+  "verification": {
+    "backendPassed": 33,
+    "typescriptPassed": true,
+    "iosSimulatorPassed": 158,
+    "iosSimulatorSkipped": 3,
+    "iosDevicePassed": 2,
+    "deviceTestsUseIsolatedLocalStores": true
+  },
+  "global": {
+    "deployment": "dpl_DyQXckktVvKQz7xRiVn4sTNrSvXr",
+    "url": "https://readout-8f95knjpx-castreader.vercel.app",
+    "alias": "api.castreader.ai",
+    "rollbackDeployment": "dpl_Df3t4UccxmoydN9qJyUU9coqFajZ"
+  },
+  "cn": {
+    "release": "/opt/castreader/release-20260915180927",
+    "rollbackRelease": "/opt/castreader/release-20260915170844"
+  },
+  "iphone": {
+    "version": "1.2.40",
+    "build": "61",
+    "dylibUUID": "05B062F6-09BE-3EFB-8D85-0AB458D7B31D",
+    "installedAt": "2026-09-15T18:34:37+08:00",
+    "launchedAt": "2026-09-15T18:34:39+08:00",
+    "normalStartupReceivedNonzeroBalance": true
+  },
+  "candidate": {
+    "passed": true,
+    "catalogs": [
+      {
+        "region": "int",
+        "voices": 1606,
+        "community": 1323,
+        "collections": 7,
+        "identical": true
+      },
+      {
+        "region": "cn",
+        "voices": 1606,
+        "community": 1323,
+        "collections": 7,
+        "identical": true
+      }
+    ],
+    "cronCount": 14,
+    "commitSha": "00ef5c566d830fe42266eb1bb6746fb741437a3c"
+  },
+  "liveChecks": {
+    "global": {
+      "checks": [
+        {
+          "label": "78-minutes",
+          "http": 200,
+          "policy": "monthly_120_v1",
+          "remaining": 4680,
+          "used": 2520
+        },
+        {
+          "label": "exhausted",
+          "http": 200,
+          "policy": "monthly_120_v1",
+          "remaining": 0,
+          "used": 7200
+        }
+      ],
+      "cleanedUp": true,
+      "passed": true
+    },
+    "cn": {
+      "region": "cn",
+      "checks": [
+        {
+          "label": "78-minutes",
+          "http": 200,
+          "policy": "monthly_120_v1",
+          "remaining": 4680,
+          "used": 2520
+        },
+        {
+          "label": "exhausted",
+          "http": 200,
+          "policy": "monthly_120_v1",
+          "remaining": 0,
+          "used": 7200
+        }
+      ],
+      "cleanedUp": true,
+      "passed": true
+    }
+  }
+}
