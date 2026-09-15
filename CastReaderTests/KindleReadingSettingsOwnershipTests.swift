@@ -1177,8 +1177,37 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         } catch {
             // KindleBookError is private to the model's source file. Assert its
             // public LocalizedError result, not a test-only internal cast.
-            XCTAssertEqual(error.localizedDescription, AppLocalized("请先处理 Amazon 的 Cookie 提示。"))
+            XCTAssertFalse(model.isAmazonCookieConsentVisible)
+            XCTAssertEqual(error.localizedDescription, AppLocalized("Kindle 页面正在准备中。"))
         }
+    }
+
+    func testVoicePanelAllowsStablePageObservationWithoutChangingViewport() async throws {
+        try await loadFixture()
+        _ = try await model.webView.evaluateJavaScript("""
+          window.fixtureStableReadCount=0;
+          Object.defineProperty(window,'__crKindleState',{configurable:false,writable:false,value:()=>{
+            window.fixtureStableReadCount++;
+            return JSON.stringify({key:'voice-page',orderedCount:1,ordered:'voice-page',visibleArea:100,
+              viewportWidth:innerWidth,viewportHeight:innerHeight,
+              rect:{left:0,top:0,width:390,height:700}});
+          }});
+          true;
+        """)
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        model.setPlayerControlOverlayPresented(true)
+        let bounds = model.webView.bounds
+        let transform = model.webView.transform
+        XCTAssertFalse(model.isAmazonCookieConsentVisible)
+        try await model.waitForStablePageForTesting()
+        let reads = try await model.webView.evaluateJavaScript("window.fixtureStableReadCount") as? Int
+        XCTAssertGreaterThanOrEqual(reads ?? 0, 4)
+        XCTAssertEqual(model.webView.bounds, bounds)
+        XCTAssertEqual(model.webView.transform, transform)
+        model.setPlayerControlOverlayPresented(false)
+        // The dismissal's frozen viewport must permit the same observation.
+        try await model.waitForStablePageForTesting()
     }
 
     private func loadFixture(initializeControls: Bool = true) async throws {

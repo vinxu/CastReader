@@ -818,6 +818,12 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             VoiceCloneStore.shared.applyQuotaHeaders(http)
         }
         guard 200..<300 ~= http.statusCode else {
+            // Correlate a failed voice with the gateway's stable error code;
+            // never log account credentials, spoken text or response bodies.
+            ReaderRunLog.write(
+                "TTS clone rejected request=\(requestID) voice=\(voiceID) " +
+                "status=\(http.statusCode) code=\(code ?? "unknown")"
+            )
             let message = VoiceCloneResponseParser.serverMessage(from: data)
             if code == "CLONE_QUOTA_EXHAUSTED" {
                 let resetAt = VoiceCloneResponseParser.quotaResetAt(from: data)

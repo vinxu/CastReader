@@ -2441,6 +2441,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     var startDocumentPreparationForTesting: (() async throws -> ReadingDocument)?
     var syncDialogReadinessForTesting: (() async throws -> Void)?
     var readSpeechGeneratorForTesting: (any ParagraphSpeechGenerating)?
+    func waitForStablePageForTesting() async throws { try await waitForKindleImageStable() }
     #endif
     private var pendingPersistentAnchor: KindleListeningAnchor?
     private var listeningAnchorPersistTask: Task<Void, Never>?
@@ -3637,7 +3638,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         )
         if !allowed {
             KindleRunLog.write(
-                "KINDLE operation paused operation=\(operation.rawValue) reason=\(reason)"
+                "KINDLE operation paused operation=\(operation.rawValue) reason=\(reason) " +
+                "cookie=\(isAmazonCookieConsentVisible) voicePanel=\(playerOverlayBlocksLayout) " +
+                "readingSettings=\(isReadingSettingsPresented || isApplyingReadingSettings)"
             )
         }
         return allowed
@@ -3648,7 +3651,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         reason: String
     ) throws {
         guard readerOperationAllowed(operation, reason: reason) else {
-            throw KindleBookError.cookieConsentVisible
+            throw isAmazonCookieConsentVisible ? KindleBookError.cookieConsentVisible : KindleBookError.busy
         }
     }
 
@@ -13963,11 +13966,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func waitForKindleImageStable() async throws {
-        try requireReaderOperation(.layoutRepair, reason: "wait-image-stable")
+        // Observing the already-rendered page does not change its layout. Voice
+        // panels freeze viewport mutations, but continuous reading must still
+        // confirm/capture the next page underneath that stable viewport.
+        try requireReaderOperation(.capture, reason: "wait-image-stable")
         var previousSignature: String?
         var stableHits = 0
         for attempt in 0..<24 {
-            try requireReaderOperation(.layoutRepair, reason: "wait-image-stable-loop")
+            try requireReaderOperation(.capture, reason: "wait-image-stable-loop")
             installCaptureScript()
             if let state = try? await evaluateJSON("window.__crKindleState && window.__crKindleState()"),
                let rect = state["rect"] as? [String: Any] {

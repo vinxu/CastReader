@@ -447,6 +447,12 @@ class AudioPlayerService: NSObject, ObservableObject {
     private var wasInterrupted = false
     private var playbackSuspendedByInterruption = false
     private var playbackRequested = false
+    /// A held/retired next-page gate can be silent without becoming a user
+    /// Pause. Keep the requested transport intent across that transient state.
+    var hasPlaybackRequest: Bool {
+        playbackRequested && !isExplicitlyPaused && !playbackSuspendedByInterruption
+            && !hasTerminalPlaybackFailure
+    }
     /// A user pause outlives a network wait and is distinct from natural item
     /// completion (where isPlaying is also false).
     private(set) var isExplicitlyPaused = false

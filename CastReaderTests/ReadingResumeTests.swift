@@ -1480,3 +1480,63 @@ extension ReadingResumeTests {
         }
     }
 }
+
+extension ReadingResumeTests {
+    func testVoiceSwitchAfterRetiredPageGatePreservesPlaybackIntent() async throws {
+        try await exerciseRetiredPageGateVoiceSwitch(paused: false)
+    }
+
+    func testVoiceSwitchAfterRetiredPageGateHonorsExplicitPause() async throws {
+        try await exerciseRetiredPageGateVoiceSwitch(paused: true)
+    }
+
+    private func exerciseRetiredPageGateVoiceSwitch(paused: Bool) async throws {
+        let settings = AppSettings.shared, audio = AudioPlayerService.shared
+        let previous = settings.voice(for: "en")
+        settings.setVoice("vl_switch_test", for: "en")
+        let old = retokenizedSegment(words: ["We", "can't", "wait."], changedAudio: false)
+        let fresh = retokenizedSegment(words: ["We", "can", "'t", "wait."])
+        let future = retokenizedSegment("Next page.", words: ["Next", "page."], paragraph: 1)
+        let doc = ReadingDocument(id: UUID().uuidString, title: "Page gate switch", sourceKind: .kindle,
+                                  language: "en", paragraphs: paragraphs([old.text]))
+        let store = HistoryStore(directory: directory)
+        store.record(doc)
+        let speech = VoiceRecordingSpeech([fresh])
+        let vm = ReadAloudViewModel(document: doc, historyStore: store, speechGenerator: speech)
+        defer {
+            audio.canStartQueuedSegment = nil
+            vm.stop(); vm.deactivate()
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+        }
+        vm.startWithCachedSegments([old], paragraphIndex: 0, segmentID: old.id,
+                                   progress: 29 / 30, isReplayEligible: false)
+        let token = try XCTUnwrap(audio.activePlaybackSession)
+        audio.canStartQueuedSegment = { $0.id != future.id }
+        _ = audio.appendPreparedSegmentsForContinuousPlayback([future], session: token)
+        try await waitUntil("Natural completion must hold the next page at the gate") { audio.isQueuedSegmentGated }
+        vm.flushReadingProgress()
+        XCTAssertNotNil(store.readingCheckpoint(for: doc.id)?.audio)
+        XCTAssertTrue(audio.removePendingSegments(withIDs: [future.id]))
+        audio.canStartQueuedSegment = nil
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertFalse(audio.isBuffering)
+        XCTAssertFalse(audio.isExplicitlyPaused)
+        if paused { vm.pausePlayback() }
+        settings.setVoice("af_maya", for: "en")
+        try await waitUntil("The selected voice must replace the retired page gate") {
+            audio.currentSegment?.audioData == fresh.audioData && VoiceSwitchStatusCenter.shared.progress == nil
+        }
+        XCTAssertNil(vm.resumeNotice)
+        if paused {
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertTrue(audio.isExplicitlyPaused)
+        } else {
+            try await waitUntil("A transient page gate must not become a user Pause after switching") {
+                vm.isPlaying && audio.hasAudibleProgress
+            }
+        }
+        let voices = await speech.voices
+        XCTAssertEqual(voices, ["af_maya"])
+    }
+}

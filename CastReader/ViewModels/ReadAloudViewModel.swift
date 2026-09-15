@@ -3701,6 +3701,7 @@ final class ReadAloudViewModel: ObservableObject {
         VoiceSamplePlayer.shared.stop(resumeSuspendedPlayback: false)
         VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
         let shouldAutoPlay = previewHadSuspendedPlayback ||
+            (ownsAudioQueue && audio.hasPlaybackRequest && !isPlaybackPausedByUser) ||
             (retryingAudioResume && !isPlaybackPausedByUser) ||
             (!audio.isExplicitlyPaused && (audio.isPlaying ||
                 audio.isQueuedSegmentGated || status.isLoading ||
@@ -3720,6 +3721,11 @@ final class ReadAloudViewModel: ObservableObject {
             to: newVoiceID
         )
         activeVoiceSwitchID = switchID
+        ReaderRunLog.write(
+            "READ voice switch begin from=\(oldVoiceID) to=\(newVoiceID) " +
+            "para=\(currentParagraphIndex) auto=\(shouldAutoPlay) " +
+            "requested=\(audio.hasPlaybackRequest) userPaused=\(isPlaybackPausedByUser)"
+        )
         NSLog(
             "CRDBG voice switch begin lang=%@ from=%@ to=%@ para=%d autoPlay=%@",
             docLanguage,
