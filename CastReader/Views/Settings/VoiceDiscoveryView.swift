@@ -54,7 +54,12 @@ struct VoiceDiscoveryFeed: View {
     }
 
     var body: some View {
-        LazyVStack(alignment: .leading, spacing: 28) {
+        // The parent browser already owns the vertical lazy stack and its
+        // pinned header. A second vertical lazy stack can repeatedly invalidate
+        // its estimated height while scrolling (observed with the short French
+        // feed on iOS 26). This is a bounded editorial feed, not the full catalog;
+        // give the parent a stable height and keep catalog rows lazy separately.
+        VStack(alignment: .leading, spacing: 28) {
             // Keep navigation origins mounted while only preference ranking
             // changes; otherwise favoriting a detail voice can pop its screen.
             if model.request?.catalogID == request.catalogID,

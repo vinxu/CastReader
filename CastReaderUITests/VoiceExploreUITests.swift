@@ -374,6 +374,15 @@ final class VoiceExploreUITests: XCTestCase {
         let voices = document["voices"] as! [[String: Any]]
         let cloneIDs = voices.compactMap { $0["id"] as? String }.filter { $0.hasPrefix("vl_") }
         XCTAssertEqual(cloneIDs.count, 6)
+        // This fixture tests identity subgroups; give all six entries the same
+        // source language so discovery's language filter is not another variable.
+        document["voices"] = voices.map { voice -> [String: Any] in
+            var value = voice
+            if (value["id"] as? String)?.hasPrefix("vl_") == true {
+                value["referenceLanguage"] = "en"
+            }
+            return value
+        }
         var edition = document["discovery"] as! [String: Any]
         var modules = edition["modules"] as! [[String: Any]]
         modules[0]["voiceIds"] = ["am_fenrir"] + cloneIDs
