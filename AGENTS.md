@@ -5,7 +5,8 @@
 - 当前本地 iPhone 迭代在 `/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914`，分支 `codex/mobile-voice-explore-20260914`。
 - 测试包必须同时保留音色发现与个人 / 朋友声音入口 `633f6bb`、EPUB TOC 与滚动分支 `ad4b885`（功能提交 `513c674`），以及发布源码祖先 `64c2dbd`。单独从任一功能分支打包会遗漏另一项。
 - 打包前执行 `bash scripts/build-voice-toc-integration.sh --check`；真机用同脚本 `--device`，通过 `CASTREADER_DEVICE_DERIVED_DATA` 指定独立构建目录。此脚本会检查三个祖先再执行原发布基线校验。
-- 这是本地测试集成，不代表 App Store 版本已更新。克隆切常规音色的恢复卡住问题仅完成诊断，不能把目录合并记为该问题已修复。
+- 当前真机应用源码为 `e573cde`：在上述集成上修复跨音色时间戳拆词 / 合词的续读对齐，并收敛切换事务的成功、失败、取消出口。202 项模拟器回归通过；8 项真机播放链路测试通过（可控 TTS 音频，真实 VM / AVPlayer，含 Kindle 三类音色往返）。验收证据见 `docs/voice-discovery-2026-09-14/reading-voice-switch-fix-2026-09-15.md`。
+- 这是本地测试集成，不代表 App Store 版本已更新。不得把目录合并提交 `487c746` 单独视为该切换问题已修复。
 
 ## 打包与本地真机包的基线校验（2026-09-14）
 
