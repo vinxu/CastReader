@@ -275,13 +275,17 @@ private struct VoiceEditorialVoiceRow: View {
                 }
             }
             Button(action: onPreview) {
-                Group {
-                    if previewStatus == .loading { ProgressView().controlSize(.small) }
-                    else {
-                        Label(AppLocalized("试听"), systemImage: previewStatus == .playing ? "stop.fill" : "play.fill")
-                            .font(.caption.weight(.bold))
-                    }
-                }.frame(width: 76, height: 40)
+                HStack(spacing: 8) {
+                    ZStack {
+                        Image(systemName: previewStatus == .playing ? "stop.fill" : "play.fill")
+                            .opacity(previewStatus == .loading ? 0 : 1)
+                        if previewStatus == .loading { ProgressView().controlSize(.mini) }
+                    }.frame(width: 14, height: 14)
+                    Text(AppLocalized("试听")).lineLimit(1)
+                }.font(.caption.weight(.semibold))
+                    .padding(.horizontal, 16)
+                    .frame(minHeight: 44)
+                    .fixedSize(horizontal: true, vertical: false)
                     .foregroundStyle(AppTheme.primary)
                     .background(AppTheme.primary.opacity(0.09), in: Capsule())
             }.buttonStyle(.plain).accessibilityIdentifier("voicePreview_\(voice.id)")
