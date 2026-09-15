@@ -236,6 +236,8 @@ actor ProBackendService {
         }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        let quotaRequestID = UUID().uuidString
+        request.setValue(quotaRequestID, forHTTPHeaderField: "X-Request-ID")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
         Self.debugLog("status-v2 START device=\(Self.redact(Self.deviceId))")
@@ -254,6 +256,7 @@ actor ProBackendService {
                 return .unavailable
             }
             let status = try ProStatusDTO.decodeServerResponse(from: data)
+            ReaderRunLog.write("CLONE quota status request=\(quotaRequestID) policy=\(status.clonePolicy ?? "legacy") remaining=\(status.cloneMonthlyRemainingSeconds.map(String.init) ?? "unknown")")
             if let config = status.growthConfig {
                 await ProductAnalytics.shared.trackGrowthConfigAssigned(
                     configId: config.configId,

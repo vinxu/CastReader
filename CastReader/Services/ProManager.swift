@@ -153,6 +153,7 @@ final class ProManager: ObservableObject {
         let identityLinked = await AuthService.shared
             .linkGrowthIdentityIfAuthenticated()
 
+        let quotaRead = VoiceCloneStore.shared.beginQuotaRead()
         let outcome = await ProBackendService.shared.fetchStatus()
         let status: ProStatusDTO
         switch outcome {
@@ -192,7 +193,7 @@ final class ProManager: ObservableObject {
             AuthService.shared.fillMissingProfile(name: account.name, pictureURL: account.image)
         }
         QuotaManager.shared.applyServerStatus(status)
-        VoiceCloneStore.shared.applyServerStatus(status)
+        VoiceCloneStore.shared.applyServerStatus(status, readSequence: quotaRead)
         refreshSyncState(reason: "refresh-server")
 
         if allowGrowthBootstrapRetry,

@@ -42,6 +42,8 @@ final class VoiceCloneStore: ObservableObject {
     private var accountGeneration: UInt64 = 0
     private var refreshGeneration: UInt64 = 0
     private var capabilityUpdatedAt: Date?
+    private var quotaReadSequence: UInt64 = 0
+    private var appliedQuotaReadSequence: UInt64 = 0
     private var activeCreateRequestID: UUID?
     private var pendingCreateIdempotency: PendingCreateIdempotency?
     private var activeCreateTask: Task<ClonedVoice, Error>?
@@ -244,6 +246,7 @@ final class VoiceCloneStore: ObservableObject {
             return
         }
         let token = beginRefresh()
+        let quotaRead = beginQuotaRead()
         isLoading = true
         defer {
             if isCurrent(token) {
@@ -260,7 +263,7 @@ final class VoiceCloneStore: ObservableObject {
             )
             nextCreateAt = result.nextCreateAt
             voiceGiftEnabled = result.voiceGiftEnabled
-            applyCapability(result.capability)
+            applyCapability(result.capability, readSequence: quotaRead)
             for voice in voices {
                 if let language = voice.referenceLanguage {
                     referenceLanguages[voice.voiceId] = VoiceCatalog.normalizedLanguage(language)
@@ -785,7 +788,18 @@ final class VoiceCloneStore: ObservableObject {
         }
     }
 
-    func applyServerStatus(_ status: ProStatusDTO) {
+    /// Number reads when they start, so a slow earlier status/list response
+    /// cannot replace a newer synthesis or entitlement snapshot.
+    func beginQuotaRead() -> UInt64 {
+        quotaReadSequence &+= 1
+        return quotaReadSequence
+    }
+
+    func applyServerStatus(_ status: ProStatusDTO, readSequence: UInt64? = nil) {
+        guard status.clonePolicy != "unavailable" else {
+            ReaderRunLog.write("CLONE quota status unavailable; preserving confirmed balance")
+            return
+        }
         applyCapability(
             VoiceCloneCapability(
                 canCreate: status.cloneCanCreate,
@@ -795,15 +809,28 @@ final class VoiceCloneStore: ObservableObject {
                 monthlyUsedSeconds: status.cloneMonthlyUsedSeconds,
                 monthlyRemainingSeconds: status.cloneMonthlyRemainingSeconds,
                 resetAt: VoiceCloneResponseParser.parseServerDate(status.cloneQuotaResetAt)
-            )
+            ), readSequence: readSequence
         )
     }
 
     func clearEntitlementStatus() {
         capability = .unknown
+        capabilityUpdatedAt = nil
+        appliedQuotaReadSequence = beginQuotaRead()
     }
 
-    func applyCapability(_ update: VoiceCloneCapability) {
+    @discardableResult
+    func applyCapability(_ update: VoiceCloneCapability, readSequence: UInt64? = nil) -> Bool {
+        let hasQuota = update.canApply != nil || update.monthlyRemainingSeconds != nil
+            || update.monthlyUsedSeconds != nil || update.resetAt != nil
+        if hasQuota {
+            let sequence = readSequence ?? beginQuotaRead()
+            guard sequence >= appliedQuotaReadSequence else {
+                ReaderRunLog.write("CLONE quota stale snapshot ignored read=\(sequence) applied=\(appliedQuotaReadSequence)")
+                return false
+            }
+            appliedQuotaReadSequence = sequence
+        }
         if update.canApply != nil || update.monthlyRemainingSeconds != nil { capabilityUpdatedAt = Date() }
         // Decode legacy creation fields for wire compatibility, but never use
         // or persist them as an eligibility gate. Older servers may briefly
@@ -820,16 +847,17 @@ final class VoiceCloneStore: ObservableObject {
             }
         }
         if let value = update.resetAt { capability.resetAt = value }
+        return true
     }
 
-    func applyQuotaHeaders(_ response: HTTPURLResponse) {
-        applyCapability(VoiceCloneResponseParser.quotaCapability(from: response))
+    func applyQuotaHeaders(_ response: HTTPURLResponse, readSequence: UInt64? = nil) {
+        applyCapability(VoiceCloneResponseParser.quotaCapability(from: response), readSequence: readSequence)
     }
 
-    func markQuotaExhausted(resetAt: Date?) {
-        capability.canApply = false
-        capability.monthlyRemainingSeconds = 0
-        if let resetAt { capability.resetAt = resetAt }
+    @discardableResult
+    func markQuotaExhausted(resetAt: Date?, readSequence: UInt64? = nil) -> Bool {
+        applyCapability(VoiceCloneCapability(canApply: false, monthlyRemainingSeconds: 0,
+                                             resetAt: resetAt), readSequence: readSequence)
     }
 
     private func handle(_ error: Error) {
@@ -919,6 +947,7 @@ final class VoiceCloneStore: ObservableObject {
 
     private func invalidateAccountWork() {
         capabilityUpdatedAt = nil
+        appliedQuotaReadSequence = beginQuotaRead()
         accountGeneration &+= 1
         invalidateRefreshes()
         activeCreateTask?.cancel()

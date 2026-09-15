@@ -755,7 +755,9 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             let error = VoiceCloneError.quotaExhausted(accessState.resetAt)
             await MainActor.run {
                 guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
-                VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
+                if priority == .interactive {
+                    VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
+                }
             }
             throw error
         }
@@ -784,6 +786,7 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         request.setValue(priority.rawValue, forHTTPHeaderField: "X-TTS-Priority")
         request.setValue(requestID, forHTTPHeaderField: "X-Request-ID")
 
+        let quotaRead = await MainActor.run { VoiceCloneStore.shared.beginQuotaRead() }
         let data: Data
         let response: URLResponse
         do {
@@ -834,11 +837,12 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             ?? "unknown"
         ReaderRunLog.write(
             "TTS clone response request=\(responseRequestID) " +
-            "status=\(http.statusCode) quota=\(quotaMode) attempt=\(transientAttempt + 1)"
+            "status=\(http.statusCode) quota=\(quotaMode) attempt=\(transientAttempt + 1) " +
+            "remaining=\(http.value(forHTTPHeaderField: "X-Clone-Quota-Remaining-Seconds") ?? "unknown")"
         )
         await MainActor.run {
             guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
-            VoiceCloneStore.shared.applyQuotaHeaders(http)
+            VoiceCloneStore.shared.applyQuotaHeaders(http, readSequence: quotaRead)
         }
         guard 200..<300 ~= http.statusCode else {
             // Correlate a failed voice with the gateway's stable error code;
@@ -854,8 +858,10 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                 let error = VoiceCloneError.quotaExhausted(resetAt)
                 await MainActor.run {
                     guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
-                    VoiceCloneStore.shared.markQuotaExhausted(resetAt: resetAt)
-                    VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
+                    let applied = VoiceCloneStore.shared.markQuotaExhausted(resetAt: resetAt, readSequence: quotaRead)
+                    if applied, priority == .interactive {
+                        VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
+                    }
                 }
                 throw error
             }

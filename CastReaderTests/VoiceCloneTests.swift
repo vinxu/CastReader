@@ -2,6 +2,70 @@ import XCTest
 @testable import CastReader
 
 final class VoiceCloneTests: XCTestCase {
+    @MainActor
+    func testUnavailableQuotaStatusNeverInventsOrClearsExhaustion() throws {
+        let suite = "QuotaUnavailable-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = VoiceCloneStore(defaults: defaults)
+        let resetAt = Date().addingTimeInterval(86_400)
+        store.applyCapability(.init(canApply: true, monthlyUsedSeconds: 2520,
+                                    monthlyRemainingSeconds: 4680, resetAt: resetAt))
+        let original = store.capability
+        // Cover both a rolling old gateway's fabricated zero and the fixed
+        // nullable response. Neither may overwrite the last confirmed state.
+        for remaining in ["0", "null"] {
+            let data = Data("""
+            {"pro":true,"clonePolicy":"unavailable","cloneCanApply":false,
+             "cloneMonthlyRemainingSeconds":\(remaining),"cloneMonthlyUsedSeconds":0}
+            """.utf8)
+            store.applyServerStatus(try ProStatusDTO.decodeServerResponse(from: data))
+            XCTAssertEqual(store.capability, original)
+            XCTAssertFalse(store.isQuotaBlocked)
+        }
+        store.markQuotaExhausted(resetAt: resetAt)
+        let unavailable = try ProStatusDTO.decodeServerResponse(from:
+            Data(#"{"pro":true,"clonePolicy":"unavailable"}"#.utf8))
+        store.applyServerStatus(unavailable)
+        XCTAssertTrue(store.isQuotaBlocked, "Unknown must not erase confirmed exhaustion either")
+        store.clearEntitlementStatus()
+        store.applyServerStatus(unavailable)
+        XCTAssertNil(store.capability.monthlyRemainingSeconds)
+        XCTAssertFalse(store.isQuotaBlocked, "An account without a snapshot is unknown, not exhausted")
+    }
+
+    @MainActor
+    func testQuotaResponsesIgnoreOlderReadsAndAccountInvalidation() throws {
+        let suite = "QuotaOrdering-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = VoiceCloneStore(defaults: defaults)
+        let slowStatus = store.beginQuotaRead()
+        let newerSpeech = store.beginQuotaRead()
+        let headers = HTTPURLResponse(url: URL(string: "https://api.castreader.ai")!,
+            statusCode: 200, httpVersion: nil, headerFields: [
+                "X-Clone-Quota-Remaining-Seconds": "4680",
+                "X-Clone-Quota-Used-Seconds": "2520",
+            ])!
+        store.applyQuotaHeaders(headers, readSequence: newerSpeech)
+        let zeroStatus = try ProStatusDTO.decodeServerResponse(from:
+            Data(#"{"pro":true,"clonePolicy":"monthly_120_v1","cloneMonthlyRemainingSeconds":0}"#.utf8))
+        store.applyServerStatus(zeroStatus, readSequence: slowStatus)
+        XCTAssertEqual(store.capability.monthlyRemainingSeconds, 4680)
+        XCTAssertFalse(store.markQuotaExhausted(resetAt: nil, readSequence: slowStatus))
+        XCTAssertFalse(store.isQuotaBlocked)
+
+        let confirmedExhaustion = store.beginQuotaRead()
+        store.applyServerStatus(zeroStatus, readSequence: confirmedExhaustion)
+        store.applyQuotaHeaders(headers, readSequence: newerSpeech)
+        XCTAssertTrue(store.isQuotaBlocked, "An old success cannot unlock a newer exhausted decision")
+
+        let oldAccount = store.beginQuotaRead()
+        store.activateAccountScope(storageID: String(repeating: "a", count: 64))
+        store.applyServerStatus(zeroStatus, readSequence: oldAccount)
+        XCTAssertNil(store.capability.monthlyRemainingSeconds)
+    }
+
     func testFamiliarVoicesMixOwnAndFriendsByCreationDateAndExcludeLostAccess() {
         let owner = ClonedVoice(voiceId: "mine", createdAt: "2026-09-15T11:00:00Z")
         let invited = ClonedVoice(voiceId: "invited", createdAt: "2026-09-15T19:30:00+08:00", origin: .invitation)
