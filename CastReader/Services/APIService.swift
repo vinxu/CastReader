@@ -69,6 +69,19 @@ enum ClonedTTSRetryPolicy {
         1_800_000_000,
     ]
 
+    /// Preparation contention has its own backoff, within the same total
+    /// deadline. Authentication and ordinary service failures keep their limits.
+    static func delayNanoseconds(attempt: Int, serverCode: String? = nil,
+                                 retryAfter: String? = nil, remainingSeconds: TimeInterval) -> UInt64? {
+        let preparing = serverCode == "VOICE_PREPARING"
+        guard attempt < (preparing ? 12 : delaysNanoseconds.count), remainingSeconds > 0 else { return nil }
+        let fallback = preparing ? 3.0 : Double(delaysNanoseconds[attempt]) / 1_000_000_000
+        let serverDelay = retryAfter.flatMap(Double.init).flatMap { $0.isFinite && $0 > 0 ? $0 : nil }
+        let seconds = max(fallback, serverDelay ?? 0)
+        guard seconds < remainingSeconds else { return nil }
+        return UInt64(seconds * 1_000_000_000)
+    }
+
     static func isRetryable(_ error: Error) -> Bool {
         if let cloneError = error as? VoiceCloneError {
             switch cloneError {
@@ -640,6 +653,10 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             // JSON contract as preset voices.
             let networkRequestID = requestID ?? UUID().uuidString
             let queuedBoundary = await MainActor.run { AccountContentIsolation.captureBoundaryToken() }
+            if priority != .interactive {
+                try await VoiceSwitchStatusCenter.shared.waitForPreparation()
+            }
+            try Task.checkCancellation()
             let response = try await cloneScheduler.run(
                 priority: presetPriority ?? (priority == .interactive ? .interactive : .readAhead),
                 requestID: networkRequestID
@@ -681,7 +698,8 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         requestID: String = UUID().uuidString,
         canRefresh: Bool = true,
         transientAttempt: Int = 0,
-        accountBoundary: AccountContentBoundaryToken? = nil
+        accountBoundary: AccountContentBoundaryToken? = nil,
+        deadline: TimeInterval = ProcessInfo.processInfo.systemUptime + 90
     ) async throws -> TTSResponse {
         let expectedBoundary: AccountContentBoundaryToken?
         if let accountBoundary {
@@ -753,7 +771,10 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         guard let url = URL(string: Constants.API.clonedVoiceTTS) else {
             throw APIError.invalidURL
         }
+        let remainingSeconds = deadline - ProcessInfo.processInfo.systemUptime
+        guard remainingSeconds > 0 else { throw VoiceCloneError.temporaryUnavailable }
         var request = URLRequest(url: url)
+        request.timeoutInterval = min(75, remainingSeconds)
         request.httpMethod = "POST"
         request.httpBody = body
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -776,7 +797,8 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                 requestID: requestID,
                 canRefresh: canRefresh,
                 transientAttempt: transientAttempt,
-                accountBoundary: expectedBoundary
+                accountBoundary: expectedBoundary,
+                deadline: deadline
             ) {
                 return retry
             }
@@ -802,7 +824,8 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                 requestID: requestID,
                 canRefresh: false,
                 transientAttempt: transientAttempt,
-                accountBoundary: expectedBoundary
+                accountBoundary: expectedBoundary,
+                deadline: deadline
             )
         }
         let responseRequestID = http.value(forHTTPHeaderField: "X-Request-ID")
@@ -918,7 +941,10 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                     requestID: requestID,
                     canRefresh: canRefresh,
                     transientAttempt: transientAttempt,
-                    accountBoundary: expectedBoundary
+                    accountBoundary: expectedBoundary,
+                    deadline: deadline,
+                    serverCode: code,
+                    retryAfter: http.value(forHTTPHeaderField: "Retry-After")
                 ) {
                     return retry
                 }
@@ -933,7 +959,10 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                     requestID: requestID,
                     canRefresh: canRefresh,
                     transientAttempt: transientAttempt,
-                    accountBoundary: expectedBoundary
+                    accountBoundary: expectedBoundary,
+                    deadline: deadline,
+                    serverCode: code,
+                    retryAfter: http.value(forHTTPHeaderField: "Retry-After")
                 ) {
                     return retry
                 }
@@ -966,17 +995,22 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         requestID: String,
         canRefresh: Bool,
         transientAttempt: Int,
-        accountBoundary: AccountContentBoundaryToken?
+        accountBoundary: AccountContentBoundaryToken?,
+        deadline: TimeInterval,
+        serverCode: String? = nil,
+        retryAfter: String? = nil
     ) async throws -> TTSResponse? {
-        let delays = ClonedTTSRetryPolicy.delaysNanoseconds
-        guard transientAttempt < delays.count,
-              ClonedTTSRetryPolicy.isRetryable(error) else { return nil }
+        guard ClonedTTSRetryPolicy.isRetryable(error),
+              let delay = ClonedTTSRetryPolicy.delayNanoseconds(
+                attempt: transientAttempt, serverCode: serverCode, retryAfter: retryAfter,
+                remainingSeconds: deadline - ProcessInfo.processInfo.systemUptime
+              ) else { return nil }
         let nextAttempt = transientAttempt + 1
         ReaderRunLog.write(
             "TTS clone retry request=\(requestID) " +
             "next=\(nextAttempt + 1) error=\(error.localizedDescription)"
         )
-        try await Task.sleep(nanoseconds: delays[transientAttempt])
+        try await Task.sleep(nanoseconds: delay)
         try Task.checkCancellation()
         return try await requestClonedVoiceTTS(
             body: body,
@@ -985,7 +1019,8 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             requestID: requestID,
             canRefresh: canRefresh,
             transientAttempt: nextAttempt,
-            accountBoundary: accountBoundary
+            accountBoundary: accountBoundary,
+            deadline: deadline
         )
     }
 

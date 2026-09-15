@@ -2576,6 +2576,16 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(merged.audioFormat, response.audioFormat)
     }
 
+    func testPreparationRetriesRespectServerDelayAndOneTotalDeadline() {
+        XCTAssertEqual(ClonedTTSRetryPolicy.delayNanoseconds(attempt: 0, serverCode: "VOICE_PREPARING", retryAfter: "3", remainingSeconds: 20), 3_000_000_000)
+        XCTAssertEqual(ClonedTTSRetryPolicy.delayNanoseconds(attempt: 4, serverCode: "VOICE_PREPARING", retryAfter: "5", remainingSeconds: 20), 5_000_000_000)
+        XCTAssertNil(ClonedTTSRetryPolicy.delayNanoseconds(attempt: 4, serverCode: "VOICE_PREPARING", retryAfter: "3", remainingSeconds: 2))
+        XCTAssertNil(ClonedTTSRetryPolicy.delayNanoseconds(attempt: 12, serverCode: "VOICE_PREPARING", remainingSeconds: 90))
+        XCTAssertNil(ClonedTTSRetryPolicy.delayNanoseconds(attempt: 3, remainingSeconds: 90))
+        XCTAssertEqual(ClonedTTSRetryPolicy.delayNanoseconds(attempt: 0, serverCode: "VOICE_PREPARING", retryAfter: "nan", remainingSeconds: 20), 3_000_000_000)
+        XCTAssertNil(ClonedTTSRetryPolicy.delayNanoseconds(attempt: 0, retryAfter: "999999999999999999999", remainingSeconds: 90))
+    }
+
     func testClonedTTSRetryPolicyRetriesOnlyTransientFailures() {
         XCTAssertTrue(
             ClonedTTSRetryPolicy.isRetryable(

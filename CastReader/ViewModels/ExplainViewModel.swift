@@ -700,6 +700,12 @@ final class ExplainViewModel: ObservableObject {
         if let oldSwitchID = activeVoiceSwitchID {
             VoiceSwitchStatusCenter.shared.finish(oldSwitchID)
         }
+        let switchID = VoiceSwitchStatusCenter.shared.begin(
+            language: playbackLanguage,
+            from: oldVoiceID,
+            to: newVoiceID
+        )
+        activeVoiceSwitchID = switchID
         NotificationCenter.default.post(
             name: .castReaderPlaybackVoiceWillSwitch,
             object: self,
@@ -709,12 +715,6 @@ final class ExplainViewModel: ObservableObject {
                 "toVoiceID": newVoiceID,
             ]
         )
-        let switchID = VoiceSwitchStatusCenter.shared.begin(
-            language: playbackLanguage,
-            from: oldVoiceID,
-            to: newVoiceID
-        )
-        activeVoiceSwitchID = switchID
         guard let session = ensureAudioSessionClaim() else {
             VoiceSwitchStatusCenter.shared.finish(switchID)
             activeVoiceSwitchID = nil

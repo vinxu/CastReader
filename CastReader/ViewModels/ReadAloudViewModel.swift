@@ -3706,6 +3706,12 @@ final class ReadAloudViewModel: ObservableObject {
             (!audio.isExplicitlyPaused && (audio.isPlaying ||
                 audio.isQueuedSegmentGated || status.isLoading ||
                 (status.isStreaming && audio.currentSegment == nil && !audio.hasQueuedSegments)))
+        let switchID = VoiceSwitchStatusCenter.shared.begin(
+            language: docLanguage,
+            from: oldVoiceID,
+            to: newVoiceID
+        )
+        activeVoiceSwitchID = switchID
         NotificationCenter.default.post(
             name: .castReaderPlaybackVoiceWillSwitch,
             object: self,
@@ -3715,12 +3721,6 @@ final class ReadAloudViewModel: ObservableObject {
                 "toVoiceID": newVoiceID,
             ]
         )
-        let switchID = VoiceSwitchStatusCenter.shared.begin(
-            language: docLanguage,
-            from: oldVoiceID,
-            to: newVoiceID
-        )
-        activeVoiceSwitchID = switchID
         ReaderRunLog.write(
             "READ voice switch begin from=\(oldVoiceID) to=\(newVoiceID) " +
             "para=\(currentParagraphIndex) auto=\(shouldAutoPlay) " +

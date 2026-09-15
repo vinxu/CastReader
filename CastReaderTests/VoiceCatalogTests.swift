@@ -796,6 +796,27 @@ final class VoiceCatalogTests: XCTestCase {
     }
 
     @MainActor
+    func testBackgroundPreparationWaitsForNewestSwitchAndCancellationRemovesWaiters() async throws {
+        let center = VoiceSwitchStatusCenter.shared
+        let first = center.begin(language: "en", from: "af_heart", to: "af_bella")
+        let background = Task { try await center.waitForPreparation() }
+        let cancelled = Task { try await center.waitForPreparation() }
+        while center.debugPreparationWaiterCount < 2 { await Task.yield() }
+        cancelled.cancel()
+        do { try await cancelled.value; XCTFail("Expected cancelled wait") }
+        catch is CancellationError {}
+        XCTAssertEqual(center.debugPreparationWaiterCount, 1)
+        let second = center.begin(language: "en", from: "af_bella", to: "af_nicole")
+        center.finish(first)
+        XCTAssertEqual(center.debugPreparationWaiterCount, 1, "Stale completion must not release the next voice's wait")
+        center.finish(second)
+        try await background.value
+        XCTAssertEqual(center.debugPreparationWaiterCount, 0)
+        // Audio readiness releases the barrier without waiting for banner animation.
+        try await center.waitForPreparation()
+    }
+
+    @MainActor
     func testNewestVoiceSwitchTransactionCannotBeClearedByStaleCompletion() async {
         let center = VoiceSwitchStatusCenter.shared
         let first = center.begin(language: "ja", from: "jf_alpha", to: "jf_beta")

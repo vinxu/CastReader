@@ -903,12 +903,38 @@ final class VoiceSwitchStatusCenter: ObservableObject {
 
     @Published private(set) var progress: VoiceSwitchProgress?
     private let minimumVisibleDuration: TimeInterval = 0.65
+    private var preparingID: UUID?
+    private var preparationWaiters: [UUID: CheckedContinuation<Void, Error>] = [:]
+
+    /// Background generation waits outside transport admission. The UI's
+    /// minimum banner duration does not delay the next paragraph.
+    func waitForPreparation() async throws {
+        while preparingID != nil {
+            let waiterID = UUID()
+            try await withTaskCancellationHandler {
+                try Task.checkCancellation()
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    preparationWaiters[waiterID] = continuation
+                }
+            } onCancel: {
+                Task { @MainActor in
+                    self.preparationWaiters.removeValue(forKey: waiterID)?.resume(throwing: CancellationError())
+                }
+            }
+        }
+        try Task.checkCancellation()
+    }
+
+    #if DEBUG
+    var debugPreparationWaiterCount: Int { preparationWaiters.count }
+    #endif
 
     private init() {}
 
     @discardableResult
     func begin(language: String, from oldVoiceID: String, to newVoiceID: String) -> UUID {
         let id = UUID()
+        preparingID = id
         progress = VoiceSwitchProgress(
             id: id,
             language: VoiceCatalog.normalizedLanguage(language),
@@ -923,6 +949,12 @@ final class VoiceSwitchStatusCenter: ObservableObject {
 
     func finish(_ id: UUID) {
         guard let current = progress, current.id == id else { return }
+        if preparingID == id {
+            preparingID = nil
+            let waiters = preparationWaiters.values
+            preparationWaiters.removeAll()
+            waiters.forEach { $0.resume() }
+        }
         let delay = max(0, minimumVisibleDuration - Date().timeIntervalSince(current.startedAt))
         guard delay > 0.01 else {
             progress = nil

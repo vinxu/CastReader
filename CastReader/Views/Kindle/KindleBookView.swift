@@ -12777,6 +12777,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         clearPendingContinuation()
         cachedStartAudio = nil
         cachedStartAudioCandidates.removeAll()
+        // Retain captured pages, cancel generation under the previous voice.
+        pageCacheTask?.cancel()
+        pageCacheTask = nil
+        cachingNextPageAfterKey = nil
         let fromVoice = notification.userInfo?["fromVoiceID"] as? String ?? "-"
         let toVoice = notification.userInfo?["toVoiceID"] as? String ?? "-"
         KindleRunLog.write("KINDLE voice switch invalidate audio-prefetch from=\(fromVoice) to=\(toVoice) lang=\(requestedLanguage)")
