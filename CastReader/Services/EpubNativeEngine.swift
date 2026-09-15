@@ -12,6 +12,7 @@
 import Foundation
 import ZIPFoundation
 import SwiftSoup
+import ImageIO
 
 enum EpubNativeEngine {
 
@@ -25,6 +26,7 @@ enum EpubNativeEngine {
     struct ParsedEpub {
         let title: String?
         let paragraphs: [ReadingParagraph]
+        let navigation: EpubNavigation
     }
 
     /// 解析 EPUB 字节为顺序段落（图片段已回填字节）。失败返回 nil（调用方回退原上传流程）。
@@ -103,121 +105,139 @@ enum EpubNativeEngine {
             return d
         }
 
-        // 1. META-INF/container.xml → OPF 路径
-        guard let containerData = try entryData(
-            "META-INF/container.xml",
-            maximumBytes: maximumContainerMarkupBytes
-        ),
-              let containerXml = decodeXml(containerData),
-              let containerDoc = try? SwiftSoup.parse(containerXml, "", Parser.xmlParser()),
-              let opf = (try? containerDoc.select("rootfile").first()?.attr("full-path")) ?? nil,
-              !opf.isEmpty else {
-            try Task.checkCancellation()
-            return nil
+        // Container URLs are relative to the ZIP root, not META-INF.
+        guard let containerData = try entryData("META-INF/container.xml", maximumBytes: maximumContainerMarkupBytes),
+              let containerXML = decodeXml(containerData),
+              let container = try? SwiftSoup.parse(containerXML, "", Parser.xmlParser()) else { return nil }
+        let roots = EpubXML.descendants(container, "rootfile")
+        guard let root = roots.first(where: { EpubXML.attr($0, "media-type") == "application/oebps-package+xml" }) ?? roots.first,
+              let opf = EpubResourceURL.resolve(EpubXML.attr(root, "full-path"), relativeTo: "")?.path,
+              let opfData = try entryData(opf, maximumBytes: maximumPackageMarkupBytes),
+              let opfXML = decodeXml(opfData),
+              let opfDoc = try? SwiftSoup.parse(opfXML, "", Parser.xmlParser()) else { return nil }
+        struct Item {
+            let id: String
+            let path: String
+            let type: String
+            let properties: Set<String>
         }
-        try Task.checkCancellation()
-
-        // OPF 所在目录（相对 zip 根）—— manifest 内 href 相对此目录
-        let opfPathNorm = normHref(opf)
-        let opfDir: String = opfPathNorm.contains("/")
-            ? String(opfPathNorm[..<opfPathNorm.lastIndex(of: "/")!]) : ""
-
-        func zipPath(relOpf: String) -> String {
-            normHref(opfDir.isEmpty ? relOpf : opfDir + "/" + relOpf)
-        }
-
-        // 2. OPF → manifest（id→href,type）+ spine（阅读顺序）
-        let primaryOPFData = try entryData(opf, maximumBytes: maximumPackageMarkupBytes)
-        let resolvedOPFData: Data?
-        if let primaryOPFData {
-            resolvedOPFData = primaryOPFData
-        } else {
-            resolvedOPFData = try entryData(
-                opfPathNorm,
-                maximumBytes: maximumPackageMarkupBytes
-            )
-        }
-        guard let opfData = resolvedOPFData,
-              let opfXml = decodeXml(opfData),
-              let opfDoc = try? SwiftSoup.parse(opfXml, "", Parser.xmlParser()) else {
-            try Task.checkCancellation()
-            return nil
-        }
-        try Task.checkCancellation()
-
-        var manifest: [String: (href: String, type: String)] = [:]
-        let manifestItems = (try? opfDoc.select("manifest item").array()) ?? []
-        try Task.checkCancellation()
-        for item in manifestItems {
-            try Task.checkCancellation()
-            let id = (try? item.attr("id")) ?? ""
-            let href = (try? item.attr("href")) ?? ""
-            let type = (try? item.attr("media-type")) ?? ""
-            if !id.isEmpty, !href.isEmpty { manifest[id] = (href, type) }
-        }
-        var spine: [String] = []
-        let spineItems = (try? opfDoc.select("spine itemref").array()) ?? []
-        try Task.checkCancellation()
-        for r in spineItems {
-            try Task.checkCancellation()
-            let idref = (try? r.attr("idref")) ?? ""
-            if !idref.isEmpty { spine.append(idref) }
-        }
-        guard !spine.isEmpty else {
-            try Task.checkCancellation()
-            return nil
-        }
-
-        // 3. 内嵌图片资源：规范化 href（相对 OPF 目录）→ 字节
-        var images: [String: Data] = [:]
-        for item in manifest.values {
-            try Task.checkCancellation()
-            guard item.type.lowercased().hasPrefix("image/") else { continue }
-            if let d = try entryData(zipPath(relOpf: item.href)) {
-                images[normHref(item.href)] = d
-            }
-        }
-
-        // 4. 按 spine 顺序逐章解析 → 合并段落、重排 id、回填图片字节
-        var paragraphs: [ReadingParagraph] = []
-        var idx = 0
-        for idref in spine {
-            try Task.checkCancellation()
-            guard let item = manifest[idref] else { continue }
-            let t = item.type.lowercased()
-            guard t.contains("html") || t.contains("xml") else { continue }   // 仅 XHTML 章节
-            guard let chData = try entryData(
-                zipPath(relOpf: item.href),
-                maximumBytes: maximumChapterMarkupBytes
-            ),
-                  let xhtml = decodeXml(chData) else { continue }
-            try Task.checkCancellation()
-            let blocks = HtmlParser.parse(xhtml)
-            try Task.checkCancellation()
-            for b in blocks {
+        var items: [Item] = []
+        if let manifest = EpubXML.descendants(opfDoc, "manifest").first {
+            for element in EpubXML.children(manifest, "item") {
                 try Task.checkCancellation()
-                var imageData: Data? = nil
-                if b.type == .image {
-                    guard let href = b.imageHref else { continue }
-                    guard let d = images[resolveImageHref(href, chapterHref: item.href)] else { continue }   // 无字节 → 跳过图片段
-                    imageData = d
-                } else if b.text.isEmpty {
-                    continue
-                }
-                // 图片段 text 置空：占 id 保 index 对齐，但不让 caption("Image") 污染解读 fullText / 后端段落
-                paragraphs.append(ReadingParagraph(id: idx, text: b.type == .image ? "" : b.text, type: b.type, imageData: imageData))
-                idx += 1
+                let id = EpubXML.attr(element, "id")
+                guard !id.isEmpty, let target = EpubResourceURL.resolve(EpubXML.attr(element, "href"), relativeTo: opf) else { continue }
+                items.append(Item(id: id, path: target.path, type: EpubXML.attr(element, "media-type").lowercased(),
+                                  properties: EpubXML.tokens(EpubXML.attr(element, "properties"))))
             }
         }
+        var manifest: [String: Item] = [:]
+        for item in items where manifest[item.id] == nil { manifest[item.id] = item }
+        guard let spine = EpubXML.descendants(opfDoc, "spine").first else { return nil }
+        var chapters = EpubXML.children(spine, "itemref").compactMap { manifest[EpubXML.attr($0, "idref")] }
+        guard !chapters.isEmpty else { return nil }
 
-        try Task.checkCancellation()
-        guard !paragraphs.isEmpty else {
+        // Read both published sources. A valid NAV takes precedence over NCX;
+        // an unusable NAV may fall back to the NCX without combining duplicates.
+        var candidates: [EpubNavigation] = []
+        var navPaths = Set<String>()
+        func readNavigation(_ item: Item, source: EpubNavigation.Source) throws {
             try Task.checkCancellation()
-            return nil
+            guard let data = try entryData(item.path, maximumBytes: maximumChapterMarkupBytes),
+                  let markup = decodeXml(data),
+                  let navigation = EpubNavigationParser.parse(markup, path: item.path, source: source) else { return }
+            candidates.append(navigation)
         }
+        for item in items where item.properties.contains("nav") {
+            navPaths.insert(item.path)
+            try readNavigation(item, source: .nav)
+        }
+        let declaredNCX = manifest[EpubXML.attr(spine, "toc")]
+        let ncx = declaredNCX ?? items.first(where: { $0.type == "application/x-dtbncx+xml" })
+        if let ncx { try readNavigation(ncx, source: .ncx) }
+        if let guide = EpubXML.descendants(opfDoc, "guide").first,
+           let reference = EpubXML.children(guide, "reference").first(where: { EpubXML.tokens(EpubXML.attr($0, "type")).contains("toc") }),
+           let path = EpubResourceURL.resolve(EpubXML.attr(reference, "href"), relativeTo: opf)?.path,
+           let item = items.first(where: { $0.path == path }) {
+            try readNavigation(item, source: .guide)
+        }
+        var requested: [String: Set<String>] = [:]
+        for entry in candidates.flatMap(\.entries) {
+            guard let path = entry.href else { continue }
+            if let fragment = entry.fragment { requested[path, default: []].insert(fragment) }
+            // Tolerate published TOC destinations omitted from spine, but only
+            // if declared in this publication's manifest.
+            if !chapters.contains(where: { $0.path == path }),
+               let item = items.first(where: { $0.path == path }) { chapters.append(item) }
+        }
+        var images: [String: Data] = [:]
+        for item in items where item.type.hasPrefix("image/") {
+            if let data = try entryData(item.path) { images[item.path] = data }
+        }
+        var paragraphs: [ReadingParagraph] = []
+        var starts: [String: Int] = [:]
+        var anchors: [String: [String: Int]] = [:]
+        var generated: [EpubNavigation.Entry] = []
+        var spineEntries: [EpubNavigation.Entry] = []
+        var visited = Set<String>()
+        for item in chapters {
+            try Task.checkCancellation()
+            guard visited.insert(item.path).inserted,
+                  item.type.contains("html") || item.type.contains("xml"),
+                  item.type != "application/x-dtbncx+xml",
+                  let chapterData = try entryData(item.path, maximumBytes: maximumChapterMarkupBytes),
+                  let markup = decodeXml(chapterData) else { continue }
+            let blocks = try EpubContentParser.parse(markup, referencedFragments: requested[item.path] ?? [])
+            let chapterStart = paragraphs.count
+            for block in blocks {
+                try Task.checkCancellation()
+                var imageData: Data?
+                if block.type == .image {
+                    guard let href = block.imageHref,
+                          let path = EpubResourceURL.resolve(href, relativeTo: item.path)?.path else { continue }
+                    // Some converted books omit real, locally referenced images
+                    // from manifest. Read only that exact archive entry, under
+                    // the same extraction limits, and require a renderable image.
+                    let referencedData: Data?
+                    if let cached = images[path] { referencedData = cached }
+                    else { referencedData = try entryData(path) }
+                    guard let data = referencedData,
+                          CGImageSourceCreateWithData(data as CFData, nil) != nil else { continue }
+                    imageData = data
+                }
+                let index = paragraphs.count
+                for anchor in block.anchors where anchors[item.path]?[anchor] == nil {
+                    anchors[item.path, default: [:]][anchor] = index
+                }
+                paragraphs.append(ReadingParagraph(id: index, text: block.text, type: block.type, imageData: imageData))
+                if case .heading(let level) = block.type, !navPaths.contains(item.path) {
+                    generated.append(.init(id: "heading-\(index)", title: block.text, depth: level - 1,
+                                           href: item.path, fragment: nil, paragraphIndex: index, isGroup: false))
+                }
+            }
+            if paragraphs.count > chapterStart {
+                starts[item.path] = chapterStart
+                let title = paragraphs[chapterStart...].first(where: { !$0.text.isEmpty })?.text
+                    ?? (item.path as NSString).lastPathComponent
+                spineEntries.append(.init(id: "spine-\(chapterStart)", title: title, depth: 0,
+                                          href: item.path, fragment: nil, paragraphIndex: chapterStart, isGroup: false))
+            }
+        }
+        guard !paragraphs.isEmpty else { return nil }
+        for index in candidates.indices {
+            for row in candidates[index].entries.indices {
+                let entry = candidates[index].entries[row]
+                guard let path = entry.href else { continue }
+                // A missing fragment never silently degrades to chapter start.
+                candidates[index].entries[row].paragraphIndex = entry.fragment.map { anchors[path]?[$0] } ?? starts[path]
+            }
+        }
+        let fallback = EpubNavigation(source: generated.isEmpty ? .spine : .headings,
+                                      entries: Array((generated.isEmpty ? spineEntries : generated).prefix(EpubNavigationParser.maximumEntries)))
+        let navigation = EpubNavigationSelection.select(candidates, paragraphs: paragraphs) ?? fallback
         let title = try extractTitleCancellable(opfDoc) ?? fallbackTitle
         try Task.checkCancellation()
-        return ParsedEpub(title: title, paragraphs: paragraphs)
+        return ParsedEpub(title: title, paragraphs: paragraphs, navigation: navigation)
     }
 
     // MARK: - Helpers
@@ -230,10 +250,10 @@ enum EpubNativeEngine {
     /// 注意 SwiftSoup.Document 显式限定——CastReader 另有 Models/Document.swift 同名类型。
     private static func extractTitleCancellable(_ opfDoc: SwiftSoup.Document) throws -> String? {
         try Task.checkCancellation()
-        guard let meta = try? opfDoc.select("metadata").first() else { return nil }
+        guard let meta = EpubXML.descendants(opfDoc, "metadata").first else { return nil }
         for el in (try? meta.getAllElements().array()) ?? [] {
             try Task.checkCancellation()
-            if el.tagName().lowercased().contains("title"), let t = try? el.text() {
+            if EpubXML.name(el) == "title", let t = try? el.text() {
                 let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty { return trimmed }
             }

@@ -1,6 +1,42 @@
 import XCTest
 
 final class ReadingResumeUITests: XCTestCase {
+    func testEPUBContentsCanSearchJumpAndReopenWithoutOldAudio() {
+        let app = XCUIApplication()
+        let base = ["-CastReaderResumeMVPFixture", "-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+                    "-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en"]
+        app.launchArguments = base + ["-CastReaderResetResumeFixture"]
+        app.launch()
+        XCTAssertTrue(app.buttons["resumeFixtureStart"].waitForExistence(timeout: 15))
+        app.buttons["resumeFixtureStart"].tap()
+        let status = app.staticTexts["resumeFixtureStatus"]
+        let playing = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "playing=true"), object: status)
+        XCTAssertEqual(XCTWaiter.wait(for: [playing], timeout: 12), .completed)
+        let contents = app.buttons["Table of Contents"].firstMatch
+        XCTAssertTrue(contents.waitForExistence(timeout: 5))
+        contents.tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap(); search.typeText("Chapter 42")
+        let chapter = app.buttons.matching(NSPredicate(format: "label == %@", "Chapter 42")).firstMatch
+        XCTAssertTrue(chapter.waitForExistence(timeout: 5))
+        attach(app, name: "epub-contents-search")
+        chapter.tap()
+        let located = NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@ AND label CONTAINS %@",
+            "paragraph=82;", "playing=false", "queued=false")
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: located, object: status)], timeout: 8), .completed)
+        attach(app, name: "epub-contents-jump-paused")
+        app.terminate()
+        app.launchArguments = base
+        app.launch()
+        XCTAssertTrue(status.waitForExistence(timeout: 15))
+        XCTAssertTrue(status.label.contains("paragraph=82;"), status.label)
+        XCTAssertTrue(status.label.contains("playing=false"), status.label)
+        XCTAssertTrue(contents.exists)
+        attach(app, name: "epub-contents-reopen")
+        app.terminate()
+    }
+
     func testPauseButtonWorksWhileSpeechIsLoadingAndLateAudioStaysPaused() {
         let app = XCUIApplication()
         app.launchArguments = ["-CastReaderResumeMVPFixture", "-CastReaderResetResumeFixture",

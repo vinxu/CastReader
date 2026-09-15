@@ -454,8 +454,10 @@ enum DocumentBuilder {
         let sample = parsed.paragraphs.prefix(40).filter { $0.type.isReadable }.map(\.text).joined(separator: " ")
         let lang = detectLanguage(sample)
         try Task.checkCancellation()
-        return ReadingDocument(title: parsed.title ?? title, sourceKind: .epub, language: lang,
-                               paragraphs: parsed.paragraphs, fileData: data)   // 保留原始字节供历史重开重新解析
+        var document = ReadingDocument(title: parsed.title ?? title, sourceKind: .epub, language: lang,
+                                       paragraphs: parsed.paragraphs, fileData: data)
+        document.epubNavigation = parsed.navigation
+        return document
     }
 
     /// 本地纯文本文件。

@@ -1,0 +1,6 @@
+# Keep a compact record of the final configuration and verified source.
+# Intermediate device receipts and full build/test logs remain local.
+*
+!.gitignore
+!source-identity-upper-quarter.json
+!validation-summary.json

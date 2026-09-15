@@ -4,7 +4,7 @@ import Foundation
 /// independent. Never used for cloud references or connected-library content.
 enum LocalDocumentCache {
     // Bump when PDF extraction, OCR reflow or EPUB paragraph semantics change.
-    static let parserVersion = 2
+    static let parserVersion = 3
     static let maximumSnapshotBytes = 32 * 1_024 * 1_024
     static let maximumDirectoryBytes = 128 * 1_024 * 1_024
 
@@ -24,6 +24,7 @@ enum LocalDocumentCache {
         let paragraphs: [Paragraph]
         let images: [Data]
         let resumeIndex: ReadingResumeDocumentIndex
+        let epubNavigation: EpubNavigation?
 
         init?(document: ReadingDocument, fingerprint: String) throws {
             guard supports(document.sourceKind), document.origin == nil,
@@ -33,6 +34,7 @@ enum LocalDocumentCache {
             source = document.sourceKind.rawValue
             payloadFingerprint = fingerprint
             language = document.language
+            epubNavigation = document.epubNavigation
             resumeIndex = document.precomputedResumeIndex ?? ReadingResumeDocumentIndex(paragraphs: document.paragraphs)
             var images: [Data] = [], imageIDs: [String: Int] = [:]
             var paragraphs: [Paragraph] = []
@@ -108,6 +110,10 @@ enum LocalDocumentCache {
             }
             var document = ReadingDocument(id: record.id, title: record.title, sourceKind: record.sourceKind,
                 language: language, paragraphs: result, fileData: data)
+            if record.sourceKind == .epub, let epubNavigation {
+                guard epubNavigation.isValid(paragraphCount: result.count) else { return nil }
+                document.epubNavigation = epubNavigation
+            }
             document.precomputedResumeIndex = resumeIndex
             return document
         }

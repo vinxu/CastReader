@@ -1,0 +1,640 @@
+{
+  "contractId": "castreader.epub-reader.android-parity",
+  "version": 1,
+  "date": "2026-09-14",
+  "status": "implementation_contract_not_android_test_results",
+  "specification": "../EPUB-TOC与朗读滚动-Android对齐实施规范-20260914.md",
+  "implementationReferences": {
+    "iosCommit": "513c674e5db3ddd21a45585e85f8e122d7665314",
+    "androidReviewedCommit": "82fe75504a826e6940122b4288bde294af1b2490",
+    "androidChangesMade": false,
+    "androidTestsExecuted": false
+  },
+  "coordinates": {
+    "unit": "physical_px_after_conversion_to_unobscured_viewport",
+    "positiveScroll": "content_moves_up",
+    "target": "current_glyph_or_line_rect_not_full_paragraph",
+    "geometryToleranceDp": 2,
+    "viewportIsFullScreen": false
+  },
+  "viewportPolicy": {
+    "bandTopFromTop": 0.18,
+    "bandBottomFromTop": 0.88,
+    "landingFromTop": 0.25,
+    "landingFromBottom": 0.75,
+    "bandContainsWholeTarget": true,
+    "boundaryComparison": "inclusive",
+    "animationMaximumDistanceInViewports": 1.5,
+    "targetDelta": "targetTop - (viewportTop + 0.25 * (viewportBottom - viewportTop))",
+    "clampDelta": "max(-remainingBackwardPx, min(remainingForwardPx, targetDelta))",
+    "shortFollowMustHaveIntermediateFrames": true,
+    "repeatedTicksMustNotRestartSameMotion": true,
+    "userDragFlingOrZoomWins": true,
+    "explicitTocAlignment": "unobscured_viewport_top",
+    "explicitTocAutoPlay": false
+  },
+  "viewportCases": [
+    {
+      "id": "V01",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        680,
+        700
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "hold",
+        "deltaPx": 0
+      }
+    },
+    {
+      "id": "V02",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        700,
+        720
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "animate",
+        "deltaPx": 500,
+        "finalTargetTopPx": 200
+      }
+    },
+    {
+      "id": "V03",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        130,
+        150
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "animate",
+        "deltaPx": -70,
+        "finalTargetTopPx": 200
+      }
+    },
+    {
+      "id": "V04",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        144,
+        164
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "hold",
+        "deltaPx": 0
+      }
+    },
+    {
+      "id": "V05",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        684,
+        704
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "hold",
+        "deltaPx": 0
+      }
+    },
+    {
+      "id": "V06",
+      "viewport": [
+        60,
+        860
+      ],
+      "target": [
+        750,
+        780
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "animate",
+        "deltaPx": 490,
+        "finalTargetTopPx": 260
+      }
+    },
+    {
+      "id": "V07",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        700,
+        720
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 10,
+      "expected": {
+        "action": "animate",
+        "deltaPx": 10,
+        "finalTargetTopPx": 690
+      }
+    },
+    {
+      "id": "V08",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        690,
+        710
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 0,
+      "expected": {
+        "action": "hold_at_boundary",
+        "deltaPx": 0
+      }
+    },
+    {
+      "id": "V09",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        100,
+        120
+      ],
+      "remainingBackwardPx": 0,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "hold_at_boundary",
+        "deltaPx": 0
+      }
+    },
+    {
+      "id": "V10",
+      "reason": "distant_resume",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        1500,
+        1520
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "position_without_long_flight",
+        "deltaPx": 1300,
+        "finalTargetTopPx": 200
+      }
+    },
+    {
+      "id": "V11",
+      "reduceMotion": true,
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        700,
+        720
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "position_reduce_motion",
+        "deltaPx": 500,
+        "finalTargetTopPx": 200
+      }
+    },
+    {
+      "id": "V12",
+      "userInteraction": "fling",
+      "viewport": [
+        0,
+        800
+      ],
+      "target": [
+        700,
+        720
+      ],
+      "remainingBackwardPx": 1000,
+      "remainingForwardPx": 2000,
+      "expected": {
+        "action": "defer_latest_target",
+        "deltaPx": 0
+      }
+    }
+  ],
+  "inFlightCases": [
+    {
+      "id": "M01",
+      "viewport": [
+        0,
+        800
+      ],
+      "latestTarget": [
+        600,
+        620
+      ],
+      "ownMotionRemainingDeltaPx": 400,
+      "expected": "keep_existing_motion_projected_target_200_to_220"
+    },
+    {
+      "id": "M02",
+      "viewport": [
+        0,
+        800
+      ],
+      "latestTarget": [
+        1000,
+        1020
+      ],
+      "ownMotionRemainingDeltaPx": 100,
+      "expected": "one_controlled_replan_or_latest_pending_target_no_parallel_owner"
+    },
+    {
+      "id": "M03",
+      "event": "user_drag_start",
+      "expected": "cancel_own_motion_and_yield_until_user_fling_finishes"
+    },
+    {
+      "id": "M04",
+      "event": "old_layout_or_navigation_generation",
+      "expected": "discard_without_scroll_or_state_mutation"
+    },
+    {
+      "id": "M05",
+      "event": "highlight_null_then_first_word_in_band",
+      "expected": "zero_excursion_not_paragraph_top_then_word"
+    }
+  ],
+  "uriPolicy": {
+    "resourceIdentity": "zip_root_relative_case_sensitive_path",
+    "containingFileIsBase": true,
+    "percentDecodeCount": 1,
+    "literalPlusPreserved": true,
+    "queryIgnoredForZipLookup": true,
+    "missingFragmentFallback": false,
+    "basenameOrSuffixGuessing": false
+  },
+  "uriCases": [
+    {
+      "id": "U01",
+      "base": "OPS/nav/nav.xhtml",
+      "href": "../Text/ch.xhtml#section",
+      "expected": {
+        "path": "OPS/Text/ch.xhtml",
+        "fragment": "section"
+      }
+    },
+    {
+      "id": "U02",
+      "base": "OPS/Text/ch.xhtml",
+      "href": "#section",
+      "expected": {
+        "path": "OPS/Text/ch.xhtml",
+        "fragment": "section"
+      }
+    },
+    {
+      "id": "U03",
+      "base": "OPS/nav.xhtml",
+      "href": "Text/ch.xhtml?mode=x#s",
+      "expected": {
+        "path": "OPS/Text/ch.xhtml",
+        "fragment": "s"
+      }
+    },
+    {
+      "id": "U04",
+      "base": "OPS/nav.xhtml",
+      "href": "Text/%E7%AB%A0.xhtml#%E8%8A%82",
+      "expected": {
+        "path": "OPS/Text/章.xhtml",
+        "fragment": "节"
+      }
+    },
+    {
+      "id": "U05",
+      "base": "OPS/nav.xhtml",
+      "href": "Text/a+b.xhtml#x+y",
+      "expected": {
+        "path": "OPS/Text/a+b.xhtml",
+        "fragment": "x+y"
+      }
+    },
+    {
+      "id": "U06",
+      "base": "OPS/nav.xhtml",
+      "href": "Text/a%2520b.xhtml",
+      "expected": {
+        "path": "OPS/Text/a%20b.xhtml",
+        "fragment": null
+      }
+    },
+    {
+      "id": "U07",
+      "base": "OPS/nav.xhtml",
+      "href": "Text/Chapter.xhtml#A",
+      "expected": {
+        "path": "OPS/Text/Chapter.xhtml",
+        "fragment": "A"
+      }
+    },
+    {
+      "id": "U08",
+      "base": "OPS/nav.xhtml",
+      "href": "Text/ch.xhtml#",
+      "expected": {
+        "path": "OPS/Text/ch.xhtml",
+        "fragment": null
+      }
+    },
+    {
+      "id": "U09",
+      "base": "OPS/nav.xhtml",
+      "href": "Text/a%20b.xhtml#x%20y",
+      "expected": {
+        "path": "OPS/Text/a b.xhtml",
+        "fragment": "x y"
+      }
+    },
+    {
+      "id": "U10",
+      "base": "OPS/nav.xhtml",
+      "href": "https://example.org/ch.xhtml#s",
+      "expected": null
+    },
+    {
+      "id": "U11",
+      "base": "OPS/nav.xhtml",
+      "href": "//example.org/ch.xhtml#s",
+      "expected": null
+    },
+    {
+      "id": "U12",
+      "base": "OPS/nav.xhtml",
+      "href": "file:///Text/ch.xhtml",
+      "expected": null
+    },
+    {
+      "id": "U13",
+      "base": "OPS/nav.xhtml",
+      "href": "javascript:void(0)",
+      "expected": null
+    },
+    {
+      "id": "U14",
+      "base": "OPS/nav.xhtml",
+      "href": "Text/a%2Fb.xhtml",
+      "expected": null
+    },
+    {
+      "id": "U15",
+      "base": "OPS/nav.xhtml",
+      "href": "Text/a%5Cb.xhtml",
+      "expected": null
+    },
+    {
+      "id": "U16",
+      "base": "OPS/nav.xhtml",
+      "href": "Text\\ch.xhtml",
+      "expected": null
+    }
+  ],
+  "navigationPolicy": {
+    "sourcePriority": [
+      "nav",
+      "ncx",
+      "guide",
+      "headings",
+      "spine"
+    ],
+    "minimumResolvedTargetsForUsableCandidate": 1,
+    "partialInvalidCandidate": "retain_source_and_disable_bad_entries",
+    "maxEntries": 10000,
+    "maxDepthInclusive": 64,
+    "contentDepthExclusive": 256,
+    "keepGroups": true,
+    "keepDuplicateTitlesAndTargets": true,
+    "ncxOrder": "dom_not_playOrder",
+    "sourceRepair": {
+      "normalizedTitle": "NFC_remove_Unicode_whitespace_lowercase",
+      "repeatedBodyHeadings": "do_not_vote",
+      "match": "exact_heading_or_only_empty_text_blocks_before_it",
+      "originalGate": "conflicts >= 3 AND conflicts > matches",
+      "alternativeGate": "matches >= 3 AND matches > original.matches AND matches >= 4 * max(conflicts, 1)",
+      "preserveOriginalDepth": "only_when_entire_normalized_title_sequences_are_equal"
+    }
+  },
+  "candidateSelectionCases": [
+    {
+      "id": "C01",
+      "original": {
+        "matches": 0,
+        "conflicts": 6
+      },
+      "alternative": {
+        "matches": 6,
+        "conflicts": 0
+      },
+      "entireTitlesEqual": true,
+      "expected": {
+        "replace": true,
+        "inheritOriginalDepth": true
+      }
+    },
+    {
+      "id": "C02",
+      "original": {
+        "matches": 0,
+        "conflicts": 3
+      },
+      "alternative": {
+        "matches": 3,
+        "conflicts": 0
+      },
+      "entireTitlesEqual": true,
+      "expected": {
+        "replace": false
+      }
+    },
+    {
+      "id": "C03",
+      "original": {
+        "matches": 0,
+        "conflicts": 3
+      },
+      "alternative": {
+        "matches": 4,
+        "conflicts": 1
+      },
+      "entireTitlesEqual": false,
+      "expected": {
+        "replace": true,
+        "inheritOriginalDepth": false
+      }
+    },
+    {
+      "id": "C04",
+      "original": {
+        "matches": 1,
+        "conflicts": 3
+      },
+      "alternative": {
+        "matches": 7,
+        "conflicts": 2
+      },
+      "entireTitlesEqual": true,
+      "expected": {
+        "replace": false
+      }
+    },
+    {
+      "id": "C05",
+      "original": {
+        "matches": 1,
+        "conflicts": 3
+      },
+      "alternative": {
+        "matches": 8,
+        "conflicts": 2
+      },
+      "entireTitlesEqual": true,
+      "expected": {
+        "replace": true,
+        "inheritOriginalDepth": true
+      }
+    },
+    {
+      "id": "C06",
+      "original": {
+        "matches": 3,
+        "conflicts": 3
+      },
+      "alternative": {
+        "matches": 10,
+        "conflicts": 0
+      },
+      "entireTitlesEqual": true,
+      "expected": {
+        "replace": false
+      }
+    },
+    {
+      "id": "C07",
+      "original": {
+        "matches": 0,
+        "conflicts": 2
+      },
+      "alternative": {
+        "matches": 10,
+        "conflicts": 0
+      },
+      "entireTitlesEqual": true,
+      "expected": {
+        "replace": false
+      }
+    },
+    {
+      "id": "C08",
+      "original": {
+        "matches": 4,
+        "conflicts": 5
+      },
+      "alternative": {
+        "matches": 4,
+        "conflicts": 0
+      },
+      "entireTitlesEqual": true,
+      "expected": {
+        "replace": false
+      }
+    }
+  ],
+  "navigationTransaction": {
+    "requiresExplicitPlayAfterSelection": true,
+    "invalidOrGroupSelectionChangesPlayback": false,
+    "cancelsOldGenerationAndQueue": true,
+    "persistsWithoutHeardAudio": true,
+    "checkpointAudio": null,
+    "flushRequired": true,
+    "latestValidSelectionWins": true,
+    "tocBrowsingSuppressesWordFollow": true,
+    "visualAndSpeechLocationMayDiffer": true,
+    "crossPlatformOracle": "source_resource_fragment_and_rendered_boundary_not_equal_paragraph_number"
+  },
+  "acceptanceMatrixIds": {
+    "toc": [
+      "T01",
+      "T02",
+      "T03",
+      "T04",
+      "T05",
+      "T06",
+      "T07",
+      "T08",
+      "T09",
+      "T10",
+      "T11",
+      "T12",
+      "T13",
+      "T14",
+      "T15",
+      "T16",
+      "T17",
+      "T18"
+    ],
+    "scroll": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07",
+      "S08",
+      "S09",
+      "S10",
+      "S11",
+      "S12",
+      "S13",
+      "S14",
+      "S15"
+    ],
+    "persistence": [
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P08",
+      "P09"
+    ]
+  }
+}

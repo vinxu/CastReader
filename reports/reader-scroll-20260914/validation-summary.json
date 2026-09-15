@@ -1,0 +1,83 @@
+{
+  "date": "2026-09-14",
+  "finalBehavior": {
+    "landingFromTop": 0.25,
+    "landingFromBottom": 0.75,
+    "lowerTriggerFromTop": 0.88,
+    "smoothFollow": true,
+    "sources": [
+      "EPUB",
+      "reflow PDF",
+      "native PDFKit"
+    ]
+  },
+  "finalRegression": {
+    "tests": 7,
+    "passed": 7,
+    "failed": 0,
+    "suite": "ReaderViewportTests",
+    "resultBundle": "CastReaderViewport-upper-quarter.xcresult",
+    "checks": [
+      "explicit 25% landing",
+      "no immediate retrigger",
+      "no paragraph-to-word reversal",
+      "lazy distant paragraph",
+      "long paragraph and font reflow",
+      "real text and PDFKit intermediate animation frames"
+    ]
+  },
+  "deviceInstallation": {
+    "version": "1.2.39",
+    "build": "60",
+    "installed": true,
+    "sourceIdentity": "source-identity-upper-quarter.json"
+  },
+  "iphoneContinuousPlayback": {
+    "configurationAtTime": {
+      "landingFromTop": 0.4,
+      "lowerTriggerFromTop": 0.7
+    },
+    "results": {
+      "epub": {
+        "animatedMovements": 7,
+        "allMovementsForward": true,
+        "advancedParagraphs": [
+          98,
+          99,
+          100,
+          101,
+          102,
+          103,
+          104,
+          105,
+          106,
+          107,
+          108
+        ]
+      },
+      "pdf": {
+        "animatedMovements": 6,
+        "allMovementsForward": true,
+        "advancedParagraphs": [
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36
+        ]
+      }
+    },
+    "limitation": "The final 25% landing adjustment passed automated tests and was installed. iPhone Mirroring was unavailable during that final adjustment; earlier visual playback records are not treated as final-position verification."
+  },
+  "rawEvidence": "Full build/test logs and device receipts remain in the local report directory."
+}

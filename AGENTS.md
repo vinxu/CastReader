@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## 音色发现与 EPUB 目录本地集成（2026-09-15）
+
+- 当前本地 iPhone 迭代在 `/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914`，分支 `codex/mobile-voice-explore-20260914`。
+- 测试包必须同时保留音色发现与个人 / 朋友声音入口 `633f6bb`、EPUB TOC 与滚动分支 `ad4b885`（功能提交 `513c674`），以及发布源码祖先 `64c2dbd`。单独从任一功能分支打包会遗漏另一项。
+- 打包前执行 `bash scripts/build-voice-toc-integration.sh --check`；真机用同脚本 `--device`，通过 `CASTREADER_DEVICE_DERIVED_DATA` 指定独立构建目录。此脚本会检查三个祖先再执行原发布基线校验。
+- 这是本地测试集成，不代表 App Store 版本已更新。克隆切常规音色的恢复卡住问题仅完成诊断，不能把目录合并记为该问题已修复。
+
 ## 打包与本地真机包的基线校验（2026-09-14）
 
 - 本次已提交 App Store、等待审核的 iOS 1.2.39（60）应用源码为 `64c2dbd934d34e7b000c8def1a4c8ee5dc94ab23`；工作树：

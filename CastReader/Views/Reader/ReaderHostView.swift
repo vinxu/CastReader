@@ -396,6 +396,13 @@ struct ReaderHostView: View {
     @State private var pendingModeSwitch: PendingReaderModeSwitch?
     @State private var showKoboSessionRecovery = false
     @State private var didRestoreKoboSession = false
+    @State private var showsEpubTOC = false
+
+    private var showNativeTOC: (() -> Void)? {
+        if document.sourceKind == .weread { return { weReadTOC.present() } }
+        if document.sourceKind == .epub, document.epubNavigation != nil { return { showsEpubTOC = true } }
+        return nil
+    }
 
     private var appearanceSource: ReaderAppearanceSource {
         switch document.sourceKind {
@@ -471,6 +478,21 @@ struct ReaderHostView: View {
         }
         .background(AppTheme.background.ignoresSafeArea())
         .environment(\.readerAppearanceSource, appearanceSource)
+        .sheet(isPresented: $showsEpubTOC) {
+            if let navigation = document.epubNavigation {
+                EpubTOCSheet(navigation: navigation,
+                            currentParagraph: readVM.epubNavigationParagraphIndex ?? readVM.currentParagraphIndex) { entry in
+                    guard let paragraph = entry.paragraphIndex else { return }
+                    if mode == .explain {
+                        explainVM.deactivate()
+                        pendingModeSwitch = PendingReaderModeSwitch(target: .read, shouldContinuePlayback: false)
+                        coordinator.mode = .read
+                    }
+                    readVM.navigateToEpubParagraph(paragraph)
+                    scheduleRefocusBurst(reason: "epubTOC")
+                }
+            }
+        }
         // A transient WKWebView search keyboard must not repaginate a live reader
         // or leave the native playback bar stranded at the old keyboard top.
         .ignoresSafeArea(.keyboard, edges: document.sourceKind.isWebRendered ? .bottom : [])
@@ -733,14 +755,14 @@ struct ReaderHostView: View {
             if mode == .read {
                 ReadControlBar(
                     vm: readVM,
-                    showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil,
+                    showTOC: showNativeTOC,
                     previousPage: pageTurnAction(.previous),
                     nextPage: pageTurnAction(.next)
                 )
             } else {
                 ExplainControlBar(
                     vm: explainVM,
-                    showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil,
+                    showTOC: showNativeTOC,
                     previousPage: pageTurnAction(.previous),
                     nextPage: pageTurnAction(.next)
                 )
@@ -763,14 +785,14 @@ struct ReaderHostView: View {
         if mode == .read {
             ReaderLandscapeReadOverlay(
                 vm: readVM,
-                showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil,
+                showTOC: showNativeTOC,
                 previousPage: pageTurnAction(.previous),
                 nextPage: pageTurnAction(.next)
             )
         } else {
             ReaderLandscapeExplainOverlay(
                 vm: explainVM,
-                showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil,
+                showTOC: showNativeTOC,
                 previousPage: pageTurnAction(.previous),
                 nextPage: pageTurnAction(.next)
             )
