@@ -5,7 +5,8 @@
 - 当前本地 iPhone 迭代在 `/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914`，分支 `codex/mobile-voice-explore-20260914`。
 - 测试包必须同时保留音色发现与个人 / 朋友声音入口 `633f6bb`、EPUB TOC 与滚动分支 `ad4b885`（功能提交 `513c674`），以及发布源码祖先 `64c2dbd`。单独从任一功能分支打包会遗漏另一项。
 - 打包前执行 `bash scripts/build-voice-toc-integration.sh --check`；真机用同脚本 `--device`，通过 `CASTREADER_DEVICE_DERIVED_DATA` 指定独立构建目录。此脚本会检查三个祖先再执行原发布基线校验。
-- 当前真机应用源码为 `e573cde`：在上述集成上修复跨音色时间戳拆词 / 合词的续读对齐，并收敛切换事务的成功、失败、取消出口。202 项模拟器回归通过；8 项真机播放链路测试通过（可控 TTS 音频，真实 VM / AVPlayer，含 Kindle 三类音色往返）。验收证据见 `docs/voice-discovery-2026-09-14/reading-voice-switch-fix-2026-09-15.md`。
+- 上一轮真机应用源码 `e573cde`：在上述集成上修复跨音色时间戳拆词 / 合词的续读对齐，并收敛切换事务的成功、失败、取消出口。202 项模拟器回归通过；8 项真机播放链路测试通过（可控 TTS 音频，真实 VM / AVPlayer，含 Kindle 三类音色往返）。验收证据见 `docs/voice-discovery-2026-09-14/reading-voice-switch-fix-2026-09-15.md`。
+- 当前真机应用源码为 `a4a3ee0`：继续修复音色面板误拦只读页面稳定检查、页尾等待取消后切换丢失播放意图。保留上述所有祖先。131 项模拟器回归（分组）及 6 项真机测试通过，16:23:52 安装后正常启动。用户另一次“李云龙”读英文的 4 次 HTTP 503 已取证，但服务端原因未确认、未修复；不能据客户端验收声称所有音色合成都恢复。见 `docs/voice-discovery-2026-09-14/voice-switch-page-stop-2026-09-15.md`。
 - 这是本地测试集成，不代表 App Store 版本已更新。不得把目录合并提交 `487c746` 单独视为该切换问题已修复。
 
 ## 打包与本地真机包的基线校验（2026-09-14）
