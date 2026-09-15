@@ -87,18 +87,25 @@ enum VoiceDiscovery {
         return normalized((translated + voice.tags + voice.bestFor).joined(separator: " "))
     }
 
+    static let styleRules: [(Set<String>, String.LocalizationValue)] = [
+        (["warm"], "温暖"), (["gentle", "soft"], "柔和"),
+        (["deep", "grounded", "low"], "低沉"), (["bright", "high"], "明亮"),
+        (["clear", "crisp", "articulate"], "清晰"), (["calm", "composed"], "沉稳"),
+        (["conversational", "friendly", "approachable"], "亲切"),
+        (["expressive", "dramatic"], "有表现力"), (["playful"], "俏皮"),
+        (["energetic", "cheerful", "brisk"], "轻快"),
+        (["measured", "steady", "slow"], "舒缓"), (["raspy"], "沙哑")
+    ]
+
     static func styleLabels(for voice: VoiceOption) -> [String] {
         let values = features(voice)
-        let labels: [(Set<String>, String.LocalizationValue)] = [
-            (["warm"], "温暖"), (["gentle", "soft"], "柔和"),
-            (["deep", "grounded", "low"], "低沉"), (["bright", "high"], "明亮"),
-            (["clear", "crisp", "articulate"], "清晰"), (["calm", "composed"], "沉稳"),
-            (["conversational", "friendly", "approachable"], "亲切"),
-            (["expressive", "dramatic"], "有表现力"), (["playful"], "俏皮"),
-            (["energetic", "cheerful", "brisk"], "轻快"),
-            (["measured", "steady", "slow"], "舒缓"), (["raspy"], "沙哑")
-        ]
-        return labels.compactMap { $0.0.isDisjoint(with: values) ? nil : AppLocalized($0.1) }
+
+        return styleRules.compactMap { $0.0.isDisjoint(with: values) ? nil : AppLocalized($0.1) }
+    }
+
+    private static func styleProfile(_ voice: VoiceOption) -> Int? {
+        let values = features(voice)
+        return styleRules.firstIndex { !$0.0.isDisjoint(with: values) }
     }
 
     static func subtitle(_ voice: VoiceOption, chinese: Bool) -> String {
@@ -148,7 +155,7 @@ enum VoiceDiscovery {
             let index: Int
             if let last = result.last,
                let different = remaining.prefix(8).firstIndex(where: {
-                   $0.gender != last.gender || styleLabels(for: $0).first != styleLabels(for: last).first
+                   $0.gender != last.gender || styleProfile($0) != styleProfile(last)
                }) { index = different } else { index = 0 }
             let voice = remaining.remove(at: index)
             if seen.insert(voice.id).inserted { result.append(voice) }

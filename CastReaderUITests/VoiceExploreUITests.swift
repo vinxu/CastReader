@@ -3,10 +3,10 @@ import XCTest
 final class VoiceExploreUITests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
     private let publicID = "vl_083fdead97ec221573f3"
-    private func launch(_ language: String = "en") -> XCUIApplication {
+    private func launch(_ language: String = "en", fixtureDirectory: URL? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-CastReaderVoiceExploreFixture", "-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding", "-AppleLanguages", "(\(language))", "-interfaceLanguage", language]
-        app.launchEnvironment["CASTREADER_VOICE_FIXTURE_DIRECTORY"] = Bundle(for: Self.self).resourceURL!.appendingPathComponent("VoiceDiscovery").path
+        app.launchEnvironment["CASTREADER_VOICE_FIXTURE_DIRECTORY"] = (fixtureDirectory ?? Bundle(for: Self.self).resourceURL!.appendingPathComponent("VoiceDiscovery")).path
         app.launch()
         return app
     }
@@ -59,6 +59,40 @@ final class VoiceExploreUITests: XCTestCase {
         attach(app, "voice-discovery-topic-search")
         app.buttons["presetVoiceSelect_af_heart"].tap()
         XCTAssertEqual(app.buttons["presetVoiceSelect_af_heart"].value as? String, "已选择")
+    }
+
+    func testFullCatalogCanFindLastCommunityVoice() throws {
+        #if targetEnvironment(simulator)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("VoiceScale-" + UUID().uuidString)
+        let source = Bundle(for: Self.self).resourceURL!.appendingPathComponent("VoiceDiscovery")
+        try FileManager.default.copyItem(at: source, to: directory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("catalog.json")
+        var document = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+        var voices = document["voices"] as! [[String: Any]]
+        let template = try XCTUnwrap(voices.first { ($0["id"] as? String)?.hasPrefix("vl_") == true })
+        for index in 0..<1317 {
+            var voice = template
+            voice["id"] = "vl_scale_\(index)"
+            voice["name"] = "Scale Voice \(index)"
+            voices.append(voice)
+        }
+        XCTAssertEqual(voices.count, 1606)
+        document["voices"] = voices
+        try JSONSerialization.data(withJSONObject: document).write(to: url)
+        let app = launch(fixtureDirectory: directory)
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "voiceEdition_weekly-stories").firstMatch.waitForExistence(timeout: 20))
+        let search = app.searchFields.firstMatch
+        if !search.isHittable { app.swipeDown() }
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap(); search.typeText("Scale Voice 1316")
+        XCTAssertTrue(app.buttons["presetVoiceSelect_vl_scale_1316"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["voiceQuota_vl_scale_1316"].exists)
+        XCTAssertFalse(app.buttons["presetVoiceSelect_vl_scale_0"].exists)
+        attach(app, "voice-full-catalog-last-result")
+        #else
+        throw XCTSkip("Synthetic scale fixture is simulator only")
+        #endif
     }
 
     func testProductionDiscoveryOnConnectedPhone() throws {

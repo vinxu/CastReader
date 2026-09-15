@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct VoiceDiscoveryFeed: View {
-    let voices: [VoiceOption]
+    let snapshot: VoiceCatalogSnapshot
     let language: String
     let favoriteIDs: Set<String>
     let recentIDs: [String]
@@ -10,142 +10,112 @@ struct VoiceDiscoveryFeed: View {
     let onSelect: (VoiceOption) -> Void
     let onPreview: (VoiceOption) -> Void
     let onFavorite: (VoiceOption) -> Void
-    @ObservedObject private var sample = VoiceSamplePlayer.shared
+    @StateObject private var model = VoiceDiscoveryFeedModel()
     @ObservedObject private var appLanguage = AppLanguageManager.shared
 
-    private var editorial: [VoiceDiscoveryModule] {
-        VoiceCatalog.discovery?.activeModules(from: voices, language: language) ?? []
-    }
-    private var editorialIDs: Set<String> { Set(editorial.flatMap(\.voiceIds)) }
-
-    private var collections: [VoiceDiscoveryCollection] {
-        VoiceCatalog.collections.filter { !$0.voices(from: voices, language: language).isEmpty }
-    }
-    private var recommendations: [VoiceOption] {
-        let curated = Set(collections.flatMap(\.voiceIds))
-        return VoiceDiscovery.recommended(curated.isEmpty ? voices : voices.filter { curated.contains($0.id) }, language: language, favoriteIDs: favoriteIDs, recentIDs: recentIDs, excluding: editorialIDs)
-    }
-    private var topics: [VoiceDiscoveryTopic] {
-        VoiceDiscoveryTopic.allCases.filter { !VoiceDiscovery.voices(in: $0, from: voices).isEmpty }
-    }
-    private func picks(_ topic: VoiceDiscoveryTopic, excluding ids: Set<String> = []) -> [VoiceOption] {
-        VoiceDiscovery.recommended(VoiceDiscovery.voices(in: topic, from: voices), language: language,
-                                   excluding: ids.union(editorialIDs), limit: 5)
+    private var request: VoiceBrowseRequest {
+        VoiceBrowseRequest(catalogID: snapshot.id, language: language,
+            locale: appLanguage.selectedLanguage.resolvedLanguageCode,
+            favorites: favoriteIDs, recents: recentIDs, includingMonthly: Constants.Features.voiceCloningEnabled)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 28) {
-            ForEach(editorial) { module in
-                editorialSection(module)
-            }
-            if !recommendations.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    heading(AppLocalized("先听这几个"))
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(Array(stride(from: 0, to: recommendations.count, by: 2)), id: \.self) { start in
-                                VStack(spacing: 6) {
-                                    ForEach(Array(recommendations.dropFirst(start).prefix(2))) { voice in
-                                        row(voice).frame(width: 285)
-                                    }
+        LazyVStack(alignment: .leading, spacing: 28) {
+            if model.request == request, let data = model.data {
+                ForEach(data.sections) { editorialSection($0) }
+                if !data.recommendations.isEmpty {
+                    recommendationSection(data.recommendations)
+                }
+                if !data.collections.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        heading(AppLocalized("声音专题"))
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            LazyHGrid(rows: [GridItem(.fixed(106)), GridItem(.fixed(106))], spacing: 12) {
+                                ForEach(data.collections) { item in
+                                    NavigationLink(value: VoiceDiscoveryDestination.collection(item.id)) {
+                                        VoiceTopicTile(topic: item.collection.theme, count: item.count, title: item.collection.localizedTitle)
+                                    }.buttonStyle(.plain).accessibilityIdentifier("voiceCollection_\(item.id)")
                                 }
-                            }
-                        }.padding(.horizontal)
+                            }.padding(.horizontal)
+                        }
+                    }
+                } else if !data.topics.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        heading(AppLocalized("声音专题"))
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            LazyHGrid(rows: [GridItem(.fixed(106)), GridItem(.fixed(106))], spacing: 12) {
+                                ForEach(data.topics) { item in
+                                    NavigationLink(value: item.topic) { VoiceTopicTile(topic: item.topic, count: item.count) }
+                                        .buttonStyle(.plain).accessibilityIdentifier("voiceTopic_\(item.id)")
+                                }
+                            }.padding(.horizontal)
+                        }
                     }
                 }
+                ForEach(data.fallbackSections) { editorialSection($0, fallback: true) }
+                NavigationLink(value: VoiceDiscoveryDestination.all) {
+                    HStack {
+                        Label(AppLocalized("浏览全部音色"), systemImage: "square.grid.2x2")
+                        Spacer(); Image(systemName: "arrow.right")
+                    }.font(.subheadline.weight(.semibold)).padding(18).foregroundStyle(AppTheme.foreground)
+                        .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 18))
+                }.buttonStyle(.plain).padding(.horizontal).accessibilityIdentifier("voiceBrowseAll")
+            } else {
+                ProgressView().frame(maxWidth: .infinity, minHeight: 180)
             }
-            if !collections.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    heading(AppLocalized("声音专题"))
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHGrid(rows: [GridItem(.fixed(106)), GridItem(.fixed(106))], spacing: 12) {
-                            ForEach(collections) { collection in
-                                NavigationLink(value: VoiceDiscoveryDestination.collection(collection.id)) {
-                                    VoiceTopicTile(topic: collection.theme,
-                                        count: collection.voices(from: voices, language: language).count,
-                                        title: collection.localizedTitle)
-                                }.buttonStyle(.plain).accessibilityIdentifier("voiceCollection_\(collection.id)")
-                            }
-                        }.padding(.horizontal)
-                    }
-                }
-            } else if !topics.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    heading(AppLocalized("声音专题"))
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHGrid(rows: [GridItem(.fixed(106)), GridItem(.fixed(106))], spacing: 12) {
-                            ForEach(topics) { topic in
-                                NavigationLink(value: topic) {
-                                    VoiceTopicTile(topic: topic, count: VoiceDiscovery.voices(in: topic, from: voices).count)
-                                }.buttonStyle(.plain)
-                                    .accessibilityIdentifier("voiceTopic_\(topic.id)")
-                            }
-                        }.padding(.horizontal)
-                    }
-                }
-            }
-            if collections.isEmpty {
-            let gentle = picks(.gentle, excluding: Set(recommendations.map(\.id)))
-            if !gentle.isEmpty { portraitSection(.gentle, voices: gentle) }
-            let stories = picks(.stories, excluding: Set((recommendations + gentle).map(\.id)))
-            if !stories.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    topicHeading(.stories)
-                    ForEach(stories.prefix(3)) { row($0).padding(.horizontal) }
-                }
-            }
-            let focus = picks(.focus, excluding: Set((recommendations + gentle + stories.prefix(3)).map(\.id)))
-            if !focus.isEmpty { portraitSection(.focus, voices: focus) }
-            }
-            NavigationLink(value: VoiceDiscoveryDestination.all) {
-                HStack {
-                    Label(AppLocalized("浏览全部音色"), systemImage: "square.grid.2x2")
-                    Spacer()
-                    Image(systemName: "arrow.right")
-                }.font(.subheadline.weight(.semibold))
-                    .padding(18)
-                    .foregroundStyle(AppTheme.foreground)
-                    .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 18))
-            }.buttonStyle(.plain).padding(.horizontal)
-                .accessibilityIdentifier("voiceBrowseAll")
-        }
-        .padding(.top, 16)
-        .padding(.bottom, 28)
+        }.padding(.top, 16).padding(.bottom, 28)
+            .task(id: request) { await model.update(request, snapshot: snapshot) }
     }
 
     private func heading(_ title: String) -> some View {
         Text(title).font(.title3.weight(.bold)).padding(.horizontal)
     }
-    @ViewBuilder private func editorialSection(_ module: VoiceDiscoveryModule) -> some View {
-        let selected = module.voices(from: voices, language: language)
+    private func recommendationSection(_ voices: [VoiceOption]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
+            heading(AppLocalized("先听这几个"))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(Array(stride(from: 0, to: voices.count, by: 2)), id: \.self) { start in
+                        VStack(spacing: 6) {
+                            ForEach(Array(voices.dropFirst(start).prefix(2))) { row($0).frame(width: 285) }
+                        }
+                    }
+                }.padding(.horizontal)
+            }
+        }
+    }
+    private func editorialSection(_ section: VoiceFeedSection, fallback: Bool = false) -> some View {
+        let module = section.module
+        let selected = section.voices
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(module.layout == "feature" ? AppLocalized("本周发现") : module.localizedTitle)
                     .font(.title3.weight(.bold))
                 Spacer()
-                NavigationLink(value: VoiceDiscoveryDestination.edition(module.id)) {
-                    Image(systemName: "arrow.right").frame(width: 44, height: 32)
-                }.accessibilityLabel(Text(AppLocalized("查看全部") + " · " + module.localizedTitle))
+                if fallback {
+                    NavigationLink(value: module.theme) { Image(systemName: "arrow.right").frame(width: 44, height: 32) }
+                } else {
+                    NavigationLink(value: VoiceDiscoveryDestination.edition(module.id)) {
+                        Image(systemName: "arrow.right").frame(width: 44, height: 32)
+                    }.accessibilityLabel(Text(AppLocalized("查看全部") + " · " + module.localizedTitle))
+                }
             }.padding(.horizontal)
             if module.layout == "feature" {
                 NavigationLink(value: VoiceDiscoveryDestination.edition(module.id)) {
                     VoiceEditorialCover(module: module, count: selected.count)
-                }.buttonStyle(.plain)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(module.localizedTitle)
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityIdentifier("voiceEdition_\(module.id)")
+                }.buttonStyle(.plain).accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(module.localizedTitle)).accessibilityIdentifier("voiceEdition_\(module.id)")
                     .padding(.horizontal)
                 if let voice = selected.first {
                     VoiceEditorialVoiceRow(voice: voice, selected: selectedID == voice.id,
-                        onSelect: { onSelect(voice) }, onPreview: { onPreview(voice) })
-                        .padding(.horizontal)
+                        onSelect: { onSelect(voice) }, onPreview: { onPreview(voice) }).padding(.horizontal)
                 }
             } else if module.layout == "portraits" {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(selected.prefix(8)) { voice in
-                            portrait(voice)
+                            VoicePortraitCard(voice: voice, selected: selectedID == voice.id, favorite: favoriteIDs.contains(voice.id),
+                                onSelect: { onSelect(voice) }, onPreview: { onPreview(voice) }, onFavorite: { onFavorite(voice) })
                         }
                     }.padding(.horizontal)
                 }
@@ -154,35 +124,20 @@ struct VoiceDiscoveryFeed: View {
             }
         }
     }
-    private func portrait(_ voice: VoiceOption) -> some View {
-        VoicePortraitCard(voice: voice, selected: selectedID == voice.id, favorite: favoriteIDs.contains(voice.id),
-            onSelect: { onSelect(voice) }, onPreview: { onPreview(voice) }, onFavorite: { onFavorite(voice) })
-    }
-    private func topicHeading(_ topic: VoiceDiscoveryTopic) -> some View {
-        HStack {
-            Text(topic.title).font(.title3.weight(.bold))
-            Spacer()
-            NavigationLink(value: topic) {
-                Image(systemName: "arrow.right").frame(width: 44, height: 32)
-            }.accessibilityLabel(Text(AppLocalized("查看全部") + " · " + topic.title))
-        }.padding(.horizontal)
-    }
-    private func portraitSection(_ topic: VoiceDiscoveryTopic, voices: [VoiceOption]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            topicHeading(topic)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 12) {
-                    ForEach(voices) { voice in
-                        portrait(voice)
-                    }
-                }.padding(.horizontal)
-            }
-        }
-    }
     private func row(_ voice: VoiceOption) -> some View {
-        VoiceDiscoveryRow(voice: voice, selected: selectedID == voice.id,
-                          favorite: favoriteIDs.contains(voice.id), selecting: selectingID == voice.id,
-                          onSelect: { onSelect(voice) }, onPreview: { onPreview(voice) }, onFavorite: { onFavorite(voice) })
+        VoiceDiscoveryRow(voice: voice, selected: selectedID == voice.id, favorite: favoriteIDs.contains(voice.id),
+            selecting: selectingID == voice.id, onSelect: { onSelect(voice) }, onPreview: { onPreview(voice) }, onFavorite: { onFavorite(voice) })
+    }
+}
+
+/// Error state belongs to the preview surface, not the catalog/filter owner.
+struct VoicePreviewErrorPresentation: ViewModifier {
+    @ObservedObject private var sample = VoiceSamplePlayer.shared
+    func body(content: Content) -> some View {
+        content.alert(AppLocalized("试听"), isPresented: Binding(
+            get: { sample.previewError != nil }, set: { if !$0 { sample.previewError = nil } }
+        )) { Button(AppLocalized("完成"), role: .cancel) { sample.previewError = nil } }
+        message: { Text(sample.previewError ?? "") }
     }
 }
 
@@ -196,7 +151,7 @@ private struct VoiceEditorialCover: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             GeometryReader { geometry in
-                CachedAsyncImage(url: VoiceCatalogAssetURL.resolve(module.artworkURL), route: ComputeRouting.current) {
+                VoiceAssetImage(url: VoiceCatalogAssetURL.resolve(module.artworkURL), route: ComputeRouting.current, pixels: 1200) {
                     Image("VoiceStoriesEditorial").resizable().scaledToFill()
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height).clipped()
@@ -308,7 +263,6 @@ struct VoiceDiscoveryRow: View {
     let onSelect: () -> Void
     let onPreview: () -> Void
     let onFavorite: () -> Void
-    @ObservedObject private var sample = VoiceSamplePlayer.shared
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     var body: some View {
         HStack(spacing: 11) {
@@ -411,7 +365,6 @@ private struct VoicePortraitCard: View {
 struct VoiceUsageBadge: View {
     let voice: VoiceOption
     @ObservedObject private var pro = ProManager.shared
-    @ObservedObject private var store = VoiceCloneStore.shared
     @State private var showsQuota = false
     var body: some View {
         Group {
@@ -429,14 +382,20 @@ struct VoiceUsageBadge: View {
             .alert(AppLocalized("生成额度"), isPresented: $showsQuota) {
                 Button(AppLocalized("完成"), role: .cancel) {}
             } message: {
-                Text(VoiceGenerationQuotaSummary.sharedExplanation)
+                VoiceQuotaExplanation()
             }
     }
 }
 
+private struct VoiceQuotaExplanation: View {
+    @ObservedObject private var store = VoiceCloneStore.shared
+    var body: some View { Text(VoiceGenerationQuotaSummary.sharedExplanation) }
+}
+
 struct VoiceDiscoveryCollectionView: View {
     let title: String
-    let voices: [VoiceOption]
+    var voiceIDs: [String]? = nil
+    var topic: VoiceDiscoveryTopic? = nil
     let language: String
     let onSelect: (VoiceOption) -> Void
     let onPreview: (VoiceOption) -> Void
@@ -444,14 +403,20 @@ struct VoiceDiscoveryCollectionView: View {
     @ObservedObject private var settings = AppSettings.shared
     @State private var query = ""
     @State private var usage: VoiceUsageFilter = .all
-    private var results: [VoiceOption] {
-        VoiceBrowserFilter.apply(voices: voices, search: query, language: language, gender: "", tier: .all)
-            .filter { usage.includes($0) }
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
+    @StateObject private var resultModel = VoiceBrowseResults()
+    private var request: VoiceBrowseRequest {
+        VoiceBrowseRequest(catalogID: VoiceCatalog.snapshot.id, language: language,
+            locale: appLanguage.selectedLanguage.resolvedLanguageCode, search: query, usage: usage,
+            includingMonthly: Constants.Features.voiceCloningEnabled, voiceIDs: voiceIDs, topic: topic)
     }
+    private var results: [VoiceOption] { resultModel.voices }
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                if results.isEmpty {
+                if resultModel.request != request {
+                    ProgressView().frame(maxWidth: .infinity, minHeight: 120)
+                } else if results.isEmpty {
                     ContentUnavailableView(AppLocalized("没有匹配的音色"), systemImage: "waveform",
                                            description: Text(AppLocalized("尝试其他搜索或筛选条件"))).padding(.top, 50)
                 } else {
@@ -467,6 +432,7 @@ struct VoiceDiscoveryCollectionView: View {
         }.background(AppTheme.background).reservesMiniPlayerSpace()
             .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
             .searchable(text: $query, prompt: AppLocalized("搜索音色或听感"))
+            .task(id: request) { await resultModel.update(request, snapshot: VoiceCatalog.snapshot) }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {

@@ -109,12 +109,12 @@ final class PlaybackVoicePanelCenter: ObservableObject {
 struct VoiceBrowserView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var settings: AppSettings
-    @ObservedObject private var pro: ProManager
+    private let pro: ProManager
     @ObservedObject private var catalog: VoiceCatalogService
     @ObservedObject private var library: VoiceLibraryStore
-    @ObservedObject private var samplePlayer: VoiceSamplePlayer
+    private let samplePlayer: VoiceSamplePlayer
     @ObservedObject private var voiceSwitch: VoiceSwitchStatusCenter
-    @ObservedObject private var voiceCloneStore: VoiceCloneStore
+    private let voiceCloneStore: VoiceCloneStore
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     private let presentation: VoiceBrowserPresentation
     /// The reader seeds the panel with the language it is currently narrating in.
@@ -129,6 +129,7 @@ struct VoiceBrowserView: View {
     private let launchRequest: VoiceBrowserLaunchRequest?
     private let onConsumeLaunchRequest: (UUID) -> Void
 
+    @StateObject private var results = VoiceBrowseResults()
     @State private var tab: VoiceBrowserTab = .explore
     @State private var searchText = ""
     @State private var genderFilter = ""
@@ -158,12 +159,12 @@ struct VoiceBrowserView: View {
         self.onDone = onDone
         _tab = State(initialValue: launchRequest?.tab ?? .explore)
         _settings = ObservedObject(wrappedValue: .shared)
-        _pro = ObservedObject(wrappedValue: .shared)
+        self.pro = .shared
         _catalog = ObservedObject(wrappedValue: .shared)
         _library = ObservedObject(wrappedValue: .shared)
-        _samplePlayer = ObservedObject(wrappedValue: .shared)
+        self.samplePlayer = .shared
         _voiceSwitch = ObservedObject(wrappedValue: .shared)
-        _voiceCloneStore = ObservedObject(wrappedValue: .shared)
+        self.voiceCloneStore = .shared
     }
 
     init(
@@ -187,12 +188,12 @@ struct VoiceBrowserView: View {
         self.onDone = onDone
         _tab = State(initialValue: launchRequest?.tab ?? .explore)
         _settings = ObservedObject(wrappedValue: settings)
-        _pro = ObservedObject(wrappedValue: pro)
+        self.pro = pro
         _catalog = ObservedObject(wrappedValue: catalog)
         _library = ObservedObject(wrappedValue: library)
-        _samplePlayer = ObservedObject(wrappedValue: .shared)
+        self.samplePlayer = .shared
         _voiceSwitch = ObservedObject(wrappedValue: .shared)
-        _voiceCloneStore = ObservedObject(wrappedValue: .shared)
+        self.voiceCloneStore = .shared
     }
 
     /// Pin the language only when it was supplied from outside *and* cannot be
@@ -253,7 +254,7 @@ struct VoiceBrowserView: View {
                 case .collection(let id):
                     if let collection = VoiceCatalog.collections.first(where: { $0.id == id }) {
                         VoiceDiscoveryCollectionView(title: collection.localizedTitle,
-                            voices: collection.voices(from: sourceVoices, language: library.browserLanguage),
+                            voiceIDs: collection.voiceIds,
                             language: library.browserLanguage, onSelect: select, onPreview: preview)
                     } else {
                         discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
@@ -261,7 +262,7 @@ struct VoiceBrowserView: View {
                 case .edition(let id):
                     if let module = VoiceCatalog.discovery?.activeModules(from: sourceVoices, language: library.browserLanguage).first(where: { $0.id == id }) {
                         VoiceDiscoveryCollectionView(title: module.localizedTitle,
-                            voices: module.voices(from: sourceVoices, language: library.browserLanguage),
+                            voiceIDs: module.voiceIds,
                             language: library.browserLanguage, onSelect: select, onPreview: preview)
                     } else {
                         discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
@@ -292,12 +293,7 @@ struct VoiceBrowserView: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .alert(AppLocalized("试听"), isPresented: Binding(
-            get: { samplePlayer.previewError != nil },
-            set: { if !$0 { samplePlayer.previewError = nil } }
-        )) {
-            Button(AppLocalized("完成"), role: .cancel) { samplePlayer.previewError = nil }
-        } message: { Text(samplePlayer.previewError ?? "") }
+        .modifier(VoicePreviewErrorPresentation())
         .sheet(isPresented: $showLanguagePicker) {
             VoiceLanguagePickerView(
                 title: languageControlTitle,
@@ -314,6 +310,9 @@ struct VoiceBrowserView: View {
                 analyticsTrigger: "pro_voice",
                 analyticsSurface: "voice_browser"
             )
+        }
+        .task(id: browseRequest) {
+            await results.update(browseRequest, snapshot: VoiceCatalog.snapshot)
         }
         .task {
             await catalog.refreshIfStale()
@@ -382,6 +381,8 @@ struct VoiceBrowserView: View {
                 onConsumeLaunchRequest: onConsumeLaunchRequest
             )
                 .frame(minHeight: 360)
+        } else if results.request != browseRequest {
+            ProgressView().frame(maxWidth: .infinity, minHeight: 180)
         } else if displayedVoices.isEmpty {
             emptyState
                 .frame(maxWidth: .infinity)
@@ -389,7 +390,7 @@ struct VoiceBrowserView: View {
         } else {
             if tab == .explore && searchText.trimmed.isEmpty && genderFilter.isEmpty
                 && tierFilter == .all && accentFilter.isEmpty && !recommendedOnly && usageFilter == .all {
-                VoiceDiscoveryFeed(voices: displayedVoices, language: library.browserLanguage,
+                VoiceDiscoveryFeed(snapshot: VoiceCatalog.snapshot, language: library.browserLanguage,
                     favoriteIDs: library.favoriteIDs, recentIDs: library.recentIDs,
                     selectedID: settings.voice(for: library.browserLanguage), selectingID: selectingVoiceID,
                     onSelect: select, onPreview: preview, onFavorite: { library.toggleFavorite($0.id) })
@@ -423,7 +424,7 @@ struct VoiceBrowserView: View {
 
     private func discoveryCollection(title: String, topic: VoiceDiscoveryTopic?) -> some View {
         VoiceDiscoveryCollectionView(title: title,
-            voices: topic.map { VoiceDiscovery.voices(in: $0, from: sourceVoices) } ?? sourceVoices,
+            topic: topic,
             language: library.browserLanguage,
             onSelect: select, onPreview: preview)
     }
@@ -500,16 +501,16 @@ struct VoiceBrowserView: View {
         }
     }
 
-    private var displayedVoices: [VoiceOption] {
-        VoiceBrowserFilter.apply(
-            voices: sourceVoices,
-            search: searchText,
-            language: library.browserLanguage,
-            gender: tab == .explore ? genderFilter : "",
-            tier: tab == .explore ? tierFilter : .all,
-            accent: tab == .explore ? accentFilter : "",
-            recommendedOnly: tab == .explore && recommendedOnly
-        ).filter { tab != .explore || usageFilter.includes($0) }
+    private var displayedVoices: [VoiceOption] { results.voices }
+
+    private var browseRequest: VoiceBrowseRequest {
+        VoiceBrowseRequest(catalogID: VoiceCatalog.snapshot.id, language: library.browserLanguage,
+            locale: appLanguage.selectedLanguage.resolvedLanguageCode, tab: tab, search: searchText,
+            gender: tab == .explore ? genderFilter : "", tier: tab == .explore ? tierFilter : .all,
+            accent: tab == .explore ? accentFilter : "", recommendedOnly: tab == .explore && recommendedOnly,
+            usage: tab == .explore ? usageFilter : .all,
+            favorites: tab == .favorites ? library.favoriteIDs : [], recents: tab == .recent ? library.recentIDs : [],
+            includingMonthly: Constants.Features.voiceCloningEnabled)
     }
 
     private var availableGenders: [String] {
@@ -847,7 +848,7 @@ struct VoiceAvatarView: View {
 
     var body: some View {
         let route = ComputeRouting.current
-        CachedAsyncImage(url: avatarURL(route: route), route: route) {
+        VoiceAssetImage(url: avatarURL(route: route), route: route) {
             ZStack {
                 Circle().fill(fallbackColor.opacity(0.18))
                 Text(initial)

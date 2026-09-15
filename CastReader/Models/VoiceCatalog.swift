@@ -311,27 +311,85 @@ private struct VoiceCatalogCacheRecord: Codable {
     let catalog: TTSVoiceCatalogDocument
 }
 
-private final class VoiceCatalogRuntime: @unchecked Sendable {
-    private let lock = NSLock()
-    private var catalog: TTSVoiceCatalogDocument?
+/// Immutable, precomputed catalog data. Construction is done before publication;
+/// readers only retain a snapshot under a short lock, never transform the catalog.
+final class VoiceCatalogSnapshot: @unchecked Sendable {
+    let id = UUID()
+    let document: TTSVoiceCatalogDocument?
+    let all: [VoiceOption]
+    let selectable: [VoiceOption]
+    let byID: [String: VoiceOption]
+    let languages: [VoiceCatalogLanguageOption]
+    let regularLanguages: [VoiceCatalogLanguageOption]
+    private let byLanguage: [String: [VoiceOption]]
+    private let regularByLanguage: [String: [VoiceOption]]
 
-    func read() -> TTSVoiceCatalogDocument? {
-        lock.lock()
-        defer { lock.unlock() }
-        return catalog
+    init(document: TTSVoiceCatalogDocument?) {
+        self.document = document
+        let fallback = VoiceCatalog.fallbackAll
+        let remote = document?.voices.map(VoiceCatalog.option(from:)) ?? []
+        let remoteLanguages = Set(remote.map(\.lang))
+        all = document == nil ? fallback : remote + fallback.filter { !remoteLanguages.contains($0.lang) }
+        selectable = all.filter(\.selectable)
+        var lookup = Dictionary(fallback.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for voice in remote { lookup[voice.id] = voice }
+        byID = lookup
+        var regular: [String: [VoiceOption]] = [:]
+        var monthly: [String: [VoiceOption]] = [:]
+        for voice in (document == nil ? fallback : remote) where voice.selectable {
+            for language in Set(voice.supportedLanguages) {
+                if voice.usesMonthlyGeneration { monthly[language, default: []].append(voice) }
+                else { regular[language, default: []].append(voice) }
+            }
+        }
+        for voice in fallback where voice.selectable {
+            for language in voice.supportedLanguages where regular[language] == nil {
+                regular[language] = fallback.filter { $0.selectable && $0.supportedLanguages.contains(language) }
+            }
+        }
+        regularByLanguage = regular
+        var combined = regular
+        for (language, voices) in monthly { combined[language, default: []].append(contentsOf: voices) }
+        byLanguage = combined
+        func summaries(_ index: [String: [VoiceOption]]) -> [VoiceCatalogLanguageOption] {
+            SupportedTTSLanguage.allCases.compactMap { supported in
+                let count = index[supported.rawValue]?.count ?? 0
+                guard count > 0 else { return nil }
+                let metadata = document?.languages.first { VoiceCatalog.normalizedLanguage($0.code) == supported.rawValue }
+                return VoiceCatalogLanguageOption(code: supported.rawValue,
+                    locale: metadata?.locale ?? supported.localeIdentifier,
+                    name: metadata?.name ?? supported.catalogName,
+                    status: metadata?.status ?? (document == nil && (supported == .english || supported == .chinese) ? "ga" : "offline-default"),
+                    voiceCount: count)
+            }
+        }
+        languages = summaries(combined)
+        regularLanguages = summaries(regular)
     }
 
-    func replace(with catalog: TTSVoiceCatalogDocument?) {
-        lock.lock()
-        self.catalog = catalog
-        lock.unlock()
+    func voices(for language: String, includingMonthly: Bool) -> [VoiceOption] {
+        (includingMonthly ? byLanguage : regularByLanguage)[VoiceCatalog.normalizedLanguage(language)] ?? []
+    }
+}
+
+private final class VoiceCatalogRuntime: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: VoiceCatalogSnapshot?
+    func read() -> VoiceCatalogSnapshot? {
+        lock.lock(); defer { lock.unlock() }
+        return value
+    }
+    func replace(with snapshot: VoiceCatalogSnapshot?) {
+        lock.lock(); value = snapshot; lock.unlock()
     }
 }
 
 enum VoiceCatalog {
     private static let runtime = VoiceCatalogRuntime()
-    static var discovery: VoiceDiscoveryEdition? { runtime.read()?.discovery }
-    static var collections: [VoiceDiscoveryCollection] { runtime.read()?.collections ?? [] }
+    private static let fallbackSnapshot = VoiceCatalogSnapshot(document: nil)
+    static var snapshot: VoiceCatalogSnapshot { runtime.read() ?? fallbackSnapshot }
+    static var discovery: VoiceDiscoveryEdition? { snapshot.document?.discovery }
+    static var collections: [VoiceDiscoveryCollection] { snapshot.document?.collections ?? [] }
 
     // 英文 fallback 与 english-31 的 28 个 selectable v1.0 voice 对齐。
     // 头像和试听仍以网络 catalog 为准，fallback 只保留稳定选择合同字段。
@@ -397,74 +455,19 @@ enum VoiceCatalog {
 
     static let fallbackAll: [VoiceOption] = english + chinese + multilingualDefaults
 
-    static var all: [VoiceOption] {
-        guard let catalog = runtime.read() else { return fallbackAll }
-        let remote = catalog.voices.map(option(from:))
-        let remoteLanguages = Set(remote.map { normalizedLanguage($0.lang) })
-        return remote + fallbackAll.filter { !remoteLanguages.contains(normalizedLanguage($0.lang)) }
-    }
-
-    static var selectableVoices: [VoiceOption] {
-        all.filter(\.selectable)
-    }
-
-    /// 九语产品顺序就是浏览器展示顺序；没有可选音色的远端语言使用静态安全默认。
-    /// 离线或首次启动时每种语言都有安全默认，网络目录到达后替换为完整音色元数据。
+    static var all: [VoiceOption] { snapshot.all }
+    static var selectableVoices: [VoiceOption] { snapshot.selectable }
     static var availableLanguages: [VoiceCatalogLanguageOption] {
-        guard let catalog = runtime.read() else {
-            return SupportedTTSLanguage.allCases.map { language in
-                VoiceCatalogLanguageOption(
-                    code: language.rawValue,
-                    locale: language.localeIdentifier,
-                    name: language.catalogName,
-                    status: language == .english || language == .chinese ? "ga" : "offline-default",
-                    voiceCount: voices(for: language.rawValue).count
-                )
-            }
-        }
-
-        return SupportedTTSLanguage.allCases.compactMap { supported in
-            let language = catalog.languages.first(where: {
-                normalizedLanguage($0.code) == supported.rawValue
-            })
-            let code = supported.rawValue
-            let count = voices(for: code).count
-            guard count > 0 else { return nil }
-            return VoiceCatalogLanguageOption(
-                code: code,
-                locale: language?.locale ?? supported.localeIdentifier,
-                name: language?.name ?? supported.catalogName,
-                status: language?.status ?? "offline-default",
-                voiceCount: count
-            )
-        }
+        Constants.Features.voiceCloningEnabled ? snapshot.languages : snapshot.regularLanguages
     }
-
     static func languageOption(for language: String) -> VoiceCatalogLanguageOption? {
         let normalized = normalizedLanguage(language)
         return availableLanguages.first { $0.code == normalized }
     }
-
-    /// selectable 是选择器可见性的唯一权威；status 只描述质量/维护状态。
     static func voices(for language: String) -> [VoiceOption] {
-        let normalized = normalizedLanguage(language)
-        guard let catalog = runtime.read() else {
-            return fallbackAll.filter { normalizedLanguage($0.lang) == normalized }
-        }
-        let options = catalog.voices.map(option(from:)).filter { $0.selectable && $0.supports(normalized) }
-        let regular = options.filter { !$0.usesMonthlyGeneration }
-        let base = regular.isEmpty
-            ? fallbackAll.filter { $0.supports(normalized) && $0.selectable }
-            : regular
-        return base + (Constants.Features.voiceCloningEnabled ? options.filter(\.usesMonthlyGeneration) : [])
+        snapshot.voices(for: language, includingMonthly: Constants.Features.voiceCloningEnabled)
     }
-
-    static func option(for code: String) -> VoiceOption? {
-        if let remote = runtime.read()?.voices.first(where: { $0.id == code }) {
-            return option(from: remote)
-        }
-        return fallbackAll.first { $0.code == code }
-    }
+    static func option(for code: String) -> VoiceOption? { snapshot.byID[code] }
 
     static func displayName(for code: String) -> String {
         option(for: code)?.name ?? code
@@ -484,7 +487,7 @@ enum VoiceCatalog {
         let normalized = normalizedLanguage(language)
         let value = preferred.trimmed
         if !value.isEmpty { return value }
-        if let remoteDefault = runtime.read()?.languages.first(where: {
+        if let remoteDefault = snapshot.document?.languages.first(where: {
             normalizedLanguage($0.code) == normalized
         })?.defaultVoice.trimmed, !remoteDefault.isEmpty {
             return remoteDefault
@@ -496,21 +499,26 @@ enum VoiceCatalog {
 
     static func install(_ catalog: TTSVoiceCatalogDocument) throws {
         try catalog.validate()
-        runtime.replace(with: catalog)
+        runtime.replace(with: VoiceCatalogSnapshot(document: catalog))
     }
+
+    static func publish(_ snapshot: VoiceCatalogSnapshot) { runtime.replace(with: snapshot) }
 
     static func resetForTesting() {
         runtime.replace(with: nil)
     }
 
     static func normalizedLanguage(_ language: String) -> String {
+        // Catalog codes are already canonical. Avoid Foundation string processing
+        // in membership checks and repeated voice selection lookups.
+        if language.utf8.count == 2, language.utf8.allSatisfy({ $0 >= 97 && $0 <= 122 }) { return language }
         let value = language.trimmed.lowercased().replacingOccurrences(of: "_", with: "-")
         return value.split(separator: "-").first.map(String.init) ?? ""
     }
 
     private static func defaultVoice(for language: String) -> String {
         let normalized = normalizedLanguage(language)
-        if let value = runtime.read()?.languages.first(where: {
+        if let value = snapshot.document?.languages.first(where: {
             normalizedLanguage($0.code) == normalized
         })?.defaultVoice.trimmed, !value.isEmpty {
             return value
@@ -541,7 +549,7 @@ enum VoiceCatalog {
         )
     }
 
-    private static func option(from voice: TTSVoiceCatalogVoice) -> VoiceOption {
+    fileprivate static func option(from voice: TTSVoiceCatalogVoice) -> VoiceOption {
         VoiceOption(
             code: voice.id,
             name: voice.name,
@@ -631,8 +639,10 @@ final class VoiceCatalogService: ObservableObject {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-CastReaderVoiceExploreFixture") { return }
         #endif
-        _ = loadCachedCatalog()
-        Task { await refresh(force: true) }
+        Task {
+            await restoreCache()
+            await refresh(force: true)
+        }
     }
 
     func refreshIfStale() async {
@@ -663,22 +673,51 @@ final class VoiceCatalogService: ObservableObject {
                   (200..<300).contains(http.statusCode) else {
                 throw VoiceCatalogError.invalidResponse
             }
-            let catalog = try TTSVoiceCatalogDocument.decodeServerResponse(from: data)
-            guard catalog.editorialRegion == nil || catalog.editorialRegion == editorialRegion.rawValue else {
-                throw VoiceCatalogError.invalidResponse
-            }
-            try VoiceCatalog.install(catalog)
-            let record = VoiceCatalogCacheRecord(savedAt: now(), catalog: catalog)
-            defaults.set(try JSONEncoder().encode(record), forKey: cacheKey)
-            lastNetworkRefreshAt = now()
+            let region = editorialRegion.rawValue
+            let savedAt = now()
+            let oldDocument = VoiceCatalog.snapshot.document
+            let prepared = try await Task.detached(priority: .userInitiated) {
+                let document = try TTSVoiceCatalogDocument.decodeServerResponse(from: data)
+                guard document.editorialRegion == nil || document.editorialRegion == region else {
+                    throw VoiceCatalogError.invalidResponse
+                }
+                let changed = document != oldDocument
+                let snapshot = changed ? VoiceCatalogSnapshot(document: document) : nil
+                let encoded = try JSONEncoder().encode(VoiceCatalogCacheRecord(savedAt: savedAt, catalog: document))
+                return (snapshot, encoded, document.version, document.voices.count)
+            }.value
+            try Task.checkCancellation()
+            let cacheDefaults = defaults, key = cacheKey
+            await Task.detached(priority: .utility) { cacheDefaults.set(prepared.1, forKey: key) }.value
+            if let snapshot = prepared.0 { VoiceCatalog.publish(snapshot); revision &+= 1 }
+            lastNetworkRefreshAt = savedAt
             source = .network
-            revision &+= 1
-            debugLog("network version=\(catalog.version) voices=\(catalog.voices.count)")
+            debugLog("network version=\(prepared.2) voices=\(prepared.3)")
         } catch {
             debugLog("refresh failed source=\(source.rawValue) error=\(error.localizedDescription)")
         }
     }
 
+    private func restoreCache() async {
+        let cacheDefaults = defaults, key = cacheKey, region = editorialRegion.rawValue
+        let prepared = await Task.detached(priority: .userInitiated) { () -> (VoiceCatalogSnapshot, Date)? in
+            guard let data = cacheDefaults.data(forKey: key) else { return nil }
+            do {
+                let record = try JSONDecoder().decode(VoiceCatalogCacheRecord.self, from: data)
+                guard record.catalog.editorialRegion == nil || record.catalog.editorialRegion == region else { return nil }
+                try record.catalog.validate()
+                return (VoiceCatalogSnapshot(document: record.catalog), record.savedAt)
+            } catch { cacheDefaults.removeObject(forKey: key); return nil }
+        }.value
+        guard let prepared, !Task.isCancelled, source != .network else { return }
+        VoiceCatalog.publish(prepared.0)
+        lastNetworkRefreshAt = prepared.1
+        source = .cache
+        revision &+= 1
+    }
+
+    /// Synchronous entry retained for isolated cache contract tests. App startup
+    /// restores and indexes the cache off the main actor via restoreCache().
     @discardableResult
     func loadCachedCatalog() -> Bool {
         guard let data = defaults.data(forKey: cacheKey) else { return false }
