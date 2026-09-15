@@ -137,7 +137,21 @@ final class ReadAloudContinuationTests: XCTestCase {
         return AudioPlayerService(testTemporaryRoot: root)
     }
     private func document(_ texts: [String], language: String = "en") -> ReadingDocument {
-        ReadingDocument(title: "Offline continuation fixture", sourceKind: .kindle,
+        // The simulator may retain a community voice from UI testing. These
+        // offline transport fixtures require the anonymous preset endpoint.
+        let settings = AppSettings.shared
+        let previous = settings.voice(for: language)
+        if language == "en" {
+            settings.clearActiveClonedVoice(for: language)
+            settings.setVoice("af_heart", for: language)
+            addTeardownBlock {
+                await MainActor.run {
+                    if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: language) }
+                    else { settings.setVoice(previous, for: language) }
+                }
+            }
+        }
+        return ReadingDocument(title: "Offline continuation fixture", sourceKind: .kindle,
                         language: language,
                         paragraphs: texts.enumerated().map { ReadingParagraph(id: $0.offset, text: $0.element) })
     }

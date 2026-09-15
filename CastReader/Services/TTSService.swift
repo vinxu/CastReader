@@ -96,14 +96,21 @@ protocol ParagraphSpeechGenerating {
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws
 
+    func generateVoiceSwitchSegments(paragraphIndex: Int, text: String, voice: String, language: String) async throws -> [AudioSegment]
+
     func generatePrefetchSegments(
         paragraphIndex: Int, text: String, voice: String?, speed: Double,
         language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        presetPriority: PresetTTSRequestScheduler.Priority,
         onSegmentReady: ((AudioSegment) async -> Void)?
     ) async throws -> [AudioSegment]
 }
 
 extension ParagraphSpeechGenerating {
+    func generateVoiceSwitchSegments(paragraphIndex: Int, text: String, voice: String, language: String) async throws -> [AudioSegment] {
+        try await generatePrefetchSegments(paragraphIndex: paragraphIndex, text: text, voice: voice, language: language)
+    }
+
     func generateTTSForParagraph(
         paragraphIndex: Int, text: String, voice: String?, speed: Double,
         language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
@@ -121,6 +128,22 @@ extension ParagraphSpeechGenerating {
         paragraphIndex: Int, text: String, voice: String? = nil, speed: Double = 1,
         language: String = "en", includeVoiceCode: Bool = true, speaker: String? = nil,
         cloneRequestID: String? = nil, onSegmentReady: ((AudioSegment) async -> Void)? = nil
+    ) async throws -> [AudioSegment] {
+        // Pass every argument to the requirement so default arguments cannot
+        // statically select the fallback implementation through an existential.
+        try await generatePrefetchSegments(
+            paragraphIndex: paragraphIndex, text: text, voice: voice, speed: speed,
+            language: language, includeVoiceCode: includeVoiceCode, speaker: speaker,
+            cloneRequestID: cloneRequestID, presetPriority: .readAhead,
+            onSegmentReady: onSegmentReady
+        )
+    }
+
+    func generatePrefetchSegments(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double,
+        language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        presetPriority: PresetTTSRequestScheduler.Priority,
+        onSegmentReady: ((AudioSegment) async -> Void)?
     ) async throws -> [AudioSegment] {
         var segments: [AudioSegment] = []
         try await generateTTSForParagraph(paragraphIndex: paragraphIndex, text: text, voice: voice,
@@ -194,6 +217,11 @@ actor TTSService: ParagraphSpeechGenerating {
         )
     }
 
+    func generateVoiceSwitchSegments(paragraphIndex: Int, text: String, voice: String, language: String) async throws -> [AudioSegment] {
+        try await generatePrefetchSegments(paragraphIndex: paragraphIndex, text: text, voice: voice,
+                                          language: language, presetPriority: .interactive)
+    }
+
     /// 生成可缓存的 TTS segments，不触碰 `currentRequestId`。
     ///
     /// Kindle 解读会在当前页播放时预生成下一页 block_0；如果复用 `generateTTSForParagraph`，
@@ -208,7 +236,7 @@ actor TTSService: ParagraphSpeechGenerating {
         includeVoiceCode: Bool = true,
         speaker: String? = nil,
         cloneRequestID: String? = nil,
-        presetPriority: PresetTTSRequestScheduler.Priority = .readAhead,
+        presetPriority: PresetTTSRequestScheduler.Priority,
         onSegmentReady: ((AudioSegment) async -> Void)? = nil
     ) async throws -> [AudioSegment] {
         var segmentIndex = 0
@@ -235,7 +263,7 @@ actor TTSService: ParagraphSpeechGenerating {
                     speed: speed,
                     language: language,
                     includeVoiceCode: includeVoiceCode,
-                    priority: .prefetch,
+                    priority: presetPriority == .interactive ? .interactive : .prefetch,
                     requestID: networkRequestID,
                     presetPriority: presetPriority
                 )
@@ -298,7 +326,7 @@ actor TTSService: ParagraphSpeechGenerating {
 
         var segmentIndex = continuation?.nextSegmentIndex ?? 0
         let requestUnits = continuation?.requestUnits
-            ?? TTSSentenceSegmenter.requestUnits(text, language: language)
+            ?? ClonedTTSStartup.requestUnits(text, language: language, voice: voice)
 
         // Segment-timed languages first split into natural sentences. The inner
         // loop still consumes a backend partial response without dropping text.

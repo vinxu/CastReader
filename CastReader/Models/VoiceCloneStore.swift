@@ -38,6 +38,7 @@ final class VoiceCloneStore: ObservableObject {
     private var activeStorageID: String?
     private var accountGeneration: UInt64 = 0
     private var refreshGeneration: UInt64 = 0
+    private var capabilityUpdatedAt: Date?
     private var activeCreateRequestID: UUID?
     private var pendingCreateIdempotency: PendingCreateIdempotency?
     private var activeCreateTask: Task<ClonedVoice, Error>?
@@ -210,6 +211,18 @@ final class VoiceCloneStore: ObservableObject {
         let value = voice.referenceLanguage ?? referenceLanguages[voice.voiceId]
         let normalized = VoiceCatalog.normalizedLanguage(value ?? "")
         return normalized.isEmpty ? nil : normalized
+    }
+
+    /// Selection needs recent account capability, not another full library round-trip.
+    /// Actual synthesis still revalidates authentication and quota on the server.
+    func refreshForSelectionIfNeeded(now: Date = Date()) async {
+        guard isSignedIn(), activeStorageID != nil else { return }
+        if canApply, let updatedAt = capabilityUpdatedAt,
+           now.timeIntervalSince(updatedAt) >= 0, now.timeIntervalSince(updatedAt) < 60,
+           capability.resetAt.map({ $0 > now }) ?? true {
+            return
+        }
+        await refresh()
     }
 
     func refresh() async {
@@ -788,6 +801,7 @@ final class VoiceCloneStore: ObservableObject {
     }
 
     func applyCapability(_ update: VoiceCloneCapability) {
+        if update.canApply != nil || update.monthlyRemainingSeconds != nil { capabilityUpdatedAt = Date() }
         // Decode legacy creation fields for wire compatibility, but never use
         // or persist them as an eligibility gate. Older servers may briefly
         // return canCreate=false/freeCreationConsumed=true during rollout.
@@ -901,6 +915,7 @@ final class VoiceCloneStore: ObservableObject {
     }
 
     private func invalidateAccountWork() {
+        capabilityUpdatedAt = nil
         accountGeneration &+= 1
         invalidateRefreshes()
         activeCreateTask?.cancel()

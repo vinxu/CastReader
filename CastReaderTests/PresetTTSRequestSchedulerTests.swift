@@ -163,4 +163,54 @@ final class PresetTTSRequestSchedulerTests: XCTestCase {
         XCTAssertEqual(counts.active, 0)
         XCTAssertEqual(counts.waiting, 0)
     }
+
+    func testCloneBackgroundWaitsForFirstAudioAndUserActionCanOvertakeIt() async throws {
+        let scheduler = PresetTTSRequestScheduler(protectInteractive: true)
+        let recorder = Recorder()
+        let foreground = try await scheduler.acquire(priority: .interactive, requestID: "first-audio")
+        let background = job("background", .readAhead, scheduler, recorder)
+        try await until { await scheduler.debugCounts.waiting == 1 }
+        let before = await recorder.values
+        XCTAssertTrue(before.isEmpty, "An unused transport slot must not start a competing clone preparation")
+        await scheduler.release(foreground)
+        try await background.value
+
+        let activeBackground = try await scheduler.acquire(priority: .readAhead, requestID: "already-generating")
+        let later = job("later", .speculative, scheduler, recorder)
+        try await until { await scheduler.debugCounts.waiting == 1 }
+        let userAction = job("user", .interactive, scheduler, recorder)
+        try await userAction.value
+        let during = await recorder.values
+        XCTAssertEqual(during, ["background", "user"])
+        await scheduler.release(activeBackground)
+        try await later.value
+        let counts = await scheduler.debugCounts
+        XCTAssertEqual(counts.active, 0)
+        XCTAssertEqual(counts.waiting, 0)
+    }
+
+    func testProtocolPrefetchDoesNotCancelForegroundSpeech() async throws {
+        let foregroundText = "The current sentence must finish."
+        let backgroundText = "The following paragraph can prepare independently."
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input), delay: input == foregroundText ? 0.4 : 0)
+        }
+        defer { fixture.close() }
+        let service: any ParagraphSpeechGenerating = fixture.service()
+        let recorder = Recorder()
+        let foreground = Task {
+            try await service.generateTTSForParagraph(
+                paragraphIndex: 0, text: foregroundText, voice: "af_heart", speed: 1,
+                language: "en", includeVoiceCode: true, speaker: nil, cloneRequestID: nil
+            ) { segment in await recorder.add(segment.text) }
+        }
+        try await until { fixture.requests == [foregroundText] }
+        let background = try await service.generatePrefetchSegments(
+            paragraphIndex: 1, text: backgroundText, voice: "af_heart", language: "en"
+        )
+        XCTAssertEqual(background.map(\.text).joined(), backgroundText)
+        try await foreground.value
+        let played = await recorder.values
+        XCTAssertEqual(played, [foregroundText])
+    }
 }

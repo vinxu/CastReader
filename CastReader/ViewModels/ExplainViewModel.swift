@@ -784,11 +784,10 @@ final class ExplainViewModel: ObservableObject {
         language: String,
         voiceID: String
     ) async throws -> PreparedBlock {
-        let segments = try await speechGenerator.generatePrefetchSegments(
+        let segments = try await speechGenerator.generateVoiceSwitchSegments(
             paragraphIndex: blockIndex,
             text: original.text,
             voice: voiceID,
-            speed: 1.0,
             language: language
         )
         guard !segments.isEmpty else { throw QuickReadError.noBlock0 }

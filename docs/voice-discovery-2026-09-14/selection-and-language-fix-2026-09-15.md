@@ -43,4 +43,6 @@
 - `scripts/build-reader-more-integration.sh --check` 通过，保留发布祖先 b6dd4d7 及 Kindle / WeRead / Kobo 恢复实现。脚本 `--device` 因目标 iPhone 不可用无法定位目的设备；相同源码通过 generic iOS 的签名 build-for-testing 预编译。
 - 预编译包：`/tmp/CastReaderVoiceSelectionDevice20260915/Build/Products/Debug-iphoneos/CastReader.app`；版本 1.2.40 (61)，Debug dylib UUID `BDDD9870-FCD6-32A0-8944-E85249285714`。版本号相同不代表源码相同。本轮尚未安装到 iPhone；连接恢复后需要同脚本真机目标构建、安装和原路径复测。
 
+安装记录补充：2026-09-15 13:02:42，连接恢复后，同脚本真机目标构建与安装已成功，安装目录 `B95DA485-148B-4CE3-9C07-BD1C0A281E6C`。工具启动当时因锁屏失败，随后用户手动启动并测试；13:10 的朗读日志来自这个已安装的版本。
+
 本地证据在 `/tmp/castreader-voice-selection-20260915/`：`tests-final.log`、`tests-personal.log`、`tests-discovery.log`、`preview-performance.log`、UI 附件、前后运营快照及预编译记录。早期测试有一个缺少试听 URL 的韩语夹具失败，补齐夹具后主回归已通过。

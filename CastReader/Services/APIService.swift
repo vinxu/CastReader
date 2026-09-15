@@ -161,6 +161,7 @@ actor APIService: VoiceCloneSTSCredentialProviding {
     private let session: URLSession
     private let ttsSessions: [ServiceRoute: URLSession]
     private let presetScheduler: PresetTTSRequestScheduler
+    private let cloneScheduler = PresetTTSRequestScheduler(protectInteractive: true)
     private let cloneTTSSession: URLSession
     private let decoder: JSONDecoder
     private let mobileSessionProvider: any MobileSessionProviding
@@ -637,12 +638,21 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             // Clone synthesis stays on the authenticated account gateway. The
             // gateway owns compute authorization and returns the same captioned
             // JSON contract as preset voices.
-            let response = try await requestClonedVoiceTTS(
-                body: bodyData,
-                voiceID: resolvedVoice,
-                priority: priority,
-                requestID: requestID ?? UUID().uuidString
-            )
+            let networkRequestID = requestID ?? UUID().uuidString
+            let queuedBoundary = await MainActor.run { AccountContentIsolation.captureBoundaryToken() }
+            let response = try await cloneScheduler.run(
+                priority: presetPriority ?? (priority == .interactive ? .interactive : .readAhead),
+                requestID: networkRequestID
+            ) {
+                let stillCurrent = await MainActor.run {
+                    AccountContentIsolation.captureBoundaryToken() == queuedBoundary
+                }
+                guard stillCurrent else { throw CancellationError() }
+                return try await self.requestClonedVoiceTTS(
+                    body: bodyData, voiceID: resolvedVoice, priority: priority,
+                    requestID: networkRequestID, accountBoundary: queuedBoundary
+                )
+            }
             return ClonedTTSRequestChunker.appendingLocalRemainder(
                 to: response,
                 submittedInput: inputText,

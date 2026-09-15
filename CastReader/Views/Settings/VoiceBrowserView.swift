@@ -642,7 +642,7 @@ struct VoiceBrowserView: View {
                 VoiceCloneAccessCoordinator.shared.prompt = .signIn
                 return
             }
-            await voiceCloneStore.refresh()
+            await voiceCloneStore.refreshForSelectionIfNeeded()
             guard !voiceCloneStore.isQuotaBlocked else {
                 VoiceCloneAccessCoordinator.shared.prompt = .message(
                     AppLocalized("本期生成额度已用完。可选择常规音色继续，当前阅读位置会保留。")

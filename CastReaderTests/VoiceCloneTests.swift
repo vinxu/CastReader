@@ -2,6 +2,69 @@ import XCTest
 @testable import CastReader
 
 final class VoiceCloneTests: XCTestCase {
+    func testCloneStartupKeepsAllTextAndBoundsOpeningAcrossLanguages() {
+        let samples: [(String, String, Int)] = [
+            ("en", String(repeating: "A familiar voice makes reading feel natural, even on a very busy day. ", count: 5), 120),
+            ("zh-CN", String(repeating: "熟悉的声音让阅读更亲切，让我们从第一句话开始慢慢听下去", count: 6) + "。", 48),
+            ("ja", String(repeating: "毎日好きな声で文章を読んで理解を深めましょう", count: 6) + "。", 48),
+            ("en", String(repeating: "Family 👨‍👩‍👧‍👦 and café voices help us listen with care, ", count: 6), 120)
+        ]
+        for (language, text, limit) in samples {
+            let baseline = TTSSentenceSegmenter.requestUnits(text, language: language)
+            XCTAssertEqual(ClonedTTSStartup.requestUnits(text, language: language, voice: "af_heart"), baseline)
+            for voice in ["vc_personal", "vl_community"] {
+                let chunks = ClonedTTSStartup.requestUnits(text, language: language, voice: voice)
+                XCTAssertGreaterThan(chunks.count, baseline.count)
+                XCTAssertLessThanOrEqual(chunks[0].utf16.count, limit)
+                XCTAssertEqual(chunks.joined(), baseline.joined(), "No loss, duplication or damaged Unicode: \(language)")
+            }
+        }
+        XCTAssertEqual(ClonedTTSStartup.requestUnits("Short sentence.", language: "en", voice: "vl_test"), ["Short sentence."])
+        XCTAssertTrue(ClonedTTSStartup.requestUnits("  ", language: "en", voice: "vc_test").isEmpty)
+    }
+
+    @MainActor
+    func testVoiceSelectionReusesOnlyFreshEligibleAccountCapability() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        let priorPro = ProManager.shared.debugForcePro
+        ProManager.shared.debugForcePro = true
+        defer {
+            defaults.removePersistentDomain(forName: suite)
+            ProManager.shared.debugForcePro = priorPro
+        }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(service: service, defaults: defaults, isSignedIn: { true })
+        let eligible = VoiceCloneListResult(voices: [], nextCreateAt: nil,
+            capability: VoiceCloneCapability(canApply: true, monthlyRemainingSeconds: 600))
+        store.activateAccountScope(storageID: String(repeating: "a", count: 64))
+        await service.enqueueImmediateList(eligible)
+        await store.refreshForSelectionIfNeeded()
+        await store.refreshForSelectionIfNeeded()
+        let cachedCalls = await service.listCalls()
+        XCTAssertEqual(cachedCalls, 1)
+
+        await service.enqueueImmediateList(eligible)
+        await store.refreshForSelectionIfNeeded(now: Date().addingTimeInterval(61))
+        let expiredCalls = await service.listCalls()
+        XCTAssertEqual(expiredCalls, 2)
+
+        store.activateAccountScope(storageID: String(repeating: "b", count: 64))
+        await service.enqueueImmediateList(eligible)
+        await store.refreshForSelectionIfNeeded()
+        let switchedCalls = await service.listCalls()
+        XCTAssertEqual(switchedCalls, 3, "Another account must fetch its own capability")
+
+        store.applyCapability(VoiceCloneCapability(canApply: false, monthlyRemainingSeconds: 0))
+        let exhausted = VoiceCloneListResult(voices: [], nextCreateAt: nil,
+            capability: VoiceCloneCapability(canApply: false, monthlyRemainingSeconds: 0))
+        await service.enqueueImmediateList(exhausted)
+        await store.refreshForSelectionIfNeeded()
+        let blockedCalls = await service.listCalls()
+        XCTAssertEqual(blockedCalls, 4)
+        XCTAssertFalse(store.canApply)
+    }
+
     func testAdaptiveVoiceCreationHasEndToEndTimeoutHeadroom() {
         XCTAssertEqual(VoiceCloneService.creationRequestTimeout, 150)
     }

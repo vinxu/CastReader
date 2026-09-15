@@ -434,6 +434,37 @@ enum TTSSentenceSegmenter {
     }
 }
 
+/// Only foreground clone startup gets a short opening chunk. Keep every
+/// character and leave regular voices / saved continuations unchanged.
+enum ClonedTTSStartup {
+    static func requestUnits(_ text: String, language: String, voice: String) -> [String] {
+        var units = TTSSentenceSegmenter.requestUnits(text, language: language)
+        guard VoiceOption.requiresGenerationQuota(voice), let first = units.first else { return units }
+        let cjk = ["zh", "ja", "ko"].contains(VoiceCatalog.normalizedLanguage(language))
+        let limit = cjk ? 48 : 120
+        guard first.utf16.count > limit else { return units }
+        let bounded = ClonedTTSRequestChunker.split(first, maxUTF16Length: limit).input
+        let minimum = cjk ? 16 : 48
+        let separators = CharacterSet(charactersIn: ".!?。！？;；,，、:：")
+        let boundedEnd = first.index(first.startIndex, offsetBy: bounded.count)
+        let candidates = first[..<boundedEnd].indices.filter { index in
+            let length = first[..<index].utf16.count
+            return length >= minimum && length < bounded.utf16.count
+        }
+        let punctuation = candidates.last { index in
+            first[index].unicodeScalars.contains { separators.contains($0) }
+        }
+        let whitespace = candidates.last { first[$0].isWhitespace }
+        let split = punctuation.map { first.index(after: $0) }
+            ?? whitespace
+            ?? boundedEnd
+        let opening = String(first[..<split]), remainder = String(first[split...])
+        guard !opening.trimmed.isEmpty, !remainder.trimmed.isEmpty else { return units }
+        units.replaceSubrange(0...0, with: [opening, remainder])
+        return units
+    }
+}
+
 // MARK: - Audio Segment
 struct AudioSegment: Identifiable {
     let id: String

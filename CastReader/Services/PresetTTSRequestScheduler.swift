@@ -21,12 +21,14 @@ actor PresetTTSRequestScheduler {
     }
 
     private let maximumActive: Int
+    private let protectInteractive: Bool
     private var active: [UUID: Priority] = [:]
     private var waiting: [Waiter] = []
 
-    init(maximumActive: Int = 2) {
+    init(maximumActive: Int = 2, protectInteractive: Bool = false) {
         precondition(maximumActive > 0)
         self.maximumActive = maximumActive
+        self.protectInteractive = protectInteractive
     }
 
     func run<T>(
@@ -82,7 +84,12 @@ actor PresetTTSRequestScheduler {
     private func drain() {
         while active.count < maximumActive {
             guard let index = waiting.firstIndex(where: {
-                $0.priority != .speculative || !active.values.contains(.speculative)
+                if protectInteractive, $0.priority != .interactive {
+                    // A clone may need a cold prompt restored. Do not launch
+                    // duplicate background preparation while first audio waits.
+                    return active.isEmpty
+                }
+                return $0.priority != .speculative || !active.values.contains(.speculative)
             }) else { return }
             let waiter = waiting.remove(at: index)
             active[waiter.id] = waiter.priority
