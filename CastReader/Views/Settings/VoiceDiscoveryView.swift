@@ -1,4 +1,36 @@
 import SwiftUI
+import Combine
+
+/// Search belongs to the scrolling content. Keeping a second native search
+/// controller out of a pushed voice page avoids navigation-bar/safe-area
+/// relayout during interactive transitions on iOS 26.
+struct VoiceBrowseSearchField: View {
+    @Binding var text: String
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundStyle(AppTheme.mutedForeground)
+            TextField(AppLocalized("搜索音色或听感"), text: $text)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .submitLabel(.search).accessibilityIdentifier("voiceSearchField")
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(AppTheme.mutedForeground)
+                }.buttonStyle(.plain).accessibilityLabel(Text(AppLocalized("清除")))
+            }
+        }.padding(.horizontal, 12).frame(height: 44)
+            .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal).padding(.vertical, 8)
+    }
+}
+
+/// Reserve scrollable content, not another safe area on each navigation page.
+/// Safe-area changes feed UIKit's scroll-offset/navigation-bar coordination.
+struct VoiceBrowseContentMargins: ViewModifier {
+    @ObservedObject private var metrics = BottomOverlayMetrics.shared
+    func body(content: Content) -> some View {
+        content.contentMargins(.bottom, metrics.height, for: .scrollContent)
+    }
+}
 
 struct VoiceDiscoveryFeed: View {
     let snapshot: VoiceCatalogSnapshot
@@ -156,12 +188,14 @@ struct VoiceDiscoveryFeed: View {
 
 /// Error state belongs to the preview surface, not the catalog/filter owner.
 struct VoicePreviewErrorPresentation: ViewModifier {
-    @ObservedObject private var sample = VoiceSamplePlayer.shared
+    private let sample = VoiceSamplePlayer.shared
+    @State private var error: String?
     func body(content: Content) -> some View {
         content.alert(AppLocalized("试听"), isPresented: Binding(
-            get: { sample.previewError != nil }, set: { if !$0 { sample.previewError = nil } }
+            get: { error != nil }, set: { if !$0 { error = nil; sample.previewError = nil } }
         )) { Button(AppLocalized("完成"), role: .cancel) { sample.previewError = nil } }
-        message: { Text(sample.previewError ?? "") }
+        message: { Text(error ?? "") }
+            .onReceive(sample.$previewError.removeDuplicates()) { error = $0 }
     }
 }
 
@@ -216,7 +250,7 @@ private struct VoiceEditorialVoiceRow: View {
     let selected: Bool
     let onSelect: () -> Void
     let onPreview: () -> Void
-    @ObservedObject private var sample = VoiceSamplePlayer.shared
+    @State private var previewStatus: VoiceSamplePlayer.Status = .stopped
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     var body: some View {
         HStack(spacing: 12) {
@@ -242,18 +276,19 @@ private struct VoiceEditorialVoiceRow: View {
             }
             Button(action: onPreview) {
                 Group {
-                    if sample.loadingVoiceID == voice.id { ProgressView().controlSize(.small) }
+                    if previewStatus == .loading { ProgressView().controlSize(.small) }
                     else {
-                        Label(AppLocalized("试听"), systemImage: sample.playingVoiceID == voice.id ? "stop.fill" : "play.fill")
+                        Label(AppLocalized("试听"), systemImage: previewStatus == .playing ? "stop.fill" : "play.fill")
                             .font(.caption.weight(.bold))
                     }
-                }.frame(minWidth: 60, minHeight: 40).padding(.horizontal, 8)
+                }.frame(width: 76, height: 40)
                     .foregroundStyle(AppTheme.primary)
                     .background(AppTheme.primary.opacity(0.09), in: Capsule())
             }.buttonStyle(.plain).accessibilityIdentifier("voicePreview_\(voice.id)")
                 .accessibilityLabel(Text(AppLocalized("试听") + " · " + voice.name))
-                .accessibilityValue(sample.playingVoiceID == voice.id ? "playing" : sample.loadingVoiceID == voice.id ? "loading" : "stopped")
+                .accessibilityValue(Text(verbatim: previewStatus.rawValue))
         }.padding(.horizontal, 4).padding(.vertical, 2)
+            .onReceive(VoiceSamplePlayer.shared.$playbackState.map { $0.status(for: voice.id) }.removeDuplicates()) { previewStatus = $0 }
     }
 }
 
@@ -339,21 +374,22 @@ private struct VoicePreviewAvatar: View {
     let voice: VoiceOption
     let size: CGFloat
     let onPreview: () -> Void
-    @ObservedObject private var sample = VoiceSamplePlayer.shared
+    @State private var previewStatus: VoiceSamplePlayer.Status = .stopped
     var body: some View {
         Button(action: onPreview) {
             VoiceAvatarView(voice: voice).frame(width: size, height: size)
                 .overlay(alignment: .bottomTrailing) {
                     Group {
-                        if sample.loadingVoiceID == voice.id { ProgressView().controlSize(.mini).tint(.white) }
-                        else { Image(systemName: sample.playingVoiceID == voice.id ? "stop.fill" : "play.fill").font(.system(size: 9, weight: .bold)) }
+                        if previewStatus == .loading { ProgressView().controlSize(.mini).tint(.white) }
+                        else { Image(systemName: previewStatus == .playing ? "stop.fill" : "play.fill").font(.system(size: 9, weight: .bold)) }
                     }.foregroundStyle(.white).frame(width: 23, height: 23)
                         .background(AppTheme.foreground, in: Circle())
                         .overlay(Circle().stroke(AppTheme.background, lineWidth: 2))
                 }
         }.buttonStyle(.plain).accessibilityLabel(Text(AppLocalized("试听") + " · " + voice.name))
             .accessibilityIdentifier("voicePreview_\(voice.id)")
-            .accessibilityValue(sample.playingVoiceID == voice.id ? "playing" : sample.loadingVoiceID == voice.id ? "loading" : "stopped")
+            .accessibilityValue(Text(verbatim: previewStatus.rawValue))
+            .onReceive(VoiceSamplePlayer.shared.$playbackState.map { $0.status(for: voice.id) }.removeDuplicates()) { previewStatus = $0 }
     }
 }
 
@@ -458,6 +494,7 @@ struct VoiceDiscoveryCollectionView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
+                VoiceBrowseSearchField(text: $query)
                 if usageScope == .monthly { VoiceClonedSelectionNote().frame(maxWidth: .infinity, alignment: .leading).padding() }
                 if !subgroupCollections.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -482,10 +519,11 @@ struct VoiceDiscoveryCollectionView: View {
                     }
                 }
             }.padding(.vertical, 12)
-        }.background(AppTheme.background).reservesMiniPlayerSpace()
+        }.background(AppTheme.background).modifier(VoiceBrowseContentMargins())
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(title).navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $query, prompt: AppLocalized("搜索音色或听感"))
             .task(id: request) { await resultModel.update(request, snapshot: VoiceCatalog.snapshot) }
+            .onDisappear { VoiceSamplePlayer.shared.stop() }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {

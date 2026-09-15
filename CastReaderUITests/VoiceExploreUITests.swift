@@ -58,7 +58,7 @@ final class VoiceExploreUITests: XCTestCase {
         attach(app, "voice-discovery-categories-zh")
         XCTAssertTrue(app.buttons["voiceTopic_stories"].waitForExistence(timeout: 5))
         app.buttons["voiceTopic_stories"].tap()
-        let search = app.searchFields.firstMatch
+        let search = app.textFields["voiceSearchField"]
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap(); search.typeText("Heart")
         XCTAssertTrue(app.buttons["presetVoiceSelect_af_heart"].waitForExistence(timeout: 5))
@@ -88,7 +88,7 @@ final class VoiceExploreUITests: XCTestCase {
         try JSONSerialization.data(withJSONObject: document).write(to: url)
         let app = launch(fixtureDirectory: directory)
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "voiceEdition_weekly-stories").firstMatch.waitForExistence(timeout: 20))
-        let search = app.searchFields.firstMatch
+        let search = app.textFields["voiceSearchField"]
         if !search.isHittable { app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap(); search.typeText("Scale Voice 1316")
@@ -131,12 +131,52 @@ final class VoiceExploreUITests: XCTestCase {
         attach(app, "iphone-production-monthly-quota")
         app.alerts.buttons.firstMatch.tap()
         app.navigationBars.buttons.firstMatch.tap()
-        let search = app.searchFields.firstMatch
+        let search = app.textFields["voiceSearchField"]
         if !search.isHittable { app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("Calm Narrator")
         XCTAssertTrue(app.buttons["presetVoiceSelect_vl_b5c9589c1370164a19fe"].waitForExistence(timeout: 10))
         attach(app, "iphone-production-full-catalog-search")
         #endif
+    }
+
+    func testEverydayCollectionRepeatedPreviewRemainsResponsive() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding", "-CastReaderVoicePreviewDiagnostics"]
+        app.launch()
+        let voices = app.buttons.matching(NSPredicate(format: "label IN %@", ["音色", "Voice", "Voices"])).firstMatch
+        XCTAssertTrue(voices.waitForExistence(timeout: 20))
+        voices.tap()
+        let feature = app.descendants(matching: .any).matching(NSPredicate(format: "identifier IN %@", ["voiceEdition_cn-everyday", "voiceEdition_international-everyday"])).firstMatch
+        XCTAssertTrue(feature.waitForExistence(timeout: 45))
+        for pass in 0..<3 {
+            feature.tap()
+            let previews = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voicePreview_"))
+            let first = previews.element(boundBy: 0)
+            let second = previews.element(boundBy: 1)
+            XCTAssertTrue(first.waitForExistence(timeout: 10))
+            first.tap()
+            expectation(for: NSPredicate(format: "value ==[c] %@", "playing"), evaluatedWith: first)
+            waitForExpectations(timeout: 30)
+            XCTAssertTrue(second.exists)
+            second.tap()
+            expectation(for: NSPredicate(format: "value ==[c] %@", "playing"), evaluatedWith: second)
+            waitForExpectations(timeout: 30)
+            XCTAssertEqual((first.value as? String)?.lowercased(), "stopped")
+            second.tap()
+            XCTAssertEqual((second.value as? String)?.lowercased(), "stopped")
+            attach(app, "everyday-preview-stopped-\(pass)")
+            // Leaving during playback must release the preview as well.
+            first.tap()
+            expectation(for: NSPredicate(format: "value ==[c] %@", "playing"), evaluatedWith: first)
+            waitForExpectations(timeout: 30)
+            app.navigationBars.buttons.firstMatch.tap()
+            XCTAssertTrue(feature.waitForExistence(timeout: 5))
+            let feedPreview = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voicePreview_")).firstMatch
+            XCTAssertEqual((feedPreview.value as? String)?.lowercased(), "stopped")
+        }
+        // Capture a quiet interval after repeated navigation/audio allocations.
+        Thread.sleep(forTimeInterval: 5)
+        attach(app, "everyday-preview-idle")
     }
 
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {

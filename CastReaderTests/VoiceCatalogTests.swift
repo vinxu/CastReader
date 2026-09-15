@@ -1,6 +1,86 @@
 import XCTest
 @testable import CastReader
 
+final class VoiceSampleCacheTests: XCTestCase {
+    private func cache(_ directory: URL, maximumBytes: Int = 32 * 1_024 * 1_024) -> VoiceSampleCache {
+        let configuration = OwnedAPIURLSession.explicitCredentialConfiguration()
+        configuration.protocolClasses = [SampleURLProtocol.self]
+        return VoiceSampleCache(directory: directory, session: URLSession(configuration: configuration), maximumBytes: maximumBytes)
+    }
+    private func directory() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("sample-cache-test-" + UUID().uuidString)
+    }
+
+    func testSampleIsReusedAndDiskBudgetEvictsOlderSamples() async throws {
+        let directory = directory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = cache(directory, maximumBytes: 128 * 1_024)
+        let url = URL(string: "https://preview.example/ok.mp3?id=\(UUID())")!
+        let first = try await cache.file(for: url, route: .globalGateway)
+        let second = try await cache.file(for: url, route: .globalGateway)
+        XCTAssertEqual(first, second)
+        XCTAssertEqual(SampleURLProtocol.count(for: url), 1)
+        XCTAssertEqual(try Data(contentsOf: first).count, 128 * 1_024)
+        let other = try await cache.file(for: URL(string: "https://preview.example/other.mp3?id=\(UUID())")!, route: .globalGateway)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: other.path))
+    }
+
+    func testRejectsInvalidAndOversizedResponsesWithoutCachingPartials() async throws {
+        let directory = directory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = cache(directory)
+        for path in ["error", "html", "empty", "large-header", "large-chunked"] {
+            do {
+                _ = try await cache.file(for: URL(string: "https://preview.example/\(path)")!, route: .globalGateway)
+                XCTFail("Accepted \(path)")
+            } catch {
+                XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty, path)
+            }
+        }
+    }
+
+    func testCancelDuringDownloadLeavesNoFileAndCanRetry() async throws {
+        let directory = directory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = cache(directory)
+        let url = URL(string: "https://preview.example/slow?id=\(UUID())")!
+        let task = Task { try await cache.file(for: url, route: .globalGateway) }
+        // The protocol has delivered headers and one chunk, then deliberately
+        // stalls. Cancel that in-flight transfer, as a second preview tap does.
+        for _ in 0..<100 {
+            if SampleURLProtocol.count(for: url) > 0 { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        task.cancel()
+        do { _ = try await task.value; XCTFail("Cancelled preview completed") } catch {}
+        XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
+        let retry = try await cache.file(for: URL(string: "https://preview.example/ok.mp3")!, route: .globalGateway)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: retry.path))
+    }
+}
+
+private final class SampleURLProtocol: URLProtocol {
+    private static let lock = NSLock()
+    private static var requests: [URL: Int] = [:]
+    static func count(for url: URL) -> Int { lock.lock(); defer { lock.unlock() }; return requests[url, default: 0] }
+    override class func canInit(with request: URLRequest) -> Bool { request.url?.host == "preview.example" }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        let url = request.url!
+        Self.lock.lock(); Self.requests[url, default: 0] += 1; Self.lock.unlock()
+        let path = url.lastPathComponent
+        var headers = ["Content-Type": path == "html" ? "text/html" : "audio/mpeg"]
+        if path == "large-header" { headers["Content-Length"] = "\(13 * 1_024 * 1_024)" }
+        client?.urlProtocol(self, didReceive: HTTPURLResponse(url: url, statusCode: path == "error" ? 503 : 200,
+            httpVersion: "HTTP/1.1", headerFields: headers)!, cacheStoragePolicy: .notAllowed)
+        let size = path == "large-chunked" ? 12 * 1_024 * 1_024 + 1 : path == "empty" ? 0 : 128 * 1_024
+        client?.urlProtocol(self, didLoad: Data(repeating: 1, count: size))
+        if path != "slow" { client?.urlProtocolDidFinishLoading(self) }
+    }
+    override func stopLoading() {}
+}
+
 final class VoiceCatalogTests: XCTestCase {
     @MainActor
     func testPublicVoiceRetainsIdentityAcrossOutputLanguagesAndUsesSharedQuota() throws {

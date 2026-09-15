@@ -219,6 +219,7 @@ struct VoiceBrowserView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                    VoiceBrowseSearchField(text: $searchText)
                     HStack(spacing: 10) {
                         languageSelector
                         if tab == .explore { discoveryFiltersMenu }
@@ -237,9 +238,7 @@ struct VoiceBrowserView: View {
                     }
                 }
             }
-            // Inside the NavigationStack on purpose — an inset applied outside it
-            // never reaches this ScrollView.
-            .reservesMiniPlayerSpace()
+            .modifier(VoiceBrowseContentMargins())
             .background(AppTheme.background)
             .scrollDismissesKeyboard(.interactively)
             // Each browse tab starts at its own top. In particular, a creation
@@ -279,7 +278,6 @@ struct VoiceBrowserView: View {
                 }
             }
             .navigationBarTitleDisplayMode(presentation == .tab ? .large : .inline)
-            .searchable(text: $searchText, prompt: "搜索音色")
             .toolbar {
                 if presentation != .tab {
                     ToolbarItem(placement: .confirmationAction) {

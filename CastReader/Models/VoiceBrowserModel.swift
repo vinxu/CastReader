@@ -195,19 +195,34 @@ enum VoiceBrowserFilter {
 final class VoiceSamplePlayer: ObservableObject {
     static let shared = VoiceSamplePlayer()
 
-    @Published private(set) var playingVoiceID: String?
-    @Published private(set) var loadingVoiceID: String?
+    enum Status: String { case stopped, loading, playing }
+    enum PlaybackState: Equatable {
+        case stopped, loading(String), playing(String)
+        func status(for voiceID: String) -> Status {
+            switch self {
+            case .loading(let id) where id == voiceID: return .loading
+            case .playing(let id) where id == voiceID: return .playing
+            default: return .stopped
+            }
+        }
+    }
+    @Published private(set) var playbackState: PlaybackState = .stopped
+    var playingVoiceID: String? { if case .playing(let id) = playbackState { return id }; return nil }
+    var loadingVoiceID: String? { if case .loading(let id) = playbackState { return id }; return nil }
     @Published var previewError: String?
 
     private var player: AVPlayer?
-    private var endObserver: NSObjectProtocol?
+    private var endObservers: [NSObjectProtocol] = []
     private var statusCancellable: AnyCancellable?
     private var sampleLoadTask: Task<Void, Never>?
     private var sampleLoadID: UUID?
-    private var sampleFileURL: URL?
+    private var readinessTimeout: Task<Void, Never>?
 
     func toggle(voiceID: String, sampleURL: String?) {
-        previewError = nil
+        #if DEBUG
+        VoiceSampleDiagnostics.start()
+        #endif
+        if previewError != nil { previewError = nil }
         if playingVoiceID == voiceID || loadingVoiceID == voiceID {
             stop()
             return
@@ -221,7 +236,7 @@ final class VoiceSamplePlayer: ObservableObject {
         stop(resumeSuspendedPlayback: false)
         VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
         VoicePreviewPlaybackCoordinator.shared.begin()
-        loadingVoiceID = voiceID
+        playbackState = .loading(voiceID)
         let loadID = UUID()
         sampleLoadID = loadID
         sampleLoadTask = Task { [weak self] in
@@ -230,10 +245,8 @@ final class VoiceSamplePlayer: ObservableObject {
                 try Task.checkCancellation()
                 guard let self,
                       self.sampleLoadID == loadID, self.loadingVoiceID == voiceID else {
-                    try? FileManager.default.removeItem(at: localURL)
                     return
                 }
-                self.sampleFileURL = localURL
                 self.installPlayer(voiceID: voiceID, url: localURL, loadID: loadID)
             } catch {
                 guard let self, self.sampleLoadID == loadID, self.loadingVoiceID == voiceID else { return }
@@ -250,21 +263,32 @@ final class VoiceSamplePlayer: ObservableObject {
         let item = AVPlayerItem(url: url)
         let player = AVPlayer(playerItem: item)
         self.player = player
-        endObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: item,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.stop() }
+        for name in [Notification.Name.AVPlayerItemDidPlayToEndTime, .AVPlayerItemFailedToPlayToEndTime] {
+            endObservers.append(NotificationCenter.default.addObserver(forName: name, object: item, queue: .main) { [weak self] _ in
+                Task { @MainActor in
+                    guard let self, self.sampleLoadID == loadID else { return }
+                    self.stop()
+                    if name == .AVPlayerItemFailedToPlayToEndTime {
+                        self.previewError = AppLocalized("试听暂不可用，请稍后重试")
+                    }
+                }
+            })
+        }
+        readinessTimeout = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(10)) } catch { return }
+            guard let self, self.sampleLoadID == loadID, self.loadingVoiceID == voiceID else { return }
+            self.stop()
+            self.previewError = AppLocalized("试听暂不可用，请稍后重试")
         }
         statusCancellable = item.publisher(for: \.status)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] status in
+            .sink { [weak self, weak item] status in
                 guard let self, self.sampleLoadID == loadID, self.loadingVoiceID == voiceID else { return }
                 switch status {
                 case .readyToPlay:
-                    self.loadingVoiceID = nil
-                    self.playingVoiceID = voiceID
+                    self.readinessTimeout?.cancel()
+                    self.readinessTimeout = nil
+                    self.playbackState = .playing(voiceID)
                     self.player?.play()
                     #if DEBUG
                     NSLog("[VoiceSample] playing %@", voiceID)
@@ -273,7 +297,7 @@ final class VoiceSamplePlayer: ObservableObject {
                     self.stop()
                     self.previewError = AppLocalized("试听暂不可用，请稍后重试")
                     #if DEBUG
-                    NSLog("[VoiceSample] player failed: %@", item.error?.localizedDescription ?? "unknown")
+                    NSLog("[VoiceSample] player failed: %@", item?.error?.localizedDescription ?? "unknown")
                     #endif
                 default:
                     break
@@ -285,18 +309,16 @@ final class VoiceSamplePlayer: ObservableObject {
         sampleLoadID = nil
         sampleLoadTask?.cancel()
         sampleLoadTask = nil
-        player?.pause()
-        player = nil
+        readinessTimeout?.cancel()
+        readinessTimeout = nil
         statusCancellable?.cancel()
         statusCancellable = nil
-        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
-        endObserver = nil
-        if let sampleFileURL {
-            try? FileManager.default.removeItem(at: sampleFileURL)
-        }
-        sampleFileURL = nil
-        playingVoiceID = nil
-        loadingVoiceID = nil
+        endObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        endObservers.removeAll()
+        player?.pause()
+        player?.replaceCurrentItem(with: nil)
+        player = nil
+        if playbackState != .stopped { playbackState = .stopped }
         if resumeSuspendedPlayback { VoicePreviewPlaybackCoordinator.shared.end() }
     }
 
@@ -320,30 +342,10 @@ final class VoiceSamplePlayer: ObservableObject {
            let language = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "language" })?.value,
            ["en", "zh"].contains(language) {
             let source = URL(fileURLWithPath: directory).appendingPathComponent("\(id)-\(language).mp3")
-            let destination = FileManager.default.temporaryDirectory.appendingPathComponent("voice-test-\(UUID().uuidString).mp3")
-            try FileManager.default.copyItem(at: source, to: destination)
-            return destination
+            return source
         }
         #endif
-        let (data, response) = try await OwnedAPIURLSession.data(from: url, route: route)
-        guard let http = response as? HTTPURLResponse,
-              (200..<300).contains(http.statusCode),
-              !data.isEmpty,
-              data.count <= 12 * 1_024 * 1_024 else {
-            throw URLError(.badServerResponse)
-        }
-        let rawExtension = url.pathExtension.lowercased()
-        let safeExtension = rawExtension.range(
-            of: #"^[a-z0-9]{1,5}$"#,
-            options: .regularExpression
-        ) == nil ? "mp3" : rawExtension
-        let destination = FileManager.default.temporaryDirectory
-            .appendingPathComponent("castreader-voice-\(UUID().uuidString)")
-            .appendingPathExtension(safeExtension)
-        return try await Task.detached(priority: .utility) {
-            try data.write(to: destination, options: [.atomic])
-            return destination
-        }.value
+        return try await VoiceSampleCache.shared.file(for: url, route: route)
     }
 }
 
