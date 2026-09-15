@@ -26,6 +26,7 @@ struct VoiceBrowseRequest: Equatable {
     var favorites: Set<String> = []
     var recents: [String] = []
     var includingMonthly = true
+    var allLanguages = false
     /// nil = entire language catalog; non-nil preserves a collection's order.
     var voiceIDs: [String]? = nil
     var topic: VoiceDiscoveryTopic? = nil
@@ -88,7 +89,7 @@ actor VoiceBrowseWorker {
         } else if request.tab == .recent {
             source = request.recents.compactMap { snapshot.byID[$0] }
         } else {
-            let voices = snapshot.voices(for: language, includingMonthly: request.includingMonthly)
+            let voices = request.allLanguages ? snapshot.all : snapshot.voices(for: language, includingMonthly: request.includingMonthly)
             source = request.tab == .favorites ? voices.filter { request.favorites.contains($0.id) } : voices
         }
         let query = VoiceDiscovery.normalized(request.search)
@@ -106,7 +107,8 @@ actor VoiceBrowseWorker {
                     let topics = VoiceDiscoveryTopic.allCases.enumerated().flatMap { pair in
                         purposes.contains(pair.element) ? vocabulary.topics[pair.offset] : []
                     }
-                    let raw = [voice.name, voice.id, voice.locale, voice.accent ?? "",
+                    let raw = [voice.name, voice.id, voice.locale, voice.discoveryLanguage,
+                               Locale(identifier: request.locale).localizedString(forLanguageCode: voice.discoveryLanguage) ?? "", voice.accent ?? "",
                                voice.description ?? "", voice.descriptionZh ?? "", voice.collection ?? ""]
                     index[voice.id] = VoiceDiscovery.normalized((raw + voice.tags + voice.bestFor + styles + topics).joined(separator: " "))
                 }
@@ -118,7 +120,7 @@ actor VoiceBrowseWorker {
         var result: [VoiceOption] = []
         for (offset, voice) in source.enumerated() {
             if offset.isMultiple(of: 64) { try Task.checkCancellation() }
-            guard voice.selectable, voice.supportedLanguages.contains(language),
+            guard voice.enabled, voice.selectable, request.allLanguages || voice.supportedLanguages.contains(language),
                   request.includingMonthly || !voice.usesMonthlyGeneration,
                   request.usage.includes(voice), request.style.includes(voice) else { continue }
             if !gender.isEmpty && voice.gender.trimmed.lowercased() != gender { continue }

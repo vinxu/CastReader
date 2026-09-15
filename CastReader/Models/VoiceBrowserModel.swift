@@ -484,6 +484,10 @@ enum VoiceSelectionPolicy {
         language: String? = nil
     ) -> Bool {
         guard voice.selectable, !voice.isPro || isPro else { return false }
+        if voice.usesMonthlyGeneration {
+            guard voice.supports(language ?? voice.lang) else { return false }
+            return settings.setMultilingualClonedVoice(voice.code, supportedLanguages: voice.supportedLanguages)
+        }
         return settings.setVoice(voice.code, for: language ?? voice.lang)
     }
 }

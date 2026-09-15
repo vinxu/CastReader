@@ -88,14 +88,22 @@ final class VoiceExploreUITests: XCTestCase {
         try JSONSerialization.data(withJSONObject: document).write(to: url)
         let app = launch(fixtureDirectory: directory)
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "voiceEdition_weekly-stories").firstMatch.waitForExistence(timeout: 20))
+        let browseAll = app.buttons["voiceBrowseAll"]
+        reveal(browseAll, in: app); browseAll.tap()
+        let tabs = app.segmentedControls["voiceCatalogTabs"]
+        XCTAssertTrue(tabs.waitForExistence(timeout: 5))
+        XCTAssertTrue(tabs.buttons["Regular voices"].isSelected)
+        tabs.buttons["Curated voices"].tap()
+        XCTAssertTrue(app.staticTexts["voiceClonedSelectionNote"].exists)
         let search = app.textFields["voiceSearchField"]
-        if !search.isHittable { app.swipeDown() }
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap(); search.typeText("Scale Voice 1316")
         XCTAssertTrue(app.buttons["presetVoiceSelect_vl_scale_1316"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["voiceQuota_vl_scale_1316"].exists)
         XCTAssertFalse(app.buttons["presetVoiceSelect_vl_scale_0"].exists)
         attach(app, "voice-full-catalog-last-result")
+        tabs.buttons["Regular voices"].tap()
+        XCTAssertFalse(app.buttons["presetVoiceSelect_vl_scale_1316"].exists)
         #else
         throw XCTSkip("Synthetic scale fixture is simulator only")
         #endif

@@ -651,8 +651,8 @@ final class VoiceCloneStore: ObservableObject {
         if !currentVoice.access.capabilities.canUse {
             return false
         }
-        AppSettings.shared.setActiveClonedVoice(voice.voiceId, for: normalizedLanguage)
-        return true
+        return AppSettings.shared.setMultilingualClonedVoice(
+            voice.voiceId, supportedLanguages: VoiceCloneLanguageSupport.languages(for: currentVoice))
     }
 
     func delete(_ voice: ClonedVoice) async {

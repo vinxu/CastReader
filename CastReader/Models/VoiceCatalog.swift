@@ -39,6 +39,22 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
     let supportedLanguages: [String]
     let sampleURLs: [String: String]
     let previewLanguages: [String: String]
+    let referenceLanguage: String?
+
+    /// Recommendation culture follows the source recording, while synthesis
+    /// eligibility follows supportedLanguages. Some source languages (e.g. ko)
+    /// are represented by an English catalog locale for legacy compatibility.
+    var discoveryLanguage: String {
+        if let referenceLanguage, !referenceLanguage.trimmed.isEmpty {
+            return VoiceCatalog.normalizedLanguage(referenceLanguage)
+        }
+        let originals = Set(previewLanguages.values.map(VoiceCatalog.normalizedLanguage))
+        return originals.count == 1 ? originals.first! : VoiceCatalog.normalizedLanguage(lang)
+    }
+
+    func matchesDiscoveryLanguage(_ language: String) -> Bool {
+        supports(language) && discoveryLanguage == VoiceCatalog.normalizedLanguage(language)
+    }
 
     var usesMonthlyGeneration: Bool { usagePolicy == "monthly_generation" || code.hasPrefix("vl_") }
 
@@ -91,12 +107,14 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
         usagePolicy: String = "regular",
         supportedLanguages: [String]? = nil,
         sampleURLs: [String: String] = [:],
-        previewLanguages: [String: String] = [:]
+        previewLanguages: [String: String] = [:],
+        referenceLanguage: String? = nil
     ) {
         self.usagePolicy = usagePolicy
         self.supportedLanguages = (supportedLanguages ?? [lang]).map(VoiceCatalog.normalizedLanguage)
         self.sampleURLs = sampleURLs
         self.previewLanguages = previewLanguages
+        self.referenceLanguage = referenceLanguage
         self.code = code
         self.name = name
         self.isPro = isPro
@@ -172,6 +190,7 @@ struct TTSVoiceCatalogVoice: Codable, Equatable {
     var supportedLanguages: [String]? = nil
     var sampleUrls: [String: String]? = nil
     var previewLanguages: [String: String]? = nil
+    var referenceLanguage: String? = nil
     let accent: String?
     let sourceModelVersion: String?
     let collection: String?
@@ -579,7 +598,8 @@ enum VoiceCatalog {
             usagePolicy: voice.usagePolicy ?? "regular",
             supportedLanguages: voice.supportedLanguages,
             sampleURLs: voice.sampleUrls ?? [:],
-            previewLanguages: voice.previewLanguages ?? [:]
+            previewLanguages: voice.previewLanguages ?? [:],
+            referenceLanguage: voice.referenceLanguage
         )
     }
 }

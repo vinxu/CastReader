@@ -53,6 +53,64 @@
     "筛选" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"筛选"}},"en":{"stringUnit":{"state":"translated","value":"Filters"}},"ja":{"stringUnit":{"state":"translated","value":"絞り込み"}},"es":{"stringUnit":{"state":"translated","value":"Filtros"}},"fr":{"stringUnit":{"state":"translated","value":"Filtres"}},"de":{"stringUnit":{"state":"translated","value":"Filter"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Filtros"}},"it":{"stringUnit":{"state":"translated","value":"Filtri"}},"hi":{"stringUnit":{"state":"translated","value":"फ़िल्टर"}}}},
     "重置" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"重置"}},"en":{"stringUnit":{"state":"translated","value":"Reset"}},"ja":{"stringUnit":{"state":"translated","value":"リセット"}},"es":{"stringUnit":{"state":"translated","value":"Restablecer"}},"fr":{"stringUnit":{"state":"translated","value":"Réinitialiser"}},"de":{"stringUnit":{"state":"translated","value":"Zurücksetzen"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Redefinir"}},"it":{"stringUnit":{"state":"translated","value":"Reimposta"}},"hi":{"stringUnit":{"state":"translated","value":"रीसेट"}}}},
     "试听暂不可用，请稍后重试" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"试听暂不可用，请稍后重试"}},"en":{"stringUnit":{"state":"translated","value":"Preview is unavailable. Please try again shortly."}},"ja":{"stringUnit":{"state":"translated","value":"現在試聴できません。しばらくしてから再試行してください。"}},"es":{"stringUnit":{"state":"translated","value":"La muestra no está disponible. Inténtalo de nuevo en un momento."}},"fr":{"stringUnit":{"state":"translated","value":"L’extrait est indisponible. Réessayez dans un instant."}},"de":{"stringUnit":{"state":"translated","value":"Die Hörprobe ist nicht verfügbar. Bitte versuche es gleich noch einmal."}},"pt-BR":{"stringUnit":{"state":"translated","value":"A prévia está indisponível. Tente novamente em instantes."}},"it":{"stringUnit":{"state":"translated","value":"L’anteprima non è disponibile. Riprova tra poco."}},"hi":{"stringUnit":{"state":"translated","value":"अभी नमूना उपलब्ध नहीं है। थोड़ी देर में फिर कोशिश करें।"}}}},
+    "常规音色" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "常规音色"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regular voices"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標準音声"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voces estándar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voix standard"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standardstimmen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vozes padrão"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voci standard"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सामान्य आवाज़ें"
+          }
+        }
+      }
+    },
     "精选音色" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"精选音色"}},"en":{"stringUnit":{"state":"translated","value":"Curated voices"}},"ja":{"stringUnit":{"state":"translated","value":"厳選音声"}},"es":{"stringUnit":{"state":"translated","value":"Voces seleccionadas"}},"fr":{"stringUnit":{"state":"translated","value":"Voix sélectionnées"}},"de":{"stringUnit":{"state":"translated","value":"Ausgewählte Stimmen"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Vozes selecionadas"}},"it":{"stringUnit":{"state":"translated","value":"Voci selezionate"}},"hi":{"stringUnit":{"state":"translated","value":"चुनिंदा आवाज़ें"}}}},
     "120 分钟 / 月" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"120 分钟 / 月"}},"en":{"stringUnit":{"state":"translated","value":"120 min / month"}},"ja":{"stringUnit":{"state":"translated","value":"120分 / 月"}},"es":{"stringUnit":{"state":"translated","value":"120 min / mes"}},"fr":{"stringUnit":{"state":"translated","value":"120 min / mois"}},"de":{"stringUnit":{"state":"translated","value":"120 Min. / Monat"}},"pt-BR":{"stringUnit":{"state":"translated","value":"120 min / mês"}},"it":{"stringUnit":{"state":"translated","value":"120 min / mese"}},"hi":{"stringUnit":{"state":"translated","value":"120 मिनट / माह"}}}},
     "%@ / %@ 剩余" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"%@ / %@ 剩余"}},"en":{"stringUnit":{"state":"translated","value":"%@ / %@ left"}},"ja":{"stringUnit":{"state":"translated","value":"残り %@ / %@"}},"es":{"stringUnit":{"state":"translated","value":"%@ / %@ restantes"}},"fr":{"stringUnit":{"state":"translated","value":"%@ / %@ restants"}},"de":{"stringUnit":{"state":"translated","value":"%@ / %@ übrig"}},"pt-BR":{"stringUnit":{"state":"translated","value":"%@ / %@ restantes"}},"it":{"stringUnit":{"state":"translated","value":"%@ / %@ rimasti"}},"hi":{"stringUnit":{"state":"translated","value":"%@ / %@ शेष"}}}},

@@ -1037,3 +1037,131 @@ extension ReadingResumeTests {
     }
 
 }
+
+private actor VoiceRecordingSpeech: ParagraphSpeechGenerating {
+    private(set) var voices: [String] = []
+    private(set) var inputs: [String] = []
+    var fails = false
+    let segments: [AudioSegment]
+    init(_ segments: [AudioSegment]) { self.segments = segments }
+    func setFails(_ value: Bool) { fails = value }
+    func generateTTSForParagraph(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double,
+        language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        continuation: TTSContinuation?, onCheckpoint: ((TTSContinuation) async -> Void)?,
+        onSegmentReady: @escaping (AudioSegment) async -> Void
+    ) async throws {
+        voices.append(voice ?? "")
+        inputs.append(text)
+        if fails { throw URLError(.cannotConnectToHost) }
+        for segment in segments { try Task.checkCancellation(); await onSegmentReady(segment) }
+    }
+}
+
+extension ReadingResumeTests {
+    func testInactiveReadAloudDiscardsOldVoiceAudioBeforeResume() async throws {
+        let settings = AppSettings.shared
+        let previous = settings.voice(for: "en")
+        let old = segment(0, text: "Alpha beta gamma delta.", duration: 30)
+        let replacement = segment(0, text: old.text, duration: 30, changedAudio: true)
+        settings.clearActiveClonedVoice(for: "en")
+        XCTAssertTrue(settings.setVoice("af_heart", for: "en"))
+        let speech = VoiceRecordingSpeech([replacement])
+        let vm = ReadAloudViewModel(document: document(), speechGenerator: speech)
+        defer {
+            vm.stop(); vm.deactivate()
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+        }
+        vm.startWithCachedSegments([old], paragraphIndex: 1, segmentID: old.id, progress: 0,
+                                   isReplayEligible: false, autoplay: false)
+        vm.deactivate()
+        XCTAssertTrue(settings.setVoice("vl_read_test", for: "en"))
+        try await Task.sleep(nanoseconds: 100_000_000)
+        vm.activate()
+        vm.ensurePlaying()
+        try await waitUntil("Read must replace stale audio on resume") {
+            AudioPlayerService.shared.currentSegment?.audioData == replacement.audioData
+        }
+        let voices = await speech.voices
+        XCTAssertEqual(voices.first, "vl_read_test")
+        XCTAssertFalse(voices.contains("af_heart"))
+    }
+
+    func testExplainCachedAudioRevoicesAndFailureNeverResumesOldNarrator() async throws {
+        let settings = AppSettings.shared
+        let previous = settings.voice(for: "en"), oldLanguage = settings.explainLanguage
+        settings.explainLanguage = "en"
+        settings.clearActiveClonedVoice(for: "en")
+        settings.setVoice("af_heart", for: "en")
+        let old = segment(0, text: "A cached explanation.", paragraph: 0, duration: 30)
+        let replacement = segment(0, text: old.text, paragraph: 0, duration: 30, changedAudio: true)
+        let speech = VoiceRecordingSpeech([replacement])
+        let vm = ExplainViewModel(document: document(), speechGenerator: speech)
+        defer {
+            vm.stop(); vm.deactivate()
+            settings.explainLanguage = oldLanguage
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+        }
+        vm.debugSeedCachedNarration([old], voiceID: "af_heart")
+        settings.setVoice("vl_explain_test", for: "en")
+        try await Task.sleep(nanoseconds: 100_000_000)
+        await speech.setFails(true)
+        vm.activate()
+        vm.ensurePlaying()
+        try await waitUntil("A failed voice switch must be visible") {
+            if case .error = vm.status { return true }; return false
+        }
+        XCTAssertNil(AudioPlayerService.shared.currentSegment)
+        XCTAssertFalse(AudioPlayerService.shared.hasQueuedSegments)
+        XCTAssertFalse(AudioPlayerService.shared.isPlaying)
+        await speech.setFails(false)
+        vm.start()
+        try await waitUntil("Retry must reuse narration and generate only the new voice") {
+            AudioPlayerService.shared.currentSegment?.audioData == replacement.audioData
+        }
+        let voices = await speech.voices, inputs = await speech.inputs
+        XCTAssertEqual(voices, ["vl_explain_test", "vl_explain_test"])
+        XCTAssertEqual(inputs, [old.text, old.text])
+        if case .error = vm.status { XCTFail("Successful retry must clear the error") }
+        // Switching back from a clone to a regular voice also invalidates audio.
+        settings.setVoice("af_bella", for: "en")
+        try await Task.sleep(nanoseconds: 250_000_000)
+        let finalVoices = await speech.voices
+        XCTAssertEqual(finalVoices.last, "af_bella")
+    }
+}
+
+extension ReadingResumeTests {
+    func testSelectedPersonalVoiceIsUsedByReadAndCachedExplainReplay() async throws {
+        let settings = AppSettings.shared
+        let previous = settings.voice(for: "en"), oldLanguage = settings.explainLanguage
+        settings.explainLanguage = "en"
+        settings.setMultilingualClonedVoice("vc_personal_test", supportedLanguages: ["en"])
+        let audio = segment(0, text: "One short paragraph.", paragraph: 0, duration: 30)
+        let doc = ReadingDocument(id: "personal-voice", title: "Personal narrator", sourceKind: .text,
+                                  language: "en", paragraphs: paragraphs([audio.text]))
+        let speech = VoiceRecordingSpeech([audio])
+        let read = ReadAloudViewModel(document: doc, speechGenerator: speech)
+        let explain = ExplainViewModel(document: doc, speechGenerator: speech)
+        defer {
+            read.stop(); read.deactivate(); explain.stop(); explain.deactivate()
+            settings.explainLanguage = oldLanguage
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+        }
+        read.start()
+        try await waitUntil("Personal voice must produce Read audio") {
+            AudioPlayerService.shared.currentSegment?.audioData == audio.audioData
+        }
+        read.stop(); read.deactivate()
+        explain.debugSeedCachedNarration([audio], voiceID: "af_heart")
+        explain.replay()
+        try await waitUntil("Replay must replace an old regular voice with the selected personal voice") {
+            AudioPlayerService.shared.currentSegment?.audioData == audio.audioData
+        }
+        let voices = await speech.voices
+        XCTAssertEqual(voices, ["vc_personal_test", "vc_personal_test"])
+    }
+}

@@ -2419,10 +2419,13 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testTTSRequestSendsVoiceAndVoiceCode() throws {
-        let data = try JSONEncoder().encode(TTSRequest(input: "hello", voice: "vc_one"))
-        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        XCTAssertEqual(object["voice"] as? String, "vc_one")
-        XCTAssertEqual(object["voice_code"] as? String, "vc_one")
+        for id in ["af_heart", "vc_one", "vl_community"] {
+            let data = try JSONEncoder().encode(TTSRequest(input: "hello", voice: id))
+            let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            XCTAssertEqual(object["voice"] as? String, id)
+            XCTAssertEqual(object["voice_code"] as? String, id)
+            XCTAssertEqual(VoiceOption.requiresGenerationQuota(id), id != "af_heart")
+        }
     }
 
     @MainActor

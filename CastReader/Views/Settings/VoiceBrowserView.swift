@@ -439,6 +439,7 @@ struct VoiceBrowserView: View {
     private func discoveryCollection(title: String, topic: VoiceDiscoveryTopic?) -> some View {
         VoiceDiscoveryCollectionView(title: title,
             topic: topic, usageScope: topic == nil ? .all : .regular,
+            showsCatalogTabs: topic == nil,
             language: library.browserLanguage,
             onSelect: select, onPreview: preview)
     }
@@ -603,7 +604,9 @@ struct VoiceBrowserView: View {
             selectMonthlyVoice(voice)
             return
         }
-        if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: library.browserLanguage) {
+        let language = voice.lang
+        if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: language) {
+            library.setBrowserLanguage(language)
             library.recordRecent(voice.code)
             applyReadingLanguage(of: voice)
             return
@@ -613,7 +616,8 @@ struct VoiceBrowserView: View {
         selectingVoiceID = voice.code
         Task { @MainActor in
             await pro.refresh()
-            if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: library.browserLanguage) {
+            if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: language) {
+                library.setBrowserLanguage(language)
                 library.recordRecent(voice.code)
                 applyReadingLanguage(of: voice)
             } else {
@@ -625,6 +629,10 @@ struct VoiceBrowserView: View {
 
     private func selectMonthlyVoice(_ voice: VoiceOption) {
         let language = library.browserLanguage
+        guard voice.supports(language) else {
+            VoiceCloneAccessCoordinator.shared.prompt = .message(VoiceCloneError.languageUnsupported.localizedDescription)
+            return
+        }
         selectingVoiceID = voice.code
         Task { @MainActor in
             defer { selectingVoiceID = nil }
@@ -666,7 +674,6 @@ struct VoiceBrowserView: View {
     private func chooseLanguage(_ language: String) {
         let normalized = VoiceCatalog.normalizedLanguage(language)
         guard !normalized.isEmpty else { return }
-        VoiceSelectionPolicy.carrySelection(from: library.browserLanguage, to: normalized, settings: settings)
         languageChosenByUser = true
         library.setBrowserLanguage(normalized)
         onCorrectReadingLanguage?(normalized)

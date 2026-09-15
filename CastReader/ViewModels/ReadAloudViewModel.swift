@@ -2344,8 +2344,7 @@ final class ReadAloudViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }
             .store(in: &cancellables)
-        settings.$voicesByLanguage
-            .combineLatest(settings.$clonedVoicesByLanguage)
+        settings.$voiceSelectionRevision
             .dropFirst()
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.handleVoicePreferenceChanged() }
@@ -3620,6 +3619,16 @@ final class ReadAloudViewModel: ObservableObject {
         guard forceRestart || newVoiceID != playbackVoiceID else { return }
         let oldVoiceID = playbackVoiceID
         playbackVoiceID = newVoiceID
+
+        // A deactivated reader can still hold a ready paragraph from the old
+        // narrator. Ownership recovery must regenerate it, not relabel/replay it.
+        if !isActive {
+            segmentsByParagraph.removeAll(keepingCapacity: false)
+            paragraphContinuation = nil
+            clearPrefetch()
+            resetLiveWebCarryPrewarmState()
+            return
+        }
 
         guard isActive,
               currentParagraphIndex >= 0,

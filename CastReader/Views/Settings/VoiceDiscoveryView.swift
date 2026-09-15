@@ -469,6 +469,7 @@ struct VoiceDiscoveryCollectionView: View {
     var topic: VoiceDiscoveryTopic? = nil
     var usageScope: VoiceUsageFilter = .all
     var subgroupCollections: [VoiceDiscoveryCollection] = []
+    var showsCatalogTabs = false
     let language: String
     let onSelect: (VoiceOption) -> Void
     let onPreview: (VoiceOption) -> Void
@@ -478,12 +479,14 @@ struct VoiceDiscoveryCollectionView: View {
     @State private var listeningStyle: VoiceListeningStyle = .all
     @State private var query = ""
     @State private var usage: VoiceUsageFilter = .all
+    @State private var catalogTab: VoiceUsageFilter = .regular
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @StateObject private var resultModel = VoiceBrowseResults()
     private var request: VoiceBrowseRequest {
         VoiceBrowseRequest(catalogID: VoiceCatalog.snapshot.id, language: language,
-            locale: appLanguage.selectedLanguage.resolvedLanguageCode, search: query, usage: usageScope == .all ? usage : usageScope,
-            includingMonthly: Constants.Features.voiceCloningEnabled, voiceIDs: subgroupIDs, topic: topic, style: listeningStyle)
+            locale: appLanguage.selectedLanguage.resolvedLanguageCode, search: query, usage: effectiveUsage,
+            includingMonthly: Constants.Features.voiceCloningEnabled, allLanguages: showsCatalogTabs,
+            voiceIDs: subgroupIDs, topic: topic, style: listeningStyle)
     }
     private var subgroupIDs: [String]? {
         guard let selected = subgroupCollections.first(where: { $0.id == subgroupID }) else { return voiceIDs }
@@ -491,11 +494,21 @@ struct VoiceDiscoveryCollectionView: View {
         return voiceIDs?.filter { members.contains($0) }
     }
     private var results: [VoiceOption] { resultModel.voices }
+    private var effectiveUsage: VoiceUsageFilter {
+        showsCatalogTabs ? catalogTab : usageScope == .all ? usage : usageScope
+    }
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 VoiceBrowseSearchField(text: $query)
-                if usageScope == .monthly { VoiceClonedSelectionNote().frame(maxWidth: .infinity, alignment: .leading).padding() }
+                if showsCatalogTabs {
+                    Picker(AppLocalized("全部音色"), selection: $catalogTab) {
+                        Text(AppLocalized("常规音色")).tag(VoiceUsageFilter.regular)
+                        Text(AppLocalized("精选音色")).tag(VoiceUsageFilter.monthly)
+                    }.pickerStyle(.segmented).padding(.horizontal).padding(.vertical, 8)
+                        .accessibilityIdentifier("voiceCatalogTabs")
+                }
+                if effectiveUsage == .monthly { VoiceClonedSelectionNote().frame(maxWidth: .infinity, alignment: .leading).padding() }
                 if !subgroupCollections.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -511,10 +524,15 @@ struct VoiceDiscoveryCollectionView: View {
                                            description: Text(AppLocalized("尝试其他搜索或筛选条件"))).padding(.top, 50)
                 } else {
                     ForEach(results) { voice in
-                        VoiceDiscoveryRow(voice: voice, selected: settings.voice(for: language) == voice.id,
+                        VoiceDiscoveryRow(voice: voice, selected: settings.voice(for: voice.usesMonthlyGeneration ? language : voice.lang) == voice.id,
                                           favorite: library.isFavorite(voice.id), selecting: false,
                                           onSelect: { onSelect(voice) }, onPreview: { onPreview(voice) },
                                           onFavorite: { library.toggleFavorite(voice.id) }).padding(.horizontal)
+                        if showsCatalogTabs && !voice.usesMonthlyGeneration {
+                            Text(Locale(identifier: appLanguage.selectedLanguage.resolvedLanguageCode).localizedString(forLanguageCode: voice.lang) ?? voice.lang)
+                                .font(.caption2).foregroundStyle(AppTheme.mutedForeground)
+                                .frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 76).padding(.bottom, 6)
+                        }
                         Divider().padding(.leading, 76)
                     }
                 }
@@ -530,7 +548,7 @@ struct VoiceDiscoveryCollectionView: View {
                         Picker(AppLocalized("声音特点"), selection: $listeningStyle) {
                             ForEach(VoiceListeningStyle.allCases) { Text($0.title).tag($0) }
                         }
-                        if usageScope == .all {
+                        if usageScope == .all && !showsCatalogTabs {
                             Picker(AppLocalized("使用权益"), selection: $usage) {
                                 ForEach(VoiceUsageFilter.allCases) { Text($0.title).tag($0) }
                             }

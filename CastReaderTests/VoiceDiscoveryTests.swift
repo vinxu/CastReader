@@ -38,7 +38,7 @@ final class VoiceDiscoveryTests: XCTestCase {
         XCTAssertFalse(picks.contains(favorite))
     }
 
-    func testWeeklyEditionExpiresOfflineAndPreservesCrossLanguageIdentity() {
+    func testWeeklyEditionUsesSourceLanguageWithoutRestrictingSynthesis() {
         let regular = voice("af_en")
         let publicVoice = voice("vl_story", tags: ["storytelling"], monthly: true)
         let modules = [VoiceDiscoveryModule(id: "story", layout: "feature", title: ["en": "Stories"], theme: .stories,
@@ -47,8 +47,10 @@ final class VoiceDiscoveryTests: XCTestCase {
         let edition = VoiceDiscoveryEdition(id: "week", startsAt: "2026-09-14T00:00:00Z", endsAt: "2026-09-21T00:00:00Z", modules: modules)
         let now = ISO8601DateFormatter().date(from: "2026-09-15T00:00:00Z")!
         let chinese = edition.activeModules(from: [regular, publicVoice], language: "zh", now: now)
-        XCTAssertEqual(chinese.count, 1)
-        XCTAssertEqual(chinese[0].voiceIds, [publicVoice.id])
+        XCTAssertTrue(chinese.isEmpty, "English-source clones belong in English recommendations")
+        XCTAssertTrue(publicVoice.supports("zh"), "Recommendation language must not restrict synthesis")
+        XCTAssertEqual(edition.activeModules(from: [regular, publicVoice], language: "en", now: now).first?.voiceIds,
+                       [regular.id, publicVoice.id])
         XCTAssertTrue(edition.activeModules(from: [regular, publicVoice], language: "en", now: now.addingTimeInterval(7 * 86400)).isEmpty)
     }
 
@@ -195,7 +197,7 @@ extension VoiceDiscoveryTests {
         let cnRequest = VoiceBrowseRequest(catalogID: cn.id, language: "zh", locale: "zh")
         let feed = try await worker.feed(cnRequest, snapshot: cn, now: now)
         XCTAssertTrue(feed.sections.isEmpty)
-        XCTAssertEqual(feed.featuredClones.map(\.id), ["vl_performance_1322"])
+        XCTAssertTrue(feed.featuredClones.isEmpty, "English-source clones must not populate Chinese recommendations")
         XCTAssertTrue(feed.collections.isEmpty)
         let expired = try await worker.feed(cnRequest, snapshot: cn, now: now.addingTimeInterval(7 * 86400))
         XCTAssertTrue(expired.sections.isEmpty)
@@ -241,5 +243,46 @@ extension VoiceDiscoveryTests {
         filter.style = .gentle
         let gentle = try await worker.results(filter, snapshot: snapshot, vocabulary: .current)
         XCTAssertEqual(gentle.count, 1598)
+    }
+}
+
+extension VoiceDiscoveryTests {
+    @MainActor
+    func testBrowseAllTabsSearchEveryVoiceRegardlessOfDiscoveryLanguage() async throws {
+        let snapshot = try fullSnapshot(), worker = VoiceBrowseWorker()
+        var request = VoiceBrowseRequest(catalogID: snapshot.id, language: "zh", locale: "en",
+                                        usage: .regular, allLanguages: true)
+        let regular = try await worker.results(request, snapshot: snapshot, vocabulary: .current)
+        XCTAssertEqual(regular.count, 283)
+        XCTAssertTrue(regular.allSatisfy { !$0.usesMonthlyGeneration })
+        request.usage = .monthly
+        let clones = try await worker.results(request, snapshot: snapshot, vocabulary: .current)
+        XCTAssertEqual(clones.count, 1323)
+        request.search = "performance_1322"
+        let found = try await worker.results(request, snapshot: snapshot, vocabulary: .current)
+        XCTAssertEqual(found.map(\.id), ["vl_performance_1322"])
+        request = VoiceBrowseRequest(catalogID: snapshot.id, language: "hi", locale: "en",
+                                     search: "performance_1322", usage: .monthly, allLanguages: true)
+        let unsupported = try await worker.results(request, snapshot: snapshot, vocabulary: .current)
+        XCTAssertEqual(unsupported.map(\.id), ["vl_performance_1322"], "Browsing must not hide unsupported-output entries")
+    }
+
+    func testSourceMetadataSeparatesChineseEnglishAndFallbackEncodedKorean() throws {
+        let english = voice("vl_en", monthly: true)
+        let chinese = voice("vl_zh", language: "zh", monthly: true)
+        let korean = VoiceOption(code: "vl_ko", name: "Korean narrator", isPro: true, lang: "en", gender: "male",
+            sampleURL: "https://example.invalid/ko.mp3", usagePolicy: "monthly_generation",
+            supportedLanguages: ["en", "zh", "ko"], sampleURLs: ["ko": "https://example.invalid/ko.mp3"],
+            referenceLanguage: "ko")
+        let module = VoiceDiscoveryModule(id: "both", layout: "rows", title: [:], theme: .character,
+                                         voiceIds: [english.id, chinese.id, korean.id])
+        let all = [english, chinese, korean]
+        XCTAssertEqual(module.voices(from: all, language: "zh").map(\.id), [chinese.id])
+        XCTAssertEqual(module.voices(from: all, language: "en").map(\.id), [english.id])
+        XCTAssertEqual(module.voices(from: all, language: "ko").map(\.id), [korean.id])
+        XCTAssertTrue(korean.supports("en"))
+        let legacy = VoiceOption(code: "vl_legacy", name: "Legacy", isPro: true, lang: "en", gender: "female",
+            usagePolicy: "monthly_generation", supportedLanguages: ["en", "zh"], previewLanguages: ["en": "zh", "zh": "zh"])
+        XCTAssertEqual(legacy.discoveryLanguage, "zh")
     }
 }

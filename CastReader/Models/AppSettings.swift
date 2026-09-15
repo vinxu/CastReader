@@ -957,6 +957,9 @@ final class AppSettings: ObservableObject {
 
     @Published private(set) var voicesByLanguage: [String: String]
     @Published private(set) var clonedVoicesByLanguage: [String: String]
+    /// Published after both preference maps are committed, so playback never
+    /// reacts to an intermediate personal/public/preset selection.
+    @Published private(set) var voiceSelectionRevision: UInt64 = 0
     @Published var speed: Double { didSet { d.set(speed, forKey: K.speed) } }
     @Published var explainLanguage: String { didSet { d.set(explainLanguage, forKey: K.explainLang) } } // "" = 跟随原文
     @Published var explainDepth: String { didSet { d.set(explainDepth, forKey: K.explainDepth) } }
@@ -1058,12 +1061,37 @@ final class AppSettings: ObservableObject {
 
         var next = voicesByLanguage
         next[normalized] = value
-        voicesByLanguage = next
-        d.set(next, forKey: K.voicesByLanguage)
-        if normalized == "en" { d.set(value, forKey: K.voiceEN) }
-        if normalized == "zh" { d.set(value, forKey: K.voiceZH) }
-        clearActiveClonedVoice(for: normalized)
+        var clones = clonedVoicesByLanguage
+        clones.removeValue(forKey: normalized)
+        commitVoiceSelection(voices: next, clones: clones)
         return true
+    }
+
+    /// A selected clone is one narrator for Read and Explain across its actual
+    /// supported output languages. Source/preview language is not a restriction.
+    @discardableResult
+    func setMultilingualClonedVoice(_ voiceID: String, supportedLanguages: [String]) -> Bool {
+        let value = voiceID.trimmed
+        let languages = Set(supportedLanguages.map(VoiceCatalog.normalizedLanguage).filter { !$0.isEmpty })
+        guard voiceCloningEnabled, VoiceOption.requiresGenerationQuota(value), !languages.isEmpty else { return false }
+        var voices = voicesByLanguage, clones = clonedVoicesByLanguage
+        for language in languages {
+            if value.hasPrefix("vc_") { clones[language] = value }
+            else { voices[language] = value; clones.removeValue(forKey: language) }
+        }
+        commitVoiceSelection(voices: voices, clones: clones)
+        return true
+    }
+
+    private func commitVoiceSelection(voices: [String: String], clones: [String: String]) {
+        guard voices != voicesByLanguage || clones != clonedVoicesByLanguage else { return }
+        if voices != voicesByLanguage { voicesByLanguage = voices }
+        if clones != clonedVoicesByLanguage { clonedVoicesByLanguage = clones }
+        d.set(voices, forKey: K.voicesByLanguage)
+        d.set(clones, forKey: K.clonedVoicesByLanguage)
+        if let value = voices["en"] { d.set(value, forKey: K.voiceEN) }
+        if let value = voices["zh"] { d.set(value, forKey: K.voiceZH) }
+        voiceSelectionRevision &+= 1
     }
 
     @discardableResult
@@ -1074,8 +1102,7 @@ final class AppSettings: ObservableObject {
         guard value.hasPrefix("vc_"), value.count > 3, !normalized.isEmpty else { return false }
         var next = clonedVoicesByLanguage
         next[normalized] = value
-        clonedVoicesByLanguage = next
-        d.set(next, forKey: K.clonedVoicesByLanguage)
+        commitVoiceSelection(voices: voicesByLanguage, clones: next)
         return true
     }
 
@@ -1100,8 +1127,7 @@ final class AppSettings: ObservableObject {
         if let voiceID, clonedVoicesByLanguage[normalized] != voiceID { return }
         var next = clonedVoicesByLanguage
         next.removeValue(forKey: normalized)
-        clonedVoicesByLanguage = next
-        d.set(next, forKey: K.clonedVoicesByLanguage)
+        commitVoiceSelection(voices: voicesByLanguage, clones: next)
     }
 
     func clearActiveClonedVoice(ifMatching voiceID: String? = nil) {
@@ -1110,8 +1136,7 @@ final class AppSettings: ObservableObject {
             return value != voiceID
         }
         guard next != clonedVoicesByLanguage else { return }
-        clonedVoicesByLanguage = next
-        d.set(next, forKey: K.clonedVoicesByLanguage)
+        commitVoiceSelection(voices: voicesByLanguage, clones: next)
     }
 
     /// 讲解语言：空串表示跟随原文（请求里传 nil）。

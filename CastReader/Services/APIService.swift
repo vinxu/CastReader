@@ -631,7 +631,7 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             includeVoiceCode: includeVoiceCode
         )
         let bodyData = try JSONEncoder().encode(ttsRequest)
-        apiDebugLog("[TTSRoute] language=\(canonicalLanguage) voice=\(resolvedVoice) clone=\(resolvedVoice.hasPrefix("vc_") ? "Y" : "N")")
+        apiDebugLog("[TTSRoute] language=\(canonicalLanguage) voice=\(resolvedVoice) clone=\(isClonedVoice ? "Y" : "N")")
 
         if isClonedVoice {
             // Clone synthesis stays on the authenticated account gateway. The

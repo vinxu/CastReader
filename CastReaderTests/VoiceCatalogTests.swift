@@ -1,4 +1,5 @@
 import XCTest
+import Combine
 @testable import CastReader
 
 final class VoiceSampleCacheTests: XCTestCase {
@@ -100,8 +101,8 @@ final class VoiceCatalogTests: XCTestCase {
         let settings = AppSettings(defaults: isolatedDefaults())
         XCTAssertFalse(VoiceSelectionPolicy.select(voice, isPro: false, settings: settings, language: "zh"))
         XCTAssertTrue(VoiceSelectionPolicy.select(voice, isPro: true, settings: settings, language: "en"))
-        VoiceSelectionPolicy.carrySelection(from: "en", to: "zh", settings: settings)
-        XCTAssertEqual(settings.voice(for: "zh"), "vl_rowan")
+        XCTAssertEqual(settings.voice(for: "zh"), "vl_rowan", "Selection must reach Chinese without changing the browser language")
+        XCTAssertEqual(settings.voice(for: "ko"), "vl_rowan")
         XCTAssertFalse(settings.setVoice("vl_rowan", for: "hi"))
         var limitedVoice = publicVoice
         limitedVoice.supportedLanguages = ["en"]
@@ -841,5 +842,34 @@ private extension URLSessionConfiguration {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [VoiceCatalogTestURLProtocol.self]
         return configuration
+    }
+}
+
+@MainActor
+extension VoiceCatalogTests {
+    func testPersonalCommunityAndRegularSelectionCommitOneEffectiveChange() {
+        let defaults = isolatedDefaults()
+        let settings = AppSettings(defaults: defaults)
+        let languages = ["en", "zh", "ko", "ja", "de", "fr", "es", "pt", "it", "ru"]
+        let hindi = settings.voice(for: "hi")
+        var changes: [[String]] = []
+        let observer = settings.$voiceSelectionRevision.dropFirst().sink { _ in
+            changes.append([settings.voice(for: "en"), settings.voice(for: "zh")])
+        }
+        defer { observer.cancel() }
+        XCTAssertTrue(settings.setMultilingualClonedVoice("vl_community", supportedLanguages: languages))
+        XCTAssertEqual(changes, [["vl_community", "vl_community"]])
+        XCTAssertTrue(settings.setMultilingualClonedVoice("vc_friend", supportedLanguages: languages))
+        XCTAssertEqual(changes.last, ["vc_friend", "vc_friend"])
+        XCTAssertTrue(settings.setMultilingualClonedVoice("vl_other", supportedLanguages: languages))
+        XCTAssertEqual(changes.last, ["vl_other", "vl_other"])
+        XCTAssertTrue(settings.clonedVoicesByLanguage.isEmpty, "A previous personal voice must not override the community selection")
+        XCTAssertEqual(changes.count, 3)
+        let fresh = AppSettings(defaults: defaults)
+        for language in languages { XCTAssertEqual(fresh.voice(for: language), "vl_other") }
+        XCTAssertEqual(fresh.voice(for: "hi"), hindi)
+        XCTAssertTrue(settings.setVoice("af_heart", for: "en"))
+        XCTAssertEqual(changes.last, ["af_heart", "vl_other"])
+        XCTAssertEqual(changes.count, 4)
     }
 }

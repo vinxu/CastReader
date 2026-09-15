@@ -204,7 +204,7 @@ struct VoiceDiscoveryModule: Codable, Equatable, Identifiable {
         var seen = Set<String>()
         return voiceIds.compactMap { id in
             guard seen.insert(id).inserted else { return nil }
-            return catalog.first { $0.id == id && $0.enabled && $0.selectable && $0.supports(language)
+            return catalog.first { $0.id == id && $0.enabled && $0.selectable && $0.matchesDiscoveryLanguage(language)
                 && $0.previewURL(for: language) != nil && !["lab", "legacy"].contains($0.status) }
         }
     }

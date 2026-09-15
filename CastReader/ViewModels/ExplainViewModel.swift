@@ -348,6 +348,7 @@ final class ExplainViewModel: ObservableObject {
 
     private let audio = AudioPlayerService.shared
     private let settings = AppSettings.shared
+    private let speechGenerator: any ParagraphSpeechGenerating
     private let pro = ProManager.shared
     private let quota = QuotaManager.shared
     private var audioSessionToken: AudioPlaybackSessionToken?
@@ -357,6 +358,7 @@ final class ExplainViewModel: ObservableObject {
         let marks: [QuickreadEvent]     // at 已填
         let text: String
         let sentences: [String]         // 讲解文本按句切分（字幕逐句显示，按播放进度推进）
+        let voiceID: String
     }
 
     struct PrefetchedFirstBlock {
@@ -507,8 +509,10 @@ final class ExplainViewModel: ObservableObject {
     private var analyticsBlocksStarted = Set<Int>()
     private var analyticsBlocksCompleted = Set<Int>()
 
-    init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil) {
+    init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil,
+         speechGenerator: (any ParagraphSpeechGenerating)? = nil) {
         self.document = document
+        self.speechGenerator = speechGenerator ?? TTSService.shared
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         let initialLanguage = VoiceCatalog.normalizedLanguage(
             AppSettings.shared.explainLangOrNil ?? document.language
@@ -633,8 +637,7 @@ final class ExplainViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }
             .store(in: &cancellables)
-        settings.$voicesByLanguage
-            .combineLatest(settings.$clonedVoicesByLanguage)
+        settings.$voiceSelectionRevision
             .dropFirst()
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.handleVoicePreferenceChanged() }
@@ -675,18 +678,19 @@ final class ExplainViewModel: ObservableObject {
         setOutputLanguage(settings.explainLangOrNil ?? doc.language)
     }
 
-    private func handleVoicePreferenceChanged() {
+    private func handleVoicePreferenceChanged(forceRestart: Bool = false, autoPlayOverride: Bool? = nil) {
         let newVoiceID = settings.voice(for: playbackLanguage)
-        guard newVoiceID != playbackVoiceID else { return }
+        guard forceRestart || newVoiceID != playbackVoiceID else { return }
         let oldVoiceID = playbackVoiceID
         playbackVoiceID = newVoiceID
+        clearPagePrefetch()
 
         guard isActive,
               currentBlockIndex >= 0,
               let original = prepared[currentBlockIndex] else { return }
 
         let blockIndex = currentBlockIndex
-        let shouldAutoPlay = ownsAudioQueue && audio.isPlaying
+        let shouldAutoPlay = autoPlayOverride ?? (ownsAudioQueue && audio.isPlaying)
         let previewHadSuspendedPlayback = VoicePreviewPlaybackCoordinator.shared.cancelForVoiceSwitch()
         VoiceSamplePlayer.shared.stop(resumeSuspendedPlayback: false)
         VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
@@ -736,6 +740,7 @@ final class ExplainViewModel: ObservableObject {
                 try Task.checkCancellation()
                 guard self.activeVoiceSwitchID == switchID,
                       self.currentBlockIndex == blockIndex,
+                      self.settings.voice(for: self.playbackLanguage) == rebuilt.voiceID,
                       self.isActive,
                       self.audioSessionToken == session,
                       self.audio.isPlaybackSessionActive(session) else { return }
@@ -760,15 +765,12 @@ final class ExplainViewModel: ObservableObject {
                 guard self.activeVoiceSwitchID == switchID,
                       self.audioSessionToken == session,
                       self.audio.isPlaybackSessionActive(session) else { return }
-                // A network failure must not strand the player. Restore the
-                // cached old block and preserve whether the user was playing.
-                self.installVoiceSwitchedBlock(
-                    original,
-                    replacing: original,
-                    blockIndex: blockIndex,
-                    autoPlay: resumeAfterSwitch,
-                    session: session
-                )
+                // Keep the narration text for retry, but never silently play
+                // voice A while the UI says voice B has been selected.
+                _ = self.audio.clearQueue(session: session)
+                _ = self.audio.setMoreSegmentsExpected(false, session: session)
+                self.isPreparingNext = false
+                self.status = .error(AppLocalized("声音服务暂时不可用，请稍后重试"))
                 VoiceSwitchStatusCenter.shared.finish(switchID)
                 self.activeVoiceSwitchID = nil
                 self.debugLog("explain voice switch failed block=%d error=%@", blockIndex, error.localizedDescription)
@@ -782,7 +784,7 @@ final class ExplainViewModel: ObservableObject {
         language: String,
         voiceID: String
     ) async throws -> PreparedBlock {
-        let segments = try await TTSService.shared.generatePrefetchSegments(
+        let segments = try await speechGenerator.generatePrefetchSegments(
             paragraphIndex: blockIndex,
             text: original.text,
             voice: voiceID,
@@ -834,7 +836,8 @@ final class ExplainViewModel: ObservableObject {
             segments: segments,
             marks: marks,
             text: original.text,
-            sentences: Self.splitSentences(original.text)
+            sentences: Self.splitSentences(original.text),
+            voiceID: voiceID
         )
     }
 
@@ -869,6 +872,8 @@ final class ExplainViewModel: ObservableObject {
         prepared[blockIndex] = block
         if let replayIndex = replayBlocks.lastIndex(where: { $0.text == original.text }) {
             replayBlocks[replayIndex] = block
+        } else if !isReplayingCached {
+            replayBlocks.append(block)
         }
         marksByBlock[blockIndex] = block.marks
         currentBlockIndex = blockIndex
@@ -964,6 +969,12 @@ final class ExplainViewModel: ObservableObject {
 
     func start() {
         guard requireWebContentReady() else { return }
+        if isErrorState, let block = prepared[currentBlockIndex],
+           block.voiceID != settings.voice(for: playbackLanguage) {
+            activate()
+            recoverPlaybackAfterOwnershipChange()
+            return
+        }
         start(allowAccessRefresh: true)
     }
 
@@ -1205,15 +1216,17 @@ final class ExplainViewModel: ObservableObject {
     /// 快道 block_0 → 可播放块：TTS narration + ensureTiming 均匀铺 at（跳过 compose，§5.5）。
     private func prepareFastBlock(_ section: QuickreadSection, language: String) async throws -> PreparedBlock {
         var segs: [AudioSegment] = []
-        try await TTSService.shared.generateTTSForParagraph(
+        let voiceID = settings.voice(for: language)
+        try await speechGenerator.generateTTSForParagraph(
             paragraphIndex: 0, text: section.text,
-            voice: settings.voice(for: language), speed: 1.0, language: language) { segs.append($0) }
+            voice: voiceID, speed: 1.0, language: language,
+            includeVoiceCode: true, speaker: nil, cloneRequestID: nil) { segs.append($0) }
         guard !segs.isEmpty else { throw QuickReadError.noBlock0 }
         let duration = segs.reduce(0) { $0 + effectiveDuration($1) }
         let marks = ensureTiming(section.events, duration: duration)
         debugLog("fastlane prepare marks_raw=%d marks_timed=%d segs=%d duration=%.2f text=%d",
                  section.events.count, marks.count, segs.count, duration, section.text.count)
-        return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text))
+        return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text), voiceID: voiceID)
     }
 
     /// 快道执行：先 LLM(fast-block0) + TTS 决定 idxBase/scope，再启动质道。
@@ -1426,6 +1439,7 @@ final class ExplainViewModel: ObservableObject {
         guard isActive,
               audioSessionToken == session,
               audio.isPlaybackSessionActive(session) else { return }
+        if revoiceCachedBlockIfNeeded(block, index: blockIndex) { return }
         _ = audio.clearQueue(session: session)
         currentBlockIndex = blockIndex
         prepared[blockIndex] = block
@@ -1947,7 +1961,7 @@ final class ExplainViewModel: ObservableObject {
         var segs: [AudioSegment] = []
         let ttsStartedAt = Date()
         if detachedTTS {
-            segs = try await TTSService.shared.generatePrefetchSegments(
+            segs = try await speechGenerator.generatePrefetchSegments(
                 paragraphIndex: idx,
                 text: section.text,
                 voice: voiceID,
@@ -1955,12 +1969,15 @@ final class ExplainViewModel: ObservableObject {
                 language: language
             )
         } else {
-            try await TTSService.shared.generateTTSForParagraph(
+            try await speechGenerator.generateTTSForParagraph(
                 paragraphIndex: idx,
                 text: section.text,
                 voice: voiceID,
                 speed: 1.0,
-                language: language
+                language: language,
+                includeVoiceCode: true,
+                speaker: nil,
+                cloneRequestID: nil
             ) { segment in
                 segs.append(segment)
             }
@@ -1999,11 +2016,12 @@ final class ExplainViewModel: ObservableObject {
                  marks.count, segs.count, timeline.count, duration, section.text.count)
         kindlePerfLog("prepare-section idx=\(idx) qIdx=\(composeIdx) detached=\(detachedTTS ? "Y" : "N") ttsMs=\(ttsMs) composeMs=\(composeMs) totalMs=\(elapsedMs(since: startedAt)) sectionMarks=\(section.events.count) composedMarks=\(composedCount.map(String.init) ?? "nil") finalMarks=\(marks.count) segs=\(segs.count) text=\(section.text.count)")
 
-        return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text))
+        return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text), voiceID: voiceID)
     }
 
     private func enqueue(_ pb: PreparedBlock, idx: Int) {
         guard let session = ensureAudioSessionClaim() else { return }
+        if revoiceCachedBlockIfNeeded(pb, index: idx) { return }
         prepared[idx] = pb   // 缓存每块（含 block 0），供 replay 复用、不重新 TTS/调后端
         if !isReplayingCached {
             replayBlocks.append(pb)
@@ -2103,6 +2121,32 @@ final class ExplainViewModel: ObservableObject {
             return
         }
         enqueue(replayBlocks[idx], idx: idx)
+    }
+
+    /// Every cache/replay/prefetch entrance shares this identity gate. Keep the
+    /// explanation and regenerate only its audio when the narrator changes.
+#if DEBUG
+    /// Seed a completed narration in integration tests; playback still goes
+    /// through the production ownership, voice validation and retry paths.
+    func debugSeedCachedNarration(_ segments: [AudioSegment], voiceID: String) {
+        let text = segments.map(\.text).joined(separator: " ")
+        let block = PreparedBlock(segments: segments, marks: [], text: text,
+                                  sentences: Self.splitSentences(text), voiceID: voiceID)
+        prepared = [0: block]
+        replayBlocks = [block]
+        currentBlockIndex = 0
+        totalBlocks = 1
+        playbackVoiceID = voiceID
+        status = .streaming(block: 0, total: 1)
+    }
+#endif
+
+    private func revoiceCachedBlockIfNeeded(_ block: PreparedBlock, index: Int) -> Bool {
+        guard block.voiceID != settings.voice(for: playbackLanguage) else { return false }
+        prepared[index] = block
+        currentBlockIndex = index
+        handleVoicePreferenceChanged(forceRestart: true, autoPlayOverride: !liveWebTurnIntentSuspended)
+        return true
     }
 
     /// PDF 连续解读：切到下一批续播。命中批间预取 → 跳过 extract-plan；否则实时规划（显示「继续讲解…」）。
