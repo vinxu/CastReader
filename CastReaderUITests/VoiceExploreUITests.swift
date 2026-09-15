@@ -67,6 +67,96 @@ final class VoiceExploreUITests: XCTestCase {
         XCTAssertEqual(app.buttons["presetVoiceSelect_af_heart"].value as? String, "已选择")
     }
 
+    func testNineLanguageVoiceDiscoveryAndAllowanceControls() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let catalog = try JSONSerialization.jsonObject(with: Data(contentsOf:
+            root.appendingPathComponent("CastReader/Localizable.xcstrings"))) as! [String: Any]
+        let strings = catalog["strings"] as! [String: Any]
+        func localized(_ key: String, _ language: String) throws -> String {
+            let entry = try XCTUnwrap(strings[key] as? [String: Any])
+            let locales = try XCTUnwrap(entry["localizations"] as? [String: Any])
+            let value = try XCTUnwrap(locales[language] as? [String: Any])
+            let unit = try XCTUnwrap(value["stringUnit"] as? [String: Any])
+            return try XCTUnwrap(unit["value"] as? String)
+        }
+        for language in ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"] {
+            let app = launch(language)
+            XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "voiceEdition_weekly-stories")
+                .firstMatch.waitForExistence(timeout: 20), language)
+            XCTAssertTrue(app.staticTexts[try localized("本周发现", language)].exists, language)
+            attach(app, "release-voice-feed-" + language)
+            let browse = app.buttons["voiceBrowseAll"]
+            reveal(browse, in: app)
+            XCTAssertTrue(browse.isHittable, language)
+            browse.tap()
+            let tabs = app.segmentedControls["voiceCatalogTabs"]
+            XCTAssertTrue(tabs.waitForExistence(timeout: 5), language)
+            let regular = tabs.buttons[try localized("常规音色", language)]
+            let curated = tabs.buttons[try localized("精选音色", language)]
+            XCTAssertTrue(regular.isSelected, language)
+            XCTAssertTrue(curated.isHittable, language)
+            XCTAssertTrue(app.textFields["voiceSearchField"].isHittable, language)
+            curated.tap()
+            let note = app.staticTexts["voiceClonedSelectionNote"]
+            XCTAssertTrue(note.waitForExistence(timeout: 5), language)
+            XCTAssertEqual(note.label, try localized("克隆音色 · 多语言适用 · 生成消耗月额度", language))
+            let preview = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voicePreview_vl_")).firstMatch
+            XCTAssertTrue(preview.waitForExistence(timeout: 5), language)
+            XCTAssertTrue(preview.isHittable, language)
+            XCTAssertGreaterThanOrEqual(preview.frame.width, 44, language)
+            XCTAssertGreaterThanOrEqual(preview.frame.height, 44, language)
+            attach(app, "release-voice-curated-" + language)
+            let quota = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voiceQuota_vl_")).firstMatch
+            quota.tap()
+            XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 5), language)
+            attach(app, "release-voice-allowance-" + language)
+            app.alerts.buttons.firstMatch.tap()
+            XCTAssertTrue(curated.isSelected, language)
+            app.terminate()
+        }
+    }
+
+    func testReleaseStoreScreenshotsUseLiveLocalizedDiscovery() throws {
+        guard ProcessInfo.processInfo.environment["CASTREADER_RELEASE_SCREENSHOTS"] == "1" else {
+            throw XCTSkip("Opt-in App Store capture using the live public voice catalog")
+        }
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let catalog = try JSONSerialization.jsonObject(with: Data(contentsOf:
+            root.appendingPathComponent("CastReader/Localizable.xcstrings"))) as! [String: Any]
+        let strings = catalog["strings"] as! [String: Any]
+        let url = URL(string: "https://api.castreader.ai/api/tts/mobile-catalog?region=international")!
+        let data = try Data(contentsOf: url)
+        let publicCatalog = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let edition = try XCTUnwrap(publicCatalog["discovery"] as? [String: Any])
+        let modules = try XCTUnwrap(edition["modules"] as? [[String: Any]])
+        let story = try XCTUnwrap(modules.first { ($0["id"] as? String) == "international-everyday" })
+        let titles = try XCTUnwrap(story["title"] as? [String: String])
+        for language in ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"] {
+            let code = language.split(separator: "-").first.map(String.init)!
+            let title = try XCTUnwrap(titles[code], "Missing published editorial translation: \(language)")
+            let app = XCUIApplication()
+            app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+                "-CastReaderRegion", "global", "-CastReaderServiceRoute", "global",
+                "-AppleLanguages", "(\(language))", "-interfaceLanguage", language,
+                "-voice_browser_language_v1", code]
+            app.launch()
+            let entry = try XCTUnwrap(strings["音色"] as? [String: Any])
+            let locales = try XCTUnwrap(entry["localizations"] as? [String: Any])
+            let localization = try XCTUnwrap(locales[language] as? [String: Any])
+            let unit = try XCTUnwrap(localization["stringUnit"] as? [String: Any])
+            let label = try XCTUnwrap(unit["value"] as? String)
+            let tab = app.tabBars.buttons[label]
+            XCTAssertTrue(tab.waitForExistence(timeout: 20), language)
+            tab.tap()
+            let voice = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "presetVoiceSelect_")).firstMatch
+            XCTAssertTrue(voice.waitForExistence(timeout: 30), language)
+            if language == "en" { XCTAssertTrue(app.staticTexts[title].exists, language) }
+            Thread.sleep(forTimeInterval: 3)
+            attach(app, "appstore-voice-discovery-" + language)
+            app.terminate()
+        }
+    }
+
     func testFullCatalogCanFindLastCommunityVoice() throws {
         #if targetEnvironment(simulator)
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("VoiceScale-" + UUID().uuidString)

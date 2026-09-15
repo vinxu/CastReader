@@ -30,6 +30,8 @@ MARKERS = [
     "-CastReaderOfflineFixturePartial", "-CastReaderOfflineFixtureChinese",
     "-CastReaderOfflineFixtureJapanese", "-CastReaderOfflineFixtureFailure",
     "-CastReaderOfflineFixtureResumeViewport", "-CastReaderKindleFontDiagnostics",
+    "-CastReaderVoiceExploreFixture", "-CastReaderFamiliarVoicesFixture",
+    "-CastReaderVoicePreviewDiagnostics", "CASTREADER_VOICE_FIXTURE_DIRECTORY",
 ]
 
 def inspect(root):

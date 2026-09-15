@@ -2,6 +2,25 @@ import XCTest
 import AVFoundation
 @testable import CastReader
 
+extension XCTestCase {
+    /// Keep preset transport fixtures independent from saved clone selections.
+    @MainActor
+    func useRegularVoiceForTest(language: String) {
+        let settings = AppSettings.shared
+        let previous = settings.voice(for: language)
+        XCTAssertTrue(settings.setVoice(VoiceCatalog.resolvedVoice(preferred: "", for: language), for: language))
+        addTeardownBlock {
+            await MainActor.run {
+                if previous.hasPrefix("vc_") {
+                    settings.setActiveClonedVoice(previous, for: language)
+                } else {
+                    settings.setVoice(previous, for: language)
+                }
+            }
+        }
+    }
+}
+
 /// Each fixture has its own URLSession and registry key. These are controlled
 /// HTTP responses through URLProtocol, not a claim about an online TTS service.
 final class ReadAloudHTTPFixture {

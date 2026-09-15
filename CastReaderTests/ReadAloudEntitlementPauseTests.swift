@@ -3,6 +3,11 @@ import XCTest
 
 @MainActor
 final class ReadAloudEntitlementPauseTests: XCTestCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        useRegularVoiceForTest(language: "en")
+    }
+
     @MainActor
     private final class ControlledRefresh {
         private var continuation: CheckedContinuation<Void, Never>?

@@ -252,6 +252,7 @@ final class EvalTests: XCTestCase {
     /// 这是消除段间 gap 的前提——advance 时缓存已就绪即可秒接，无需再等首字节。
     @MainActor
     func testPrefetch_GeneratesNextParagraph() async throws {
+        useRegularVoiceForTest(language: "zh")
         let doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
         let vm = ReadAloudViewModel(document: doc)
         defer {
@@ -276,6 +277,7 @@ final class EvalTests: XCTestCase {
     /// segmentsByParagraph 复用缓存（segment 数一致=没重新请求 TTS）、预取缓存清空。
     @MainActor
     func testPrefetch_PromoteReusesCacheNoRegen() async throws {
+        useRegularVoiceForTest(language: "zh")
         let doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
         let vm = ReadAloudViewModel(document: doc)
         defer {
@@ -305,6 +307,7 @@ final class EvalTests: XCTestCase {
     /// 这是消除 gap 的实际触发点——前两个测试手动调 preloadNext，本测试证明朗读时会自动发生。
     @MainActor
     func testPrefetch_GenerateAutoTriggersPreload() async throws {
+        useRegularVoiceForTest(language: "zh")
         let doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
         let vm = ReadAloudViewModel(document: doc)
         defer {

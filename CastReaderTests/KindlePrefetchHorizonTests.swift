@@ -3,6 +3,11 @@ import XCTest
 
 @MainActor
 final class KindlePrefetchHorizonTests: XCTestCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        useRegularVoiceForTest(language: "en")
+    }
+
     private func candidates(_ count: Int, chars: Int = 12, duration: Double? = nil) -> [KindleParagraphPrefetchHorizon.Candidate] {
         (1...count).map { .init(index: $0, utf16Count: chars, readyDuration: duration) }
     }
