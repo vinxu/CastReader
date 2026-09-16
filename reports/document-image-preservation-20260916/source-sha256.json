@@ -1,0 +1,12 @@
+{
+  "CastReader/Models/ReadingDocument.swift": "cb025612de5d2f75dff6ae3d3a41cf58f8c42cb99f205357dd475607d1109a60",
+  "CastReader/Services/EpubNativeEngine.swift": "12d24041102131f20b9bae83dacf88fb3dae162a1020f507b20bfd5d1e8b761d",
+  "CastReader/Services/LocalDocumentCache.swift": "0c629f5a3fdc854742d0aa1a68a253cab90ffc1b0026fd6592eb2a893bad7b3b",
+  "CastReader/Utils/DocumentBuilder.swift": "4a36471b58a574f4c59b103c9ed2ef67b8865332e28ed74bbd88908473e5df67",
+  "CastReader/Utils/HtmlParser.swift": "062dc77ce449b6983f0ca6f5ce7bf97b35552e6e7c8180a55c4617b26ddcf5ee",
+  "CastReader/Utils/EpubImageResource.swift": "496760086d050c9b5f7f864181f082f8e866d08e0f426c093c9ce84eeb114ccf",
+  "CastReader/Utils/PDFOCRGeometry.swift": "5bbe2f53ba82905e56dcff03ac5cdc18d4c781145e22b412c6d5fd5e052a4b5a",
+  "CastReader/Views/Reader/PDFReaderView.swift": "4859f2c0c6a1cbb719dbedeb5f3fe292545a38fad3a0c39ad9c2ede915d63372",
+  "CastReader/Views/Reader/TextReaderView.swift": "b36b05fd852f87e98a0193695a902702f91406289af52d94c105396819fd605b",
+  "CastReader/Views/Reader/ReadingResumeScenarioFixture.swift": "2cf50c696584d5b4dd71a08e7a44ce3dbc0d5812b45cfc2e1fda76194fcd39dd"
+}

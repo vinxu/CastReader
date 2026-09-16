@@ -4,11 +4,15 @@ import Foundation
 /// independent. Never used for cloud references or connected-library content.
 enum LocalDocumentCache {
     // Bump when PDF extraction, OCR reflow or EPUB paragraph semantics change.
-    static let parserVersion = 2
+    static let parserVersion = 3
     static let maximumSnapshotBytes = 32 * 1_024 * 1_024
     static let maximumDirectoryBytes = 128 * 1_024 * 1_024
 
     struct Snapshot: Codable {
+        struct Word: Codable {
+            let text: String
+            let bounds: CGRect
+        }
         struct Paragraph: Codable {
             let text: String
             let kind: String
@@ -16,6 +20,8 @@ enum LocalDocumentCache {
             let page: Int?
             let range: NSRange?
             let image: Int?
+            let ocrWords: [Word]?
+            let ocrBounds: CGRect?
         }
         let version: Int
         let source: String
@@ -40,7 +46,8 @@ enum LocalDocumentCache {
             for (index, p) in document.paragraphs.enumerated() {
                 try Task.checkCancellation()
                 // Reject richer inputs rather than silently dropping geometry.
-                guard p.id == index, p.words.isEmpty, p.bboxNorm == nil,
+                let isPDFOCR = document.sourceKind == .pdf && p.pdfRange == nil
+                guard p.id == index, (isPDFOCR || (p.words.isEmpty && p.bboxNorm == nil)),
                       p.visualFragments.isEmpty, p.speechText == nil,
                       p.speaker == nil, p.pageIndex == nil, p.startMs == nil else { return nil }
                 var image: Int?
@@ -64,10 +71,12 @@ enum LocalDocumentCache {
                 case .caption: kind = "caption"; heading = nil
                 case .image: kind = "image"; heading = nil
                 }
-                bytes += p.text.utf8.count + 128
+                bytes += p.text.utf8.count + 128 + p.words.reduce(0) { $0 + $1.text.utf8.count + 96 }
                 guard bytes <= maximumSnapshotBytes else { return nil }
                 paragraphs.append(Paragraph(text: p.text, kind: kind, heading: heading,
-                                            page: p.pdfPageIndex, range: p.pdfRange, image: image))
+                                            page: p.pdfPageIndex, range: p.pdfRange, image: image,
+                                            ocrWords: p.words.isEmpty ? nil : p.words.map { Word(text: $0.text, bounds: $0.bboxNorm) },
+                                            ocrBounds: p.bboxNorm))
             }
             self.paragraphs = paragraphs
             self.images = images
@@ -104,6 +113,8 @@ enum LocalDocumentCache {
                 if let range = p.range,
                    range.location < 0 || range.length < 0 || range.location > Int.max - range.length { return nil }
                 result.append(ReadingParagraph(id: index, text: p.text, type: type,
+                    words: (p.ocrWords ?? []).enumerated().map { OCRWord(id: $0.offset, text: $0.element.text, bboxNorm: $0.element.bounds) },
+                    bboxNorm: p.ocrBounds,
                     pdfPageIndex: p.page, pdfRange: p.range, imageData: p.image.map { images[$0] }))
             }
             var document = ReadingDocument(id: record.id, title: record.title, sourceKind: record.sourceKind,

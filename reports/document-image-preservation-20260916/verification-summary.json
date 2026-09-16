@@ -1,0 +1,35 @@
+{
+  "result": "passed",
+  "sourceBaseline": "b10d83ced9b450e63c1d5f4e021849122e2d59d0",
+  "branch": "codex/document-image-preservation-20260916",
+  "passedTests": 83,
+  "skippedTests": 1,
+  "failedTests": 0,
+  "unitPassed": 78,
+  "uiPassed": 5,
+  "newTargetedTests": 11,
+  "skip": "LocalDocumentCacheTests/testUserPDFReopenPerformanceSample: No local reproduction PDF",
+  "parserSamplesPassed": 12,
+  "resultBundles": [
+    "/tmp/CastReaderDocumentImages-verified.xcresult",
+    "/tmp/CastReaderDocumentImages-legacy-route.xcresult"
+  ],
+  "environment": {
+    "architecture": "arm64",
+    "deviceId": "8B296DAC-A2C0-4A32-8B31-514D401ACA23",
+    "deviceName": "CastReader-Document-Images-20260916",
+    "modelName": "iPhone 17 Pro",
+    "osBuildNumber": "23F77",
+    "osVersion": "26.5",
+    "platform": "iOS Simulator"
+  },
+  "actualCustomerOriginalFileAvailable": false,
+  "cloudSpeechTested": false,
+  "released": false,
+  "screenshotsVisuallyReviewed": [
+    "epub-table-and-raster-chart.png",
+    "epub-svg-and-repeated-charts.png",
+    "pdf-scanned-page-ocr-highlight.png",
+    "pdf-ocr-reopened.png"
+  ]
+}

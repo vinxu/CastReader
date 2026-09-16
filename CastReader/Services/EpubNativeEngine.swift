@@ -2,7 +2,7 @@
 //  EpubNativeEngine.swift
 //  CastReader
 //
-//  纯本地 EPUB 解析（对标 PDF 的 fromPDFNative，全程不触网、不走 WebView）：
+//  纯本地 EPUB 解析（全程不触网；仅独立 SVG 插图交给 WebKit 绘制）：
 //  ZIPFoundation 解 EPUB → 读 META-INF/container.xml 找 OPF → 解析 manifest+spine →
 //  按 spine 顺序逐章 XHTML 经 HtmlParser 抽段落（含图片）→ 合并、重排 index、内嵌图片字节回填。
 //  产出 [ReadingParagraph]（图片段带 imageData），交 TextReaderView 原生渲染，
@@ -178,6 +178,16 @@ enum EpubNativeEngine {
             }
         }
 
+        func illustration(_ href: String, relativeTo base: String) -> Data? {
+            let resolved = resolveImageHref(href, chapterHref: base)
+            guard let data = EpubImageResource.embeddedData(href) ?? images[resolved] else { return nil }
+            guard EpubImageResource.isSVG(data) else { return data }
+            let svgBase = href.hasPrefix("data:") ? base : resolved
+            return EpubImageResource.svg(data) { nested in
+                images[resolveImageHref(nested, chapterHref: svgBase)]
+            }
+        }
+
         // 4. 按 spine 顺序逐章解析 → 合并段落、重排 id、回填图片字节
         var paragraphs: [ReadingParagraph] = []
         var idx = 0
@@ -199,7 +209,7 @@ enum EpubNativeEngine {
                 var imageData: Data? = nil
                 if b.type == .image {
                     guard let href = b.imageHref else { continue }
-                    guard let d = images[resolveImageHref(href, chapterHref: item.href)] else { continue }   // 无字节 → 跳过图片段
+                    guard let d = illustration(href, relativeTo: item.href) else { continue }   // 无字节 → 跳过图片段
                     imageData = d
                 } else if b.text.isEmpty {
                     continue
@@ -250,22 +260,27 @@ enum EpubNativeEngine {
     /// <img src>（相对当前章节）→ 相对 OPF 目录的规范化 href，用于匹配 images map。
     private static func resolveImageHref(_ src: String, chapterHref: String) -> String {
         if src.isEmpty || src.hasPrefix("data:") || src.hasPrefix("http") { return src }
-        let decoded = src.replacingOccurrences(of: "%20", with: " ")
         let baseDir = chapterHref.contains("/") ? String(chapterHref[..<chapterHref.lastIndex(of: "/")!]) : ""
         let combined: String
-        if decoded.hasPrefix("/") {
-            combined = String(decoded.drop(while: { $0 == "/" }))
+        if src.hasPrefix("/") {
+            combined = String(src.drop(while: { $0 == "/" }))
         } else if baseDir.isEmpty {
-            combined = decoded
+            combined = src
         } else {
-            combined = baseDir + "/" + decoded
+            combined = baseDir + "/" + src
         }
         return normHref(combined)
     }
 
-    /// 规范化 href：解析 ./ 与 ../、去空段、decode %20。
+    private static func resourcePath(_ href: String) -> String {
+        let path = href.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)[0]
+            .split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)[0]
+        return String(path).removingPercentEncoding ?? String(path)
+    }
+
+    /// 规范化 href：解析 ./ 与 ../、去空段、decode percent-encoded resource paths。
     private static func normHref(_ href: String) -> String {
-        let decoded = href.replacingOccurrences(of: "%20", with: " ")
+        let decoded = resourcePath(href)
         var parts: [String] = []
         for seg in decoded.split(separator: "/", omittingEmptySubsequences: true) {
             switch seg {

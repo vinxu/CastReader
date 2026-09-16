@@ -68,6 +68,9 @@ struct PDFReaderView: UIViewRepresentable {
         private var lastMarkScrollId: UUID?     // 解读标注上次滚到的 mark：mark 变化且超出视野才滚、同 mark 重画不抖
         // 词级高亮缓存（英文）：当前句各词的 page 矩形，句内顺序 findString 增量算、避免每 tick 重复定位。
         private var wordAnn: (page: PDFPage, ann: PDFAnnotation)?
+        private var ocrWordAnnotations: [(page: PDFPage, ann: PDFAnnotation)] = []
+        private var ocrWordMap: [Range<Int>?] = []
+        private var ocrTimestampWords: [String] = []
         private var wordRects: [CGRect] = []
         private var wordRectsPara = -1
         private var wordSearchLoc = 0           // 句内 findString 顺序游标（page.string 绝对字符位置）
@@ -173,6 +176,7 @@ struct PDFReaderView: UIViewRepresentable {
                 if let key = markKeysById.removeValue(forKey: id) { drawnMarkKeys.remove(key) }
             }
 
+            var lastOCRMark: (CGRect, PDFPage)?
             var lastDrawnSel: PDFSelection?     // 最后一个成功画出的 mark（= 最新出现）→ 滚动跟随它
             var lastDrawnId: UUID?
             let ink = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.85)   // #FD5F01 统一橙（深浅都清晰）
@@ -195,6 +199,21 @@ struct PDFReaderView: UIViewRepresentable {
                     .replacingOccurrences(of: "\n", with: "")
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 guard markText.count >= 1 else { continue }
+                if para.pdfRange == nil {
+                    let rects = PDFOCRGeometry.rects(para, page: page, characterRange: m.charRange)
+                    guard !rects.isEmpty else { continue }
+                    let bounds = rects.reduce(CGRect.null) { $0.union($1) }
+                    let ann = HandwrittenPDFAnnotation(bounds: bounds.insetBy(dx: -12, dy: -10), forType: .stamp, withProperties: nil)
+                    ann.markRects = rects
+                    ann.markAction = m.action; ann.markSeed = m.seed; ann.markN = m.n
+                    ann.markWeight = m.weight; ann.inkColor = ink; ann.primaryColor = primary
+                    page.addAnnotation(ann)
+                    markShown[m.id] = [(page, ann)]
+                    markKeysById[m.id] = markKey
+                    drawnMarkKeys.insert(markKey)
+                    lastOCRMark = (bounds, page); lastDrawnSel = nil; lastDrawnId = m.id
+                    continue
+                }
                 let rangeSel = pdfSelectionForMark(pdfDoc: pdfDoc, page: page, paragraph: para, charRange: m.charRange)
                 let exactSel: PDFSelection? = {
                     guard rangeSel == nil else { return nil }
@@ -230,9 +249,14 @@ struct PDFReaderView: UIViewRepresentable {
                 drawnMarkKeys.insert(markKey)
                 debugLog("pdfMark DRAW para=%d page=%d action=%@ source=%@ text=%@",
                          m.paragraphIndex, pageIdx, m.action, rangeSel == nil ? "search" : "range", String(markText.prefix(28)))
+                lastOCRMark = nil
                 lastDrawnSel = sel; lastDrawnId = m.id   // 跟踪最新画出的 mark
             }
             // 滚动跟随最新标注：mark 变化且已移出视野才滚（同页从上到下、跨页都跟随；在视野内不跳、同 mark 不抖）。
+            if autoScroll, let (bounds, page) = lastOCRMark, lastDrawnId != lastMarkScrollId {
+                lastMarkScrollId = lastDrawnId
+                revealWord(bounds, page: page)
+            }
             if autoScroll, let sel = lastDrawnSel, lastDrawnId != lastMarkScrollId,
                let pv = pdfView, let p = sel.pages.first {
                 lastMarkScrollId = lastDrawnId
@@ -253,6 +277,12 @@ struct PDFReaderView: UIViewRepresentable {
                   mark.paragraphIndex >= 0, mark.paragraphIndex < doc.paragraphs.count else { return false }
             let para = doc.paragraphs[mark.paragraphIndex]
             guard let pageIdx = para.pdfPageIndex, let page = pdfDoc.page(at: pageIdx) else { return false }
+            if para.pdfRange == nil {
+                let rects = PDFOCRGeometry.rects(para, page: page, characterRange: mark.charRange)
+                guard let first = rects.first else { return false }
+                pdfView.go(to: first.insetBy(dx: 0, dy: -45), on: page)
+                return true
+            }
             guard let sel = pdfSelectionForMark(pdfDoc: pdfDoc, page: page, paragraph: para, charRange: mark.charRange) else {
                 return false
             }
@@ -265,10 +295,14 @@ struct PDFReaderView: UIViewRepresentable {
             guard let pdfView, let pdfDoc = pdfView.document, let doc,
                   idx >= 0, idx < doc.paragraphs.count else { return }
             let para = doc.paragraphs[idx]
-            guard let pageIdx = para.pdfPageIndex,
-                  let page = pdfDoc.page(at: pageIdx),
-                  let range = para.pdfRange,
-                  let pageText = page.string else { return }
+            guard let pageIdx = para.pdfPageIndex, let page = pdfDoc.page(at: pageIdx) else { return }
+            if para.pdfRange == nil {
+                if let first = PDFOCRGeometry.rects(para, page: page).first {
+                    pdfView.go(to: first.insetBy(dx: 0, dy: -45), on: page)
+                } else { pdfView.go(to: page) }
+                return
+            }
+            guard let range = para.pdfRange, let pageText = page.string else { return }
             let nsLength = (pageText as NSString).length
             guard range.location >= 0, range.location < nsLength else { return }
             let end = min(nsLength, range.location + max(1, min(range.length, 24)))
@@ -339,9 +373,16 @@ struct PDFReaderView: UIViewRepresentable {
             guard let page = pdfView.page(for: pt, nearest: true) else { return }
             let pagePt = pdfView.convert(pt, to: page)
             let charIdx = page.characterIndex(at: pagePt)
-            guard charIdx >= 0 else { return }
             let pageIdx = pdfView.document?.index(for: page) ?? -1
             guard pageIdx >= 0 else { return }
+            if let paragraph = doc.paragraphs.first(where: { paragraph in
+                paragraph.pdfPageIndex == pageIdx && paragraph.pdfRange == nil &&
+                PDFOCRGeometry.rects(paragraph, page: page).contains { $0.insetBy(dx: -4, dy: -4).contains(pagePt) }
+            }) {
+                readVM?.jump(to: paragraph.id)
+                return
+            }
+            guard charIdx >= 0 else { return }
             // 找包含点击字符的句 → 从该句朗读（跳读/跳页）
             if let para = doc.paragraphs.first(where: {
                 $0.pdfPageIndex == pageIdx && NSLocationInRange(charIdx, $0.pdfRange ?? NSRange(location: 0, length: 0))
@@ -366,17 +407,34 @@ struct PDFReaderView: UIViewRepresentable {
             for item in shown { item.page.removeAnnotation(item.ann) }
             shown.removeAll()
             if let w = wordAnn { w.page.removeAnnotation(w.ann); wordAnn = nil }
+            for item in ocrWordAnnotations { item.page.removeAnnotation(item.ann) }
+            ocrWordAnnotations = []
             wordRectsPara = -1
             wordRects = []
+            ocrWordMap = []
+            ocrTimestampWords = []
         }
 
-        private func highlight(_ idx: Int) {
+        func highlight(_ idx: Int) {
             guard let pdfView, let doc, idx >= 0, idx < doc.paragraphs.count,
                   let pdfDoc = pdfView.document else { return }
             let para = doc.paragraphs[idx]
-            guard let pageIdx = para.pdfPageIndex, let page = pdfDoc.page(at: pageIdx),
-                  let range = para.pdfRange else { return }
+            guard let pageIdx = para.pdfPageIndex, let page = pdfDoc.page(at: pageIdx) else { return }
             clearHighlights()
+            if para.pdfRange == nil {
+                let rects = PDFOCRGeometry.rects(para, page: page)
+                for rect in rects {
+                    let ann = PDFAnnotation(bounds: rect, forType: .highlight, withProperties: nil)
+                    ann.color = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.22)
+                    page.addAnnotation(ann)
+                    shown.append((page, ann))
+                }
+                lastHlIdx = idx
+                if autoScroll, let first = rects.first { pdfView.go(to: first.insetBy(dx: 0, dy: -45), on: page) }
+                revealResumeWord()
+                return
+            }
+            guard let range = para.pdfRange else { return }
             let color = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.33)
             let ns = (page.string ?? "") as NSString
 
@@ -411,6 +469,9 @@ struct PDFReaderView: UIViewRepresentable {
                   let sourceRange = Range(range, in: para.text) else { return }
             let lower = para.text.distance(from: para.text.startIndex, to: sourceRange.lowerBound)
             let upper = para.text.distance(from: para.text.startIndex, to: sourceRange.upperBound)
+            if para.pdfRange == nil, let rect = PDFOCRGeometry.rects(para, page: page, characterRange: lower..<upper).first {
+                revealWord(rect, page: page)
+            }
             if let selection = pdfSelectionForMark(pdfDoc: pdfDoc, page: page, paragraph: para, charRange: lower..<upper) {
                 revealWord(selection.bounds(for: page), page: page)
             }
@@ -426,12 +487,35 @@ struct PDFReaderView: UIViewRepresentable {
 
         /// 英文词级高亮：在当前句的 page.string 范围内顺序 findString 每个 TTS 词，按字符位置取 PDFSelection 画词矩形。
         /// 复用句级同款 findString 路径（不依赖易错位的 characterBounds）；词矩形按句缓存，tick 高频调用仅查缓存。
-        private func highlightWord(_ cmd: PDFWordHighlight) {
+        func highlightWord(_ cmd: PDFWordHighlight) {
             guard let pdfView, let doc, let pdfDoc = pdfView.document,
                   cmd.paragraphIndex >= 0, cmd.paragraphIndex < doc.paragraphs.count else { return }
             let para = doc.paragraphs[cmd.paragraphIndex]
-            guard let pageIdx = para.pdfPageIndex, let page = pdfDoc.page(at: pageIdx),
-                  let range = para.pdfRange else { return }
+            guard let pageIdx = para.pdfPageIndex, let page = pdfDoc.page(at: pageIdx) else { return }
+            for item in ocrWordAnnotations { item.page.removeAnnotation(item.ann) }
+            ocrWordAnnotations = []
+            if para.pdfRange == nil {
+                if wordRectsPara != cmd.paragraphIndex || ocrTimestampWords != cmd.words {
+                    wordRectsPara = cmd.paragraphIndex
+                    ocrTimestampWords = cmd.words
+                    ocrWordMap = OCRWordAligner.mapTimestampWordRanges(
+                        cmd.words.map { TTSTimestamp(word: $0, startTime: 0, endTime: 1) },
+                        in: para, allowFallback: false)
+                }
+                guard ocrWordMap.indices.contains(cmd.wordIndex), let range = ocrWordMap[cmd.wordIndex],
+                      let first = range.first, para.words.indices.contains(first) else { return }
+                if let old = wordAnn { old.page.removeAnnotation(old.ann) }
+                wordAnn = nil
+                for index in range where para.words.indices.contains(index) {
+                    let rect = PDFOCRGeometry.pageRect(para.words[index].bboxNorm, page: page)
+                    let ann = PDFAnnotation(bounds: rect, forType: .highlight, withProperties: nil)
+                    ann.color = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.5)
+                    page.addAnnotation(ann); ocrWordAnnotations.append((page, ann))
+                }
+                revealWord(PDFOCRGeometry.pageRect(para.words[first].bboxNorm, page: page), page: page)
+                return
+            }
+            guard let range = para.pdfRange else { return }
             let ns = (page.string ?? "") as NSString
             guard range.location >= 0, range.location + range.length <= ns.length else { return }
             // 句变 → 重置词缓存，游标回句首。
