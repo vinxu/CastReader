@@ -5,6 +5,20 @@ final class SafariExtensionContractTests: XCTestCase {
     private let accountA = String(repeating: "a", count: 64)
     private let accountB = String(repeating: "b", count: 64)
 
+    func testBackgroundSessionIdentityRequiresCanonicalPrincipalAndBoundary() {
+        let snapshot: [String: Any] = ["userId": "canonical-a", "accountStorageID": accountA,
+                                       "boundaryNonce": "login-a", "email": "qa@example.invalid",
+                                       "identityToken": "private-provider-fixture"]
+        let identity = SafariExtensionContract.sessionIdentity(snapshot)
+        XCTAssertEqual(identity?["canonicalAccountId"] as? String, "canonical-a")
+        XCTAssertNil(identity?["identityToken"])
+        for key in ["userId", "accountStorageID", "boundaryNonce"] {
+            var invalid = snapshot
+            invalid.removeValue(forKey: key)
+            XCTAssertNil(SafariExtensionContract.sessionIdentity(invalid))
+        }
+    }
+
     func testRefreshCannotReturnTheRejectedBearerAsRenewed() {
         let session = SafariSessionEnvelope(route: "global", accountStorageID: accountA,
                                              boundaryNonce: "login-1", sessionToken: "cms_current_fixture")
