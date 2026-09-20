@@ -1,0 +1,10 @@
+{
+  "app": "/private/tmp/CastReader1242Release/Build/Products/Release-iphoneos/CastReader.app",
+  "version": "1.2.42",
+  "build": "64",
+  "filesScanned": 124,
+  "markersChecked": 54,
+  "debugPositiveControlsPassed": true,
+  "releaseMatches": [],
+  "passed": true
+}

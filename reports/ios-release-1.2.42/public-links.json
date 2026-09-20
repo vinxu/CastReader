@@ -1,0 +1,38 @@
+[
+  {
+    "url": "https://castreader.com",
+    "status": 200,
+    "finalURL": "https://castreader.com/",
+    "verifiedWith": "system curl, certificate validation enabled"
+  },
+  {
+    "url": "https://castreader.com/",
+    "status": 200,
+    "finalURL": "https://castreader.com/",
+    "verifiedWith": "system curl, certificate validation enabled"
+  },
+  {
+    "url": "https://castreader.com/castreader-app",
+    "status": 200,
+    "finalURL": "https://castreader.com/castreader-app",
+    "verifiedWith": "system curl, certificate validation enabled"
+  },
+  {
+    "url": "https://castreader.com/en/privacy-policy",
+    "status": 200,
+    "finalURL": "https://castreader.com/privacy-policy",
+    "verifiedWith": "system curl, certificate validation enabled"
+  },
+  {
+    "url": "https://castreader.com/zh/castreader-app",
+    "status": 200,
+    "finalURL": "https://castreader.com/zh/castreader-app",
+    "verifiedWith": "system curl, certificate validation enabled"
+  },
+  {
+    "url": "https://castreader.com/zh/privacy-policy",
+    "status": 200,
+    "finalURL": "https://castreader.com/zh/privacy-policy",
+    "verifiedWith": "system curl, certificate validation enabled"
+  }
+]

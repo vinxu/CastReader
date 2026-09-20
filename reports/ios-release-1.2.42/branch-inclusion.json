@@ -1,0 +1,68 @@
+{
+  "candidate": "d1650452ac4daf66dc8ecc1558baca714252285b",
+  "required": [
+    {
+      "commit": "b6dd4d7c6f2be0cd0f3c04e9c89f3bbd8273a56c",
+      "included": true
+    },
+    {
+      "commit": "5f863c4ba9692ab51c9cf1ee318cad63a17d2c92",
+      "included": true
+    },
+    {
+      "commit": "64c2dbd934d34e7b000c8def1a4c8ee5dc94ab23",
+      "included": true
+    },
+    {
+      "commit": "d58e2965b3e9efb498679bbb0b46ac74a00a7160",
+      "included": true
+    },
+    {
+      "commit": "633f6bb8273388b776a47e4b12b344921e334a1c",
+      "included": true
+    },
+    {
+      "commit": "ad4b88576e3c32564a245899ef035ce872205c75",
+      "included": true
+    },
+    {
+      "commit": "a4a3ee0e1672499152562370895dc827757cd0d4",
+      "included": true
+    },
+    {
+      "commit": "e573cde323227ecee152cffce9993731ee241dd7",
+      "included": true
+    },
+    {
+      "commit": "24b28e3db6952b2b9597be131bfc83064e8b1c56",
+      "included": true
+    },
+    {
+      "commit": "9f946ac42c2952f7ca4dced49f937f22f3e84b1c",
+      "included": true
+    },
+    {
+      "commit": "48998e72f202c606d76785e3f4cdd41206801537",
+      "included": true
+    },
+    {
+      "commit": "f94b41dfdeb906a50013556ca664af3c1a258f1d",
+      "included": true
+    },
+    {
+      "commit": "9935c6dd411007f1240211224c5061bcecfcc8b6",
+      "included": true
+    },
+    {
+      "commit": "94499d29cafe118b9df75446158922daa5f977ae",
+      "included": true
+    },
+    {
+      "commit": "d4e427c9314edd1cb5fca6834d5ba73be1476a89",
+      "included": true
+    }
+  ],
+  "preMergeCandidateRejectedForMissingImages": true,
+  "buildGateRequiredFinalFix": "d1650452ac4daf66dc8ecc1558baca714252285b",
+  "buildGatePassed": true
+}

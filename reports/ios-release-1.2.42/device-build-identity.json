@@ -1,0 +1,11 @@
+{
+  "version": "1.2.42",
+  "build": "64",
+  "uuid": "UUID: 39CE811A-E963-329F-BF21-380B6B8BBD8C (arm64) /tmp/CastReader1242Device/Build/Products/Debug-iphoneos/CastReader.app/CastReader.debug.dylib",
+  "binarySHA256": "516df8d8103724074fab6cc456e17a89025fd8c992180a95931422aa3a676c3f",
+  "installed": true,
+  "appPath": "/tmp/CastReader1242Device/Build/Products/Debug-iphoneos/CastReader.app",
+  "sourceCommit": "d1650452ac4daf66dc8ecc1558baca714252285b",
+  "sourceConfigurationSHA256": "81dfdf980da92c7bd8f4f55f82a0cec555607230b611d51c5ce15b163edba788",
+  "installedAt": "2026-09-20T12:29:34+08:00"
+}

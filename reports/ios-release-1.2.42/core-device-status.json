@@ -1,0 +1,16 @@
+{
+  "candidate": "d1650452ac4daf66dc8ecc1558baca714252285b",
+  "version": "1.2.42",
+  "build": "64",
+  "device": "iPhone 15 Pro Max",
+  "ios": "26.7",
+  "installedAt": "2026-09-20T12:29:34+08:00",
+  "mirrorState": "Unlock Your iPhone; follow the instructions on iPhone to unlock and use it on this Mac",
+  "launchFailure": "Device remained locked; app launch was denied",
+  "coreStatus": "NOT_RUN",
+  "archiveCreated": false,
+  "uploaded": false,
+  "submitted": false,
+  "note": "Installation, simulator fixtures and unit results are not actual device core playback evidence.",
+  "recordedAt": "2026-09-20T04:50:34.094279+00:00"
+}

@@ -4,7 +4,7 @@
 
 - 1.2.41（63）已由 App Store Connect 确认为 READY_FOR_SALE。其已发应用源码摘要 `8670be15e6d5e31df8752192c9b694a81f5149c65a22ce2c0eeb429d75f3dd06` 已逐文件重建核对，完整增量固化在 `94499d2`；不得只从旧报告的 `febfeab` 或单独 `9935c6d` 打包。
 - 本次统一保留 `9935c6d`（跨页、完整字幕、EPUB 目录、PDF 内存）和正式合并的 `d4e427c`（EPUB 插图、PDF 原页/OCR 坐标）。冲突整合保留新目录解析和每页内存释放；解析缓存版本提升为 4。
-- 发布分支 `codex/ios-release-1.2.42` 的完整集成须同步到 `main` 和原集成分支 `codex/mobile-voice-explore-20260914`。今后从最新远端 `main` 建立发布分支，先合并功能再打包；必须执行 `bash scripts/build-voice-toc-integration.sh --check`。脚本检查本批必备祖先，缺任何一项都拒绝继续。
+- 发布分支 `codex/ios-release-1.2.42` 的应用源码 `d165045` 已推送并同步到远端 `main` 和原集成分支 `codex/mobile-voice-explore-20260914`，包含解读动画结束后继续播放的翻页代次修复。今后从最新远端 `main` 建立发布分支，先合并功能再打包；必须执行 `bash scripts/build-voice-toc-integration.sh --check`。脚本检查本批必备祖先，缺任何一项都拒绝继续。
 - 本节记录整合要求，不代表 1.2.42 已通过核心验收或送审；以 `docs/iOS-1.2.42-Release-Report.md` 的实际状态为准。历史安装、额度、审核状态仅在其原时间有效。
 
 ## App Store 1.2.41 已送审（2026-09-19）

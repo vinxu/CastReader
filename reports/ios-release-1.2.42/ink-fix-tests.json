@@ -1,0 +1,46 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "9B9DC969-34F1-488A-A6E5-2448472AD414",
+        "deviceName" : "CastReader-EPUB-Repair-20260920",
+        "modelName" : "iPhone 15 Pro Max",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 24,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1789878325.012,
+  "passedTests" : 24,
+  "result" : "Passed",
+  "skippedTests" : 0,
+  "startTime" : 1789878239.196,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "38% of duration",
+      "text" : "1 longest test run with outlier durations exceeding 12.19s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 24
+}

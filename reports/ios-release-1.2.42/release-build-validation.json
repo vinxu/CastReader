@@ -1,0 +1,25 @@
+{
+  "configuration": "Release",
+  "artifact": "development-signed build, not an App Store archive",
+  "components": [
+    {
+      "bundle": "com.same.castreader",
+      "version": "1.2.42",
+      "build": "64",
+      "signatureVerified": true
+    },
+    {
+      "bundle": "com.same.castreader.ShareExtension",
+      "version": "1.2.42",
+      "build": "64",
+      "signatureVerified": true
+    },
+    {
+      "bundle": "com.same.castreader.Widget",
+      "version": "1.2.42",
+      "build": "64",
+      "signatureVerified": true
+    }
+  ],
+  "fixtureAuditPassed": true
+}

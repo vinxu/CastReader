@@ -1,0 +1,64 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "9B9DC969-34F1-488A-A6E5-2448472AD414",
+        "deviceName" : "CastReader-EPUB-Repair-20260920",
+        "modelName" : "iPhone 15 Pro Max",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 2,
+      "passedTests" : 1832,
+      "skippedTests" : 11,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 2,
+  "finishTime" : 1789878206.569,
+  "passedTests" : 1832,
+  "result" : "Failed",
+  "skippedTests" : 11,
+  "startTime" : 1789877582.963,
+  "statistics" : [
+    {
+      "subtitle" : "1 test run",
+      "title" : "1 test collected performance metrics"
+    }
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertEqual failed: (\"2\") is not equal to (\"1\")",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 1322,
+      "testIdentifierString" : "SpeechPipelineTests/testPlayDuringKindleInkDrainResumesExactlyOnePageWithoutReplayingAudio()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/SpeechPipelineTests/testPlayDuringKindleInkDrainResumesExactlyOnePageWithoutReplayingAudio",
+      "testName" : "testPlayDuringKindleInkDrainResumesExactlyOnePageWithoutReplayingAudio()"
+    },
+    {
+      "failureText" : "XCTAssertEqual failed: (\"4\") is not equal to (\"1\") - The locally short page sends no request",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 1586,
+      "testIdentifierString" : "WeReadPageAvailabilityTests/testShortChapterTailContinuesToConfirmedNextPageAndPlaysExplanation()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/WeReadPageAvailabilityTests/testShortChapterTailContinuesToConfirmedNextPageAndPlaysExplanation",
+      "testName" : "testShortChapterTailContinuesToConfirmedNextPageAndPlaysExplanation()"
+    }
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "35% of duration",
+      "text" : "28 longest test runs with outlier durations exceeding 3.67s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 1845
+}
