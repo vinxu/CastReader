@@ -1,0 +1,92 @@
+{
+  "mode": "dry-run",
+  "versionId": "4a052397-9a76-46f7-8137-2998c92ad14c",
+  "patches": [
+    {
+      "id": "f5d673c6-bd22-4792-b6bc-578741db388e",
+      "locale": "fr-FR",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "7cf55789-ba00-4aaf-a399-16e42a6b3481",
+      "locale": "ja",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "d31fc5a0-965b-4874-bf48-9ffc6dd9503e",
+      "locale": "zh-Hans",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "b568dd19-9d5e-4a68-9d9e-61b09ede8d49",
+      "locale": "hi",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "a0f70c00-14bb-40d4-a134-174f8eb2bfe9",
+      "locale": "de-DE",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "194da8f2-8e9f-469b-8630-7baa82b51852",
+      "locale": "it",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "8ab640b2-668f-480e-8bf5-71212e8cbb67",
+      "locale": "en-US",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "b1d3b6a2-5e39-4864-b2c3-f98b6f4d5d1c",
+      "locale": "es-ES",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "350eaaac-cb97-40e2-b8c7-2d95b525216e",
+      "locale": "pt-BR",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "abe0a5a8-0f6a-4205-bea9-d53c671ba52d",
+      "locale": "es-MX",
+      "fields": [
+        "whatsNew"
+      ]
+    },
+    {
+      "id": "57a0198a-cd52-4ff3-9f79-0e967da2738b",
+      "locale": "zh-Hant",
+      "fields": [
+        "whatsNew"
+      ]
+    }
+  ],
+  "preservedFields": [
+    "description",
+    "keywords",
+    "marketingUrl",
+    "supportUrl",
+    "promotionalText"
+  ],
+  "localeCount": 11,
+  "passed": true
+}

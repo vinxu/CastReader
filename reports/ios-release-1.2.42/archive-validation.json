@@ -1,0 +1,43 @@
+{
+  "archive": "build/CastReader-1.2.42-64.xcarchive",
+  "sourceCommit": "1ce1e560fd2aba335d18502f1c1992fbcd4f52d9",
+  "sourceConfigurationSHA256": "635de9e4b189b11f866118824fa76af1a845caa10360a7e76d70a9b81fc30800",
+  "sourceFilesMatched": 304,
+  "products": [
+    {
+      "product": "CastReader.app",
+      "bundle": "com.same.castreader",
+      "version": "1.2.42",
+      "build": "64",
+      "signatureValid": true,
+      "get-task-allow": true,
+      "team": "KQW6UNZE8J",
+      "executableSHA256": "2c2745181ad8e9e41208dedfed07a548c87ca63b3fd8a8ab647933ce65746152",
+      "nonExemptEncryption": false
+    },
+    {
+      "product": "CastReader Share Extension.appex",
+      "bundle": "com.same.castreader.ShareExtension",
+      "version": "1.2.42",
+      "build": "64",
+      "signatureValid": true,
+      "get-task-allow": true,
+      "team": "KQW6UNZE8J",
+      "executableSHA256": "7841262aa13ec22403401ec197b349f6ccf0635fd229d9f27decf183ec7daa5b",
+      "nonExemptEncryption": null
+    },
+    {
+      "product": "CastReader Widget.appex",
+      "bundle": "com.same.castreader.Widget",
+      "version": "1.2.42",
+      "build": "64",
+      "signatureValid": true,
+      "get-task-allow": true,
+      "team": "KQW6UNZE8J",
+      "executableSHA256": "0c04729587c8bb3cdcfe424afe3b581a0de890bdfb4a3aa1674d953b6d1982fe",
+      "nonExemptEncryption": null
+    }
+  ],
+  "note": "Archive signed for development; export re-signs App Store distribution",
+  "passed": true
+}

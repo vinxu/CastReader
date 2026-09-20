@@ -1,0 +1,15 @@
+{
+  "versionId": "4a052397-9a76-46f7-8137-2998c92ad14c",
+  "version": "1.2.42",
+  "versionState": "WAITING_FOR_REVIEW",
+  "buildId": "526e2914-8834-4706-bc79-62fe41a5743d",
+  "build": "64",
+  "buildState": "VALID",
+  "submissionId": "c1501e0f-69a3-4238-b58f-2bac9818b971",
+  "submissionState": "WAITING_FOR_REVIEW",
+  "submittedDate": "2026-09-20T07:13:39.658Z",
+  "releaseType": "AFTER_APPROVAL",
+  "localeCount": 11,
+  "metadataMatchesIntendedDiff": true,
+  "passed": true
+}

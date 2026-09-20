@@ -1,0 +1,22 @@
+{
+  "mode": "execute",
+  "resumed": false,
+  "submission": {
+    "id": "c1501e0f-69a3-4238-b58f-2bac9818b971",
+    "state": "WAITING_FOR_REVIEW",
+    "submittedDate": "2026-09-20T07:13:39.658Z",
+    "items": [
+      {
+        "id": "YzE1MDFlMGYtNjlhMy00MjM4LWI1OGYtMmJhYzk4MThiOTcxfDZ8ODkxNjY1MDUx",
+        "state": "READY_FOR_REVIEW",
+        "appStoreVersionId": "4a052397-9a76-46f7-8137-2998c92ad14c"
+      }
+    ]
+  },
+  "version": {
+    "id": "4a052397-9a76-46f7-8137-2998c92ad14c",
+    "version": "1.2.42",
+    "state": "WAITING_FOR_REVIEW",
+    "releaseType": "AFTER_APPROVAL"
+  }
+}

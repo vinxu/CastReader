@@ -1,0 +1,24 @@
+{
+  "mode": "dry-run",
+  "canExecute": true,
+  "blockingState": null,
+  "create": {
+    "data": {
+      "type": "appStoreVersions",
+      "attributes": {
+        "platform": "IOS",
+        "versionString": "1.2.42",
+        "copyright": "© 2026 CastReader Inc.",
+        "releaseType": "AFTER_APPROVAL"
+      },
+      "relationships": {
+        "app": {
+          "data": {
+            "type": "apps",
+            "id": "6757636395"
+          }
+        }
+      }
+    }
+  }
+}

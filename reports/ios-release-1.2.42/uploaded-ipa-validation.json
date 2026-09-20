@@ -1,0 +1,36 @@
+{
+  "products": [
+    {
+      "product": "CastReader.app",
+      "bundle": "com.same.castreader",
+      "version": "1.2.42",
+      "build": "64",
+      "signatureValid": true,
+      "get-task-allow": false,
+      "team": "KQW6UNZE8J"
+    },
+    {
+      "product": "CastReader Share Extension.appex",
+      "bundle": "com.same.castreader.ShareExtension",
+      "version": "1.2.42",
+      "build": "64",
+      "signatureValid": true,
+      "get-task-allow": false,
+      "team": "KQW6UNZE8J"
+    },
+    {
+      "product": "CastReader Widget.appex",
+      "bundle": "com.same.castreader.Widget",
+      "version": "1.2.42",
+      "build": "64",
+      "signatureValid": true,
+      "get-task-allow": false,
+      "team": "KQW6UNZE8J"
+    }
+  ],
+  "ipa": "build/appstore-1.2.42-64/CastReader.ipa",
+  "ipaBytes": 42944125,
+  "ipaSHA256": "8cf7a4d51170e9f1d3eb7cbb54e5a616ac6064c6eaa7e066809f1842caaf604a",
+  "uploadSucceededAt": "2026-09-20T15:07:23+08:00",
+  "passed": true
+}

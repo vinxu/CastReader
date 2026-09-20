@@ -1,0 +1,26 @@
+{
+  "measured": "previous actual audio queue completion to next actual playing (device log, not page commit only)",
+  "samples": [
+    {
+      "endOfPreviousAudio": "14:49:17.648",
+      "confirmedPage": "14:49:17.918",
+      "nextAudioPlaying": "14:49:18.023",
+      "gapMs": 375,
+      "prefetchHit": true
+    },
+    {
+      "endOfPreviousAudio": "14:49:43.618",
+      "confirmedPage": "14:49:43.817",
+      "nextAudioPlaying": "14:49:43.924",
+      "gapMs": 306,
+      "prefetchHit": true
+    }
+  ],
+  "freshExplainAfterManualNavigation": {
+    "request": "14:53:59.725",
+    "playing": "14:54:15.917",
+    "elapsedMs": 16192,
+    "note": "New plan/audio generation after manual page change; not a prefetched automatic page transition"
+  },
+  "source": "weread-final-progress.log"
+}

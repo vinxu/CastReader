@@ -1,0 +1,40 @@
+{
+  "versionId": "4a052397-9a76-46f7-8137-2998c92ad14c",
+  "reviewDetailsId": "6047806a-9545-4e42-864a-06fa326c7612",
+  "fields": {
+    "contactFirstName": {
+      "sameAsPublished": true,
+      "present": true
+    },
+    "contactLastName": {
+      "sameAsPublished": true,
+      "present": true
+    },
+    "contactPhone": {
+      "sameAsPublished": true,
+      "present": true
+    },
+    "contactEmail": {
+      "sameAsPublished": true,
+      "present": true
+    },
+    "demoAccountName": {
+      "sameAsPublished": true,
+      "present": false
+    },
+    "demoAccountPassword": {
+      "sameAsPublished": true,
+      "present": false
+    },
+    "demoAccountRequired": {
+      "sameAsPublished": true,
+      "present": true
+    },
+    "notes": {
+      "sameAsPublished": true,
+      "present": true
+    }
+  },
+  "valuesRedacted": true,
+  "passed": true
+}

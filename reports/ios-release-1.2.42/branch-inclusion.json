@@ -1,5 +1,5 @@
 {
-  "candidate": "d1650452ac4daf66dc8ecc1558baca714252285b",
+  "candidate": "1ce1e560fd2aba335d18502f1c1992fbcd4f52d9",
   "required": [
     {
       "commit": "b6dd4d7c6f2be0cd0f3c04e9c89f3bbd8273a56c",
@@ -60,9 +60,17 @@
     {
       "commit": "d4e427c9314edd1cb5fca6834d5ba73be1476a89",
       "included": true
+    },
+    {
+      "commit": "d1650452ac4daf66dc8ecc1558baca714252285b",
+      "included": true
+    },
+    {
+      "commit": "1ce1e560fd2aba335d18502f1c1992fbcd4f52d9",
+      "included": true
     }
   ],
   "preMergeCandidateRejectedForMissingImages": true,
-  "buildGateRequiredFinalFix": "d1650452ac4daf66dc8ecc1558baca714252285b",
+  "buildGateRequiredFinalFix": "1ce1e560fd2aba335d18502f1c1992fbcd4f52d9",
   "buildGatePassed": true
 }
