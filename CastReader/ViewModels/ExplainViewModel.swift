@@ -1051,6 +1051,52 @@ final class ExplainViewModel: ObservableObject {
         startFromPrefetched(prefetched, allowAccessRefresh: true)
     }
 
+    /// A visible WeRead page may arrive just before its speculative audio and
+    /// marks are ready. Adopt that work without starting a duplicate plan.
+    /// The normal content-generation token still fences every user page/mode
+    /// change, and cancellation propagates to the detached preparation task.
+    func startFromPendingPagePrefetch(_ work: Task<PrefetchedFirstBlock, Error>) {
+        guard status == .idle else { work.cancel(); return }
+        beginFreshContentGeneration()
+        let generation = contentGeneration
+        let started = Date()
+        activate()
+        status = .planning
+        stageText = AppLocalized("继续讲解…")
+        orchestrationTask = Task { [weak self] in
+            let deadline = Task {
+                do {
+                    // This is a stalled-request guard, not a cache-hit deadline:
+                    // cancelling healthy cloud work after a few seconds only
+                    // adds another complete plan/TTS round trip.
+                    try await Task.sleep(nanoseconds: 15_000_000_000)
+                    work.cancel()
+                } catch { }
+            }
+            defer { deadline.cancel() }
+            do {
+                let payload = try await withTaskCancellationHandler {
+                    try await work.value
+                } onCancel: {
+                    work.cancel()
+                }
+                guard let self, !Task.isCancelled,
+                      generation == self.contentGeneration, self.isActive else { return }
+                self.orchestrationTask = nil
+                self.status = .idle
+                ReaderRunLog.write("WEREAD explain adopted ready waitMs=\(Int(Date().timeIntervalSince(started) * 1000))")
+                self.startFromPrefetched(payload)
+            } catch {
+                guard let self, !Task.isCancelled,
+                      generation == self.contentGeneration, self.isActive else { return }
+                self.orchestrationTask = nil
+                self.status = .idle
+                ReaderRunLog.write("WEREAD explain adopted fallback waitMs=\(Int(Date().timeIntervalSince(started) * 1000)) error=\(error.localizedDescription)")
+                self.start()
+            }
+        }
+    }
+
     private func startFromPrefetched(_ prefetched: PrefetchedFirstBlock, allowAccessRefresh: Bool) {
         guard status == .idle || isErrorState else { return }
         guard prefetched.matchesCurrentSettings else {

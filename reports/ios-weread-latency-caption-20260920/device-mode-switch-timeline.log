@@ -1,0 +1,116 @@
+10:54:46.522 WEREAD explain preload ready source=23754b23 next=577aeeb7 blocks=1
+10:55:58.716 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-0
+10:55:58.749 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-0
+10:56:02.174 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-1
+10:56:02.207 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-1
+10:56:04.556 WEREAD page commit prior=23754b23 next=7053697a confirmed=true epoch=22 cols= geometry=fillText glyphs=319 paras=1
+10:56:04.560 WEREAD explain preload consume next=7053697a hit=Y match=199c predicted=1.00 visible=0.62
+10:56:04.560 WEREAD explain preload invalidated reason=page-commit-consumed
+10:56:04.575 WEREAD explain preload invalidated reason=prediction-changed
+10:56:04.576 WEREAD explain preload start source=7053697a next=ad915f3e paras=3
+10:56:04.631 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-0
+10:56:04.698 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-0
+10:56:07.134 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-1
+10:56:07.171 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-1
+10:56:08.672 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-2
+10:56:08.727 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-2
+10:56:15.578 WEREAD page commit prior=7053697a next=bbfd4d5e confirmed=true epoch=23 cols= geometry=fillText glyphs=283 paras=3
+10:56:15.583 WEREAD explain preload adopted next=bbfd4d5e
+10:56:15.583 WEREAD explain preload invalidated reason=page-commit-miss
+10:56:15.587 WEREAD explain preload invalidated reason=prediction-changed
+10:56:17.801 WEREAD explain adopted ready waitMs=2215
+10:56:17.830 WEREAD explain preload start source=bbfd4d5e next=84db65f4 paras=2
+10:56:17.901 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-0
+10:56:17.933 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-0
+10:56:20.535 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-1
+10:56:20.565 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-1
+10:56:21.697 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-2
+10:56:21.752 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-2
+10:56:24.129 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-3
+10:56:24.170 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-3
+10:56:28.466 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-0
+10:56:28.525 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-0
+10:56:31.813 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-1
+10:56:31.849 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-1
+10:56:33.979 WEREAD explain preload ready source=bbfd4d5e next=84db65f4 blocks=1
+10:56:36.411 WEREAD page commit prior=bbfd4d5e next=7af1a393 confirmed=true epoch=24 cols= geometry=fillText glyphs=294 paras=2
+10:56:36.418 WEREAD explain preload consume next=7af1a393 hit=Y match=303c predicted=1.00 visible=1.00
+10:56:36.418 WEREAD explain preload invalidated reason=page-commit-consumed
+10:56:36.438 WEREAD explain preload invalidated reason=prediction-changed
+10:56:36.440 WEREAD explain preload start source=7af1a393 next=3e1565a paras=3
+10:56:36.481 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-0
+10:56:36.512 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-0
+10:56:39.112 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-1
+10:56:39.152 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-1
+10:56:43.276 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-2
+10:56:43.312 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-2
+10:56:44.329 WEREAD explain preload ready source=7af1a393 next=3e1565a blocks=2
+10:56:45.406 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-3
+10:56:45.441 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-3
+10:56:46.953 WEREAD explain preload invalidated reason=mode-switched-to-read
+10:56:46.956 HOST mode switch target=朗读 continue=Y
+10:56:49.103 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-0
+10:56:49.131 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-0
+10:56:51.868 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-1
+10:56:51.902 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-1
+10:56:56.423 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-2
+10:56:56.485 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-2
+10:56:58.774 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-0
+10:56:58.813 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-0
+10:57:01.148 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-1
+10:57:01.185 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-1
+10:57:03.274 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-2
+10:57:03.335 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-2
+10:57:06.550 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-3
+10:57:06.592 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-3
+10:57:08.763 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-4
+10:57:08.825 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-4
+10:57:11.231 WEREAD page commit prior=7af1a393 next=b589f103 confirmed=true epoch=25 cols= geometry=fillText glyphs=290 paras=3
+10:57:11.247 WEREAD explain preload invalidated reason=prediction-changed
+10:57:12.453 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-850010000
+10:57:12.487 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-850010000
+10:57:15.142 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-850010001
+10:57:15.224 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-850010001
+10:57:19.334 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-0
+10:57:19.367 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-0
+10:57:21.521 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-1
+10:57:21.557 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-1
+10:57:24.775 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-2
+10:57:24.829 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-2
+10:57:26.841 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-3
+10:57:26.900 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-3
+10:57:28.557 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=2-0
+10:57:28.593 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=2-0
+10:57:29.667 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=2-1
+10:57:29.702 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=2-1
+10:57:33.151 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=2-2
+10:57:33.191 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=2-2
+10:57:33.376 WEREAD page commit prior=b589f103 next=2bac3db9 confirmed=true epoch=26 cols= geometry=fillText glyphs=290 paras=2
+10:57:33.392 WEREAD explain preload invalidated reason=prediction-changed
+10:57:36.771 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-850020000
+10:57:36.815 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-850020000
+10:57:37.802 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-850020001
+10:57:37.863 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-850020001
+10:57:41.982 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-850020002
+10:57:42.016 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-850020002
+10:57:44.485 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-850020003
+10:57:44.549 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-850020003
+10:57:46.033 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-850020004
+10:57:46.096 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-850020004
+10:57:49.379 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-850020005
+10:57:49.415 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-850020005
+10:57:51.677 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-850020006
+10:57:51.720 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-850020006
+10:57:53.413 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-850020007
+10:57:53.470 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-850020007
+10:57:55.011 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=1-850020008
+10:57:55.085 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=1-850020008
+10:57:56.041 WEREAD page commit prior=2bac3db9 next=1e28e37c confirmed=true epoch=27 cols= geometry=fillText glyphs=220 paras=2
+10:57:58.155 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-850030000
+10:57:58.197 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-850030000
+10:58:00.188 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-850030001
+10:58:00.230 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-850030001
+10:58:03.099 AUDIO state reason=time-control actual=paused waiting=Y rate=3.00 segment=0-850030002
+10:58:03.203 AUDIO state reason=time-control actual=playing waiting=N rate=3.00 segment=0-850030002
+10:58:05.263 AUDIO route removed segment=0-850030002
+11:00:17.746 SPEED selected=1.25 effective=1.25 playing=N

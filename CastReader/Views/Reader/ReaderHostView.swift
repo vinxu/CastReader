@@ -1582,18 +1582,7 @@ private struct ReaderLandscapeExplainOverlay: View {
     @ViewBuilder
     private var caption: some View {
         if shouldShowCaption {
-            Text(vm.explanationText)
-                .font(.callout.weight(.medium))
-                .foregroundColor(AppTheme.foreground)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .frame(maxWidth: 760)
-                .background(.regularMaterial, in: Capsule())
-                .overlay(Capsule().stroke(AppTheme.mutedForeground.opacity(0.12), lineWidth: 0.5))
-                .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            ExplainPlaybackCaptionBubble(text: vm.explanationText, maxWidth: 760)
         }
     }
 

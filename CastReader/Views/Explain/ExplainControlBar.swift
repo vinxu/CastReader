@@ -21,8 +21,8 @@ enum ExplainSegmentProgressCopy {
     }
 }
 
-/// Shared Kindle-style single-line caption. The bubble keeps its intrinsic
-/// width while the outer frame controls center/trailing alignment.
+/// Display the complete current subtitle, wrapping when necessary. Its parent
+/// anchors the bottom above the fixed console so captions never repaginate text.
 struct ExplainPlaybackCaptionBubble: View {
     let text: String
     var foregroundColor: Color = AppTheme.foreground
@@ -34,16 +34,17 @@ struct ExplainPlaybackCaptionBubble: View {
         Text(text)
             .font(.callout.weight(.medium))
             .foregroundColor(foregroundColor)
-            .lineLimit(1)
-            .truncationMode(.tail)
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
+            .multilineTextAlignment(.leading)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
             .background {
-                Capsule()
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(.ultraThinMaterial)
-                    .overlay(Capsule().fill(AppTheme.surface.opacity(0.18)))
+                    .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(AppTheme.surface.opacity(0.18)))
             }
-            .overlay(Capsule().stroke(AppTheme.mutedForeground.opacity(0.18), lineWidth: 0.5))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(AppTheme.mutedForeground.opacity(0.18), lineWidth: 0.5))
             .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
             .frame(maxWidth: maxWidth, alignment: alignment)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -105,7 +106,9 @@ struct ExplainControlBar: View {
                 if shouldShowCaption {
                     ExplainPlaybackCaptionBubble(text: vm.explanationText)
                         .padding(.horizontal, 18)
-                        .offset(y: ReaderPlaybackBarLayoutContract.explainCaptionOffset)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(height: 0, alignment: .bottom)
+                        .offset(y: -8)
                         .allowsHitTesting(false)
                         .zIndex(1)
                 } else if let errorText {
@@ -115,7 +118,9 @@ struct ExplainControlBar: View {
                         accessibilityIdentifier: "readerExplainError"
                     )
                     .padding(.horizontal, 18)
-                    .offset(y: ReaderPlaybackBarLayoutContract.explainCaptionOffset)
+                    .fixedSize(horizontal: false, vertical: true)
+                        .frame(height: 0, alignment: .bottom)
+                        .offset(y: -8)
                     .allowsHitTesting(false)
                     .zIndex(1)
                 }

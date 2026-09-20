@@ -1,0 +1,86 @@
+{
+  "originalGapSeconds": 11.649,
+  "originalStagesSeconds": {
+    "pageToPlanRequest": 0.031,
+    "extractPlan": 4.03,
+    "firstTTSStartOverhead": 0.021,
+    "allThreeTTSPieces": 6.587,
+    "composeAndEnqueue": 0.858,
+    "audioStart": 0.122
+  },
+  "samePathReproduction": {
+    "pageFingerprint": "8a2e9ba0",
+    "sourceFingerprint": "ce7457ee",
+    "beforeCommit": "10:13:45.949",
+    "beforePlaying": "10:13:58.321",
+    "beforeGapSeconds": 12.372,
+    "afterCommit": "10:21:40.946",
+    "afterPlaying": "10:21:41.031",
+    "afterGapSeconds": 0.085,
+    "afterPreviousPageFinished": "10:21:40.791",
+    "afterEndToEndGapSeconds": 0.24,
+    "prefetchTextCoverage": {
+      "predicted": 1.0,
+      "visible": 1.0
+    }
+  },
+  "caption": {
+    "previous": "single line with trailing ellipsis",
+    "after": "full text wraps above fixed 72pt playback region",
+    "observedOnPhone": "不管是冬天裹着裘皮，还是夏日穿着轻便朴素的衣服，",
+    "observedLines": 2,
+    "readerRepaginationObserved": false
+  },
+  "verification": "Physical iPhone Mirroring, WeRead The Lady of the Camellias + Cao Cao, normal-speed reproduction and 3x stress playback. Final candidate observed 18 automatic page commits: 17 played and one short page auto-skipped. 13 reused prefetch; four correctly fell back because predicted content was unavailable or did not match.",
+  "notClaimed": [
+    "No simulator verification in this iteration.",
+    "No cloud worker acceleration or universal zero-latency claim.",
+    "Cold first start still requires generation; observed 10.53 seconds.",
+    "Kindle shared caption code compiled but not navigated in this WeRead task.",
+    "Cold/mismatched preview cross-page generation still measured 6.827–9.257 seconds.",
+    "15-second adoption watchdog and cancellation while awaiting the adopted task were not deterministically verified on this phone.",
+    "No changes to language/text compatibility thresholds or late mark timing were made."
+  ],
+  "inFlightSameTarget": {
+    "targetFingerprint": "bbea001b",
+    "beforeCommit": "10:30:28.663",
+    "beforePlaying": "10:30:39.673",
+    "beforeGapSeconds": 11.01,
+    "afterCommit": "10:48:44.250",
+    "afterPlaying": "10:48:44.788",
+    "afterGapSeconds": 0.538,
+    "afterPlaybackRate": 3.0
+  },
+  "finalCandidate": {
+    "readyPrefetchCount": 6,
+    "readyCommitToAudioSeconds": [
+      0.152,
+      0.118,
+      0.126,
+      0.165,
+      0.13,
+      0.096
+    ],
+    "adoptedInFlightCount": 7,
+    "adoptedCommitToAudioSeconds": [
+      2.064,
+      1.645,
+      1.097,
+      0.538,
+      2.392,
+      2.067,
+      0.607
+    ],
+    "freshGenerationCount": 4,
+    "freshCommitToAudioSeconds": [
+      9.004,
+      7.446,
+      6.827,
+      9.257
+    ],
+    "shortPageSkipped": 1,
+    "adoptionFallbacks": 0
+  },
+  "cancellationCheck": "10:50:48 previous-page click was rejected while automatic turn was busy and is NOT a passed cancellation test. Final log confirms mode switch at 10:56:46.956 cancelled speculative explanation preload; Read started at 10:56:49.131 and continued. This was after adopted/ready audio had begun, not during awaiting an adopted task. That precise edge and the 15-second watchdog remain unverified.",
+  "finalDeviceState": "iPhone Mirroring reconnected; playback speed display restored to 1.2x at 11:00; paused in Read mode."
+}

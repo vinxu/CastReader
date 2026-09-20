@@ -1,0 +1,163 @@
+[
+  {
+    "commit": "10:47:12.334",
+    "fp": "6d50c066",
+    "path": "adopted",
+    "playing": "10:47:14.398",
+    "gap": 2.064,
+    "previousAudioEndedTurnStarted": "10:47:12.155",
+    "endToEndGapSeconds": 2.243
+  },
+  {
+    "commit": "10:47:21.914",
+    "fp": "ce7457ee",
+    "path": "adopted",
+    "playing": "10:47:23.559",
+    "gap": 1.645,
+    "previousAudioEndedTurnStarted": "10:47:21.305",
+    "endToEndGapSeconds": 2.254
+  },
+  {
+    "commit": "10:47:37.055",
+    "fp": "8a2e9ba0",
+    "path": "ready",
+    "playing": "10:47:37.207",
+    "gap": 0.152,
+    "previousAudioEndedTurnStarted": "10:47:36.444",
+    "endToEndGapSeconds": 0.763
+  },
+  {
+    "commit": "10:48:01.399",
+    "fp": "853754e0",
+    "path": "ready",
+    "playing": "10:48:01.517",
+    "gap": 0.118,
+    "previousAudioEndedTurnStarted": "10:48:00.794",
+    "endToEndGapSeconds": 0.723
+  },
+  {
+    "commit": "10:48:10.698",
+    "fp": "b773dc40",
+    "path": "adopted",
+    "playing": "10:48:11.795",
+    "gap": 1.097,
+    "previousAudioEndedTurnStarted": "10:48:10.083",
+    "endToEndGapSeconds": 1.712
+  },
+  {
+    "commit": "10:48:35.143",
+    "fp": "cb25c13",
+    "path": "ready",
+    "playing": "10:48:35.269",
+    "gap": 0.126,
+    "previousAudioEndedTurnStarted": "10:48:34.533",
+    "endToEndGapSeconds": 0.736
+  },
+  {
+    "commit": "10:48:44.250",
+    "fp": "bbea001b",
+    "path": "adopted",
+    "playing": "10:48:44.788",
+    "gap": 0.538,
+    "previousAudioEndedTurnStarted": "10:48:43.664",
+    "endToEndGapSeconds": 1.124
+  },
+  {
+    "commit": "10:48:52.594",
+    "fp": "4be73b8b",
+    "path": "adopted",
+    "playing": "10:48:54.986",
+    "gap": 2.392,
+    "previousAudioEndedTurnStarted": "10:48:51.996",
+    "endToEndGapSeconds": 2.99
+  },
+  {
+    "commit": "10:49:16.133",
+    "fp": "b0539fab",
+    "path": "ready",
+    "playing": "10:49:16.298",
+    "gap": 0.165,
+    "previousAudioEndedTurnStarted": "10:49:15.939",
+    "endToEndGapSeconds": 0.359
+  },
+  {
+    "commit": "10:49:34.837",
+    "fp": "c1500ee7",
+    "path": "ready",
+    "playing": "10:49:34.967",
+    "gap": 0.13,
+    "previousAudioEndedTurnStarted": "10:49:33.768",
+    "endToEndGapSeconds": 1.199
+  },
+  {
+    "commit": "10:49:50.172",
+    "fp": "632927cd",
+    "path": "fresh",
+    "playing": null,
+    "gap": null,
+    "previousAudioEndedTurnStarted": "10:49:49.925"
+  },
+  {
+    "commit": "10:49:50.923",
+    "fp": "8ba837e6",
+    "path": "fresh",
+    "playing": "10:49:59.927",
+    "gap": 9.004,
+    "previousAudioEndedTurnStarted": "10:49:50.178",
+    "endToEndGapSeconds": 9.749
+  },
+  {
+    "commit": "10:50:06.463",
+    "fp": "babcce3e",
+    "path": "fresh",
+    "playing": "10:50:13.909",
+    "gap": 7.446,
+    "previousAudioEndedTurnStarted": "10:50:05.874",
+    "endToEndGapSeconds": 8.035
+  },
+  {
+    "commit": "10:50:20.931",
+    "fp": "219121ae",
+    "path": "adopted",
+    "playing": "10:50:22.998",
+    "gap": 2.067,
+    "previousAudioEndedTurnStarted": "10:50:20.317",
+    "endToEndGapSeconds": 2.681
+  },
+  {
+    "commit": "10:50:32.173",
+    "fp": "b7839383",
+    "path": "adopted",
+    "playing": "10:50:32.780",
+    "gap": 0.607,
+    "previousAudioEndedTurnStarted": "10:50:31.575",
+    "endToEndGapSeconds": 1.205
+  },
+  {
+    "commit": "10:50:48.350",
+    "fp": "edd58b6f",
+    "path": "fresh",
+    "playing": "10:50:55.177",
+    "gap": 6.827,
+    "previousAudioEndedTurnStarted": "10:50:47.745",
+    "endToEndGapSeconds": 7.432
+  },
+  {
+    "commit": "10:51:08.520",
+    "fp": "5d87644e",
+    "path": "ready",
+    "playing": "10:51:08.616",
+    "gap": 0.096,
+    "previousAudioEndedTurnStarted": "10:51:08.293",
+    "endToEndGapSeconds": 0.323
+  },
+  {
+    "commit": "10:51:22.901",
+    "fp": "23754b23",
+    "path": "fresh",
+    "playing": "10:51:32.158",
+    "gap": 9.257,
+    "previousAudioEndedTurnStarted": "10:51:22.284",
+    "endToEndGapSeconds": 9.874
+  }
+]

@@ -195,11 +195,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var weReadNativeTOCBookID = ""
     private var resumeReadAfterWeReadTurn = false
     private var resumeExplainAfterWeReadTurn = false
+    // A manual page candidate waits 600 ms before committing. Its immediately
+    // following preview must wait with it, rather than being lost to the old
+    // committed fingerprint. Keep at most one; commit still validates identity.
+    private var deferredWeReadPreview: [String: Any]?
     private var pendingWeReadPreview: WeReadPagePreview?
     private var preparedWeReadPage: WeReadPreparedPage?
     private var weReadPreviewTask: Task<Void, Never>?
     private var preparedWeReadExplanation: WeReadPreparedExplanation?
+    private var pendingWeReadExplanation: WeReadPendingExplanation?
     private var weReadExplainPrefetchTask: Task<Void, Never>?
+    private var weReadExplainPrefetchGeneration: UInt64 = 0
     private var continuousWeReadHandoff: WeReadContinuousHandoff?
     private var activeWeReadCarry: WeReadActiveCarry?
     private var pendingWeReadBoundaryTurn: WeReadBoundaryTurn?
@@ -266,6 +272,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private struct WeReadPreparedExplanation {
         let preview: WeReadPagePreview
         let payload: ExplainViewModel.PrefetchedFirstBlock
+        let voiceID: String
+        let depth: String
+        let requestedLanguage: String
+    }
+
+    private struct WeReadPendingExplanation {
+        let preview: WeReadPagePreview
+        let task: Task<ExplainViewModel.PrefetchedFirstBlock, Error>
+        let voiceLanguage: String
         let voiceID: String
         let depth: String
         let requestedLanguage: String
@@ -1894,9 +1909,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private func receiveWeReadPagePreview(_ payload: [String: Any]) {
         let sourceFingerprint = (payload["sourceFingerprint"] as? String) ?? ""
         let contentFingerprint = (payload["contentFingerprint"] as? String) ?? ""
-        guard !sourceFingerprint.isEmpty,
-              sourceFingerprint == lastWeReadFingerprint,
-              !contentFingerprint.isEmpty else { return }
+        guard !sourceFingerprint.isEmpty, !contentFingerprint.isEmpty else { return }
+        guard sourceFingerprint == lastWeReadFingerprint else {
+            if weReadManualCommitTask != nil {
+                deferredWeReadPreview = payload
+                ReaderRunLog.write("WEREAD preload preview deferred source=\(String(sourceFingerprint.prefix(12))) awaiting-manual-commit")
+            }
+            return
+        }
         let raw = payload["paragraphs"] as? [[String: Any]] ?? []
         let texts = raw.compactMap {
             ($0["text"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2056,15 +2076,27 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         ReaderRunLog.write(
             "WEREAD explain preload start source=\(String(preview.sourceFingerprint.prefix(12))) next=\(String(preview.contentFingerprint.prefix(12))) paras=\(preview.page.count)"
         )
+        let generation = weReadExplainPrefetchGeneration
+        let work = Task {
+            try await vm.prefetchFirstBlock(
+                for: target,
+                previousSummary: previousSummary,
+                textFingerprint: preview.contentFingerprint
+            )
+        }
+        let voiceLanguage = settings.explainLangOrNil ?? preview.language
+        pendingWeReadExplanation = WeReadPendingExplanation(
+            preview: preview, task: work, voiceLanguage: voiceLanguage,
+            voiceID: settings.voice(for: voiceLanguage), depth: depth,
+            requestedLanguage: requestedLanguage
+        )
         weReadExplainPrefetchTask = Task { [weak self] in
             guard let self else { return }
             do {
-                let payload = try await vm.prefetchFirstBlock(
-                    for: target,
-                    previousSummary: previousSummary,
-                    textFingerprint: preview.contentFingerprint
-                )
+                let payload = try await work.value
                 try Task.checkCancellation()
+                guard generation == self.weReadExplainPrefetchGeneration else { return }
+                self.pendingWeReadExplanation = nil
                 let currentSettings = AppSettings.shared
                 let currentToken = [
                     self.pendingWeReadPreview?.sourceFingerprint ?? "",
@@ -2090,12 +2122,48 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     "WEREAD explain preload ready source=\(String(preview.sourceFingerprint.prefix(12))) next=\(String(preview.contentFingerprint.prefix(12))) blocks=\(payload.totalBlocks)"
                 )
             } catch is CancellationError {
+                guard generation == self.weReadExplainPrefetchGeneration else { return }
+                self.pendingWeReadExplanation = nil
                 self.weReadExplainPrefetchTask = nil
             } catch {
+                guard generation == self.weReadExplainPrefetchGeneration else { return }
+                self.pendingWeReadExplanation = nil
                 self.weReadExplainPrefetchTask = nil
                 ReaderRunLog.write("WEREAD explain preload miss error=\(error.localizedDescription)")
             }
         }
+    }
+
+    /// Transfer matching work to the committed page instead of cancelling a
+    /// nearly finished TTS/compose request and issuing the same plan again.
+    private func takePendingWeReadExplanation(
+        for candidate: WeReadPageCandidate
+    ) -> Task<ExplainViewModel.PrefetchedFirstBlock, Error>? {
+        guard preparedWeReadExplanation == nil,
+              let pending = pendingWeReadExplanation else { return nil }
+        let settings = AppSettings.shared
+        guard pending.requestedLanguage == settings.explainLanguage,
+              WeReadExplainPagePrefetchContract.canConsume(
+                sourceFingerprint: pending.preview.sourceFingerprint,
+                previousFingerprint: candidate.priorFingerprint,
+                predictedContentFingerprint: pending.preview.contentFingerprint,
+                visibleContentFingerprint: candidate.evidence.contentFingerprint,
+                predictedText: pending.preview.page.map(\.text),
+                visibleText: candidate.page.map(\.text),
+                payloadTextFingerprint: pending.preview.contentFingerprint,
+                preparedVoiceID: pending.voiceID,
+                selectedVoiceID: settings.voice(for: pending.voiceLanguage),
+                preparedDepth: pending.depth,
+                selectedDepth: settings.explainDepth
+              ) else { return nil }
+        // Cancel only the speculative observer. The VM now owns the work and
+        // cancels it when this page/mode is left or its bounded wait expires.
+        pendingWeReadExplanation = nil
+        weReadExplainPrefetchGeneration &+= 1
+        weReadExplainPrefetchTask?.cancel()
+        weReadExplainPrefetchTask = nil
+        ReaderRunLog.write("WEREAD explain preload adopted next=\(String(candidate.fingerprint.prefix(12)))")
+        return pending.task
     }
 
     private func consumeWeReadExplainPrefetch(
@@ -2258,6 +2326,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         guard candidate.priorFingerprint == lastWeReadFingerprint,
               candidate.fingerprint != lastWeReadFingerprint || refresh != nil else { return }
 
+        let deferredPreview = deferredWeReadPreview
+        deferredWeReadPreview = nil
         let liveWasReading =
             readVM?.shouldResumeAfterManualLivePageTurn == true
         let liveWasExplaining = !isReadMode &&
@@ -2475,6 +2545,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 }
             } else {
                 cancelWeReadContinuousHandoff(reason: "explain-page-commit")
+                let pending = wasExplaining ? takePendingWeReadExplanation(for: candidate) : nil
                 let prefetched = wasExplaining ? consumeWeReadExplainPrefetch(for: candidate) : nil
                 if !wasExplaining {
                     invalidateWeReadExplainPrefetch(reason: "page-commit-without-resume")
@@ -2485,9 +2556,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 explainVM?.replaceLiveWebPage(
                     candidate.page,
                     language: candidate.language,
-                    autoplay: wasExplaining,
+                    autoplay: wasExplaining && pending == nil,
                     prefetched: prefetched
                 )
+                if let pending {
+                    explainVM?.startFromPendingPagePrefetch(pending)
+                }
                 invalidateWeReadPreview(reason: "explain-page-committed")
             }
         } else {
@@ -2499,6 +2573,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             scheduleWeReadInitialPlayback()
         }
         finishWeReadRefresh(reason: "page-commit")
+        if let deferredPreview,
+           deferredPreview["sourceFingerprint"] as? String == candidate.fingerprint {
+            receiveWeReadPagePreview(deferredPreview)
+        }
     }
 
     /// While one natural sentence spans two visual pages, the audio item stays
@@ -2732,6 +2810,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         weReadPreviewTask = nil
         if !preservePrediction {
             pendingWeReadPreview = nil
+            deferredWeReadPreview = nil
         }
         preparedWeReadPage = nil
         ReaderRunLog.write("WEREAD preload invalidated reason=\(reason) preserve=\(preservePrediction ? "Y" : "N")")
@@ -2761,6 +2840,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func invalidateWeReadExplainPrefetch(reason: String) {
+        weReadExplainPrefetchGeneration &+= 1
+        pendingWeReadExplanation?.task.cancel()
+        pendingWeReadExplanation = nil
         weReadExplainPrefetchTask?.cancel()
         weReadExplainPrefetchTask = nil
         preparedWeReadExplanation = nil

@@ -37,6 +37,9 @@ struct EpubNavigation: Codable, Equatable {
 }
 
 enum EpubNavigationSelection {
+    /// Invalidate only EPUB snapshots when directory selection changes.
+    static let cacheVersion = 1
+
     /// A converter may shift every NCX file number while retaining a correct
     /// in-book TOC. Prefer that independently corroborated source, never guess
     /// individual links from similar titles. Ambiguous/repeated headings do not
@@ -47,15 +50,39 @@ enum EpubNavigationSelection {
         func key(_ text: String) -> String {
             text.precomposedStringWithCanonicalMapping.filter { !$0.isWhitespace }.lowercased()
         }
-        var headings: [String: [Int]] = [:]
+        var headings: [String: Set<Int>] = [:]
         for paragraph in paragraphs {
-            if case .heading = paragraph.type { headings[key(paragraph.text), default: []].append(paragraph.id) }
+            if case .heading = paragraph.type { headings[key(paragraph.text), default: []].insert(paragraph.id) }
+        }
+        func uniqueLabels(_ navigation: EpubNavigation) -> Set<String> {
+            let counts = Dictionary(grouping: navigation.entries.filter { !$0.isGroup }, by: { key($0.title) })
+            return Set(counts.filter { !$0.key.isEmpty && $0.value.count == 1 }.keys)
+        }
+        // Converted books often style headings with <p> or <blockquote>.
+        // Trust exact text at a publisher-provided destination as corroboration,
+        // without searching the body for a replacement link. Distinct locations
+        // with the same label remain ambiguous and cannot vote for a repair.
+        for navigation in usable {
+            let unique = uniqueLabels(navigation)
+            for entry in navigation.entries where !entry.isGroup {
+                let label = key(entry.title)
+                guard unique.contains(label), entry.href != nil,
+                      let index = entry.paragraphIndex, paragraphs.indices.contains(index),
+                      key(paragraphs[index].text) == label else { continue }
+                headings[label, default: []].insert(index)
+            }
         }
         func score(_ navigation: EpubNavigation) -> (matches: Int, conflicts: Int) {
             var matches = 0, conflicts = 0
+            let unique = uniqueLabels(navigation)
             for entry in navigation.entries where !entry.isGroup {
-                guard let indexes = headings[key(entry.title)], indexes.count == 1,
-                      let expected = indexes.first, let actual = entry.paragraphIndex else { continue }
+                guard unique.contains(key(entry.title)),
+                      let indexes = headings[key(entry.title)], indexes.count == 1,
+                      let expected = indexes.first else { continue }
+                guard let actual = entry.paragraphIndex, paragraphs.indices.contains(actual) else {
+                    conflicts += 1
+                    continue
+                }
                 if actual == expected || (actual < expected && paragraphs[actual..<expected].allSatisfy { $0.text.isEmpty }) { matches += 1 }
                 else { conflicts += 1 }
             }

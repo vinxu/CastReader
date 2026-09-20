@@ -1,0 +1,22 @@
+{
+  "parent": "febfeabf869c2f77b57d360e970218899c87aa02",
+  "scope": "Latency/caption sub-scope from iteration snapshots. At explicit user request, consolidated with the independently verified EPUB TOC and PDF OCR memory fixes in one commit. Other pre-existing working-tree changes excluded.",
+  "validation": "Patch applies cleanly to parent; staged whitespace validation passed. Physical-device evidence was captured from the integrated working tree; its full-file hashes are in source-identity.json.",
+  "sourceSHA256": {
+    "CastReader/Services/WebReaderBridge.swift": "ae04aa3a31eddb1eac08748f7e5a725927fda8d38557aa8a72d1a3c079a4f984",
+    "CastReader/ViewModels/ExplainViewModel.swift": "bba8461988eebed2decee6703c5c694592dfdea17bfc3579b6f8647f3d929b50",
+    "CastReader/Views/Explain/ExplainControlBar.swift": "25d56f93cfc3f7dfcad8bae31aa424d3181fa6337a50abf1acb30181148f3907",
+    "CastReader/Views/Reader/ReaderHostView.swift": "3bbfa7886187f9db69d3ef79c786f48cd2047893ec82e2aad068939d886660a2",
+    "CastReader/Views/Kindle/KindleBookView.swift": "f8bb64c9b6515f48303a7d68a15a3880850d17802e499e507ad94599609879c4"
+  },
+  "combinedImportScope": {
+    "sourceCommit": "0641e1d",
+    "validationReport": "reports/import-device-acceptance-20260920/README.md",
+    "includes": [
+      "EPUB TOC target selection and cache invalidation",
+      "PDF OCR raster size and temporary-memory lifetime",
+      "EPUB/PDF regression tests and registration",
+      "EPUB/PDF diagnosis and physical iPhone acceptance reports"
+    ]
+  }
+}

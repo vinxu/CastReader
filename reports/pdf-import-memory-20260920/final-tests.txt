@@ -1,0 +1,12 @@
+Test Suite 'Selected tests' started at 2026-09-20 10:11:04.373.
+Test Suite 'CastReaderTests.xctest' started at 2026-09-20 10:11:04.374.
+Test Suite 'PDFImportMemoryTests' started at 2026-09-20 10:11:04.374.
+Test Case '-[CastReaderTests.PDFImportMemoryTests testReportedMoneyPDFImportsEveryPageWithoutExcessiveRasterMemory]' started.
+Test Case '-[CastReaderTests.PDFImportMemoryTests testReportedMoneyPDFImportsEveryPageWithoutExcessiveRasterMemory]' passed (85.551 seconds).
+Test Suite 'PDFImportMemoryTests' passed at 2026-09-20 10:12:29.927.
+	 Executed 1 test, with 0 failures (0 unexpected) in 85.551 (85.552) seconds
+Test Suite 'CastReaderTests.xctest' passed at 2026-09-20 10:12:29.927.
+	 Executed 1 test, with 0 failures (0 unexpected) in 85.551 (85.553) seconds
+Test Suite 'Selected tests' passed at 2026-09-20 10:12:29.928.
+	 Executed 1 test, with 0 failures (0 unexpected) in 85.551 (85.554) seconds
+** TEST EXECUTE SUCCEEDED **

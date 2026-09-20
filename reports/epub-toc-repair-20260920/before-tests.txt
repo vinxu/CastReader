@@ -1,0 +1,20 @@
+Test Suite 'Selected tests' started at 2026-09-20 09:51:12.991.
+Test Suite 'CastReaderTests.xctest' started at 2026-09-20 09:51:12.991.
+Test Suite 'EpubNavigationTests' started at 2026-09-20 09:51:12.991.
+Test Case '-[CastReaderTests.EpubNavigationTests testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags]' started.
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/EpubNavigationTests.swift:173: error: -[CastReaderTests.EpubNavigationTests testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags] : XCTAssertEqual failed: ("ncx") is not equal to ("guide")
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/EpubNavigationTests.swift:174: error: -[CastReaderTests.EpubNavigationTests testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags] : XCTAssertEqual failed: ("nil") is not equal to ("Optional(CastReader.EpubNavigation.Source.ncx)")
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/EpubNavigationTests.swift:175: error: -[CastReaderTests.EpubNavigationTests testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags] : XCTAssertEqual failed: ("["Chapter B", "Chapter C", "三"]") is not equal to ("["Chapter A", "Chapter B", "Chapter C", "三", "四"]")
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/EpubNavigationTests.swift:177: error: -[CastReaderTests.EpubNavigationTests testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags] : XCTAssertEqual failed: ("[2, 4, 6]") is not equal to ("[0, 2, 4, 6, 8]")
+Test Case '-[CastReaderTests.EpubNavigationTests testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags]' failed (0.156 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testOldEPUBDirectoryCacheRebuildsAndPreservesPosition]' started.
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/EpubNavigationTests.swift:197: error: -[CastReaderTests.EpubNavigationTests testOldEPUBDirectoryCacheRebuildsAndPreservesPosition] : XCTAssertEqual failed: ("nil") is not equal to ("Optional(CastReader.EpubNavigation.Source.guide)")
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/EpubNavigationTests.swift:198: error: -[CastReaderTests.EpubNavigationTests testOldEPUBDirectoryCacheRebuildsAndPreservesPosition] : XCTAssertEqual failed: ("nil") is not equal to ("Optional([0, 2, 4, 6, 8])")
+Test Case '-[CastReaderTests.EpubNavigationTests testOldEPUBDirectoryCacheRebuildsAndPreservesPosition]' failed (0.210 seconds).
+Test Suite 'EpubNavigationTests' failed at 2026-09-20 09:51:13.359.
+	 Executed 2 tests, with 6 failures (0 unexpected) in 0.367 (0.368) seconds
+Test Suite 'CastReaderTests.xctest' failed at 2026-09-20 09:51:13.359.
+	 Executed 2 tests, with 6 failures (0 unexpected) in 0.367 (0.368) seconds
+Test Suite 'Selected tests' failed at 2026-09-20 09:51:13.359.
+	 Executed 2 tests, with 6 failures (0 unexpected) in 0.367 (0.369) seconds
+** TEST FAILED **

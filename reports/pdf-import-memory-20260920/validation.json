@@ -1,0 +1,39 @@
+{
+  "worktree": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914",
+  "baseHead": "febfeabf869c2f77b57d360e970218899c87aa02",
+  "changedFiles": {
+    "CastReader/Utils/DocumentBuilder.swift": "93a08ad27b6e31ca89cdf7273e718cd60d6614a997bae6c95af028eecf27b789",
+    "CastReaderTests/PDFImportMemoryTests.swift": "005a917630738c107542399db62d750d47ebf51ee3fd9b6273b3f30d886f2827"
+  },
+  "projectRegistration": "PDFImportMemoryTests.swift registered once via xcodeproj Ruby gem; unrelated existing project edits preserved",
+  "samplePages": 242,
+  "contentPages": 241,
+  "blankPagesOneBased": [
+    8
+  ],
+  "paragraphsBefore": 3507,
+  "paragraphsAfter": 3507,
+  "peakBytesBefore": 4275288960,
+  "peakBytesAfter": 836526464,
+  "peakReductionPercent": 80.4,
+  "secondsBefore": 98.5323920249939,
+  "secondsAfter": 85.43408703804016,
+  "suite": {
+    "total": 19,
+    "passed": 18,
+    "skipped": 1,
+    "failed": 0,
+    "resultBundle": "/tmp/CastReaderPDFRepair20260920/fixed.xcresult"
+  },
+  "finalColdImport": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "peakLimitBytes": 1073741824,
+    "resultBundle": "/tmp/CastReaderPDFRepair20260920/final.xcresult"
+  },
+  "limitations": [
+    "Simulator memory measurements; no customer jetsam log supplied",
+    "No physical device installation or App Store release"
+  ]
+}

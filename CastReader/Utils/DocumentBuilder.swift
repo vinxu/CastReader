@@ -232,7 +232,7 @@ enum DocumentBuilder {
         pageTexts.reserveCapacity(pdf.pageCount)
         for pageIndex in 0..<pdf.pageCount {
             try Task.checkCancellation()
-            let pageText = pdf.page(at: pageIndex)?.string ?? ""
+            let pageText = autoreleasepool { pdf.page(at: pageIndex)?.string ?? "" }
             try Task.checkCancellation()
             pageTexts.append(pageText)
         }
@@ -363,56 +363,70 @@ enum DocumentBuilder {
     /// rendered luminance probe prevents one truly blank page from forcing the
     /// entire document into OCR reflow, while scanned text/pages remain visible.
     private static func pdfPageHasVisibleInkCancellable(_ page: PDFPage) throws -> Bool {
-        try Task.checkCancellation()
-        let bounds = page.bounds(for: .mediaBox)
-        guard bounds.width > 1, bounds.height > 1 else { return false }
-        let scale = 180 / max(bounds.width, bounds.height)
-        try Task.checkCancellation()
-        let thumbnail = page.thumbnail(
-            of: CGSize(width: bounds.width * scale, height: bounds.height * scale),
-            for: .mediaBox
-        )
-        try Task.checkCancellation()
-        guard let input = CIImage(image: thumbnail),
-              let filter = CIFilter(name: "CIAreaAverage") else { return true }
-        filter.setValue(input, forKey: kCIInputImageKey)
-        filter.setValue(CIVector(cgRect: input.extent), forKey: kCIInputExtentKey)
-        guard let output = filter.outputImage else { return true }
-        var pixel = [UInt8](repeating: 255, count: 4)
-        CIContext(options: [.workingColorSpace: NSNull()]).render(
-            output,
-            toBitmap: &pixel,
-            rowBytes: 4,
-            bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
-            format: .RGBA8,
-            colorSpace: nil
-        )
-        try Task.checkCancellation()
-        let luminance = (0.2126 * Double(pixel[0]) + 0.7152 * Double(pixel[1]) + 0.0722 * Double(pixel[2])) / 255
-        return luminance < 0.997
+        // Drain synchronous PDFKit/Core Image/UIKit temporaries per page;
+        // an autorelease pool must never span the asynchronous OCR await.
+        return try autoreleasepool {
+            try Task.checkCancellation()
+            let bounds = page.bounds(for: .mediaBox)
+            guard bounds.width > 1, bounds.height > 1 else { return false }
+            let scale = 180 / max(bounds.width, bounds.height)
+            try Task.checkCancellation()
+            let thumbnail = page.thumbnail(
+                of: CGSize(width: bounds.width * scale, height: bounds.height * scale),
+                for: .mediaBox
+            )
+            try Task.checkCancellation()
+            guard let input = CIImage(image: thumbnail),
+                  let filter = CIFilter(name: "CIAreaAverage") else { return true }
+            filter.setValue(input, forKey: kCIInputImageKey)
+            filter.setValue(CIVector(cgRect: input.extent), forKey: kCIInputExtentKey)
+            guard let output = filter.outputImage else { return true }
+            var pixel = [UInt8](repeating: 255, count: 4)
+            CIContext(options: [.workingColorSpace: NSNull()]).render(
+                output,
+                toBitmap: &pixel,
+                rowBytes: 4,
+                bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+                format: .RGBA8,
+                colorSpace: nil
+            )
+            try Task.checkCancellation()
+            let luminance = (0.2126 * Double(pixel[0]) + 0.7152 * Double(pixel[1]) + 0.0722 * Double(pixel[2])) / 255
+            return luminance < 0.997
+        }
     }
 
     /// Render before OCR at a bounded high resolution. This is deliberately
     /// independent of the JPEG used for history thumbnails: OCR receives clean
     /// lossless pixels and is never fed a compressed preview.
-    private static func renderPDFPageForOCRCancellable(_ page: PDFPage) throws -> UIImage? {
-        try Task.checkCancellation()
-        let bounds = page.bounds(for: .mediaBox)
-        guard bounds.width > 1, bounds.height > 1 else { return nil }
-        let targetLongEdge = min(2800, max(bounds.width, bounds.height) * 3)
-        let scale = targetLongEdge / max(bounds.width, bounds.height)
-        let size = CGSize(width: bounds.width * scale, height: bounds.height * scale)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        try Task.checkCancellation()
-        let image = renderer.image { context in
-            UIColor.white.setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-            context.cgContext.translateBy(x: 0, y: size.height)
-            context.cgContext.scaleBy(x: scale, y: -scale)
-            page.draw(with: .mediaBox, to: context.cgContext)
+    static func renderPDFPageForOCRCancellable(_ page: PDFPage) throws -> UIImage? {
+        // Drain synchronous PDFKit/Core Image/UIKit temporaries per page;
+        // an autorelease pool must never span the asynchronous OCR await.
+        return try autoreleasepool {
+            try Task.checkCancellation()
+            let bounds = page.bounds(for: .mediaBox)
+            guard bounds.width > 1, bounds.height > 1 else { return nil }
+            let targetLongEdge = min(2800, max(bounds.width, bounds.height) * 3)
+            let scale = targetLongEdge / max(bounds.width, bounds.height)
+            let size = CGSize(width: bounds.width * scale, height: bounds.height * scale)
+            // `size` is already a pixel budget. UIKit's default screen scale would
+            // turn a 2376-pixel page into 7128 pixels on a 3x iPhone (9x the area).
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            format.opaque = true
+            format.preferredRange = .standard
+            let renderer = UIGraphicsImageRenderer(size: size, format: format)
+            try Task.checkCancellation()
+            let image = renderer.image { context in
+                UIColor.white.setFill()
+                context.fill(CGRect(origin: .zero, size: size))
+                context.cgContext.translateBy(x: 0, y: size.height)
+                context.cgContext.scaleBy(x: scale, y: -scale)
+                page.draw(with: .mediaBox, to: context.cgContext)
+            }
+            try Task.checkCancellation()
+            return image
         }
-        try Task.checkCancellation()
-        return image
     }
 
     /// 去掉 PDF 硬换行（视觉排版换行，非句子边界，否则 TTS 在此停顿）：CJK 字之间删除（连续）、其余替空格（保英文词边界）。

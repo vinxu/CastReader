@@ -1,0 +1,14 @@
+{
+  "baseCommit": "febfeabf869c2f77b57d360e970218899c87aa02",
+  "worktree": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914",
+  "uncommittedChanges": true,
+  "deviceVersion": "1.2.41 (63)",
+  "dylibUUID": "76704178-79BE-33C1-9CA7-BCA48643F332",
+  "installedAt": "2026-09-20 10:18 +08:00",
+  "sourceSHA256": {
+    "CastReader/Services/WebReaderBridge.swift": "56b1062ab9e0f181b3724499367dba52268e0f986cbcd85c2c5d7f944579d83a",
+    "CastReader/Views/Explain/ExplainControlBar.swift": "25d56f93cfc3f7dfcad8bae31aa424d3181fa6337a50abf1acb30181148f3907",
+    "CastReader/Views/Reader/ReaderHostView.swift": "3bbfa7886187f9db69d3ef79c786f48cd2047893ec82e2aad068939d886660a2",
+    "CastReader/Views/Kindle/KindleBookView.swift": "b30652dfde6e61262bfeb612a12478ce51ed7cd76c2cfd44329ec13cbd2e6705"
+  }
+}

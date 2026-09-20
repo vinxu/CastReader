@@ -1,0 +1,31 @@
+{
+  "baseHead": "febfeabf869c2f77b57d360e970218899c87aa02",
+  "worktree": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914",
+  "changedFiles": {
+    "CastReader/Models/EpubNavigation.swift": "335f2fe005f7caeb2b0542690f6ee381d706b58731542830163666f0b3eb50d7",
+    "CastReader/Services/LocalDocumentCache.swift": "5d2a11d71b498041804ea1af478c803d17e605893b0f5ea44364fe1047a2888a",
+    "CastReaderTests/EpubNavigationTests.swift": "476f73939bba4f820e6432f252560b9a33a8fb3bed311aa1c0fe72140bcf036d"
+  },
+  "regressionBefore": {
+    "tests": 2,
+    "failedTests": 2,
+    "assertionFailures": 6,
+    "resultBundle": "/tmp/CastReaderEPUBRepair-before.xcresult"
+  },
+  "verification": {
+    "tests": 26,
+    "passed": 25,
+    "skipped": 1,
+    "failures": 0,
+    "skippedReason": "Optional unrelated local PDF performance sample not present",
+    "resultBundle": "/tmp/CastReaderEPUBRepair-verified.xcresult"
+  },
+  "originalEPUB": {
+    "source": "guide",
+    "entries": 40,
+    "paragraphs": 1463,
+    "unresolved": 0,
+    "independentlyVerifiedDestinations": 40
+  },
+  "infrastructureRetry": "First fixed-binary run could not launch because CoreSimulator reported invalid device state / Mach -308; rebooted only task simulator and repeated identical test binary successfully."
+}

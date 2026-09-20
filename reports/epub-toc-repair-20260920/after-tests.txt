@@ -1,0 +1,69 @@
+Test Suite 'Selected tests' started at 2026-09-20 09:55:43.252.
+Test Suite 'CastReaderTests.xctest' started at 2026-09-20 09:55:43.253.
+Test Suite 'EpubNativeEngineTests' started at 2026-09-20 09:55:43.253.
+Test Case '-[CastReaderTests.EpubNativeEngineTests testDocumentBuilderFromEPUB]' started.
+Test Case '-[CastReaderTests.EpubNativeEngineTests testDocumentBuilderFromEPUB]' passed (1.002 seconds).
+Test Case '-[CastReaderTests.EpubNativeEngineTests testParseRealEpub]' started.
+Test Case '-[CastReaderTests.EpubNativeEngineTests testParseRealEpub]' passed (0.597 seconds).
+Test Case '-[CastReaderTests.EpubNativeEngineTests testRejectsEPUBWithOversizedEntryMetadataBeforeExtraction]' started.
+Test Case '-[CastReaderTests.EpubNativeEngineTests testRejectsEPUBWithOversizedEntryMetadataBeforeExtraction]' passed (0.013 seconds).
+Test Suite 'EpubNativeEngineTests' passed at 2026-09-20 09:55:44.867.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 1.612 (1.614) seconds
+Test Suite 'EpubNavigationTests' started at 2026-09-20 09:55:44.867.
+Test Case '-[CastReaderTests.EpubNavigationTests testAllLocalEPUBsProduceSafeIndexedNavigationOrRejectInvalidFiles]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testAllLocalEPUBsProduceSafeIndexedNavigationOrRejectInvalidFiles]' passed (0.220 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testAlternativeNamespacePrefixAndBodyAnchors]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testAlternativeNamespacePrefixAndBodyAnchors]' passed (0.007 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags]' passed (0.009 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testDirectoryRepairDoesNotOverrideValidSourceOrVoteWithRepeatedLabels]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testDirectoryRepairDoesNotOverrideValidSourceOrVoteWithRepeatedLabels]' passed (0.002 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testDirectorySurvivesColdCacheAndSelectionPersistsWithoutAudio]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testDirectorySurvivesColdCacheAndSelectionPersistsWithoutAudio]' passed (0.085 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testExactInlineContainerEmptyAndNamedAnchorsPreserveAllText]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testExactInlineContainerEmptyAndNamedAnchorsPreserveAllText]' passed (0.006 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testMissingFragmentAndExternalURLAreDisabledNeverGuessedByTitle]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testMissingFragmentAndExternalURLAreDisabledNeverGuessedByTitle]' passed (0.003 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testNavigationRespectsHTMLBaseAndNCXXMLBase]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testNavigationRespectsHTMLBaseAndNCXXMLBase]' passed (0.002 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testNAVWinsPreservesGroupsDepthAndIgnoresPageList]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testNAVWinsPreservesGroupsDepthAndIgnoresPageList]' passed (0.004 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testNCXUsesNestedDirectLabelsAndDocumentOrderRatherThanPlayOrder]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testNCXUsesNestedDirectLabelsAndDocumentOrderRatherThanPlayOrder]' passed (0.003 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testOldEPUBDirectoryCacheRebuildsAndPreservesPosition]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testOldEPUBDirectoryCacheRebuildsAndPreservesPosition]' passed (0.028 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testReportedEPUBUsesGuideAndEveryDestinationResolves]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testReportedEPUBUsesGuideAndEveryDestinationResolves]' passed (0.367 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testSystematicallyShiftedNCXUsesCorroboratedGuideWithoutGuessingLinks]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testSystematicallyShiftedNCXUsesCorroboratedGuideWithoutGuessingLinks]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testUnusableNAVFallsBackToNCXThenHeadings]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testUnusableNAVFallsBackToNCXThenHeadings]' passed (0.006 seconds).
+Test Case '-[CastReaderTests.EpubNavigationTests testURLResolutionPreservesCaseUnicodePlusAndSingleDecoding]' started.
+Test Case '-[CastReaderTests.EpubNavigationTests testURLResolutionPreservesCaseUnicodePlusAndSingleDecoding]' passed (0.001 seconds).
+Test Suite 'EpubNavigationTests' passed at 2026-09-20 09:55:45.615.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.742 (0.748) seconds
+Test Suite 'LocalDocumentCacheTests' started at 2026-09-20 09:55:45.616.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testCorruptAndOldParserCacheRebuildWithoutChangingSavedPosition]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testCorruptAndOldParserCacheRebuildWithoutChangingSavedPosition]' passed (0.296 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testEditingCachedParagraphsInvalidatesDerivedIndex]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testEditingCachedParagraphsInvalidatesDerivedIndex]' passed (0.082 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testEPUBImportSeedsPersistentCacheAndColdHistoryPreservesAllParagraphs]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testEPUBImportSeedsPersistentCacheAndColdHistoryPreservesAllParagraphs]' passed (0.108 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testRemoteContentCannotProduceOrReadLocalParsedCache]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testRemoteContentCannotProduceOrReadLocalParsedCache]' passed (0.067 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testReopenDoesNotRewritePayloadAndDeleteRemovesDerivedContent]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testReopenDoesNotRewritePayloadAndDeleteRemovesDerivedContent]' passed (0.097 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testSameSizeChangedPayloadCannotUseStaleCacheAndMissingFileCannotOpen]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testSameSizeChangedPayloadCannotUseStaleCacheAndMissingFileCannotOpen]' passed (0.095 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testSnapshotPreservesEPUBStylesImagesAndPDFRanges]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testSnapshotPreservesEPUBStylesImagesAndPDFRanges]' passed (0.012 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testUserPDFReopenPerformanceSample]' started.
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/LocalDocumentCacheTests.swift:150: -[CastReaderTests.LocalDocumentCacheTests testUserPDFReopenPerformanceSample] : Test skipped - No local reproduction PDF
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testUserPDFReopenPerformanceSample]' skipped (0.012 seconds).
+Test Suite 'LocalDocumentCacheTests' passed at 2026-09-20 09:55:46.388.
+	 Executed 8 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.769 (0.772) seconds
+Test Suite 'CastReaderTests.xctest' passed at 2026-09-20 09:55:46.388.
+	 Executed 26 tests, with 1 test skipped and 0 failures (0 unexpected) in 3.123 (3.135) seconds
+Test Suite 'Selected tests' passed at 2026-09-20 09:55:46.388.
+	 Executed 26 tests, with 1 test skipped and 0 failures (0 unexpected) in 3.123 (3.136) seconds
+** TEST EXECUTE SUCCEEDED **

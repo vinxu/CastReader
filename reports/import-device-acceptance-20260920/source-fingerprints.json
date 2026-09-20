@@ -1,0 +1,7 @@
+{
+  "CastReader/Models/EpubNavigation.swift": "335f2fe005f7caeb2b0542690f6ee381d706b58731542830163666f0b3eb50d7",
+  "CastReader/Services/LocalDocumentCache.swift": "5d2a11d71b498041804ea1af478c803d17e605893b0f5ea44364fe1047a2888a",
+  "CastReader/Utils/DocumentBuilder.swift": "93a08ad27b6e31ca89cdf7273e718cd60d6614a997bae6c95af028eecf27b789",
+  "CastReaderTests/EpubNavigationTests.swift": "edc1e9d6636cb146b65df5c3e8c9402e06392b4d19a7efe567863d72204325ae",
+  "CastReaderTests/PDFImportMemoryTests.swift": "3e34c9d2cf7e3b6f02ed41465255aaa4bc0edbdddfdcd747839b35506887a4cf"
+}

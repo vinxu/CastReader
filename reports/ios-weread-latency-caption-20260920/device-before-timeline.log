@@ -1,0 +1,60 @@
+# 2026-09-20; redacted transport/playback timeline
+10:12:30.217 HOST mode switch target=朗读 continue=N
+10:12:41.015 HOST page button direction=next source=weread mode=朗读
+10:12:41.869 WEREAD page commit prior=6d50c066 next=ce7457ee confirmed=true epoch=18 cols= geometry=fillText glyphs=278 paras=3
+10:12:53.530 HOST mode switch target=解读 continue=N
+10:13:05.817 EXPLAIN plan request idxBase=0 paras=3 chars=290 fp=a171d8925ba3023f prevSummaryChars=0
+10:13:12.563 TTS clone response request=5FCB68D0-84D7-4CD4-ADAA-1CFEC7D38556 status=200 quota=async attempt=1 remaining=5965
+10:13:14.670 TTS clone response request=7FF403CC-C945-42E2-85CB-AEA2085C2F1F status=200 quota=async attempt=1 remaining=5958
+10:13:16.234 TTS clone response request=5B80BC98-096A-4191-86CB-1DC2C1C5AEC4 status=200 quota=async attempt=1 remaining=5946
+10:13:16.931 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+10:13:16.960 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+10:13:17.981 TTS clone response request=926863FC-FE39-45F1-BA61-311154B19948 status=200 quota=async attempt=1 remaining=5941
+10:13:24.065 AUDIO item finished segment=0-0 index=0/2
+10:13:24.105 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-1
+10:13:24.134 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-1
+10:13:31.914 AUDIO item finished segment=0-1 index=1/2
+10:13:31.915 AUDIO queue complete segment=0-1 queue=2
+10:13:32.001 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-0
+10:13:32.035 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-0
+10:13:39.136 AUDIO item finished segment=1-0 index=0/2
+10:13:39.178 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-1
+10:13:39.210 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-1
+10:13:45.785 AUDIO item finished segment=1-1 index=1/2
+10:13:45.786 AUDIO queue complete segment=1-1 queue=2
+10:13:45.787 WEREAD page turn action=semantic-next fingerprint=ce7457ee
+10:13:45.949 WEREAD page commit prior=ce7457ee next=8a2e9ba0 confirmed=true epoch=19 cols= geometry=fillText glyphs=291 paras=3
+10:13:45.950 WEREAD explain preload invalidated reason=page-commit-miss
+10:13:45.950 WEREAD explain confirmed-page restart=Y prefetched=N prior=ce7457ee next=8a2e9ba0
+10:13:45.954 WEREAD explain preload invalidated reason=prediction-changed
+10:13:45.954 WEREAD preload preview source=8a2e9ba0 next=aded7801 confidence=sequential paras=2
+10:13:45.982 EXPLAIN plan request idxBase=0 paras=3 chars=293 fp=0eac8bc4bbc92c5c prevSummaryChars=0
+10:13:53.090 TTS clone response request=42E35B5F-3CA0-4E89-9D13-8E9D7531728F status=200 quota=async attempt=1 remaining=5928
+10:13:54.822 TTS clone response request=74B99D99-557C-4889-8DB2-1E93A74A4F59 status=200 quota=async attempt=1 remaining=5923
+10:13:54.876 TTS clone response request=1945EA01-7E37-4844-88AC-D8B454AC8A7F status=200 quota=async attempt=1 remaining=5918
+10:13:57.288 TTS clone response request=54CEA6CA-E470-481C-A763-819736819559 status=200 quota=async attempt=1 remaining=5907
+10:13:57.699 TTS clone response request=FB730823-C65B-4788-BF9F-49F69889BF07 status=200 quota=async attempt=1 remaining=5894
+10:13:58.231 WEREAD explain preload start source=8a2e9ba0 next=aded7801 paras=2
+10:13:58.291 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+10:13:58.321 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+10:13:59.436 TTS clone response request=329E4097-A318-4678-B2DB-EE1F87875733 status=200 quota=async attempt=1 remaining=5895
+10:14:03.839 TTS clone response request=6ED45708-172F-4087-93FD-86F609C2F765 status=200 quota=async attempt=1 remaining=5884
+10:14:05.263 TTS clone response request=C4B7A3FF-5897-417F-BB23-0A8198E722A5 status=200 quota=async attempt=1 remaining=5881
+10:14:06.444 AUDIO item finished segment=0-0 index=0/3
+10:14:06.479 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-1
+10:14:06.508 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-1
+10:14:07.679 TTS clone response request=1BC42586-A413-464A-8B98-296504889785 status=200 quota=async attempt=1 remaining=5867
+10:14:08.155 WEREAD explain preload ready source=8a2e9ba0 next=aded7801 blocks=1
+10:14:08.924 AUDIO item finished segment=0-1 index=1/3
+10:14:08.965 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-2
+10:14:08.993 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-2
+10:14:15.704 AUDIO item finished segment=0-2 index=2/3
+10:14:15.705 AUDIO queue complete segment=0-2 queue=3
+10:14:15.816 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-0
+10:14:15.847 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-0
+10:14:21.214 AUDIO item finished segment=1-0 index=0/3
+10:14:21.256 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-1
+10:14:21.284 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-1
+10:14:30.984 AUDIO item finished segment=1-1 index=1/3
+10:14:31.042 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-2
+10:14:31.068 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-2

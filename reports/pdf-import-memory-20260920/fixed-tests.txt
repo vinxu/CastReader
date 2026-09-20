@@ -1,0 +1,58 @@
+Test Suite 'Selected tests' started at 2026-09-20 10:07:37.754.
+Test Suite 'CastReaderTests.xctest' started at 2026-09-20 10:07:37.754.
+Test Suite 'LocalDocumentCacheTests' started at 2026-09-20 10:07:37.754.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testCorruptAndOldParserCacheRebuildWithoutChangingSavedPosition]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testCorruptAndOldParserCacheRebuildWithoutChangingSavedPosition]' passed (0.362 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testEditingCachedParagraphsInvalidatesDerivedIndex]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testEditingCachedParagraphsInvalidatesDerivedIndex]' passed (0.077 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testEPUBImportSeedsPersistentCacheAndColdHistoryPreservesAllParagraphs]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testEPUBImportSeedsPersistentCacheAndColdHistoryPreservesAllParagraphs]' passed (0.111 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testRemoteContentCannotProduceOrReadLocalParsedCache]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testRemoteContentCannotProduceOrReadLocalParsedCache]' passed (0.067 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testReopenDoesNotRewritePayloadAndDeleteRemovesDerivedContent]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testReopenDoesNotRewritePayloadAndDeleteRemovesDerivedContent]' passed (0.086 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testSameSizeChangedPayloadCannotUseStaleCacheAndMissingFileCannotOpen]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testSameSizeChangedPayloadCannotUseStaleCacheAndMissingFileCannotOpen]' passed (0.088 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testSnapshotPreservesEPUBStylesImagesAndPDFRanges]' started.
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testSnapshotPreservesEPUBStylesImagesAndPDFRanges]' passed (0.011 seconds).
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testUserPDFReopenPerformanceSample]' started.
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/LocalDocumentCacheTests.swift:150: -[CastReaderTests.LocalDocumentCacheTests testUserPDFReopenPerformanceSample] : Test skipped - No local reproduction PDF
+Test Case '-[CastReaderTests.LocalDocumentCacheTests testUserPDFReopenPerformanceSample]' skipped (0.014 seconds).
+Test Suite 'LocalDocumentCacheTests' passed at 2026-09-20 10:07:38.574.
+	 Executed 8 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.816 (0.820) seconds
+Test Suite 'OCRVisionCancellationTests' started at 2026-09-20 10:07:38.574.
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testCancellationBeforeEntryNeverStartsVision]' started.
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testCancellationBeforeEntryNeverStartsVision]' passed (0.003 seconds).
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testCancellationDuringPerformDiscardsItsLaterSuccess]' started.
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testCancellationDuringPerformDiscardsItsLaterSuccess]' passed (0.002 seconds).
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testCancellationDuringPerformWinsOverItsLaterError]' started.
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testCancellationDuringPerformWinsOverItsLaterError]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testPerformFailureHasOneThrowingOutcome]' started.
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testPerformFailureHasOneThrowingOutcome]' passed (0.002 seconds).
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testRealVisionOCRAndOrientationCancelThenFreshRecognitionSucceeds]' started.
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testRealVisionOCRAndOrientationCancelThenFreshRecognitionSucceeds]' passed (1.980 seconds).
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testSuccessfulPerformRunsOnceAndReturnsNormally]' started.
+Test Case '-[CastReaderTests.OCRVisionCancellationTests testSuccessfulPerformRunsOnceAndReturnsNormally]' passed (0.001 seconds).
+Test Suite 'OCRVisionCancellationTests' passed at 2026-09-20 10:07:40.565.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 1.989 (1.991) seconds
+Test Suite 'PDFImportMemoryTests' started at 2026-09-20 10:07:40.565.
+Test Case '-[CastReaderTests.PDFImportMemoryTests testCancelledRasterDoesNotAllocateAnImage]' started.
+Test Case '-[CastReaderTests.PDFImportMemoryTests testCancelledRasterDoesNotAllocateAnImage]' passed (0.005 seconds).
+Test Case '-[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays]' started.
+PDF RASTER points=(612.0, 792.0) pixels=1836x2376 bytes=17487360 scale=1.0
+PDF RASTER points=(792.0, 612.0) pixels=2376x1836 bytes=17449344 scale=1.0
+PDF RASTER points=(2000.0, 3000.0) pixels=1867x2800 bytes=20966400 scale=1.0
+Test Case '-[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays]' passed (0.027 seconds).
+Test Case '-[CastReaderTests.PDFImportMemoryTests testReportedMoneyPDFImportsEveryPageWithoutExcessiveRasterMemory]' started.
+Test Case '-[CastReaderTests.PDFImportMemoryTests testReportedMoneyPDFImportsEveryPageWithoutExcessiveRasterMemory]' passed (84.099 seconds).
+Test Case '-[CastReaderTests.PDFImportMemoryTests testScannedAndNativePagesSurviveMixedPDFImport]' started.
+Test Case '-[CastReaderTests.PDFImportMemoryTests testScannedAndNativePagesSurviveMixedPDFImport]' passed (3.474 seconds).
+Test Case '-[CastReaderTests.PDFImportMemoryTests testSearchablePDFWithBlankPageKeepsOriginalTextRanges]' started.
+Test Case '-[CastReaderTests.PDFImportMemoryTests testSearchablePDFWithBlankPageKeepsOriginalTextRanges]' passed (0.024 seconds).
+Test Suite 'PDFImportMemoryTests' passed at 2026-09-20 10:09:08.197.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 87.629 (87.632) seconds
+Test Suite 'CastReaderTests.xctest' passed at 2026-09-20 10:09:08.198.
+	 Executed 19 tests, with 1 test skipped and 0 failures (0 unexpected) in 90.434 (90.444) seconds
+Test Suite 'Selected tests' passed at 2026-09-20 10:09:08.198.
+	 Executed 19 tests, with 1 test skipped and 0 failures (0 unexpected) in 90.434 (90.445) seconds
+** TEST EXECUTE SUCCEEDED **

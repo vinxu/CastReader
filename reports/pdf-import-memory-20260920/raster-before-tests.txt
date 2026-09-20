@@ -1,0 +1,21 @@
+Test Suite 'Selected tests' started at 2026-09-20 10:03:37.638.
+Test Suite 'CastReaderTests.xctest' started at 2026-09-20 10:03:37.639.
+Test Suite 'PDFImportMemoryTests' started at 2026-09-20 10:03:37.639.
+Test Case '-[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays]' started.
+PDF RASTER points=(612.0, 792.0) pixels=5508x7128 bytes=78693120 scale=3.0
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/PDFImportMemoryTests.swift:20: error: -[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays] : XCTAssertLessThanOrEqual failed: ("7128") is greater than ("2800")
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/PDFImportMemoryTests.swift:21: error: -[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays] : XCTAssertEqual failed: ("3.0") is not equal to ("1.0")
+PDF RASTER points=(792.0, 612.0) pixels=7128x5508 bytes=78610176 scale=3.0
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/PDFImportMemoryTests.swift:20: error: -[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays] : XCTAssertLessThanOrEqual failed: ("7128") is greater than ("2800")
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/PDFImportMemoryTests.swift:21: error: -[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays] : XCTAssertEqual failed: ("3.0") is not equal to ("1.0")
+PDF RASTER points=(2000.0, 3000.0) pixels=5600x8400 bytes=94080000 scale=3.0
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/PDFImportMemoryTests.swift:20: error: -[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays] : XCTAssertLessThanOrEqual failed: ("8400") is greater than ("2800")
+/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914/CastReaderTests/PDFImportMemoryTests.swift:21: error: -[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays] : XCTAssertEqual failed: ("3.0") is not equal to ("1.0")
+Test Case '-[CastReaderTests.PDFImportMemoryTests testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays]' failed (0.337 seconds).
+Test Suite 'PDFImportMemoryTests' failed at 2026-09-20 10:03:37.977.
+	 Executed 1 test, with 6 failures (0 unexpected) in 0.337 (0.338) seconds
+Test Suite 'CastReaderTests.xctest' failed at 2026-09-20 10:03:37.977.
+	 Executed 1 test, with 6 failures (0 unexpected) in 0.337 (0.339) seconds
+Test Suite 'Selected tests' failed at 2026-09-20 10:03:37.977.
+	 Executed 1 test, with 6 failures (0 unexpected) in 0.337 (0.339) seconds
+** TEST FAILED **

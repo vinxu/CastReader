@@ -1169,7 +1169,9 @@ private struct KindleExplainPlaybackBar: View {
                     maxWidth: 620
                 )
                 .padding(.horizontal, 18)
-                .offset(y: ReaderPlaybackBarLayoutContract.explainCaptionOffset)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(height: 0, alignment: .bottom)
+                .offset(y: -8)
                 .allowsHitTesting(false)
                 .zIndex(1)
             }

@@ -1,0 +1,37 @@
+{
+  "file": "The_Psychology_of_Money.pdf",
+  "bytes": 2982509,
+  "sha256": "c160363e09e244bc34cc2d7b20427df7004f82e91385f9230a88bc2df6d5f238",
+  "pages": 242,
+  "encrypted": false,
+  "pageSizePoints": [
+    612,
+    792
+  ],
+  "pagesWithoutTextLayerOneBased": [
+    1,
+    2,
+    3,
+    8,
+    18,
+    31,
+    43,
+    52,
+    60,
+    73,
+    85,
+    94,
+    97,
+    102,
+    111,
+    119,
+    133,
+    144,
+    151,
+    159,
+    167,
+    180,
+    193,
+    200
+  ]
+}

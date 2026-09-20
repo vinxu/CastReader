@@ -1,0 +1,17 @@
+{
+  "baseCommit": "febfeabf869c2f77b57d360e970218899c87aa02",
+  "worktree": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914",
+  "uncommittedChanges": true,
+  "deviceVersion": "1.2.41 (63)",
+  "dylibUUID": "EA1085E6-6D29-343E-BFB8-439341F498CD",
+  "installedAt": "2026-09-20 10:43 +08:00",
+  "sourceSHA256": {
+    "CastReader/Services/WebReaderBridge.swift": "d1db3d760146d13cbe3b9f006521c8150e90876835847bc2d3ab3e619e385c8b",
+    "CastReader/Views/Explain/ExplainControlBar.swift": "25d56f93cfc3f7dfcad8bae31aa424d3181fa6337a50abf1acb30181148f3907",
+    "CastReader/Views/Reader/ReaderHostView.swift": "3bbfa7886187f9db69d3ef79c786f48cd2047893ec82e2aad068939d886660a2",
+    "CastReader/Views/Kindle/KindleBookView.swift": "b30652dfde6e61262bfeb612a12478ce51ed7cd76c2cfd44329ec13cbd2e6705",
+    "CastReader/ViewModels/ExplainViewModel.swift": "84ee3e72457afc3894221968e9a5654fc0e9f724bc6952255b39f24c30d63b85"
+  },
+  "buildLog": "/tmp/castreader-weread-pending-device-build-generic-20260920.log",
+  "buildValidation": "Approved integration baseline check passed; physical destination preparation timed out, then generic iOS Debug build succeeded. No simulator or unit-test execution claimed."
+}

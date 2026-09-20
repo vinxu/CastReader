@@ -25,6 +25,7 @@ enum LocalDocumentCache {
         let images: [Data]
         let resumeIndex: ReadingResumeDocumentIndex
         let epubNavigation: EpubNavigation?
+        let epubNavigationVersion: Int?
 
         init?(document: ReadingDocument, fingerprint: String) throws {
             guard supports(document.sourceKind), document.origin == nil,
@@ -35,6 +36,7 @@ enum LocalDocumentCache {
             payloadFingerprint = fingerprint
             language = document.language
             epubNavigation = document.epubNavigation
+            epubNavigationVersion = document.sourceKind == .epub ? EpubNavigationSelection.cacheVersion : nil
             resumeIndex = document.precomputedResumeIndex ?? ReadingResumeDocumentIndex(paragraphs: document.paragraphs)
             var images: [Data] = [], imageIDs: [String: Int] = [:]
             var paragraphs: [Paragraph] = []
@@ -76,6 +78,9 @@ enum LocalDocumentCache {
         }
 
         func document(record: HistoryRecord, data: Data, fingerprint: String) throws -> ReadingDocument? {
+            // Old EPUB snapshots can retain unusable NCX destinations. Reparse
+            // the saved original once; PDF caches and checkpoints are unchanged.
+            if record.sourceKind == .epub, epubNavigationVersion != EpubNavigationSelection.cacheVersion { return nil }
             guard version == parserVersion, source == record.sourceKindRaw,
                   payloadFingerprint == fingerprint, !paragraphs.isEmpty,
                   resumeIndex.fingerprints.count == paragraphs.count,

@@ -1,0 +1,251 @@
+[
+  {
+    "file": "ocb.epub",
+    "source": "guide",
+    "verifiedDestinations": 40,
+    "unresolved": 0,
+    "method": "ElementTree source guide links + exact id and following text, compared with production Swift paragraph prefix",
+    "destinations": [
+      {
+        "title": "他们如何评价这本书",
+        "path": "text/part0000.html",
+        "fragment": "filepos109",
+        "paragraph": 1
+      },
+      {
+        "title": "序",
+        "path": "text/part0001.html",
+        "fragment": "filepos5297",
+        "paragraph": 27
+      },
+      {
+        "title": "鸣谢",
+        "path": "text/part0002.html",
+        "fragment": "filepos8660",
+        "paragraph": 38
+      },
+      {
+        "title": "中国",
+        "path": "text/part0003.html",
+        "fragment": "filepos9479",
+        "paragraph": 41
+      },
+      {
+        "title": "一个强大的中央",
+        "path": "text/part0004.html",
+        "fragment": "filepos9739",
+        "paragraph": 42
+      },
+      {
+        "title": "政治变革",
+        "path": "text/part0005.html",
+        "fragment": "filepos13723",
+        "paragraph": 51
+      },
+      {
+        "title": "韦自光养晦：不露锋芒，保持谦逊",
+        "path": "text/part0006.html",
+        "fragment": "filepos31995",
+        "paragraph": 114
+      },
+      {
+        "title": "新中国：人民、社会、经济",
+        "path": "text/part0007.html",
+        "fragment": "filepos67969",
+        "paragraph": 212
+      },
+      {
+        "title": "美国：陷入困境但优势仍在",
+        "path": "text/part0008.html",
+        "fragment": "filepos94798",
+        "paragraph": 277
+      },
+      {
+        "title": "最终的较量",
+        "path": "text/part0009.html",
+        "fragment": "filepos103467",
+        "paragraph": 291
+      },
+      {
+        "title": "债务问题",
+        "path": "text/part0010.html",
+        "fragment": "filepos114993",
+        "paragraph": 308
+      },
+      {
+        "title": "我所认知的美国",
+        "path": "text/part0011.html",
+        "fragment": "filepos120147",
+        "paragraph": 314
+      },
+      {
+        "title": "欧洲",
+        "path": "text/part0012.html",
+        "fragment": "filepos136528",
+        "paragraph": 362
+      },
+      {
+        "title": "一",
+        "path": "text/part0013.html",
+        "fragment": "filepos146430",
+        "paragraph": 380
+      },
+      {
+        "title": "二",
+        "path": "text/part0014.html",
+        "fragment": "filepos156680",
+        "paragraph": 398
+      },
+      {
+        "title": "三",
+        "path": "text/part0015.html",
+        "fragment": "filepos165612",
+        "paragraph": 417
+      },
+      {
+        "title": "四",
+        "path": "text/part0016.html",
+        "fragment": "filepos170876",
+        "paragraph": 426
+      },
+      {
+        "title": "五",
+        "path": "text/part0017.html",
+        "fragment": "filepos179184",
+        "paragraph": 450
+      },
+      {
+        "title": "日本、朝韩和印度",
+        "path": "text/part0018.html",
+        "fragment": "filepos184137",
+        "paragraph": 468
+      },
+      {
+        "title": "日本：走向平庸",
+        "path": "text/part0019.html",
+        "fragment": "filepos184397",
+        "paragraph": 469
+      },
+      {
+        "title": "朝韩：偷天换日",
+        "path": "text/part0020.html",
+        "fragment": "filepos204516",
+        "paragraph": 532
+      },
+      {
+        "title": "印度：受种姓制度羁绊",
+        "path": "text/part0021.html",
+        "fragment": "filepos217682",
+        "paragraph": 570
+      },
+      {
+        "title": "东南亚",
+        "path": "text/part0022.html",
+        "fragment": "filepos235183",
+        "paragraph": 612
+      },
+      {
+        "title": "马来西亚：分道扬镳",
+        "path": "text/part0023.html",
+        "fragment": "filepos235428",
+        "paragraph": 613
+      },
+      {
+        "title": "印度尼西亚：偏离中央",
+        "path": "text/part0024.html",
+        "fragment": "filepos257954",
+        "paragraph": 673
+      },
+      {
+        "title": "泰国：苏醒的社会底层",
+        "path": "text/part0025.html",
+        "fragment": "filepos276931",
+        "paragraph": 713
+      },
+      {
+        "title": "越南：解不开的社会主义思维枷锁",
+        "path": "text/part0026.html",
+        "fragment": "filepos286918",
+        "paragraph": 749
+      },
+      {
+        "title": "缅甸：将领改变路向",
+        "path": "text/part0027.html",
+        "fragment": "filepos293708",
+        "paragraph": 767
+      },
+      {
+        "title": "新加坡：处在十字路口",
+        "path": "text/part0028.html",
+        "fragment": "filepos300892",
+        "paragraph": 788
+      },
+      {
+        "title": "政治",
+        "path": "text/part0029.html",
+        "fragment": "filepos301194",
+        "paragraph": 789
+      },
+      {
+        "title": "人口政策",
+        "path": "text/part0030.html",
+        "fragment": "filepos321985",
+        "paragraph": 851
+      },
+      {
+        "title": "经济",
+        "path": "text/part0031.html",
+        "fragment": "filepos338080",
+        "paragraph": 890
+      },
+      {
+        "title": "中东：春残无夏",
+        "path": "text/part0032.html",
+        "fragment": "filepos352331",
+        "paragraph": 938
+      },
+      {
+        "title": "全球经济：何去何从？",
+        "path": "text/part0033.html",
+        "fragment": "filepos381895",
+        "paragraph": 1010
+      },
+      {
+        "title": "能源和气候变化：做好最坏的打算",
+        "path": "text/part0034.html",
+        "fragment": "filepos416664",
+        "paragraph": 1094
+      },
+      {
+        "title": "个人生活 选择何时而去",
+        "path": "text/part0035.html",
+        "fragment": "filepos435564",
+        "paragraph": 1140
+      },
+      {
+        "title": "老朋友的对话",
+        "path": "text/part0036.html",
+        "fragment": "filepos459366",
+        "paragraph": 1229
+      },
+      {
+        "title": "领导人的启示",
+        "path": "text/part0037.html",
+        "fragment": "filepos460693",
+        "paragraph": 1233
+      },
+      {
+        "title": "欧洲愿景",
+        "path": "text/part0038.html",
+        "fragment": "filepos485891",
+        "paragraph": 1332
+      },
+      {
+        "title": "告别",
+        "path": "text/part0039.html",
+        "fragment": "filepos504758",
+        "paragraph": 1405
+      }
+    ]
+  }
+]
