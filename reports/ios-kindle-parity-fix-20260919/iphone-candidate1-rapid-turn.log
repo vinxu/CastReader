@@ -1,0 +1,28 @@
+00:09:17.092 [active] KINDLE page turn requested next mode=朗读 resume=true
+00:09:17.110 [active] KINDLE page turn stop old-playback reason=manual-next
+00:09:17.111 [active] KINDLE preload invalidate reason=manual-next epoch=8 clear=false
+00:09:17.111 [active] KINDLE page turn cancel in-flight processing reason=manual-next epoch=8
+00:09:17.160 [active] KINDLE page turn requested next mode=朗读 resume=true
+00:09:17.169 [active] KINDLE page turn stop old-playback reason=manual-next
+00:09:17.170 [active] KINDLE preload invalidate reason=manual-next epoch=9 clear=false
+00:09:17.170 [active] KINDLE page turn cancel in-flight processing reason=manual-next epoch=9
+00:09:17.199 [active] KINDLE page turn requested next mode=朗读 resume=true
+00:09:17.208 [active] KINDLE page turn stop old-playback reason=manual-next
+00:09:17.209 [active] KINDLE preload invalidate reason=manual-next epoch=10 clear=false
+00:09:17.209 [active] KINDLE page turn cancel in-flight processing reason=manual-next epoch=10
+00:09:17.237 [active] KINDLE page turn requested previous mode=朗读 resume=true
+00:09:17.247 [active] KINDLE page turn stop old-playback reason=manual-previous
+00:09:17.247 [active] KINDLE preload invalidate reason=manual-previous epoch=11 clear=false
+00:09:17.248 [active] KINDLE page turn cancel in-flight processing reason=manual-previous epoch=11
+00:09:17.286 [active] KINDLE page turn requested previous mode=朗读 resume=true
+00:09:17.295 [active] KINDLE page turn stop old-playback reason=manual-previous
+00:09:17.296 [active] KINDLE preload invalidate reason=manual-previous epoch=12 clear=false
+00:09:17.297 [active] KINDLE page turn cancel in-flight processing reason=manual-previous epoch=12
+00:09:17.300 [active] KINDLE page turn next error 未能完成操作。（Swift.CancellationError错误1。）
+00:09:17.880 [active] KINDLE page turn only previous old=62ce404d124d visibleOld=62ce404d124d target=62ce404d124d strategy=react-paired-action tried= resume=true
+00:09:17.881 [active] KINDLE manual resume scheduled mode=朗读 old=62ce404d124d target=62ce404d124d dir=previous reason=manual-previous epoch=12
+00:09:18.800 [active] KINDLE manual resume fallback-capture old=62ce404d124d visible=62ce404d124d requested=62ce404d124d target=62ce404d124d dir=previous reason=manual-previous
+00:09:19.311 [active] KINDLE manual resume failed mode=朗读 old=62ce404d124d target=62ce404d124d reason=manual-previous error=Could not capture the Kindle page: manual-resume-same-key:content-bfd5fc5af392184a
+00:09:22.579 [active] KINDLE page turn next error Could not capture the Kindle page: semantic-page-turn-unconfirmed
+00:09:22.612 [active] KINDLE page turn previous error Could not capture the Kindle page: semantic-page-turn-unconfirmed
+00:09:22.690 [active] KINDLE page turn next error Could not capture the Kindle page: semantic-page-turn-unconfirmed

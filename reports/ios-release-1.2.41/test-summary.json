@@ -1,0 +1,73 @@
+[
+  {
+    "run": "initial-full",
+    "log": "/tmp/castreader-1241-full-unit.log",
+    "cases": 1784,
+    "passed": 1768,
+    "failed": 7,
+    "skipped": 9,
+    "failedCases": [
+      "CastReaderTests.EvalTests testPrefetch_GeneratesNextParagraph",
+      "CastReaderTests.EvalTests testPrefetch_PromoteReusesCacheNoRegen",
+      "CastReaderTests.PlaybackSleepTimerTests testExpirationPausesRealPlayerAndPreservesPosition",
+      "CastReaderTests.ReadAloudContinuationTests testHTTP500BeforePrefixEndsCannotSkipTailAndRetryDoesNotReplayPrefix",
+      "CastReaderTests.ReadAloudContinuationTests testPauseAndResumeFirstRequestPreservesItsProducer",
+      "CastReaderTests.ReadAloudContinuationTests testPauseWhileFailedTailPrefixIsStillPlayingDoesNotTriggerRetry",
+      "CastReaderTests.ReadAloudContinuationTests testPauseWhilePrefetchIsInFlightWaitsForExplicitResumeWithoutDuplicateRequest"
+    ],
+    "skippedCases": [
+      "CastReaderTests.EpubNavigationTests testAllLocalEPUBsProduceSafeIndexedNavigationOrRejectInvalidFiles",
+      "CastReaderTests.EvalTests testExplainAnchorRate_Live",
+      "CastReaderTests.GoogleBooksWebBridgeTests testRealPlayBooksShellInstallsRelayOnly",
+      "CastReaderTests.LocalDocumentCacheTests testUserPDFReopenPerformanceSample",
+      "CastReaderTests.PaymentTests testExpiry_revertsToFree",
+      "CastReaderTests.PaymentTests testRestorePurchase",
+      "CastReaderTests.PaymentTests testStoreKitPurchase_unlocksPro",
+      "CastReaderTests.ServiceRoutingTests testLiveDirectPresetNineLanguagesAndSourceBoundaries",
+      "CastReaderTests.YouTubeTranscriptServiceTests testOptInLiveExtractionForInjectedPublicURL"
+    ]
+  },
+  {
+    "run": "initial-affected",
+    "log": "/tmp/castreader-1241-affected-suites.log",
+    "cases": 48,
+    "passed": 47,
+    "failed": 0,
+    "skipped": 1,
+    "failedCases": [],
+    "skippedCases": [
+      "CastReaderTests.EvalTests testExplainAnchorRate_Live"
+    ]
+  },
+  {
+    "run": "ownership-recheck",
+    "log": "/tmp/castreader-1241-ownership-recheck.log",
+    "cases": 99,
+    "passed": 99,
+    "failed": 0,
+    "skipped": 0,
+    "failedCases": [],
+    "skippedCases": []
+  },
+  {
+    "run": "final-full",
+    "log": "/tmp/castreader-1241-final-unit.log",
+    "resultBundle": "/tmp/CastReader1241FinalUnit20260918.xcresult",
+    "cases": 1787,
+    "passed": 1778,
+    "failed": 0,
+    "skipped": 9,
+    "failedCases": [],
+    "skippedCases": [
+      "CastReaderTests.EpubNavigationTests testAllLocalEPUBsProduceSafeIndexedNavigationOrRejectInvalidFiles",
+      "CastReaderTests.EvalTests testExplainAnchorRate_Live",
+      "CastReaderTests.GoogleBooksWebBridgeTests testRealPlayBooksShellInstallsRelayOnly",
+      "CastReaderTests.LocalDocumentCacheTests testUserPDFReopenPerformanceSample",
+      "CastReaderTests.PaymentTests testExpiry_revertsToFree",
+      "CastReaderTests.PaymentTests testRestorePurchase",
+      "CastReaderTests.PaymentTests testStoreKitPurchase_unlocksPro",
+      "CastReaderTests.ServiceRoutingTests testLiveDirectPresetNineLanguagesAndSourceBoundaries",
+      "CastReaderTests.YouTubeTranscriptServiceTests testOptInLiveExtractionForInjectedPublicURL"
+    ]
+  }
+]

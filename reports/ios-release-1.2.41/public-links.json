@@ -1,0 +1,38 @@
+[
+  {
+    "url": "https://castreader.com",
+    "result": "200\thttps://castreader.com/",
+    "exitCode": 0,
+    "error": null
+  },
+  {
+    "url": "https://castreader.com/",
+    "result": "200\thttps://castreader.com/",
+    "exitCode": 0,
+    "error": null
+  },
+  {
+    "url": "https://castreader.com/castreader-app",
+    "result": "200\thttps://castreader.com/castreader-app",
+    "exitCode": 0,
+    "error": null
+  },
+  {
+    "url": "https://castreader.com/en/privacy-policy",
+    "result": "200\thttps://castreader.com/privacy-policy",
+    "exitCode": 0,
+    "error": null
+  },
+  {
+    "url": "https://castreader.com/zh/castreader-app",
+    "result": "200\thttps://castreader.com/zh/castreader-app",
+    "exitCode": 0,
+    "error": null
+  },
+  {
+    "url": "https://castreader.com/zh/privacy-policy",
+    "result": "200\thttps://castreader.com/zh/privacy-policy",
+    "exitCode": 0,
+    "error": null
+  }
+]

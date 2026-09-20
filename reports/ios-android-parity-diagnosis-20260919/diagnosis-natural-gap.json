@@ -1,0 +1,12 @@
+{
+  "active": true,
+  "currentSegmentRetained": true,
+  "isPlaying": false,
+  "manualTurnShouldResume": false,
+  "moreSegmentsExpected": true,
+  "pausedByUser": false,
+  "scope": "Real ReadAloud VM, AVPlayer and controlled delayed TTS; production WeRead bridge consumes this predicate",
+  "source": "weread",
+  "vmWaitingForPlayableAudio": true,
+  "waitingForNextSegment": true
+}

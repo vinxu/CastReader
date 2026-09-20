@@ -1,6 +1,7 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "请先在微信读书页面恢复正文，再继续播放。" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"请先在微信读书页面恢复正文，再继续播放。"}},"en":{"stringUnit":{"state":"translated","value":"Restore the book text on the WeRead page before playing."}},"de":{"stringUnit":{"state":"translated","value":"Lade zuerst den Buchtext auf der WeRead-Seite, bevor du die Wiedergabe fortsetzt."}},"es":{"stringUnit":{"state":"translated","value":"Recupera el texto del libro en WeRead antes de reproducirlo."}},"fr":{"stringUnit":{"state":"translated","value":"Rétablissez le texte du livre sur la page WeRead avant de lancer la lecture."}},"hi":{"stringUnit":{"state":"translated","value":"चलाने से पहले WeRead पेज पर पुस्तक का पाठ वापस खोलें।"}},"it":{"stringUnit":{"state":"translated","value":"Ripristina il testo del libro nella pagina WeRead prima di avviare la riproduzione."}},"ja":{"stringUnit":{"state":"translated","value":"WeRead のページで本文を表示してから再生してください。"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Restaure o texto do livro na página do WeRead antes de reproduzir."}}}},
     "清除" : {"localizations":{"zh-Hans":{"stringUnit":{"state":"translated","value":"清除"}},"en":{"stringUnit":{"state":"translated","value":"Clear"}},"ja":{"stringUnit":{"state":"translated","value":"クリア"}},"es":{"stringUnit":{"state":"translated","value":"Borrar"}},"fr":{"stringUnit":{"state":"translated","value":"Effacer"}},"de":{"stringUnit":{"state":"translated","value":"Löschen"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Limpar"}},"it":{"stringUnit":{"state":"translated","value":"Cancella"}},"hi":{"stringUnit":{"state":"translated","value":"साफ़ करें"}}}},
     "目录由正文结构生成" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Aus der Dokumentstruktur erstelltes Inhaltsverzeichnis"}},"en":{"stringUnit":{"state":"translated","value":"Contents generated from document structure"}},"es":{"stringUnit":{"state":"translated","value":"Índice generado a partir de la estructura del documento"}},"fr":{"stringUnit":{"state":"translated","value":"Sommaire généré à partir de la structure du document"}},"hi":{"stringUnit":{"state":"translated","value":"दस्तावेज़ की संरचना से बनाई गई विषयसूची"}},"it":{"stringUnit":{"state":"translated","value":"Indice generato dalla struttura del documento"}},"ja":{"stringUnit":{"state":"translated","value":"本文の構成から生成した目次"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Índice gerado a partir da estrutura do documento"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"目录由正文结构生成"}}}},
     "此目录位置无法打开" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Diese Position ist nicht verfügbar"}},"en":{"stringUnit":{"state":"translated","value":"This location is unavailable"}},"es":{"stringUnit":{"state":"translated","value":"Esta ubicación no está disponible"}},"fr":{"stringUnit":{"state":"translated","value":"Cet emplacement est indisponible"}},"hi":{"stringUnit":{"state":"translated","value":"यह स्थान उपलब्ध नहीं है"}},"it":{"stringUnit":{"state":"translated","value":"Questa posizione non è disponibile"}},"ja":{"stringUnit":{"state":"translated","value":"この位置は開けません"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Este local não está disponível"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"此目录位置无法打开"}}}},
@@ -710,55 +711,55 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skip footnote reference numbers"
+            "value" : "Skip footnotes"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fußnotenverweise überspringen"
+            "value" : "Fußnoten überspringen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Omitir números de referencia a notas"
+            "value" : "Omitir notas al pie"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ignorer les numéros d’appel de note"
+            "value" : "Ignorer les notes de bas de page"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "फ़ुटनोट संदर्भ संख्याएँ छोड़ें"
+            "value" : "फ़ुटनोट छोड़ें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Salta i numeri di richiamo delle note"
+            "value" : "Salta le note a piè di pagina"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "脚注の参照番号をスキップ"
+            "value" : "脚注をスキップ"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ignorar números de referência de notas"
+            "value" : "Ignorar notas de rodapé"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "跳过脚注引用编号"
+            "value" : "跳过脚注"
           }
         }
       }
@@ -768,55 +769,55 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Only clearly identified superscript footnote references are skipped. Body numbers and footnote text are kept."
+            "value" : "Skip clearly matched footnote numbers and notes in Read and Explain. Keep uncertain text."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nur eindeutig erkannte hochgestellte Fußnotenverweise werden übersprungen. Zahlen im Text und Fußnotentexte bleiben erhalten."
+            "value" : "Eindeutig zugeordnete Fußnotennummern und Anmerkungen beim Vorlesen und Erklären überspringen. Unklare Texte bleiben erhalten."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Solo se omiten referencias a notas en superíndice claramente identificadas. Se conservan los números del texto y el contenido de las notas."
+            "value" : "Omitir números y notas claramente vinculados al leer y explicar. Conservar el texto dudoso."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seuls les appels de note en exposant clairement identifiés sont ignorés. Les nombres du texte et le contenu des notes sont conservés."
+            "value" : "Ignorer les numéros et notes clairement associés lors de la lecture et de l’explication. Conserver les textes incertains."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "केवल स्पष्ट रूप से पहचाने गए सुपरस्क्रिप्ट फ़ुटनोट संदर्भ छोड़े जाते हैं। मुख्य पाठ की संख्याएँ और फ़ुटनोट का पाठ बनाए रखे जाते हैं।"
+            "value" : "पढ़ते और समझाते समय स्पष्ट रूप से जुड़े फ़ुटनोट नंबर और टिप्पणियाँ छोड़ें। संदिग्ध पाठ बना रहेगा।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vengono saltati solo i richiami in apice chiaramente riconosciuti. I numeri nel testo e il contenuto delle note restano invariati."
+            "value" : "Salta numeri e note chiaramente associati durante la lettura e la spiegazione. Conserva il testo incerto."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "明確に識別できる上付きの脚注参照番号のみをスキップします。本文の数字と脚注の内容は保持します。"
+            "value" : "読み上げと解説で、対応が明確な脚注番号と注釈をスキップします。不確かな内容は残します。"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Somente referências de notas em sobrescrito claramente identificadas são ignoradas. Os números do texto e o conteúdo das notas são mantidos."
+            "value" : "Ignorar números e notas claramente associados ao ler e explicar. Manter o texto incerto."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "仅跳过可明确识别的上标脚注编号，保留正文数字和脚注内容。"
+            "value" : "朗读和解读时跳过可确认的脚注编号及注释，保留无法确认的内容。"
           }
         }
       }

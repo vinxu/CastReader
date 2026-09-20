@@ -1,0 +1,21 @@
+{
+  "allWordsFromVision": true,
+  "case": "footnotes",
+  "paragraphs": 7,
+  "policy": "kindle-vision-reference-v2",
+  "textWordOrderMatches": true,
+  "unchanged": true,
+  "usesProductionKindleEntry": true,
+  "removedWordCount": 0,
+  "definitionParagraphIndices": [
+    3,
+    4
+  ],
+  "numericTokens": [
+    "declination|2|",
+    "inclination|3|",
+    "12",
+    "[3]"
+  ],
+  "bothDefinitionsPreserved": true
+}

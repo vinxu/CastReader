@@ -89,6 +89,16 @@ struct TTSContinuation: Equatable, Sendable {
 // MARK: - TTS Service
 
 protocol ParagraphSpeechGenerating {
+    /// Independently owned producer: promotion changes demand, not the HTTP
+    /// request identity. Checkpoints always identify the first ungenerated part.
+    func generateBufferedSpeech(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double, language: String,
+        includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        continuation: TTSContinuation?,
+        beforeRequest: @escaping (TTSContinuation) async throws -> PresetTTSRequestScheduler.Priority,
+        onSegmentReady: @escaping (AudioSegment) async -> Void
+    ) async throws
+
     func generateTTSForParagraph(
         paragraphIndex: Int, text: String, voice: String?, speed: Double,
         language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
@@ -107,6 +117,29 @@ protocol ParagraphSpeechGenerating {
 }
 
 extension ParagraphSpeechGenerating {
+    func generateBufferedSpeech(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double, language: String,
+        includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        continuation: TTSContinuation?,
+        beforeRequest: @escaping (TTSContinuation) async throws -> PresetTTSRequestScheduler.Priority,
+        onSegmentReady: @escaping (AudioSegment) async -> Void
+    ) async throws {
+        // Protocol fixtures retain the same streaming contract. Production uses
+        // the independent implementation below, not the foreground singleton.
+        var gateError: Error?
+        try await generateTTSForParagraph(paragraphIndex: paragraphIndex, text: text,
+            voice: voice, speed: speed, language: language, includeVoiceCode: includeVoiceCode,
+            speaker: speaker, cloneRequestID: cloneRequestID, continuation: continuation,
+            onCheckpoint: { checkpoint in
+                do { _ = try await beforeRequest(checkpoint) } catch { gateError = error }
+            }, onSegmentReady: { segment in
+                guard gateError == nil, !Task.isCancelled else { return }
+                await onSegmentReady(segment)
+            })
+        if let gateError { throw gateError }
+        try Task.checkCancellation()
+    }
+
     func generateVoiceSwitchSegments(paragraphIndex: Int, text: String, voice: String, language: String) async throws -> [AudioSegment] {
         try await generatePrefetchSegments(paragraphIndex: paragraphIndex, text: text, voice: voice, language: language)
     }
@@ -239,22 +272,47 @@ actor TTSService: ParagraphSpeechGenerating {
         presetPriority: PresetTTSRequestScheduler.Priority,
         onSegmentReady: ((AudioSegment) async -> Void)? = nil
     ) async throws -> [AudioSegment] {
-        var segmentIndex = 0
+        // Keep the collecting API for complete-block callers. Readers needing
+        // early audio consume generateBufferedSpeech directly.
         var segments: [AudioSegment] = []
+        try await generateBufferedSpeech(paragraphIndex: paragraphIndex, text: text,
+            voice: voice, speed: speed, language: language, includeVoiceCode: includeVoiceCode,
+            speaker: speaker, cloneRequestID: cloneRequestID, continuation: nil,
+            beforeRequest: { _ in presetPriority }, onSegmentReady: { segment in
+                segments.append(segment)
+                await onSegmentReady?(segment)
+            })
+        return segments
+    }
+
+    func generateBufferedSpeech(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double, language: String,
+        includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        continuation: TTSContinuation?,
+        beforeRequest: @escaping (TTSContinuation) async throws -> PresetTTSRequestScheduler.Priority,
+        onSegmentReady: @escaping (AudioSegment) async -> Void
+    ) async throws {
+        var segmentIndex = continuation?.nextSegmentIndex ?? 0
         let resolvedVoice = VoiceCatalog.resolvedVoice(
             preferred: voice ?? "",
             for: language
         )
 
-        let requestUnits = TTSSentenceSegmenter.requestUnits(
+        let requestUnits = continuation?.requestUnits ?? ClonedTTSStartup.requestUnits(
             SpeechTextSanitizer.sanitizedForTTS(text),
-            language: language
+            language: language, voice: resolvedVoice
         )
-        for requestUnit in requestUnits {
+        for (unitIndex, requestUnit) in requestUnits.enumerated() {
             var remainingText = requestUnit
             while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
                 try Task.checkCancellation()
-                let networkRequestID = cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex)
+                let checkpoint = TTSContinuation(
+                    requestUnits: [remainingText] + Array(requestUnits.dropFirst(unitIndex + 1)),
+                    nextSegmentIndex: segmentIndex)
+                let presetPriority = try await beforeRequest(checkpoint)
+                try Task.checkCancellation()
+                let networkRequestID = Self.cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex,
+                    text: remainingText, voice: resolvedVoice, language: language, speed: speed, includeVoiceCode: includeVoiceCode)
                     ?? UUID().uuidString
                 ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=\(presetPriority)")
                 let response = try await api.generateTTS(
@@ -286,10 +344,7 @@ actor TTSService: ParagraphSpeechGenerating {
                     speaker: speaker
                 )
                 let segment = ensureDuration(rawSegment)
-                segments.append(segment)
-                if let onSegmentReady {
-                    await onSegmentReady(segment)
-                }
+                await onSegmentReady(segment)
                 segmentIndex += 1
 
                 if let unprocessed = response.unprocessedText,
@@ -301,7 +356,6 @@ actor TTSService: ParagraphSpeechGenerating {
             }
         }
 
-        return segments
     }
 
     // MARK: - Cloud TTS
@@ -347,7 +401,8 @@ actor TTSService: ParagraphSpeechGenerating {
             guard currentRequestId == requestId else { throw TTSError.cancelled }
             do {
                 ttsDebugLog("[TTSService] 📊 Cloud TTS request #\(segmentIndex): \(remainingText.prefix(50))...")
-                let networkRequestID = cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex)
+                let networkRequestID = Self.cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex,
+                    text: remainingText, voice: voice, language: language, speed: speed, includeVoiceCode: includeVoiceCode)
                     ?? UUID().uuidString
                 ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=interactive")
                 let response = try await api.generateTTS(
@@ -433,12 +488,19 @@ actor TTSService: ParagraphSpeechGenerating {
         }
     }
 
-    nonisolated private func cloneSubrequestID(
+    nonisolated static func cloneSubrequestID(
         base: String?,
-        segmentIndex: Int
+        segmentIndex: Int, text: String, voice: String,
+        language: String, speed: Double, includeVoiceCode: Bool
     ) -> String? {
         guard let base, !base.isEmpty else { return nil }
-        return "\(base)-\(segmentIndex)"
+        // Retries of exactly the same speech keep their quota identity. A
+        // prefetch/foreground partition or backend partial-tail change must
+        // never reuse a successful subrequest ID for different speech.
+        let fields = [base, String(segmentIndex), text, voice, language,
+                      String(speed), String(includeVoiceCode)]
+        let payload = fields.map { "\($0.utf8.count):\($0)" }.joined()
+        return "cr2-" + ReadingResumeContract.fingerprint(payload)
     }
 
     // MARK: - 时间戳合成（后端对中文等语言不返回词时间戳时，按真实音频时长在字符上均匀合成）

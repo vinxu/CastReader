@@ -1,0 +1,128 @@
+2026-09-18 23:06:18.936 CastReader[21170:3986913] CRDBG generate para=4 lang=en voice=vl_b4bb75aa2d3e56fd90a2 epoch=1 web=N
+2026-09-18 23:06:19.033 CastReader[21170:3986913] CRDBG generate request begin para=4 voice=vl_b4bb75aa2d3e56fd90a2 epoch=1
+[TTSRoute] language=en voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=en voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=en voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=en voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=en voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=en voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=en voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+2026-09-18 23:07:03.309 CastReader[21170:3986913] CRDBG voice switch begin lang=en from=vl_b4bb75aa2d3e56fd90a2 to=af_bella para=10 autoPlay=N
+2026-09-18 23:07:03.316 CastReader[21170:3986913] CRDBG generate para=0 lang=en voice=af_bella epoch=2 web=N
+2026-09-18 23:07:03.319 CastReader[21170:3986913] CRDBG generate request begin para=0 voice=af_bella epoch=2
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:07:06.767 CastReader[21170:3987062] CR_TTS_TRANSPORT response request=DA21C2C8-F282-41B2-9012-A45446398CC2 host=tts.castreader.ai status=200 bytes=49696 elapsedMs=3435 fallback=false
+2026-09-18 23:07:35.387 CastReader[21170:3986913] CRDBG generate para=1 lang=en voice=af_bella epoch=3 web=N
+2026-09-18 23:07:35.421 CastReader[21170:3986913] CRDBG generate request begin para=1 voice=af_bella epoch=3
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:07:37.185 CastReader[21170:3987997] CR_TTS_TRANSPORT response request=666A0302-0428-4F3C-963F-590CC2D3685E host=tts.castreader.ai status=200 bytes=128072 elapsedMs=1762 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:07:38.744 CastReader[21170:3987516] CR_TTS_TRANSPORT response request=C491FD3A-2327-4D1D-9E77-A6818FC403E4 host=tts.castreader.ai status=200 bytes=125119 elapsedMs=1464 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:07:39.936 CastReader[21170:3988010] CR_TTS_TRANSPORT response request=7785445A-4FB8-4980-9787-1AD422BB5ED6 host=tts.castreader.ai status=200 bytes=51734 elapsedMs=1164 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:07:41.003 CastReader[21170:3987516] CR_TTS_TRANSPORT response request=D5B373E5-BAF4-465B-B55E-F887749D1500 host=tts.castreader.ai status=200 bytes=118629 elapsedMs=1038 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:07:44.247 CastReader[21170:3988008] CR_TTS_TRANSPORT response request=BC04AB49-1921-4CAD-BBC5-A0CAEEABA322 host=tts.castreader.ai status=200 bytes=69785 elapsedMs=882 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:07:45.309 CastReader[21170:3988009] CR_TTS_TRANSPORT response request=44D7BCC4-54FA-414E-ADF9-D9809E603BCC host=tts.castreader.ai status=200 bytes=142629 elapsedMs=1051 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:07:53.155 CastReader[21170:3988010] CR_TTS_TRANSPORT response request=3066DF52-FAC2-41FC-BD62-8CDDADD9A2F2 host=tts.castreader.ai status=200 bytes=65285 elapsedMs=1198 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:07:58.665 CastReader[21170:3988170] CR_TTS_TRANSPORT response request=3F4FF98A-A2CC-42F1-A5A6-C7723BAB8EA0 host=tts.castreader.ai status=200 bytes=115220 elapsedMs=1024 fallback=false
+2026-09-18 23:08:00.626 CastReader[21170:3986913] CRDBG voice switch begin lang=en from=af_bella to=vl_d1efb23a380bdaa2f6b0 para=5 autoPlay=Y
+2026-09-18 23:08:00.639 CastReader[21170:3986913] CRDBG generate para=5 lang=en voice=vl_d1efb23a380bdaa2f6b0 epoch=4 web=N
+2026-09-18 23:08:00.676 CastReader[21170:3986913] CRDBG generate request begin para=5 voice=vl_d1efb23a380bdaa2f6b0 epoch=4
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-18 23:08:25.556 CastReader[21170:3986913] CRDBG voice switch begin lang=en from=vl_d1efb23a380bdaa2f6b0 to=vc_62934fe77f764051aa341b4b076bbb85 para=9 autoPlay=Y
+2026-09-18 23:08:25.563 CastReader[21170:3986913] CRDBG generate para=9 lang=en voice=vc_62934fe77f764051aa341b4b076bbb85 epoch=5 web=N
+2026-09-18 23:08:25.569 CastReader[21170:3986913] CRDBG generate request begin para=9 voice=vc_62934fe77f764051aa341b4b076bbb85 epoch=5
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+2026-09-18 23:08:45.477 CastReader[21170:3986913] CRDBG generate para=3 lang=en voice=vc_62934fe77f764051aa341b4b076bbb85 epoch=6 web=N
+2026-09-18 23:08:45.536 CastReader[21170:3986913] CRDBG generate request begin para=3 voice=vc_62934fe77f764051aa341b4b076bbb85 epoch=6
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+2026-09-18 23:09:20.680 CastReader[21170:3986913] CRDBG voice switch begin lang=en from=vc_62934fe77f764051aa341b4b076bbb85 to=af_bella para=9 autoPlay=Y
+2026-09-18 23:09:20.693 CastReader[21170:3986913] CRDBG generate para=9 lang=en voice=af_bella epoch=7 web=N
+2026-09-18 23:09:20.698 CastReader[21170:3986913] CRDBG generate request begin para=9 voice=af_bella epoch=7
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:09:21.955 CastReader[21170:3989379] CR_TTS_TRANSPORT response request=F2494F0E-CF3F-4D23-89F4-9DBEC6435698 host=tts.castreader.ai status=200 bytes=61114 elapsedMs=1215 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:09:23.209 CastReader[21170:3989468] CR_TTS_TRANSPORT response request=23DC9EA1-EB28-4C88-8F30-E06BD5AFCCB5 host=tts.castreader.ai status=200 bytes=127338 elapsedMs=1136 fallback=false
+[QuickRead] extract-plan START base=https://api.castreader.ai source=castreader://doc/3D3FFBBE-B555-494F-8BC1-5417DD053854 scenario=general depth=standard lang=auto paras=11 chars=797 bytes=2907
+[QuickRead] SSE stage=extract
+[QuickRead] SSE block0 job=qrc_NFWbs9hAX_gWtTFgW2fxxMHiyQGTF_hh total_hint=3 marks=2 text=189
+[QuickRead] SSE done job=qrc_NFWbs9hAX_gWtTFgW2fxxMHiyQGTF_hh total=3 model=gemini-3.8-flash
+[QuickRead] extract-plan DONE job=qrc_NFWbs9hAX_gWtTFgW2fxxMHiyQGTF_hh total=3 model=gemini-3.8-flash route=account elapsed=6.74s
+[QuickRead] extract-block[1] START bytes=63
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:09:56.289 CastReader[21170:3989372] CR_TTS_TRANSPORT response request=8B2317F1-038A-4B86-9412-491A43E59388 host=tts.castreader.ai status=200 bytes=236031 elapsedMs=1542 fallback=false
+[QuickRead] compose-block[0] ts=31 dur=10.9 START bytes=2206
+[QuickRead] compose-block[0] ts=31 dur=10.9 DONE marks=2 text=189 elapsed=0.46s
+[QuickRead] extract-block[1] DONE marks=3 text=372 elapsed=5.24s
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:10:02.225 CastReader[21170:3989372] CR_TTS_TRANSPORT response request=DEB00C08-05CB-47A6-972B-84DD28AC3B42 host=tts.castreader.ai status=200 bytes=472827 elapsedMs=2245 fallback=false
+[QuickRead] compose-block[1] ts=59 dur=22.0 START bytes=3202
+[QuickRead] compose-block[1] ts=59 dur=22.0 DONE marks=3 text=372 elapsed=0.71s
+[QuickRead] extract-block[2] START bytes=63
+[QuickRead] extract-block[2] DONE marks=2 text=227 elapsed=2.52s
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:10:07.345 CastReader[21170:3989806] CR_TTS_TRANSPORT response request=1F5A2D2F-DD03-46F4-8B37-C116DD341537 host=tts.castreader.ai status=200 bytes=302042 elapsedMs=1880 fallback=false
+[QuickRead] compose-block[2] ts=37 dur=14.0 START bytes=2621
+[QuickRead] compose-block[2] ts=37 dur=14.0 DONE marks=2 text=227 elapsed=0.87s
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[QuickRead] compose-block[2] ts=37 dur=15.1 START bytes=1775
+[QuickRead] compose-block[2] ts=37 dur=15.1 DONE marks=2 text=227 elapsed=0.87s
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[QuickRead] compose-block[0] ts=31 dur=11.6 START bytes=1616
+[QuickRead] compose-block[0] ts=31 dur=11.6 DONE marks=2 text=189 elapsed=1.17s
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[QuickRead] compose-block[1] ts=57 dur=22.5 START bytes=2803
+[QuickRead] compose-block[1] ts=57 dur=22.5 DONE marks=3 text=372 elapsed=0.70s
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[QuickRead] compose-block[2] ts=37 dur=13.8 START bytes=1744
+[QuickRead] compose-block[2] ts=37 dur=13.8 DONE marks=2 text=227 elapsed=0.59s
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[QuickRead] compose-block[0] ts=31 dur=11.4 START bytes=1561
+[QuickRead] compose-block[0] ts=31 dur=11.4 DONE marks=2 text=189 elapsed=0.56s
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[QuickRead] compose-block[1] ts=58 dur=21.9 START bytes=2903
+[QuickRead] compose-block[1] ts=58 dur=21.9 DONE marks=3 text=372 elapsed=0.66s
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:20:07.479 CastReader[21170:3994872] CR_TTS_TRANSPORT response request=C7DC064F-433D-4A55-A3C5-70335250EC3A host=tts.castreader.ai status=200 bytes=302032 elapsedMs=5790 fallback=false
+[QuickRead] compose-block[2] ts=37 dur=14.0 START bytes=2611
+[QuickRead] compose-block[2] ts=37 dur=14.0 DONE marks=2 text=227 elapsed=0.48s
+2026-09-18 23:21:52.574 CastReader[21170:3986913] CRDBG generate para=4 lang=en voice=af_bella epoch=9 web=N
+2026-09-18 23:21:52.618 CastReader[21170:3986913] CRDBG generate request begin para=4 voice=af_bella epoch=9
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:21:54.276 CastReader[21170:3995757] CR_TTS_TRANSPORT response request=F490C2DC-0123-4697-B9E2-41E61C2757AD host=tts.castreader.ai status=200 bytes=118629 elapsedMs=1637 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:21:55.536 CastReader[21170:3995758] CR_TTS_TRANSPORT response request=E7BC085E-C399-43C1-9A7E-FD8EE507AA83 host=tts.castreader.ai status=200 bytes=69891 elapsedMs=1166 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:21:56.902 CastReader[21170:3995758] CR_TTS_TRANSPORT response request=2A76A597-C4B9-437E-B304-607045E28C30 host=tts.castreader.ai status=200 bytes=142441 elapsedMs=1337 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:21:58.470 CastReader[21170:3995939] CR_TTS_TRANSPORT response request=7F662EA8-CFEF-4B79-AEA7-3F82F27DB307 host=tts.castreader.ai status=200 bytes=65285 elapsedMs=1548 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:22:01.473 CastReader[21170:3995758] CR_TTS_TRANSPORT response request=AD2A2023-C0BE-4F85-9E35-C96627BFD37A host=tts.castreader.ai status=200 bytes=115220 elapsedMs=1445 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:22:13.529 CastReader[21170:3995907] CR_TTS_TRANSPORT response request=C9342697-77CC-45A3-B736-1812C443E5DC host=tts.castreader.ai status=200 bytes=61114 elapsedMs=1459 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-18 23:22:15.060 CastReader[21170:3996254] CR_TTS_TRANSPORT response request=EDEC76C1-EDCA-4D6E-A548-E50AF87ECA30 host=tts.castreader.ai status=200 bytes=127338 elapsedMs=1527 fallback=false

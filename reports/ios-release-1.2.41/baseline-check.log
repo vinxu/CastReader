@@ -1,0 +1,6 @@
+Integration source: /Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914
+Release baseline: b6dd4d7
+HEAD: febfeabf869c2f77b57d360e970218899c87aa02
+Tracked patch SHA-256: 52619ebb1a7f6d48815b667e437890d373030abf3602430fd22df2359f1fe6bf  -
+b1e4593a7d714e7cf3af0482b7d013e53b4932e5a2ca6f5bb2d45800cbd2d4b9  CastReader/Services/SpeechStreamBuffer.swift
+56f9301d76f98b5e49f6727b3d77e92e6d9759c8f9fe05b2064167b630cf6ee8  CastReaderTests/SpeechPipelineTests.swift

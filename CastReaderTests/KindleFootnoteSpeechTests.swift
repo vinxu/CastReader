@@ -152,6 +152,121 @@ final class KindleFootnoteSpeechTests: XCTestCase {
         XCTAssertTrue(prepare(normal).paragraphs[0].skippedSourceWordIndices.isEmpty)
     }
 
+    func testPairedDefinitionsAndInlineMarkersAreRemovedWithStableSourceGeometry() throws {
+        let doc = noteDocument([
+            "We measured declination|2| and inclination|3| in 1924.",
+            "[2] The declination is the variation of the magnetic compass.",
+            "[3] Inclination is the dip of the magnetic needle.",
+            "The journey continued in 1894."
+        ])
+        let projected = KindleFootnoteSpeech.prepare(document: doc)
+        XCTAssertEqual(projected.paragraphs.map(\.spokenText), ["We measured declination and inclination in 1924.", "", "", "The journey continued in 1894."])
+        XCTAssertEqual(projected.paragraphs.map(\.sourceParagraphID), [0, 1, 2, 3])
+        let first = projected.paragraphs[0]
+        XCTAssertEqual(first.spokenParagraph.words[2].text, "declination")
+        for (i, word) in first.spokenParagraph.words.enumerated() {
+            let source = doc.paragraphs[0].words[first.spokenWordSourceIndices[i]]
+            XCTAssertEqual(word.id, source.id)
+            XCTAssertEqual(word.bboxNorm, source.bboxNorm)
+            XCTAssertEqual(word.sourceLineID, source.sourceLineID)
+            XCTAssertEqual(word.inkBoundsChecked, source.inkBoundsChecked)
+        }
+        for paragraph in projected.paragraphs {
+            let source = Array(paragraph.sourceParagraph.text)
+            XCTAssertEqual(String(paragraph.spokenCharacterSourceOffsets.map { source[$0] }), paragraph.spokenText)
+        }
+    }
+
+    func testVisionAndAndroidDamagedDefinitionBracketsRequireUniqueTermPair() {
+        for marker in ["12", "[21", "[2l", "[2I", "2]", "［2］", "{2}"] {
+            let doc = noteDocument(["We measured declination|2| today.", "\(marker) The declination is the variation of the compass."])
+            let page = KindleFootnoteSpeech.prepare(document: doc)
+            XCTAssertEqual(page.paragraphs[0].spokenText, "We measured declination today.", marker)
+            XCTAssertEqual(page.paragraphs[1].spokenText, "", marker)
+        }
+    }
+
+    func testAmbiguousDamagedNumberAndUnpairedOrMixedNarrativeArePreserved() {
+        let cases = [
+            ["We measured declination|2| and declination|12|.", "12 The declination is the variation of the compass."],
+            ["We measured declination|2| and declination|21|.", "[21 The declination is the variation of the compass."],
+            ["We measured declination|2| today.", "[2] The inclination is the dip of the needle."],
+            ["We measured declination|2| today.", "[2] The declination is the variation of the compass. We left at noon."],
+            ["We measured declination|2| today.", "[2] The declination is the variation of the compass.", "[2] Declination is another variation of the compass."],
+            ["There were 12 people.", "[2] The declination is the variation of the compass."]
+        ]
+        for texts in cases {
+            XCTAssertEqual(KindleFootnoteSpeech.prepare(document: noteDocument(texts)).paragraphs.map(\.spokenText), texts)
+        }
+    }
+
+    func testMergedTailNoteRequiresRealLineBoundaryAndPreservesPrecedingProse() {
+        let texts = ["We measured declination|2| today.", "The journey continued. [2] The declination is the variation of the compass."]
+        var doc = noteDocument(texts)
+        XCTAssertEqual(KindleFootnoteSpeech.prepare(document: doc).paragraphs.map(\.spokenText), texts)
+        doc.paragraphs[1] = noteParagraph(texts[1], id: 1, lineStarts: [3])
+        XCTAssertEqual(KindleFootnoteSpeech.prepare(document: doc).paragraphs.map(\.spokenText), ["We measured declination today.", "The journey continued."])
+    }
+
+    func testIndentedNoteIsOneDefinitionAndKeepsStableSourceOffsets() {
+        let doc = noteDocument(["We measured declination|2| today.", "  [2] The declination is the variation of the compass."])
+        let page = KindleFootnoteSpeech.prepare(document: doc)
+        XCTAssertEqual(page.paragraphs[0].spokenText, "We measured declination today.")
+        XCTAssertEqual(page.paragraphs[1].spokenText, "")
+    }
+
+    func testIncompleteBindingPreservesBothReferenceAndDefinition() {
+        var doc = noteDocument(["We measured declination|2| today.", "[2] The declination is the variation of the compass."])
+        doc.paragraphs[0] = ReadingParagraph(id: 0, text: "Missing " + doc.paragraphs[0].text, words: doc.paragraphs[0].words)
+        XCTAssertEqual(KindleFootnoteSpeech.prepare(document: doc).paragraphs.map(\.spokenText), doc.paragraphs.map(\.text))
+    }
+
+    @MainActor
+    func testReadExplainAndPrefetchShareProjectionAndMarksMapBackToOriginal() throws {
+        let key = "kindle.skipFootnoteReferences.v1"
+        let old = UserDefaults.standard.object(forKey: key)
+        defer { if let old { UserDefaults.standard.set(old, forKey: key) } else { UserDefaults.standard.removeObject(forKey: key) } }
+        UserDefaults.standard.set(true, forKey: key)
+        let doc = noteDocument(["We measured declination|2| and inclination during the journey.", "[2] The declination is the variation of the compass."])
+        let read = KindleFootnoteSpeech.prepare(document: doc)
+        let explain = ExplainViewModel.explanationInput(doc)
+        XCTAssertEqual(explain.paragraphs, read.paragraphs.map(\.spokenParagraph))
+        let vm = ExplainViewModel(document: doc)
+        defer { vm.stop(); vm.deactivate() }
+        let hit = try XCTUnwrap(MarkAnchoring.locate(markText: "inclination during the journey", in: explain, near: nil))
+        let range = try XCTUnwrap(vm.sourceMarkRange(paragraphID: hit.paragraphIndex, range: hit.range))
+        XCTAssertEqual(String(Array(doc.paragraphs[0].text)[range]), "inclination during the journey.")
+        XCTAssertEqual(vm.document, doc, "The visual document stays original")
+        UserDefaults.standard.set(false, forKey: key)
+        XCTAssertEqual(ExplainViewModel.explanationInput(doc).paragraphs, doc.paragraphs)
+        XCTAssertNotEqual(read.cacheSignature, KindleFootnoteSpeech.prepare(document: doc, skipReferences: false).cacheSignature)
+    }
+
+    func testUnicodeCharacterOffsetsSurvivePartialTokenRemoval() throws {
+        let doc = noteDocument(["We measured déclination|2| and inclination today.", "[2] The déclination is the variation of the compass."])
+        let page = KindleFootnoteSpeech.prepare(document: doc)
+        XCTAssertFalse(page.paragraphs[0].spokenText.contains("|2|"))
+        let source = Array(doc.paragraphs[0].text)
+        XCTAssertEqual(String(page.paragraphs[0].spokenCharacterSourceOffsets.map { source[$0] }), page.paragraphs[0].spokenText)
+    }
+
+    private func noteDocument(_ texts: [String]) -> ReadingDocument {
+        ReadingDocument(title: "Notes", sourceKind: .kindle, language: "en",
+                        paragraphs: texts.enumerated().map { noteParagraph($0.element, id: $0.offset) },
+                        imagePixelSize: CGSize(width: 1000, height: 1000))
+    }
+
+    private func noteParagraph(_ text: String, id: Int, lineStarts: Set<Int> = []) -> ReadingParagraph {
+        var line = id * 10
+        let words = text.split(separator: " ").enumerated().map { index, token in
+            if lineStarts.contains(index) { line += 1 }
+            return OCRWord(id: id * 100 + index, text: String(token),
+                bboxNorm: CGRect(x: 0.02 + Double(index) * 0.06, y: 0.8 - Double(line) * 0.01, width: 0.05, height: 0.02),
+                bboxSource: .visionTextRange, sourceLineID: line, recognitionConfidence: 1)
+        }
+        return ReadingParagraph(id: id, text: text, words: words)
+    }
+
     private func measuredParagraph(raised: Bool = true, failedIndices: Set<Int> = [],
                                    flattenRawBoxes: Bool = true) -> ReadingParagraph {
         let source = paragraph(raised: raised)

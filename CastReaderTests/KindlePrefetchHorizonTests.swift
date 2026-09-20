@@ -153,7 +153,7 @@ final class KindlePrefetchHorizonTests: XCTestCase {
         XCTAssertEqual(vm.preparedKindlePageAudioTail?.lastSegmentID, "1-0")
     }
 
-    func testOtherReaderSourcesRetainSingleParagraphPrefetch() async throws {
+    func testOtherReaderSourcesUseSharedBoundedPrefetch() async throws {
         let texts = (0..<10).map { "Paragraph \($0)." }
         let fixture = ReadAloudHTTPFixture { input, _ in
             .response(ReadAloudHTTPFixture.body(input, duration: 2))
@@ -164,10 +164,10 @@ final class KindlePrefetchHorizonTests: XCTestCase {
                                    audioService: audio, ttsService: fixture.service())
         defer { vm.deactivate(); audio.stop() }
         vm.dbgGenerate(0)
-        try await waitUntil { vm.dbgPrefetchedIndex == 1 }
+        try await waitUntil { vm.dbgKindleReadyIndices.count == 6 }
         XCTAssertEqual(vm.currentParagraphIndex, 0)
-        XCTAssertEqual(fixture.requests.count, 2)
-        XCTAssertTrue(vm.dbgKindlePrefetchIndices.isEmpty)
+        XCTAssertEqual(fixture.requests.count, 7)
+        XCTAssertEqual(vm.dbgKindlePrefetchIndices, Array(1...6))
     }
 
     func testSlowNextSentenceIsRequestedBeforeAnyFartherParagraph() async throws {

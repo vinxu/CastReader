@@ -1,0 +1,34 @@
+{
+  "mode": "executed",
+  "versionId": "6ad32f79-da45-4ded-8863-be8ef3d0afe9",
+  "locales": [
+    "en-US",
+    "zh-Hans",
+    "zh-Hant",
+    "ja",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "de-DE",
+    "pt-BR",
+    "it",
+    "hi"
+  ],
+  "changed": [
+    "fr-FR",
+    "en-US",
+    "hi",
+    "pt-BR",
+    "zh-Hant",
+    "zh-Hans",
+    "ja",
+    "de-DE",
+    "es-ES",
+    "es-MX",
+    "it"
+  ],
+  "onlyField": "whatsNew",
+  "untouchedVersionFieldsPreserved": true,
+  "pendingAppInfoId": "2795ac8a-92b4-4401-a8d5-6e63b3385fb1",
+  "appInfoChanged": false
+}

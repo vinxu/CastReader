@@ -46,6 +46,40 @@ final class KindleWebViewContainerTests: XCTestCase {
         }
     }
 
+    func testLiveAnimationResumesTheNativeClockPhaseWithoutChangingStroke() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        try await installMarkPage(in: fixture.webView)
+        let web = fixture.webView
+        let canvas = try await markJSON(web, payload: ["paragraphIndex": 0, "canvasOnly": true])
+        let width = try XCTUnwrap(canvas["width"] as? Double)
+        let height = try XCTUnwrap(canvas["height"] as? Double)
+        let ink = HandwrittenMark.stroke(action: "underline", rects: [
+            CGRect(x: 30, y: 80, width: 320, height: 22), CGRect(x: 30, y: 110, width: 320, height: 22)
+        ], seed: 123, weight: "primary")
+        let payload: [String: Any] = ["paragraphIndex": 0, "id": "clock-mark", "animate": true,
+            "canvasKey": canvas["key"]!, "canvasWidth": width, "canvasHeight": height,
+            "ink": ink.svgPayload(canvasSize: CGSize(width: width, height: height)),
+            "inkElapsedMs": 1100, "inkDurationMs": 2200]
+        let result = try await markJSON(web, payload: payload)
+        XCTAssertEqual(result["ok"] as? Bool, true)
+        let progress = try await web.evaluateJavaScript("""
+          (() => {
+            const p = document.querySelector('[data-cr-mark-id] path');
+            const a = p.getAnimations()[0]; a.pause(); a.currentTime = 0;
+            return a.effect.getComputedTiming().progress;
+          })()
+        """) as? Double
+        let native = KindleMarkAnimationClock.Animation(startedAt: 100, duration: 2.2)
+        XCTAssertEqual(try XCTUnwrap(progress), Double(native.progress(at: 101.1)), accuracy: 0.002)
+        let attributes = try await markPathAttributes(web)
+        XCTAssertEqual(attributes["width"] as? Double, Double(ink.lineWidth))
+        XCTAssertEqual(attributes["d"] as? String, ink.svgPayload(canvasSize: CGSize(width: width, height: height))["path"] as? String)
+        _ = try await web.evaluateJavaScript("document.querySelector('[data-cr-mark-id] path').getAnimations()[0].finish()")
+        let completed = try await markPathAttributes(web)
+        XCTAssertEqual(NSDictionary(dictionary: attributes), NSDictionary(dictionary: completed))
+    }
+
     func testExplainInkRejectsPageOrGeometryChangedBeforeDraw() async throws {
         let fixture = try await ContainerFixture.make()
         defer { fixture.close() }
@@ -102,8 +136,11 @@ final class KindleWebViewContainerTests: XCTestCase {
         let root = ZStack(alignment: .topLeading) {
             Color.white
             ForEach(actions.indices, id: \.self) { i in
-                MarkInkView(rects: rects[i], action: actions[i], seed: UInt64(i + 17), n: nil,
-                            animateOnAppear: false)
+                KindleTimedMarkInkView(
+                    ink: HandwrittenMark.stroke(action: actions[i], rects: rects[i], seed: UInt64(i + 17)),
+                    animation: KindleMarkAnimationClock.Animation(
+                        startedAt: ProcessInfo.processInfo.systemUptime - 10, duration: 2.2)
+                )
             }
         }.frame(width: size.width, height: size.height).ignoresSafeArea()
         let host = UIHostingController(rootView: root)

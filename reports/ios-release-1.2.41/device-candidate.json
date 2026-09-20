@@ -1,0 +1,9 @@
+{
+  "version": "1.2.41",
+  "build": "63",
+  "bundleID": "com.same.castreader",
+  "binarySHA256": "bb3e24e355998c4b9be345fc008f3fcd591a19a9cbaee168fb27715492de271a",
+  "uuids": "UUID: D99F968F-0D02-3FE8-BBDD-516F69C86B2C (arm64) /tmp/CastReaderSpeechDevice20260918/Build/Products/Debug-iphoneos/CastReader.app/CastReader.debug.dylib",
+  "installed": true,
+  "installedAt": "2026-09-18T23:05:02+08:00"
+}

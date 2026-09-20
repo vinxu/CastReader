@@ -1,0 +1,18 @@
+{
+  "uploadReceipt": "aa33b7a4-cbc2-4c7d-aa76-a626434af0b8",
+  "state": {
+    "errors": [
+
+    ],
+    "warnings": [
+
+    ],
+    "infos": [
+
+    ],
+    "state": "AWAITING_UPLOAD"
+  },
+  "visibleBuilds": [
+
+  ]
+}

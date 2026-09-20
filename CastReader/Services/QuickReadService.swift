@@ -213,6 +213,7 @@ enum QuickReadError: Error, LocalizedError {
     case serverError(String)
     case decodeError(String)
     case noBlock0
+    case textTooShort
     case computeSessionExpired
     case missingJobTransport
 
@@ -222,6 +223,7 @@ enum QuickReadError: Error, LocalizedError {
         case .httpError(let c): return AppLocalized("解读服务错误 (HTTP \(c))")
         case .serverError(let m): return AppLocalized("解读失败：\(m)")
         case .decodeError(let m): return AppLocalized("解读数据解析失败：\(m)")
+        case .textTooShort: return AppLocalized("内容太短，无法解读，试试朗读")
         case .noBlock0: return AppLocalized("解读未返回首块内容")
         case .computeSessionExpired: return AppLocalized("解读算力凭据已过期")
         case .missingJobTransport: return AppLocalized("解读任务线路状态已丢失，请重新开始解读")
@@ -239,9 +241,9 @@ enum QuickReadSSEErrorMapper {
         let containers = [root, nested].compactMap { $0 }
         for container in containers {
             for key in ["errorCode", "error_code", "code", "error"] {
-                if let code = container[key] as? String,
-                   code == "COMPUTE_SESSION_EXPIRED" {
-                    return .computeSessionExpired
+                if let code = container[key] as? String {
+                    if code == "COMPUTE_SESSION_EXPIRED" { return .computeSessionExpired }
+                    if code == "text_too_short" { return .textTooShort }
                 }
             }
         }
@@ -598,6 +600,9 @@ actor QuickReadService {
         data: Data,
         transport: QuickReadTransportKind
     ) -> QuickReadError {
+        if status == 400, structuredErrorCode(in: data) == "text_too_short" {
+            return .textTooShort
+        }
         if transport == .computeTicket,
            status == 401,
            structuredErrorCode(in: data) == "COMPUTE_SESSION_EXPIRED" {
@@ -614,7 +619,7 @@ actor QuickReadService {
             guard let object = value as? [String: Any] else { return nil }
             for key in ["errorCode", "error_code", "code", "error"] {
                 if let code = object[key] as? String,
-                   code == "COMPUTE_SESSION_EXPIRED" {
+                   ["COMPUTE_SESSION_EXPIRED", "text_too_short"].contains(code) {
                     return code
                 }
             }

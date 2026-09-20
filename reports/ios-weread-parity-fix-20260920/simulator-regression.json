@@ -1,0 +1,261 @@
+{
+  "suiteRun": "/tmp/castreader-weread-fix2-20260920.xcresult",
+  "passed": 51,
+  "tests": [
+    {
+      "suite": "AO3WebReaderTests",
+      "test": "testChapterNavigationReplacesCommittedContentAndErrorPageClearsIt",
+      "duration": "1.899 seconds"
+    },
+    {
+      "suite": "AO3WebReaderTests",
+      "test": "testLateNoticeInvalidatesBothModesAndDoesNotRestartPausedPlayback",
+      "duration": "1.475 seconds"
+    },
+    {
+      "suite": "AO3WebReaderTests",
+      "test": "testNoticeIncludingHiddenPendingPhaseNeverCommitsAndRecoversAutomatically",
+      "duration": "2.431 seconds"
+    },
+    {
+      "suite": "AO3WebReaderTests",
+      "test": "testPayloadRejectsForeignHostsAndStaleChapterButIgnoresAnchor",
+      "duration": "0.012 seconds"
+    },
+    {
+      "suite": "AO3WebReaderTests",
+      "test": "testRepeatedCachedPageRestorationRenewsIdentityAndObserver",
+      "duration": "2.017 seconds"
+    },
+    {
+      "suite": "AO3WebReaderTests",
+      "test": "testSameTextReplacementRebindsDOMAndRepeatedProseIsPreserved",
+      "duration": "1.047 seconds"
+    },
+    {
+      "suite": "AO3WebReaderTests",
+      "test": "testUnwrappedMixedBlocksStayStableAcrossRepeatedExtraction",
+      "duration": "0.846 seconds"
+    },
+    {
+      "suite": "ReadAloudContinuationTests",
+      "test": "testDeactivateRejectsLateTailAndOldSessionCannotResume",
+      "duration": "1.016 seconds"
+    },
+    {
+      "suite": "ReadAloudContinuationTests",
+      "test": "testHTTP500BeforePrefixEndsCannotSkipTailAndRetryDoesNotReplayPrefix",
+      "duration": "2.115 seconds"
+    },
+    {
+      "suite": "ReadAloudContinuationTests",
+      "test": "testLocalSentenceCheckpointRetainsLaterUnstartedUnits",
+      "duration": "0.013 seconds"
+    },
+    {
+      "suite": "ReadAloudContinuationTests",
+      "test": "testPauseAndResumeFirstRequestPreservesItsProducer",
+      "duration": "1.077 seconds"
+    },
+    {
+      "suite": "ReadAloudContinuationTests",
+      "test": "testPauseWhileFailedTailPrefixIsStillPlayingDoesNotTriggerRetry",
+      "duration": "2.880 seconds"
+    },
+    {
+      "suite": "ReadAloudContinuationTests",
+      "test": "testPauseWhilePrefetchIsInFlightWaitsForExplicitResumeWithoutDuplicateRequest",
+      "duration": "1.612 seconds"
+    },
+    {
+      "suite": "ReadAloudContinuationTests",
+      "test": "testTimeoutAfterPrefixDrainsRetriesOnlyMissingTail",
+      "duration": "1.253 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testBufferDemandAccountsForRateAndPause",
+      "duration": "0.005 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testCompletedReaderPreparesNewVoiceWithoutReplayingOldAudio",
+      "duration": "1.173 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testExplanationKeepsAmbiguousOrParaphrasedMarksOnComposePath",
+      "duration": "0.032 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testExplanationPublishesTimedMarksWithFirstShortUnitBeforeDelayedTail",
+      "duration": "3.043 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testForegroundReadAheadStopsAtTimeBudgetAndWhilePaused",
+      "duration": "0.687 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testKindleBridgeWaitsForActualFinalMultilineMarkAfterAudioEnds",
+      "duration": "2.927 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testManualTurnDuringNaturalAudioGapPreservesResumeButExplicitPauseWins",
+      "duration": "0.363 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testPausedReadAheadCannotAutoPromoteOrDispatchMoreWork",
+      "duration": "2.297 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testPlayDuringKindleInkDrainResumesExactlyOnePageWithoutReplayingAudio",
+      "duration": "2.893 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testPromotedReadAheadFailureRetriesOnlyMissingTail",
+      "duration": "1.551 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testReadAheadFirstAudioPlaysBeforeTailAcrossReaderSources",
+      "duration": "16.663 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testRetainedExplanationCannotStealCurrentReadOnVoiceChange",
+      "duration": "0.234 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testRetainedReaderCannotStealNewDocumentOnVoiceChange",
+      "duration": "0.231 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testStoppingKindleDuringFinalInkRevokesAutomaticTurn",
+      "duration": "3.530 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testSuffixRejectsChangedTextAndPreservesUnicodeBoundary",
+      "duration": "0.029 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testVoiceSwitchSendsOnlyVerifiedSuffixAndReusesCompletedVoice",
+      "duration": "1.549 seconds"
+    },
+    {
+      "suite": "SpeechPipelineTests",
+      "test": "testVoiceSwitchSkipsEvenShortVerifiedPrefix",
+      "duration": "1.531 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testCancellationOwnsLateProbe",
+      "duration": "0.002 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testCanvasCoverWithHiddenSourceAndNoPreviousIsRecognized",
+      "duration": "0.779 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testChangedCoversAreBoundedToFourTurns",
+      "duration": "0.007 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testCoverAdvancesOnceAndWaitsForCommittedBody",
+      "duration": "0.001 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testHiddenCoverOnSlowBodyPageAndOpenAaCannotAdvance",
+      "duration": "0.528 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testHiddenDuplicateNextIsNotClickedAndHiddenPanelDoesNotBlock",
+      "duration": "0.581 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testNoChangeTimesOutWithoutClickingTwice",
+      "duration": "0.007 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testProductionBridgeCoverToBodyUsesNativeNextAndDetectsChinese",
+      "duration": "0.611 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testSleepExpiryOrOwnershipChangeWhileProbingCannotClickOrResume",
+      "duration": "0.016 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testSlowBodyAndPaywallAreNeverSkipped",
+      "duration": "0.001 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testViewModelPauseCancelsPendingCoverPreparation",
+      "duration": "0.086 seconds"
+    },
+    {
+      "suite": "WeReadOpeningPlaybackTests",
+      "test": "testVisibleFlyleafIntroWithPreviousIsSkippedButHiddenIntroIsNot",
+      "duration": "0.504 seconds"
+    },
+    {
+      "suite": "WeReadPageAvailabilityTests",
+      "test": "testErrorStopsExplanationAndClearsItsCachedNarration",
+      "duration": "1.427 seconds"
+    },
+    {
+      "suite": "WeReadPageAvailabilityTests",
+      "test": "testErrorSurfaceStopsDelayedReadAndCannotBeRestartedByControls",
+      "duration": "4.547 seconds"
+    },
+    {
+      "suite": "WeReadPageAvailabilityTests",
+      "test": "testFailedTurnTimeoutCannotReviveErrorPageAudio",
+      "duration": "4.583 seconds"
+    },
+    {
+      "suite": "WeReadPageAvailabilityTests",
+      "test": "testHiddenErrorAndErrorWordsInsideProseDoNotBlock",
+      "duration": "2.668 seconds"
+    },
+    {
+      "suite": "WeReadPageAvailabilityTests",
+      "test": "testNaturalSegmentGapTurnResumesOnConfirmedNewPage",
+      "duration": "5.594 seconds"
+    },
+    {
+      "suite": "WeReadPageAvailabilityTests",
+      "test": "testPausedTurnDoesNotResumeAndCancelledNavigationPreservesBody",
+      "duration": "2.586 seconds"
+    },
+    {
+      "suite": "WeReadPageAvailabilityTests",
+      "test": "testSamePageRecoveryDoesNotAutoplayAfterError",
+      "duration": "2.069 seconds"
+    },
+    {
+      "suite": "WeReadPageAvailabilityTests",
+      "test": "testTrialWallRetiresBothModesAndKeepsPlayBlocked",
+      "duration": "1.680 seconds"
+    }
+  ]
+}

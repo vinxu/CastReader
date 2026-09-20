@@ -80,12 +80,12 @@ struct KindleExplainVisualHoldState {
     let image: UIImage
     let imageRect: CGRect
     let document: ReadingDocument
-    let initiallyDrawnMarks: Set<UUID>
 }
 
 private struct KindleExplainVisualHoldView: View {
     let state: KindleExplainVisualHoldState
     @ObservedObject var owner: ExplainViewModel
+    @ObservedObject var clock: KindleMarkAnimationClock
 
     var body: some View {
         // Author paths in page-local points, exactly as the live SVG renderer.
@@ -99,10 +99,11 @@ private struct KindleExplainVisualHoldView: View {
                 .frame(width: state.imageRect.width, height: state.imageRect.height)
                 .position(x: state.imageRect.midX, y: state.imageRect.midY)
             ForEach(owner.activeMarks) { mark in
-                MarkInkView(
-                    rects: resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange),
-                    action: mark.action, seed: mark.seed, n: mark.n, weight: mark.weight,
-                    animateOnAppear: !state.initiallyDrawnMarks.contains(mark.id)
+                KindleTimedMarkInkView(
+                    ink: HandwrittenMark.stroke(action: mark.action,
+                        rects: resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange),
+                        seed: mark.seed, n: mark.n, weight: mark.weight),
+                    animation: clock.animations[mark.id]
                 )
                 .offset(x: state.imageRect.minX, y: state.imageRect.minY)
             }
@@ -372,7 +373,7 @@ struct KindleBookView: View {
                 .accessibilityHidden(true)
             }
             if let hold = model.explainVisualHold, let owner = model.explainVM {
-                KindleExplainVisualHoldView(state: hold, owner: owner)
+                KindleExplainVisualHoldView(state: hold, owner: owner, clock: model.markAnimationClock)
             }
             // What a browser gives you and a bare WKWebView does not: proof that
             // something is happening. Before the first byte arrives there is no
@@ -2281,6 +2282,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var pendingCaptureKey: String?
     private var suppressNextScrollParagraphIndex: Int?
     private var lastHighlightedWordByParagraph: [String: Int] = [:]
+    let markAnimationClock = KindleMarkAnimationClock()
     private var shownMarkIds = Set<String>()
     private var animatedMarkIds = Set<String>()
     private var didLoad = false
@@ -2356,6 +2358,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var pageKeyWatchTask: Task<Void, Never>?
     private var navigationRestartTask: Task<Void, Never>?
     private var manualPageResumeTask: Task<Void, Never>?
+    private let manualButtonTurns = KindleManualPageTurnQueue()
     private var layoutPlaybackRestartTask: Task<Void, Never>?
     private var modeSwitchTask: Task<Void, Never>?
     private var handledKindleNavigationSeq = 0
@@ -2443,6 +2446,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     var startDocumentPreparationForTesting: (() async throws -> ReadingDocument)?
     var syncDialogReadinessForTesting: (() async throws -> Void)?
     var readSpeechGeneratorForTesting: (any ParagraphSpeechGenerating)?
+    var explainAdvanceReadyForTesting: (() -> Void)?
+    func bindLivePlaybackForTesting(document: ReadingDocument) { bindLivePlayback(document: document) }
     func waitForStablePageForTesting() async throws { try await waitForKindleImageStable() }
     #endif
     private var pendingPersistentAnchor: KindleListeningAnchor?
@@ -6122,6 +6127,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func clearKindleMarkState(resetAnimationHistory: Bool) {
         shownMarkIds.removeAll()
         if resetAnimationHistory {
+            markAnimationClock.reset()
             animatedMarkIds.removeAll()
         }
     }
@@ -6137,6 +6143,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
             return
         }
+        manualButtonTurns.cancel()
         let shouldContinuePlayback = autoStart || shouldContinuePlaybackOnModeSwitch
         if shouldContinuePlayback {
             modeSwitchTask?.cancel()
@@ -6555,6 +6562,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func turnPage(_ direction: KindlePageTurnDirection) async {
+        let resumeMode = pendingManualPageResumeMode ?? mode
+        let shouldResume = shouldResumeAfterUserPageTurn
+        await manualButtonTurns.perform { [weak self] in
+            guard let self, !Task.isCancelled, self.mode == resumeMode else { return }
+            await self.turnPageSerial(direction, resumeMode: resumeMode, shouldResume: shouldResume)
+        }
+    }
+
+    private func turnPageSerial(_ direction: KindlePageTurnDirection, resumeMode: ReaderMode, shouldResume: Bool) async {
         guard readerOperationAllowed(.pageTurn, reason: direction.logName) else {
             statusText = AppLocalized("请先处理 Amazon 的 Cookie 提示。")
             return
@@ -6564,8 +6580,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE page turn blocked sync-dialog direction=\(direction.logName)")
             return
         }
-        let resumeMode = pendingManualPageResumeMode ?? mode
-        let shouldResume = shouldResumeAfterUserPageTurn
         let navigation = beginUserNavigation(reason: "button-\(direction.logName)")
         KindleRunLog.write("KINDLE page turn requested \(direction.logName) mode=\(mode.rawValue) resume=\(shouldResume)")
         if shouldResume {
@@ -6591,10 +6605,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         stopPlaybackForPageTurn(reason: "paused-page-turn")
         cancelInFlightProcessingForManualPageTurn(reason: "paused-page-turn")
 
+        let navigationEpoch = preloadEpoch
         do {
             try await ensureCaptureScriptInstalled(reason: "dispatch-only-\(direction.logName)")
             let oldKey = await currentVisibleKindlePageKey()
+            guard !Task.isCancelled, preloadEpoch == navigationEpoch else { return }
             let target = try await requestKindlePageTurnTarget(direction, oldKey: oldKey)
+            guard !Task.isCancelled, preloadEpoch == navigationEpoch else { return }
             if let navigation, let state = target.result["confirmedState"] as? [String: Any] {
                 confirmUserNavigation(id: navigation.id, state: state)
             }
@@ -6602,6 +6619,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             let strategy = result["strategy"] as? String ?? ""
             KindleRunLog.write("KINDLE page turn dispatch-only result \(direction.logName) old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(target.targetKey)) strategy=\(strategy) tried=\(String(describing: result["tried"] ?? result["fallbackTried"] ?? "")) reason=\(String(describing: result["reason"] ?? ""))")
         } catch {
+            guard !Task.isCancelled, preloadEpoch == navigationEpoch else { return }
             statusText = error.localizedDescription
             KindleRunLog.write("KINDLE page turn dispatch-only error \(direction.logName) \(error.localizedDescription)")
             // 翻页失败时抓一次现场：hasNext=0 / pagination-component-unavailable 只
@@ -6650,6 +6668,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             await heldPage?.task?.value
             guard !Task.isCancelled, preloadEpoch == navigationEpoch else { return false }
             try await ensureCaptureScriptInstalled(reason: "manual-\(direction.logName)")
+            guard !Task.isCancelled, preloadEpoch == navigationEpoch else { return false }
             await setKindlePageModeLocked(true)
 
             let visibleOldKey = await currentVisibleKindlePageKey()
@@ -6663,6 +6682,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             } else {
                 oldKey = await currentKindlePageKey()
             }
+            guard !Task.isCancelled, preloadEpoch == navigationEpoch else { return false }
             manualPageResumeTask?.cancel()
             pendingCaptureKey = nil
             clearExternalMismatchState()
@@ -6681,6 +6701,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 statusText = AppLocalized("正在切换 Kindle 页面…")
             }
 
+            guard !Task.isCancelled, preloadEpoch == navigationEpoch else { return false }
             let turnTarget = try await requestManualPageTurnTarget(
                 direction, oldKey: oldKey, heldPage: heldPage
             )
@@ -6706,6 +6727,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
             return true
         } catch {
+            guard !Task.isCancelled, preloadEpoch == navigationEpoch else { return false }
             pendingManualPageResumeMode = nil
             isPageTurnResuming = false
             statusText = error.localizedDescription
@@ -6792,14 +6814,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         manualPageResumeTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 850_000_000)
             guard let self else { return }
-            guard !Task.isCancelled,
-                  self.preloadEpoch == epoch else {
-                if self.pendingManualPageResumeMode == resumeMode {
-                    self.pendingManualPageResumeMode = nil
-                }
-                self.isPageTurnResuming = false
-                return
-            }
+            guard !Task.isCancelled, self.preloadEpoch == epoch else { return }
             await self.resumePlaybackFromStableManualPage(
                 mode: resumeMode,
                 oldKey: oldKey,
@@ -6819,8 +6834,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         reason: String,
         epoch: UInt64
     ) async {
-        guard preloadEpoch == epoch,
-              !isAdvancingLivePage else {
+        guard !Task.isCancelled, preloadEpoch == epoch else { return }
+        guard !isAdvancingLivePage else {
             if pendingManualPageResumeMode == resumeMode {
                 pendingManualPageResumeMode = nil
             }
@@ -6831,14 +6846,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
         var didRestartPlayback = false
         defer {
-            let resumedKey = didRestartPlayback ? livePageKey?.nilIfEmpty : nil
-            if pendingManualPageResumeMode == resumeMode {
-                pendingManualPageResumeMode = nil
-            }
-            isPageTurnResuming = false
-            manualPageResumeTask = nil
-            if let resumedKey {
-                startCachingNextPage(afterKey: resumedKey)
+            if preloadEpoch == epoch {
+                let resumedKey = didRestartPlayback ? livePageKey?.nilIfEmpty : nil
+                if pendingManualPageResumeMode == resumeMode { pendingManualPageResumeMode = nil }
+                isPageTurnResuming = false
+                manualPageResumeTask = nil
+                if let resumedKey { startCachingNextPage(afterKey: resumedKey) }
             }
         }
 
@@ -6898,6 +6911,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             didRestartPlayback = true
             KindleRunLog.write("KINDLE manual resume started mode=\(resumeMode.rawValue) old=\(Self.keyLog(activationOldKey)) new=\(Self.keyLog(prepared.page.key)) reason=\(reason) epoch=\(epoch)")
         } catch {
+            guard !Task.isCancelled, preloadEpoch == epoch else { return }
             pendingCaptureKey = nil
             statusText = AppLocalized("已暂停，请点击播放继续。")
             KindleRunLog.write("KINDLE manual resume failed mode=\(resumeMode.rawValue) old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(targetKey ?? "")) reason=\(reason) error=\(error.localizedDescription)")
@@ -7237,6 +7251,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func stopAll() {
+        manualButtonTurns.cancel()
         cancelExplainPagePreparation(reason: "stop-all")
         explainVisualHold = nil
         readingSettingsSessionActive = false
@@ -8136,6 +8151,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func cancelInFlightProcessingForManualPageTurn(reason: String) {
+        if !reason.hasPrefix("manual-"), reason != "paused-page-turn" { manualButtonTurns.cancel() }
         cancelPendingPlaybackStart(reason: reason)
         readerLayoutRepairTask?.cancel()
         readerLayoutRepairTask = nil
@@ -10004,9 +10020,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
         explainVM.$activeMarks
             .receive(on: RunLoop.main)
-            .sink { [weak self] marks in
-                guard let self else { return }
-                Task { await self.pushMarks(marks) }
+            .sink { [weak self, weak explainVM] marks in
+                guard let self, let explainVM, self.explainVM === explainVM else { return }
+                self.beginMarkAnimations(marks)
+                Task { [weak self, weak explainVM] in
+                    guard let self, let explainVM, self.explainVM === explainVM else { return }
+                    await self.pushMarks(marks)
+                }
             }
             .store(in: &playbackCancellables)
 
@@ -10036,9 +10056,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // A fast opening may finish before the quality plan's final block
         // count arrives. Only the VM's settled-plan completion may turn the
         // page; observing `.completed` directly could skip the remaining plan.
+        explainVM.onPlaybackIntentChanged = { [weak self, weak explainVM] in
+            guard let self, let explainVM, self.explainVM === explainVM,
+                  !self.isAdvancingLivePage else { return }
+            self.markAnimationClock.cancelWaits()
+        }
         explainVM.onDocumentFinished = { [weak self, weak explainVM] in
             guard let self, let explainVM,
-                  self.mode == .explain, self.explainVM === explainVM else { return }
+                  self.mode == .explain, self.explainVM === explainVM,
+                  !self.isAdvancingLivePage else { return }
             self.isContinuingExplainPage = true
             Task { @MainActor [weak self, weak explainVM] in
                 guard let self, let explainVM,
@@ -11309,9 +11335,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         #if DEBUG
         debugPreparedHeldPageKey = nil
         #endif
+        beginMarkAnimations(owner.activeMarks)
         explainVisualHold = KindleExplainVisualHoldState(
             image: image, imageRect: lease.fit.applying(to: pageRect),
-            document: owner.document, initiallyDrawnMarks: Set(owner.activeMarks.map(\.id))
+            document: owner.document
         )
         // The same OCR anchors keep drawing timed marks on the old page while
         // WebKit prepares the actual next page underneath it. No speculative
@@ -11385,6 +11412,32 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             isContinuingExplainPage = false
             return
         }
+        guard let owner = explainVM else { return }
+        let epoch = preloadEpoch
+        let inkGeneration = markAnimationClock.generation
+        beginMarkAnimations(owner.activeMarks)
+        func retainsContinuation() -> Bool {
+            !Task.isCancelled && explainVM === owner && mode == .explain && owner.isActive
+                && owner.status == .completed && preloadEpoch == epoch
+                && markAnimationClock.generation == inkGeneration
+                && AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback()
+        }
+        let drained = await markAnimationClock.drain(while: retainsContinuation)
+        guard drained, retainsContinuation() else {
+            if explainVM === owner, preloadEpoch == epoch, markAnimationClock.generation == inkGeneration {
+                isContinuingExplainPage = false
+            }
+            return
+        }
+        #if DEBUG
+        if let ready = explainAdvanceReadyForTesting {
+            ready()
+            isContinuingExplainPage = false
+            return
+        }
+        #endif
+        // Acquire the navigation flag only after draining: manual turns remain
+        // responsive and invalidate this old continuation through the epoch.
         isAdvancingLivePage = true
         let earlyPreparation = explainPagePreparation
         if let earlyPreparation, explainVM === earlyPreparation.owner {
@@ -11393,7 +11446,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 await explainPrefetchTask?.value
             }
             guard explainPagePreparation === earlyPreparation,
-                  explainVM === earlyPreparation.owner, mode == .explain else {
+                  explainVM === earlyPreparation.owner, retainsContinuation() else {
                 isAdvancingLivePage = false
                 isContinuingExplainPage = false
                 return
@@ -11401,6 +11454,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             explainPagePreparation = nil
         }
         let visibleOldKey = await currentVisibleKindlePageKey()
+        guard retainsContinuation() else {
+            isAdvancingLivePage = false
+            isContinuingExplainPage = false
+            return
+        }
         let oldKey: String
         if let earlyPreparation {
             oldKey = earlyPreparation.oldKey
@@ -11408,6 +11466,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             oldKey = visibleKey
         } else {
             oldKey = await currentKindlePageKey()
+        }
+        guard retainsContinuation() else {
+            isAdvancingLivePage = false
+            isContinuingExplainPage = false
+            return
         }
         defer {
             isAdvancingLivePage = false
@@ -13632,6 +13695,19 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return paragraph.words.indices.first
     }
 
+    private func beginMarkAnimations(_ marks: [ResolvedMark]) {
+        guard let owner = explainVM else { return }
+        let size = explainVisualHold?.imageRect.size
+            ?? viewportPresentationPageRect.map { viewportPresentationFit.applying(to: $0).size }
+            ?? owner.document.imagePixelSize ?? .zero
+        let resolver = PhotoAnchorResolver(document: owner.document, fitted: CGRect(origin: .zero, size: size))
+        for mark in marks {
+            let rects = resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange)
+            guard !rects.isEmpty else { continue }
+            markAnimationClock.begin(mark.id, duration: HandwrittenMark.duration(action: mark.action, rects: rects))
+        }
+    }
+
     private func pushMarks(_ marks: [ResolvedMark], force: Bool = false) async {
         guard mode == .explain else { return }
         if let hold = explainVisualHold {
@@ -13656,7 +13732,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             guard explainVisualHold == nil else { return }
             let markId = mark.id.uuidString
             guard !shownMarkIds.contains(markId) else { continue }
-            let shouldAnimate = !animatedMarkIds.contains(markId)
+            let animation = markAnimationClock.animations[mark.id]
+            let stillDrawing = animation.map { ProcessInfo.processInfo.systemUptime < $0.startedAt + $0.duration } ?? false
+            let shouldAnimate = !animatedMarkIds.contains(markId) || stillDrawing
             if let explainVM,
                let paragraph = explainVM.document.paragraphs.first(where: { $0.id == mark.paragraphIndex }) {
                 recordPlaybackAnchor(
@@ -13738,6 +13816,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         drawingPayload["canvasWidth"] = width
         drawingPayload["canvasHeight"] = height
         drawingPayload["ink"] = ink.svgPayload(canvasSize: size)
+        markAnimationClock.begin(mark.id, duration: ink.duration)
+        if let animation = markAnimationClock.animations[mark.id] {
+            drawingPayload["inkElapsedMs"] = max(0, ProcessInfo.processInfo.systemUptime - animation.startedAt) * 1_000
+            drawingPayload["inkDurationMs"] = animation.duration * 1_000
+        }
         return try? jsonString(drawingPayload)
     }
 
@@ -15335,12 +15418,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private static func explainFingerprint(_ document: ReadingDocument) -> String {
-        let normalized = document.readableParagraphs
-            .map(\.text)
-            .joined(separator: " ")
-            .lowercased()
-            .replacingOccurrences(of: "[^\\p{L}\\p{N}]+", with: "", options: .regularExpression)
-        return String(normalized.prefix(360))
+        KindleFootnoteSpeech.prepare(document: document, skipReferences: KindleFootnoteSpeech.isEnabled).cacheSignature
     }
 
     private static func number(from value: Any?) -> CGFloat? {

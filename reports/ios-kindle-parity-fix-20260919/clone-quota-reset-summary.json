@@ -1,0 +1,16 @@
+{
+  "executed": true,
+  "at": "2026-09-20T00:28:27.624Z",
+  "beforeUsedMs": 7191111,
+  "after": {
+    "used_ms": 0,
+    "reserved_ms": 0,
+    "period_start": "2026-09-14T13:08:57.000Z",
+    "reset_at": "2026-10-14T13:08:57.000Z"
+  },
+  "remainingMinutes": 120,
+  "historicalLedgerUnchanged": true,
+  "otherBucketsUnchanged": true,
+  "userAuthorization": "2026-09-20: 用户要求重置当前测试账号克隆额度，并补完测试。",
+  "uiVerified120Minutes": true
+}

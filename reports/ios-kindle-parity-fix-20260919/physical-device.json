@@ -1,0 +1,94 @@
+{
+  "date": "2026-09-20",
+  "timezone": "Asia/Shanghai",
+  "device": "iPhone 15 Pro Max",
+  "os": "iOS 26.7",
+  "version": "1.2.41 (63)",
+  "book": "A Journey to the Centre of the Earth",
+  "interaction": "iPhone Mirroring controlled through cua_repl",
+  "baselineHEAD": "febfeabf869c2f77b57d360e970218899c87aa02",
+  "binaryUUID": "F8666CDD-6384-36D3-8B06-14A07A720ADA",
+  "binarySHA256": "589ac54b8e5163447b4f01282c57c14e25b2ca11173162a168ccfede686d310a",
+  "sourceSHA256": {
+    "CastReader/Utils/KindleManualPageTurnQueue.swift": "ece45ab8a88f4a4b4d02d624e2aed5514f18c06bf86224afdbb702195a5458cc",
+    "CastReader/Utils/KindleMarkAnimationClock.swift": "c09d311b90792a7c7c1c636757e938aded4ade829b5313b10e25bfa1dee179d0",
+    "CastReader/Utils/KindleFootnoteSpeech.swift": "dcc3582d456468066121aded9e499db6989281e5424395121171d0e08d0883df",
+    "CastReader/Views/Kindle/KindleBookView.swift": "0c4cbcbd8db347b621bca84108f1a3325b10c2f609c03017515d6f405838ac62",
+    "CastReader/Services/KindleWebScripts.swift": "a04560c935510ecbccff3797af412610b6bc6473dc7e80da50e16fa3309fb5ab",
+    "CastReader/ViewModels/ReadAloudViewModel.swift": "63d5d81ce914057fb6832735b0fb8bbcb70148530ee1c6c2aefc96b363ca21cb",
+    "CastReader/ViewModels/ExplainViewModel.swift": "19c8e08564855016c488dde987c92e343be28517dbae6f3f4a553388bd1beca6",
+    "CastReader.xcodeproj/project.pbxproj": "1ba18cb25dc8f23ef40fd0475f1c933ef820e9ae940dece969f82c825d02995a"
+  },
+  "candidate1": {
+    "rapidTurns": "FAILED: overlapping native actions and stale resume ownership",
+    "evidence": "iphone-candidate1-rapid-turn.log"
+  },
+  "candidate2": {
+    "readNext3Previous2": {
+      "result": "passed",
+      "voice": "曹操",
+      "lastConfirmation": "00:29:03.044",
+      "resumePipelineStarted": "00:29:04.785",
+      "subsequentAutoTurnConfirmed": "00:29:38.014"
+    },
+    "explainNext3Previous2": {
+      "result": "passed",
+      "voice": "晓萱 / regular",
+      "lastConfirmation": "00:36:19.867",
+      "resumePipelineStarted": "00:36:21.692"
+    },
+    "explainAlternatingNextPreviousTwice": {
+      "result": "passed",
+      "returnsToInitialPage": true,
+      "resumePipelineStarted": "00:38:01.697"
+    },
+    "explainFinalInk": {
+      "result": "passed",
+      "lastMultilineMarkStarted": "00:34:22.906",
+      "pageHandoffStarted": "00:34:25.226",
+      "intervalSeconds": 2.32,
+      "nextPageStarted": "00:34:26.229"
+    },
+    "explainMultiPage": {
+      "result": "passed",
+      "automaticHandoffsObserved": 6
+    },
+    "explainPauseResume": {
+      "result": "passed",
+      "observation": "Page, subtitle and completed ink remained unchanged for about 40 seconds; resume progressed and advanced."
+    }
+  },
+  "scopeLimits": [
+    "Exact stroke geometry/opacity parity additionally checked by production-renderer simulator tests; mirror observations are not frame-by-frame measurements.",
+    "Sleep expiry checked by automated tests, not a full physical timer run.",
+    "Followup CoreDevice console disconnected at 08:34:46; later pause/resume, alternating navigation and Explain-to-Read verified through iPhone Mirroring, with server-side generation reconciliation."
+  ],
+  "finalState": "Playback paused in Read Aloud; Cao Cao remains selected. Current book page retained. User-authorized quota reset completed; about 111 minutes remain after verification.",
+  "evidence": "iphone-candidate2-navigation-ink.log",
+  "initialFinalState": "Playback paused; current book page retained. Restoring Cao Cao was blocked by allowance, so regular voice 晓萱 remains selected. No entitlement/quota mutation.",
+  "caocaoFollowup": {
+    "date": "2026-09-20",
+    "timeWindow": "08:28–08:40 Asia/Shanghai",
+    "sameInstalledCandidate": true,
+    "voice": "vl_b4bb75aa2d3e56fd90a2",
+    "cases": {
+      "newGeneratedExplain": "passed",
+      "multiPageExplain": "passed",
+      "next3Previous2DuringExplain": "passed",
+      "pauseResumeExplain": "passed",
+      "alternatingNextPreviousTwice": "passed",
+      "explainToReadAndAutomaticNext": "passed"
+    },
+    "quotaResetUI120Minutes": true,
+    "quotaAfterTest": {
+      "used_ms": 533880,
+      "reserved_ms": 0,
+      "reset_at": "2026-10-14T13:08:57.000Z"
+    },
+    "successfulRequests": 70,
+    "generatedMs": 533880,
+    "remainingMinutes": 111.102,
+    "remainingMinutesShownInApp": 111,
+    "evidence": "iphone-caocao-followup-console.log"
+  }
+}

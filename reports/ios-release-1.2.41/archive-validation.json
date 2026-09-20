@@ -1,0 +1,46 @@
+{
+  "products": [
+    {
+      "bundle": "com.same.castreader",
+      "version": "1.2.41",
+      "build": "63",
+      "signatureVerified": true,
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": true,
+      "sha256": "17da4a6aa80b6deb5cc7cd00b1f4e47fecb7a9b0a58ce3e7065f24fbbdeaf434"
+    },
+    {
+      "bundle": "com.same.castreader.ShareExtension",
+      "version": "1.2.41",
+      "build": "63",
+      "signatureVerified": true,
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": true,
+      "sha256": "243329be3886698faf3131585c2bc54a53e163a0d8dfb625531fb4696cfb8302"
+    },
+    {
+      "bundle": "com.same.castreader.Widget",
+      "version": "1.2.41",
+      "build": "63",
+      "signatureVerified": true,
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": true,
+      "sha256": "2d10411a063d45822d0c97b4129eae51e93e7953d93f9a665c337329a5b27b79"
+    }
+  ],
+  "languages": [
+    "de",
+    "en",
+    "es",
+    "fr",
+    "hi",
+    "it",
+    "ja",
+    "pt",
+    "pt-BR",
+    "zh-Hans"
+  ],
+  "internalDistributionControls": "NO",
+  "fixtureResourcesFound": false,
+  "archive": "build/CastReader-1.2.41-63.xcarchive"
+}

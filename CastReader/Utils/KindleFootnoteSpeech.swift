@@ -40,16 +40,27 @@ struct KindleSpeechPage {
     let cacheSignature: String
 }
 
-/// Deliberately narrow: independently recognized, raised reference digits at
-/// a prose sentence end. This is neither a general superscript remover nor a
-/// footnote-body filter. Ambiguous or incompletely bound paragraphs stay intact.
+/// Same-page, term-linked notes and independently proven raised references.
+/// Ambiguous definitions and incompletely bound OCR stay audible.
 enum KindleFootnoteSpeech {
-    static let policyVersion = "kindle-vision-reference-v2"
+    static let policyVersion = "kindle-vision-footnotes-v3"
+
+    static var isEnabled: Bool {
+        UserDefaults.standard.object(forKey: "kindle.skipFootnoteReferences.v1") as? Bool ?? true
+    }
+
+    static func explanationDocument(_ document: ReadingDocument, page: KindleSpeechPage) -> ReadingDocument {
+        var result = document
+        // Silent placeholders preserve original paragraph IDs for marks/progress.
+        result.paragraphs = page.paragraphs.map(\.spokenParagraph)
+        return result
+    }
 
     static func prepare(document: ReadingDocument, skipReferences: Bool = true) -> KindleSpeechPage {
-        let paragraphs = document.paragraphs.map {
-            project($0, pixelSize: document.imagePixelSize, language: document.language,
-                    skipReferences: skipReferences)
+        let omitted = skipReferences ? pairedFootnotes(document) : [:]
+        let paragraphs = document.paragraphs.enumerated().map { index, paragraph in
+            project(paragraph, pixelSize: document.imagePixelSize, language: document.language,
+                    skipReferences: skipReferences, omittedRanges: omitted[index] ?? [])
         }
         var digest = SHA256()
         func add(_ value: String) {
@@ -71,7 +82,7 @@ enum KindleFootnoteSpeech {
     }
 
     private static func project(_ source: ReadingParagraph, pixelSize: CGSize?, language: String,
-                                skipReferences: Bool) -> KindleSpeechParagraph {
+                                skipReferences: Bool, omittedRanges: [Range<Int>]) -> KindleSpeechParagraph {
         let chars = Array(source.text)
         func identity() -> KindleSpeechParagraph {
             KindleSpeechParagraph(sourceParagraph: source, spokenParagraph: source,
@@ -96,11 +107,25 @@ enum KindleFootnoteSpeech {
                 skipped.insert(indexes[index])
             }
         }
-        guard !skipped.isEmpty else { return identity() }
+        guard !skipped.isEmpty || !omittedRanges.isEmpty else { return identity() }
 
         var keep = Array(repeating: true, count: chars.count)
         for index in skipped {
             for offset in ranges[index] { keep[offset] = false }
+        }
+        for range in omittedRanges {
+            for offset in range where keep.indices.contains(offset) { keep[offset] = false }
+        }
+        var retainedWords: [OCRWord] = []
+        var keptIndexes: [Int] = []
+        for (index, word) in source.words.enumerated() {
+            let text = String(ranges[index].filter { keep[$0] }.map { chars[$0] })
+            if text.isEmpty { skipped.insert(index); continue }
+            keptIndexes.append(index)
+            retainedWords.append(OCRWord(id: word.id, text: text, bboxNorm: word.bboxNorm,
+                bboxSource: word.bboxSource, sourceLineID: word.sourceLineID,
+                recognitionConfidence: word.recognitionConfidence,
+                inkBoundsNorm: word.inkBoundsNorm, inkBoundsChecked: word.inkBoundsChecked))
         }
         var spoken: [Character] = []
         var offsets: [Int] = []
@@ -113,16 +138,118 @@ enum KindleFootnoteSpeech {
             spoken.removeLast()
             offsets.removeLast()
         }
-        let keptIndexes = source.words.indices.filter { !skipped.contains($0) }
         let speech = ReadingParagraph(
             id: source.id, text: String(spoken), speaker: source.speaker, type: source.type,
-            words: keptIndexes.map { source.words[$0] }, bboxNorm: source.bboxNorm,
+            words: retainedWords, bboxNorm: source.bboxNorm,
             pageIndex: source.pageIndex
         )
         return KindleSpeechParagraph(sourceParagraph: source, spokenParagraph: speech,
                                      spokenWordSourceIndices: keptIndexes,
                                      skippedSourceWordIndices: skipped,
                                      spokenCharacterSourceOffsets: offsets)
+    }
+
+    private struct Marker {
+        let range: Range<Int>
+        let id: String
+    }
+    private struct Definition {
+        let paragraph: Int
+        let marker: Marker
+        let range: Range<Int>
+        let body: String
+        let ambiguousID: String?
+    }
+    private struct Reference {
+        let paragraph: Int
+        let marker: Marker
+        let term: String
+    }
+
+    /// Regex offsets are converted at this boundary; all projection offsets are
+    /// Swift Characters, including non-BMP letters and combining accents.
+    private static func matches(_ pattern: String, _ text: String) -> [(Range<Int>, [String])] {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match in
+            guard let range = Range(match.range, in: text) else { return nil }
+            let offsets = text.distance(from: text.startIndex, to: range.lowerBound)..<text.distance(from: text.startIndex, to: range.upperBound)
+            return (offsets, (1..<match.numberOfRanges).map { index in
+                Range(match.range(at: index), in: text).map { String(text[$0]) } ?? ""
+            })
+        }
+    }
+
+    private static func markers(_ text: String) -> [Marker] {
+        matches(#"[\[{|［]\s*(\d{1,3}|\?)\s*[\]|)］}]|(?<![\p{L}\p{N}])(\d{1,3})\s*[\]|］]"#, text).map {
+            Marker(range: $0.0, id: $0.1.first(where: { !$0.isEmpty }) ?? "")
+        }
+    }
+
+    private static func pairedFootnotes(_ document: ReadingDocument) -> [Int: [Range<Int>]] {
+        guard ["en", "de", "es", "fr", "it", "pt"].contains(KindleLanguageContract.normalize(document.language) ?? ""),
+              let size = document.imagePixelSize, size.width > 0, size.height > 0 else { return [:] }
+        var definitions: [Definition] = []
+        for (index, paragraph) in document.paragraphs.enumerated() where paragraph.type.isReadable {
+            guard let ranges = exactWordRanges(paragraph) else { continue }
+            let chars = Array(paragraph.text)
+            var starts: Set<Int> = [0]
+            var seenLines = Set<Int>()
+            for (wordIndex, word) in paragraph.words.enumerated() {
+                if word.bboxSource == .visionTextRange,
+                   let line = word.sourceLineID, seenLines.insert(line).inserted {
+                    starts.insert(ranges[wordIndex].lowerBound)
+                }
+            }
+            var candidates: [(Int, Marker, String?)] = []
+            for start in starts.sorted() {
+                let tail = String(chars.dropFirst(start))
+                let normal = markers(tail).first.flatMap { marker -> Marker? in
+                    guard marker.id != "?", tail.prefix(marker.range.lowerBound).allSatisfy(\.isWhitespace) else { return nil }
+                    return marker
+                }
+                // Vision: "12 The declination ..." can be [2]; ML Kit: "[21".
+                // A matching reference for the unrepaired ID always vetoes repair.
+                let damaged = normal == nil ? matches(#"^\s*(?:[\[［]([1-9][0-9]{0,2})[1lI]|1([1-9][0-9]?))(?=\s+[\p{L}\p{M}])"#, tail).first : nil
+                let marker = normal ?? damaged.map { Marker(range: $0.0, id: $0.1.first(where: { !$0.isEmpty }) ?? "") }
+                guard let marker else { continue }
+                let absoluteRange = (marker.range.lowerBound + start)..<(marker.range.upperBound + start)
+                // Leading whitespace can expose the same marker at offset zero
+                // and at the first OCR word. It is one definition, not two.
+                guard !candidates.contains(where: { $0.1.range == absoluteRange }) else { continue }
+                let ambiguous = damaged.map { $0.1[0].isEmpty ? "1" + marker.id : marker.id + "1" }
+                candidates.append((start, Marker(range: absoluteRange, id: marker.id), ambiguous))
+            }
+            for (offset, candidate) in candidates.enumerated() {
+                let end = offset + 1 < candidates.count ? candidates[offset + 1].0 : chars.count
+                definitions.append(Definition(paragraph: index, marker: candidate.1,
+                    range: candidate.0..<end, body: String(chars[candidate.1.range.upperBound..<end]), ambiguousID: candidate.2))
+            }
+        }
+        let references: [Reference] = document.paragraphs.enumerated().flatMap { index, paragraph in
+            guard paragraph.type.isReadable, exactWordRanges(paragraph) != nil else { return [Reference]() }
+            return markers(paragraph.text).compactMap { marker in
+                guard !definitions.contains(where: { $0.paragraph == index && $0.range.contains(marker.range.lowerBound) }),
+                      let term = matches(#"([\p{L}\p{M}]{3,})\s*$"#, String(paragraph.text.prefix(marker.range.lowerBound))).first?.1.first else { return nil }
+                return Reference(paragraph: index, marker: marker, term: term.lowercased())
+            }
+        }
+        var omitted: [Int: [Range<Int>]] = [:]
+        for reference in references {
+            let matching = definitions.filter { note in
+                guard reference.marker.id == "?" || reference.marker.id == note.marker.id else { return false }
+                if let ambiguous = note.ambiguousID,
+                   reference.marker.id == "?" || references.contains(where: { $0.term == reference.term && $0.marker.id == ambiguous }) { return false }
+                // Never swallow narrative merged after a definition's final sentence.
+                guard matches(#"[.!?][\"”’')]*\s+\S"#, note.body.trimmingCharacters(in: .whitespacesAndNewlines)).isEmpty else { return false }
+                let words = matches(#"([\p{L}\p{M}]+)"#, note.body).map { $0.1[0].lowercased() }
+                return words.count >= 4 && (words[0] == reference.term ||
+                    (["the", "a", "an"].contains(words[0]) && words[1] == reference.term))
+            }
+            guard matching.count == 1, let note = matching.first else { continue }
+            omitted[note.paragraph, default: []].append(note.range)
+            omitted[reference.paragraph, default: []].append(reference.marker.range)
+        }
+        return omitted
     }
 
     /// Require exact, complete binding. Searching past unbound non-whitespace

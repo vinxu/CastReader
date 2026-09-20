@@ -1,0 +1,30 @@
+{
+  "method": "iPhone Mirroring manual interaction, production WeRead, QuickRead and TTS",
+  "shortPage": {
+    "characters": 32,
+    "serverError": "HTTP 400 text_too_short",
+    "requestCount": 1,
+    "started": "09:57:09.080",
+    "continue": "09:57:11.138",
+    "nextPageCommitted": "09:57:11.788",
+    "nextPageAudioPlaying": "09:57:18.653",
+    "nextPageMarksObserved": true
+  },
+  "regularExplainAutoTurnsAfterShortPage": 2,
+  "modeSwitches": "Explain to Read on current page; paused Read manual next then Explain with Cao Cao; matching page text/marks observed",
+  "cloneExplainNextPage": {
+    "commit": "10:01:45.984",
+    "audioPlaying": "10:01:57.633",
+    "marksObserved": true
+  },
+  "cloneResponseStatuses": {
+    "200": 11
+  },
+  "finalState": "Paused in Explain with Cao Cao",
+  "limitations": [
+    "Seven newly added short-page cases compiled but not executed: simulator runner failed to launch; subsequent verification changed to physical iPhone as requested.",
+    "Consecutive four-short-page cap, book-end handling and unknown HTTP 400 were not manually fault-injected on the production WeRead book.",
+    "Earlier 54 passing regressions predate short-page changes; not represented as final-candidate full regression.",
+    "Clone next-page sample took about 11.65 seconds from commit to playback; continuation passed, instant playback not claimed."
+  ]
+}

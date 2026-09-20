@@ -1,0 +1,18 @@
+{
+  "at": "2026-09-20T00:39:53.592Z",
+  "bucket": {
+    "used_ms": 533880,
+    "reserved_ms": 0,
+    "reset_at": "2026-10-14T13:08:57.000Z"
+  },
+  "generatedSinceReset": [
+    {
+      "voice_id": "vc_library_b4bb75aa2d3e56fd90a2",
+      "state": "succeeded",
+      "requests": 70,
+      "actual_ms": "533880",
+      "first_request": "2026-09-20T00:33:12.013Z",
+      "last_request": "2026-09-20T00:39:24.595Z"
+    }
+  ]
+}

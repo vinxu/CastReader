@@ -1,0 +1,167 @@
+[
+  {
+    "type": "appInfoLocalizations",
+    "id": "3a0683dd-f74d-4c46-8dd5-ec378f389932",
+    "attributes": {
+      "locale": "pt-BR",
+      "name": "CastReader: Texto em voz e IA",
+      "subtitle": "Ouvir PDF, web e livros",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/en/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/3a0683dd-f74d-4c46-8dd5-ec378f389932"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "214ee1b8-1d7d-4974-97f1-0000311b2aa9",
+    "attributes": {
+      "locale": "hi",
+      "name": "CastReader: सुनें और समझें",
+      "subtitle": "स्कैन करें और AI से समझें",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/en/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/214ee1b8-1d7d-4974-97f1-0000311b2aa9"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "a43fef7e-54c9-4ef4-a9b3-af7872d3409a",
+    "attributes": {
+      "locale": "es-ES",
+      "name": "CastReader: Texto a voz con IA",
+      "subtitle": "Escucha PDF, web y libros",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/en/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/a43fef7e-54c9-4ef4-a9b3-af7872d3409a"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "f1bc118c-b3c1-4038-b4db-138d08ded7a3",
+    "attributes": {
+      "locale": "zh-Hans",
+      "name": "CastReader：朗读 · AI解读",
+      "subtitle": "PDF·网页·电子书·拍照转语音",
+      "privacyPolicyUrl": "https://castreader.com/zh/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/zh/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/f1bc118c-b3c1-4038-b4db-138d08ded7a3"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "9a4e645a-0784-4768-9276-4d132e434ae6",
+    "attributes": {
+      "locale": "es-MX",
+      "name": "CastReader: Texto a voz con IA",
+      "subtitle": "Escucha PDF, web y libros",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/en/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/9a4e645a-0784-4768-9276-4d132e434ae6"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "0373cc61-ed2e-478f-b0c1-6f09f584b0a4",
+    "attributes": {
+      "locale": "en-US",
+      "name": "CastReader: Read Aloud Books",
+      "subtitle": "Audiobook from PDF, EPUB, Web",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/en/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/0373cc61-ed2e-478f-b0c1-6f09f584b0a4"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "da7b60bc-74af-4c81-8789-1d1676faa0a7",
+    "attributes": {
+      "locale": "fr-FR",
+      "name": "CastReader : Lecture vocale IA",
+      "subtitle": "Écouter PDF, web et livres",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/en/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/da7b60bc-74af-4c81-8789-1d1676faa0a7"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "6204df9d-9b79-47f1-9161-00a4f651833b",
+    "attributes": {
+      "locale": "zh-Hant",
+      "name": "CastReader：朗讀 · AI解讀",
+      "subtitle": "PDF·網頁·電子書·拍照轉語音",
+      "privacyPolicyUrl": "https://castreader.com/zh/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/zh/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/6204df9d-9b79-47f1-9161-00a4f651833b"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "902825f8-5524-432a-9008-e6488f1a0ced",
+    "attributes": {
+      "locale": "de-DE",
+      "name": "CastReader: Vorlesen mit KI",
+      "subtitle": "PDF, Web & Bücher anhören",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/en/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/902825f8-5524-432a-9008-e6488f1a0ced"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "7590e533-158b-4e2c-8144-be5f4fd69c3a",
+    "attributes": {
+      "locale": "it",
+      "name": "CastReader: Lettura vocale IA",
+      "subtitle": "Ascolta PDF, web e libri",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/en/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/7590e533-158b-4e2c-8144-be5f4fd69c3a"
+    }
+  },
+  {
+    "type": "appInfoLocalizations",
+    "id": "68359bc7-1a07-4bcf-935a-1d613bd3abab",
+    "attributes": {
+      "locale": "ja",
+      "name": "CastReader：読み上げ・AI解説",
+      "subtitle": "PDF・Web・本を音声で聴く",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+      "privacyChoicesUrl": "https://castreader.com/en/terms-of-service",
+      "privacyPolicyText": null
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/68359bc7-1a07-4bcf-935a-1d613bd3abab"
+    }
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "head": "febfeabf869c2f77b57d360e970218899c87aa02",
+  "worktree": "/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914",
+  "workingTreeIncludesUncommittedChanges": true,
+  "sourceSHA256": {
+    "CastReader/Services/WeReadWebScripts.swift": "e89cf3c63e2ab8027085a425dadce35703fdc75e3e22b7d901588360916918e4",
+    "CastReader/Services/WebReaderBridge.swift": "9d9169cc493d0c4bf891c686cfb7f32844a30de1d8343c07fb3d26c47b66f63f",
+    "CastReader/ViewModels/ReadAloudViewModel.swift": "c2b6ac9d15f441ce70ec8555dce99d498a643cb5464cf0a5b16084f1d1ccbb86",
+    "CastReader/ViewModels/ExplainViewModel.swift": "53dfba167096f9109f21a133a63db8be29ccccbe5c814e8391e7bf4e363fe40e",
+    "CastReaderTests/WeReadPageAvailabilityTests.swift": "f91c47ce2a51929938ae32663ba40c86f7f4e30189985374ae2d63cf07246cdb",
+    "CastReader/Localizable.xcstrings": "d48b9c63f3a164b5fe9220c6be8f2fe225f1b45caa2d2d1ea1cb5398acfb088c",
+    "CastReader/Services/QuickReadService.swift": "afe473d45a58313c9f72c85361bf3a19ff2b5f47076801d4ed5b3898f68f4810"
+  },
+  "deviceBuild": {
+    "version": "1.2.41",
+    "build": "63",
+    "dylibUUID": "02C7018B-DBE0-3929-BDF8-2C8049F40166",
+    "installedAtLocal": "2026-09-20 09:55 +08:00",
+    "derivedData": "/tmp/CastReaderWeReadParityDevice20260920",
+    "appSHA256": "ca0b3ba1db1e427ca59f50ad81678c72d61e44fd3d6957ee24ec92924834165b"
+  }
+}

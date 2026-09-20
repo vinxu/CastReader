@@ -57,6 +57,16 @@ struct ReadingResumeVisualCursor: Codable, Equatable {
     }
 }
 
+/// Hashed spoken-text range for languages intentionally using segment timing.
+/// A changed audio partition can replay the verified range's first chunk, but
+/// cannot infer a word time from the old voice's elapsed seconds.
+struct ReadingResumeUntimedAnchor: Codable, Equatable {
+    let prefixUTF16Length: Int
+    let prefixFingerprint: String
+    let textUTF16Length: Int
+    let textFingerprint: String
+}
+
 struct ReadingResumeAudioCursor: Codable, Equatable {
     let outputUTF16Offset: Int
     let outputPrefixFingerprint: String
@@ -72,6 +82,7 @@ struct ReadingResumeAudioCursor: Codable, Equatable {
     var semanticPrefixFingerprint: String? = nil
     var semanticWordFingerprint: String? = nil
     var semanticWordUTF16Length: Int? = nil
+    var untimedAnchor: ReadingResumeUntimedAnchor? = nil
 
     var isValid: Bool {
         outputUTF16Offset >= 0 && segmentIndex >= 0
@@ -136,6 +147,46 @@ enum ReadingResumeAudioResolution: Equatable {
 }
 
 enum ReadingResumeContract {
+    struct SpeechSuffixPlan {
+        let text: String
+        /// Text/timestamp context only. These entries must never be enqueued.
+        let prefix: [AudioSegment]
+        let nextSegmentIndex: Int
+    }
+
+    static func speechSuffixPlan(source: String, segments: [AudioSegment],
+                                 cursor: ReadingResumeAudioCursor) -> SpeechSuffixPlan? {
+        guard cursor.isValid, segments.indices.contains(cursor.segmentIndex),
+              cursor.segmentIndex > 0, source.utf16.count <= 65_536 else { return nil }
+        let current = segments[cursor.segmentIndex]
+        guard fingerprint(current.text) == cursor.segmentTextFingerprint else { return nil }
+        let prior = Array(segments.prefix(cursor.segmentIndex))
+        let prefix = semanticText(prior.map(\.text).joined())
+        // Validate the whole prefix and target chunk together. A minimum
+        // prefix length would make short sentences pay for discarded audio.
+        guard !prefix.isEmpty,
+              semanticText(source).hasPrefix(prefix + semanticText(current.text)) else { return nil }
+        var offset = source.startIndex
+        var consumed = 0
+        while offset < source.endIndex, consumed < prefix.utf16.count {
+            consumed += semanticText(String(source[offset])).utf16.count
+            offset = source.index(after: offset)
+        }
+        guard consumed == prefix.utf16.count else { return nil }
+        while offset < source.endIndex, semanticText(String(source[offset])).isEmpty {
+            offset = source.index(after: offset)
+        }
+        guard offset < source.endIndex else { return nil }
+        let suffix = String(source[offset...])
+        guard SpeechTextSanitizer.containsSpeakableContent(suffix) else { return nil }
+        let context = prior.map {
+            AudioSegment(paragraphIndex: $0.paragraphIndex, segmentIndex: $0.segmentIndex,
+                audioData: Data(), timestamps: $0.timestamps, duration: $0.duration,
+                text: $0.text, isWavFormat: $0.isWavFormat, speaker: $0.speaker)
+        }
+        return SpeechSuffixPlan(text: suffix, prefix: context, nextSegmentIndex: prior.count)
+    }
+
     private static func semanticText(_ text: String) -> String {
         let allowed = CharacterSet.alphanumerics.union(.nonBaseCharacters)
         return String(String.UnicodeScalarView(text.lowercased()
@@ -375,6 +426,15 @@ enum ReadingResumeContract {
             cursor.semanticPrefixFingerprint = fingerprint(semanticPrefix)
             cursor.semanticWordFingerprint = fingerprint(semanticText(word.timestamp.word))
             cursor.semanticWordUTF16Length = semanticText(word.timestamp.word).utf16.count
+        } else if segment.timestamps.isEmpty {
+            let normalizedPrefix = semanticText(priorText)
+            let normalizedText = semanticText(segment.text)
+            cursor.untimedAnchor = ReadingResumeUntimedAnchor(
+                prefixUTF16Length: normalizedPrefix.utf16.count,
+                prefixFingerprint: fingerprint(normalizedPrefix),
+                textUTF16Length: normalizedText.utf16.count,
+                textFingerprint: fingerprint(normalizedText)
+            )
         }
         return cursor
     }
@@ -441,6 +501,9 @@ enum ReadingResumeContract {
                 }
             }
         }
+        if cursor.wordFingerprint == nil, cursor.untimedAnchor != nil {
+            return resolveUntimedAudio(cursor, segments: segments, isComplete: isComplete)
+        }
         var precedingText = ""
         for (index, segment) in segments.enumerated() {
             let end = precedingText.utf16.count + segment.text.utf16.count
@@ -460,6 +523,36 @@ enum ReadingResumeContract {
             precedingText += segment.text
         }
         return resolveSemanticAudio(cursor, segments: segments, isComplete: isComplete)
+    }
+
+    private static func resolveUntimedAudio(
+        _ cursor: ReadingResumeAudioCursor, segments: [AudioSegment], isComplete: Bool
+    ) -> ReadingResumeAudioResolution {
+        guard let anchor = cursor.untimedAnchor,
+              anchor.prefixUTF16Length >= 0, anchor.textUTF16Length > 0,
+              anchor.textUTF16Length <= 16_384,
+              segments.allSatisfy({ $0.timestamps.isEmpty }) else { return .unavailable }
+        let texts = segments.map { semanticText($0.text) }
+        let spoken = texts.joined() as NSString
+        let start = anchor.prefixUTF16Length
+        guard start <= spoken.length, anchor.textUTF16Length <= spoken.length - start else {
+            return isComplete ? .unavailable : .waiting
+        }
+        guard fingerprint(spoken.substring(to: start)) == anchor.prefixFingerprint,
+              fingerprint(spoken.substring(with: NSRange(location: start, length: anchor.textUTF16Length)))
+                == anchor.textFingerprint else { return .unavailable }
+        var offset = 0
+        for (index, text) in texts.enumerated() {
+            let end = offset + text.utf16.count
+            if start < end {
+                // Exact chunk restoration above preserves fractional position.
+                // Repartitioned audio replays this verified boundary, never an
+                // estimated word/time that could skip previously unheard text.
+                return .seek(segmentIndex: index, seconds: 0)
+            }
+            offset = end
+        }
+        return isComplete ? .unavailable : .waiting
     }
 
     /// A repeated request may normalize quotes/spaces differently or split its

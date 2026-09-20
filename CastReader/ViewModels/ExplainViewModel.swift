@@ -145,6 +145,8 @@ struct ResolvedMark: Identifiable, Equatable {
 final class ExplainViewModel: ObservableObject {
 
     let document: ReadingDocument
+    private let kindleSpeechPage: KindleSpeechPage?
+    private let kindleSpeechDocument: ReadingDocument?
     let analyticsContext: AnalyticsContentContext
 
     /// 场景 content_type（从首页场景入口进入时设置；通用 ➕ 导入为 nil）。仅决定后端「划什么/怎么批」prompt 分支，
@@ -157,6 +159,7 @@ final class ExplainViewModel: ObservableObject {
     private var playbackChapterTitle: String?
     private var playbackCoverURL: String?
     var onDocumentFinished: (() -> Void)?
+    var onPlaybackIntentChanged: (() -> Void)?
 
     /// The complete generated remainder of an authoritative page can authorize
     /// visual preparation. A short final block must not collapse the lead time;
@@ -191,7 +194,7 @@ final class ExplainViewModel: ObservableObject {
     // .web 源：用 WebView extractor 提取的段落构成讲解/锚定文档（原始 document.paragraphs 为空）。
     private var webDoc: ReadingDocument? = nil
     private var deferredWebAutoplay = DeferredAutoplayGate()
-    private var doc: ReadingDocument { webDoc ?? document }
+    private var doc: ReadingDocument { webDoc ?? kindleSpeechDocument ?? document }
     func loadWebParagraphs(_ p: [ReadingParagraph], language: String? = nil) {
         webDoc = ReadingDocument(id: document.id, title: document.title, sourceKind: .web,
                                  language: language ?? document.language, paragraphs: p, sourceURL: document.sourceURL)
@@ -262,12 +265,18 @@ final class ExplainViewModel: ObservableObject {
         status = .idle
     }
 
-    // Kept separate from the shared player: a blocked AO3 document must not
-    // restart through its toolbar, mini player, or a delayed access retry.
+    // A blocked web document must not restart through its toolbar, mini player,
+    // or a delayed access retry, even after shared-player ownership changes.
     var webContentBlockMessage: String?
 
     func invalidateAO3Content(message: String) {
         guard document.sourceKind == .web, AO3PageUpdate.isAO3URL(document.sourceURL) else { return }
+        invalidateWebContent(message: message)
+    }
+
+    func invalidateWebContent(message: String) {
+        guard document.sourceKind.isWebRendered else { return }
+        stop() // Clear this owner's queue before releasing its session.
         deactivate()
         stageInactiveLiveWebPage([])
         webContentBlockMessage = message
@@ -348,6 +357,9 @@ final class ExplainViewModel: ObservableObject {
 
     private let audio = AudioPlayerService.shared
     private let settings = AppSettings.shared
+    private let injectedQuickReadService: QuickReadService?
+    private var consecutiveShortWeReadPages = 0
+    private let maxConsecutiveShortWeReadPages = 4
     private let speechGenerator: any ParagraphSpeechGenerating
     private let pro = ProManager.shared
     private let quota = QuotaManager.shared
@@ -359,7 +371,11 @@ final class ExplainViewModel: ObservableObject {
         let text: String
         let sentences: [String]         // 讲解文本按句切分（字幕逐句显示，按播放进度推进）
         let voiceID: String
+        var isComplete = true
+        var sourceMarks: [QuickreadEvent]? = nil
     }
+    private var requestedStreamingBlock: (index: Int, generation: UInt64)?
+    private var enqueuedStreamingBlocks: [Int: UInt64] = [:]
 
     struct PrefetchedFirstBlock {
         let jobId: String
@@ -510,8 +526,14 @@ final class ExplainViewModel: ObservableObject {
     private var analyticsBlocksCompleted = Set<Int>()
 
     init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil,
-         speechGenerator: (any ParagraphSpeechGenerating)? = nil) {
+         speechGenerator: (any ParagraphSpeechGenerating)? = nil,
+         quickReadService: QuickReadService? = nil) {
         self.document = document
+        let speechPage = document.sourceKind == .kindle
+            ? KindleFootnoteSpeech.prepare(document: document, skipReferences: KindleFootnoteSpeech.isEnabled) : nil
+        self.kindleSpeechPage = speechPage
+        self.kindleSpeechDocument = speechPage.map { KindleFootnoteSpeech.explanationDocument(document, page: $0) }
+        self.injectedQuickReadService = quickReadService
         self.speechGenerator = speechGenerator ?? TTSService.shared
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         let initialLanguage = VoiceCatalog.normalizedLanguage(
@@ -685,6 +707,14 @@ final class ExplainViewModel: ObservableObject {
         playbackVoiceID = newVoiceID
         clearPagePrefetch()
 
+        // A retained explanation must not steal a newer document's player
+        // in response to a global voice preference. Prepared blocks carry
+        // voice IDs and are revoiced when this reader is explicitly resumed.
+        let hasCurrentSession = audioSessionToken.map { audio.isPlaybackSessionActive($0) } == true
+        guard !isActive || hasCurrentSession else {
+            deactivate()
+            return
+        }
         guard isActive,
               currentBlockIndex >= 0,
               let original = prepared[currentBlockIndex] else { return }
@@ -728,14 +758,33 @@ final class ExplainViewModel: ObservableObject {
         _ = audio.setMoreSegmentsExpected(true, session: session)
         isPreparingNext = true
 
+        let switchGeneration = contentGeneration
         voiceSwitchTask = Task { [weak self] in
             guard let self else { return }
+            var installedPrefix = false
             do {
+                let onPrefix: (PreparedBlock) -> Void = { [weak self] block in
+                    guard let self, self.activeVoiceSwitchID == switchID,
+                          self.contentGeneration == switchGeneration,
+                          self.currentBlockIndex == blockIndex, self.ownsAudioQueue,
+                          self.settings.voice(for: self.playbackLanguage) == newVoiceID else { return }
+                    if !installedPrefix {
+                        self.installVoiceSwitchedBlock(block, replacing: original, blockIndex: blockIndex,
+                                                       autoPlay: resumeAfterSwitch && !self.audio.isExplicitlyPaused, session: session)
+                        self.enqueuedStreamingBlocks[blockIndex] = self.contentGeneration
+                        installedPrefix = true
+                        VoiceSwitchStatusCenter.shared.finish(switchID)
+                    } else {
+                        self.publishNarration(block, idx: blockIndex, generation: self.contentGeneration)
+                    }
+                }
                 let rebuilt = try await self.revoicePreparedBlock(
                     original,
                     blockIndex: blockIndex,
                     language: self.playbackLanguage,
-                    voiceID: newVoiceID
+                    voiceID: newVoiceID,
+                    onPrefix: onPrefix,
+                    permitFirstWhilePaused: !resumeAfterSwitch
                 )
                 try Task.checkCancellation()
                 guard self.activeVoiceSwitchID == switchID,
@@ -744,6 +793,7 @@ final class ExplainViewModel: ObservableObject {
                       self.isActive,
                       self.audioSessionToken == session,
                       self.audio.isPlaybackSessionActive(session) else { return }
+                if !installedPrefix {
                 self.installVoiceSwitchedBlock(
                     rebuilt,
                     replacing: original,
@@ -751,6 +801,7 @@ final class ExplainViewModel: ObservableObject {
                     autoPlay: resumeAfterSwitch,
                     session: session
                 )
+                }
                 VoiceSwitchStatusCenter.shared.finish(switchID)
                 self.activeVoiceSwitchID = nil
             } catch is CancellationError, TTSError.cancelled {
@@ -782,8 +833,18 @@ final class ExplainViewModel: ObservableObject {
         _ original: PreparedBlock,
         blockIndex: Int,
         language: String,
-        voiceID: String
+        voiceID: String,
+        onPrefix: ((PreparedBlock) -> Void)? = nil,
+        permitFirstWhilePaused: Bool = false
     ) async throws -> PreparedBlock {
+        let sourceMarks = original.sourceMarks ?? original.marks
+        if let units = ExplanationSpeechPlan.units(text: original.text, marks: sourceMarks) {
+            let section = QuickreadSection(id: "revoice", text: original.text,
+                cinematic: QuickreadCinematic(events: sourceMarks))
+            return try await prepareShortNarration(section, units: units, idx: blockIndex,
+                language: language, voiceID: voiceID, generation: contentGeneration,
+                onPrefix: onPrefix, permitFirstWhilePaused: permitFirstWhilePaused)
+        }
         let segments = try await speechGenerator.generateVoiceSwitchSegments(
             paragraphIndex: blockIndex,
             text: original.text,
@@ -830,7 +891,8 @@ final class ExplainViewModel: ObservableObject {
         }
         let oldDuration = original.segments.reduce(0) { $0 + effectiveDuration($1) }
         let marks = recomposed.map { ensureTiming($0, duration: duration) }
-            ?? retimeEvents(original.marks, from: oldDuration, to: duration)
+            ?? (original.sourceMarks.map { ensureTiming($0, duration: duration) }
+                ?? retimeEvents(original.marks, from: oldDuration, to: duration))
         return PreparedBlock(
             segments: segments,
             marks: marks,
@@ -889,7 +951,7 @@ final class ExplainViewModel: ObservableObject {
                 session: session
             )
         }
-        _ = audio.setMoreSegmentsExpected(false, session: session)
+        _ = audio.setMoreSegmentsExpected(!block.isComplete, session: session)
     }
 
     private func finishVoiceSwitchIfNeeded() {
@@ -932,6 +994,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     func deactivate() {
+        consecutiveShortWeReadPages = 0
         // The quota/membership refresh happens before `activate()`. Invalidate
         // it even when Explain has not acquired playback ownership yet, or a
         // late refresh can start Explain after the user switched back to Read.
@@ -968,6 +1031,9 @@ final class ExplainViewModel: ObservableObject {
 
     func start() {
         guard requireWebContentReady() else { return }
+        if isErrorState, consecutiveShortWeReadPages >= maxConsecutiveShortWeReadPages {
+            consecutiveShortWeReadPages = 0 // A new explicit retry gets a fresh bounded budget.
+        }
         if isErrorState, let block = prepared[currentBlockIndex],
            block.voiceID != settings.voice(for: playbackLanguage) {
             activate()
@@ -992,6 +1058,7 @@ final class ExplainViewModel: ObservableObject {
         // 提交 LLM 前预校验：内容太短，LLM 没东西可讲 → 直接引导朗读，不发请求白等重试、也不消耗额度（而非无脑提交）。
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
+            if continuePastShortWeReadPage() { return }
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
         }
@@ -1106,6 +1173,7 @@ final class ExplainViewModel: ObservableObject {
         }
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
+            if continuePastShortWeReadPage() { return }
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
         }
@@ -1140,6 +1208,7 @@ final class ExplainViewModel: ObservableObject {
             pdfScopedParagraphs = nil
             pdfBatchCursor = nil
         }
+        consecutiveShortWeReadPages = 0
         jobId = prefetched.jobId
         totalBlocks = max(1, prefetched.totalBlocks)
         setOutputLanguage(prefetched.outputLanguage)
@@ -1222,7 +1291,30 @@ final class ExplainViewModel: ObservableObject {
     /// continuation and compose request for a Google Drive document is bound
     /// to the dedicated Limited Use service instance and its global job map.
     private var quickReadService: QuickReadService {
-        QuickReadService.forDocument(doc)
+        injectedQuickReadService ?? QuickReadService.forDocument(doc)
+    }
+
+    /// A chapter tail is only a visual page, not the whole article. Reuse the
+    /// bridge's confirmed semantic turn (one click, bounded timeout). Never
+    /// interpret an arbitrary HTTP 400, access wall, or network failure as this.
+    @discardableResult
+    private func continuePastShortWeReadPage() -> Bool {
+        guard document.sourceKind == .weread,
+              let onDocumentFinished,
+              !liveWebTurnIntentSuspended,
+              audio.sleepTimer.permitsAutomaticPlayback(),
+              consecutiveShortWeReadPages < maxConsecutiveShortWeReadPages else { return false }
+        consecutiveShortWeReadPages += 1
+        stop() // Retire any old page audio and invalidate late plan callbacks.
+        activate()
+        completionNotified = true
+        planSettled = true
+        status = .completed
+        isContinuingLivePage = true
+        stageText = AppLocalized("继续讲解…")
+        ReaderRunLog.write("WEREAD explain short-page continue count=\(consecutiveShortWeReadPages)")
+        onDocumentFinished()
+        return true
     }
 
     /// 解读最低内容量（提交 LLM 前预校验）：中文字符密度高、阈值低；其他语言按字符计。低于此 LLM 没东西可讲。
@@ -1381,8 +1473,15 @@ final class ExplainViewModel: ObservableObject {
 
     func togglePlayPause() {
         guard requireWebContentReady() else { return }
+        onPlaybackIntentChanged?()
         audio.sleepTimer.resumeByUser()
         liveWebTurnIntentSuspended = false
+        // The last audio item has ended while the live reader finishes ink or
+        // page preparation. Replaying that ended item cannot resume a page.
+        if status == .completed, isContinuingLivePage {
+            onDocumentFinished?()
+            return
+        }
         if audio.hasTerminalPlaybackFailure {
             recoverPlaybackAfterOwnershipChange()
             return
@@ -1402,7 +1501,12 @@ final class ExplainViewModel: ObservableObject {
     /// audio when possible.
     func ensurePlaying() {
         guard requireWebContentReady() else { return }
+        onPlaybackIntentChanged?()
         liveWebTurnIntentSuspended = false
+        if status == .completed, isContinuingLivePage {
+            if audio.sleepTimer.permitsAutomaticPlayback() { onDocumentFinished?() }
+            return
+        }
         if ownsAudioQueue, audio.isPlaying { return }
 
         switch status {
@@ -1484,6 +1588,12 @@ final class ExplainViewModel: ObservableObject {
         guard isActive,
               audioSessionToken == session,
               audio.isPlaybackSessionActive(session) else { return }
+        if !block.isComplete {
+            prepared.removeValue(forKey: blockIndex)
+            status = .idle
+            start(allowAccessRefresh: true, reusingStartedSession: true)
+            return
+        }
         if revoiceCachedBlockIfNeeded(block, index: blockIndex) { return }
         _ = audio.clearQueue(session: session)
         currentBlockIndex = blockIndex
@@ -1513,6 +1623,8 @@ final class ExplainViewModel: ObservableObject {
             let current = prepared.keys.sorted().compactMap { prepared[$0] }
             if !current.isEmpty { replayBlocks = current } else { start(); return }
         }
+        replayBlocks.removeAll { !$0.isComplete }
+        guard !replayBlocks.isEmpty else { start(); return }
         beginFreshContentGeneration()
         beginAnalyticsExplainSession()
         activate()
@@ -1733,7 +1845,7 @@ final class ExplainViewModel: ObservableObject {
                 await ProManager.shared.refresh()
             }
             await MainActor.run {
-                guard self.contentGeneration == generation else { return }
+                guard self.contentGeneration == generation, !Task.isCancelled else { return }
                 self.planFailed = true   // 通知 prepareBlock 的 section0 等待循环跳出（快道占位后不再死等挂起）
                 // server entitlement 超限 → 付费墙（对齐扩展：免费额度用满当付费墙，不当普通错误）
                 if case QuickReadError.httpError(402) = error {
@@ -1758,6 +1870,13 @@ final class ExplainViewModel: ObservableObject {
                         errorStage: "plan",
                         errorCode: "http_402"
                     )
+                } else if case QuickReadError.textTooShort = error {
+                    guard self.isActive else { return }
+                    if self.continuePastShortWeReadPage() { return }
+                    self.status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
+                    self.stageText = AppLocalized("解读失败")
+                    self.endAnalyticsExplainSession(result: .failed, reason: "text_too_short",
+                                                   errorStage: "plan", errorCode: "text_too_short")
                 } else if case QuickReadError.httpError(400) = error {
                     // 重试 3 次仍 400：多为内容太短/不适合解读，给可读提示而非裸 HTTP 码
                     self.status = .error(AppLocalized("内容太短或暂不支持解读，请稍后重试"))
@@ -1787,6 +1906,7 @@ final class ExplainViewModel: ObservableObject {
 
     private func handlePlan(_ plan: PlanBlock0, generation: UInt64) {
         guard generation == contentGeneration else { return }
+        consecutiveShortWeReadPages = 0
         if !didProjectServerExplainConsumption {
             quota.noteExplainAcceptedByServer(isPro: pro.isPro)
             didProjectServerExplainConsumption = true
@@ -1827,11 +1947,17 @@ final class ExplainViewModel: ObservableObject {
         } else {
             kindlePerfLog("kindleExplainBlockPrefetch fallback idx=\(idx) source=prepare-enqueue")
         }
+        requestedStreamingBlock = (idx, generation)
+        defer {
+            if requestedStreamingBlock?.index == idx, requestedStreamingBlock?.generation == generation {
+                requestedStreamingBlock = nil
+            }
+        }
         do {
             let pb = try await prepareBlock(idx, generation: generation)
             await MainActor.run {
                 guard self.contentGeneration == generation else { return }
-                self.enqueue(pb, idx: idx)
+                if self.enqueuedStreamingBlocks[idx] != generation { self.enqueue(pb, idx: idx) }
             }
             guard contentGeneration == generation else { return }
             kindlePerfLog("prepare-enqueue ready idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) segs=\(pb.segments.count) text=\(pb.text.count)")
@@ -1902,13 +2028,17 @@ final class ExplainViewModel: ObservableObject {
     /// a barrier: later blocks must not overtake it because the server's block
     /// extraction and continuity context are ordered.
     private func fillRollingPrefetchWindow(reason: String) {
-        guard !isReplayingCached, totalBlocks > 0 else { return }
+        guard !isReplayingCached, totalBlocks > 0, !audio.isExplicitlyPaused,
+              !liveWebTurnIntentSuspended else { return }
         let first = max(0, currentBlockIndex + 1)
         let last = min(totalBlocks - 1, currentBlockIndex + rollingPrefetchDepth)
         guard first <= last else { return }
 
         for idx in first...last {
-            if prepared[idx] != nil { continue }
+            if let block = prepared[idx] {
+                if block.isComplete { continue }
+                return
+            }
             if preparingBlocks.contains(idx) || scheduledBackgroundBlocks.contains(idx) {
                 return
             }
@@ -1990,8 +2120,8 @@ final class ExplainViewModel: ObservableObject {
             section = try await quickReadService.extractBlock(jobId: jobId, blockIdx: qIdx)
         }
         let sectionMs = elapsedMs(since: sectionStartedAt)
-        let pb = try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage, detachedTTS: detachedTTS)
-        guard generation == contentGeneration else { throw CancellationError() }
+        let pb = try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage, detachedTTS: detachedTTS, publishIncrementally: true)
+        guard generation == contentGeneration, settings.voice(for: outputLanguage) == pb.voiceID else { throw CancellationError() }
         prepared[idx] = pb
         kindlePerfLog("prepare-block ready idx=\(idx) qIdx=\(qIdx) detached=\(detachedTTS ? "Y" : "N") waitedMs=\(waitedMs) sectionMs=\(sectionMs) totalMs=\(elapsedMs(since: startedAt))")
         return pb
@@ -1999,9 +2129,14 @@ final class ExplainViewModel: ObservableObject {
 
     /// 讲解 section → 可播放块（TTS + 拼时间线 + composeBlock 回填 mark.at）。参数化 jobId/语言 → 当前页与页间预取共用。
     /// idx = iOS 块序（TTS 段标识、匹配 currentBlockIndex）；composeIdx = 质道块号（快道激活后两者差 idxBase）。
-    private func prepareSection(_ section: QuickreadSection, idx: Int, composeIdx: Int, jobId: String, language: String, detachedTTS: Bool = false, voiceOverride: String? = nil) async throws -> PreparedBlock {
+    private func prepareSection(_ section: QuickreadSection, idx: Int, composeIdx: Int, jobId: String, language: String, detachedTTS: Bool = false, voiceOverride: String? = nil, publishIncrementally: Bool = false) async throws -> PreparedBlock {
         let startedAt = Date()
         let voiceID = voiceOverride ?? settings.voice(for: language)
+        if publishIncrementally, let units = ExplanationSpeechPlan.units(text: section.text, marks: section.events) {
+            return try await prepareShortNarration(section, units: units, idx: idx,
+                language: language, voiceID: voiceID, generation: contentGeneration)
+        }
+        // Paraphrased/ambiguous marks retain the full server-compose path.
         // TTS 讲解文本（收集全部 segment）
         var segs: [AudioSegment] = []
         let ttsStartedAt = Date()
@@ -2064,14 +2199,109 @@ final class ExplainViewModel: ObservableObject {
         return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text), voiceID: voiceID)
     }
 
+    /// Publish audio and its immutable, already timed marks together. A later
+    /// unit only appends; no played prefix is re-composed or re-timed.
+    private func prepareShortNarration(_ section: QuickreadSection,
+        units: [ExplanationSpeechPlan.Unit], idx: Int, language: String,
+        voiceID: String, generation: UInt64, onPrefix: ((PreparedBlock) -> Void)? = nil, permitFirstWhilePaused: Bool = false) async throws -> PreparedBlock {
+        var segments: [AudioSegment] = []
+        var marks: [QuickreadEvent] = []
+        let demand = SpeechStreamBuffer(paragraphIndex: idx, voice: voiceID, language: language, requestID: UUID().uuidString)
+        let started = Date()
+        do {
+            for (unitIndex, unit) in units.enumerated() {
+                var group: [AudioSegment] = []
+                try await speechGenerator.generateBufferedSpeech(paragraphIndex: idx, text: unit.text,
+                    voice: voiceID, speed: 1, language: language, includeVoiceCode: true,
+                    speaker: nil, cloneRequestID: demand.requestID,
+                    continuation: TTSContinuation(requestUnits: ClonedTTSStartup.requestUnits(unit.text, language: language, voice: voiceID),
+                                                  nextSegmentIndex: segments.count),
+                    beforeRequest: { [weak self] checkpoint in
+                        guard let self else { throw CancellationError() }
+                        while true {
+                            try Task.checkCancellation()
+                            guard self.isActive, self.contentGeneration == generation,
+                                  self.settings.voice(for: language) == voiceID else { throw CancellationError() }
+                            let current = self.currentBlockIndex == idx && self.ownsAudioQueue
+                            if (segments.isEmpty && permitFirstWhilePaused) || demand.canRequest(currentSegmentID: current ? self.audio.currentSegment?.id : nil,
+                                position: current ? self.audio.playbackPosition : 0,
+                                rate: Double(self.audio.playbackRate),
+                                paused: self.audio.isExplicitlyPaused || self.liveWebTurnIntentSuspended) {
+                                demand.beginRequest(checkpoint)
+                                return current || self.requestedStreamingBlock?.index == idx ? .interactive : .readAhead
+                            }
+                            try await Task.sleep(nanoseconds: 75_000_000)
+                        }
+                    }, onSegmentReady: { segment in group.append(segment) })
+                try Task.checkCancellation()
+                guard contentGeneration == generation, settings.voice(for: language) == voiceID else { throw CancellationError() }
+                let offset = segments.reduce(0) { $0 + effectiveDuration($1) }
+                // Normalized speech may expand numbers. In that case use the
+                // established Explain timing fallback inside this short unit;
+                // the original-text anchor and already published marks stay fixed.
+                guard !group.isEmpty else { throw QuickReadError.noBlock0 }
+                let timed = ExplanationSpeechPlan.timedMarks(unit.marks, segments: group, offset: offset)
+                    ?? ensureTiming(unit.marks.map { event in var copy = event; copy.at = nil; return copy },
+                                    duration: group.reduce(0) { $0 + effectiveDuration($1) }).map { event in
+                        var copy = event; copy.at = (copy.at ?? 0) + offset; return copy
+                    }
+                segments.append(contentsOf: group); marks.append(contentsOf: timed)
+                group.forEach { demand.append($0) }
+                let block = PreparedBlock(segments: segments, marks: marks, text: section.text,
+                    sentences: Self.splitSentences(section.text), voiceID: voiceID,
+                    isComplete: unitIndex == units.count - 1, sourceMarks: section.events)
+                if let onPrefix { onPrefix(block) } else { publishNarration(block, idx: idx, generation: generation) }
+                if unitIndex == 0 {
+                    ReaderRunLog.write("EXPLAIN short-block playable block=\(idx) firstMs=\(elapsedMs(since: started)) units=\(units.count)")
+                }
+            }
+            return PreparedBlock(segments: segments, marks: marks, text: section.text,
+                sentences: Self.splitSentences(section.text), voiceID: voiceID, sourceMarks: section.events)
+        } catch {
+            if contentGeneration == generation, prepared[idx]?.voiceID == voiceID,
+               prepared[idx]?.isComplete == false {
+                prepared.removeValue(forKey: idx)
+                replayBlocks.removeAll { !$0.isComplete && $0.text == section.text }
+                if currentBlockIndex == idx {
+                    status = .error(AppLocalized("声音服务暂时不可用，请稍后重试"))
+                    // Incomplete audio must never signal block completion.
+                    setMoreSegmentsExpected(true)
+                }
+            }
+            throw error
+        }
+    }
+
+    private func publishNarration(_ block: PreparedBlock, idx: Int, generation: UInt64) {
+        guard isActive, contentGeneration == generation, settings.voice(for: playbackLanguage) == block.voiceID else { return }
+        let previousCount = prepared[idx]?.segments.count ?? 0
+        prepared[idx] = block
+        let requested = requestedStreamingBlock?.index == idx && requestedStreamingBlock?.generation == generation
+        if enqueuedStreamingBlocks[idx] == generation, currentBlockIndex == idx, ownsAudioQueue, let session = audioSessionToken {
+            // Install timing before adding playable audio.
+            marksByBlock[idx] = block.marks
+            if let index = replayBlocks.lastIndex(where: { $0.text == block.text }) { replayBlocks[index] = block }
+            for segment in block.segments.dropFirst(previousCount) {
+                _ = audio.loadSegment(segment, autoPlay: !audio.isExplicitlyPaused && !liveWebTurnIntentSuspended, session: session)
+            }
+            _ = audio.setMoreSegmentsExpected(!block.isComplete, session: session)
+        } else if requested {
+            enqueuedStreamingBlocks[idx] = generation
+            enqueue(block, idx: idx)
+        }
+    }
+
     private func enqueue(_ pb: PreparedBlock, idx: Int) {
         guard let session = ensureAudioSessionClaim() else { return }
         if revoiceCachedBlockIfNeeded(pb, index: idx) { return }
+        if !pb.isComplete { enqueuedStreamingBlocks[idx] = contentGeneration }
         prepared[idx] = pb   // 缓存每块（含 block 0），供 replay 复用、不重新 TTS/调后端
         if !isReplayingCached {
             replayBlocks.append(pb)
         }
+        let shouldAutoPlay = !audio.isExplicitlyPaused && !liveWebTurnIntentSuspended
         _ = audio.clearQueue(session: session)
+        if !shouldAutoPlay { _ = audio.pause(session: session) }
         currentBlockIndex = idx
         explanationText = pb.sentences.first ?? pb.text
         updateNowPlayingCaption(explanationText)
@@ -2084,11 +2314,11 @@ final class ExplainViewModel: ObservableObject {
         for seg in pb.segments {
             _ = audio.loadSegment(
                 seg,
-                autoPlay: !liveWebTurnIntentSuspended,
+                autoPlay: shouldAutoPlay,
                 session: session
             )
         }
-        _ = audio.setMoreSegmentsExpected(false, session: session)
+        _ = audio.setMoreSegmentsExpected(!pb.isComplete, session: session)
         fillRollingPrefetchWindow(reason: "enqueue-\(idx)")
         // PDF 连续解读：当前页一开始播就后台预取下一页首块，切页时秒接（消除页间 gap）。
         if !isReplayingCached { prefetchNextPage() }
@@ -2173,6 +2403,19 @@ final class ExplainViewModel: ObservableObject {
 #if DEBUG
     /// Seed a completed narration in integration tests; playback still goes
     /// through the production ownership, voice validation and retry paths.
+    func debugPlayShortNarration(_ section: QuickreadSection) async throws {
+        activate()
+        guard ensureAudioSessionClaim() != nil,
+              let units = ExplanationSpeechPlan.units(text: section.text, marks: section.events) else {
+            throw QuickReadError.noBlock0
+        }
+        totalBlocks = 1; planSettled = true
+        requestedStreamingBlock = (0, contentGeneration)
+        defer { requestedStreamingBlock = nil }
+        _ = try await prepareShortNarration(section, units: units, idx: 0, language: playbackLanguage,
+            voiceID: playbackVoiceID, generation: contentGeneration)
+    }
+    var debugPreparedMarkTimes: [Double] { (marksByBlock[0] ?? []).compactMap(\.at) }
     func debugSeedCachedNarration(_ segments: [AudioSegment], voiceID: String) {
         let text = segments.map(\.text).joined(separator: " ")
         let block = PreparedBlock(segments: segments, marks: [], text: text,
@@ -2423,6 +2666,7 @@ final class ExplainViewModel: ObservableObject {
         textFingerprint: String
     ) async throws -> PrefetchedFirstBlock {
         guard pro.isPro else { throw CancellationError() }
+        let targetDocument = Self.explanationInput(targetDocument)
         let readableChars = targetDocument.readableParagraphs.reduce(0) {
             $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count
         }
@@ -2480,7 +2724,10 @@ final class ExplainViewModel: ObservableObject {
         let blockElapsed = priorDuration + t
 
         // 字幕逐句：按块内播放进度选当前句（解读后端常把整块合成一个大 segment，不能用 seg.text 当一句）。
-        if let sentences = prepared[currentBlockIndex]?.sentences {
+        if prepared[currentBlockIndex]?.isComplete == false {
+            explanationText = seg.text
+            updateNowPlayingCaption(seg.text)
+        } else if let sentences = prepared[currentBlockIndex]?.sentences {
             let blockDur = segs.reduce(0) { $0 + effectiveDuration($1) }
             let progress = blockDur > 0.01 ? blockElapsed / blockDur : 0
             if currentBlockIndex == 0,
@@ -2577,12 +2824,25 @@ final class ExplainViewModel: ObservableObject {
         markHit += 1
         debugLog("mark HIT %d/%d para=%d [%@]", markHit, markTotal, hit.paragraphIndex, String(anchorText.prefix(28)))
         anchorCursor = hit.paragraphIndex
-        let seed = "\(hit.paragraphIndex)-\(hit.range.lowerBound)-\(ev.action)".stableSeed
+        guard let sourceRange = sourceMarkRange(paragraphID: hit.paragraphIndex, range: hit.range) else { return }
+        let seed = "\(hit.paragraphIndex)-\(sourceRange.lowerBound)-\(ev.action)".stableSeed
         let mark = ResolvedMark(id: ev.id, paragraphIndex: hit.paragraphIndex,
-                                charRange: hit.range, action: ev.action, n: ev.n, seed: seed,
+                                charRange: sourceRange, action: ev.action, n: ev.n, seed: seed,
                                 weight: ev.weight, role: ev.role)
         activeMarks.append(mark)
         scrollTarget = hit.paragraphIndex   // 跟随讲解滚动
+    }
+
+    static func explanationInput(_ document: ReadingDocument) -> ReadingDocument {
+        guard document.sourceKind == .kindle else { return document }
+        return KindleFootnoteSpeech.explanationDocument(document, page:
+            KindleFootnoteSpeech.prepare(document: document, skipReferences: KindleFootnoteSpeech.isEnabled))
+    }
+
+    func sourceMarkRange(paragraphID: Int, range: Range<Int>) -> Range<Int>? {
+        guard let kindleSpeechPage else { return range }
+        return kindleSpeechPage.paragraphs.first { $0.sourceParagraphID == paragraphID }?
+            .sourceCharacterRange(forSpokenRange: range)
     }
 
     // MARK: - Helpers

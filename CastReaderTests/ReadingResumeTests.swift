@@ -22,6 +22,19 @@ private struct ResumeTestSpeech: ParagraphSpeechGenerating {
     }
 }
 
+private actor CloneIdentityFailureSpeech: ParagraphSpeechGenerating {
+    private(set) var requests: [(String, String?)] = []
+    func generateTTSForParagraph(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double,
+        language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        continuation: TTSContinuation?, onCheckpoint: ((TTSContinuation) async -> Void)?,
+        onSegmentReady: @escaping (AudioSegment) async -> Void
+    ) async throws {
+        requests.append((text, cloneRequestID))
+        throw URLError(.timedOut)
+    }
+}
+
 @MainActor
 final class ReadingResumeTests: XCTestCase {
     private var directory: URL!
@@ -35,6 +48,118 @@ final class ReadingResumeTests: XCTestCase {
     override func tearDown() async throws {
         ProManager.shared.debugForcePro = wasPro
         try? FileManager.default.removeItem(at: directory)
+    }
+
+    func testCloneRetryKeepsIdentityButDifferentLivePageDoesNot() async throws {
+        let settings = AppSettings.shared
+        let previous = settings.voice(for: "zh")
+        settings.setVoice("vl_page_identity_test", for: "zh")
+        defer {
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "zh") }
+            else { settings.setVoice(previous, for: "zh") }
+        }
+        let speech = CloneIdentityFailureSpeech()
+        let vm = ReadAloudViewModel(document: ReadingDocument(
+            id: UUID().uuidString, title: "Page identity", sourceKind: .weread,
+            language: "zh", paragraphs: []), historyStore: HistoryStore(directory: directory),
+            speechGenerator: speech)
+        defer { vm.stop(); vm.deactivate() }
+        vm.loadWebParagraphs(paragraphs(["上一页尚未生成完的内容。"]), language: "zh")
+        vm.dbgGenerate(0)
+        await vm.dbgWaitGeneration()
+        vm.dbgGenerate(0)
+        await vm.dbgWaitGeneration()
+        vm.replaceLiveWebPage(paragraphs(["下一页，同一段落序号但是全新内容。"]), language: "zh", autoplay: false)
+        vm.dbgGenerate(0)
+        await vm.dbgWaitGeneration()
+        let requests = await speech.requests
+        XCTAssertEqual(requests.count, 3)
+        guard requests.count == 3 else { return }
+        XCTAssertNotNil(requests[0].1)
+        XCTAssertEqual(requests[0].1, requests[1].1, "Same failed speech retries must not reserve quota twice")
+        XCTAssertNotEqual(requests[1].1, requests[2].1, "A new page must not inherit the prior page's idempotency key")
+    }
+
+    func testUntimedChineseResumeAcceptsVerifiedSplitAndMergedAudio() throws {
+        let first = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: Data([1]),
+                                 timestamps: [], duration: 16, text: "她走过了长长的街道，随后停在花店门前。")
+        let cursor = try XCTUnwrap(ReadingResumeContract.captureAudio(segments: [first], currentSegmentID: first.id, time: 8.69))
+        let split = [
+            AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: Data([2]), timestamps: [], duration: 8, text: "她走过了长长的街道，"),
+            AudioSegment(paragraphIndex: 0, segmentIndex: 1, audioData: Data([3]), timestamps: [], duration: 6, text: "随后停在花店门前。")
+        ]
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [split[0]], isComplete: false), .waiting)
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [split[0]], isComplete: true), .unavailable)
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: split, isComplete: true), .seek(segmentIndex: 0, seconds: 0))
+        let splitCursor = try XCTUnwrap(ReadingResumeContract.captureAudio(segments: split, currentSegmentID: split[1].id, time: 3))
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(splitCursor, segments: [first], isComplete: true), .seek(segmentIndex: 0, seconds: 0))
+        let changed = AudioSegment(paragraphIndex: 0, segmentIndex: 1, audioData: Data([4]), timestamps: [], duration: 6, text: "随后停在车站门前。")
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [split[0], changed], isComplete: true), .unavailable)
+    }
+
+    func testUntimedVoiceSwitchStartsVerifiedChineseAudioAndPreservesPause() async throws {
+        for paused in [false, true] {
+            let settings = AppSettings.shared, audio = AudioPlayerService.shared
+            let previous = settings.voice(for: "zh")
+            settings.setVoice("vl_old_chinese", for: "zh")
+            let text = "她走过了长长的街道，随后停在花店门前。"
+            let old = AudioSegment(paragraphIndex: 0, segmentIndex: 0,
+                audioData: wav(duration: 20, sample: 0), timestamps: [], duration: 20, text: text, isWavFormat: true)
+            let fresh = [
+                AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: wav(duration: 8, sample: 7),
+                    timestamps: [], duration: 8, text: "她走过了长长的街道，", isWavFormat: true),
+                AudioSegment(paragraphIndex: 0, segmentIndex: 1, audioData: wav(duration: 8, sample: 9),
+                    timestamps: [], duration: 8, text: "随后停在花店门前。", isWavFormat: true)
+            ]
+            let store = HistoryStore(directory: directory)
+            let doc = ReadingDocument(id: UUID().uuidString, title: "Chinese switch", sourceKind: .weread,
+                                      language: "zh", paragraphs: [])
+            let vm = ReadAloudViewModel(document: doc, historyStore: store,
+                                       speechGenerator: ResumeTestSpeech(segments: fresh))
+            defer {
+                vm.stop(); vm.deactivate()
+                if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "zh") }
+                else { settings.setVoice(previous, for: "zh") }
+            }
+            vm.loadWebParagraphs(paragraphs([text]), language: "zh")
+            vm.startWithCachedSegments([old], paragraphIndex: 0, segmentID: old.id, progress: 0.4, isReplayEligible: false)
+            try await waitUntil("Old Chinese audio must establish actual playback") { audio.hasAudibleProgress && audio.playbackPosition >= 8 }
+            if paused { vm.pausePlayback() }
+            settings.setVoice("vl_new_chinese", for: "zh")
+            try await waitUntil("Fresh split audio must replace the old voice") {
+                vm.dbgSegments(for: 0).map(\.audioData) == fresh.map(\.audioData)
+                    && VoiceSwitchStatusCenter.shared.progress == nil
+            }
+            XCTAssertNil(vm.resumeNotice)
+            XCTAssertFalse(audio.hasTerminalPlaybackFailure)
+            if paused {
+                XCTAssertTrue(audio.isExplicitlyPaused)
+                XCTAssertFalse(audio.isPlaying)
+                vm.togglePlayPause()
+            }
+            try await waitUntil("New Chinese voice must actually advance") {
+                audio.currentSegment?.audioData == fresh[0].audioData
+                    && audio.hasAudibleProgress && audio.playbackPosition > 0
+            }
+            vm.stop(); vm.deactivate()
+        }
+    }
+
+    func testCloneSubrequestIdentityTracksActualSpeechAndPreservesRetries() throws {
+        func id(_ text: String = "相同内容。", voice: String = "vl_cao", language: String = "zh",
+                speed: Double = 1, index: Int = 0, base: String = "logical-request") -> String? {
+            TTSService.cloneSubrequestID(base: base, segmentIndex: index, text: text,
+                voice: voice, language: language, speed: speed, includeVoiceCode: true)
+        }
+        let same = try XCTUnwrap(id())
+        XCTAssertEqual(same, id())
+        XCTAssertLessThanOrEqual(same.count, 128)
+        for changed in [id("新页面内容。"), id(voice: "vc_private"), id(language: "en"),
+                        id(speed: 1.2), id(index: 1), id(base: "another-page")] {
+            XCTAssertNotEqual(same, changed)
+        }
+        XCTAssertNil(TTSService.cloneSubrequestID(base: nil, segmentIndex: 0, text: "text",
+            voice: "af_heart", language: "en", speed: 1, includeVoiceCode: true))
     }
 
     private func paragraphs(_ texts: [String]) -> [ReadingParagraph] {

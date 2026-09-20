@@ -1,11 +1,36 @@
 # AGENTS.md
 
+## App Store 1.2.41 已送审（2026-09-19）
+
+- 本工作树当前 App / Share / Widget 为 **1.2.41（63）**，已于北京时间 00:54:15 提交，版本及 Review Submission 均为 **WAITING_FOR_REVIEW**，审核通过后自动发布；尚不代表已上线。上一版 1.2.40 为 READY_FOR_SALE。
+- 最终候选增加保留会话换声归属检查及完成后换声缓存修复；正常开发包 dylib UUID `D99F968F-0D02-3FE8-BBDD-516F69C86B2C`。源码摘要和二进制摘要见 `reports/ios-release-1.2.41/candidate-identity.json`、`device-candidate.json`。
+- 最终候选已于 9 月 18 日 23:05 安装确认；此前 19:41 断连失败及同版本修复前包不得作为最终验证。源码/配置 SHA-256 为 `8670be15e6d5e31df8752192c9b694a81f5149c65a22ce2c0eeb429d75f3dd06`，HEAD `febfeab` 加本轮增量，测试后源码未变。
+- 相关套件 99 项通过；最终全量 1,778 通过、9 跳过、0 失败。中国/中文与国际/英文的真实朗读、解读 × 常规、社区、私人声音均通过，包含换声和暂停恢复。记录与边界见 `docs/iOS-1.2.41-Release-Report.md`，不因继续任务重复测试未变化候选。
+- 归档 `build/CastReader-1.2.41-63.xcarchive`，独立 DerivedData `/tmp/CastReader1241Archive63`。上传 IPA 三个组件分发签名正常、`get-task-allow=false`；九语资源与夹具排除检查通过。Build ID `aa33b7a4-cbc2-4c7d-aa76-a626434af0b8` 为 VALID / APP_STORE_ELIGIBLE；审核单 `f5a6f1f5-9eed-49f4-aa99-da89538a0e0f`。11 语更新说明和 45 张现有截图审计通过。后续从本工作树及报告中的源码摘要继续集成，不从主目录旧基线打包。
+- 用户授权重置国际区当前克隆用量并新增中国区 24 小时临时测试权益；后者到 2026-09-19 15:30:23.313Z 自动到期，保留测试产生用量及原有订阅。原国际区账号、中文讲解和曹操音色已恢复。下节旧余额及“最新安装”均为历史测试记录。
+
+## 语音管线延迟优化本地包（2026-09-18）
+
+- **最新安装为 16:25 的 1.2.40（62）开发包**，dylib UUID `879CD501-8239-360F-9770-538301984509`，应用/工程 tracked diff SHA-256 `a5f616168a50e7ab629c71ac433b4ee85eebcbc0809e1c5a30be639a15c345ef`，包含下述短前缀门槛修正。用户重新授权镜像真机验证，取代先前不占用手机的临时安排。
+- 16:50–16:52 追加快速翻页专项：下一页连续点 3 次后播放、播放中上一页连续点 3 次、前后交替 6 次均恢复播放；最后一组回到原页走 2.5 秒无页面变化恢复分支。27 条克隆响应全部 200，未复现停播。最后已暂停，服务端日志克隆余额 12 秒；后续不可用此余额做长时克隆测试，也不能把额度耗尽误判为翻页故障。
+- 16:25–16:38 实际复测《茶花女》/曹操：全程 9 次自动、2 次手动翻页，127 条克隆响应均 200。单独不干预连续窗口约 5 分钟内 6 次自动翻页，52 次音频衔接中位数 94 ms，最长 1.176 s；未复现停播。暂停后换声跳过 104 字符、仅请求 42 字符，切回曹操缓存命中、无新请求且保持暂停。具体小于 48 字符边界未单独在线复现，不以这些样本替代该边界回归；解读完整标注验收未在这次延长朗读测试中完成。详情见下述报告的第二轮真机记录。
+- 14:15 安装到用户 iPhone 的开发包为 **1.2.40（62）**，包含增量预读、换声后缀/缓存、共用有界预读、可验证标注的解读短块。dylib UUID `40ECF280-7C11-3EF7-BB06-CA73D4804A9E`。不是 App Store 更新。
+- 已安装应用/工程 tracked diff SHA-256：`549d9502dd533f9a6c34226bdb0a42310795dcb45610712c4919179b8a0409cc`；另含新增 `SpeechStreamBuffer.swift`，SHA-256 `b1e4593a7d714e7cf3af0482b7d013e53b4932e5a2ca6f5bb2d45800cbd2d4b9`。独立 DerivedData 为 `/tmp/CastReaderSpeechDevice20260918`。
+- 14:15 包之后移除了换声后缀的 48 字符门槛，保留完整前缀与当前片段校验；先完成模拟器/可控网络验证，16:25 已安装，见上方最新记录。
+- 《茶花女》+ 曹操线上段间 158 ms/115 ms，32 条克隆响应均 200；换声仍有 3.413 s/6.008 s 样本，冷恢复约 9 s，不得描述为全面秒播。详细验证、范围与剩余项见 `docs/voice-discovery-2026-09-14/shared-speech-latency-results-2026-09-18.md`。
+
+## 微信读书克隆停播本地修复包（2026-09-18）
+
+- 最近安装到用户 iPhone 的开发包为 **1.2.40（62）**，源码 `febfeab` 加本轮 3 个应用文件补丁，位于当前 `CastReader-mobile-voice-explore-20260914` 工作树。应用 diff SHA-256：`ad16bc7ea776e8e9b4af0f35a7528cce6d2cee3bf200c2da43cab29698293e72`；dylib UUID `A9D28E6D-4059-3288-B7AB-0837154C92FA`。09:51:38 启动。
+- 修复跨页克隆请求身份冲突、预读/前台分段身份差异，以及中文换音色拆段后的续读失败。240 项模拟器、11 项真机可控 TTS / AVPlayer 回归通过。10:10–10:15 镜像直接操作《茶花女》+「曹操」：4 次手动翻页、1 次自动翻页、与晓悦往返切换及暂停/继续均恢复播放，56 条克隆响应全部 200、没有 409 或恢复失败。仍有长段生成/预读 8–10 秒延迟，详见 `docs/voice-discovery-2026-09-14/weread-clone-playback-fix-2026-09-18.md`。
+- 这不是新的 App Store 提交，与下节同版本 Build 62 商店候选的二进制不同。后续以源码差异和 UUID 区分，仍须通过 `scripts/build-voice-toc-integration.sh --check` 后在独立 DerivedData 构建。
+
 ## App Store 1.2.40 送审基线（2026-09-16）
 
 - 当前已提交并回读为 `WAITING_FOR_REVIEW` 的版本为 **1.2.40（62）**，应用源码 **`5c45b75`**；工作树 `/Users/xuxuheng/Documents/.worktrees/CastReader-mobile-voice-explore-20260914`，分支 `codex/mobile-voice-explore-20260914`。归档为该工作树 `build/CastReader-1.2.40-62.xcarchive`，后续截图测试/文档提交不改变包内应用源码。
 - 包含下节音色发现、切换并发和额度修复，保留 `64c2dbd`、`633f6bb`、`ad4b885`、`a4a3ee0`、`24b28e3`、`48998e7` / `f94b41d`。另修复法语短发现页内外两层懒加载触发的布局循环；仅有界推荐内容使用 `VStack`，完整音色列表继续懒加载。
 - 发布记录及所有检测结果见 `docs/iOS-1.2.40-Release-Report.md`。后续增量集成从此基线继续，打包前运行 `bash scripts/build-voice-toc-integration.sh --check`，使用独立 DerivedData。不得从主目录旧分支打包覆盖。
-- 本次未重装用户 iPhone；下节 `9f946ac`（Build 61）仍是最后安装的开发测试源码。商店候选等待审核不代表已上线。
+- 9 月 16 日送审时未重装用户 iPhone；当时最后开发测试源码为下节 `9f946ac`（Build 61）。9 月 18 日新的本地安装见顶部记录。商店候选等待审核不代表已上线。
 
 ## 音色发现与 EPUB 目录本地集成（2026-09-15）
 
@@ -69,9 +94,11 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 
 `/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store/SKILL.md`
 
-完整提交指令默认授权：读取 App Store Connect 当前版本与最大 Build → 更新版本号 → 测试/归档/签名 → 上传并等待 `VALID` → 创建新版本 → 八语 App Info 与版本元数据 → 截图/审核资料/合规检查 → 绑定 Build → Review Submission → 状态回读。不要只停在打包、上传或保存草稿。
+完整提交指令默认授权到正式送审与状态回读。按 `docs/iOS-AppStore-Release-SOP.md` 五步执行：确认基线 → 核心服务 → 一次归档上传 → 资料差异检查 → 提交回读。同一候选的有效结果复用，失败后只重测受影响范围。
 
-项目内 SOP 见 `docs/iOS-AppStore-Release-SOP.md`，八语文案源为 `docs/CastReader-AppStore-Metadata-8-Languages.md`。不得输出 `.p8`、JWT 或签名凭据，不得为过审擅自修改价格、订阅、地区、App Privacy、年龄分级或法律声明。
+**送审核心门禁：朗读 / 解读 × Kokoro / 克隆四条管线必须在实际地区服务上验证，克隆覆盖社区 `vl_` 与私人 `vc_`，含真实出声、高亮/原文标注、续播、切换及额度。** 操作与证据见 `docs/iOS-Core-Service-Release-Gate.md`；试听或单测总数不能替代核心验收。
+
+App 九语、商店 11 locale。文案以当前 ASC 资料与本版差异为准，旧八语/1.2.20 模板仅作历史参考。默认保留标题、副标题、未修改字段及有效截图。不得输出 `.p8`、JWT 或签名凭据，不得为过审擅自修改价格、订阅、地区、App Privacy、年龄分级或法律声明。
 
 ### 新增/删除源文件 → 必须改 project.pbxproj
 

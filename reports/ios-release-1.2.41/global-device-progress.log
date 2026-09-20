@@ -1,0 +1,698 @@
+23:06:18.918 READ resume located source=text para=4
+23:06:18.932 AUDIO session claimed owner=readAloud gen=1
+23:06:18.936 READ generate start para=4 epoch=1 chars=86
+23:06:18.937 AUDIO producer expected=Y owner=readAloud gen=1 segment=nil
+23:06:20.108 CLONE quota status request=38B3ECF6-1B01-4C8A-8488-D6650A26A966 policy=monthly_120_v1 remaining=6799
+23:06:20.306 CLONE quota status request=A81701C5-20C9-4996-810B-E67CF033AF74 policy=monthly_120_v1 remaining=6799
+23:06:22.625 CLONE quota stale snapshot ignored read=3 applied=5
+23:06:22.653 READ segment ready para=4 seg=0 count=1 duration=5.57
+23:06:22.656 AUDIO stage segment=4-0 index=0/1 duration=5.57
+23:06:22.680 READ resume audio para=4 seg=0 time=0.24
+23:06:22.717 READ generate done para=4 epoch=1 segs=1
+23:06:22.719 READ prefetch start para=5 epoch=1 chars=52 streaming=Y
+23:06:22.744 AUDIO ready segment=4-0 duration=5.57 auto=Y
+23:06:22.786 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=4-0
+23:06:22.835 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=4-0
+23:06:22.856 READ resume first-play source=text item=34983e27b689 para=4 time=0.255353917 word=f39592393ef0 fraction=0.046852475000000095
+23:06:23.511 CLONE quota status request=EE118C1F-3B8C-46FB-9429-53952330E8AF policy=monthly_120_v1 remaining=6794
+23:06:24.301 CLONE quota stale snapshot ignored read=6 applied=7
+23:06:24.327 READ prefetch playable para=5 seg=0 buffered=1
+23:06:24.328 READ prefetch done para=5 epoch=1 segs=1 promoted=false
+23:06:24.328 READ prefetch start para=6 epoch=1 chars=102 streaming=Y
+23:06:26.043 READ prefetch playable para=6 seg=0 buffered=1
+23:06:26.043 READ prefetch done para=6 epoch=1 segs=1 promoted=false
+23:06:26.043 READ prefetch start para=7 epoch=1 chars=47 streaming=Y
+23:06:27.467 READ prefetch playable para=7 seg=0 buffered=1
+23:06:27.485 READ prefetch done para=7 epoch=1 segs=1 promoted=false
+23:06:28.200 AUDIO item finished segment=4-0 index=0/1
+23:06:28.201 AUDIO queue complete segment=4-0 queue=1
+23:06:28.201 READ completion accepted para=4 status=ready
+23:06:28.202 READ advance from=4 readable=11 status=ready prefetching=- prefetched=5
+23:06:28.209 READ checkpoint saved source=text item=34983e27b689 para=4 seg=0 time=5.568 offset=80 visual=true reflow=false word=dba36bffa5ca fraction=1.0
+23:06:28.213 READ prefetch promote para=5 segs=1
+23:06:28.215 AUDIO stage segment=5-0 index=0/1 duration=3.89
+23:06:28.220 AUDIO stage reused segment=5-0
+23:06:28.221 READ prefetch start para=8 epoch=1 chars=85 streaming=Y
+23:06:28.280 AUDIO ready segment=5-0 duration=3.89 auto=Y
+23:06:28.303 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=5-0
+23:06:28.330 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=5-0
+23:06:30.088 READ prefetch playable para=8 seg=0 buffered=1
+23:06:30.088 READ prefetch done para=8 epoch=1 segs=1 promoted=false
+23:06:32.260 AUDIO item finished segment=5-0 index=0/1
+23:06:32.261 AUDIO queue complete segment=5-0 queue=1
+23:06:32.261 READ completion accepted para=5 status=ready
+23:06:32.262 READ advance from=5 readable=11 status=ready prefetching=- prefetched=6
+23:06:32.271 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=3.888 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=1.0
+23:06:32.275 READ prefetch promote para=6 segs=1
+23:06:32.276 AUDIO stage segment=6-0 index=0/1 duration=6.53
+23:06:32.279 READ prefetch start para=9 epoch=1 chars=44 streaming=Y
+23:06:32.334 AUDIO ready segment=6-0 duration=6.53 auto=Y
+23:06:32.358 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=6-0
+23:06:32.385 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=6-0
+23:06:33.422 READ prefetch playable para=9 seg=0 buffered=1
+23:06:33.441 READ prefetch done para=9 epoch=1 segs=1 promoted=false
+23:06:33.441 READ prefetch start para=10 epoch=1 chars=93 streaming=Y
+23:06:35.341 READ prefetch playable para=10 seg=0 buffered=1
+23:06:35.342 READ prefetch done para=10 epoch=1 segs=1 promoted=false
+23:06:38.960 AUDIO item finished segment=6-0 index=0/1
+23:06:38.960 AUDIO queue complete segment=6-0 queue=1
+23:06:38.961 READ completion accepted para=6 status=ready
+23:06:38.961 READ advance from=6 readable=11 status=ready prefetching=- prefetched=7
+23:06:38.970 READ checkpoint saved source=text item=34983e27b689 para=6 seg=0 time=6.528 offset=93 visual=true reflow=false word=6ee16429668c fraction=1.0
+23:06:38.974 READ prefetch promote para=7 segs=1
+23:06:38.975 AUDIO stage segment=7-0 index=0/1 duration=2.93
+23:06:39.037 AUDIO ready segment=7-0 duration=2.93 auto=Y
+23:06:39.038 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=7-0
+23:06:39.067 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=7-0
+23:06:42.060 AUDIO item finished segment=7-0 index=0/1
+23:06:42.060 AUDIO queue complete segment=7-0 queue=1
+23:06:42.061 READ completion accepted para=7 status=ready
+23:06:42.062 READ advance from=7 readable=11 status=ready prefetching=- prefetched=8
+23:06:42.070 READ checkpoint saved source=text item=34983e27b689 para=7 seg=0 time=2.928 offset=36 visual=true reflow=false word=126ff07c1835 fraction=1.0
+23:06:42.074 READ prefetch promote para=8 segs=1
+23:06:42.075 AUDIO stage segment=8-0 index=0/1 duration=5.57
+23:06:42.138 AUDIO ready segment=8-0 duration=5.57 auto=Y
+23:06:42.138 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=8-0
+23:06:42.167 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=8-0
+23:06:47.800 AUDIO item finished segment=8-0 index=0/1
+23:06:47.800 AUDIO queue complete segment=8-0 queue=1
+23:06:47.801 READ completion accepted para=8 status=ready
+23:06:47.801 READ advance from=8 readable=11 status=ready prefetching=- prefetched=9
+23:06:47.810 READ checkpoint saved source=text item=34983e27b689 para=8 seg=0 time=5.568 offset=81 visual=true reflow=false word=944c27e5b97a fraction=1.0
+23:06:47.814 READ prefetch promote para=9 segs=1
+23:06:47.815 AUDIO stage segment=9-0 index=0/1 duration=3.26
+23:06:47.879 AUDIO ready segment=9-0 duration=3.26 auto=Y
+23:06:47.879 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=9-0
+23:06:47.910 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=9-0
+23:06:51.240 AUDIO item finished segment=9-0 index=0/1
+23:06:51.241 AUDIO queue complete segment=9-0 queue=1
+23:06:51.241 READ completion accepted para=9 status=ready
+23:06:51.242 READ advance from=9 readable=11 status=ready prefetching=- prefetched=10
+23:06:51.250 READ checkpoint saved source=text item=34983e27b689 para=9 seg=0 time=3.264 offset=38 visual=true reflow=false word=bbccb9c002d5 fraction=1.0
+23:06:51.254 READ prefetch promote para=10 segs=1
+23:06:51.255 AUDIO stage segment=10-0 index=0/1 duration=5.50
+23:06:51.317 AUDIO ready segment=10-0 duration=5.50 auto=Y
+23:06:51.318 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=10-0
+23:06:51.349 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=10-0
+23:06:56.910 AUDIO item finished segment=10-0 index=0/1
+23:06:56.910 AUDIO queue complete segment=10-0 queue=1
+23:06:56.910 READ completion accepted para=10 status=ready
+23:06:56.911 READ advance from=10 readable=11 status=ready prefetching=- prefetched=-
+23:06:56.911 READ document finished para=10 readable=11
+23:06:56.920 READ checkpoint saved source=text item=34983e27b689 para=10 seg=0 time=5.496 offset=85 visual=true reflow=false word=0886b0510756 fraction=1.0
+23:07:03.309 READ voice switch begin from=vl_b4bb75aa2d3e56fd90a2 to=af_bella para=10 auto=false requested=true userPaused=false
+23:07:03.311 READ checkpoint saved source=text item=34983e27b689 para=10 seg=0 time=5.496 offset=85 visual=true reflow=false word=0886b0510756 fraction=1.0
+23:07:03.317 READ generate start para=0 epoch=2 chars=38
+23:07:03.318 AUDIO producer expected=Y owner=readAloud gen=1 segment=nil
+23:07:06.771 READ segment ready para=0 seg=0 count=1 duration=2.30
+23:07:06.773 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=N
+23:07:06.774 READ voice switch finished para=0
+23:07:06.823 READ generate done para=0 epoch=2 segs=1
+23:07:32.866 AUDIO stage segment=0-0 index=0/1 duration=2.30
+23:07:32.961 AUDIO ready segment=0-0 duration=2.30 auto=Y
+23:07:32.986 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=0-0
+23:07:33.015 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=0-0
+23:07:35.373 AUDIO item finished segment=0-0 index=0/1
+23:07:35.373 AUDIO queue complete segment=0-0 queue=1
+23:07:35.374 READ completion accepted para=0 status=ready
+23:07:35.374 READ advance from=0 readable=11 status=ready prefetching=- prefetched=-
+23:07:35.374 READ boundary no prefetch next=1; foreground generate
+23:07:35.383 READ checkpoint saved source=text item=34983e27b689 para=0 seg=0 time=2.304 offset=31 visual=true reflow=false word=c064fbca9d9d fraction=1.0
+23:07:35.387 READ generate start para=1 epoch=3 chars=102
+23:07:35.388 AUDIO producer expected=Y owner=readAloud gen=1 segment=nil
+23:07:37.190 READ segment ready para=1 seg=0 count=1 duration=5.93
+23:07:37.192 AUDIO enqueue segment=1-0 queue=1 waiting=N auto=Y
+23:07:37.194 AUDIO stage segment=1-0 index=0/1 duration=5.93
+23:07:37.250 READ generate done para=1 epoch=3 segs=1
+23:07:37.252 READ prefetch start para=2 epoch=3 chars=90 streaming=Y
+23:07:37.279 AUDIO ready segment=1-0 duration=5.93 auto=Y
+23:07:37.301 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=1-0
+23:07:37.344 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=1-0
+23:07:38.770 READ prefetch playable para=2 seg=0 buffered=1
+23:07:38.771 READ prefetch done para=2 epoch=3 segs=1 promoted=false
+23:07:38.771 READ prefetch start para=3 epoch=3 chars=38 streaming=Y
+23:07:39.945 READ prefetch playable para=3 seg=0 buffered=1
+23:07:39.963 READ prefetch done para=3 epoch=3 segs=1 promoted=false
+23:07:39.964 READ prefetch start para=4 epoch=3 chars=86 streaming=Y
+23:07:41.020 READ prefetch playable para=4 seg=0 buffered=1
+23:07:41.021 READ prefetch done para=4 epoch=3 segs=1 promoted=false
+23:07:43.313 AUDIO item finished segment=1-0 index=0/1
+23:07:43.314 AUDIO queue complete segment=1-0 queue=1
+23:07:43.314 READ completion accepted para=1 status=ready
+23:07:43.315 READ advance from=1 readable=11 status=ready prefetching=- prefetched=2
+23:07:43.323 READ checkpoint saved source=text item=34983e27b689 para=1 seg=0 time=5.928 offset=97 visual=true reflow=false word=80688fc3d5f8 fraction=1.0
+23:07:43.327 READ prefetch promote para=2 segs=1
+23:07:43.328 AUDIO stage segment=2-0 index=0/1 duration=5.81
+23:07:43.328 AUDIO stage reused segment=2-0
+23:07:43.331 READ prefetch start para=5 epoch=3 chars=52 streaming=Y
+23:07:43.394 AUDIO ready segment=2-0 duration=5.81 auto=Y
+23:07:43.395 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-0
+23:07:43.424 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-0
+23:07:44.256 READ prefetch playable para=5 seg=0 buffered=1
+23:07:44.256 READ prefetch done para=5 epoch=3 segs=1 promoted=false
+23:07:44.256 READ prefetch start para=6 epoch=3 chars=102 streaming=Y
+23:07:45.317 READ prefetch playable para=6 seg=0 buffered=1
+23:07:45.338 READ prefetch done para=6 epoch=3 segs=1 promoted=false
+23:07:49.313 AUDIO item finished segment=2-0 index=0/1
+23:07:49.313 AUDIO queue complete segment=2-0 queue=1
+23:07:49.314 READ completion accepted para=2 status=ready
+23:07:49.314 READ advance from=2 readable=11 status=ready prefetching=- prefetched=3
+23:07:49.323 READ checkpoint saved source=text item=34983e27b689 para=2 seg=0 time=5.808 offset=81 visual=true reflow=false word=3a419467866c fraction=1.0
+23:07:49.327 READ prefetch promote para=3 segs=1
+23:07:49.328 AUDIO stage segment=3-0 index=0/1 duration=2.40
+23:07:49.395 AUDIO ready segment=3-0 duration=2.40 auto=Y
+23:07:49.395 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=3-0
+23:07:49.425 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=3-0
+23:07:51.903 AUDIO item finished segment=3-0 index=0/1
+23:07:51.903 AUDIO queue complete segment=3-0 queue=1
+23:07:51.904 READ completion accepted para=3 status=ready
+23:07:51.904 READ advance from=3 readable=11 status=ready prefetching=- prefetched=4
+23:07:51.913 READ checkpoint saved source=text item=34983e27b689 para=3 seg=0 time=2.4 offset=31 visual=true reflow=false word=2ed6b4c1ae9f fraction=1.0
+23:07:51.917 READ prefetch promote para=4 segs=1
+23:07:51.918 AUDIO stage segment=4-0 index=0/1 duration=5.50
+23:07:51.923 READ prefetch start para=7 epoch=3 chars=47 streaming=Y
+23:07:51.985 AUDIO ready segment=4-0 duration=5.50 auto=Y
+23:07:52.008 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=4-0
+23:07:52.049 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=4-0
+23:07:53.180 READ prefetch playable para=7 seg=0 buffered=1
+23:07:53.180 READ prefetch done para=7 epoch=3 segs=1 promoted=false
+23:07:57.583 AUDIO item finished segment=4-0 index=0/1
+23:07:57.583 AUDIO queue complete segment=4-0 queue=1
+23:07:57.584 READ completion accepted para=4 status=ready
+23:07:57.584 READ advance from=4 readable=11 status=ready prefetching=- prefetched=5
+23:07:57.593 READ checkpoint saved source=text item=34983e27b689 para=4 seg=0 time=5.496 offset=80 visual=true reflow=false word=dba36bffa5ca fraction=1.0
+23:07:57.597 READ prefetch promote para=5 segs=1
+23:07:57.598 AUDIO stage segment=5-0 index=0/1 duration=3.24
+23:07:57.604 READ prefetch start para=8 epoch=3 chars=85 streaming=Y
+23:07:57.663 AUDIO ready segment=5-0 duration=3.24 auto=Y
+23:07:57.663 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=5-0
+23:07:57.693 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=5-0
+23:07:58.673 READ prefetch playable para=8 seg=0 buffered=1
+23:07:58.693 READ prefetch done para=8 epoch=3 segs=1 promoted=false
+23:08:00.627 READ voice switch begin from=af_bella to=vl_d1efb23a380bdaa2f6b0 para=5 auto=true requested=true userPaused=false
+23:08:00.635 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=2.903266709 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=0.7057389537953794
+23:08:00.639 READ generate start para=5 epoch=4 chars=52
+23:08:00.640 AUDIO producer expected=Y owner=readAloud gen=1 segment=nil
+23:08:03.967 READ segment ready para=5 seg=0 count=1 duration=3.98
+23:08:03.969 AUDIO stage segment=5-0 index=0/1 duration=3.98
+23:08:03.981 READ resume audio para=5 seg=0 time=3.6375624760396037
+23:08:03.981 READ voice switch finished para=5
+23:08:04.023 READ generate done para=5 epoch=4 segs=1
+23:08:04.024 READ prefetch start para=6 epoch=4 chars=102 streaming=Y
+23:08:04.051 AUDIO ready segment=5-0 duration=3.98 auto=Y
+23:08:04.096 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=5-0
+23:08:04.140 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=5-0
+23:08:04.159 READ resume first-play source=text item=34983e27b689 para=5 time=3.6512555 word=41ffd8b76afc fraction=0.7374171874999998
+23:08:04.494 AUDIO item finished segment=5-0 index=0/1
+23:08:04.495 AUDIO queue complete segment=5-0 queue=1
+23:08:04.495 READ completion accepted para=5 status=ready
+23:08:04.496 READ advance from=5 readable=11 status=ready prefetching=6 prefetched=-
+23:08:04.496 READ boundary waiting prefetch from=5 next=6
+23:08:04.503 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=3.9473333333333334 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=1.0
+23:08:06.101 READ prefetch playable para=6 seg=0 buffered=1
+23:08:06.101 READ advance from=5 readable=11 status=loading prefetching=6 prefetched=6
+23:08:06.104 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=3.9473333333333334 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=1.0
+23:08:06.110 READ prefetch promote para=6 segs=1
+23:08:06.111 AUDIO stage segment=6-0 index=0/1 duration=6.53
+23:08:06.111 AUDIO stage reused segment=6-0
+23:08:06.113 AUDIO producer expected=Y owner=readAloud gen=1 segment=6-0
+23:08:06.147 READ prefetch done para=6 epoch=4 segs=1 promoted=true
+23:08:06.147 READ prefetch start para=7 epoch=4 chars=47 streaming=Y
+23:08:06.173 AUDIO ready segment=6-0 duration=6.53 auto=Y
+23:08:06.197 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=6-0
+23:08:06.241 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=6-0
+23:08:07.606 READ prefetch playable para=7 seg=0 buffered=1
+23:08:07.625 READ prefetch done para=7 epoch=4 segs=1 promoted=false
+23:08:07.626 READ prefetch start para=8 epoch=4 chars=85 streaming=Y
+23:08:08.962 READ prefetch playable para=8 seg=0 buffered=1
+23:08:08.963 READ prefetch done para=8 epoch=4 segs=1 promoted=false
+23:08:08.963 READ prefetch start para=9 epoch=4 chars=44 streaming=Y
+23:08:10.328 READ prefetch playable para=9 seg=0 buffered=1
+23:08:10.344 READ prefetch done para=9 epoch=4 segs=1 promoted=false
+23:08:12.804 AUDIO item finished segment=6-0 index=0/1
+23:08:12.804 AUDIO queue complete segment=6-0 queue=1
+23:08:12.805 READ completion accepted para=6 status=ready
+23:08:12.805 READ advance from=6 readable=11 status=ready prefetching=- prefetched=7
+23:08:12.814 READ checkpoint saved source=text item=34983e27b689 para=6 seg=0 time=6.528 offset=93 visual=true reflow=false word=6ee16429668c fraction=1.0
+23:08:12.817 READ prefetch promote para=7 segs=1
+23:08:12.819 AUDIO stage segment=7-0 index=0/1 duration=3.26
+23:08:12.822 AUDIO stage reused segment=7-0
+23:08:12.824 READ prefetch start para=10 epoch=4 chars=93 streaming=Y
+23:08:12.885 AUDIO ready segment=7-0 duration=3.26 auto=Y
+23:08:12.909 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=7-0
+23:08:12.950 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=7-0
+23:08:14.786 READ prefetch playable para=10 seg=0 buffered=1
+23:08:14.787 READ prefetch done para=10 epoch=4 segs=1 promoted=false
+23:08:16.254 AUDIO item finished segment=7-0 index=0/1
+23:08:16.254 AUDIO queue complete segment=7-0 queue=1
+23:08:16.255 READ completion accepted para=7 status=ready
+23:08:16.255 READ advance from=7 readable=11 status=ready prefetching=- prefetched=8
+23:08:16.263 READ checkpoint saved source=text item=34983e27b689 para=7 seg=0 time=3.264 offset=36 visual=true reflow=false word=126ff07c1835 fraction=1.0
+23:08:16.267 READ prefetch promote para=8 segs=1
+23:08:16.268 AUDIO stage segment=8-0 index=0/1 duration=5.50
+23:08:16.330 AUDIO ready segment=8-0 duration=5.50 auto=Y
+23:08:16.330 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=8-0
+23:08:16.360 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=8-0
+23:08:19.691 CLONE quota status request=1D5FD739-3F3F-4BCB-B6C7-D80D1221B8A5 policy=monthly_120_v1 remaining=6737
+23:08:21.924 AUDIO item finished segment=8-0 index=0/1
+23:08:21.924 AUDIO queue complete segment=8-0 queue=1
+23:08:21.924 READ completion accepted para=8 status=ready
+23:08:21.925 READ advance from=8 readable=11 status=ready prefetching=- prefetched=9
+23:08:21.934 READ checkpoint saved source=text item=34983e27b689 para=8 seg=0 time=5.496 offset=81 visual=true reflow=false word=944c27e5b97a fraction=1.0
+23:08:21.937 READ prefetch promote para=9 segs=1
+23:08:21.938 AUDIO stage segment=9-0 index=0/1 duration=3.50
+23:08:22.005 AUDIO ready segment=9-0 duration=3.50 auto=Y
+23:08:22.029 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=9-0
+23:08:22.071 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=9-0
+23:08:23.451 CLONE quota status request=8D10C2E3-1F6F-4FDF-8C2D-883660BBCD7F policy=monthly_120_v1 remaining=6737
+23:08:25.556 READ voice switch begin from=vl_d1efb23a380bdaa2f6b0 to=vc_62934fe77f764051aa341b4b076bbb85 para=9 auto=true requested=true userPaused=false
+23:08:25.559 READ checkpoint saved source=text item=34983e27b689 para=9 seg=0 time=3.482060874 offset=38 visual=true reflow=false word=bbccb9c002d5 fraction=1.0
+23:08:25.563 READ generate start para=9 epoch=5 chars=44
+23:08:25.564 AUDIO producer expected=Y owner=readAloud gen=1 segment=nil
+23:08:27.310 READ segment ready para=9 seg=0 count=1 duration=3.17
+23:08:27.312 AUDIO stage segment=9-0 index=0/1 duration=3.17
+23:08:27.324 READ resume audio para=9 seg=0 time=3.04
+23:08:27.324 READ voice switch finished para=9
+23:08:27.363 READ generate done para=9 epoch=5 segs=1
+23:08:27.365 READ prefetch start para=10 epoch=5 chars=93 streaming=Y
+23:08:27.391 AUDIO ready segment=9-0 duration=3.17 auto=Y
+23:08:27.435 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=9-0
+23:08:27.479 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=9-0
+23:08:27.499 READ resume first-play source=text item=34983e27b689 para=9 time=3.064913873 word=bbccb9c002d5 fraction=1.0
+23:08:27.604 AUDIO item finished segment=9-0 index=0/1
+23:08:27.604 AUDIO queue complete segment=9-0 queue=1
+23:08:27.604 READ completion accepted para=9 status=ready
+23:08:27.605 READ advance from=9 readable=11 status=ready prefetching=10 prefetched=-
+23:08:27.605 READ boundary waiting prefetch from=9 next=10
+23:08:27.606 READ checkpoint saved source=text item=34983e27b689 para=9 seg=0 time=3.128 offset=38 visual=true reflow=false word=bbccb9c002d5 fraction=1.0
+23:08:29.499 READ prefetch playable para=10 seg=0 buffered=1
+23:08:29.499 READ advance from=9 readable=11 status=loading prefetching=10 prefetched=10
+23:08:29.502 READ checkpoint saved source=text item=34983e27b689 para=9 seg=0 time=3.128 offset=38 visual=true reflow=false word=bbccb9c002d5 fraction=1.0
+23:08:29.507 READ prefetch promote para=10 segs=1
+23:08:29.509 AUDIO stage segment=10-0 index=0/1 duration=5.98
+23:08:29.509 AUDIO stage reused segment=10-0
+23:08:29.512 AUDIO producer expected=Y owner=readAloud gen=1 segment=10-0
+23:08:29.522 READ prefetch done para=10 epoch=5 segs=1 promoted=true
+23:08:29.553 AUDIO ready segment=10-0 duration=5.98 auto=Y
+23:08:29.578 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=10-0
+23:08:29.605 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=10-0
+23:08:35.624 AUDIO item finished segment=10-0 index=0/1
+23:08:35.624 AUDIO queue complete segment=10-0 queue=1
+23:08:35.625 READ completion accepted para=10 status=ready
+23:08:35.625 READ advance from=10 readable=11 status=ready prefetching=- prefetched=-
+23:08:35.625 READ document finished para=10 readable=11
+23:08:35.628 READ checkpoint saved source=text item=34983e27b689 para=10 seg=0 time=5.976 offset=85 visual=true reflow=false word=0886b0510756 fraction=1.0
+23:08:45.447 READ checkpoint saved source=text item=34983e27b689 para=10 seg=0 time=5.976 offset=85 visual=true reflow=false word=0886b0510756 fraction=1.0
+23:08:45.469 READ checkpoint saved source=text item=34983e27b689 para=10 seg=0 time=5.976 offset=85 visual=true reflow=false word=0886b0510756 fraction=1.0
+23:08:45.477 READ generate start para=3 epoch=6 chars=38
+23:08:45.480 AUDIO producer expected=Y owner=readAloud gen=1 segment=nil
+23:08:46.988 READ segment ready para=3 seg=0 count=1 duration=2.86
+23:08:46.989 AUDIO enqueue segment=3-0 queue=1 waiting=N auto=Y
+23:08:46.989 AUDIO stage segment=3-0 index=0/1 duration=2.86
+23:08:47.029 READ generate done para=3 epoch=6 segs=1
+23:08:47.030 READ prefetch start para=4 epoch=6 chars=86 streaming=Y
+23:08:47.054 AUDIO ready segment=3-0 duration=2.86 auto=Y
+23:08:47.076 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=3-0
+23:08:47.119 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=3-0
+23:08:49.074 READ prefetch playable para=4 seg=0 buffered=1
+23:08:49.074 READ prefetch done para=4 epoch=6 segs=1 promoted=false
+23:08:49.075 READ prefetch start para=5 epoch=6 chars=52 streaming=Y
+23:08:50.019 AUDIO item finished segment=3-0 index=0/1
+23:08:50.019 AUDIO queue complete segment=3-0 queue=1
+23:08:50.019 READ completion accepted para=3 status=ready
+23:08:50.020 READ advance from=3 readable=11 status=ready prefetching=- prefetched=4
+23:08:50.029 READ checkpoint saved source=text item=34983e27b689 para=3 seg=0 time=2.856 offset=31 visual=true reflow=false word=2ed6b4c1ae9f fraction=1.0
+23:08:50.033 READ prefetch promote para=4 segs=1
+23:08:50.034 AUDIO stage segment=4-0 index=0/1 duration=7.18
+23:08:50.034 AUDIO stage reused segment=4-0
+23:08:50.101 AUDIO ready segment=4-0 duration=7.18 auto=Y
+23:08:50.101 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=4-0
+23:08:50.132 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=4-0
+23:08:50.620 READ prefetch playable para=5 seg=0 buffered=1
+23:08:50.620 READ prefetch done para=5 epoch=6 segs=1 promoted=false
+23:08:50.621 READ prefetch start para=6 epoch=6 chars=102 streaming=Y
+23:08:52.712 READ prefetch playable para=6 seg=0 buffered=1
+23:08:52.712 READ prefetch done para=6 epoch=6 segs=1 promoted=false
+23:08:52.713 READ prefetch start para=7 epoch=6 chars=47 streaming=Y
+23:08:54.272 READ prefetch playable para=7 seg=0 buffered=1
+23:08:54.292 READ prefetch done para=7 epoch=6 segs=1 promoted=false
+23:08:57.381 AUDIO item finished segment=4-0 index=0/1
+23:08:57.382 AUDIO queue complete segment=4-0 queue=1
+23:08:57.382 READ completion accepted para=4 status=ready
+23:08:57.383 READ advance from=4 readable=11 status=ready prefetching=- prefetched=5
+23:08:57.391 READ checkpoint saved source=text item=34983e27b689 para=4 seg=0 time=7.176 offset=80 visual=true reflow=false word=dba36bffa5ca fraction=1.0
+23:08:57.395 READ prefetch promote para=5 segs=1
+23:08:57.396 AUDIO stage segment=5-0 index=0/1 duration=4.06
+23:08:57.399 AUDIO stage reused segment=5-0
+23:08:57.400 READ prefetch start para=8 epoch=6 chars=85 streaming=Y
+23:08:57.459 AUDIO ready segment=5-0 duration=4.06 auto=Y
+23:08:57.460 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=5-0
+23:08:57.490 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=5-0
+23:08:59.269 READ prefetch playable para=8 seg=0 buffered=1
+23:08:59.269 READ prefetch done para=8 epoch=6 segs=1 promoted=false
+23:09:01.612 AUDIO item finished segment=5-0 index=0/1
+23:09:01.613 AUDIO queue complete segment=5-0 queue=1
+23:09:01.613 READ completion accepted para=5 status=ready
+23:09:01.615 READ advance from=5 readable=11 status=ready prefetching=- prefetched=6
+23:09:01.624 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=4.056 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=1.0
+23:09:01.628 READ prefetch promote para=6 segs=1
+23:09:01.629 AUDIO stage segment=6-0 index=0/1 duration=6.62
+23:09:01.634 READ prefetch start para=9 epoch=6 chars=44 streaming=Y
+23:09:01.691 AUDIO ready segment=6-0 duration=6.62 auto=Y
+23:09:01.716 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=6-0
+23:09:01.757 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=6-0
+23:09:02.662 READ prefetch playable para=9 seg=0 buffered=1
+23:09:02.662 READ prefetch done para=9 epoch=6 segs=1 promoted=false
+23:09:08.423 AUDIO item finished segment=6-0 index=0/1
+23:09:08.424 AUDIO queue complete segment=6-0 queue=1
+23:09:08.424 READ completion accepted para=6 status=ready
+23:09:08.425 READ advance from=6 readable=11 status=ready prefetching=- prefetched=7
+23:09:08.433 READ checkpoint saved source=text item=34983e27b689 para=6 seg=0 time=6.624 offset=93 visual=true reflow=false word=6ee16429668c fraction=1.0
+23:09:08.437 READ prefetch promote para=7 segs=1
+23:09:08.438 AUDIO stage segment=7-0 index=0/1 duration=2.86
+23:09:08.441 READ prefetch start para=10 epoch=6 chars=93 streaming=Y
+23:09:08.500 AUDIO ready segment=7-0 duration=2.86 auto=Y
+23:09:08.501 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=7-0
+23:09:08.530 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=7-0
+23:09:09.756 READ prefetch playable para=10 seg=0 buffered=1
+23:09:09.756 READ prefetch done para=10 epoch=6 segs=1 promoted=false
+23:09:11.454 AUDIO item finished segment=7-0 index=0/1
+23:09:11.456 AUDIO queue complete segment=7-0 queue=1
+23:09:11.456 READ completion accepted para=7 status=ready
+23:09:11.456 READ advance from=7 readable=11 status=ready prefetching=- prefetched=8
+23:09:11.464 READ checkpoint saved source=text item=34983e27b689 para=7 seg=0 time=2.856 offset=36 visual=true reflow=false word=126ff07c1835 fraction=1.0
+23:09:11.468 READ prefetch promote para=8 segs=1
+23:09:11.469 AUDIO stage segment=8-0 index=0/1 duration=5.98
+23:09:11.526 AUDIO ready segment=8-0 duration=5.98 auto=Y
+23:09:11.527 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=8-0
+23:09:11.557 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=8-0
+23:09:17.604 AUDIO item finished segment=8-0 index=0/1
+23:09:17.604 AUDIO queue complete segment=8-0 queue=1
+23:09:17.605 READ completion accepted para=8 status=ready
+23:09:17.605 READ advance from=8 readable=11 status=ready prefetching=- prefetched=9
+23:09:17.614 READ checkpoint saved source=text item=34983e27b689 para=8 seg=0 time=5.976 offset=81 visual=true reflow=false word=944c27e5b97a fraction=1.0
+23:09:17.618 READ prefetch promote para=9 segs=1
+23:09:17.619 AUDIO stage segment=9-0 index=0/1 duration=3.17
+23:09:17.675 AUDIO ready segment=9-0 duration=3.17 auto=Y
+23:09:17.699 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=9-0
+23:09:17.743 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=9-0
+23:09:20.679 READ voice switch begin from=vc_62934fe77f764051aa341b4b076bbb85 to=af_bella para=9 auto=true requested=true userPaused=false
+23:09:20.689 READ checkpoint saved source=text item=34983e27b689 para=9 seg=0 time=2.935462376 offset=38 visual=true reflow=false word=bbccb9c002d5 fraction=0.7822132833333328
+23:09:20.693 READ generate start para=9 epoch=7 chars=44
+23:09:20.694 AUDIO producer expected=Y owner=readAloud gen=1 segment=nil
+23:09:21.958 READ segment ready para=9 seg=0 count=1 duration=2.83
+23:09:21.961 AUDIO stage segment=9-0 index=0/1 duration=2.83
+23:09:21.974 READ resume audio para=9 seg=0 time=2.636259341719792
+23:09:21.975 READ voice switch finished para=9
+23:09:22.044 READ generate done para=9 epoch=7 segs=1
+23:09:22.046 READ prefetch start para=10 epoch=7 chars=93 streaming=Y
+23:09:22.073 AUDIO ready segment=9-0 duration=2.83 auto=Y
+23:09:22.120 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=9-0
+23:09:22.148 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=9-0
+23:09:22.171 READ resume first-play source=text item=34983e27b689 para=9 time=2.650502583 word=bbccb9c002d5 fraction=0.8274821805654548
+23:09:22.345 AUDIO item finished segment=9-0 index=0/1
+23:09:22.345 AUDIO queue complete segment=9-0 queue=1
+23:09:22.345 READ completion accepted para=9 status=ready
+23:09:22.346 READ advance from=9 readable=11 status=ready prefetching=10 prefetched=-
+23:09:22.346 READ boundary waiting prefetch from=9 next=10
+23:09:22.354 READ checkpoint saved source=text item=34983e27b689 para=9 seg=0 time=2.789 offset=38 visual=true reflow=false word=bbccb9c002d5 fraction=1.0
+23:09:23.226 READ prefetch playable para=10 seg=0 buffered=1
+23:09:23.228 READ advance from=9 readable=11 status=loading prefetching=10 prefetched=10
+23:09:23.233 READ checkpoint saved source=text item=34983e27b689 para=9 seg=0 time=2.789 offset=38 visual=true reflow=false word=bbccb9c002d5 fraction=1.0
+23:09:23.244 READ prefetch promote para=10 segs=1
+23:09:23.247 AUDIO stage segment=10-0 index=0/1 duration=5.90
+23:09:23.247 AUDIO stage reused segment=10-0
+23:09:23.252 AUDIO producer expected=Y owner=readAloud gen=1 segment=10-0
+23:09:23.296 READ prefetch done para=10 epoch=7 segs=1 promoted=true
+23:09:23.323 AUDIO ready segment=10-0 duration=5.90 auto=Y
+23:09:23.346 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=10-0
+23:09:23.391 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=10-0
+23:09:29.357 AUDIO item finished segment=10-0 index=0/1
+23:09:29.357 AUDIO queue complete segment=10-0 queue=1
+23:09:29.358 READ completion accepted para=10 status=ready
+23:09:29.358 READ advance from=10 readable=11 status=ready prefetching=- prefetched=-
+23:09:29.359 READ document finished para=10 readable=11
+23:09:29.368 READ checkpoint saved source=text item=34983e27b689 para=10 seg=0 time=5.904 offset=85 visual=true reflow=false word=0886b0510756 fraction=1.0
+23:09:41.146 READ checkpoint saved source=text item=34983e27b689 para=10 seg=0 time=5.904 offset=85 visual=true reflow=false word=0886b0510756 fraction=1.0
+23:09:41.153 AUDIO session released owner=readAloud gen=1
+23:09:41.154 AUDIO session claimed owner=explain gen=2
+23:09:41.158 EXPLAIN mode activation autoplay=N status=idle paras=11
+23:09:47.922 EXPLAIN start requested status=idle reuse=N paras=11
+23:09:47.930 EXPLAIN planning started reuse=N
+23:09:47.979 EXPLAIN plan request idxBase=0 paras=11 chars=777 fp=423080363db9f273 prevSummaryChars=0
+23:09:56.767 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:09:56.768 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+23:09:56.770 AUDIO stage segment=0-0 index=0/1 duration=10.94
+23:09:56.786 AUDIO producer expected=N owner=explain gen=2 segment=0-0
+23:09:56.860 AUDIO ready segment=0-0 duration=10.94 auto=Y
+23:09:56.861 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=0-0
+23:09:56.891 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=0-0
+23:10:07.919 AUDIO item finished segment=0-0 index=0/1
+23:10:07.920 AUDIO queue complete segment=0-0 queue=1
+23:10:07.949 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:10:07.950 AUDIO enqueue segment=1-0 queue=1 waiting=N auto=Y
+23:10:07.950 AUDIO stage segment=1-0 index=0/1 duration=21.98
+23:10:07.959 AUDIO producer expected=N owner=explain gen=2 segment=1-0
+23:10:08.013 AUDIO ready segment=1-0 duration=21.98 auto=Y
+23:10:08.014 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=1-0
+23:10:08.045 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=1-0
+23:10:30.099 AUDIO item finished segment=1-0 index=0/1
+23:10:30.099 AUDIO queue complete segment=1-0 queue=1
+23:10:30.127 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:10:30.127 AUDIO enqueue segment=2-0 queue=1 waiting=N auto=Y
+23:10:30.127 AUDIO stage segment=2-0 index=0/1 duration=14.02
+23:10:30.136 AUDIO producer expected=N owner=explain gen=2 segment=2-0
+23:10:30.191 AUDIO ready segment=2-0 duration=14.02 auto=Y
+23:10:30.191 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-0
+23:10:30.222 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-0
+23:10:44.309 AUDIO item finished segment=2-0 index=0/1
+23:10:44.310 AUDIO queue complete segment=2-0 queue=1
+23:11:00.786 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:11:05.873 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:11:05.875 AUDIO enqueue segment=2-0 queue=1 waiting=N auto=N
+23:11:05.876 AUDIO enqueue segment=2-1 queue=2 waiting=N auto=N
+23:11:05.877 AUDIO producer expected=N owner=explain gen=2 segment=nil
+23:15:03.255 AUDIO stage segment=2-0 index=0/2 duration=7.90
+23:15:03.326 AUDIO ready segment=2-0 duration=7.90 auto=Y
+23:15:03.327 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-0
+23:15:03.360 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-0
+23:15:11.330 AUDIO item finished segment=2-0 index=0/2
+23:15:11.330 AUDIO advance segment from=2-0 to=2-1
+23:15:11.332 AUDIO stage segment=2-1 index=1/2 duration=7.18
+23:15:11.373 AUDIO ready segment=2-1 duration=7.18 auto=Y
+23:15:11.396 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-1
+23:15:11.440 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-1
+23:15:18.650 AUDIO item finished segment=2-1 index=1/2
+23:15:18.650 AUDIO queue complete segment=2-1 queue=2
+23:15:27.989 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:15:34.818 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:15:34.820 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+23:15:34.822 AUDIO stage segment=0-0 index=0/1 duration=4.22
+23:15:34.839 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+23:15:34.839 AUDIO producer expected=N owner=explain gen=2 segment=0-0
+23:15:34.917 AUDIO ready segment=0-0 duration=4.22 auto=Y
+23:15:34.918 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=0-0
+23:15:34.949 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=0-0
+23:15:39.249 AUDIO item finished segment=0-0 index=0/2
+23:15:39.249 AUDIO advance segment from=0-0 to=0-1
+23:15:39.250 AUDIO stage segment=0-1 index=1/2 duration=7.34
+23:15:39.291 AUDIO ready segment=0-1 duration=7.34 auto=Y
+23:15:39.291 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=0-1
+23:15:39.337 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=0-1
+23:15:46.729 AUDIO item finished segment=0-1 index=1/2
+23:15:46.729 AUDIO queue complete segment=0-1 queue=2
+23:15:46.730 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:15:52.642 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:15:52.643 AUDIO enqueue segment=1-0 queue=1 waiting=N auto=Y
+23:15:52.645 AUDIO stage segment=1-0 index=0/1 duration=7.18
+23:15:52.661 AUDIO enqueue segment=1-1 queue=2 waiting=N auto=Y
+23:15:52.662 AUDIO producer expected=N owner=explain gen=2 segment=1-0
+23:15:52.738 AUDIO ready segment=1-0 duration=7.18 auto=Y
+23:15:52.739 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=1-0
+23:15:52.769 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=1-0
+23:16:00.021 AUDIO item finished segment=1-0 index=0/2
+23:16:00.021 AUDIO advance segment from=1-0 to=1-1
+23:16:00.022 AUDIO stage segment=1-1 index=1/2 duration=15.34
+23:16:00.063 AUDIO ready segment=1-1 duration=15.34 auto=Y
+23:16:00.086 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=1-1
+23:16:00.113 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=1-1
+23:16:15.491 AUDIO item finished segment=1-1 index=1/2
+23:16:15.491 AUDIO queue complete segment=1-1 queue=2
+23:16:15.493 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:16:15.493 AUDIO enqueue segment=2-0 queue=1 waiting=N auto=Y
+23:16:15.493 AUDIO stage segment=2-0 index=0/1 duration=7.90
+23:16:15.495 AUDIO enqueue segment=2-1 queue=2 waiting=N auto=Y
+23:16:15.496 AUDIO producer expected=N owner=explain gen=2 segment=2-0
+23:16:15.561 AUDIO ready segment=2-0 duration=7.90 auto=Y
+23:16:15.561 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-0
+23:16:15.592 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-0
+23:16:23.561 AUDIO item finished segment=2-0 index=0/2
+23:16:23.561 AUDIO advance segment from=2-0 to=2-1
+23:16:23.562 AUDIO stage segment=2-1 index=1/2 duration=7.18
+23:16:23.604 AUDIO ready segment=2-1 duration=7.18 auto=Y
+23:16:23.627 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-1
+23:16:23.670 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-1
+23:16:30.881 AUDIO item finished segment=2-1 index=1/2
+23:16:30.881 AUDIO queue complete segment=2-1 queue=2
+23:16:55.127 CLONE quota status request=1595AB74-AF35-4DD7-8F1E-C0EC299AD1EE policy=monthly_120_v1 remaining=6642
+23:16:59.260 CLONE quota status request=6B9EC879-1DA5-438D-82B1-E6F9A69C0EB0 policy=monthly_120_v1 remaining=6642
+23:16:59.373 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:17:04.073 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:17:04.075 AUDIO enqueue segment=2-0 queue=1 waiting=N auto=N
+23:17:04.077 AUDIO enqueue segment=2-1 queue=2 waiting=N auto=N
+23:17:04.078 AUDIO producer expected=N owner=explain gen=2 segment=nil
+23:18:06.260 AUDIO stage segment=2-0 index=0/2 duration=7.01
+23:18:06.333 AUDIO ready segment=2-0 duration=7.01 auto=Y
+23:18:06.334 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-0
+23:18:06.367 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-0
+23:18:13.446 AUDIO item finished segment=2-0 index=0/2
+23:18:13.446 AUDIO advance segment from=2-0 to=2-1
+23:18:13.447 AUDIO stage segment=2-1 index=1/2 duration=6.77
+23:18:13.489 AUDIO ready segment=2-1 duration=6.77 auto=Y
+23:18:13.513 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-1
+23:18:13.556 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-1
+23:18:20.346 AUDIO item finished segment=2-1 index=1/2
+23:18:20.346 AUDIO queue complete segment=2-1 queue=2
+23:18:36.810 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:18:41.575 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:18:41.577 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+23:18:41.579 AUDIO stage segment=0-0 index=0/1 duration=4.37
+23:18:41.596 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+23:18:41.597 AUDIO producer expected=N owner=explain gen=2 segment=0-0
+23:18:41.672 AUDIO ready segment=0-0 duration=4.37 auto=Y
+23:18:41.673 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=0-0
+23:18:41.704 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=0-0
+23:18:46.146 AUDIO item finished segment=0-0 index=0/2
+23:18:46.146 AUDIO advance segment from=0-0 to=0-1
+23:18:46.147 AUDIO stage segment=0-1 index=1/2 duration=7.01
+23:18:46.188 AUDIO ready segment=0-1 duration=7.01 auto=Y
+23:18:46.212 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=0-1
+23:18:46.240 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=0-1
+23:19:17.498 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=0-1
+23:19:17.550 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=0-1
+23:19:23.207 AUDIO item finished segment=0-1 index=1/2
+23:19:23.207 AUDIO queue complete segment=0-1 queue=2
+23:19:23.209 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:19:28.871 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:19:28.873 AUDIO enqueue segment=1-0 queue=1 waiting=N auto=Y
+23:19:28.874 AUDIO stage segment=1-0 index=0/1 duration=7.42
+23:19:28.891 AUDIO enqueue segment=1-1 queue=2 waiting=N auto=Y
+23:19:28.892 AUDIO producer expected=N owner=explain gen=2 segment=1-0
+23:19:28.969 AUDIO ready segment=1-0 duration=7.42 auto=Y
+23:19:28.969 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=1-0
+23:19:29.000 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=1-0
+23:19:36.492 AUDIO item finished segment=1-0 index=0/2
+23:19:36.492 AUDIO advance segment from=1-0 to=1-1
+23:19:36.493 AUDIO stage segment=1-1 index=1/2 duration=14.45
+23:19:36.534 AUDIO ready segment=1-1 duration=14.45 auto=Y
+23:19:36.557 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=1-1
+23:19:36.601 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=1-1
+23:19:51.092 AUDIO item finished segment=1-1 index=1/2
+23:19:51.092 AUDIO queue complete segment=1-1 queue=2
+23:19:51.094 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:19:51.094 AUDIO enqueue segment=2-0 queue=1 waiting=N auto=Y
+23:19:51.094 AUDIO stage segment=2-0 index=0/1 duration=7.01
+23:19:51.102 AUDIO enqueue segment=2-1 queue=2 waiting=N auto=Y
+23:19:51.102 AUDIO producer expected=N owner=explain gen=2 segment=2-0
+23:19:51.166 AUDIO ready segment=2-0 duration=7.01 auto=Y
+23:19:51.186 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-0
+23:19:51.230 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-0
+23:19:58.271 AUDIO item finished segment=2-0 index=0/2
+23:19:58.272 AUDIO advance segment from=2-0 to=2-1
+23:19:58.273 AUDIO stage segment=2-1 index=1/2 duration=6.77
+23:19:58.316 AUDIO ready segment=2-1 duration=6.77 auto=Y
+23:19:58.340 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-1
+23:19:58.385 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-1
+23:20:01.675 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:20:07.971 AUDIO producer expected=Y owner=explain gen=2 segment=nil
+23:20:07.973 AUDIO enqueue segment=2-0 queue=1 waiting=N auto=Y
+23:20:07.974 AUDIO stage segment=2-0 index=0/1 duration=14.02
+23:20:07.992 AUDIO producer expected=N owner=explain gen=2 segment=2-0
+23:20:08.067 AUDIO ready segment=2-0 duration=14.02 auto=Y
+23:20:08.067 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-0
+23:20:08.100 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-0
+23:21:24.536 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=2-0
+23:21:24.585 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=2-0
+23:21:31.724 AUDIO item finished segment=2-0 index=0/1
+23:21:31.724 AUDIO queue complete segment=2-0 queue=1
+23:21:42.900 AUDIO session released owner=explain gen=2
+23:21:42.901 AUDIO session claimed owner=readAloud gen=3
+23:21:52.575 READ generate start para=4 epoch=9 chars=86
+23:21:52.578 AUDIO producer expected=Y owner=readAloud gen=3 segment=nil
+23:21:54.281 READ segment ready para=4 seg=0 count=1 duration=5.50
+23:21:54.283 AUDIO enqueue segment=4-0 queue=1 waiting=N auto=Y
+23:21:54.285 AUDIO stage segment=4-0 index=0/1 duration=5.50
+23:21:54.341 READ generate done para=4 epoch=9 segs=1
+23:21:54.342 READ prefetch start para=5 epoch=9 chars=52 streaming=Y
+23:21:54.369 AUDIO ready segment=4-0 duration=5.50 auto=Y
+23:21:54.392 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=4-0
+23:21:54.435 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=4-0
+23:21:55.544 READ prefetch playable para=5 seg=0 buffered=1
+23:21:55.563 READ prefetch done para=5 epoch=9 segs=1 promoted=false
+23:21:55.564 READ prefetch start para=6 epoch=9 chars=102 streaming=Y
+23:21:56.920 READ prefetch playable para=6 seg=0 buffered=1
+23:21:56.920 READ prefetch done para=6 epoch=9 segs=1 promoted=false
+23:21:56.921 READ prefetch start para=7 epoch=9 chars=47 streaming=Y
+23:21:58.478 READ prefetch playable para=7 seg=0 buffered=1
+23:21:58.478 READ prefetch done para=7 epoch=9 segs=1 promoted=false
+23:21:59.973 AUDIO item finished segment=4-0 index=0/1
+23:21:59.973 AUDIO queue complete segment=4-0 queue=1
+23:21:59.973 READ completion accepted para=4 status=ready
+23:21:59.974 READ advance from=4 readable=11 status=ready prefetching=- prefetched=5
+23:21:59.982 READ checkpoint saved source=text item=34983e27b689 para=4 seg=0 time=5.496 offset=80 visual=true reflow=false word=dba36bffa5ca fraction=1.0
+23:21:59.986 READ prefetch promote para=5 segs=1
+23:21:59.987 AUDIO stage segment=5-0 index=0/1 duration=3.24
+23:21:59.988 AUDIO stage reused segment=5-0
+23:21:59.990 READ prefetch start para=8 epoch=9 chars=85 streaming=Y
+23:22:00.049 AUDIO ready segment=5-0 duration=3.24 auto=Y
+23:22:00.049 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=5-0
+23:22:00.080 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=5-0
+23:22:01.491 READ prefetch playable para=8 seg=0 buffered=1
+23:22:01.491 READ prefetch done para=8 epoch=9 segs=1 promoted=false
+23:22:03.293 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=3.171076291 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=1.0
+23:22:03.321 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=3.171205249 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=1.0
+23:22:03.327 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=3.171205249 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=1.0
+23:22:03.334 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=3.171205249 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=1.0
+23:22:11.936 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=5-0
+23:22:11.984 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=5-0
+23:22:12.020 AUDIO item finished segment=5-0 index=0/1
+23:22:12.021 AUDIO queue complete segment=5-0 queue=1
+23:22:12.021 READ completion accepted para=5 status=ready
+23:22:12.021 READ advance from=5 readable=11 status=ready prefetching=- prefetched=6
+23:22:12.023 READ checkpoint saved source=text item=34983e27b689 para=5 seg=0 time=3.24 offset=44 visual=true reflow=false word=41ffd8b76afc fraction=1.0
+23:22:12.027 READ prefetch promote para=6 segs=1
+23:22:12.028 AUDIO stage segment=6-0 index=0/1 duration=6.62
+23:22:12.032 READ prefetch start para=9 epoch=9 chars=44 streaming=Y
+23:22:12.090 AUDIO ready segment=6-0 duration=6.62 auto=Y
+23:22:12.091 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=6-0
+23:22:12.121 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=6-0
+23:22:13.531 READ prefetch playable para=9 seg=0 buffered=1
+23:22:13.532 READ prefetch done para=9 epoch=9 segs=1 promoted=false
+23:22:13.532 READ prefetch start para=10 epoch=9 chars=93 streaming=Y
+23:22:15.084 READ prefetch playable para=10 seg=0 buffered=1
+23:22:15.084 READ prefetch done para=10 epoch=9 segs=1 promoted=false
+23:22:18.817 AUDIO item finished segment=6-0 index=0/1
+23:22:18.817 AUDIO queue complete segment=6-0 queue=1
+23:22:18.817 READ completion accepted para=6 status=ready
+23:22:18.818 READ advance from=6 readable=11 status=ready prefetching=- prefetched=7
+23:22:18.827 READ checkpoint saved source=text item=34983e27b689 para=6 seg=0 time=6.624 offset=93 visual=true reflow=false word=6ee16429668c fraction=1.0
+23:22:18.831 READ prefetch promote para=7 segs=1
+23:22:18.832 AUDIO stage segment=7-0 index=0/1 duration=3.02
+23:22:18.876 AUDIO ready segment=7-0 duration=3.02 auto=Y
+23:22:18.900 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=7-0
+23:22:18.942 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=7-0
+23:22:20.717 READ checkpoint saved source=text item=34983e27b689 para=7 seg=0 time=1.770063041 offset=26 visual=true reflow=false word=81db8ebbbbc6 fraction=0.5175993121568626
+23:22:21.996 AUDIO item finished segment=7-0 index=0/1
+23:22:21.997 AUDIO queue complete segment=7-0 queue=1
+23:22:21.997 READ completion accepted para=7 status=ready
+23:22:21.998 READ advance from=7 readable=11 status=ready prefetching=- prefetched=8
+23:22:22.005 READ checkpoint saved source=text item=34983e27b689 para=7 seg=0 time=3.024 offset=36 visual=true reflow=false word=126ff07c1835 fraction=1.0
+23:22:22.009 READ prefetch promote para=8 segs=1
+23:22:22.010 AUDIO stage segment=8-0 index=0/1 duration=5.35
+23:22:22.079 AUDIO ready segment=8-0 duration=5.35 auto=Y
+23:22:22.102 AUDIO state reason=time-control actual=paused waiting=Y rate=1.00 segment=8-0
+23:22:22.130 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=8-0
+23:22:27.257 READ checkpoint saved source=text item=34983e27b689 para=8 seg=0 time=5.10026629 offset=81 visual=true reflow=false word=944c27e5b97a fraction=0.660864109931294
+23:22:27.296 READ checkpoint saved source=text item=34983e27b689 para=8 seg=0 time=5.100281999 offset=81 visual=true reflow=false word=944c27e5b97a fraction=0.660890275244639
+23:22:27.302 READ checkpoint saved source=text item=34983e27b689 para=8 seg=0 time=5.100281999 offset=81 visual=true reflow=false word=944c27e5b97a fraction=0.660890275244639
+23:22:27.309 READ checkpoint saved source=text item=34983e27b689 para=8 seg=0 time=5.100281999 offset=81 visual=true reflow=false word=944c27e5b97a fraction=0.660890275244639

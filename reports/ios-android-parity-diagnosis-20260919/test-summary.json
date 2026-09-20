@@ -1,0 +1,673 @@
+{
+  "productCodeChanged": false,
+  "liveKindleBookAcceptance": "blocked at existing simulator CastReader login; no login/session bypass",
+  "runs": [
+    {
+      "run": 3,
+      "result": "Failed",
+      "passed": 91,
+      "failed": 1,
+      "skipped": 0,
+      "xcresult": "/tmp/CastReaderKindleDiagnosis20260919-run3.xcresult"
+    },
+    {
+      "run": 4,
+      "result": "Passed",
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0,
+      "xcresult": "/tmp/CastReaderKindleDiagnosis20260919-run4.xcresult"
+    },
+    {
+      "run": 5,
+      "result": "Passed",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "xcresult": "/tmp/CastReaderKindleDiagnosis20260919-run5.xcresult"
+    },
+    {
+      "run": 6,
+      "result": "Passed",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "xcresult": "/tmp/CastReaderKindleDiagnosis20260919-run6.xcresult"
+    }
+  ],
+  "uniqueCases": 125,
+  "latestVerdicts": {
+    "passed": 125,
+    "failed": 0,
+    "skipped": 0
+  },
+  "initialFailure": "Run 3 diagnostic had only one sentence, rejected by the existing short-narration planner with noBlock0 before playback. Run 4 uses a valid two-sentence narration; Run 5 strengthens it with actual multiline mark geometry. Not a product failure or a waived assertion.",
+  "diagnosticMeaning": "Passing diagnosis assertions confirms current defects; it does not mean those defects were fixed.",
+  "cases": {
+    "AndroidParityDiagnosisTests.testReportedPagesThroughActualIOSVision": {
+      "status": "passed",
+      "seconds": 2.865,
+      "run": 4
+    },
+    "KindleFootnoteSpeechTests.testDisableRestoresExactOriginalAndPolicyChangesCacheSignature": {
+      "status": "passed",
+      "seconds": 0.013,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testFailedInkMeasurementCannotFallBackToAnApparentlyRaisedRawBox": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testLegacyPhotoSnapshotStillDecodesWithoutInventingVisionProvenance": {
+      "status": "passed",
+      "seconds": 0.01,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testLegacyWordInitializerIsUnknownAndReidentificationPreservesEvidence": {
+      "status": "passed",
+      "seconds": 0.145,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testMathDateChapterAndBracketNotationStayAudible": {
+      "status": "passed",
+      "seconds": 0.002,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testMeasuredInkCanProveReferenceWhenVisionFlattensEveryTokenToLineHeight": {
+      "status": "passed",
+      "seconds": 0.003,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testMissingPixelSizeAndUnsupportedScriptRemainIdentity": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testMissingProvenanceMixedEstimatedLineAndLowConfidenceNeverDelete": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testOnlyRaisedSentenceReferenceIsRemovedAndSourceIDsStayIntact": {
+      "status": "passed",
+      "seconds": 0.008,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testPartialOrNormalizedSourceBindingFallsBackToWholeParagraphIdentity": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testRepeatedDigitsBindToTheRaisedOccurrenceOnly": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testSameLineFollowingProseSupportsBaselineWithoutUsingRejectedWordPixels": {
+      "status": "passed",
+      "seconds": 0.051,
+      "run": 3
+    },
+    "KindleFootnoteSpeechTests.testSameNumberAtNormalBaselineAndFourDigitYearsArePreserved": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testBothDirectionsRequireChangedPixelsAndStableFallbackEvidence": {
+      "status": "passed",
+      "seconds": 0.003,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testCachedActionThatThrowsIsStillOneDispatch": {
+      "status": "passed",
+      "seconds": 3.897,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testCompatibilityAliasDoesNotRepeatThrowingSemanticAction": {
+      "status": "passed",
+      "seconds": 0.512,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testFreshActionThatChangesPageThenThrowsNeverDispatchesAgain": {
+      "status": "passed",
+      "seconds": 1.658,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testHeldPrefetchRasterHasSameFingerprintAsItsVisiblePage": {
+      "status": "passed",
+      "seconds": 1.121,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testKeyboardExceptionAfterKeyDownPreservesDispatchedEvidence": {
+      "status": "passed",
+      "seconds": 1.226,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testMissingPairedCapabilityUsesOneKeyboardAction": {
+      "status": "passed",
+      "seconds": 0.47,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testObjectFitContainKeepsLetterboxingInContentCoordinates": {
+      "status": "passed",
+      "seconds": 0.468,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testObjectFitCoverRetainsOverflowForSourceCoordinateMapping": {
+      "status": "passed",
+      "seconds": 0.45,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testObjectFitFillReportsActualStretchedPageContentRect": {
+      "status": "passed",
+      "seconds": 0.512,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testObjectFitNoneRetainsNaturalDimensionsAndObjectPosition": {
+      "status": "passed",
+      "seconds": 0.415,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testObjectFitScaleDownDoesNotUpscaleSmallPage": {
+      "status": "passed",
+      "seconds": 0.46,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testPresentationEvidenceMapsBothDecodedPagesWithoutUsingTransformedFrame": {
+      "status": "passed",
+      "seconds": 0.451,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testPresentationEvidenceRejectsAncestorClipAndPartiallyVisibleSpread": {
+      "status": "passed",
+      "seconds": 0.456,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testPreviousConfirmsActualChangedImageAndDecreasedLocation": {
+      "status": "passed",
+      "seconds": 0.455,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testPreviousUsesRendererEvidenceOnlyWhenLocationDidNotChange": {
+      "status": "passed",
+      "seconds": 0.0,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testProgressMustAgreeWithRequestedDirection": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testRapidOppositeSwipesOnlySaveLatestSettledPage": {
+      "status": "passed",
+      "seconds": 1.854,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testSwipeWaitsForChangedPixelsBeforeSavingDelayedPage": {
+      "status": "passed",
+      "seconds": 2.059,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testSyncDecisionsNeverAlsoEmitManualNavigationWithEitherBootstrap": {
+      "status": "passed",
+      "seconds": 0.896,
+      "run": 3
+    },
+    "KindlePageTurnEvidenceTests.testThrowBeforeVisibleMutationDoesNotAuthorizeAnotherAction": {
+      "status": "passed",
+      "seconds": 3.043,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testAaAlsoRetainsTheAppliedPresentationFitAcrossStaleSurfaceCallback": {
+      "status": "passed",
+      "seconds": 0.707,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testAaDefersUntilAttachedContainerHasAppliedItsNewCrop": {
+      "status": "passed",
+      "seconds": 0.608,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testAaRetainsAppliedPortraitViewportWhenModelStillHasLandscapeCrop": {
+      "status": "passed",
+      "seconds": 0.641,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testConfirmedNativeFontDoneClosesAndRelocksOnceWithoutReloading": {
+      "status": "passed",
+      "seconds": 1.039,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testDoneDoesNotReloadOrRewriteAnUnrelatedPreferenceMismatch": {
+      "status": "passed",
+      "seconds": 1.203,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testEarlyAaDoesNotPresentOrCancelRealBootstrapAndSyncObserverStillRuns": {
+      "status": "passed",
+      "seconds": 0.635,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testExplicitNativeFontChangeCancelsPendingResizeCorrection": {
+      "status": "passed",
+      "seconds": 1.001,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testFailedCloseObservesFiveTimesClicksOnceKeepsGateAndExplicitDoneCanRetry": {
+      "status": "passed",
+      "seconds": 1.684,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testFullCaptureSettingsRelockPreservesNativeFontWithoutSyntheticResize": {
+      "status": "passed",
+      "seconds": 0.63,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testImmediateCloseCancelsUndispatchedChangeWithoutMutatingNativeFont": {
+      "status": "passed",
+      "seconds": 0.845,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testImmediateCloseCancelsUndispatchedReadAndReopenAdoptsFreshValue": {
+      "status": "passed",
+      "seconds": 0.62,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testLateSyncDismissesSettingsRevokesFontReplyAndDoesNotChooseForUser": {
+      "status": "passed",
+      "seconds": 2.277,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testLightBootstrapSettingsRelockPreservesNativeFontWithoutSyntheticResize": {
+      "status": "passed",
+      "seconds": 0.644,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testMalformedOrAbsentFontPairsAreNeverRepaired": {
+      "status": "passed",
+      "seconds": 0.622,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testNativeWKResizeAlsoPreservesFontAndPublishesCorrectiveHook": {
+      "status": "passed",
+      "seconds": 0.667,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testNavigationAndStopRevokeFontSettingsCloseWithoutAnyReload": {
+      "status": "passed",
+      "seconds": 1.79,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testNewDocumentRevokesReadyAndNeedsItsOwnBootstrapBeforeAa": {
+      "status": "passed",
+      "seconds": 0.928,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testNoFontChangeFootnoteOnlyAndUnpersistedFontDoNotReload": {
+      "status": "passed",
+      "seconds": 1.993,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testPageModeLockHidesAaUntilModelUnlocksAndDoneRelocks": {
+      "status": "passed",
+      "seconds": 0.863,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testReparentDuringLightLockRevokesPendingPageAction": {
+      "status": "passed",
+      "seconds": 0.646,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testResizeCompatibilityRestoresOnlyFontPairAndNotifiesNativeHook": {
+      "status": "passed",
+      "seconds": 0.636,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testSameDocumentToolbarReplacementRevokesDetachedMenuDispatchFlag": {
+      "status": "passed",
+      "seconds": 0.659,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testSameKeyWriteOutsideResizeWinsOverPendingCorrection": {
+      "status": "passed",
+      "seconds": 0.642,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testSettingsOpenedAndClosedDuringLightLockRevokesPendingPageAction": {
+      "status": "passed",
+      "seconds": 0.655,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testSyncDialogPreemptsCloseReplyWithoutRelockingItsNewOwner": {
+      "status": "passed",
+      "seconds": 1.062,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testTwoResizeBurstRetainsFirstSnapshotAndBootstrapIsIdempotent": {
+      "status": "passed",
+      "seconds": 0.621,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testUnchangedOwnerDispatchesExactlyOnceAfterLightLock": {
+      "status": "passed",
+      "seconds": 0.629,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testUnrelatedLocalKeysAndSessionStoragePassThroughDuringResize": {
+      "status": "passed",
+      "seconds": 0.655,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testVoicePanelAllowsStablePageObservationWithoutChangingViewport": {
+      "status": "passed",
+      "seconds": 1.475,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testVoicePanelRetainsActualExplainViewportThroughDismissal": {
+      "status": "passed",
+      "seconds": 1.844,
+      "run": 3
+    },
+    "KindleReadingSettingsOwnershipTests.testVoicePanelRetainsActualReadViewportThroughDismissal": {
+      "status": "passed",
+      "seconds": 1.839,
+      "run": 3
+    },
+    "KindleVisionFootnoteFixtureTests.testVisionBracketedReferenceIsConservativelyPreserved": {
+      "status": "passed",
+      "seconds": 1.982,
+      "run": 3
+    },
+    "KindleVisionFootnoteFixtureTests.testVisionNormalBaselineNumberAndYearsRemainAudible": {
+      "status": "passed",
+      "seconds": 1.985,
+      "run": 3
+    },
+    "KindleVisionFootnoteFixtureTests.testVisionRecognizedMathExponentRemainsAudible": {
+      "status": "passed",
+      "seconds": 1.909,
+      "run": 3
+    },
+    "KindleVisionFootnoteFixtureTests.testVisionRecognizesRaisedReferenceBeforeProjectionRemovesIt": {
+      "status": "passed",
+      "seconds": 1.991,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testCancelledMaskedSnapshotRestoresSameLiveHighlightNode": {
+      "status": "passed",
+      "seconds": 0.519,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testDifferentNativeMarginsExposeFixedCropClippingAtBothFontSizes": {
+      "status": "passed",
+      "seconds": 0.648,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testExpectedPageMarginsKeepSmallAndLargeTextInsideVisibleSurface": {
+      "status": "passed",
+      "seconds": 0.656,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testExplainInkKeepsNativePathWeightAndOpacityAcrossLiveRedraw": {
+      "status": "passed",
+      "seconds": 0.565,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testExplainInkRejectsPageOrGeometryChangedBeforeDraw": {
+      "status": "passed",
+      "seconds": 0.505,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testExplainLiveAndNativeHoldHaveSameVisibleInk": {
+      "status": "passed",
+      "seconds": 0.853,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testFailedCoverKeepsLiveHighlightAndDefersRepeatedTicksUntilAudioBoundary": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testLandscapeDockKeepsActualWebViewAndLastPageLineAboveControls": {
+      "status": "passed",
+      "seconds": 0.791,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testLandscapeDockKeepsCSSViewportWhenPlaybackControlsAreTemporarilyHidden": {
+      "status": "passed",
+      "seconds": 0.923,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testOffscreenRetainedHostKeepsRAFAndViewportUntilItReturns": {
+      "status": "passed",
+      "seconds": 7.202,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testOldContainerCannotResizeWebViewAfterNewContainerTakesOwnership": {
+      "status": "passed",
+      "seconds": 0.804,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testPresentationFitContainsBothPagesOfVisibleSpread": {
+      "status": "passed",
+      "seconds": 0.802,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testPresentationFitContainsClippedPageWithoutChangingCSSViewport": {
+      "status": "passed",
+      "seconds": 0.69,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testPresentationFitRetainsContainedNextPageAndRejectsInvalidGeometry": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testRealSurfaceResizeStillUpdatesNativeFrameAndCSSViewport": {
+      "status": "passed",
+      "seconds": 0.616,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testRejectedMaskedSnapshotRestoresSameLiveHighlightNode": {
+      "status": "passed",
+      "seconds": 0.509,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testSuccessfulMaskedSnapshotRestoresLiveHighlightAndRemovesMask": {
+      "status": "passed",
+      "seconds": 0.586,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testTransientZeroSurfaceRetainsNativeFrameAndCSSViewport": {
+      "status": "passed",
+      "seconds": 0.731,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testVisualHoldSnapshotAcceptsUnchangedCanonicalHost": {
+      "status": "passed",
+      "seconds": 0.494,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testVisualHoldSnapshotRejectsFitChangedWhileSnapshotIsInFlight": {
+      "status": "passed",
+      "seconds": 0.502,
+      "run": 3
+    },
+    "KindleWebViewContainerTests.testVisualHoldSnapshotRejectsHostAndCropChangesBeforeDispatch": {
+      "status": "passed",
+      "seconds": 0.475,
+      "run": 3
+    },
+    "SpeechPipelineTests.testDiagnosisExplanationCompletionDoesNotWaitForInk": {
+      "status": "passed",
+      "seconds": 1.835,
+      "run": 5
+    },
+    "ReadAloudContinuationTests.testDeactivateRejectsLateTailAndOldSessionCannotResume": {
+      "status": "passed",
+      "seconds": 1.033,
+      "run": 4
+    },
+    "ReadAloudContinuationTests.testHTTP500BeforePrefixEndsCannotSkipTailAndRetryDoesNotReplayPrefix": {
+      "status": "passed",
+      "seconds": 2.204,
+      "run": 4
+    },
+    "ReadAloudContinuationTests.testLocalSentenceCheckpointRetainsLaterUnstartedUnits": {
+      "status": "passed",
+      "seconds": 0.015,
+      "run": 4
+    },
+    "ReadAloudContinuationTests.testPauseAndResumeFirstRequestPreservesItsProducer": {
+      "status": "passed",
+      "seconds": 1.08,
+      "run": 4
+    },
+    "ReadAloudContinuationTests.testPauseWhileFailedTailPrefixIsStillPlayingDoesNotTriggerRetry": {
+      "status": "passed",
+      "seconds": 2.871,
+      "run": 4
+    },
+    "ReadAloudContinuationTests.testPauseWhilePrefetchIsInFlightWaitsForExplicitResumeWithoutDuplicateRequest": {
+      "status": "passed",
+      "seconds": 1.611,
+      "run": 4
+    },
+    "ReadAloudContinuationTests.testTimeoutAfterPrefixDrainsRetriesOnlyMissingTail": {
+      "status": "passed",
+      "seconds": 1.251,
+      "run": 4
+    },
+    "SpeechPipelineTests.testBufferDemandAccountsForRateAndPause": {
+      "status": "passed",
+      "seconds": 0.004,
+      "run": 4
+    },
+    "SpeechPipelineTests.testCompletedReaderPreparesNewVoiceWithoutReplayingOldAudio": {
+      "status": "passed",
+      "seconds": 1.189,
+      "run": 4
+    },
+    "SpeechPipelineTests.testExplanationKeepsAmbiguousOrParaphrasedMarksOnComposePath": {
+      "status": "passed",
+      "seconds": 0.031,
+      "run": 4
+    },
+    "SpeechPipelineTests.testExplanationPublishesTimedMarksWithFirstShortUnitBeforeDelayedTail": {
+      "status": "passed",
+      "seconds": 3.044,
+      "run": 4
+    },
+    "SpeechPipelineTests.testForegroundReadAheadStopsAtTimeBudgetAndWhilePaused": {
+      "status": "passed",
+      "seconds": 0.769,
+      "run": 4
+    },
+    "SpeechPipelineTests.testPausedReadAheadCannotAutoPromoteOrDispatchMoreWork": {
+      "status": "passed",
+      "seconds": 2.347,
+      "run": 4
+    },
+    "SpeechPipelineTests.testPromotedReadAheadFailureRetriesOnlyMissingTail": {
+      "status": "passed",
+      "seconds": 1.541,
+      "run": 4
+    },
+    "SpeechPipelineTests.testReadAheadFirstAudioPlaysBeforeTailAcrossReaderSources": {
+      "status": "passed",
+      "seconds": 16.701,
+      "run": 4
+    },
+    "SpeechPipelineTests.testRetainedExplanationCannotStealCurrentReadOnVoiceChange": {
+      "status": "passed",
+      "seconds": 0.241,
+      "run": 4
+    },
+    "SpeechPipelineTests.testRetainedReaderCannotStealNewDocumentOnVoiceChange": {
+      "status": "passed",
+      "seconds": 0.245,
+      "run": 4
+    },
+    "SpeechPipelineTests.testSuffixRejectsChangedTextAndPreservesUnicodeBoundary": {
+      "status": "passed",
+      "seconds": 0.008,
+      "run": 4
+    },
+    "SpeechPipelineTests.testVoiceSwitchSendsOnlyVerifiedSuffixAndReusesCompletedVoice": {
+      "status": "passed",
+      "seconds": 1.55,
+      "run": 4
+    },
+    "SpeechPipelineTests.testVoiceSwitchSkipsEvenShortVerifiedPrefix": {
+      "status": "passed",
+      "seconds": 1.547,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testCancellationOwnsLateProbe": {
+      "status": "passed",
+      "seconds": 0.002,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testCanvasCoverWithHiddenSourceAndNoPreviousIsRecognized": {
+      "status": "passed",
+      "seconds": 1.533,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testChangedCoversAreBoundedToFourTurns": {
+      "status": "passed",
+      "seconds": 0.01,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testCoverAdvancesOnceAndWaitsForCommittedBody": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testHiddenCoverOnSlowBodyPageAndOpenAaCannotAdvance": {
+      "status": "passed",
+      "seconds": 0.638,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testHiddenDuplicateNextIsNotClickedAndHiddenPanelDoesNotBlock": {
+      "status": "passed",
+      "seconds": 0.635,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testNoChangeTimesOutWithoutClickingTwice": {
+      "status": "passed",
+      "seconds": 0.016,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testProductionBridgeCoverToBodyUsesNativeNextAndDetectsChinese": {
+      "status": "passed",
+      "seconds": 0.601,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testSleepExpiryOrOwnershipChangeWhileProbingCannotClickOrResume": {
+      "status": "passed",
+      "seconds": 0.016,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testSlowBodyAndPaywallAreNeverSkipped": {
+      "status": "passed",
+      "seconds": 0.001,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testViewModelPauseCancelsPendingCoverPreparation": {
+      "status": "passed",
+      "seconds": 0.088,
+      "run": 4
+    },
+    "WeReadOpeningPlaybackTests.testVisibleFlyleafIntroWithPreviousIsSkippedButHiddenIntroIsNot": {
+      "status": "passed",
+      "seconds": 0.518,
+      "run": 4
+    },
+    "SpeechPipelineTests.testDiagnosisManualTurnDuringNaturalAudioGapLosesResumeIntent": {
+      "status": "passed",
+      "seconds": 1.247,
+      "run": 6
+    }
+  }
+}

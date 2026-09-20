@@ -1,0 +1,137 @@
+[TTSRoute] language=zh voice=zf_001 clone=N
+[TTSRoute] language=zh voice=zf_001 clone=N
+[TTSRoute] language=zh voice=zf_001 clone=N
+[TTSRoute] language=zh voice=zf_001 clone=N
+[TTSRoute] language=zh voice=zf_001 clone=N
+[TTSRoute] language=zh voice=zf_001 clone=N
+Audio ready to play, duration: 9.84
+2026-09-20 08:32:27.549 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:32:27.581 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:32:28.106 CastReader[25599:4831636] CRDBG mark HIT 1/1 para=0 [anchor omitted]
+[TTSRoute] language=zh voice=zf_001 clone=N
+[TTSRoute] language=zh voice=zf_001 clone=N
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=0
+Audio ready to play, duration: 5.088
+2026-09-20 08:32:35.577 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:32:35.603 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:32:39.316 CastReader[25599:4831636] CRDBG mark HIT 2/2 para=1 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=1
+🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete
+Audio ready to play, duration: 2.76
+2026-09-20 08:32:39.816 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:32:39.843 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:32:40.356 CastReader[25599:4831636] CRDBG mark HIT 3/3 para=2 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=0
+Audio ready to play, duration: 5.112
+2026-09-20 08:32:42.157 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:32:42.182 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=1
+Audio ready to play, duration: 7.728
+2026-09-20 08:32:46.380 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:32:46.413 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:32:52.246 CastReader[25599:4831636] CRDBG mark HIT 4/4 para=2 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=2
+🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete
+2026-09-20 08:32:52.748 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+Audio ready to play, duration: 8.616
+2026-09-20 08:32:52.776 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:32:53.286 CastReader[25599:4831636] CRDBG mark HIT 5/5 para=3 [anchor omitted]
+2026-09-20 08:32:55.806 CastReader[25599:4831636] CRDBG mark HIT 6/6 para=3 [anchor omitted]
+2026-09-20 08:32:58.286 CastReader[25599:4831636] CRDBG mark HIT 7/7 para=3 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=0
+Audio ready to play, duration: 8.016
+2026-09-20 08:32:59.779 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:32:59.807 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:33:00.916 CastReader[25599:4831636] CRDBG mark HIT 8/8 para=3 [anchor omitted]
+2026-09-20 08:33:03.396 CastReader[25599:4831636] CRDBG mark HIT 9/9 para=3 [anchor omitted]
+2026-09-20 08:33:05.876 CastReader[25599:4831636] CRDBG mark HIT 10/10 para=3 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=1
+🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete
+2026-09-20 08:33:06.452 CastReader[25599:4831636] CRDBG KINDLE explain auto advance begin key=c05c935090b7
+2026-09-20 08:33:07.774 CastReader[25599:4831636] CRDBG mark HIT 1/1 para=0 [anchor omitted]
+2026-09-20 08:33:07.774 CastReader[25599:4831636] CRDBG mark HIT 2/2 para=1 [anchor omitted]
+Audio ready to play, duration: 7.896
+2026-09-20 08:33:07.858 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:33:07.862 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+Audio ready to play, duration: 8.616
+2026-09-20 08:33:16.152 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:33:16.177 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=0
+🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete
+Audio ready to play, duration: 7.728
+2026-09-20 08:33:27.374 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:33:27.401 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:33:27.898 CastReader[25599:4831636] CRDBG mark HIT 3/3 para=2 [anchor omitted]
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=0
+2026-09-20 08:33:33.679 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+Audio ready to play, duration: 8.616
+2026-09-20 08:33:33.706 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:33:34.858 CastReader[25599:4831636] CRDBG mark HIT 4/4 para=2 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=1
+Audio ready to play, duration: 10.296
+2026-09-20 08:33:40.710 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:33:40.736 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:33:41.807 CastReader[25599:4831636] CRDBG mark HIT 5/5 para=2 [anchor omitted]
+2026-09-20 08:33:48.607 CastReader[25599:4831636] CRDBG mark HIT 6/6 para=3 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=2
+🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete
+Audio ready to play, duration: 7.176
+2026-09-20 08:33:49.130 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:33:49.157 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:33:49.677 CastReader[25599:4831636] CRDBG mark HIT 7/7 para=4 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=0
+Audio ready to play, duration: 6.624
+2026-09-20 08:33:55.025 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:33:55.049 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:33:59.987 CastReader[25599:4831636] CRDBG mark HIT 8/8 para=4 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=1
+🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete
+2026-09-20 08:34:00.818 CastReader[25599:4831636] CRDBG KINDLE explain auto advance begin key=43dc3d21d67f
+2026-09-20 08:34:02.339 CastReader[25599:4831636] CRDBG mark HIT 1/1 para=0 [anchor omitted]
+Audio ready to play, duration: 4.536
+2026-09-20 08:34:02.417 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:34:02.464 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=0
+2026-09-20 08:34:06.159 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:34:06.185 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+Audio ready to play, duration: 10.704
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+2026-09-20 08:34:08.737 CastReader[25599:4831636] CRDBG mark HIT 2/2 para=0 [anchor omitted]
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+2026-09-20 08:34:14.417 CastReader[25599:4831636] CRDBG mark HIT 3/3 para=1 [anchor omitted]
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=1
+🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete
+Audio ready to play, duration: 6.144
+2026-09-20 08:34:14.908 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:34:14.936 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:34:15.447 CastReader[25599:4831636] CRDBG mark HIT 4/4 para=2 [anchor omitted]
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=0
+Audio ready to play, duration: 17.016
+2026-09-20 08:34:19.958 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:34:19.983 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 08:34:24.417 CastReader[25599:4831636] CRDBG mark HIT 5/5 para=3 [anchor omitted]
+2026-09-20 08:34:34.404 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:34:34.431 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+Audio ready to play, duration: 10.296
+2026-09-20 08:34:34.934 CastReader[25599:4831636] CRDBG mark HIT 1/1 para=0 [anchor omitted]
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+2026-09-20 08:34:42.761 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 08:34:42.789 CastReader[25599:4831636] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+🔊 playerDidFinishPlaying: Segment finished, currentIndex=0
+Audio ready to play, duration: 8.616
+2026-09-20 08:34:46.137 CastReader[25599:4831636] CRDBG mark HIT 2/2 para=0 [anchor omitted]

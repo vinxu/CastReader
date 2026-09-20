@@ -1,0 +1,39 @@
+{
+  "products": [
+    {
+      "product": "CastReader.app",
+      "bundleID": "com.same.castreader",
+      "version": "1.2.41",
+      "build": "63",
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": false,
+      "signatureValid": true,
+      "executableSHA256": "09b2b03405b299cf571520e912ea8d43c9b61d31c2c5b467fdbefe39a12ec430"
+    },
+    {
+      "product": "CastReader Share Extension.appex",
+      "bundleID": "com.same.castreader.ShareExtension",
+      "version": "1.2.41",
+      "build": "63",
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": false,
+      "signatureValid": true,
+      "executableSHA256": "ec5a7b4fdd428f04c4ace79c1ac9bd4bfd179e645e3c09c1fd08f1d65b603af8"
+    },
+    {
+      "product": "CastReader Widget.appex",
+      "bundleID": "com.same.castreader.Widget",
+      "version": "1.2.41",
+      "build": "63",
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": false,
+      "signatureValid": true,
+      "executableSHA256": "b8a9d4a275367c2ce04042107ec5d6b9e4999b9a4ad47106ec785c8d12531353"
+    }
+  ],
+  "ipaBytes": 42822946,
+  "ipaSHA256": "383a35dc4fd5139d5a191c7f31e85de7b5b265f8e9e7cb0e3bd5472d6b549acc",
+  "storedIPA": "build/CastReader-1.2.41-63-upload.ipa",
+  "uploadReceiptID": "aa33b7a4-cbc2-4c7d-aa76-a626434af0b8",
+  "resumedExistingUpload": true
+}

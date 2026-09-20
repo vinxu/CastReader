@@ -1,0 +1,8 @@
+{
+  "head": "febfeabf869c2f77b57d360e970218899c87aa02",
+  "candidateSourceSHA256": "8670be15e6d5e31df8752192c9b694a81f5149c65a22ce2c0eeb429d75f3dd06",
+  "files": 216,
+  "version": "1.2.41",
+  "build": "63",
+  "builtProduct": "/tmp/CastReaderSpeechDevice20260918/Build/Products/Debug-iphoneos/CastReader.app"
+}

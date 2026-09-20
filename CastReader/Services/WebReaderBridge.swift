@@ -179,6 +179,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var googleBooksMainFrameWatchdogTask: Task<Void, Never>?
     private var googleBooksAwaitingReaderRecovery = false
     private var lastWeReadFingerprint = ""
+    private var weReadContentBlocked = false
+    private var weReadNetworkRetryTask: Task<Void, Never>?
     private var lastWeReadEvidence: WeReadPageEvidence?
     private var pendingWeReadTurn = false
     private var automaticAppReviewContinuation = AppReviewAutomaticPageContinuation()
@@ -979,6 +981,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             if self.livePlatform == .googleBooks, let webView = message.webView {
                 ReaderWebAppearanceCenter.shared.registerReaderFrame(frameInfo, in: webView)
             }
+            if messageType == "wereadContentUnavailable",
+               (!frame.isMainFrame || frame.securityHost.lowercased() != "weread.qq.com") { return }
             self.handle(body)
         }
     }
@@ -1110,6 +1114,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                         ?? lastGoogleBooksSignature,
                 payload: msg.payload
             )
+        case "wereadContentUnavailable":
+            guard isWeRead else { return }
+            invalidateWeReadContent(reason: msg.payload["reason"] as? String == "access-gate" ? "access-gate" : "visible-error")
         case "wereadPage":
             receiveWeReadPage(msg.payload)
         case "wereadPagePreview":
@@ -1705,6 +1712,44 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         )
         ReaderRunLog.write("WEREAD opening playback ready=\(ready)")
         return ready
+    }
+
+    /// A visible provider failure retires the entire page transaction. Clearing
+    /// just the player leaves delayed TTS, explanation marks and turn timeouts
+    /// able to restart the previous page.
+    private func invalidateWeReadContent(reason: String) {
+        guard isWeRead, !weReadContentBlocked else { return }
+        weReadContentBlocked = true
+        didInit = false
+        didAutoStart = true // Recovery requires an explicit Play, not opening Auto Play.
+        isWeReadInitialPlaybackPending = false
+        weReadInitialPlaybackTask?.cancel()
+        cancelWeReadContinuousHandoff(reason: reason)
+        invalidateWeReadPreview(reason: reason)
+        invalidateWeReadExplainPrefetch(reason: reason)
+        automaticAppReviewContinuation.cancel()
+        pendingWeReadBoundaryTurn = nil
+        activeWeReadCarry = nil
+        pendingWeReadTurn = false
+        pendingWeReadManualTurn = false
+        resumeReadAfterWeReadTurn = false
+        resumeExplainAfterWeReadTurn = false
+        weReadTurnTimeout?.cancel()
+        weReadManualIntentTimeout?.cancel()
+        weReadManualCommitTask?.cancel()
+        weReadRefreshTask?.cancel()
+        weReadRefreshState = nil
+        if pendingWeReadTOCJump { failWeReadTOCJump(reason: reason) }
+        lastWeReadFingerprint = ""
+        lastWeReadEvidence = nil
+        let message = reason == "access-gate"
+            ? AppLocalized("请先在微信读书页面恢复正文，再继续播放。")
+            : AppLocalized("网络连接失败，请重试。")
+        readVM?.invalidateWebContent(message: message)
+        explainVM?.invalidateWebContent(message: message)
+        call("clearHighlight")
+        call("clearMarks")
+        ReaderRunLog.write("WEREAD content blocked reason=\(reason)")
     }
 
     /// Commit a canvas page only when the visible-surface fingerprint changed.
@@ -2411,6 +2456,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
         }
 
+        if weReadContentBlocked {
+            weReadContentBlocked = false
+            readVM?.webContentBlockMessage = nil
+            explainVM?.webContentBlockMessage = nil
+            readVM?.status = .pending
+            explainVM?.status = .idle
+            ReaderRunLog.write("WEREAD content restored; awaiting user playback")
+        }
+        weReadNetworkRetryTask?.cancel()
+        weReadNetworkRetryTask = nil
+        weReadNetworkRetries = 0
         lastWeReadFingerprint = candidate.fingerprint
         lastWeReadEvidence = candidate.evidence
         pendingWeReadTurn = false
@@ -2450,6 +2506,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         ReaderRunLog.write("WEREAD page commit prior=\(String(candidate.priorFingerprint.prefix(12))) next=\(String(candidate.fingerprint.prefix(12))) confirmed=\(candidate.isConfirmedTurn) epoch=\(candidate.evidence.canvasEpoch) cols=\(String(candidate.evidence.columnFingerprint.prefix(32))) geometry=\(candidate.geometrySource) glyphs=\(candidate.mappedGlyphs) paras=\(candidate.page.count)")
 
         if didInit {
+            // Both modes must follow the confirmed page. Update only the
+            // inactive mode here: its staging path invalidates old plans/audio
+            // without touching the active mode's shared-player session.
+            if isReadMode {
+                explainVM?.stageInactiveLiveWebPage(candidate.page, language: candidate.language)
+            } else {
+                readVM?.stageInactiveLiveWebPage(candidate.page, language: candidate.language,
+                                                weReadBoundary: candidate.boundary)
+            }
             // Reset the JavaScript renderer before transferring playback/highlight
             // ownership to the confirmed page.  The carry/continuous paths can
             // paint immediately; issuing `init` afterwards used to erase the
@@ -6887,6 +6952,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         _ webView: WKWebView,
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
+        if isWeRead {
+            weReadNetworkRetryTask?.cancel()
+            weReadNetworkRetryTask = nil
+        }
         if isAO3 {
             if let id = ao3DocumentID { ao3RetiredDocuments.insert(id) }
             ao3DocumentID = nil
@@ -7030,6 +7099,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
            navigationResponse.isForMainFrame,
            let http = navigationResponse.response as? HTTPURLResponse {
             lastWeReadMainFrameStatus = http.statusCode
+            if http.statusCode >= 400 {
+                invalidateWeReadContent(reason: "main-frame-http-\(http.statusCode)")
+            }
             ReaderRunLog.write("WEREAD response status=\(http.statusCode) url=\(http.url?.absoluteString ?? "")")
         }
         decisionHandler(.allow)
@@ -7264,6 +7336,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         guard isWeRead else { return }
         let nsError = error as NSError
         guard nsError.code != NSURLErrorCancelled else { return }
+        if phase == "committed" { invalidateWeReadContent(reason: "navigation-committed-failure") }
         if pendingWeReadTOCJump {
             failWeReadTOCJump(reason: "navigation-\(phase)-\(nsError.code)")
             return
@@ -7281,9 +7354,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             weReadNetworkRetries += 1
             let delay = UInt64(weReadNetworkRetries * 2) * 1_000_000_000
             ReaderRunLog.write("WEREAD network retry \(weReadNetworkRetries)/2 in \(weReadNetworkRetries * 2)s")
-            Task { @MainActor [weak self] in
+            let failedURL = webView.url
+            weReadNetworkRetryTask?.cancel()
+            weReadNetworkRetryTask = Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: delay)
-                guard let self, self.weReadEntryRecoveryStage == .idle else { return }
+                guard let self, !Task.isCancelled,
+                      self.weReadEntryRecoveryStage == .idle,
+                      self.webView?.url == failedURL else { return }
                 self.webView?.load(URLRequest(url: retryURL))
             }
             return

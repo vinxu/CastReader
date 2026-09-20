@@ -1,0 +1,103 @@
+Test Suite 'LocalizationCatalogTests' started at 2026-09-18 18:45:36.433.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testAppLanguageOverrideChangesRuntimeLocalizedStrings]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testAppLanguageOverrideChangesRuntimeLocalizedStrings]' passed (0.021 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testAppLanguagePickerContainsSystemAndAllNineLanguages]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testAppLanguagePickerContainsSystemAndAllNineLanguages]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testAuxiliaryCatalogsCoverAllNineLanguagesAndPreserveTemplates]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testAuxiliaryCatalogsCoverAllNineLanguagesAndPreserveTemplates]' passed (0.011 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testBlockedKindleModeSwitchPreservesCurrentPlaybackAndRequestsTargetPaywall]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testBlockedKindleModeSwitchPreservesCurrentPlaybackAndRequestsTargetPaywall]' passed (0.002 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testCachedAsyncImageRejectsStaleVoiceAvatarCompletion]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testCachedAsyncImageRejectsStaleVoiceAvatarCompletion]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testCoreNavigationTerminologyIsNativeAndStable]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testCoreNavigationTerminologyIsNativeAndStable]' passed (0.019 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testDynamicWebExtractionRejectsTitleOnlyPayloadButAcceptsArticleBody]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testDynamicWebExtractionRejectsTitleOnlyPayloadButAcceptsArticleBody]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testEveryStaticAppLocalizedLiteralExistsInCatalog]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testEveryStaticAppLocalizedLiteralExistsInCatalog]' passed (0.108 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testExplainVoiceUsesTargetLanguageInsteadOfSourceLanguage]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testExplainVoiceUsesTargetLanguageInsteadOfSourceLanguage]' passed (0.007 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testFreeTrialCopyIsCompleteInAllNineLanguages]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testFreeTrialCopyIsCompleteInAllNineLanguages]' passed (0.019 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testHomeProCardCopyFollowsAllNineRuntimeLanguages]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testHomeProCardCopyFollowsAllNineRuntimeLanguages]' passed (0.019 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testHomeProCardPurchaseContractRoutesWithoutAnIntermediatePaywall]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testHomeProCardPurchaseContractRoutesWithoutAnIntermediatePaywall]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testHomeProCardWeeklyPriceUsesAnnualPriceDividedByFiftyTwo]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testHomeProCardWeeklyPriceUsesAnnualPriceDividedByFiftyTwo]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testImportedOCRHindiSelectionRequiresStrongIndependentEvidence]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testImportedOCRHindiSelectionRequiresStrongIndependentEvidence]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testInfoPlistCatalogCoversAllAppLocales]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testInfoPlistCatalogCoversAllAppLocales]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testKindlePlaybackAccessGateCoversReadAndExplainQuota]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testKindlePlaybackAccessGateCoversReadAndExplainQuota]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testKindleReaderSurfaceFreezesWhilePlayerVoiceOverlayIsPresented]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testKindleReaderSurfaceFreezesWhilePlayerVoiceOverlayIsPresented]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testKindleVisualCandidateDriftCannotRestartPlaybackWithoutSemanticNavigation]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testKindleVisualCandidateDriftCannotRestartPlaybackWithoutSemanticNavigation]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testNineLanguageCatalogIsCompleteAndFormatSafe]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testNineLanguageCatalogIsCompleteAndFormatSafe]' passed (0.352 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testPDFRenderingModeSeparatesTextLayerFromOCRReflow]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testPDFRenderingModeSeparatesTextLayerFromOCRReflow]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testPlaybackVoicePanelUsesOneNormalizedRootRequest]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testPlaybackVoicePanelUsesOneNormalizedRootRequest]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testProjectDeclaresAllNineKnownRegions]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testProjectDeclaresAllNineKnownRegions]' passed (0.012 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testQuickReadOrdinarySSEErrorRemainsAServiceError]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testQuickReadOrdinarySSEErrorRemainsAServiceError]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testQuickReadStructuredSSE402MapsToQuotaError]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testQuickReadStructuredSSE402MapsToQuotaError]' passed (0.000 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testReadingSentenceContractCoversAllNineLanguages]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testReadingSentenceContractCoversAllNineLanguages]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testReadingSentenceContractKeepsGermanAbbreviationsTogether]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testReadingSentenceContractKeepsGermanAbbreviationsTogether]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testReadingSentenceContractPreservesJapaneseAndChineseVisualWraps]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testReadingSentenceContractPreservesJapaneseAndChineseVisualWraps]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testShareExtensionGermanCopyDoesNotFallBackToEnglish]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testShareExtensionGermanCopyDoesNotFallBackToEnglish]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testShareInboxBadgeCountsOnlyItemsCreatedAfterLastSeenDate]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testShareInboxBadgeCountsOnlyItemsCreatedAfterLastSeenDate]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testShareInboxExtractsThePageURLFromSharedCaptionText]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testShareInboxExtractsThePageURLFromSharedCaptionText]' passed (0.050 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testShareInboxRecordRemainsBackwardCompatibleBeforeLinkPreviewFields]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testShareInboxRecordRemainsBackwardCompatibleBeforeLinkPreviewFields]' passed (0.002 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testUnifiedContinueIncludesConnectedLibraries]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testUnifiedContinueIncludesConnectedLibraries]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testVoiceCloneAndPlayerCopyIsLocalizedInEveryAppLanguage]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testVoiceCloneAndPlayerCopyIsLocalizedInEveryAppLanguage]' passed (0.019 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadAvailabilityIsGlobalWithoutLocaleRestrictions]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadAvailabilityIsGlobalWithoutLocaleRestrictions]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadBackgroundLifecycleNeverReloadsForTransientForegroundProbeFailure]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadBackgroundLifecycleNeverReloadsForTransientForegroundProbeFailure]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadBookAndSingleTurnContracts]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadBookAndSingleTurnContracts]' passed (0.002 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadBookEntryRecoveryRetriesCanonicalBeforeShelfScan]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadBookEntryRecoveryRetriesCanonicalBeforeShelfScan]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadBridgePreservesNoPrivateAPIBoundary]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadBridgePreservesNoPrivateAPIBoundary]' passed (0.022 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadExplainOwnsItsPageLifecycle]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadExplainOwnsItsPageLifecycle]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadExplainPrefetchRequiresExactVisiblePageAndCurrentSettings]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadExplainPrefetchRequiresExactVisiblePageAndCurrentSettings]' passed (0.006 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadPlaybackResumeFindsCurrentSentenceAcrossViewportReflow]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadPlaybackResumeFindsCurrentSentenceAcrossViewportReflow]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadRejectsGenericCoverAltAsBookTitle]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadRejectsGenericCoverAltAsBookTitle]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadShelfPageContractRejectsHomeRecommendationsAndLooseShelfPaths]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadShelfPageContractRejectsHomeRecommendationsAndLooseShelfPaths]' passed (0.000 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadShelfSnapshotContractExcludedRowsDoNotVetoCompletion]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadShelfSnapshotContractExcludedRowsDoNotVetoCompletion]' passed (0.001 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadTOCBridgeUsesStableChapterIdentityAndOneNavigationAction]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadTOCBridgeUsesStableChapterIdentityAndOneNavigationAction]' passed (0.010 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadTOCNormalizesDuplicatesAndMarksCurrentChapter]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadTOCNormalizesDuplicatesAndMarksCurrentChapter]' passed (0.002 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadTOCRefusesToNavigateWithoutAuthoritativeChapterUID]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadTOCRefusesToNavigateWithoutAuthoritativeChapterUID]' passed (0.003 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadTOCRejectsPresentationOnlyRowsWithoutDowngradingIdentity]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadTOCRejectsPresentationOnlyRowsWithoutDowngradingIdentity]' passed (0.004 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadUIStringsCoverAllNineRuntimeLanguages]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadUIStringsCoverAllNineRuntimeLanguages]' passed (0.038 seconds).
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadViewportCropIsPredictedBeforeLoadAndCalibratedFromVisibleText]' started.
+Test Case '-[CastReaderTests.LocalizationCatalogTests testWeReadViewportCropIsPredictedBeforeLoadAndCalibratedFromVisibleText]' passed (0.005 seconds).
+Test Suite 'LocalizationCatalogTests' passed at 2026-09-18 18:45:37.201.
+	 Executed 50 tests, with 0 failures (0 unexpected) in 0.754 (0.768) seconds

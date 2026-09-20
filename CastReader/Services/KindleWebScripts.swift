@@ -8878,7 +8878,7 @@ enum KindleWebScripts {
         svg.setAttribute('height', String(h));
         return svg;
       }
-      function crKindleDrawAnimatedPath(parent, d, stroke, strokeWidth, opacity, duration, delay, fill, extraStyle, animate) {
+      function crKindleDrawAnimatedPath(parent, d, stroke, strokeWidth, opacity, duration, delay, fill, extraStyle, animate, elapsed) {
         var shouldAnimate = animate !== false;
         var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', d);
@@ -8896,6 +8896,13 @@ enum KindleWebScripts {
           path.style.strokeDasharray = String(len);
           path.style.strokeDashoffset = String(len);
           path.style.transition = 'none';
+          if (Number.isFinite(elapsed) && path.animate) {
+            path.animate([{ strokeDashoffset:String(len) }, { strokeDashoffset:'0' }], {
+              duration:Math.max(1, duration || 700), delay:-Math.max(0, elapsed),
+              easing:'ease-out', fill:'forwards'
+            });
+            return path;
+          }
           try { path.getBoundingClientRect(); } catch (e) {}
           requestAnimationFrame(function() {
             requestAnimationFrame(function() {
@@ -8923,7 +8930,7 @@ enum KindleWebScripts {
         canvas.style.overflow = 'visible';
         group.appendChild(canvas);
         crKindleDrawAnimatedPath(canvas, ink.path, '#FD5F01', ink.lineWidth,
-          ink.opacity, ink.durationMs, 0, 'none', '', data.animate !== false);
+          ink.opacity, data.inkDurationMs || ink.durationMs, 0, 'none', '', data.animate !== false, data.inkElapsedMs);
       }
       window.__crKindleLiveShowMark = function(payload) {
         try {

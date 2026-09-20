@@ -1,0 +1,13 @@
+{
+  "en-US": "Improved reading playback with cloned voices, including recovery after turning pages.\nFaster voice switching and smoother transitions between audio segments.\nImproved audio buffering and playback stability.",
+  "zh-Hans": "优化克隆音色朗读，修复部分翻页后无法继续播放的问题。\n加快音色切换，改善音频片段之间的衔接。\n优化音频预读与缓存，提升播放稳定性。",
+  "zh-Hant": "最佳化複製音色朗讀，修正部分翻頁後無法繼續播放的問題。\n加快音色切換，改善音訊片段之間的銜接。\n最佳化音訊預先載入與快取，提升播放穩定性。",
+  "ja": "クローン音声での読み上げを改善し、ページをめくった後に再生を続けられない場合がある問題を修正しました。\n音声の切り替えを高速化し、音声セグメント間のつながりを改善しました。\n音声の先読みとキャッシュを最適化し、再生の安定性を向上しました。",
+  "es-ES": "Mejoramos la lectura con voces clonadas y corregimos problemas al reanudar la reproducción después de pasar de página.\nCambios de voz más rápidos y transiciones de audio más fluidas.\nMejoras en la carga anticipada, la caché y la estabilidad de la reproducción.",
+  "es-MX": "Mejoramos la lectura con voces clonadas y corregimos problemas al reanudar la reproducción después de cambiar de página.\nCambios de voz más rápidos y transiciones de audio más fluidas.\nMejoras en la carga anticipada, la caché y la estabilidad de la reproducción.",
+  "fr-FR": "Amélioration de la lecture avec les voix clonées et correction de problèmes de reprise après un changement de page.\nChangement de voix plus rapide et transitions audio plus fluides.\nOptimisation du préchargement, du cache et de la stabilité de la lecture.",
+  "de-DE": "Die Wiedergabe mit geklonten Stimmen wurde verbessert. Probleme beim Fortsetzen nach dem Umblättern wurden behoben.\nSchnellerer Stimmenwechsel und flüssigere Übergänge zwischen Audioabschnitten.\nVerbessertes Vorladen, Caching und stabilere Wiedergabe.",
+  "pt-BR": "Melhoramos a leitura com vozes clonadas e corrigimos problemas ao retomar a reprodução após virar a página.\nTroca de voz mais rápida e transições de áudio mais suaves.\nMelhorias no pré-carregamento, no cache e na estabilidade da reprodução.",
+  "it": "Migliorata la lettura con voci clonate e corretti alcuni problemi di ripresa della riproduzione dopo il cambio di pagina.\nCambio di voce più rapido e transizioni audio più fluide.\nMigliorati il precaricamento, la cache e la stabilità della riproduzione.",
+  "hi": "क्लोन की गई आवाज़ों में पढ़ने का अनुभव बेहतर बनाया गया है और पेज बदलने के बाद प्लेबैक फिर से शुरू न होने की समस्या ठीक की गई है।\nआवाज़ बदलना तेज़ हुआ है और ऑडियो खंडों के बीच रुकावट कम हुई है।\nऑडियो की प्रीलोडिंग, कैश और प्लेबैक की स्थिरता में सुधार किया गया है।"
+}

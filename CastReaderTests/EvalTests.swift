@@ -248,59 +248,68 @@ final class EvalTests: XCTestCase {
     第三段。链式预取保证播放始终领先当前一段，连续朗读不卡顿。
     """
 
-    /// 验证「预生成」：当前段生成完后 preloadNext 真的后台生成「下一可朗读段」TTS 到缓存（不再是空占位）。
-    /// 这是消除段间 gap 的前提——advance 时缓存已就绪即可秒接，无需再等首字节。
+    /// Prefetch requires an owned foreground paragraph with playable audio.
+    /// Exercise that prerequisite through generation rather than seeding VM state.
     @MainActor
     func testPrefetch_GeneratesNextParagraph() async throws {
         useRegularVoiceForTest(language: "zh")
         let doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
-        let vm = ReadAloudViewModel(document: doc)
-        defer {
-            _ = vm.stop()
-            vm.deactivate()
+        let firstText = try XCTUnwrap(doc.readableParagraphs.first?.text)
+        let fixture = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: firstText.contains(text) ? 30 : 1))
         }
+        let vm = ReadAloudViewModel(document: doc, ttsService: fixture.service())
+        defer { _ = vm.stop(); vm.deactivate(); fixture.close() }
         let readable = vm.dbgReadableIndices
-        guard readable.count >= 2 else { return XCTFail("[P] 可朗读段不足 2") }
+        XCTAssertGreaterThanOrEqual(readable.count, 2)
 
-        await vm.dbgPreloadNext(after: readable[0])   // 触发预取 readable[1]
+        await vm.dbgPreloadNext(after: readable[0])
+        XCTAssertTrue(fixture.requests.isEmpty, "Inactive readers must not consume prefetch quota")
+        vm.dbgGenerate(readable[0])
+        await vm.dbgWaitGeneration()
         await vm.dbgWaitPrefetch()
 
-        let pIdx = vm.dbgPrefetchedIndex
-        let segs = vm.dbgPrefetchedSegments
-        print("[EVAL][P] 预取 prefetchedIndex=\(String(describing: pIdx)) segs=\(segs.count) para=\(segs.first?.paragraphIndex ?? -1)")
-        guard !segs.isEmpty else { return XCTFail("[P] 预取无 segment（网络/节点问题，或预取未实现 → gap 不会消除）") }
-        XCTAssertEqual(pIdx, readable[1], "[P] 预取段索引应为下一可朗读段")
-        XCTAssertEqual(segs.first?.paragraphIndex, readable[1], "[P] 预取 segment 段号不对（高亮会错位）")
+        XCTAssertEqual(vm.dbgPrefetchedIndex, readable[1])
+        let segment = try XCTUnwrap(vm.dbgPrefetchedSegments.first)
+        XCTAssertEqual(segment.paragraphIndex, readable[1], "Prefetched highlighting must belong to the next paragraph")
+        let expectedUnits = ClonedTTSStartup.requestUnits(doc.paragraphs[readable[1]].text,
+            language: "zh", voice: AppSettings.shared.voice(for: "zh"))
+        for unit in expectedUnits {
+            let requestText = SpeechTextSanitizer.sanitizedForTTS(unit).trimmingCharacters(in: .whitespacesAndNewlines)
+            XCTAssertEqual(fixture.requests.filter { $0 == requestText }.count, 1)
+        }
     }
 
-    /// 验证「秒接」：预取就绪后 promote 把缓存转正为当前段——currentParagraphIndex 切到该段、
-    /// segmentsByParagraph 复用缓存（segment 数一致=没重新请求 TTS）、预取缓存清空。
+    /// Promotion must reuse the exact audio, without sending another TTS request.
     @MainActor
     func testPrefetch_PromoteReusesCacheNoRegen() async throws {
         useRegularVoiceForTest(language: "zh")
-        let doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
-        let vm = ReadAloudViewModel(document: doc)
-        defer {
-            _ = vm.stop()
-            vm.deactivate()
+        var doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
+        doc.paragraphs = Array(doc.paragraphs.prefix(2))
+        let firstText = try XCTUnwrap(doc.readableParagraphs.first?.text)
+        let fixture = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: firstText.contains(text) ? 30 : 1))
         }
+        let vm = ReadAloudViewModel(document: doc, ttsService: fixture.service())
+        defer { _ = vm.stop(); vm.deactivate(); fixture.close() }
         let readable = vm.dbgReadableIndices
-        guard readable.count >= 2 else { return XCTFail("[P] 可朗读段不足 2") }
+        XCTAssertEqual(readable.count, 2)
 
-        await vm.dbgPreloadNext(after: readable[0])
+        vm.dbgGenerate(readable[0])
+        await vm.dbgWaitGeneration()
         await vm.dbgWaitPrefetch()
         let cached = vm.dbgPrefetchedSegments
-        guard !cached.isEmpty else { return XCTFail("[P] 预取为空，无法验证转正（网络/节点问题）") }
-
+        XCTAssertFalse(cached.isEmpty)
+        let requestCount = fixture.requests.count
         vm.dbgPromote(to: readable[1])
 
-        let cur = vm.currentParagraphIndex
-        let after = vm.dbgPrefetchedIndex
+        XCTAssertEqual(vm.currentParagraphIndex, readable[1])
         let promoted = vm.dbgSegments(for: readable[1])
-        print("[EVAL][P] 转正 current=\(cur) seg1=\(promoted.count) cached=\(cached.count) prefetchedAfter=\(String(describing: after))")
-        XCTAssertEqual(cur, readable[1], "[P] 转正后当前段未切到预取段")
-        XCTAssertEqual(promoted.count, cached.count, "[P] 转正未复用预取缓存（段 segment 数≠缓存数=重新生成了 → 没省掉 gap）")
-        XCTAssertNil(after, "[P] 转正后未清空预取缓存（链式预取状态脏）")
+        XCTAssertEqual(promoted.map(\.id), cached.map(\.id))
+        XCTAssertEqual(promoted.map(\.audioData), cached.map(\.audioData))
+        XCTAssertNil(vm.dbgPrefetchedIndex)
+        await vm.dbgWaitGeneration()
+        XCTAssertEqual(fixture.requests.count, requestCount, "Promotion must not synthesize cached audio again")
     }
 
     /// 验证「真机路径」：generate 当前段完成后会自动触发预取下一段（preloadNext 接在生成链路尾部）。

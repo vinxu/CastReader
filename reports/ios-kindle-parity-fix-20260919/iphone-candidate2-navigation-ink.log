@@ -1,0 +1,275 @@
+00:27:52.575 [active] KINDLE refocus cancel-effects error reason=audio-paused Kindle returned unexpected page data.
+00:27:52.597 [active] KINDLE refocus cancel-effects error reason=audio-paused Kindle returned unexpected page data.
+00:27:53.966 [active] KINDLE refocus cancel-effects error reason=audio-paused Kindle returned unexpected page data.
+00:27:54.201 [active] KINDLE refocus cancel-effects error reason=audio-paused Kindle returned unexpected page data.
+00:27:54.511 [active] KINDLE refocus cancel-effects error reason=audio-paused Kindle returned unexpected page data.
+00:27:54.588 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:27:54.588 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:28:22.833 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:28:22.835 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:28:23.829 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:d9b17 after=px:1296x2142:e3ff9 stable=2 accepted=Y
+00:28:24.837 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:e3ff9 after=px:1296x2142:331cb stable=2 accepted=Y
+00:28:25.797 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:331cb after=px:1296x2142:bfb4d stable=2 accepted=Y
+00:28:26.759 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:bfb4d after=px:1296x2142:ed810 stable=2 accepted=Y
+00:28:27.780 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:ed810 after=px:1296x2142:bfb4d stable=2 accepted=Y
+00:28:28.807 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:bfb4d after=px:1296x2142:331cb stable=2 accepted=Y
+00:28:29.826 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:331cb after=px:1296x2142:e3ff9 stable=2 accepted=Y
+00:28:30.857 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:e3ff9 after=px:1296x2142:d9b17 stable=2 accepted=Y
+00:28:31.889 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:d9b17 after=px:1296x2142:1be36 stable=2 accepted=Y
+00:28:32.530 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:28:32.541 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:28:33.181 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:28:34.022 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:29:00.304 [active] KINDLE page turn requested next mode=朗读 resume=true
+00:29:00.829 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:1be36 after=px:1296x2142:6f97a stable=2 accepted=Y
+00:29:00.854 [active] KINDLE page turn only next old=47c3467c1be7 visibleOld=47c3467c1be7 target=ce53b2b98912 strategy=react-paired-action tried= resume=true
+00:29:00.856 [active] KINDLE manual resume scheduled mode=朗读 old=47c3467c1be7 target=ce53b2b98912 dir=next reason=manual-next epoch=2
+00:29:00.886 [active] KINDLE page turn requested next mode=朗读 resume=true
+00:29:01.393 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:6f97a after=px:1296x2142:9d247 stable=2 accepted=Y
+00:29:01.416 [active] KINDLE page turn only next old=ce53b2b98912 visibleOld=ce53b2b98912 target=ab7b9483eff2 strategy=react-paired-action tried= resume=true
+00:29:01.417 [active] KINDLE manual resume scheduled mode=朗读 old=ce53b2b98912 target=ab7b9483eff2 dir=next reason=manual-next epoch=3
+00:29:01.446 [active] KINDLE page turn requested next mode=朗读 resume=true
+00:29:01.935 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:9d247 after=px:1296x2142:3741d stable=2 accepted=Y
+00:29:01.960 [active] KINDLE page turn only next old=ab7b9483eff2 visibleOld=ab7b9483eff2 target=1525a6ae851b strategy=react-paired-action tried= resume=true
+00:29:01.960 [active] KINDLE manual resume scheduled mode=朗读 old=ab7b9483eff2 target=1525a6ae851b dir=next reason=manual-next epoch=4
+00:29:01.991 [active] KINDLE page turn requested previous mode=朗读 resume=true
+00:29:02.485 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:3741d after=px:1296x2142:9d247 stable=2 accepted=Y
+00:29:02.506 [active] KINDLE page turn only previous old=1525a6ae851b visibleOld=1525a6ae851b target=ab7b9483eff2 strategy=react-paired-action tried= resume=true
+00:29:02.507 [active] KINDLE manual resume scheduled mode=朗读 old=1525a6ae851b target=ab7b9483eff2 dir=previous reason=manual-previous epoch=5
+00:29:02.536 [active] KINDLE page turn requested previous mode=朗读 resume=true
+00:29:03.021 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:9d247 after=px:1296x2142:6f97a stable=2 accepted=Y
+00:29:03.044 [active] KINDLE page turn only previous old=ab7b9483eff2 visibleOld=ab7b9483eff2 target=ce53b2b98912 strategy=react-paired-action tried= resume=true
+00:29:03.044 [active] KINDLE manual resume scheduled mode=朗读 old=ab7b9483eff2 target=ce53b2b98912 dir=previous reason=manual-previous epoch=6
+00:29:04.785 [active] KINDLE manual resume started mode=朗读 old=ab7b9483eff2 new=ce53b2b98912 reason=manual-previous epoch=6
+00:29:04.833 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:29:35.853 [active] KINDLE read continuous armed reason=prepared-page-tail serial=1 old=ce53b2b98912 next=ab7b9483eff2 predecessor=8-0 segs=1
+00:29:38.014 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:6f97a after=px:1296x2142:9d247 stable=2 accepted=Y
+00:29:38.014 [active] KINDLE auto next turn-only old=ce53b2b98912 target=ab7b9483eff2 ok=true strategy=react-paired-action reason=read-continuous-page-turn tried=
+00:29:41.844 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:30:18.367 [active] KINDLE read continuous armed reason=prepared-page-tail serial=2 old=ab7b9483eff2 next=ce53b2b98912 predecessor=10-0 segs=1
+00:30:19.114 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:9d247 after=px:1296x2142:3741d stable=2 accepted=Y
+00:30:19.114 [active] KINDLE auto next turn-only old=ab7b9483eff2 target=1525a6ae851b ok=true strategy=react-paired-action reason=read-continuous-page-turn tried=
+00:30:22.907 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:30:43.393 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:30:43.412 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:31:11.534 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:31:11.546 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:31:12.174 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:31:12.694 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:32:01.521 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:32:13.449 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:32:53.514 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:32:54.128 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:06.131 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:06.146 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:06.777 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:07.268 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:14.251 [active] KINDLE mark draw ok id=E151CE7F animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:33:18.908 [active] KINDLE mark draw ok id=899FF0DF animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:33:23.389 [active] KINDLE mark draw ok id=97216B65 animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:33:24.399 [active] KINDLE mark draw ok id=154F0C17 animate=true p=3 result=["ok": 1, "renderer": shared-native-ink]
+00:33:27.340 [active] KINDLE explain tail-preparation begin old=1525a6ae851b remainingMs=15971
+00:33:27.881 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:3741d after=px:1296x2142:268b0 stable=2 accepted=Y
+00:33:27.881 [active] KINDLE auto next turn-only old=1525a6ae851b target=c22b5b918f32 ok=true strategy=react-paired-action reason=explain-tail-preparation tried=
+00:33:28.421 [active] KINDLE explain tail-preparation ready old=1525a6ae851b next=c22b5b918f32 elapsedMs=1080
+00:33:34.660 [active] KINDLE explain held-mark id=F178C857 rects=1
+00:33:35.717 [active] KINDLE explain held-mark id=A57B2075 rects=2
+00:33:43.100 [active] KINDLE explain held-mark id=39543605 rects=1
+00:33:43.577 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:43.803 [active] KINDLE explain auto advance begin key=1525a6ae851b visible=c22b5b918f32
+00:33:43.814 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:43.815 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:44.402 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:44.893 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:33:44.977 [active] KINDLE explain playback start reason=explain-auto-next-page key=c22b5b918f32 paras=6
+00:33:44.984 [active] KINDLE 解读 auto advance success old=1525a6ae851b new=c22b5b918f32 reason=explain-auto-next-page
+00:33:45.650 [active] KINDLE mark draw ok id=451E171A animate=true p=0 result=["renderer": shared-native-ink, "ok": 1]
+00:33:45.651 [active] KINDLE mark draw ok id=451E171A animate=true p=0 result=["duplicate": 1, "ok": 1]
+00:33:45.728 [active] KINDLE mark draw ok id=977E773E animate=true p=0 result=["renderer": shared-native-ink, "ok": 1]
+00:33:56.249 [active] KINDLE mark draw ok id=8E5F199F animate=true p=1 result=["ok": 1, "renderer": shared-native-ink]
+00:33:57.270 [active] KINDLE mark draw ok id=51A1C576 animate=true p=2 result=["ok": 1, "renderer": shared-native-ink]
+00:34:05.628 [active] KINDLE mark draw ok id=B0E3BAC9 animate=true p=3 result=["ok": 1, "renderer": shared-native-ink]
+00:34:06.688 [active] KINDLE mark draw ok id=A86987BB animate=true p=4 result=["ok": 1, "renderer": shared-native-ink]
+00:34:07.149 [active] KINDLE explain tail-preparation begin old=c22b5b918f32 remainingMs=15974
+00:34:07.700 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:268b0 after=px:1296x2142:71fed stable=2 accepted=Y
+00:34:07.700 [active] KINDLE auto next turn-only old=c22b5b918f32 target=5eb5e7317f04 ok=true strategy=react-paired-action reason=explain-tail-preparation tried=
+00:34:14.726 [active] KINDLE explain held-mark id=EA647746 rects=1
+00:34:22.429 [active] KINDLE explain tail-preparation ready old=c22b5b918f32 next=5eb5e7317f04 elapsedMs=15252
+00:34:22.906 [active] KINDLE explain held-mark id=3ECB75D7 rects=3
+00:34:23.330 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:34:25.226 [active] KINDLE explain auto advance begin key=c22b5b918f32 visible=5eb5e7317f04
+00:34:25.241 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:34:25.245 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:34:25.844 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:34:26.142 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:34:26.222 [active] KINDLE explain playback start reason=explain-auto-next-page key=5eb5e7317f04 paras=5
+00:34:26.229 [active] KINDLE 解读 auto advance success old=c22b5b918f32 new=5eb5e7317f04 reason=explain-auto-next-page
+00:34:26.877 [active] KINDLE mark draw ok id=1992C3BD animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:34:36.157 [active] KINDLE mark draw ok id=A5E3FD04 animate=true p=0 result=["renderer": shared-native-ink, "ok": 1]
+00:35:38.206 [active] KINDLE mark draw ok id=D313AC55 animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:35:39.260 [active] KINDLE mark draw ok id=3FAF14C6 animate=true p=3 result=["ok": 1, "renderer": shared-native-ink]
+00:35:40.886 [active] KINDLE explain tail-preparation begin old=5eb5e7317f04 remainingMs=15966
+00:35:41.462 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:71fed after=px:1296x2142:f82e3 stable=2 accepted=Y
+00:35:41.462 [active] KINDLE auto next turn-only old=5eb5e7317f04 target=5c51cacdde21 ok=true strategy=react-paired-action reason=explain-tail-preparation tried=
+00:35:42.004 [active] KINDLE explain tail-preparation ready old=5eb5e7317f04 next=5c51cacdde21 elapsedMs=1093
+00:35:56.626 [active] KINDLE explain held-mark id=4A933910 rects=2
+00:35:57.070 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:35:58.238 [active] KINDLE explain auto advance begin key=5eb5e7317f04 visible=5c51cacdde21
+00:35:58.254 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:35:58.259 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:35:58.829 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:35:59.217 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:35:59.296 [active] KINDLE explain playback start reason=explain-auto-next-page key=5c51cacdde21 paras=4
+00:35:59.303 [active] KINDLE 解读 auto advance success old=5eb5e7317f04 new=5c51cacdde21 reason=explain-auto-next-page
+00:35:59.959 [active] KINDLE mark draw ok id=9FED3035 animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:35:59.959 [active] KINDLE mark draw ok id=9FED3035 animate=true p=0 result=["ok": 1, "duplicate": 1]
+00:35:59.989 [active] KINDLE mark draw ok id=30C854DB animate=true p=1 result=["ok": 1, "renderer": shared-native-ink]
+00:36:17.161 [active] KINDLE page turn requested next mode=解读 resume=true
+00:36:17.213 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:17.213 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:17.236 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:17.671 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:f82e3 after=px:1296x2142:6cf7f stable=2 accepted=Y
+00:36:17.693 [active] KINDLE page turn only next old=5c51cacdde21 visibleOld=5c51cacdde21 target=c339f0d2a512 strategy=react-paired-action tried= resume=true
+00:36:17.693 [active] KINDLE manual resume scheduled mode=解读 old=5c51cacdde21 target=c339f0d2a512 dir=next reason=manual-next epoch=14
+00:36:17.723 [active] KINDLE page turn requested next mode=解读 resume=true
+00:36:17.752 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:17.754 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:17.754 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:17.774 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:18.212 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:6cf7f after=px:1296x2142:dc330 stable=2 accepted=Y
+00:36:18.234 [active] KINDLE page turn only next old=c339f0d2a512 visibleOld=c339f0d2a512 target=250cdd8a0439 strategy=react-paired-action tried= resume=true
+00:36:18.234 [active] KINDLE manual resume scheduled mode=解读 old=c339f0d2a512 target=250cdd8a0439 dir=next reason=manual-next epoch=15
+00:36:18.265 [active] KINDLE page turn requested next mode=解读 resume=true
+00:36:18.292 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:18.294 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:18.295 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:18.316 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:18.761 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:dc330 after=px:1296x2142:47d4c stable=2 accepted=Y
+00:36:18.786 [active] KINDLE page turn only next old=250cdd8a0439 visibleOld=250cdd8a0439 target=17d7f477ea06 strategy=react-paired-action tried= resume=true
+00:36:18.787 [active] KINDLE manual resume scheduled mode=解读 old=250cdd8a0439 target=17d7f477ea06 dir=next reason=manual-next epoch=16
+00:36:18.818 [active] KINDLE page turn requested previous mode=解读 resume=true
+00:36:18.849 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:18.849 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:18.850 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:18.870 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:19.302 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:47d4c after=px:1296x2142:dc330 stable=2 accepted=Y
+00:36:19.325 [active] KINDLE page turn only previous old=17d7f477ea06 visibleOld=17d7f477ea06 target=250cdd8a0439 strategy=react-paired-action tried= resume=true
+00:36:19.325 [active] KINDLE manual resume scheduled mode=解读 old=17d7f477ea06 target=250cdd8a0439 dir=previous reason=manual-previous epoch=17
+00:36:19.356 [active] KINDLE page turn requested previous mode=解读 resume=true
+00:36:19.385 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:19.385 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:19.386 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:19.403 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:19.843 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:dc330 after=px:1296x2142:6cf7f stable=2 accepted=Y
+00:36:19.866 [active] KINDLE page turn only previous old=250cdd8a0439 visibleOld=250cdd8a0439 target=c339f0d2a512 strategy=react-paired-action tried= resume=true
+00:36:19.867 [active] KINDLE manual resume scheduled mode=解读 old=250cdd8a0439 target=c339f0d2a512 dir=previous reason=manual-previous epoch=18
+00:36:19.892 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:20.780 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:20.790 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:20.885 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:21.307 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:21.685 [active] KINDLE explain playback start reason=manual-previous-resume key=c339f0d2a512 paras=7
+00:36:21.692 [active] KINDLE manual resume started mode=解读 old=250cdd8a0439 new=c339f0d2a512 reason=manual-previous epoch=18
+00:36:22.317 [active] KINDLE mark draw ok id=6E8EA640 animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:36:30.677 [active] KINDLE mark draw ok id=CCE84B23 animate=true p=1 result=["ok": 1, "renderer": shared-native-ink]
+00:36:31.738 [active] KINDLE mark draw ok id=D9C13DB6 animate=true p=2 result=["ok": 1, "renderer": shared-native-ink]
+00:36:37.838 [active] KINDLE mark draw ok id=F328F168 animate=true p=3 result=["renderer": shared-native-ink, "ok": 1]
+00:36:42.058 [active] KINDLE explain tail-preparation begin old=c339f0d2a512 remainingMs=15987
+00:36:42.608 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:6cf7f after=px:1296x2142:dc330 stable=2 accepted=Y
+00:36:42.609 [active] KINDLE auto next turn-only old=c339f0d2a512 target=250cdd8a0439 ok=true strategy=react-paired-action reason=explain-tail-preparation tried=
+00:36:43.169 [active] KINDLE explain tail-preparation ready old=c339f0d2a512 next=250cdd8a0439 elapsedMs=1110
+00:36:43.875 [active] KINDLE explain held-mark id=AE7568D1 rects=3
+00:36:44.928 [active] KINDLE explain held-mark id=8F1EF8FA rects=3
+00:36:51.548 [active] KINDLE explain held-mark id=E0DBBC7B rects=1
+00:36:58.128 [active] KINDLE explain held-mark id=301645B6 rects=2
+00:36:58.605 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:59.834 [active] KINDLE explain auto advance begin key=c339f0d2a512 visible=250cdd8a0439
+00:36:59.848 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:36:59.851 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:00.436 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:00.730 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:00.822 [active] KINDLE explain playback start reason=explain-auto-next-page key=250cdd8a0439 paras=3
+00:37:00.830 [active] KINDLE 解读 auto advance success old=c339f0d2a512 new=250cdd8a0439 reason=explain-auto-next-page
+00:37:00.906 [active] KINDLE mark draw ok id=90EBD210 animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:37:25.129 [active] KINDLE mark draw ok id=B2009268 animate=true p=1 result=["renderer": shared-native-ink, "ok": 1]
+00:37:26.159 [active] KINDLE mark draw ok id=204296C6 animate=true p=2 result=["renderer": shared-native-ink, "ok": 1]
+00:37:30.417 [active] KINDLE explain tail-preparation begin old=250cdd8a0439 remainingMs=15995
+00:37:30.993 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:dc330 after=px:1296x2142:47d4c stable=2 accepted=Y
+00:37:30.994 [active] KINDLE auto next turn-only old=250cdd8a0439 target=17d7f477ea06 ok=true strategy=react-paired-action reason=explain-tail-preparation tried=
+00:37:36.115 [active] KINDLE explain held-mark id=D2ED53EB rects=2
+00:37:36.873 [active] KINDLE explain tail-preparation ready old=250cdd8a0439 next=17d7f477ea06 elapsedMs=6429
+00:37:46.315 [active] KINDLE explain held-mark id=217058E9 rects=2
+00:37:46.737 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:48.188 [active] KINDLE explain auto advance begin key=250cdd8a0439 visible=17d7f477ea06
+00:37:48.202 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:48.206 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:48.791 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:49.108 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:49.191 [active] KINDLE explain playback start reason=explain-auto-next-page key=17d7f477ea06 paras=3
+00:37:49.199 [active] KINDLE 解读 auto advance success old=250cdd8a0439 new=17d7f477ea06 reason=explain-auto-next-page
+00:37:49.870 [active] KINDLE mark draw ok id=09EAAEB8 animate=true p=0 result=["renderer": shared-native-ink, "ok": 1]
+00:37:55.971 [active] KINDLE mark draw ok id=8FB5587D animate=true p=0 result=["renderer": shared-native-ink, "ok": 1]
+00:37:57.764 [active] KINDLE page turn requested next mode=解读 resume=true
+00:37:57.812 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:57.812 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:57.838 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:58.292 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:47d4c after=px:1296x2142:9db99 stable=2 accepted=Y
+00:37:58.313 [active] KINDLE page turn only next old=17d7f477ea06 visibleOld=17d7f477ea06 target=91f4e21ac40d strategy=react-paired-action tried= resume=true
+00:37:58.314 [active] KINDLE manual resume scheduled mode=解读 old=17d7f477ea06 target=91f4e21ac40d dir=next reason=manual-next epoch=21
+00:37:58.343 [active] KINDLE page turn requested previous mode=解读 resume=true
+00:37:58.372 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:58.373 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:58.376 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:58.402 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:58.838 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:9db99 after=px:1296x2142:47d4c stable=2 accepted=Y
+00:37:58.861 [active] KINDLE page turn only previous old=91f4e21ac40d visibleOld=91f4e21ac40d target=17d7f477ea06 strategy=react-paired-action tried= resume=true
+00:37:58.861 [active] KINDLE manual resume scheduled mode=解读 old=91f4e21ac40d target=17d7f477ea06 dir=previous reason=manual-previous epoch=22
+00:37:58.891 [active] KINDLE page turn requested next mode=解读 resume=true
+00:37:58.918 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:58.919 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:58.921 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:58.938 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:59.375 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:47d4c after=px:1296x2142:9db99 stable=2 accepted=Y
+00:37:59.398 [active] KINDLE page turn only next old=17d7f477ea06 visibleOld=17d7f477ea06 target=91f4e21ac40d strategy=react-paired-action tried= resume=true
+00:37:59.398 [active] KINDLE manual resume scheduled mode=解读 old=17d7f477ea06 target=91f4e21ac40d dir=next reason=manual-next epoch=23
+00:37:59.428 [active] KINDLE page turn requested previous mode=解读 resume=true
+00:37:59.458 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:59.458 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:59.459 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:59.480 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:37:59.913 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:9db99 after=px:1296x2142:47d4c stable=2 accepted=Y
+00:37:59.920 [active] KINDLE page turn only previous old=91f4e21ac40d visibleOld=91f4e21ac40d target=17d7f477ea06 strategy=react-paired-action tried= resume=true
+00:37:59.921 [active] KINDLE manual resume scheduled mode=解读 old=91f4e21ac40d target=17d7f477ea06 dir=previous reason=manual-previous epoch=24
+00:37:59.938 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:00.865 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:00.868 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:00.942 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:01.391 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:01.696 [active] KINDLE explain playback start reason=manual-previous-resume key=17d7f477ea06 paras=3
+00:38:01.697 [active] KINDLE manual resume started mode=解读 old=91f4e21ac40d new=17d7f477ea06 reason=manual-previous epoch=24
+00:38:13.766 [active] KINDLE mark draw ok id=315C6B9C animate=true p=0 result=["renderer": shared-native-ink, "ok": 1]
+00:38:23.465 [active] KINDLE mark draw ok id=52AE3D4E animate=true p=1 result=["ok": 1, "renderer": shared-native-ink]
+00:38:24.520 [active] KINDLE mark draw ok id=384F1ED0 animate=true p=2 result=["ok": 1, "renderer": shared-native-ink]
+00:38:24.858 [active] KINDLE explain tail-preparation begin old=17d7f477ea06 remainingMs=15998
+00:38:25.435 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:47d4c after=px:1296x2142:9db99 stable=2 accepted=Y
+00:38:25.436 [active] KINDLE auto next turn-only old=17d7f477ea06 target=91f4e21ac40d ok=true strategy=react-paired-action reason=explain-tail-preparation tried=
+00:38:32.638 [active] KINDLE explain held-mark id=C0B5F3E5 rects=3
+00:38:32.656 [active] KINDLE explain tail-preparation ready old=17d7f477ea06 next=91f4e21ac40d elapsedMs=7768
+00:38:40.768 [active] KINDLE explain held-mark id=6253656A rects=2
+00:38:41.225 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:42.647 [active] KINDLE explain auto advance begin key=17d7f477ea06 visible=91f4e21ac40d
+00:38:42.663 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:42.664 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:43.260 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:43.562 [active] KINDLE refocus cancel-effects reason=audio-paused cancelled=0
+00:38:43.651 [active] KINDLE explain playback start reason=explain-auto-next-page key=91f4e21ac40d paras=3
+00:38:43.659 [active] KINDLE 解读 auto advance success old=17d7f477ea06 new=91f4e21ac40d reason=explain-auto-next-page
+00:38:43.757 [active] KINDLE mark draw ok id=91C37254 animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:38:52.676 [active] KINDLE mark draw ok id=1F04C8E2 animate=true p=0 result=["renderer": shared-native-ink, "ok": 1]
+00:39:00.916 [active] KINDLE mark draw ok id=DBF47790 animate=true p=0 result=["ok": 1, "renderer": shared-native-ink]
+00:39:01.986 [active] KINDLE mark draw ok id=6ED4B1FA animate=true p=1 result=["renderer": shared-native-ink, "ok": 1]
+00:39:04.087 [active] KINDLE explain tail-preparation begin old=91f4e21ac40d remainingMs=15985
+00:39:04.636 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2142:9db99 after=px:1296x2142:cb06e stable=2 accepted=Y
+00:39:04.636 [active] KINDLE auto next turn-only old=91f4e21ac40d target=4e7137bbc4af ok=true strategy=react-paired-action reason=explain-tail-preparation tried=
+00:39:09.763 [active] KINDLE explain tail-preparation ready old=91f4e21ac40d next=4e7137bbc4af elapsedMs=5675
+00:39:11.004 [active] KINDLE explain held-mark id=441C36E2 rects=4

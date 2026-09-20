@@ -1,0 +1,11 @@
+09:06:24.541 WEREAD page commit prior= next=17ce3523 confirmed=false epoch=16 cols= geometry=fillText glyphs=241 paras=3
+09:08:44.679 WEREAD page turn action=semantic-next fingerprint=17ce3523
+09:08:44.854 WEREAD page commit prior=17ce3523 next=aa78c6de confirmed=true epoch=17 cols= geometry=fillText glyphs=264 paras=4
+09:09:29.958 WEREAD page turn action=semantic-next fingerprint=aa78c6de
+09:09:30.218 WEREAD page commit prior=aa78c6de next=841df4bd confirmed=true epoch=18 cols= geometry=fillText glyphs=253 paras=4
+09:10:11.518 WEREAD page turn action=semantic-next fingerprint=841df4bd
+09:10:11.701 WEREAD page commit prior=841df4bd next=61c70bdd confirmed=true epoch=19 cols= geometry=fillText glyphs=116 paras=5
+09:10:11.715 WEREAD continuous committed serial=3 next=61c70bdd
+09:10:32.457 WEREAD page turn action=semantic-next fingerprint=61c70bdd
+09:10:33.141 READ document finished para=4 readable=4
+09:10:36.758 WEREAD page turn confirmation timeout no-retry

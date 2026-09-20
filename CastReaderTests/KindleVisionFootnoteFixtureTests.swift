@@ -64,6 +64,32 @@ final class KindleVisionFootnoteFixtureTests: XCTestCase {
         assertIdentity(fixture)
     }
 
+    @MainActor
+    func testReportedAndroidPageThroughProductionVisionSkipsEntirePairedNotes() async throws {
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "kindle-paired-footnotes-reported-page", withExtension: "png"))
+        let image = try XCTUnwrap(UIImage(data: Data(contentsOf: url)))
+        let document = try await OCRService.shared.recognizeKindle(image: image,
+            profile: XCTUnwrap(KindleLanguageContract.profile(language: "en")), title: "Reported footnotes",
+            paragraphStrategy: KindleLivePageOCRContract.isolatedPageStrategy)
+        XCTAssertEqual(document.paragraphs.count, 7)
+        let page = KindleFootnoteSpeech.prepare(document: document)
+        XCTAssertTrue(document.paragraphs[3].text.contains("declination"))
+        XCTAssertTrue(document.paragraphs[4].text.contains("Inclination"))
+        XCTAssertEqual(page.paragraphs[3].spokenText, "")
+        XCTAssertEqual(page.paragraphs[4].spokenText, "")
+        XCTAssertFalse(page.paragraphs[2].spokenText.contains("|2|"))
+        XCTAssertFalse(page.paragraphs[2].spokenText.contains("|3|"))
+        for index in [0, 1, 5, 6] {
+            XCTAssertEqual(page.paragraphs[index].spokenParagraph, document.paragraphs[index])
+        }
+        for paragraph in page.paragraphs {
+            let chars = Array(paragraph.sourceParagraph.text)
+            XCTAssertEqual(String(paragraph.spokenCharacterSourceOffsets.map { chars[$0] }), paragraph.spokenText)
+        }
+        XCTAssertEqual(KindleFootnoteSpeech.prepare(document: document, skipReferences: false).paragraphs.map(\.spokenParagraph), document.paragraphs)
+        print("PARITY_FIXED actualVisionPairedNotesRemoved=2 sourceParagraphs=7 unaffectedNarrative=4")
+    }
+
     private struct Fixture {
         let raw: ReadingDocument
         let rebuilt: ReadingDocument

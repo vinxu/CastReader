@@ -1,0 +1,155 @@
+2026-09-18 23:25:35.332 CastReader[21193:3997505] CRDBG generate para=0 lang=zh voice=vl_d1efb23a380bdaa2f6b0 epoch=1 web=N
+2026-09-18 23:25:35.468 CastReader[21193:3997505] CRDBG generate request begin para=0 voice=vl_d1efb23a380bdaa2f6b0 epoch=1
+[TTSRoute] language=zh voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-18 23:26:04.344 CastReader[21193:3997505] CRDBG voice switch begin lang=zh from=vl_d1efb23a380bdaa2f6b0 to=zf_001 para=0 autoPlay=N
+2026-09-18 23:26:04.346 CastReader[21193:3997505] CRDBG generate para=0 lang=zh voice=zf_001 epoch=2 web=N
+2026-09-18 23:26:04.347 CastReader[21193:3997505] CRDBG generate request begin para=0 voice=zf_001 epoch=2
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:06.084 CastReader[21193:3997971] CR_TTS_TRANSPORT response request=CC4BBE82-3589-4564-BF7D-8DACC28B20DF host=api.castreader.cn status=200 bytes=66186 elapsedMs=1732 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:20.434 CastReader[21193:3997978] CR_TTS_TRANSPORT response request=1A71BAB2-8CAC-4D23-896F-1803BF7A3142 host=api.castreader.cn status=200 bytes=102026 elapsedMs=1629 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:21.947 CastReader[21193:3997978] CR_TTS_TRANSPORT response request=FC9DA0E4-6D83-473A-8F93-0B5651274F4B host=api.castreader.cn status=200 bytes=114314 elapsedMs=1504 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:22.699 CastReader[21193:3998061] CR_TTS_TRANSPORT response request=AD63DAAA-0096-41D1-B448-883F4780ED1D host=api.castreader.cn status=200 bytes=56970 elapsedMs=678 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:23.893 CastReader[21193:3998061] CR_TTS_TRANSPORT response request=D1A0D982-3640-46EE-B7D9-BC012DDC12A3 host=api.castreader.cn status=200 bytes=109706 elapsedMs=1182 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:24.505 CastReader[21193:3997976] CR_TTS_TRANSPORT response request=E991B28B-AA0E-474F-A79F-5AAB99E4E3AB host=api.castreader.cn status=200 bytes=76426 elapsedMs=589 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:25.593 CastReader[21193:3997976] CR_TTS_TRANSPORT response request=0B1CD535-5DAB-417B-B6C9-B6AA9D043610 host=api.castreader.cn status=200 bytes=112266 elapsedMs=1079 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:32.973 CastReader[21193:3998356] CR_TTS_TRANSPORT response request=28F2148B-0B36-4969-BBC7-BCD5B346F85D host=api.castreader.cn status=200 bytes=83594 elapsedMs=550 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:33.531 CastReader[21193:3998357] CR_TTS_TRANSPORT response request=9CC8C2AF-E63F-4147-9B6F-9D399EA087CE host=api.castreader.cn status=200 bytes=93322 elapsedMs=555 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:34.551 CastReader[21193:3997971] CR_TTS_TRANSPORT response request=B4269082-8C08-4E86-8FE6-F36B4796F4E8 host=api.castreader.cn status=200 bytes=86666 elapsedMs=1010 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:26:51.676 CastReader[21193:3998061] CR_TTS_TRANSPORT response request=30B4A197-265E-4F76-A966-0C8A80BCE6F6 host=api.castreader.cn status=200 bytes=143498 elapsedMs=1591 fallback=false
+[QuickRead] extract-plan START base=https://quickread.castreader.cn source=castreader://doc/D561576D-BD96-4B6C-AE88-1950D4B00DF5 scenario=general depth=standard lang=auto paras=3 chars=237 bytes=2361
+[QuickRead] SSE stage=extract
+[QuickRead] SSE block0 job=qrc_RrgOcTBonmPY6JIH-uJ4tRq8wY1h9tFn total_hint=0 marks=3 text=97
+[QuickRead] SSE done job=qrc_RrgOcTBonmPY6JIH-uJ4tRq8wY1h9tFn total=2 model=deepseek-v4-pro
+[QuickRead] extract-plan DONE job=qrc_RrgOcTBonmPY6JIH-uJ4tRq8wY1h9tFn total=2 model=deepseek-v4-pro route=account elapsed=3.93s
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:30:15.694 CastReader[21193:4000006] CR_TTS_TRANSPORT response request=9EE125CB-6851-48F1-BD1B-ABA47777676E host=api.castreader.cn status=200 bytes=195722 elapsedMs=2285 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:30:18.301 CastReader[21193:3999532] CR_TTS_TRANSPORT response request=2620EA49-8DDA-43F3-98E2-33B7DB416064 host=api.castreader.cn status=200 bytes=243338 elapsedMs=2595 fallback=false
+[QuickRead] compose-block[0] ts=97 dur=20.6 START bytes=6358
+[QuickRead] compose-block[0] ts=97 dur=20.6 DONE marks=3 text=97 elapsed=0.04s
+[QuickRead] extract-block[1] START bytes=63
+[QuickRead] extract-block[1] DONE marks=3 text=84 elapsed=3.15s
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:30:22.129 CastReader[21193:4000006] CR_TTS_TRANSPORT response request=D0A4F55A-EC68-4EA2-85BA-9E525C7431EC host=api.castreader.cn status=200 bytes=80522 elapsedMs=562 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:30:23.092 CastReader[21193:4000079] CR_TTS_TRANSPORT response request=2723D01E-7A43-4F7F-89AB-F0AD04D08081 host=api.castreader.cn status=200 bytes=95882 elapsedMs=961 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:30:23.853 CastReader[21193:4000078] CR_TTS_TRANSPORT response request=2FF52288-5F9A-4105-92AB-35BEF20AC220 host=api.castreader.cn status=200 bytes=75402 elapsedMs=757 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:30:25.156 CastReader[21193:4000006] CR_TTS_TRANSPORT response request=C963C10C-2E66-4FEB-8D1C-46DA65F99AB3 host=api.castreader.cn status=200 bytes=142474 elapsedMs=1300 fallback=false
+[QuickRead] compose-block[1] ts=84 dur=18.5 START bytes=4359
+[QuickRead] compose-block[1] ts=84 dur=18.5 DONE marks=3 text=84 elapsed=0.03s
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[QuickRead] compose-block[1] ts=84 dur=18.8 START bytes=4367
+[QuickRead] compose-block[1] ts=84 dur=18.8 DONE marks=3 text=84 elapsed=0.08s
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[QuickRead] compose-block[0] ts=97 dur=21.6 START bytes=6220
+[QuickRead] compose-block[0] ts=97 dur=21.6 DONE marks=3 text=97 elapsed=0.04s
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[QuickRead] compose-block[1] ts=84 dur=20.5 START bytes=4333
+[QuickRead] compose-block[1] ts=84 dur=20.5 DONE marks=3 text=84 elapsed=0.03s
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[QuickRead] compose-block[0] ts=97 dur=21.6 START bytes=6148
+[QuickRead] compose-block[0] ts=97 dur=21.6 DONE marks=3 text=97 elapsed=0.04s
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:42:46.783 CastReader[21193:4006191] CR_TTS_TRANSPORT response request=8DAC30AF-F068-44E4-822A-6039D3D058B4 host=api.castreader.cn status=200 bytes=80522 elapsedMs=531 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:42:47.481 CastReader[21193:4006311] CR_TTS_TRANSPORT response request=1DC564CC-3A9B-4F2C-82EB-BC27AD1FAA64 host=api.castreader.cn status=200 bytes=95882 elapsedMs=689 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:42:48.160 CastReader[21193:4006191] CR_TTS_TRANSPORT response request=6141C5AE-2D2A-4B84-8380-73BECED4BBEA host=api.castreader.cn status=200 bytes=75402 elapsedMs=670 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:42:49.645 CastReader[21193:4006191] CR_TTS_TRANSPORT response request=617A41EB-9FE8-4A4D-9519-91ADE1D40DCB host=api.castreader.cn status=200 bytes=142474 elapsedMs=1476 fallback=false
+[QuickRead] compose-block[1] ts=84 dur=18.5 START bytes=4359
+[QuickRead] compose-block[1] ts=84 dur=18.5 DONE marks=3 text=84 elapsed=0.13s
+2026-09-18 23:52:03.031 CastReader[21322:4012326] CRDBG generate para=2 lang=zh voice=zf_001 epoch=1 web=N
+2026-09-18 23:52:03.092 CastReader[21322:4012326] CRDBG generate request begin para=2 voice=zf_001 epoch=1
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:04.996 CastReader[21322:4012551] CR_TTS_TRANSPORT response request=E8D24ABD-0D09-4BFE-BEEC-434FBB2BD8B5 host=api.castreader.cn status=200 bytes=83594 elapsedMs=1900 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:07.337 CastReader[21322:4012551] CR_TTS_TRANSPORT response request=DF31D38E-B3B3-49CF-85C4-10A3B09CC172 host=api.castreader.cn status=200 bytes=93322 elapsedMs=2306 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:08.488 CastReader[21322:4012554] CR_TTS_TRANSPORT response request=3E493589-CFEF-436D-A08D-BB1A7AABC85A host=api.castreader.cn status=200 bytes=86666 elapsedMs=1124 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:11.592 CastReader[21322:4012551] CR_TTS_TRANSPORT response request=268BD6A2-EE7B-4AEE-AB87-0F5BCA031358 host=api.castreader.cn status=200 bytes=143498 elapsedMs=3076 fallback=false
+2026-09-18 23:52:19.963 CastReader[21322:4012326] CRDBG generate para=0 lang=zh voice=zf_001 epoch=2 web=N
+2026-09-18 23:52:20.004 CastReader[21322:4012326] CRDBG generate request begin para=0 voice=zf_001 epoch=2
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:20.401 CastReader[21322:4012551] CR_TTS_TRANSPORT response request=0D2798C3-0371-4C3E-A462-C5A7DBA0D69C host=api.castreader.cn status=200 bytes=66186 elapsedMs=383 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:21.279 CastReader[21322:4012551] CR_TTS_TRANSPORT response request=33118BFF-CE20-4B3C-BDE8-E78396E31375 host=api.castreader.cn status=200 bytes=102026 elapsedMs=819 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:22.278 CastReader[21322:4012551] CR_TTS_TRANSPORT response request=4D4AD9BB-D995-4A06-8BFB-0E327FEE23D5 host=api.castreader.cn status=200 bytes=114314 elapsedMs=991 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:22.796 CastReader[21322:4012551] CR_TTS_TRANSPORT response request=158F5A9A-86B0-4953-8962-54A528472B50 host=api.castreader.cn status=200 bytes=56970 elapsedMs=479 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:23.807 CastReader[21322:4012799] CR_TTS_TRANSPORT response request=902D3DFB-BBE3-409B-8652-D6A928FE1882 host=api.castreader.cn status=200 bytes=109706 elapsedMs=987 fallback=false
+2026-09-18 23:52:25.411 CastReader[21322:4012553] CR_TTS_TRANSPORT response request=AE5DCC8B-02FB-4036-B73F-515A519D81E9 host=api.castreader.cn status=200 bytes=76426 elapsedMs=1600 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:27.840 CastReader[21322:4012553] CR_TTS_TRANSPORT response request=6FAE976B-054A-40F4-96EA-F768440B4444 host=api.castreader.cn status=200 bytes=112266 elapsedMs=2418 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:34.531 CastReader[21322:4013011] CR_TTS_TRANSPORT response request=49D7E141-2222-43C3-B484-D245EA476496 host=api.castreader.cn status=200 bytes=83594 elapsedMs=419 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:35.213 CastReader[21322:4012780] CR_TTS_TRANSPORT response request=528515FD-CD04-4B33-B90A-9E60D5D38E73 host=api.castreader.cn status=200 bytes=93322 elapsedMs=671 fallback=false
+[TTSRoute] language=zh voice=zf_001 clone=N
+2026-09-18 23:52:36.416 CastReader[21322:4012780] CR_TTS_TRANSPORT response request=E7C50187-1E4E-4D49-AD62-E35CF4AABE79 host=api.castreader.cn status=200 bytes=86666 elapsedMs=1192 fallback=false
+2026-09-18 23:52:42.495 CastReader[21322:4012326] CRDBG voice switch begin lang=zh from=zf_001 to=vl_b4bb75aa2d3e56fd90a2 para=1 autoPlay=Y
+2026-09-18 23:52:42.500 CastReader[21322:4012326] CRDBG generate para=1 lang=zh voice=vl_b4bb75aa2d3e56fd90a2 epoch=3 web=N
+2026-09-18 23:52:42.505 CastReader[21322:4012326] CRDBG generate request begin para=1 voice=vl_b4bb75aa2d3e56fd90a2 epoch=3
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+2026-09-18 23:53:12.950 CastReader[21322:4012326] CRDBG generate para=0 lang=zh voice=vl_b4bb75aa2d3e56fd90a2 epoch=4 web=N
+2026-09-18 23:53:12.979 CastReader[21322:4012326] CRDBG generate request begin para=0 voice=vl_b4bb75aa2d3e56fd90a2 epoch=4
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+[TTSRoute] language=zh voice=vl_b4bb75aa2d3e56fd90a2 clone=Y
+2026-09-18 23:53:47.565 CastReader[21322:4012326] CRDBG voice switch begin lang=zh from=vl_b4bb75aa2d3e56fd90a2 to=vc_63a448ca35794f57b0aea0e189a68cb3 para=1 autoPlay=Y
+2026-09-18 23:53:47.571 CastReader[21322:4012326] CRDBG generate para=1 lang=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 epoch=5 web=N
+2026-09-18 23:53:47.604 CastReader[21322:4012326] CRDBG generate request begin para=1 voice=vc_63a448ca35794f57b0aea0e189a68cb3 epoch=5
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+2026-09-18 23:54:04.396 CastReader[21322:4012326] CRDBG generate para=0 lang=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 epoch=6 web=N
+2026-09-18 23:54:04.422 CastReader[21322:4012326] CRDBG generate request begin para=0 voice=vc_63a448ca35794f57b0aea0e189a68cb3 epoch=6
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
+[TTSRoute] language=zh voice=vc_63a448ca35794f57b0aea0e189a68cb3 clone=Y
