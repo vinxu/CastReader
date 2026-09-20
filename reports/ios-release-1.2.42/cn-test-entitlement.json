@@ -1,0 +1,11 @@
+{
+  "id": "ios1242-cn-test-20260920",
+  "startUTC": "2026-09-20T06:06:35.229583",
+  "expiresUTC": "2026-09-21T06:06:35.229583",
+  "amount": 0,
+  "provider": "manual",
+  "matchesUser": true,
+  "autoExpires": true,
+  "preservedExistingSubscriptions": 3,
+  "preservedExistingUsage": true
+}

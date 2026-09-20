@@ -1,0 +1,1188 @@
+14:43:36.555 WEREAD viewport create frame=-40,0,511,715 cssCompact=Y pagePadding=50
+14:43:36.558 WEREAD viewport geometry surface=430x715 layoutScale=1.19
+14:43:37.039 WEREAD response status=200 url=https://weread.qq.com/web/reader/14932810813abbb8bg01249f?wtheme=white
+14:43:37.292 WEREAD toc loaded count=28 uids=28 source=transient-initial-state
+14:43:41.070 WEREAD preload invalidated reason=non-text-page preserve=N
+14:43:41.072 WEREAD explain preload invalidated reason=non-text-page
+14:43:41.073 WEREAD non-text surface cleared-stale-page=false
+14:43:52.196 WEREAD entry retained usable cover/appearance without text
+14:44:25.157 WEREAD opening playback requested
+14:44:25.163 WEREAD opening probe kind=cover reason=visible-flyleaf identity=b81cd8ca fingerprint= extracted=0
+14:44:25.826 WEREAD opening advance accepted=true
+14:44:26.153 WEREAD opening probe kind=cover reason=visible-flyleaf identity=217be5cb fingerprint= extracted=0
+14:44:26.395 WEREAD preload invalidated reason=non-text-page preserve=N
+14:44:26.397 WEREAD explain preload invalidated reason=non-text-page
+14:44:26.398 WEREAD non-text surface cleared-stale-page=false
+14:44:26.807 WEREAD opening advance accepted=true
+14:44:27.141 WEREAD opening probe kind=reading reason=- identity=- fingerprint= extracted=0
+14:44:27.504 WEREAD viewport report left=0.137 right=0.867 native=430x715
+14:44:27.528 WEREAD page commit prior= next=5ee770d8 confirmed=false epoch=1 cols= geometry=fillText glyphs=93 paras=8
+14:44:27.550 WEREAD preload unavailable source=5ee770d8 reason=chapter-end-or-no-following-text geometry=fillText layouts=3 layout=39p/2903c page=93c
+14:44:27.791 WEREAD opening probe kind=reading reason=- identity=- fingerprint=5ee770d8 extracted=1
+14:44:29.352 WEREAD initial surface stable autoplay=Y fingerprint=5ee770d8
+14:44:29.385 WEREAD opening playback ready=true
+14:44:29.387 AUDIO session claimed owner=readAloud gen=5
+14:44:29.397 READ generate start para=0 epoch=1 chars=4
+14:44:29.398 AUDIO producer expected=Y owner=readAloud gen=5 segment=nil
+14:44:29.432 TTS part begin para=0 part=0 request=5DC903D1-15AD-468C-B21B-BD4F99C32AE3 priority=interactive
+14:44:29.433 TTS schedule dispatch request=5DC903D1-15AD-468C-B21B-BD4F99C32AE3 priority=interactive queueMs=0 active=1 pending=0
+14:44:29.861 TTS transport response request=5DC903D1-15AD-468C-B21B-BD4F99C32AE3 host=api.castreader.cn status=200 bytes=30346 elapsedMs=427 fallback=false
+14:44:29.864 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:44:29.865 AUDIO stage segment=0-0 index=0/1 duration=1.42
+14:44:29.902 READ generate done para=0 epoch=1 segs=1
+14:44:29.903 READ prefetch start para=1 epoch=1 chars=6 streaming=Y
+14:44:29.926 TTS part begin para=1 part=0 request=0F9ECDC6-4725-45F3-8932-C80BE78BA532 priority=readAhead
+14:44:29.927 AUDIO ready segment=0-0 duration=1.42 auto=Y
+14:44:29.927 TTS schedule dispatch request=0F9ECDC6-4725-45F3-8932-C80BE78BA532 priority=readAhead queueMs=0 active=1 pending=0
+14:44:29.927 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:44:29.952 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:44:30.298 TTS transport response request=0F9ECDC6-4725-45F3-8932-C80BE78BA532 host=api.castreader.cn status=200 bytes=35978 elapsedMs=370 fallback=false
+14:44:30.306 READ prefetch playable para=1 seg=0 buffered=1
+14:44:30.306 READ prefetch done para=1 epoch=1 segs=1 promoted=false
+14:44:30.306 READ prefetch start para=2 epoch=1 chars=10 streaming=Y
+14:44:30.307 TTS part begin para=2 part=0 request=7B63C352-397B-40D0-BCCD-20F3141F1E74 priority=readAhead
+14:44:30.307 TTS schedule dispatch request=7B63C352-397B-40D0-BCCD-20F3141F1E74 priority=readAhead queueMs=0 active=1 pending=0
+14:44:30.619 TTS transport response request=7B63C352-397B-40D0-BCCD-20F3141F1E74 host=api.castreader.cn status=200 bytes=38538 elapsedMs=311 fallback=false
+14:44:30.627 READ prefetch playable para=2 seg=0 buffered=1
+14:44:30.628 READ prefetch done para=2 epoch=1 segs=1 promoted=false
+14:44:30.628 READ prefetch start para=3 epoch=1 chars=5 streaming=Y
+14:44:30.629 TTS part begin para=3 part=0 request=C087E94F-586F-4DA1-8CD8-4C53B2FA28BE priority=readAhead
+14:44:30.629 TTS schedule dispatch request=C087E94F-586F-4DA1-8CD8-4C53B2FA28BE priority=readAhead queueMs=0 active=1 pending=0
+14:44:30.857 TTS transport response request=C087E94F-586F-4DA1-8CD8-4C53B2FA28BE host=api.castreader.cn status=200 bytes=30346 elapsedMs=227 fallback=false
+14:44:30.865 READ prefetch playable para=3 seg=0 buffered=1
+14:44:30.865 READ prefetch done para=3 epoch=1 segs=1 promoted=false
+14:44:30.866 READ prefetch start para=4 epoch=1 chars=15 streaming=Y
+14:44:30.867 TTS part begin para=4 part=0 request=56B13A58-4672-4782-A819-9698579FF067 priority=readAhead
+14:44:30.867 TTS schedule dispatch request=56B13A58-4672-4782-A819-9698579FF067 priority=readAhead queueMs=0 active=1 pending=0
+14:44:31.171 AUDIO item finished segment=0-0 index=0/1
+14:44:31.171 AUDIO queue complete segment=0-0 queue=1
+14:44:31.171 READ completion accepted para=0 status=ready
+14:44:31.172 READ advance from=0 readable=8 status=ready prefetching=- prefetched=1
+14:44:31.182 READ prefetch promote para=1 segs=1
+14:44:31.183 AUDIO stage segment=1-0 index=0/1 duration=1.68
+14:44:31.184 AUDIO stage reused segment=1-0
+14:44:31.232 AUDIO ready segment=1-0 duration=1.68 auto=Y
+14:44:31.244 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-0
+14:44:31.260 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-0
+14:44:31.583 TTS transport response request=56B13A58-4672-4782-A819-9698579FF067 host=api.castreader.cn status=200 bytes=73354 elapsedMs=715 fallback=false
+14:44:31.597 READ prefetch playable para=4 seg=0 buffered=1
+14:44:31.601 READ prefetch done para=4 epoch=1 segs=1 promoted=false
+14:44:31.601 READ prefetch start para=5 epoch=1 chars=16 streaming=Y
+14:44:31.602 TTS part begin para=5 part=0 request=C7E256D1-A81C-4B4B-805E-165BD6CFFD71 priority=readAhead
+14:44:31.602 TTS schedule dispatch request=C7E256D1-A81C-4B4B-805E-165BD6CFFD71 priority=readAhead queueMs=0 active=1 pending=0
+14:44:32.680 AUDIO item finished segment=1-0 index=0/1
+14:44:32.680 AUDIO queue complete segment=1-0 queue=1
+14:44:32.681 READ completion accepted para=1 status=ready
+14:44:32.681 READ advance from=1 readable=8 status=ready prefetching=- prefetched=2
+14:44:32.690 READ prefetch promote para=2 segs=1
+14:44:32.691 AUDIO stage segment=2-0 index=0/1 duration=1.80
+14:44:32.726 AUDIO ready segment=2-0 duration=1.80 auto=Y
+14:44:32.727 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-0
+14:44:32.749 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-0
+14:44:34.260 AUDIO item finished segment=2-0 index=0/1
+14:44:34.260 AUDIO queue complete segment=2-0 queue=1
+14:44:34.260 READ completion accepted para=2 status=ready
+14:44:34.261 READ advance from=2 readable=8 status=ready prefetching=- prefetched=3
+14:44:34.270 READ prefetch promote para=3 segs=1
+14:44:34.271 AUDIO stage segment=3-0 index=0/1 duration=1.42
+14:44:34.320 AUDIO ready segment=3-0 duration=1.42 auto=Y
+14:44:34.331 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=3-0
+14:44:34.361 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=3-0
+14:44:34.835 TTS transport response request=C7E256D1-A81C-4B4B-805E-165BD6CFFD71 host=api.castreader.cn status=200 bytes=76426 elapsedMs=3233 fallback=false
+14:44:34.837 READ prefetch playable para=5 seg=0 buffered=1
+14:44:34.837 READ prefetch done para=5 epoch=1 segs=1 promoted=false
+14:44:34.837 READ prefetch start para=6 epoch=1 chars=28 streaming=Y
+14:44:34.838 TTS part begin para=6 part=0 request=F1FF049A-43F7-4267-BDF9-04B367BAE7D8 priority=readAhead
+14:44:34.838 TTS schedule dispatch request=F1FF049A-43F7-4267-BDF9-04B367BAE7D8 priority=readAhead queueMs=0 active=1 pending=0
+14:44:35.549 AUDIO item finished segment=3-0 index=0/1
+14:44:35.550 AUDIO queue complete segment=3-0 queue=1
+14:44:35.550 READ completion accepted para=3 status=ready
+14:44:35.551 READ advance from=3 readable=8 status=ready prefetching=- prefetched=4
+14:44:35.559 READ prefetch promote para=4 segs=1
+14:44:35.560 AUDIO stage segment=4-0 index=0/1 duration=3.43
+14:44:35.607 AUDIO ready segment=4-0 duration=3.43 auto=Y
+14:44:35.620 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=4-0
+14:44:35.642 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=4-0
+14:44:36.757 TTS transport response request=F1FF049A-43F7-4267-BDF9-04B367BAE7D8 host=api.castreader.cn status=200 bytes=129162 elapsedMs=1919 fallback=false
+14:44:36.765 READ prefetch playable para=6 seg=0 buffered=1
+14:44:36.768 READ prefetch done para=6 epoch=1 segs=1 promoted=false
+14:44:36.769 READ prefetch start para=7 epoch=1 chars=11 streaming=Y
+14:44:36.769 TTS part begin para=7 part=0 request=A9A9FAE4-CA66-4DCB-851E-EB4174961D3B priority=readAhead
+14:44:36.770 TTS schedule dispatch request=A9A9FAE4-CA66-4DCB-851E-EB4174961D3B priority=readAhead queueMs=0 active=1 pending=0
+14:44:37.266 TTS transport response request=A9A9FAE4-CA66-4DCB-851E-EB4174961D3B host=api.castreader.cn status=200 bytes=47242 elapsedMs=496 fallback=false
+14:44:37.274 READ prefetch playable para=7 seg=0 buffered=1
+14:44:37.275 READ prefetch done para=7 epoch=1 segs=1 promoted=false
+14:44:38.449 AUDIO item finished segment=4-0 index=0/1
+14:44:38.449 AUDIO queue complete segment=4-0 queue=1
+14:44:38.449 READ completion accepted para=4 status=ready
+14:44:38.450 READ advance from=4 readable=8 status=ready prefetching=- prefetched=5
+14:44:38.459 READ prefetch promote para=5 segs=1
+14:44:38.460 AUDIO stage segment=5-0 index=0/1 duration=3.58
+14:44:38.512 AUDIO ready segment=5-0 duration=3.58 auto=Y
+14:44:38.513 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=5-0
+14:44:38.539 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=5-0
+14:44:41.468 AUDIO item finished segment=5-0 index=0/1
+14:44:41.468 AUDIO queue complete segment=5-0 queue=1
+14:44:41.469 READ completion accepted para=5 status=ready
+14:44:41.469 READ advance from=5 readable=8 status=ready prefetching=- prefetched=6
+14:44:41.479 READ prefetch promote para=6 segs=1
+14:44:41.479 AUDIO stage segment=6-0 index=0/1 duration=6.05
+14:44:41.524 AUDIO ready segment=6-0 duration=6.05 auto=Y
+14:44:41.539 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=6-0
+14:44:41.558 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=6-0
+14:44:46.457 AUDIO item finished segment=6-0 index=0/1
+14:44:46.457 AUDIO queue complete segment=6-0 queue=1
+14:44:46.457 READ completion accepted para=6 status=ready
+14:44:46.458 READ advance from=6 readable=8 status=ready prefetching=- prefetched=7
+14:44:46.467 READ prefetch promote para=7 segs=1
+14:44:46.468 AUDIO stage segment=7-0 index=0/1 duration=2.21
+14:44:46.520 AUDIO ready segment=7-0 duration=2.21 auto=Y
+14:44:46.535 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=7-0
+14:44:46.555 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=7-0
+14:44:47.705 WEREAD page turn action=semantic-next fingerprint=5ee770d8
+14:44:47.919 WEREAD preload invalidated reason=manual-page-change preserve=N
+14:44:47.920 WEREAD page changing reason=dom read=Y explain=N
+14:44:47.921 WEREAD turn latency measured=0.216s nextLead=0.540s
+14:44:47.923 WEREAD page commit prior=5ee770d8 next=63a2a609 confirmed=true epoch=2 cols= geometry=fillText glyphs=103 paras=2
+14:44:47.923 WEREAD automatic review session adoption rejected next=63a2a609
+14:44:47.936 READ generate start para=0 epoch=3 chars=3
+14:44:47.936 AUDIO producer expected=Y owner=readAloud gen=5 segment=nil
+14:44:47.937 WEREAD explain preload invalidated reason=prediction-changed
+14:44:47.938 WEREAD preload preview source=63a2a609 next=5b75b232 confidence=sequential paras=1
+14:44:47.967 TTS part begin para=0 part=0 request=E86B50FB-E3B9-4AD2-878B-F9F11DAD8D84 priority=interactive
+14:44:47.968 TTS schedule dispatch request=E86B50FB-E3B9-4AD2-878B-F9F11DAD8D84 priority=interactive queueMs=0 active=1 pending=0
+14:44:48.466 TTS transport response request=E86B50FB-E3B9-4AD2-878B-F9F11DAD8D84 host=api.castreader.cn status=200 bytes=19594 elapsedMs=496 fallback=false
+14:44:48.467 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:44:48.468 AUDIO stage segment=0-0 index=0/1 duration=0.91
+14:44:48.503 READ generate done para=0 epoch=3 segs=1
+14:44:48.504 READ prefetch start para=1 epoch=3 chars=122 streaming=Y
+14:44:48.523 TTS part begin para=1 part=0 request=BEF9B465-736E-427F-BA93-E30EF160D1D5 priority=readAhead
+14:44:48.524 AUDIO ready segment=0-0 duration=0.91 auto=Y
+14:44:48.524 TTS schedule dispatch request=BEF9B465-736E-427F-BA93-E30EF160D1D5 priority=readAhead queueMs=0 active=1 pending=0
+14:44:48.535 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:44:48.569 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:44:49.346 AUDIO item finished segment=0-0 index=0/1
+14:44:49.347 AUDIO queue complete segment=0-0 queue=1
+14:44:49.347 READ completion accepted para=0 status=ready
+14:44:49.348 READ advance from=0 readable=2 status=ready prefetching=1 prefetched=-
+14:44:50.138 TTS transport response request=BEF9B465-736E-427F-BA93-E30EF160D1D5 host=api.castreader.cn status=200 bytes=135818 elapsedMs=1613 fallback=false
+14:44:50.149 READ prefetch playable para=1 seg=0 buffered=1
+14:44:50.150 READ advance from=0 readable=2 status=loading prefetching=1 prefetched=1
+14:44:50.163 READ prefetch promote para=1 segs=1
+14:44:50.166 AUDIO stage segment=1-0 index=0/1 duration=6.36
+14:44:50.168 AUDIO stage reused segment=1-0
+14:44:50.172 AUDIO producer expected=Y owner=readAloud gen=5 segment=1-0
+14:44:50.208 TTS part begin para=1 part=1 request=D30DCEC8-0BCC-4E95-9E52-29DB84C567A2 priority=interactive
+14:44:50.209 TTS schedule dispatch request=D30DCEC8-0BCC-4E95-9E52-29DB84C567A2 priority=interactive queueMs=0 active=1 pending=0
+14:44:50.225 AUDIO ready segment=1-0 duration=6.36 auto=Y
+14:44:50.240 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-0
+14:44:50.260 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-0
+14:44:51.606 TTS transport response request=D30DCEC8-0BCC-4E95-9E52-29DB84C567A2 host=api.castreader.cn status=200 bytes=145034 elapsedMs=1396 fallback=false
+14:44:51.618 AUDIO enqueue segment=1-1 queue=2 waiting=N auto=Y
+14:44:51.619 TTS part begin para=1 part=2 request=507FD65B-C304-4742-9A86-7E8423AD5794 priority=interactive
+14:44:51.619 TTS schedule dispatch request=507FD65B-C304-4742-9A86-7E8423AD5794 priority=interactive queueMs=0 active=1 pending=0
+14:44:52.977 TTS transport response request=507FD65B-C304-4742-9A86-7E8423AD5794 host=api.castreader.cn status=200 bytes=126090 elapsedMs=1357 fallback=false
+14:44:52.981 AUDIO enqueue segment=1-2 queue=3 waiting=N auto=Y
+14:44:53.540 TTS part begin para=1 part=3 request=96ED14B6-1892-4229-AFFD-861816675AF6 priority=interactive
+14:44:53.540 TTS schedule dispatch request=96ED14B6-1892-4229-AFFD-861816675AF6 priority=interactive queueMs=0 active=1 pending=0
+14:44:55.061 TTS transport response request=96ED14B6-1892-4229-AFFD-861816675AF6 host=api.castreader.cn status=200 bytes=141962 elapsedMs=1520 fallback=false
+14:44:55.062 AUDIO enqueue segment=1-3 queue=4 waiting=N auto=Y
+14:44:55.062 READ prefetch done para=1 epoch=3 segs=4 promoted=true
+14:44:55.071 TTS part begin para=0 part=0 request=E4636CA8-720C-428B-BCD8-4A0EDF4D94E0 priority=readAhead
+14:44:55.071 TTS schedule dispatch request=E4636CA8-720C-428B-BCD8-4A0EDF4D94E0 priority=readAhead queueMs=0 active=1 pending=0
+14:44:55.406 AUDIO item finished segment=1-0 index=0/4
+14:44:55.406 AUDIO advance segment from=1-0 to=1-1
+14:44:55.407 AUDIO stage segment=1-1 index=1/4 duration=6.79
+14:44:55.441 AUDIO ready segment=1-1 duration=6.79 auto=Y
+14:44:55.452 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-1
+14:44:55.471 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-1
+14:44:57.494 TTS transport response request=E4636CA8-720C-428B-BCD8-4A0EDF4D94E0 host=api.castreader.cn status=200 bytes=210570 elapsedMs=2422 fallback=false
+14:44:57.495 TTS part begin para=0 part=1 request=6FADF717-F7AE-483D-ABDB-0788CE8A8897 priority=readAhead
+14:44:57.496 TTS schedule dispatch request=6FADF717-F7AE-483D-ABDB-0788CE8A8897 priority=readAhead queueMs=0 active=1 pending=0
+14:44:58.733 TTS transport response request=6FADF717-F7AE-483D-ABDB-0788CE8A8897 host=api.castreader.cn status=200 bytes=138890 elapsedMs=1237 fallback=false
+14:44:58.734 TTS part begin para=0 part=2 request=E29A40FF-0D08-4347-B8F0-C13D3EA07AD8 priority=readAhead
+14:44:58.735 TTS schedule dispatch request=E29A40FF-0D08-4347-B8F0-C13D3EA07AD8 priority=readAhead queueMs=0 active=1 pending=0
+14:45:00.382 TTS transport response request=E29A40FF-0D08-4347-B8F0-C13D3EA07AD8 host=api.castreader.cn status=200 bytes=121994 elapsedMs=1646 fallback=false
+14:45:00.382 WEREAD preload audio ready source=63a2a609 next=5b75b232 voice=zf_001 segs=3
+14:45:00.383 WEREAD continuous armed reason=preload-ready serial=1 source=63a2a609 next=5b75b232 predecessor=1-3 segs=3
+14:45:00.975 AUDIO item finished segment=1-1 index=1/7
+14:45:00.976 AUDIO advance segment from=1-1 to=1-2
+14:45:00.977 AUDIO stage segment=1-2 index=2/7 duration=5.90
+14:45:01.009 AUDIO ready segment=1-2 duration=5.90 auto=Y
+14:45:01.020 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-2
+14:45:01.039 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-2
+14:45:05.835 AUDIO item finished segment=1-2 index=2/7
+14:45:05.836 AUDIO advance segment from=1-2 to=1-3
+14:45:05.837 AUDIO stage segment=1-3 index=3/7 duration=6.65
+14:45:05.870 AUDIO ready segment=1-3 duration=6.65 auto=Y
+14:45:05.871 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-3
+14:45:05.891 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-3
+14:45:07.173 WEREAD page turn action=semantic-next fingerprint=63a2a609
+14:45:07.345 WEREAD page changing reason=dom read=Y explain=N
+14:45:07.346 WEREAD turn latency measured=0.172s nextLead=0.453s
+14:45:07.347 WEREAD page commit prior=63a2a609 next=3bd6f629 confirmed=true epoch=3 cols= geometry=fillText glyphs=280 paras=3
+14:45:07.348 WEREAD continuous cancelled reason=visible-fingerprint-mismatch serial=1
+14:45:07.357 WEREAD exact prewarm start para=0 epoch=4 serial=1 chars=105
+14:45:07.357 WEREAD preload invalidated reason=boundary-carry-committed preserve=N
+14:45:07.357 WEREAD boundary carry committed next=3bd6f629 trim=22
+14:45:07.360 WEREAD explain preload invalidated reason=prediction-changed
+14:45:07.360 WEREAD preload preview source=3bd6f629 next=cd4d0e23 confidence=sequential paras=3
+14:45:07.360 TTS part begin para=0 part=0 request=EC1A78DB-B635-4152-85DF-74195798E1D4 priority=readAhead
+14:45:07.361 TTS schedule dispatch request=EC1A78DB-B635-4152-85DF-74195798E1D4 priority=readAhead queueMs=0 active=1 pending=0
+14:45:09.451 TTS transport response request=EC1A78DB-B635-4152-85DF-74195798E1D4 host=api.castreader.cn status=200 bytes=210570 elapsedMs=2089 fallback=false
+14:45:09.452 WEREAD exact prewarm segment para=0 seg=0 buffered=1 due=N
+14:45:09.453 TTS part begin para=0 part=1 request=731AF489-FA24-43AF-83AF-BACA998CC2E4 priority=readAhead
+14:45:09.453 TTS schedule dispatch request=731AF489-FA24-43AF-83AF-BACA998CC2E4 priority=readAhead queueMs=0 active=1 pending=0
+14:45:10.844 TTS transport response request=731AF489-FA24-43AF-83AF-BACA998CC2E4 host=api.castreader.cn status=200 bytes=138890 elapsedMs=1390 fallback=false
+14:45:10.845 WEREAD exact prewarm segment para=0 seg=1 buffered=2 due=N
+14:45:10.845 TTS part begin para=0 part=2 request=AE25CDED-2C38-444F-B044-BC990029EFBF priority=readAhead
+14:45:10.846 TTS schedule dispatch request=AE25CDED-2C38-444F-B044-BC990029EFBF priority=readAhead queueMs=0 active=1 pending=0
+14:45:11.285 AUDIO item finished segment=1-3 index=3/4
+14:45:11.286 AUDIO queue complete segment=1-3 queue=4
+14:45:11.286 READ completion accepted para=-1 status=ready
+14:45:11.287 WEREAD carry completed; promote exact prewarm para=0 buffered=2 producer=active
+14:45:11.288 AUDIO stage segment=0-850010000 index=0/2 duration=9.86
+14:45:11.296 AUDIO producer expected=Y owner=readAloud gen=5 segment=0-850010000
+14:45:11.296 WEREAD exact prewarm promoted para=0 epoch=4 buffered=2 producer=active
+14:45:11.333 AUDIO ready segment=0-850010000 duration=9.86 auto=Y
+14:45:11.349 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-850010000
+14:45:11.380 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-850010000
+14:45:12.634 TTS transport response request=AE25CDED-2C38-444F-B044-BC990029EFBF host=api.castreader.cn status=200 bytes=121994 elapsedMs=1787 fallback=false
+14:45:12.644 WEREAD exact prewarm segment para=0 seg=2 buffered=3 due=Y
+14:45:12.644 AUDIO enqueue segment=0-850010002 queue=3 waiting=N auto=Y
+14:45:12.646 WEREAD exact prewarm done para=0 epoch=4 serial=1 segs=3
+14:45:12.646 READ prefetch start para=1 epoch=4 chars=134 streaming=Y
+14:45:12.658 TTS part begin para=1 part=0 request=BC8E094D-7287-470A-80C5-815C270BB1A4 priority=readAhead
+14:45:12.658 TTS schedule dispatch request=BC8E094D-7287-470A-80C5-815C270BB1A4 priority=readAhead queueMs=0 active=1 pending=0
+14:45:13.157 TTS transport response request=BC8E094D-7287-470A-80C5-815C270BB1A4 host=api.castreader.cn status=200 bytes=57482 elapsedMs=498 fallback=false
+14:45:13.171 READ prefetch playable para=1 seg=0 buffered=1
+14:45:13.172 TTS part begin para=1 part=1 request=E450F64B-C3A0-47BF-AEC8-6FBCBFBD8EC4 priority=readAhead
+14:45:13.173 TTS schedule dispatch request=E450F64B-C3A0-47BF-AEC8-6FBCBFBD8EC4 priority=readAhead queueMs=0 active=1 pending=0
+14:45:13.732 WEREAD manual page button direction=next read=Y explain=N
+14:45:13.733 WEREAD preload invalidated reason=manual-page-change preserve=N
+14:45:13.734 WEREAD page changing reason=manual-intent read=Y explain=N
+14:45:13.799 WEREAD manual page button busy direction=next
+14:45:13.850 WEREAD manual page button busy direction=prev
+14:45:14.355 WEREAD preload invalidated reason=manual-page-change preserve=N
+14:45:14.356 WEREAD page changing reason=fillText read=Y explain=N
+14:45:14.359 WEREAD preload preview deferred source=6241ff46 awaiting-manual-commit
+14:45:14.998 WEREAD page commit prior=3bd6f629 next=6241ff46 confirmed=true epoch=4 cols= geometry=fillText glyphs=284 paras=3
+14:45:15.027 READ generate start para=0 epoch=6 chars=32
+14:45:15.028 AUDIO producer expected=Y owner=readAloud gen=5 segment=nil
+14:45:15.030 WEREAD explain preload invalidated reason=prediction-changed
+14:45:15.031 WEREAD preload preview source=6241ff46 next=b5f1ccda confidence=sequential paras=2
+14:45:15.066 TTS part begin para=0 part=0 request=FFBD703C-9048-4729-A1EC-2E1B01C2E639 priority=interactive
+14:45:15.067 TTS schedule dispatch request=FFBD703C-9048-4729-A1EC-2E1B01C2E639 priority=interactive queueMs=0 active=1 pending=0
+14:45:16.890 TTS transport response request=FFBD703C-9048-4729-A1EC-2E1B01C2E639 host=api.castreader.cn status=200 bytes=83594 elapsedMs=1823 fallback=false
+14:45:16.892 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:45:16.893 AUDIO stage segment=0-0 index=0/1 duration=3.91
+14:45:16.931 TTS part begin para=0 part=1 request=5956539F-D3A4-4AB2-8EA9-4BB6B899E320 priority=interactive
+14:45:16.933 TTS schedule dispatch request=5956539F-D3A4-4AB2-8EA9-4BB6B899E320 priority=interactive queueMs=0 active=1 pending=0
+14:45:16.950 AUDIO ready segment=0-0 duration=3.91 auto=Y
+14:45:16.951 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:45:16.974 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:45:17.832 TTS transport response request=5956539F-D3A4-4AB2-8EA9-4BB6B899E320 host=api.castreader.cn status=200 bytes=67722 elapsedMs=898 fallback=false
+14:45:17.833 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+14:45:17.835 READ generate done para=0 epoch=6 segs=2
+14:45:17.835 READ prefetch start para=1 epoch=6 chars=75 streaming=Y
+14:45:17.844 TTS part begin para=1 part=0 request=243EAEFC-546C-43D8-BBD3-B4E68BAB44F9 priority=readAhead
+14:45:17.845 TTS schedule dispatch request=243EAEFC-546C-43D8-BBD3-B4E68BAB44F9 priority=readAhead queueMs=0 active=1 pending=0
+14:45:19.940 TTS transport response request=243EAEFC-546C-43D8-BBD3-B4E68BAB44F9 host=api.castreader.cn status=200 bytes=113802 elapsedMs=2094 fallback=false
+14:45:19.945 READ prefetch playable para=1 seg=0 buffered=1
+14:45:19.945 TTS part begin para=1 part=1 request=4AA8FB58-56D1-4AC0-A0A8-D90762CCCE6A priority=readAhead
+14:45:19.945 TTS schedule dispatch request=4AA8FB58-56D1-4AC0-A0A8-D90762CCCE6A priority=readAhead queueMs=0 active=1 pending=0
+14:45:20.174 AUDIO item finished segment=0-0 index=0/2
+14:45:20.175 AUDIO advance segment from=0-0 to=0-1
+14:45:20.176 AUDIO stage segment=0-1 index=1/2 duration=3.17
+14:45:20.209 AUDIO ready segment=0-1 duration=3.17 auto=Y
+14:45:20.210 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-1
+14:45:20.231 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-1
+14:45:22.845 AUDIO item finished segment=0-1 index=1/2
+14:45:22.845 AUDIO queue complete segment=0-1 queue=2
+14:45:22.846 READ completion accepted para=0 status=ready
+14:45:22.846 READ advance from=0 readable=3 status=ready prefetching=1 prefetched=1
+14:45:22.855 READ prefetch promote para=1 segs=1
+14:45:22.856 AUDIO stage segment=1-0 index=0/1 duration=5.33
+14:45:22.857 AUDIO stage reused segment=1-0
+14:45:22.858 AUDIO producer expected=Y owner=readAloud gen=5 segment=1-0
+14:45:22.903 AUDIO ready segment=1-0 duration=5.33 auto=Y
+14:45:22.916 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-0
+14:45:22.938 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-0
+14:45:23.405 TTS transport response request=4AA8FB58-56D1-4AC0-A0A8-D90762CCCE6A host=api.castreader.cn status=200 bytes=212618 elapsedMs=3459 fallback=false
+14:45:23.407 AUDIO enqueue segment=1-1 queue=2 waiting=N auto=Y
+14:45:23.409 READ prefetch done para=1 epoch=6 segs=2 promoted=true
+14:45:23.410 READ prefetch start para=2 epoch=6 chars=177 streaming=Y
+14:45:23.422 TTS part begin para=2 part=0 request=A58E715F-5488-4352-BD46-D32443EC3269 priority=readAhead
+14:45:23.423 TTS schedule dispatch request=A58E715F-5488-4352-BD46-D32443EC3269 priority=readAhead queueMs=0 active=1 pending=0
+14:45:24.635 TTS transport response request=A58E715F-5488-4352-BD46-D32443EC3269 host=api.castreader.cn status=200 bytes=89738 elapsedMs=1211 fallback=false
+14:45:24.643 READ prefetch playable para=2 seg=0 buffered=1
+14:45:24.643 TTS part begin para=2 part=1 request=B3A28B82-BC40-4AB0-B2DB-26C9581C0306 priority=readAhead
+14:45:24.644 TTS schedule dispatch request=B3A28B82-BC40-4AB0-B2DB-26C9581C0306 priority=readAhead queueMs=0 active=1 pending=0
+14:45:25.846 TTS transport response request=B3A28B82-BC40-4AB0-B2DB-26C9581C0306 host=api.castreader.cn status=200 bytes=105610 elapsedMs=1201 fallback=false
+14:45:25.854 READ prefetch playable para=2 seg=1 buffered=2
+14:45:25.855 TTS part begin para=2 part=2 request=381337F7-3884-4E8B-8F42-674427C2B7E2 priority=readAhead
+14:45:25.856 TTS schedule dispatch request=381337F7-3884-4E8B-8F42-674427C2B7E2 priority=readAhead queueMs=0 active=1 pending=0
+14:45:27.275 AUDIO item finished segment=1-0 index=0/2
+14:45:27.275 AUDIO advance segment from=1-0 to=1-1
+14:45:27.276 AUDIO stage segment=1-1 index=1/2 duration=9.96
+14:45:27.309 AUDIO ready segment=1-1 duration=9.96 auto=Y
+14:45:27.310 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-1
+14:45:27.332 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-1
+14:45:32.506 TTS transport response request=381337F7-3884-4E8B-8F42-674427C2B7E2 host=api.castreader.cn status=200 bytes=467594 elapsedMs=6649 fallback=false
+14:45:32.516 READ prefetch playable para=2 seg=2 buffered=3
+14:45:35.375 AUDIO item finished segment=1-1 index=1/2
+14:45:35.375 AUDIO queue complete segment=1-1 queue=2
+14:45:35.375 READ completion accepted para=1 status=ready
+14:45:35.376 READ advance from=1 readable=3 status=ready prefetching=2 prefetched=2
+14:45:35.385 READ prefetch promote para=2 segs=3
+14:45:35.387 AUDIO stage segment=2-0 index=0/3 duration=4.20
+14:45:35.389 AUDIO stage reused segment=2-0
+14:45:35.390 AUDIO producer expected=Y owner=readAloud gen=5 segment=2-0
+14:45:35.434 AUDIO ready segment=2-0 duration=4.20 auto=Y
+14:45:35.451 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-0
+14:45:35.471 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-0
+14:45:38.885 AUDIO item finished segment=2-0 index=0/3
+14:45:38.885 AUDIO advance segment from=2-0 to=2-1
+14:45:38.886 AUDIO stage segment=2-1 index=1/3 duration=4.94
+14:45:38.886 AUDIO stage reused segment=2-1
+14:45:38.914 AUDIO ready segment=2-1 duration=4.94 auto=Y
+14:45:38.926 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-1
+14:45:38.945 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-1
+14:45:42.965 AUDIO item finished segment=2-1 index=1/3
+14:45:42.966 AUDIO advance segment from=2-1 to=2-2
+14:45:42.966 AUDIO stage segment=2-2 index=2/3 duration=21.91
+14:45:42.967 AUDIO stage reused segment=2-2
+14:45:42.995 AUDIO ready segment=2-2 duration=21.91 auto=Y
+14:45:42.996 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-2
+14:45:43.019 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-2
+14:45:48.317 TTS part begin para=2 part=3 request=D7CA1FCC-0F07-4E9B-AB1C-9B6C20298A4C priority=interactive
+14:45:48.318 TTS schedule dispatch request=D7CA1FCC-0F07-4E9B-AB1C-9B6C20298A4C priority=interactive queueMs=0 active=1 pending=0
+14:45:49.114 TTS transport response request=D7CA1FCC-0F07-4E9B-AB1C-9B6C20298A4C host=api.castreader.cn status=200 bytes=117898 elapsedMs=796 fallback=false
+14:45:49.116 AUDIO enqueue segment=2-3 queue=4 waiting=N auto=Y
+14:45:49.117 READ prefetch done para=2 epoch=6 segs=4 promoted=true
+14:45:49.128 TTS part begin para=0 part=0 request=EA33CA75-E2D6-4C7E-B6F0-61EFDB390AEB priority=readAhead
+14:45:49.129 TTS schedule dispatch request=EA33CA75-E2D6-4C7E-B6F0-61EFDB390AEB priority=readAhead queueMs=0 active=1 pending=0
+14:45:50.653 TTS transport response request=EA33CA75-E2D6-4C7E-B6F0-61EFDB390AEB host=api.castreader.cn status=200 bytes=154762 elapsedMs=1524 fallback=false
+14:45:50.654 TTS part begin para=0 part=1 request=1AB41C9B-A874-42D2-85C9-54002E1E6095 priority=readAhead
+14:45:50.655 TTS schedule dispatch request=1AB41C9B-A874-42D2-85C9-54002E1E6095 priority=readAhead queueMs=0 active=1 pending=0
+14:45:51.415 TTS transport response request=1AB41C9B-A874-42D2-85C9-54002E1E6095 host=api.castreader.cn status=200 bytes=81546 elapsedMs=759 fallback=false
+14:45:51.415 TTS part begin para=0 part=2 request=B402BFE1-E55C-408F-B482-720E77A180DA priority=readAhead
+14:45:51.416 TTS schedule dispatch request=B402BFE1-E55C-408F-B482-720E77A180DA priority=readAhead queueMs=0 active=1 pending=0
+14:45:53.084 TTS transport response request=B402BFE1-E55C-408F-B482-720E77A180DA host=api.castreader.cn status=200 bytes=180362 elapsedMs=1668 fallback=false
+14:45:53.085 TTS part begin para=0 part=3 request=97E357D9-FE4E-4D92-B2E8-599525C9102C priority=readAhead
+14:45:53.086 TTS schedule dispatch request=97E357D9-FE4E-4D92-B2E8-599525C9102C priority=readAhead queueMs=0 active=1 pending=0
+14:45:54.506 TTS transport response request=97E357D9-FE4E-4D92-B2E8-599525C9102C host=api.castreader.cn status=200 bytes=150154 elapsedMs=1420 fallback=false
+14:45:54.508 TTS part begin para=0 part=4 request=E152B02F-8A3F-4CA0-9228-05F65C261542 priority=readAhead
+14:45:54.508 TTS schedule dispatch request=E152B02F-8A3F-4CA0-9228-05F65C261542 priority=readAhead queueMs=0 active=1 pending=0
+14:45:57.670 TTS transport response request=E152B02F-8A3F-4CA0-9228-05F65C261542 host=api.castreader.cn status=200 bytes=278154 elapsedMs=3161 fallback=false
+14:45:57.673 WEREAD preload audio ready source=6241ff46 next=b5f1ccda voice=zf_001 segs=5
+14:45:57.673 WEREAD continuous armed reason=preload-ready serial=2 source=6241ff46 next=b5f1ccda predecessor=2-3 segs=5
+14:46:00.625 AUDIO item finished segment=2-2 index=2/9
+14:46:00.625 AUDIO advance segment from=2-2 to=2-3
+14:46:00.626 AUDIO stage segment=2-3 index=3/9 duration=5.52
+14:46:00.660 AUDIO ready segment=2-3 duration=5.52 auto=Y
+14:46:00.661 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-3
+14:46:00.683 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-3
+14:46:04.723 WEREAD page turn action=semantic-next fingerprint=6241ff46
+14:46:05.175 AUDIO item finished segment=2-3 index=3/9
+14:46:05.175 AUDIO advance segment from=2-3 to=0-800002000
+14:46:05.301 WEREAD page changing reason=fillText read=Y explain=N
+14:46:05.302 WEREAD turn latency measured=0.579s nextLead=0.539s
+14:46:05.304 WEREAD page commit prior=6241ff46 next=9447d227 confirmed=true epoch=5 cols= geometry=fillText glyphs=287 paras=2
+14:46:05.305 WEREAD automatic review session adoption rejected next=9447d227
+14:46:05.305 WEREAD continuous cancelled reason=visible-fingerprint-mismatch serial=2
+14:46:05.319 READ generate start para=0 epoch=8 chars=189
+14:46:05.319 AUDIO producer expected=Y owner=readAloud gen=5 segment=nil
+14:46:05.333 WEREAD explain preload invalidated reason=prediction-changed
+14:46:05.333 WEREAD preload preview source=9447d227 next=f9096613 confidence=sequential paras=3
+14:46:05.347 TTS part begin para=0 part=0 request=93101231-3861-493D-8FE4-FAD2C4EBD973 priority=interactive
+14:46:05.348 TTS schedule dispatch request=93101231-3861-493D-8FE4-FAD2C4EBD973 priority=interactive queueMs=0 active=1 pending=0
+14:46:10.224 TTS transport response request=93101231-3861-493D-8FE4-FAD2C4EBD973 host=api.castreader.cn status=200 bytes=155274 elapsedMs=4875 fallback=false
+14:46:10.229 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:46:10.230 AUDIO stage segment=0-0 index=0/1 duration=7.27
+14:46:10.273 TTS part begin para=0 part=1 request=D74D2144-6860-4A99-B899-6B194848D1A4 priority=interactive
+14:46:10.275 TTS schedule dispatch request=D74D2144-6860-4A99-B899-6B194848D1A4 priority=interactive queueMs=0 active=1 pending=0
+14:46:10.294 AUDIO ready segment=0-0 duration=7.27 auto=Y
+14:46:10.295 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:46:10.321 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:46:12.619 TTS transport response request=D74D2144-6860-4A99-B899-6B194848D1A4 host=api.castreader.cn status=200 bytes=81546 elapsedMs=2343 fallback=false
+14:46:12.621 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+14:46:12.622 TTS part begin para=0 part=2 request=4BDCADA4-FA74-41ED-AAEC-6A70EE78E1ED priority=interactive
+14:46:12.622 TTS schedule dispatch request=4BDCADA4-FA74-41ED-AAEC-6A70EE78E1ED priority=interactive queueMs=0 active=1 pending=0
+14:46:16.220 AUDIO item finished segment=0-0 index=0/2
+14:46:16.221 AUDIO advance segment from=0-0 to=0-1
+14:46:16.222 AUDIO stage segment=0-1 index=1/2 duration=3.82
+14:46:16.259 AUDIO ready segment=0-1 duration=3.82 auto=Y
+14:46:16.259 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-1
+14:46:16.282 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-1
+14:46:19.239 TTS transport response request=4BDCADA4-FA74-41ED-AAEC-6A70EE78E1ED host=api.castreader.cn status=200 bytes=180874 elapsedMs=6616 fallback=false
+14:46:19.253 AUDIO enqueue segment=0-2 queue=3 waiting=N auto=Y
+14:46:19.256 TTS part begin para=0 part=3 request=9D994D75-E857-4B77-8606-6CC29B221CED priority=interactive
+14:46:19.256 TTS schedule dispatch request=9D994D75-E857-4B77-8606-6CC29B221CED priority=interactive queueMs=0 active=1 pending=0
+14:46:19.410 AUDIO item finished segment=0-1 index=1/3
+14:46:19.411 AUDIO advance segment from=0-1 to=0-2
+14:46:19.412 AUDIO stage segment=0-2 index=2/3 duration=8.47
+14:46:19.445 AUDIO ready segment=0-2 duration=8.47 auto=Y
+14:46:19.458 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-2
+14:46:19.480 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-2
+14:46:23.351 TTS transport response request=9D994D75-E857-4B77-8606-6CC29B221CED host=api.castreader.cn status=200 bytes=150154 elapsedMs=4094 fallback=false
+14:46:23.352 AUDIO enqueue segment=0-3 queue=4 waiting=N auto=Y
+14:46:23.354 TTS part begin para=0 part=4 request=5EFAB217-98EA-4A75-B63E-4D77D8116FAB priority=interactive
+14:46:23.355 TTS schedule dispatch request=5EFAB217-98EA-4A75-B63E-4D77D8116FAB priority=interactive queueMs=0 active=1 pending=0
+14:46:26.330 AUDIO item finished segment=0-2 index=2/4
+14:46:26.331 AUDIO advance segment from=0-2 to=0-3
+14:46:26.331 AUDIO stage segment=0-3 index=3/4 duration=7.03
+14:46:26.367 AUDIO ready segment=0-3 duration=7.03 auto=Y
+14:46:26.367 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-3
+14:46:26.389 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-3
+14:46:28.952 TTS transport response request=5EFAB217-98EA-4A75-B63E-4D77D8116FAB host=api.castreader.cn status=200 bytes=278154 elapsedMs=5596 fallback=false
+14:46:28.959 AUDIO enqueue segment=0-4 queue=5 waiting=N auto=Y
+14:46:28.960 READ generate done para=0 epoch=8 segs=5
+14:46:28.961 READ prefetch start para=1 epoch=8 chars=142 streaming=Y
+14:46:28.972 TTS part begin para=1 part=0 request=8EF35A53-B71A-4028-AFCA-D45C36074C2A priority=readAhead
+14:46:28.972 TTS schedule dispatch request=8EF35A53-B71A-4028-AFCA-D45C36074C2A priority=readAhead queueMs=0 active=1 pending=0
+14:46:32.091 AUDIO item finished segment=0-3 index=3/5
+14:46:32.091 AUDIO advance segment from=0-3 to=0-4
+14:46:32.092 AUDIO stage segment=0-4 index=4/5 duration=13.03
+14:46:32.126 AUDIO ready segment=0-4 duration=13.03 auto=Y
+14:46:32.126 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-4
+14:46:32.149 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-4
+14:46:34.911 TTS transport response request=8EF35A53-B71A-4028-AFCA-D45C36074C2A host=api.castreader.cn status=200 bytes=91274 elapsedMs=5938 fallback=false
+14:46:34.923 READ prefetch playable para=1 seg=0 buffered=1
+14:46:34.924 TTS part begin para=1 part=1 request=D3B2B459-75E0-45C8-A8E2-18E937CF95E6 priority=readAhead
+14:46:34.924 TTS schedule dispatch request=D3B2B459-75E0-45C8-A8E2-18E937CF95E6 priority=readAhead queueMs=0 active=1 pending=0
+14:46:38.847 READ voice switch begin from=zf_001 to=vl_b4bb75aa2d3e56fd90a2 para=0 auto=true requested=true userPaused=false
+14:46:38.863 READ generate start para=0 epoch=9 chars=189
+14:46:38.865 AUDIO producer expected=Y owner=readAloud gen=5 segment=nil
+14:46:38.865 READ voice switch suffix para=0 skippedChars=126 requestChars=63
+14:46:38.885 TTS part begin para=0 part=4 request=cr2-0b1cec10e0a7537dc29171ebdb4ec13909ecb4da4079a1770102f4f455201652 priority=interactive
+14:46:38.885 TTS schedule dispatch request=cr2-0b1cec10e0a7537dc29171ebdb4ec13909ecb4da4079a1770102f4f455201652 priority=interactive queueMs=0 active=1 pending=0
+14:46:42.837 TTS clone response request=cr2-0b1cec10e0a7537dc29171ebdb4ec13909ecb4da4079a1770102f4f455201652 status=200 quota=async attempt=1 remaining=6309
+14:46:42.884 TTS part begin para=0 part=5 request=cr2-c3e70ca4428c69ec3b592aea27d8063af8686d2ed801865432c9c3d73358063c priority=interactive
+14:46:42.884 TTS schedule dispatch request=cr2-c3e70ca4428c69ec3b592aea27d8063af8686d2ed801865432c9c3d73358063c priority=interactive queueMs=0 active=1 pending=0
+14:46:43.906 TTS clone response request=cr2-c3e70ca4428c69ec3b592aea27d8063af8686d2ed801865432c9c3d73358063c status=200 quota=async attempt=1 remaining=6308
+14:46:43.942 AUDIO stage segment=0-4 index=0/2 duration=8.86
+14:46:43.957 READ voice switch finished para=0
+14:46:43.990 READ generate done para=0 epoch=9 segs=6
+14:46:43.991 READ prefetch start para=1 epoch=9 chars=142 streaming=Y
+14:46:44.002 AUDIO ready segment=0-4 duration=8.86 auto=Y
+14:46:44.003 TTS part begin para=1 part=0 request=cr2-2049ffdc13cb9ebfb4dd31e580748e63cce0f842ea096beaaad7c67d9d6d2a23 priority=readAhead
+14:46:44.025 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-4
+14:46:44.026 TTS schedule dispatch request=cr2-2049ffdc13cb9ebfb4dd31e580748e63cce0f842ea096beaaad7c67d9d6d2a23 priority=readAhead queueMs=0 active=1 pending=0
+14:46:44.046 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-4
+14:46:45.953 TTS clone response request=cr2-2049ffdc13cb9ebfb4dd31e580748e63cce0f842ea096beaaad7c67d9d6d2a23 status=200 quota=async attempt=1 remaining=6304
+14:46:45.968 READ prefetch playable para=1 seg=0 buffered=1
+14:46:45.972 TTS part begin para=1 part=1 request=cr2-f20dedbcd5af3cc49344e0bab0ada4a1f6600fe0f0be0c425f68ab3d4cb31a61 priority=readAhead
+14:46:45.982 TTS schedule dispatch request=cr2-f20dedbcd5af3cc49344e0bab0ada4a1f6600fe0f0be0c425f68ab3d4cb31a61 priority=readAhead queueMs=0 active=1 pending=0
+14:46:48.386 TTS clone response request=cr2-f20dedbcd5af3cc49344e0bab0ada4a1f6600fe0f0be0c425f68ab3d4cb31a61 status=200 quota=async attempt=1 remaining=6294
+14:46:48.402 READ prefetch playable para=1 seg=1 buffered=2
+14:46:48.402 TTS part begin para=1 part=2 request=cr2-5f4452ceb7a0c07dd89b41e17b5a66735eb73063511d2d4fd1042cfb1e24239d priority=readAhead
+14:46:48.414 TTS schedule dispatch request=cr2-5f4452ceb7a0c07dd89b41e17b5a66735eb73063511d2d4fd1042cfb1e24239d priority=readAhead queueMs=0 active=1 pending=0
+14:46:51.205 AUDIO item finished segment=0-4 index=0/2
+14:46:51.205 AUDIO advance segment from=0-4 to=0-5
+14:46:51.206 AUDIO stage segment=0-5 index=1/2 duration=3.50
+14:46:51.234 AUDIO ready segment=0-5 duration=3.50 auto=Y
+14:46:51.235 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-5
+14:46:51.258 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-5
+14:46:53.767 TTS clone response request=cr2-5f4452ceb7a0c07dd89b41e17b5a66735eb73063511d2d4fd1042cfb1e24239d status=200 quota=async attempt=1 remaining=6274
+14:46:53.788 READ prefetch playable para=1 seg=2 buffered=3
+14:46:53.800 READ prefetch done para=1 epoch=9 segs=3 promoted=false
+14:46:54.135 AUDIO item finished segment=0-5 index=1/2
+14:46:54.135 AUDIO queue complete segment=0-5 queue=2
+14:46:54.135 READ completion accepted para=0 status=ready
+14:46:54.136 READ advance from=0 readable=2 status=ready prefetching=- prefetched=1
+14:46:54.146 READ prefetch promote para=1 segs=3
+14:46:54.147 AUDIO stage segment=1-0 index=0/3 duration=5.02
+14:46:54.148 AUDIO stage reused segment=1-0
+14:46:54.174 TTS part begin para=1 part=0 request=E3DF4448-A109-43B7-8CFE-4480E911093E priority=readAhead
+14:46:54.174 TTS schedule dispatch request=E3DF4448-A109-43B7-8CFE-4480E911093E priority=readAhead queueMs=0 active=1 pending=0
+14:46:54.199 AUDIO ready segment=1-0 duration=5.02 auto=Y
+14:46:54.214 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-0
+14:46:54.233 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-0
+14:46:55.488 TTS clone response request=E3DF4448-A109-43B7-8CFE-4480E911093E status=200 quota=async attempt=1 remaining=6273
+14:46:55.497 TTS part begin para=1 part=1 request=27123594-E8AF-4385-B17E-F47FD5E32588 priority=readAhead
+14:46:55.497 TTS schedule dispatch request=27123594-E8AF-4385-B17E-F47FD5E32588 priority=readAhead queueMs=0 active=1 pending=0
+14:46:57.935 TTS clone response request=27123594-E8AF-4385-B17E-F47FD5E32588 status=200 quota=async attempt=1 remaining=6259
+14:46:57.948 TTS part begin para=1 part=2 request=31E8C7A1-09A5-473A-817C-B7158A7D85FF priority=readAhead
+14:46:57.959 TTS schedule dispatch request=31E8C7A1-09A5-473A-817C-B7158A7D85FF priority=readAhead queueMs=0 active=1 pending=0
+14:46:58.315 AUDIO item finished segment=1-0 index=0/3
+14:46:58.315 AUDIO advance segment from=1-0 to=1-1
+14:46:58.316 AUDIO stage segment=1-1 index=1/3 duration=8.38
+14:46:58.316 AUDIO stage reused segment=1-1
+14:46:58.343 AUDIO ready segment=1-1 duration=8.38 auto=Y
+14:46:58.344 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-1
+14:46:58.365 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-1
+14:46:58.861 TTS clone response request=31E8C7A1-09A5-473A-817C-B7158A7D85FF status=200 quota=async attempt=1 remaining=6257
+14:46:58.870 TTS part begin para=1 part=3 request=42316BE3-A65E-427C-ACEA-F7EFC21AD37A priority=readAhead
+14:46:58.870 TTS schedule dispatch request=42316BE3-A65E-427C-ACEA-F7EFC21AD37A priority=readAhead queueMs=0 active=1 pending=0
+14:47:00.107 WEREAD manual page button direction=next read=Y explain=N
+14:47:00.108 WEREAD preload invalidated reason=manual-page-change preserve=N
+14:47:00.109 WEREAD page changing reason=manual-intent read=Y explain=N
+14:47:00.138 WEREAD preload audio failed error=已取消
+14:47:00.145 WEREAD manual page button busy direction=prev
+14:47:00.190 WEREAD manual page button busy direction=next
+14:47:00.711 WEREAD preload invalidated reason=manual-page-change preserve=N
+14:47:00.713 WEREAD page changing reason=fillText read=Y explain=N
+14:47:00.718 WEREAD preload preview deferred source=34805d2a awaiting-manual-commit
+14:47:01.350 WEREAD page commit prior=9447d227 next=34805d2a confirmed=true epoch=6 cols= geometry=fillText glyphs=280 paras=3
+14:47:01.379 READ generate start para=0 epoch=11 chars=44
+14:47:01.380 AUDIO producer expected=Y owner=readAloud gen=5 segment=nil
+14:47:01.381 WEREAD explain preload invalidated reason=prediction-changed
+14:47:01.382 WEREAD preload preview source=34805d2a next=faf4a507 confidence=sequential paras=3
+14:47:01.419 TTS part begin para=0 part=0 request=cr2-c436b3f9da0bc60bb1f91f09ab67553fefb8a15b9722699e7215d0a48eb0c330 priority=interactive
+14:47:01.419 TTS schedule dispatch request=cr2-c436b3f9da0bc60bb1f91f09ab67553fefb8a15b9722699e7215d0a48eb0c330 priority=interactive queueMs=0 active=1 pending=0
+14:47:03.414 TTS clone response request=cr2-c436b3f9da0bc60bb1f91f09ab67553fefb8a15b9722699e7215d0a48eb0c330 status=200 quota=async attempt=1 remaining=6237
+14:47:03.458 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:47:03.458 AUDIO stage segment=0-0 index=0/1 duration=11.98
+14:47:03.494 READ generate done para=0 epoch=11 segs=1
+14:47:03.495 READ prefetch start para=1 epoch=11 chars=137 streaming=Y
+14:47:03.513 TTS part begin para=1 part=0 request=cr2-c4b1cad3ed9b4b09fd6f8505e8a016df3f9ff43f77305312090074a3938db066 priority=readAhead
+14:47:03.514 AUDIO ready segment=0-0 duration=11.98 auto=Y
+14:47:03.514 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:47:03.536 TTS schedule dispatch request=cr2-c4b1cad3ed9b4b09fd6f8505e8a016df3f9ff43f77305312090074a3938db066 priority=readAhead queueMs=0 active=1 pending=0
+14:47:03.537 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:47:03.842 TTS clone response request=cr2-c4b1cad3ed9b4b09fd6f8505e8a016df3f9ff43f77305312090074a3938db066 status=200 quota=async attempt=1 remaining=6230
+14:47:03.856 READ prefetch playable para=1 seg=0 buffered=1
+14:47:03.860 TTS part begin para=1 part=1 request=cr2-ab8b6a557c36a6601575300155a948e8783bd7dadf92fc82c0709ebbd2a25384 priority=readAhead
+14:47:03.860 TTS schedule dispatch request=cr2-ab8b6a557c36a6601575300155a948e8783bd7dadf92fc82c0709ebbd2a25384 priority=readAhead queueMs=0 active=1 pending=0
+14:47:05.278 TTS clone response request=cr2-ab8b6a557c36a6601575300155a948e8783bd7dadf92fc82c0709ebbd2a25384 status=200 quota=async attempt=1 remaining=6216
+14:47:05.294 READ prefetch playable para=1 seg=1 buffered=2
+14:47:13.197 AUDIO item finished segment=0-0 index=0/1
+14:47:13.197 AUDIO queue complete segment=0-0 queue=1
+14:47:13.198 READ completion accepted para=0 status=ready
+14:47:13.199 READ advance from=0 readable=3 status=ready prefetching=1 prefetched=1
+14:47:13.208 READ prefetch promote para=1 segs=2
+14:47:13.209 AUDIO stage segment=1-0 index=0/2 duration=4.46
+14:47:13.210 AUDIO stage reused segment=1-0
+14:47:13.211 AUDIO producer expected=Y owner=readAloud gen=5 segment=1-0
+14:47:13.254 AUDIO ready segment=1-0 duration=4.46 auto=Y
+14:47:13.270 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-0
+14:47:13.290 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-0
+14:47:14.703 TTS part begin para=1 part=2 request=cr2-0a6a934672ef1f6f30b08c267c0a8a918741c974f1d659e9147800007e41d880 priority=interactive
+14:47:14.704 TTS schedule dispatch request=cr2-0a6a934672ef1f6f30b08c267c0a8a918741c974f1d659e9147800007e41d880 priority=interactive queueMs=0 active=1 pending=0
+14:47:15.086 TTS clone response request=cr2-0a6a934672ef1f6f30b08c267c0a8a918741c974f1d659e9147800007e41d880 status=200 quota=async attempt=1 remaining=6214
+14:47:15.098 AUDIO enqueue segment=1-2 queue=3 waiting=N auto=Y
+14:47:16.927 AUDIO item finished segment=1-0 index=0/3
+14:47:16.927 AUDIO advance segment from=1-0 to=1-1
+14:47:16.928 AUDIO stage segment=1-1 index=1/3 duration=12.22
+14:47:16.929 AUDIO stage reused segment=1-1
+14:47:16.963 AUDIO ready segment=1-1 duration=12.22 auto=Y
+14:47:16.978 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-1
+14:47:16.999 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-1
+14:47:18.679 TTS part begin para=1 part=3 request=cr2-eda6f4f70eb092db2c2cb88ab7871fb91bfa4214a7a4f3fa4a9e0eb9cdc445e5 priority=interactive
+14:47:18.679 TTS schedule dispatch request=cr2-eda6f4f70eb092db2c2cb88ab7871fb91bfa4214a7a4f3fa4a9e0eb9cdc445e5 priority=interactive queueMs=0 active=1 pending=0
+14:47:19.254 TTS clone response request=cr2-eda6f4f70eb092db2c2cb88ab7871fb91bfa4214a7a4f3fa4a9e0eb9cdc445e5 status=200 quota=async attempt=1 remaining=6203
+14:47:19.273 AUDIO enqueue segment=1-3 queue=4 waiting=N auto=Y
+14:47:19.281 READ prefetch done para=1 epoch=11 segs=4 promoted=true
+14:47:19.282 READ prefetch start para=2 epoch=11 chars=121 streaming=Y
+14:47:19.294 TTS part begin para=2 part=0 request=cr2-cbe44bf2e5cf5ac48ba3bf7ad821157c073838f115efec4d87feee031ab5ae48 priority=readAhead
+14:47:19.294 TTS schedule dispatch request=cr2-cbe44bf2e5cf5ac48ba3bf7ad821157c073838f115efec4d87feee031ab5ae48 priority=readAhead queueMs=0 active=1 pending=0
+14:47:20.221 TTS clone response request=cr2-cbe44bf2e5cf5ac48ba3bf7ad821157c073838f115efec4d87feee031ab5ae48 status=200 quota=async attempt=1 remaining=6199
+14:47:20.241 READ prefetch playable para=2 seg=0 buffered=1
+14:47:20.250 TTS part begin para=2 part=1 request=cr2-e8b599953dd84e162cde027f063025aa3586778888566a1b8764a64381ed9507 priority=readAhead
+14:47:20.253 TTS schedule dispatch request=cr2-e8b599953dd84e162cde027f063025aa3586778888566a1b8764a64381ed9507 priority=readAhead queueMs=0 active=1 pending=0
+14:47:21.119 TTS clone response request=cr2-e8b599953dd84e162cde027f063025aa3586778888566a1b8764a64381ed9507 status=200 quota=async attempt=1 remaining=6191
+14:47:21.136 READ prefetch playable para=2 seg=1 buffered=2
+14:47:21.137 TTS part begin para=2 part=2 request=cr2-2ba8f719aadcd13cdf1366b5b7d13157153beaaf33ecd1bcbcf0f9ec975cc5ff priority=readAhead
+14:47:21.137 TTS schedule dispatch request=cr2-2ba8f719aadcd13cdf1366b5b7d13157153beaaf33ecd1bcbcf0f9ec975cc5ff priority=readAhead queueMs=0 active=1 pending=0
+14:47:22.375 TTS clone response request=cr2-2ba8f719aadcd13cdf1366b5b7d13157153beaaf33ecd1bcbcf0f9ec975cc5ff status=200 quota=async attempt=1 remaining=6182
+14:47:22.393 READ prefetch playable para=2 seg=2 buffered=3
+14:47:26.837 AUDIO item finished segment=1-1 index=1/4
+14:47:26.838 AUDIO advance segment from=1-1 to=1-2
+14:47:26.839 AUDIO stage segment=1-2 index=2/4 duration=4.78
+14:47:26.872 AUDIO ready segment=1-2 duration=4.78 auto=Y
+14:47:26.873 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-2
+14:47:26.895 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-2
+14:47:30.787 AUDIO item finished segment=1-2 index=2/4
+14:47:30.788 AUDIO advance segment from=1-2 to=1-3
+14:47:30.789 AUDIO stage segment=1-3 index=3/4 duration=9.89
+14:47:30.822 AUDIO ready segment=1-3 duration=9.89 auto=Y
+14:47:30.822 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-3
+14:47:30.843 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-3
+14:47:38.827 AUDIO item finished segment=1-3 index=3/4
+14:47:38.828 AUDIO queue complete segment=1-3 queue=4
+14:47:38.828 READ completion accepted para=1 status=ready
+14:47:38.829 READ advance from=1 readable=3 status=ready prefetching=2 prefetched=2
+14:47:38.838 READ prefetch promote para=2 segs=3
+14:47:38.839 AUDIO stage segment=2-0 index=0/3 duration=5.50
+14:47:38.842 AUDIO stage reused segment=2-0
+14:47:38.843 AUDIO producer expected=Y owner=readAloud gen=5 segment=2-0
+14:47:38.886 AUDIO ready segment=2-0 duration=5.50 auto=Y
+14:47:38.902 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-0
+14:47:38.921 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-0
+14:47:42.796 TTS part begin para=2 part=3 request=cr2-e1b7fe6172a3f88333ac61cdd559d2591b075c81a384a9f72929499271fbb823 priority=interactive
+14:47:42.796 TTS schedule dispatch request=cr2-e1b7fe6172a3f88333ac61cdd559d2591b075c81a384a9f72929499271fbb823 priority=interactive queueMs=0 active=1 pending=0
+14:47:43.377 AUDIO item finished segment=2-0 index=0/3
+14:47:43.377 AUDIO advance segment from=2-0 to=2-1
+14:47:43.378 AUDIO stage segment=2-1 index=1/3 duration=5.81
+14:47:43.379 AUDIO stage reused segment=2-1
+14:47:43.407 AUDIO ready segment=2-1 duration=5.81 auto=Y
+14:47:43.407 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-1
+14:47:43.429 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-1
+14:47:45.178 TTS clone response request=cr2-e1b7fe6172a3f88333ac61cdd559d2591b075c81a384a9f72929499271fbb823 status=200 quota=async attempt=1 remaining=6175
+14:47:45.189 AUDIO enqueue segment=2-3 queue=4 waiting=N auto=Y
+14:47:45.190 READ prefetch done para=2 epoch=11 segs=4 promoted=true
+14:47:45.203 TTS part begin para=1 part=0 request=2609AA59-00F3-4289-8DE5-8B059DAC68A3 priority=readAhead
+14:47:45.213 TTS schedule dispatch request=2609AA59-00F3-4289-8DE5-8B059DAC68A3 priority=readAhead queueMs=0 active=1 pending=0
+14:47:46.446 TTS clone response request=2609AA59-00F3-4289-8DE5-8B059DAC68A3 status=200 quota=async attempt=1 remaining=6169
+14:47:46.456 TTS part begin para=1 part=1 request=3221948A-FA51-461D-A9BC-424D244CC665 priority=readAhead
+14:47:46.456 TTS schedule dispatch request=3221948A-FA51-461D-A9BC-424D244CC665 priority=readAhead queueMs=0 active=1 pending=0
+14:47:47.488 TTS clone response request=3221948A-FA51-461D-A9BC-424D244CC665 status=200 quota=async attempt=1 remaining=6162
+14:47:47.496 TTS part begin para=1 part=2 request=E30383FE-9BD2-4B95-8E99-44B269EBB268 priority=readAhead
+14:47:47.496 TTS schedule dispatch request=E30383FE-9BD2-4B95-8E99-44B269EBB268 priority=readAhead queueMs=0 active=1 pending=0
+14:47:48.157 AUDIO item finished segment=2-1 index=1/4
+14:47:48.158 AUDIO advance segment from=2-1 to=2-2
+14:47:48.159 AUDIO stage segment=2-2 index=2/4 duration=8.45
+14:47:48.159 AUDIO stage reused segment=2-2
+14:47:48.186 AUDIO ready segment=2-2 duration=8.45 auto=Y
+14:47:48.187 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-2
+14:47:48.208 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-2
+14:47:48.898 TTS clone response request=E30383FE-9BD2-4B95-8E99-44B269EBB268 status=200 quota=async attempt=1 remaining=6158
+14:47:48.908 TTS part begin para=1 part=3 request=DD2C846B-F723-46D4-B1F1-932F023C40EE priority=readAhead
+14:47:48.908 TTS schedule dispatch request=DD2C846B-F723-46D4-B1F1-932F023C40EE priority=readAhead queueMs=0 active=1 pending=0
+14:47:52.348 TTS clone response request=DD2C846B-F723-46D4-B1F1-932F023C40EE status=200 quota=async attempt=1 remaining=6137
+14:47:52.359 WEREAD preload audio ready source=34805d2a next=faf4a507 voice=vl_b4bb75aa2d3e56fd90a2 segs=4
+14:47:52.359 WEREAD continuous armed reason=preload-ready serial=3 source=34805d2a next=faf4a507 predecessor=2-3 segs=4
+14:47:55.037 AUDIO item finished segment=2-2 index=2/8
+14:47:55.038 AUDIO advance segment from=2-2 to=2-3
+14:47:55.038 AUDIO stage segment=2-3 index=3/8 duration=7.49
+14:47:55.075 AUDIO ready segment=2-3 duration=7.49 auto=Y
+14:47:55.075 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-3
+14:47:55.098 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-3
+14:47:56.856 WEREAD page turn action=semantic-next fingerprint=34805d2a
+14:47:57.429 WEREAD page changing reason=fillText read=Y explain=N
+14:47:57.430 WEREAD turn latency measured=0.574s nextLead=0.594s
+14:47:57.431 WEREAD page commit prior=34805d2a next=403f6ace confirmed=true epoch=7 cols= geometry=fillText glyphs=267 paras=3
+14:47:57.432 WEREAD continuous cancelled reason=visible-fingerprint-mismatch serial=3
+14:47:57.441 WEREAD exact prewarm start para=1 epoch=12 serial=2 chars=165
+14:47:57.442 WEREAD preload invalidated reason=boundary-carry-committed preserve=N
+14:47:57.442 WEREAD boundary carry committed next=403f6ace trim=22
+14:47:57.442 WEREAD explain preload invalidated reason=prediction-changed
+14:47:57.443 WEREAD preload preview source=403f6ace next=954e91aa confidence=sequential paras=2
+14:47:57.447 TTS part begin para=1 part=0 request=187FC026-CDCA-4EA9-83D9-23A003E503E3 priority=readAhead
+14:47:57.472 TTS schedule dispatch request=187FC026-CDCA-4EA9-83D9-23A003E503E3 priority=readAhead queueMs=0 active=1 pending=0
+14:47:57.872 TTS clone response request=187FC026-CDCA-4EA9-83D9-23A003E503E3 status=200 quota=async attempt=1 remaining=6134
+14:47:57.882 WEREAD exact prewarm segment para=1 seg=0 buffered=1 due=N
+14:47:57.882 TTS part begin para=1 part=1 request=9CC08A28-2790-4C30-8C35-04C0348CECF4 priority=readAhead
+14:47:57.883 TTS schedule dispatch request=9CC08A28-2790-4C30-8C35-04C0348CECF4 priority=readAhead queueMs=0 active=1 pending=0
+14:47:58.309 TTS clone response request=9CC08A28-2790-4C30-8C35-04C0348CECF4 status=200 quota=async attempt=1 remaining=6126
+14:47:58.321 WEREAD exact prewarm segment para=1 seg=1 buffered=2 due=N
+14:47:58.321 TTS part begin para=1 part=2 request=C77B6A76-4EEF-4FE6-8447-4705F6233428 priority=readAhead
+14:47:58.322 TTS schedule dispatch request=C77B6A76-4EEF-4FE6-8447-4705F6233428 priority=readAhead queueMs=0 active=1 pending=0
+14:47:58.789 TTS clone response request=C77B6A76-4EEF-4FE6-8447-4705F6233428 status=200 quota=async attempt=1 remaining=6122
+14:47:58.797 WEREAD exact prewarm segment para=1 seg=2 buffered=3 due=N
+14:47:58.798 TTS part begin para=1 part=3 request=E8974CD9-BEC2-4184-A170-40EA4E2F9F58 priority=readAhead
+14:47:58.798 TTS schedule dispatch request=E8974CD9-BEC2-4184-A170-40EA4E2F9F58 priority=readAhead queueMs=0 active=1 pending=0
+14:48:00.610 TTS clone response request=E8974CD9-BEC2-4184-A170-40EA4E2F9F58 status=200 quota=async attempt=1 remaining=6101
+14:48:00.629 WEREAD exact prewarm segment para=1 seg=3 buffered=4 due=N
+14:48:00.630 WEREAD exact prewarm done para=1 epoch=12 serial=2 segs=4
+14:48:01.157 AUDIO item finished segment=2-3 index=3/4
+14:48:01.158 AUDIO queue complete segment=2-3 queue=4
+14:48:01.158 READ completion accepted para=-1 status=ready
+14:48:01.159 WEREAD carry completed; promote exact prewarm para=1 buffered=4 producer=done
+14:48:01.160 AUDIO stage segment=1-850020000 index=0/4 duration=6.14
+14:48:01.169 WEREAD exact prewarm promoted para=1 epoch=12 buffered=4 producer=done
+14:48:01.170 READ prefetch start para=2 epoch=12 chars=80 streaming=Y
+14:48:01.198 TTS part begin para=2 part=0 request=cr2-c89828982bdd41399d60d60c59008d0568ff17271a78fa2f6300a7743d92d1c9 priority=readAhead
+14:48:01.199 TTS schedule dispatch request=cr2-c89828982bdd41399d60d60c59008d0568ff17271a78fa2f6300a7743d92d1c9 priority=readAhead queueMs=0 active=1 pending=0
+14:48:01.218 AUDIO ready segment=1-850020000 duration=6.14 auto=Y
+14:48:01.230 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-850020000
+14:48:01.251 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-850020000
+14:48:01.852 AUDIO session released owner=readAloud gen=5
+14:48:01.853 AUDIO session claimed owner=explain gen=6
+14:48:01.854 WEREAD preload invalidated reason=mode-switched-to-explain preserve=Y
+14:48:01.856 EXPLAIN mode activation autoplay=N status=idle paras=2
+14:48:29.076 EXPLAIN start requested status=idle reuse=N paras=2
+14:48:29.082 EXPLAIN planning started reuse=N
+14:48:29.123 EXPLAIN plan request idxBase=0 paras=3 chars=245 fp=f847e9a078ba36ce prevSummaryChars=0
+14:48:37.174 TTS part begin para=0 part=0 request=D9F36FCF-105B-4C2B-8D3C-1A6974188AD0 priority=interactive
+14:48:37.183 TTS schedule dispatch request=D9F36FCF-105B-4C2B-8D3C-1A6974188AD0 priority=interactive queueMs=0 active=1 pending=0
+14:48:38.713 TTS clone response request=D9F36FCF-105B-4C2B-8D3C-1A6974188AD0 status=200 quota=async attempt=1 remaining=6099
+14:48:38.753 TTS part begin para=0 part=1 request=270F3949-A16F-46A2-913D-7A87ED793CC7 priority=interactive
+14:48:38.754 TTS schedule dispatch request=270F3949-A16F-46A2-913D-7A87ED793CC7 priority=interactive queueMs=0 active=1 pending=0
+14:48:40.170 TTS clone response request=270F3949-A16F-46A2-913D-7A87ED793CC7 status=200 quota=async attempt=1 remaining=6090
+14:48:40.207 TTS part begin para=0 part=2 request=6C3302A4-12E6-4D80-81AB-D2DA65A33245 priority=interactive
+14:48:40.208 TTS schedule dispatch request=6C3302A4-12E6-4D80-81AB-D2DA65A33245 priority=interactive queueMs=0 active=1 pending=0
+14:48:42.158 TTS clone response request=6C3302A4-12E6-4D80-81AB-D2DA65A33245 status=200 quota=async attempt=1 remaining=6080
+14:48:42.197 TTS part begin para=0 part=3 request=AB30B0DC-23F3-4618-A24F-F9D987B76F7C priority=interactive
+14:48:42.198 TTS schedule dispatch request=AB30B0DC-23F3-4618-A24F-F9D987B76F7C priority=interactive queueMs=0 active=1 pending=0
+14:48:43.613 TTS clone response request=AB30B0DC-23F3-4618-A24F-F9D987B76F7C status=200 quota=async attempt=1 remaining=6073
+14:48:43.653 TTS part begin para=0 part=4 request=E45A1AD3-9F1F-4FD9-B1C1-D5A5914B6132 priority=interactive
+14:48:43.654 TTS schedule dispatch request=E45A1AD3-9F1F-4FD9-B1C1-D5A5914B6132 priority=interactive queueMs=0 active=1 pending=0
+14:48:44.768 TTS clone response request=E45A1AD3-9F1F-4FD9-B1C1-D5A5914B6132 status=200 quota=async attempt=1 remaining=6065
+14:48:44.901 AUDIO producer expected=Y owner=explain gen=6 segment=nil
+14:48:44.902 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:48:44.903 AUDIO stage segment=0-0 index=0/1 duration=5.90
+14:48:44.909 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+14:48:44.910 AUDIO enqueue segment=0-2 queue=3 waiting=N auto=Y
+14:48:44.910 AUDIO enqueue segment=0-3 queue=4 waiting=N auto=Y
+14:48:44.911 AUDIO enqueue segment=0-4 queue=5 waiting=N auto=Y
+14:48:44.911 AUDIO producer expected=N owner=explain gen=6 segment=0-0
+14:48:44.921 WEREAD explain preload start source=403f6ace next=954e91aa paras=2
+14:48:44.955 AUDIO ready segment=0-0 duration=5.90 auto=Y
+14:48:44.970 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:48:44.993 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:48:49.788 AUDIO item finished segment=0-0 index=0/5
+14:48:49.788 AUDIO advance segment from=0-0 to=0-1
+14:48:49.789 AUDIO stage segment=0-1 index=1/5 duration=7.90
+14:48:49.822 AUDIO ready segment=0-1 duration=7.90 auto=Y
+14:48:49.823 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-1
+14:48:49.843 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-1
+14:48:52.803 TTS part begin para=0 part=0 request=732AC5E9-C0D2-4CE5-9F54-292192A627EB priority=readAhead
+14:48:52.804 TTS schedule dispatch request=732AC5E9-C0D2-4CE5-9F54-292192A627EB priority=readAhead queueMs=0 active=1 pending=0
+14:48:53.305 TTS clone response request=732AC5E9-C0D2-4CE5-9F54-292192A627EB status=200 quota=async attempt=1 remaining=6065
+14:48:53.317 TTS part begin para=0 part=1 request=C2AEFEEF-9543-413C-9ABB-4B4A8A203430 priority=readAhead
+14:48:53.317 TTS schedule dispatch request=C2AEFEEF-9543-413C-9ABB-4B4A8A203430 priority=readAhead queueMs=0 active=1 pending=0
+14:48:55.019 TTS clone response request=C2AEFEEF-9543-413C-9ABB-4B4A8A203430 status=200 quota=async attempt=1 remaining=6054
+14:48:55.027 TTS part begin para=0 part=2 request=BDBC464D-52FE-4882-B3F0-AB19B266C7F6 priority=readAhead
+14:48:55.028 TTS schedule dispatch request=BDBC464D-52FE-4882-B3F0-AB19B266C7F6 priority=readAhead queueMs=0 active=1 pending=0
+14:48:56.237 AUDIO item finished segment=0-1 index=1/5
+14:48:56.238 AUDIO advance segment from=0-1 to=0-2
+14:48:56.239 AUDIO stage segment=0-2 index=2/5 duration=10.46
+14:48:56.272 AUDIO ready segment=0-2 duration=10.46 auto=Y
+14:48:56.273 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-2
+14:48:56.298 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-2
+14:48:56.635 TTS clone response request=BDBC464D-52FE-4882-B3F0-AB19B266C7F6 status=200 quota=async attempt=1 remaining=6048
+14:48:56.644 TTS part begin para=0 part=3 request=592236D7-1E60-4447-A5C6-6F24DD616256 priority=readAhead
+14:48:56.645 TTS schedule dispatch request=592236D7-1E60-4447-A5C6-6F24DD616256 priority=readAhead queueMs=0 active=1 pending=0
+14:48:57.746 TTS clone response request=592236D7-1E60-4447-A5C6-6F24DD616256 status=200 quota=async attempt=1 remaining=6039
+14:48:57.758 TTS part begin para=0 part=4 request=455791EA-E068-4D6D-AD7D-59B123F44998 priority=readAhead
+14:48:57.759 TTS schedule dispatch request=455791EA-E068-4D6D-AD7D-59B123F44998 priority=readAhead queueMs=0 active=1 pending=0
+14:48:58.528 TTS clone response request=455791EA-E068-4D6D-AD7D-59B123F44998 status=200 quota=async attempt=1 remaining=6033
+14:48:58.587 WEREAD explain preload ready source=403f6ace next=954e91aa blocks=1
+14:49:04.748 AUDIO item finished segment=0-2 index=2/5
+14:49:04.748 AUDIO advance segment from=0-2 to=0-3
+14:49:04.749 AUDIO stage segment=0-3 index=3/5 duration=9.58
+14:49:04.785 AUDIO ready segment=0-3 duration=9.58 auto=Y
+14:49:04.785 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-3
+14:49:04.814 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-3
+14:49:12.537 AUDIO item finished segment=0-3 index=3/5
+14:49:12.538 AUDIO advance segment from=0-3 to=0-4
+14:49:12.539 AUDIO stage segment=0-4 index=4/5 duration=6.22
+14:49:12.575 AUDIO ready segment=0-4 duration=6.22 auto=Y
+14:49:12.576 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-4
+14:49:12.602 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-4
+14:49:17.647 AUDIO item finished segment=0-4 index=4/5
+14:49:17.648 AUDIO queue complete segment=0-4 queue=5
+14:49:17.649 WEREAD page turn action=semantic-next fingerprint=403f6ace
+14:49:17.898 WEREAD preload invalidated reason=explain-auto-turn preserve=Y
+14:49:17.900 WEREAD page changing reason=dom read=N explain=Y
+14:49:17.915 WEREAD turn latency measured=0.267s nextLead=0.521s
+14:49:17.918 WEREAD page commit prior=403f6ace next=40758213 confirmed=true epoch=8 cols= geometry=fillText glyphs=292 paras=2
+14:49:17.924 WEREAD explain preload consume next=40758213 hit=Y match=289c predicted=1.00 visible=0.85
+14:49:17.924 WEREAD explain preload invalidated reason=page-commit-consumed
+14:49:17.925 WEREAD explain confirmed-page restart=Y prefetched=Y prior=403f6ace next=40758213
+14:49:17.929 AUDIO producer expected=Y owner=explain gen=6 segment=nil
+14:49:17.929 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:49:17.929 AUDIO stage segment=0-0 index=0/1 duration=2.38
+14:49:17.933 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+14:49:17.933 AUDIO enqueue segment=0-2 queue=3 waiting=N auto=Y
+14:49:17.933 AUDIO enqueue segment=0-3 queue=4 waiting=N auto=Y
+14:49:17.934 AUDIO enqueue segment=0-4 queue=5 waiting=N auto=Y
+14:49:17.934 AUDIO producer expected=N owner=explain gen=6 segment=0-0
+14:49:17.935 WEREAD preload invalidated reason=explain-page-committed preserve=N
+14:49:17.936 WEREAD explain preload invalidated reason=prediction-changed
+14:49:17.937 WEREAD preload preview source=40758213 next=de12f2b2 confidence=sequential paras=2
+14:49:17.938 WEREAD explain preload start source=40758213 next=de12f2b2 paras=2
+14:49:17.985 AUDIO ready segment=0-0 duration=2.38 auto=Y
+14:49:18.002 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:49:18.023 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:49:19.978 AUDIO item finished segment=0-0 index=0/5
+14:49:19.978 AUDIO advance segment from=0-0 to=0-1
+14:49:19.979 AUDIO stage segment=0-1 index=1/5 duration=7.90
+14:49:20.016 AUDIO ready segment=0-1 duration=7.90 auto=Y
+14:49:20.016 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-1
+14:49:20.044 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-1
+14:49:26.428 AUDIO item finished segment=0-1 index=1/5
+14:49:26.428 AUDIO advance segment from=0-1 to=0-2
+14:49:26.429 AUDIO stage segment=0-2 index=2/5 duration=8.30
+14:49:26.463 AUDIO ready segment=0-2 duration=8.30 auto=Y
+14:49:26.481 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-2
+14:49:26.502 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-2
+14:49:28.951 TTS part begin para=0 part=0 request=609A5FA0-5B83-4574-A525-D008401CCB27 priority=readAhead
+14:49:28.951 TTS schedule dispatch request=609A5FA0-5B83-4574-A525-D008401CCB27 priority=readAhead queueMs=0 active=1 pending=0
+14:49:30.119 TTS clone response request=609A5FA0-5B83-4574-A525-D008401CCB27 status=200 quota=async attempt=1 remaining=6025
+14:49:30.133 TTS part begin para=0 part=1 request=6AECA758-ED75-45E9-A1AB-BC8DE41A1195 priority=readAhead
+14:49:30.144 TTS schedule dispatch request=6AECA758-ED75-45E9-A1AB-BC8DE41A1195 priority=readAhead queueMs=0 active=1 pending=0
+14:49:30.634 TTS clone response request=6AECA758-ED75-45E9-A1AB-BC8DE41A1195 status=200 quota=async attempt=1 remaining=6023
+14:49:30.645 TTS part begin para=0 part=2 request=11A8D6AF-8CDF-48A6-A5E7-3E24D2703DB1 priority=readAhead
+14:49:30.646 TTS schedule dispatch request=11A8D6AF-8CDF-48A6-A5E7-3E24D2703DB1 priority=readAhead queueMs=0 active=1 pending=0
+14:49:31.718 TTS clone response request=11A8D6AF-8CDF-48A6-A5E7-3E24D2703DB1 status=200 quota=async attempt=1 remaining=6015
+14:49:31.731 TTS part begin para=0 part=3 request=EEF0CD29-395A-4ED9-BACE-8AE9AC5B6DAB priority=readAhead
+14:49:31.739 TTS schedule dispatch request=EEF0CD29-395A-4ED9-BACE-8AE9AC5B6DAB priority=readAhead queueMs=0 active=1 pending=0
+14:49:32.936 TTS clone response request=EEF0CD29-395A-4ED9-BACE-8AE9AC5B6DAB status=200 quota=async attempt=1 remaining=6004
+14:49:32.947 TTS part begin para=0 part=4 request=ACB35001-984A-4834-9FDF-8F053D568D69 priority=readAhead
+14:49:32.948 TTS schedule dispatch request=ACB35001-984A-4834-9FDF-8F053D568D69 priority=readAhead queueMs=0 active=1 pending=0
+14:49:33.208 AUDIO item finished segment=0-2 index=2/5
+14:49:33.208 AUDIO advance segment from=0-2 to=0-3
+14:49:33.209 AUDIO stage segment=0-3 index=3/5 duration=7.66
+14:49:33.243 AUDIO ready segment=0-3 duration=7.66 auto=Y
+14:49:33.243 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-3
+14:49:33.264 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-3
+14:49:33.904 TTS clone response request=ACB35001-984A-4834-9FDF-8F053D568D69 status=200 quota=async attempt=1 remaining=6000
+14:49:33.917 TTS part begin para=0 part=5 request=BE16328B-C494-4C1C-8011-AE9D240A5C54 priority=readAhead
+14:49:33.928 TTS schedule dispatch request=BE16328B-C494-4C1C-8011-AE9D240A5C54 priority=readAhead queueMs=0 active=1 pending=0
+14:49:35.065 TTS clone response request=BE16328B-C494-4C1C-8011-AE9D240A5C54 status=200 quota=async attempt=1 remaining=5995
+14:49:35.075 TTS part begin para=0 part=6 request=5E579231-A72A-4380-BF4B-A9C638209815 priority=readAhead
+14:49:35.078 TTS schedule dispatch request=5E579231-A72A-4380-BF4B-A9C638209815 priority=readAhead queueMs=0 active=1 pending=0
+14:49:35.999 TTS clone response request=5E579231-A72A-4380-BF4B-A9C638209815 status=200 quota=async attempt=1 remaining=5991
+14:49:36.010 TTS part begin para=0 part=7 request=23430333-6F26-47B0-8192-69DCED88C800 priority=readAhead
+14:49:36.011 TTS schedule dispatch request=23430333-6F26-47B0-8192-69DCED88C800 priority=readAhead queueMs=0 active=1 pending=0
+14:49:36.529 TTS clone response request=23430333-6F26-47B0-8192-69DCED88C800 status=200 quota=async attempt=1 remaining=5990
+14:49:36.538 TTS part begin para=0 part=8 request=EF59E7A8-1F64-459A-81A3-2D373941F786 priority=readAhead
+14:49:36.538 TTS schedule dispatch request=EF59E7A8-1F64-459A-81A3-2D373941F786 priority=readAhead queueMs=0 active=1 pending=0
+14:49:39.219 TTS clone response request=EF59E7A8-1F64-459A-81A3-2D373941F786 status=200 quota=async attempt=1 remaining=5970
+14:49:39.274 WEREAD explain preload ready source=40758213 next=de12f2b2 blocks=1
+14:49:39.467 AUDIO item finished segment=0-3 index=3/5
+14:49:39.468 AUDIO advance segment from=0-3 to=0-4
+14:49:39.469 AUDIO stage segment=0-4 index=4/5 duration=5.02
+14:49:39.501 AUDIO ready segment=0-4 duration=5.02 auto=Y
+14:49:39.502 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-4
+14:49:39.533 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-4
+14:49:43.618 AUDIO item finished segment=0-4 index=4/5
+14:49:43.618 AUDIO queue complete segment=0-4 queue=5
+14:49:43.619 WEREAD page turn action=semantic-next fingerprint=40758213
+14:49:43.806 WEREAD preload invalidated reason=explain-auto-turn preserve=Y
+14:49:43.807 WEREAD page changing reason=dom read=N explain=Y
+14:49:43.815 WEREAD turn latency measured=0.196s nextLead=0.450s
+14:49:43.817 WEREAD page commit prior=40758213 next=2c16b65 confirmed=true epoch=9 cols= geometry=fillText glyphs=294 paras=2
+14:49:43.821 WEREAD explain preload consume next=2c16b65 hit=Y match=317c predicted=1.00 visible=1.00
+14:49:43.821 WEREAD explain preload invalidated reason=page-commit-consumed
+14:49:43.822 WEREAD explain confirmed-page restart=Y prefetched=Y prior=40758213 next=2c16b65
+14:49:43.825 AUDIO producer expected=Y owner=explain gen=6 segment=nil
+14:49:43.825 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:49:43.826 AUDIO stage segment=0-0 index=0/1 duration=8.38
+14:49:43.834 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+14:49:43.834 AUDIO enqueue segment=0-2 queue=3 waiting=N auto=Y
+14:49:43.835 AUDIO enqueue segment=0-3 queue=4 waiting=N auto=Y
+14:49:43.835 AUDIO enqueue segment=0-4 queue=5 waiting=N auto=Y
+14:49:43.835 AUDIO enqueue segment=0-5 queue=6 waiting=N auto=Y
+14:49:43.835 AUDIO enqueue segment=0-6 queue=7 waiting=N auto=Y
+14:49:43.836 AUDIO enqueue segment=0-7 queue=8 waiting=N auto=Y
+14:49:43.836 AUDIO enqueue segment=0-8 queue=9 waiting=N auto=Y
+14:49:43.836 AUDIO producer expected=N owner=explain gen=6 segment=0-0
+14:49:43.837 WEREAD preload invalidated reason=explain-page-committed preserve=N
+14:49:43.838 WEREAD explain preload invalidated reason=prediction-changed
+14:49:43.839 WEREAD preload preview source=2c16b65 next=2d919852 confidence=sequential paras=4
+14:49:43.839 WEREAD explain preload start source=2c16b65 next=2d919852 paras=4
+14:49:43.888 AUDIO ready segment=0-0 duration=8.38 auto=Y
+14:49:43.902 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:49:43.924 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:49:50.688 AUDIO item finished segment=0-0 index=0/9
+14:49:50.688 AUDIO advance segment from=0-0 to=0-1
+14:49:50.689 AUDIO stage segment=0-1 index=1/9 duration=2.69
+14:49:50.724 AUDIO ready segment=0-1 duration=2.69 auto=Y
+14:49:50.724 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-1
+14:49:50.748 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-1
+14:49:52.200 TTS part begin para=0 part=0 request=F3186E1C-67CB-4B7C-B43D-B174FA7E350B priority=readAhead
+14:49:52.200 TTS schedule dispatch request=F3186E1C-67CB-4B7C-B43D-B174FA7E350B priority=readAhead queueMs=0 active=1 pending=0
+14:49:52.968 AUDIO item finished segment=0-1 index=1/9
+14:49:52.968 AUDIO advance segment from=0-1 to=0-2
+14:49:52.969 AUDIO stage segment=0-2 index=2/9 duration=8.06
+14:49:53.003 AUDIO ready segment=0-2 duration=8.06 auto=Y
+14:49:53.004 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-2
+14:49:53.025 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-2
+14:49:54.125 TTS clone response request=F3186E1C-67CB-4B7C-B43D-B174FA7E350B status=200 quota=async attempt=1 remaining=5963
+14:49:54.136 TTS part begin para=0 part=1 request=A937DDBF-7C69-496F-AFF7-2347F7F5EAC0 priority=readAhead
+14:49:54.136 TTS schedule dispatch request=A937DDBF-7C69-496F-AFF7-2347F7F5EAC0 priority=readAhead queueMs=0 active=1 pending=0
+14:49:54.661 TTS clone response request=A937DDBF-7C69-496F-AFF7-2347F7F5EAC0 status=200 quota=async attempt=1 remaining=5963
+14:49:54.672 TTS part begin para=0 part=2 request=AD66DC22-9BBA-44C5-AC02-FCB7E9CE69B8 priority=readAhead
+14:49:54.683 TTS schedule dispatch request=AD66DC22-9BBA-44C5-AC02-FCB7E9CE69B8 priority=readAhead queueMs=0 active=1 pending=0
+14:49:55.399 TTS clone response request=AD66DC22-9BBA-44C5-AC02-FCB7E9CE69B8 status=200 quota=async attempt=1 remaining=5958
+14:49:55.408 TTS part begin para=0 part=3 request=273DC977-36D5-4521-89FD-AA4B0339AA48 priority=readAhead
+14:49:55.408 TTS schedule dispatch request=273DC977-36D5-4521-89FD-AA4B0339AA48 priority=readAhead queueMs=0 active=1 pending=0
+14:49:56.305 TTS clone response request=273DC977-36D5-4521-89FD-AA4B0339AA48 status=200 quota=async attempt=1 remaining=5953
+14:49:56.378 WEREAD explain preload ready source=2c16b65 next=2d919852 blocks=3
+14:49:59.558 AUDIO item finished segment=0-2 index=2/9
+14:49:59.558 AUDIO advance segment from=0-2 to=0-3
+14:49:59.559 AUDIO stage segment=0-3 index=3/9 duration=8.14
+14:49:59.594 AUDIO ready segment=0-3 duration=8.14 auto=Y
+14:49:59.594 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-3
+14:49:59.616 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-3
+14:50:06.198 AUDIO item finished segment=0-3 index=3/9
+14:50:06.198 AUDIO advance segment from=0-3 to=0-4
+14:50:06.199 AUDIO stage segment=0-4 index=4/9 duration=6.05
+14:50:06.230 AUDIO ready segment=0-4 duration=6.05 auto=Y
+14:50:06.241 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-4
+14:50:06.260 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-4
+14:50:11.168 AUDIO item finished segment=0-4 index=4/9
+14:50:11.168 AUDIO advance segment from=0-4 to=0-5
+14:50:11.170 AUDIO stage segment=0-5 index=5/9 duration=6.14
+14:50:11.204 AUDIO ready segment=0-5 duration=6.14 auto=Y
+14:50:11.204 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-5
+14:50:11.226 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-5
+14:50:16.218 AUDIO item finished segment=0-5 index=5/9
+14:50:16.218 AUDIO advance segment from=0-5 to=0-6
+14:50:16.219 AUDIO stage segment=0-6 index=6/9 duration=3.34
+14:50:16.255 AUDIO ready segment=0-6 duration=3.34 auto=Y
+14:50:16.256 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-6
+14:50:16.278 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-6
+14:50:19.018 AUDIO item finished segment=0-6 index=6/9
+14:50:19.018 AUDIO advance segment from=0-6 to=0-7
+14:50:19.020 AUDIO stage segment=0-7 index=7/9 duration=2.38
+14:50:19.060 AUDIO ready segment=0-7 duration=2.38 auto=Y
+14:50:19.060 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-7
+14:50:19.083 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-7
+14:50:21.048 AUDIO item finished segment=0-7 index=7/9
+14:50:21.049 AUDIO advance segment from=0-7 to=0-8
+14:50:21.049 AUDIO stage segment=0-8 index=8/9 duration=16.13
+14:50:21.085 AUDIO ready segment=0-8 duration=16.13 auto=Y
+14:50:21.085 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-8
+14:50:21.109 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-8
+14:50:34.088 AUDIO item finished segment=0-8 index=8/9
+14:50:34.089 AUDIO queue complete segment=0-8 queue=9
+14:50:34.090 WEREAD page turn action=semantic-next fingerprint=2c16b65
+14:50:34.667 WEREAD preload invalidated reason=explain-auto-turn preserve=Y
+14:50:34.669 WEREAD page changing reason=fillText read=N explain=Y
+14:50:34.684 WEREAD turn latency measured=0.594s nextLead=0.542s
+14:50:34.686 WEREAD page commit prior=2c16b65 next=974e3872 confirmed=true epoch=10 cols= geometry=fillText glyphs=266 paras=4
+14:50:34.692 WEREAD explain preload consume next=974e3872 hit=Y match=296c predicted=1.00 visible=1.00
+14:50:34.693 WEREAD explain preload invalidated reason=page-commit-consumed
+14:50:34.693 WEREAD explain confirmed-page restart=Y prefetched=Y prior=2c16b65 next=974e3872
+14:50:34.697 AUDIO producer expected=Y owner=explain gen=6 segment=nil
+14:50:34.697 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:50:34.698 AUDIO stage segment=0-0 index=0/1 duration=8.45
+14:50:34.707 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+14:50:34.708 AUDIO enqueue segment=0-2 queue=3 waiting=N auto=Y
+14:50:34.708 AUDIO enqueue segment=0-3 queue=4 waiting=N auto=Y
+14:50:34.709 AUDIO producer expected=N owner=explain gen=6 segment=0-0
+14:50:34.710 WEREAD preload invalidated reason=explain-page-committed preserve=N
+14:50:34.712 WEREAD explain preload invalidated reason=prediction-changed
+14:50:34.713 WEREAD preload preview source=974e3872 next=36a6a46a confidence=sequential paras=16
+14:50:34.713 WEREAD explain preload start source=974e3872 next=36a6a46a paras=16
+14:50:34.762 AUDIO ready segment=0-0 duration=8.45 auto=Y
+14:50:34.762 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:50:34.785 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:50:38.999 TTS part begin para=1 part=0 request=6D0CB42F-5FE7-443F-9D8F-DABAD34E3291 priority=readAhead
+14:50:38.999 TTS schedule dispatch request=6D0CB42F-5FE7-443F-9D8F-DABAD34E3291 priority=readAhead queueMs=0 active=1 pending=0
+14:50:41.618 AUDIO item finished segment=0-0 index=0/4
+14:50:41.619 AUDIO advance segment from=0-0 to=0-1
+14:50:41.620 AUDIO stage segment=0-1 index=1/4 duration=2.30
+14:50:41.655 AUDIO ready segment=0-1 duration=2.30 auto=Y
+14:50:41.670 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-1
+14:50:41.691 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-1
+14:50:41.804 TTS part begin para=0 part=0 request=568F35AC-7A04-4A30-8F92-998828793FF9 priority=readAhead
+14:50:42.546 TTS clone response request=6D0CB42F-5FE7-443F-9D8F-DABAD34E3291 status=200 quota=async attempt=1 remaining=5941
+14:50:42.559 TTS schedule dispatch request=568F35AC-7A04-4A30-8F92-998828793FF9 priority=readAhead queueMs=755 active=1 pending=0
+14:50:42.560 TTS part begin para=1 part=1 request=C8F62206-0570-47ED-BEE8-828E232432C3 priority=readAhead
+14:50:43.530 TTS clone response request=568F35AC-7A04-4A30-8F92-998828793FF9 status=200 quota=async attempt=1 remaining=5937
+14:50:43.542 TTS schedule dispatch request=C8F62206-0570-47ED-BEE8-828E232432C3 priority=readAhead queueMs=973 active=1 pending=0
+14:50:43.542 TTS part begin para=0 part=1 request=9085D182-5A3C-4CCF-ADBC-01A00050EBA3 priority=readAhead
+14:50:43.598 AUDIO item finished segment=0-1 index=1/4
+14:50:43.599 AUDIO advance segment from=0-1 to=0-2
+14:50:43.600 AUDIO stage segment=0-2 index=2/4 duration=4.22
+14:50:43.631 AUDIO ready segment=0-2 duration=4.22 auto=Y
+14:50:43.631 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-2
+14:50:43.655 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-2
+14:50:44.475 TTS clone response request=C8F62206-0570-47ED-BEE8-828E232432C3 status=200 quota=async attempt=1 remaining=5933
+14:50:44.483 TTS schedule dispatch request=9085D182-5A3C-4CCF-ADBC-01A00050EBA3 priority=readAhead queueMs=940 active=1 pending=0
+14:50:45.736 TTS clone response request=9085D182-5A3C-4CCF-ADBC-01A00050EBA3 status=200 quota=async attempt=1 remaining=5926
+14:50:45.750 TTS part begin para=0 part=2 request=4DA0CB60-4128-499E-93E5-9819C7F646E9 priority=readAhead
+14:50:45.763 TTS schedule dispatch request=4DA0CB60-4128-499E-93E5-9819C7F646E9 priority=readAhead queueMs=0 active=1 pending=0
+14:50:47.108 AUDIO item finished segment=0-2 index=2/4
+14:50:47.108 AUDIO advance segment from=0-2 to=0-3
+14:50:47.109 AUDIO stage segment=0-3 index=3/4 duration=5.09
+14:50:47.148 AUDIO ready segment=0-3 duration=5.09 auto=Y
+14:50:47.148 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-3
+14:50:47.176 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-3
+14:50:48.312 TTS part begin para=2 part=0 request=E9E96040-D28B-41B4-B3F5-FA326BD24C39 priority=readAhead
+14:50:48.378 TTS clone response request=4DA0CB60-4128-499E-93E5-9819C7F646E9 status=200 quota=async attempt=1 remaining=5924
+14:50:48.387 TTS schedule dispatch request=E9E96040-D28B-41B4-B3F5-FA326BD24C39 priority=readAhead queueMs=74 active=1 pending=0
+14:50:48.423 WEREAD explain preload ready source=974e3872 next=36a6a46a blocks=3
+14:50:49.963 TTS clone response request=E9E96040-D28B-41B4-B3F5-FA326BD24C39 status=200 quota=async attempt=1 remaining=5917
+14:50:49.972 TTS part begin para=2 part=1 request=8BEDFCD5-315B-4A87-A968-6336729CF984 priority=readAhead
+14:50:49.983 TTS schedule dispatch request=8BEDFCD5-315B-4A87-A968-6336729CF984 priority=readAhead queueMs=0 active=1 pending=0
+14:50:51.308 AUDIO item finished segment=0-3 index=3/4
+14:50:51.309 AUDIO queue complete segment=0-3 queue=4
+14:50:51.332 AUDIO producer expected=Y owner=explain gen=6 segment=nil
+14:50:51.333 AUDIO enqueue segment=1-0 queue=1 waiting=N auto=Y
+14:50:51.333 AUDIO stage segment=1-0 index=0/1 duration=10.30
+14:50:51.343 AUDIO enqueue segment=1-1 queue=2 waiting=N auto=Y
+14:50:51.344 AUDIO producer expected=N owner=explain gen=6 segment=1-0
+14:50:51.372 AUDIO ready segment=1-0 duration=10.30 auto=Y
+14:50:51.373 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-0
+14:50:51.397 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-0
+14:50:51.770 TTS clone response request=8BEDFCD5-315B-4A87-A968-6336729CF984 status=200 quota=async attempt=1 remaining=5911
+14:50:59.708 AUDIO item finished segment=1-0 index=0/2
+14:50:59.709 AUDIO advance segment from=1-0 to=1-1
+14:50:59.709 AUDIO stage segment=1-1 index=1/2 duration=4.85
+14:50:59.743 AUDIO ready segment=1-1 duration=4.85 auto=Y
+14:50:59.743 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-1
+14:50:59.765 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-1
+14:53:17.020 WEREAD manual page button direction=prev read=N explain=N
+14:53:17.028 WEREAD preload invalidated reason=explain-manual-page-change preserve=N
+14:53:17.029 WEREAD explain preload invalidated reason=explain-manual-page-change
+14:53:17.030 WEREAD page changing reason=manual-intent read=N explain=N
+14:53:17.200 WEREAD preload invalidated reason=explain-manual-page-change preserve=N
+14:53:17.202 WEREAD explain preload invalidated reason=explain-manual-page-change
+14:53:17.202 WEREAD page changing reason=dom read=N explain=N
+14:53:17.204 WEREAD preload preview deferred source=2c16b65 awaiting-manual-commit
+14:53:17.857 WEREAD page commit prior=974e3872 next=2c16b65 confirmed=true epoch=11 cols= geometry=fillText glyphs=294 paras=2
+14:53:17.859 WEREAD explain preload invalidated reason=page-commit-without-resume
+14:53:17.859 WEREAD explain confirmed-page restart=N prefetched=N prior=974e3872 next=2c16b65
+14:53:17.862 WEREAD preload invalidated reason=explain-page-committed preserve=N
+14:53:17.863 WEREAD explain preload invalidated reason=prediction-changed
+14:53:17.864 WEREAD preload preview source=2c16b65 next=2d919852 confidence=sequential paras=4
+14:53:43.074 WEREAD manual page button direction=next read=N explain=N
+14:53:43.079 WEREAD preload invalidated reason=explain-manual-page-change preserve=N
+14:53:43.080 WEREAD explain preload invalidated reason=explain-manual-page-change
+14:53:43.081 WEREAD page changing reason=manual-intent read=N explain=N
+14:53:43.236 WEREAD preload invalidated reason=explain-manual-page-change preserve=N
+14:53:43.236 WEREAD explain preload invalidated reason=explain-manual-page-change
+14:53:43.237 WEREAD page changing reason=dom read=N explain=N
+14:53:43.239 WEREAD preload preview deferred source=974e3872 awaiting-manual-commit
+14:53:43.857 WEREAD page commit prior=2c16b65 next=974e3872 confirmed=true epoch=12 cols= geometry=fillText glyphs=266 paras=4
+14:53:43.859 WEREAD explain preload invalidated reason=page-commit-without-resume
+14:53:43.860 WEREAD explain confirmed-page restart=N prefetched=N prior=2c16b65 next=974e3872
+14:53:43.861 WEREAD preload invalidated reason=explain-page-committed preserve=N
+14:53:43.863 WEREAD explain preload invalidated reason=prediction-changed
+14:53:43.864 WEREAD preload preview source=974e3872 next=36a6a46a confidence=sequential paras=16
+14:53:59.725 EXPLAIN start requested status=idle reuse=N paras=4
+14:53:59.729 EXPLAIN planning started reuse=N
+14:53:59.761 EXPLAIN plan request idxBase=0 paras=4 chars=296 fp=fd11525c8244236f prevSummaryChars=0
+14:54:08.067 TTS part begin para=0 part=0 request=1D5086E6-06E8-4BD3-A08E-732522DE4858 priority=interactive
+14:54:08.076 TTS schedule dispatch request=1D5086E6-06E8-4BD3-A08E-732522DE4858 priority=interactive queueMs=0 active=1 pending=0
+14:54:10.999 TTS clone response request=1D5086E6-06E8-4BD3-A08E-732522DE4858 status=200 quota=async attempt=1 remaining=5900
+14:54:11.042 TTS part begin para=0 part=1 request=A574E881-B509-48D5-A8CE-E78A030ED587 priority=interactive
+14:54:11.043 TTS schedule dispatch request=A574E881-B509-48D5-A8CE-E78A030ED587 priority=interactive queueMs=0 active=1 pending=0
+14:54:11.593 TTS clone response request=A574E881-B509-48D5-A8CE-E78A030ED587 status=200 quota=async attempt=1 remaining=5902
+14:54:11.633 TTS part begin para=0 part=2 request=CE470A63-C1EC-4653-8068-23563A6CB194 priority=interactive
+14:54:11.634 TTS schedule dispatch request=CE470A63-C1EC-4653-8068-23563A6CB194 priority=interactive queueMs=0 active=1 pending=0
+14:54:12.439 TTS clone response request=CE470A63-C1EC-4653-8068-23563A6CB194 status=200 quota=async attempt=1 remaining=5898
+14:54:12.480 TTS part begin para=0 part=3 request=9190E765-4B64-4DE1-9857-4F7D420DC2B2 priority=interactive
+14:54:12.481 TTS schedule dispatch request=9190E765-4B64-4DE1-9857-4F7D420DC2B2 priority=interactive queueMs=0 active=1 pending=0
+14:54:15.760 TTS clone response request=9190E765-4B64-4DE1-9857-4F7D420DC2B2 status=200 quota=async attempt=1 remaining=5892
+14:54:15.836 AUDIO producer expected=Y owner=explain gen=6 segment=nil
+14:54:15.837 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:54:15.837 AUDIO stage segment=0-0 index=0/1 duration=9.02
+14:54:15.842 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+14:54:15.843 AUDIO enqueue segment=0-2 queue=3 waiting=N auto=Y
+14:54:15.843 AUDIO enqueue segment=0-3 queue=4 waiting=N auto=Y
+14:54:15.844 AUDIO producer expected=N owner=explain gen=6 segment=0-0
+14:54:15.853 WEREAD explain preload start source=974e3872 next=36a6a46a paras=16
+14:54:15.892 AUDIO ready segment=0-0 duration=9.02 auto=Y
+14:54:15.892 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:54:15.917 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:54:19.495 TTS part begin para=1 part=0 request=D35369FF-E219-4A05-A5EF-2284E43EF5FF priority=readAhead
+14:54:19.497 TTS schedule dispatch request=D35369FF-E219-4A05-A5EF-2284E43EF5FF priority=readAhead queueMs=0 active=1 pending=0
+14:54:20.757 TTS clone response request=D35369FF-E219-4A05-A5EF-2284E43EF5FF status=200 quota=async attempt=1 remaining=5884
+14:54:20.766 TTS part begin para=1 part=1 request=63BB50E5-1498-40BC-9CE0-BAEA6C13E68B priority=readAhead
+14:54:20.777 TTS schedule dispatch request=63BB50E5-1498-40BC-9CE0-BAEA6C13E68B priority=readAhead queueMs=0 active=1 pending=0
+14:54:21.665 TTS clone response request=63BB50E5-1498-40BC-9CE0-BAEA6C13E68B status=200 quota=async attempt=1 remaining=5880
+14:54:22.054 TTS part begin para=0 part=0 request=FCE58C68-85C9-4F4B-9C7C-FB4075F0615B priority=readAhead
+14:54:22.057 TTS schedule dispatch request=FCE58C68-85C9-4F4B-9C7C-FB4075F0615B priority=readAhead queueMs=0 active=1 pending=0
+14:54:22.908 TTS clone response request=FCE58C68-85C9-4F4B-9C7C-FB4075F0615B status=200 quota=async attempt=1 remaining=5872
+14:54:22.918 TTS part begin para=0 part=1 request=66481177-805D-4073-A6F8-4EBDF2A06911 priority=readAhead
+14:54:22.919 TTS schedule dispatch request=66481177-805D-4073-A6F8-4EBDF2A06911 priority=readAhead queueMs=0 active=1 pending=0
+14:54:23.215 AUDIO item finished segment=0-0 index=0/4
+14:54:23.216 AUDIO advance segment from=0-0 to=0-1
+14:54:23.217 AUDIO stage segment=0-1 index=1/4 duration=1.66
+14:54:23.250 AUDIO ready segment=0-1 duration=1.66 auto=Y
+14:54:23.265 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-1
+14:54:23.285 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-1
+14:54:23.564 TTS clone response request=66481177-805D-4073-A6F8-4EBDF2A06911 status=200 quota=async attempt=1 remaining=5871
+14:54:23.574 TTS part begin para=0 part=2 request=EE3AAABA-5424-4981-9B8F-0F4F2ADA441B priority=readAhead
+14:54:23.575 TTS schedule dispatch request=EE3AAABA-5424-4981-9B8F-0F4F2ADA441B priority=readAhead queueMs=0 active=1 pending=0
+14:54:24.211 TTS clone response request=EE3AAABA-5424-4981-9B8F-0F4F2ADA441B status=200 quota=async attempt=1 remaining=5868
+14:54:24.253 WEREAD explain preload ready source=974e3872 next=36a6a46a blocks=3
+14:54:24.676 AUDIO item finished segment=0-1 index=1/4
+14:54:24.677 AUDIO advance segment from=0-1 to=0-2
+14:54:24.677 AUDIO stage segment=0-2 index=2/4 duration=4.06
+14:54:24.713 AUDIO ready segment=0-2 duration=4.06 auto=Y
+14:54:24.713 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-2
+14:54:24.739 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-2
+14:54:25.910 TTS part begin para=2 part=0 request=9E831A86-70EF-4542-A593-D181775EA24C priority=readAhead
+14:54:25.910 TTS schedule dispatch request=9E831A86-70EF-4542-A593-D181775EA24C priority=readAhead queueMs=0 active=1 pending=0
+14:54:26.910 TTS clone response request=9E831A86-70EF-4542-A593-D181775EA24C status=200 quota=async attempt=1 remaining=5862
+14:54:26.919 TTS part begin para=2 part=1 request=729F3D66-33D1-405D-B0CE-C12D6DDA5163 priority=readAhead
+14:54:26.919 TTS schedule dispatch request=729F3D66-33D1-405D-B0CE-C12D6DDA5163 priority=readAhead queueMs=0 active=1 pending=0
+14:54:28.056 AUDIO item finished segment=0-2 index=2/4
+14:54:28.056 AUDIO advance segment from=0-2 to=0-3
+14:54:28.057 AUDIO stage segment=0-3 index=3/4 duration=6.05
+14:54:28.091 AUDIO ready segment=0-3 duration=6.05 auto=Y
+14:54:28.107 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-3
+14:54:28.124 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-3
+14:54:28.644 TTS clone response request=729F3D66-33D1-405D-B0CE-C12D6DDA5163 status=200 quota=async attempt=1 remaining=5852
+14:54:33.026 AUDIO item finished segment=0-3 index=3/4
+14:54:33.026 AUDIO queue complete segment=0-3 queue=4
+14:54:33.050 AUDIO producer expected=Y owner=explain gen=6 segment=nil
+14:54:33.050 AUDIO enqueue segment=1-0 queue=1 waiting=N auto=Y
+14:54:33.050 AUDIO stage segment=1-0 index=0/1 duration=6.62
+14:54:33.060 AUDIO enqueue segment=1-1 queue=2 waiting=N auto=Y
+14:54:33.060 AUDIO producer expected=N owner=explain gen=6 segment=1-0
+14:54:33.088 AUDIO ready segment=1-0 duration=6.62 auto=Y
+14:54:33.088 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-0
+14:54:33.112 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-0
+14:54:38.486 AUDIO item finished segment=1-0 index=0/2
+14:54:38.486 AUDIO advance segment from=1-0 to=1-1
+14:54:38.487 AUDIO stage segment=1-1 index=1/2 duration=5.18
+14:54:38.520 AUDIO ready segment=1-1 duration=5.18 auto=Y
+14:54:38.520 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=1-1
+14:54:38.541 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=1-1
+14:54:42.765 AUDIO item finished segment=1-1 index=1/2
+14:54:42.766 AUDIO queue complete segment=1-1 queue=2
+14:54:42.784 AUDIO producer expected=Y owner=explain gen=6 segment=nil
+14:54:42.784 AUDIO enqueue segment=2-0 queue=1 waiting=N auto=Y
+14:54:42.784 AUDIO stage segment=2-0 index=0/1 duration=5.57
+14:54:42.793 AUDIO enqueue segment=2-1 queue=2 waiting=N auto=Y
+14:54:42.793 AUDIO producer expected=N owner=explain gen=6 segment=2-0
+14:54:42.837 AUDIO ready segment=2-0 duration=5.57 auto=Y
+14:54:42.852 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-0
+14:54:42.873 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-0
+14:54:47.396 AUDIO item finished segment=2-0 index=0/2
+14:54:47.396 AUDIO advance segment from=2-0 to=2-1
+14:54:47.397 AUDIO stage segment=2-1 index=1/2 duration=8.21
+14:54:47.427 AUDIO ready segment=2-1 duration=8.21 auto=Y
+14:54:47.443 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=2-1
+14:54:47.461 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=2-1
+14:54:54.086 AUDIO item finished segment=2-1 index=1/2
+14:54:54.087 AUDIO queue complete segment=2-1 queue=2
+14:54:54.087 WEREAD page turn action=semantic-next fingerprint=974e3872
+14:54:54.670 WEREAD preload invalidated reason=explain-auto-turn preserve=Y
+14:54:54.673 WEREAD page changing reason=fillText read=N explain=Y
+14:54:54.692 WEREAD turn latency measured=0.605s nextLead=0.606s
+14:54:54.696 WEREAD page commit prior=974e3872 next=2c140da confirmed=true epoch=13 cols= geometry=fillText glyphs=145 paras=8
+14:54:54.702 WEREAD explain preload consume next=2c140da hit=N match=137c predicted=0.54 visible=1.00
+14:54:54.703 WEREAD explain preload invalidated reason=page-commit-consumed
+14:54:54.703 WEREAD explain confirmed-page restart=Y prefetched=N prior=974e3872 next=2c140da
+14:54:54.705 EXPLAIN start requested status=idle reuse=N paras=8
+14:54:54.707 EXPLAIN planning started reuse=N
+14:54:54.708 WEREAD preload invalidated reason=explain-page-committed preserve=N
+14:54:54.709 WEREAD explain preload invalidated reason=prediction-changed
+14:54:54.710 WEREAD preload preview source=2c140da next=1fa3a558 confidence=sequential paras=11
+14:54:54.739 EXPLAIN plan request idxBase=0 paras=8 chars=145 fp=6d6a37490a112980 prevSummaryChars=0
+14:55:00.938 TTS part begin para=0 part=0 request=BA8E7D95-63E1-4365-BFF4-74C40642AC09 priority=interactive
+14:55:00.951 TTS schedule dispatch request=BA8E7D95-63E1-4365-BFF4-74C40642AC09 priority=interactive queueMs=0 active=1 pending=0
+14:55:03.417 TTS clone response request=BA8E7D95-63E1-4365-BFF4-74C40642AC09 status=200 quota=async attempt=1 remaining=5849
+14:55:03.459 TTS part begin para=0 part=1 request=A4A15BE7-0E38-42FA-B65C-617D5C457260 priority=interactive
+14:55:03.460 TTS schedule dispatch request=A4A15BE7-0E38-42FA-B65C-617D5C457260 priority=interactive queueMs=0 active=1 pending=0
+14:55:05.599 TTS clone response request=A4A15BE7-0E38-42FA-B65C-617D5C457260 status=200 quota=async attempt=1 remaining=5843
+14:55:05.632 TTS part begin para=0 part=2 request=1CD741C3-D340-446A-BC4F-E6DD8C960A4E priority=interactive
+14:55:05.633 TTS schedule dispatch request=1CD741C3-D340-446A-BC4F-E6DD8C960A4E priority=interactive queueMs=0 active=1 pending=0
+14:55:06.743 TTS clone response request=1CD741C3-D340-446A-BC4F-E6DD8C960A4E status=200 quota=async attempt=1 remaining=5841
+14:55:06.822 AUDIO producer expected=Y owner=explain gen=6 segment=nil
+14:55:06.822 AUDIO enqueue segment=0-0 queue=1 waiting=N auto=Y
+14:55:06.823 AUDIO stage segment=0-0 index=0/1 duration=4.85
+14:55:06.828 AUDIO enqueue segment=0-1 queue=2 waiting=N auto=Y
+14:55:06.829 AUDIO enqueue segment=0-2 queue=3 waiting=N auto=Y
+14:55:06.829 AUDIO producer expected=N owner=explain gen=6 segment=0-0
+14:55:06.837 WEREAD explain preload start source=2c140da next=1fa3a558 paras=11
+14:55:06.875 AUDIO ready segment=0-0 duration=4.85 auto=Y
+14:55:06.893 AUDIO state reason=time-control actual=paused waiting=Y rate=1.25 segment=0-0
+14:55:06.913 AUDIO state reason=time-control actual=playing waiting=N rate=1.25 segment=0-0
+14:55:09.881 TTS part begin para=1 part=0 request=938E95C0-D15E-4596-B442-ACB5404F0120 priority=readAhead
+14:55:09.882 TTS schedule dispatch request=938E95C0-D15E-4596-B442-ACB5404F0120 priority=readAhead queueMs=0 active=1 pending=0
+14:55:11.570 TTS clone response request=938E95C0-D15E-4596-B442-ACB5404F0120 status=200 quota=async attempt=1 remaining=5837
+14:55:11.601 TTS part begin para=1 part=1 request=36CDFA7A-E5CC-408E-A5A4-0121BF2091F9 priority=readAhead
+14:55:11.602 TTS schedule dispatch request=36CDFA7A-E5CC-408E-A5A4-0121BF2091F9 priority=readAhead queueMs=0 active=1 pending=0
+14:55:12.434 TTS clone response request=36CDFA7A-E5CC-408E-A5A4-0121BF2091F9 status=200 quota=async attempt=1 remaining=5835
+14:55:13.726 TTS part begin para=0 part=0 request=C24066D0-E323-45A2-B405-F2BF0360AA91 priority=readAhead
+14:55:13.729 TTS schedule dispatch request=C24066D0-E323-45A2-B405-F2BF0360AA91 priority=readAhead queueMs=0 active=1 pending=0
+14:55:15.541 TTS clone response request=C24066D0-E323-45A2-B405-F2BF0360AA91 status=200 quota=async attempt=1 remaining=5822
+14:55:15.581 TTS part begin para=0 part=1 request=85F31368-31CA-4D0D-9BF6-61F6C0676F08 priority=readAhead
+14:55:15.582 TTS schedule dispatch request=85F31368-31CA-4D0D-9BF6-61F6C0676F08 priority=readAhead queueMs=0 active=1 pending=0
+14:55:16.267 TTS clone response request=85F31368-31CA-4D0D-9BF6-61F6C0676F08 status=200 quota=async attempt=1 remaining=5824
+14:55:16.302 TTS part begin para=0 part=2 request=3794919B-4581-411F-AD32-67771CE60216 priority=readAhead
+14:55:16.308 TTS schedule dispatch request=3794919B-4581-411F-AD32-67771CE60216 priority=readAhead queueMs=0 active=1 pending=0
+14:55:17.723 TTS clone response request=3794919B-4581-411F-AD32-67771CE60216 status=200 quota=async attempt=1 remaining=5812
+14:55:17.804 WEREAD explain preload ready source=2c140da next=1fa3a558 blocks=1

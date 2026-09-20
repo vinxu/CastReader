@@ -1,8 +1,8 @@
 {
-  "commit": "1ce1e560fd2aba335d18502f1c1992fbcd4f52d9",
+  "commit": "d1650452ac4daf66dc8ecc1558baca714252285b",
   "version": "1.2.42",
   "build": "64",
-  "sourceConfigurationSHA256": "635de9e4b189b11f866118824fa76af1a845caa10360a7e76d70a9b81fc30800",
+  "sourceConfigurationSHA256": "81dfdf980da92c7bd8f4f55f82a0cec555607230b611d51c5ce15b163edba788",
   "files": [
     {
       "path": "CastReader Share Extension/CastReaderShareExtension.entitlements",
@@ -634,7 +634,7 @@
     },
     {
       "path": "CastReader/Services/ResumeCoordinator.swift",
-      "sha256": "b7ecdafc344b094f1adabad913a7826e48b0cf8a9a7710477d5044a2aa931c9e"
+      "sha256": "a3c6c9759c41573613fad314f194fc91d5ceeaf4b51e2edcfeb1ca95213c98a4"
     },
     {
       "path": "CastReader/Services/ResumeReminderManager.swift",
@@ -846,7 +846,7 @@
     },
     {
       "path": "CastReader/ViewModels/ExplainViewModel.swift",
-      "sha256": "9efeac7c0c6674607a87b66f61e9e0c523d4d7e993362cb8927ad20c0850708d"
+      "sha256": "84ee3e72457afc3894221968e9a5654fc0e9f724bc6952255b39f24c30d63b85"
     },
     {
       "path": "CastReader/ViewModels/ImportViewModel.swift",
@@ -858,7 +858,7 @@
     },
     {
       "path": "CastReader/ViewModels/PlayerCoordinator.swift",
-      "sha256": "78c48d8e5576a372c8ad1c17fd1ecf3dbc5a312b3f11d547c39f131554625182"
+      "sha256": "f5b0e644fc691c5ea2821c586973fc2848c81c5165d8a5cb3737efb4b33ea1a1"
     },
     {
       "path": "CastReader/ViewModels/ReadAloudViewModel.swift",
@@ -902,7 +902,7 @@
     },
     {
       "path": "CastReader/Views/Explain/ExplainControlBar.swift",
-      "sha256": "8e0291895183c141e009101a806afe5223f7f26ddd5edc79f4de39eecde96778"
+      "sha256": "25d56f93cfc3f7dfcad8bae31aa424d3181fa6337a50abf1acb30181148f3907"
     },
     {
       "path": "CastReader/Views/GoogleBooks/GoogleBooksLibraryViews.swift",
@@ -930,7 +930,7 @@
     },
     {
       "path": "CastReader/Views/Kindle/KindleBookView.swift",
-      "sha256": "230dd3e82c0bee90e92034e77082c4f9f190db39fb5264a68073d44c4a95ffcd"
+      "sha256": "d14c3591c205b3ef05919c73b953bd92f792bfbd2d9f2d3f570ee79758a0af33"
     },
     {
       "path": "CastReader/Views/Kindle/KindleFirstLaunchFlowView.swift",
@@ -1054,7 +1054,7 @@
     },
     {
       "path": "CastReader/Views/Reader/ReaderHostView.swift",
-      "sha256": "9d904dc5a99a3bb83e9ea5e12c8dad2e4aac421bde0d826c6086b579512ec8f3"
+      "sha256": "3bbfa7886187f9db69d3ef79c786f48cd2047893ec82e2aad068939d886660a2"
     },
     {
       "path": "CastReader/Views/Reader/ReaderMoreButton.swift",
@@ -1221,6 +1221,5 @@
       "sha256": "3b281ed480c60d82192b911bacee3cd8258487de2e899dca226f435520c920bc"
     }
   ],
-  "secretsConfigurationSHA256": "90bd1f200f5051803818e56bfb81181c4ea11cabb9cca2dd6d65a9596a4c4815",
-  "hashAlgorithm": "SHA256 of UTF-8 JSON files array, sorted object keys, compact separators"
+  "secretsConfigurationSHA256": "90bd1f200f5051803818e56bfb81181c4ea11cabb9cca2dd6d65a9596a4c4815"
 }

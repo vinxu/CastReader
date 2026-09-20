@@ -1,0 +1,226 @@
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:54:20.920 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:54:20.953 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:55:37.003 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:55:37.055 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:55:40.497 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:55:40.548 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:55:45.085 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:55:45.119 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:55:50.850 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:55:50.905 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:55:53.655 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:55:53.692 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:55:58.318 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:55:58.369 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:56:01.404 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:56:01.440 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 13:56:05.884 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:56:05.935 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:56:08.961 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:56:08.998 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 13:56:13.949 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:56:14.001 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:56:16.417 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:56:16.451 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[QuickRead] extract-plan START base=https://api.castreader.ai source=castreader://doc/92F67192-A60A-42A7-BF48-E23497FA0382 scenario=general depth=standard lang=en paras=24 chars=2121 bytes=7326
+[QuickRead] extract-plan DONE job=qrc_s2LZNsihNUdbl9AzwPXuLJGamkyEOqug total=6 model=gemini-3.8-flash route=account elapsed=4.56s
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[QuickRead] compose-block[0] ts=35 dur=13.5 START bytes=2059
+[QuickRead] compose-block[0] ts=35 dur=13.5 DONE marks=2 text=209 elapsed=0.55s
+[QuickRead] extract-block[1] START bytes=63
+2026-09-20 13:56:45.704 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:56:45.743 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[QuickRead] extract-block[1] DONE marks=3 text=291 elapsed=1.95s
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:56:50.127 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:56:50.180 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[QuickRead] compose-block[1] ts=47 dur=17.9 START bytes=2260
+[QuickRead] compose-block[1] ts=47 dur=17.9 DONE marks=3 text=291 elapsed=0.47s
+[QuickRead] extract-block[2] START bytes=63
+2026-09-20 13:56:56.835 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:56:56.889 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[QuickRead] extract-block[2] DONE marks=5 text=317 elapsed=5.31s
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:57:00.815 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:57:00.850 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[QuickRead] compose-block[2] ts=51 dur=20.5 START bytes=2536
+[QuickRead] compose-block[2] ts=51 dur=20.5 DONE marks=5 text=317 elapsed=0.44s
+[QuickRead] extract-block[3] START bytes=63
+[QuickRead] extract-block[3] DONE marks=3 text=337 elapsed=1.79s
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[QuickRead] compose-block[3] ts=58 dur=22.3 START bytes=2728
+[QuickRead] compose-block[3] ts=58 dur=22.3 DONE marks=3 text=337 elapsed=0.67s
+[QuickRead] extract-block[4] START bytes=63
+2026-09-20 13:57:11.490 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:57:11.528 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[QuickRead] extract-block[4] DONE marks=3 text=294 elapsed=2.07s
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:57:17.732 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:57:17.783 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[QuickRead] compose-block[4] ts=52 dur=17.5 START bytes=2528
+[QuickRead] compose-block[4] ts=52 dur=17.5 DONE marks=3 text=294 elapsed=0.67s
+[QuickRead] extract-block[5] START bytes=63
+2026-09-20 13:57:28.258 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:57:28.295 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[QuickRead] extract-block[5] DONE marks=4 text=419 elapsed=4.14s
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+2026-09-20 13:57:34.042 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:57:34.093 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vl_d1efb23a380bdaa2f6b0 clone=Y
+[QuickRead] compose-block[5] ts=60 dur=25.6 START bytes=3030
+[QuickRead] compose-block[5] ts=60 dur=25.6 DONE marks=4 text=419 elapsed=0.65s
+2026-09-20 13:57:46.492 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:57:46.549 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 13:57:50.875 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:57:50.929 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 13:58:00.828 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:58:00.888 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 13:58:04.924 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:58:04.981 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[QuickRead] compose-block[5] ts=60 dur=25.1 START bytes=2996
+[QuickRead] compose-block[5] ts=60 dur=25.1 DONE marks=4 text=419 elapsed=0.95s
+2026-09-20 13:58:26.568 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:58:26.609 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 13:58:31.753 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:58:31.806 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[QuickRead] compose-block[0] ts=34 dur=13.7 START bytes=1680
+[QuickRead] compose-block[0] ts=34 dur=13.7 DONE marks=2 text=209 elapsed=0.52s
+2026-09-20 13:59:08.834 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:59:08.872 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 13:59:12.953 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:59:12.993 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[QuickRead] compose-block[1] ts=47 dur=16.4 START bytes=2267
+[QuickRead] compose-block[1] ts=47 dur=16.4 DONE marks=3 text=291 elapsed=0.66s
+2026-09-20 13:59:25.177 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:59:25.218 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 13:59:28.738 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:59:28.792 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[QuickRead] compose-block[2] ts=50 dur=19.5 START bytes=2396
+[QuickRead] compose-block[2] ts=50 dur=19.5 DONE marks=5 text=317 elapsed=0.65s
+2026-09-20 13:59:44.200 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:59:44.256 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 13:59:49.356 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:59:49.411 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 13:59:57.652 CastReader[933:75875] CR_TTS_TRANSPORT response request=E7C9B829-BFEC-4007-A70A-8B70373722ED host=tts.castreader.ai status=200 bytes=414782 elapsedMs=4096 fallback=false
+[QuickRead] compose-block[2] ts=51 dur=19.3 START bytes=2581
+[QuickRead] compose-block[2] ts=51 dur=19.3 DONE marks=5 text=317 elapsed=0.53s
+2026-09-20 13:59:58.338 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 13:59:58.395 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:00:18.084 CastReader[933:75363] CR_TTS_TRANSPORT response request=CCD5ED39-4F26-416D-9299-99168EE29C55 host=tts.castreader.ai status=200 bytes=440996 elapsedMs=4165 fallback=false
+[QuickRead] compose-block[3] ts=61 dur=20.5 START bytes=3607
+[QuickRead] compose-block[3] ts=61 dur=20.5 DONE marks=3 text=337 elapsed=0.47s
+2026-09-20 14:00:18.674 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:00:18.713 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:00:37.231 CastReader[933:75363] CR_TTS_TRANSPORT response request=BFC4C57B-0511-4CC6-961E-FE403A81BE04 host=tts.castreader.ai status=200 bytes=352816 elapsedMs=2007 fallback=false
+[QuickRead] compose-block[4] ts=54 dur=16.4 START bytes=3061
+[QuickRead] compose-block[4] ts=54 dur=16.4 DONE marks=3 text=294 elapsed=0.78s
+2026-09-20 14:00:38.129 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:00:38.172 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:00:53.000 CastReader[933:76170] CR_TTS_TRANSPORT response request=E8451002-720C-4A0A-998A-F2A75B186A8D host=tts.castreader.ai status=200 bytes=559843 elapsedMs=1609 fallback=false
+[QuickRead] compose-block[5] ts=61 dur=26.0 START bytes=4194
+[QuickRead] compose-block[5] ts=61 dur=26.0 DONE marks=4 text=419 elapsed=0.47s
+2026-09-20 14:00:53.593 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:00:53.633 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:01:09.207 CastReader[933:75875] CR_TTS_TRANSPORT response request=580AB6A4-15E5-4CA6-AC96-6E836FF54ED5 host=tts.castreader.ai status=200 bytes=130275 elapsedMs=1191 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:01:09.372 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:01:09.425 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 14:01:10.983 CastReader[933:76490] CR_TTS_TRANSPORT response request=2E060871-45D1-4057-9BDE-60D4C3F12CA1 host=tts.castreader.ai status=200 bytes=133550 elapsedMs=1659 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:01:12.686 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:01:12.738 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 14:01:12.900 CastReader[933:75875] CR_TTS_TRANSPORT response request=3080906D-4E8A-4674-9B55-617FA83B6C9A host=tts.castreader.ai status=200 bytes=177221 elapsedMs=1889 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:01:14.282 CastReader[933:76490] CR_TTS_TRANSPORT response request=BA547D7F-7570-41DB-B17D-873BBE506471 host=tts.castreader.ai status=200 bytes=90683 elapsedMs=1367 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:01:15.913 CastReader[933:75875] CR_TTS_TRANSPORT response request=F664AFB2-FF44-4563-A3D8-9067D3AE31DC host=tts.castreader.ai status=200 bytes=137217 elapsedMs=1600 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:01:17.835 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:01:17.888 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 14:01:19.037 CastReader[933:76330] CR_TTS_TRANSPORT response request=4B4A5F8F-1C75-4001-BFD1-3144862B7395 host=tts.castreader.ai status=200 bytes=75383 elapsedMs=1256 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:01:20.205 CastReader[933:76330] CR_TTS_TRANSPORT response request=20F5C3F3-6EEE-414C-9BB8-CEA26302872E host=tts.castreader.ai status=200 bytes=103125 elapsedMs=1140 fallback=false
+2026-09-20 14:01:59.652 CastReader[933:71473] CRDBG voice switch begin lang=en from=af_bella to=vc_62934fe77f764051aa341b4b076bbb85 para=12 autoPlay=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+2026-09-20 14:03:02.855 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:02.895 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+2026-09-20 14:03:08.400 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:08.451 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+2026-09-20 14:03:13.880 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:13.933 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+2026-09-20 14:03:16.701 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:16.753 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+2026-09-20 14:03:21.070 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:21.122 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+2026-09-20 14:03:26.387 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:26.442 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+[TTSRoute] language=en voice=vc_62934fe77f764051aa341b4b076bbb85 clone=Y
+2026-09-20 14:03:33.058 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:33.129 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 14:03:33.376 CastReader[933:71473] CRDBG voice switch begin lang=en from=vc_62934fe77f764051aa341b4b076bbb85 to=af_bella para=18 autoPlay=Y
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:03:34.644 CastReader[933:77471] CR_TTS_TRANSPORT response request=0B41BE5E-50E8-47D8-8F23-B2DEF004834E host=tts.castreader.ai status=200 bytes=122338 elapsedMs=1195 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:03:34.820 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:34.875 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 14:03:35.596 CastReader[933:77471] CR_TTS_TRANSPORT response request=29BCEDC9-059F-4A0B-8925-6002C92478F9 host=tts.castreader.ai status=200 bytes=71799 elapsedMs=827 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:03:36.640 CastReader[933:77657] CR_TTS_TRANSPORT response request=42B0D8B0-3A42-4982-BBFB-F6D46C5489C2 host=tts.castreader.ai status=200 bytes=177916 elapsedMs=1014 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:03:38.151 CastReader[933:77471] CR_TTS_TRANSPORT response request=67933E1F-F6A8-43E9-ADC3-CDD8E42A12EC host=tts.castreader.ai status=200 bytes=58701 elapsedMs=1487 fallback=false
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:03:39.423 CastReader[933:77657] CR_TTS_TRANSPORT response request=5E42267C-A225-4793-8AD1-D9F8C2B1C498 host=tts.castreader.ai status=200 bytes=177076 elapsedMs=1239 fallback=false
+2026-09-20 14:03:39.486 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:39.540 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+[TTSRoute] language=en voice=af_bella clone=N
+2026-09-20 14:03:42.320 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:42.392 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 14:03:43.534 CastReader[933:77562] CR_TTS_TRANSPORT response request=AF0465CF-3CDB-4C84-AA56-36E39533E86E host=tts.castreader.ai status=200 bytes=99710 elapsedMs=1241 fallback=false
+2026-09-20 14:03:49.138 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:49.176 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 14:03:51.480 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:51.532 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N
+2026-09-20 14:03:58.221 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=paused uiWas=playing rate=1.25 status=1 interrupted=N
+2026-09-20 14:03:58.276 CastReader[933:71473] CRDBG AUDIO syncPlayback reason=time-control actual=playing uiWas=paused rate=1.25 status=2 interrupted=N

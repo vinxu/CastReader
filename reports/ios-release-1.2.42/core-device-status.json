@@ -1,16 +1,80 @@
 {
-  "candidate": "d1650452ac4daf66dc8ecc1558baca714252285b",
+  "status": "PASS",
+  "sourceCommit": "1ce1e560fd2aba335d18502f1c1992fbcd4f52d9",
+  "sourceConfigurationSHA256": "635de9e4b189b11f866118824fa76af1a845caa10360a7e76d70a9b81fc30800",
   "version": "1.2.42",
   "build": "64",
-  "device": "iPhone 15 Pro Max",
-  "ios": "26.7",
-  "installedAt": "2026-09-20T12:29:34+08:00",
-  "mirrorState": "Unlock Your iPhone; follow the instructions on iPhone to unlock and use it on this Mac",
-  "launchFailure": "Device remained locked; app launch was denied",
-  "coreStatus": "NOT_RUN",
-  "archiveCreated": false,
-  "uploaded": false,
-  "submitted": false,
-  "note": "Installation, simulator fixtures and unit results are not actual device core playback evidence.",
-  "recordedAt": "2026-09-20T04:50:34.094279+00:00"
+  "device": "iPhone 15 Pro Max / iOS 26.7",
+  "deviceSigning": "Development Debug, no injected media/identity; same 304 app/config/resource source hashes as Release archive",
+  "regions": {
+    "global": {
+      "language": "en",
+      "tts": "api.castreader.ai (Kokoro transport also tts.castreader.ai)",
+      "quickRead": "api.castreader.ai",
+      "regular": "af_bella",
+      "community": "vl_d1efb23a380bdaa2f6b0",
+      "private": "vc_62934fe77f764051aa341b4b076bbb85",
+      "window": "2026-09-20 13:53–14:04 +08:00",
+      "planBlocks": 6,
+      "quotaInitialSeconds": 3501,
+      "quotaObservedSeconds": 3237,
+      "cells": {
+        "R-K": "PASS",
+        "R-C-vl": "PASS",
+        "R-C-vc": "PASS",
+        "E-K": "PASS",
+        "E-C-vl": "PASS",
+        "E-C-vc": "PASS"
+      },
+      "evidence": [
+        "global-final-api.log",
+        "global-final-progress.log"
+      ]
+    },
+    "cn": {
+      "language": "zh",
+      "tts": "api.castreader.cn",
+      "quickRead": "quickread.castreader.cn",
+      "regular": "zf_001",
+      "community": "vl_b4bb75aa2d3e56fd90a2",
+      "private": "vc_12e286594652455dae539cabbf93c2c0",
+      "window": "2026-09-20 14:11–14:55 +08:00",
+      "planBlocks": 4,
+      "quotaInitialSeconds": 7200,
+      "quotaObservedSeconds": 6522,
+      "cells": {
+        "R-K": "PASS",
+        "R-C-vl": "PASS",
+        "R-C-vc": "PASS",
+        "E-K": "PASS",
+        "E-C-vl": "PASS",
+        "E-C-vc": "PASS"
+      },
+      "evidence": [
+        "cn-final-api.log",
+        "cn-final-progress.log"
+      ]
+    }
+  },
+  "weread": {
+    "status": "PASS",
+    "book": "茶花女",
+    "voice": "vl_b4bb75aa2d3e56fd90a2",
+    "evidence": "weread-final-progress.log",
+    "observations": [
+      "Cover/flyleaf skipped into chapter one; normal and clone Read advance across pages with highlights",
+      "Rapid repeated page taps are guarded while a turn is in flight; final confirmed page resumes",
+      "Separate previous and next taps confirmed both directions; explicit Explain starts and progresses",
+      "Explain original marks and complete sentence captions observed; two consecutive prefetched page adoptions hit",
+      "Latest short-tail regression was deterministic; this extra device run did not revisit the specific short chapter-tail page"
+    ]
+  },
+  "coldVoice": "warm; no VOICE_PREPARING observed in final matrix, cold/retry/cancellation covered by deterministic tests",
+  "limitations": [
+    "No claim of App Store distribution-binary playback: device package is normal Development Debug",
+    "No calibrated CPU/memory benchmark in this run; responsive UI and uninterrupted process/log observed",
+    "Balance observations are not a separate production billing-ledger reconciliation"
+  ],
+  "restored": "Normal app relaunch without region/service/explain launch overrides at end; original persisted product region remains global; Chinese voice left on Cao Cao, English Bella",
+  "testedAt": "2026-09-20T14:55:00+08:00"
 }

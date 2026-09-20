@@ -1,10 +1,27 @@
-{
-  "en": {
-    "characters": 797,
-    "sha256": "5a71614d42374869f2a7da0dba8877788635b9a92b4d5d755861c3b92a0ee72a"
+[
+  {
+    "file": "core-sample-cn-switch.txt",
+    "sha256": "910dc27ebc82b30b0c3b6e8b712d1a91877b91ba478a1c2394ac85462344c351",
+    "characters": 1521
   },
-  "zh": {
-    "characters": 226,
-    "sha256": "a6fcf8b8a425541492b2a1a1e8a5d8a7137934d4c0127a5f3c6253069321f3df"
+  {
+    "file": "core-sample-en.txt",
+    "sha256": "5a71614d42374869f2a7da0dba8877788635b9a92b4d5d755861c3b92a0ee72a",
+    "characters": 798
+  },
+  {
+    "file": "core-sample-final-en.txt",
+    "sha256": "ea09086aea852b8f0f68edd7398ac4b4e86713ee8a1fa58eaba1d7117f04f925",
+    "characters": 2105
+  },
+  {
+    "file": "core-sample-final-zh.txt",
+    "sha256": "dca6ce64dacf066036d447d6aabb5fe4a7a99aa70b1479e75002bff060971e54",
+    "characters": 501
+  },
+  {
+    "file": "core-sample-zh.txt",
+    "sha256": "a6fcf8b8a425541492b2a1a1e8a5d8a7137934d4c0127a5f3c6253069321f3df",
+    "characters": 227
   }
-}
+]
