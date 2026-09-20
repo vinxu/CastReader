@@ -1029,6 +1029,19 @@ final class ExplainViewModel: ObservableObject {
 
     // MARK: - Start
 
+    func startByUser() {
+        guard requireWebContentReady(), status == .idle || isErrorState else { return }
+        // A new explicit Start replaces the outgoing reader's Pause. Reset
+        // before any access/plan await, so a later Pause still wins when the
+        // first narration arrives. Automatic page starts keep using start().
+        audio.sleepTimer.resumeByUser()
+        activate()
+        if let session = audioSessionToken {
+            _ = audio.clearQueue(session: session)
+        }
+        start()
+    }
+
     func start() {
         guard requireWebContentReady() else { return }
         if isErrorState, consecutiveShortWeReadPages >= maxConsecutiveShortWeReadPages {
@@ -1511,7 +1524,7 @@ final class ExplainViewModel: ObservableObject {
 
         switch status {
         case .idle, .error:
-            start()
+            startByUser()
         case .completed:
             replay()
         case .planning, .streaming:

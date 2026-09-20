@@ -162,7 +162,7 @@ final class PlayerCoordinator: ObservableObject {
                     s.explainVM.requestAutoplayWhenWebReady()
                 }
             } else {
-                if mode == .read { s.readVM.ensurePlaying() } else { s.explainVM.start() }
+                if mode == .read { s.readVM.ensurePlaying() } else { s.explainVM.ensurePlaying() }
             }
         }
     }

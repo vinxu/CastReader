@@ -6485,7 +6485,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   Self.keyLog(livePageKey ?? ""))
             #endif
             KindleRunLog.write("KINDLE explain start key=\(Self.keyLog(livePageKey ?? "")) paras=\(singlePageDoc.paragraphs.count)")
-            vm.start()
+            vm.startByUser()
             startPageKeyWatcher()
             KindlePlaybackCenter.shared.activate(model: self)
             return .started

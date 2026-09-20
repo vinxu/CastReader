@@ -59,6 +59,76 @@ final class SpeechPipelineTests: XCTestCase {
         XCTAssertTrue(old.dbgSegments(for: 0).isEmpty, "A later explicit resume must regenerate with the new voice")
     }
 
+    func testExplicitExplainStartReplacesInheritedReadPause() async throws {
+        try await verifyExplainStartAfterReadPause(explicitStart: true, pauseDuringPlan: false)
+    }
+
+    func testPauseDuringExplicitExplainPreparationStillWins() async throws {
+        try await verifyExplainStartAfterReadPause(explicitStart: true, pauseDuringPlan: true)
+    }
+
+    func testAutomaticExplainStartPreservesInheritedPause() async throws {
+        try await verifyExplainStartAfterReadPause(explicitStart: false, pauseDuringPlan: false)
+    }
+
+    private func verifyExplainStartAfterReadPause(explicitStart: Bool, pauseDuringPlan: Bool) async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let priorAutoPlay = AppSettings.shared.autoPlay
+        AppSettings.shared.autoPlay = false
+        let narration = "This is a new explanation rather than the old reading audio."
+        let speech = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: 3))
+        }
+        let plan = ReadAloudHTTPFixture.forRequests { request, _ in
+            if request.url?.path == "/api/quickread/compose-block" {
+                return .response(Data("{\"section\":{\"id\":\"block-0\",\"text\":\"\(narration)\",\"style\":\"explain\",\"cinematic\":{\"events\":[]}}}".utf8))
+            }
+            return .response(Data("""
+            event: block0
+            data: {"job_id":"pause-intent-plan","output_language":"en","total_blocks":1,"block_0":{"id":"block-0","text":"\(narration)","style":"explain","cinematic":{"events":[]}}}
+
+            event: done
+            data: {"job_id":"pause-intent-plan","total_blocks":1}
+
+            """.utf8), delay: 0.35)
+        }
+        let document = ReadingDocument(title: "Explicit explanation start", sourceKind: .text,
+            language: "en", paragraphs: [ReadingParagraph(id: 0,
+                text: "Listening while reading helps connect spoken words with their written meaning. A short pause leaves time to reflect on the main idea.")])
+        let vm = ExplainViewModel(document: document, speechGenerator: speech.service(),
+            quickReadService: QuickReadService(session: plan.session,
+                mobileSessionProvider: SpeechPipelineSessionProvider()))
+        defer {
+            vm.stop(); vm.deactivate(); audio.clearForAccountBoundary()
+            speech.close(); plan.close(); AppSettings.shared.autoPlay = priorAutoPlay
+        }
+        let readSession = audio.claimPlaybackSession(owner: .readAloud)
+        XCTAssertTrue(audio.loadSegments([AudioSegment(paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadAloudHTTPFixture.wav(duration: 3), timestamps: [], duration: 3,
+            text: "Old reading audio", isWavFormat: true)], autoPlay: false, session: readSession))
+        XCTAssertTrue(audio.pause(session: readSession))
+        vm.activateAfterModeSwitch(autoplay: false)
+        XCTAssertTrue(audio.isExplicitlyPaused)
+        if explicitStart { vm.startByUser() } else { vm.start() }
+        try await wait { !plan.requests.isEmpty }
+        if pauseDuringPlan {
+            let session = try XCTUnwrap(audio.activePlaybackSession)
+            XCTAssertTrue(audio.pause(session: session))
+        }
+        try await wait { audio.hasQueuedSegments && vm.currentBlockIndex == 0 }
+        if explicitStart && !pauseDuringPlan {
+            try await wait { audio.hasAudibleProgress }
+        } else {
+            try await Task.sleep(nanoseconds: 200_000_000)
+            XCTAssertFalse(audio.isPlaying, "A later Pause or an automatic continuation must not be overridden")
+            vm.togglePlayPause()
+            try await wait { audio.hasAudibleProgress }
+        }
+        XCTAssertEqual(audio.currentSegment?.text, narration)
+        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, 1)
+    }
+
     func testCompletedReaderPreparesNewVoiceWithoutReplayingOldAudio() async throws {
         let fixture = ReadAloudHTTPFixture { text, attempt in
             .response(ReadAloudHTTPFixture.body(text, duration: attempt == 1 ? 0.2 : 2))
@@ -406,4 +476,11 @@ extension SpeechPipelineTests {
             print("PARITY_FIXED inkStartToTurnMs=\((visibleAdvanceAt - timing.startedAt) * 1000) audioEndToTurnMs=\((visibleAdvanceAt - audioEndedAt) * 1000)")
         }
     }
+}
+
+private actor SpeechPipelineSessionProvider: MobileSessionProviding {
+    func sessionToken() -> String? { "cms_fixture" }
+    func refreshSession() -> String? { "cms_fixture" }
+    func invalidateSession() {}
+    func rejectSession(_ token: String?) {}
 }

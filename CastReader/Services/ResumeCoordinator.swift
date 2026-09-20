@@ -107,7 +107,7 @@ final class ResumeCoordinator {
                 self.player.upgradeSessionContent(recognized)
                 if autoplay, self.player.session?.document.id == id {
                     if mode == .read { self.player.session?.readVM.ensurePlaying() }
-                    else { self.player.session?.explainVM.start() }
+                    else { self.player.session?.explainVM.ensurePlaying() }
                 }
             }
         }

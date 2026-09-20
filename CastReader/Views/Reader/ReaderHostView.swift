@@ -1641,7 +1641,7 @@ private struct ReaderLandscapeExplainOverlay: View {
         AudioPlayerService.shared.sleepTimer.resumeByUser()
         switch presentationState {
         case .start, .retry:
-            vm.start()
+            vm.startByUser()
         case .playing, .paused:
             vm.togglePlayPause()
         case .replay:
