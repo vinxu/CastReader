@@ -33,6 +33,10 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             // to global just because an account snapshot is absent.
             complete(context, SafariExtensionContract.entitlement(isCurrent ? snapshot : [:], route: route))
         case "GET_MOBILE_SESSION", "REFRESH_MOBILE_SESSION":
+            guard account != nil else {
+                complete(context, ["ok": false, "serviceRoute": route, "error": "mobile_session_signed_out"])
+                return
+            }
             guard isCurrent, let account,
                   let session = SafariSharedSessionStore.read(route: route),
                   session.matches(route: route, accountStorageID: account, boundaryNonce: nonce) else {
@@ -46,7 +50,11 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                 complete(context, ["ok": false, "serviceRoute": route, "error": "mobile_session_refresh_required"])
                 return
             }
-            complete(context, ["ok": true, "serviceRoute": route, "sessionToken": token])
+            guard let identity = SafariExtensionContract.sessionIdentity(snapshot) else {
+                complete(context, ["ok": false, "serviceRoute": route, "error": "mobile_session_unavailable"])
+                return
+            }
+            complete(context, identity.merging(["ok": true, "serviceRoute": route, "sessionToken": token]) { _, new in new })
         case "OPEN_PRO", "OPEN_ACCOUNT", "SIGN_OUT":
             let action: SafariHandoffAction = type == "SIGN_OUT" ? .signOut
                 : (type == "OPEN_PRO" || message["mode"] as? String == "manage_pro" ? .pro : .account)

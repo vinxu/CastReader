@@ -48,6 +48,17 @@ enum SafariExtensionContract {
             && snapshot["boundaryNonce"] as? String == nonce
     }
 
+    /// Background-only identity, taken from the same scope-checked projection
+    /// as the bearer. Provider subjects and profile email are never owner keys.
+    static func sessionIdentity(_ snapshot: [String: Any]) -> [String: Any]? {
+        guard let userID = snapshot["userId"] as? String,
+              !userID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, userID.count <= 512,
+              let account = validAccount(snapshot["accountStorageID"] as? String),
+              let nonce = snapshot["boundaryNonce"] as? String, !nonce.isEmpty, nonce.count <= 512 else { return nil }
+        return ["canonicalAccountId": userID, "accountStorageID": account, "boundaryNonce": nonce,
+                "email": snapshot["email"] as? String ?? ""]
+    }
+
     /// Deliberately whitelist the public fields. Secure session data can never
     /// enter the entitlement response consumed by content scripts.
     static func entitlement(_ snapshot: [String: Any], route: String) -> [String: Any] {
