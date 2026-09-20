@@ -65,3 +65,13 @@
 - ASC 版本 `4a052397-9a76-46f7-8137-2998c92ad14c` 已创建，11 语仅更新 What's New，并回读确认其他版本文案一致；审核资料逐字段与已上线版本一致（仅保存布尔结果）。最终审核单 `c1501e0f-69a3-4238-b58f-2bac9818b971` 于 `2026-09-20T07:13:39.658Z` 提交；版本和审核单均回读为 `WAITING_FOR_REVIEW`，发布方式保持 `AFTER_APPROVAL`。
 
 - 最终 ASC audit 无阻塞项，11 语名称/副标题保持，45 张截图全部 COMPLETE，未恢复旧截图；见 `asc-final-audit.json`、`submission.json` 与 `submission-readback.json`。构建上传与最终 App 源码未再变更，后续记录提交只更新文档和证据。
+
+## 送审后新增的 Mac Safari 要求
+
+2026-09-20 用户追加恢复 Safari，随后明确选择“仅 Mac 上的 Safari 扩展”。因此保留本次 iOS 审核单和 Build 64，不增加 iPhone/iPad Safari，也不因这项要求重新打包 iOS。
+
+Mac Safari 使用扩展仓库 `safari-xcode` 的独立容器 `com.castreader.CastReader` / `.Extension`。本轮 App Store Connect 按该 Bundle ID 查询没有 App 记录；当前既有发布流程是 Developer ID 签名、公证、staple 后的 DMG/ZIP。网站源码的 Safari 下载入口仍为 `coming_soon`，没有有效下载 URL。不能仅修改入口状态或使用旧 1.2.18 包就宣称本次新版可用。
+
+已将用户这次的 Mac 恢复分发要求、完整 iOS 主线提交 `1d35f89` 及保持现有 iOS 审核的边界同步到正在进行的任务「Safari 全功能对齐 Chrome 与 iOS 联合发布」（`01a0bcfa-6d0a-7cc3-ad2f-7ba0468febe1`）。以该任务最终 Mac 候选的真实验收、签名公证及下载回读为准；本记录不宣称 Mac Safari 已重新开放。
+
+范围明确前准备的 `codex/ios-safari-release-1.2.42`（`fa7fdec`）仅为隔离的原生宿主合并准备，没有冻结 JS 资源、没有新验收、没有上传，**不纳入本次发布、不合入主线**。

@@ -6,6 +6,7 @@
 - 本次统一保留 `9935c6d`（跨页、完整字幕、EPUB 目录、PDF 内存）和正式合并的 `d4e427c`（EPUB 插图、PDF 原页/OCR 坐标）。冲突整合保留新目录解析和每页内存释放；解析缓存版本提升为 4。
 - 发布分支 `codex/ios-release-1.2.42` 的应用源码 `1ce1e56` 已推送并同步到远端 `main` 和原集成分支 `codex/mobile-voice-explore-20260914`，包含解读动画结束后的翻页代次修复，以及暂停朗读后明确启动解读的暂停意图修复。今后从最新远端 `main` 建立发布分支，先合并功能再打包；必须执行 `bash scripts/build-voice-toc-integration.sh --check`。脚本检查本批必备祖先，缺任何一项都拒绝继续。
 - 1.2.42（64）已于 2026-09-20 15:13:39 +08:00 正式提交，版本及审核单 `c1501e0f-69a3-4238-b58f-2bac9818b971` 均 WAITING_FOR_REVIEW，审核通过自动发布。两区真实朗读/解读核心通过，最终全量 1,837 通过、0 失败、11 跳过；以 `docs/iOS-1.2.42-Release-Report.md` 的实际状态为准。历史安装、额度、审核状态仅在其原时间有效。
+- 送审后的 Safari 恢复要求已由用户明确为**仅 Mac Safari**。Mac 扩展使用独立的 `com.castreader.CastReader` 容器与公证安装包；不得为此撤回 iOS 1.2.42（64）、给 iOS 加入未验收的 Safari target，或把 iOS 提交成功当作 Mac 已开放。Mac 的最终源码/验收/签名/下载恢复由 Safari 专项发布记录分别确认。
 
 ## App Store 1.2.41 已送审（2026-09-19）
 
