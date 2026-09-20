@@ -43,3 +43,6 @@ Secrets.xcconfig
 
 # Local Apple Ads automation output
 reports/apple-ads/
+
+# Local Safari integration test bundles (summary/receipts are versioned)
+reports/safari-parity-*/*.xcresult/

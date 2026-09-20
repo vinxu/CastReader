@@ -140,6 +140,7 @@ struct MainTabView: View {
     @StateObject private var studyBoostRouter: StudyBoostRouter
     @StateObject private var youtubeRouteCenter: YouTubeRouteCenter
     @StateObject private var voiceGiftRouteCenter: VoiceGiftRouteCenter
+    @StateObject private var safariAppRouteCenter = SafariAppRouteCenter.shared
     @StateObject private var voiceCloneStore = VoiceCloneStore.shared
     @StateObject private var auth = AuthService.shared
     @StateObject private var growthLoop = GrowthLoopConversionCoordinator.shared
@@ -652,6 +653,9 @@ struct MainTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .castReaderShareInboxChanged)) { _ in
             reloadShareInbox(showWhenPending: true)
+        }
+        .sheet(item: $safariAppRouteCenter.request) { request in
+            SettingsView(initialSafariAction: request.action)
         }
         .onReceive(youtubeRouteCenter.$request.compactMap { $0 }) { request in
             guard scenePhase == .active else { return }

@@ -71,5 +71,7 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>CastReaderSafariKeychainAccessGroup</key>
+	<string>$(AppIdentifierPrefix)com.same.castreader.safari</string>
 </dict>
 </plist>

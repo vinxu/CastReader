@@ -95,6 +95,8 @@ final class ReaderSceneContext: ObservableObject, Identifiable {
             _ = CloudStorageCenter.handleOAuthRedirect(url)
         } else if StudyBoostDeepLink.matches(url) {
             studyBoost.open()
+        } else if url.scheme == "castreader", url.host == "safari" {
+            SafariAppRouteCenter.shared.open(url)
         } else if url.scheme == "castreader", url.host == "voice-gift" {
             voiceGift.open()
         } else if url.scheme == "castreader", url.host == "youtube" {
