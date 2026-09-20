@@ -497,6 +497,7 @@ export function initBridge(deps: CRDeps): void {
       })
     },
     clearMarks(): void { markRenderer.clear() },
+    relayoutMarks(): void { markRenderer.relayout() },
   }
   ;(window as unknown as { CR: typeof CR }).CR = CR
 

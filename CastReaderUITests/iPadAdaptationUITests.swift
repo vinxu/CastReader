@@ -76,4 +76,126 @@ final class iPadAdaptationUITests: XCTestCase {
         rotate(app, .landscapeLeft)
         capture(app, "module1-import-landscape")
     }
+
+    func testNativeTextRotation() { verifyReaderRotation("text-long") }
+    func testNativeEPUBRotation() { verifyReaderRotation("epub-long") }
+    func testNativePDFRotation() { verifyReaderRotation("pdf") }
+    func testNativeScannedPDFRotation() { verifyReaderRotation("pdf-ocr") }
+    func testNativePhotoRotation() { verifyReaderRotation("photo") }
+    func testNativeDOCXRotation() { verifyReaderRotation("docx-long") }
+    func testNativeWebRotation() { verifyReaderRotation("web-long") }
+
+    private func number(_ key: String, in text: String) -> Double {
+        text.split(separator: ";").first { $0.hasPrefix(key + "=") }
+            .flatMap { Double($0.dropFirst(key.count + 1)) } ?? -1
+    }
+
+    private func waitForStatus(_ status: XCUIElement, timeout: TimeInterval = 20,
+                               _ matches: @escaping (String) -> Bool) -> Bool {
+        let expected = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            status.exists && matches(status.label)
+        }, object: status)
+        return XCTWaiter.wait(for: [expected], timeout: timeout) == .completed
+    }
+
+    private func scenario(_ kind: String) -> XCUIApplication {
+        let app = XCUIApplication()
+        // These fixtures use isolated document/progress directories. They do
+        // not remove the signed-in account, Kindle cookies or real library.
+        app.launchArguments = ["-CastReaderResumeScenario", kind, "-CastReaderResetResumeScenario",
+            "-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding", "-CastReaderForceDebugPro",
+            "-auto_play", "NO", "-tts_speed", "1", "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+            "-interfaceLanguage", "en"]
+        app.launch()
+        return app
+    }
+
+    func testPDFManualZoomAndPositionSurviveRotation() {
+        let app = scenario("pdf")
+        let status = app.staticTexts["scenarioStatus"]
+        XCTAssertTrue(waitForStatus(status, timeout: 45) { self.number("target", in: $0) >= 0 })
+        app.buttons["scenarioSeekTarget"].tap()
+        XCTAssertTrue(waitForStatus(status) { $0.contains("playing=true") })
+        app.buttons["readPlayPauseButton"].tap()
+        app.buttons["scenarioFollowOff"].tap()
+        let canvas = app.descendants(matching: .any)["pdfReaderCanvas"].firstMatch
+        XCTAssertTrue(canvas.waitForExistence(timeout: 5))
+        capture(app, "module2-pdf-before-pinch")
+        canvas.pinch(withScale: 2, velocity: 1)
+        capture(app, "module2-pdf-after-pinch")
+        XCTAssertTrue(waitForStatus(status) { self.number("zoom", in: $0) > 1.2 }, status.label)
+        canvas.swipeUp()
+        canvas.swipeUp()
+        XCTAssertTrue(waitForStatus(status) { self.number("centerPage", in: $0) >= 0 })
+        let page = number("centerPage", in: status.label)
+        let centerY = number("centerY", in: status.label)
+        let zoom = number("zoom", in: status.label)
+        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait] {
+            rotate(app, orientation)
+            XCTAssertTrue(waitForStatus(status) { $0.contains("layoutStable=true") && abs(self.number("zoom", in: $0) - zoom) < 0.08 })
+            XCTAssertEqual(number("centerPage", in: status.label), page, "Manual browsing must keep its page")
+            XCTAssertEqual(number("centerY", in: status.label), centerY, accuracy: 10, "Rotation must keep the same page point in the viewport center")
+            capture(app, "module2-pdf-manual-\(orientation.rawValue)")
+        }
+        canvas.pinch(withScale: 0.6, velocity: -1)
+        XCTAssertTrue(waitForStatus(status) { self.number("zoom", in: $0) < zoom - 0.2 })
+        capture(app, "module2-pdf-zoom-out")
+        app.terminate()
+    }
+
+    private func verifyReaderRotation(_ kind: String) {
+        let app = scenario(kind)
+        let status = app.staticTexts["scenarioStatus"]
+        XCTAssertTrue(waitForStatus(status, timeout: 45) { self.number("target", in: $0) >= 0 })
+        let target = number("target", in: status.label)
+        app.buttons["scenarioSeekTarget"].tap()
+        XCTAssertTrue(waitForStatus(status) { $0.contains("playing=true") && self.number("time", in: $0) >= 1 })
+        app.buttons["readPlayPauseButton"].tap()
+        XCTAssertTrue(waitForStatus(status) { $0.contains("playing=false") })
+        let stopped = number("time", in: status.label)
+        let segment = number("segment", in: status.label)
+        for (orientation, name) in [(UIDeviceOrientation.portrait, "portrait"),
+            (.landscapeLeft, "landscape-left"), (.landscapeRight, "landscape-right"),
+            (.portraitUpsideDown, "portrait-upside-down"), (.portrait, "portrait-restored")] {
+            rotate(app, orientation)
+            XCTAssertTrue(waitForStatus(status) {
+                $0.contains("layoutStable=true") && ($0.contains("activeVisible=true") || $0.contains("visible=true"))
+            }, "\(kind) lost its reading anchor: \(status.label)")
+            XCTAssertEqual(number("paragraph", in: status.label), target)
+            XCTAssertEqual(number("segment", in: status.label), segment)
+            XCTAssertEqual(number("time", in: status.label), stopped, accuracy: 0.4)
+            XCTAssertTrue(app.buttons["readPlayPauseButton"].isHittable)
+            capture(app, "module2-\(kind)-\(name)")
+        }
+        if kind == "pdf" {
+            let canvas = app.descendants(matching: .any)["pdfReaderCanvas"].firstMatch
+            canvas.pinch(withScale: 2, velocity: 1)
+            XCTAssertTrue(waitForStatus(status) { self.number("zoom", in: $0) > 1.2 })
+            let zoom = number("zoom", in: status.label)
+            rotate(app, .landscapeLeft)
+            XCTAssertTrue(waitForStatus(status) { $0.contains("activeVisible=true") && abs(self.number("zoom", in: $0) - zoom) < 0.08 })
+            capture(app, "module2-pdf-zoom-follow-word")
+            canvas.pinch(withScale: 0.5, velocity: -1)
+        }
+        if kind == "photo" {
+            let canvas = app.scrollViews["photoReaderCanvas"]
+            canvas.pinch(withScale: 2, velocity: 1)
+            XCTAssertTrue(waitForStatus(status) { self.number("zoom", in: $0) > 1.2 })
+            let zoom = number("zoom", in: status.label)
+            rotate(app, .landscapeLeft)
+            XCTAssertTrue(waitForStatus(status) { $0.contains("layoutStable=true") && abs(self.number("zoom", in: $0) - zoom) < 0.02 })
+            capture(app, "module2-photo-zoom-preserved")
+            canvas.doubleTap()
+        }
+        app.buttons["scenarioShowMarks"].tap()
+        XCTAssertTrue(waitForStatus(status) { self.number("marks", in: $0) == 1 && $0.contains("visible=true") })
+        let markID = status.label.split(separator: ";").first { $0.hasPrefix("markID=") }.map(String.init) ?? "missing"
+        for (orientation, name) in [(UIDeviceOrientation.landscapeLeft, "landscape"), (.portrait, "portrait")] {
+            rotate(app, orientation)
+            XCTAssertTrue(waitForStatus(status) { $0.contains("layoutStable=true") && $0.contains("visible=true") })
+            XCTAssertTrue(status.label.contains(markID), "Resize must keep the same explanation mark")
+            capture(app, "module2-\(kind)-explain-\(name)")
+        }
+        app.terminate()
+    }
 }

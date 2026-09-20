@@ -917,7 +917,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             .receive(on: RunLoop.main)
             .sink { [weak self] idx in
                 guard idx >= 0 else { return }
-                self?.call("scrollTo", ["paragraphIndex": idx, "anchor": 0.35])
+                self?.revealCurrentExplainPosition(fallback: idx)
             }
             .store(in: &cancellables)
     }
@@ -6497,11 +6497,22 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             ReaderRunLog.write("WEB refocus read para=\(readVM.currentParagraphIndex) token=\(token) didInit=\(didInit)")
             revealCurrentReadPosition()
         } else {
-            let target = explainVM?.activeMarks.last?.paragraphIndex ?? explainVM?.scrollTarget ?? -1
-            guard target >= 0 else { return }
-            ReaderRunLog.write("WEB refocus explain para=\(target) token=\(token) didInit=\(didInit)")
-            call("scrollTo", ["paragraphIndex": target, "anchor": 0.35, "reason": "refocus"])
+            call("relayoutMarks")
+            revealCurrentExplainPosition()
         }
+    }
+
+    private func revealCurrentExplainPosition(fallback: Int = -1) {
+        guard didInit, !isReadMode, readVM?.autoScrollEnabled == true else { return }
+        let mark = explainVM?.activeMarks.last
+        let target = mark?.paragraphIndex ?? explainVM?.scrollTarget ?? fallback
+        guard target >= 0 else { return }
+        var payload: [String: Any] = ["paragraphIndex": target]
+        if let mark, let range = explainVM?.webUTF16Range(for: mark) {
+            payload["charStart"] = range.lowerBound
+            payload["charEnd"] = range.upperBound
+        }
+        call("scrollTo", payload)
     }
 
     private func revealCurrentReadPosition() {

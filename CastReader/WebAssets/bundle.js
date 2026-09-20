@@ -42128,12 +42128,40 @@ var __CRWeb = (() => {
   function createMarkRenderer(getParaEl, initialColor) {
     const svgs = /* @__PURE__ */ new Map();
     let color = initialColor;
-    const shown = /* @__PURE__ */ new Set();
+    const shown = /* @__PURE__ */ new Map();
+    const observedWindows = /* @__PURE__ */ new WeakSet();
+    let animateDrawing = true;
+    let pendingRelayout = 0;
+    function scheduleRelayout() {
+      if (pendingRelayout || shown.size === 0) return;
+      pendingRelayout = requestAnimationFrame(() => {
+        pendingRelayout = 0;
+        relayout();
+      });
+    }
+    function relayout() {
+      const marks = Array.from(shown.values());
+      svgs.forEach((svg) => svg.replaceChildren());
+      shown.clear();
+      animateDrawing = false;
+      try {
+        marks.forEach(show);
+      } finally {
+        animateDrawing = true;
+      }
+    }
     function ensureSvg(doc) {
+      var _a;
       const root2 = doc.documentElement;
       const body = doc.body;
       const host = body || root2;
       if (!host) return null;
+      const ownerWindow = doc.defaultView;
+      if (ownerWindow && !observedWindows.has(ownerWindow)) {
+        observedWindows.add(ownerWindow);
+        ownerWindow.addEventListener("resize", scheduleRelayout);
+        (_a = doc.fonts) == null ? void 0 : _a.addEventListener("loadingdone", scheduleRelayout);
+      }
       const width = Math.max((root2 == null ? void 0 : root2.scrollWidth) || 0, (body == null ? void 0 : body.scrollWidth) || 0, 1);
       const height = Math.max((root2 == null ? void 0 : root2.scrollHeight) || 0, (body == null ? void 0 : body.scrollHeight) || 0, 1);
       const existing = svgs.get(doc);
@@ -42199,6 +42227,7 @@ var __CRWeb = (() => {
       path5.setAttribute("stroke-linecap", "round");
       path5.setAttribute("stroke-linejoin", "round");
       s.appendChild(path5);
+      if (!animateDrawing) return;
       try {
         const len = (_b = (_a = path5.getTotalLength) == null ? void 0 : _a.call(path5)) != null ? _b : 120;
         path5.style.strokeDasharray = String(len);
@@ -42233,7 +42262,7 @@ var __CRWeb = (() => {
       const sy = ownerWindow.scrollY;
       const lineRects = rects.filter((rc) => rc.width >= 2 && rc.height >= 2);
       if (!lineRects.length) return;
-      shown.add(m.id);
+      shown.set(m.id, m);
       const last2 = lineRects[lineRects.length - 1];
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       lineRects.forEach((rc) => {
@@ -42287,6 +42316,8 @@ var __CRWeb = (() => {
       }
     }
     function clear() {
+      cancelAnimationFrame(pendingRelayout);
+      pendingRelayout = 0;
       shown.clear();
       svgs.forEach((svg) => {
         try {
@@ -42299,7 +42330,7 @@ var __CRWeb = (() => {
     function setColor(hex) {
       color = hex;
     }
-    return { show, clear, setColor };
+    return { show, clear, setColor, relayout };
   }
 
   // ../../../MyProject/readout-desktop/src/shared/highlight-palette.ts
@@ -52862,6 +52893,7 @@ var __CRWeb = (() => {
       wcSeg = -1;
       wcRanges = [];
       paraCursor = 0;
+      for (const element of extractedParaElements.values()) element.removeAttribute("data-cr-para");
       paraElements.clear();
       extractedParaElements.clear();
       paraOffsets.clear();
@@ -53095,6 +53127,9 @@ var __CRWeb = (() => {
       },
       clearMarks() {
         markRenderer.clear();
+      },
+      relayoutMarks() {
+        markRenderer.relayout();
       }
     };
     window.CR = CR;

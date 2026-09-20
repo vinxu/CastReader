@@ -197,9 +197,11 @@ struct ReadingResumeScenarioFixtureView: View {
                 Button("Read target") { seekTarget() }.disabled(targetIndex < 0).accessibilityIdentifier("scenarioSeekTarget")
                 Button("Reopen") { Task { await reopen() } }.accessibilityIdentifier("scenarioReopen")
                 Button("Expand") { coordinator.expand() }.accessibilityIdentifier("scenarioExpand")
+                Button("Follow off") { coordinator.session?.readVM.autoScrollEnabled = false }.accessibilityIdentifier("scenarioFollowOff")
+                Button("Show marks") { showGeometryMarks() }.disabled(targetIndex < 0).accessibilityIdentifier("scenarioShowMarks")
             }.font(.caption)
             if let s = coordinator.session {
-                ReadingResumeScenarioStatus(vm: s.readVM, target: targetIndex, probe: probe)
+                ReadingResumeScenarioStatus(vm: s.readVM, explainVM: s.explainVM, target: targetIndex, probe: probe)
                 ZStack(alignment: .bottom) {
                     if coordinator.showsMiniPlayer { MiniPlayerView(coordinator: coordinator) }
                     ReaderHostView(readVM: s.readVM, explainVM: s.explainVM, coordinator: coordinator, document: s.document)
@@ -254,6 +256,20 @@ struct ReadingResumeScenarioFixtureView: View {
                                         progress: word.startTime / segment.duration, isReplayEligible: false)
         ReaderRunLog.write("SCENARIO seek dispatched target=\(targetIndex) actual=\(s.readVM.currentParagraphIndex)")
     }
+    private func showGeometryMarks() {
+        guard let session = coordinator.session,
+              let range = targetText.range(of: ReadingResumeScenario.marker) else { return }
+        coordinator.mode = .explain
+        let lower = targetText.distance(from: targetText.startIndex, to: range.lowerBound)
+        let upper = targetText.distance(from: targetText.startIndex, to: range.upperBound)
+        // Wait for the production mode transition, then exercise the actual
+        // native/DOM mark renderers without another paid explanation request.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            session.explainVM.activeMarks = [ResolvedMark(id: UUID(), paragraphIndex: targetIndex,
+                charRange: lower..<upper, action: "underline", n: nil, seed: 42)]
+            session.explainVM.scrollTarget = targetIndex
+        }
+    }
     private func reopen() async {
         guard !loading else { return }; loading = true
         defer { loading = false }
@@ -269,12 +285,13 @@ struct ReadingResumeScenarioFixtureView: View {
 
 private struct ReadingResumeScenarioStatus: View {
     @ObservedObject var vm: ReadAloudViewModel
+    @ObservedObject var explainVM: ExplainViewModel
     @ObservedObject private var audio = AudioPlayerService.shared
     let target: Int
     let probe: String
     var body: some View {
-        Text(verbatim: "target=\(target);paragraph=\(vm.currentParagraphIndex);segment=\(audio.currentSegment?.segmentIndex ?? -1);time=\(String(format: "%.2f", audio.currentTime));playing=\(vm.isPlaying);first=\(vm.debugResumeFirstPlaybackSeconds.map { String(format: "%.3f", $0) } ?? "-1");\(probe)")
-            .font(.system(size: 9)).accessibilityIdentifier("scenarioStatus")
+        Text(verbatim: "target=\(target);paragraph=\(vm.currentParagraphIndex);segment=\(audio.currentSegment?.segmentIndex ?? -1);time=\(String(format: "%.2f", audio.currentTime));playing=\(vm.isPlaying);first=\(vm.debugResumeFirstPlaybackSeconds.map { String(format: "%.3f", $0) } ?? "-1");marks=\(explainVM.activeMarks.count);markID=\(explainVM.activeMarks.last?.id.uuidString ?? "none");\(probe)")
+            .font(.system(size: 9)).lineLimit(4).frame(height: 44).accessibilityIdentifier("scenarioStatus")
     }
 }
 
@@ -302,6 +319,10 @@ enum ReadingResumeViewportProbe {
         if document.sourceKind == .pdf, let pdf = views.compactMap({ $0 as? PDFView }).first,
            let paragraph = document.paragraphs.first(where: { $0.text.localizedCaseInsensitiveContains(needle) }),
            let pageIndex = paragraph.pdfPageIndex, let page = pdf.document?.page(at: pageIndex) {
+            if let scroll = descendants(pdf).compactMap({ $0 as? UIScrollView }).first,
+               scroll.isZooming || scroll.isTracking || scroll.isDragging || scroll.isDecelerating {
+                return "visible=false;surface=pdf;zoom=\(scroll.zoomScale / max(0.001, (pdf.superview as? PDFReaderContainerView)?.fitScale ?? 1));page=\(pageIndex)"
+            }
             // A measurement must not rescan all 120 pages on every player tick.
             let rect: CGRect
             if paragraph.pdfRange == nil, let index = paragraph.words.firstIndex(where: { $0.text.localizedCaseInsensitiveContains(needle) }) {
@@ -311,9 +332,12 @@ enum ReadingResumeViewportProbe {
                 rect = range.location == NSNotFound ? .null
                     : pdf.convert(page.selection(for: range)?.bounds(for: page) ?? .null, from: page)
             }
+            let center = CGPoint(x: pdf.bounds.midX, y: pdf.bounds.midY)
+            let centerPage = pdf.page(for: center, nearest: true)
+            let centerY = centerPage.map { pdf.convert(center, to: $0).y } ?? -1
             let activePage = vm.flatMap { document.paragraphs.indices.contains($0.currentParagraphIndex) ? document.paragraphs[$0.currentParagraphIndex].pdfPageIndex : nil }.flatMap { pdf.document?.page(at: $0) }
             let active = activePage.flatMap { page in page.annotations.last.map { visible(pdf.convert($0.bounds, from: page), in: pdf) } } ?? false
-            return "visible=\(visible(rect, in: pdf));activeVisible=\(active);surface=pdf;page=\(pdf.currentPage.flatMap { pdf.document?.index(for: $0) } ?? -1)"
+            return "visible=\(visible(rect, in: pdf));activeVisible=\(active);surface=pdf;centerPage=\(centerPage.flatMap { pdf.document?.index(for: $0) } ?? -1);centerY=\(centerY);zoom=\(pdf.scaleFactor / max(0.001, (pdf.superview as? PDFReaderContainerView)?.fitScale ?? 1));page=\(pdf.currentPage.flatMap { pdf.document?.index(for: $0) } ?? -1)"
         }
         if document.sourceKind == .photo,
            let paragraph = document.paragraphs.first(where: { $0.text.localizedCaseInsensitiveContains(needle) }),
@@ -322,7 +346,7 @@ enum ReadingResumeViewportProbe {
            let host = scroll.subviews.first {
             let rects = PhotoAnchorResolver(document: document, fitted: host.bounds).rectsForWord(paragraphIndex: paragraph.id, wordIndex: index)
             let activeRects = PhotoAnchorResolver(document: document, fitted: host.bounds).rectsForWord(paragraphIndex: vm?.currentParagraphIndex ?? -1, wordIndex: vm?.photoHighlightWordIndex ?? -1)
-            return "visible=\(rects.contains { visible($0, in: host) });activeVisible=\(activeRects.contains { visible($0, in: host) });surface=photo"
+            return "visible=\(rects.contains { visible($0, in: host) });activeVisible=\(activeRects.contains { visible($0, in: host) });surface=photo;zoom=\(scroll.zoomScale)"
         }
         if document.sourceKind.isWebRendered, let web = views.compactMap({ $0 as? WKWebView }).first {
             let saved = vm?.initialResumeViewportRange

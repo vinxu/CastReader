@@ -380,6 +380,8 @@ private struct WeReadNativeTOCPanel: View {
 struct ReaderHostView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var hostSize = CGSize.zero
     @ObservedObject var readVM: ReadAloudViewModel
     @ObservedObject var explainVM: ExplainViewModel
     @ObservedObject var coordinator: PlayerCoordinator
@@ -420,7 +422,12 @@ struct ReaderHostView: View {
     }
 
     private var mode: ReaderMode { coordinator.mode }
-    private var usesCompactPlaybackBar: Bool { verticalSizeClass == .compact }
+    private var usesCompactPlaybackBar: Bool {
+        if AdaptiveLayout.isPad {
+            return AdaptiveLayout.usesCompactControls(size: hostSize, accessibility: dynamicTypeSize.isAccessibilitySize)
+        }
+        return verticalSizeClass == .compact
+    }
 
     var body: some View {
         // Keep one structural path for the reader surface in both orientations.
@@ -476,6 +483,13 @@ struct ReaderHostView: View {
                     .zIndex(30)
             }
         }
+        .background {
+            GeometryReader { geometry in
+                Color.clear
+                    .onAppear { hostSize = geometry.size }
+                    .onChange(of: geometry.size) { hostSize = $0 }
+            }
+        }
         .background(AppTheme.background.ignoresSafeArea())
         .environment(\.readerAppearanceSource, appearanceSource)
         .sheet(isPresented: $showsEpubTOC) {
@@ -499,18 +513,6 @@ struct ReaderHostView: View {
         .onAppear { scheduleRefocusBurst(reason: "appear") }
         .onDisappear {
             refocusTask?.cancel()
-        }
-        .onPreferenceChange(ReaderSurfaceSizeKey.self) { size in
-            guard size.width > 1, size.height > 1 else { return }
-            guard abs(size.width - readerSurfaceSize.width) > 2
-                    || abs(size.height - readerSurfaceSize.height) > 2 else { return }
-            // ReaderHost is kept alive off-screen while minimized. Its first
-            // valid geometry preference can therefore arrive just before
-            // `isReaderPresented` flips to true. Always cache that geometry;
-            // only the visible reader needs an immediate refocus burst.
-            readerSurfaceSize = size
-            guard coordinator.isReaderPresented else { return }
-            scheduleRefocusBurst(reason: "surfaceSize")
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active, coordinator.isReaderPresented {
@@ -598,10 +600,21 @@ struct ReaderHostView: View {
                 }
             }
             .frame(width: surfaceSize.width, height: surfaceSize.height)
-            .preference(key: ReaderSurfaceSizeKey.self, value: surfaceSize)
+            .onAppear { updateReaderSurfaceSize(surfaceSize) }
+            .onChange(of: surfaceSize) { updateReaderSurfaceSize($0) }
         }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .id(document.contentSessionKey)   // 同一远端文件换 revision 必须重建；切朗读/解读仍不重建
+    }
+
+    private func updateReaderSurfaceSize(_ size: CGSize) {
+        guard size.width > 1, size.height > 1,
+              abs(size.width - readerSurfaceSize.width) > 2 || abs(size.height - readerSurfaceSize.height) > 2 else { return }
+        readerSurfaceSize = size
+        guard coordinator.isReaderPresented else { return }
+        // iPad stays regular-height when rotated. Observe this exact surface,
+        // not a size class or a preference that another subtree can overwrite.
+        scheduleRefocusBurst(reason: "surfaceSize")
     }
 
     // MARK: 顶部
@@ -612,6 +625,7 @@ struct ReaderHostView: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(AppTheme.foreground)
+                    .frame(width: AdaptiveLayout.isPad ? 44 : nil, height: AdaptiveLayout.isPad ? 44 : nil)
             }
             .accessibilityIdentifier("readerMinimizeButton")
             .accessibilityLabel(Text(AppLocalized("返回")))
@@ -633,7 +647,8 @@ struct ReaderHostView: View {
                     ForEach(ReaderMode.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 140)
+                .frame(width: AdaptiveLayout.isPad ? min(240, max(180, hostSize.width * 0.35)) : 140)
+                .layoutPriority(1)
                 .accessibilityIdentifier("readerModePicker")
             }
         }
@@ -1120,13 +1135,6 @@ struct ReaderHostView: View {
                 #endif
             }
         }
-    }
-}
-
-private struct ReaderSurfaceSizeKey: PreferenceKey {
-    static var defaultValue: CGSize = .zero
-    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
-        value = nextValue()
     }
 }
 

@@ -4,6 +4,8 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 module="${1:?module name required}"
 test_identifier="${2:?XCTest identifier required}"
+test_arguments=()
+for identifier in "${@:2}"; do test_arguments+=("-only-testing:$identifier"); done
 device="${CASTREADER_IPAD_SIMULATOR:-BFCF61DE-9C45-4467-8996-6F4E03AE7725}"
 derived="${CASTREADER_IPAD_DERIVED_DATA:-/tmp/CastReader-iPad-Adaptation}"
 run="$(date +%Y%m%dT%H%M%S)"
@@ -17,7 +19,7 @@ xcodebuild -disableAutomaticPackageResolution -skipPackageUpdates -workspace Cas
   -destination "platform=iOS Simulator,id=$device" \
   -derivedDataPath "$derived" -parallel-testing-enabled NO \
   -resultBundlePath "$report/tests.xcresult" \
-  "-only-testing:$test_identifier" test > "$report/tests.log" 2>&1 || test_status=$?
+  "${test_arguments[@]}" test > "$report/tests.log" 2>&1 || test_status=$?
 xcrun xcresulttool get test-results summary --path "$report/tests.xcresult" \
   --format json > "$report/summary.json"
 xcrun xcresulttool export attachments --path "$report/tests.xcresult" \

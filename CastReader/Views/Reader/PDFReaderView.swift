@@ -4,12 +4,110 @@
 //
 //  PDF 本地原生渲染（PDFKit PDFView，保排版、不重排，故无换行问题）。
 //  朗读时按 currentParagraphIndex 在 PDF 上用 characterBounds 画当前句高亮 annotation + 自动滚动。
-//  解读手写标注为后续阶段（MVP 先做朗读）。
+//  解读按原页字符/OCR 坐标绘制手写标注，缩放和旋转保留页内位置。
 //
 
 import SwiftUI
 import PDFKit
 import Combine
+
+/// Keep a PDF page-space destination and the user's zoom relative to fit size.
+/// Resizing does not replace the document, annotations or playback session.
+final class PDFReaderContainerView: UIView {
+    let pdfView = PDFView()
+    private var viewport = CGSize.zero
+    private(set) var fitScale: CGFloat = 0
+    private weak var zoomScroll: UIScrollView?
+    private var gestureStartScale: CGFloat = 1
+    private var gestureStartValue: CGFloat = 1
+    private var needsZoomFallback = false
+    private var gesturePage: PDFPage?
+    private var gesturePagePoint = CGPoint.zero
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        addSubview(pdfView)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.width > 0, bounds.height > 0, bounds.size != viewport else { return }
+        let center = CGPoint(x: pdfView.bounds.midX, y: pdfView.bounds.midY)
+        let anchorPage = viewport == .zero ? nil : pdfView.page(for: center, nearest: true)
+        let anchorPoint = anchorPage.map { pdfView.convert(center, to: $0) }
+        let relativeZoom = fitScale > 0 ? pdfView.scaleFactor / fitScale : 1
+        viewport = bounds.size
+        pdfView.frame = bounds
+        guard AdaptiveLayout.isPad, pdfView.document != nil else { return }
+        pdfView.layoutIfNeeded()
+        let fit = pdfView.scaleFactorForSizeToFit
+        guard fit.isFinite, fit > 0 else { return }
+        fitScale = fit
+        pdfView.autoScales = false
+        pdfView.minScaleFactor = fit * 0.5
+        pdfView.maxScaleFactor = fit * 5
+        let scale = min(pdfView.maxScaleFactor, max(pdfView.minScaleFactor, fit * relativeZoom))
+        pdfView.scaleFactor = scale
+        installZoomRecovery()
+        if let page = anchorPage, let point = anchorPoint {
+            position(point, on: page, at: CGPoint(x: bounds.midX, y: bounds.midY))
+        }
+    }
+    private func installZoomRecovery() {
+        var ancestor = pdfView.documentView?.superview
+        while let view = ancestor {
+            if let scroll = view as? UIScrollView {
+                guard zoomScroll !== scroll else { return }
+                zoomScroll?.pinchGestureRecognizer?.removeTarget(self, action: #selector(recoverStalledZoom(_:)))
+                zoomScroll = scroll
+                scroll.pinchGestureRecognizer?.addTarget(self, action: #selector(recoverStalledZoom(_:)))
+                return
+            }
+            ancestor = view.superview
+        }
+    }
+
+    /// PDFKit on the tested iPadOS 26.5 runtime can recognize a pinch while
+    /// leaving both PDF and scroll scales unchanged. Only recover that stalled
+    /// case; a normally advancing native pinch keeps full control.
+    @objc private func recoverStalledZoom(_ gesture: UIPinchGestureRecognizer) {
+        let location = gesture.location(in: pdfView)
+        if gesture.state == .began {
+            gestureStartScale = pdfView.scaleFactor
+            gestureStartValue = max(0.001, gesture.scale)
+            needsZoomFallback = false
+            gesturePage = pdfView.page(for: location, nearest: true)
+            if let page = gesturePage { gesturePagePoint = pdfView.convert(location, to: page) }
+        }
+        guard gesture.state == .changed || gesture.state == .ended else { return }
+        let factor = gesture.scale / gestureStartValue
+        if !needsZoomFallback {
+            guard abs(factor - 1) > 0.01,
+                  abs(pdfView.scaleFactor - gestureStartScale) < 0.001 else { return }
+            needsZoomFallback = true
+        }
+        let scale = min(pdfView.maxScaleFactor, max(pdfView.minScaleFactor, gestureStartScale * factor))
+        pdfView.scaleFactor = scale
+        guard let page = gesturePage else { return }
+        position(gesturePagePoint, on: page, at: location)
+    }
+
+    private func position(_ point: CGPoint, on page: PDFPage, at location: CGPoint) {
+        guard let scroll = zoomScroll else { return }
+        pdfView.layoutIfNeeded()
+        let updated = pdfView.convert(point, from: page)
+        let offset = CGPoint(x: scroll.contentOffset.x + updated.x - location.x,
+                             y: scroll.contentOffset.y + updated.y - location.y)
+        scroll.setContentOffset(CGPoint(
+            x: min(max(-scroll.adjustedContentInset.left, offset.x),
+                   max(-scroll.adjustedContentInset.left, scroll.contentSize.width - scroll.bounds.width + scroll.adjustedContentInset.right)),
+            y: min(max(-scroll.adjustedContentInset.top, offset.y),
+                   max(-scroll.adjustedContentInset.top, scroll.contentSize.height - scroll.bounds.height + scroll.adjustedContentInset.bottom))), animated: false)
+    }
+
+}
 
 struct PDFReaderView: UIViewRepresentable {
     let document: ReadingDocument
@@ -25,8 +123,10 @@ struct PDFReaderView: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    func makeUIView(context: Context) -> PDFView {
-        let v = PDFView()
+    func makeUIView(context: Context) -> PDFReaderContainerView {
+        let container = PDFReaderContainerView(frame: .zero)
+        let v = container.pdfView
+        v.accessibilityIdentifier = "pdfReaderCanvas"
         v.autoScales = true
         v.displayMode = .singlePageContinuous
         v.displayDirection = .vertical
@@ -41,10 +141,11 @@ struct PDFReaderView: UIViewRepresentable {
         // 翻页 → 把当前页范围告诉解读 VM（点解读时只对当前页生成讲解，而非全文从头）。
         NotificationCenter.default.addObserver(context.coordinator, selector: #selector(Coordinator.pageChanged), name: .PDFViewPageChanged, object: v)
         DispatchQueue.main.async { context.coordinator.updatePdfScope() }
-        return v
+        return container
     }
 
-    func updateUIView(_ v: PDFView, context: Context) {
+    func updateUIView(_ container: PDFReaderContainerView, context: Context) {
+        let v = container.pdfView
         if v.isHidden == isActive { v.isHidden = !isActive }
         context.coordinator.setMode(mode)
         context.coordinator.refocusIfNeeded(refocusToken, mode: mode)
@@ -109,6 +210,7 @@ struct PDFReaderView: UIViewRepresentable {
             case .explain:
                 let marks = explainVM?.activeMarks ?? []
                 showMarks(marks)
+                guard autoScroll else { return }
                 if let mark = marks.last, scrollToResolvedMark(mark) { return }
                 if let target = explainVM?.scrollTarget, target >= 0 {
                     ReaderRunLog.write("PDF refocus explain para=\(target)")
@@ -489,7 +591,16 @@ struct PDFReaderView: UIViewRepresentable {
             var ancestor = pdfView.documentView?.superview
             while let view = ancestor {
                 if let scroll = view as? UIScrollView, scroll.isScrollEnabled {
-                    ReaderViewportFollow.reveal(pdfView.convert(viewportRect, to: scroll), in: scroll, source: "pdf")
+                    guard !scroll.isZooming, !scroll.isDragging, !scroll.isDecelerating, !scroll.isTracking else { return }
+                    let target = pdfView.convert(viewportRect, to: scroll)
+                    let visible = scroll.bounds.inset(by: scroll.adjustedContentInset)
+                    if target.minX < visible.minX || target.maxX > visible.maxX {
+                        let minX = -scroll.adjustedContentInset.left
+                        let maxX = max(minX, scroll.contentSize.width - scroll.bounds.width + scroll.adjustedContentInset.right)
+                        let x = min(maxX, max(minX, target.midX - visible.width / 2))
+                        scroll.setContentOffset(CGPoint(x: x, y: scroll.contentOffset.y), animated: false)
+                    }
+                    ReaderViewportFollow.reveal(target, in: scroll, source: "pdf")
                     return
                 }
                 ancestor = view.superview
