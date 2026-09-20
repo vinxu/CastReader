@@ -1,7 +1,68 @@
 import XCTest
+import UIKit
 
 final class ReadingResumeScenarioUITests: XCTestCase {
     override func setUp() { continueAfterFailure = true; XCUIDevice.shared.orientation = .portrait }
+
+    func testIllustratedEPUBImportShowsRasterAndSVGCharts() {
+        let app = openIllustrations("illustrations.epub")
+        XCTAssertTrue(containsBlueChart(app.screenshot().image), "Imported paragraph image must actually paint")
+        attach(app, "epub-table-and-raster-chart")
+        app.swipeUp()
+        // The vector wrapper is a local WebKit illustration; allow its first
+        // paint before checking pixels rather than merely checking an element.
+        let painted = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            self.containsBlueChart(app.screenshot().image)
+        }, object: app)
+        XCTAssertEqual(XCTWaiter.wait(for: [painted], timeout: 10), .completed)
+        attach(app, "epub-svg-and-repeated-charts")
+        app.terminate()
+    }
+
+    func testMixedPDFImportShowsChartsAndResumesOnScannedPage() {
+        let app = openIllustrations("mixed-illustrations.pdf")
+        XCTAssertTrue(containsBlueChart(app.screenshot().image), "PDF chart must remain on its original page")
+        attach(app, "pdf-original-searchable-page")
+        app.buttons["scenarioSeekTarget"].tap()
+        let status = app.staticTexts["scenarioStatus"]
+        XCTAssertTrue(wait(status, timeout: 20) { $0.contains("playing=true") && $0.contains("surface=pdf") && $0.contains("activeVisible=true") })
+        app.buttons["readPlayPauseButton"].tap()
+        XCTAssertTrue(wait(status, timeout: 10) { $0.contains("playing=false") && $0.contains("visible=true") })
+        attach(app, "pdf-scanned-page-ocr-highlight")
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "-CastReaderResetResumeScenario" }
+        app.launch()
+        XCTAssertTrue(wait(status, timeout: 20) { $0.contains("visible=true") && $0.contains("surface=pdf") && $0.contains("playing=false") })
+        attach(app, "pdf-scanned-page-cold-resume")
+        app.terminate()
+    }
+
+    private func openIllustrations(_ name: String) -> XCUIApplication {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let path = root.appendingPathComponent("CastReaderTests/Fixtures/document-images/" + name).path
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderResumeScenario", "document-images", "-CastReaderFixtureDocumentPath", path,
+            "-CastReaderResetResumeScenario", "-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderForceDebugPro", "-auto_play", "NO", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        XCTAssertTrue(wait(app.staticTexts["scenarioStatus"], timeout: 40) { self.number("target", $0) >= 0 })
+        return app
+    }
+
+    private func containsBlueChart(_ image: UIImage) -> Bool {
+        guard let cg = image.cgImage else { return false }
+        let width = cg.width, height = cg.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        guard let context = CGContext(data: &pixels, width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+        context.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
+        var blue = 0
+        for offset in stride(from: 0, to: pixels.count, by: 4) {
+            let r = Int(pixels[offset]), g = Int(pixels[offset + 1]), b = Int(pixels[offset + 2])
+            if r < 70 && g > 75 && b > 130 && b > r * 2 { blue += 1 }
+        }
+        return blue > 500
+    }
 
     func testLongEPUBColdResume() { run("epub") }
     func testEPUBSingleVeryLongParagraphColdResume() { run("epub-long") }
@@ -140,7 +201,7 @@ final class ReadingResumeScenarioUITests: XCTestCase {
         XCTAssertTrue(wait(status, timeout: 35) { self.number("paragraph", $0) == target && $0.contains("playing=false") })
         XCTAssertTrue(wait(status, timeout: 8) { $0.contains("activeVisible=true") }, "\(kind): the saved word must be in the actual clipped viewport before playback: \(status.label)")
         if kind == "pdf" { XCTAssertTrue(status.label.contains("surface=pdf"), "Must test PDFKit, not extracted text") }
-        if kind == "pdf-ocr" { XCTAssertTrue(status.label.contains("surface=text"), "A scanned page must use real OCR and the PDF reflow reader") }
+        if kind == "pdf-ocr" { XCTAssertTrue(status.label.contains("surface=pdf"), "Real OCR must anchor to the original scanned PDF page") }
         if kind == "photo" { XCTAssertTrue(status.label.contains("surface=photo"), "Must test the OCR image surface") }
         attach(app, "\(kind)-reopened")
         app.buttons["readPlayPauseButton"].tap()

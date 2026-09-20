@@ -137,8 +137,8 @@ struct ReadingParagraph: Identifiable, Equatable {
     var speechText: String? = nil
     var speaker: String? = nil
     var type: ReadingParagraphType = .paragraph
-    var words: [OCRWord] = []   // 仅 photo，按阅读顺序
-    var bboxNorm: CGRect? = nil // 仅 photo，段落包络（用于滚动/居中）
+    var words: [OCRWord] = []   // photo / scanned PDF, in reading order
+    var bboxNorm: CGRect? = nil // photo / scanned PDF paragraph bounds
     var visualFragments: [OCRVisualFragment] = [] // Kindle 跨栏段落的独立绘制区域
     var pdfPageIndex: Int? = nil // 仅 pdf：该句所在 PDF 页
     var pdfRange: NSRange? = nil // 仅 pdf：该句在该页 string 内的字符范围（PDFKit characterBounds 高亮用）
@@ -270,11 +270,10 @@ struct ReadingDocument: Identifiable, Equatable {
         readableParagraphs.isEmpty
     }
 
-    /// Text-layer PDFs retain exact PDFKit ranges and render in PDFView. A
-    /// scanned or hybrid PDF is OCR-reflowed and intentionally has no pdfRange,
-    /// so it uses the same text/highlight pipeline as TXT and EPUB.
+    /// File-backed PDFs always display their original pages. Text-layer ranges
+    /// and OCR word boxes are two anchor types on that same PDF surface.
     var usesNativePDFRendering: Bool {
-        sourceKind == .pdf && paragraphs.contains { $0.pdfRange != nil }
+        sourceKind == .pdf && (fileData != nil || paragraphs.contains { $0.pdfRange != nil })
     }
 
     var usesNativeTextRendering: Bool {

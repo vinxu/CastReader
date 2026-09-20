@@ -2,7 +2,7 @@
 //  EpubNativeEngine.swift
 //  CastReader
 //
-//  纯本地 EPUB 解析（对标 PDF 的 fromPDFNative，全程不触网、不走 WebView）：
+//  纯本地 EPUB 解析（不触网；独立 SVG 插图用禁用脚本的 WebKit 绘制）：
 //  ZIPFoundation 解 EPUB → 读 META-INF/container.xml 找 OPF → 解析 manifest+spine →
 //  按 spine 顺序逐章 XHTML 经 HtmlParser 抽段落（含图片）→ 合并、重排 index、内嵌图片字节回填。
 //  产出 [ReadingParagraph]（图片段带 imageData），交 TextReaderView 原生渲染，
@@ -174,6 +174,23 @@ enum EpubNativeEngine {
         for item in items where item.type.hasPrefix("image/") {
             if let data = try entryData(item.path) { images[item.path] = data }
         }
+        func illustration(_ href: String, relativeTo base: String) throws -> Data? {
+            let path = EpubResourceURL.resolve(href, relativeTo: base)?.path
+            let data: Data?
+            if let embedded = EpubImageResource.embeddedData(href) { data = embedded }
+            else if let path, let cached = images[path] { data = cached }
+            else if let path { data = try entryData(path) }
+            else { data = nil }
+            guard let data else { return nil }
+            if EpubImageResource.isSVG(data) {
+                let svgBase = href.lowercased().hasPrefix("data:") ? base : (path ?? base)
+                return EpubImageResource.svg(data) { nested in
+                    guard let target = EpubResourceURL.resolve(nested, relativeTo: svgBase)?.path else { return nil }
+                    return images[target]
+                }
+            }
+            return CGImageSourceCreateWithData(data as CFData, nil) != nil ? data : nil
+        }
         var paragraphs: [ReadingParagraph] = []
         var starts: [String: Int] = [:]
         var anchors: [String: [String: Int]] = [:]
@@ -194,15 +211,7 @@ enum EpubNativeEngine {
                 var imageData: Data?
                 if block.type == .image {
                     guard let href = block.imageHref,
-                          let path = EpubResourceURL.resolve(href, relativeTo: item.path)?.path else { continue }
-                    // Some converted books omit real, locally referenced images
-                    // from manifest. Read only that exact archive entry, under
-                    // the same extraction limits, and require a renderable image.
-                    let referencedData: Data?
-                    if let cached = images[path] { referencedData = cached }
-                    else { referencedData = try entryData(path) }
-                    guard let data = referencedData,
-                          CGImageSourceCreateWithData(data as CFData, nil) != nil else { continue }
+                          let data = try illustration(href, relativeTo: item.path) else { continue }
                     imageData = data
                 }
                 let index = paragraphs.count

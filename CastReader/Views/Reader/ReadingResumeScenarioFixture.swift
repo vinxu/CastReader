@@ -53,6 +53,10 @@ enum ReadingResumeScenario {
     @MainActor static func build(directory: URL) async throws -> ReadingDocument {
         let paras = bodyParagraphs
         switch kind {
+        case "document-images":
+            guard let path = UserDefaults.standard.string(forKey: "CastReaderFixtureDocumentPath") else { throw CocoaError(.fileNoSuchFile) }
+            let result = try await DocumentImportPipeline().importDocument(DocumentImportRequest(localURL: URL(fileURLWithPath: path)))
+            return result.document
         case "epub", "epub-long":
             var entries: [(String, String)] = [
                 ("mimetype", "application/epub+zip"),
@@ -114,7 +118,7 @@ enum ReadingResumeScenario {
             }
             if kind == "pdf-ocr" {
                 guard let doc = try await DocumentBuilder.fromPDFWithOCR(data: bytes, title: "120 page mixed PDF"),
-                      !doc.usesNativePDFRendering else { throw CocoaError(.fileReadCorruptFile) }
+                      doc.usesNativePDFRendering else { throw CocoaError(.fileReadCorruptFile) }
                 return doc
             }
             let url = directory.appendingPathComponent("long.pdf")
@@ -297,12 +301,16 @@ enum ReadingResumeViewportProbe {
         }
         if document.sourceKind == .pdf, let pdf = views.compactMap({ $0 as? PDFView }).first,
            let paragraph = document.paragraphs.first(where: { $0.text.localizedCaseInsensitiveContains(needle) }),
-           let pageIndex = paragraph.pdfPageIndex, let page = pdf.document?.page(at: pageIndex),
-           let pageText = page.string {
+           let pageIndex = paragraph.pdfPageIndex, let page = pdf.document?.page(at: pageIndex) {
             // A measurement must not rescan all 120 pages on every player tick.
-            let range = (pageText as NSString).range(of: needle, options: .caseInsensitive)
-            let rect = range.location == NSNotFound ? CGRect.null
-                : pdf.convert(page.selection(for: range)?.bounds(for: page) ?? .null, from: page)
+            let rect: CGRect
+            if paragraph.pdfRange == nil, let index = paragraph.words.firstIndex(where: { $0.text.localizedCaseInsensitiveContains(needle) }) {
+                rect = pdf.convert(PDFOCRGeometry.pageRect(paragraph.words[index].bboxNorm, page: page), from: page)
+            } else {
+                let range = ((page.string ?? "") as NSString).range(of: needle, options: .caseInsensitive)
+                rect = range.location == NSNotFound ? .null
+                    : pdf.convert(page.selection(for: range)?.bounds(for: page) ?? .null, from: page)
+            }
             let activePage = vm.flatMap { document.paragraphs.indices.contains($0.currentParagraphIndex) ? document.paragraphs[$0.currentParagraphIndex].pdfPageIndex : nil }.flatMap { pdf.document?.page(at: $0) }
             let active = activePage.flatMap { page in page.annotations.last.map { visible(pdf.convert($0.bounds, from: page), in: pdf) } } ?? false
             return "visible=\(visible(rect, in: pdf));activeVisible=\(active);surface=pdf;page=\(pdf.currentPage.flatMap { pdf.document?.index(for: $0) } ?? -1)"

@@ -15,7 +15,7 @@ import SwiftSoup
 struct EpubBlock {
     let type: ReadingParagraphType
     let text: String          // 正文 / 标题文字 / 图片 alt-caption
-    let imageHref: String?    // 仅 .image：<img src>（相对当前章节）
+    let imageHref: String?    // Local resource href or an embedded SVG/data image
 }
 
 enum HtmlParser {
@@ -30,10 +30,9 @@ enum HtmlParser {
 
             var blocks: [EpubBlock] = []
             var processed = Set<ObjectIdentifier>()
-            var processedImages = Set<String>()
 
             for child in body.children().array() {
-                try processElement(child, into: &blocks, processed: &processed, processedImages: &processedImages)
+                try processElement(child, into: &blocks, processed: &processed)
             }
 
             return blocks.isEmpty ? fallback(html) : blocks
@@ -46,7 +45,7 @@ enum HtmlParser {
 
     private static let skipTags: Set<String> = [
         "script", "style", "nav", "header", "footer",
-        "table", "tbody", "tr", "td", "th", "noscript", "iframe", "svg"
+        "noscript", "iframe"
     ]
     private static let skipClassFragments = [
         "toc", "table-of-contents", "navigation", "nav",
@@ -55,8 +54,7 @@ enum HtmlParser {
 
     private static func processElement(_ element: Element,
                                        into blocks: inout [EpubBlock],
-                                       processed: inout Set<ObjectIdentifier>,
-                                       processedImages: inout Set<String>) throws {
+                                       processed: inout Set<ObjectIdentifier>) throws {
         let oid = ObjectIdentifier(element)
         if processed.contains(oid) { return }
 
@@ -70,35 +68,43 @@ enum HtmlParser {
         }
         if tag == "span", classes.contains(where: { $0.lowercased().contains("pageno") }) { return }
 
-        // 图片容器（figure / div.figcenter|figright|figleft|figure|illustration|image）
-        if isImageContainer(tag: tag, classes: classes) {
-            if let img = try element.select("img").first() {
-                let src = try img.attr("src")
-                if !src.isEmpty, !processedImages.contains(src) {
-                    processedImages.insert(src)
-                    markSubtreeProcessed(element, into: &processed)
-                    let caption = firstText(element, ".caption")
-                        ?? firstText(element, "figcaption")
-                        ?? nonEmpty(try? img.attr("alt"))
-                        ?? nonEmpty(try? img.attr("title"))
-                        ?? "Image"
-                    blocks.append(EpubBlock(type: .image, text: caption, imageHref: src))
-                }
+        // Consume each DOM occurrence, not each filename: repeated figures are
+        // meaningful content. Empty alt is accessibility metadata, not a dropcap.
+        if tag == "img" {
+            processed.insert(oid)
+            let src = try element.attr("src")
+            if !src.isEmpty {
+                blocks.append(EpubBlock(type: .image,
+                    text: nonEmpty(try? element.attr("alt")) ?? "Image", imageHref: src))
             }
             return
         }
-
-        // 独立 <img>
-        if tag == "img" {
-            let src = try element.attr("src")
-            let alt = try element.attr("alt")
-            let isDropcap = classes.contains("dropcap") || alt.count <= 1
-            if !src.isEmpty, !processedImages.contains(src), !isDropcap {
-                processedImages.insert(src)
-                processed.insert(oid)
-                let caption = nonEmpty(alt) ?? nonEmpty(try? element.attr("title")) ?? "Image"
-                blocks.append(EpubBlock(type: .image, text: caption, imageHref: src))
+        if tag == "svg" {
+            processed.insert(oid)
+            let markup = try element.outerHtml()
+            blocks.append(EpubBlock(type: .image, text: "Image",
+                imageHref: "data:image/svg+xml;base64," + Data(markup.utf8).base64EncodedString()))
+            return
+        }
+        if isImageContainer(tag: tag, classes: classes) {
+            try appendContent(element, type: .paragraph, into: &blocks)
+            markSubtreeProcessed(element, into: &processed)
+            return
+        }
+        if tag == "table" {
+            // Preserve every cell and embedded image, with visible row/cell
+            // boundaries. EPUB remains reflowed rather than discarding tables.
+            func appendRows(_ container: Element) throws {
+                for child in container.children().array() {
+                    switch child.tagName().lowercased() {
+                    case "caption": try appendContent(child, type: .paragraph, into: &blocks)
+                    case "tr": try appendContent(child, type: .paragraph, into: &blocks, tableRow: true)
+                    default: try appendRows(child)
+                    }
+                }
             }
+            try appendRows(element)
+            markSubtreeProcessed(element, into: &processed)
             return
         }
 
@@ -113,8 +119,7 @@ enum HtmlParser {
         // 标题 h1–h6
         if tag.count == 2, tag.hasPrefix("h"), let level = Int(String(tag.dropFirst())), (1...6).contains(level) {
             processed.insert(oid)
-            let text = try extractText(element)
-            if !text.isEmpty { blocks.append(EpubBlock(type: .heading(level), text: text, imageHref: nil)) }
+            try appendContent(element, type: .heading(level), into: &blocks)
             return
         }
 
@@ -122,13 +127,11 @@ enum HtmlParser {
         switch tag {
         case "p":
             processed.insert(oid)
-            let text = try extractText(element)
-            if !text.isEmpty { blocks.append(EpubBlock(type: .paragraph, text: text, imageHref: nil)) }
+            try appendContent(element, type: .paragraph, into: &blocks)
             return
         case "blockquote":
             processed.insert(oid)
-            let text = try extractText(element)
-            if !text.isEmpty { blocks.append(EpubBlock(type: .blockquote, text: text, imageHref: nil)) }
+            try appendContent(element, type: .blockquote, into: &blocks)
             return
         case "pre":
             processed.insert(oid)
@@ -138,8 +141,7 @@ enum HtmlParser {
             return
         case "li":
             processed.insert(oid)
-            let text = try extractText(element)
-            if !text.isEmpty { blocks.append(EpubBlock(type: .list, text: text, imageHref: nil)) }
+            try appendContent(element, type: .list, into: &blocks)
             return
         default:
             break
@@ -150,15 +152,63 @@ enum HtmlParser {
             let text = try extractText(element)
             if text.count > 10 {
                 markSubtreeProcessed(element, into: &processed)
-                blocks.append(EpubBlock(type: .paragraph, text: text, imageHref: nil))
+                try appendContent(element, type: .paragraph, into: &blocks)
                 return
             }
         }
 
         // 容器元素：递归子节点
         for child in element.children().array() {
-            try processElement(child, into: &blocks, processed: &processed, processedImages: &processedImages)
+            try processElement(child, into: &blocks, processed: &processed)
         }
+    }
+
+    /// Walk mixed inline content in source order. Extracting only `.text()`
+    /// from a paragraph silently loses images nested in p/a/span/blockquote/li.
+    private static func appendContent(_ element: Element, type: ReadingParagraphType,
+                                      into blocks: inout [EpubBlock], tableRow: Bool = false) throws {
+        var text = ""
+        func flush() {
+            let value = text.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !value.isEmpty { blocks.append(EpubBlock(type: type, text: value, imageHref: nil)) }
+            text = ""
+        }
+        func visit(_ node: Node) throws {
+            if let value = node as? TextNode { text += value.getWholeText(); return }
+            guard let child = node as? Element else { return }
+            let tag = child.tagName().lowercased()
+            if skipTags.contains(tag) { return }
+            if tag == "img" {
+                flush()
+                let src = try child.attr("src")
+                if !src.isEmpty {
+                    blocks.append(EpubBlock(type: .image,
+                        text: nonEmpty(try? child.attr("alt")) ?? "Image", imageHref: src))
+                }
+                return
+            }
+            if tag == "svg" {
+                flush()
+                let markup = try child.outerHtml()
+                blocks.append(EpubBlock(type: .image, text: "Image",
+                    imageHref: "data:image/svg+xml;base64," + Data(markup.utf8).base64EncodedString()))
+                return
+            }
+            if tag == "br" { text += " "; return }
+            let boundary = blockTags.contains(tag) || tag == "figcaption"
+            if boundary { flush() }
+            for node in child.getChildNodes() { try visit(node) }
+            if boundary { flush() }
+        }
+        let children = element.getChildNodes()
+        for (index, node) in children.enumerated() {
+            if tableRow, let cell = node as? Element,
+               ["td", "th"].contains(cell.tagName().lowercased()),
+               index > 0, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { text += " | " }
+            try visit(node)
+        }
+        flush()
     }
 
     // MARK: - Helpers
@@ -210,12 +260,6 @@ enum HtmlParser {
             lines = raw.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         }
         return lines.joined(separator: "\n")
-    }
-
-    /// 取某 CSS 选择器命中的首个元素文本（非空）。
-    private static func firstText(_ element: Element, _ css: String) -> String? {
-        guard let el = try? element.select(css).first(), let t = try? el.text() else { return nil }
-        return nonEmpty(t)
     }
 
     private static func nonEmpty(_ s: String?) -> String? {

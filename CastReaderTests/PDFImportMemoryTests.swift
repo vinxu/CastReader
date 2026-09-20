@@ -29,7 +29,8 @@ final class PDFImportMemoryTests: XCTestCase {
         XCTAssertTrue(document.paragraphs.contains { $0.pdfPageIndex == 0 && $0.text.contains("Native page") })
         XCTAssertTrue(document.paragraphs.contains { $0.pdfPageIndex == 1 && $0.text.contains("Scanned page") })
         XCTAssertFalse(document.paragraphs.contains { $0.pdfPageIndex == 2 })
-        XCTAssertTrue(document.usesNativeTextRendering)
+        XCTAssertTrue(document.usesNativePDFRendering)
+        XCTAssertFalse(document.usesNativeTextRendering)
         XCTAssertEqual(document.fileData, data)
     }
 

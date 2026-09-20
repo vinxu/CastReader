@@ -22,7 +22,7 @@ enum EpubContentParser {
         var pendingSpace = false
         let containers: Set<String> = ["p", "div", "section", "article", "header", "footer", "aside", "main",
             "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "li", "ul", "ol", "dl", "dt", "dd",
-            "table", "thead", "tbody", "tfoot", "tr", "figure", "figcaption", "address", "hr"]
+            "table", "caption", "thead", "tbody", "tfoot", "tr", "figure", "figcaption", "address", "hr"]
 
         func flush() {
             let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -70,7 +70,14 @@ enum EpubContentParser {
             else if tag == "li" { kind = .list }
             else if tag == "figcaption" { kind = .caption }
             else if isBlock && !["blockquote", "pre", "li"].contains(tag) && previousKind == .paragraph { kind = .paragraph }
-            if tag == "img" || tag == "image" {
+            if tag == "svg" {
+                flush()
+                let markup = try element.outerHtml()
+                blocks.append(.init(type: .image, text: "",
+                    imageHref: "data:image/svg+xml;base64," + Data(markup.utf8).base64EncodedString(),
+                    anchors: pendingAnchors))
+                pendingAnchors.removeAll(keepingCapacity: true)
+            } else if tag == "img" || tag == "image" {
                 flush()
                 let src = tag == "img" ? EpubXML.attr(element, "src") :
                     (EpubXML.attr(element, "href").isEmpty ? EpubXML.attr(element, "xlink:href") : EpubXML.attr(element, "href"))
@@ -80,7 +87,7 @@ enum EpubContentParser {
                 }
             } else if tag == "br" { pendingSpace = !text.isEmpty }
             else {
-                if tag == "td" || tag == "th" { pendingSpace = !text.isEmpty }
+                if (tag == "td" || tag == "th"), !text.isEmpty { appendText(" | ") }
                 for child in element.getChildNodes() { try walk(child, depth: depth + 1) }
             }
             if isBlock { flush() }

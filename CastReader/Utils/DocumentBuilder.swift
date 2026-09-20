@@ -216,10 +216,8 @@ enum DocumentBuilder {
                                sourceKind: .pdf, language: lang, paragraphs: paragraphs, fileData: data)
     }
 
-    /// Unified PDF import. Fully searchable PDFs keep their original layout and
-    /// exact PDFKit ranges. If any content page lacks a usable text layer, the
-    /// document becomes a single OCR/text-reflow track so native and scanned
-    /// pages cannot diverge into two incompatible highlight systems.
+    /// Keep the original PDF for every page. Searchable pages retain exact
+    /// PDFKit ranges; scanned pages get OCR boxes in PDF page coordinates.
     static func fromPDFWithOCR(
         data: Data,
         title: String? = nil,
@@ -252,8 +250,8 @@ enum DocumentBuilder {
             pagesRequiringOCR.append(!hasText && hasVisibleInk)
         }
         try Task.checkCancellation()
-        let requiresOCRReflow = pagesRequiringOCR.contains(true)
-        if !requiresOCRReflow {
+        let requiresOCR = pagesRequiringOCR.contains(true)
+        if !requiresOCR {
             return try nativePDFDocumentCancellable(
                 pdf: pdf,
                 data: data,
@@ -277,7 +275,8 @@ enum DocumentBuilder {
                     paragraphs.append(ReadingParagraph(
                         id: paragraphs.count,
                         text: value,
-                        pdfPageIndex: pageIndex
+                        pdfPageIndex: pageIndex,
+                        pdfRange: range
                     ))
                 }
                 continue
@@ -286,12 +285,13 @@ enum DocumentBuilder {
             guard pagesRequiringOCR[pageIndex],
                   let page = pdf.page(at: pageIndex) else { continue }
             try Task.checkCancellation()
-            guard let image = try renderPDFPageForOCRCancellable(page) else { continue }
+            guard let rendered = try renderPDFPageGeometryForOCRCancellable(page) else { continue }
             try Task.checkCancellation()
             do {
                 let ocr = try await OCRService.shared.recognizeImportedImage(
-                    image: image,
-                    title: title ?? fallbackTitle
+                    image: rendered.image,
+                    title: title ?? fallbackTitle,
+                    orientationSettled: true
                 )
                 try Task.checkCancellation()
                 for paragraph in ocr.paragraphs where
@@ -301,6 +301,11 @@ enum DocumentBuilder {
                         id: paragraphs.count,
                         text: paragraph.text,
                         type: paragraph.type,
+                        words: paragraph.words.enumerated().map { index, word in
+                            OCRWord(id: index, text: word.text,
+                                    bboxNorm: rendered.normalizedPageRect(word.bboxNorm))
+                        },
+                        bboxNorm: paragraph.bboxNorm.map(rendered.normalizedPageRect),
                         pdfPageIndex: pageIndex
                     ))
                 }
@@ -359,74 +364,47 @@ enum DocumentBuilder {
         return evidence.readableCharacterCount >= 12 && SpeechTextSanitizer.containsSpeakableContent(text)
     }
 
-    /// Empty separator pages are common in otherwise searchable PDFs. A small
-    /// rendered luminance probe prevents one truly blank page from forcing the
-    /// entire document into OCR reflow, while scanned text/pages remain visible.
+    /// An average reduced to one 8-bit pixel rounds sparse text back to white.
+    /// Count dark pixels instead, so a lightly printed scan still receives OCR.
     private static func pdfPageHasVisibleInkCancellable(_ page: PDFPage) throws -> Bool {
-        // Drain synchronous PDFKit/Core Image/UIKit temporaries per page;
-        // an autorelease pool must never span the asynchronous OCR await.
         return try autoreleasepool {
             try Task.checkCancellation()
-            let bounds = page.bounds(for: .mediaBox)
+            let bounds = page.bounds(for: .cropBox)
             guard bounds.width > 1, bounds.height > 1 else { return false }
-            let scale = 180 / max(bounds.width, bounds.height)
+            let scale = 320 / max(bounds.width, bounds.height)
+            let thumbnail = page.thumbnail(of: CGSize(width: bounds.width * scale, height: bounds.height * scale), for: .cropBox)
+            guard let image = thumbnail.cgImage else { return true }
+            let width = image.width, height = image.height
+            var pixels = [UInt8](repeating: 255, count: width * height * 4)
+            guard let context = CGContext(data: &pixels, width: width, height: height, bitsPerComponent: 8,
+                bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return true }
+            context.setFillColor(UIColor.white.cgColor)
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
             try Task.checkCancellation()
-            let thumbnail = page.thumbnail(
-                of: CGSize(width: bounds.width * scale, height: bounds.height * scale),
-                for: .mediaBox
-            )
-            try Task.checkCancellation()
-            guard let input = CIImage(image: thumbnail),
-                  let filter = CIFilter(name: "CIAreaAverage") else { return true }
-            filter.setValue(input, forKey: kCIInputImageKey)
-            filter.setValue(CIVector(cgRect: input.extent), forKey: kCIInputExtentKey)
-            guard let output = filter.outputImage else { return true }
-            var pixel = [UInt8](repeating: 255, count: 4)
-            CIContext(options: [.workingColorSpace: NSNull()]).render(
-                output,
-                toBitmap: &pixel,
-                rowBytes: 4,
-                bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
-                format: .RGBA8,
-                colorSpace: nil
-            )
-            try Task.checkCancellation()
-            let luminance = (0.2126 * Double(pixel[0]) + 0.7152 * Double(pixel[1]) + 0.0722 * Double(pixel[2])) / 255
-            return luminance < 0.997
+            var ink = 0
+            for offset in stride(from: 0, to: pixels.count, by: 4) {
+                if min(pixels[offset], pixels[offset + 1], pixels[offset + 2]) < 230 {
+                    ink += 1
+                    if ink >= 8 { return true }
+                }
+            }
+            return false
         }
     }
 
-    /// Render before OCR at a bounded high resolution. This is deliberately
-    /// independent of the JPEG used for history thumbnails: OCR receives clean
-    /// lossless pixels and is never fed a compressed preview.
-    static func renderPDFPageForOCRCancellable(_ page: PDFPage) throws -> UIImage? {
-        // Drain synchronous PDFKit/Core Image/UIKit temporaries per page;
-        // an autorelease pool must never span the asynchronous OCR await.
-        return try autoreleasepool {
+    private static func renderPDFPageGeometryForOCRCancellable(_ page: PDFPage) throws -> PDFOCRGeometry.RenderedPage? {
+        try autoreleasepool {
             try Task.checkCancellation()
-            let bounds = page.bounds(for: .mediaBox)
-            guard bounds.width > 1, bounds.height > 1 else { return nil }
-            let targetLongEdge = min(2800, max(bounds.width, bounds.height) * 3)
-            let scale = targetLongEdge / max(bounds.width, bounds.height)
-            let size = CGSize(width: bounds.width * scale, height: bounds.height * scale)
-            // `size` is already a pixel budget. UIKit's default screen scale would
-            // turn a 2376-pixel page into 7128 pixels on a 3x iPhone (9x the area).
-            let format = UIGraphicsImageRendererFormat()
-            format.scale = 1
-            format.opaque = true
-            format.preferredRange = .standard
-            let renderer = UIGraphicsImageRenderer(size: size, format: format)
+            let rendered = PDFOCRGeometry.render(page)
             try Task.checkCancellation()
-            let image = renderer.image { context in
-                UIColor.white.setFill()
-                context.fill(CGRect(origin: .zero, size: size))
-                context.cgContext.translateBy(x: 0, y: size.height)
-                context.cgContext.scaleBy(x: scale, y: -scale)
-                page.draw(with: .mediaBox, to: context.cgContext)
-            }
-            try Task.checkCancellation()
-            return image
+            return rendered
         }
+    }
+
+    static func renderPDFPageForOCRCancellable(_ page: PDFPage) throws -> UIImage? {
+        try renderPDFPageGeometryForOCRCancellable(page)?.image
     }
 
     /// 去掉 PDF 硬换行（视觉排版换行，非句子边界，否则 TTS 在此停顿）：CJK 字之间删除（连续）、其余替空格（保英文词边界）。

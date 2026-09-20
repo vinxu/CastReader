@@ -78,7 +78,7 @@ final class EpubNavigationTests: XCTestCase {
                        ["Container heading", "exact inline destination after.", "After empty anchor.", "Named anchor body."])
         XCTAssertTrue(book.paragraphs.contains { $0.text == "Before" })
         XCTAssertTrue(book.paragraphs.contains { $0.text == "Retain header" })
-        XCTAssertTrue(book.paragraphs.contains { $0.text == "Table text Still readable" })
+        XCTAssertTrue(book.paragraphs.contains { $0.text == "Table text | Still readable" })
         XCTAssertEqual(book.paragraphs.map(\.id), Array(book.paragraphs.indices))
     }
 

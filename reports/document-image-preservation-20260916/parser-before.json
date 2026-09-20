@@ -1,0 +1,132 @@
+[
+  {
+    "case": "figure_image_control",
+    "imageHrefs": [
+      "chart.jpg"
+    ],
+    "parsedImageCount": 1,
+    "sourceImageCount": 1,
+    "text": [
+      "Before the illustration.",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "standalone_with_alt_control",
+    "imageHrefs": [
+      "chart.jpg"
+    ],
+    "parsedImageCount": 1,
+    "sourceImageCount": 1,
+    "text": [
+      "Before the illustration.",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "image_inside_paragraph",
+    "imageHrefs": [],
+    "parsedImageCount": 0,
+    "sourceImageCount": 1,
+    "text": [
+      "Before the illustration.",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "standalone_empty_alt",
+    "imageHrefs": [],
+    "parsedImageCount": 0,
+    "sourceImageCount": 1,
+    "text": [
+      "Before the illustration.",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "standalone_missing_alt",
+    "imageHrefs": [],
+    "parsedImageCount": 0,
+    "sourceImageCount": 1,
+    "text": [
+      "Before the illustration.",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "standalone_single_character_alt",
+    "imageHrefs": [],
+    "parsedImageCount": 0,
+    "sourceImageCount": 1,
+    "text": [
+      "Before the illustration.",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "svg_wrapped_image",
+    "imageHrefs": [],
+    "parsedImageCount": 0,
+    "sourceImageCount": 1,
+    "text": [
+      "Before the illustration.",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "table_wrapped_image",
+    "imageHrefs": [],
+    "parsedImageCount": 0,
+    "sourceImageCount": 1,
+    "text": [
+      "Before the illustration.",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "figure_two_images",
+    "imageHrefs": [
+      "table.jpg"
+    ],
+    "parsedImageCount": 1,
+    "sourceImageCount": 2,
+    "text": [
+      "Before the illustration.",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "text_div_with_inline_image",
+    "imageHrefs": [],
+    "parsedImageCount": 0,
+    "sourceImageCount": 1,
+    "text": [
+      "Before the illustration.",
+      "Example chart explanation",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "screenshot_pattern",
+    "imageHrefs": [],
+    "parsedImageCount": 0,
+    "sourceImageCount": 2,
+    "text": [
+      "Before the illustration.",
+      "Table 1-1. AVERAGE ANNUAL RETURN",
+      "FIGURE 1-1",
+      "After the illustration."
+    ]
+  },
+  {
+    "case": "html_table",
+    "imageHrefs": [],
+    "parsedImageCount": 0,
+    "sourceImageCount": 0,
+    "text": [
+      "Before the illustration.",
+      "Table 1-1. AVERAGE ANNUAL RETURN",
+      "After the illustration."
+    ]
+  }
+]
