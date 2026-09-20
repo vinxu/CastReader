@@ -71,7 +71,7 @@ struct MainTabView: View {
     /// Where the floating player sits. Purely visual — the space tab content
     /// gives up for it is measured, not derived from this number, so the two can
     /// no longer drift apart.
-    private static let miniPlayerBottomPadding: CGFloat = 68
+    private static var miniPlayerBottomPadding: CGFloat { AdaptiveLayout.isPad ? 12 : 68 }
     private static let rootSpace = "mainTabRoot"
 
     private enum LibraryOnboardingPostDismissAction {
@@ -106,6 +106,7 @@ struct MainTabView: View {
     @StateObject private var growthLoop = GrowthLoopConversionCoordinator.shared
     @ObservedObject private var audioPlayer = AudioPlayerService.shared
     @Environment(\.scenePhase) private var scenePhase
+    @State private var viewport = CGSize.zero
     @Environment(\.requestReview) private var requestReview
     @State private var selectedTab: Int
     @State private var voiceBrowserLaunchRequest: VoiceBrowserLaunchRequest?
@@ -155,12 +156,29 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        presentationContent
+        GeometryReader { geometry in
+            presentationContent
+                .environment(\.appViewport, geometry.size)
+                .onAppear { viewport = geometry.size }
+                .onChange(of: geometry.size) { viewport = $0 }
+        }
     }
 
-    private var mainContent: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
+    @ViewBuilder
+    private var adaptiveTabs: some View {
+        if AdaptiveLayout.isPad {
+            if #available(iOS 18.0, *) {
+                tabs.tabViewStyle(.sidebarAdaptable)
+            } else {
+                tabs
+            }
+        } else {
+            tabs
+        }
+    }
+
+    private var tabs: some View {
+        TabView(selection: $selectedTab) {
                 HomeView(
                     shareInboxUnreadCount: shareInboxUnreadCount,
                     isSurfaceActive: selectedTab == 0
@@ -188,6 +206,20 @@ struct MainTabView: View {
                     .tabItem { Label("首页", systemImage: "house.fill") }
                     .tag(0)
                 // 中间占位：被凸起 ➕ 覆盖；万一点到 tab item 也走通用导入并回首页。
+                if AdaptiveLayout.isPad {
+                    NavigationStack {
+                        LibraryView()
+                            .toolbar {
+                                ToolbarItem(placement: .primaryAction) {
+                                    Button { selectedTab = 0; importRouter.openQuickImport() } label: {
+                                        Label("导入内容", systemImage: "plus")
+                                    }.accessibilityIdentifier("libraryImportButton")
+                                }
+                            }
+                    }
+                    .tabItem { Label("文库", systemImage: "books.vertical") }
+                    .tag(3)
+                } else {
                 Color.clear
                     .tabItem {
                         Image(uiImage: Self.plusTabImage)
@@ -195,6 +227,7 @@ struct MainTabView: View {
                         Text("")
                     }
                     .tag(1)
+                }
                 VoiceBrowserView(
                     presentation: .tab,
                     launchRequest: voiceBrowserLaunchRequest,
@@ -202,7 +235,21 @@ struct MainTabView: View {
                 )
                     .tabItem { Label("音色", systemImage: "waveform") }
                     .tag(2)
-            }
+                if AdaptiveLayout.isPad {
+                    SettingsView(shareInboxUnreadCount: shareInboxUnreadCount, onOpenShareInbox: {
+                        reloadShareInbox(showWhenPending: false)
+                        markShareInboxSeen()
+                        showShareInbox = true
+                    }, showsDismissButton: false)
+                    .tabItem { Label("设置", systemImage: "gearshape") }
+                    .tag(4)
+                }
+        }
+    }
+
+    private var mainContent: some View {
+        ZStack(alignment: .bottom) {
+            adaptiveTabs
             // Zero-height probe: reserves nothing, only reports where a tab's
             // content actually ends (the top of the tab bar) so the overlap can
             // be measured instead of guessed. The reservation itself happens
@@ -225,7 +272,7 @@ struct MainTabView: View {
                 }
             }
 
-            if !importRouter.hideMainChrome {
+            if !AdaptiveLayout.isPad && !importRouter.hideMainChrome {
                 plusTapTarget
             }
 
@@ -253,7 +300,9 @@ struct MainTabView: View {
             if let s = coordinator.session {
                 ReaderHostView(readVM: s.readVM, explainVM: s.explainVM, coordinator: coordinator, document: s.document)
                     .id(s.instanceID)   // 新 VM 重建桥接；收起/展开仍保留同一会话
-                    .offset(y: coordinator.isReaderPresented ? 0 : UIScreen.main.bounds.height)
+                    .offset(y: coordinator.isReaderPresented ? 0 : max(1, viewport.height) + 120)
+                    .allowsHitTesting(coordinator.isReaderPresented)
+                    .accessibilityHidden(!coordinator.isReaderPresented)
                     .transition(.move(edge: .bottom))   // 首次 open / close 时从底部滑入滑出
                     .animation(.spring(response: 0.4, dampingFraction: 0.9), value: coordinator.isReaderPresented)
                     .zIndex(10)
@@ -266,8 +315,9 @@ struct MainTabView: View {
             if let model = kindleCenter.model {
                 KindleBookView(model: model)
                     .id(ObjectIdentifier(model))
-                    .offset(y: kindleCenter.isPresented ? 0 : UIScreen.main.bounds.height)
+                    .offset(y: kindleCenter.isPresented ? 0 : max(1, viewport.height) + 120)
                     .allowsHitTesting(kindleCenter.isPresented)
+                    .accessibilityHidden(!kindleCenter.isPresented)
                     .transition(.move(edge: .bottom))
                     .animation(.spring(response: 0.4, dampingFraction: 0.9), value: kindleCenter.isPresented)
                     .zIndex(11)

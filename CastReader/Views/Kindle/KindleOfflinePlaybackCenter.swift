@@ -89,6 +89,7 @@ final class KindleOfflinePlaybackCenter: ObservableObject {
 
 @MainActor
 struct KindleOfflinePlaybackSurface: View {
+    @Environment(\.appViewport) private var viewport
     @ObservedObject var center: KindleOfflinePlaybackCenter
     var body: some View {
         if let model = center.model {
@@ -107,7 +108,7 @@ struct KindleOfflinePlaybackSurface: View {
             }
             .id(ObjectIdentifier(model))
             .background(AppTheme.background.ignoresSafeArea())
-            .offset(y: center.isPresented ? 0 : UIScreen.main.bounds.height * 2)
+            .offset(y: center.isPresented ? 0 : max(1, viewport.height) + 120)
             .allowsHitTesting(center.isPresented)
             .accessibilityHidden(!center.isPresented)
         }

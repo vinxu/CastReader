@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    private let showsDismissButton: Bool
     private let shareInboxUnreadCount: Int
     private let onOpenShareInbox: (() -> Void)?
     private let onRequestLibraryOnboarding: ((Bool) -> Void)?
@@ -52,8 +53,10 @@ struct SettingsView: View {
         offlineScopeProvider: @escaping @MainActor () -> String? = { KindleOfflineContext.currentScope },
         shareInboxUnreadCount: Int = 0,
         onOpenShareInbox: (() -> Void)? = nil,
-        onRequestLibraryOnboarding: ((Bool) -> Void)? = nil
+        onRequestLibraryOnboarding: ((Bool) -> Void)? = nil,
+        showsDismissButton: Bool = true
     ) {
+        self.showsDismissButton = showsDismissButton
         self._history = ObservedObject(wrappedValue: history)
         self.offlineStore = offlineStore
         self.offlineScopeProvider = offlineScopeProvider
@@ -112,9 +115,11 @@ struct SettingsView: View {
             // 设置是 sheet，但没有关闭按钮时只能下拉退出。与书架来源等 sheet 对齐，
             // 在左上角补一颗「关闭」。
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(AppLocalized("关闭")) { dismiss() }
-                        .accessibilityIdentifier("settingsCloseButton")
+                if showsDismissButton {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(AppLocalized("关闭")) { dismiss() }
+                            .accessibilityIdentifier("settingsCloseButton")
+                    }
                 }
             }
             .sheet(isPresented: $showPaywall) {

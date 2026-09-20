@@ -368,6 +368,8 @@ struct HomeView: View {
                     }
                 }
                 .padding(HomeLayout.pageInset)
+                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity)
+                .frame(maxWidth: .infinity)
             }
             // Inside the NavigationView on purpose — an inset applied outside it
             // never reaches this ScrollView.
@@ -381,6 +383,15 @@ struct HomeView: View {
                     })
 
                     // 收件箱下沉到设置里（低频入口），未读数由头像上的红点接手。
+                    if AdaptiveLayout.isPad {
+                        Button { importRouter.openQuickImport() } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .frame(minWidth: 44, minHeight: 44)
+                        }
+                        .accessibilityLabel(Text("导入内容"))
+                        .accessibilityIdentifier("plusImportButton")
+                        .keyboardShortcut("o", modifiers: .command)
+                    }
                     SettingsToolbarButton(
                         shareInboxUnreadCount: shareInboxUnreadCount,
                         onOpenShareInbox: onOpenShareInbox
