@@ -45,7 +45,12 @@ final class WeReadPageAvailabilityTests: XCTestCase {
             sourceKind: .weread, language: "en", paragraphs: [], sourceURL: url)
         read = ReadAloudViewModel(document: document, audioService: audio,
             ttsService: fixture.service(), historyStore: HistoryStore(directory: root))
-        planFixture = ReadAloudHTTPFixture { [unowned self] _, _ in self.planReply }
+        planFixture = ReadAloudHTTPFixture.forRequests { [unowned self] request, _ in
+            if request.url?.path == "/api/quickread/compose-block" {
+                return .response(Data("{\"section\":{\"id\":\"block-0\",\"text\":\"An explanation of the new chapter.\",\"style\":\"explain\",\"cinematic\":{\"events\":[]}}}".utf8))
+            }
+            return self.planReply
+        }
         explain = ExplainViewModel(document: document, speechGenerator: fixture.service(),
             quickReadService: QuickReadService(session: planFixture.session,
                 mobileSessionProvider: WeReadFixtureSessionProvider()))
@@ -222,7 +227,13 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         try await wait { self.explain.stagedLiveWebParagraphTexts == [next] && self.audio.hasAudibleProgress }
         XCTAssertEqual(audio.currentSegment?.text, "An explanation of the new chapter.")
         XCTAssertEqual(read.stagedLiveWebParagraphTexts, [next])
-        XCTAssertEqual(planFixture.requests.count, 1, "The locally short page sends no request")
+        let plans = planFixture.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }
+        XCTAssertEqual(plans.count, 1, "The locally short page sends no plan request")
+        let body = try XCTUnwrap(plans.first?.body)
+        let encoded = String(decoding: try JSONSerialization.data(withJSONObject: body), as: UTF8.self)
+        XCTAssertFalse(encoded.contains("A short tail."))
+        XCTAssertTrue(encoded.contains(next), "Only the confirmed next page may reach explanation")
+        XCTAssertEqual(planFixture.capturedRequests.filter { $0.path == "/api/quickread/compose-block" }.count, 1)
     }
 
     func testServerShortPageDoesNotRetryAndBookEndCompletes() async throws {

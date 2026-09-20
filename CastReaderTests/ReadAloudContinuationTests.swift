@@ -29,8 +29,11 @@ final class ReadAloudHTTPFixture {
         case failure(URLError.Code, delay: Double = 0)
     }
     private let lock = NSLock()
+    struct CapturedRequest { let path: String; let body: [String: Any] }
     private var inputs: [String] = []
+    private var captured: [CapturedRequest] = []
     private let responder: (String, Int) -> Reply
+    private var requestResponder: ((URLRequest, [String: Any]) -> Reply)?
     let id = UUID().uuidString
     lazy var session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
@@ -42,6 +45,15 @@ final class ReadAloudHTTPFixture {
         self.responder = responder
         ReadAloudFixtureURLProtocol.register(self)
     }
+    static func forRequests(_ responder: @escaping (URLRequest, [String: Any]) -> Reply) -> ReadAloudHTTPFixture {
+        let fixture = ReadAloudHTTPFixture { _, _ in .failure(.badServerResponse) }
+        fixture.requestResponder = responder
+        return fixture
+    }
+    var capturedRequests: [CapturedRequest] {
+        lock.lock(); defer { lock.unlock() }
+        return captured
+    }
     func close() {
         session.invalidateAndCancel()
         ReadAloudFixtureURLProtocol.unregister(id)
@@ -50,10 +62,11 @@ final class ReadAloudHTTPFixture {
         lock.lock(); defer { lock.unlock() }
         return inputs
     }
-    fileprivate func reply(_ input: String) -> Reply {
+    fileprivate func reply(_ input: String, request: URLRequest, body: [String: Any]) -> Reply {
         lock.lock(); defer { lock.unlock() }
         inputs.append(input)
-        return responder(input, inputs.filter { $0 == input }.count)
+        captured.append(CapturedRequest(path: request.url?.path ?? "", body: body))
+        return requestResponder?(request, body) ?? responder(input, inputs.filter { $0 == input }.count)
     }
     func service() -> TTSService { TTSService(api: APIService(session: session)) }
 
@@ -119,7 +132,7 @@ private final class ReadAloudFixtureURLProtocol: URLProtocol {
             }
         }
         let object = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any]
-        let reply = fixture.reply(object?["input"] as? String ?? "MISSING_INPUT")
+        let reply = fixture.reply(object?["input"] as? String ?? "MISSING_INPUT", request: request, body: object ?? [:])
         let delay: Double
         switch reply {
         case .response(_, _, let value), .failure(_, let value): delay = value

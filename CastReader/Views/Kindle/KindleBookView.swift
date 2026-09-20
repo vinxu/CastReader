@@ -10065,10 +10065,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             guard let self, let explainVM,
                   self.mode == .explain, self.explainVM === explainVM,
                   !self.isAdvancingLivePage else { return }
+            // Capture ownership before enqueueing. A queued completion must
+            // not adopt a later Play intent's generation when its Task starts.
+            self.markAnimationClock.cancelWaits()
+            let continuationGeneration = self.markAnimationClock.generation
             self.isContinuingExplainPage = true
             Task { @MainActor [weak self, weak explainVM] in
                 guard let self, let explainVM,
-                      self.explainVM === explainVM else { return }
+                      self.explainVM === explainVM,
+                      self.markAnimationClock.generation == continuationGeneration else { return }
                 await self.advanceToNextExplainPageIfNeeded()
             }
         }
