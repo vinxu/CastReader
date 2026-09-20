@@ -68,7 +68,7 @@
 
 ## 送审后新增的 Mac Safari 要求
 
-2026-09-20 用户追加恢复 Safari，随后明确选择“仅 Mac 上的 Safari 扩展”。因此保留本次 iOS 审核单和 Build 64，不增加 iPhone/iPad Safari，也不因这项要求重新打包 iOS。
+2026-09-20 用户追加恢复 Safari，随后明确选择“仅 Mac 上的 Safari 扩展”，并进一步说明 iPhone/iPad Safari 没有做产品适配、不需要开启。因此保留本次 iOS 审核单和 Build 64，不增加 iPhone/iPad Safari，也不因这项要求重新打包 iOS。移动端 Safari 不属于本轮适配、安装、启用或发布范围，也不是 Mac 发布前置；手机原生 App 的已有功能继续保留。此边界已再次同步 Safari 专项任务，后续只有用户另行明确要求才纳入移动端 Safari。
 
 Mac Safari 使用扩展仓库 `safari-xcode` 的独立容器 `com.castreader.CastReader` / `.Extension`。本轮 App Store Connect 按该 Bundle ID 查询没有 App 记录；当前既有发布流程是 Developer ID 签名、公证、staple 后的 DMG/ZIP。网站源码的 Safari 下载入口仍为 `coming_soon`，没有有效下载 URL。不能仅修改入口状态或使用旧 1.2.18 包就宣称本次新版可用。
 
