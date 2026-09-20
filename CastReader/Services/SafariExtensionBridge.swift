@@ -1,4 +1,23 @@
 import Foundation
+import Combine
+
+@MainActor
+final class SafariAppRouteCenter: ObservableObject {
+    struct Request: Identifiable {
+        let id = UUID()
+        let action: SafariHandoffAction
+    }
+    static let shared = SafariAppRouteCenter()
+    @Published var request: Request?
+
+    func open(_ url: URL) {
+        guard !AuthService.shared.isWorking,
+              let defaults = UserDefaults(suiteName: SafariExtensionContract.appGroup),
+              let action = SafariAppHandoff.consume(url, route: ServiceRouting.current.rawValue,
+                                                   defaults: defaults) else { return }
+        request = Request(action: action)
+    }
+}
 
 @MainActor
 enum SafariExtensionBridge {

@@ -91,4 +91,49 @@ final class SafariExtensionContractTests: XCTestCase {
         XCTAssertNil(SafariSharedSessionStore.read(route: "global"))
         XCTAssertEqual(SafariSharedSessionStore.read(route: "cn"), china)
     }
+
+    func testHandoffIsSingleUseAndDoesNotEncodeAccountData() throws {
+        let name = "SafariHandoffTests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        defaults.set("global", forKey: "serviceRoute")
+        defaults.set(accountA, forKey: SafariExtensionContract.accountKey)
+        defaults.set("boundary-a", forKey: SafariExtensionContract.nonceKey)
+        let now = Date(timeIntervalSince1970: 1_000)
+        let url = try XCTUnwrap(SafariAppHandoff.issue(.signOut, route: "global", defaults: defaults, now: now))
+        XCTAssertFalse(url.absoluteString.contains(accountA))
+        XCTAssertFalse(url.absoluteString.contains("signOut"))
+        XCTAssertEqual(SafariAppHandoff.consume(url, route: "global", defaults: defaults, now: now), .signOut)
+        XCTAssertNil(SafariAppHandoff.consume(url, route: "global", defaults: defaults, now: now))
+        XCTAssertNil(SafariAppHandoff.consume(URL(string: "castreader://account?action=signout")!, route: "global", defaults: defaults, now: now))
+    }
+
+    func testHandoffRejectsExpiredChangedAccountAndChangedRoute() throws {
+        let name = "SafariHandoffTests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let now = Date(timeIntervalSince1970: 1_000)
+        for change in ["expired", "future", "account", "boundary", "route"] {
+            defaults.set("global", forKey: "serviceRoute")
+            defaults.set(accountA, forKey: SafariExtensionContract.accountKey)
+            defaults.set("boundary-a", forKey: SafariExtensionContract.nonceKey)
+            let url = try XCTUnwrap(SafariAppHandoff.issue(.pro, route: "global", defaults: defaults, now: now))
+            if change == "account" { defaults.set(accountB, forKey: SafariExtensionContract.accountKey) }
+            if change == "boundary" { defaults.set("boundary-a-new", forKey: SafariExtensionContract.nonceKey) }
+            if change == "route" { defaults.set("cn", forKey: "serviceRoute") }
+            let time = now.addingTimeInterval(change == "expired" ? 121 : change == "future" ? -1 : 1)
+            XCTAssertNil(SafariAppHandoff.consume(url, route: "global", defaults: defaults, now: time), change)
+        }
+    }
+
+    func testSignedOutHandoffCanOpenLoginButCannotSignOut() throws {
+        let name = "SafariHandoffTests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        defaults.set("global", forKey: "serviceRoute")
+        XCTAssertNil(SafariAppHandoff.issue(.signOut, route: "global", defaults: defaults))
+        let url = try XCTUnwrap(SafariAppHandoff.issue(.account, route: "global", defaults: defaults))
+        XCTAssertEqual(SafariAppHandoff.consume(url, route: "global", defaults: defaults), .account)
+        XCTAssertNil(SafariAppHandoff.issue(.account, route: "cn", defaults: defaults))
+    }
 }

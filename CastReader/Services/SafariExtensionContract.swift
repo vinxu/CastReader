@@ -55,6 +55,56 @@ enum SafariExtensionContract {
     }
 }
 
+enum SafariHandoffAction: String {
+    case account, pro, signOut
+}
+
+/// A Safari URL only redeems a short-lived, locally issued navigation intent.
+/// Arbitrary websites cannot sign out the App by constructing an account URL.
+enum SafariAppHandoff {
+    private static let key = "safari.appHandoff.v1"
+
+    static func issue(_ action: SafariHandoffAction, route: String, defaults: UserDefaults,
+                      now: Date = Date()) -> URL? {
+        guard ["global", "cn"].contains(route),
+              SafariExtensionContract.route(defaults.string(forKey: "serviceRoute")) == route else { return nil }
+        let account = defaults.string(forKey: SafariExtensionContract.accountKey) ?? ""
+        let boundary = defaults.string(forKey: SafariExtensionContract.nonceKey) ?? ""
+        if action == .signOut && (SafariExtensionContract.validAccount(account) == nil || boundary.isEmpty) {
+            return nil
+        }
+        let requestID = UUID().uuidString
+        defaults.set(["requestID": requestID, "action": action.rawValue, "route": route,
+                      "account": account, "boundary": boundary, "issuedAt": now.timeIntervalSince1970], forKey: key)
+        guard defaults.synchronize() else { return nil }
+        var url = URLComponents()
+        url.scheme = "castreader"
+        url.host = "safari"
+        url.queryItems = [URLQueryItem(name: "request", value: requestID)]
+        return url.url
+    }
+
+    static func consume(_ url: URL, route: String, defaults: UserDefaults,
+                        now: Date = Date()) -> SafariHandoffAction? {
+        guard url.scheme == "castreader", url.host == "safari", url.path.isEmpty,
+              url.user == nil, url.password == nil, url.port == nil, url.fragment == nil,
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              items.count == 1, items[0].name == "request", let requestID = items[0].value,
+              let pending = defaults.dictionary(forKey: key),
+              pending["requestID"] as? String == requestID else { return nil }
+        defaults.removeObject(forKey: key)
+        defaults.synchronize()
+        guard let issuedAt = pending["issuedAt"] as? Double,
+              now.timeIntervalSince1970 >= issuedAt, now.timeIntervalSince1970 - issuedAt <= 120,
+              pending["route"] as? String == route,
+              SafariExtensionContract.route(defaults.string(forKey: "serviceRoute")) == route,
+              pending["account"] as? String == (defaults.string(forKey: SafariExtensionContract.accountKey) ?? ""),
+              pending["boundary"] as? String == (defaults.string(forKey: SafariExtensionContract.nonceKey) ?? ""),
+              let raw = pending["action"] as? String else { return nil }
+        return SafariHandoffAction(rawValue: raw)
+    }
+}
+
 enum SafariSharedSessionStore {
     private static let service = "ai.castreader.safari-session"
 

@@ -43,15 +43,12 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             // refresh credentials never leave the App's private access group.
             complete(context, ["ok": true, "serviceRoute": route, "sessionToken": session.sessionToken])
         case "OPEN_PRO", "OPEN_ACCOUNT", "SIGN_OUT":
-            var components = URLComponents()
-            components.scheme = "castreader"
-            components.host = type == "OPEN_PRO" ? "pro" : "account"
-            components.queryItems = [
-                URLQueryItem(name: "source", value: "safari_extension"),
-                URLQueryItem(name: "serviceRoute", value: route)
-            ]
-            if type == "SIGN_OUT" { components.queryItems?.append(URLQueryItem(name: "action", value: "signout")) }
-            guard let url = components.url else { complete(context, ["ok": false]); return }
+            let action: SafariHandoffAction = type == "SIGN_OUT" ? .signOut
+                : (type == "OPEN_PRO" || message["mode"] as? String == "manage_pro" ? .pro : .account)
+            guard let url = SafariAppHandoff.issue(action, route: route, defaults: defaults) else {
+                complete(context, ["ok": false, "error": "app_handoff_unavailable"])
+                return
+            }
             context.open(url) { opened in
                 self.complete(context, ["ok": opened, "destination": type == "OPEN_PRO" ? "ios_storekit" : "ios_account"])
             }

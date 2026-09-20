@@ -13,6 +13,8 @@ struct SettingsView: View {
     private let onRequestLibraryOnboarding: ((Bool) -> Void)?
     private let offlineStore: KindleOfflineBookStore
     private let offlineScopeProvider: @MainActor () -> String?
+    private let initialSafariAction: SafariHandoffAction?
+    @State private var didApplySafariAction = false
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -52,6 +54,7 @@ struct SettingsView: View {
         offlineScopeProvider: @escaping @MainActor () -> String? = { KindleOfflineContext.currentScope },
         shareInboxUnreadCount: Int = 0,
         onOpenShareInbox: (() -> Void)? = nil,
+        initialSafariAction: SafariHandoffAction? = nil,
         onRequestLibraryOnboarding: ((Bool) -> Void)? = nil
     ) {
         self._history = ObservedObject(wrappedValue: history)
@@ -60,6 +63,7 @@ struct SettingsView: View {
         self.shareInboxUnreadCount = shareInboxUnreadCount
         self.onOpenShareInbox = onOpenShareInbox
         self.onRequestLibraryOnboarding = onRequestLibraryOnboarding
+        self.initialSafariAction = initialSafariAction
     }
 
     private var explainLanguages: [(String, String)] {
@@ -133,6 +137,17 @@ struct SettingsView: View {
         .navigationViewStyle(.stack)
         .onAppear {
             synchronizeAccountRouteWithProductRegion(showMessage: false)
+        }
+        .task {
+            guard !didApplySafariAction, let initialSafariAction else { return }
+            didApplySafariAction = true
+            await Task.yield()
+            switch initialSafariAction {
+            case .account: showLogin = !auth.isSignedIn
+            case .pro: showPaywall = true
+            // Retain the App's existing confirmation, never sign out from a URL.
+            case .signOut: showSignOutConfirm = auth.isSignedIn
+            }
         }
         .onChange(of: regionOverrideRaw) { _, _ in
             synchronizeAccountRouteWithProductRegion(showMessage: true)
