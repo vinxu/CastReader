@@ -10,6 +10,14 @@ struct SafariSessionEnvelope: Codable, Equatable {
     let boundaryNonce: String
     let sessionToken: String
 
+    /// The extension cannot renew OAuth credentials. A 401 retry may only
+    /// adopt a different bearer that the containing App has already renewed.
+    func tokenForRequest(refresh: Bool, rejectedToken: String?) -> String? {
+        guard !refresh || (rejectedToken?.hasPrefix("cms_") == true
+                           && rejectedToken != sessionToken) else { return nil }
+        return sessionToken
+    }
+
     func matches(route: String, accountStorageID: String, boundaryNonce: String) -> Bool {
         ["global", "cn"].contains(route)
             && SafariExtensionContract.validAccount(accountStorageID) != nil

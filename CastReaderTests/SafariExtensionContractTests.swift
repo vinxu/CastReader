@@ -5,6 +5,16 @@ final class SafariExtensionContractTests: XCTestCase {
     private let accountA = String(repeating: "a", count: 64)
     private let accountB = String(repeating: "b", count: 64)
 
+    func testRefreshCannotReturnTheRejectedBearerAsRenewed() {
+        let session = SafariSessionEnvelope(route: "global", accountStorageID: accountA,
+                                             boundaryNonce: "login-1", sessionToken: "cms_current_fixture")
+        XCTAssertEqual(session.tokenForRequest(refresh: false, rejectedToken: nil), "cms_current_fixture")
+        XCTAssertNil(session.tokenForRequest(refresh: true, rejectedToken: "cms_current_fixture"))
+        XCTAssertNil(session.tokenForRequest(refresh: true, rejectedToken: nil))
+        XCTAssertNil(session.tokenForRequest(refresh: true, rejectedToken: "provider_fixture"))
+        XCTAssertEqual(session.tokenForRequest(refresh: true, rejectedToken: "cms_old_fixture"), "cms_current_fixture")
+    }
+
     func testSessionRequiresExactRouteAccountAndLoginBoundary() {
         let session = SafariSessionEnvelope(route: "cn", accountStorageID: accountA,
                                              boundaryNonce: "login-1", sessionToken: "cms_contract_fixture")

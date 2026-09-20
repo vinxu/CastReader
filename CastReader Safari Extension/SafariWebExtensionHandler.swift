@@ -41,7 +41,12 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             }
             // Refresh can pick up a bearer already renewed by the App. OAuth
             // refresh credentials never leave the App's private access group.
-            complete(context, ["ok": true, "serviceRoute": route, "sessionToken": session.sessionToken])
+            guard let token = session.tokenForRequest(refresh: type == "REFRESH_MOBILE_SESSION",
+                                                       rejectedToken: message["rejectedToken"] as? String) else {
+                complete(context, ["ok": false, "serviceRoute": route, "error": "mobile_session_refresh_required"])
+                return
+            }
+            complete(context, ["ok": true, "serviceRoute": route, "sessionToken": token])
         case "OPEN_PRO", "OPEN_ACCOUNT", "SIGN_OUT":
             let action: SafariHandoffAction = type == "SIGN_OUT" ? .signOut
                 : (type == "OPEN_PRO" || message["mode"] as? String == "manage_pro" ? .pro : .account)
@@ -50,7 +55,7 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                 return
             }
             context.open(url) { opened in
-                self.complete(context, ["ok": opened, "destination": type == "OPEN_PRO" ? "ios_storekit" : "ios_account"])
+                self.complete(context, ["ok": opened, "destination": action == .pro ? "ios_storekit" : "ios_account"])
             }
         default:
             complete(context, ["ok": false, "error": "unsupported_message"])
