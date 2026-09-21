@@ -231,6 +231,7 @@ enum VoiceGiftHomeEntryPolicy {
 }
 
 struct HomeView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var readerScene: ReaderSceneContext
     let shareInboxUnreadCount: Int
     let isSurfaceActive: Bool
@@ -379,10 +380,6 @@ struct HomeView: View {
             .navigationTitle("CastReader")
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    ShelfSourcesToolbarButton(onTap: {
-                        activeSheet = .librarySources
-                    })
-
                     // 收件箱下沉到设置里（低频入口），未读数由头像上的红点接手。
                     if AdaptiveLayout.isPad {
                         Button { importRouter.openQuickImport() } label: {
@@ -391,8 +388,11 @@ struct HomeView: View {
                         }
                         .accessibilityLabel(Text("导入内容"))
                         .accessibilityIdentifier("plusImportButton")
-                        .keyboardShortcut("o", modifiers: .command)
                     }
+                    ShelfSourcesToolbarButton(onTap: {
+                        activeSheet = .librarySources
+                    })
+
                     SettingsToolbarButton(
                         shareInboxUnreadCount: shareInboxUnreadCount,
                         onOpenShareInbox: onOpenShareInbox
@@ -957,9 +957,10 @@ struct HomeView: View {
 
     private var continueSection: some View {
         VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
-            HStack {
+            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
+            layout {
                 Text("继续听").font(.headline).foregroundColor(AppTheme.foreground)
-                Spacer()
+                if !typeSize.isAccessibilitySize { Spacer() }
                 NavigationLink(destination: LibraryView(history: history)) {
                     Text("查看全部")
                         .font(.subheadline.weight(.semibold))
@@ -2226,7 +2227,7 @@ private struct ContinueCardContent: View {
                 }
             Text(record.title)
                 .font(.caption.weight(.semibold)).foregroundColor(AppTheme.foreground)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(
@@ -2239,7 +2240,7 @@ private struct ContinueCardContent: View {
             if let positionLabel {
                 Text(positionLabel)
                     .font(.caption2).foregroundColor(AppTheme.mutedForeground)
-                    .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, HomeLayout.compactCardPadding).padding(.bottom, 10)
             }
         }

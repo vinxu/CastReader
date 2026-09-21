@@ -17,9 +17,12 @@ enum AdaptiveLayout {
     static var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
     static let pageWidth: CGFloat = 1100
     static let readingWidth: CGFloat = 800
+    static func stacksPlaybackControls(in size: CGSize) -> Bool { isPad && size.width > 0 && size.width < 500 }
+    static func playbackHeight(in size: CGSize) -> CGFloat { stacksPlaybackControls(in: size) ? 128 : 72 }
+    static func consoleHeight(in size: CGSize) -> CGFloat { stacksPlaybackControls(in: size) ? 120 : 64 }
 
     static func usesCompactControls(size: CGSize, accessibility: Bool = false) -> Bool {
-        !accessibility && size.width > size.height && size.height < 600
+        !accessibility && size.width >= 600 && size.width > size.height && size.height < 600
     }
 }
 
@@ -116,4 +119,45 @@ struct WindowKeyboardInsetReader: UIViewRepresentable {
             changed?(docked && !intersection.isNull ? max(0, intersection.height) : 0)
         }
     }
+}
+
+/// Custom reader headers share the system's actual window-control exclusion
+/// region. Full-screen and older iPadOS versions contribute no extra margin.
+private struct ReaderWindowControlInsets: ViewModifier {
+    @State private var leading: CGFloat = 0
+    @State private var trailing: CGFloat = 0
+    func body(content: Content) -> some View {
+        content.padding(.leading, leading).padding(.trailing, trailing)
+            .background(WindowControlProbe { start, end in
+                if abs(leading - start) > 0.5 { leading = start }
+                if abs(trailing - end) > 0.5 { trailing = end }
+            })
+    }
+    private struct WindowControlProbe: UIViewRepresentable {
+        let changed: (CGFloat, CGFloat) -> Void
+        func makeUIView(context: Context) -> Probe { Probe(changed: changed) }
+        func updateUIView(_ view: Probe, context: Context) { view.setNeedsLayout() }
+        final class Probe: UIView {
+            let changed: (CGFloat, CGFloat) -> Void
+            init(changed: @escaping (CGFloat, CGFloat) -> Void) {
+                self.changed = changed
+                super.init(frame: .zero)
+                isUserInteractionEnabled = false
+                isAccessibilityElement = false
+            }
+            required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
+            override func layoutSubviews() {
+                super.layoutSubviews()
+                guard AdaptiveLayout.isPad, #available(iOS 26.0, *) else { return }
+                let insets = directionalEdgeInsets(for: .safeArea(cornerAdaptation: .horizontal))
+                // Header content already has a 14–16 point horizontal inset.
+                let start = max(0, insets.leading - 14)
+                let end = max(0, insets.trailing - 14)
+                DispatchQueue.main.async { [weak self] in self?.changed(start, end) }
+            }
+        }
+    }
+}
+extension View {
+    func readerWindowControlInsets() -> some View { modifier(ReaderWindowControlInsets()) }
 }

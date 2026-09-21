@@ -27,6 +27,27 @@ final class KindleInitialStartSyncTests: XCTestCase {
         }
     }
 
+    func testPausingAtAParagraphBoundaryThenSwitchingModeDoesNotAutostart() {
+        let book = KindleBook(id: "paused-mode-\(UUID().uuidString)", asin: "B000000001",
+            title: "Public pause fixture", author: "", coverURL: nil,
+            readerURL: "https://read.amazon.com/?asin=B000000001", progressLabel: "", storefrontID: "us",
+            lastOpenedAt: nil, lastSyncedAt: Date(timeIntervalSince1970: 0), lastReadPageKey: nil, lastReadURL: nil)
+        let model = KindleBookViewModel(book: book, websiteDataStore: .nonPersistent())
+        defer { model.destroy() }
+        let document = ReadingDocument(title: book.title, sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: "A public paragraph still waiting for audio.")])
+        let vm = ReadAloudViewModel(document: document)
+        model.readVM = vm
+        vm.status = .loading
+        model.pauseReadPlayback()
+        XCTAssertTrue(vm.isPlaybackPausedByUser)
+        XCTAssertEqual(vm.status, .loading, "The pending request can remain loading after an explicit pause")
+        model.selectMode(.explain)
+        XCTAssertEqual(model.mode, .explain, "A paused switch is immediate; it must not begin an asynchronous playback restart")
+        XCTAssertFalse(model.explainVM?.isPlaying ?? false)
+        XCTAssertFalse(model.explainVM?.ownsPlaybackSession ?? false)
+    }
+
     func testInitialPlaySurvivesLateSyncAndOldPreparationCannotCommit() async throws {
         try await runScenario(cancellation: nil)
     }

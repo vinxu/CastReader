@@ -34,10 +34,15 @@ final class PDFReaderContainerView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         guard bounds.width > 0, bounds.height > 0, bounds.size != viewport else { return }
-        let center = CGPoint(x: pdfView.bounds.midX, y: pdfView.bounds.midY)
+        let relativeZoom = fitScale > 0 ? pdfView.scaleFactor / fitScale : 1
+        // At fit width and the start of the document, keep the page top in
+        // view. Preserving the old center on a shorter landscape viewport can
+        // otherwise move every line of a short first page above the viewport.
+        let keepsTop = abs(relativeZoom - 1) < 0.01 &&
+            (zoomScroll.map { $0.contentOffset.y <= -$0.adjustedContentInset.top + 1 } ?? true)
+        let center = CGPoint(x: pdfView.bounds.midX, y: keepsTop ? 0 : pdfView.bounds.midY)
         let anchorPage = viewport == .zero ? nil : pdfView.page(for: center, nearest: true)
         let anchorPoint = anchorPage.map { pdfView.convert(center, to: $0) }
-        let relativeZoom = fitScale > 0 ? pdfView.scaleFactor / fitScale : 1
         viewport = bounds.size
         pdfView.frame = bounds
         guard AdaptiveLayout.isPad, pdfView.document != nil else { return }
@@ -52,8 +57,14 @@ final class PDFReaderContainerView: UIView {
         pdfView.scaleFactor = scale
         installZoomRecovery()
         if let page = anchorPage, let point = anchorPoint {
-            position(point, on: page, at: CGPoint(x: bounds.midX, y: bounds.midY))
+            position(point, on: page, at: CGPoint(x: bounds.midX, y: keepsTop ? 0 : bounds.midY))
         }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderDropPDF"), let page = pdfView.document?.page(at: 0) {
+            ReaderRunLog.write("DROP-PDF viewport=\(bounds) scale=\(scale) fit=\(fit) anchor=\(String(describing: anchorPoint)) first=\(pdfView.convert(page.characterBounds(at: 0), from: page)) offset=\(String(describing: zoomScroll?.contentOffset))")
+            pdfView.accessibilityValue = "characters=\(page.numberOfCharacters);firstVisible=\(pdfView.bounds.intersects(pdfView.convert(page.characterBounds(at: 0), from: page)))"
+        }
+        #endif
     }
     private func installZoomRecovery() {
         var ancestor = pdfView.documentView?.superview

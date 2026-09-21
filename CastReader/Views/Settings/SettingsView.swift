@@ -92,7 +92,6 @@ struct SettingsView: View {
                             Label("新窗口", systemImage: "plus.rectangle.on.rectangle")
                                 .frame(minHeight: 44)
                         }.accessibilityIdentifier("newReaderWindow")
-                            .keyboardShortcut("n", modifiers: .command)
                     }
                 }
                 languageSection
@@ -123,6 +122,7 @@ struct SettingsView: View {
                 if DistributionTestingPolicy.showsDebugPanels { debugSection }
                 #endif
             }
+            .reservesMiniPlayerSpace()
             .navigationTitle("设置")
             // 设置是 sheet，但没有关闭按钮时只能下拉退出。与书架来源等 sheet 对齐，
             // 在左上角补一颗「关闭」。

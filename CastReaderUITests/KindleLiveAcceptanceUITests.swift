@@ -53,8 +53,8 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
             let ready = !loading.exists && !app.activityIndicators.firstMatch.exists &&
                 !app.buttons["kindleReadingSettingsDone"].exists &&
                 !app.staticTexts["Most Recent Page Read"].exists &&
-                playFrame.width > 1 && playFrame.height > 1 && playFrame.intersects(app.frame) &&
-                settingsFrame.width > 1 && settingsFrame.height > 1 && settingsFrame.intersects(app.frame) &&
+                playFrame.width > 1 && playFrame.height > 1 && playFrame.intersects(app.windows.firstMatch.frame) &&
+                settingsFrame.width > 1 && settingsFrame.height > 1 && settingsFrame.intersects(app.windows.firstMatch.frame) &&
                 play.value as? String == "Paused" && play.isEnabled && play.isHittable &&
                 settings.isEnabled && settings.isHittable
             guard ready else { readySince = nil; return false }
@@ -123,9 +123,17 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
             "-auto_play", "NO", "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
         app.launch()
+        if app.windows.firstMatch.frame.width < 700 {
+            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
+            wait(10) { app.windows.firstMatch.frame.width >= 700 }
+        }
         let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.kindle.")).firstMatch
         XCTAssertTrue(book.waitForExistence(timeout: 30))
-        wait(20) { if book.isHittable { return true }; app.swipeUp(); return false }
+        wait(20) {
+            let frame = book.frame
+            if frame.width > 1 && frame.height > 1 && frame.intersects(app.windows.firstMatch.frame) && book.isHittable { return true }
+            app.scrollViews.firstMatch.swipeUp(); return false
+        }
         book.tap()
         waitForPausedReader(app)
         app.buttons["Table of Contents"].tap()
@@ -159,9 +167,17 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
             "-CastReaderIPadAcceptance", "-CastReaderTTSClockDiagnostics", "-auto_play", "NO",
             "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
         app.launch()
+        if app.windows.firstMatch.frame.width < 700 {
+            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
+            wait(10) { app.windows.firstMatch.frame.width >= 700 }
+        }
         let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.kindle.")).firstMatch
         XCTAssertTrue(book.waitForExistence(timeout: 30))
-        wait(20) { if book.isHittable { return true }; app.swipeUp(); return false }
+        wait(20) {
+            let frame = book.frame
+            if frame.width > 1 && frame.height > 1 && frame.intersects(app.windows.firstMatch.frame) && book.isHittable { return true }
+            app.scrollViews.firstMatch.swipeUp(); return false
+        }
         snapshot(app, "iPad-live-Kindle-shelf")
         book.tap()
         waitForPausedReader(app)
@@ -233,6 +249,20 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         XCTAssertEqual(field("explainSession"), explainSession)
         XCTAssertEqual(number("time"), pausedTime, accuracy: 0.4)
         snapshot(app, "iPad-live-expanded-paused")
+        if ProcessInfo.processInfo.environment["CASTREADER_KINDLE_EXPLAIN_REFLOW_CONTINUATION"] == "1" {
+            explain.tap()
+            wait(60) { explain.exists && (explain.value as? String)?.lowercased() == "playing" }
+            XCUIDevice.shared.orientation = .portrait
+            wait(420) {
+                explain.exists && (explain.value as? String)?.lowercased() == "playing" &&
+                    field("explainSession") != explainSession && field("explainSession") != "none" &&
+                    !field("explainSession").isEmpty && field("stable") == "true"
+            }
+            wait(90) { number("marks") > 0 && number("ink") > 0 }
+            snapshot(app, "iPad-live-Explain-continued-after-reflow")
+            explain.tap()
+            wait(15) { (explain.value as? String)?.lowercased() == "paused" }
+        }
         XCUIDevice.shared.orientation = .portrait
     }
 
@@ -682,4 +712,60 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         snapshot(app,"Kindle-font-focused-complete")
     }
 
+}
+
+extension KindleLiveAcceptanceUITests {
+    func testAuthorizedIPadNarrowWindowAndKeyboard() throws { try verifyNarrowWindow(usingKeyboard: true) }
+    func testAuthorizedIPadNarrowWindowAndControls() throws { try verifyNarrowWindow(usingKeyboard: false) }
+
+    private func verifyNarrowWindow(usingKeyboard: Bool) throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1")
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding", "-CastReaderIPadAcceptance", "-auto_play", "NO", "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.launch()
+        if app.windows.firstMatch.frame.width < 700 {
+            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
+            wait(10) { app.windows.firstMatch.frame.width >= 700 }
+        }
+        let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.kindle.")).firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 30))
+        wait(20) {
+            let frame = book.frame
+            if frame.width > 1 && frame.height > 1 && frame.intersects(app.windows.firstMatch.frame) && book.isHittable { return true }
+            app.scrollViews.firstMatch.swipeUp(); return false
+        }
+        book.tap(); waitForPausedReader(app)
+        let read = app.buttons["kindleReadPlayPauseButton"]
+        if usingKeyboard { app.windows.firstMatch.typeKey(" ", modifierFlags: []) }
+        else { read.tap() }
+        wait(150) { read.value as? String == "Playing" }
+        if usingKeyboard { app.windows.firstMatch.typeKey(" ", modifierFlags: []) }
+        else { read.tap() }
+        waitForPausedReader(app)
+        let original = app.windows.firstMatch.frame
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.992, dy: 0.992)).press(forDuration: 1,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.58, dy: 0.65)))
+        wait(15) { app.windows.firstMatch.frame.width < original.width - 100 }
+        waitForPausedReader(app)
+        for id in ["kindleMinimizeButton", "kindleModeMenu", "kindleReadPlayPauseButton", "readerMoreButton"] {
+            let b = app.buttons[id]; XCTAssertTrue(b.isHittable, id)
+            XCTAssertGreaterThanOrEqual(b.frame.width, 44, id); XCTAssertGreaterThanOrEqual(b.frame.height, 44, id)
+        }
+        snapshot(app, "module6-live-kindle-narrow-paused")
+        app.buttons["Table of Contents"].tap()
+        wait(30) { app.buttons["kindleTOCClose"].isHittable }
+        snapshot(app, "module6-live-kindle-narrow-toc")
+        if usingKeyboard { app.windows.firstMatch.typeKey(.escape, modifierFlags: []) }
+        else { app.buttons["kindleTOCClose"].tap() }
+        waitForPausedReader(app)
+        openReadingSettings(app); waitForReadingSettingsReady(app)
+        snapshot(app, "module6-live-kindle-narrow-aa")
+        app.buttons["kindleReadingSettingsDone"].tap(); waitForPausedReader(app)
+        app.buttons["kindleMinimizeButton"].tap()
+        wait(10) { app.buttons["kindleMiniPlayerExpand"].isHittable }
+        snapshot(app, "module6-live-kindle-narrow-minimized")
+        app.terminate()
+    }
 }

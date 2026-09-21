@@ -19,7 +19,14 @@ final class iPadAdaptationUITests: XCTestCase {
             "-CastReaderRegion", "global", "-AppleLanguages", "(\(language))",
             "-AppleLocale", "en_US", "-interfaceLanguage", language, "-auto_play", "NO"] + extra
         app.launch()
-        XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 30))
+        let ready = app.buttons["plusImportButton"].waitForExistence(timeout: 30)
+        if !ready { capture(app, "home-readiness-failure") }
+        XCTAssertTrue(ready)
+        if app.windows.firstMatch.frame.width < 700 {
+            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
+            let full = NSPredicate { _, _ in app.windows.firstMatch.frame.width >= 700 }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: full, object: app)], timeout: 10), .completed)
+        }
         return app
     }
 
@@ -90,7 +97,8 @@ final class iPadAdaptationUITests: XCTestCase {
         app.buttons["plusImportButton"].tap()
         let source = app.buttons["importSource.\(kind)"]
         XCTAssertTrue(source.waitForExistence(timeout: 10))
-        for _ in 0..<5 where !source.isHittable { app.swipeUp() }
+        let scroll = app.scrollViews.matching(NSPredicate(format: "identifier BEGINSWITH %@", "importOptions.")).firstMatch
+        for _ in 0..<16 where !source.isHittable { scroll.swipeUp() }
         XCTAssertTrue(source.isHittable)
         source.tap()
     }
@@ -598,6 +606,230 @@ extension iPadAdaptationUITests {
         rotate(app, .landscapeLeft)
         XCTAssertTrue(app.buttons["plusImportButton"].isHittable)
         capture(app, "module5-new-window-home-landscape")
+        app.terminate()
+    }
+}
+
+extension iPadAdaptationUITests {
+    func testKeyboardNavigationImportAndEditing() {
+        let app = home()
+        app.windows.firstMatch.typeKey("2", modifierFlags: .command)
+        XCTAssertTrue(app.buttons["libraryImportButton"].waitForExistence(timeout: 5))
+        app.windows.firstMatch.typeKey("4", modifierFlags: .command)
+        XCTAssertTrue(app.buttons["newReaderWindow"].waitForExistence(timeout: 5))
+        app.windows.firstMatch.typeKey("o", modifierFlags: .command)
+        XCTAssertTrue(app.buttons["importSource.text"].waitForExistence(timeout: 8))
+        app.buttons["importSource.text"].tap()
+        let text = app.textViews["importTextBody"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        text.tap(); text.typeText("Keyboard input")
+        app.windows.firstMatch.typeKey(" ", modifierFlags: [])
+        text.typeText("keeps spaces.")
+        XCTAssertEqual(text.value as? String, "Keyboard input keeps spaces.")
+        capture(app, "module6-keyboard-editor")
+        app.terminate()
+    }
+
+    func testActualTextDropOpensReaderAfterRotation() {
+        let app = home(extra: ["-CastReaderDropAcceptance"])
+        let source = app.staticTexts["dropAcceptanceSource"]
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 1.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55)))
+        XCTAssertTrue(app.buttons["dropImportRead"].waitForExistence(timeout: 15))
+        capture(app, "module6-drop-review-portrait")
+        rotate(app, .landscapeLeft)
+        XCTAssertTrue(app.buttons["dropImportRead"].isHittable)
+        capture(app, "module6-drop-review-landscape")
+        app.buttons["dropImportRead"].tap()
+        XCTAssertTrue(app.buttons["readerMinimizeButton"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.textViews.firstMatch.value as? String == "iPad drag import keeps this public sample in the receiving window.")
+        capture(app, "module6-dropped-text-reader")
+        app.windows.firstMatch.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 5))
+        app.terminate()
+    }
+
+    func testSystemWindowResize() {
+        let app = home()
+        let original = app.windows.firstMatch.frame
+        let bottomRight = app.coordinate(withNormalizedOffset: CGVector(dx: 0.992, dy: 0.992))
+        let destination = app.coordinate(withNormalizedOffset: CGVector(dx: 0.58, dy: 0.65))
+        bottomRight.press(forDuration: 1.0, thenDragTo: destination)
+        let resized = NSPredicate { _, _ in app.windows.firstMatch.frame.width < original.width - 100 }
+        let result = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: resized, object: app)], timeout: 10)
+        capture(app, "module6-system-resize-probe")
+        let tree = XCTAttachment(string: app.debugDescription)
+        tree.name = "module6-system-resize-accessibility"; tree.lifetime = .keepAlways; add(tree)
+        XCTAssertEqual(result, .completed)
+        XCTAssertTrue(app.buttons["plusImportButton"].isHittable)
+        app.terminate()
+    }
+}
+
+extension iPadAdaptationUITests {
+    func testNarrowWindowReaderAndPopover() {
+        let app = home()
+        importSource("text", app: app)
+        XCTAssertTrue(app.textFields["importTextTitle"].waitForExistence(timeout: 10))
+        app.textFields["importTextTitle"].tap(); app.textFields["importTextTitle"].typeText("A narrow iPad window")
+        app.textViews["importTextBody"].tap()
+        app.textViews["importTextBody"].typeText(String(repeating: "Reading controls stay reachable in a small window. ", count: 15))
+        app.buttons["Start"].tap()
+        XCTAssertTrue(app.buttons["readerMinimizeButton"].waitForExistence(timeout: 15))
+        let origin = app.windows.firstMatch.frame
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.992, dy: 0.992)).press(forDuration: 1,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.58, dy: 0.65)))
+        let resized = NSPredicate { _, _ in app.windows.firstMatch.frame.width < origin.width - 100 }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: resized, object: app)], timeout: 10), .completed)
+        for id in ["readerMinimizeButton", "readerModeMenu", "readPlayPauseButton", "readerMoreButton"] {
+            let button = app.buttons[id].firstMatch
+            XCTAssertTrue(button.isHittable, id)
+            XCTAssertGreaterThanOrEqual(button.frame.width, 44, id)
+            XCTAssertGreaterThanOrEqual(button.frame.height, 44, id)
+        }
+        capture(app, "module6-narrow-reader-375")
+        app.buttons["readerMoreButton"].tap()
+        XCTAssertTrue(app.buttons["readerAppearanceMenuItem"].waitForExistence(timeout: 5))
+        capture(app, "module6-narrow-more")
+        app.buttons["readerAppearanceMenuItem"].tap()
+        XCTAssertTrue(app.buttons["readerSettingsDone"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["readerSettingsDone"].isHittable)
+        capture(app, "module6-narrow-appearance")
+        app.buttons["readerSettingsDone"].tap()
+        app.buttons["readerMinimizeButton"].tap()
+        XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 5))
+        capture(app, "module6-narrow-minimized")
+        app.terminate()
+    }
+
+    func testLargestAccessibilityTextAndDarkAppearance() {
+        let app = home(extra: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL",
+            "-CastReaderIPadDarkAppearance"])
+        capture(app, "module6-largest-type-home")
+        importSource("text", app: app)
+        let body = app.textViews["importTextBody"]
+        XCTAssertTrue(body.waitForExistence(timeout: 8)); body.tap(); body.typeText("Large text remains readable on iPad.")
+        XCTAssertTrue(app.buttons["Start"].isHittable)
+        app.buttons["Start"].tap()
+        XCTAssertTrue(app.buttons["readerMinimizeButton"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["readPlayPauseButton"].isHittable)
+        for name in ["gobackward.15", "goforward.15"] {
+            let button = app.buttons[name]
+            XCTAssertGreaterThanOrEqual(button.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+        }
+        capture(app, "module6-largest-type-reader-portrait")
+        rotate(app, .landscapeLeft)
+        XCTAssertTrue(app.buttons["readerMoreButton"].isHittable)
+        capture(app, "module6-largest-type-reader-landscape")
+        app.buttons["readerMoreButton"].tap()
+        capture(app, "module6-largest-type-more")
+        app.terminate()
+    }
+
+    func testKeyboardPlaybackAndThirtyGeometryChanges() {
+        let app = scenario("text-long")
+        let status = app.staticTexts["scenarioStatus"]
+        XCTAssertTrue(waitForStatus(status, timeout: 45) { self.number("target", in: $0) >= 0 })
+        app.buttons["scenarioSeekTarget"].tap()
+        XCTAssertTrue(waitForStatus(status) { $0.contains("playing=true") })
+        app.windows.firstMatch.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(waitForStatus(status) { $0.contains("playing=false") })
+        app.windows.firstMatch.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(waitForStatus(status) { $0.contains("playing=true") })
+        for index in 0..<30 {
+            let orientation: UIDeviceOrientation = index.isMultiple(of: 2) ? .landscapeLeft : .portrait
+            rotate(app, orientation)
+            XCTAssertTrue(waitForStatus(status) { $0.contains("layoutStable=true") && $0.contains("playing=true") })
+            if index.isMultiple(of: 10) { capture(app, "module6-rotation-stress-\(index)") }
+        }
+        app.windows.firstMatch.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(waitForStatus(status) { $0.contains("playing=false") })
+        let checkpoint = number("time", in: status.label)
+        rotate(app, .landscapeLeft)
+        XCTAssertEqual(number("time", in: status.label), checkpoint, accuracy: 0.4)
+        capture(app, "module6-rotation-stress-final-paused")
+        app.terminate()
+    }
+}
+
+extension iPadAdaptationUITests {
+    func testActualPDFDropAndKeyboardNewWindow() { verifyPDFDropAndNewWindow(usingKeyboard: true) }
+    func testActualPDFDropAndWindowControls() { verifyPDFDropAndNewWindow(usingKeyboard: false) }
+
+    private func verifyPDFDropAndNewWindow(usingKeyboard: Bool) {
+        let app = home(extra: ["-CastReaderDropAcceptance", "-CastReaderDropPDF"])
+        let source = app.staticTexts["dropAcceptanceSource"]
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 1.1,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55)))
+        XCTAssertTrue(app.buttons["dropImportRead"].waitForExistence(timeout: 15))
+        app.buttons["dropImportRead"].tap()
+        XCTAssertTrue(app.buttons["readerMinimizeButton"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.descendants(matching: .any)["pdfReaderCanvas"].firstMatch.exists)
+        rotate(app, .landscapeLeft)
+        let pdf = app.descendants(matching: .any)["pdfReaderCanvas"].firstMatch
+        XCTAssertTrue((pdf.value as? String ?? "").contains("firstVisible=true"))
+        capture(app, "module6-dropped-pdf-landscape")
+        if usingKeyboard { app.windows.firstMatch.typeKey(.escape, modifierFlags: []) }
+        else { app.buttons["readerMinimizeButton"].tap() }
+        XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 5))
+        let minimized = NSPredicate { _, _ in !app.buttons["readerMinimizeButton"].isHittable }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: minimized, object: app)], timeout: 8), .completed)
+        if usingKeyboard { app.windows.firstMatch.typeKey("4", modifierFlags: .command) }
+        else { selectTab("Settings", app: app) }
+        XCTAssertTrue(app.buttons["newReaderWindow"].waitForExistence(timeout: 5))
+        if usingKeyboard { app.windows.firstMatch.typeKey("n", modifierFlags: .command) }
+        else {
+            let newWindow = app.buttons["newReaderWindow"]
+            // Bring the whole row above the floating mini player before tapping.
+            for _ in 0..<3 where newWindow.frame.maxY > app.windows.firstMatch.frame.maxY - 150 {
+                app.collectionViews.element(boundBy: app.collectionViews.count - 1).swipeUp()
+            }
+            newWindow.tap()
+        }
+        XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["plusImportButton"].isHittable)
+        capture(app, usingKeyboard ? "module6-keyboard-new-window" : "module6-pdf-drop-new-window")
+        app.terminate()
+    }
+}
+
+extension iPadAdaptationUITests {
+    func testDropQueueReviewsIndividualResultsInBothOrientations() {
+        let app = home(extra: ["-CastReaderDropAcceptance", "-CastReaderDropQueueAcceptance"])
+        let source = app.staticTexts["dropAcceptanceSource"]
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 1.1,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55)))
+        let importAll = app.buttons["dropImportAll"]
+        XCTAssertTrue(importAll.waitForExistence(timeout: 15)); importAll.tap()
+        let completed = NSPredicate { _, _ in app.buttons.matching(identifier: "dropQueuedRead").count == 2 && importAll.isEnabled }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: completed, object: app)], timeout: 30), .completed)
+        capture(app, "module6-drop-queue-portrait")
+        rotate(app, .landscapeLeft)
+        capture(app, "module6-drop-queue-landscape")
+        let read = app.buttons.matching(identifier: "dropQueuedRead").firstMatch
+        if !read.isHittable { app.scrollViews.firstMatch.swipeDown() }
+        read.tap()
+        XCTAssertTrue(app.buttons["readerMinimizeButton"].waitForExistence(timeout: 10))
+        capture(app, "module6-drop-queue-open-paused")
+        app.terminate()
+    }
+}
+
+extension iPadAdaptationUITests {
+    func testSystemTextEditorCommandModifierContract() {
+        let app = home()
+        importSource("text", app: app)
+        let text = app.textViews["importTextBody"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        text.tap(); text.typeText("Public original")
+        text.typeKey("a", modifierFlags: .command)
+        capture(app, "module6-system-editor-selection")
+        text.typeText("Replaced")
+        capture(app, "module6-system-editor-command-modifier")
+        XCTAssertEqual(text.value as? String, "Replaced", "System UITextView must receive Command-A before testing app shortcuts")
         app.terminate()
     }
 }

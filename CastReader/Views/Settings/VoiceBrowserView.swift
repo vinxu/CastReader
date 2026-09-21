@@ -979,9 +979,11 @@ struct PlaybackVoiceButton: View {
                         .lineLimit(1)
                 }
             }
+            .frame(minWidth: AdaptiveLayout.isPad ? 44 : nil, minHeight: AdaptiveLayout.isPad ? 44 : nil)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .hoverEffect(.highlight)
         .accessibilityIdentifier("playbackVoiceButton")
         .accessibilityLabel(Text(AppLocalized("音色")))
         .accessibilityValue(Text(displayName + " · " + AppLocalized(VoiceOption.requiresGenerationQuota(voiceID) ? "使用每月共享生成额度" : "常规音色 · Pro 不限时")))

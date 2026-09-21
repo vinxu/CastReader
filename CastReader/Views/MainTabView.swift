@@ -68,6 +68,7 @@ private struct TabContentBottomKey: PreferenceKey {
 }
 
 struct MainTabView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Where the floating player sits. Purely visual — the space tab content
     /// gives up for it is measured, not derived from this number, so the two can
     /// no longer drift apart.
@@ -107,6 +108,7 @@ struct MainTabView: View {
     @StateObject private var growthLoop = GrowthLoopConversionCoordinator.shared
     @ObservedObject private var audioPlayer = AudioPlayerService.shared
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openWindow) private var openWindow
     @State private var viewport = CGSize.zero
     @Environment(\.requestReview) private var requestReview
     @SceneStorage("reader.selectedTab") private var selectedTab: Int = 0
@@ -174,11 +176,36 @@ struct MainTabView: View {
     var body: some View {
         GeometryReader { geometry in
             presentationContent
+                .modifier(ReaderDropImport(scene: readerScene))
                 .readerSceneEnvironment(readerScene)
                 .environment(\.appViewport, geometry.size)
+                .background(ReaderKeyboardRegistration(scene: readerScene, actions: windowKeyboardActions))
                 .onAppear { viewport = geometry.size }
                 .onChange(of: geometry.size) { viewport = $0 }
         }
+    }
+
+    private var hasPresentedReader: Bool {
+        coordinator.isReaderPresented || kindleCenter.isPresented || offlineCenter.isPresented
+    }
+
+    private var windowKeyboardActions: [ReaderWindowCommand: () -> Void] {
+        guard !playbackVoicePanel.isPresented, !studyBoostRouter.isPresented,
+              youtubeExtractionPresentation == nil else { return [:] }
+        return [
+            .home: { minimizeReaders(); selectedTab = 0 },
+            .library: { minimizeReaders(); selectedTab = 3 },
+            .voices: { minimizeReaders(); selectedTab = 2 },
+            .settings: { minimizeReaders(); selectedTab = 4 },
+            .importContent: { minimizeReaders(); selectedTab = 0; importRouter.openQuickImport() },
+            .newWindow: { openWindow(id: "main") }
+        ]
+    }
+
+    private func minimizeReaders() {
+        if coordinator.isReaderPresented { coordinator.minimize() }
+        if kindleCenter.isPresented { kindleCenter.minimize() }
+        if offlineCenter.isPresented { offlineCenter.minimize() }
     }
 
     private var usesLegacySidebar: Bool {
@@ -281,6 +308,8 @@ struct MainTabView: View {
     private var mainContent: some View {
         ZStack(alignment: .bottom) {
             adaptiveTabs
+                .allowsHitTesting(!hasPresentedReader && !playbackVoicePanel.isPresented)
+                .accessibilityHidden(hasPresentedReader || playbackVoicePanel.isPresented)
             // Zero-height probe: reserves nothing, only reports where a tab's
             // content actually ends (the top of the tab bar) so the overlap can
             // be measured instead of guessed. The reservation itself happens
@@ -335,7 +364,7 @@ struct MainTabView: View {
                     .allowsHitTesting(coordinator.isReaderPresented)
                     .accessibilityHidden(!coordinator.isReaderPresented)
                     .transition(.move(edge: .bottom))   // 首次 open / close 时从底部滑入滑出
-                    .animation(.spring(response: 0.4, dampingFraction: 0.9), value: coordinator.isReaderPresented)
+                    .animation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.9), value: coordinator.isReaderPresented)
                     .zIndex(10)
             }
 
@@ -350,7 +379,7 @@ struct MainTabView: View {
                     .allowsHitTesting(kindleCenter.isPresented)
                     .accessibilityHidden(!kindleCenter.isPresented)
                     .transition(.move(edge: .bottom))
-                    .animation(.spring(response: 0.4, dampingFraction: 0.9), value: kindleCenter.isPresented)
+                    .animation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.9), value: kindleCenter.isPresented)
                     .zIndex(11)
             }
 
@@ -369,7 +398,7 @@ struct MainTabView: View {
             // This keeps ReaderHost/Kindle WKWebView geometry completely stable
             // while the user previews or switches voices.
             PlaybackVoicePanelOverlay(center: playbackVoicePanel)
-                .animation(.spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
+                .animation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
                 .zIndex(100)
 
             if studyBoostRouter.isPresented {
@@ -435,12 +464,12 @@ struct MainTabView: View {
             selectedTab = 0
         }
         .toolbar(importRouter.hideMainChrome ? .hidden : .visible, for: .tabBar)
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
-        .animation(.spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
-        .animation(.spring(response: 0.38, dampingFraction: 0.9), value: studyBoostRouter.isPresented)
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
+        .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
+        .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.9), value: studyBoostRouter.isPresented)
         .animation(
-            .spring(response: 0.34, dampingFraction: 0.9),
+            reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.9),
             value: captionLanguageSwitcher.isPickerPresented
         )
         .alert(
@@ -2125,7 +2154,7 @@ struct MainTabView: View {
             restoredOfflineBookID = bookmark.offlineBookID
             restoredMode = bookmark.mode
             restoredScope = bookmark.scope
-            selectedTab = (0...3).contains(bookmark.tab) ? bookmark.tab : 0
+            selectedTab = [0, 2, 3, 4].contains(bookmark.tab) ? bookmark.tab : 0
         }
         if !restoredOfflineBookID.isEmpty, restoredScope == AccountContentIsolation.activeStorageID,
            let scope = KindleOfflineContext.currentScope,

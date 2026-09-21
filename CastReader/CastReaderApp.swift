@@ -358,6 +358,11 @@ struct RouteReadyRoot: View {
             .environmentObject(visitorService)
             .readerSceneEnvironment(readerScene)
             .background(ReaderSceneWindowProbe(context: readerScene))
+            .focusedSceneValue(\.readerKeyboardScene, readerScene)
+            .focusedSceneObject(readerScene.keyboard)
+            #if DEBUG
+            .preferredColorScheme(ProcessInfo.processInfo.arguments.contains("-CastReaderIPadDarkAppearance") ? .dark : nil)
+            #endif
             .onAppear(perform: drainURLs)
             .onChange(of: pendingURLs) { _ in drainURLs() }
     }
@@ -449,5 +454,6 @@ struct CastReaderApp: App {
         WindowGroup(id: "main") {
             CastReaderWindowRoot(startup: startup, appLanguage: appLanguage)
         }
+        .commands { ReaderAppKeyboardCommands() }
     }
 }

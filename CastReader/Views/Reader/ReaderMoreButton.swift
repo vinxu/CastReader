@@ -240,7 +240,7 @@ private struct ReaderAppearanceSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents(AdaptiveLayout.isPad ? [.large] : [.medium, .large])
         .presentationDragIndicator(.visible)
     }
 }

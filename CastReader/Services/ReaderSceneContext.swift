@@ -7,6 +7,7 @@ import Combine
 final class ReaderSceneContext: ObservableObject, Identifiable {
     static let legacy = ReaderSceneContext(legacyServices: true)
     let id = UUID()
+    let keyboard = ReaderWindowKeyboard()
     weak var window: UIWindow?
     @Published var sceneSessionID: String?
     let player: PlayerCoordinator

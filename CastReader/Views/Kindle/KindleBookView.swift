@@ -233,6 +233,7 @@ struct KindleBookView: View {
                     .onChange(of: geometry.size) { hostSize = $0 }
             }
         }
+        .background(ReaderKeyboardRegistration(scene: model.playbackCenter.scene ?? .legacy, priority: 11, actions: keyboardActions))
         .background(AppTheme.background.ignoresSafeArea())
         .environment(\.readerAppearanceSource, .web {
             model.openReadingSettings()
@@ -590,6 +591,7 @@ struct KindleBookView: View {
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppTheme.foreground)
                     .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
+                    .contentShape(Rectangle())
             }
 
             .accessibilityIdentifier("kindleMinimizeButton")
@@ -613,6 +615,17 @@ struct KindleBookView: View {
             }
             #endif
 
+            Group {
+            if AdaptiveLayout.isPad && (hostSize.width < 500 || dynamicTypeSize.isAccessibilitySize) {
+                Menu {
+                    Button(LocalizedStringKey(ReaderMode.read.rawValue)) { model.selectMode(.read) }
+                    Button(LocalizedStringKey(ReaderMode.explain.rawValue)) { model.selectMode(.explain) }
+                } label: {
+                    Label(LocalizedStringKey(model.mode.rawValue), systemImage: "chevron.up.chevron.down")
+                        .font(.subheadline).lineLimit(1).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                            .frame(minWidth: 44, minHeight: 44)
+                }.accessibilityIdentifier("kindleModeMenu")
+            } else {
             HStack(spacing: 2) {
                 kindleModeButton(.read, title: AppLocalized("朗读"))
                 kindleModeButton(.explain, title: AppLocalized("解读"))
@@ -621,11 +634,14 @@ struct KindleBookView: View {
             .layoutPriority(1)
             .padding(3)
             .background(AppTheme.surfaceVariant, in: Capsule())
+            }
+            }
             .opacity(model.isKindleSyncDialogVisible || model.isAmazonCookieConsentVisible ? 0.5 : 1)
             .allowsHitTesting(!model.isKindleSyncDialogVisible && !model.isAmazonCookieConsentVisible)
         }
-        .frame(height: headerHeight)
+        .frame(minHeight: headerHeight)
         .padding(.horizontal, 14)
+        .readerWindowControlInsets()
         .background(.regularMaterial)
     }
 
@@ -638,10 +654,11 @@ struct KindleBookView: View {
                 .foregroundColor(model.mode == mode ? AppTheme.foreground : AppTheme.mutedForeground)
                 .lineLimit(1)
                 .padding(.horizontal, 12)
-                .frame(height: 28)
+                .frame(height: AdaptiveLayout.isPad ? 44 : 28)
                 .background(model.mode == mode ? AppTheme.surface : Color.clear, in: Capsule())
         }
         .buttonStyle(.plain)
+        .hoverEffect(.highlight)
         .accessibilityIdentifier(mode == .read ? "kindleModeButton_read" : "kindleModeButton_explain")
     }
 
@@ -767,7 +784,7 @@ struct KindleBookView: View {
         // Kindle viewport height. A fixed single-line console prevents React
         // from reconciling the reader surface when playback begins.
         .frame(maxWidth: .infinity)
-        .frame(height: ReaderPlaybackBarLayoutContract.portraitHeight)
+        .frame(height: AdaptiveLayout.playbackHeight(in: hostSize))
         .background(.regularMaterial)
     }
 
@@ -829,6 +846,30 @@ struct KindleBookView: View {
         }
     }
 
+    private var keyboardActions: [ReaderWindowCommand: () -> Void] {
+        guard playbackCenter.isPresented, !playbackVoicePanel.isPresented else { return [:] }
+        if model.isNativeTOCPresented { return [.dismiss: { model.dismissNativeTOCPanel() }] }
+        guard !model.isNativeTOCJumpBlocking, !model.isKindleSyncDialogVisible,
+              !model.isAmazonCookieConsentVisible, !model.isApplyingReadingSettings else { return [:] }
+        return [
+            .dismiss: { playbackCenter.minimize() },
+            .previous: previousPage, .next: nextPage,
+            .playPause: {
+                if model.mode == .read {
+                    if model.readVM?.isPlaying == true || model.isPlaybackPreparing { model.pauseReadPlayback() }
+                    else { startCurrentMode() }
+                } else if let vm = model.explainVM {
+                    switch vm.status {
+                    case .idle, .error: startCurrentMode()
+                    case .completed: vm.replay()
+                    case .streaming: vm.togglePlayPause()
+                    case .planning: break
+                    }
+                } else { startCurrentMode() }
+            }
+        ]
+    }
+
     private func previousPage() {
         KindleRunLog.write("KINDLE button tap previous")
         Task { await model.turnPage(.previous) }
@@ -869,6 +910,7 @@ struct KindleBookView: View {
 /// changing WebKit's CSS viewport. Explain captions retain their existing
 /// overflow behavior; the control capsule itself never covers the page.
 struct KindleReaderPlaybackDock<Reader: View, Playback: View>: View {
+    @Environment(\.appViewport) private var viewport
     let isLandscape: Bool
     let reader: Reader
     let playback: Playback
@@ -886,7 +928,7 @@ struct KindleReaderPlaybackDock<Reader: View, Playback: View>: View {
             playback
                 .frame(maxWidth: .infinity)
                 .frame(height: isLandscape ? ReaderPlaybackBarLayoutContract.landscapeControlHeight
-                       : ReaderPlaybackBarLayoutContract.portraitHeight, alignment: .bottom)
+                       : AdaptiveLayout.playbackHeight(in: viewport), alignment: .bottom)
         }
     }
 }
@@ -1024,9 +1066,11 @@ private struct KindlePageTurnButton: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 20, weight: .semibold))
-                .frame(width: 36, height: 36)
+                .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: AdaptiveLayout.isPad ? 44 : 36)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .hoverEffect(.highlight)
         .accessibilityLabel(Text(accessibilityLabel ?? systemName))
     }
 }
@@ -1035,6 +1079,8 @@ private struct KindlePageTurnButton: View {
 /// orientation. Previous/next stay immediately beside play; TOC, voice and
 /// speed form one compact tool group. Button order and height never change.
 private struct KindlePlaybackConsole<PlayControl: View>: View {
+    @Environment(\.appViewport) private var viewport
+    private var stacked: Bool { AdaptiveLayout.stacksPlaybackControls(in: viewport) }
     let isLandscape: Bool
     let playbackStatus: String
     let statusMessage: String?
@@ -1075,7 +1121,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
                 .kindleLandscapePill()
         } else {
             fullWidthBody
-                .frame(height: ReaderPlaybackBarLayoutContract.consoleHeight)
+                .frame(height: AdaptiveLayout.consoleHeight(in: viewport))
         }
     }
 
@@ -1084,7 +1130,8 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
     /// prevents an intrinsic-width HStack from bunching every button together
     /// in the middle while the surrounding material spans the whole screen.
     private var fullWidthBody: some View {
-        HStack(spacing: 0) {
+        let layout = stacked ? AnyLayout(VStackLayout(spacing: 0)) : AnyLayout(HStackLayout(spacing: 0))
+        return layout {
             playbackCluster(spacing: 8)
                 .frame(maxWidth: .infinity)
                 .layoutPriority(1)
@@ -1097,7 +1144,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
                     .frame(maxWidth: 72)
             }
 
-            Divider().frame(height: 30)
+            if !stacked { Divider().frame(height: 30) }
 
             utilityCluster(spacing: 8)
                 .frame(maxWidth: .infinity)
@@ -1282,6 +1329,7 @@ private struct KindleExplainPlaybackBar: View {
                         .frame(width: compact ? 44 : 52, height: compact ? 44 : 52)
                 }
                 .buttonStyle(.plain)
+        .hoverEffect(.highlight)
             }
         case .error:
             if isContinuingPage {
@@ -1295,6 +1343,7 @@ private struct KindleExplainPlaybackBar: View {
                         .frame(width: compact ? 44 : 52, height: compact ? 44 : 52)
                 }
                 .buttonStyle(.plain)
+        .hoverEffect(.highlight)
             }
         }
         }
@@ -1312,6 +1361,7 @@ private struct KindleExplainPlaybackBar: View {
             )
         }
         .buttonStyle(.plain)
+        .hoverEffect(.highlight)
         .accessibilityIdentifier("kindleExplainPlayPauseButton")
         .accessibilityValue(isLoading ? "loading" : (isPlaying ? "playing" : "paused"))
     }
@@ -1844,6 +1894,7 @@ struct KindleMiniPlayerView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+        .hoverEffect(.highlight)
                 .accessibilityIdentifier("kindleMiniPlayerExpand")
 
                 if model.mode == .explain, let vm = model.explainVM {
@@ -2104,9 +2155,11 @@ private struct KindleNativeTOCPanel: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(AppTheme.mutedForeground)
                         .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
+                        .contentShape(Rectangle())
                         .background(AppTheme.surfaceVariant, in: Circle())
                 }
                 .buttonStyle(.plain)
+        .hoverEffect(.highlight)
                 .accessibilityLabel(Text(AppLocalized("关闭")))
                 .accessibilityIdentifier("kindleTOCClose")
             }
@@ -2168,6 +2221,7 @@ private struct KindleNativeTOCPanel: View {
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
+        .hoverEffect(.highlight)
                                 .disabled(isLoading)
                                 .accessibilityIdentifier("kindleTOCEntry.\(entry.id)")
 
@@ -8456,7 +8510,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let audioBelongsToBook = ownsPlaybackSession
         switch mode {
         case .read:
-            guard let vm = readVM else { return false }
+            guard let vm = readVM, !vm.isPlaybackPausedByUser else { return false }
             if audioBelongsToBook, audio.isPlaying || vm.isPlaying {
                 return true
             }

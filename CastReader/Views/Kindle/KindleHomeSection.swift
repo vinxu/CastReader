@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct KindleHomeSection: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject var store: KindleLibraryStore
     @ObservedObject private var history = HistoryStore.shared
@@ -63,7 +64,8 @@ struct KindleHomeSection: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center) {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .center))
+        return layout {
             VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                 Text("Kindle")
                     .font(.headline)
@@ -72,7 +74,7 @@ struct KindleHomeSection: View {
                     .font(.caption)
                     .foregroundColor(AppTheme.mutedForeground)
             }
-            Spacer()
+            if !typeSize.isAccessibilitySize { Spacer() }
             NavigationLink(destination: KindleLibraryView()) {
                 Text("查看全部")
                     .font(.subheadline.weight(.semibold))
@@ -102,6 +104,8 @@ struct KindleHomeSection: View {
 }
 
 private struct KindleBookRailCard: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    private var cardWidth: CGFloat { typeSize.isAccessibilitySize ? 240 : 108 }
     let book: KindleBook
     let isRecent: Bool
 
@@ -128,16 +132,19 @@ private struct KindleBookRailCard: View {
             Text(book.title)
                 .font(.caption.weight(.semibold))
                 .foregroundColor(AppTheme.foreground)
-                .lineLimit(2)
-                .frame(width: 104, height: 34, alignment: .topLeading)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: cardWidth - 4, alignment: .topLeading)
+                .frame(minHeight: 34, alignment: .topLeading)
 
             LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress)
                 .font(.caption2)
                 .foregroundColor(AppTheme.mutedForeground)
-                .lineLimit(1)
-                .frame(width: 104, alignment: .leading)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: cardWidth - 4, alignment: .leading)
         }
-        .frame(width: 108, alignment: .topLeading)
+        .frame(width: cardWidth, alignment: .topLeading)
     }
 }
 

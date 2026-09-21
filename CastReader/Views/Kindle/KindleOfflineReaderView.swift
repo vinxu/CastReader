@@ -133,6 +133,7 @@ struct KindleOfflineBookReaderView: View {
 
 @MainActor
 private struct KindleOfflineBookReaderContent: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject var model: KindleOfflineBookReaderModel
     @ObservedObject var speech: SystemSpeechPlaybackService
     let continueDownload: (() -> Void)?
@@ -171,6 +172,7 @@ private struct KindleOfflineBookReaderContent: View {
                 savedEndNotice
             }
         }
+        .background(ReaderKeyboardRegistration(scene: readerScene, priority: 12, actions: keyboardActions))
         .safeAreaInset(edge: .bottom, spacing: 0) { playbackBar }
         .background(AppTheme.background)
         .toolbar { ToolbarItem(placement: .primaryAction) { ReaderMoreButton() } }
@@ -200,6 +202,17 @@ private struct KindleOfflineBookReaderContent: View {
         .onChange(of: model.loading) { _, _ in saveDiagnostic() }
         .onChange(of: model.preparingSpeech) { _, _ in saveDiagnostic() }
         .onChange(of: speech.callbackCount) { _, count in if count % 10 == 0 { saveDiagnostic() } }
+    }
+
+    private var keyboardActions: [ReaderWindowCommand: () -> Void] {
+        guard readerScene.offline.isPresented else { return [:] }
+        var actions: [ReaderWindowCommand: () -> Void] = [
+            .playPause: { if playing { model.pause() } else { model.play() } },
+            .dismiss: { readerScene.offline.minimize() }
+        ]
+        if !model.loading, model.pageIndex > 0 { actions[.previous] = { model.selectPage(model.pageIndex - 1) } }
+        if !model.loading, model.pageIndex + 1 < model.book.pages.count { actions[.next] = { model.selectPage(model.pageIndex + 1) } }
+        return actions
     }
 
     private var pageHeader: some View {
@@ -288,7 +301,6 @@ private struct KindleOfflineBookReaderContent: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppTheme.primary.opacity(0.06))
             .accessibilityElement(children: .contain).accessibilityIdentifier("offlineBookEnd")
-            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 
     private func openImageZoom() {
