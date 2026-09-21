@@ -34,8 +34,11 @@ display = "APP_IPAD_PRO_3GEN_129"
 locale = client.request("GET", "/v1/appStoreVersionLocalizations/#{localization}?include=appStoreVersion")
 version = locale.fetch("included").find { |x| x["type"] == "appStoreVersions" }
 abort "Use only the pending 1.2.43 iOS version" unless version && version.dig("attributes", "versionString") == "1.2.43" && version.dig("attributes", "platform") == "IOS" && version.dig("attributes", "appStoreState") == "PREPARE_FOR_SUBMISSION"
-app = client.request("GET", "/v1/appStoreVersions/#{version.fetch('id')}/app").fetch("data")
-abort "Unexpected App Store app" unless app["id"] == "6757636395"
+# Individual ASC keys can read the app's version collection while Apple's
+# reverse version/app endpoint returns 403. Verify ownership through the
+# supported parent collection without weakening the app/version guard.
+app_versions = client.get_all("/v1/apps/6757636395/appStoreVersions?filter%5Bplatform%5D=IOS&limit=200")
+abort "Unexpected App Store app" unless app_versions.any? { |v| v["id"] == version.fetch("id") }
 abort "Only the two reviewed locales are supported" unless %w[en-US zh-Hans].include?(locale.dig("data", "attributes", "locale"))
 abort "Screenshot directory does not match the target locale" unless File.basename(File.expand_path(directory)) == locale.dig("data", "attributes", "locale")
 sets = client.get_all("/v1/appStoreVersionLocalizations/#{localization}/appScreenshotSets?limit=50")

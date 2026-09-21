@@ -1,6 +1,6 @@
 # iOS 1.2.43（65）通用 iPhone / iPad 发布记录
 
-状态：发布准备与验收中，尚未上传、尚未送审。不得将本记录视为已发布。
+状态：iPad 支持与商店物料已完成；真机英文四组及中文常规两组通过。中国测试账号 Pro 到期，中文克隆组待恢复权益。ASC 1.2.43 草稿已建立；尚未归档、上传二进制或提交审核。
 
 ## 正式合并与功能保留
 
@@ -29,21 +29,27 @@
 
 `testUniversalNavigationAndAllOrientations` 在 `compact-ui-20260922T005036` PASS：四方向首页，以及书架、音色、设置、首页和导入弹层横竖屏。此前模拟器系统旋转未响应；仅重启原有同一台模拟器后恢复，未新增、抹除设备或账号。
 
-真机 iPhone 使用正常开发签名候选。国际英文常规朗读已观察到 `af_bella` 新生成、真实播放、段落继续和词高亮；选择社区 `vl_d1efb23a380bdaa2f6b0` 成功生成待播放音频。因设备低电量及镜像连接超时，完整换声与两区核心矩阵尚未完成，**不将这些部分证据记为核心 PASS**。用户已充电锁屏，等待镜像恢复继续验收。模拟器不替代真机核心门禁。
-
-2026-09-22 00:42，Xcode 已可见有线 iPhone 15 Pro Max（iOS 26.7），设备报告 `unlockedSinceBoot=true`、`passcodeRequired=false`，但镜像仍显示连接超时。另尝试不跳过登录、不注入内容的 Xcode 真机启动检查，编译签名成功，00:57 测试运行器初始化返回 `com.apple.LocalAuthentication Code=-4`（认证已取消），实际测试尚未执行。证据为 `device-authorized-launch.log/.xcresult`。仍需用户手动恢复系统认证/镜像显示后继续。
+用户充电并锁屏后，iPhone 镜像已恢复；2026-09-22 01:34–02:15 在同一台 iPhone 15 Pro Max / iOS 26.7 上完成正常开发签名候选的真实接口与播放器检查。全程使用自有中英文测试短文，未注入音频、讲解、账号或跳过鉴权。地区/输出语言参数用于选择真实生产线路；实际域名另由日志核对。开发包验收不等于测试过 App Store 分发签名包。
 
 | 地区/输出语言 | R-K | R-C（vl/vc） | E-K | E-C（vl/vc） |
 | --- | --- | --- | --- | --- |
-| CN / zh | NOT_RUN | NOT_RUN / NOT_RUN | NOT_RUN | NOT_RUN / NOT_RUN |
-| International / en | NOT_RUN | NOT_RUN / NOT_RUN | NOT_RUN | NOT_RUN / NOT_RUN |
+| CN / zh | PASS | NOT_RUN / NOT_RUN | PASS | NOT_RUN / NOT_RUN |
+| International / en | PASS | PASS / PASS | PASS | PASS / PASS |
+
+- 国际常规 `af_bella`、社区 `vl_d1efb23a380bdaa2f6b0`、私人 `vc_62934fe77f764051aa341b4b076bbb85` 均在真实朗读/解读中生成并播放。朗读社区→私人在第 12 段播放中切换，继续至第 18 段；私人解读重播第 0→1 块有新生成和原文标注。两种模式完成常规→社区→私人→常规，观察到位置保留、暂停/继续、模式互切及旧队列清理。实际进度证据来自真机画面、音频段播放结束和段落/块推进日志，不仅是请求成功或 `isPlaying`。
+- 国际 QuickRead 走 `api.castreader.ai`，英文真实 plan/block/compose 共 6 块；常规 TTS 实际 transport 为 `tts.castreader.ai`。讲解文本区别于原文，原文圈线及高亮随时间出现。日志记录 87 个音频段完成、58 次朗读段落推进、46 次标注触发。
+- 中国常规 `zf_001` 走 `api.castreader.cn`，中文 6 段原文真实播放和句段高亮；QuickRead 走 `quickread.castreader.cn`，中文真实讲解 3 块、9 次原文标注。暂停后画面/位置稳定，再继续至结束。日志记录 30 个音频段完成和 4 次朗读段落推进。
+- 国际克隆剩余额度界面依次观察到 104 / 103 / 101 / 100 分钟（每周期 120 分钟），对应新生成。该观察不冒充逐请求财务对账。缓存/固定试听不重复扣费、普通音色、未知/零额度、冷准备、等待暂停、迟到响应及失败恢复分支由同候选隔离单测覆盖；本轮社区线上为 warm，不伪报冷启动。
+- 中国独立测试账号原 24 小时 Pro 于 **2026-09-21 06:06:35 UTC** 到期。真机回读 `serverPro=N`，克隆门禁提示权益同步；只读后台确认该测试账号原 4 条订阅保留、当前有效 Pro 为 0。已准备零金额、无续费、自动到期的 24 小时测试权益方案，等待用户确认，**尚未执行账号写入或重置用量**。此门禁不算克隆验收通过。
+
+详细时间、声音 ID、样本摘要、请求/任务 ID 与源码绑定见 `reports/ios-release-1.2.43/core-live-final/evidence.json`，控制台原始证据为同目录 `global-en.log` 与 `cn-zh.log`。309 个应用/配置文件再次逐一校验无变化。真机镜像/系统认证此前的失败记录保留为历史，不再是当前阻塞。
 
 现有且唯一启动的模拟器为 `BFCF61DE-9C45-4467-8996-6F4E03AE7725`；本地登录已由用户恢复，各平台绑定和缓存保留。真机为已配对 iPhone 15 Pro Max。
 
 ## 商店资料与构建计划
 
-- 已保存当前 ASC 11 语 App Info、11 语版本文案及 9 组共 45 张 iPhone 截图快照。
-- 保留标题、副标题、关键词、推广文字、原有描述与有效 iPhone 截图；仅在 11 语描述增加 iPhone/iPad 通用支持段落，更新 What's New，并新增 iPad 物料。
+- 已保存当前 ASC 11 语 App Info、11 语版本文案及 9 组共 45 张 iPhone 截图快照。1.2.43 草稿 ID：`64b17291-fac4-444d-a18b-790b75c01d03`；pending App Info：`74d0c149-211b-4d37-8d29-e77667241029`。
+- 已在 11 语描述增加 iPhone/iPad 通用支持段落并更新 What's New；逐字段回读确认标题、副标题、隐私链接、关键词、空推广文字和其余链接保留。审核备注新增简短 iPad 检查说明，原审核联系人/账号资料和既有说明保留，3991 字符未超限。
 - 不修改价格、订阅、地区、隐私、年龄分级或法律声明。发布方式沿用审核通过自动发布。
 - Xcode Apple Accounts 中已看到正确团队及证书/设备权限，正常签名构建成功；正式上传凭据仍以 export 返回为准。
 - Preflight 已通过；独立构建目录 `/tmp/CastReader1243Device`，归档/上传必须在核心门禁通过后执行。
@@ -56,12 +62,15 @@
 
 物料位于 `AppStoreAssets/1.2.43/iPad/`，浅暖底色、标题与现有 iPhone 风格一致。中文版采集在修正测试对播放状态的本地化识别后也已 PASS（`capture-zh-Hans-20260922T003214`），5 张成品已逐张目检；失败采集不作为最终物料。共 10 张原图与 10 张成品，`README.md` 保存来源和复现方式，`manifest.json` 保存每张尺寸及 SHA-256。
 
-计划新增 en-US、zh-Hans 各 5 张 iPad 图，其余版本语言回退到英文 iPad 图；上传后仍须核对 ASC 实际回退。保留既有 iPhone 45 张截图。新 `scripts/upload-ipad-app-store.rb` 仅处理本版两语的 iPad 集合，保存每个上传 ID、对不确定写入先回读，不删除旧素材或操作 iPhone/预览。离线检查覆盖完整资产复用、语言不匹配拒绝、不确定预约拒绝重复创建；尚未执行真实上传。
+已向 1.2.43 草稿新增 en-US、zh-Hans 各 5 张 iPad 图，全部为 **COMPLETE**，顺序及 MD5 与已目检成品一致。具体集合与资产 ID 保存于 `ipad-en-journal.json`、`ipad-zh-journal.json`，以实际 journal 为准。其余版本语言没有单独 iPad 图，使用主语言英文回退；既有 iPhone 45 张截图按文件名/大小/校验和逐张核对全部保留；11 语全库存共 55 张均 COMPLETE，`materials-audit.json` 无错误，App 主语言确认为 en-US。
+
+`scripts/upload-ipad-app-store.rb` 仅处理本版两语的 iPad 集合，保存每个上传 ID、不确定写入先回读，不删除旧素材或操作 iPhone/预览。实际 API 返回个体密钥无法访问反向 version/app 端点（403），改由指定 App 的版本集合验证版本归属；目标 App、版本、语言限制均保留。离线复用完整资产、错误 App 拒绝写入两项补验通过，正常上传和读取最终顺序通过。商店资料差异脚本保留在私有证据目录，审核账号资料未提交到仓库。
+
 
 ## 仍待完成
 
-1. 恢复真机系统认证/镜像，补齐上表 CN/zh 与 Global/en 四条管线及社区/私人声音子项。
-2. 核心门禁通过后，再核对远端主线增量并正式合并到 main；从主线候选归档、官方上传 Build 65，等待精确 Build 为 VALID / APP_STORE_ELIGIBLE。
-3. 创建 1.2.43 版本，应用已准备的 11 语说明差异，上传两组 iPad 图，保留原 iPhone 图，绑定 Build、审核资料检查、正式送审并回读状态。
+1. 用户确认后恢复中国测试账号临时 Pro，完成 CN/zh 社区与私人声音朗读/解读、连续播放与换声验收；复用已完成的同候选英文及中文常规证据。
+2. 核心门禁通过后正式合并到 main；远端已再次核对为 `8298f84`，既有 iPhone 功能祖先检查通过。随后从主线候选归档、官方上传 Build 65，等待精确 Build 为 VALID / APP_STORE_ELIGIBLE。
+3. 绑定 Build，运行最终审核门禁，正式送审并回读版本及 Review Submission 状态。11 语文案、两组 iPad 图及原 iPhone 图的当前库存检查已通过。
 
-尚未创建 App Store 1.2.43 草稿、归档、上传或审核单；不可将发布准备完成视为已提交。发布技能要求 “Missing/failed/skipped core evidence blocks upload/submission.”，本版的真机核心证据仍未齐全。
+ASC 草稿和商店资料不等于已提交。发布技能要求 “Missing/failed/skipped core evidence blocks upload/submission.”；中文克隆组证据未齐前，不归档、上传二进制或送审。
