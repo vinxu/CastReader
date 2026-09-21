@@ -30,7 +30,15 @@ final class ReaderDropImportModel: ObservableObject {
         var webLink: URL?
     }
     private let historyStore: HistoryStore
-    init(historyStore: HistoryStore? = nil) { self.historyStore = historyStore ?? .shared }
+    private let captureBoundary: @MainActor () -> AccountContentBoundaryToken?
+    private let validateBoundary: @MainActor (AccountContentBoundaryToken) -> Bool
+    init(historyStore: HistoryStore? = nil,
+         captureBoundary: @escaping @MainActor () -> AccountContentBoundaryToken? = { AccountContentIsolation.captureBoundaryToken() },
+         validateBoundary: @escaping @MainActor (AccountContentBoundaryToken) -> Bool = { AccountContentIsolation.isCurrent($0) }) {
+        self.historyStore = historyStore ?? .shared
+        self.captureBoundary = captureBoundary
+        self.validateBoundary = validateBoundary
+    }
     private var generation = UUID()
     private var progress: Progress?
     private var parseTask: Task<Void, Never>?
@@ -47,7 +55,7 @@ final class ReaderDropImportModel: ObservableObject {
             review = Review(title: AppLocalized("导入内容"), error: AppLocalized("每次最多拖入 8 项内容。"))
             return true
         }
-        guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return false }
+        guard let boundary = captureBoundary() else { return false }
         self.boundary = boundary
         let token = UUID(); generation = token
         if providers.count > 1 {
@@ -55,7 +63,7 @@ final class ReaderDropImportModel: ObservableObject {
             // Start every provider inside the drop callback. Files are staged
             // to disk; expensive parsing below is strictly sequential.
             queued = providers.map { provider in
-                let loader = ReaderDropImportModel(historyStore: historyStore)
+                let loader = ReaderDropImportModel(historyStore: historyStore, captureBoundary: captureBoundary, validateBoundary: validateBoundary)
                 loader.receive([provider])
                 return QueueItem(loader: loader)
             }
@@ -134,7 +142,7 @@ final class ReaderDropImportModel: ObservableObject {
     }
 
     private func finish(_ result: Result<Payload, Error>, token: UUID) {
-        guard generation == token, let boundary, AccountContentIsolation.isCurrent(boundary), review != nil else {
+        guard generation == token, let boundary, validateBoundary(boundary), review != nil else {
             if case .success(.file(let url)) = result { Self.removeCopy(url) }
             return
         }
@@ -155,7 +163,7 @@ final class ReaderDropImportModel: ObservableObject {
 
     func importQueue() {
         guard !busy, !queued.isEmpty, let boundary,
-              AccountContentIsolation.isCurrent(boundary) else { return }
+              validateBoundary(boundary) else { return }
         busy = true
         let token = generation
         parseTask = Task { [weak self] in
@@ -193,7 +201,7 @@ final class ReaderDropImportModel: ObservableObject {
 
     func openQueued(_ id: UUID, mode: ReaderMode, scene: ReaderSceneContext) {
         guard !busy, let item = queued.first(where: { $0.id == id }), let boundary,
-              AccountContentIsolation.isCurrent(boundary) else { return }
+              validateBoundary(boundary) else { return }
         if let url = item.webLink {
             _ = scene.youtubeRoutes.open(url.absoluteString, entry: .share, autoplay: false)
             cancel(); return
@@ -238,7 +246,7 @@ final class ReaderDropImportModel: ObservableObject {
 
     func open(mode: ReaderMode, scene: ReaderSceneContext) {
         guard !busy, let payload = review?.payload, let boundary,
-              AccountContentIsolation.isCurrent(boundary) else { return }
+              validateBoundary(boundary) else { return }
         busy = true
         let token = generation
         parseTask = Task { [weak self, weak scene] in
@@ -264,7 +272,7 @@ final class ReaderDropImportModel: ObservableObject {
     }
 
     private func isCurrent(_ token: UUID, boundary: AccountContentBoundaryToken) -> Bool {
-        generation == token && !Task.isCancelled && AccountContentIsolation.isCurrent(boundary)
+        generation == token && !Task.isCancelled && validateBoundary(boundary)
     }
     func cancel() {
         generation = UUID()

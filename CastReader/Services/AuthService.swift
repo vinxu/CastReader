@@ -95,6 +95,11 @@ struct AccountContentScope: Equatable, Sendable {
 struct AccountContentBoundaryToken: Equatable, Sendable {
     fileprivate let storageID: String
     fileprivate let revision: UInt64
+
+    init(storageID: String, revision: UInt64) {
+        self.storageID = storageID
+        self.revision = revision
+    }
 }
 
 /// Switches every user-visible local shelf before AuthService publishes a new

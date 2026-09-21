@@ -405,7 +405,7 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertTrue(source.contains("await ServiceRouting.bootstrapForCurrentProcess("))
         XCTAssertFalse(source.contains("async let computeProbe = ComputeRouting.probeFirstPartyGateways"))
         XCTAssertTrue(source.contains("await ComputeRouting.bootstrapForCurrentProcess("))
-        XCTAssertTrue(source.contains("if startup.isReady {\n                    RouteReadyRoot()"))
+        XCTAssertTrue(source.range(of: #"if startup\.isReady\s*\{\s*RouteReadyRoot\(pendingURLs: \$pendingURLs\)"#, options: .regularExpression) != nil)
         XCTAssertTrue(source.contains("@StateObject private var visitorService = VisitorService.shared"))
 
         let bootstrap = try XCTUnwrap(
@@ -1128,6 +1128,16 @@ final class ServiceRoutingTests: XCTestCase {
             )
         )
 
+        let keys = MobileSessionStore.storageKeys(for: ServiceRouting.current)
+        let saved = [keys.session: KeychainStore.get(keys.session),
+                     keys.provider: KeychainStore.get(keys.provider),
+                     keys.identityToken: KeychainStore.get(keys.identityToken)]
+        defer {
+            for (key, value) in saved {
+                if let value { KeychainStore.set(value, for: key) }
+                else { KeychainStore.delete(key) }
+            }
+        }
         _ = MobileSessionStore.detachLocalSession(for: ServiceRouting.current)
         var requestCount = 0
         RoutingURLProtocol.handler = { request in

@@ -729,7 +729,7 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         XCTAssertFalse(center.isPresented)
     }
 
-    func testOpeningOnlineOwnerClosesOfflineSessionWithoutStoppingNewOwner() async throws {
+    func testOpeningOnlineOwnerRetainsOfflineWindowWithoutStoppingNewOwner() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let (store, book, scope) = try await imageBook(root: root)
@@ -737,11 +737,18 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         center.open(book: book, scope: scope, store: store, scopeValidator: { true })
         try await waitForSession(center)
         center.minimize()
+        let retained = try XCTUnwrap(center.model)
+        let page = retained.pageIndex
         let audio = AudioPlayerService.shared
         let token = audio.claimPlaybackSession(owner: .readAloud)
         defer { audio.releasePlaybackSession(token) }
-        XCTAssertNil(center.model)
-        XCTAssertFalse(center.showsMiniPlayer)
+        // Another window owns the audio, while the paused offline window keeps
+        // its document and position so the user can return to it.
+        XCTAssertTrue(center.model === retained)
+        XCTAssertEqual(retained.pageIndex, page)
+        XCTAssertTrue(center.showsMiniPlayer)
+        XCTAssertFalse(center.ownsPlaybackSession)
+        XCTAssertFalse(retained.canPausePlayback)
         XCTAssertTrue(audio.isPlaybackSessionActive(token))
         center.stop()
         XCTAssertTrue(audio.isPlaybackSessionActive(token))

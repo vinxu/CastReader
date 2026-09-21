@@ -188,7 +188,14 @@ final class ReaderViewportTests: XCTestCase {
                                                               mode: .read, refocusToken: 0))
         try await show(host)
         let scroll = try XCTUnwrap(descendants(host.view, as: UIScrollView.self).first(where: { $0.isScrollEnabled }))
-        let target = try XCTUnwrap(descendants(host.view, as: ReaderUITextView.self).first(where: { $0.text.hasPrefix("Paragraph 2 ") }))
+        // Pick a paragraph in the actual reading band: paragraph 2 is above
+        // that band on an iPad, where more paragraphs fit on screen.
+        let comfortable = scroll.bounds.insetBy(dx: 0, dy: scroll.bounds.height * 0.18)
+        let target = try XCTUnwrap(descendants(host.view, as: ReaderUITextView.self).first { view in
+            guard view.text.hasPrefix("Paragraph "), let rect = view.rects(forCharRange: NSRange(location: 0, length: 9)).first else { return false }
+            return comfortable.contains(view.convert(rect, to: scroll))
+        })
+        let targetIndex = try XCTUnwrap(Int(target.text.split(separator: " ")[1]))
         let targetRect = target.convert(try XCTUnwrap(target.rects(forCharRange: NSRange(location: 0, length: 9)).first), to: scroll)
         XCTAssertTrue(scroll.bounds.insetBy(dx: 0, dy: scroll.bounds.height * 0.18).contains(targetRect), "Fixture target must already be comfortable")
         let initialOffset = scroll.contentOffset.y
@@ -198,8 +205,8 @@ final class ReaderViewportTests: XCTestCase {
 
         // The real prefetch promotion clears the previous word before the new
         // AVPlayerItem reports its first timestamp. Exercise both render passes.
-        vm.currentParagraphIndex = 2
-        vm.processedDisplayText = paragraphs[2].text
+        vm.currentParagraphIndex = targetIndex
+        vm.processedDisplayText = paragraphs[targetIndex].text
         vm.highlightRange = nil
         try await settle()
         vm.highlightRange = NSRange(location: 0, length: 9)

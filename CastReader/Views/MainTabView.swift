@@ -175,7 +175,7 @@ struct MainTabView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            presentationContent
+            AnyView(presentationContent)
                 .modifier(ReaderDropImport(scene: readerScene))
                 .readerSceneEnvironment(readerScene)
                 .environment(\.appViewport, geometry.size)
@@ -307,7 +307,7 @@ struct MainTabView: View {
 
     private var mainContent: some View {
         ZStack(alignment: .bottom) {
-            adaptiveTabs
+            AnyView(adaptiveTabs)
                 .allowsHitTesting(!hasPresentedReader && !playbackVoicePanel.isPresented)
                 .accessibilityHidden(hasPresentedReader || playbackVoicePanel.isPresented)
             // Zero-height probe: reserves nothing, only reports where a tab's
@@ -484,15 +484,26 @@ struct MainTabView: View {
         }
     }
 
+    // Bound the concrete root view type at lifecycle boundaries. The combined
+    // tab, reader, window and presentation modifiers otherwise exhaust the
+    // iPhone main-thread stack while Swift instantiates their generic metadata.
+    // Each boundary keeps the same underlying type and all existing state owners.
     private var windowLifecycleContent: some View {
-        mainContent
+        AnyView(mainContent)
         .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeKeyNotification)) { notification in
             guard let window = notification.object as? UIWindow, window === readerScene.window else { return }
             if !routePendingYouTubeIfAvailable() { routePendingSystemActionIfAvailable() }
         }
         .task { await restoreWindowIfNeeded() }
         .onReceive(readerScene.$sceneSessionID.compactMap { $0 }) { _ in
-            Task { await restoreWindowIfNeeded() }
+            Task { @MainActor in
+                // The window probe can attach after the key-window notification
+                // and initial task. Drain an already queued cold-launch route
+                // now, before restoring an unrelated previous reading session.
+                if !routePendingYouTubeIfAvailable(), !routePendingSystemActionIfAvailable() {
+                    await restoreWindowIfNeeded()
+                }
+            }
         }
         .onChange(of: coordinator.session?.document.id) { _ in saveWindowBookmark() }
         .onChange(of: coordinator.mode) { _ in saveWindowBookmark() }
@@ -503,7 +514,7 @@ struct MainTabView: View {
     }
 
     private var lifecycleContent: some View {
-        windowLifecycleContent
+        AnyView(windowLifecycleContent)
         .onChange(of: scenePhase) { phase in
             if phase != .active { saveWindowBookmark() }
             if phase == .active {
@@ -641,7 +652,7 @@ struct MainTabView: View {
     }
 
     private var presentationContent: some View {
-        lifecycleContent
+        AnyView(lifecycleContent)
         .sheet(item: $clipboard.detected) { kind in
             ClipboardPromptView(
                 kind: kind,

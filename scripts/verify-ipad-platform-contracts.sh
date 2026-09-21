@@ -1,6 +1,16 @@
 #!/bin/bash
 # Account-preserving regression set for live bookshelf reflow and continuation.
 set -euo pipefail
+# Authentication/routing suites mutate the real app's Keychain. They belong
+# in the separately namespaced host, even when a test restores its own keys.
+for selected in "$@"; do
+  case "${selected#CastReaderTests/}" in
+    ServiceRoutingTests|PaymentTests|AuthServiceTests|AccountContentIsolationTests)
+      printf 'Use scripts/verify-isolated-unit-tests.sh for account-mutating suite %s\n' "$selected" >&2
+      exit 2
+      ;;
+  esac
+done
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 device=BFCF61DE-9C45-4467-8996-6F4E03AE7725
 derived=/tmp/CastReader-iPad-Adaptation

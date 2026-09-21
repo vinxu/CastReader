@@ -5,13 +5,41 @@ import UniformTypeIdentifiers
 
 @MainActor
 final class ReaderDropImportTests: XCTestCase {
-    override func setUp() async throws {
-        for _ in 0..<200 {
-            if AccountContentIsolation.captureBoundaryToken() != nil { return }
-            try await Task.sleep(for: .milliseconds(30))
-        }
-        XCTFail("Account content scope did not finish bootstrapping")
+    private func model(historyStore: HistoryStore? = nil) -> ReaderDropImportModel {
+        // Provider/queue contracts must not depend on a real account or on
+        // whichever route a preceding routing test froze in this process.
+        let token = AccountContentBoundaryToken(storageID: "drop-unit-scope", revision: 1)
+        return ReaderDropImportModel(historyStore: historyStore,
+            captureBoundary: { token }, validateBoundary: { $0 == token })
     }
+    func testMissingAccountBoundaryRejectsDropWithoutOpeningReview() {
+        let model = ReaderDropImportModel(captureBoundary: { nil }, validateBoundary: { _ in false })
+        XCTAssertFalse(model.receive([NSItemProvider(object: "Unassigned text" as NSString)]))
+        XCTAssertNil(model.review)
+        XCTAssertFalse(model.busy)
+    }
+
+    func testAccountChangeDiscardsLateProviderPayload() async throws {
+        let token = AccountContentBoundaryToken(storageID: "old-account", revision: 1)
+        var valid = true
+        var complete: ((Data?, Error?) -> Void)?
+        let registered = expectation(description: "Provider requested")
+        let provider = NSItemProvider()
+        provider.registerDataRepresentation(forTypeIdentifier: UTType.utf8PlainText.identifier, visibility: .all) { callback in
+            Task { @MainActor in complete = callback; registered.fulfill() }
+            return nil
+        }
+        let model = ReaderDropImportModel(captureBoundary: { token }, validateBoundary: { valid && $0 == token })
+        defer { model.cancel() }
+        XCTAssertTrue(model.receive([provider]))
+        await fulfillment(of: [registered], timeout: 3)
+        valid = false
+        complete?(Data("Previous account text".utf8), nil)
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertNil(model.review?.payload, "Late content cannot cross the account boundary")
+        XCTAssertTrue(model.queued.isEmpty)
+    }
+
     private func settled(_ model: ReaderDropImportModel) async throws {
         for _ in 0..<100 {
             if !model.busy { return }
@@ -23,7 +51,7 @@ final class ReaderDropImportTests: XCTestCase {
         let source = FileManager.default.temporaryDirectory.appendingPathComponent("source-\(UUID()).txt")
         try Data("A retained original".utf8).write(to: source)
         defer { try? FileManager.default.removeItem(at: source) }
-        let model = ReaderDropImportModel()
+        let model = model()
         defer { model.cancel() }
         XCTAssertTrue(model.receive([NSItemProvider(item: source as NSURL, typeIdentifier: UTType.fileURL.identifier)]))
         try await settled(model)
@@ -43,14 +71,14 @@ final class ReaderDropImportTests: XCTestCase {
         provider.registerDataRepresentation(forTypeIdentifier: UTType.png.identifier, visibility: .all) { callback in
             callback(data, nil); return nil
         }
-        let model = ReaderDropImportModel(); defer { model.cancel() }
+        let model = model(); defer { model.cancel() }
         XCTAssertTrue(model.receive([provider])); try await settled(model)
         guard case .file(let staged) = model.review?.payload else { return XCTFail("Missing image") }
         XCTAssertEqual(staged.pathExtension, "png")
         XCTAssertNotNil(UIImage(contentsOfFile: staged.path))
     }
     func testWebLinkIsReviewedAndNonWebSchemeRejected() async throws {
-        let model = ReaderDropImportModel(); defer { model.cancel() }
+        let model = model(); defer { model.cancel() }
         let url = URL(string: "https://example.com/public-article")!
         XCTAssertTrue(model.receive([NSItemProvider(object: url as NSURL)])); try await settled(model)
         guard case .link(let received) = model.review?.payload else { return XCTFail("Missing link") }
@@ -62,7 +90,7 @@ final class ReaderDropImportTests: XCTestCase {
         XCTAssertNotNil(model.review?.error)
     }
     func testOverLimitAndUnsupportedDropsHaveAnExplicitError() async throws {
-        let model = ReaderDropImportModel(); defer { model.cancel() }
+        let model = model(); defer { model.cancel() }
         XCTAssertTrue(model.receive((0..<9).map { NSItemProvider(object: "item \($0)" as NSString) }))
         XCTAssertNotNil(model.review?.error); XCTAssertNil(model.review?.payload)
         model.cancel()
@@ -74,7 +102,7 @@ final class ReaderDropImportTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let history = HistoryStore(directory: root)
         defer { try? FileManager.default.removeItem(at: root) }
-        let model = ReaderDropImportModel(historyStore: history); defer { model.cancel() }
+        let model = model(historyStore: history); defer { model.cancel() }
         let invalid = NSItemProvider(item: Data([1, 2, 3]) as NSData, typeIdentifier: "public.zip-archive")
         XCTAssertTrue(model.receive([NSItemProvider(object: "First public text." as NSString), invalid,
                                      NSItemProvider(object: "Second public text." as NSString)]))
@@ -99,7 +127,7 @@ final class ReaderDropImportTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let history = HistoryStore(directory: root)
         defer { try? FileManager.default.removeItem(at: root) }
-        let model = ReaderDropImportModel(historyStore: history); defer { model.cancel() }
+        let model = model(historyStore: history); defer { model.cancel() }
         XCTAssertTrue(model.receive((0..<2).map { _ in NSItemProvider(object: "The same public document." as NSString) }))
         model.importQueue(); try await settled(model)
         XCTAssertEqual(history.records.count, 1)
@@ -110,7 +138,7 @@ final class ReaderDropImportTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let history = HistoryStore(directory: root)
         defer { try? FileManager.default.removeItem(at: root) }
-        let model = ReaderDropImportModel(historyStore: history); defer { model.cancel() }
+        let model = model(historyStore: history); defer { model.cancel() }
         let url = URL(string: "https://www.youtube.com/watch?v=dQw4w9WgXcQ")!
         XCTAssertTrue(model.receive([NSItemProvider(object: url as NSURL), NSItemProvider(object: "A public text." as NSString)]))
         model.importQueue(); try await settled(model)
@@ -135,7 +163,7 @@ final class ReaderDropImportTests: XCTestCase {
             }
             return nil
         }
-        let model = ReaderDropImportModel(); defer { model.cancel() }
+        let model = model(); defer { model.cancel() }
         XCTAssertTrue(model.receive([provider])); model.cancel()
         XCTAssertTrue(model.receive([NSItemProvider(object: "New text" as NSString)])); try await settled(model)
         await fulfillment(of: [delivered], timeout: 3)
