@@ -39,6 +39,13 @@ final class PlayerCoordinator: ObservableObject {
     lazy var resume = ResumeCoordinator(player: self, history: historyStore)
     private(set) var presentationGeneration = UUID()
 
+    weak var scene: ReaderSceneContext?
+    var kindleCenter: KindlePlaybackCenter { scene?.kindle ?? .shared }
+    var offlineCenter: KindleOfflinePlaybackCenter { scene?.offline ?? .shared }
+    var youtubeRoutes: YouTubeRouteCenter { scene?.youtubeRoutes ?? .shared }
+    var youtubeService: YouTubeTranscriptService { scene?.youtubeService ?? .shared }
+    var ownsPlaybackSession: Bool { session?.readVM.ownsPlaybackSession == true || session?.explainVM.ownsPlaybackSession == true }
+
     private let speechGenerator: any ParagraphSpeechGenerating
 
     init(historyStore: HistoryStore = .shared,
@@ -80,13 +87,13 @@ final class PlayerCoordinator: ObservableObject {
         analyticsContext suppliedAnalyticsContext: AnalyticsContentContext? = nil,
         reusingLocalPayload: Bool = false
     ) {
-        KindleOfflinePlaybackCenter.shared.stop(preservingSleepTimer: true)
+        offlineCenter.stop(preservingSleepTimer: true)
         let openStarted = Date()
         presentationGeneration = UUID()
         let document = historyStore.canonicalDocument(incomingDocument)
-        KindlePlaybackCenter.shared.close(preservingSleepTimer: true)
+        kindleCenter.close(preservingSleepTimer: true)
         if document.sourceKind != .youtube {
-            YouTubeTranscriptService.shared.releaseWarmSession()
+            youtubeService.releaseWarmSession()
         }
 
         if session?.id != document.contentSessionKey {
@@ -242,19 +249,28 @@ final class PlayerCoordinator: ObservableObject {
     ///   caption-language switch. The kept-alive document is exactly what makes
     ///   the next switch fast, so it must outlive that internal churn.
     func close(releasingYouTubeWarmSession: Bool = true, preservingSleepTimer: Bool = false) {
-        if !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
+        if ownsPlaybackSession, !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
         presentationGeneration = UUID()
         // The YouTube extractor may be holding a hidden document alive so
         // caption-language switches stay fast. Nothing justifies that once the
         // reader it belonged to is gone.
         if releasingYouTubeWarmSession, session?.document.sourceKind == .youtube {
-            YouTubeTranscriptService.shared.releaseWarmSession()
+            youtubeService.releaseWarmSession()
         }
         session?.readVM.stop()
         session?.explainVM.stop()
         session = nil
         isReaderPresented = false
         AppOrientationLock.unlock(owner: Self.orientationOwner)
+    }
+
+    func adoptPlayback(from source: PlayerCoordinator) {
+        guard source.ownsPlaybackSession else { return }
+        session = source.session
+        mode = source.mode
+        source.session = nil
+        source.isReaderPresented = false
+        isReaderPresented = true
     }
 
     private func updateOrientationForExpandedReader(_ document: ReadingDocument) {

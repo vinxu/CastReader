@@ -209,6 +209,22 @@ final class ReaderAppearanceTests: XCTestCase {
         audio.endReaderAppearance(hold, resumePlayback: false)
     }
 
+    func testExplicitPauseDuringPreviewPreventsLateAutomaticResume() async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        defer { audio.clearForAccountBoundary() }
+        let token = audio.claimPlaybackSession(owner: .readAloud)
+        let segment = AudioSegment(paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadingResumeFixtureSpeech.wav(), timestamps: [],
+            duration: 16, text: "Preview pause intent", isWavFormat: true)
+        XCTAssertTrue(audio.loadSegments([segment], autoPlay: true, session: token))
+        for _ in 0..<40 where !audio.isPlaying { try await Task.sleep(for: .milliseconds(25)) }
+        let handle = try XCTUnwrap(audio.suspendActivePlaybackForVoicePreview())
+        XCTAssertTrue(audio.pause(session: token))
+        XCTAssertFalse(audio.resumePlaybackAfterVoicePreview(handle))
+        XCTAssertFalse(audio.isPlaying)
+    }
+
     private func json(_ script: String, _ webView: WKWebView) async throws -> [String: Any] {
         let raw = try await webView.evaluateJavaScript(script)
         let text = try XCTUnwrap(raw as? String)

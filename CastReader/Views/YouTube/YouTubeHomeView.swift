@@ -295,6 +295,7 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
 }
 
 struct YouTubeHomeSection: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     let activeDocumentID: String?
     var isSurfaceEnabled = true
 
@@ -475,7 +476,7 @@ struct YouTubeHomeSection: View {
     }
 
     private func route(_ rawURL: String, entry: YouTubeListenEntry) {
-        guard YouTubeRouteCenter.shared.open(rawURL, entry: entry) else {
+        guard readerScene.youtubeRoutes.open(rawURL, entry: entry) else {
             notice = AppLocalized("这不是有效的 YouTube 视频链接")
             return
         }
@@ -543,6 +544,7 @@ private struct YouTubeHomeShelfRow: View {
 }
 
 struct YouTubeHomeView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var history = HistoryStore.shared
@@ -833,7 +835,7 @@ struct YouTubeHomeView: View {
     }
 
     private func route(_ rawURL: String, entry: YouTubeListenEntry) {
-        if YouTubeRouteCenter.shared.open(rawURL, entry: entry) {
+        if readerScene.youtubeRoutes.open(rawURL, entry: entry) {
             linkText = ""
         } else {
             notice = AppLocalized("这不是有效的 YouTube 视频链接")

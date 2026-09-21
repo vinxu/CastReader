@@ -478,3 +478,126 @@ final class iPadAdaptationUITests: XCTestCase {
         app.terminate()
     }
 }
+
+extension iPadAdaptationUITests {
+    func testTwoActualWindowsKeepIndependentReadersAndTransferAudio() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderMultiWindowFixture", "-CastReaderSkipSignInGate",
+            "-CastReaderSkipLibraryOnboarding", "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.launch()
+        func button(_ id: String) -> XCUIElement { app.buttons[id].firstMatch }
+        func status(_ n: Int, contains text: String, timeout: TimeInterval = 20) {
+            let element = app.staticTexts["window\(n).status"].firstMatch
+            let predicate = NSPredicate { _, _ in element.exists && element.label.contains(text) }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: app)], timeout: timeout), .completed, "Expected \(text); \(element.exists ? element.label : app.debugDescription)")
+        }
+        func time(_ n: Int) -> Double {
+            let text = app.staticTexts["window\(n).status"].firstMatch.label
+            return Double(text.components(separatedBy: ";")[0].replacingOccurrences(of: "time=", with: "")) ?? -1
+        }
+        XCTAssertTrue(button("window1.play").waitForExistence(timeout: 30))
+        button("window1.play").tap()
+        status(1, contains: "w1:owner=true,playing=true")
+        let advances = NSPredicate { _, _ in time(1) >= 3 }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: advances, object: app)], timeout: 10), .completed)
+        let oldPosition = time(1)
+        capture(app, "module5-window1-playing")
+        button("window1.new").tap()
+        XCTAssertTrue(button("window2.play").waitForExistence(timeout: 20))
+        status(2, contains: "w1:owner=true,playing=true")
+        status(2, contains: "w2:owner=false,playing=false")
+        XCTAssertGreaterThan(time(2), oldPosition)
+        capture(app, "module5-window2-browsing-window1-playing")
+        button("window2.play").tap()
+        status(2, contains: "w2:owner=true,playing=true")
+        status(2, contains: "w1:owner=false,playing=false")
+        capture(app, "module5-window2-takes-playback")
+        button("window2.focus1").tap()
+        XCTAssertTrue(button("window1.play").waitForExistence(timeout: 20))
+        button("window1.play").tap()
+        status(1, contains: "w1:owner=true,playing=true")
+        XCTAssertGreaterThanOrEqual(time(1), oldPosition - 0.5)
+        capture(app, "module5-window1-resumes-exact-position")
+        button("window1.focus2").tap()
+        XCTAssertTrue(button("window2.close").waitForExistence(timeout: 20))
+        button("window2.close").tap()
+        let firstFront = NSPredicate { _, _ in app.state == .runningForeground && button("window1.play").isHittable }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: firstFront, object: app)], timeout: 15), .completed)
+        status(1, contains: "w1:owner=true,playing=true")
+        capture(app, "module5-close-inactive-window-keeps-playing")
+        button("window1.new").tap()
+        XCTAssertTrue(button("window3.play").waitForExistence(timeout: 20))
+        button("window3.focus1").tap()
+        XCTAssertTrue(button("window1.close").waitForExistence(timeout: 20))
+        button("window1.close").tap()
+        status(3, contains: "w3:owner=true,playing=true")
+        let front = NSPredicate { _, _ in app.state == .runningForeground && button("window3.pause").isHittable }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: front, object: app)], timeout: 15), .completed)
+        capture(app, "module5-close-owner-moves-live-reader")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        let landscapeWindow = NSPredicate { _, _ in
+            let label = app.staticTexts["window3.status"].firstMatch.label
+            return label.contains("orientation=3") || label.contains("orientation=4")
+        }
+        let rotationResult = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: landscapeWindow, object: app)], timeout: 10)
+        capture(app, "module5-migration-rotation-probe")
+        XCTAssertEqual(rotationResult, .completed, app.staticTexts["window3.status"].firstMatch.label)
+        status(3, contains: "w3:owner=true,playing=true")
+        capture(app, "module5-migrated-reader-landscape")
+        button("window3.pause").tap()
+        status(3, contains: "w3:owner=true,playing=false")
+        app.terminate()
+    }
+}
+
+extension iPadAdaptationUITests {
+    func testWindowRestoresNativeDocumentAndModeWithoutAutoplay() {
+        let app = home()
+        importSource("text", app: app)
+        let title = app.textFields["importTextTitle"]
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        title.tap(); title.typeText("iPad window restore acceptance")
+        let body = app.textViews["importTextBody"]
+        body.tap(); body.typeText("A restored iPad window keeps this public sample ready to read. It must remain paused until the user explicitly asks for playback.")
+        app.buttons["Start"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["readPlayPauseButton"].waitForExistence(timeout: 15))
+        let explain = app.segmentedControls["readerModePicker"].buttons["Explain"]
+        explain.tap()
+        XCTAssertTrue(explain.isSelected)
+        capture(app, "module5-window-before-process-restart")
+        XCUIDevice.shared.press(.home)
+        app.terminate()
+        app.launchArguments += ["-CastReaderRestoreWindowAcceptance"]
+        app.launch()
+        let restored = app.buttons["readerMinimizeButton"].waitForExistence(timeout: 20)
+        capture(app, "module5-restore-probe")
+        XCTAssertTrue(restored)
+        XCTAssertTrue(app.staticTexts["iPad window restore acceptance"].firstMatch.exists)
+        XCTAssertTrue(app.segmentedControls["readerModePicker"].buttons["Explain"].isSelected)
+        XCTAssertFalse(app.buttons["Pause"].firstMatch.exists)
+        capture(app, "module5-window-restored-paused")
+        rotate(app, .landscapeLeft)
+        capture(app, "module5-window-restored-landscape")
+        app.terminate()
+    }
+}
+
+extension iPadAdaptationUITests {
+    func testProductionNewWindowOpensIndependentHome() {
+        let app = home()
+        selectTab("Settings", app: app)
+        let create = app.buttons["newReaderWindow"].firstMatch
+        XCTAssertTrue(create.waitForExistence(timeout: 10))
+        if !create.isHittable { app.swipeUp() }
+        XCTAssertTrue(create.isHittable)
+        capture(app, "module5-new-window-settings-entry")
+        create.tap()
+        XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["plusImportButton"].isHittable)
+        capture(app, "module5-new-window-home")
+        rotate(app, .landscapeLeft)
+        XCTAssertTrue(app.buttons["plusImportButton"].isHittable)
+        capture(app, "module5-new-window-home-landscape")
+        app.terminate()
+    }
+}

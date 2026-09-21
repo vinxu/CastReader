@@ -1723,3 +1723,154 @@ extension ReadingResumeTests {
         XCTAssertEqual(voices, ["af_maya"])
     }
 }
+
+extension ReadingResumeTests {
+    func testTwoReadOwnersTransferAndResumeExactCachedPosition() async throws {
+        useRegularVoiceForTest(language: "en")
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let aSegment = segment(0, text: "Alpha beta gamma delta.", duration: 30)
+        let bSegment = segment(0, text: "Another window reads independently.", duration: 30, changedAudio: true)
+        let a = ReadAloudViewModel(document: document(id: "window-a"), historyStore: HistoryStore(directory: directory))
+        let b = ReadAloudViewModel(document: document(id: "window-b"), historyStore: HistoryStore(directory: directory))
+        defer { a.stop(); b.stop(); audio.clearForAccountBoundary() }
+        a.startWithCachedSegments([aSegment], paragraphIndex: 1, segmentID: aSegment.id,
+                                 progress: 0.2, isReplayEligible: false, autoplay: true)
+        try await waitUntil("A starts beyond its saved cursor") { audio.isPlaying && audio.playbackPosition >= 5 }
+        let position = audio.playbackPosition
+        let aOwner = audio.activePlaybackSession
+        // Merely constructing and switching the other window's idle mode cannot steal audio.
+        let idleExplain = ExplainViewModel(document: document(id: "window-b"))
+        idleExplain.activateAfterModeSwitch(autoplay: false)
+        XCTAssertEqual(audio.activePlaybackSession, aOwner)
+        b.startWithCachedSegments([bSegment], paragraphIndex: 1, segmentID: bSegment.id,
+                                 progress: 0, isReplayEligible: false, autoplay: true)
+        try await waitUntil("B takes ownership") { audio.currentSegment?.id == bSegment.id && audio.isPlaying }
+        XCTAssertFalse(a.isActive)
+        XCTAssertFalse(a.isPlaying)
+        XCTAssertTrue(b.ownsPlaybackSession)
+        // An explicit A resume uses the cached segment and exact retained cursor.
+        a.ensurePlaying()
+        try await waitUntil("A resumes its own cached position") {
+            audio.currentSegment?.id == aSegment.id && audio.isPlaying && audio.playbackPosition >= position - 0.3
+        }
+        XCTAssertLessThan(audio.playbackPosition, position + 2)
+        XCTAssertFalse(b.isActive)
+        let active = audio.activePlaybackSession
+        b.stop()
+        XCTAssertEqual(audio.activePlaybackSession, active)
+        XCTAssertTrue(audio.isPlaying)
+    }
+
+    func testExplainOwnerTransferRetainsSegmentClockWithoutNewNarration() async throws {
+        useRegularVoiceForTest(language: "en")
+        let language = AppSettings.shared.explainLanguage
+        AppSettings.shared.explainLanguage = "en"
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let narration = segment(0, text: "A cached explanation continues here.", paragraph: 0, duration: 30)
+        let a = ExplainViewModel(document: document(id: "explain-window-a"))
+        let b = ReadAloudViewModel(document: document(id: "read-window-b"))
+        defer { a.stop(); b.stop(); audio.clearForAccountBoundary(); AppSettings.shared.explainLanguage = language }
+        a.debugSeedCachedNarration([narration], voiceID: AppSettings.shared.voice(for: "en"))
+        a.ensurePlaying()
+        try await waitUntil("Explain starts") { audio.isPlaying }
+        audio.seek(to: 7, session: audio.activePlaybackSession)
+        try await waitUntil("Explain seek is applied") { audio.playbackPosition >= 6.8 }
+        let position = audio.playbackPosition
+        let other = segment(0, text: "Other window.", duration: 30, changedAudio: true)
+        b.startWithCachedSegments([other], paragraphIndex: 1, segmentID: other.id,
+                                 progress: 0, isReplayEligible: false, autoplay: true)
+        try await waitUntil("Read takes ownership") { audio.currentSegment?.id == other.id && audio.isPlaying }
+        XCTAssertFalse(a.isActive)
+        a.ensurePlaying()
+        try await waitUntil("Explain resumes exact cached audio") {
+            audio.currentSegment?.id == narration.id && audio.isPlaying && audio.playbackPosition >= position - 0.3
+        }
+        XCTAssertLessThan(audio.playbackPosition, position + 2)
+        XCTAssertFalse(b.isActive)
+    }
+}
+
+extension ReadingResumeTests {
+    func testWindowBrowseCloseAndLiveSessionMigrationKeepAudioIdentity() async throws {
+        useRegularVoiceForTest(language: "en")
+        let a = ReaderSceneContext(player: PlayerCoordinator(historyStore: HistoryStore(directory: directory.appendingPathComponent("scene-a"))))
+        let b = ReaderSceneContext(player: PlayerCoordinator(historyStore: HistoryStore(directory: directory.appendingPathComponent("scene-b"))))
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        defer { a.resetForAccountBoundary(); b.resetForAccountBoundary(); audio.clearForAccountBoundary() }
+        let doc = document(id: "ipad-scene-isolation-test")
+        a.player.open(doc)
+        let original = try XCTUnwrap(a.player.session)
+        let narrated = segment(0, text: "Two windows share one audio output.", paragraph: 1, duration: 30)
+        original.readVM.startWithCachedSegments([narrated], paragraphIndex: 1, segmentID: narrated.id,
+            progress: 0.2, isReplayEligible: false, autoplay: true)
+        try await waitUntil("First scene is playing") { audio.isPlaying && audio.playbackPosition >= 5 }
+        let token = audio.activePlaybackSession
+        let position = audio.playbackPosition
+        audio.sleepTimer.start(after: 300)
+        b.player.open(doc)
+        b.voicePanel.present(language: "en")
+        XCTAssertFalse(a.voicePanel.isPresented)
+        XCTAssertTrue(b.voicePanel.isPresented)
+        b.bottomMetrics.update(90)
+        XCTAssertEqual(a.bottomMetrics.height, 0)
+        b.player.close()
+        XCTAssertEqual(audio.activePlaybackSession, token)
+        XCTAssertTrue(audio.isPlaying)
+        XCTAssertNotNil(audio.sleepTimer.deadline)
+        b.player.open(doc)
+        b.adoptPlayback(from: a)
+        XCTAssertNil(a.player.session)
+        XCTAssertTrue(b.player.session?.readVM === original.readVM)
+        XCTAssertEqual(audio.currentSegment?.id, narrated.id)
+        XCTAssertEqual(audio.activePlaybackSession, token)
+        XCTAssertGreaterThanOrEqual(audio.playbackPosition, position - 0.1)
+        XCTAssertTrue(audio.isPlaying)
+        a.resetForAccountBoundary()
+        XCTAssertTrue(audio.isPlaying)
+        XCTAssertEqual(audio.activePlaybackSession, token)
+    }
+
+    func testTwoSceneYouTubeExtractionAndPresentationServicesAreIndependent() {
+        let a = ReaderSceneContext()
+        let b = ReaderSceneContext()
+        defer { a.resetForAccountBoundary(); b.resetForAccountBoundary() }
+        a.captionSwitcher.presentPicker(for: "video-a")
+        b.captionSwitcher.presentPicker(for: "video-b")
+        a.captionSwitcher.dismissPicker()
+        XCTAssertEqual(b.captionSwitcher.presentedPickerVideoID, "video-b")
+        XCTAssertFalse(a.youtubeService === b.youtubeService)
+        XCTAssertFalse(a.kindle === b.kindle)
+        XCTAssertFalse(a.offline === b.offline)
+        let pending = UUID()
+        XCTAssertTrue(a.youtubeRoutes.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", entry: .share, pendingItemID: pending))
+        XCTAssertTrue(b.youtubeRoutes.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", entry: .share, pendingItemID: pending))
+        XCTAssertNil(b.youtubeRoutes.request, "A durable share is processed by just one scene")
+        a.youtubeRoutes.resetForAccountBoundary()
+        XCTAssertTrue(b.youtubeRoutes.open("https://www.youtube.com/watch?v=dQw4w9WgXcQ", entry: .share, pendingItemID: pending))
+        XCTAssertNotNil(b.youtubeRoutes.request)
+    }
+}
+
+@MainActor
+final class ReaderWindowBookmarkTests: XCTestCase {
+    func testCheckpointSurvivesRecreationAndKeepsWindowsAndAccountsSeparate() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = ReaderWindowBookmarkStore(directory: directory)
+        let a = ReaderWindowBookmark(itemID: "document-a", offlineBookID: "", mode: ReaderMode.explain.rawValue, tab: 1, scope: "account-a")
+        let b = ReaderWindowBookmark(itemID: "", offlineBookID: "offline-b", mode: ReaderMode.read.rawValue, tab: 0, scope: "account-a")
+        store.save(a, sessionID: "scene-a")
+        store.save(b, sessionID: "scene-b")
+        let reopened = ReaderWindowBookmarkStore(directory: directory)
+        XCTAssertEqual(reopened.load(sessionID: "scene-a", scope: "account-a"), a)
+        XCTAssertEqual(reopened.load(sessionID: "scene-b", scope: "account-a"), b)
+        XCTAssertNil(reopened.load(sessionID: "scene-a", scope: "account-b"))
+        reopened.remove(sessionIDs: ["scene-a"])
+        XCTAssertNil(ReaderWindowBookmarkStore(directory: directory).load(sessionID: "scene-a", scope: "account-a"))
+        reopened.retain(sessionIDs: [])
+        XCTAssertNil(ReaderWindowBookmarkStore(directory: directory).load(sessionID: "scene-b", scope: "account-a"))
+    }
+}

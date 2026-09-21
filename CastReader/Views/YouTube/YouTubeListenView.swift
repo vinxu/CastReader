@@ -276,7 +276,7 @@ private struct YouTubeArtworkHeader: View {
     @StateObject private var loader = YouTubeArtworkLoader()
     @StateObject private var cacheBadge = YouTubeCacheBadgeLoader()
     @ObservedObject private var settings = AppSettings.shared
-    @ObservedObject private var switcher = YouTubeCaptionLanguageSwitcher.shared
+    @EnvironmentObject private var switcher: YouTubeCaptionLanguageSwitcher
     @ObservedObject private var languageManager = AppLanguageManager.shared
     @Environment(\.displayScale) private var displayScale
 

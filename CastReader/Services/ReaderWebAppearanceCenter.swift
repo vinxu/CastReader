@@ -5,7 +5,7 @@ import WebKit
 @MainActor
 final class ReaderWebAppearanceCenter {
     static let shared = ReaderWebAppearanceCenter()
-    private let views = NSMapTable<NSString, WKWebView>(keyOptions: .strongMemory, valueOptions: .weakMemory)
+    private let views = NSMapTable<WKWebView, NSString>(keyOptions: .weakMemory, valueOptions: .strongMemory)
     private let readerFrames = NSMapTable<WKWebView, WKFrameInfo>(keyOptions: .weakMemory, valueOptions: .strongMemory)
 
     /// Only called after the bridge's exact provider origin/path policy passes.
@@ -20,11 +20,15 @@ final class ReaderWebAppearanceCenter {
     }
 
     func register(_ webView: WKWebView, documentID: String) {
-        views.setObject(webView, forKey: documentID as NSString)
+        views.setObject(documentID as NSString, forKey: webView)
     }
 
-    func open(documentID: String) async -> Bool {
-        guard let webView = views.object(forKey: documentID as NSString) else { return false }
+    func open(documentID: String, in window: UIWindow? = nil) async -> Bool {
+        let candidates = views.keyEnumerator().allObjects.compactMap { $0 as? WKWebView }.filter {
+            views.object(forKey: $0) as String? == documentID && (window == nil || $0.window === window)
+        }
+        // Ambiguous legacy callers never open another window's settings.
+        guard candidates.count == 1, let webView = candidates.first else { return false }
         return await open(webView: webView)
     }
 

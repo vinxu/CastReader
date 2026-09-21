@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct KindleHomeSection: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject var store: KindleLibraryStore
     @ObservedObject private var history = HistoryStore.shared
 
@@ -85,7 +86,7 @@ struct KindleHomeSection: View {
         HomeHorizontalRail(alignment: .top) {
             ForEach(orderedHomeBooks) { book in
                 Button {
-                    KindlePlaybackCenter.shared.open(book: book)
+                    readerScene.kindle.open(book: book)
                 } label: {
                     KindleBookRailCard(
                         book: book,

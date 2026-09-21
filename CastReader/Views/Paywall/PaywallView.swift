@@ -355,6 +355,7 @@ struct PaywallView: View {
 
 /// Pro 权益 + 购买按钮（PaywallView 与 UpgradeView 共用）。
 struct ProUpsellContent: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     var reason: String? = nil
     var analyticsTrigger: String = "unknown"
     var analyticsSurface: String = "paywall"
@@ -784,6 +785,7 @@ struct ProUpsellContent: View {
         Task {
             let purchased = await pro.purchase(
                 product,
+                in: readerScene.window?.windowScene,
                 analyticsTrigger: analyticsTrigger,
                 purchaseAttemptId: purchaseAttemptId
             )

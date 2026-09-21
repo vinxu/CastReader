@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct KindleOfflineDownloadView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject var model: KindleBookViewModel
     @ObservedObject var download: KindleOfflineDownloadCoordinator
     #if DEBUG
@@ -179,7 +180,7 @@ struct KindleOfflineDownloadView: View {
         if let book = download.book, !book.pages.isEmpty, scope != nil {
             Button {
                 guard let scope else { return }
-                KindleOfflinePlaybackCenter.shared.prepareAfterDownload(book: book, scope: scope,
+                readerScene.offline.prepareAfterDownload(book: book, scope: scope,
                     store: download.store, scopeValidator: { scope == self.scope })
                 dismiss()
             } label: {

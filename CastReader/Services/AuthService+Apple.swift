@@ -23,6 +23,7 @@ extension AuthService {
     /// 处理 Apple 授权结果。返回是否成功。
     func handleAppleAuthorization(_ authorization: ASAuthorization) async -> Bool {
         guard let cred = authorization.credential as? ASAuthorizationAppleIDCredential else { return false }
+        guard !isWorking else { return false }
         isWorking = true
         defer { isWorking = false }
 

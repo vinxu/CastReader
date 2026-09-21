@@ -16,7 +16,8 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
             }
             // The authorized account can have another device's saved location.
             // Keep this test's current page through Amazon's visible native UI.
-            if app.staticTexts["Most Recent Page Read"].exists {
+            if !app.buttons["kindleTOCClose"].exists,
+               app.staticTexts["Most Recent Page Read"].exists {
                 let keepCurrentPage = app.buttons["No"]
                 if keepCurrentPage.isHittable { keepCurrentPage.tap() }
                 // Let Amazon finish dismissing/reflowing before evaluating a

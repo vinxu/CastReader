@@ -12,7 +12,7 @@ import SwiftUI
 struct LibrarySourcesSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var player: PlayerCoordinator
-    @ObservedObject private var kindle = KindlePlaybackCenter.shared
+    @EnvironmentObject private var kindle: KindlePlaybackCenter
 
     var body: some View {
         NavigationView {
@@ -34,6 +34,7 @@ struct LibrarySourcesSheet: View {
 }
 
 struct LibrarySourcesView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
@@ -397,7 +398,7 @@ struct LibrarySourcesView: View {
         Task { @MainActor in
             switch source {
             case .kindle:
-                KindlePlaybackCenter.shared.close()
+                readerScene.kindle.close()
                 await kindleStore.disconnectAccount()
             case .weread:
                 await weReadStore.disconnectAccount()

@@ -1193,7 +1193,13 @@ final class VoiceCloneAccessCoordinator: ObservableObject {
             }
         }
     }
-    @Published var prompt: Prompt?
+    private(set) var presentationSceneID: UUID?
+    @Published var prompt: Prompt? {
+        willSet {
+            if newValue != nil, prompt == nil { presentationSceneID = ReaderSceneRegistry.shared.presentationContext?.id }
+            if newValue == nil { presentationSceneID = nil }
+        }
+    }
 }
 
 @MainActor

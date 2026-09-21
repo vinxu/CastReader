@@ -475,6 +475,25 @@ final class ExplainViewModel: ObservableObject {
             && audio.canControlPlayback(session: token)
     }
 
+    var ownsPlaybackSession: Bool {
+        isActive && audioSessionToken.map(audio.isPlaybackSessionActive) == true
+    }
+    var onPlaybackOwnershipRevoked: (() -> Void)?
+    private var ownershipCheckpoint: (block: Int, segmentID: String, seconds: Double)?
+
+    private func playbackOwnershipWasRevoked() {
+        if ownsAudioQueue, let segment = audio.currentSegment {
+            ownershipCheckpoint = (currentBlockIndex, segment.id, audio.playbackPosition)
+        }
+        deactivate()
+        isPlaying = false
+        onPlaybackOwnershipRevoked?()
+    }
+
+    func pauseOwnedPlayback() {
+        if let token = audioSessionToken { _ = audio.pause(session: token) }
+    }
+
     @discardableResult
     private func ensureAudioSessionClaim() -> AudioPlaybackSessionToken? {
         guard isActive else { return nil }
@@ -482,7 +501,9 @@ final class ExplainViewModel: ObservableObject {
            audio.isPlaybackSessionActive(token) {
             return token
         }
-        let token = audio.claimPlaybackSession(owner: .explain)
+        let token = audio.claimPlaybackSession(owner: .explain, onRevoked: { [weak self] in
+            self?.playbackOwnershipWasRevoked()
+        })
         audioSessionToken = token
         isPlaying = false
         return token
@@ -684,6 +705,7 @@ final class ExplainViewModel: ObservableObject {
 
     /// 应用全局语速到共享播放器（与 ReadAloudViewModel.applySpeed 对称，统一由 settings.speed 驱动）。
     private func applySpeed() {
+        guard ownsPlaybackSession else { return }
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
     }
 
@@ -974,7 +996,7 @@ final class ExplainViewModel: ObservableObject {
     /// or restores it. A non-autoplay switch remains idle/actionable.
     func activateAfterModeSwitch(autoplay: Bool) {
         liveWebTurnIntentSuspended = false
-        activate()
+        if autoplay { activate() }
         ReaderRunLog.write(
             "EXPLAIN mode activation autoplay=\(autoplay ? "Y" : "N") " +
             "status=\(statusLogValue) paras=\(doc.readableParagraphs.count)"
@@ -1005,6 +1027,7 @@ final class ExplainViewModel: ObservableObject {
         if wasRefreshingAccess {
             stageText = ""
         }
+        let ownedPlayback = ownsPlaybackSession
         let wasActive = isActive
         isActive = false
         if let token = audioSessionToken {
@@ -1022,7 +1045,7 @@ final class ExplainViewModel: ObservableObject {
         preparingBlocks.removeAll()
         isPreparingNext = false
         clearPagePrefetch()
-        audio.setNowPlayingCaption(nil)
+        if ownedPlayback { audio.setNowPlayingCaption(nil) }
         lastNowPlayingCaption = nil
         finishVoiceSwitchIfNeeded()
     }
@@ -1458,7 +1481,12 @@ final class ExplainViewModel: ObservableObject {
         if let token = audioSessionToken {
             _ = audio.setMoreSegmentsExpected(false, session: token)
             _ = audio.clearBook(session: token)
+            audio.releasePlaybackSession(token)
         }
+        audioSessionToken = nil
+        isActive = false
+        isPlaying = false
+        ownershipCheckpoint = nil
         clearPagePrefetch()
         preparingBlocks.removeAll()
         // `PreparedBlock` owns raw MP3 Data. A closed/superseded document can
@@ -1554,10 +1582,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     private func recoverPlaybackAfterOwnershipChange() {
-        guard isActive else {
-            start()
-            return
-        }
+        if !isActive { activate() }
         guard let session = ensureAudioSessionClaim() else { return }
         let plan = ExplainOwnershipRecoveryPlan.resolve(
             currentBlockIndex: currentBlockIndex,
@@ -1617,12 +1642,20 @@ final class ExplainViewModel: ObservableObject {
         status = .streaming(block: blockIndex, total: max(totalBlocks, blockIndex + 1))
         isPreparingNext = false
         _ = audio.setMoreSegmentsExpected(true, session: session)
+        let checkpoint = ownershipCheckpoint.flatMap { value in
+            value.block == blockIndex && block.segments.contains(where: { $0.id == value.segmentID }) ? value : nil
+        }
         for segment in block.segments {
             _ = audio.loadSegment(
                 segment,
-                autoPlay: !liveWebTurnIntentSuspended,
+                autoPlay: checkpoint == nil && !liveWebTurnIntentSuspended,
                 session: session
             )
+        }
+        if let checkpoint {
+            _ = audio.startQueuedSegment(id: checkpoint.segmentID, progress: 0,
+                initialTime: checkpoint.seconds, autoPlay: !liveWebTurnIntentSuspended, session: session)
+            ownershipCheckpoint = nil
         }
         _ = audio.setMoreSegmentsExpected(false, session: session)
     }

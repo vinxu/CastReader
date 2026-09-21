@@ -59,6 +59,7 @@ struct LoginConsentGate: Equatable {
 }
 
 struct LoginView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     /// 作为根登录墙时为 true：展示价值主张（可听的内容源）。
     /// sheet 场景（付费墙「登录账号同步 Pro」等入口）保持原有的紧凑形态。
     var isRootGate = false
@@ -553,7 +554,7 @@ struct LoginView: View {
     private func signInGoogle() {
         errorMessage = nil
         Task {
-            do { try await auth.signInWithGoogle() }
+            do { try await auth.signInWithGoogle(presentationWindow: readerScene.window) }
             catch AuthError.cancelled {}
             catch { errorMessage = error.localizedDescription }
         }
@@ -562,6 +563,7 @@ struct LoginView: View {
     private func signInApple() {
         errorMessage = nil
         let session = AppleSignInCoordinator(
+            presentationWindow: readerScene.window,
             onSuccess: { dismiss() },
             onError: { errorMessage = $0 }
         )

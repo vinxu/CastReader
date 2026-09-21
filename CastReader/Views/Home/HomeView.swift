@@ -231,6 +231,7 @@ enum VoiceGiftHomeEntryPolicy {
 }
 
 struct HomeView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     let shareInboxUnreadCount: Int
     let isSurfaceActive: Bool
     let onOpenShareInbox: () -> Void
@@ -711,7 +712,7 @@ struct HomeView: View {
               let yearly = pro.yearly else { return }
         isPurchasingAnnual = true
         Task { @MainActor in
-            _ = await pro.purchase(yearly, analyticsTrigger: "home_pro_card_yearly")
+            _ = await pro.purchase(yearly, in: readerScene.window?.windowScene, analyticsTrigger: "home_pro_card_yearly")
             isPurchasingAnnual = false
         }
     }
@@ -896,7 +897,7 @@ struct HomeView: View {
         switch source {
         case .kindle:
             if let book = kindleStore.homeBooks.first {
-                KindlePlaybackCenter.shared.open(book: book)
+                readerScene.kindle.open(book: book)
             } else {
                 onRequestLibraryConnection(.kindle)
             }

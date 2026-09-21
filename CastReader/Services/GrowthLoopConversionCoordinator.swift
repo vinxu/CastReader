@@ -160,8 +160,13 @@ final class GrowthLoopConversionCoordinator: ObservableObject {
     static let shared = GrowthLoopConversionCoordinator()
 
     @Published private(set) var assignment: GrowthProductAssignment?
-    @Published private(set) var softOffer: GrowthTrialOffer?
-    @Published private(set) var isPaywallPresented = false
+    private(set) var presentationSceneID: UUID?
+    @Published private(set) var softOffer: GrowthTrialOffer? {
+        willSet { if newValue != nil, softOffer == nil { presentationSceneID = ReaderSceneRegistry.shared.presentationContext?.id } }
+    }
+    @Published private(set) var isPaywallPresented = false {
+        willSet { if newValue, !isPaywallPresented { presentationSceneID = ReaderSceneRegistry.shared.presentationContext?.id } }
+    }
     @Published private(set) var paywallTrigger = "growth_unknown"
     @Published private(set) var progress = GrowthLoopConversionProgress()
 

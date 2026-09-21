@@ -102,7 +102,7 @@ struct AccountContentBoundaryToken: Equatable, Sendable {
 /// frame in which account B is visible while account A's cached content remains.
 @MainActor
 enum AccountContentIsolation {
-    private static var activeStorageID: String?
+    private(set) static var activeStorageID: String?
     private static var boundaryRevision: UInt64 = 0
 
     static func captureBoundaryToken() -> AccountContentBoundaryToken? {
@@ -136,6 +136,7 @@ enum AccountContentIsolation {
         if didChangeScope {
             advanceBoundaryRevision()
             AudioPlayerService.shared.clearForAccountBoundary()
+            ReaderSceneRegistry.shared.resetForAccountBoundary()
             KindlePlaybackCenter.shared.close()
             YouTubeCaptionLanguageSwitcher.shared.resetForAccountBoundary()
             YouTubeRouteCenter.shared.resetForAccountBoundary()
@@ -167,7 +168,8 @@ enum AccountContentIsolation {
     static func deactivate() {
         advanceBoundaryRevision()
         AudioPlayerService.shared.clearForAccountBoundary()
-        KindlePlaybackCenter.shared.close()
+        ReaderSceneRegistry.shared.resetForAccountBoundary()
+            KindlePlaybackCenter.shared.close()
         YouTubeCaptionLanguageSwitcher.shared.resetForAccountBoundary()
         YouTubeRouteCenter.shared.resetForAccountBoundary()
 
@@ -628,6 +630,7 @@ final class AuthService: NSObject, ObservableObject {
     /// 与 Google/Apple 的差别：后端直接下发 mobile session token 与 user id，
     /// 不需要再走 `exchangeWithBackend`。手机号本身只保留脱敏形式。
     func signInWithPhone(phone rawPhone: String, code: String) async throws {
+        guard !isWorking else { throw AuthError.cancelled }
         isWorking = true
         defer { isWorking = false }
 
@@ -677,6 +680,7 @@ final class AuthService: NSObject, ObservableObject {
     /// 后端失败时**不**清本地——否则用户会以为已注销，实际数据还在。
     @discardableResult
     func deleteAccount() async throws -> AccountDeletionReceipt {
+        guard !isWorking else { throw AuthError.cancelled }
         isWorking = true
         defer { isWorking = false }
 
@@ -723,7 +727,12 @@ final class AuthService: NSObject, ObservableObject {
 
     // MARK: - Google 登录
 
-    func signInWithGoogle() async throws {
+    private weak var authenticationWindow: UIWindow?
+
+    func signInWithGoogle(presentationWindow: UIWindow? = nil) async throws {
+        guard !isWorking else { throw AuthError.cancelled }
+        authenticationWindow = presentationWindow
+        defer { authenticationWindow = nil }
         guard Constants.GoogleOAuth.isConfigured else { throw AuthError.notConfigured }
         isWorking = true
         defer { isWorking = false }
@@ -801,6 +810,7 @@ final class AuthService: NSObject, ObservableObject {
     func sendEmailOTP(to email: String) async throws {
         let normalized = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard Self.isPlausibleEmail(normalized) else { throw AuthError.invalidEmail }
+        guard !isWorking else { throw AuthError.cancelled }
         isWorking = true
         defer { isWorking = false }
         _ = try await postEmailOTP(
@@ -816,6 +826,7 @@ final class AuthService: NSObject, ObservableObject {
         guard Self.isPlausibleEmail(normalized) else { throw AuthError.invalidEmail }
         let otp = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !otp.isEmpty else { throw AuthError.invalidOTP }
+        guard !isWorking else { throw AuthError.cancelled }
         isWorking = true
         defer { isWorking = false }
 
@@ -1102,11 +1113,7 @@ final class AuthService: NSObject, ObservableObject {
 extension AuthService: ASWebAuthenticationPresentationContextProviding {
     nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         MainActor.assumeIsolated {
-            let window = UIApplication.shared.connectedScenes
-                .compactMap { $0 as? UIWindowScene }
-                .flatMap { $0.windows }
-                .first { $0.isKeyWindow }
-            return window ?? ASPresentationAnchor()
+            return authenticationWindow ?? ASPresentationAnchor()
         }
     }
 }

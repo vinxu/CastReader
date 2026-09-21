@@ -47,7 +47,7 @@ final class VoiceGiftRouteCenter: ObservableObject {
 
     @Published private(set) var requestID: UUID?
 
-    private init() {}
+    init() {}
 
     func open() {
         guard VoiceGiftFeature.isRegionEligible() else { return }
@@ -83,7 +83,7 @@ final class PlaybackVoicePanelCenter: ObservableObject {
 
     var isPresented: Bool { request != nil }
 
-    private init() {}
+    init() {}
 
     func present(language: String, onCorrectReadingLanguage: ((String) -> Void)? = nil) {
         let normalized = VoiceCatalog.normalizedLanguage(language)
@@ -916,6 +916,7 @@ struct VoiceAvatarView: View {
 /// the same avatar, language lock and switching behavior.
 @MainActor
 struct PlaybackVoiceButton: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var catalog = VoiceCatalogService.shared
     @ObservedObject private var cloneStore = VoiceCloneStore.shared
@@ -951,7 +952,7 @@ struct PlaybackVoiceButton: View {
 
     var body: some View {
         Button {
-            PlaybackVoicePanelCenter.shared.present(
+            readerScene.voicePanel.present(
                 language: normalizedLanguage,
                 onCorrectReadingLanguage: onCorrectReadingLanguage
             )

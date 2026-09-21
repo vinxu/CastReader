@@ -12,7 +12,8 @@ struct KindleOfflineLibraryView: View {
     @State private var error: String?
     @State private var query = ""
     @State private var deletion: Deletion?
-    @ObservedObject private var playback = KindleOfflinePlaybackCenter.shared
+    @EnvironmentObject private var playback: KindleOfflinePlaybackCenter
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     let store: KindleOfflineBookStore
     private let scopeProvider: @MainActor () -> String?
     private let continueDownload: ((KindleOfflineBook) -> Void)?
@@ -174,7 +175,7 @@ struct KindleOfflineLibraryView: View {
         guard let source = library.boundBooks.first(where: { $0.id == book.sourceBookID }) ?? book.sourceBook else {
             error = AppLocalized("请先在 Kindle 书架同步这本书，再从“更多”继续离线保存。"); return
         }
-        KindlePlaybackCenter.shared.openOfflineDownload(book: source)
+        readerScene.kindle.openOfflineDownload(book: source)
         onReaderPresented?()
     }
 }

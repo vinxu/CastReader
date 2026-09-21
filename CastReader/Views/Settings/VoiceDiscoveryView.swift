@@ -29,7 +29,7 @@ struct VoiceBrowseSearchField: View {
 /// Reserve scrollable content, not another safe area on each navigation page.
 /// Safe-area changes feed UIKit's scroll-offset/navigation-bar coordination.
 struct VoiceBrowseContentMargins: ViewModifier {
-    @ObservedObject private var metrics = BottomOverlayMetrics.shared
+    @EnvironmentObject private var metrics: BottomOverlayMetrics
     func body(content: Content) -> some View {
         content.contentMargins(.bottom, metrics.height, for: .scrollContent)
     }

@@ -771,6 +771,23 @@ final class ReadAloudViewModel: ObservableObject {
             && audio.canControlPlayback(session: token)
     }
 
+    var ownsPlaybackSession: Bool {
+        isActive && audioSessionToken.map(audio.isPlaybackSessionActive) == true
+    }
+    var onPlaybackOwnershipRevoked: (() -> Void)?
+
+    private func playbackOwnershipWasRevoked() {
+        deactivate(clearingHighlights: false)
+        isPlaying = false
+        isBuffering = false
+        isPlaybackPausedByUser = true
+        onPlaybackOwnershipRevoked?()
+    }
+
+    func clearOwnedAudioQueue() {
+        if let token = audioSessionToken { _ = audio.clearQueue(session: token) }
+    }
+
     @discardableResult
     private func ensureAudioSessionClaim() -> AudioPlaybackSessionToken? {
         guard isActive else { return nil }
@@ -778,7 +795,9 @@ final class ReadAloudViewModel: ObservableObject {
            audio.isPlaybackSessionActive(token) {
             return token
         }
-        let token = audio.claimPlaybackSession(owner: .readAloud)
+        let token = audio.claimPlaybackSession(owner: .readAloud, onRevoked: { [weak self] in
+            self?.playbackOwnershipWasRevoked()
+        })
         audioSessionToken = token
         // A restored page may be activated before ensurePlaying()/jump(),
         // bypassing start(). Bind the book whenever we claim its audio session;
@@ -1280,6 +1299,7 @@ final class ReadAloudViewModel: ObservableObject {
         }
         isActive = true
         audioSessionToken = token
+        audio.setOwnershipRevocationHandler(for: token) { [weak self] in self?.playbackOwnershipWasRevoked() }
         installAudioCompletionCallback()
         beginAnalyticsReadSessionIfNeeded(resume: false)
         invalidateAccessRetry()
@@ -2418,13 +2438,14 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// 退出激活（切到解读模式时调用）：必须停掉生成/预取，否则流式生成的新 segment 经 loadSegment 会自动
     /// 重新 playSegment（首段未播放时），导致「切到解读后朗读还在响」。
-    func deactivate() {
+    func deactivate(clearingHighlights: Bool = true) {
         cancelReadablePagePreparation()
         flushReadingProgress()
         retainReadingCursorForQueueRebuild()
         // The initial quota refresh happens before `activate()`. Invalidate it
         // even when this VM has not yet acquired playback ownership.
         invalidateAccessRetry()
+        let ownedPlayback = ownsPlaybackSession
         let wasActive = isActive
         if wasActive,
            youtubeCompletionSubmittedParagraph != currentParagraphIndex {
@@ -2451,14 +2472,16 @@ final class ReadAloudViewModel: ObservableObject {
         cloneRequestIDs.removeAll(keepingCapacity: false)
         isAwaitingLiveWebCarryCompletion = false
         pendingLiveWebCarryStartIndex = nil
-        audio.setNowPlayingCaption(nil)
+        if ownedPlayback { audio.setNowPlayingCaption(nil) }
         lastNowPlayingCaption = nil
         // 清朗读高亮状态，避免切到解读后残留（web 源 DOM 另由 setActive→clearOverlay 清）
-        highlightRange = nil
-        photoHighlightWordIndex = nil
-        photoHighlightWordRange = nil
-        webHighlight = nil
-        pdfHighlight = nil
+        if clearingHighlights {
+            highlightRange = nil
+            photoHighlightWordIndex = nil
+            photoHighlightWordRange = nil
+            webHighlight = nil
+            pdfHighlight = nil
+        }
         if let switchID = activeVoiceSwitchID {
             VoiceSwitchStatusCenter.shared.finish(switchID)
             activeVoiceSwitchID = nil
@@ -2738,10 +2761,11 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func rebuildCurrentParagraphAfterOwnershipChange() {
-        guard isActive, currentParagraphIndex >= 0 else {
+        guard currentParagraphIndex >= 0 else {
             start()
             return
         }
+        if !isActive { activate() }
         guard let token = ensureAudioSessionClaim() else { return }
         let cached = segmentsByParagraph[currentParagraphIndex] ?? []
         switch ReadAloudOwnershipRecoveryPlan.resolve(
@@ -3110,6 +3134,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func applySpeed() {
+        guard ownsPlaybackSession else { return }
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
         if document.sourceKind == .kindle, currentParagraphIndex >= 0 {
             preloadNext(after: currentParagraphIndex)
@@ -3153,7 +3178,11 @@ final class ReadAloudViewModel: ObservableObject {
         if let token = audioSessionToken {
             _ = audio.setMoreSegmentsExpected(false, session: token)
             _ = audio.clearBook(session: token)
+            audio.releasePlaybackSession(token)
         }
+        audioSessionToken = nil
+        isActive = false
+        isPlaying = false
         YouTubeAudioMemoryWindow.prune(
             &segmentsByParagraph,
             sourceKind: document.sourceKind,
@@ -4551,7 +4580,7 @@ final class ReadAloudViewModel: ObservableObject {
         force: Bool = false,
         waitForPersistence: Bool = false
     ) {
-        guard document.sourceKind == .youtube,
+        guard document.sourceKind == .youtube, ownsAudioQueue,
               let segment = audio.currentSegment,
               segment.paragraphIndex == currentParagraphIndex else { return }
 

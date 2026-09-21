@@ -151,8 +151,8 @@ struct KindleBookView: View {
     @EnvironmentObject private var importRouter: ImportRouter
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
-    @ObservedObject private var playbackCenter = KindlePlaybackCenter.shared
-    @ObservedObject private var playbackVoicePanel = PlaybackVoicePanelCenter.shared
+    @ObservedObject private var playbackCenter: KindlePlaybackCenter
+    @ObservedObject private var playbackVoicePanel: PlaybackVoicePanelCenter
     @StateObject private var model: KindleBookViewModel
     @State private var refocusTask: Task<Void, Never>?
     @State private var readerSurfaceSize: CGSize = .zero
@@ -163,7 +163,7 @@ struct KindleBookView: View {
     #endif
 
     init(book: KindleBook) {
-        _model = StateObject(wrappedValue: KindleBookViewModel(book: book))
+        self.init(model: KindleBookViewModel(book: book))
     }
 
     private var usesCompactPlaybackBar: Bool {
@@ -188,6 +188,8 @@ struct KindleBookView: View {
 
     init(model: KindleBookViewModel) {
         _model = StateObject(wrappedValue: model)
+        _playbackCenter = ObservedObject(wrappedValue: model.playbackCenter)
+        _playbackVoicePanel = ObservedObject(wrappedValue: model.voicePanel)
     }
 
     var body: some View {
@@ -212,6 +214,8 @@ struct KindleBookView: View {
                     .accessibilityHidden(shouldHidePlaybackControls || model.isKindleSyncDialogVisible)
                 }
             }
+            .allowsHitTesting(!model.isNativeTOCPresented && !model.isNativeTOCJumpBlocking)
+            .accessibilityHidden(model.isNativeTOCPresented || model.isNativeTOCJumpBlocking)
 
             if model.isNativeTOCPresented {
                 nativeTOCOverlay
@@ -261,7 +265,7 @@ struct KindleBookView: View {
             guard playbackCenter.consumeOfflineDownloadRequest(for: model.offlineSourceBook.id) else { return }
             showOfflineDownload = true
         }
-        .sheet(isPresented: $showOfflineDownload, onDismiss: { KindleOfflinePlaybackCenter.shared.presentAfterDownload() }) {
+        .sheet(isPresented: $showOfflineDownload, onDismiss: { playbackCenter.offlineCenter.presentAfterDownload() }) {
             KindleOfflineDownloadView(model: model, download: model.offlineDownload)
         }
         #if DEBUG
@@ -497,7 +501,7 @@ struct KindleBookView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(AppTheme.primary)
                 Button("返回") {
-                    KindlePlaybackCenter.shared.close()
+                    playbackCenter.close()
                 }
             }
             .padding(22)
@@ -555,8 +559,8 @@ struct KindleBookView: View {
             .tint(AppTheme.primary)
             .disabled(model.isStaleBookRecovering)
             Button("返回") {
-                if KindlePlaybackCenter.shared.isPresented && KindlePlaybackCenter.shared.isOwning(model) {
-                    KindlePlaybackCenter.shared.minimize()
+                if playbackCenter.isPresented && playbackCenter.isOwning(model) {
+                    playbackCenter.minimize()
                 } else {
                     dismiss()
                 }
@@ -576,8 +580,8 @@ struct KindleBookView: View {
     private var header: some View {
         HStack(spacing: 12) {
             Button {
-                if KindlePlaybackCenter.shared.isPresented && KindlePlaybackCenter.shared.isOwning(model) {
-                    KindlePlaybackCenter.shared.minimize()
+                if playbackCenter.isPresented && playbackCenter.isOwning(model) {
+                    playbackCenter.minimize()
                 } else {
                     dismiss()
                 }
@@ -1938,7 +1942,11 @@ final class KindlePlaybackCenter: ObservableObject {
         model != nil && !isPresented
     }
 
-    private init() {}
+    weak var scene: ReaderSceneContext?
+    var offlineCenter: KindleOfflinePlaybackCenter { scene?.offline ?? .shared }
+    var voicePanel: PlaybackVoicePanelCenter { scene?.voicePanel ?? .shared }
+    var ownsPlaybackSession: Bool { model?.ownsPlaybackSession == true }
+    init() {}
 
     func openOfflineDownload(book: KindleBook) {
         offlineDownloadBookID = book.id
@@ -1953,7 +1961,7 @@ final class KindlePlaybackCenter: ObservableObject {
     }
 
     func open(book: KindleBook, intent: KindleOpenIntent = .present) {
-        KindleOfflinePlaybackCenter.shared.stop(preservingSleepTimer: true)
+        offlineCenter.stop(preservingSleepTimer: true)
         AppOrientationLock.unlock(owner: Self.orientationOwner)
         if let active = model, active.isSameBook(as: book) {
             active.refreshMetadata(from: book)
@@ -1965,7 +1973,7 @@ final class KindlePlaybackCenter: ObservableObject {
         }
 
         let old = model
-        let next = KindleBookViewModel(book: book, openIntent: intent)
+        let next = KindleBookViewModel(book: book, openIntent: intent, playbackCenter: self)
         model = next
         isPresented = true
         old?.destroy()
@@ -1979,7 +1987,8 @@ final class KindlePlaybackCenter: ObservableObject {
         let next = KindleBookViewModel(
             book: book,
             staleRecoveryAlreadyAttempted: true,
-            openIntent: current.pendingOpenIntentForReplacement
+            openIntent: current.pendingOpenIntentForReplacement,
+            playbackCenter: self
         )
         model = next
         current.destroy()
@@ -2010,12 +2019,21 @@ final class KindlePlaybackCenter: ObservableObject {
     }
 
     func close(preservingSleepTimer: Bool = false) {
-        if !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
+        if ownsPlaybackSession, !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
         let active = model
         model = nil
         isPresented = false
         AppOrientationLock.unlock(owner: Self.orientationOwner)
         active?.destroy()
+    }
+
+    func adoptPlayback(from source: KindlePlaybackCenter) {
+        guard source.ownsPlaybackSession, let active = source.model else { return }
+        source.model = nil
+        source.isPresented = false
+        active.move(to: self)
+        model = active
+        isPresented = true
     }
 
     func clear(ifModel candidate: KindleBookViewModel) {
@@ -2549,7 +2567,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var pendingContinuationTask: Task<Void, Never>?
 
     var shouldRunPlaybackRefocus: Bool {
-        guard AudioPlayerService.shared.currentBookId == book.id else { return false }
+        guard ownsPlaybackSession else { return false }
         if isRecoveringIPadViewport { return readVM != nil || explainVM != nil }
         switch mode {
         case .read:
@@ -2833,7 +2851,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
             isRecoveringIPadViewport = true
             needsIPadViewportProjection = true
-            if iPadViewportVisualHold == nil, iPadViewportAudioHold == nil, AudioPlayerService.shared.currentBookId == book.id {
+            if iPadViewportVisualHold == nil, iPadViewportAudioHold == nil, ownsPlaybackSession {
                 iPadViewportAudioHold = AudioPlayerService.shared.beginReaderAppearance()
             }
             markReaderLayoutUnstable(reason: reason)
@@ -2881,14 +2899,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private var shouldRunFullReaderLayoutRepair: Bool {
-        hasActivePlaybackSession || shouldRunPlaybackRefocus || AudioPlayerService.shared.currentBookId == book.id
+        hasActivePlaybackSession || shouldRunPlaybackRefocus || ownsPlaybackSession
     }
 
     private func preparePlaybackForReaderLayoutRestartIfNeeded(reason: String) {
         guard Self.layoutReasonShouldRestartPlayback(reason),
               pendingLayoutPlaybackMode == nil,
               hasActivePlaybackSession,
-              AudioPlayerService.shared.currentBookId == book.id else { return }
+              ownsPlaybackSession else { return }
         let oldMode = mode
         pendingLayoutPlaybackMode = oldMode
         pendingLayoutPlaybackOldKey = livePageKey?.nilIfEmpty
@@ -2990,8 +3008,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     suppressExternalPageChangeUntil = Date().addingTimeInterval(3)
                     finishIPadViewportRecovery(resume: recovered)
                     if !recovered {
-                        if mode == .read { readVM?.pausePlayback() } else if AudioPlayerService.shared.currentBookId == book.id {
-                            _ = AudioPlayerService.shared.pauseActivePlaybackForCoordinator(owner: .explain)
+                        if mode == .read { readVM?.pausePlayback() } else if ownsPlaybackSession {
+                            _ = explainVM?.pauseOwnedPlayback()
                         }
                         playbackErrorText = AppLocalized("请等待阅读页面加载完成后重试，或使用原阅读器的 Aa 设置。")
                     }
@@ -3096,8 +3114,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE reader layout repair give-up reason=\(reason) attempt=\(attempt) key=\(Self.keyLog(livePageKey ?? ""))")
             if reason == "ipad-viewport" {
                 finishIPadViewportRecovery(resume: false)
-                if mode == .read { readVM?.pausePlayback() } else if AudioPlayerService.shared.currentBookId == book.id {
-                            _ = AudioPlayerService.shared.pauseActivePlaybackForCoordinator(owner: .explain)
+                if mode == .read { readVM?.pausePlayback() } else if ownsPlaybackSession {
+                            _ = explainVM?.pauseOwnedPlayback()
                         }
                 playbackErrorText = AppLocalized("请等待阅读页面加载完成后重试，或使用原阅读器的 Aa 设置。")
             }
@@ -3295,14 +3313,85 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
+    func move(to center: KindlePlaybackCenter) {
+        owningCenter = center
+        setReadingSurfaceAttached(true)
+        observeVoicePanel()
+    }
+
+    private func observeVoicePanel() {
+        playerOverlaySubscription = voicePanel.$request
+            .map { $0 != nil }
+            .removeDuplicates()
+            .sink { [weak self] presented in
+                self?.setPlayerControlOverlayPresented(presented)
+            }
+    }
+
+    private var isReadingSurfaceAttached = true
+
+    func setReadingSurfaceAttached(_ attached: Bool) {
+        isReadingSurfaceAttached = attached
+        guard !attached else { return }
+        // Ready narration can finish after the last window closes. Further
+        // page confirmation requires a mounted reader and must wait for it.
+        cancelPageCaching(clearPrepared: false)
+        stopPageKeyWatcher()
+        layoutPlaybackRestartTask?.cancel(); layoutPlaybackRestartTask = nil
+        readerLayoutRepairTask?.cancel(); readerLayoutRepairTask = nil
+        cancelExplainPagePreparation(reason: "window-disconnected")
+    }
+
+    private var playbackOwnershipWasRevoked = false
+
+    private func playbackOwnershipRevoked() {
+        playbackOwnershipWasRevoked = true
+        flushListeningAnchor(reason: "window-playback-transfer")
+        cancelPendingPlaybackStart(reason: "window-playback-transfer")
+        manualButtonTurns.cancel()
+        modeSwitchTask?.cancel(); modeSwitchTask = nil
+        manualPageResumeTask?.cancel(); manualPageResumeTask = nil
+        layoutPlaybackRestartTask?.cancel(); layoutPlaybackRestartTask = nil
+        readerLayoutRepairTask?.cancel(); readerLayoutRepairTask = nil
+        continueListeningTask?.cancel(); continueListeningTask = nil
+        pendingManualPageResumeMode = nil
+        pendingLayoutPlaybackMode = nil
+        isPageTurnResuming = false
+        isContinuingExplainPage = false
+        cancelExplainPagePreparation(reason: "window-playback-transfer")
+        cancelPageCaching(clearPrepared: false)
+        clearPendingContinuation()
+        stopPageKeyWatcher()
+        statusText = AppLocalized("播放已转移到其他窗口，轻点播放继续。")
+    }
+
+    private weak var owningCenter: KindlePlaybackCenter?
+    var playbackCenter: KindlePlaybackCenter { owningCenter ?? .shared }
+    var voicePanel: PlaybackVoicePanelCenter { playbackCenter.voicePanel }
+    private var continuousReadAudioSession: AudioPlaybackSessionToken?
+    var ownsPlaybackSession: Bool {
+        readVM?.ownsPlaybackSession == true || explainVM?.ownsPlaybackSession == true ||
+            continuousReadAudioSession.map(AudioPlayerService.shared.isPlaybackSessionActive) == true
+    }
+    private func clearOwnedReadQueue() {
+        let audio = AudioPlayerService.shared
+        if let token = continuousReadAudioSession, audio.isPlaybackSessionActive(token) {
+            _ = audio.clearQueue(session: token)
+            audio.releasePlaybackSession(token)
+            continuousReadAudioSession = nil
+        } else { readVM?.clearOwnedAudioQueue() }
+    }
+
     init(
         book: KindleBook,
         staleRecoveryAlreadyAttempted: Bool = false,
         openIntent: KindleOpenIntent = .present,
+        playbackCenter: KindlePlaybackCenter? = nil,
         websiteDataStore: WKWebsiteDataStore? = nil,
         libraryStore: KindleLibraryStore = .shared,
         historyStore: HistoryStore = .shared
     ) {
+        self.owningCenter = playbackCenter
         self.store = libraryStore
         self.historyStore = historyStore
         self.positionStorageGeneration = libraryStore.positionStorageGeneration
@@ -3452,12 +3541,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         super.init()
         // Do not hop to RunLoop.main here: receiving the will-set publication
         // synchronously is what prevents the first panel frame from resizing WK.
-        playerOverlaySubscription = PlaybackVoicePanelCenter.shared.$request
-            .map { $0 != nil }
-            .removeDuplicates()
-            .sink { [weak self] presented in
-                self?.setPlayerControlOverlayPresented(presented)
-            }
+        observeVoicePanel()
         staleBookRecoveryAttempted = staleRecoveryAlreadyAttempted
         nativeTOCEntries = Self.loadCachedNativeTOCEntries(for: resolvedBook)
         if !nativeTOCEntries.isEmpty {
@@ -3609,7 +3693,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   !isAdvancingLivePage,
                   let oldKey = livePageKey?.nilIfEmpty else {
                 let audio = AudioPlayerService.shared
-                KindleRunLog.write("KINDLE user page gesture ignored direction=\(direction) active=\(shouldResumeAfterUserPageTurn ? "Y" : "N") bookMatch=\(audio.currentBookId == book.id ? "Y" : "N") playing=\(audio.isPlaying ? "Y" : "N") resuming=\(isPageTurnResuming ? "Y" : "N") advancing=\(isAdvancingLivePage ? "Y" : "N") livePage=\(livePageKey?.nilIfEmpty == nil ? "N" : "Y")")
+                KindleRunLog.write("KINDLE user page gesture ignored direction=\(direction) active=\(shouldResumeAfterUserPageTurn ? "Y" : "N") bookMatch=\(ownsPlaybackSession ? "Y" : "N") playing=\(audio.isPlaying ? "Y" : "N") resuming=\(isPageTurnResuming ? "Y" : "N") advancing=\(isAdvancingLivePage ? "Y" : "N") livePage=\(livePageKey?.nilIfEmpty == nil ? "N" : "Y")")
                 return
             }
             KindleRunLog.write("KINDLE user page gesture direction=\(direction) old=\(Self.keyLog(oldKey))")
@@ -3773,6 +3857,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         _ operation: KindleCookieConsentPipelineOperation,
         reason: String
     ) -> Bool {
+        if !isReadingSurfaceAttached,
+           [.automaticPageTurn, .capture, .ocr, .layoutRepair, .visualRecovery, .ttsPreparation].contains(operation) { return false }
+        if playbackOwnershipWasRevoked, operation == .automaticPageTurn || operation == .ttsPreparation { return false }
         if operation == .automaticPageTurn,
            !AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback() { return false }
         let playerOverlayBlocksLayout = operation == .layoutRepair &&
@@ -4630,7 +4717,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 self.refreshMetadata(from: latest)
                 self.statusText = AppLocalized("打开任意位置，然后点播放开始朗读。")
                 KindleRunLog.write("KINDLE stale-entry auto-recovery synced book=\(Self.keyLog(latest.id)) fresh-reader=begin")
-                KindlePlaybackCenter.shared.replaceAfterLibraryRecovery(current: self, book: latest)
+                playbackCenter.replaceAfterLibraryRecovery(current: self, book: latest)
             case .signInRequired:
                 self.statusText = AppLocalized("Kindle 登录已过期，请重新登录并同步书架。")
                 self.staleBookRecoveryMessage = self.statusText
@@ -4713,10 +4800,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if supported {
             store.switchStorefront(to: observed.id)
         }
-        KindlePlaybackCenter.shared.clear(ifModel: self)
+        playbackCenter.clear(ifModel: self)
         NotificationCenter.default.post(
             name: .castReaderKindleRebindRequested,
-            object: supported ? observed.id : expected.id
+            object: supported ? observed.id : expected.id,
+            userInfo: playbackCenter.scene?.notificationUserInfo
         )
     }
 
@@ -4744,10 +4832,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         KindleRunLog.write(
             "KINDLE storefront navigation blocked expected=\(expected.id) domain=\(domain)"
         )
-        KindlePlaybackCenter.shared.clear(ifModel: self)
+        playbackCenter.clear(ifModel: self)
         NotificationCenter.default.post(
             name: .castReaderKindleRebindRequested,
-            object: expected.id
+            object: expected.id,
+            userInfo: playbackCenter.scene?.notificationUserInfo
         )
     }
 
@@ -4757,16 +4846,19 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func startKindleRebind() {
         KindleRunLog.write("KINDLE rebind requested book=\(Self.keyLog(book.id))")
         needsKindleRebind = false
+        let center = playbackCenter
+        let targetInfo = center.scene?.notificationUserInfo
         Task { @MainActor in
             if let storefrontID = book.storefrontID,
                storefrontID != store.boundStorefrontID {
                 store.switchStorefront(to: storefrontID)
             }
             await store.markSessionExpiredForRebind()
-            KindlePlaybackCenter.shared.close()
+            center.close()
             NotificationCenter.default.post(
                 name: .castReaderKindleRebindRequested,
-                object: book.storefrontID
+                object: book.storefrontID,
+                userInfo: targetInfo
             )
         }
     }
@@ -4976,7 +5068,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
            let vm = readVM,
            vm.currentParagraphIndex >= 0,
            !vm.isFinished,
-           audio.currentBookId == book.id {
+           ownsPlaybackSession {
             startContinueListeningBaseline(
                 request: request,
                 requestedAt: requestedAt,
@@ -4987,7 +5079,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             vm.ensurePlaying()
             pendingAutoplayRequestID = nil
             startPageKeyWatcher()
-            KindlePlaybackCenter.shared.activate(model: self)
+            playbackCenter.activate(model: self)
             KindleRunLog.write("KINDLE audiobook continue existing-session request=\(request) key=\(Self.keyLog(livePageKey ?? "")) p=\(vm.currentParagraphIndex)")
             return
         }
@@ -5091,7 +5183,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             for _ in 0..<200 {
                 guard !Task.isCancelled else { return }
                 let audio = AudioPlayerService.shared
-                if audio.isPlaying, audio.currentBookId == self.book.id {
+                if audio.isPlaying, self.ownsPlaybackSession {
                     let elapsedMs = Int(Date().timeIntervalSince(requestedAt) * 1_000)
                     KindleRunLog.write("KINDLE audiobook first-audio request=\(request) elapsedMs=\(elapsedMs) match=\(match.rawValue) reason=\(reason) key=\(Self.keyLog(self.livePageKey ?? "")) hash=\(pageTextHash.prefix(12))")
                     return
@@ -5609,7 +5701,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         clearExternalMismatchState()
         if shouldResume {
             isPageTurnResuming = true
-            KindlePlaybackCenter.shared.activate(model: self)
+            playbackCenter.activate(model: self)
             statusText = AppLocalized("正在切换 Kindle 页面…")
         }
         installCaptureScript()
@@ -6306,12 +6398,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if newMode == .read {
             isContinuingExplainPage = false
             explainVM?.deactivate()
-            readVM?.activate()
             clearKindleMarkState(resetAnimationHistory: false)
             Task { _ = try? await evaluateJSON("window.__crKindleLiveClearMarks && window.__crKindleLiveClearMarks()") }
         } else {
             readVM?.deactivate()
-            explainVM?.activate()
             lastHighlightedWordByParagraph.removeAll()
             Task { _ = try? await evaluateJSON("window.__crKindleLiveClearWord && window.__crKindleLiveClearWord()") }
         }
@@ -6386,6 +6476,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     @discardableResult
     func startCurrentMode() async throws -> KindlePlaybackStartOutcome {
+        playbackOwnershipWasRevoked = false
         guard AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback() else { return .deferred }
         try requireReaderOperation(.ttsPreparation, reason: "start-current-mode")
         if isKindleSyncDialogVisible,
@@ -6581,7 +6672,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 vm.start()
             }
             startPageKeyWatcher()
-            KindlePlaybackCenter.shared.activate(model: self)
+            playbackCenter.activate(model: self)
             return .started
         case .explain:
             if let vm = explainVM {
@@ -6593,7 +6684,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 case .completed:
                     vm.replay()
                     startPageKeyWatcher()
-                    KindlePlaybackCenter.shared.activate(model: self)
+                    playbackCenter.activate(model: self)
                     return .started
                 default:
                     break
@@ -6626,7 +6717,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE explain start key=\(Self.keyLog(livePageKey ?? "")) paras=\(singlePageDoc.paragraphs.count)")
             vm.startByUser()
             startPageKeyWatcher()
-            KindlePlaybackCenter.shared.activate(model: self)
+            playbackCenter.activate(model: self)
             return .started
         }
     }
@@ -6836,7 +6927,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 liveVisibleBottomNorm = nil
                 pageBackStack.removeAll()
                 pageForwardStack.removeAll()
-                KindlePlaybackCenter.shared.activate(model: self)
+                playbackCenter.activate(model: self)
                 statusText = AppLocalized("正在切换 Kindle 页面…")
             }
 
@@ -7703,7 +7794,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         readVM = nil
         explainVM = nil
         if clearPlaybackCenter {
-            KindlePlaybackCenter.shared.clear(ifModel: self)
+            playbackCenter.clear(ifModel: self)
         }
         Task { _ = try? await evaluateJSON("window.__crKindleLiveClear && window.__crKindleLiveClear()") }
     }
@@ -8352,7 +8443,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return true
         }
         let audio = AudioPlayerService.shared
-        if audio.currentBookId == book.id, audio.currentSegment != nil {
+        if ownsPlaybackSession, audio.currentSegment != nil {
             // Includes a user-paused item and the continuous-page boundary where
             // the old VM can already be detached while its audio still owns the book.
             return true
@@ -8362,7 +8453,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private var shouldContinuePlaybackOnModeSwitch: Bool {
         let audio = AudioPlayerService.shared
-        let audioBelongsToBook = audio.currentBookId == book.id
+        let audioBelongsToBook = ownsPlaybackSession
         switch mode {
         case .read:
             guard let vm = readVM else { return false }
@@ -8388,7 +8479,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private var isCurrentModePlaybackActiveOrPreparing: Bool {
         let audio = AudioPlayerService.shared
-        let audioBelongsToBook = audio.currentBookId == book.id
+        let audioBelongsToBook = ownsPlaybackSession
         switch mode {
         case .read:
             guard let vm = readVM else { return false }
@@ -8542,7 +8633,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         bridgedNextResumeByPageKey.removeAll()
         pendingCaptureKey = visibleKey?.nilIfEmpty
         clearExternalMismatchState()
-        KindlePlaybackCenter.shared.activate(model: self)
+        playbackCenter.activate(model: self)
 
         // Do not lock to the first observed key. If the user flips several pages
         // quickly, resume from the final visible Kindle page after the debounce.
@@ -8817,6 +8908,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             historyStore: historyStore,
             speechGenerator: speechGenerator
         )
+        vm.onPlaybackOwnershipRevoked = { [weak self, weak vm] in
+            guard let self, let vm, self.readVM === vm, self.mode == .read else { return }
+            self.playbackOwnershipRevoked()
+        }
         vm.configurePlaybackMetadata(id: book.id, title: book.title, coverURL: book.coverURL)
         activeReadNavigationID = store.navigationPositions[book.id]?.id
         if activeReadNavigationID != nil { vm.discardReadingResumeForConfirmedNavigation() }
@@ -8885,6 +8980,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func makeExplainVM(document: ReadingDocument) -> ExplainViewModel {
         trackAnalyticsContentReadyIfNeeded(document)
         let vm = ExplainViewModel(document: document, analyticsContext: analyticsContext)
+        vm.onPlaybackOwnershipRevoked = { [weak self, weak vm] in
+            guard let self, let vm, self.explainVM === vm, self.mode == .explain else { return }
+            self.playbackOwnershipRevoked()
+        }
         vm.scenario = ExplainContentType.book.rawValue
         vm.configurePlaybackMetadata(
             id: book.id,
@@ -9383,7 +9482,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         pageKey rawPageKey: String?
     ) {
         let audio = AudioPlayerService.shared
-        guard audio.currentBookId == book.id, audio.hasAudibleProgress,
+        guard ownsPlaybackSession, audio.hasAudibleProgress,
               !audio.isBuffering, audio.isPlaying,
               let pageKey = rawPageKey?.trimmingCharacters(in: .whitespacesAndNewlines),
               !pageKey.isEmpty,
@@ -10253,6 +10352,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         resumeWordIndex: Int? = nil,
         reason: String
     ) -> Bool {
+        guard !playbackOwnershipWasRevoked else { return false }
         guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return false }
         guard mode == .read, let vm = readVM else { return false }
         vm.discardReadingResumeForConfirmedNavigation()
@@ -10287,7 +10387,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if let key = livePageKey?.nilIfEmpty {
             startCachingNextPage(afterKey: key)
         }
-        KindlePlaybackCenter.shared.activate(model: self)
+        playbackCenter.activate(model: self)
         return true
     }
 
@@ -10387,7 +10487,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// not: ordinary paragraph playback replaces its own queue, so append only
     /// after the final paragraph has actually installed its complete audio.
     private func appendContinuousReadAudioIfReady() {
-        guard !continuousReadAudioAppended,
+        guard ownsPlaybackSession, !continuousReadAudioAppended,
               let handoff = continuousReadHandoff,
               let vm = readVM, vm.isOnLastReadableParagraph,
               vm.currentTTSCompleteForPageHandoff else { return }
@@ -10664,7 +10764,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadTurnFailureCount = 0
         releaseContinuousReadVisualHoldIfReady(reason: "staged-after-audio-boundary")
 
-        if continuousReadAudioAppended,
+        if ownsPlaybackSession, continuousReadAudioAppended,
            resolvedHandoff.target.page.key == staged.page.key,
            resolvedHandoff.target.page.key != handoff.target.page.key {
             let audio = AudioPlayerService.shared
@@ -11025,19 +11125,25 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 reason: "listen_quota"
             )
             cancelContinuousReadHandoff(reason: "listen-quota", force: true)
-            _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
+            clearOwnedReadQueue()
             return
         }
 
         continuousReadAudioBoundaryReached = true
         releaseContinuousReadVisualHoldIfReady(reason: "audio-boundary")
         if !continuousReadOldVMDetached {
+            continuousReadAudioSession = AudioPlayerService.shared.activePlaybackSession
             continuousReadAnalyticsOwner = readVM
             continuousReadAppReviewSession = readVM?.detachForContinuousPageHandoff(
                 nextSegmentID: handoff.segments.first?.id
             )
             invalidateReadPageSession(reason: "continuous-handoff-\(serial)-detached")
             continuousReadOldVMDetached = true
+            if let token = continuousReadAudioSession {
+                AudioPlayerService.shared.setOwnershipRevocationHandler(for: token) { [weak self] in
+                    self?.playbackOwnershipRevoked()
+                }
+            }
             AudioPlayerService.shared.onPlaybackComplete = { [weak self] in
                 guard let self,
                       self.continuousReadHandoff?.serial == serial else { return }
@@ -11066,7 +11172,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 statusText = AppLocalized("下一页已缓存，但 Kindle 页面同步失败，已暂停。")
                 continuousReadCommitTask = nil
                 cancelContinuousReadHandoff(reason: "commit-page-sync-failed")
-                _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
+                clearOwnedReadQueue()
                 KindleRunLog.write("KINDLE read continuous commit failed serial=\(serial) error=\(error.localizedDescription)")
                 return
             }
@@ -11103,7 +11209,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadTurnFailureCount = 0
         continuousReadSemanticTurnAttempted = false
         continuousReadConfirmedTargetKey = nil
-        AudioPlayerService.shared.canStartQueuedSegment = nil
+        if ownsPlaybackSession { AudioPlayerService.shared.canStartQueuedSegment = nil }
         invalidatePagePreloads(clearPrepared: false, reason: "continuous-page-commit")
 
         liveDocument = staged.document
@@ -11162,7 +11268,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 targetDocumentID: queuedDocument.id
             )
             guard canAdoptPrefetchedAudio, ownerCanAdopt else {
-                _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
+                clearOwnedReadQueue()
                 _ = consumeStartAudioCandidate(
                     pageKey: staged.page.key,
                     textFingerprint: stagedFingerprint,
@@ -11187,11 +11293,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 )
                 return
             }
+            guard !playbackOwnershipWasRevoked, ownsPlaybackSession else { throw CancellationError() }
             guard vm.adoptContinuousPlayback(handoff.segments, paragraphIndex: start) else {
                 // The prepared item may have ended while the visual surface was
                 // committing. Restart the confirmed current page from its first
                 // prepared utterance instead of pausing or advancing again.
-                _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
+                clearOwnedReadQueue()
                 let restarted = startReadPlayback(
                     document: queuedDocument,
                     startHint: start,
@@ -11218,7 +11325,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 voiceID: AppSettings.shared.voice(for: staged.document.language)
             )
             startPageKeyWatcher()
-            KindlePlaybackCenter.shared.activate(model: self)
+            playbackCenter.activate(model: self)
             statusText = AppLocalized("正在朗读 Kindle…")
             KindleRunLog.write(
                 "KINDLE read continuous committed serial=\(serial) old=\(Self.keyLog(handoff.oldKey)) " +
@@ -11229,7 +11336,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
         } catch {
             statusText = AppLocalized("下一页播放衔接失败，请点击播放继续。")
-            _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
+            clearOwnedReadQueue()
             let endedByRetiredOwner = retainedAnalyticsOwner?
                 .finishLogicalAnalyticsSession(
                     result: .failed,
@@ -11268,7 +11375,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         )
         cancelContinuousReadHandoff(reason: reason, force: true)
         if ownsCurrentContinuousSegment {
-            _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
+            clearOwnedReadQueue()
         }
     }
 
@@ -11288,7 +11395,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             : nil
         continuousReadTurnTask?.cancel()
         continuousReadCommitTask?.cancel()
-        if let handoff {
+        if let handoff, ownsPlaybackSession {
             _ = audio.removePendingSegments(withIDs: handoff.segmentIDs)
             audio.canStartQueuedSegment = nil
         }
@@ -12273,6 +12380,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         reason: String,
         prefetched: ExplainViewModel.PrefetchedFirstBlock? = nil
     ) {
+        guard !playbackOwnershipWasRevoked else { return }
         guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return }
         guard mode == .explain, let vm = explainVM else { return }
         readVM?.deactivate()
@@ -12304,7 +12412,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             vm.start()
         }
         startPageKeyWatcher()
-        KindlePlaybackCenter.shared.activate(model: self)
+        playbackCenter.activate(model: self)
     }
 
     private func ensureExplainNextPagePrefetch(afterKey rawKey: String, reason: String) {
@@ -13920,7 +14028,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 _ = audio.pauseActivePlaybackForCoordinator(owner: .readAloud)
                 await refocusPlaybackPosition(reason: "highlight-recovery")
                 if shouldResume,
-                   audio.currentBookId == book.id,
+                   ownsPlaybackSession,
                    readVM != nil {
                     _ = audio.playActivePlaybackForCoordinator(owner: .readAloud)
                 }

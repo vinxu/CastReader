@@ -378,6 +378,7 @@ private struct WeReadNativeTOCPanel: View {
 }
 
 struct ReaderHostView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -411,7 +412,7 @@ struct ReaderHostView: View {
         case .photo, .pdf: return .fixedLayout
         case .web, .docx: return .webText
         case .googleBooks, .kobo, .oreilly, .weread:
-            return .web { await ReaderWebAppearanceCenter.shared.open(documentID: document.id) }
+            return .web { await ReaderWebAppearanceCenter.shared.open(documentID: document.id, in: readerScene.window) }
         default: return .text
         }
     }
@@ -545,8 +546,8 @@ struct ReaderHostView: View {
             )
             if newMode == .read {
                 explainVM.deactivate()
-                readVM.activate()       // 切回朗读：重新接管音频回调（onPlaybackComplete）
                 if shouldContinuePlayback {
+                    readVM.activate()
                     readVM.ensurePlaying()
                 }
             } else {
@@ -944,7 +945,7 @@ struct ReaderHostView: View {
         // closing this session so SwiftUI can present that flow immediately.
         NotificationCenter.default.post(
             name: .castReaderGoogleBooksRebindRequested,
-            object: nil
+            object: nil, userInfo: readerScene.notificationUserInfo
         )
         coordinator.close()
     }
@@ -1056,7 +1057,7 @@ struct ReaderHostView: View {
                     oreillyStore.clearError()
                     NotificationCenter.default.post(
                         name: .castReaderOReillyRebindRequested,
-                        object: nil
+                        object: nil, userInfo: readerScene.notificationUserInfo
                     )
                     coordinator.close()
                 } label: {
