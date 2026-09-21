@@ -216,7 +216,9 @@ final class PlayerCoordinator: ObservableObject {
     func minimize() {
         session?.readVM.flushReadingProgress()
         guard let document = session?.document else { return }
-        if Self.isPortraitOnly(document.sourceKind) {
+        if AdaptiveLayout.isPad {
+            AppOrientationLock.unlock(owner: Self.orientationOwner)
+        } else if Self.isPortraitOnly(document.sourceKind) {
             // Portrait-only in both the full reader and the Mini Player: the
             // reader stays mounted off-screen, so releasing the lock here would
             // let a rotation reflow it behind the user's back.
@@ -270,6 +272,6 @@ final class PlayerCoordinator: ObservableObject {
     /// layout falls apart. WeRead is portrait-only for a different reason —
     /// rotating its live WebView reflows the page mid-playback.
     private static func isPortraitOnly(_ sourceKind: ReadingSourceKind) -> Bool {
-        sourceKind == .weread || sourceKind == .youtube
+        !AdaptiveLayout.isPad && (sourceKind == .weread || sourceKind == .youtube)
     }
 }

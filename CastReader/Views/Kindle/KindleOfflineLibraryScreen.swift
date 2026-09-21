@@ -132,6 +132,7 @@ struct KindleOfflineLibraryView: View {
             Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 .accessibilityHidden(true)
         }.padding(.vertical, 4)
+            .contentShape(Rectangle())
     }
 
     private func loadCover(_ book: KindleOfflineBook) async -> Data? {

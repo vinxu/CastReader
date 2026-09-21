@@ -89,9 +89,9 @@ final class KindleOfflinePlaybackCenter: ObservableObject {
 
 @MainActor
 struct KindleOfflinePlaybackSurface: View {
-    @Environment(\.appViewport) private var viewport
     @ObservedObject var center: KindleOfflinePlaybackCenter
     var body: some View {
+        GeometryReader { geometry in
         if let model = center.model {
             NavigationStack {
                 KindleOfflineBookReaderView(model: model, continueDownload: center.resumeDownload)
@@ -108,9 +108,10 @@ struct KindleOfflinePlaybackSurface: View {
             }
             .id(ObjectIdentifier(model))
             .background(AppTheme.background.ignoresSafeArea())
-            .offset(y: center.isPresented ? 0 : max(1, viewport.height) + 120)
+            .offset(y: center.isPresented ? 0 : geometry.size.height + 120)
             .allowsHitTesting(center.isPresented)
             .accessibilityHidden(!center.isPresented)
+        }
         }
     }
 }

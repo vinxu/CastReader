@@ -15,6 +15,7 @@ struct YouTubeListenView: View {
     @ObservedObject var readVM: ReadAloudViewModel
     let refocusToken: Int
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var followsPlayback = true
     @State private var textViews = TextViewRegistry()
 
@@ -25,7 +26,11 @@ struct YouTubeListenView: View {
     var body: some View {
         Group {
             if let transcript {
-                VStack(spacing: 0) {
+                GeometryReader { geometry in
+                let wide = AdaptiveLayout.isPad && geometry.size.width >= 900 && !dynamicTypeSize.isAccessibilitySize
+                let layout = wide ? AnyLayout(HStackLayout(alignment: .top, spacing: 0))
+                                  : AnyLayout(VStackLayout(spacing: 0))
+                layout {
                     YouTubeArtworkHeader(
                         transcript: transcript,
                         paragraphStartMs: currentStartMs,
@@ -33,10 +38,13 @@ struct YouTubeListenView: View {
                             ?? YouTubeCacheStore.cacheKey(for: transcript),
                         paragraphIndexes:
                             readVM.youtubeReadableParagraphIndexes,
-                        documentLanguage: document.language
+                        documentLanguage: document.language,
+                        artworkMaxHeight: AdaptiveLayout.isPad ? min(200, max(70, geometry.size.height * 0.24)) : nil
                     )
+                    .frame(width: wide ? 320 : nil)
                     Divider()
                     transcriptList(transcript)
+                }
                 }
             } else {
                 ContentUnavailableView(
@@ -63,6 +71,8 @@ struct YouTubeListenView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
+                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.readingWidth : .infinity)
+                .frame(maxWidth: .infinity)
             }
             .simultaneousGesture(
                 DragGesture(minimumDistance: 5)
@@ -100,7 +110,7 @@ struct YouTubeListenView: View {
                 DispatchQueue.main.async { scrollToPlayback(proxy, animated: false) }
             }
             .onChange(of: refocusToken) { _ in
-                followsPlayback = true
+                guard followsPlayback, readVM.autoScrollEnabled else { return }
                 scrollToPlayback(proxy, animated: true)
             }
             .task(id: document.contentSessionKey) {
@@ -261,6 +271,7 @@ private struct YouTubeArtworkHeader: View {
     let cacheKey: YouTubeTranscriptCacheKey
     let paragraphIndexes: [Int]
     let documentLanguage: String
+    var artworkMaxHeight: CGFloat? = nil
 
     @StateObject private var loader = YouTubeArtworkLoader()
     @StateObject private var cacheBadge = YouTubeCacheBadgeLoader()
@@ -285,6 +296,8 @@ private struct YouTubeArtworkHeader: View {
                     artwork
                         .frame(maxWidth: .infinity)
                         .aspectRatio(16 / 9, contentMode: .fit)
+                        .frame(maxWidth: artworkMaxHeight.map { $0 * 16 / 9 })
+                        .frame(maxWidth: .infinity)
                         .background(Color.black.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 

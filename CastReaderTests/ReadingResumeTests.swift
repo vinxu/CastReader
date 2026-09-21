@@ -40,6 +40,64 @@ final class ReadingResumeTests: XCTestCase {
     private var directory: URL!
     private var wasPro = false
 
+    func testReflowRemainderCursorSeeksFirstUnreadWordAndRejectsChangedPrefix() throws {
+        let text = "Already spoken words. Continue from here."
+        let range = (text as NSString).range(of: "Continue")
+        let cursor = try XCTUnwrap(ReadingResumeContract.sourceWordCursor(source: text, range: range))
+        XCTAssertTrue(cursor.isValid)
+        func segment(_ source: String) -> AudioSegment {
+            AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: Data([8]),
+                timestamps: [TTSTimestamp(word: "Already", startTime: 0, endTime: 1),
+                             TTSTimestamp(word: "Continue", startTime: 4, endTime: 5)],
+                duration: 8, text: source)
+        }
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [segment(text)], isComplete: true),
+                       .seek(segmentIndex: 0, seconds: 4))
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor,
+            segments: [segment("Different spoken words. Continue from here.")], isComplete: true), .unavailable)
+        XCTAssertNil(ReadingResumeContract.sourceWordCursor(source: text, range: NSRange(location: 900, length: 3)))
+    }
+
+    func testNewKindleOwnerCanSeedUnreadWordWithoutChangingSource() throws {
+        let text = "Already spoken words continue here"
+        let words = text.split(separator: " ").enumerated().map {
+            OCRWord(id: $0.offset, text: String($0.element), bboxNorm: CGRect(x: 0.1, y: 0.8, width: 0.1, height: 0.04))
+        }
+        let doc = ReadingDocument(title: "Reflow", sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: text, type: .paragraph, words: words)])
+        let vm = ReadAloudViewModel(document: doc, historyStore: HistoryStore(directory: directory))
+        defer { vm.stop(); vm.deactivate() }
+        XCTAssertTrue(vm.prepareKindleWordStart(paragraphIndex: 0, wordIndex: 3))
+        XCTAssertTrue(vm.hasPendingReadingResume)
+        XCTAssertEqual(vm.currentParagraphIndex, 0)
+        XCTAssertEqual(vm.document.paragraphs[0].text, text)
+        XCTAssertFalse(vm.prepareKindleWordStart(paragraphIndex: 0, wordIndex: 50))
+    }
+
+    func testReflowRemainderActuallyStartsAudioAtUnreadWord() async throws {
+        useRegularVoiceForTest(language: "en")
+        let text = "Already spoken words continue here"
+        let words = text.split(separator: " ").enumerated().map {
+            OCRWord(id: $0.offset, text: String($0.element), bboxNorm: CGRect(x: 0.1, y: 0.8, width: 0.1, height: 0.04))
+        }
+        let doc = ReadingDocument(id: UUID().uuidString, title: "Reflow audio", sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: text, words: words)])
+        let audio = AudioPlayerService.shared
+        let source = segment(0, text: text, paragraph: 0, duration: 18)
+        let vm = ReadAloudViewModel(document: doc, historyStore: HistoryStore(directory: directory),
+            speechGenerator: ResumeTestSpeech(segments: [source]))
+        defer { vm.stop(); vm.deactivate() }
+        XCTAssertTrue(vm.prepareKindleWordStart(paragraphIndex: 0, wordIndex: 3))
+        vm.start()
+        try await waitUntil("Reflow continuation must seek to its first unread word before playing") {
+            audio.currentSegment?.audioData == source.audioData && audio.hasAudibleProgress && audio.playbackPosition >= 9
+                && (vm.photoHighlightWordIndex ?? -1) >= 3
+        }
+        XCTAssertNil(vm.resumeNotice)
+        XCTAssertGreaterThanOrEqual(vm.photoHighlightWordIndex ?? -1, 3)
+        XCTAssertLessThan(audio.playbackPosition, 12)
+    }
+
     override func setUp() async throws {
         directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         wasPro = ProManager.shared.debugForcePro

@@ -84,6 +84,7 @@ final class iPadAdaptationUITests: XCTestCase {
     func testNativePhotoRotation() { verifyReaderRotation("photo") }
     func testNativeDOCXRotation() { verifyReaderRotation("docx-long") }
     func testNativeWebRotation() { verifyReaderRotation("web-long") }
+    func testYouTubeTranscriptRotation() { verifyReaderRotation("youtube-long") }
 
     private func number(_ key: String, in text: String) -> Double {
         text.split(separator: ";").first { $0.hasPrefix(key + "=") }
@@ -186,6 +187,15 @@ final class iPadAdaptationUITests: XCTestCase {
             XCTAssertTrue(waitForStatus(status) { $0.contains("layoutStable=true") && abs(self.number("zoom", in: $0) - zoom) < 0.02 })
             capture(app, "module2-photo-zoom-preserved")
             canvas.doubleTap()
+        }
+        if kind == "youtube-long" {
+            app.buttons["readerMinimizeButton"].tap()
+            rotate(app, .landscapeLeft)
+            app.buttons["scenarioExpand"].tap()
+            XCTAssertTrue(waitForStatus(status) { $0.contains("activeVisible=true") || $0.contains("visible=true") })
+            capture(app, "module3-youtube-expanded-landscape")
+            app.terminate()
+            return
         }
         app.buttons["scenarioShowMarks"].tap()
         XCTAssertTrue(waitForStatus(status) { self.number("marks", in: $0) == 1 && $0.contains("visible=true") })

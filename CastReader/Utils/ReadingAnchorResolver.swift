@@ -23,11 +23,15 @@ struct PhotoAnchorResolver: ReadingAnchorResolver {
     let document: ReadingDocument
     /// 图片在容器内 aspectFit 后的显示矩形（SwiftUI 点，未缩放）。
     let fitted: CGRect
+    /// A reflow may split one old token across multiple new lines. An explicit
+    /// projection also means absent words are off-page, never old coordinates.
+    var wordBoxOverrides: [Int: [Int: [CGRect]]]? = nil
 
     func rectsForWord(paragraphIndex: Int, wordIndex: Int) -> [CGRect] {
         guard let para = paragraph(paragraphIndex),
               wordIndex >= 0, wordIndex < para.words.count else { return [] }
-        return [ReadingGeometry.displayRect(forNorm: para.words[wordIndex].bboxNorm, in: fitted)]
+        return boxes(paragraph: para, wordIndex: wordIndex)
+            .map { ReadingGeometry.displayRect(forNorm: $0, in: fitted) }
     }
 
     /// 整段的逐行矩形，用于段落级底色。
@@ -37,7 +41,7 @@ struct PhotoAnchorResolver: ReadingAnchorResolver {
     /// 按视觉行分组（含 x 连续性约束），所以跨栏的段落不会连成一大片。
     func rectsForParagraph(paragraphIndex: Int) -> [CGRect] {
         guard let para = paragraph(paragraphIndex), !para.words.isEmpty else { return [] }
-        return groupByLine(para.words.map(\.bboxNorm))
+        return groupByLine(para.words.indices.flatMap { boxes(paragraph: para, wordIndex: $0) })
             .compactMap { ReadingGeometry.unionNorm($0) }
             .map { ReadingGeometry.displayRect(forNorm: $0, in: fitted) }
     }
@@ -47,29 +51,40 @@ struct PhotoAnchorResolver: ReadingAnchorResolver {
         let hitWords = wordsIntersecting(charRange: range, in: para)
         guard !hitWords.isEmpty else { return [] }
         // 按行（归一化 midY 接近）分组后并集，再换算到显示坐标。
-        let lines = groupByLine(hitWords.map { $0.bboxNorm })
+        let lines = groupByLine(hitWords.flatMap { boxes(paragraph: para, wordIndex: $0) })
         return lines.compactMap { ReadingGeometry.unionNorm($0) }
             .map { ReadingGeometry.displayRect(forNorm: $0, in: fitted) }
     }
 
     // MARK: helpers
 
+    private func boxes(paragraph: ReadingParagraph, wordIndex: Int) -> [CGRect] {
+        if let wordBoxOverrides { return wordBoxOverrides[paragraph.id]?[wordIndex] ?? [] }
+        let box = paragraph.words[wordIndex].bboxNorm
+        return box.isEmpty || box.isNull || box.isInfinite ? [] : [box]
+    }
+
     private func paragraph(_ index: Int) -> ReadingParagraph? {
-        guard index >= 0, index < document.paragraphs.count else { return nil }
-        return document.paragraphs[index]
+        guard index >= 0 else { return nil }
+        if index < document.paragraphs.count, document.paragraphs[index].id == index {
+            return document.paragraphs[index]
+        }
+        // A reflow projection contains only the paragraphs on the visible page,
+        // while retaining the playback document's semantic IDs.
+        return document.paragraphs.first { $0.id == index }
     }
 
     /// 计算每个词在 paragraph.text 中的字符范围，返回与 charRange 相交的词。
-    private func wordsIntersecting(charRange: Range<Int>, in para: ReadingParagraph) -> [OCRWord] {
+    private func wordsIntersecting(charRange: Range<Int>, in para: ReadingParagraph) -> [Int] {
         let chars = Array(para.text)
         var cursor = 0
-        var result: [OCRWord] = []
-        for w in para.words {
+        var result: [Int] = []
+        for (index, w) in para.words.enumerated() {
             let wChars = Array(w.text)
             guard !wChars.isEmpty else { continue }
             if let found = findSub(wChars, in: chars, from: cursor) {
                 let wordRange = found..<(found + wChars.count)
-                if wordRange.overlaps(charRange) { result.append(w) }
+                if wordRange.overlaps(charRange) { result.append(index) }
                 cursor = found + wChars.count
             }
         }

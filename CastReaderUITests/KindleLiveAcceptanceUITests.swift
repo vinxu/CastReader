@@ -84,7 +84,7 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
     }
 
     private func snapshot(_ app: XCUIApplication, _ name: String) {
-        let image = XCTAttachment(screenshot: app.screenshot())
+        let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         image.name = name
         image.lifetime = .keepAlways
         add(image)
@@ -113,6 +113,92 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         if app.state == .runningForeground { snapshot(app, "Kindle-live-at-teardown") }
         XCUIDevice.shared.orientation = .portrait
         super.tearDown()
+    }
+
+    func testAuthorizedIPadReadExplainAndRotation() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1")
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderIPadAcceptance", "-CastReaderTTSClockDiagnostics", "-auto_play", "NO",
+            "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.launch()
+        let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.kindle.")).firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 30))
+        wait(20) { if book.isHittable { return true }; app.swipeUp(); return false }
+        snapshot(app, "iPad-live-Kindle-shelf")
+        book.tap()
+        waitForPausedReader(app)
+        let read = app.buttons["kindleReadPlayPauseButton"]
+        let metrics = app.otherElements["kindlePlaybackMetrics"]
+        func field(_ key: String) -> String {
+            guard metrics.exists else { return "" }
+            return (metrics.value as? String ?? "").split(separator: ";").first { $0.hasPrefix(key + "=") }
+                .map { String($0.dropFirst(key.count + 1)) } ?? ""
+        }
+        func number(_ key: String) -> Double { Double(field(key)) ?? -1 }
+        read.tap()
+        wait(150) { read.value as? String == "Playing" && number("time") >= 1.5 }
+        wait(45) { read.exists && read.value as? String == "Playing" && number("duration") - number("time") >= 3 }
+        snapshot(app, "iPad-live-Read-portrait")
+        let priorTime = number("time")
+        let priorSegment = field("segment")
+        let readSession = field("readSession")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        wait(6) { read.exists && read.value as? String == "Playing" && (field("segment") != priorSegment || number("time") >= priorTime + 0.3) }
+        snapshot(app, "iPad-live-Read-reflow-in-progress")
+        wait(90) { app.frame.width > app.frame.height && read.exists && read.value as? String == "Playing" && number("time") >= 1.5 && field("stable") == "true" }
+        XCTAssertEqual(field("readSession"), readSession, "Rotation must not regenerate the reading session")
+        snapshot(app, "iPad-live-Read-landscape")
+        if ProcessInfo.processInfo.environment["CASTREADER_KINDLE_REFLOW_CONTINUATION"] == "1" {
+            wait(420) { read.exists && read.value as? String == "Playing" && number("continuations") > 0 && field("stable") == "true" }
+            XCTAssertNotEqual(field("readSession"), readSession, "Only natural page completion creates the next page session")
+            snapshot(app, "iPad-live-Read-continued-after-reflow")
+        }
+        read.tap()
+        waitForPausedReader(app)
+        app.buttons["kindleModeButton_explain"].tap()
+        let explain = app.buttons["kindleExplainPlayPauseButton"]
+        wait(30) { explain.exists && explain.isEnabled && explain.isHittable }
+        explain.tap()
+        wait(180) { explain.exists && (explain.value as? String)?.lowercased() == "playing" && number("time") >= 1.5 && number("marks") > 0 }
+        snapshot(app, "iPad-live-Explain-landscape-marks")
+        explain.tap()
+        wait(15) { explain.exists && (explain.value as? String)?.lowercased() == "paused" }
+        let marks = number("marks")
+        let explainSession = field("explainSession")
+        let pausedTime = number("time")
+        XCUIDevice.shared.orientation = .portrait
+        var stableSince: Date?
+        wait(60) {
+            guard app.frame.height > app.frame.width, field("stable") == "true",
+                  number("marks") >= marks, number("shown") >= marks, number("ink") > 0, explain.exists, explain.isHittable else {
+                stableSince = nil; return false
+            }
+            if stableSince == nil { stableSince = Date() }
+            return Date().timeIntervalSince(stableSince!) > 3
+        }
+        XCTAssertEqual(field("explainSession"), explainSession)
+        XCTAssertEqual(number("time"), pausedTime, accuracy: 0.4)
+        XCTAssertEqual((explain.value as? String)?.lowercased(), "paused")
+        snapshot(app, "iPad-live-Explain-portrait-marks")
+        app.buttons["kindleMinimizeButton"].tap()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        wait(15) { app.frame.width > app.frame.height && app.buttons["kindleMiniPlayerExpand"].exists && app.buttons["kindleMiniPlayerExpand"].isHittable }
+        snapshot(app, "iPad-live-mini-landscape")
+        app.buttons["kindleMiniPlayerExpand"].tap()
+        wait(30) { explain.exists && explain.isHittable && (explain.value as? String)?.lowercased() == "paused" }
+        stableSince = nil
+        wait(60) {
+            guard field("stable") == "true", number("ink") > 0 else { stableSince = nil; return false }
+            if stableSince == nil { stableSince = Date() }
+            return Date().timeIntervalSince(stableSince!) > 3
+        }
+        XCTAssertEqual(field("explainSession"), explainSession)
+        XCTAssertEqual(number("time"), pausedTime, accuracy: 0.4)
+        snapshot(app, "iPad-live-expanded-paused")
+        XCUIDevice.shared.orientation = .portrait
     }
 
     func testAuthorizedKindleColdResumeThenManualPageTurns() throws {

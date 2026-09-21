@@ -106,6 +106,38 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         try await js("document.body.innerHTML='<div class=readerError><h2>网络异常</h2><button>重新加载</button></div>'")
     }
 
+    func testIPadViewportReflowRetainsPausedReadAndMarkGeometry() async throws {
+        let container = WebReaderContainerView(webView: web, isWeRead: true, isKobo: false,
+            initialSurfaceSize: web.bounds.size, loadAction: {})
+        window.rootViewController!.view.addSubview(container)
+        read.dbgGenerate(0)
+        try await wait({ self.audio.isPlaying && self.audio.currentTime > 0.08 }, timeout: 10)
+        read.togglePlayPause()
+        try await wait({ !self.audio.isPlaying })
+        let paragraph = read.currentParagraphIndex
+        for (index, size) in [CGSize(width: 820, height: 1000), CGSize(width: 1180, height: 650), CGSize(width: 400, height: 650)].enumerated() {
+            window.frame.size = size
+            window.rootViewController!.view.frame.size = size
+            container.frame = CGRect(origin: .zero, size: size)
+            container.layoutIfNeeded()
+            bridge.refocusIfNeeded(index + 1, readMode: true)
+            try await Task.sleep(for: .milliseconds(1400))
+            XCTAssertFalse(audio.isPlaying, "Resizing must preserve explicit pause")
+            XCTAssertEqual(read.currentParagraphIndex, paragraph)
+            XCTAssertEqual(read.stagedLiveWebParagraphTexts, [first])
+            try await js("CR.highlightRange({paragraphIndex:0,charStart:0,charEnd:9});CR.showMark({id:'viewport',paragraphIndex:0,charStart:10,charEnd:22,action:'underline',seed:42})")
+            let highlight = try await web.evaluateJavaScript("document.querySelectorAll('[data-cr-weread-highlight]').length")
+            let marks = try await web.evaluateJavaScript("document.querySelectorAll('#castreader-weread-marks-svg path').length")
+            XCTAssertGreaterThan(highlight as? Int ?? 0, 0)
+            XCTAssertGreaterThan(marks as? Int ?? 0, 0)
+            let screenshot = UIGraphicsImageRenderer(size: size).image { _ in container.drawHierarchy(in: container.bounds, afterScreenUpdates: true) }
+            let attachment = XCTAttachment(image: screenshot)
+            attachment.name = "weread-ipad-\(Int(size.width))x\(Int(size.height))"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+    }
+
     func testErrorSurfaceStopsDelayedReadAndCannotBeRestartedByControls() async throws {
         read.dbgGenerate(0)
         try await wait { self.audio.isWaitingForNextSegment && self.audio.currentSegment != nil }

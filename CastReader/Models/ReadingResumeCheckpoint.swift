@@ -193,6 +193,29 @@ enum ReadingResumeContract {
             .precomposedStringWithCanonicalMapping.unicodeScalars.filter { allowed.contains($0) }))
     }
 
+    /// Exact source anchor for continuing at the first unread word after a
+    /// provider reflow. Generated audio must verify its prefix and target word.
+    static func sourceWordCursor(source: String, range: NSRange) -> ReadingResumeAudioCursor? {
+        let text = source as NSString
+        guard range.location >= 0, range.length > 0, range.location <= text.length,
+              range.length <= text.length - range.location else { return nil }
+        let prefix = text.substring(to: range.location)
+        let word = text.substring(with: range)
+        let normalizedPrefix = semanticText(prefix), normalizedWord = semanticText(word)
+        guard !normalizedWord.isEmpty else { return nil }
+        var cursor = ReadingResumeAudioCursor(outputUTF16Offset: range.location,
+            outputPrefixFingerprint: fingerprint(prefix), wordFingerprint: fingerprint(word.lowercased()),
+            wordFraction: 0, segmentIndex: 0,
+            segmentTextFingerprint: fingerprint("source:verify-generated-words"),
+            audioFingerprint: fingerprint("source:no-audio-identity"), segmentTime: 0)
+        cursor.outputUTF16Length = range.length
+        cursor.semanticOffset = normalizedPrefix.utf16.count
+        cursor.semanticPrefixFingerprint = fingerprint(normalizedPrefix)
+        cursor.semanticWordFingerprint = fingerprint(normalizedWord)
+        cursor.semanticWordUTF16Length = normalizedWord.utf16.count
+        return cursor
+    }
+
     private struct SourceUnit {
         let character: Character
         let paragraph: Int

@@ -1735,35 +1735,94 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         )
     }
 
+    func testIPadKoboIframeAcrossWindowWidths() async throws {
+        try await verifyIPadPlatformViewport("kobo")
+    }
+
+    func testIPadOReillyChapterAcrossWindowWidths() async throws {
+        try await verifyIPadPlatformViewport("oreilly")
+    }
+
+    private func verifyIPadPlatformViewport(_ platform: String) async throws {
+        let prose = (0..<18).map { "<p>Paragraph \($0). The reading position and precise word highlight must remain attached to this original sentence when the iPad window changes size. A wide viewport can show several lines while a narrow viewport reflows the same text.</p>" }.joined()
+        let content: String
+        let url: String
+        if platform == "kobo" {
+            url = "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"
+            let chapter = "<html><head><style>html,body{margin:0;height:100%;overflow:hidden}article{margin:24px 32px;height:calc(100vh - 48px);column-width:calc(100vw - 64px);column-gap:64px;column-fill:auto}p{font:22px/34px Georgia;margin:0 0 24px}</style></head><body><article>" + prose + "</article></body></html>"
+            let escaped = chapter.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "\"", with: "&quot;")
+            content = "<iframe style='position:absolute;inset:0;width:100%;height:100%;border:0' srcdoc=\"" + escaped + "\"></iframe>"
+        } else {
+            url = "https://learning.oreilly.com/library/view/ipad-fixture/9780000000001/ch01.html"
+            content = "<main class='orm-ChapterReader-readerContainer'><article id='sbo-rt-content' style='max-width:760px;margin:24px auto;padding:0 28px;font:22px/34px Georgia'>" + prose + "</article></main>"
+        }
+        webView.loadHTMLString("<html><head><meta name='viewport' content='width=device-width,initial-scale=1'><style>html,body{margin:0;width:100%;height:100%}</style></head><body>" + content + "</body></html>", baseURL: URL(string: url))
+        for _ in 0..<100 {
+            if inbox.messages.contains(where: { $0.type == "rendered" && ($0.payload["source"] as? String) == platform && !self.paragraphs($0.payload).isEmpty }) { break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        let initial = try XCTUnwrap(inbox.messages.last { $0.type == "rendered" && ($0.payload["source"] as? String) == platform })
+        XCTAssertFalse(paragraphs(initial.payload).isEmpty)
+        let session = initial.payload["frameSessionID"] as? String
+        for size in [CGSize(width: 820, height: 1000), CGSize(width: 1180, height: 650), CGSize(width: 400, height: 650)] {
+            let before = inbox.messages.count
+            webView.window?.frame.size = size
+            webView.superview?.frame.size = size
+            webView.frame.size = size
+            webView.layoutIfNeeded()
+            _ = try await webView.callAsyncJavaScript("CR.gbRelayout({reason:'orientation',width:width,height:height,bottomOcclusion:0})", arguments: ["width": size.width, "height": size.height], in: nil, contentWorld: .page)
+            for _ in 0..<120 {
+                if inbox.messages.dropFirst(before).contains(where: { $0.type == "rendered" && ($0.payload["reason"] as? String) == "refresh" }) { break }
+                try await Task.sleep(for: .milliseconds(100))
+            }
+            let refresh = try XCTUnwrap(inbox.messages.dropFirst(before).last { $0.type == "rendered" })
+            XCTAssertEqual(refresh.payload["reason"] as? String, "refresh")
+            XCTAssertEqual(refresh.payload["frameSessionID"] as? String, session)
+            XCTAssertFalse(paragraphs(refresh.payload).isEmpty)
+            XCTAssertFalse(inbox.messages.dropFirst(before).contains { ($0.payload["reason"] as? String) == "manual" })
+            _ = try await webView.evaluateJavaScript("CR.showMark({id:'ipad-viewport',paragraphIndex:0,charStart:0,charEnd:11,action:'underline',seed:42});CR.relayoutMarks()")
+            let count = try await webView.evaluateJavaScript("(()=>{let doc=document.querySelector('iframe')?.contentDocument||document;return doc.querySelectorAll('[data-cr-marks] path').length})()")
+            XCTAssertGreaterThan(count as? Int ?? 0, 0)
+            let attachment = XCTAttachment(image: try await webView.takeSnapshot(configuration: nil))
+            attachment.name = "\(platform)-ipad-\(Int(size.width))x\(Int(size.height))"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+    }
+
     func testPureViewportResizeIsRefreshRatherThanManualTurn() async throws {
         _ = try await loadReaderFrame()
-        let expectation = expectation(description: "rendered:refresh-after-resize")
-        var refreshed: [String: Any] = [:]
-        var fulfilled = false
-        inbox.onMessage = { type, payload in
-            guard !fulfilled, type == "rendered",
-                  (payload["reason"] as? String) == "refresh" else { return }
-            fulfilled = true
-            refreshed = payload
-            expectation.fulfill()
+        for size in [CGSize(width: 430, height: 700), CGSize(width: 820, height: 1000),
+                     CGSize(width: 1180, height: 650), CGSize(width: 400, height: 650),
+                     CGSize(width: 820, height: 1000)] {
+            let expectation = expectation(description: "rendered:refresh-after-resize")
+            var refreshed: [String: Any] = [:]
+            var fulfilled = false
+            inbox.onMessage = { type, payload in
+                guard !fulfilled, type == "rendered", (payload["reason"] as? String) == "refresh" else { return }
+                fulfilled = true
+                refreshed = payload
+                expectation.fulfill()
+            }
+            webView.window?.frame.size = size
+            webView.superview?.frame.size = size
+            webView.frame = CGRect(origin: .zero, size: size)
+            webView.layoutIfNeeded()
+            await fulfillment(of: [expectation], timeout: 12)
+            inbox.onMessage = nil
+            XCTAssertFalse(paragraphs(refreshed).isEmpty)
+            let changed = inbox.messages.last { $0.type == "googleBooksPageChanging" }
+            XCTAssertEqual(changed?.payload["reason"] as? String, "refresh")
+            XCTAssertEqual(changed?.payload["phase"] as? String, "changed")
+            XCTAssertFalse(inbox.messages.contains {
+                $0.type == "googleBooksPageChanging" && ($0.payload["reason"] as? String) == "manual"
+            }, "Viewport resizing must not impersonate a manual page turn")
+            let screenshot = try await webView.takeSnapshot(configuration: nil)
+            let attachment = XCTAttachment(image: screenshot)
+            attachment.name = "google-books-viewport-\(Int(size.width))x\(Int(size.height))"
+            attachment.lifetime = .keepAlways
+            add(attachment)
         }
-
-        webView.frame = CGRect(x: 0, y: 0, width: 430, height: 700)
-        webView.layoutIfNeeded()
-        await fulfillment(of: [expectation], timeout: 12)
-        inbox.onMessage = nil
-
-        XCTAssertFalse(paragraphs(refreshed).isEmpty)
-        let changed = inbox.messages.last { $0.type == "googleBooksPageChanging" }
-        XCTAssertEqual(changed?.payload["reason"] as? String, "refresh")
-        XCTAssertEqual(changed?.payload["phase"] as? String, "changed")
-        XCTAssertFalse(
-            inbox.messages.contains {
-                $0.type == "googleBooksPageChanging" &&
-                ($0.payload["reason"] as? String) == "manual"
-            },
-            "纯 resize/reflow 不得触发手动翻页停播"
-        )
     }
 
     func testCancelledManualRubberBandReturnsToBaselineWithoutPageCommit() async throws {

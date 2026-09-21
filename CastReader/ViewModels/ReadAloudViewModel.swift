@@ -2529,6 +2529,36 @@ final class ReadAloudViewModel: ObservableObject {
         if readableIndices.contains(paragraphIndex) { currentParagraphIndex = paragraphIndex }
     }
 
+    /// A reflowed provider page can contain the tail of the completed page.
+    /// Seed an exact source-word cursor so newly generated audio starts at the
+    /// first unread word, using the same verified timestamp resolver as resume.
+    @discardableResult
+    func prepareKindleWordStart(paragraphIndex: Int, wordIndex: Int) -> Bool {
+        guard document.sourceKind == .kindle, !hasObservedReadingPlayback,
+              paras.indices.contains(paragraphIndex),
+              paras[paragraphIndex].words.indices.contains(wordIndex) else { return false }
+        let paragraph = paras[paragraphIndex]
+        let source = paragraph.text as NSString
+        var offset = 0
+        for (index, word) in paragraph.words.enumerated() {
+            let range = source.range(of: word.text, range: NSRange(location: offset, length: source.length - offset))
+            guard range.location != NSNotFound else { return false }
+            offset = NSMaxRange(range)
+            guard index == wordIndex else { continue }
+            guard let cursor = ReadingResumeContract.sourceWordCursor(source: paragraph.text, range: range) else { return false }
+            pendingReadingAudioCursor = cursor
+            pendingResumeParagraphIndex = paragraphIndex
+            currentParagraphIndex = paragraphIndex
+            resumeSourceRange = range
+            resumeSourceParagraphIndex = paragraphIndex
+            lastReadingCheckpoint = resumeDocumentIndex.checkpoint(sourceKind: .kindle,
+                paragraphIndex: paragraphIndex, audio: cursor)
+            resumeNotice = nil
+            return true
+        }
+        return false
+    }
+
     /// Selecting a TOC destination is browsing. Cancel old streaming work and
     /// persist the new position even if the user never starts audio there.
     @Published var epubNavigationParagraphIndex: Int? = nil
