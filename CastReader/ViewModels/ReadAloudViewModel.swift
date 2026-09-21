@@ -1617,8 +1617,21 @@ final class ReadAloudViewModel: ObservableObject {
         didSignalPageBoundaryApproaching = false
         playbackVoiceID = settings.voice(for: docLanguage)
         status = .pending
+        if resumeAnchor != nil, resumedParagraph == nil {
+            // A geometry update must never restart unrelated text at page 0.
+            // The bridge first tries a verified adjacent-page reveal; if the
+            // source is still unavailable, require a real paragraph choice.
+            resumeNotice = AppLocalized("内容已变化，无法准确恢复。请选择从哪里继续朗读。")
+            return
+        }
         if autoplay, !isPlaybackPausedByUser, !readableIndices.isEmpty {
             start()
+        } else if let resumedParagraph, resumeAnchor?.wasPlaying == false, isActive {
+            // A viewport reflow is not a user navigation. Rebuild the anchored
+            // paragraph while paused so its word can be painted immediately;
+            // the normal resume path seeks before exposing the audio item.
+            // A manual turn has no resumeAnchor and still waits for Play.
+            generate(resumedParagraph, autoPlay: false)
         }
     }
 
@@ -2199,6 +2212,8 @@ final class ReadAloudViewModel: ObservableObject {
            checkpoint.sourceKind == document.sourceKind {
             let restored = resumeDocumentIndex.resolve(checkpoint) != nil ? checkpoint
                 : ReadingResumeContract.relocatedKindleCheckpoint(checkpoint, paragraphs: paras)
+                    ?? ReadingResumeContract.relocatedKoboCheckpoint(checkpoint, paragraphs: paras)
+                    ?? ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: paras)
 #if DEBUG
             if let restored, restored.paragraphFingerprint != checkpoint.paragraphFingerprint {
                 ReaderRunLog.write("READ resume reflow source=\(document.sourceKind.rawValue) oldPara=\(checkpoint.paragraphIndex) newPara=\(restored.paragraphIndex) word=\(restored.audio?.semanticWordFingerprint?.prefix(12) ?? "-") fraction=\(restored.audio?.wordFraction ?? -1)")
@@ -2317,7 +2332,7 @@ final class ReadAloudViewModel: ObservableObject {
                 output: segments.map(\.text).joined(), offset: cursor.outputUTF16Offset,
                 length: cursor.outputUTF16Length,
                 source: paras[currentParagraphIndex].text)
-            if document.sourceKind == .kindle {
+            if document.sourceKind == .kindle || document.sourceKind == .kobo || document.sourceKind == .weread {
                 checkpoint.reflow = ReadingResumeContract.captureReflow(
                     source: paras[currentParagraphIndex].text, visual: checkpoint.visual, audio: cursor,
                     precedingSource: paras.prefix(currentParagraphIndex).filter { $0.type.isReadable }.map(\.text).joined(),
@@ -3758,6 +3773,12 @@ final class ReadAloudViewModel: ObservableObject {
             ReaderRunLog.write(
                 "WEREAD playback restored para=\(paragraph) seg=\(segment.segmentIndex) progress=\(String(format: "%.3f", pending.anchor.segmentProgress)) playing=\(shouldAutoPlay && pending.anchor.wasPlaying ? "Y" : "N")"
             )
+            // AVPlayer may not publish a periodic tick while paused. Paint
+            // directly from the accepted seek target instead of waiting for
+            // an event that only reliably arrives during active playback.
+            if !pending.anchor.wasPlaying {
+                updateHighlight(segment.duration * pending.anchor.segmentProgress)
+            }
         } else {
             let loaded = audio.loadSegment(
                 segment,

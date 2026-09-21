@@ -33,10 +33,17 @@ struct ReadingResumeReflowCursor: Codable, Equatable {
     let wordCount: Int
     let afterHash: String
     let afterCount: Int
+    // Optional shorter hashes support compact pages containing only part of
+    // either 48-character side. At least 32 verified context characters are
+    // still required; older checkpoints retain their original strict rules.
+    var beforeFragments: [Int: String]? = nil
+    var afterFragments: [Int: String]? = nil
+    var usesSentenceTiming: Bool? = nil
 
     var isValid: Bool {
         (0...48).contains(beforeCount) && (0...48).contains(afterCount)
-            && (1...128).contains(wordCount) && beforeCount + afterCount >= 32
+            && (1...128).contains(wordCount)
+            && beforeCount + afterCount + (usesSentenceTiming == true ? wordCount : 0) >= 32
             && [beforeHash, wordHash, afterHash].allSatisfy { $0.count == 64 }
     }
 }
@@ -238,14 +245,24 @@ enum ReadingResumeContract {
     static func captureReflow(source: String, visual: ReadingResumeVisualCursor?,
                               audio: ReadingResumeAudioCursor,
                               precedingSource: String = "", followingSource: String = "") -> ReadingResumeReflowCursor? {
-        guard let range = visual?.range(in: source), let wordHash = audio.semanticWordFingerprint else { return nil }
+        guard let range = visual?.range(in: source),
+              let wordHash = audio.semanticWordFingerprint ?? audio.untimedAnchor?.textFingerprint else { return nil }
         let text = source as NSString
         let before = Array(semanticText(precedingSource + text.substring(to: range.location)).suffix(48))
         let word = Array(semanticText(text.substring(with: range)))
         let after = Array(semanticText(text.substring(from: NSMaxRange(range)) + followingSource).prefix(48))
         guard fingerprint(String(word)) == wordHash else { return nil }
-        let result = ReadingResumeReflowCursor(beforeHash: fingerprint(String(before)), beforeCount: before.count,
+        var result = ReadingResumeReflowCursor(beforeHash: fingerprint(String(before)), beforeCount: before.count,
             wordHash: wordHash, wordCount: word.count, afterHash: fingerprint(String(after)), afterCount: after.count)
+        result.usesSentenceTiming = audio.untimedAnchor != nil && audio.semanticWordFingerprint == nil
+        // An untimed sentence is itself fully hashed context. Compact pages
+        // may contain little outside that sentence; still require at least
+        // 32 exact semantic characters overall, with a unique match.
+        let lengths = result.usesSentenceTiming == true ? [8, 12, 16, 24, 32, 48] : [16, 24, 32, 48]
+        result.beforeFragments = Dictionary(uniqueKeysWithValues: lengths
+            .filter { $0 <= before.count }.map { ($0, fingerprint(String(before.suffix($0)))) })
+        result.afterFragments = Dictionary(uniqueKeysWithValues: lengths
+            .filter { $0 <= after.count }.map { ($0, fingerprint(String(after.prefix($0)))) })
         return result.isValid ? result : nil
     }
 
@@ -256,10 +273,31 @@ enum ReadingResumeContract {
     /// segment time can never accidentally seek into different spoken text.
     static func relocatedKindleCheckpoint(_ checkpoint: ReadingResumeCheckpoint,
                                            paragraphs: [ReadingParagraph]) -> ReadingResumeCheckpoint? {
-        guard checkpoint.sourceKind == .kindle, checkpoint.isValid,
+        guard checkpoint.sourceKind == .kindle else { return nil }
+        return relocatedCheckpoint(checkpoint, paragraphs: paragraphs, permitsOCRCorrection: true)
+    }
+
+    static func relocatedKoboCheckpoint(_ checkpoint: ReadingResumeCheckpoint,
+                                        paragraphs: [ReadingParagraph]) -> ReadingResumeCheckpoint? {
+        guard checkpoint.sourceKind == .kobo else { return nil }
+        return relocatedCheckpoint(checkpoint, paragraphs: paragraphs, permitsOCRCorrection: false)
+    }
+
+    static func relocatedWeReadCheckpoint(_ checkpoint: ReadingResumeCheckpoint,
+                                          paragraphs: [ReadingParagraph]) -> ReadingResumeCheckpoint? {
+        guard checkpoint.sourceKind == .weread else { return nil }
+        return relocatedCheckpoint(checkpoint, paragraphs: paragraphs, permitsOCRCorrection: false)
+    }
+
+    private static func relocatedCheckpoint(_ checkpoint: ReadingResumeCheckpoint,
+                                            paragraphs: [ReadingParagraph],
+                                            permitsOCRCorrection: Bool) -> ReadingResumeCheckpoint? {
+        guard checkpoint.isValid,
               let context = checkpoint.reflow, context.isValid,
               let oldAudio = checkpoint.audio,
-              oldAudio.semanticWordFingerprint == context.wordHash else { return nil }
+              context.usesSentenceTiming != true || oldAudio.untimedAnchor != nil,
+              oldAudio.semanticWordFingerprint == context.wordHash ||
+                (!permitsOCRCorrection && oldAudio.untimedAnchor?.textFingerprint == context.wordHash) else { return nil }
         let units = sourceUnits(paragraphs)
         guard units.count >= context.wordCount else { return nil }
         func hash(_ range: Range<Int>) -> String { fingerprint(String(units[range].map(\.character))) }
@@ -270,11 +308,37 @@ enum ReadingResumeContract {
                   hash(start..<end) == context.wordHash else { continue }
             let hasBefore = start >= context.beforeCount
             let hasAfter = units.count - end >= context.afterCount
-            guard (!hasBefore || matchesOCRContext(units: units, edge: start, before: true,
-                        count: context.beforeCount, expectedHash: context.beforeHash)),
-                  (!hasAfter || matchesOCRContext(units: units, edge: end, before: false,
-                        count: context.afterCount, expectedHash: context.afterHash)),
-                  (hasBefore ? context.beforeCount : 0) + (hasAfter ? context.afterCount : 0) >= 32 else { continue }
+            func matchesContext(edge: Int, before: Bool, count: Int, expectedHash: String) -> Bool {
+                if permitsOCRCorrection {
+                    return matchesOCRContext(units: units, edge: edge, before: before,
+                                             count: count, expectedHash: expectedHash)
+                }
+                return hash(before ? (edge - count)..<edge : edge..<(edge + count)) == expectedHash
+            }
+            func verifiedStrictContext(before: Bool) -> Int? {
+                let maximum = before ? context.beforeCount : context.afterCount
+                let available = before ? start : units.count - end
+                let fullHash = before ? context.beforeHash : context.afterHash
+                let fragments = before ? context.beforeFragments : context.afterFragments
+                let count = available >= maximum ? maximum :
+                    (fragments?.keys.filter { $0 >= (context.usesSentenceTiming == true ? 8 : 16) && $0 <= min(maximum, available) }.max() ?? 0)
+                if count == 0 { return 0 }
+                guard let expected = count == maximum ? fullHash : fragments?[count], expected.count == 64,
+                      matchesContext(edge: before ? start : end, before: before,
+                                     count: count, expectedHash: expected) else { return nil }
+                return count
+            }
+            if permitsOCRCorrection {
+                guard (!hasBefore || matchesContext(edge: start, before: true,
+                            count: context.beforeCount, expectedHash: context.beforeHash)),
+                      (!hasAfter || matchesContext(edge: end, before: false,
+                            count: context.afterCount, expectedHash: context.afterHash)),
+                      (hasBefore ? context.beforeCount : 0) + (hasAfter ? context.afterCount : 0) >= 32 else { continue }
+            } else {
+                guard let before = verifiedStrictContext(before: true),
+                      let after = verifiedStrictContext(before: false),
+                      before + after + (context.usesSentenceTiming == true ? context.wordCount : 0) >= 32 else { continue }
+            }
             let first = units[start], last = units[end - 1]
             matches.append((first.paragraph, NSRange(location: first.range.location,
                 length: NSMaxRange(last.range) - first.range.location)))
@@ -287,15 +351,24 @@ enum ReadingResumeContract {
         var audio = ReadingResumeAudioCursor(outputUTF16Offset: range.location,
             outputPrefixFingerprint: fingerprint(prefix), wordFingerprint: oldAudio.wordFingerprint,
             wordFraction: oldAudio.wordFraction, segmentIndex: 0,
-            segmentTextFingerprint: fingerprint("reflow:verify-generated-words"),
-            audioFingerprint: fingerprint("reflow:no-audio-identity"), segmentTime: 0)
+            segmentTextFingerprint: oldAudio.untimedAnchor == nil ? fingerprint("reflow:verify-generated-words") : oldAudio.segmentTextFingerprint,
+            audioFingerprint: fingerprint("reflow:no-audio-identity"),
+            segmentTime: oldAudio.untimedAnchor == nil ? 0 : oldAudio.segmentTime)
         audio.outputUTF16Length = range.length
-        audio.semanticOffset = semanticPrefix.utf16.count
-        audio.semanticPrefixFingerprint = fingerprint(semanticPrefix)
-        audio.semanticWordFingerprint = context.wordHash
-        audio.semanticWordUTF16Length = semanticText(source.substring(with: range)).utf16.count
+        if oldAudio.untimedAnchor != nil {
+            audio.segmentDuration = oldAudio.segmentDuration
+            audio.untimedAnchor = ReadingResumeUntimedAnchor(prefixUTF16Length: semanticPrefix.utf16.count,
+                prefixFingerprint: fingerprint(semanticPrefix),
+                textUTF16Length: semanticText(source.substring(with: range)).utf16.count,
+                textFingerprint: context.wordHash)
+        } else {
+            audio.semanticOffset = semanticPrefix.utf16.count
+            audio.semanticPrefixFingerprint = fingerprint(semanticPrefix)
+            audio.semanticWordFingerprint = context.wordHash
+            audio.semanticWordUTF16Length = semanticText(source.substring(with: range)).utf16.count
+        }
         var result = ReadingResumeDocumentIndex(paragraphs: paragraphs).checkpoint(
-            sourceKind: .kindle, paragraphIndex: index, audio: audio, now: checkpoint.updatedAt)
+            sourceKind: checkpoint.sourceKind, paragraphIndex: index, audio: audio, now: checkpoint.updatedAt)
         result?.visual = ReadingResumeVisualCursor(sourceFingerprint: fingerprint(paragraphs[index].text),
             utf16Offset: range.location, utf16Length: range.length)
         result?.reflow = context
@@ -450,6 +523,10 @@ enum ReadingResumeContract {
             cursor.semanticWordFingerprint = fingerprint(semanticText(word.timestamp.word))
             cursor.semanticWordUTF16Length = semanticText(word.timestamp.word).utf16.count
         } else if segment.timestamps.isEmpty {
+            // Segment-timed speech anchors the actual spoken sentence. A
+            // whitespace-derived range could otherwise swallow the remainder
+            // of a Chinese paragraph and fail a later compact-page match.
+            cursor.outputUTF16Length = segment.text.utf16.count
             let normalizedPrefix = semanticText(priorText)
             let normalizedText = semanticText(segment.text)
             cursor.untimedAnchor = ReadingResumeUntimedAnchor(
@@ -568,6 +645,14 @@ enum ReadingResumeContract {
         for (index, text) in texts.enumerated() {
             let end = offset + text.utf16.count
             if start < end {
+                let segment = segments[index]
+                if offset == start, text.utf16.count == anchor.textUTF16Length,
+                   fingerprint(segment.text) == cursor.segmentTextFingerprint,
+                   let oldDuration = cursor.segmentDuration, oldDuration.isFinite, oldDuration > 0,
+                   segment.duration.isFinite, segment.duration > 0 {
+                    return .seek(segmentIndex: index, seconds:
+                        min(1, max(0, cursor.segmentTime / oldDuration)) * segment.duration)
+                }
                 // Exact chunk restoration above preserves fractional position.
                 // Repartitioned audio replays this verified boundary, never an
                 // estimated word/time that could skip previously unheard text.

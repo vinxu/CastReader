@@ -93,6 +93,16 @@ struct WeReadTOCEntry: Identifiable, Codable, Equatable {
     /// only be selected after WeRead has supplied its server-authored UID.
     var isActionable: Bool { !chapterUID.isEmpty }
 
+    /// The provider may omit its current-chapter flag after hydration. A
+    /// unique catalog heading at the start of the extracted visible body
+    /// proves that selecting it is already satisfied, without waiting for
+    /// a nonexistent changed-page event or restarting the current narration.
+    func hasUniqueCatalogHeading(_ catalog: [WeReadTOCEntry]) -> Bool {
+        let heading = title.filter { !$0.isWhitespace }
+        return isActionable && !heading.isEmpty &&
+            catalog.filter { $0.title.filter { !$0.isWhitespace } == heading }.count == 1
+    }
+
     init(
         index: Int,
         chapterIndex: Int,

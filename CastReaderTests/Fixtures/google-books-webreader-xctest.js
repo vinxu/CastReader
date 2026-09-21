@@ -52742,6 +52742,40 @@ var __CRWeb = (() => {
     const paraElements = /* @__PURE__ */ new Map();
     const extractedParaElements = /* @__PURE__ */ new Map();
     const paraOffsets = /* @__PURE__ */ new Map();
+    const paragraphTapDocuments = /* @__PURE__ */ new WeakSet();
+    function installParagraphTaps(doc) {
+      if (paragraphTapDocuments.has(doc)) return;
+      paragraphTapDocuments.add(doc);
+      doc.addEventListener("click", (e) => {
+        var _a2, _b, _c, _d;
+        const target = e.target;
+        const el = (_a2 = target == null ? void 0 : target.closest) == null ? void 0 : _a2.call(target, "[data-cr-para]");
+        const index = el ? (_b = [...paraElements].find(([, candidate]) => candidate === el)) == null ? void 0 : _b[0] : void 0;
+        if (index !== void 0) {
+          post("paragraphTapped", { paragraphIndex: index });
+          return;
+        }
+        if (doc !== document || ((_c = target == null ? void 0 : target.closest) == null ? void 0 : _c.call(target, 'a,button,input,select,textarea,[role="button"],[role="dialog"]'))) return;
+        for (const [paragraphIndex, candidate] of paraElements) {
+          const owner = candidate.ownerDocument;
+          const frame = (_d = owner.defaultView) == null ? void 0 : _d.frameElement;
+          if (!frame || frame.ownerDocument !== doc) continue;
+          const box = frame.getBoundingClientRect();
+          const sx = box.width / Math.max(1, frame.offsetWidth);
+          const sy = box.height / Math.max(1, frame.offsetHeight);
+          const x = (e.clientX - box.left) / sx - frame.clientLeft;
+          const y = (e.clientY - box.top) / sy - frame.clientTop;
+          const range2 = owner.createRange();
+          range2.selectNodeContents(candidate);
+          for (const rect of Array.from(range2.getClientRects())) {
+            if (rect.width < 1 || rect.height < 1 || x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue;
+            if (deps.acceptHighlightRect && !deps.acceptHighlightRect(candidate, rect)) continue;
+            post("paragraphTapped", { paragraphIndex });
+            return;
+          }
+        }
+      }, true);
+    }
     let color = "#FD5F01";
     const markRenderer = createMarkRenderer((i) => paraElements.get(i), color);
     const overlayNodes = /* @__PURE__ */ new Set();
@@ -52900,6 +52934,7 @@ var __CRWeb = (() => {
       const out = [];
       paras.forEach((p, i) => {
         const el = p.element;
+        installParagraphTaps(el.ownerDocument);
         try {
           el.setAttribute("data-cr-para", String(i));
         } catch (e) {
@@ -53133,12 +53168,7 @@ var __CRWeb = (() => {
       }
     };
     window.CR = CR;
-    document.addEventListener("click", (e) => {
-      var _a2;
-      const t = e.target;
-      const el = (_a2 = t == null ? void 0 : t.closest) == null ? void 0 : _a2.call(t, "[data-cr-para]");
-      if (el) post("paragraphTapped", { paragraphIndex: Number(el.getAttribute("data-cr-para")) });
-    }, true);
+    installParagraphTaps(document);
     (_a = deps.onInstalled) == null ? void 0 : _a.call(deps, { extract: doExtract });
     function ready() {
       post("ready", { version: "m1" });
@@ -54508,6 +54538,16 @@ var __CRWeb = (() => {
       },
       refresh(arg) {
         var _a;
+        const reflow = recordArg(arg);
+        if (reflow.reflowDirection === "next" || reflow.reflowDirection === "prev") {
+          if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent || reflow.reflowBaseline !== playBooksSignature()) return;
+          changeReasonInFlight = "refresh";
+          changeBaseline = committedSignature;
+          changeMetadata = null;
+          turnPlayBooksPage(reflow.reflowDirection, "button");
+          commit("refresh");
+          return;
+        }
         const fallbackBaseline = committedSignature || playBooksSignature();
         const automatic = nonemptyString(recordArg(arg).turnID) ? automaticMetadata2(arg, fallbackBaseline) : null;
         const manual = manualMetadata2(arg, fallbackBaseline);
@@ -55378,14 +55418,28 @@ var __CRWeb = (() => {
     if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") <= 0.01) return null;
     const rect = iframe.getBoundingClientRect();
     if (rect.width <= 1 || rect.height <= 1) return null;
+    let viewport = topViewport();
+    for (let parent2 = iframe.parentElement; parent2; parent2 = parent2.parentElement) {
+      const parentStyle = getComputedStyle(parent2);
+      const paintClip = /(?:^|\s)(paint|strict|content)(?:\s|$)/.test(parentStyle.contain);
+      const clipsX = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowX);
+      const clipsY = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowY);
+      if (!clipsX && !clipsY) continue;
+      const box = parent2.getBoundingClientRect();
+      const sx = box.width / Math.max(1, parent2.offsetWidth);
+      const sy = box.height / Math.max(1, parent2.offsetHeight);
+      const left = box.left + parent2.clientLeft * sx;
+      const top = box.top + parent2.clientTop * sy;
+      viewport = {
+        left: clipsX ? Math.max(viewport.left, left) : viewport.left,
+        right: clipsX ? Math.min(viewport.right, left + parent2.clientWidth * sx) : viewport.right,
+        top: clipsY ? Math.max(viewport.top, top) : viewport.top,
+        bottom: clipsY ? Math.min(viewport.bottom, top + parent2.clientHeight * sy) : viewport.bottom
+      };
+    }
     const hit = intersect2(
-      {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom
-      },
-      topViewport()
+      { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+      viewport
     );
     if (!hit) return null;
     const layoutWidth = Math.max(1, iframe.offsetWidth || rect.width);
@@ -55630,7 +55684,8 @@ var __CRWeb = (() => {
         });
       });
     }
-    return koboParagraphSnapshotQuality(output).ok ? output : [];
+    const quality = koboParagraphSnapshotQuality(output);
+    return quality.ok ? output : [];
   }
   function extractKoboParagraphs() {
     return extractKoboParagraphsFromClips(currentKoboFrameClips());
@@ -56449,7 +56504,7 @@ var __CRWeb = (() => {
           }
           const finalSignature = current;
           const returnedToBaseline = changeBaseline.length > 0 && finalSignature === changeBaseline;
-          if (returnedToBaseline && !forceExtract) {
+          if (returnedToBaseline && !forceExtract && reason !== "refresh") {
             if (reason === "manual") {
               postForFrame("googleBooksPageChanging", __spreadValues({
                 reason: "manual",
@@ -56785,13 +56840,29 @@ var __CRWeb = (() => {
         return attemptManualTurn(direction);
       },
       refresh(arg) {
-        var _a2;
+        var _a2, _b;
+        const reflow = recordArg2(arg);
+        if (reflow.reflowDirection === "next" || reflow.reflowDirection === "prev") {
+          if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent || reflow.reflowBaseline !== koboSignature()) return;
+          const direction = reflow.reflowDirection;
+          if (!methodAvailable("semantic", direction) && !methodAvailable("button", direction)) return;
+          beginLayoutRefresh("source-anchor");
+          if (methodAvailable("semantic", direction)) {
+            const invocation = invokeKoboSemanticPageTurn(direction);
+            void ((_a2 = invocation.completion) == null ? void 0 : _a2.catch(() => {
+            }));
+          } else {
+            turnKoboPage(direction, "button");
+          }
+          beginSettlement("refresh", 0, true);
+          return;
+        }
         const fallbackBaseline = committedSignature || koboSignature();
         const automatic = nonemptyString2(recordArg2(arg).turnID) ? automaticMetadata2(arg, fallbackBaseline) : null;
         const manual = manualMetadata2(arg, fallbackBaseline);
         if (automatic) {
           changeReasonInFlight = "auto";
-          changeBaseline = ((_a2 = liveLateAutoTurn()) == null ? void 0 : _a2.detectionBaselineSignature) || fallbackBaseline;
+          changeBaseline = ((_b = liveLateAutoTurn()) == null ? void 0 : _b.detectionBaselineSignature) || fallbackBaseline;
           changeMetadata = automatic;
           beginSettlement("auto", 0, true);
         } else if (manual) {

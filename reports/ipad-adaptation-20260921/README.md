@@ -124,3 +124,10 @@ Passing simulator fixtures is evidence of UI and deterministic behavior only. Li
 - Final local candidate: `final-candidate/CastReader.app`, Release 1.2.42 (64), arm64 simulator. `final-candidate/audit.json` contains binary/resource hashes; these files and screenshots remain ignored. The normal launch uses no testing arguments or account/Pro overrides. Only the authorized 11-inch simulator is booted, and keyboard capture is off.
 
 - Final normally signed Release smoke check: opened the real saved Kindle book, started live Read, observed moving word highlighting after portrait → landscape reflow, paused successfully, and returned to portrait. This check used the installed Release app directly, not an XCTest replacement. Portrait and landscape captures are in `final-candidate/`.
+
+## Synchronized-platform follow-up
+
+- Continued after `f2b5df6` on the same authenticated 11-inch simulator, in the order Google Play Books → Kobo → WeRead. Each platform passed real Read/Explain, rotation, continuation and reviewed shelf/narrow-window/native-control gates before moving on.
+- Final additional issues fixed: WeRead short Chinese sentence checkpoints survive compact/full-screen cold reopening, and native catalog actions target the site's real title control so portrait chapter selection opens the requested chapter.
+- Final shared gate `platform-contracts-20260921T195948`: **276/276 passed, zero skips**. The normally signed Release candidate is now `platform-final-candidate/CastReader.app`; the original candidate remains in `final-candidate/`. Account/library data are retained.
+- Complete platform evidence, actual test selections and failed-iteration explanations: [PLATFORM-LIVE.md](PLATFORM-LIVE.md). O'Reilly remains unconnected with zero books and has no live acceptance claim. Original real-hardware and keyboard verification limits still apply.

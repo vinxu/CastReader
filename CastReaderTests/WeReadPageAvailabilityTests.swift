@@ -138,6 +138,74 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         }
     }
 
+    func testResizeDoesNotCommitTheProvidersIntermediatePartialCanvas() async throws {
+        read.dbgGenerate(0)
+        try await wait { self.audio.currentSegment != nil }
+        read.togglePlayPause()
+        try await wait { !self.audio.isPlaying }
+        let segment = audio.currentSegment?.id
+        let time = audio.currentTime
+        // The real reader first paints one of two landscape columns, then
+        // publishes both. That partial paint is geometry, not a manual turn.
+        try await js("window.dispatchEvent(new Event('resize')); document.querySelector('.wr_readerContent p').textContent='The first visible page';setTimeout(()=>{document.querySelector('.wr_readerContent p').textContent=\"\(first)\"},600)")
+        try await Task.sleep(for: .milliseconds(2200))
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [first])
+        XCTAssertEqual(audio.currentSegment?.id, segment)
+        XCTAssertEqual(audio.currentTime, time, accuracy: 0.1)
+        XCTAssertFalse(audio.isPlaying)
+    }
+
+    func testCanvasReflowRetainsAudioMarksAndConsumesNewlyVisibleTail() async throws {
+        // A real WK canvas plus a captured chapter layout: only the provider
+        // drawing source is controlled. The production extraction, native
+        // bridge, AVPlayer and semantic-next transaction remain in use.
+        let spoken = "Canvas heading. " + first
+        try await js("""
+        const host=document.querySelector('.wr_readerContent');
+        host.innerHTML='<canvas width="350" height="300" style="width:350px;height:300px"></canvas>';
+        const source=document.createElement('div');source.className='preRenderContainer';
+        source.style.cssText='position:absolute;left:-10000px;width:350px;height:300px';
+        source.innerHTML='<p>\(spoken) \(second)</p>';document.body.append(source);
+        const canvas=host.querySelector('canvas');window.testPaint=['\(spoken)'];window.testTurns=0;
+        window.__castReaderWeReadCanvas={snapshot(){return{calls:window.testPaint.flatMap((text,row)=>Array.from(text).map((ch,i)=>({canvas,text:ch,x:10+i*5,y:35+row*60,width:5,a:1,d:1,tx:0,ty:0,fontSize:18,fontAscent:14,fontDescent:4}))),draws:[],epoch:1,columnFingerprint:''}}};
+        document.querySelector('button').onclick=()=>{window.testTurns++;source.innerHTML='<p>The next physical page is confirmed.</p>';window.testPaint=['The next physical page is confirmed.'];window.dispatchEvent(new CustomEvent('castreader-weread-canvas'))};
+        window.dispatchEvent(new CustomEvent('castreader-weread-canvas'));
+        """)
+        try await wait({ self.read.stagedLiveWebParagraphTexts == [spoken] }, timeout: 8)
+        let visibleHeading = try await web.evaluateJavaScript("CastReaderWeRead.isVisibleChapterStart('\(spoken)')")
+        let hiddenHeading = try await web.evaluateJavaScript("CastReaderWeRead.isVisibleChapterStart('\(second)')")
+        XCTAssertEqual(visibleHeading as? Bool, true)
+        XCTAssertEqual(hiddenHeading as? Bool, false)
+        read.dbgGenerate(0)
+        try await wait { self.audio.currentSegment != nil }
+        read.pausePlayback()
+        let oldSegment = audio.currentSegment?.id
+        let oldTime = audio.currentTime
+        // Simulate the observed WebKit ordering: a new viewport/paint is
+        // visible to extraction before the bridge receives a resize event.
+        try await js("CR.showMark({id:'retained',paragraphIndex:0,charStart:10,charEnd:22,action:'underline',seed:42});window.addEventListener('resize',event=>event.stopImmediatePropagation(),{capture:true,once:true})")
+        web.frame.size.width = 500
+        try await js("window.testPaint=['\(spoken)','\(second)'];window.dispatchEvent(new CustomEvent('castreader-weread-canvas'))")
+        try await Task.sleep(for: .milliseconds(2300))
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [spoken])
+        XCTAssertEqual(audio.currentSegment?.id, oldSegment)
+        XCTAssertEqual(audio.currentTime, oldTime, accuracy: 0.1)
+        XCTAssertFalse(audio.isPlaying)
+        let ink = try await web.evaluateJavaScript("document.querySelectorAll('[data-cr-weread-mark-id=retained] path').length")
+        XCTAssertGreaterThan(ink as? Int ?? 0, 0)
+        // Finishing the old scope first consumes the newly revealed source,
+        // without clicking past that unexplained/unspoken text.
+        let continued = try await web.evaluateJavaScript("CastReaderWeRead.nextPage()")
+        XCTAssertEqual(continued as? Bool, true)
+        try await wait { self.read.stagedLiveWebParagraphTexts == [self.second] }
+        let turns = try await web.evaluateJavaScript("window.testTurns")
+        XCTAssertEqual(turns as? Int, 0)
+        bridge.requestUserPageTurn(.next)
+        try await wait { self.read.stagedLiveWebParagraphTexts == ["The next physical page is confirmed."] }
+        let physicalTurns = try await web.evaluateJavaScript("window.testTurns")
+        XCTAssertEqual(physicalTurns as? Int, 1)
+    }
+
     func testErrorSurfaceStopsDelayedReadAndCannotBeRestartedByControls() async throws {
         read.dbgGenerate(0)
         try await wait { self.audio.isWaitingForNextSegment && self.audio.currentSegment != nil }

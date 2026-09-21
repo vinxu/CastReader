@@ -1869,6 +1869,20 @@ export function installPlayBooksReader(
       return attemptManualTurn(direction)
     },
     refresh(arg?: unknown): void {
+      const reflow = recordArg(arg)
+      if (reflow.reflowDirection === 'next' || reflow.reflowDirection === 'prev') {
+        // Geometry-only correction requested by the owned native reader after
+        // exact neighboring source text proves the speaking paragraph moved
+        // outside Google's new page range. Preserve audio and manual intent.
+        if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent ||
+            reflow.reflowBaseline !== playBooksSignature()) return
+        changeReasonInFlight = 'refresh'
+        changeBaseline = committedSignature
+        changeMetadata = null
+        turnPlayBooksPage(reflow.reflowDirection, 'button')
+        commit('refresh')
+        return
+      }
       const fallbackBaseline = committedSignature || playBooksSignature()
       const automatic = nonemptyString(recordArg(arg).turnID)
         ? automaticMetadata(arg, fallbackBaseline)

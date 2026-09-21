@@ -1094,7 +1094,7 @@ final class ExplainViewModel: ObservableObject {
         // 提交 LLM 前预校验：内容太短，LLM 没东西可讲 → 直接引导朗读，不发请求白等重试、也不消耗额度（而非无脑提交）。
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
-            if continuePastShortWeReadPage() { return }
+            if continuePastShortLivePage() { return }
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
         }
@@ -1209,7 +1209,7 @@ final class ExplainViewModel: ObservableObject {
         }
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
-            if continuePastShortWeReadPage() { return }
+            if continuePastShortLivePage() { return }
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
         }
@@ -1334,8 +1334,8 @@ final class ExplainViewModel: ObservableObject {
     /// bridge's confirmed semantic turn (one click, bounded timeout). Never
     /// interpret an arbitrary HTTP 400, access wall, or network failure as this.
     @discardableResult
-    private func continuePastShortWeReadPage() -> Bool {
-        guard document.sourceKind == .weread,
+    private func continuePastShortLivePage() -> Bool {
+        guard [.weread, .kobo, .googleBooks].contains(document.sourceKind),
               let onDocumentFinished,
               !liveWebTurnIntentSuspended,
               audio.sleepTimer.permitsAutomaticPlayback(),
@@ -1348,7 +1348,7 @@ final class ExplainViewModel: ObservableObject {
         status = .completed
         isContinuingLivePage = true
         stageText = AppLocalized("继续讲解…")
-        ReaderRunLog.write("WEREAD explain short-page continue count=\(consecutiveShortWeReadPages)")
+        ReaderRunLog.write("LIVE explain short-page continue source=\(document.sourceKind.rawValue) count=\(consecutiveShortWeReadPages)")
         onDocumentFinished()
         return true
     }
@@ -1918,7 +1918,7 @@ final class ExplainViewModel: ObservableObject {
                     )
                 } else if case QuickReadError.textTooShort = error {
                     guard self.isActive else { return }
-                    if self.continuePastShortWeReadPage() { return }
+                    if self.continuePastShortLivePage() { return }
                     self.status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
                     self.stageText = AppLocalized("解读失败")
                     self.endAnalyticsExplainSession(result: .failed, reason: "text_too_short",

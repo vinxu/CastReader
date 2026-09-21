@@ -3874,6 +3874,35 @@ final class WeReadTOCWebTests: XCTestCase {
         }
     }
 
+    func testCatalogSelectionDispatchesOnceToTitleControl() async throws {
+        let web = WKWebView(frame: CGRect(x: 0, y: 0, width: 820, height: 900))
+        web.loadHTMLString(#"""
+        <html><body>
+        <script type="application/json">window.__INITIAL_STATE__={"reader":{"chapterInfos":[{"chapterUid":4,"chapterIdx":4,"title":"Introduction"},{"chapterUid":5,"chapterIdx":5,"title":"First chapter"}]}};</script>
+        <ul class="readerCatalog_list">
+          <li><span class="readerCatalog_list_item_title_text" onclick="window.selected=4;window.clicks=(window.clicks||0)+1">Introduction</span></li>
+          <li><span class="readerCatalog_list_item_title_text" onclick="window.selected=5;window.clicks=(window.clicks||0)+1;window.hasCoordinates=event.clientX>0&&event.clientY>0">First chapter</span></li>
+        </ul></body></html>
+        """#, baseURL: URL(string: "https://weread.qq.com/web/reader/testbook"))
+        for _ in 0..<100 {
+            if (try? await web.evaluateJavaScript("document.querySelectorAll('li').length")) as? Int == 2 { break }
+            try await Task.sleep(nanoseconds: 30_000_000)
+        }
+        _ = try await web.evaluateJavaScript(WeReadWebScripts.tocBridge)
+        _ = try await web.evaluateJavaScript("window.CastReaderWeReadTOC.jump({index:1,chapterIndex:5,chapterUID:'5',title:'First chapter'})")
+        for _ in 0..<50 {
+            if (try? await web.evaluateJavaScript("window.selected")) as? Int == 5 { break }
+            try await Task.sleep(nanoseconds: 30_000_000)
+        }
+        let selected = try await web.evaluateJavaScript("window.selected") as? Int
+        let clicks = try await web.evaluateJavaScript("window.clicks") as? Int
+        let coordinates = try await web.evaluateJavaScript("window.hasCoordinates") as? Bool
+        XCTAssertEqual(selected, 5)
+        XCTAssertEqual(clicks, 1)
+        XCTAssertEqual(coordinates, true)
+        web.stopLoading()
+    }
+
     func testSSRWithTrailingCleanupPreservesAllStableChapterIDsWithoutExecutingCode() async throws {
         let catalog = (0..<108).map { index in
             ["chapterUid": "uid-\(index)", "chapterIdx": index,

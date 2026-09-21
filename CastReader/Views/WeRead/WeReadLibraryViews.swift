@@ -15,6 +15,7 @@ extension Notification.Name {
 }
 
 struct WeReadHomeSection: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = WeReadLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
@@ -23,14 +24,16 @@ struct WeReadHomeSection: View {
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
                 VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
-                    HStack(alignment: .center) {
+                    let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .center))
+                    layout {
                         VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                             Text(AppLocalized("微信读书")).font(.headline).foregroundColor(AppTheme.foreground)
                             Text(AppLocalized("已同步的微信读书书架")).font(.caption).foregroundColor(AppTheme.mutedForeground)
                         }
-                        Spacer()
+                        if !typeSize.isAccessibilitySize { Spacer() }
                         NavigationLink(destination: WeReadLibraryView()) {
                             Text(AppLocalized("查看全部")).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.primary)
+                                .frame(minHeight: AdaptiveLayout.isPad ? 44 : nil)
                         }
                         .accessibilityIdentifier("homeShelfViewAll.weread")
                     }
@@ -43,6 +46,7 @@ struct WeReadHomeSection: View {
                         }
                     }
                 }
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("homeShelfSection.weread")
             }
         }
@@ -214,6 +218,7 @@ struct WeReadLibraryConnectView: View {
 }
 
 struct WeReadLibraryView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = WeReadLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
@@ -229,17 +234,38 @@ struct WeReadLibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Picker(AppLocalized("排序"), selection: $sort) { ForEach(WeReadLibrarySort.allCases) { Text($0.label).tag($0) } }.pickerStyle(.segmented)
-                    Button { showConnect = true } label: { Image(systemName: "arrow.clockwise").frame(width: 36,height:36).background(AppTheme.primary.opacity(0.12),in:Circle()) }.foregroundColor(AppTheme.primary)
+                    if typeSize.isAccessibilitySize {
+                        Menu {
+                            ForEach(WeReadLibrarySort.allCases) { value in
+                                Button(value.label) { sort = value }
+                            }
+                        } label: {
+                            Label(AppLocalized("排序"), systemImage: "arrow.up.arrow.down")
+                                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        }.accessibilityIdentifier("weReadShelfSort")
+                    } else {
+                        Picker(AppLocalized("排序"), selection: $sort) {
+                            ForEach(WeReadLibrarySort.allCases) { Text($0.label).tag($0) }
+                        }.pickerStyle(.segmented)
+                    }
+                    Button { showConnect = true } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: AdaptiveLayout.isPad ? 44 : 36)
+                            .background(AppTheme.primary.opacity(0.12), in: Circle())
+                    }
+                    .foregroundColor(AppTheme.primary)
+                    .accessibilityLabel(AppLocalized("刷新"))
+                    .accessibilityIdentifier("refreshWeReadLibraryButton")
                 }
                 if visible.isEmpty { empty } else {
                     LazyVStack(spacing: 12) { ForEach(visible) { book in WeReadLibraryRow(book: book, open: { open(book) }) } }
-                    if visible.count < all.count { Button(AppLocalized("加载更多")) { page += 1 }.font(.subheadline.weight(.semibold)).frame(maxWidth:.infinity).padding(.vertical,12).background(AppTheme.surface,in:RoundedRectangle(cornerRadius:14)).foregroundColor(AppTheme.primary) }
+                    if visible.count < all.count { Button(AppLocalized("加载更多")) { page += 1 }.accessibilityIdentifier("weReadLoadMore").font(.subheadline.weight(.semibold)).frame(maxWidth:.infinity).padding(.vertical,12).background(AppTheme.surface,in:RoundedRectangle(cornerRadius:14)).foregroundColor(AppTheme.primary) }
                 }
             }.padding(18)
         }
+        .reservesMiniPlayerSpace()
         .background(AppTheme.background.ignoresSafeArea()).navigationTitle(AppLocalized("微信读书书架")).navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $query, prompt: AppLocalized("搜索微信读书书籍"))
+        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: AppLocalized("搜索微信读书书籍"))
         .onChange(of: query) { _, _ in page = 1 }.onChange(of: sort) { _, _ in page = 1 }
         .sheet(isPresented: $showConnect) { WeReadLibraryConnectView() }
     }
@@ -274,30 +300,63 @@ struct WeReadLibraryView: View {
 }
 
 private struct WeReadBookRailCard: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     let book: WeReadBook
+    private var cardWidth: CGFloat { typeSize.isAccessibilitySize ? 240 : 108 }
+
     var body: some View {
         VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
-            WeReadCoverView(urlString: book.coverURL).frame(width:96,height:144).clipShape(RoundedRectangle(cornerRadius:8)).overlay(RoundedRectangle(cornerRadius:8).stroke(AppTheme.border.opacity(0.65),lineWidth:1))
-            Text(book.title).font(.caption.weight(.semibold)).foregroundColor(AppTheme.foreground).lineLimit(2).frame(width:104,height:34,alignment:.topLeading)
-            LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress).font(.caption2).foregroundColor(AppTheme.mutedForeground).lineLimit(1).frame(width:104,alignment:.leading)
-        }.frame(width:108,alignment:.topLeading)
+            WeReadCoverView(urlString: book.coverURL)
+                .frame(width: 96, height: 144)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppTheme.border.opacity(0.65), lineWidth: 1))
+            Text(book.title)
+                .font(.caption.weight(.semibold)).foregroundColor(AppTheme.foreground)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: cardWidth, alignment: .leading)
+            LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress)
+                .font(.caption2).foregroundColor(AppTheme.mutedForeground)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: cardWidth, alignment: .leading)
+        }.frame(width: cardWidth, alignment: .topLeading)
     }
 }
 
 private struct WeReadLibraryRow: View {
-    let book: WeReadBook; let open: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
+    let book: WeReadBook
+    let open: () -> Void
+
     var body: some View {
-        HStack(spacing:12) {
-            HStack(spacing:14) {
-                WeReadCoverView(urlString: book.coverURL).frame(width:64,height:94).clipShape(RoundedRectangle(cornerRadius:7)).overlay(RoundedRectangle(cornerRadius:7).stroke(AppTheme.border.opacity(0.65),lineWidth:1))
-                VStack(alignment:.leading,spacing:6) {
-                    Text(book.title).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.foreground).lineLimit(2)
-                    Text(book.displayAuthor).font(.caption).foregroundColor(AppTheme.mutedForeground).lineLimit(1)
-                    LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress).font(.caption2).foregroundColor(AppTheme.mutedForeground).lineLimit(1)
-                }; Spacer(minLength:4)
-            }.contentShape(Rectangle()).onTapGesture(perform:open)
-            Image(systemName:"chevron.right").font(.caption.weight(.semibold)).foregroundColor(AppTheme.mutedForeground.opacity(0.8)).frame(width:28)
-        }.padding(12).background(AppTheme.surface).cornerRadius(16).overlay(RoundedRectangle(cornerRadius:16).stroke(AppTheme.border.opacity(0.65),lineWidth:1))
+        Button(action: open) {
+            HStack(spacing: 14) {
+                WeReadCoverView(urlString: book.coverURL)
+                    .frame(width: 64, height: 94).clipShape(RoundedRectangle(cornerRadius: 7))
+                    .overlay(RoundedRectangle(cornerRadius: 7).stroke(AppTheme.border.opacity(0.65), lineWidth: 1))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(book.title).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.foreground)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(book.displayAuthor).font(.caption).foregroundColor(AppTheme.mutedForeground)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                        .fixedSize(horizontal: false, vertical: true)
+                    LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress)
+                        .font(.caption2).foregroundColor(AppTheme.mutedForeground)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                    .foregroundColor(AppTheme.mutedForeground.opacity(0.8))
+            }
+            .padding(12).background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.border.opacity(0.65), lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("weReadLibraryBook.\(book.id)")
     }
 }
 

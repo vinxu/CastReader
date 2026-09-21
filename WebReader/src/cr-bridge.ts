@@ -102,6 +102,44 @@ export function initBridge(deps: CRDeps): void {
   // Play Books 的段落只取可见片段，DOM 里的 element.textContent 还包含前后不可见
   // 的部分；所有字符偏移都要加上这个基准。其余源恒为 0。
   const paraOffsets = new Map<number, number>()
+  const paragraphTapDocuments = new WeakSet<Document>()
+  function installParagraphTaps(doc: Document): void {
+    if (paragraphTapDocuments.has(doc)) return
+    paragraphTapDocuments.add(doc)
+    doc.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null
+      const el = target?.closest?.('[data-cr-para]') as HTMLElement | null
+      // Only the current page's registered elements may select a native
+      // paragraph. Same-origin chapter events do not bubble to the shell.
+      const index = el ? [...paraElements].find(([, candidate]) => candidate === el)?.[0] : undefined
+      if (index !== undefined) {
+        post('paragraphTapped', { paragraphIndex: index })
+        return
+      }
+      if (doc !== document || target?.closest?.('a,button,input,select,textarea,[role="button"],[role="dialog"]')) return
+      // Kobo can put its gesture surface above the chapter iframe. Resolve
+      // a shell tap only against actual visible text fragments of registered
+      // paragraphs, never a paragraph's multi-column bounding rectangle.
+      for (const [paragraphIndex, candidate] of paraElements) {
+        const owner = candidate.ownerDocument
+        const frame = owner.defaultView?.frameElement as HTMLIFrameElement | null
+        if (!frame || frame.ownerDocument !== doc) continue
+        const box = frame.getBoundingClientRect()
+        const sx = box.width / Math.max(1, frame.offsetWidth)
+        const sy = box.height / Math.max(1, frame.offsetHeight)
+        const x = (e.clientX - box.left) / sx - frame.clientLeft
+        const y = (e.clientY - box.top) / sy - frame.clientTop
+        const range = owner.createRange()
+        range.selectNodeContents(candidate)
+        for (const rect of Array.from(range.getClientRects())) {
+          if (rect.width < 1 || rect.height < 1 || x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue
+          if (deps.acceptHighlightRect && !deps.acceptHighlightRect(candidate, rect)) continue
+          post('paragraphTapped', { paragraphIndex })
+          return
+        }
+      }
+    }, true)
+  }
   let color = '#FD5F01'
   const markRenderer = createMarkRenderer((i) => paraElements.get(i), color)
   // Kobo 等分页阅读器会把正文放在同源 iframe 里。Range 的矩形坐标属于它自己的
@@ -264,6 +302,7 @@ export function initBridge(deps: CRDeps): void {
     const out: Array<Record<string, unknown>> = []
     paras.forEach((p, i) => {
       const el = p.element
+      installParagraphTaps(el.ownerDocument)
       try { el.setAttribute('data-cr-para', String(i)) } catch { /* */ }
       // 折叠段内空白：HTML 源码换行/缩进否则会让 TTS 停顿；charRange 与 textContent 同步。
       // exactText 的提取器已经在自己的坐标系里量过可见区间，再改文本节点会让偏移错位。
@@ -501,11 +540,7 @@ export function initBridge(deps: CRDeps): void {
   }
   ;(window as unknown as { CR: typeof CR }).CR = CR
 
-  document.addEventListener('click', (e) => {
-    const t = e.target as HTMLElement | null
-    const el = t?.closest?.('[data-cr-para]') as HTMLElement | null
-    if (el) post('paragraphTapped', { paragraphIndex: Number(el.getAttribute('data-cr-para')) })
-  }, true)
+  installParagraphTaps(document)
 
   deps.onInstalled?.({ extract: doExtract })
 

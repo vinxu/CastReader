@@ -20,6 +20,18 @@ import WebKit
 final class GoogleBooksWebBridgeTests: XCTestCase {
 
     func testKoboLaggingProviderBookmarkFindsSavedPageBeforeLoadingVM() async throws {
+        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false)
+    }
+
+    func testKoboLeadingProviderBookmarkSearchesBackWithoutLosingCheckpoint() async throws {
+        try await verifyKoboOpeningCheckpoint(bookmarkLeads: true)
+    }
+
+    func testKoboEndBookmarkCanRecoverAnEarlierListeningPage() async throws {
+        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, nextUnavailable: true)
+    }
+
+    private func verifyKoboOpeningCheckpoint(bookmarkLeads: Bool, nextUnavailable: Bool = false) async throws {
         let url = "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"
         let target = ReadingParagraph(id: 0, text: "This is the exact saved listening paragraph.")
         var document = ReadingDocument(id: "kobo-lagging-fixture", title: "Kobo resume fixture",
@@ -63,7 +75,11 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         let booted = expectation(description: "first intermediate page held while requesting next page")
         configuration.userContentController.addUserScript(WKUserScript(source: """
         window.turns = 0;
-        window.CastReaderKobo = { nextPage: () => { window.turns++; return true; } };
+        window.previousTurns = 0;
+        window.CastReaderKobo = {
+          nextPage: () => { window.turns++; return \(nextUnavailable ? "false" : "true"); },
+          prevPage: () => { window.previousTurns++; return true; }
+        };
         window.CR = {};
         window.emitPage = function (text, signature) {
           window.webkit.messageHandlers.castreader.postMessage({type:'rendered', payload:{
@@ -83,6 +99,30 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         await fulfillment(of: [booted], timeout: 3)
         XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
         XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
+        if nextUnavailable {
+            for _ in 0..<80 {
+                if (try? await web.evaluateJavaScript("window.previousTurns")) as? Int == 1 { break }
+                try await Task.sleep(nanoseconds: 25_000_000)
+            }
+            let turns = try await web.evaluateJavaScript("window.previousTurns") as? Int
+            XCTAssertEqual(turns, 1)
+        }
+        if bookmarkLeads {
+            _ = try await web.evaluateJavaScript("window.emitPage('A later provider page.', 'later-page')")
+            for _ in 0..<80 {
+                if (try? await web.evaluateJavaScript("window.previousTurns")) as? Int == 1 { break }
+                try await Task.sleep(nanoseconds: 25_000_000)
+            }
+            _ = try await web.evaluateJavaScript("window.emitPage('An earlier provider page.', 'earlier-page')")
+            for _ in 0..<80 {
+                if (try? await web.evaluateJavaScript("window.previousTurns")) as? Int == 2 { break }
+                try await Task.sleep(nanoseconds: 25_000_000)
+            }
+            let previous = try await web.evaluateJavaScript("window.previousTurns") as? Int
+            XCTAssertEqual(previous, 2, "Revisiting the initial signature must not stall the backwards search")
+            XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+            XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
+        }
         _ = try await web.callAsyncJavaScript("window.emitPage(text, 'saved-page')", arguments: ["text": target.text], in: nil, contentWorld: .page)
         for _ in 0..<80 where read.stagedLiveWebParagraphTexts.isEmpty {
             try await Task.sleep(nanoseconds: 25_000_000)
@@ -1735,6 +1775,50 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         )
     }
 
+    func testKoboExtractionHonorsTheProviderClippingViewport() async throws {
+        webView.loadHTMLString("""
+        <html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+        <div style="position:absolute;left:24px;top:24px;width:220px;height:300px;overflow:hidden">
+          <iframe style="width:660px;height:300px;border:0" srcdoc="<style>html,body{margin:0;height:300px;column-width:220px;column-gap:0;column-fill:auto}p{margin:0;height:300px;font:18px/24px Georgia}</style><p>Only this first paragraph is visible inside the provider viewport.</p><p>The second paragraph belongs to the next hidden column.</p><p>The third paragraph is also hidden by the provider viewport.</p>"></iframe>
+        </div></body></html>
+        """, baseURL: URL(string: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"))
+        for _ in 0..<100 {
+            if inbox.messages.contains(where: { $0.type == "rendered" && ($0.payload["source"] as? String) == "kobo" }) { break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        let rendered = try XCTUnwrap(inbox.messages.last { $0.type == "rendered" })
+        let visible = paragraphs(rendered.payload)
+        XCTAssertEqual(visible.count, 1)
+        XCTAssertTrue(String(describing: visible).contains("Only this first paragraph"))
+        XCTAssertFalse(String(describing: visible).contains("next hidden column"))
+        let tapsBefore = inbox.messages.filter { $0.type == "paragraphTapped" }.count
+        _ = try await webView.evaluateJavaScript("document.querySelector('iframe').contentDocument.querySelector('p').click();true")
+        for _ in 0..<20 {
+            if inbox.messages.filter({ $0.type == "paragraphTapped" }).count > tapsBefore { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertEqual(inbox.messages.filter { $0.type == "paragraphTapped" }.count, tapsBefore + 1)
+        XCTAssertEqual(inbox.messages.last { $0.type == "paragraphTapped" }?.payload["paragraphIndex"] as? Int, 0)
+        _ = try await webView.evaluateJavaScript("(()=>{const p=document.querySelector('iframe').contentDocument.querySelectorAll('p')[1];p.setAttribute('data-cr-para','0');p.click();return true})()")
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(inbox.messages.filter { $0.type == "paragraphTapped" }.count, tapsBefore + 1, "An unregistered hidden paragraph cannot select a page")
+        _ = try await webView.evaluateJavaScript("""
+        (() => {
+          const f=document.querySelector('iframe'),p=f.contentDocument.querySelector('p');
+          const range=f.contentDocument.createRange();range.selectNodeContents(p);
+          const r=range.getClientRects()[0],box=f.getBoundingClientRect();
+          document.body.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:box.left+r.left+5,clientY:box.top+r.top+5}));
+          return true;
+        })()
+        """)
+        for _ in 0..<20 {
+            if inbox.messages.filter({ $0.type == "paragraphTapped" }).count > tapsBefore + 1 { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertEqual(inbox.messages.filter { $0.type == "paragraphTapped" }.count, tapsBefore + 2,
+                       "The provider gesture surface must forward taps on visible chapter text")
+    }
+
     func testIPadKoboIframeAcrossWindowWidths() async throws {
         try await verifyIPadPlatformViewport("kobo")
     }
@@ -1764,6 +1848,28 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         let initial = try XCTUnwrap(inbox.messages.last { $0.type == "rendered" && ($0.payload["source"] as? String) == platform })
         XCTAssertFalse(paragraphs(initial.payload).isEmpty)
         let session = initial.payload["frameSessionID"] as? String
+        if platform == "kobo" {
+            // A native reflow can temporarily change the visible slice and
+            // return to the exact same source. Polling must not discard the
+            // refresh just because its final logical signature is unchanged.
+            let before = inbox.messages.count
+            _ = try await webView.evaluateJavaScript("""
+            (() => {
+              CR.gbRelayout({reason:'orientation',bottomOcclusion:0});
+              const p=document.querySelector('iframe').contentDocument.querySelector('p');
+              setTimeout(()=>p.style.display='none',200);
+              setTimeout(()=>p.style.removeProperty('display'),750);
+              return true;
+            })()
+            """)
+            for _ in 0..<70 {
+                if inbox.messages.dropFirst(before).contains(where: { $0.type == "rendered" && ($0.payload["reason"] as? String) == "refresh" }) { break }
+                try await Task.sleep(for: .milliseconds(100))
+            }
+            let refresh = try XCTUnwrap(inbox.messages.dropFirst(before).last { $0.type == "rendered" })
+            XCTAssertEqual(refresh.payload["signature"] as? String, initial.payload["signature"] as? String)
+            XCTAssertEqual(refresh.payload["reason"] as? String, "refresh")
+        }
         for size in [CGSize(width: 820, height: 1000), CGSize(width: 1180, height: 650), CGSize(width: 400, height: 650)] {
             let before = inbox.messages.count
             webView.window?.frame.size = size
@@ -1787,6 +1893,40 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
             attachment.name = "\(platform)-ipad-\(Int(size.width))x\(Int(size.height))"
             attachment.lifetime = .keepAlways
             add(attachment)
+        }
+        if platform == "kobo" {
+            let current = try XCTUnwrap(inbox.messages.last { $0.type == "rendered" })
+            let baseline = try XCTUnwrap(current.payload["signature"] as? String)
+            _ = try await webView.evaluateJavaScript("""
+            (()=>{
+              window.revealTurns=0;
+              const b=document.createElement('button');b.setAttribute('aria-label','next page');
+              b.style.cssText='position:fixed;right:0;top:100px;width:44px;height:44px;z-index:99999';
+              b.onclick=()=>{window.revealTurns++;document.querySelector('iframe').contentDocument.querySelector('p').textContent='A different confirmed page. The exact source is now visible after the bounded reflow correction, with enough original body text to narrate and highlight.'};
+              document.body.append(b);return true;
+            })()
+            """)
+            for pair in [("wrong-owner", baseline), (session ?? "", "stale-page")] {
+                _ = try await webView.callAsyncJavaScript(
+                    "CastReaderKobo.refresh({reflowDirection:'next',originFrameSessionID:owner,reflowBaseline:baseline})",
+                    arguments: ["owner": pair.0, "baseline": pair.1], in: nil, contentWorld: .page)
+            }
+            let invalidTurns = try await webView.evaluateJavaScript("window.revealTurns")
+            XCTAssertEqual(invalidTurns as? Int, 0)
+            let before = inbox.messages.count
+            _ = try await webView.callAsyncJavaScript(
+                "CastReaderKobo.refresh({reflowDirection:'next',originFrameSessionID:owner,reflowBaseline:baseline})",
+                arguments: ["owner": session ?? "", "baseline": baseline], in: nil, contentWorld: .page)
+            for _ in 0..<90 {
+                if inbox.messages.dropFirst(before).contains(where: { $0.type == "rendered" }) { break }
+                try await Task.sleep(for: .milliseconds(100))
+            }
+            let refreshed = try XCTUnwrap(inbox.messages.dropFirst(before).last { $0.type == "rendered" })
+            XCTAssertEqual(refreshed.payload["reason"] as? String, "refresh")
+            XCTAssertNotEqual(refreshed.payload["signature"] as? String, baseline)
+            let turns = try await webView.evaluateJavaScript("window.revealTurns")
+            XCTAssertEqual(turns as? Int, 1)
+            XCTAssertFalse(inbox.messages.dropFirst(before).contains { ($0.payload["reason"] as? String) == "manual" || ($0.payload["reason"] as? String) == "auto" })
         }
     }
 
@@ -1823,6 +1963,70 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
             attachment.lifetime = .keepAlways
             add(attachment)
         }
+    }
+
+    func testReflowRevealRequiresOwnedCurrentBaselineAndCommitsOnlyRefresh() async throws {
+        let initial = try await loadReaderFrame()
+        let frame = try XCTUnwrap(initial["frameSessionID"] as? String)
+        let baseline = try XCTUnwrap(initial["signature"] as? String)
+        for values in [("stale-frame", baseline), (frame, "stale-geometry")] {
+            _ = try await webView.callAsyncJavaScript(
+                "CastReaderGoogleBooks.refresh({reflowDirection:'next',originFrameSessionID:frame,reflowBaseline:baseline})",
+                arguments: ["frame": values.0, "baseline": values.1], in: nil, contentWorld: .page)
+            let page = try await webView.evaluateJavaScript("window.fixturePage")
+            XCTAssertEqual(page as? Int, 0)
+        }
+        _ = try await webView.callAsyncJavaScript(
+            "CastReaderGoogleBooks.refresh({reflowDirection:'next',originFrameSessionID:frame,reflowBaseline:baseline})",
+            arguments: ["frame": frame, "baseline": baseline], in: nil, contentWorld: .page)
+        let refreshed = try await waitForRendered(reason: "refresh")
+        let page = try await webView.evaluateJavaScript("window.fixturePage")
+        XCTAssertEqual(page as? Int, 1)
+        XCTAssertNotEqual(refreshed["signature"] as? String, baseline)
+        XCTAssertFalse(inbox.messages.contains { ($0.payload["reason"] as? String) == "manual" || ($0.payload["reason"] as? String) == "auto" })
+    }
+
+    func testIdenticalPausedWordIsRepaintedAfterDOMInvalidation() async throws {
+        let document = ReadingDocument(id: UUID().uuidString, title: "Reflow contract", sourceKind: .kobo,
+            language: "en", paragraphs: [], sourceURL: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001")
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let read = ReadAloudViewModel(document: document, historyStore: HistoryStore(directory: directory))
+        let explain = ExplainViewModel(document: document)
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .kobo,
+                         bookID: document.id, readerURL: document.sourceURL)
+        bridge.attach(readVM: read, explainVM: explain)
+        bridge.webView = webView
+        let controller = webView.configuration.userContentController
+        controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+        controller.add(bridge, name: WebReaderBridge.handlerName)
+        defer { read.stop(); read.deactivate(); controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName); try? FileManager.default.removeItem(at: directory) }
+        // The shared highlight subscription also serves Kobo's trusted main
+        // frame. Google's native origin policy correctly rejects a fake main
+        // reader frame, so exercise the real pipe using this valid owner.
+        controller.removeAllUserScripts()
+        controller.addUserScript(WKUserScript(source: """
+        window.CR = {};
+        window.webkit.messageHandlers.castreader.postMessage({type:'rendered', payload:{
+          source:'kobo', reason:'initial', signature:'paused-word-page', frameSessionID:'paused-word-owner',
+          language:'en', paragraphs:[{text:'A morning word survives a DOM reset.', paragraphIndex:0}]
+        }});
+        """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        webView.loadHTMLString("<html><body>A morning word survives a DOM reset.</body></html>", baseURL: URL(string: document.sourceURL!))
+        for _ in 0..<100 {
+            if !read.stagedLiveWebParagraphTexts.isEmpty { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertFalse(read.stagedLiveWebParagraphTexts.isEmpty)
+        _ = try await webView.evaluateJavaScript("window.paintCount=0;CR.highlightWord=()=>{window.paintCount++};true")
+        let word = WebHighlightCmd(paragraphIndex: 0, words: ["morning"], wordIndex: 0, segSeq: 0, segmentTexts: [])
+        read.webHighlight = word
+        try await Task.sleep(for: .milliseconds(100))
+        read.webHighlight = nil
+        read.webHighlight = word
+        try await Task.sleep(for: .milliseconds(100))
+        let count = try await webView.evaluateJavaScript("window.paintCount")
+        XCTAssertEqual(count as? Int, 2, "The new DOM must receive the paused word even when its text and index are unchanged")
     }
 
     func testCancelledManualRubberBandReturnsToBaselineWithoutPageCommit() async throws {

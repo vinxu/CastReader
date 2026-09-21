@@ -37,6 +37,9 @@ strings = subprocess.check_output(["strings", str(binary)], text=True, errors="r
 markers = [marker for marker in (
     "Drag sample text", "CastReaderDropAcceptance", "CastReaderMultiWindowFixture",
     "CastReaderIPadAcceptance", "dropAcceptanceSource",
+    "CastReaderLivePlatformAcceptance", "livePlatformPlaybackMetrics",
+    "automaticExplainTurns=", "automaticReadTurns=",
+    "physicalExplainPages=",
 ) if marker in strings]
 assert not markers, "Debug fixture found in Release candidate"
 

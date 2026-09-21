@@ -488,3 +488,10 @@ iPad 顶层建议为「首页 / 文库 / 音色」，导入是明确的 `+ 导�
 | Web 与平台适配 | [WebReaderBridge.swift](/Users/xuxuheng/.codex/worktrees/castreader-ios-release-1-2-42/CastReader/CastReader/Services/WebReaderBridge.swift)、[LiveWebPlatform.swift](/Users/xuxuheng/.codex/worktrees/castreader-ios-release-1-2-42/CastReader/CastReader/Services/LiveWebPlatform.swift)、[KindleBookView.swift](/Users/xuxuheng/.codex/worktrees/castreader-ios-release-1-2-42/CastReader/CastReader/Views/Kindle/KindleBookView.swift) |
 | 唯一音频回调 | [AudioPlayerService.swift](/Users/xuxuheng/.codex/worktrees/castreader-ios-release-1-2-42/CastReader/CastReader/Services/AudioPlayerService.swift:324) |
 | 分享与 Widget | [ShareViewController.swift](</Users/xuxuheng/.codex/worktrees/castreader-ios-release-1-2-42/CastReader/CastReader Share Extension/ShareViewController.swift>)、[ContinueReadingWidget.swift](</Users/xuxuheng/.codex/worktrees/castreader-ios-release-1-2-42/CastReader/CastReader Widget/ContinueReadingWidget.swift>) |
+
+
+## 18. 已同步第三方书架的追加执行（2026-09-21）
+
+用户同步其他书架后，继续在 `codex/ipad-adaptation` 的 `f2b5df6` 基础上推进 Google Play 图书 → Kobo → 微信读书，保持同一已登录模拟器。每个平台分别执行：真实书架/正文核心门禁、自然朗读与解读续页、最大辅助字号与深色搜索/排序、375×497 实际窗口、原生字号和目录，截图复核后进入下一平台。最终再运行共享适配器、位置恢复和 WebKit 回归，制作正常签名的 Release 模拟器候选包。O’Reilly 当前未连接且无同步书籍，不能以离线夹具替代真实账号验收。
+
+实际结果与限制统一记录在 [交付记录](CastReader-iPad-Delivery-2026-09-21.md) 和 [平台追加验收记录](../reports/ipad-adaptation-20260921/PLATFORM-LIVE.md)，保留失败记录，不把跳过或零用例执行记为通过。

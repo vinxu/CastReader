@@ -278,7 +278,9 @@ private struct WeReadNativeTOCPanel: View {
                         .background(AppTheme.surfaceVariant, in: Circle())
                 }
                 .buttonStyle(.plain)
-        .hoverEffect(.highlight)
+                .accessibilityLabel(Text(AppLocalized("关闭")))
+                .accessibilityIdentifier("weReadTOCClose")
+                .hoverEffect(.highlight)
             }
             .padding(.horizontal, 18)
             .padding(.top, isLandscape ? 18 : 14)
@@ -339,6 +341,7 @@ private struct WeReadNativeTOCPanel: View {
         .hoverEffect(.highlight)
                                     .disabled(!entry.isActionable)
                                     .opacity(entry.isActionable ? 1 : 0.48)
+                                    .accessibilityIdentifier("weReadTOCEntry.\(entry.id)")
                                     .id(entry.id)
 
                                     Divider()
@@ -406,6 +409,11 @@ struct ReaderHostView: View {
 
     private var showNativeTOC: (() -> Void)? {
         if document.sourceKind == .weread { return { weReadTOC.present() } }
+        if document.sourceKind == .kobo, !readVM.stagedLiveWebParagraphTexts.isEmpty {
+            return { Task { @MainActor in
+                _ = await ReaderWebAppearanceCenter.shared.openKoboContents(documentID: document.id, in: readerScene.window)
+            } }
+        }
         if document.sourceKind == .epub, document.epubNavigation != nil { return { showsEpubTOC = true } }
         return nil
     }
@@ -497,6 +505,13 @@ struct ReaderHostView: View {
             }
         }
         .background(ReaderKeyboardRegistration(scene: readerScene, priority: 10, actions: keyboardActions))
+        #if DEBUG
+        .overlay(alignment: .topLeading) {
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderLivePlatformAcceptance") {
+                LivePlatformAcceptanceMetricsView(controller: liveWebPageTurn)
+            }
+        }
+        #endif
         .background(AppTheme.background.ignoresSafeArea())
         .environment(\.readerAppearanceSource, appearanceSource)
         .sheet(isPresented: $showsEpubTOC) {

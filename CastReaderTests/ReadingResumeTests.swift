@@ -300,6 +300,142 @@ final class ReadingResumeTests: XCTestCase {
         return (doc, checkpoint, target + suffix)
     }
 
+    func testKoboAndGoogleShortExplanationRemaindersContinueWithinBoundedBudget() {
+        for source in [ReadingSourceKind.kobo, .googleBooks] {
+            let document = ReadingDocument(id: UUID().uuidString, title: "Chapter tail", sourceKind: source,
+                language: "en", paragraphs: [ReadingParagraph(id: 0, text: "A short tail.")])
+            let vm = ExplainViewModel(document: document)
+            var turns = 0
+            vm.onDocumentFinished = { turns += 1 }
+            for _ in 0..<5 {
+                vm.replaceLiveWebPage([ReadingParagraph(id: 0, text: "A short tail.")], autoplay: true)
+            }
+            XCTAssertEqual(turns, 4)
+            if case .error = vm.status {} else { XCTFail("Repeated short pages must stop at the bounded limit") }
+            XCTAssertFalse(vm.isContinuingLivePage)
+            vm.stop(); vm.deactivate()
+        }
+    }
+
+    func testKoboReflowRestoresExactHashedContextWithoutOCRCorrection() throws {
+        let (document, old, suffix) = try reflowFixture()
+        var checkpoint = ReadingResumeCheckpoint(sourceKind: .kobo,
+            paragraphIndex: old.paragraphIndex, paragraphFingerprint: old.paragraphFingerprint,
+            previousFingerprint: old.previousFingerprint, nextFingerprint: old.nextFingerprint,
+            structureFingerprint: old.structureFingerprint, audio: old.audio, updatedAt: old.updatedAt)
+        checkpoint.visual = old.visual; checkpoint.reflow = old.reflow
+        let relocated = try XCTUnwrap(ReadingResumeContract.relocatedKoboCheckpoint(checkpoint,
+            paragraphs: [ReadingParagraph(id: 0, text: suffix)]))
+        XCTAssertEqual(relocated.sourceKind, .kobo)
+        XCTAssertEqual(relocated.visual?.utf16Offset, 0)
+        XCTAssertEqual(relocated.audio?.wordFraction, old.audio?.wordFraction)
+        XCTAssertNil(ReadingResumeContract.relocatedKoboCheckpoint(checkpoint,
+            paragraphs: [ReadingParagraph(id: 0, text: document.paragraphs[0].text
+                .replacingOccurrences(of: "precise", with: "precize"))]))
+        XCTAssertNil(ReadingResumeContract.relocatedKoboCheckpoint(checkpoint,
+            paragraphs: [document.paragraphs[0], ReadingParagraph(id: 1, text: document.paragraphs[0].text)]))
+    }
+
+    func testWeReadReflowRestoresExactHashedContextWithoutOCRCorrection() throws {
+        let (document, old, suffix) = try reflowFixture()
+        var checkpoint = ReadingResumeCheckpoint(sourceKind: .weread,
+            paragraphIndex: old.paragraphIndex, paragraphFingerprint: old.paragraphFingerprint,
+            previousFingerprint: old.previousFingerprint, nextFingerprint: old.nextFingerprint,
+            structureFingerprint: old.structureFingerprint, audio: old.audio, updatedAt: old.updatedAt)
+        checkpoint.visual = old.visual; checkpoint.reflow = old.reflow
+        let relocated = try XCTUnwrap(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint,
+            paragraphs: [ReadingParagraph(id: 0, text: suffix)]))
+        XCTAssertEqual(relocated.sourceKind, .weread)
+        XCTAssertEqual(relocated.visual?.utf16Offset, 0)
+        XCTAssertEqual(relocated.audio?.wordFraction, old.audio?.wordFraction)
+        XCTAssertNil(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint,
+            paragraphs: [ReadingParagraph(id: 0, text: document.paragraphs[0].text
+                .replacingOccurrences(of: "precise", with: "precize"))]))
+        XCTAssertNil(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint,
+            paragraphs: [document.paragraphs[0], ReadingParagraph(id: 1, text: document.paragraphs[0].text)]))
+    }
+
+    func testWeReadCompactPageUsesVerifiedContextOnBothSides() throws {
+        let (document, old, _) = try reflowFixture()
+        var checkpoint = ReadingResumeCheckpoint(sourceKind: .weread,
+            paragraphIndex: old.paragraphIndex, paragraphFingerprint: old.paragraphFingerprint,
+            previousFingerprint: old.previousFingerprint, nextFingerprint: old.nextFingerprint,
+            structureFingerprint: old.structureFingerprint, audio: old.audio, updatedAt: old.updatedAt)
+        checkpoint.visual = old.visual; checkpoint.reflow = old.reflow
+        let source = document.paragraphs[0].text as NSString
+        let word = try XCTUnwrap(old.visual).utf16Offset
+        let length = try XCTUnwrap(old.visual).utf16Length
+        let compact = source.substring(with: NSRange(location: word - 24, length: 24 + length + 24))
+        let page = [ReadingParagraph(id: 0, text: compact)]
+        let restored = try XCTUnwrap(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: page))
+        XCTAssertEqual(restored.visual?.utf16Offset, 24)
+        XCTAssertEqual(restored.audio?.wordFraction, old.audio?.wordFraction)
+        checkpoint.reflow?.beforeFragments = nil
+        checkpoint.reflow?.afterFragments = nil
+        XCTAssertNil(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: page),
+            "A legacy hash cannot authorize a guessed partial context")
+    }
+
+    func testUntimedWeReadReflowVerifiesSentenceAndRetainsOnlyIdenticalChunkTime() throws {
+        let before = "窗外的山川河流不断向后退去旅人静静看着远处熟悉而又陌生的风景等待下一站列车到达"
+        let sentence = "她走过了长长的街道，随后停在花店门前。"
+        let after = "天色逐渐明亮起来城市中的人们开始忙碌的一天街角的商店陆续打开门迎接新的客人到来"
+        let source = before + sentence + after
+        let segments = [
+            AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: Data([1]), timestamps: [], duration: 20, text: before),
+            AudioSegment(paragraphIndex: 0, segmentIndex: 1, audioData: Data([2]), timestamps: [], duration: 16, text: sentence)
+        ]
+        let audio = try XCTUnwrap(ReadingResumeContract.captureAudio(segments: segments, currentSegmentID: segments[1].id, time: 8))
+        let visual = try XCTUnwrap(ReadingResumeContract.captureVisual(output: segments.map(\.text).joined(),
+            offset: audio.outputUTF16Offset, length: audio.outputUTF16Length, source: source))
+        var checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: paragraphs([source])).checkpoint(
+            sourceKind: .weread, paragraphIndex: 0, audio: audio))
+        checkpoint.visual = visual
+        checkpoint.reflow = try XCTUnwrap(ReadingResumeContract.captureReflow(source: source, visual: visual, audio: audio))
+        let compact = String(before.suffix(20)) + sentence + String(after.prefix(20))
+        let restored = try XCTUnwrap(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: paragraphs([compact])))
+        let cursor = try XCTUnwrap(restored.audio)
+        XCTAssertNil(cursor.semanticWordFingerprint, "Sentence timing must not invent a word timestamp")
+        let regenerated = [
+            AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: Data([3]), timestamps: [], duration: 5, text: String(before.suffix(20))),
+            AudioSegment(paragraphIndex: 0, segmentIndex: 1, audioData: Data([4]), timestamps: [], duration: 12, text: sentence)
+        ]
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: regenerated, isComplete: true), .seek(segmentIndex: 1, seconds: 6))
+        let merged = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: Data([5]), timestamps: [], duration: 20, text: compact)
+        XCTAssertEqual(ReadingResumeContract.resolveAudio(cursor, segments: [merged], isComplete: true), .seek(segmentIndex: 0, seconds: 0))
+        XCTAssertNil(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint,
+            paragraphs: paragraphs([compact.replacingOccurrences(of: "花店", with: "车站")])))
+        XCTAssertNil(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: paragraphs([compact, compact])))
+    }
+
+    func testShortCompactSentenceCheckpointRestoresIntoWideParagraphWithoutLosingContext() throws {
+        let sentence = "他们会告诉你这里过去满是歌舞升平的生活。"
+        let tail = "在他们看来你该为这些往事感到惊讶。"
+        let compact = sentence + tail
+        let audioSegment = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: Data([8]),
+            timestamps: [], duration: 8, text: sentence)
+        let audio = try XCTUnwrap(ReadingResumeContract.captureAudio(segments: [audioSegment], currentSegmentID: audioSegment.id, time: 4))
+        let visual = try XCTUnwrap(ReadingResumeContract.captureVisual(output: sentence,
+            offset: audio.outputUTF16Offset, length: audio.outputUTF16Length, source: compact))
+        var checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: paragraphs([compact])).checkpoint(
+            sourceKind: .weread, paragraphIndex: 0, audio: audio))
+        checkpoint.visual = visual
+        checkpoint.reflow = try XCTUnwrap(ReadingResumeContract.captureReflow(source: compact, visual: visual, audio: audio))
+        XCTAssertTrue(checkpoint.reflow?.usesSentenceTiming == true)
+        let wide = "这是前面几页已经经过严格验证的正文。" + compact + "这又是接下来将要继续阅读的文字。"
+        let restored = try XCTUnwrap(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: paragraphs([wide])))
+        XCTAssertEqual(restored.visual?.utf16Offset, (wide as NSString).range(of: sentence).location)
+        XCTAssertNil(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: paragraphs([wide, wide])))
+        XCTAssertNil(ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint,
+            paragraphs: paragraphs([wide.replacingOccurrences(of: "感到惊讶", with: "保持沉默")])))
+        let short = "他们会告诉你。"
+        let shortSegment = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: Data([9]), timestamps: [], duration: 4, text: short)
+        let shortAudio = try XCTUnwrap(ReadingResumeContract.captureAudio(segments: [shortSegment], currentSegmentID: shortSegment.id, time: 1))
+        let shortVisual = ReadingResumeContract.captureVisual(output: short, offset: 0, length: short.utf16.count, source: short)
+        XCTAssertNil(ReadingResumeContract.captureReflow(source: short, visual: shortVisual, audio: shortAudio),
+            "A short common sentence still cannot authorize a guessed position")
+    }
+
     func testKindleReflowMovesWordAcrossParagraphsAndRebuildsAudioCoordinates() throws {
         let (_, checkpoint, suffix) = try reflowFixture()
         let changed = [ReadingParagraph(id: 0, text: "A newly paginated preceding paragraph."),
@@ -553,6 +689,43 @@ final class ReadingResumeTests: XCTestCase {
         XCTAssertFalse(vm.isPlaybackPausedByUser)
     }
 
+    func testPausedLiveReflowRestoresWordAndClockWithoutStartingAudio() async throws {
+        let text = "Alpha beta gamma delta remains anchored after rotation."
+        let doc = document(.googleBooks, id: UUID().uuidString)
+        let old = segment(0, text: text, paragraph: 1, duration: 12)
+        let fresh = segment(0, text: text, paragraph: 0, duration: 12)
+        let vm = ReadAloudViewModel(document: doc, historyStore: HistoryStore(directory: directory),
+            speechGenerator: ResumeTestSpeech(segments: [fresh]))
+        defer { vm.stop(); vm.deactivate() }
+        vm.loadWebParagraphs(paragraphs(["Earlier content.", text]), language: "en")
+        vm.startWithCachedSegments([old], paragraphIndex: 1, segmentID: old.id,
+                                  progress: 0.4, isReplayEligible: false)
+        let audio = AudioPlayerService.shared
+        try await waitUntil("Original sentence should become audible") {
+            audio.isPlaying && audio.hasAudibleProgress && !audio.isBuffering
+        }
+        vm.pausePlayback()
+        let anchor = try XCTUnwrap(vm.makeWeReadPlaybackResumeAnchor())
+        let position = audio.playbackPosition
+        var playedDuringReflow = false
+        let observer = audio.$isPlaying.sink { if $0 { playedDuringReflow = true } }
+        defer { observer.cancel() }
+        vm.replaceLiveWebPage(paragraphs([text, "Later content."]), language: "en",
+                              autoplay: false, resumeAnchor: anchor)
+        try await waitUntil("Paused reflow must restore a drawable word and the same audio cursor") {
+            audio.currentSegment?.paragraphIndex == 0 && vm.webHighlight != nil &&
+                abs(audio.playbackPosition - position) < 0.35
+        }
+        XCTAssertFalse(playedDuringReflow)
+        XCTAssertTrue(vm.isPlaybackPausedByUser)
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertEqual(vm.currentParagraphIndex, 0)
+        vm.ensurePlaying()
+        try await waitUntil("Explicit resume should continue from the restored cursor") {
+            audio.isPlaying && audio.playbackPosition >= position
+        }
+    }
+
     func testLateAutomaticPageCommitCannotOverrideUserPause() throws {
         let doc = document(.kobo)
         let vm = ReadAloudViewModel(document: doc, historyStore: HistoryStore(directory: directory))
@@ -563,6 +736,21 @@ final class ReadingResumeTests: XCTestCase {
         XCTAssertFalse(vm.isPlaying)
         XCTAssertFalse(vm.isWaitingForPlayableAudio)
         XCTAssertFalse(vm.shouldResumeAfterManualLivePageTurn)
+        XCTAssertEqual(vm.currentParagraphIndex, -1)
+    }
+
+    func testUnmatchedReflowCannotRestartUnrelatedPageOpening() {
+        let vm = ReadAloudViewModel(document: document(.googleBooks, id: UUID().uuidString),
+                                   historyStore: HistoryStore(directory: directory))
+        defer { vm.stop(); vm.deactivate() }
+        vm.activate()
+        let anchor = WeReadPlaybackResumeAnchor(segmentText: "The original speaking sentence.",
+            sourceParagraphText: "The original speaking sentence.", segmentProgress: 0.4, wasPlaying: true)
+        vm.replaceLiveWebPage(paragraphs(["Completely unrelated text from another chapter."]),
+                              language: "en", autoplay: true, resumeAnchor: anchor)
+        XCTAssertNotNil(vm.resumeNotice)
+        XCTAssertFalse(vm.isPlaying)
+        XCTAssertFalse(vm.isWaitingForPlayableAudio)
         XCTAssertEqual(vm.currentParagraphIndex, -1)
     }
 
