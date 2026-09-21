@@ -328,7 +328,7 @@ struct HomeView: View {
     private let scenarioColumns = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: HomeLayout.sectionGap) {
                     if libraryOnboarding.shouldShowReminder {
@@ -401,7 +401,7 @@ struct HomeView: View {
             }
             .overlay { if isProcessingContent { processingOverlay } }
         }
-        .navigationViewStyle(.stack)
+
         .onAppear {
             onReviewPresentationBlockedChanged(isProcessingContent)
             #if DEBUG
@@ -1711,7 +1711,7 @@ private struct ImportOptionsSheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     header
@@ -2098,6 +2098,7 @@ private struct ImportSourceRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(source.label))
+        .accessibilityIdentifier("importSource.\(source.rawValue)")
     }
 }
 
@@ -2257,10 +2258,10 @@ private struct TextInputSheet: View {
     @State private var text = ""
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
-                Section("标题（可选）") { TextField("未命名", text: $title) }
-                Section("内容") { TextEditor(text: $text).frame(minHeight: 220) }
+                Section("标题（可选）") { TextField("未命名", text: $title).accessibilityIdentifier("importTextTitle") }
+                Section("内容") { TextEditor(text: $text).frame(minHeight: 220).accessibilityIdentifier("importTextBody") }
             }
             .navigationTitle("输入文本")
             .navigationBarTitleDisplayMode(.inline)
@@ -2282,10 +2283,11 @@ private struct URLInputSheet: View {
     @State private var url = ""
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section("网址") {
                     TextField("https://example.com/article", text: $url)
+                        .accessibilityIdentifier("importURLField")
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -2315,7 +2317,7 @@ private struct KindleBackgroundProbeSheet: View {
     @State private var showDebugTools = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Open Kindle, tap Start Probe, then lock the phone. Logs show whether JS/native scrolling survives background.")

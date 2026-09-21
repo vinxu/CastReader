@@ -6,12 +6,15 @@ import Combine
 /// relayout during interactive transitions on iOS 26.
 struct VoiceBrowseSearchField: View {
     @Binding var text: String
+    @FocusState private var isFocused: Bool
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(AppTheme.mutedForeground)
             TextField(AppLocalized("搜索音色或听感"), text: $text)
+                .focused($isFocused)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
                 .submitLabel(.search).accessibilityIdentifier("voiceSearchField")
+                .onSubmit { isFocused = false }
             if !text.isEmpty {
                 Button { text = "" } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(AppTheme.mutedForeground)
@@ -546,6 +549,8 @@ struct VoiceDiscoveryCollectionView: View {
                     }
                 }
             }.padding(.vertical, 12)
+                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity)
+                .frame(maxWidth: .infinity)
         }.background(AppTheme.background).modifier(VoiceBrowseContentMargins())
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(title).navigationBarTitleDisplayMode(.inline)

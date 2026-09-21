@@ -643,9 +643,9 @@ struct KindleBookView: View {
 
     private var nativeTOCOverlay: some View {
         GeometryReader { proxy in
-            let isLandscape = usesCompactPlaybackBar
+            let isLandscape = proxy.size.width >= 700 || usesCompactPlaybackBar
             let panelWidth = isLandscape ? min(420, max(320, proxy.size.width * 0.44)) : proxy.size.width
-            let panelHeight = isLandscape ? proxy.size.height : min(proxy.size.height * 0.72, 620)
+            let panelHeight = isLandscape ? max(1, proxy.size.height - 24) : min(proxy.size.height * 0.72, 620)
 
             ZStack(alignment: isLandscape ? .trailing : .bottom) {
                 Color.black.opacity(0.28)
@@ -2085,10 +2085,12 @@ private struct KindleNativeTOCPanel: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(AppTheme.mutedForeground)
-                        .frame(width: 34, height: 34)
+                        .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
                         .background(AppTheme.surfaceVariant, in: Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text(AppLocalized("关闭")))
+                .accessibilityIdentifier("kindleTOCClose")
             }
             .padding(.horizontal, 18)
             .padding(.top, isLandscape ? 18 : 14)
@@ -2149,6 +2151,7 @@ private struct KindleNativeTOCPanel: View {
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(isLoading)
+                                .accessibilityIdentifier("kindleTOCEntry.\(entry.id)")
 
                                 Divider()
                                     .padding(.leading, 52 + CGFloat(min(entry.level, 3)) * 16)

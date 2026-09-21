@@ -833,9 +833,9 @@ struct ReaderHostView: View {
 
     private var weReadTOCOverlay: some View {
         GeometryReader { proxy in
-            let isLandscape = usesCompactPlaybackBar
+            let isLandscape = proxy.size.width >= 700 || usesCompactPlaybackBar
             let panelWidth = isLandscape ? min(420, max(320, proxy.size.width * 0.44)) : proxy.size.width
-            let panelHeight = isLandscape ? proxy.size.height : min(proxy.size.height * 0.72, 620)
+            let panelHeight = isLandscape ? max(1, proxy.size.height - 24) : min(proxy.size.height * 0.72, 620)
 
             ZStack(alignment: isLandscape ? .trailing : .bottom) {
                 Color.black.opacity(0.28)
@@ -1765,6 +1765,7 @@ enum SpeedMenuStyle {
 }
 
 struct SpeedMenu: View {
+    @Environment(\.appViewport) private var viewport
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var audio = AudioPlayerService.shared
@@ -1789,7 +1790,7 @@ struct SpeedMenu: View {
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                 }
-                .frame(width: 70, height: 36)
+                .frame(width: 70, height: AdaptiveLayout.isPad ? 44 : 36)
                 .background(AppTheme.surfaceVariant)
                 .foregroundColor(AppTheme.foreground)
                 .cornerRadius(8)
@@ -1812,7 +1813,7 @@ struct SpeedMenu: View {
                         .fixedSize(horizontal: true, vertical: false)
                 }
                 .foregroundStyle(AppTheme.foreground)
-                .frame(width: 62, height: 36)
+                .frame(width: 62, height: AdaptiveLayout.isPad ? 44 : 36)
             }
         }
         .buttonStyle(.plain)
@@ -1830,7 +1831,18 @@ struct SpeedMenu: View {
         }
     }
 
+    @ViewBuilder
     private var speedPicker: some View {
+        if AdaptiveLayout.isPad {
+            ScrollView { speedPickerContent }
+                .frame(width: 292, height: min(500, viewport.height > 0 ? max(1, viewport.height - 140) : 500))
+                .background(AppTheme.surface)
+        } else {
+            speedPickerContent.frame(width: 292).background(AppTheme.surface)
+        }
+    }
+
+    private var speedPickerContent: some View {
         VStack(spacing: 14) {
             HStack {
                 Text(AppLocalized("Playback Speed"))
@@ -1867,7 +1879,7 @@ struct SpeedMenu: View {
                             }
                         }
                         .padding(.horizontal, 12)
-                        .frame(height: 42)
+                        .frame(minHeight: 44)
                         .background(
                             isSelected(speed)
                                 ? AppTheme.primary.opacity(0.12)
@@ -1889,8 +1901,6 @@ struct SpeedMenu: View {
             }
         }
         .padding(16)
-        .frame(width: 292)
-        .background(AppTheme.surface)
     }
 
     private func isSelected(_ speed: Float) -> Bool {

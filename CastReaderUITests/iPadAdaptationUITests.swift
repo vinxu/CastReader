@@ -13,11 +13,11 @@ final class iPadAdaptationUITests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
     }
 
-    private func home(_ language: String = "en") -> XCUIApplication {
+    private func home(_ language: String = "en", extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
             "-CastReaderRegion", "global", "-AppleLanguages", "(\(language))",
-            "-AppleLocale", "en_US", "-interfaceLanguage", language]
+            "-AppleLocale", "en_US", "-interfaceLanguage", language, "-auto_play", "NO"] + extra
         app.launch()
         XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 30))
         return app
@@ -51,6 +51,18 @@ final class iPadAdaptationUITests: XCTestCase {
         }
     }
 
+    private func selectTab(_ title: String, app: XCUIApplication) {
+        // The iPadOS adaptable sidebar exposes cells; its top tab bar exposes buttons.
+        let button = app.buttons[title].firstMatch
+        let cell = app.cells.matching(NSPredicate(format: "label == %@", title)).firstMatch
+        if button.exists && button.isHittable { button.tap() }
+        else {
+            XCTAssertTrue(cell.waitForExistence(timeout: 10))
+            XCTAssertTrue(cell.isHittable)
+            cell.tap()
+        }
+    }
+
     func testUniversalNavigationAndAllOrientations() {
         let app = home()
         for (orientation, name) in [(UIDeviceOrientation.portrait, "portrait"),
@@ -62,10 +74,7 @@ final class iPadAdaptationUITests: XCTestCase {
         }
         rotate(app, .portrait)
         for title in ["Library", "Voice", "Settings", "Home"] {
-            let tab = app.buttons[title].firstMatch
-            XCTAssertTrue(tab.waitForExistence(timeout: 10), "Missing iPad navigation: \(title)")
-            XCTAssertTrue(tab.isHittable)
-            tab.tap()
+            selectTab(title, app: app)
             capture(app, "module1-\(title)-portrait")
             rotate(app, .landscapeLeft)
             capture(app, "module1-\(title)-landscape")
@@ -75,6 +84,266 @@ final class iPadAdaptationUITests: XCTestCase {
         capture(app, "module1-import-portrait")
         rotate(app, .landscapeLeft)
         capture(app, "module1-import-landscape")
+    }
+
+    private func importSource(_ kind: String, app: XCUIApplication) {
+        app.buttons["plusImportButton"].tap()
+        let source = app.buttons["importSource.\(kind)"]
+        XCTAssertTrue(source.waitForExistence(timeout: 10))
+        for _ in 0..<5 where !source.isHittable { app.swipeUp() }
+        XCTAssertTrue(source.isHittable)
+        source.tap()
+    }
+
+    func testImportDraftsSurviveKeyboardAndRotation() {
+        let app = home()
+        importSource("text", app: app)
+        let title = app.textFields["importTextTitle"]
+        let body = app.textViews["importTextBody"]
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        title.tap(); title.typeText("iPad draft")
+        body.tap(); body.typeText("A reading draft stays in this window during rotation.")
+        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait] {
+            rotate(app, orientation)
+            XCTAssertEqual(title.value as? String, "iPad draft")
+            XCTAssertTrue((body.value as? String ?? "").contains("stays in this window"))
+            XCTAssertTrue(app.buttons["Cancel"].firstMatch.isHittable)
+            capture(app, "module4-text-keyboard-\(orientation.rawValue)")
+        }
+        app.buttons["Cancel"].firstMatch.tap()
+        importSource("url", app: app)
+        let url = app.textFields["importURLField"]
+        XCTAssertTrue(url.waitForExistence(timeout: 10))
+        url.tap(); url.typeText("https://example.com/ipad-draft")
+        rotate(app, .landscapeLeft)
+        XCTAssertEqual(url.value as? String, "https://example.com/ipad-draft")
+        capture(app, "module4-url-keyboard-landscape")
+        app.buttons["Cancel"].firstMatch.tap()
+        rotate(app, .portrait)
+        importSource("file", app: app)
+        XCTAssertTrue(app.buttons["Cancel"].firstMatch.waitForExistence(timeout: 10))
+        rotate(app, .landscapeLeft)
+        capture(app, "module4-files-landscape")
+        app.buttons["Cancel"].firstMatch.tap()
+        app.terminate()
+    }
+
+    func testReaderPopoverAndVoicePanelRotation() {
+        let app = scenario("text-long")
+        let more = app.buttons["readerMoreButton"]
+        XCTAssertTrue(more.waitForExistence(timeout: 30))
+        for orientation in [UIDeviceOrientation.portrait, .landscapeLeft] {
+            rotate(app, orientation)
+            more.tap(); app.buttons["readerSleepTimerMenuItem"].tap()
+            let preset = app.buttons["sleepTimerPreset.15"]
+            XCTAssertTrue(preset.waitForExistence(timeout: 5))
+            XCTAssertTrue(preset.isHittable)
+            XCTAssertLessThan(preset.frame.width, 500)
+            capture(app, "module4-timer-popover-\(orientation.rawValue)")
+            app.buttons["readerSettingsDone"].tap()
+            more.tap(); app.buttons["readerAppearanceMenuItem"].tap()
+            XCTAssertTrue(app.buttons["readerTextSizeIncrease"].waitForExistence(timeout: 5))
+            capture(app, "module4-appearance-popover-\(orientation.rawValue)")
+            app.buttons["readerSettingsDone"].tap()
+        }
+        app.buttons["Playback Speed"].tap()
+        XCTAssertTrue(app.buttons["1.5x"].waitForExistence(timeout: 5))
+        capture(app, "module4-speed-landscape")
+        app.buttons["1.5x"].tap()
+        app.buttons["scenarioSeekTarget"].tap()
+        let playback = app.staticTexts["scenarioStatus"]
+        XCTAssertTrue(waitForStatus(playback) { $0.contains("playing=true") })
+        app.buttons["readPlayPauseButton"].tap()
+        XCTAssertTrue(app.buttons["playbackVoiceButton"].waitForExistence(timeout: 10))
+        app.buttons["playbackVoiceButton"].tap()
+        XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].waitForExistence(timeout: 10))
+        capture(app, "module4-player-voice-landscape")
+        let search = app.textFields["voiceSearchField"]
+        search.tap(); search.typeText("Heart")
+        rotate(app, .portrait)
+        XCTAssertEqual(search.value as? String, "Heart")
+        XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].isHittable)
+        capture(app, "module4-player-voice-keyboard-portrait")
+        rotate(app, .landscapeLeft)
+        XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].isHittable)
+        capture(app, "module4-player-voice-keyboard-landscape")
+        XCTAssertLessThan(search.frame.maxY, app.keyboards.firstMatch.frame.minY)
+        search.typeText("\n")
+        let result = app.buttons["presetVoiceSelect_af_heart"]
+        XCTAssertTrue(result.waitForExistence(timeout: 10))
+        XCTAssertTrue(result.isHittable)
+        capture(app, "module4-player-voice-search-result-landscape")
+        app.buttons["playbackVoiceDoneButton"].tap()
+        app.terminate()
+        let live = home()
+        selectTab("Voice", app: live)
+        XCTAssertTrue(live.textFields["voiceSearchField"].waitForExistence(timeout: 20))
+        rotate(live, .landscapeLeft)
+        capture(live, "module4-voice-wide")
+        live.textFields["voiceSearchField"].tap()
+        live.textFields["voiceSearchField"].typeText("Heart")
+        rotate(live, .portrait)
+        XCTAssertEqual(live.textFields["voiceSearchField"].value as? String, "Heart")
+        capture(live, "module4-voice-search-keyboard")
+        live.terminate()
+    }
+
+    func testRecordingIntroductionAndControlsInLandscape() {
+        let app = home(extra: ["-CastReaderOpenVoiceCloneCreation"])
+        selectTab("Voice", app: app)
+        XCTAssertTrue(app.buttons["My Voices"].waitForExistence(timeout: 10))
+        app.buttons["My Voices"].tap()
+        let confirm = app.buttons["voiceCloneIntroConfirmButton"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        rotate(app, .landscapeLeft)
+        for _ in 0..<5 where !confirm.isHittable { app.swipeUp() }
+        XCTAssertTrue(confirm.isHittable)
+        capture(app, "module4-recording-intro-landscape")
+        confirm.tap()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        for owner in [springboard, app] {
+            let allow = owner.buttons["Allow"].firstMatch
+            if allow.waitForExistence(timeout: 2) && allow.isHittable { allow.tap() }
+        }
+        let hold = app.descendants(matching: .any)["voiceCloneHoldButton"].firstMatch
+        XCTAssertTrue(hold.waitForExistence(timeout: 10))
+        for _ in 0..<5 where !hold.isHittable { app.swipeUp() }
+        XCTAssertTrue(hold.isHittable)
+        capture(app, "module4-recording-controls-landscape")
+        rotate(app, .portrait)
+        XCTAssertTrue(hold.exists)
+        capture(app, "module4-recording-controls-portrait")
+        app.buttons["Cancel"].firstMatch.tap()
+        app.terminate()
+    }
+
+    func testPhotoPickerAndCameraFallbackRotateAndCancel() {
+        let app = home()
+        for source in ["photoLibrary", "camera"] {
+            importSource(source, app: app)
+            XCTAssertTrue(app.buttons["Cancel"].firstMatch.waitForExistence(timeout: 10))
+            XCTAssertTrue(app.staticTexts["Photos"].firstMatch.waitForExistence(timeout: 20))
+            capture(app, "module4-\(source)-portrait")
+            rotate(app, .landscapeLeft)
+            XCTAssertTrue(app.buttons["Cancel"].firstMatch.isHittable)
+            capture(app, "module4-\(source)-landscape")
+            app.buttons["Cancel"].firstMatch.tap()
+            XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 10))
+            rotate(app, .portrait)
+        }
+        app.terminate()
+    }
+
+    func testPublicPhotoImportsIntoRotatableReader() {
+        let app = home()
+        importSource("photoLibrary", app: app)
+        rotate(app, .landscapeLeft)
+        XCTAssertTrue(app.staticTexts["Photos"].firstMatch.waitForExistence(timeout: 20))
+        capture(app, "module4-photo-before-import")
+        // The simulator was seeded with the public “Reading on iPad” PNG;
+        // screenshot review confirms it is the leading thumbnail in this grid.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.30, dy: 0.35)).tap()
+        XCTAssertTrue(app.buttons["readPlayPauseButton"].waitForExistence(timeout: 45))
+        XCTAssertTrue(app.scrollViews["photoReaderCanvas"].waitForExistence(timeout: 15))
+        capture(app, "module4-imported-photo-landscape")
+        rotate(app, .portrait)
+        XCTAssertTrue(app.buttons["readPlayPauseButton"].isHittable)
+        capture(app, "module4-imported-photo-portrait")
+        app.buttons["readerMinimizeButton"].tap()
+        app.terminate()
+    }
+
+    func testAccountProAndCloudFormsRotate() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderIPadFormFixture", "-CastReaderRegion", "global",
+            "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.launch()
+        XCTAssertTrue(app.buttons["ipadForm.login"].waitForExistence(timeout: 20))
+        app.buttons["ipadForm.login"].tap()
+        XCTAssertTrue(app.buttons["login.email"].waitForExistence(timeout: 10))
+        app.buttons["login.email"].tap()
+        let email = app.textFields["login.emailAddress"]
+        XCTAssertTrue(email.waitForExistence(timeout: 5))
+        email.tap(); email.typeText("ipad-layout@example.com")
+        rotate(app, .landscapeLeft)
+        XCTAssertEqual(email.value as? String, "ipad-layout@example.com")
+        XCTAssertTrue(app.buttons["ipadFormDone"].isHittable)
+        let sendCode = app.buttons["login.sendCode"]
+        for _ in 0..<5 where !sendCode.isHittable { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(sendCode.isHittable)
+        // Verify reachability without sending mail or changing the real account.
+        capture(app, "module4-login-keyboard-landscape")
+        rotate(app, .portrait)
+        capture(app, "module4-login-keyboard-portrait")
+        app.buttons["ipadFormDone"].tap()
+        app.buttons["ipadForm.pro"].tap()
+        XCTAssertTrue(app.buttons["ipadFormDone"].waitForExistence(timeout: 10))
+        capture(app, "module4-pro-portrait")
+        rotate(app, .landscapeLeft)
+        app.swipeUp()
+        capture(app, "module4-pro-landscape-actions")
+        app.buttons["ipadFormDone"].tap()
+        for provider in ["google_drive", "dropbox", "onedrive"] {
+            app.buttons["ipadForm.\(provider)"].tap()
+            let disclosure = app.descendants(matching: .any)["cloudPrivacy.\(provider)"].firstMatch
+            XCTAssertTrue(disclosure.waitForExistence(timeout: 10))
+            capture(app, "module4-cloud-\(provider)-landscape")
+            rotate(app, .portrait)
+            capture(app, "module4-cloud-\(provider)-portrait")
+            let cancel = app.buttons["Cancel"].firstMatch
+            if cancel.exists && cancel.isHittable { cancel.tap() }
+            else {
+                let done = app.buttons["Done"].firstMatch
+                for _ in 0..<5 where !done.isHittable { app.swipeUp() }
+                XCTAssertTrue(done.isHittable)
+                done.tap()
+            }
+            rotate(app, .landscapeLeft)
+        }
+        app.terminate()
+    }
+
+    func testSystemShareExtensionInBothOrientations() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderIPadFormFixture", "-CastReaderRegion", "global",
+            "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.launch()
+        XCTAssertTrue(app.buttons["ipadForm.share"].waitForExistence(timeout: 20))
+        app.buttons["ipadForm.share"].tap()
+        let reader = app.cells.matching(NSPredicate(format: "label == %@", "CastReader")).firstMatch
+        if !reader.waitForExistence(timeout: 5) {
+            let more = app.cells.matching(NSPredicate(format: "label == %@", "More")).firstMatch
+            XCTAssertTrue(more.waitForExistence(timeout: 5))
+            more.tap()
+        }
+        XCTAssertTrue(reader.waitForExistence(timeout: 10))
+        reader.tap()
+        let save = app.buttons["castreaderShareSave"]
+        XCTAssertTrue(save.waitForExistence(timeout: 15))
+        capture(app, "module4-share-extension-portrait")
+        rotate(app, .landscapeLeft)
+        XCTAssertTrue(save.isHittable)
+        XCTAssertLessThanOrEqual(save.frame.width, 520)
+        capture(app, "module4-share-extension-landscape")
+        save.tap()
+        XCTAssertTrue(app.buttons["ipadForm.share"].waitForExistence(timeout: 15))
+        app.terminate()
+    }
+
+    func testLegacyIPadSidebarDestinations() {
+        let app = home(extra: ["-CastReaderLegacyIPadNavigation"])
+        rotate(app, .landscapeLeft)
+        for title in ["Library", "Voice", "Settings", "Home"] {
+            let item = app.buttons[title].firstMatch
+            XCTAssertTrue(item.waitForExistence(timeout: 10))
+            XCTAssertTrue(item.isHittable)
+            item.tap()
+            capture(app, "module4-legacy-sidebar-\(title)")
+        }
+        rotate(app, .portrait)
+        XCTAssertTrue(app.buttons["plusImportButton"].isHittable)
+        capture(app, "module4-legacy-sidebar-portrait")
+        app.terminate()
     }
 
     func testNativeTextRotation() { verifyReaderRotation("text-long") }

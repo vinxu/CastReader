@@ -178,6 +178,7 @@ struct ReadingResumeScenarioFixtureView: View {
     @State private var targetText = ""
     @State private var loading = false
     @State private var probeLayoutSize = CGSize.zero
+    @State private var fixtureViewport = CGSize.zero
     @State private var stableLayoutSamples = 0
 
     init() {
@@ -206,11 +207,19 @@ struct ReadingResumeScenarioFixtureView: View {
                     if coordinator.showsMiniPlayer { MiniPlayerView(coordinator: coordinator) }
                     ReaderHostView(readVM: s.readVM, explainVM: s.explainVM, coordinator: coordinator, document: s.document)
                         .id(s.instanceID)
-                        .offset(y: coordinator.isReaderPresented ? 0 : UIScreen.main.bounds.height)
+                        .offset(y: coordinator.isReaderPresented ? 0 : fixtureViewport.height + 120)
                         .accessibilityHidden(!coordinator.isReaderPresented)
                 }.clipped()
             } else if let error { Text(error).accessibilityIdentifier("scenarioError") }
             else { ProgressView() }
+        }
+        .overlay { PlaybackVoicePanelOverlay(center: .shared) }
+        .environment(\.appViewport, fixtureViewport)
+        .background {
+            GeometryReader { geometry in
+                Color.clear.onAppear { fixtureViewport = geometry.size }
+                    .onChange(of: geometry.size) { fixtureViewport = $0 }
+            }
         }
         .task {
             AppSettings.shared.autoPlay = false

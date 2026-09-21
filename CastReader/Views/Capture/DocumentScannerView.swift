@@ -19,7 +19,14 @@ struct DocumentScannerView: UIViewControllerRepresentable {
     /// 扫描失败时回调，调用方可回退到普通相机。
     var onFailure: ((Error) -> Void)?
 
-    static var isAvailable: Bool { VNDocumentCameraViewController.isSupported }
+    static var isAvailable: Bool {
+        #if targetEnvironment(simulator)
+        // Recent simulator runtimes report support but display a black camera.
+        return false
+        #else
+        return VNDocumentCameraViewController.isSupported && UIImagePickerController.isSourceTypeAvailable(.camera)
+        #endif
+    }
 
     func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
         let controller = VNDocumentCameraViewController()

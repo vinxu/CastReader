@@ -164,22 +164,77 @@ struct MainTabView: View {
         }
     }
 
+    private var usesLegacySidebar: Bool {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderLegacyIPadNavigation") { return true }
+        #endif
+        if #available(iOS 18.0, *) { return false }
+        return true
+    }
+
     @ViewBuilder
     private var adaptiveTabs: some View {
-        if AdaptiveLayout.isPad {
-            if #available(iOS 18.0, *) {
-                tabs.tabViewStyle(.sidebarAdaptable)
-            } else {
-                tabs
+        if AdaptiveLayout.isPad && usesLegacySidebar {
+            NavigationSplitView {
+                List(selection: Binding<Int?>(get: { selectedTab }, set: { if let value = $0 { selectedTab = value } })) {
+                    NavigationLink(value: 0) { Label("首页", systemImage: "house.fill") }
+                    NavigationLink(value: 3) { Label("文库", systemImage: "books.vertical") }
+                    NavigationLink(value: 2) { Label("音色", systemImage: "waveform") }
+                    NavigationLink(value: 4) { Label("设置", systemImage: "gearshape") }
+                }
+                .navigationTitle("CastReader")
+                .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 280)
+            } detail: {
+                tabPage(selectedTab)
             }
-        } else {
-            tabs
-        }
+        } else if AdaptiveLayout.isPad {
+            if #available(iOS 18.0, *) { tabs.tabViewStyle(.sidebarAdaptable) }
+            else { tabs }
+        } else { tabs }
     }
 
     private var tabs: some View {
         TabView(selection: $selectedTab) {
-                HomeView(
+            tabPage(0).tabItem { Label("首页", systemImage: "house.fill") }.tag(0)
+            if AdaptiveLayout.isPad {
+                tabPage(3).tabItem { Label("文库", systemImage: "books.vertical") }.tag(3)
+            } else {
+                Color.clear.tabItem {
+                    Image(uiImage: Self.plusTabImage).renderingMode(.original)
+                    Text("")
+                }.tag(1)
+            }
+            tabPage(2).tabItem { Label("音色", systemImage: "waveform") }.tag(2)
+            if AdaptiveLayout.isPad {
+                tabPage(4).tabItem { Label("设置", systemImage: "gearshape") }.tag(4)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tabPage(_ tab: Int) -> some View {
+        switch tab {
+        case 3:
+            NavigationStack {
+                LibraryView().toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { selectedTab = 0; importRouter.openQuickImport() } label: {
+                            Label("导入内容", systemImage: "plus")
+                        }.accessibilityIdentifier("libraryImportButton")
+                    }
+                }
+            }
+        case 2:
+            VoiceBrowserView(presentation: .tab, launchRequest: voiceBrowserLaunchRequest,
+                onConsumeLaunchRequest: consumeVoiceBrowserLaunchRequest)
+        case 4:
+            SettingsView(shareInboxUnreadCount: shareInboxUnreadCount, onOpenShareInbox: {
+                reloadShareInbox(showWhenPending: false)
+                markShareInboxSeen()
+                showShareInbox = true
+            }, showsDismissButton: false)
+        default:
+            HomeView(
                     shareInboxUnreadCount: shareInboxUnreadCount,
                     isSurfaceActive: selectedTab == 0
                         && !coordinator.isReaderPresented
@@ -203,47 +258,6 @@ struct MainTabView: View {
                         selectedTab = 2
                     }
                 )
-                    .tabItem { Label("首页", systemImage: "house.fill") }
-                    .tag(0)
-                // 中间占位：被凸起 ➕ 覆盖；万一点到 tab item 也走通用导入并回首页。
-                if AdaptiveLayout.isPad {
-                    NavigationStack {
-                        LibraryView()
-                            .toolbar {
-                                ToolbarItem(placement: .primaryAction) {
-                                    Button { selectedTab = 0; importRouter.openQuickImport() } label: {
-                                        Label("导入内容", systemImage: "plus")
-                                    }.accessibilityIdentifier("libraryImportButton")
-                                }
-                            }
-                    }
-                    .tabItem { Label("文库", systemImage: "books.vertical") }
-                    .tag(3)
-                } else {
-                Color.clear
-                    .tabItem {
-                        Image(uiImage: Self.plusTabImage)
-                            .renderingMode(.original)
-                        Text("")
-                    }
-                    .tag(1)
-                }
-                VoiceBrowserView(
-                    presentation: .tab,
-                    launchRequest: voiceBrowserLaunchRequest,
-                    onConsumeLaunchRequest: consumeVoiceBrowserLaunchRequest
-                )
-                    .tabItem { Label("音色", systemImage: "waveform") }
-                    .tag(2)
-                if AdaptiveLayout.isPad {
-                    SettingsView(shareInboxUnreadCount: shareInboxUnreadCount, onOpenShareInbox: {
-                        reloadShareInbox(showWhenPending: false)
-                        markShareInboxSeen()
-                        showShareInbox = true
-                    }, showsDismissButton: false)
-                    .tabItem { Label("设置", systemImage: "gearshape") }
-                    .tag(4)
-                }
         }
     }
 

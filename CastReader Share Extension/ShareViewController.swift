@@ -39,12 +39,15 @@ final class ShareViewController: UIViewController {
         titleLabel.text = L10n.text("share_title")
         titleLabel.font = .preferredFont(forTextStyle: .title2)
         titleLabel.textAlignment = .center
+        titleLabel.numberOfLines = 0
+        titleLabel.adjustsFontForContentSizeCategory = true
 
         detailLabel.text = L10n.text("share_detail")
         detailLabel.font = .preferredFont(forTextStyle: .body)
         detailLabel.textColor = .secondaryLabel
         detailLabel.textAlignment = .center
         detailLabel.numberOfLines = 0
+        detailLabel.adjustsFontForContentSizeCategory = true
 
         successImageView.image = UIImage(systemName: "checkmark.circle.fill")
         successImageView.tintColor = .systemGreen
@@ -53,8 +56,11 @@ final class ShareViewController: UIViewController {
         successImageView.heightAnchor.constraint(equalToConstant: 52).isActive = true
 
         saveButton.setTitle(L10n.text("share_save"), for: .normal)
+        saveButton.accessibilityIdentifier = "castreaderShareSave"
         saveButton.titleLabel?.font = .preferredFont(forTextStyle: .headline)
-        saveButton.heightAnchor.constraint(equalToConstant: 48).isActive = true
+        saveButton.titleLabel?.adjustsFontForContentSizeCategory = true
+        saveButton.titleLabel?.numberOfLines = 0
+        saveButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 48).isActive = true
         saveButton.layer.cornerRadius = 12
         saveButton.backgroundColor = .label
         saveButton.setTitleColor(.systemBackground, for: .normal)
@@ -64,11 +70,26 @@ final class ShareViewController: UIViewController {
         stack.axis = .vertical
         stack.spacing = 14
         stack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(stack)
+        let scroll = UIScrollView()
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scroll)
+        scroll.addSubview(stack)
+        let preferredWidth = stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -48)
+        preferredWidth.priority = .defaultHigh
+        let centered = stack.centerYAnchor.constraint(equalTo: scroll.frameLayoutGuide.centerYAnchor)
+        centered.priority = .defaultLow
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
-            stack.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            scroll.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            scroll.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scroll.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            scroll.contentLayoutGuide.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            stack.centerXAnchor.constraint(equalTo: scroll.frameLayoutGuide.centerXAnchor),
+            stack.widthAnchor.constraint(lessThanOrEqualToConstant: 520),
+            stack.widthAnchor.constraint(lessThanOrEqualTo: scroll.frameLayoutGuide.widthAnchor, constant: -48),
+            stack.topAnchor.constraint(greaterThanOrEqualTo: scroll.contentLayoutGuide.topAnchor, constant: 24),
+            stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -24),
+            preferredWidth, centered
         ])
     }
 

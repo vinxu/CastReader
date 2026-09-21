@@ -254,15 +254,17 @@ final class CloudStorageFlowViewModel: ObservableObject {
     func start() {
         guard !started else { return }
         started = true
+        // Reading the data-use disclosure never starts authorization and must
+        // remain available even when this build lacks a provider client ID.
+        if privacyReviewOnly {
+            stage = .disclosure
+            return
+        }
         guard center.isConfigured(provider) else {
             stage = .failed(CloudFlowFailurePresentation.make(
                 error: CloudStorageError.invalidConfiguration(code: "cloud_not_configured"),
                 hasRetrySelection: false
             ))
-            return
-        }
-        if privacyReviewOnly {
-            stage = .disclosure
             return
         }
         if showsDisclosureOnStart {

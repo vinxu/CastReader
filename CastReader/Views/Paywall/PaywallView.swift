@@ -261,7 +261,7 @@ struct PaywallView: View {
                         Button { closePaywall() } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .bold))
-                                .frame(width: 32, height: 32)
+                                .frame(width: AdaptiveLayout.isPad ? 44 : 32, height: AdaptiveLayout.isPad ? 44 : 32)
                                 .background(.ultraThinMaterial, in: Circle())
                         }
                         .accessibilityLabel(Text("关闭"))
@@ -445,6 +445,8 @@ struct ProUpsellContent: View {
                 termsRow
             }
             .padding(20)
+            .frame(maxWidth: AdaptiveLayout.isPad ? 680 : .infinity)
+            .frame(maxWidth: .infinity)
         }
         .background(AppTheme.background.ignoresSafeArea())
         .sheet(isPresented: $showLogin, onDismiss: completeLoginGateIfNeeded) {

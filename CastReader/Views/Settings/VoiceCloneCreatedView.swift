@@ -1351,8 +1351,8 @@ private struct VoiceCloneCreationView: View {
             ZStack {
                 AppTheme.background.ignoresSafeArea()
                 switch phase {
-                case .recordingIntroduction: recordingIntroduction
-                case .ready: recordingScreen
+                case .recordingIntroduction: AdaptiveFormScroll { recordingIntroduction }
+                case .ready: AdaptiveFormScroll { recordingScreen }
                 case .upload: audioUploadScreen
                 case .creating: creatingScreen
                 case .complete: completeScreen

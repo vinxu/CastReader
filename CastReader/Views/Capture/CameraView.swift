@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UIKit
+import PhotosUI
 
 struct CameraView: UIViewControllerRepresentable {
     var sourceType: UIImagePickerController.SourceType = .camera
@@ -14,13 +15,24 @@ struct CameraView: UIViewControllerRepresentable {
     var onCancel: () -> Void
 
     private var resolvedSourceType: UIImagePickerController.SourceType {
+        #if targetEnvironment(simulator)
+        if sourceType == .camera { return .photoLibrary }
+        #endif
         if sourceType == .camera && !UIImagePickerController.isSourceTypeAvailable(.camera) {
             return .photoLibrary
         }
         return sourceType
     }
 
-    func makeUIViewController(context: Context) -> UIImagePickerController {
+    func makeUIViewController(context: Context) -> UIViewController {
+        if resolvedSourceType != .camera {
+            var configuration = PHPickerConfiguration()
+            configuration.filter = .images
+            configuration.selectionLimit = 1
+            let picker = PHPickerViewController(configuration: configuration)
+            picker.delegate = context.coordinator
+            return picker
+        }
         let picker = UIImagePickerController()
         // 用指定来源；要相机但不可用（如模拟器）时回退相册
         picker.sourceType = resolvedSourceType
@@ -29,31 +41,47 @@ struct CameraView: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         context.coordinator.parent = self
-        let nextSourceType = resolvedSourceType
-        if uiViewController.sourceType != nextSourceType {
-            uiViewController.sourceType = nextSourceType
-        }
+    }
+
+    static func dismantleUIViewController(_ uiViewController: UIViewController, coordinator: Coordinator) {
+        coordinator.isAttached = false
+        coordinator.loading?.cancel()
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate, PHPickerViewControllerDelegate {
         var parent: CameraView
+        var isAttached = true
+        var loading: Progress?
+        private var didComplete = false
         init(_ parent: CameraView) { self.parent = parent }
 
-        func imagePickerController(_ picker: UIImagePickerController,
-                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.onImage(image.fixedOrientation())
-            } else {
-                parent.onCancel()
+        private func finish(_ image: UIImage?) {
+            guard isAttached, !didComplete else { return }
+            didComplete = true
+            if let image { parent.onImage(image.fixedOrientation()) }
+            else { parent.onCancel() }
+        }
+
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            guard let provider = results.first?.itemProvider,
+                  provider.canLoadObject(ofClass: UIImage.self) else { finish(nil); return }
+            loading?.cancel()
+            loading = provider.loadObject(ofClass: UIImage.self) { [weak self] object, _ in
+                DispatchQueue.main.async { self?.finish(object as? UIImage) }
             }
         }
 
+        func imagePickerController(_ picker: UIImagePickerController,
+                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            finish(info[.originalImage] as? UIImage)
+        }
+
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.onCancel()
+            finish(nil)
         }
     }
 }

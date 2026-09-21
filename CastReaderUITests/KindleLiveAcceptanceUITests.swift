@@ -115,6 +115,40 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         super.tearDown()
     }
 
+    func testAuthorizedIPadTOCAndSettingsPanels() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1")
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+            "-auto_play", "NO", "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.launch()
+        let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.kindle.")).firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 30))
+        wait(20) { if book.isHittable { return true }; app.swipeUp(); return false }
+        book.tap()
+        waitForPausedReader(app)
+        app.buttons["Table of Contents"].tap()
+        let entry = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "kindleTOCEntry.")).firstMatch
+        wait(45) { entry.exists && entry.isEnabled }
+        for orientation in [UIDeviceOrientation.landscapeLeft, .portrait] {
+            XCUIDevice.shared.orientation = orientation
+            wait(10) { app.buttons["kindleTOCClose"].isHittable }
+            XCTAssertLessThanOrEqual(entry.frame.width, 420)
+            snapshot(app, "iPad-live-TOC-\(orientation.rawValue)")
+        }
+        app.buttons["kindleTOCClose"].tap()
+        waitForPausedReader(app)
+        openReadingSettings(app)
+        waitForReadingSettingsReady(app)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        wait(15) { app.buttons["kindleReadingSettingsDone"].isHittable }
+        snapshot(app, "iPad-live-Aa-landscape")
+        app.buttons["kindleReadingSettingsDone"].tap()
+        waitForPausedReader(app)
+        snapshot(app, "iPad-live-after-Aa-landscape")
+        app.terminate()
+    }
+
     func testAuthorizedIPadReadExplainAndRotation() throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1")
         continueAfterFailure = false

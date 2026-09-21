@@ -152,7 +152,9 @@ struct RootAuthGate: View {
             // Exercise the real Kobo connection UI against a local four-page
             // shelf. The fixture and its isolated WebView/store exist only in
             // Debug builds; release builds always use the normal auth gate.
-            if ProcessInfo.processInfo.arguments.contains("-CastReaderFamiliarVoicesFixture") {
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderIPadFormFixture") {
+                IPadFormAcceptanceFixture()
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderFamiliarVoicesFixture") {
                 VoiceFamiliarAcceptanceFixture()
             } else if ProcessInfo.processInfo.arguments.contains("-CastReaderVoiceExploreFixture") {
                 VoiceExploreAcceptanceFixture()

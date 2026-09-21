@@ -237,6 +237,8 @@ struct VoiceBrowserView: View {
                         categoryTabs
                     }
                 }
+                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity)
+                .frame(maxWidth: .infinity)
             }
             .modifier(VoiceBrowseContentMargins())
             .background(AppTheme.background)
@@ -738,13 +740,16 @@ struct VoiceBrowserView: View {
 @MainActor
 struct PlaybackVoicePanelOverlay: View {
     @ObservedObject var center: PlaybackVoicePanelCenter
+    @State private var keyboardInset: CGFloat = 0
 
     var body: some View {
         if let request = center.request {
             GeometryReader { proxy in
                 let horizontalInset: CGFloat = proxy.size.width > 700 ? 42 : 12
                 let panelWidth = min(720, proxy.size.width - horizontalInset * 2)
-                let panelHeight = min(720, max(470, proxy.size.height * 0.78))
+                let bottomInset = max(8, max(proxy.safeAreaInsets.bottom, keyboardInset > 0 ? keyboardInset + 8 : 0))
+                let availableHeight = max(1, proxy.size.height - bottomInset - 12)
+                let panelHeight = min(availableHeight, min(720, max(320, proxy.size.height * 0.78)))
 
                 ZStack(alignment: .bottom) {
                     Color.black.opacity(0.32)
@@ -760,6 +765,7 @@ struct PlaybackVoicePanelOverlay: View {
                             : nil,
                         onDone: { center.dismiss() }
                     )
+                    .ignoresSafeArea(.keyboard)
                     .frame(width: panelWidth, height: panelHeight)
                     .background(AppTheme.background)
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -768,9 +774,10 @@ struct PlaybackVoicePanelOverlay: View {
                             .stroke(AppTheme.mutedForeground.opacity(0.16), lineWidth: 0.5)
                     }
                     .shadow(color: .black.opacity(0.22), radius: 24, y: 8)
-                    .padding(.bottom, max(8, proxy.safeAreaInsets.bottom))
+                    .padding(.bottom, bottomInset)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+                .background { WindowKeyboardInsetReader(inset: $keyboardInset) }
             }
             .ignoresSafeArea(edges: .bottom)
             .accessibilityIdentifier("playbackVoicePanel")
