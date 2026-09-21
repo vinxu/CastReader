@@ -22,6 +22,7 @@ final class iPadAdaptationUITests: XCTestCase {
         let ready = app.buttons["plusImportButton"].waitForExistence(timeout: 30)
         if !ready { capture(app, "home-readiness-failure") }
         XCTAssertTrue(ready)
+        dismissRatingIfPresent(app)
         if app.windows.firstMatch.frame.width < 700 {
             app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
             let full = NSPredicate { _, _ in app.windows.firstMatch.frame.width >= 700 }
@@ -647,6 +648,65 @@ extension iPadAdaptationUITests {
         app.windows.firstMatch.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 5))
         app.terminate()
+    }
+
+    func testNineLanguagesInActualCompactWindow() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let catalog = try JSONSerialization.jsonObject(with: Data(contentsOf:
+            root.appendingPathComponent("CastReader/Localizable.xcstrings"))) as! [String: Any]
+        let strings = catalog["strings"] as! [String: Any]
+        func localized(_ key: String, _ language: String) throws -> String {
+            let entry = try XCTUnwrap(strings[key] as? [String: Any])
+            let locales = try XCTUnwrap(entry["localizations"] as? [String: Any])
+            let value = try XCTUnwrap(locales[language] as? [String: Any])
+            let unit = try XCTUnwrap(value["stringUnit"] as? [String: Any])
+            return try XCTUnwrap(unit["value"] as? String)
+        }
+        let supported = ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"]
+        let requested = ProcessInfo.processInfo.environment["CASTREADER_COMPACT_LANGUAGES"]
+            .map { $0.split(separator: ",").map(String.init) } ?? supported
+        XCTAssertFalse(requested.isEmpty)
+        XCTAssertTrue(requested.allSatisfy { supported.contains($0) })
+        for language in requested {
+            let app = home(language)
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.992, dy: 0.992)).press(forDuration: 1,
+                thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.58, dy: 0.65)))
+            let compact = NSPredicate { _, _ in app.windows.firstMatch.frame.width <= 430 }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: compact, object: app)], timeout: 10), .completed)
+            dismissRatingIfPresent(app)
+            capture(app, "release-compact-home-\(language)")
+            XCTAssertTrue(app.buttons["plusImportButton"].isHittable, language)
+            selectTab(try localized("音色", language), app: app)
+            let search = app.textFields["voiceSearchField"]
+            XCTAssertTrue(search.waitForExistence(timeout: 20), language)
+            XCTAssertTrue(search.isHittable, language)
+            XCTAssertTrue(app.windows.firstMatch.frame.contains(search.frame), language)
+            capture(app, "release-compact-voices-\(language)")
+            selectTab(try localized("首页", language), app: app)
+            app.buttons["plusImportButton"].tap()
+            let file = app.buttons["importSource.file"]
+            XCTAssertTrue(file.waitForExistence(timeout: 10), language)
+            let scroll = app.scrollViews.matching(NSPredicate(format: "identifier BEGINSWITH %@", "importOptions.")).firstMatch
+            for _ in 0..<16 where !file.isHittable {
+                // Drag the vertical scroll margin, outside the nested scenario
+                // carousel and mode picker, so long translations cannot capture it.
+                let frame = file.frame
+                let towardTop = frame.isEmpty || frame.midY > scroll.frame.midY
+                scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.96, dy: towardTop ? 0.85 : 0.45))
+                    .press(forDuration: 0.1, thenDragTo: scroll.coordinate(withNormalizedOffset:
+                        CGVector(dx: 0.96, dy: towardTop ? 0.45 : 0.85)))
+            }
+            capture(app, "release-compact-import-\(language)")
+            if !file.isHittable {
+                let tree = XCTAttachment(string: app.debugDescription)
+                tree.name = "compact-import-unreachable-\(language)"
+                tree.lifetime = .keepAlways
+                add(tree)
+            }
+            XCTAssertTrue(file.isHittable, language)
+            XCTAssertTrue(app.windows.firstMatch.frame.contains(file.frame), language)
+            app.terminate()
+        }
     }
 
     func testSystemWindowResize() {

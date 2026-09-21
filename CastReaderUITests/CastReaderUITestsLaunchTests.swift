@@ -33,4 +33,25 @@ class CastReaderUITestsLaunchTests: XCTestCase {
         attachment.lifetime = .keepAlways
         add(attachment)
     }
+
+    /// A connection probe for the authorized physical release device. No login
+    /// bypass, account reset, generated audio, or synthetic content is enabled.
+    func testAuthorizedDeviceHomeWithoutAuthenticationBypass() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_DEVICE_RELEASE_ACCEPTANCE"] == "1")
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipLibraryOnboarding", "-CastReaderRegion", "global",
+                               "-interfaceLanguage", "en", "-auto_play", "NO"]
+        app.launch()
+        let home = app.buttons["plusImportButton"]
+        let ready = NSPredicate { _, _ in
+            home.isHittable || app.buttons["readerMinimizeButton"].isHittable
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: ready, object: app)], timeout: 30), .completed)
+        if !home.isHittable { app.buttons["readerMinimizeButton"].tap() }
+        XCTAssertTrue(home.isHittable)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "authorized-device-normal-home"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
 }

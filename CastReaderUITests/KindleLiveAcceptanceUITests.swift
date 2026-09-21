@@ -3,6 +3,38 @@ import XCTest
 /// Explicitly selected only on a device the user has signed into Kindle.
 /// Never signs in, clears a shelf or copies WebKit credentials.
 final class KindleLiveAcceptanceUITests: XCTestCase {
+    private lazy var localizedPlaybackStates: [String: Set<String>] = {
+        // Physical devices cannot read the build machine's #filePath. Keep the
+        // two release-core languages usable there, then expand from the catalog
+        // when running the nine-language simulator capture workflow.
+        let fallback: [String: Set<String>] = [
+            "paused": ["paused", "已暂停"],
+            "playing": ["playing", "正在播放", "朗读中", "解读中"]
+        ]
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        guard let data = try? Data(contentsOf: root.appendingPathComponent("CastReader/Localizable.xcstrings")),
+              let catalog = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let strings = catalog["strings"] as? [String: Any] else { return fallback }
+        var result: [String: Set<String>] = [:]
+        for (state, keys) in ["paused": ["已暂停"], "playing": ["正在播放", "朗读中", "解读中"]] {
+            var values: Set<String> = [state]
+            for key in keys {
+                values.insert(key)
+                let localizations = (strings[key] as? [String: Any])?["localizations"] as? [String: Any] ?? [:]
+                for locale in localizations.values {
+                    if let unit = (locale as? [String: Any])?["stringUnit"] as? [String: Any],
+                       let value = unit["value"] as? String { values.insert(value.lowercased()) }
+                }
+            }
+            result[state] = values
+        }
+        return result
+    }()
+
+    private func playbackIs(_ element: XCUIElement, _ state: String) -> Bool {
+        localizedPlaybackStates[state]?.contains((element.value as? String ?? "").lowercased()) == true
+    }
+
     private func wait(_ timeout: Double, _ condition: @escaping () -> Bool, file: StaticString = #filePath, line: UInt = #line) {
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             let app = XCUIApplication()
@@ -55,7 +87,7 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
                 !app.staticTexts["Most Recent Page Read"].exists &&
                 playFrame.width > 1 && playFrame.height > 1 && playFrame.intersects(app.windows.firstMatch.frame) &&
                 settingsFrame.width > 1 && settingsFrame.height > 1 && settingsFrame.intersects(app.windows.firstMatch.frame) &&
-                play.value as? String == "Paused" && play.isEnabled && play.isHittable &&
+                self.playbackIs(play, "paused") && play.isEnabled && play.isHittable &&
                 settings.isEnabled && settings.isHittable
             guard ready else { readySince = nil; return false }
             if readySince == nil { readySince = Date() }
@@ -114,6 +146,68 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         if app.state == .runningForeground { snapshot(app, "Kindle-live-at-teardown") }
         XCUIDevice.shared.orientation = .portrait
         super.tearDown()
+    }
+
+    func testCaptureIPadAppStoreFiveScreens() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_IPAD_STORE_CAPTURE"] == "1")
+        continueAfterFailure = false
+        let language = ProcessInfo.processInfo.environment["CASTREADER_CAPTURE_LANGUAGE"] ?? "en"
+        let app = XCUIApplication()
+        XCUIDevice.shared.orientation = .portrait
+        app.launchArguments = ["-CastReaderSkipLibraryOnboarding", "-CastReaderIPadAcceptance",
+            "-CastReaderTTSClockDiagnostics", "-auto_play", "NO", "-tts_speed", "1",
+            "-CastReaderRegion", "global", "-AppleLanguages", "(\(language))",
+            "-interfaceLanguage", language, "-explain_language", "en"]
+        app.launch()
+        wait(40) { app.buttons["plusImportButton"].exists }
+        if app.windows.firstMatch.frame.width < 700 {
+            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
+            wait(15) { app.windows.firstMatch.frame.width >= 700 }
+        }
+        let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS[c] %@", "homeShelfBook.kindle.", "Journey")).firstMatch
+        wait(30) {
+            guard book.exists else { return false }
+            if book.isHittable { return true }
+            app.scrollViews.firstMatch.swipeUp(); return false
+        }
+        snapshot(app, "store-\(language)-01-home")
+        book.tap()
+        waitForPausedReader(app)
+        let metrics = app.otherElements["kindlePlaybackMetrics"]
+        func number(_ key: String) -> Double {
+            let value = (metrics.value as? String ?? "").split(separator: ";").first { $0.hasPrefix(key + "=") }
+            return value.flatMap { Double($0.dropFirst(key.count + 1)) } ?? -1
+        }
+        let read = app.buttons["kindleReadPlayPauseButton"]
+        read.tap()
+        wait(150) { self.playbackIs(read, "playing") && number("time") >= 2 }
+        snapshot(app, "store-\(language)-02-kindle-read")
+        read.tap()
+        waitForPausedReader(app)
+        app.buttons["kindleModeButton_explain"].tap()
+        let explain = app.buttons["kindleExplainPlayPauseButton"]
+        wait(30) { explain.exists && explain.isEnabled && explain.isHittable }
+        explain.tap()
+        wait(180) { self.playbackIs(explain, "playing") && number("marks") >= 2 && number("ink") > 0 }
+        explain.tap()
+        wait(15) { self.playbackIs(explain, "paused") }
+        snapshot(app, "store-\(language)-03-kindle-explain")
+        app.buttons["kindleMinimizeButton"].tap()
+        wait(15) { app.buttons["plusImportButton"].isHittable }
+        // iPad floating tabs expose duplicate labels; target the tab's icon ID,
+        // not a retained reader's off-screen Voice button during minimization.
+        let voice = app.buttons["waveform"].firstMatch
+        wait(15) { voice.exists && voice.isHittable }
+        voice.tap()
+        wait(30) { app.textFields["voiceSearchField"].exists || app.segmentedControls["voiceBrowserCategoryPicker"].exists }
+        snapshot(app, "store-\(language)-04-voices")
+        let home = app.buttons["house.fill"].firstMatch
+        wait(15) { home.isHittable }
+        home.tap()
+        app.buttons["plusImportButton"].tap()
+        wait(15) { app.buttons["importSource.file"].exists && app.buttons["importSource.file"].isHittable }
+        snapshot(app, "store-\(language)-05-import")
+        app.terminate()
     }
 
     func testAuthorizedIPadTOCAndSettingsPanels() throws {
