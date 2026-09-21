@@ -59,6 +59,7 @@ struct LoginConsentGate: Equatable {
 }
 
 struct LoginView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     /// 作为根登录墙时为 true：展示价值主张（可听的内容源）。
     /// sheet 场景（付费墙「登录账号同步 Pro」等入口）保持原有的紧凑形态。
     var isRootGate = false
@@ -127,7 +128,20 @@ struct LoginView: View {
     /// 垂直空间不够，Spacer 会把内容挤扁甚至溢出，改成紧凑的可滚动布局。
     @ViewBuilder
     private var content: some View {
-        if verticalSizeClass == .compact {
+        if AdaptiveLayout.isPad {
+            AdaptiveFormScroll {
+                VStack(spacing: 20) {
+                    if !net.isOnline { offlineBanner }
+                    Spacer(minLength: 24)
+                    if isRootGate { rootGateHeader } else { sheetHeader }
+                    Spacer(minLength: 24)
+                    channelStack
+                    errorText
+                    termsFooter
+                }
+                .padding(.vertical, 12)
+            }
+        } else if verticalSizeClass == .compact {
             ScrollView {
                 VStack(spacing: 16) {
                     if !net.isOnline { offlineBanner }
@@ -349,6 +363,7 @@ struct LoginView: View {
     private var emailSection: some View {
         VStack(spacing: 10) {
                 TextField(AppLocalized("邮箱地址"), text: $email)
+                    .accessibilityIdentifier("login.emailAddress")
                     .keyboardType(.emailAddress)
                     .textContentType(.emailAddress)
                     .textInputAutocapitalization(.never)
@@ -403,6 +418,7 @@ struct LoginView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(AppTheme.primary)
                     .disabled(auth.isWorking || email.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .accessibilityIdentifier("login.sendCode")
                 }
 
                 // 展开后 Apple 图标被这块表单顶掉了，留一条退路回到通道选择。
@@ -538,7 +554,7 @@ struct LoginView: View {
     private func signInGoogle() {
         errorMessage = nil
         Task {
-            do { try await auth.signInWithGoogle() }
+            do { try await auth.signInWithGoogle(presentationWindow: readerScene.window) }
             catch AuthError.cancelled {}
             catch { errorMessage = error.localizedDescription }
         }
@@ -547,6 +563,7 @@ struct LoginView: View {
     private func signInApple() {
         errorMessage = nil
         let session = AppleSignInCoordinator(
+            presentationWindow: readerScene.window,
             onSuccess: { dismiss() },
             onError: { errorMessage = $0 }
         )
@@ -581,3 +598,48 @@ struct LoginView: View {
         }
     }
 }
+
+#if DEBUG
+/// Presentation-only QA. It never signs out, sends a code or purchases a plan.
+struct IPadFormAcceptanceFixture: View {
+    @State private var route: String?
+    private var isPresented: Binding<Bool> {
+        Binding(get: { route != nil }, set: { if !$0 { route = nil } })
+    }
+    var body: some View {
+        VStack {
+            ForEach(["login", "pro", "google_drive", "dropbox", "onedrive", "share"], id: \.self) { value in
+                Button(value) { route = value }.accessibilityIdentifier("ipadForm.\(value)")
+            }
+        }
+        .sheet(isPresented: isPresented) {
+            if route == "share" {
+                IPadShareAcceptanceController()
+            } else if let provider = route.flatMap(CloudProviderID.init(rawValue:)) {
+                CloudStorageFlowView(provider: provider, scenario: nil, mode: .read,
+                    analyticsContext: nil, showsDisclosureOnStart: true, privacyReviewOnly: true,
+                    onComplete: { _ in route = nil }, onCancel: { route = nil })
+                    .id(provider)
+            } else {
+                NavigationStack {
+                    Group {
+                        if route == "login" { LoginView() }
+                        else { ProUpsellContent(analyticsTrigger: "ipad_form_acceptance", analyticsSurface: "debug") }
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") { route = nil }.accessibilityIdentifier("ipadFormDone")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+private struct IPadShareAcceptanceController: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: ["CastReader iPad share acceptance. This is a public synthetic reading sample."], applicationActivities: nil)
+    }
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+}
+#endif

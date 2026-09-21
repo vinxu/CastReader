@@ -262,7 +262,10 @@ final class BoundLibraryOnboardingStore: ObservableObject {
     @Published private(set) var selectedSource: BoundLibraryOnboardingSource?
     @Published private(set) var hasSeenChooser: Bool
     @Published private(set) var isActivated: Bool
-    @Published private(set) var isChooserPresented: Bool
+    private(set) var presentationSceneID: UUID?
+    @Published private(set) var isChooserPresented: Bool {
+        willSet { if newValue, !isChooserPresented { presentationSceneID = ReaderSceneRegistry.shared.presentationContext?.id } }
+    }
     @Published private(set) var activationPlaybackSeconds: Double
     @Published private(set) var phase: BoundLibraryOnboardingPhase
     @Published private(set) var hasCompletedSample: Bool

@@ -63,7 +63,10 @@ final class AppleSignInCoordinator: NSObject, ASAuthorizationControllerDelegate,
     private let onSuccess: () -> Void
     private let onError: (String) -> Void
 
-    init(onSuccess: @escaping () -> Void, onError: @escaping (String) -> Void) {
+    private weak var presentationWindow: UIWindow?
+
+    init(presentationWindow: UIWindow? = nil, onSuccess: @escaping () -> Void, onError: @escaping (String) -> Void) {
+        self.presentationWindow = presentationWindow
         self.onSuccess = onSuccess
         self.onError = onError
         super.init()
@@ -98,9 +101,6 @@ final class AppleSignInCoordinator: NSObject, ASAuthorizationControllerDelegate,
     }
 
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first { $0.isKeyWindow } ?? ASPresentationAnchor()
+        presentationWindow ?? ASPresentationAnchor()
     }
 }

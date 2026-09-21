@@ -21,6 +21,12 @@ final class CastReaderAppDelegate: NSObject, UIApplicationDelegate {
         )
     }
 
+    func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
+        let ids = Set(sceneSessions.map(\.persistentIdentifier))
+        ReaderSceneRegistry.shared.discarded(sessionIDs: ids)
+        ReaderWindowBookmarkStore.shared.remove(sessionIDs: ids)
+    }
+
     func application(
         _ application: UIApplication,
         supportedInterfaceOrientationsFor window: UIWindow?
@@ -44,7 +50,8 @@ enum AppOrientationLock {
     private static var applicationRevision: UInt64 = 0
 
     static var supportedOrientations: UIInterfaceOrientationMask {
-        requests.values.max(by: { $0.order < $1.order })?.orientations
+        if UIDevice.current.userInterfaceIdiom == .pad { return .all }
+        return requests.values.max(by: { $0.order < $1.order })?.orientations
             ?? defaultOrientations
     }
 
@@ -73,6 +80,9 @@ enum AppOrientationLock {
         owner: String,
         reason: String
     ) {
+        // iPad windows always accept rotation, including while a hidden
+        // commercial surface captures pages. Its layout identity gates writes.
+        guard UIDevice.current.userInterfaceIdiom != .pad else { return }
         requestOrder &+= 1
         requests[owner] = Request(orientations: orientations, order: requestOrder)
         applyCurrentPolicy(reason: reason, owner: owner)
@@ -136,6 +146,7 @@ enum AppOrientationLock {
 /// MainTabView 只在登录后创建，所以常驻阅读器（ReaderHostView / KindleBookView）
 /// 的生命周期不受影响；只有主动登出才会销毁它们，这与登出语义一致。
 struct RootAuthGate: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject private var auth = AuthService.shared
 #if DEBUG
     @State private var didOpenGoogleBooksDebugConnection = false
@@ -152,7 +163,11 @@ struct RootAuthGate: View {
             // Exercise the real Kobo connection UI against a local four-page
             // shelf. The fixture and its isolated WebView/store exist only in
             // Debug builds; release builds always use the normal auth gate.
-            if ProcessInfo.processInfo.arguments.contains("-CastReaderFamiliarVoicesFixture") {
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderMultiWindowFixture") {
+                IPadMultiWindowAcceptanceFixture(scene: readerScene)
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderIPadFormFixture") {
+                IPadFormAcceptanceFixture()
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderFamiliarVoicesFixture") {
                 VoiceFamiliarAcceptanceFixture()
             } else if ProcessInfo.processInfo.arguments.contains("-CastReaderVoiceExploreFixture") {
                 VoiceExploreAcceptanceFixture()
@@ -187,7 +202,7 @@ struct RootAuthGate: View {
                 GoogleBooksLibraryConnectView()
             } else if ProcessInfo.processInfo.arguments.contains("-CastReaderKoboHomeValidation")
                 || ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksHomeValidation") {
-                MainTabView()
+                MainTabView(scene: readerScene)
                     .task {
                         guard ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksOpenConnection"),
                               !didOpenGoogleBooksDebugConnection else { return }
@@ -206,7 +221,7 @@ struct RootAuthGate: View {
         .alert(
             AppLocalized("注销申请已提交"),
             isPresented: Binding(
-                get: { auth.lastAccountDeletionReceipt != nil },
+                get: { auth.lastAccountDeletionReceipt != nil && readerScene.isKeyWindow },
                 set: { if !$0 { auth.dismissAccountDeletionReceipt() } }
             ),
             presenting: auth.lastAccountDeletionReceipt
@@ -222,7 +237,7 @@ struct RootAuthGate: View {
     @ViewBuilder
     private var authenticatedRoot: some View {
         if auth.isSignedIn || bypassesGate {
-            MainTabView()
+            MainTabView(scene: readerScene)
                 .id(auth.accountBoundaryID)
         } else {
             LoginView(isRootGate: true)
@@ -335,10 +350,45 @@ final class AppStartupCoordinator: ObservableObject {
 /// route-dependent state. SwiftUI only evaluates this branch after bootstrap.
 struct RouteReadyRoot: View {
     @StateObject private var visitorService = VisitorService.shared
+    @StateObject private var readerScene = ReaderSceneContext.makeWindowContext()
+    @Binding var pendingURLs: [URL]
 
     var body: some View {
         RootAuthGate()
             .environmentObject(visitorService)
+            .readerSceneEnvironment(readerScene)
+            .background(ReaderSceneWindowProbe(context: readerScene))
+            .focusedSceneValue(\.readerKeyboardScene, readerScene)
+            .focusedSceneObject(readerScene.keyboard)
+            #if DEBUG
+            .preferredColorScheme(ProcessInfo.processInfo.arguments.contains("-CastReaderIPadDarkAppearance") ? .dark : nil)
+            #endif
+            .onAppear(perform: drainURLs)
+            .onChange(of: pendingURLs) { _ in drainURLs() }
+    }
+    private func drainURLs() {
+        let urls = pendingURLs
+        pendingURLs.removeAll()
+        for url in urls { readerScene.handleOpenURL(url) }
+    }
+}
+
+private struct CastReaderWindowRoot: View {
+    @ObservedObject var startup: AppStartupCoordinator
+    @ObservedObject var appLanguage: AppLanguageManager
+    @State private var pendingURLs: [URL] = []
+    var body: some View {
+        Group {
+            if startup.isReady {
+                RouteReadyRoot(pendingURLs: $pendingURLs)
+                    .environment(\.locale, appLanguage.locale)
+            } else {
+                Color(uiColor: .systemBackground).ignoresSafeArea()
+                    .accessibilityIdentifier("distribution_bootstrap")
+            }
+        }
+        .task { await startup.start() }
+        .onOpenURL { pendingURLs.append($0) }
     }
 }
 
@@ -347,7 +397,6 @@ struct CastReaderApp: App {
     @UIApplicationDelegateAdaptor(CastReaderAppDelegate.self) private var appDelegate
     @StateObject private var startup = AppStartupCoordinator()
     @StateObject private var appLanguage = AppLanguageManager.shared
-    @State private var pendingOpenURLs: [URL] = []
 
     init() {
         // Freeze the install classification before this version writes any
@@ -402,58 +451,9 @@ struct CastReaderApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
-            Group {
-                if startup.isReady {
-                    RouteReadyRoot()
-                        .environment(\.locale, appLanguage.locale)
-                } else {
-                    Color(uiColor: .systemBackground)
-                        .ignoresSafeArea()
-                        .accessibilityIdentifier("distribution_bootstrap")
-                }
-            }
-            .task {
-                await startup.start()
-            }
-            .onOpenURL { url in
-                if startup.isReady {
-                    handleOpenURL(url)
-                } else {
-                    pendingOpenURLs.append(url)
-                }
-            }
-            .onChange(of: startup.isReady) { _, isReady in
-                guard isReady, !pendingOpenURLs.isEmpty else { return }
-                let urls = pendingOpenURLs
-                pendingOpenURLs.removeAll()
-                for url in urls {
-                    handleOpenURL(url)
-                }
-            }
+        WindowGroup(id: "main") {
+            CastReaderWindowRoot(startup: startup, appLanguage: appLanguage)
         }
-    }
-
-    private func handleOpenURL(_ url: URL) {
-        if CloudStorageCenter.isOAuthRedirectURL(url) {
-            _ = CloudStorageCenter.handleOAuthRedirect(url)
-        } else if StudyBoostDeepLink.matches(url) {
-            StudyBoostRouter.shared.open()
-        } else if url.scheme == "castreader", url.host == "voice-gift" {
-            VoiceGiftRouteCenter.shared.open()
-        } else if url.scheme == "castreader", url.host == "youtube" {
-            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            if let rawURL = components?.queryItems?
-                .first(where: { $0.name == "url" })?.value {
-                let entryValue = components?.queryItems?
-                    .first(where: { $0.name == "entry" })?.value
-                let entry = entryValue.flatMap(YouTubeListenEntry.init(rawValue:)) ?? .scheme
-                _ = YouTubeRouteCenter.shared.open(rawURL, entry: entry)
-            }
-        } else if let systemAction = SystemAction.from(url: url) {
-            SystemActionStore.shared.enqueue(systemAction, origin: .deepLink)
-        } else if url.scheme == "castreader", url.host == "share-inbox" {
-            NotificationCenter.default.post(name: .castReaderShareInboxChanged, object: nil)
-        }
+        .commands { ReaderAppKeyboardCommands() }
     }
 }

@@ -980,14 +980,8 @@ enum CloudTemporaryFileSecurity {
 
 @MainActor
 enum CloudPresentationContext {
-    static func topViewController() -> UIViewController? {
-        let scenes = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .filter { $0.activationState == .foregroundActive }
-        let root = scenes
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow)?
-            .rootViewController
+    static func topViewController(in window: UIWindow) -> UIViewController? {
+        let root = window.rootViewController
         return descend(from: root)
     }
 

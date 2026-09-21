@@ -1351,3 +1351,110 @@ enum GoogleBooksCrossPageContract {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
+
+
+/// An explanation owns an immutable source range until its narration finishes.
+/// A viewport change remaps that range; only a real navigation starts a new one.
+enum LiveWebSourceReflowContract {
+    static func directionToReveal(_ source: LiveWebPageSourceSlice,
+                                  among previous: [LiveWebPageSourceSlice],
+                                  visible: [LiveWebPageSourceSlice]) -> String? {
+        let neighbors = previous.filter { remap($0, in: visible) != nil }.map(\.visibleParagraphIndex)
+        guard !neighbors.isEmpty else { return nil }
+        if neighbors.allSatisfy({ $0 < source.visibleParagraphIndex }) { return "next" }
+        if neighbors.allSatisfy({ $0 > source.visibleParagraphIndex }) { return "prev" }
+        return nil
+    }
+
+    static func remaining(_ visible: [LiveWebPageSourceSlice], after consumed: [Int: Int]) -> [LiveWebPageSourceSlice] {
+        // Reflow can reveal an earlier prefix. Continue after the last source
+        // already explained, never read backwards into that newly visible prefix.
+        let startIndex = visible.lastIndex { slice in
+            slice.sourceParagraphIndex.map { consumed[$0] != nil } ?? false
+        } ?? visible.startIndex
+        return visible.dropFirst(startIndex).compactMap { slice in
+            guard let source = slice.sourceParagraphIndex,
+                  let start = slice.sourceUTF16Start,
+                  let end = consumed[source], end > start else { return slice }
+            let ns = slice.text as NSString
+            let removed = min(ns.length, end - start)
+            guard removed < ns.length else { return nil }
+            return LiveWebPageSourceSlice(visibleParagraphIndex: slice.visibleParagraphIndex,
+                sourceLayoutFingerprint: slice.sourceLayoutFingerprint,
+                sourceParagraphIndex: source, sourceUTF16Start: start + removed,
+                sourceUTF16End: slice.sourceUTF16End, text: ns.substring(from: removed))
+        }
+    }
+
+    /// Google can also recreate the chapter container's logical attributes on
+    /// rotation, changing its source hash. Require an exact, unique, substantial
+    /// UTF-16 overlap before accepting a replacement identity.
+    static func remap(_ source: LiveWebPageSourceSlice, in visible: [LiveWebPageSourceSlice]) -> LiveWebPageSourceSlice? {
+        if let id = source.sourceParagraphIndex,
+           let target = visible.first(where: { $0.sourceParagraphIndex == id }) {
+            return LiveWebPageSourceSlice(visibleParagraphIndex: target.visibleParagraphIndex,
+                sourceParagraphIndex: id, sourceUTF16Start: source.sourceUTF16Start,
+                sourceUTF16End: source.sourceUTF16End, text: source.text)
+        }
+        let old = source.text as NSString
+        // Short headings have no sentence-sized overlap. A unique exact whole
+        // paragraph match still provides an unambiguous coordinate mapping.
+        if old.length >= 2 {
+            let exact = visible.filter { $0.text == source.text && $0.sourceParagraphIndex != nil && $0.sourceUTF16Start != nil }
+            if exact.count == 1, let target = exact.first, let start = target.sourceUTF16Start {
+                return LiveWebPageSourceSlice(visibleParagraphIndex: target.visibleParagraphIndex,
+                    sourceParagraphIndex: target.sourceParagraphIndex, sourceUTF16Start: start,
+                    sourceUTF16End: start + old.length, text: source.text)
+            }
+            if exact.count > 1 { return nil }
+        }
+        guard old.length >= 24 else { return nil }
+        var matches: [LiveWebPageSourceSlice] = []
+        for target in visible {
+            guard let id = target.sourceParagraphIndex, let start = target.sourceUTF16Start else { continue }
+            let current = target.text as NSString
+            guard current.length >= 24 else { continue }
+            let length = min(48, min(old.length, current.length))
+            var shifts = Set<Int>()
+            for offset in Set([0, old.length - length]) {
+                let anchor = old.substring(with: NSRange(location: offset, length: length))
+                for location in occurrences(of: anchor, in: current) {
+                    shifts.insert(start + location - offset)
+                }
+            }
+            for offset in Set([0, current.length - length]) {
+                let anchor = current.substring(with: NSRange(location: offset, length: length))
+                for location in occurrences(of: anchor, in: old) {
+                    shifts.insert(start + offset - location)
+                }
+            }
+            for shift in shifts where shift >= 0 {
+                let lo = max(shift, start), hi = min(shift + old.length, start + current.length)
+                guard hi - lo >= 24,
+                      old.substring(with: NSRange(location: lo - shift, length: hi - lo)) ==
+                        current.substring(with: NSRange(location: lo - start, length: hi - lo)) else { continue }
+                matches.append(LiveWebPageSourceSlice(visibleParagraphIndex: target.visibleParagraphIndex,
+                    sourceParagraphIndex: id, sourceUTF16Start: shift,
+                    sourceUTF16End: shift + old.length, text: source.text))
+            }
+        }
+        let identities = Set(matches.map { "\($0.sourceParagraphIndex ?? -1):\($0.sourceUTF16Start ?? -1)" })
+        return identities.count == 1 ? matches.first : nil
+    }
+
+    private static func occurrences(of anchor: String, in text: NSString) -> [Int] {
+        var result: [Int] = []
+        var start = 0
+        while start < text.length {
+            let range = text.range(of: anchor, range: NSRange(location: start, length: text.length - start))
+            guard range.location != NSNotFound else { break }
+            result.append(range.location)
+            start = range.location + 1
+        }
+        return result
+    }
+
+    static func domIndex(for source: LiveWebPageSourceSlice, in visible: [LiveWebPageSourceSlice]) -> Int? {
+        remap(source, in: visible)?.visibleParagraphIndex
+    }
+}

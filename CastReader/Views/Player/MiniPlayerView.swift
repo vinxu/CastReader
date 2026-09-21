@@ -76,19 +76,24 @@ private struct MiniPlayerBar: View {
     var body: some View {
         HStack(spacing: 12) {
             icon
-            VStack(alignment: .leading, spacing: 2) {
-                Text(session.document.title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                    .foregroundColor(AppTheme.foreground)
-                Text(statusText)
-                    .font(.caption)
-                    .foregroundColor(AppTheme.mutedForeground)
-                    .lineLimit(1)
+            Button { coordinator.expand() } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(session.document.title)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .foregroundColor(AppTheme.foreground)
+                    Text(statusText)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.mutedForeground)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity, minHeight: AdaptiveLayout.isPad ? 44 : nil, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture { coordinator.expand() }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("readerMiniPlayerExpand")
+            .accessibilityLabel(Text(session.document.title))
+            .accessibilityValue(Text(statusText))
 
             if isExplain {
                 PlaybackVoiceButton(language: explainVM.playbackLanguage, size: 34)
@@ -112,15 +117,21 @@ private struct MiniPlayerBar: View {
                             .foregroundColor(AppTheme.foreground)
                     }
                 }
-                .frame(width: 34, height: 34)
+                .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
+                .contentShape(Rectangle())
             }
+            .accessibilityIdentifier("readerMiniPlayerPlayPause")
+            .accessibilityLabel(Text(AppLocalized(audio.isPlaying ? "暂停" : "播放")))
             .disabled(voiceSwitch.progress != nil || (isExplain && explainVM.isContinuingLivePage))
             Button { coordinator.close() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(AppTheme.mutedForeground)
-                    .frame(width: 30, height: 30)
+                    .frame(width: AdaptiveLayout.isPad ? 44 : 30, height: AdaptiveLayout.isPad ? 44 : 30)
+                    .contentShape(Rectangle())
             }
+            .accessibilityIdentifier("readerMiniPlayerClose")
+            .accessibilityLabel(Text(AppLocalized("关闭")))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

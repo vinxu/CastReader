@@ -19,6 +19,7 @@ extension Notification.Name {
 // MARK: - 首页书架条
 
 struct GoogleBooksHomeSection: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = GoogleBooksLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
@@ -27,7 +28,8 @@ struct GoogleBooksHomeSection: View {
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
                 VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
-                    HStack(alignment: .center) {
+                    let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .center))
+                    layout {
                         VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                             Text(AppLocalized("Google Play 图书"))
                                 .font(.headline)
@@ -36,11 +38,12 @@ struct GoogleBooksHomeSection: View {
                                 .font(.caption)
                                 .foregroundColor(AppTheme.mutedForeground)
                         }
-                        Spacer()
+                        if !typeSize.isAccessibilitySize { Spacer() }
                         NavigationLink(destination: GoogleBooksLibraryView()) {
                             Text(AppLocalized("查看全部"))
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundColor(AppTheme.primary)
+                                .frame(minHeight: AdaptiveLayout.isPad ? 44 : nil)
                         }
                         .accessibilityIdentifier("homeShelfViewAll.google_books")
                     }
@@ -359,6 +362,7 @@ struct GoogleBooksLibraryConnectView: View {
 // MARK: - 完整书架
 
 struct GoogleBooksLibraryView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = GoogleBooksLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
@@ -376,13 +380,14 @@ struct GoogleBooksLibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Picker(AppLocalized("排序"), selection: $sort) {
-                        ForEach(GoogleBooksLibrarySort.allCases) { Text($0.label).tag($0) }
+                    if typeSize.isAccessibilitySize {
+                        sortPicker.pickerStyle(.menu).frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        sortPicker.pickerStyle(.segmented)
                     }
-                    .pickerStyle(.segmented)
                     Button { showConnect = true } label: {
                         Image(systemName: "arrow.clockwise")
-                            .frame(width: 36, height: 36)
+                            .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: AdaptiveLayout.isPad ? 44 : 36)
                             .background(AppTheme.primary.opacity(0.12), in: Circle())
                     }
                     .foregroundColor(AppTheme.primary)
@@ -421,6 +426,13 @@ struct GoogleBooksLibraryView: View {
         .sheet(isPresented: $showConnect) { GoogleBooksLibraryConnectView() }
     }
 
+    private var sortPicker: some View {
+        Picker(AppLocalized("排序"), selection: $sort) {
+            ForEach(GoogleBooksLibrarySort.allCases) { Text($0.label).tag($0) }
+        }
+        .accessibilityIdentifier("googleBooksShelfSort")
+    }
+
     private var empty: some View {
         VStack(spacing: 12) {
             Image(systemName: store.needsConnection ? "book.pages" : "magnifyingglass")
@@ -448,6 +460,8 @@ struct GoogleBooksLibraryView: View {
 // MARK: - 卡片
 
 private struct GoogleBooksRailCard: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    private var cardWidth: CGFloat { typeSize.isAccessibilitySize ? 240 : 108 }
     let book: GoogleBooksBook
     var body: some View {
         VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
@@ -458,19 +472,23 @@ private struct GoogleBooksRailCard: View {
             Text(book.title)
                 .font(.caption.weight(.semibold))
                 .foregroundColor(AppTheme.foreground)
-                .lineLimit(2)
-                .frame(width: 104, height: 34, alignment: .topLeading)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: cardWidth - 4, alignment: .topLeading)
+                .frame(minHeight: 34, alignment: .topLeading)
             LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress)
                 .font(.caption2)
                 .foregroundColor(AppTheme.mutedForeground)
-                .lineLimit(1)
-                .frame(width: 104, alignment: .leading)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: cardWidth - 4, alignment: .leading)
         }
-        .frame(width: 108, alignment: .topLeading)
+        .frame(width: cardWidth, alignment: .topLeading)
     }
 }
 
 private struct GoogleBooksLibraryRow: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     let book: GoogleBooksBook
     let open: () -> Void
     var body: some View {
@@ -484,15 +502,18 @@ private struct GoogleBooksLibraryRow: View {
                     Text(book.title)
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(AppTheme.foreground)
-                        .lineLimit(2)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(book.displayAuthor)
                         .font(.caption)
                         .foregroundColor(AppTheme.mutedForeground)
-                        .lineLimit(1)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                        .fixedSize(horizontal: false, vertical: true)
                     LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress)
                         .font(.caption2)
                         .foregroundColor(AppTheme.mutedForeground)
-                        .lineLimit(1)
+                        .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.right")

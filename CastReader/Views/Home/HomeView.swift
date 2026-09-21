@@ -231,6 +231,8 @@ enum VoiceGiftHomeEntryPolicy {
 }
 
 struct HomeView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     let shareInboxUnreadCount: Int
     let isSurfaceActive: Bool
     let onOpenShareInbox: () -> Void
@@ -328,7 +330,7 @@ struct HomeView: View {
     private let scenarioColumns = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: HomeLayout.sectionGap) {
                     if libraryOnboarding.shouldShowReminder {
@@ -368,6 +370,8 @@ struct HomeView: View {
                     }
                 }
                 .padding(HomeLayout.pageInset)
+                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity)
+                .frame(maxWidth: .infinity)
             }
             // Inside the NavigationView on purpose — an inset applied outside it
             // never reaches this ScrollView.
@@ -376,11 +380,19 @@ struct HomeView: View {
             .navigationTitle("CastReader")
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    // 收件箱下沉到设置里（低频入口），未读数由头像上的红点接手。
+                    if AdaptiveLayout.isPad {
+                        Button { importRouter.openQuickImport() } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .frame(minWidth: 44, minHeight: 44)
+                        }
+                        .accessibilityLabel(Text("导入内容"))
+                        .accessibilityIdentifier("plusImportButton")
+                    }
                     ShelfSourcesToolbarButton(onTap: {
                         activeSheet = .librarySources
                     })
 
-                    // 收件箱下沉到设置里（低频入口），未读数由头像上的红点接手。
                     SettingsToolbarButton(
                         shareInboxUnreadCount: shareInboxUnreadCount,
                         onOpenShareInbox: onOpenShareInbox
@@ -390,7 +402,7 @@ struct HomeView: View {
             }
             .overlay { if isProcessingContent { processingOverlay } }
         }
-        .navigationViewStyle(.stack)
+
         .onAppear {
             onReviewPresentationBlockedChanged(isProcessingContent)
             #if DEBUG
@@ -700,7 +712,7 @@ struct HomeView: View {
               let yearly = pro.yearly else { return }
         isPurchasingAnnual = true
         Task { @MainActor in
-            _ = await pro.purchase(yearly, analyticsTrigger: "home_pro_card_yearly")
+            _ = await pro.purchase(yearly, in: readerScene.window?.windowScene, analyticsTrigger: "home_pro_card_yearly")
             isPurchasingAnnual = false
         }
     }
@@ -885,7 +897,7 @@ struct HomeView: View {
         switch source {
         case .kindle:
             if let book = kindleStore.homeBooks.first {
-                KindlePlaybackCenter.shared.open(book: book)
+                readerScene.kindle.open(book: book)
             } else {
                 onRequestLibraryConnection(.kindle)
             }
@@ -945,9 +957,10 @@ struct HomeView: View {
 
     private var continueSection: some View {
         VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
-            HStack {
+            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
+            layout {
                 Text("继续听").font(.headline).foregroundColor(AppTheme.foreground)
-                Spacer()
+                if !typeSize.isAccessibilitySize { Spacer() }
                 NavigationLink(destination: LibraryView(history: history)) {
                     Text("查看全部")
                         .font(.subheadline.weight(.semibold))
@@ -1700,7 +1713,7 @@ private struct ImportOptionsSheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     header
@@ -2087,6 +2100,7 @@ private struct ImportSourceRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(source.label))
+        .accessibilityIdentifier("importSource.\(source.rawValue)")
     }
 }
 
@@ -2213,7 +2227,7 @@ private struct ContinueCardContent: View {
                 }
             Text(record.title)
                 .font(.caption.weight(.semibold)).foregroundColor(AppTheme.foreground)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(
@@ -2226,7 +2240,7 @@ private struct ContinueCardContent: View {
             if let positionLabel {
                 Text(positionLabel)
                     .font(.caption2).foregroundColor(AppTheme.mutedForeground)
-                    .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, HomeLayout.compactCardPadding).padding(.bottom, 10)
             }
         }
@@ -2246,10 +2260,10 @@ private struct TextInputSheet: View {
     @State private var text = ""
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
-                Section("标题（可选）") { TextField("未命名", text: $title) }
-                Section("内容") { TextEditor(text: $text).frame(minHeight: 220) }
+                Section("标题（可选）") { TextField("未命名", text: $title).accessibilityIdentifier("importTextTitle") }
+                Section("内容") { TextEditor(text: $text).frame(minHeight: 220).accessibilityIdentifier("importTextBody") }
             }
             .navigationTitle("输入文本")
             .navigationBarTitleDisplayMode(.inline)
@@ -2271,10 +2285,11 @@ private struct URLInputSheet: View {
     @State private var url = ""
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section("网址") {
                     TextField("https://example.com/article", text: $url)
+                        .accessibilityIdentifier("importURLField")
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -2304,7 +2319,7 @@ private struct KindleBackgroundProbeSheet: View {
     @State private var showDebugTools = false
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Open Kindle, tap Start Probe, then lock the phone. Logs show whether JS/native scrolling survives background.")

@@ -47,7 +47,7 @@ final class VoiceGiftRouteCenter: ObservableObject {
 
     @Published private(set) var requestID: UUID?
 
-    private init() {}
+    init() {}
 
     func open() {
         guard VoiceGiftFeature.isRegionEligible() else { return }
@@ -83,7 +83,7 @@ final class PlaybackVoicePanelCenter: ObservableObject {
 
     var isPresented: Bool { request != nil }
 
-    private init() {}
+    init() {}
 
     func present(language: String, onCorrectReadingLanguage: ((String) -> Void)? = nil) {
         let normalized = VoiceCatalog.normalizedLanguage(language)
@@ -237,6 +237,8 @@ struct VoiceBrowserView: View {
                         categoryTabs
                     }
                 }
+                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity)
+                .frame(maxWidth: .infinity)
             }
             .modifier(VoiceBrowseContentMargins())
             .background(AppTheme.background)
@@ -738,13 +740,16 @@ struct VoiceBrowserView: View {
 @MainActor
 struct PlaybackVoicePanelOverlay: View {
     @ObservedObject var center: PlaybackVoicePanelCenter
+    @State private var keyboardInset: CGFloat = 0
 
     var body: some View {
         if let request = center.request {
             GeometryReader { proxy in
                 let horizontalInset: CGFloat = proxy.size.width > 700 ? 42 : 12
                 let panelWidth = min(720, proxy.size.width - horizontalInset * 2)
-                let panelHeight = min(720, max(470, proxy.size.height * 0.78))
+                let bottomInset = max(8, max(proxy.safeAreaInsets.bottom, keyboardInset > 0 ? keyboardInset + 8 : 0))
+                let availableHeight = max(1, proxy.size.height - bottomInset - 12)
+                let panelHeight = min(availableHeight, min(720, max(320, proxy.size.height * 0.78)))
 
                 ZStack(alignment: .bottom) {
                     Color.black.opacity(0.32)
@@ -760,6 +765,7 @@ struct PlaybackVoicePanelOverlay: View {
                             : nil,
                         onDone: { center.dismiss() }
                     )
+                    .ignoresSafeArea(.keyboard)
                     .frame(width: panelWidth, height: panelHeight)
                     .background(AppTheme.background)
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -768,9 +774,10 @@ struct PlaybackVoicePanelOverlay: View {
                             .stroke(AppTheme.mutedForeground.opacity(0.16), lineWidth: 0.5)
                     }
                     .shadow(color: .black.opacity(0.22), radius: 24, y: 8)
-                    .padding(.bottom, max(8, proxy.safeAreaInsets.bottom))
+                    .padding(.bottom, bottomInset)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+                .background { WindowKeyboardInsetReader(inset: $keyboardInset) }
             }
             .ignoresSafeArea(edges: .bottom)
             .accessibilityIdentifier("playbackVoicePanel")
@@ -909,6 +916,7 @@ struct VoiceAvatarView: View {
 /// the same avatar, language lock and switching behavior.
 @MainActor
 struct PlaybackVoiceButton: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var catalog = VoiceCatalogService.shared
     @ObservedObject private var cloneStore = VoiceCloneStore.shared
@@ -944,7 +952,7 @@ struct PlaybackVoiceButton: View {
 
     var body: some View {
         Button {
-            PlaybackVoicePanelCenter.shared.present(
+            readerScene.voicePanel.present(
                 language: normalizedLanguage,
                 onCorrectReadingLanguage: onCorrectReadingLanguage
             )
@@ -971,9 +979,11 @@ struct PlaybackVoiceButton: View {
                         .lineLimit(1)
                 }
             }
+            .frame(minWidth: AdaptiveLayout.isPad ? 44 : nil, minHeight: AdaptiveLayout.isPad ? 44 : nil)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .hoverEffect(.highlight)
         .accessibilityIdentifier("playbackVoiceButton")
         .accessibilityLabel(Text(AppLocalized("音色")))
         .accessibilityValue(Text(displayName + " · " + AppLocalized(VoiceOption.requiresGenerationQuota(voiceID) ? "使用每月共享生成额度" : "常规音色 · Pro 不限时")))

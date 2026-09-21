@@ -37,7 +37,7 @@ extension View {
 }
 
 private struct MiniPlayerSpaceReserver: ViewModifier {
-    @ObservedObject private var metrics = BottomOverlayMetrics.shared
+    @EnvironmentObject private var metrics: BottomOverlayMetrics
 
     func body(content: Content) -> some View {
         content.safeAreaInset(edge: .bottom, spacing: 0) {
@@ -68,10 +68,11 @@ private struct TabContentBottomKey: PreferenceKey {
 }
 
 struct MainTabView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Where the floating player sits. Purely visual — the space tab content
     /// gives up for it is measured, not derived from this number, so the two can
     /// no longer drift apart.
-    private static let miniPlayerBottomPadding: CGFloat = 68
+    private static var miniPlayerBottomPadding: CGFloat { AdaptiveLayout.isPad ? 12 : 68 }
     private static let rootSpace = "mainTabRoot"
 
     private enum LibraryOnboardingPostDismissAction {
@@ -88,26 +89,35 @@ struct MainTabView: View {
         var id: String { analyticsSession.bindSessionId }
     }
 
-    @StateObject private var coordinator = PlayerCoordinator()
-    @StateObject private var kindleCenter = KindlePlaybackCenter.shared
-    @StateObject private var offlineCenter = KindleOfflinePlaybackCenter.shared
+    private let readerScene: ReaderSceneContext
+    @StateObject private var coordinator: PlayerCoordinator
+    @StateObject private var kindleCenter: KindlePlaybackCenter
+    @StateObject private var offlineCenter: KindleOfflinePlaybackCenter
     @StateObject private var clipboard = ClipboardImportViewModel()
     @StateObject private var importRouter = ImportRouter()
     @StateObject private var voiceCloneAccess = VoiceCloneAccessCoordinator.shared
-    @StateObject private var playbackVoicePanel = PlaybackVoicePanelCenter.shared
-    @StateObject private var captionLanguageSwitcher = YouTubeCaptionLanguageSwitcher.shared
+    @StateObject private var playbackVoicePanel: PlaybackVoicePanelCenter
+    @StateObject private var captionLanguageSwitcher: YouTubeCaptionLanguageSwitcher
     @StateObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
     @StateObject private var reviewPrompt = AppReviewPromptManager.shared
-    @StateObject private var studyBoostRouter = StudyBoostRouter.shared
-    @StateObject private var youtubeRouteCenter = YouTubeRouteCenter.shared
-    @StateObject private var voiceGiftRouteCenter = VoiceGiftRouteCenter.shared
+    @StateObject private var studyBoostRouter: StudyBoostRouter
+    @StateObject private var youtubeRouteCenter: YouTubeRouteCenter
+    @StateObject private var voiceGiftRouteCenter: VoiceGiftRouteCenter
     @StateObject private var voiceCloneStore = VoiceCloneStore.shared
     @StateObject private var auth = AuthService.shared
     @StateObject private var growthLoop = GrowthLoopConversionCoordinator.shared
     @ObservedObject private var audioPlayer = AudioPlayerService.shared
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openWindow) private var openWindow
+    @State private var viewport = CGSize.zero
     @Environment(\.requestReview) private var requestReview
-    @State private var selectedTab: Int
+    @SceneStorage("reader.selectedTab") private var selectedTab: Int = 0
+    @SceneStorage("reader.restoredItemID") private var restoredItemID = ""
+    @SceneStorage("reader.restoredOfflineBookID") private var restoredOfflineBookID = ""
+    @SceneStorage("reader.restoredMode") private var restoredMode = "read"
+    @SceneStorage("reader.restoredScope") private var restoredScope = ""
+    @State private var didRestoreWindow = false
+    @State private var isRestoringWindow = false
     @State private var voiceBrowserLaunchRequest: VoiceBrowserLaunchRequest?
     @State private var miniPlayerTop: CGFloat?
     @State private var tabContentBottom: CGFloat?
@@ -139,8 +149,17 @@ struct MainTabView: View {
     @State private var pendingYouTubePlaybackAcceptance: YouTubeDurablePlaybackAcceptance?
     @AppStorage("youtube.didShowShareAha") private var didShowYouTubeShareAha = false
 
-    init() {
-        _selectedTab = State(initialValue: 0)
+    init(scene: ReaderSceneContext = .legacy) {
+        readerScene = scene
+        _coordinator = StateObject(wrappedValue: scene.player)
+        _kindleCenter = StateObject(wrappedValue: scene.kindle)
+        _offlineCenter = StateObject(wrappedValue: scene.offline)
+        _playbackVoicePanel = StateObject(wrappedValue: scene.voicePanel)
+        _captionLanguageSwitcher = StateObject(wrappedValue: scene.captionSwitcher)
+        _studyBoostRouter = StateObject(wrappedValue: scene.studyBoost)
+        _youtubeRouteCenter = StateObject(wrappedValue: scene.youtubeRoutes)
+        _voiceGiftRouteCenter = StateObject(wrappedValue: scene.voiceGift)
+
         _voiceBrowserLaunchRequest = State(initialValue: nil)
 
         let appearance = UITabBarAppearance()
@@ -155,13 +174,111 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        presentationContent
+        GeometryReader { geometry in
+            presentationContent
+                .modifier(ReaderDropImport(scene: readerScene))
+                .readerSceneEnvironment(readerScene)
+                .environment(\.appViewport, geometry.size)
+                .background(ReaderKeyboardRegistration(scene: readerScene, actions: windowKeyboardActions))
+                .onAppear { viewport = geometry.size }
+                .onChange(of: geometry.size) { viewport = $0 }
+        }
     }
 
-    private var mainContent: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                HomeView(
+    private var hasPresentedReader: Bool {
+        coordinator.isReaderPresented || kindleCenter.isPresented || offlineCenter.isPresented
+    }
+
+    private var windowKeyboardActions: [ReaderWindowCommand: () -> Void] {
+        guard !playbackVoicePanel.isPresented, !studyBoostRouter.isPresented,
+              youtubeExtractionPresentation == nil else { return [:] }
+        return [
+            .home: { minimizeReaders(); selectedTab = 0 },
+            .library: { minimizeReaders(); selectedTab = 3 },
+            .voices: { minimizeReaders(); selectedTab = 2 },
+            .settings: { minimizeReaders(); selectedTab = 4 },
+            .importContent: { minimizeReaders(); selectedTab = 0; importRouter.openQuickImport() },
+            .newWindow: { openWindow(id: "main") }
+        ]
+    }
+
+    private func minimizeReaders() {
+        if coordinator.isReaderPresented { coordinator.minimize() }
+        if kindleCenter.isPresented { kindleCenter.minimize() }
+        if offlineCenter.isPresented { offlineCenter.minimize() }
+    }
+
+    private var usesLegacySidebar: Bool {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderLegacyIPadNavigation") { return true }
+        #endif
+        if #available(iOS 18.0, *) { return false }
+        return true
+    }
+
+    @ViewBuilder
+    private var adaptiveTabs: some View {
+        if AdaptiveLayout.isPad && usesLegacySidebar {
+            NavigationSplitView {
+                List(selection: Binding<Int?>(get: { selectedTab }, set: { if let value = $0 { selectedTab = value } })) {
+                    NavigationLink(value: 0) { Label("首页", systemImage: "house.fill") }
+                    NavigationLink(value: 3) { Label("文库", systemImage: "books.vertical") }
+                    NavigationLink(value: 2) { Label("音色", systemImage: "waveform") }
+                    NavigationLink(value: 4) { Label("设置", systemImage: "gearshape") }
+                }
+                .navigationTitle("CastReader")
+                .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 280)
+            } detail: {
+                tabPage(selectedTab)
+            }
+        } else if AdaptiveLayout.isPad {
+            if #available(iOS 18.0, *) { tabs.tabViewStyle(.sidebarAdaptable) }
+            else { tabs }
+        } else { tabs }
+    }
+
+    private var tabs: some View {
+        TabView(selection: $selectedTab) {
+            tabPage(0).tabItem { Label("首页", systemImage: "house.fill") }.tag(0)
+            if AdaptiveLayout.isPad {
+                tabPage(3).tabItem { Label("文库", systemImage: "books.vertical") }.tag(3)
+            } else {
+                Color.clear.tabItem {
+                    Image(uiImage: Self.plusTabImage).renderingMode(.original)
+                    Text("")
+                }.tag(1)
+            }
+            tabPage(2).tabItem { Label("音色", systemImage: "waveform") }.tag(2)
+            if AdaptiveLayout.isPad {
+                tabPage(4).tabItem { Label("设置", systemImage: "gearshape") }.tag(4)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tabPage(_ tab: Int) -> some View {
+        switch tab {
+        case 3:
+            NavigationStack {
+                LibraryView().toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { selectedTab = 0; importRouter.openQuickImport() } label: {
+                            Label("导入内容", systemImage: "plus")
+                        }.accessibilityIdentifier("libraryImportButton")
+                    }
+                }
+            }
+        case 2:
+            VoiceBrowserView(presentation: .tab, launchRequest: voiceBrowserLaunchRequest,
+                onConsumeLaunchRequest: consumeVoiceBrowserLaunchRequest)
+        case 4:
+            SettingsView(shareInboxUnreadCount: shareInboxUnreadCount, onOpenShareInbox: {
+                reloadShareInbox(showWhenPending: false)
+                markShareInboxSeen()
+                showShareInbox = true
+            }, showsDismissButton: false)
+        default:
+            HomeView(
                     shareInboxUnreadCount: shareInboxUnreadCount,
                     isSurfaceActive: selectedTab == 0
                         && !coordinator.isReaderPresented
@@ -185,24 +302,14 @@ struct MainTabView: View {
                         selectedTab = 2
                     }
                 )
-                    .tabItem { Label("首页", systemImage: "house.fill") }
-                    .tag(0)
-                // 中间占位：被凸起 ➕ 覆盖；万一点到 tab item 也走通用导入并回首页。
-                Color.clear
-                    .tabItem {
-                        Image(uiImage: Self.plusTabImage)
-                            .renderingMode(.original)
-                        Text("")
-                    }
-                    .tag(1)
-                VoiceBrowserView(
-                    presentation: .tab,
-                    launchRequest: voiceBrowserLaunchRequest,
-                    onConsumeLaunchRequest: consumeVoiceBrowserLaunchRequest
-                )
-                    .tabItem { Label("音色", systemImage: "waveform") }
-                    .tag(2)
-            }
+        }
+    }
+
+    private var mainContent: some View {
+        ZStack(alignment: .bottom) {
+            adaptiveTabs
+                .allowsHitTesting(!hasPresentedReader && !playbackVoicePanel.isPresented)
+                .accessibilityHidden(hasPresentedReader || playbackVoicePanel.isPresented)
             // Zero-height probe: reserves nothing, only reports where a tab's
             // content actually ends (the top of the tab bar) so the overlap can
             // be measured instead of guessed. The reservation itself happens
@@ -225,7 +332,7 @@ struct MainTabView: View {
                 }
             }
 
-            if !importRouter.hideMainChrome {
+            if !AdaptiveLayout.isPad && !importRouter.hideMainChrome {
                 plusTapTarget
             }
 
@@ -253,9 +360,11 @@ struct MainTabView: View {
             if let s = coordinator.session {
                 ReaderHostView(readVM: s.readVM, explainVM: s.explainVM, coordinator: coordinator, document: s.document)
                     .id(s.instanceID)   // 新 VM 重建桥接；收起/展开仍保留同一会话
-                    .offset(y: coordinator.isReaderPresented ? 0 : UIScreen.main.bounds.height)
+                    .offset(y: coordinator.isReaderPresented ? 0 : max(1, viewport.height) + 120)
+                    .allowsHitTesting(coordinator.isReaderPresented)
+                    .accessibilityHidden(!coordinator.isReaderPresented)
                     .transition(.move(edge: .bottom))   // 首次 open / close 时从底部滑入滑出
-                    .animation(.spring(response: 0.4, dampingFraction: 0.9), value: coordinator.isReaderPresented)
+                    .animation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.9), value: coordinator.isReaderPresented)
                     .zIndex(10)
             }
 
@@ -266,27 +375,30 @@ struct MainTabView: View {
             if let model = kindleCenter.model {
                 KindleBookView(model: model)
                     .id(ObjectIdentifier(model))
-                    .offset(y: kindleCenter.isPresented ? 0 : UIScreen.main.bounds.height)
+                    .offset(y: kindleCenter.isPresented ? 0 : max(1, viewport.height) + 120)
                     .allowsHitTesting(kindleCenter.isPresented)
+                    .accessibilityHidden(!kindleCenter.isPresented)
                     .transition(.move(edge: .bottom))
-                    .animation(.spring(response: 0.4, dampingFraction: 0.9), value: kindleCenter.isPresented)
+                    .animation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.9), value: kindleCenter.isPresented)
                     .zIndex(11)
             }
 
             KindleOfflinePlaybackSurface(center: offlineCenter)
                 .zIndex(12)
 
+            if ReaderSceneRegistry.shared.presents(growthLoop.presentationSceneID, in: readerScene) {
             GrowthTrialOfferOverlay(
                 coordinator: growthLoop,
                 onPreview: startGrowthFirstValuePreview
             )
             .zIndex(90)
+            }
 
             // Player voice selection is an in-app overlay, not a system sheet.
             // This keeps ReaderHost/Kindle WKWebView geometry completely stable
             // while the user previews or switches voices.
             PlaybackVoicePanelOverlay(center: playbackVoicePanel)
-                .animation(.spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
+                .animation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
                 .zIndex(100)
 
             if studyBoostRouter.isPresented {
@@ -342,7 +454,7 @@ struct MainTabView: View {
         .onAppear {
             offlineCenter.beforeOpen = { [weak coordinator] in
                 coordinator?.close(preservingSleepTimer: true)
-                KindlePlaybackCenter.shared.close(preservingSleepTimer: true)
+                kindleCenter.close(preservingSleepTimer: true)
                 importRouter.hideMainChrome = false
             }
         }
@@ -352,12 +464,12 @@ struct MainTabView: View {
             selectedTab = 0
         }
         .toolbar(importRouter.hideMainChrome ? .hidden : .visible, for: .tabBar)
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
-        .animation(.spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
-        .animation(.spring(response: 0.38, dampingFraction: 0.9), value: studyBoostRouter.isPresented)
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
+        .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
+        .animation(reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.9), value: studyBoostRouter.isPresented)
         .animation(
-            .spring(response: 0.34, dampingFraction: 0.9),
+            reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.9),
             value: captionLanguageSwitcher.isPickerPresented
         )
         .alert(
@@ -372,9 +484,28 @@ struct MainTabView: View {
         }
     }
 
-    private var lifecycleContent: some View {
+    private var windowLifecycleContent: some View {
         mainContent
+        .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeKeyNotification)) { notification in
+            guard let window = notification.object as? UIWindow, window === readerScene.window else { return }
+            if !routePendingYouTubeIfAvailable() { routePendingSystemActionIfAvailable() }
+        }
+        .task { await restoreWindowIfNeeded() }
+        .onReceive(readerScene.$sceneSessionID.compactMap { $0 }) { _ in
+            Task { await restoreWindowIfNeeded() }
+        }
+        .onChange(of: coordinator.session?.document.id) { _ in saveWindowBookmark() }
+        .onChange(of: coordinator.mode) { _ in saveWindowBookmark() }
+        .onChange(of: selectedTab) { _ in saveWindowBookmark() }
+        .onChange(of: kindleCenter.model?.book.id) { _ in saveWindowBookmark() }
+        .onChange(of: kindleCenter.model?.mode) { _ in saveWindowBookmark() }
+        .onChange(of: offlineCenter.model?.book.id) { _ in saveWindowBookmark() }
+    }
+
+    private var lifecycleContent: some View {
+        windowLifecycleContent
         .onChange(of: scenePhase) { phase in
+            if phase != .active { saveWindowBookmark() }
             if phase == .active {
                 reviewPrompt.recordActiveDay()
                 ResumeReminderManager.shared.appBecameActive()   // 取消待发召回 + 时机成熟则请求通知权限
@@ -468,31 +599,38 @@ struct MainTabView: View {
                 for: .castReaderLibraryConnectedForReview
             )
         ) { _ in
+            guard readerScene.isKeyWindow else { return }
             reviewPrompt.recordPositiveOutcome(.libraryConnected)
         }
         // Legacy reader recovery paths still post these notifications. MainTab
         // is the stable presentation owner; invisible Home sections no longer
         // race to present their own sheets.
-        .onReceive(NotificationCenter.default.publisher(for: .castReaderKindleRebindRequested)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderKindleRebindRequested)) { notification in
+            guard readerScene.accepts(notification) else { return }
             requestLibraryConnection(.kindle, entryPoint: "reader_reconnect")
         }
-        .onReceive(NotificationCenter.default.publisher(for: .castReaderWeReadRebindRequested)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderWeReadRebindRequested)) { notification in
+            guard readerScene.accepts(notification) else { return }
             requestLibraryConnection(.weread, entryPoint: "reader_reconnect")
         }
-        .onReceive(NotificationCenter.default.publisher(for: .castReaderGoogleBooksRebindRequested)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderGoogleBooksRebindRequested)) { notification in
+            guard readerScene.accepts(notification) else { return }
             requestLibraryConnection(.googleBooks, entryPoint: "reader_reconnect")
         }
-        .onReceive(NotificationCenter.default.publisher(for: .castReaderKoboRebindRequested)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderKoboRebindRequested)) { notification in
+            guard readerScene.accepts(notification) else { return }
             requestLibraryConnection(.kobo, entryPoint: "reader_reconnect")
         }
-        .onReceive(NotificationCenter.default.publisher(for: .castReaderOReillyRebindRequested)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderOReillyRebindRequested)) { notification in
+            guard readerScene.accepts(notification) else { return }
             requestLibraryConnection(.oreilly, entryPoint: "reader_reconnect")
         }
         .onChange(of: kindleCenter.isPresented) { isPresented in
             if isPresented { coordinator.close(preservingSleepTimer: true) }
         }
         .onChange(of: growthLoop.softOffer?.id) { _ in
-            guard let offer = growthLoop.softOffer,
+            guard ReaderSceneRegistry.shared.presents(growthLoop.presentationSceneID, in: readerScene),
+                  let offer = growthLoop.softOffer,
                   offer.milestone == .libraryReady,
                   offer.documentID == nil else { return }
             // `sync_completed` is emitted inside the connection sheet. Close
@@ -652,7 +790,7 @@ struct MainTabView: View {
         youtubeExtractionTask = nil
         youtubePresentationWaitTask?.cancel()
         youtubePresentationWaitTask = nil
-        YouTubeTranscriptService.shared.cancel()
+        readerScene.youtubeService.cancel()
     }
 
     private var libraryOnboardingPresentation: Binding<Bool> {
@@ -660,11 +798,11 @@ struct MainTabView: View {
             // 等区域的权威判据（App Store storefront）就绪再呈现引导。
             // 否则首次安装时只有时区兜底可用，人在中国大陆出差的海外用户会先
             // 闪一下微信读书引导再跳回 Kindle 引导。最多等 2 秒，超时按兜底值走。
-            get: { isRegionResolved && libraryOnboarding.isChooserPresented },
+            get: { isRegionResolved && libraryOnboarding.isChooserPresented && ReaderSceneRegistry.shared.presents(libraryOnboarding.presentationSceneID, in: readerScene) },
             set: { presented in
                 if presented {
                     libraryOnboarding.presentChooser()
-                } else {
+                } else if ReaderSceneRegistry.shared.presents(libraryOnboarding.presentationSceneID, in: readerScene) {
                     libraryOnboarding.dismissChooser()
                 }
             }
@@ -673,7 +811,7 @@ struct MainTabView: View {
 
     private var growthPaywallPresentation: Binding<Bool> {
         Binding(
-            get: { growthLoop.isPaywallPresented },
+            get: { growthLoop.isPaywallPresented && ReaderSceneRegistry.shared.presents(growthLoop.presentationSceneID, in: readerScene) },
             set: { presented in
                 if !presented { growthLoop.dismissPaywall() }
             }
@@ -683,7 +821,7 @@ struct MainTabView: View {
     private var reviewOpportunityState: AppReviewPresentationGate {
         AppReviewPresentationGate(
             pending: reviewPrompt.isPending,
-            appIsActive: scenePhase == .active,
+            appIsActive: scenePhase == .active && readerScene.isKeyWindow,
             isHome: selectedTab == 0,
             playbackIsQuiescent: audioPlayer.isQuiescentForReviewPrompt,
             readerIsHidden: !coordinator.isReaderPresented && !offlineCenter.isPresented,
@@ -756,7 +894,7 @@ struct MainTabView: View {
             beginYouTubeExtraction(request)
             return true
         }
-        guard let pending = YouTubePendingLinkStore.peekNext() else { return false }
+        guard readerScene.isKeyWindow, let pending = YouTubePendingLinkStore.peekNext() else { return false }
         return youtubeRouteCenter.open(
             pending.rawURL,
             entry: pending.entry,
@@ -782,12 +920,15 @@ struct MainTabView: View {
         clipboard.consume()
         playbackVoicePanel.dismiss()
         studyBoostRouter.dismiss()
-        voiceCloneAccess.prompt = nil
+        if ReaderSceneRegistry.shared.presents(voiceCloneAccess.presentationSceneID, in: readerScene) {
+            voiceCloneAccess.prompt = nil
+        }
         pendingLibraryConnection = nil
         activeLibraryConnection = nil
         libraryConnectionPresentationTask?.cancel()
         libraryConnectionPresentationTask = nil
-        if libraryOnboarding.isChooserPresented {
+        if libraryOnboarding.isChooserPresented,
+           ReaderSceneRegistry.shared.presents(libraryOnboarding.presentationSceneID, in: readerScene) {
             pendingLibraryOnboardingAction = nil
             libraryOnboarding.postpone()
         }
@@ -811,7 +952,7 @@ struct MainTabView: View {
         youtubePresentationWaitTask = nil
 
         youtubeExtractionTask?.cancel()
-        YouTubeTranscriptService.shared.cancel()
+        readerScene.youtubeService.cancel()
         pendingYouTubeShareAhaSessionKey = nil
         activeYouTubeRequestID = request.id
         youtubeExtractionPresentation = .loading(request)
@@ -867,7 +1008,7 @@ struct MainTabView: View {
                                 0,
                                 Int(Date().timeIntervalSince(startedAt) * 1_000)
                             ),
-                            warmSession: YouTubeTranscriptService.shared
+                            warmSession: readerScene.youtubeService
                                 .lastExtractionServedFromWarmSession
                         )
                     )
@@ -985,7 +1126,7 @@ struct MainTabView: View {
             return YouTubeTrackRequest(refreshing: cached.document)
         }
         do {
-            transcript = try await YouTubeTranscriptService.shared.extract(
+            transcript = try await readerScene.youtubeService.extract(
                 request.reference,
                 preferredLanguage: refreshPreference,
                 requestedTrack: refreshTrack,
@@ -1361,7 +1502,7 @@ struct MainTabView: View {
         let cancelledRequest = youtubeExtractionPresentation?.request
         youtubeExtractionTask?.cancel()
         youtubeExtractionTask = nil
-        YouTubeTranscriptService.shared.cancel()
+        readerScene.youtubeService.cancel()
         youtubeExtractionPresentation = nil
         activeYouTubeRequestID = nil
         pendingYouTubeShareAhaSessionKey = nil
@@ -1391,7 +1532,7 @@ struct MainTabView: View {
     /// the only consumer because it also owns PlayerCoordinator and import UI.
     @discardableResult
     private func routePendingSystemActionIfAvailable() -> Bool {
-        guard scenePhase == .active,
+        guard scenePhase == .active, readerScene.isKeyWindow,
               systemActionTask == nil,
               let action = SystemActionStore.shared.takePending() else {
             return false
@@ -1402,7 +1543,8 @@ struct MainTabView: View {
         studyBoostRouter.dismiss()
         showShareInbox = false
         clipboard.consume()
-        if libraryOnboarding.isChooserPresented {
+        if libraryOnboarding.isChooserPresented,
+           ReaderSceneRegistry.shared.presents(libraryOnboarding.presentationSceneID, in: readerScene) {
             pendingLibraryOnboardingAction = nil
             libraryOnboarding.postpone()
         }
@@ -1588,7 +1730,7 @@ struct MainTabView: View {
         switch action {
         case .kindleBook(let book):
             selectedTab = 0
-            KindlePlaybackCenter.shared.open(
+            kindleCenter.open(
                 book: book,
                 intent: .autoplayRead(requestID: UUID())
             )
@@ -1617,7 +1759,7 @@ struct MainTabView: View {
                 requestLibraryConnection(.kindle, entryPoint: "growth_library_ready")
                 return
             }
-            KindlePlaybackCenter.shared.open(
+            kindleCenter.open(
                 book: book,
                 intent: .autoplayRead(requestID: UUID())
             )
@@ -1755,7 +1897,7 @@ struct MainTabView: View {
                     if systemPresentationProbe != .presented {
                         if clipboard.detected != nil { clipboard.consume() }
                         if showShareInbox { showShareInbox = false }
-                        if libraryOnboarding.isChooserPresented { libraryOnboarding.postpone() }
+                        if libraryOnboarding.isChooserPresented, ReaderSceneRegistry.shared.presents(libraryOnboarding.presentationSceneID, in: readerScene) { libraryOnboarding.postpone() }
                     }
                 }
                 let gatePassed = timedOut
@@ -1823,15 +1965,7 @@ struct MainTabView: View {
     }
 
     private var systemPresentationProbe: SystemPresentationProbe {
-        let activeScenes = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .filter { $0.activationState == .foregroundActive }
-        guard let window = activeScenes
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow),
-              let root = window.rootViewController else {
-            return .unknown
-        }
+        guard let root = readerScene.window?.rootViewController else { return .unknown }
         return root.presentedViewController != nil ? .presented : .clear
     }
 
@@ -1870,8 +2004,11 @@ struct MainTabView: View {
 
     private var voiceClonePromptBinding: Binding<VoiceCloneAccessCoordinator.Prompt?> {
         Binding(
-            get: { Constants.Features.voiceCloningEnabled ? voiceCloneAccess.prompt : nil },
-            set: { voiceCloneAccess.prompt = Constants.Features.voiceCloningEnabled ? $0 : nil }
+            get: { Constants.Features.voiceCloningEnabled && ReaderSceneRegistry.shared.presents(voiceCloneAccess.presentationSceneID, in: readerScene) ? voiceCloneAccess.prompt : nil },
+            set: { value in
+                guard ReaderSceneRegistry.shared.presents(voiceCloneAccess.presentationSceneID, in: readerScene) else { return }
+                voiceCloneAccess.prompt = Constants.Features.voiceCloningEnabled ? value : nil
+            }
         )
     }
 
@@ -1889,10 +2026,10 @@ struct MainTabView: View {
     /// correct if the player's height, its padding, or the tab bar ever change.
     private func publishOverlap() {
         guard let top = miniPlayerTop, let bottom = tabContentBottom else {
-            BottomOverlayMetrics.shared.update(0)
+            readerScene.bottomMetrics.update(0)
             return
         }
-        BottomOverlayMetrics.shared.update(max(0, bottom - top))
+        readerScene.bottomMetrics.update(max(0, bottom - top))
     }
 
     private static let plusTabImage: UIImage = {
@@ -1940,7 +2077,7 @@ struct MainTabView: View {
             if mode == .explain {
                 systemActionNotice = AppLocalized("YouTube 字幕稿目前仅支持朗读，已自动切换为朗读。")
             }
-            _ = YouTubeRouteCenter.shared.open(rawURL, entry: .clipboard)
+            _ = youtubeRouteCenter.open(rawURL, entry: .clipboard)
             return
         }
         let format: AnalyticsContentFormat
@@ -1986,6 +2123,55 @@ struct MainTabView: View {
         }
     }
 
+    private func saveWindowBookmark() {
+        guard didRestoreWindow else { return }
+        restoredItemID = kindleCenter.model?.book.id ?? coordinator.session?.document.id ?? ""
+        restoredOfflineBookID = offlineCenter.model?.book.id ?? ""
+        restoredMode = (kindleCenter.model?.mode ?? coordinator.mode).rawValue
+        restoredScope = AccountContentIsolation.activeStorageID ?? ""
+        if let id = readerScene.sceneSessionID {
+            ReaderWindowBookmarkStore.shared.save(ReaderWindowBookmark(itemID: restoredItemID,
+                offlineBookID: restoredOfflineBookID, mode: restoredMode, tab: selectedTab, scope: restoredScope), sessionID: id)
+        }
+        ReaderRunLog.write("WINDOW bookmark save scene=\(readerScene.sceneSessionID ?? "nil") item=\(!restoredItemID.isEmpty) mode=\(restoredMode) scope=\(!restoredScope.isEmpty)")
+    }
+
+    private func restoreWindowIfNeeded() async {
+        guard !didRestoreWindow, !isRestoringWindow, readerScene.sceneSessionID != nil else { return }
+        isRestoringWindow = true
+        defer { isRestoringWindow = false; didRestoreWindow = true }
+        ReaderRunLog.write("WINDOW bookmark restore scene=\(readerScene.sceneSessionID ?? "nil") item=\(!restoredItemID.isEmpty) mode=\(restoredMode) scopeMatches=\(restoredScope == AccountContentIsolation.activeStorageID)")
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains(where: { $0.hasPrefix("-CastReader") }), !args.contains("-CastReaderRestoreWindowAcceptance") {
+            selectedTab = 0
+            return
+        }
+        #endif
+        if let id = readerScene.sceneSessionID, let scope = AccountContentIsolation.activeStorageID,
+           let bookmark = ReaderWindowBookmarkStore.shared.load(sessionID: id, scope: scope) {
+            restoredItemID = bookmark.itemID
+            restoredOfflineBookID = bookmark.offlineBookID
+            restoredMode = bookmark.mode
+            restoredScope = bookmark.scope
+            selectedTab = [0, 2, 3, 4].contains(bookmark.tab) ? bookmark.tab : 0
+        }
+        if !restoredOfflineBookID.isEmpty, restoredScope == AccountContentIsolation.activeStorageID,
+           let scope = KindleOfflineContext.currentScope,
+           let book = try? await KindleOfflineBookStore.shared.load(id: restoredOfflineBookID, scope: scope),
+           KindleOfflineContext.currentScope == scope {
+            offlineCenter.open(book: book, scope: scope, scopeValidator: { KindleOfflineContext.currentScope == scope })
+            return
+        }
+        guard !restoredItemID.isEmpty, restoredScope == AccountContentIsolation.activeStorageID,
+              coordinator.session == nil, kindleCenter.model == nil else { return }
+        let mode = ReaderMode(rawValue: restoredMode) ?? .read
+        let isKindle = HistoryStore.shared.visibleRecords.first(where: { $0.id == restoredItemID })?.sourceKind == .kindle
+        _ = try? await coordinator.resume.open(itemID: restoredItemID,
+            mode: isKindle ? .read : mode, autoplay: false, entryPoint: "window_restore")
+        if isKindle { kindleCenter.model?.selectMode(mode) }
+    }
+
     private func reloadShareInbox(showWhenPending: Bool) {
         let pending = ShareInboxStore.pending()
         shareInboxItems = pending.map {
@@ -1993,7 +2179,7 @@ struct MainTabView: View {
         }
         shareInboxUnreadCount = ShareInboxStore.unreadCount(in: pending.map(\.record))
         scheduleShareInboxMetadataHydration()
-        if showWhenPending && !shareInboxItems.isEmpty {
+        if showWhenPending && readerScene.isKeyWindow && !shareInboxItems.isEmpty {
             showShareInbox = true
         }
     }
@@ -2084,7 +2270,7 @@ struct MainTabView: View {
                YouTubeURLParser.parse(rawURL) != nil {
                 isImportingSharedContent = false
                 showShareInbox = false
-                _ = YouTubeRouteCenter.shared.open(rawURL, entry: .share)
+                _ = youtubeRouteCenter.open(rawURL, entry: .share)
             } else {
                 complete(record.sourceURL.flatMap(DocumentBuilder.fromWebURL))
             }

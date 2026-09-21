@@ -101,6 +101,8 @@ final class ReaderRoundedBackgroundLayoutManager: NSLayoutManager {
 
 final class ReaderUITextView: UITextView {
     var viewportFocusRange: NSRange?
+    var onReaderLayout: (() -> Void)?
+    private var lastReaderSize = CGSize.zero
     private var focusScheduled = false
 
     static func make() -> ReaderUITextView {
@@ -121,7 +123,10 @@ final class ReaderUITextView: UITextView {
     }
 
     override var intrinsicContentSize: CGSize {
-        let width = bounds.width > 0 ? bounds.width : UIScreen.main.bounds.width - 40
+        guard bounds.width > 0 else {
+            return CGSize(width: UIView.noIntrinsicMetric, height: UIView.noIntrinsicMetric)
+        }
+        let width = bounds.width
         let size = sizeThatFits(CGSize(width: width, height: CGFloat.greatestFiniteMagnitude))
         return CGSize(width: UIView.noIntrinsicMetric, height: ceil(size.height))
     }
@@ -129,6 +134,10 @@ final class ReaderUITextView: UITextView {
     override func layoutSubviews() {
         super.layoutSubviews()
         invalidateIntrinsicContentSize()
+        if bounds.size != lastReaderSize {
+            lastReaderSize = bounds.size
+            DispatchQueue.main.async { [weak self] in self?.onReaderLayout?() }
+        }
         if viewportFocusRange != nil, !focusScheduled {
             focusScheduled = true
             DispatchQueue.main.async { [weak self] in
@@ -196,14 +205,22 @@ struct ReaderTextView: UIViewRepresentable {
     var readerViewportRange: NSRange? = nil
     /// 暴露底层 textview（供解读 mark 定位）。布局完成后回调。
     var onReady: ((ReaderUITextView) -> Void)? = nil
+    var onLayout: (() -> Void)? = nil
 
     func makeUIView(context: Context) -> ReaderUITextView {
         ReaderUITextView.make()
     }
 
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: ReaderUITextView, context: Context) -> CGSize? {
+        guard !autoScrollsHighlight, let width = proposal.width, width > 0, width.isFinite else { return nil }
+        let measured = uiView.sizeThatFits(CGSize(width: width, height: CGFloat.greatestFiniteMagnitude))
+        return CGSize(width: width, height: ceil(measured.height))
+    }
+
     func updateUIView(_ tv: ReaderUITextView, context: Context) {
         tv.isScrollEnabled = autoScrollsHighlight
         tv.viewportFocusRange = readerViewportRange
+        tv.onReaderLayout = onLayout
         tv.attributedText = buildAttributedString()
         tv.invalidateIntrinsicContentSize()
         tv.setNeedsLayout()

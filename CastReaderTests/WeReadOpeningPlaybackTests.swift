@@ -4,6 +4,15 @@ import WebKit
 
 @MainActor
 final class WeReadOpeningPlaybackTests: XCTestCase {
+    func testCurrentChapterSelectionRequiresUniqueAuthoritativeCatalogHeading() {
+        let entry = WeReadTOCEntry(index: 4, chapterIndex: 5, chapterUID: "5", title: "第一章 开往蒙古的列车")
+        XCTAssertTrue(entry.hasUniqueCatalogHeading([entry]))
+        XCTAssertFalse(entry.hasUniqueCatalogHeading([entry, entry]))
+        XCTAssertFalse(entry.hasUniqueCatalogHeading([]))
+        let presentationOnly = WeReadTOCEntry(index: 4, chapterIndex: 5, chapterUID: "", title: entry.title)
+        XCTAssertFalse(presentationOnly.hasUniqueCatalogHeading([presentationOnly]))
+    }
+
     func testCoverAdvancesOnceAndWaitsForCommittedBody() async {
         var probes = 0, turns = 0
         let ready = await WeReadOpeningPlayback.prepare(maximumProbes: 12, delayNanoseconds: 1,

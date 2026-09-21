@@ -675,6 +675,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
 
     func switchStorefront(to storefront: KindleStorefront) {
         guard storefront.isSelectable, storefront.id != store.boundStorefrontID else { return }
+        for context in ReaderSceneRegistry.shared.contexts { context.kindle.close() }
         KindlePlaybackCenter.shared.close()
         webView.stopLoading()
         store.switchStorefront(to: storefront.id)

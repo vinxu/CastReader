@@ -48,6 +48,7 @@ export interface MarkRenderer {
   show: (m: MarkData) => void
   clear: () => void
   setColor: (hex: string) => void
+  relayout: () => void
 }
 
 export function createMarkRenderer(
@@ -58,13 +59,37 @@ export function createMarkRenderer(
   // 否则 iframe 内 Range 的 viewport 坐标会被错误画到顶层页面。
   const svgs = new Map<Document, SVGSVGElement>()
   let color = initialColor
-  const shown = new Set<string>()
+  const shown = new Map<string, MarkData>()
+  const observedWindows = new WeakSet<Window>()
+  let animateDrawing = true
+  let pendingRelayout = 0
+
+  function scheduleRelayout(): void {
+    if (pendingRelayout || shown.size === 0) return
+    pendingRelayout = requestAnimationFrame(() => { pendingRelayout = 0; relayout() })
+  }
+
+  function relayout(): void {
+    const marks = Array.from(shown.values())
+    svgs.forEach(svg => svg.replaceChildren())
+    shown.clear()
+    // Keep semantic IDs and deterministic seeds. Existing marks are already
+    // inked; viewport/font changes must not replay their drawing animation.
+    animateDrawing = false
+    try { marks.forEach(show) } finally { animateDrawing = true }
+  }
 
   function ensureSvg(doc: Document): SVGSVGElement | null {
     const root = doc.documentElement
     const body = doc.body
     const host = body || root
     if (!host) return null
+    const ownerWindow = doc.defaultView
+    if (ownerWindow && !observedWindows.has(ownerWindow)) {
+      observedWindows.add(ownerWindow)
+      ownerWindow.addEventListener('resize', scheduleRelayout)
+      doc.fonts?.addEventListener('loadingdone', scheduleRelayout)
+    }
     const width = Math.max(root?.scrollWidth || 0, body?.scrollWidth || 0, 1)
     const height = Math.max(root?.scrollHeight || 0, body?.scrollHeight || 0, 1)
     const existing = svgs.get(doc)
@@ -119,6 +144,7 @@ export function createMarkRenderer(
     path.setAttribute('stroke-linecap', 'round')
     path.setAttribute('stroke-linejoin', 'round')
     s.appendChild(path)
+    if (!animateDrawing) return
     try {
       const len = path.getTotalLength?.() ?? 120
       path.style.strokeDasharray = String(len)
@@ -154,7 +180,7 @@ export function createMarkRenderer(
     // 否则只画第一行、换行处就断了。末尾符号用最后一行右端，圈用所有行并集 bbox 圈住整段。
     const lineRects = rects.filter((rc) => rc.width >= 2 && rc.height >= 2)
     if (!lineRects.length) return
-    shown.add(m.id)
+    shown.set(m.id, m)
     const last = lineRects[lineRects.length - 1]
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     lineRects.forEach((rc) => {
@@ -210,6 +236,8 @@ export function createMarkRenderer(
   }
 
   function clear(): void {
+    cancelAnimationFrame(pendingRelayout)
+    pendingRelayout = 0
     shown.clear()
     svgs.forEach((svg) => {
       try { svg.remove() } catch { /* detached/replaced frame */ }
@@ -219,5 +247,5 @@ export function createMarkRenderer(
 
   function setColor(hex: string): void { color = hex }
 
-  return { show, clear, setColor }
+  return { show, clear, setColor, relayout }
 }

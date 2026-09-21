@@ -88,6 +88,7 @@ final class GoogleDriveSystemWebAuthenticator: NSObject,
         category: "GoogleDriveOAuth"
     )
 
+    private weak var presentationWindow: UIWindow?
     private var session: ASWebAuthenticationSession?
     private var attempt: Attempt?
     private var timeoutTask: Task<Void, Never>?
@@ -99,6 +100,7 @@ final class GoogleDriveSystemWebAuthenticator: NSObject,
     }
 
     func authenticate(url: URL, callbackScheme: String) async throws -> URL {
+        presentationWindow = ReaderSceneRegistry.shared.presentationContext?.window
         let attemptID = UUID()
         try Task.checkCancellation()
         cancel()
@@ -381,11 +383,7 @@ final class GoogleDriveSystemWebAuthenticator: NSObject,
     }
 
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        let window = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow)
-        return window ?? ASPresentationAnchor()
+        presentationWindow ?? ASPresentationAnchor()
     }
 }
 

@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct KindleLibraryView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject private var store = KindleLibraryStore.shared
     @State private var query = ""
     @State private var sort: KindleLibrarySort = .recent
@@ -126,7 +127,7 @@ struct KindleLibraryView: View {
             ForEach(visibleBooks) { book in
                 KindleLibraryRow(
                     book: book,
-                    open: { KindlePlaybackCenter.shared.open(book: book) }
+                    open: { readerScene.kindle.open(book: book) }
                 )
             }
         }

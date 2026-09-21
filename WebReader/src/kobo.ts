@@ -781,14 +781,31 @@ function frameClip(
 
   const rect = iframe.getBoundingClientRect()
   if (rect.width <= 1 || rect.height <= 1) return null
+  // The shell clips its paged strip inside a narrower viewport. Intersect
+  // that clipping chain before mapping into chapter coordinates; otherwise
+  // letters from adjacent columns behind the shell margins look readable.
+  let viewport = topViewport()
+  for (let parent = iframe.parentElement; parent; parent = parent.parentElement) {
+    const parentStyle = getComputedStyle(parent)
+    const paintClip = /(?:^|\s)(paint|strict|content)(?:\s|$)/.test(parentStyle.contain)
+    const clipsX = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowX)
+    const clipsY = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowY)
+    if (!clipsX && !clipsY) continue
+    const box = parent.getBoundingClientRect()
+    const sx = box.width / Math.max(1, parent.offsetWidth)
+    const sy = box.height / Math.max(1, parent.offsetHeight)
+    const left = box.left + parent.clientLeft * sx
+    const top = box.top + parent.clientTop * sy
+    viewport = {
+      left: clipsX ? Math.max(viewport.left, left) : viewport.left,
+      right: clipsX ? Math.min(viewport.right, left + parent.clientWidth * sx) : viewport.right,
+      top: clipsY ? Math.max(viewport.top, top) : viewport.top,
+      bottom: clipsY ? Math.min(viewport.bottom, top + parent.clientHeight * sy) : viewport.bottom,
+    }
+  }
   const hit = intersect(
-    {
-      left: rect.left,
-      top: rect.top,
-      right: rect.right,
-      bottom: rect.bottom,
-    },
-    topViewport()
+    { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+    viewport
   )
   if (!hit) return null
 
@@ -1094,6 +1111,7 @@ export function koboParagraphSnapshotQuality(
   return { ok: true, reason: 'ok' }
 }
 
+
 function extractKoboParagraphsFromClips(clips: KoboFrame[]): KoboPara[] {
   const output: KoboPara[] = []
   const seen = new Set<string>()
@@ -1133,7 +1151,8 @@ function extractKoboParagraphsFromClips(clips: KoboFrame[]): KoboPara[] {
   // future CSS column into the current page: audio then reads invisible text,
   // TTS takes much longer, and the physical page turn is delayed. The
   // dedicated next-page speech preview owns that continuation instead.
-  return koboParagraphSnapshotQuality(output).ok ? output : []
+  const quality = koboParagraphSnapshotQuality(output)
+  return quality.ok ? output : []
 }
 
 /** Exact visible-page extraction. Never includes an off-screen preloaded frame. */
@@ -2201,7 +2220,11 @@ export function installKoboReader(
         const returnedToBaseline =
           changeBaseline.length > 0 && finalSignature === changeBaseline
 
-        if (returnedToBaseline && !forceExtract) {
+        // Rotation may expose an intermediate slice, causing the polling
+        // loop to restart settlement without the original forceExtract flag.
+        // Even if the final source signature returns to its baseline, refresh
+        // must commit the new geometry so native restores highlights/marks.
+        if (returnedToBaseline && !forceExtract && reason !== 'refresh') {
           if (reason === 'manual') {
             postForFrame('googleBooksPageChanging', {
               reason: 'manual',
@@ -2639,6 +2662,24 @@ export function installKoboReader(
       return attemptManualTurn(direction)
     },
     refresh(arg?: unknown): void {
+      const reflow = recordArg(arg)
+      if (reflow.reflowDirection === 'next' || reflow.reflowDirection === 'prev') {
+        // Native proved the active source moved outside the resized page.
+        // This is geometry recovery, not a new user or automatic speech turn.
+        if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent ||
+            reflow.reflowBaseline !== koboSignature()) return
+        const direction = reflow.reflowDirection
+        if (!methodAvailable('semantic', direction) && !methodAvailable('button', direction)) return
+        beginLayoutRefresh('source-anchor')
+        if (methodAvailable('semantic', direction)) {
+          const invocation = invokeKoboSemanticPageTurn(direction)
+          void invocation.completion?.catch(() => {})
+        } else {
+          turnKoboPage(direction, 'button')
+        }
+        beginSettlement('refresh', 0, true)
+        return
+      }
       const fallbackBaseline = committedSignature || koboSignature()
       const automatic = nonemptyString(recordArg(arg).turnID)
         ? automaticMetadata(arg, fallbackBaseline)

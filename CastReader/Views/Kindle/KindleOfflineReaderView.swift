@@ -21,24 +21,51 @@ private struct KindleOfflinePageZoom: UIViewRepresentable {
         let doubleTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.doubleTap(_:)))
         doubleTap.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTap)
+        if AdaptiveLayout.isPad {
+            view.pinchGestureRecognizer?.addTarget(context.coordinator, action: #selector(Coordinator.recoverStalledPinch(_:)))
+        }
         return view
     }
     func updateUIView(_ view: Canvas, context: Context) {
-        if view.imageView.image !== image { view.imageView.image = image; view.setNeedsLayout() }
+        if view.imageView.image !== image { view.replaceImage(image) }
     }
     final class Canvas: UIScrollView {
         let imageView = UIImageView()
         private var viewport = CGSize.zero
+        private var isRelayingOut = false
+        func replaceImage(_ image: UIImage) {
+            setZoomScale(1, animated: false)
+            imageView.image = image
+            viewport = .zero
+            setNeedsLayout()
+        }
         override func layoutSubviews() {
             super.layoutSubviews()
-            guard bounds.size != viewport, bounds.width > 0, let image = imageView.image else { return }
+            guard !isRelayingOut, bounds.size != viewport, bounds.width > 0,
+                  let image = imageView.image else { return }
+            isRelayingOut = true
+            defer { isRelayingOut = false }
+            let hadLayout = viewport != .zero
+            let zoom = zoomScale
+            let center = CGPoint(x: (contentOffset.x + viewport.width / 2) / max(1, contentSize.width),
+                                 y: (contentOffset.y + viewport.height / 2) / max(1, contentSize.height))
             viewport = bounds.size
             setZoomScale(1, animated: false)
             let fitted = AVMakeRect(aspectRatio: image.size, insideRect: CGRect(origin: .zero, size: bounds.size))
             imageView.frame = CGRect(origin: .zero, size: fitted.size)
-            contentSize = imageView.frame.size
+            contentSize = fitted.size
+            setZoomScale(zoom, animated: false)
             centerImage()
-            contentOffset = CGPoint(x: -contentInset.left, y: -contentInset.top)
+            let offset = hadLayout
+                ? CGPoint(x: center.x * contentSize.width - bounds.width / 2,
+                          y: center.y * contentSize.height - bounds.height / 2)
+                : CGPoint(x: -contentInset.left, y: -contentInset.top)
+            setClampedOffset(offset)
+        }
+        func setClampedOffset(_ point: CGPoint) {
+            contentOffset = CGPoint(
+                x: min(max(-contentInset.left, point.x), max(-contentInset.left, contentSize.width - bounds.width + contentInset.right)),
+                y: min(max(-contentInset.top, point.y), max(-contentInset.top, contentSize.height - bounds.height + contentInset.bottom)))
         }
         func centerImage() {
             let horizontal = max(0, (bounds.width - contentSize.width) / 2)
@@ -47,6 +74,30 @@ private struct KindleOfflinePageZoom: UIViewRepresentable {
         }
     }
     final class Coordinator: NSObject, UIScrollViewDelegate {
+        private var startZoom: CGFloat = 1
+        private var startScale: CGFloat = 1
+        private var anchor = CGPoint.zero
+        private var needsRecovery = false
+        @objc func recoverStalledPinch(_ gesture: UIPinchGestureRecognizer) {
+            guard let view = gesture.view as? Canvas else { return }
+            if gesture.state == .began {
+                startZoom = view.zoomScale
+                startScale = max(0.001, gesture.scale)
+                anchor = gesture.location(in: view.imageView)
+                needsRecovery = false
+            }
+            guard gesture.state == .changed || gesture.state == .ended else { return }
+            let factor = gesture.scale / startScale
+            if !needsRecovery {
+                guard abs(factor - 1) > 0.01, abs(view.zoomScale - startZoom) < 0.001 else { return }
+                needsRecovery = true
+            }
+            let location = gesture.location(in: view)
+            view.setZoomScale(min(view.maximumZoomScale, max(view.minimumZoomScale, startZoom * factor)), animated: false)
+            let point = view.imageView.convert(anchor, to: view)
+            view.setClampedOffset(CGPoint(x: view.contentOffset.x + point.x - location.x,
+                                         y: view.contentOffset.y + point.y - location.y))
+        }
         func viewForZooming(in scrollView: UIScrollView) -> UIView? { (scrollView as? Canvas)?.imageView }
         func scrollViewDidZoom(_ scrollView: UIScrollView) {
             (scrollView as? Canvas)?.centerImage()
@@ -82,6 +133,7 @@ struct KindleOfflineBookReaderView: View {
 
 @MainActor
 private struct KindleOfflineBookReaderContent: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject var model: KindleOfflineBookReaderModel
     @ObservedObject var speech: SystemSpeechPlaybackService
     let continueDownload: (() -> Void)?
@@ -120,6 +172,7 @@ private struct KindleOfflineBookReaderContent: View {
                 savedEndNotice
             }
         }
+        .background(ReaderKeyboardRegistration(scene: readerScene, priority: 12, actions: keyboardActions))
         .safeAreaInset(edge: .bottom, spacing: 0) { playbackBar }
         .background(AppTheme.background)
         .toolbar { ToolbarItem(placement: .primaryAction) { ReaderMoreButton() } }
@@ -149,6 +202,17 @@ private struct KindleOfflineBookReaderContent: View {
         .onChange(of: model.loading) { _, _ in saveDiagnostic() }
         .onChange(of: model.preparingSpeech) { _, _ in saveDiagnostic() }
         .onChange(of: speech.callbackCount) { _, count in if count % 10 == 0 { saveDiagnostic() } }
+    }
+
+    private var keyboardActions: [ReaderWindowCommand: () -> Void] {
+        guard readerScene.offline.isPresented else { return [:] }
+        var actions: [ReaderWindowCommand: () -> Void] = [
+            .playPause: { if playing { model.pause() } else { model.play() } },
+            .dismiss: { readerScene.offline.minimize() }
+        ]
+        if !model.loading, model.pageIndex > 0 { actions[.previous] = { model.selectPage(model.pageIndex - 1) } }
+        if !model.loading, model.pageIndex + 1 < model.book.pages.count { actions[.next] = { model.selectPage(model.pageIndex + 1) } }
+        return actions
     }
 
     private var pageHeader: some View {
@@ -208,6 +272,8 @@ private struct KindleOfflineBookReaderContent: View {
                             .accessibilityIdentifier("offlineBookParagraph.\(paragraph.id)")
                     }
                 }.padding(20)
+                    .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.readingWidth : .infinity)
+                    .frame(maxWidth: .infinity)
             }.id(model.pageIndex)
             .task(id: speech.highlightedParagraphID) {
                 await Task.yield()
@@ -235,7 +301,6 @@ private struct KindleOfflineBookReaderContent: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppTheme.primary.opacity(0.06))
             .accessibilityElement(children: .contain).accessibilityIdentifier("offlineBookEnd")
-            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 
     private func openImageZoom() {

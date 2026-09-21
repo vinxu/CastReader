@@ -36,6 +36,7 @@ struct AudioPlaybackResumeHandle: Equatable, Sendable {
     fileprivate let session: AudioPlaybackSessionToken?
     fileprivate let segmentID: String
     fileprivate let bookID: String?
+    fileprivate let intentRevision: UInt64
 }
 
 /// One local rebuild per selected item. A failed retry remains terminal until
@@ -279,6 +280,13 @@ struct AudioPlaybackOwnershipState: Equatable {
         activeSession = nil
     }
 
+    mutating func invalidateAll() {
+        activeSession = nil
+        queueSession = nil
+        // Never reuse a token after sign-out: detached callbacks may still exist.
+        nextGeneration &+= 1
+    }
+
     mutating func transferActiveQueue(
         to owner: AudioPlaybackOwner
     ) -> AudioPlaybackSessionToken? {
@@ -324,6 +332,8 @@ class AudioPlayerService: NSObject, ObservableObject {
     static let shared = AudioPlayerService()
     let sleepTimer = PlaybackSleepTimer()
     private var externalPlayback: (token: AudioPlaybackSessionToken, controls: AudioExternalPlaybackControls)?
+    private var ownershipRevoked: (() -> Void)?
+    private var playbackIntentRevision: UInt64 = 0
 
     /// Shares ownership, interruption, sleep and remote controls with system
     /// speech while keeping AVPlayer's segment/timestamp pipeline intact.
@@ -541,10 +551,16 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// fences callbacks from an older VM instance as well as Read/Explain mode
     /// switches.
     @discardableResult
-    func claimPlaybackSession(owner: AudioPlaybackOwner) -> AudioPlaybackSessionToken {
+    func claimPlaybackSession(owner: AudioPlaybackOwner, onRevoked: (() -> Void)? = nil) -> AudioPlaybackSessionToken {
+        // Checkpoint and cancel the outgoing producer before replacing its
+        // queue. A late generation callback must never reclaim another window.
+        let outgoing = ownershipRevoked
+        ownershipRevoked = nil
+        outgoing?()
         detachExternalPlayback()
         suspendQueueForOwnershipChange()
         let token = playbackOwnership.claim(owner)
+        ownershipRevoked = onRevoked
         ReaderRunLog.write(
             "AUDIO session claimed owner=\(owner.rawValue) gen=\(token.generation)"
         )
@@ -553,6 +569,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     func releasePlaybackSession(_ token: AudioPlaybackSessionToken) {
         guard playbackOwnership.activeSession == token else { return }
+        ownershipRevoked = nil
         detachExternalPlayback()
         suspendQueueForOwnershipChange()
         playbackOwnership.release(token)
@@ -571,10 +588,16 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard let token = playbackOwnership.transferActiveQueue(to: owner) else {
             return nil
         }
+        ownershipRevoked = nil
         if playerItem != nil {
             playerItemSession = token
         }
         return token
+    }
+
+    func setOwnershipRevocationHandler(for token: AudioPlaybackSessionToken, _ handler: @escaping () -> Void) {
+        guard playbackOwnership.activeSession == token else { return }
+        ownershipRevoked = handler
     }
 
     func isPlaybackSessionActive(_ token: AudioPlaybackSessionToken) -> Bool {
@@ -644,7 +667,8 @@ class AudioPlayerService: NSObject, ObservableObject {
         return AudioPlaybackResumeHandle(
             session: session,
             segmentID: segmentID,
-            bookID: currentBookId
+            bookID: currentBookId,
+            intentRevision: playbackIntentRevision
         )
     }
 
@@ -653,6 +677,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         _ handle: AudioPlaybackResumeHandle
     ) -> Bool {
         guard playbackOwnership.activeSession == handle.session,
+              playbackIntentRevision == handle.intentRevision,
               playbackOwnership.queueSession == handle.session,
               currentSegment?.id == handle.segmentID,
               currentBookId == handle.bookID,
@@ -1516,6 +1541,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard permitsAutomaticPlayback() else { return false }
         if let externalPlayback {
             guard token == externalPlayback.token, isPlaybackSessionActive(externalPlayback.token) else { return false }
+            playbackIntentRevision &+= 1
             externalPlayback.controls.play()
             return true
         }
@@ -1523,6 +1549,7 @@ class AudioPlayerService: NSObject, ObservableObject {
             return false
         }
         guard !hasTerminalPlaybackFailure else { return false }
+        playbackIntentRevision &+= 1
         isExplicitlyPaused = false
         playbackRequested = true
         playbackSuspendedByInterruption = false
@@ -1577,7 +1604,10 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     private func pauseRegardlessOfOwnership(recordsUserIntent: Bool = true) {
         externalPlayback?.controls.pause()
-        if recordsUserIntent { isExplicitlyPaused = true }
+        if recordsUserIntent {
+            playbackIntentRevision &+= 1
+            isExplicitlyPaused = true
+        }
         playbackRequested = false
         player?.pause()
         currentTime = playbackPosition
@@ -1648,6 +1678,10 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// normal pause/reader dismissal, so it is insufficient here: every title,
     /// cover, caption, callback and lock-screen field must disappear together.
     func clearForAccountBoundary() {
+        let outgoing = ownershipRevoked
+        ownershipRevoked = nil
+        outgoing?()
+        playbackIntentRevision &+= 1
         readerAppearanceHold = nil
         sleepTimer.endPlaybackSession()
         cancelArtworkLoad()
@@ -1667,7 +1701,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentCoverUrl = nil
         currentCaption = nil
         currentCoverImage = nil
-        playbackOwnership = AudioPlaybackOwnershipState()
+        playbackOwnership.invalidateAll()
         clearNowPlayingInfo()
     }
 

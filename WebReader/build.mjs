@@ -1,8 +1,12 @@
 // 把 src/entry.ts（含扩展 readout-desktop 的 highlight-sync / handwritten-marks）
 // 编译成单个 IIFE bundle，输出到 app 源码目录的 WebAssets/，随 app bundle 打包。
 import * as esbuild from 'esbuild'
-import { mkdirSync, readFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { dirname, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const root = fileURLToPath(new URL('.', import.meta.url))
+const extension = resolve(process.env.READOUT_DESKTOP_SOURCE || resolve(root, '../../MyProject/readout-desktop/src'))
 
 const APP_OUT = '../CastReader/WebAssets/bundle.js'
 const XCTEST_OUT = '../CastReaderTests/Fixtures/google-books-webreader-xctest.js'
@@ -16,7 +20,7 @@ const minify = process.argv.includes('--minify')
 
 async function buildBundle(outfile, enableXCTestFixtures) {
   mkdirSync(dirname(outfile), { recursive: true })
-  await esbuild.build({
+  const result = await esbuild.build({
     entryPoints: ['src/entry.ts'],
     bundle: true,
     format: 'iife',
@@ -24,7 +28,8 @@ async function buildBundle(outfile, enableXCTestFixtures) {
     target: 'es2017',
     platform: 'browser',
     outfile,
-    tsconfig: 'tsconfig.json',
+    tsconfigRaw: { compilerOptions: { target: 'ES2017', baseUrl: root, paths: { '@/*': [extension + '/*'] } } },
+    write: false,
     legalComments: 'none',
     logLevel: 'info',
     minify,
@@ -37,6 +42,14 @@ async function buildBundle(outfile, enableXCTestFixtures) {
       __CASTREADER_XCTEST_FIXTURES__: enableXCTestFixtures ? 'true' : 'false',
     },
   })
+  // Stable module labels keep an isolated checkout's absolute host paths out
+  // of generated resources, and make the functional bundle diff reviewable.
+  for (const output of result.outputFiles) {
+    const code = output.text
+      .replaceAll(relative(root, realpathSync(resolve(root, 'node_modules'))), '../../../CastReader/WebReader/node_modules')
+      .replaceAll(relative(root, realpathSync(extension)), '../../../MyProject/readout-desktop/src')
+    writeFileSync(output.path, code)
+  }
 }
 
 function assertFixtureAPIMembership(path, shouldContainFixtures) {

@@ -159,6 +159,7 @@ final class SystemSpeechPlaybackService: ObservableObject {
     private var startWatchdog: Task<Void, Never>?
     private var audio: AudioPlayerService?
     private var audioToken: AudioPlaybackSessionToken?
+    var ownsPlaybackSession: Bool { guard let audioToken, let audio else { return false }; return audio.isPlaybackSessionActive(audioToken) }
     private var playbackTitle = ""
 
     init(driver: any SystemSpeechDriving, now: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
@@ -172,7 +173,6 @@ final class SystemSpeechPlaybackService: ObservableObject {
     func connectPlayback(title: String, audio: AudioPlayerService = .shared) {
         self.audio = audio
         playbackTitle = title
-        claimPlaybackIfNeeded()
     }
 
     func closePlayback() {
