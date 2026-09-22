@@ -1,6 +1,6 @@
 # iOS 1.2.43（65）通用 iPhone / iPad 发布记录
 
-状态：iPad 支持、商店物料及中英文真机核心门禁全部通过。准备将已验收候选正式合并到 main，归档、上传并送审。
+状态：**已于 2026-09-22 09:08:47 +08:00 正式提交 1.2.43（65）。版本与 Review Submission 均为 WAITING_FOR_REVIEW，审核通过自动发布。** 同一个 App 同时支持 iPhone 与 iPad；尚不代表已经上线。
 
 ## 正式合并与功能保留
 
@@ -51,7 +51,7 @@
 
 现有且唯一启动的模拟器为 `BFCF61DE-9C45-4467-8996-6F4E03AE7725`；本地登录已由用户恢复，各平台绑定和缓存保留。真机为已配对 iPhone 15 Pro Max。
 
-## 商店资料与构建计划
+## 商店资料与构建
 
 - 已保存当前 ASC 11 语 App Info、11 语版本文案及 9 组共 45 张 iPhone 截图快照。1.2.43 草稿 ID：`64b17291-fac4-444d-a18b-790b75c01d03`；pending App Info：`74d0c149-211b-4d37-8d29-e77667241029`。
 - 已在 11 语描述增加 iPhone/iPad 通用支持段落并更新 What's New；逐字段回读确认标题、副标题、隐私链接、关键词、空推广文字和其余链接保留。审核备注新增简短 iPad 检查说明，原审核联系人/账号资料和既有说明保留，3991 字符未超限。
@@ -72,10 +72,22 @@
 `scripts/upload-ipad-app-store.rb` 仅处理本版两语的 iPad 集合，保存每个上传 ID、不确定写入先回读，不删除旧素材或操作 iPhone/预览。实际 API 返回个体密钥无法访问反向 version/app 端点（403），改由指定 App 的版本集合验证版本归属；目标 App、版本、语言限制均保留。离线复用完整资产、错误 App 拒绝写入两项补验通过，正常上传和读取最终顺序通过。商店资料差异脚本保留在私有证据目录，审核账号资料未提交到仓库。
 
 
-## 仍待完成
+## 正式归档与上传
 
-1. 中英文核心门禁已通过，309 个应用/配置文件保持与已测候选完全一致。
-2. 核心门禁通过后正式合并到 main；远端已再次核对为 `8298f84`，既有 iPhone 功能祖先检查通过。随后从主线候选归档、官方上传 Build 65，等待精确 Build 为 VALID / APP_STORE_ELIGIBLE。
-3. 绑定 Build，运行最终审核门禁，正式送审并回读版本及 Review Submission 状态。11 语文案、两组 iPad 图及原 iPhone 图的当前库存检查已通过。
+2026-09-22 将已验收发布分支以双亲合并 `fe64420dad87d7262c3d7de144a4b30c5ee7feb3` 纳入 `main`，已推送远端。主线、最新 iPhone 基线 `8298f84`、iPad 分支 `bcd9778` 和所有必备功能祖先均再次验证。合并后 309 个应用/配置文件摘要完全一致。
 
-ASC 草稿和商店资料不等于已提交。当前核心门禁已齐，后续以上传回执和审核状态回读为准。
+- 从该主线提交归档 `build/CastReader-1.2.43-65.xcarchive`，独立 DerivedData `/tmp/CastReader1243Archive65`，ARCHIVE SUCCEEDED。
+- 归档三个组件版本/Build、团队、签名、设备族 1/2、iPad 四方向和多窗口、九语资源通过；123 个文件扫描 54 个夹具标记无命中，Debug 正对照通过。
+- 官方 `xcodebuild -exportArchive` 于 **2026-09-22 08:54:09 +08:00** 返回 Upload succeeded / EXPORT SUCCEEDED。只上传一次，没有修改归档或重复上传。
+- 上传 IPA 43,633,095 字节，SHA-256 `061487ce9b7a94ee8feaee66711986b4a4c56d398bbf47a12d06af01fc37c5b0`；主 App、Share、Widget 均 1.2.43（65）、正确团队且 `get-task-allow=false`，严格分发签名验证通过。
+- 归档逐文件清单汇总 SHA-256 `c88f76fb81040c0249d78aa3877f5f892b50f61168b39990c07b73bf46e85678`。最终源码、归档、分发 IPA 身份与上传原始回执均保存在本版私有证据目录。
+
+## 最终审核回执
+
+- Build `63942036-84be-445d-9ad5-15fc2e912544`：**65 / VALID / APP_STORE_ELIGIBLE**，已核对所属 App 与 marketing version 1.2.43，`usesNonExemptEncryption=false`，并绑定版本 `64b17291-fac4-444d-a18b-790b75c01d03`。
+- 最终 ASC audit 无错误：11 语版本资料齐全、标题/副标题保持原值、审核资料存在；55 张截图全部 COMPLETE，其中 45 张原 iPhone 图、10 张中英文 iPad 图，顺序和原资产保留检查通过。
+- 审核提交 dry-run 后正式执行，审核单 **`5d864f03-1768-4e08-8c1f-44dcef10fa07`**，提交时间 **2026-09-22T01:08:47.248Z（北京时间 09:08:47）**。
+- API 回读：Review Submission = **WAITING_FOR_REVIEW**；App Store version = **WAITING_FOR_REVIEW**；releaseType = **AFTER_APPROVAL**。
+- 原始证据：`build65-valid.json`、`build65-bound.json`、`final-asc-audit.json`、`review-dry-run.json`、`review-submitted.json`，位于 `reports/ios-release-1.2.43/`。凭据、审核账号、私有运行日志未提交仓库。
+
+本次发布操作已完成，后续是否通过及何时上线以 Apple 审核结果为准；未创建额外定时任务。最终源码仍为主线归档提交 `fe64420` 的应用/配置，发布后补充仅限本记录和 AGENTS.md 基线说明。

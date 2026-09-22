@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## 1.2.43 iPhone / iPad 通用版本已送审（2026-09-22）
+
+- 最新通用发布归档源码为主线合并 `fe64420dad87d7262c3d7de144a4b30c5ee7feb3`，在最新 iPhone 基线 `8298f84` 上正式合并 iPad `bcd9778`，所有必备祖先保留。验收/归档工作树：`/Users/xuxuheng/.codex/worktrees/castreader-ipad-adaptation/CastReader`；应用/配置 309 文件摘要 `a08ee45fbac599cf4e21e97fa6f136dcaf9c777e00ef539f14dd1c2ac8b30466`。
+- App / Share / Widget 均为 **1.2.43（65）**，设备族 1/2，同一个 `com.same.castreader` 支持 iPhone 和 iPad，包含 iPad 四方向旋转与多窗口。不能用主目录旧分支覆盖本发布基线；移动端 Safari 仍不在范围。
+- 中英文真实朗读/解读 × 常规/社区/私人声音核心门禁全部通过；最终隔离单测 1,857 通过、0 失败、8 跳过，另排除会修改真实账号的 PaymentTests。复用未变应用证据，避免重复运行或清除已登录模拟器；仅使用用户指定的同一台 iPad 模拟器。
+- Build `63942036-84be-445d-9ad5-15fc2e912544` 为 VALID / APP_STORE_ELIGIBLE；审核单 `5d864f03-1768-4e08-8c1f-44dcef10fa07` 于 **2026-09-22 09:08:47 +08:00** 提交，版本与审核单均 WAITING_FOR_REVIEW，审核通过自动发布。11 语和 55 张截图审计通过（45 原 iPhone + 10 中英文 iPad）。此为提交时状态，不能冒称已上线；详见 `docs/iOS-1.2.43-Release-Report.md`。
+
 ## 1.2.42 已送审与主线整合（2026-09-20）
 
 - 1.2.41（63）已由 App Store Connect 确认为 READY_FOR_SALE。其已发应用源码摘要 `8670be15e6d5e31df8752192c9b694a81f5149c65a22ce2c0eeb429d75f3dd06` 已逐文件重建核对，完整增量固化在 `94499d2`；不得只从旧报告的 `febfeab` 或单独 `9935c6d` 打包。
