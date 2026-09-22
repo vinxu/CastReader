@@ -1460,11 +1460,10 @@ final class YouTubeTranscriptService: NSObject {
         )
     }
 
+    weak var presentationWindow: UIWindow?
+
     private func attachToTransparentWindow(_ webView: WKWebView) -> UIWindow {
-        let scenes = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-        let scene = scenes.first(where: { $0.activationState == .foregroundActive })
-            ?? scenes.first
+        let scene = presentationWindow?.windowScene
         let window: UIWindow
         if let scene {
             window = UIWindow(windowScene: scene)

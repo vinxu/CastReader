@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
+    private let showsDismissButton: Bool
     private let shareInboxUnreadCount: Int
     private let onOpenShareInbox: (() -> Void)?
     private let onRequestLibraryOnboarding: ((Bool) -> Void)?
@@ -15,6 +17,8 @@ struct SettingsView: View {
     private let offlineScopeProvider: @MainActor () -> String?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     @Environment(\.openURL) private var openURL
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var appLanguage = AppLanguageManager.shared
@@ -52,8 +56,10 @@ struct SettingsView: View {
         offlineScopeProvider: @escaping @MainActor () -> String? = { KindleOfflineContext.currentScope },
         shareInboxUnreadCount: Int = 0,
         onOpenShareInbox: (() -> Void)? = nil,
-        onRequestLibraryOnboarding: ((Bool) -> Void)? = nil
+        onRequestLibraryOnboarding: ((Bool) -> Void)? = nil,
+        showsDismissButton: Bool = true
     ) {
+        self.showsDismissButton = showsDismissButton
         self._history = ObservedObject(wrappedValue: history)
         self.offlineStore = offlineStore
         self.offlineScopeProvider = offlineScopeProvider
@@ -79,6 +85,14 @@ struct SettingsView: View {
                         onReaderPresented: { dismiss() })
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 14))
                         .listRowBackground(Color.blue.opacity(0.07))
+                }
+                if AdaptiveLayout.isPad, supportsMultipleWindows {
+                    Section {
+                        Button { openWindow(id: "main") } label: {
+                            Label("新窗口", systemImage: "plus.rectangle.on.rectangle")
+                                .frame(minHeight: 44)
+                        }.accessibilityIdentifier("newReaderWindow")
+                    }
                 }
                 languageSection
                 connectedServicesSection
@@ -108,13 +122,16 @@ struct SettingsView: View {
                 if DistributionTestingPolicy.showsDebugPanels { debugSection }
                 #endif
             }
+            .reservesMiniPlayerSpace()
             .navigationTitle("设置")
             // 设置是 sheet，但没有关闭按钮时只能下拉退出。与书架来源等 sheet 对齐，
             // 在左上角补一颗「关闭」。
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(AppLocalized("关闭")) { dismiss() }
-                        .accessibilityIdentifier("settingsCloseButton")
+                if showsDismissButton {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(AppLocalized("关闭")) { dismiss() }
+                            .accessibilityIdentifier("settingsCloseButton")
+                    }
                 }
             }
             .sheet(isPresented: $showPaywall) {
@@ -214,7 +231,7 @@ struct SettingsView: View {
                 Task { await deleteAccount() }
             }
             Button(AppLocalized("管理订阅")) {
-                Task { await pro.openManageSubscriptions() }
+                Task { await pro.openManageSubscriptions(in: readerScene.window?.windowScene) }
             }
             Button(AppLocalized("取消"), role: .cancel) {}
         } message: {
@@ -355,7 +372,7 @@ struct SettingsView: View {
             }
             .accessibilityIdentifier("settingsProLink")
             if pro.isPro {
-                Button("管理订阅") { Task { await pro.openManageSubscriptions() } }
+                Button("管理订阅") { Task { await pro.openManageSubscriptions(in: readerScene.window?.windowScene) } }
             }
             // 不按 isPro 门控：真正需要恢复购买的，恰恰是已付费却被识别成免费的人。
             // 把它藏在「升级 Pro」页里，等于要求这些用户先点开一个让他们再付一次钱的页面。

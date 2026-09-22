@@ -113,6 +113,50 @@ final class ReaderAppearanceTests: XCTestCase {
         XCTAssertEqual(closed as? Bool, true)
     }
 
+    func testWeReadPanelTracksRotationAndTheCroppedCompactViewport() async throws {
+        let view = try await fixture(html: """
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <button class="readerControls_item fontSizeButton" aria-label="Original label">Aa</button>
+        <div class="reader-font-control-panel-wrapper"><div class="font-panel-content" style="display:none;width:440px;height:600px;padding:20px"></div></div>
+        """, baseURL: URL(string: "https://weread.qq.com/web/reader/test"))
+        let window: UIWindow
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            window = UIWindow(windowScene: scene)
+        } else { window = UIWindow(frame: view.frame) }
+        window.rootViewController = UIViewController()
+        window.rootViewController!.view.addSubview(view)
+        window.isHidden = false
+        defer { window.isHidden = true; view.stopLoading() }
+        let opened = await ReaderWebAppearanceCenter.shared.open(webView: view)
+        XCTAssertTrue(opened)
+        for size in [CGSize(width: 820, height: 991), CGSize(width: 446.25, height: 285),
+                     CGSize(width: 1180, height: 631)] {
+            window.frame.size = size; window.rootViewController!.view.frame.size = size
+            view.frame.size = size; view.layoutIfNeeded()
+            try await Task.sleep(for: .milliseconds(650))
+            let card = try await json("(()=>{const r=document.querySelector('#castreader-weread-aa').getBoundingClientRect();return JSON.stringify({left:r.left,right:r.right,width:innerWidth})})()", view)
+            let width = try XCTUnwrap(card["width"] as? Double)
+            let gutter = width < 500 ? (width - width / 1.19) / 2 : 0
+            XCTAssertGreaterThanOrEqual(card["left"] as? Double ?? -1, gutter + 15)
+            XCTAssertLessThanOrEqual(card["right"] as? Double ?? .infinity, width - gutter - 15)
+        }
+        _ = try await view.evaluateJavaScript("document.querySelector('.font-panel-content').style.display='block'")
+        for size in [CGSize(width: 446.25, height: 285), CGSize(width: 1180, height: 631)] {
+            window.frame.size = size; window.rootViewController!.view.frame.size = size
+            view.frame.size = size; view.layoutIfNeeded()
+            try await Task.sleep(for: .milliseconds(650))
+            let panel = try await json("(()=>{const r=document.querySelector('.font-panel-content').getBoundingClientRect();return JSON.stringify({left:r.left,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight})})()", view)
+            let width = try XCTUnwrap(panel["width"] as? Double)
+            let gutter = width < 500 ? (width - width / 1.19) / 2 : 0
+            XCTAssertGreaterThanOrEqual(panel["left"] as? Double ?? -1, gutter + 15)
+            XCTAssertLessThanOrEqual(panel["right"] as? Double ?? .infinity, width - gutter - 15)
+            XCTAssertLessThanOrEqual(panel["bottom"] as? Double ?? .infinity, (panel["height"] as? Double ?? 0) - 15)
+        }
+        _ = try await view.evaluateJavaScript("window.__crWeReadAppearance.close()")
+        let label = try await view.evaluateJavaScript("document.querySelector('.fontSizeButton').getAttribute('aria-label')")
+        XCTAssertEqual(label as? String, "Original label")
+    }
+
     func testGoogleDisplayOptionsInsideOverflow() async throws {
         let webView = try await fixture(html: """
         <button aria-label="更多" onclick="setTimeout(()=>document.querySelector('[role=menuitem]').style.display='block',50)">⋮</button>
@@ -207,6 +251,22 @@ final class ReaderAppearanceTests: XCTestCase {
         XCTAssertTrue(audio.loadSegments([segment], autoPlay: false, session: token))
         XCTAssertTrue(audio.play(session: token))
         audio.endReaderAppearance(hold, resumePlayback: false)
+    }
+
+    func testExplicitPauseDuringPreviewPreventsLateAutomaticResume() async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        defer { audio.clearForAccountBoundary() }
+        let token = audio.claimPlaybackSession(owner: .readAloud)
+        let segment = AudioSegment(paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadingResumeFixtureSpeech.wav(), timestamps: [],
+            duration: 16, text: "Preview pause intent", isWavFormat: true)
+        XCTAssertTrue(audio.loadSegments([segment], autoPlay: true, session: token))
+        for _ in 0..<40 where !audio.isPlaying { try await Task.sleep(for: .milliseconds(25)) }
+        let handle = try XCTUnwrap(audio.suspendActivePlaybackForVoicePreview())
+        XCTAssertTrue(audio.pause(session: token))
+        XCTAssertFalse(audio.resumePlaybackAfterVoicePreview(handle))
+        XCTAssertFalse(audio.isPlaying)
     }
 
     private func json(_ script: String, _ webView: WKWebView) async throws -> [String: Any] {

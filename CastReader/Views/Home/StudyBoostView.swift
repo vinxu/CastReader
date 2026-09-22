@@ -26,7 +26,7 @@ final class StudyBoostRouter: ObservableObject {
 
     @Published private(set) var isPresented = false
 
-    private init() {
+    init() {
         #if DEBUG
         isPresented = ProcessInfo.processInfo.arguments.contains("-CastReaderOpenStudyBoost")
         #endif

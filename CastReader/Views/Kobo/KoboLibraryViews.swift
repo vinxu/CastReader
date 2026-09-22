@@ -56,6 +56,7 @@ enum KoboReaderLauncher {
 // MARK: - Home
 
 struct KoboHomeSection: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = KoboLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
@@ -64,7 +65,8 @@ struct KoboHomeSection: View {
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
                 VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
-                    HStack {
+                    let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(alignment: .center))
+                    layout {
                         VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                             Text("Kobo")
                                 .font(.headline)
@@ -73,11 +75,12 @@ struct KoboHomeSection: View {
                                 .font(.caption)
                                 .foregroundColor(AppTheme.mutedForeground)
                         }
-                        Spacer()
+                        if !typeSize.isAccessibilitySize { Spacer() }
                         NavigationLink(destination: KoboLibraryView()) {
                             Text(AppLocalized("查看全部"))
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundColor(AppTheme.primary)
+                                .frame(minHeight: AdaptiveLayout.isPad ? 44 : nil)
                         }
                         .accessibilityIdentifier("homeShelfViewAll.kobo")
                     }
@@ -119,6 +122,8 @@ struct KoboHomeSection: View {
 }
 
 private struct KoboRailCard: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
+    private var cardWidth: CGFloat { typeSize.isAccessibilitySize ? 240 : 92 }
     let book: KoboBook
 
     var body: some View {
@@ -128,13 +133,16 @@ private struct KoboRailCard: View {
             Text(book.title)
                 .font(.caption.weight(.semibold))
                 .foregroundColor(AppTheme.foreground)
-                .lineLimit(2)
-                .frame(width: 92, height: 34, alignment: .topLeading)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: cardWidth, alignment: .topLeading)
+                .frame(minHeight: 34, alignment: .topLeading)
             LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress)
                 .font(.caption2)
                 .foregroundColor(AppTheme.mutedForeground)
-                .lineLimit(1)
-                .frame(width: 92, alignment: .leading)
+                .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: cardWidth, alignment: .leading)
         }
     }
 }
@@ -142,6 +150,7 @@ private struct KoboRailCard: View {
 // MARK: - Library
 
 struct KoboLibraryView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = KoboLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
@@ -151,6 +160,9 @@ struct KoboLibraryView: View {
 
     var body: some View {
         List {
+            if typeSize.isAccessibilitySize {
+                Section { shelfOptions }
+            }
             if let label = store.accountLabel {
                 Section {
                     Label(label, systemImage: "person.crop.circle")
@@ -167,16 +179,18 @@ struct KoboLibraryView: View {
                                 Text(book.title)
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundColor(AppTheme.foreground)
-                                    .lineLimit(2)
+                                    .lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                                    .fixedSize(horizontal: false, vertical: true)
                                 Text(book.displayAuthor)
                                     .font(.caption)
                                     .foregroundColor(AppTheme.mutedForeground)
-                                    .lineLimit(1)
-                                if !book.progressLabel.isEmpty {
-                                    Text(book.progressLabel)
-                                        .font(.caption2)
-                                        .foregroundColor(AppTheme.primary)
-                                }
+                                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                LibraryListeningProgressLabel(bookID: book.id, providerProgress: book.displayProgress)
+                                    .font(.caption2)
+                                    .foregroundColor(AppTheme.mutedForeground)
+                                    .lineLimit(typeSize.isAccessibilitySize ? nil : 1)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -199,19 +213,31 @@ struct KoboLibraryView: View {
                     placement: .navigationBarDrawer(displayMode: .always),
                     prompt: AppLocalized("搜索书名或作者"))
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    ForEach(KoboLibrarySort.allCases) { value in
-                        Button(value.label) { sort = value }
-                    }
-                    Divider()
-                    Button(AppLocalized("重新同步")) { showConnect = true }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                }
+            if !typeSize.isAccessibilitySize {
+                ToolbarItem(placement: .primaryAction) { shelfOptions }
             }
         }
         .sheet(isPresented: $showConnect) { KoboLibraryConnectView() }
+    }
+
+    private var shelfOptions: some View {
+        Menu {
+            ForEach(KoboLibrarySort.allCases) { value in
+                Button(value.label) { sort = value }
+            }
+            Divider()
+            Button(AppLocalized("重新同步")) { showConnect = true }
+        } label: {
+            Group {
+                if typeSize.isAccessibilitySize {
+                    Label(AppLocalized("排序"), systemImage: "arrow.up.arrow.down")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else { Image(systemName: "ellipsis.circle") }
+            }
+            .frame(minWidth: AdaptiveLayout.isPad ? 44 : nil, minHeight: AdaptiveLayout.isPad ? 44 : nil)
+        }
+        .accessibilityLabel(AppLocalized("排序"))
+        .accessibilityIdentifier("koboShelfOptions")
     }
 
     private func open(_ book: KoboBook) {

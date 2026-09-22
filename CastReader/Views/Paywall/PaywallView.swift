@@ -261,7 +261,7 @@ struct PaywallView: View {
                         Button { closePaywall() } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .bold))
-                                .frame(width: 32, height: 32)
+                                .frame(width: AdaptiveLayout.isPad ? 44 : 32, height: AdaptiveLayout.isPad ? 44 : 32)
                                 .background(.ultraThinMaterial, in: Circle())
                         }
                         .accessibilityLabel(Text("关闭"))
@@ -355,6 +355,7 @@ struct PaywallView: View {
 
 /// Pro 权益 + 购买按钮（PaywallView 与 UpgradeView 共用）。
 struct ProUpsellContent: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     var reason: String? = nil
     var analyticsTrigger: String = "unknown"
     var analyticsSurface: String = "paywall"
@@ -445,6 +446,8 @@ struct ProUpsellContent: View {
                 termsRow
             }
             .padding(20)
+            .frame(maxWidth: AdaptiveLayout.isPad ? 680 : .infinity)
+            .frame(maxWidth: .infinity)
         }
         .background(AppTheme.background.ignoresSafeArea())
         .sheet(isPresented: $showLogin, onDismiss: completeLoginGateIfNeeded) {
@@ -782,6 +785,7 @@ struct ProUpsellContent: View {
         Task {
             let purchased = await pro.purchase(
                 product,
+                in: readerScene.window?.windowScene,
                 analyticsTrigger: analyticsTrigger,
                 purchaseAttemptId: purchaseAttemptId
             )

@@ -155,9 +155,16 @@ final class YouTubeRouteCenter: ObservableObject {
     static let shared = YouTubeRouteCenter()
 
     @Published private(set) var request: YouTubeListenRequest?
-    private var inFlightPendingItemID: UUID?
+    private let routeOwnerID = UUID()
+    private static var pendingOwners: [UUID: UUID] = [:]
+    private var inFlightPendingItemID: UUID? {
+        didSet {
+            if let oldValue, Self.pendingOwners[oldValue] == routeOwnerID { Self.pendingOwners[oldValue] = nil }
+            if let inFlightPendingItemID { Self.pendingOwners[inFlightPendingItemID] = routeOwnerID }
+        }
+    }
 
-    private init() {}
+    init() {}
 
     /// Drops an unconsumed route when authentication changes. Durable share
     /// links remain in their account-scoped App Group queue and can be retried
@@ -182,6 +189,7 @@ final class YouTubeRouteCenter: ObservableObject {
                 ? YouTubePendingLinkStore.matchingItemID(reference.canonicalURLString)
                 : nil
         )
+        if let pendingItemID, let owner = Self.pendingOwners[pendingItemID], owner != routeOwnerID { return true }
         if let pendingItemID, inFlightPendingItemID == pendingItemID {
             return true
         }

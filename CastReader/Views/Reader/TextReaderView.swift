@@ -66,6 +66,7 @@ struct TextReaderView: View {
     private struct ParagraphStart: Hashable { let index: Int }
 
     var body: some View {
+        GeometryReader { geometry in
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
@@ -78,6 +79,14 @@ struct TextReaderView: View {
                     }
                 }
                 .padding(20)
+                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.readingWidth : .infinity)
+                .frame(maxWidth: .infinity)
+            }
+            .onChange(of: geometry.size.width) { _ in
+                // Marks retain semantic character ranges; invalidate their
+                // glyph rectangles after the actual column width changes.
+                layoutRevision += 1
+                scheduleRefocus(proxy)
             }
             .onChange(of: readVM.currentParagraphIndex) { idx in
                 guard mode == .read, readVM.autoScrollEnabled, idx >= 0 else { return }
@@ -97,7 +106,10 @@ struct TextReaderView: View {
             .onDisappear { pendingRefocus?.cancel() }
             .onChange(of: explainVM.scrollTarget) { target in
                 guard mode == .explain, target >= 0 else { return }
-                withAnimation(.easeInOut(duration: 0.45)) { proxy.scrollTo(target, anchor: UnitPoint(x: 0.5, y: 0.35)) }
+                scheduleRefocus(proxy)
+            }
+            .onChange(of: explainVM.activeMarks.last?.id) { _ in
+                if mode == .explain { scheduleRefocus(proxy) }
             }
             .onChange(of: refocusToken) { _ in
                 scheduleRefocus(proxy)
@@ -111,6 +123,7 @@ struct TextReaderView: View {
             .onChange(of: appearance.usesSerif) { _ in
                 layoutRevision += 1; scheduleRefocus(proxy)
             }
+        }
         }
     }
 
@@ -140,11 +153,13 @@ struct TextReaderView: View {
                            anchor: UnitPoint(x: 0.5, y: ReaderViewportFollow.readingAnchor))
         case .explain:
             let target = explainVM.activeMarks.last?.paragraphIndex ?? explainVM.scrollTarget
-            guard target >= 0 else { return }
+            guard target >= 0, readVM.autoScrollEnabled else { return }
             ReaderRunLog.write("TEXT refocus explain para=\(target) token=\(refocusToken)")
-            withAnimation(.easeInOut(duration: 0.45)) {
-                proxy.scrollTo(target, anchor: UnitPoint(x: 0.5, y: 0.35))
+            if let view = registry[target], view.window != nil {
+                view.revealFocusInReader()
+                return
             }
+            proxy.scrollTo(ParagraphStart(index: target), anchor: UnitPoint(x: 0.5, y: ReaderViewportFollow.readingAnchor))
         }
     }
 
@@ -185,16 +200,29 @@ struct TextReaderView: View {
             lineSpacing: appearance.lineSpacing,
             usesSerif: appearance.usesSerif,
             highlightColor: readVM.highlightUIColor,
-            readerViewportRange: isCurrent && readVM.autoScrollEnabled && readVM.epubNavigationParagraphIndex == nil
-                ? (readVM.highlightRange ?? readVM.initialResumeViewportRange
-                   ?? (text.isEmpty ? nil : NSRange(location: 0, length: 1))) : nil,
-            onReady: { tv in registry[para.id] = tv }
+            readerViewportRange: viewportRange(for: para, text: text, isCurrent: isCurrent),
+            onReady: { tv in registry[para.id] = tv },
+            onLayout: { if mode == .explain { layoutRevision &+= 1 } }
         )
-        .overlay(alignment: .topLeading) { markOverlay(for: para).id(layoutRevision) }
+        .overlay(alignment: .topLeading) {
+            // Refresh geometry without replacing MarkInkView's animation state.
+            let _ = layoutRevision
+            markOverlay(for: para)
+        }
         .contentShape(Rectangle())
         .onTapGesture {
             if mode == .read { readVM.jump(to: para.id) }
         }
+    }
+
+    private func viewportRange(for paragraph: ReadingParagraph, text: String, isCurrent: Bool) -> NSRange? {
+        guard readVM.autoScrollEnabled else { return nil }
+        if mode == .explain, let mark = explainVM.activeMarks.last, mark.paragraphIndex == paragraph.id {
+            return nsRange(mark.charRange, in: paragraph.text)
+        }
+        guard isCurrent, readVM.epubNavigationParagraphIndex == nil else { return nil }
+        return readVM.highlightRange ?? readVM.initialResumeViewportRange
+            ?? (text.isEmpty ? nil : NSRange(location: 0, length: 1))
     }
 
     @ViewBuilder

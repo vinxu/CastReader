@@ -15,6 +15,7 @@ private struct MarkPathShape: Shape {
 }
 
 struct MarkInkView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let rects: [CGRect]
     let action: String
     let seed: UInt64
@@ -35,7 +36,7 @@ struct MarkInkView: View {
         .allowsHitTesting(false)
         .onAppear {
             guard progress == 0 else { return }   // 复用/重绘时不重播已画完的 mark
-            guard animateOnAppear else { progress = 1; return }
+            guard animateOnAppear && !reduceMotion else { progress = 1; return }
             // 延迟一帧让 progress=0（落笔起点）先渲染，再动画到 1——否则 SwiftUI 在 overlay/LazyVStack
             // 里常首帧直接画终值、看不到落笔过程（常驻阅读器不重建后此问题暴露）。对齐 Chrome 扩展落笔。
             DispatchQueue.main.async {

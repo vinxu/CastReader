@@ -326,9 +326,8 @@ final class ProManager: ObservableObject {
     }
 
     /// 打开系统「管理订阅」面板（模拟器不支持）。
-    func openManageSubscriptions() async {
-        guard let scene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene }).first else { return }
+    func openManageSubscriptions(in scene: UIWindowScene?) async {
+        guard let scene else { return }
         try? await AppStore.showManageSubscriptions(in: scene)
     }
 
@@ -477,12 +476,20 @@ final class ProManager: ObservableObject {
 
     // MARK: - 购买 / 恢复
 
+    @Published private(set) var purchaseInProgress = false
+
     @discardableResult
     func purchase(
         _ product: Product,
+        in windowScene: UIWindowScene? = nil,
         analyticsTrigger: String = "unknown",
         purchaseAttemptId suppliedPurchaseAttemptId: String? = nil
     ) async -> Bool {
+        guard !purchaseInProgress else { return false }
+        let purchaseBoundary = AuthService.shared.accountBoundaryID
+        let presentationScene = windowScene ?? ReaderSceneRegistry.shared.presentationContext?.window?.windowScene
+        purchaseInProgress = true
+        defer { purchaseInProgress = false }
         let purchaseAttemptId = suppliedPurchaseAttemptId
             .flatMap(UUID.init(uuidString:))?
             .uuidString ?? UUID().uuidString
@@ -565,7 +572,10 @@ final class ProManager: ObservableObject {
         purchaseInFlight = true
         defer { purchaseInFlight = false }
         do {
+            guard AuthService.shared.accountBoundaryID == purchaseBoundary,
+                  let presentationScene, presentationScene.activationState != .unattached else { return false }
             let result = try await product.purchase(
+                confirmIn: presentationScene,
                 options: [.appAccountToken(purchaseAccountToken)]
             )
             switch result {

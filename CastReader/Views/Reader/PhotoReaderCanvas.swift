@@ -22,7 +22,7 @@ struct PhotoReaderCanvas: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UIScrollView {
-        let scroll = UIScrollView()
+        let scroll = PhotoViewportScrollView()
         scroll.delegate = context.coordinator
         scroll.accessibilityIdentifier = "photoReaderCanvas"
         scroll.minimumZoomScale = 1
@@ -43,6 +43,10 @@ struct PhotoReaderCanvas: UIViewRepresentable {
         scroll.addGestureRecognizer(dbl)
 
         context.coordinator.attach(scroll: scroll, host: host)
+        scroll.onViewportChange = { [weak coordinator = context.coordinator] in coordinator?.relayoutIfNeeded() }
+        if AdaptiveLayout.isPad {
+            scroll.pinchGestureRecognizer?.addTarget(context.coordinator, action: #selector(Coordinator.recoverStalledPinch(_:)))
+        }
         DispatchQueue.main.async { context.coordinator.relayoutIfNeeded() }
         return scroll
     }
@@ -63,8 +67,13 @@ struct PhotoReaderCanvas: UIViewRepresentable {
         private weak var scroll: UIScrollView?
         private var host: UIHostingController<PhotoContent>?
         private var cancellables = Set<AnyCancellable>()
-        private var laidOutWidth: CGFloat = 0
+        private var laidOutSize = CGSize.zero
+        private var isRelayingOut = false
         private var lastRefocusToken = 0
+        private var pinchStartZoom: CGFloat = 1
+        private var pinchStartValue: CGFloat = 1
+        private var pinchAnchor = CGPoint.zero
+        private var pinchNeedsRecovery = false
 
         init(document: ReadingDocument, readVM: ReadAloudViewModel, explainVM: ExplainViewModel, mode: ReaderMode) {
             self.document = document
@@ -124,15 +133,31 @@ struct PhotoReaderCanvas: UIViewRepresentable {
 
         /// 按 scrollView 宽度铺满（fit width），高度按图片比例；仅宽度变化（首次 / 旋转）才重排，避免打断缩放。
         func relayoutIfNeeded() {
-            guard let scroll, let host else { return }
+            guard !isRelayingOut, let scroll, let host else { return }
             let W = scroll.bounds.width
-            guard W > 0, abs(W - laidOutWidth) > 0.5 else { return }
-            laidOutWidth = W
+            let size = scroll.bounds.size
+            guard W > 0, size.height > 0, size != laidOutSize else { return }
+            isRelayingOut = true
+            defer { isRelayingOut = false }
+            let hadLayout = laidOutSize.width > 0
+            let zoom = scroll.zoomScale
+            let oldContent = scroll.contentSize
+            let center = CGPoint(
+                x: (scroll.contentOffset.x + laidOutSize.width / 2) / max(1, oldContent.width),
+                y: (scroll.contentOffset.y + laidOutSize.height / 2) / max(1, oldContent.height))
+            laidOutSize = size
             scroll.zoomScale = 1
             let H = W * imageAspect
             host.view.frame = CGRect(x: 0, y: 0, width: W, height: H)
             scroll.contentSize = CGSize(width: W, height: H)
-            if mode == .read { scrollToCurrentReadAnchor() }
+            scroll.setZoomScale(min(scroll.maximumZoomScale, max(scroll.minimumZoomScale, zoom)), animated: false)
+            if hadLayout {
+                let content = scroll.contentSize
+                let offset = CGPoint(
+                    x: max(0, min(max(0, content.width - size.width), center.x * content.width - size.width / 2)),
+                    y: max(0, min(max(0, content.height - size.height), center.y * content.height - size.height / 2)))
+                scroll.setContentOffset(offset, animated: false)
+            } else if mode == .read { scrollToCurrentReadAnchor() }
         }
 
         // MARK: UIScrollViewDelegate
@@ -145,6 +170,32 @@ struct PhotoReaderCanvas: UIViewRepresentable {
             let cw = host.view.frame.width
             let inset = max(0, (scrollView.bounds.width - cw) / 2)
             scrollView.contentInset = UIEdgeInsets(top: 0, left: inset, bottom: 0, right: inset)
+        }
+
+        // Recover only a recognized pinch that leaves UIKit's zoom unchanged,
+        // as observed on the iPadOS 26.5 simulator. Normal native zoom wins.
+        @objc func recoverStalledPinch(_ gesture: UIPinchGestureRecognizer) {
+            guard let scroll, let host else { return }
+            if gesture.state == .began {
+                pinchStartZoom = scroll.zoomScale
+                pinchStartValue = max(0.001, gesture.scale)
+                pinchAnchor = gesture.location(in: host.view)
+                pinchNeedsRecovery = false
+            }
+            guard gesture.state == .changed || gesture.state == .ended else { return }
+            let factor = gesture.scale / pinchStartValue
+            if !pinchNeedsRecovery {
+                guard abs(factor - 1) > 0.01, abs(scroll.zoomScale - pinchStartZoom) < 0.001 else { return }
+                pinchNeedsRecovery = true
+            }
+            let location = gesture.location(in: scroll)
+            scroll.setZoomScale(min(scroll.maximumZoomScale, max(scroll.minimumZoomScale, pinchStartZoom * factor)), animated: false)
+            let point = host.view.convert(pinchAnchor, to: scroll)
+            let x = scroll.contentOffset.x + point.x - location.x
+            let y = scroll.contentOffset.y + point.y - location.y
+            scroll.setContentOffset(CGPoint(
+                x: min(max(-scroll.contentInset.left, x), max(-scroll.contentInset.left, scroll.contentSize.width - scroll.bounds.width + scroll.contentInset.right)),
+                y: min(max(-scroll.contentInset.top, y), max(-scroll.contentInset.top, scroll.contentSize.height - scroll.bounds.height + scroll.contentInset.bottom))), animated: false)
         }
 
         @objc func handleDoubleTap(_ g: UITapGestureRecognizer) {
@@ -196,7 +247,8 @@ struct PhotoReaderCanvas: UIViewRepresentable {
 
         /// 把内容坐标矩形（未缩放）滚到可见（含上下留白；已可见则 scrollRectToVisible 自动不滚，避免抖动）。
         private func scrollToContent(_ rects: [CGRect]) {
-            guard let scroll, !rects.isEmpty else { return }
+            guard readVM.autoScrollEnabled, let scroll, !rects.isEmpty,
+                  !scroll.isZooming, !scroll.isDragging, !scroll.isDecelerating, !scroll.isTracking else { return }
             let union = rects.reduce(CGRect.null) { $0.union($1) }
             guard !union.isNull else { return }
             let z = scroll.zoomScale
@@ -205,6 +257,19 @@ struct PhotoReaderCanvas: UIViewRepresentable {
             ReaderRunLog.write("PHOTO scroll targetY=\(Int(target.minY)) zoom=\(String(format: "%.2f", z))")
             scroll.scrollRectToVisible(target, animated: true)
         }
+    }
+}
+
+/// UIViewRepresentable updates can precede UIKit assigning the new bounds.
+/// Observe the scroll view's own completed layout, including window resizing.
+private final class PhotoViewportScrollView: UIScrollView {
+    var onViewportChange: (() -> Void)?
+    private var viewport = CGSize.zero
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.size != viewport else { return }
+        viewport = bounds.size
+        onViewportChange?()
     }
 }
 

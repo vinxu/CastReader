@@ -13,6 +13,60 @@ import WebKit
 
 final class GoogleBooksContractTests: XCTestCase {
 
+    func testReflowRevealRequiresUnambiguousNeighborDirection() {
+        let old = (0..<3).map { i in LiveWebPageSourceSlice(visibleParagraphIndex: i,
+            sourceParagraphIndex: 40 + i, sourceUTF16Start: 0, sourceUTF16End: 30,
+            text: "Unique source paragraph number \(i)") }
+        XCTAssertEqual(LiveWebSourceReflowContract.directionToReveal(old[1], among: old, visible: [old[0]]), "next")
+        XCTAssertEqual(LiveWebSourceReflowContract.directionToReveal(old[1], among: old, visible: [old[2]]), "prev")
+        XCTAssertNil(LiveWebSourceReflowContract.directionToReveal(old[1], among: old, visible: [old[0], old[2]]))
+        XCTAssertNil(LiveWebSourceReflowContract.directionToReveal(old[1], among: old, visible: []))
+        XCTAssertNil(LiveWebSourceReflowContract.directionToReveal(old[1], among: old, visible: [old[1]]))
+    }
+
+    func testExplainReflowKeepsSourceIdentityAndConsumesOnlyUnexplainedSuffix() {
+        func slice(_ dom: Int, _ source: Int, _ start: Int, _ text: String) -> LiveWebPageSourceSlice {
+            LiveWebPageSourceSlice(visibleParagraphIndex: dom, sourceParagraphIndex: source,
+                sourceUTF16Start: start, sourceUTF16End: start + text.utf16.count, text: text)
+        }
+        let original = slice(0, 42, 4, "already explained")
+        let rotated = [slice(0, 10, 0, "newly revealed earlier text"),
+                       slice(1, 42, 0, "XXXXalready explained unread tail"),
+                       slice(2, 43, 0, "next paragraph")]
+        XCTAssertEqual(LiveWebSourceReflowContract.domIndex(for: original, in: rotated), 1)
+        let remainder = LiveWebSourceReflowContract.remaining(rotated, after: [42: 21])
+        XCTAssertEqual(remainder.map(\.text), [" unread tail", "next paragraph"])
+        XCTAssertEqual(remainder.first?.sourceUTF16Start, 21)
+        XCTAssertEqual(remainder.first?.visibleParagraphIndex, 1)
+        XCTAssertNil(LiveWebSourceReflowContract.domIndex(for: slice(3, 99, 0, "offscreen"), in: rotated))
+        XCTAssertTrue(LiveWebSourceReflowContract.remaining([slice(0, 42, 4, "already")], after: [42: 21]).isEmpty)
+        XCTAssertEqual(LiveWebSourceReflowContract.remaining([slice(0, 44, 0, "new page")], after: [42: 21]).map(\.text), ["new page"])
+    }
+
+    func testExplainReflowRecreatedSourceHashRequiresExactUniqueTextOverlap() throws {
+        func slice(_ dom: Int, _ source: Int, _ start: Int, _ text: String) -> LiveWebPageSourceSlice {
+            LiveWebPageSourceSlice(visibleParagraphIndex: dom, sourceParagraphIndex: source,
+                sourceUTF16Start: start, sourceUTF16End: start + text.utf16.count, text: text)
+        }
+        let text = "A precise source sentence keeps its original annotation after the provider rebuilds its chapter."
+        let old = slice(0, 42, 20, text)
+        let new = slice(2, 81, 0, "An earlier prefix. " + text + " Later text.")
+        let mapped = try XCTUnwrap(LiveWebSourceReflowContract.remap(old, in: [new]))
+        XCTAssertEqual(mapped.visibleParagraphIndex, 2)
+        XCTAssertEqual(mapped.sourceParagraphIndex, 81)
+        XCTAssertEqual(mapped.sourceUTF16Start, 19)
+        XCTAssertEqual(mapped.text, text)
+        let clipped = slice(3, 81, 19 + 12, (text as NSString).substring(from: 12))
+        XCTAssertEqual(LiveWebSourceReflowContract.remap(old, in: [clipped])?.sourceUTF16Start, 19)
+        XCTAssertNil(LiveWebSourceReflowContract.remap(old, in: [new, slice(4, 82, 0, new.text)]))
+        XCTAssertNil(LiveWebSourceReflowContract.remap(old, in: [slice(4, 82, 0, text + " " + text)]),
+                     "Repeated exact text inside one provider paragraph is also ambiguous")
+        XCTAssertNil(LiveWebSourceReflowContract.remap(old, in: [slice(2, 81, 0, "An unrelated chapter must never inherit another paragraph's annotation.")]))
+        XCTAssertEqual(LiveWebSourceReflowContract.remap(slice(0, 42, 0, "short"), in: [slice(0, 81, 0, "short")])?.sourceParagraphIndex, 81)
+        XCTAssertNil(LiveWebSourceReflowContract.remap(slice(0, 42, 0, "short"), in: [slice(0, 81, 0, "short"), slice(1, 82, 0, "short")]))
+        XCTAssertNil(LiveWebSourceReflowContract.remap(slice(0, 42, 0, "short"), in: [slice(0, 81, 0, "short heading with unrelated text")]))
+    }
+
     // MARK: - 地址
 
     func testCanonicalReaderURLIsExtractedFromAnyEntryShape() {

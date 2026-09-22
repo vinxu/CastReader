@@ -40,7 +40,36 @@ final class LiveWebPageTurnController: ObservableObject {
     func retryReader() {
         bridge?.retryLiveWebReader()
     }
+
+    #if DEBUG
+    func liveAcceptanceMetrics() async -> String {
+        await bridge?.liveAcceptanceMetrics() ?? "ready=false"
+    }
+    #endif
 }
+
+#if DEBUG
+/// Read-only observations of the user's authorized live reader. This never
+/// supplies page content, audio, credentials or marks to the production flow.
+struct LivePlatformAcceptanceMetricsView: View {
+    let controller: LiveWebPageTurnController
+    @State private var metrics = "ready=false"
+    var body: some View {
+        Color.clear.frame(width: 1, height: 1)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Live platform playback metrics")
+            .accessibilityValue(metrics)
+            .accessibilityIdentifier("livePlatformPlaybackMetrics")
+            .allowsHitTesting(false)
+            .task {
+                while !Task.isCancelled {
+                    metrics = await controller.liveAcceptanceMetrics()
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                }
+            }
+    }
+}
+#endif
 
 /// WeRead's legacy desktop reader chooses its complete Canvas/CSS palette from
 /// browser-local state during boot.  Set that state before navigation rather
@@ -86,6 +115,9 @@ final class WebReaderContainerView: UIView {
     let isWeRead: Bool
     let isKobo: Bool
     private let loadingCover = UIView()
+    private var reflowCoverRelease: DispatchWorkItem?
+    private var hasPresentedReadableSurface = false
+    var isSurfaceCovered: Bool { loadingCover.superview != nil }
     private var lastSurfaceSize: CGSize = .zero
     private var lastReportedViewport: (left: Double, right: Double)?
     private var lastAppliedWeReadStyle: UIUserInterfaceStyle
@@ -154,10 +186,12 @@ final class WebReaderContainerView: UIView {
                 abs(lastSurfaceSize.height - bounds.height) > 2
             if surfaceChanged {
                 lastSurfaceSize = bounds.size
-                if isKobo { showLiveWebLoadingCover() }
+                if isKobo { showLiveWebReflowCover() }
             }
-            webView.frame = bounds
-            if loadingCover.superview != nil { loadingCover.frame = bounds }
+            UIView.performWithoutAnimation {
+                webView.frame = bounds
+                if loadingCover.superview != nil { loadingCover.frame = bounds }
+            }
         }
     }
 
@@ -165,8 +199,10 @@ final class WebReaderContainerView: UIView {
         guard surface.width > 1, surface.height > 1 else { return }
         let crop = WeReadViewportCrop.predicted(for: surface)
 
-        webView.transform = .identity
-        webView.frame = crop.webViewFrame(for: surface)
+        UIView.performWithoutAnimation {
+            webView.transform = .identity
+            webView.frame = crop.webViewFrame(for: surface)
+        }
         ReaderRunLog.write(
             "WEREAD viewport geometry surface=\(Int(surface.width))x\(Int(surface.height)) " +
             "layoutScale=\(String(format: "%.2f", Double(crop.widthScale)))"
@@ -193,11 +229,35 @@ final class WebReaderContainerView: UIView {
         showLiveWebLoadingCover()
     }
 
+    /// A provider dialog can suspend chapter extraction during rotation. Its
+    /// controls must remain reachable even when no new paragraph snapshot is
+    /// committed. Release only this cosmetic reflow cover after a bounded wait;
+    /// speech/page transactions still require their original stability checks.
+    func showLiveWebReflowCover() {
+        guard isKobo, hasPresentedReadableSurface else { return }
+        if reflowCoverRelease != nil { return }
+        presentLoadingCover()
+        let release = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.reflowCoverRelease = nil
+            UIView.performWithoutAnimation { self.loadingCover.removeFromSuperview() }
+        }
+        reflowCoverRelease = release
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: release)
+    }
+
     func showLiveWebLoadingCover() {
         guard isWeRead || isKobo else { return }
+        reflowCoverRelease?.cancel()
+        reflowCoverRelease = nil
+        hasPresentedReadableSurface = false
+        presentLoadingCover()
+    }
+
+    private func presentLoadingCover() {
         loadingCover.backgroundColor = backgroundColor
         if loadingCover.superview == nil { addSubview(loadingCover) }
-        loadingCover.frame = bounds
+        UIView.performWithoutAnimation { loadingCover.frame = bounds }
         bringSubviewToFront(loadingCover)
     }
 
@@ -208,6 +268,9 @@ final class WebReaderContainerView: UIView {
 
     func finishLiveWebSurfaceTransition() {
         guard isWeRead || isKobo else { return }
+        hasPresentedReadableSurface = true
+        reflowCoverRelease?.cancel()
+        reflowCoverRelease = nil
         // Never gate visibility on an optional DOM measurement. Navigation and
         // Canvas stability can complete without a viewport report (for example
         // a title/cover page), and the old two-signal gate could stay white.
@@ -444,6 +507,9 @@ struct WebReaderView: UIViewRepresentable {
         context.coordinator.onLiveWebNeedsLoadingCover = {
             [weak container] in
             container?.showLiveWebLoadingCover()
+        }
+        context.coordinator.onLiveWebNeedsReflowCover = { [weak container] in
+            container?.showLiveWebReflowCover()
         }
         context.coordinator.onLiveWebSurfaceStable = { [weak container] in
             container?.finishLiveWebSurfaceTransition()

@@ -61,7 +61,7 @@ struct ReaderMoreButton: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 20, weight: .semibold))
-                .frame(width: 36, height: 44)
+                .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: 44)
                 .contentShape(Rectangle())
                 .overlay(alignment: .topTrailing) {
                     if timer.isActive {
@@ -82,7 +82,7 @@ struct ReaderMoreButton: View {
         } message: {
             Text(AppLocalized("请等待阅读页面加载完成后重试，或使用原阅读器的 Aa 设置。"))
         }
-        .sheet(item: $panel) { item in
+        .readerSettingsPresentation(item: $panel) { item in
             switch item {
             case .timer: SleepTimerSheet(timer: timer)
             case .appearance: ReaderAppearanceSheet(source: appearanceSource)
@@ -240,7 +240,7 @@ private struct ReaderAppearanceSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents(AdaptiveLayout.isPad ? [.large] : [.medium, .large])
         .presentationDragIndicator(.visible)
     }
 }

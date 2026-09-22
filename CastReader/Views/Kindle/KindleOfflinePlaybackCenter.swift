@@ -8,6 +8,8 @@ final class KindleOfflinePlaybackCenter: ObservableObject {
     static let shared = KindleOfflinePlaybackCenter()
     @Published private(set) var model: KindleOfflineBookReaderModel?
     @Published private(set) var isPresented = false
+    weak var scene: ReaderSceneContext?
+    var ownsPlaybackSession: Bool { model?.speech.ownsPlaybackSession == true }
     var beforeOpen: (() -> Void)?
     private var store: KindleOfflineBookStore?
     private var scope: String?
@@ -52,13 +54,33 @@ final class KindleOfflinePlaybackCenter: ObservableObject {
     func expand() { guard model != nil else { return }; isPresented = true }
 
     func stop(preservingSleepTimer: Bool = false) {
+        let wasOwner = ownsPlaybackSession
         let previous = model
         model = nil; isPresented = false
         openTask?.cancel(); openTask = nil
         store = nil; scope = nil; continueDownload = nil; pendingDownload = nil
         previous?.onClosed = nil
         previous?.close()
-        if previous != nil, !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
+        if wasOwner, !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
+    }
+
+    func adoptPlayback(from source: KindleOfflinePlaybackCenter) {
+        guard source.ownsPlaybackSession, let active = source.model else { return }
+        model = active; store = source.store; scope = source.scope
+        // Download routes are re-created in the destination window.
+        let expectedScope = source.scope
+        continueDownload = { [weak self] in
+            guard let self, KindleOfflineContext.currentScope == expectedScope,
+                  let book = active.book.sourceBook else { return }
+            (self.scene?.kindle ?? .shared).openOfflineDownload(book: book)
+        }
+        source.model = nil; source.isPresented = false
+        source.store = nil; source.scope = nil; source.continueDownload = nil
+        active.onClosed = { [weak self, weak active] in
+            guard let self, self.model === active else { return }
+            self.stop(preservingSleepTimer: true)
+        }
+        isPresented = true
     }
 
     func resumeDownload() {
@@ -75,7 +97,7 @@ final class KindleOfflinePlaybackCenter: ObservableObject {
             self?.open(book: book, scope: scope, store: store, scopeValidator: scopeValidator,
                 continueDownload: {
                     guard scopeValidator(), let source = book.sourceBook else { return }
-                    KindlePlaybackCenter.shared.openOfflineDownload(book: source)
+                    (self?.scene?.kindle ?? .shared).openOfflineDownload(book: source)
                 })
         }
     }
@@ -91,6 +113,7 @@ final class KindleOfflinePlaybackCenter: ObservableObject {
 struct KindleOfflinePlaybackSurface: View {
     @ObservedObject var center: KindleOfflinePlaybackCenter
     var body: some View {
+        GeometryReader { geometry in
         if let model = center.model {
             NavigationStack {
                 KindleOfflineBookReaderView(model: model, continueDownload: center.resumeDownload)
@@ -107,9 +130,10 @@ struct KindleOfflinePlaybackSurface: View {
             }
             .id(ObjectIdentifier(model))
             .background(AppTheme.background.ignoresSafeArea())
-            .offset(y: center.isPresented ? 0 : UIScreen.main.bounds.height * 2)
+            .offset(y: center.isPresented ? 0 : geometry.size.height + 120)
             .allowsHitTesting(center.isPresented)
             .accessibilityHidden(!center.isPresented)
+        }
         }
     }
 }

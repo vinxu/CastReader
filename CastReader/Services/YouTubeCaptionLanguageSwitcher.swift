@@ -64,7 +64,8 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
     private var task: Task<Void, Never>?
     private var overlayTask: Task<Void, Never>?
 
-    private init() {}
+    private let transcriptService: YouTubeTranscriptService
+    init(transcriptService: YouTubeTranscriptService = .shared) { self.transcriptService = transcriptService }
 
     var isPickerPresented: Bool { presentedPickerVideoID != nil }
 
@@ -97,7 +98,7 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
         task?.cancel()
         // The extraction WebView is a single shared resource. Releasing it here
         // keeps a rapid second pick from racing the first one's page load.
-        YouTubeTranscriptService.shared.cancel()
+        transcriptService.cancel()
 
         let target = option.languageCode
         guard let accountBoundary = AccountContentIsolation.captureBoundaryToken() else {
@@ -114,7 +115,7 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
                     option: option,
                     reference: reference,
                     resumeAnchorMs: resumeAnchorMs,
-                    cache: cache
+                    cache: cache, service: self?.transcriptService ?? .shared
                 )
                 try Task.checkCancellation()
                 guard AccountContentIsolation.isCurrent(accountBoundary) else {
@@ -149,7 +150,7 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
         task = nil
         overlayTask?.cancel()
         overlayTask = nil
-        YouTubeTranscriptService.shared.cancel()
+        transcriptService.cancel()
         phase = .idle
     }
 
@@ -181,7 +182,7 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
         option: YouTubeCaptionTrackOption,
         reference: YouTubeVideoReference,
         resumeAnchorMs: Int,
-        cache: YouTubeCacheStore?
+        cache: YouTubeCacheStore?, service: YouTubeTranscriptService
     ) async throws -> Resolution {
         let cachedCandidate = await cache?.mostRecentTranscript(
             videoId: reference.videoId,
@@ -212,7 +213,7 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
 
         let transcript: YouTubeTranscriptDocument
         do {
-            transcript = try await YouTubeTranscriptService.shared.extract(
+            transcript = try await service.extract(
                 reference,
                 preferredLanguage: option.languageCode,
                 requestedTrack: YouTubeTrackRequest(option: option),

@@ -1,0 +1,148 @@
+{
+  "version": "1.2.43",
+  "build": "65",
+  "applicationSourceSHA256": "a08ee45fbac599cf4e21e97fa6f136dcaf9c777e00ef539f14dd1c2ac8b30466",
+  "captureDevice": "iPad Air 11-inch (M3), iPadOS 26.5",
+  "files": [
+    {
+      "file": "final/en-US/01-home.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 1296681,
+      "sha256": "96cfb8851830728141d80fc0e52f55cded6960f0aaf105677085389cd0b7581e"
+    },
+    {
+      "file": "final/en-US/02-kindle-read.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 1021116,
+      "sha256": "867082d600f028d7e8905586558872dab99a2d82202c4bbf3706051e6a62fd95"
+    },
+    {
+      "file": "final/en-US/03-kindle-explain.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 1112828,
+      "sha256": "67b39cb8fef93dc6807caa2fd725d492c655e5661274597aa91ab9ff25a90703"
+    },
+    {
+      "file": "final/en-US/04-voices.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 1263660,
+      "sha256": "acbac66a74a657a40a3a79bc89ff5763a38b985ac8aeea4f8e61b16c1691e045"
+    },
+    {
+      "file": "final/en-US/05-import.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 970564,
+      "sha256": "ad0490f8acd1bd1c0e12a89ff63c068cda7126ddecb0b97a8d13b31f84c51245"
+    },
+    {
+      "file": "final/zh-Hans/01-home.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 1284631,
+      "sha256": "817cb876cd8e318526d9b61570de95cd4e42ebddcefb0d8d3f032b5e9e909276"
+    },
+    {
+      "file": "final/zh-Hans/02-kindle-read.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 1026893,
+      "sha256": "7b0b206647fb2f60952f1fc5f8898dd022f0c52f471538e8dd335f0487af0438"
+    },
+    {
+      "file": "final/zh-Hans/03-kindle-explain.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 1103575,
+      "sha256": "38c0d7dca222735c848516e6fcb007391b702944372a28a4f9b3d4c666a56eb1"
+    },
+    {
+      "file": "final/zh-Hans/04-voices.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 1209911,
+      "sha256": "9eb2899d20a79efd40879f873db9b4658d06758181c0697a1909eb0b60006274"
+    },
+    {
+      "file": "final/zh-Hans/05-import.png",
+      "width": 2048,
+      "height": 2732,
+      "bytes": 951636,
+      "sha256": "988271b7559aa51bdde07e2f891ac4a5102b1cec17cad7c53f74c1b62d94a628"
+    },
+    {
+      "file": "raw/en-US/01-home.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 1379174,
+      "sha256": "05e7d626b0f2fc53d32a5bee11845b7675f67b191f38d3d24d0036f156feead5"
+    },
+    {
+      "file": "raw/en-US/02-kindle-read.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 768884,
+      "sha256": "5c8037c8c9b5fd32a399c83a6de7a45f78761398882e234198e4e181f2087d6d"
+    },
+    {
+      "file": "raw/en-US/03-kindle-explain.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 848148,
+      "sha256": "984959ba7e0743898a27c5454866c3fd05fa3d2c4e7cee99138bd2450f8561a9"
+    },
+    {
+      "file": "raw/en-US/04-voices.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 1399350,
+      "sha256": "9bcfcb5b02ab123394331ccbe7422775cbe6ce666ac77cf6e94ddf96ab34a875"
+    },
+    {
+      "file": "raw/en-US/05-import.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 1041273,
+      "sha256": "e17a5fc4d16d1f553cb6229994680da3e2ede8f99fa76726abf51a8c0db68c91"
+    },
+    {
+      "file": "raw/zh-Hans/01-home.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 1372028,
+      "sha256": "b58414dee48bbf44c160c11d137543c5cb4bf192e83aae33b1f6aaba1334fcde"
+    },
+    {
+      "file": "raw/zh-Hans/02-kindle-read.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 772066,
+      "sha256": "5bfd17afce1f3c77b0d336518362aa13be0a92aa23c2f54175054782d193cd44"
+    },
+    {
+      "file": "raw/zh-Hans/03-kindle-explain.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 850236,
+      "sha256": "819a7f36385c75232726d88acb0870fb0c0275240e61e8164c35aa1f027266d5"
+    },
+    {
+      "file": "raw/zh-Hans/04-voices.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 1379616,
+      "sha256": "eca82370abe37b8f5fc0bb3c2a5c76a01cb9bd66a382951aacc41aeb32512d60"
+    },
+    {
+      "file": "raw/zh-Hans/05-import.png",
+      "width": 1640,
+      "height": 2360,
+      "bytes": 1035488,
+      "sha256": "5468ec8c9e322cb2925777eb1e116219319d44b091f19964435c6a84c6238d29"
+    }
+  ]
+}

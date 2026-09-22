@@ -20,6 +20,7 @@ Pods/
 
 # Node (WebReader 构建依赖，产物 bundle.js 已入 WebAssets)
 node_modules/
+node_modules
 
 # macOS
 .DS_Store

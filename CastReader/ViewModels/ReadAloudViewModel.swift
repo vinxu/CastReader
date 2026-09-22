@@ -771,6 +771,23 @@ final class ReadAloudViewModel: ObservableObject {
             && audio.canControlPlayback(session: token)
     }
 
+    var ownsPlaybackSession: Bool {
+        isActive && audioSessionToken.map(audio.isPlaybackSessionActive) == true
+    }
+    var onPlaybackOwnershipRevoked: (() -> Void)?
+
+    private func playbackOwnershipWasRevoked() {
+        deactivate(clearingHighlights: false)
+        isPlaying = false
+        isBuffering = false
+        isPlaybackPausedByUser = true
+        onPlaybackOwnershipRevoked?()
+    }
+
+    func clearOwnedAudioQueue() {
+        if let token = audioSessionToken { _ = audio.clearQueue(session: token) }
+    }
+
     @discardableResult
     private func ensureAudioSessionClaim() -> AudioPlaybackSessionToken? {
         guard isActive else { return nil }
@@ -778,7 +795,9 @@ final class ReadAloudViewModel: ObservableObject {
            audio.isPlaybackSessionActive(token) {
             return token
         }
-        let token = audio.claimPlaybackSession(owner: .readAloud)
+        let token = audio.claimPlaybackSession(owner: .readAloud, onRevoked: { [weak self] in
+            self?.playbackOwnershipWasRevoked()
+        })
         audioSessionToken = token
         // A restored page may be activated before ensurePlaying()/jump(),
         // bypassing start(). Bind the book whenever we claim its audio session;
@@ -1280,6 +1299,7 @@ final class ReadAloudViewModel: ObservableObject {
         }
         isActive = true
         audioSessionToken = token
+        audio.setOwnershipRevocationHandler(for: token) { [weak self] in self?.playbackOwnershipWasRevoked() }
         installAudioCompletionCallback()
         beginAnalyticsReadSessionIfNeeded(resume: false)
         invalidateAccessRetry()
@@ -1597,8 +1617,21 @@ final class ReadAloudViewModel: ObservableObject {
         didSignalPageBoundaryApproaching = false
         playbackVoiceID = settings.voice(for: docLanguage)
         status = .pending
+        if resumeAnchor != nil, resumedParagraph == nil {
+            // A geometry update must never restart unrelated text at page 0.
+            // The bridge first tries a verified adjacent-page reveal; if the
+            // source is still unavailable, require a real paragraph choice.
+            resumeNotice = AppLocalized("内容已变化，无法准确恢复。请选择从哪里继续朗读。")
+            return
+        }
         if autoplay, !isPlaybackPausedByUser, !readableIndices.isEmpty {
             start()
+        } else if let resumedParagraph, resumeAnchor?.wasPlaying == false, isActive {
+            // A viewport reflow is not a user navigation. Rebuild the anchored
+            // paragraph while paused so its word can be painted immediately;
+            // the normal resume path seeks before exposing the audio item.
+            // A manual turn has no resumeAnchor and still waits for Play.
+            generate(resumedParagraph, autoPlay: false)
         }
     }
 
@@ -2179,6 +2212,8 @@ final class ReadAloudViewModel: ObservableObject {
            checkpoint.sourceKind == document.sourceKind {
             let restored = resumeDocumentIndex.resolve(checkpoint) != nil ? checkpoint
                 : ReadingResumeContract.relocatedKindleCheckpoint(checkpoint, paragraphs: paras)
+                    ?? ReadingResumeContract.relocatedKoboCheckpoint(checkpoint, paragraphs: paras)
+                    ?? ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: paras)
 #if DEBUG
             if let restored, restored.paragraphFingerprint != checkpoint.paragraphFingerprint {
                 ReaderRunLog.write("READ resume reflow source=\(document.sourceKind.rawValue) oldPara=\(checkpoint.paragraphIndex) newPara=\(restored.paragraphIndex) word=\(restored.audio?.semanticWordFingerprint?.prefix(12) ?? "-") fraction=\(restored.audio?.wordFraction ?? -1)")
@@ -2297,7 +2332,7 @@ final class ReadAloudViewModel: ObservableObject {
                 output: segments.map(\.text).joined(), offset: cursor.outputUTF16Offset,
                 length: cursor.outputUTF16Length,
                 source: paras[currentParagraphIndex].text)
-            if document.sourceKind == .kindle {
+            if document.sourceKind == .kindle || document.sourceKind == .kobo || document.sourceKind == .weread {
                 checkpoint.reflow = ReadingResumeContract.captureReflow(
                     source: paras[currentParagraphIndex].text, visual: checkpoint.visual, audio: cursor,
                     precedingSource: paras.prefix(currentParagraphIndex).filter { $0.type.isReadable }.map(\.text).joined(),
@@ -2418,13 +2453,14 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// 退出激活（切到解读模式时调用）：必须停掉生成/预取，否则流式生成的新 segment 经 loadSegment 会自动
     /// 重新 playSegment（首段未播放时），导致「切到解读后朗读还在响」。
-    func deactivate() {
+    func deactivate(clearingHighlights: Bool = true) {
         cancelReadablePagePreparation()
         flushReadingProgress()
         retainReadingCursorForQueueRebuild()
         // The initial quota refresh happens before `activate()`. Invalidate it
         // even when this VM has not yet acquired playback ownership.
         invalidateAccessRetry()
+        let ownedPlayback = ownsPlaybackSession
         let wasActive = isActive
         if wasActive,
            youtubeCompletionSubmittedParagraph != currentParagraphIndex {
@@ -2451,14 +2487,16 @@ final class ReadAloudViewModel: ObservableObject {
         cloneRequestIDs.removeAll(keepingCapacity: false)
         isAwaitingLiveWebCarryCompletion = false
         pendingLiveWebCarryStartIndex = nil
-        audio.setNowPlayingCaption(nil)
+        if ownedPlayback { audio.setNowPlayingCaption(nil) }
         lastNowPlayingCaption = nil
         // 清朗读高亮状态，避免切到解读后残留（web 源 DOM 另由 setActive→clearOverlay 清）
-        highlightRange = nil
-        photoHighlightWordIndex = nil
-        photoHighlightWordRange = nil
-        webHighlight = nil
-        pdfHighlight = nil
+        if clearingHighlights {
+            highlightRange = nil
+            photoHighlightWordIndex = nil
+            photoHighlightWordRange = nil
+            webHighlight = nil
+            pdfHighlight = nil
+        }
         if let switchID = activeVoiceSwitchID {
             VoiceSwitchStatusCenter.shared.finish(switchID)
             activeVoiceSwitchID = nil
@@ -2527,6 +2565,36 @@ final class ReadAloudViewModel: ObservableObject {
         guard currentParagraphIndex < 0, paragraphIndex >= 0 else { return }
         pendingResumeParagraphIndex = paragraphIndex
         if readableIndices.contains(paragraphIndex) { currentParagraphIndex = paragraphIndex }
+    }
+
+    /// A reflowed provider page can contain the tail of the completed page.
+    /// Seed an exact source-word cursor so newly generated audio starts at the
+    /// first unread word, using the same verified timestamp resolver as resume.
+    @discardableResult
+    func prepareKindleWordStart(paragraphIndex: Int, wordIndex: Int) -> Bool {
+        guard document.sourceKind == .kindle, !hasObservedReadingPlayback,
+              paras.indices.contains(paragraphIndex),
+              paras[paragraphIndex].words.indices.contains(wordIndex) else { return false }
+        let paragraph = paras[paragraphIndex]
+        let source = paragraph.text as NSString
+        var offset = 0
+        for (index, word) in paragraph.words.enumerated() {
+            let range = source.range(of: word.text, range: NSRange(location: offset, length: source.length - offset))
+            guard range.location != NSNotFound else { return false }
+            offset = NSMaxRange(range)
+            guard index == wordIndex else { continue }
+            guard let cursor = ReadingResumeContract.sourceWordCursor(source: paragraph.text, range: range) else { return false }
+            pendingReadingAudioCursor = cursor
+            pendingResumeParagraphIndex = paragraphIndex
+            currentParagraphIndex = paragraphIndex
+            resumeSourceRange = range
+            resumeSourceParagraphIndex = paragraphIndex
+            lastReadingCheckpoint = resumeDocumentIndex.checkpoint(sourceKind: .kindle,
+                paragraphIndex: paragraphIndex, audio: cursor)
+            resumeNotice = nil
+            return true
+        }
+        return false
     }
 
     /// Selecting a TOC destination is browsing. Cancel old streaming work and
@@ -2708,10 +2776,11 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func rebuildCurrentParagraphAfterOwnershipChange() {
-        guard isActive, currentParagraphIndex >= 0 else {
+        guard currentParagraphIndex >= 0 else {
             start()
             return
         }
+        if !isActive { activate() }
         guard let token = ensureAudioSessionClaim() else { return }
         let cached = segmentsByParagraph[currentParagraphIndex] ?? []
         switch ReadAloudOwnershipRecoveryPlan.resolve(
@@ -3080,6 +3149,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func applySpeed() {
+        guard ownsPlaybackSession else { return }
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
         if document.sourceKind == .kindle, currentParagraphIndex >= 0 {
             preloadNext(after: currentParagraphIndex)
@@ -3123,7 +3193,11 @@ final class ReadAloudViewModel: ObservableObject {
         if let token = audioSessionToken {
             _ = audio.setMoreSegmentsExpected(false, session: token)
             _ = audio.clearBook(session: token)
+            audio.releasePlaybackSession(token)
         }
+        audioSessionToken = nil
+        isActive = false
+        isPlaying = false
         YouTubeAudioMemoryWindow.prune(
             &segmentsByParagraph,
             sourceKind: document.sourceKind,
@@ -3699,6 +3773,12 @@ final class ReadAloudViewModel: ObservableObject {
             ReaderRunLog.write(
                 "WEREAD playback restored para=\(paragraph) seg=\(segment.segmentIndex) progress=\(String(format: "%.3f", pending.anchor.segmentProgress)) playing=\(shouldAutoPlay && pending.anchor.wasPlaying ? "Y" : "N")"
             )
+            // AVPlayer may not publish a periodic tick while paused. Paint
+            // directly from the accepted seek target instead of waiting for
+            // an event that only reliably arrives during active playback.
+            if !pending.anchor.wasPlaying {
+                updateHighlight(segment.duration * pending.anchor.segmentProgress)
+            }
         } else {
             let loaded = audio.loadSegment(
                 segment,
@@ -4521,7 +4601,7 @@ final class ReadAloudViewModel: ObservableObject {
         force: Bool = false,
         waitForPersistence: Bool = false
     ) {
-        guard document.sourceKind == .youtube,
+        guard document.sourceKind == .youtube, ownsAudioQueue,
               let segment = audio.currentSegment,
               segment.paragraphIndex == currentParagraphIndex else { return }
 

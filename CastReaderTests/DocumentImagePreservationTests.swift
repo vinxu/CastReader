@@ -129,11 +129,18 @@ final class DocumentImagePreservationTests: XCTestCase {
         let browser = try XCTUnwrap(target)
         try await Task.sleep(nanoseconds: 250_000_000)
         let snapshot = try await browser.takeSnapshot(configuration: nil)
-        let cg = try XCTUnwrap(snapshot.cgImage)
+        let bitmap = try XCTUnwrap(UIImage(data: try XCTUnwrap(snapshot.pngData())))
+        let cg = try XCTUnwrap(bitmap.cgImage)
+        // Sample the painted center explicitly. Shrinking the entire image to
+        // one pixel can select its transparent fitted-image border.
+        let center = try XCTUnwrap(cg.cropping(to: CGRect(x: cg.width / 2, y: cg.height / 2, width: 1, height: 1)))
         var pixel = [UInt8](repeating: 0, count: 4)
-        let context = try XCTUnwrap(CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8,
-            bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-        context.draw(cg, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        try pixel.withUnsafeMutableBytes { bytes in
+            let context = try XCTUnwrap(CGContext(data: bytes.baseAddress, width: 1, height: 1, bitsPerComponent: 8,
+                bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            context.draw(center, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        }
+        XCTAssertGreaterThan(pixel[3], 200)
         XCTAssertLessThan(pixel[0], 50)
         XCTAssertGreaterThan(pixel[1], 80)
         XCTAssertGreaterThan(pixel[2], 150)

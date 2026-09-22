@@ -13,6 +13,25 @@ final class KoboContractTests: XCTestCase {
     private let primaryUUID = "b849f0ce-d6b3-42f6-bcb6-e6774d00d132"
     private let secondUUID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
 
+    @MainActor
+    func testRotationCoverReleasesWithoutAParagraphCommitButNavigationCoverDoesNot() async {
+        let container = WebReaderContainerView(webView: WKWebView(), isWeRead: false,
+            isKobo: true, initialSurfaceSize: CGSize(width: 820, height: 991), loadAction: {})
+        container.showLiveWebLoadingCover()
+        container.showLiveWebReflowCover()
+        try? await Task.sleep(nanoseconds: 3_200_000_000)
+        XCTAssertTrue(container.isSurfaceCovered, "Initial navigation still needs a real page commit")
+        container.finishLiveWebSurfaceTransition()
+        container.showLiveWebReflowCover()
+        XCTAssertTrue(container.isSurfaceCovered)
+        try? await Task.sleep(nanoseconds: 3_200_000_000)
+        XCTAssertFalse(container.isSurfaceCovered, "A provider settings dialog must remain dismissible")
+        container.showLiveWebReflowCover()
+        container.showLiveWebLoadingCover()
+        try? await Task.sleep(nanoseconds: 3_200_000_000)
+        XCTAssertTrue(container.isSurfaceCovered, "An old rotation deadline cannot reveal a new navigation")
+    }
+
     // MARK: - Initial reader recovery
 
     func testInitialEmptyReaderReloadsOnceThenSurfacesRepeatedTimeout() {

@@ -475,6 +475,25 @@ final class ExplainViewModel: ObservableObject {
             && audio.canControlPlayback(session: token)
     }
 
+    var ownsPlaybackSession: Bool {
+        isActive && audioSessionToken.map(audio.isPlaybackSessionActive) == true
+    }
+    var onPlaybackOwnershipRevoked: (() -> Void)?
+    private var ownershipCheckpoint: (block: Int, segmentID: String, seconds: Double)?
+
+    private func playbackOwnershipWasRevoked() {
+        if ownsAudioQueue, let segment = audio.currentSegment {
+            ownershipCheckpoint = (currentBlockIndex, segment.id, audio.playbackPosition)
+        }
+        deactivate()
+        isPlaying = false
+        onPlaybackOwnershipRevoked?()
+    }
+
+    func pauseOwnedPlayback() {
+        if let token = audioSessionToken { _ = audio.pause(session: token) }
+    }
+
     @discardableResult
     private func ensureAudioSessionClaim() -> AudioPlaybackSessionToken? {
         guard isActive else { return nil }
@@ -482,7 +501,9 @@ final class ExplainViewModel: ObservableObject {
            audio.isPlaybackSessionActive(token) {
             return token
         }
-        let token = audio.claimPlaybackSession(owner: .explain)
+        let token = audio.claimPlaybackSession(owner: .explain, onRevoked: { [weak self] in
+            self?.playbackOwnershipWasRevoked()
+        })
         audioSessionToken = token
         isPlaying = false
         return token
@@ -684,6 +705,7 @@ final class ExplainViewModel: ObservableObject {
 
     /// 应用全局语速到共享播放器（与 ReadAloudViewModel.applySpeed 对称，统一由 settings.speed 驱动）。
     private func applySpeed() {
+        guard ownsPlaybackSession else { return }
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
     }
 
@@ -974,7 +996,7 @@ final class ExplainViewModel: ObservableObject {
     /// or restores it. A non-autoplay switch remains idle/actionable.
     func activateAfterModeSwitch(autoplay: Bool) {
         liveWebTurnIntentSuspended = false
-        activate()
+        if autoplay { activate() }
         ReaderRunLog.write(
             "EXPLAIN mode activation autoplay=\(autoplay ? "Y" : "N") " +
             "status=\(statusLogValue) paras=\(doc.readableParagraphs.count)"
@@ -1005,6 +1027,7 @@ final class ExplainViewModel: ObservableObject {
         if wasRefreshingAccess {
             stageText = ""
         }
+        let ownedPlayback = ownsPlaybackSession
         let wasActive = isActive
         isActive = false
         if let token = audioSessionToken {
@@ -1022,7 +1045,7 @@ final class ExplainViewModel: ObservableObject {
         preparingBlocks.removeAll()
         isPreparingNext = false
         clearPagePrefetch()
-        audio.setNowPlayingCaption(nil)
+        if ownedPlayback { audio.setNowPlayingCaption(nil) }
         lastNowPlayingCaption = nil
         finishVoiceSwitchIfNeeded()
     }
@@ -1071,7 +1094,7 @@ final class ExplainViewModel: ObservableObject {
         // 提交 LLM 前预校验：内容太短，LLM 没东西可讲 → 直接引导朗读，不发请求白等重试、也不消耗额度（而非无脑提交）。
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
-            if continuePastShortWeReadPage() { return }
+            if continuePastShortLivePage() { return }
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
         }
@@ -1186,7 +1209,7 @@ final class ExplainViewModel: ObservableObject {
         }
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
-            if continuePastShortWeReadPage() { return }
+            if continuePastShortLivePage() { return }
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
         }
@@ -1311,8 +1334,8 @@ final class ExplainViewModel: ObservableObject {
     /// bridge's confirmed semantic turn (one click, bounded timeout). Never
     /// interpret an arbitrary HTTP 400, access wall, or network failure as this.
     @discardableResult
-    private func continuePastShortWeReadPage() -> Bool {
-        guard document.sourceKind == .weread,
+    private func continuePastShortLivePage() -> Bool {
+        guard [.weread, .kobo, .googleBooks].contains(document.sourceKind),
               let onDocumentFinished,
               !liveWebTurnIntentSuspended,
               audio.sleepTimer.permitsAutomaticPlayback(),
@@ -1325,7 +1348,7 @@ final class ExplainViewModel: ObservableObject {
         status = .completed
         isContinuingLivePage = true
         stageText = AppLocalized("继续讲解…")
-        ReaderRunLog.write("WEREAD explain short-page continue count=\(consecutiveShortWeReadPages)")
+        ReaderRunLog.write("LIVE explain short-page continue source=\(document.sourceKind.rawValue) count=\(consecutiveShortWeReadPages)")
         onDocumentFinished()
         return true
     }
@@ -1458,7 +1481,12 @@ final class ExplainViewModel: ObservableObject {
         if let token = audioSessionToken {
             _ = audio.setMoreSegmentsExpected(false, session: token)
             _ = audio.clearBook(session: token)
+            audio.releasePlaybackSession(token)
         }
+        audioSessionToken = nil
+        isActive = false
+        isPlaying = false
+        ownershipCheckpoint = nil
         clearPagePrefetch()
         preparingBlocks.removeAll()
         // `PreparedBlock` owns raw MP3 Data. A closed/superseded document can
@@ -1554,10 +1582,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     private func recoverPlaybackAfterOwnershipChange() {
-        guard isActive else {
-            start()
-            return
-        }
+        if !isActive { activate() }
         guard let session = ensureAudioSessionClaim() else { return }
         let plan = ExplainOwnershipRecoveryPlan.resolve(
             currentBlockIndex: currentBlockIndex,
@@ -1617,12 +1642,20 @@ final class ExplainViewModel: ObservableObject {
         status = .streaming(block: blockIndex, total: max(totalBlocks, blockIndex + 1))
         isPreparingNext = false
         _ = audio.setMoreSegmentsExpected(true, session: session)
+        let checkpoint = ownershipCheckpoint.flatMap { value in
+            value.block == blockIndex && block.segments.contains(where: { $0.id == value.segmentID }) ? value : nil
+        }
         for segment in block.segments {
             _ = audio.loadSegment(
                 segment,
-                autoPlay: !liveWebTurnIntentSuspended,
+                autoPlay: checkpoint == nil && !liveWebTurnIntentSuspended,
                 session: session
             )
+        }
+        if let checkpoint {
+            _ = audio.startQueuedSegment(id: checkpoint.segmentID, progress: 0,
+                initialTime: checkpoint.seconds, autoPlay: !liveWebTurnIntentSuspended, session: session)
+            ownershipCheckpoint = nil
         }
         _ = audio.setMoreSegmentsExpected(false, session: session)
     }
@@ -1885,7 +1918,7 @@ final class ExplainViewModel: ObservableObject {
                     )
                 } else if case QuickReadError.textTooShort = error {
                     guard self.isActive else { return }
-                    if self.continuePastShortWeReadPage() { return }
+                    if self.continuePastShortLivePage() { return }
                     self.status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
                     self.stageText = AppLocalized("解读失败")
                     self.endAnalyticsExplainSession(result: .failed, reason: "text_too_short",

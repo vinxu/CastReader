@@ -57,7 +57,7 @@ final class ResumeCoordinator {
             guard let book else { throw ContentResumeError.missingResource }
             guard mode == .read else { throw ContentResumeError.unsupportedMode }
             player.close()
-            KindlePlaybackCenter.shared.open(book: book,
+            player.kindleCenter.open(book: book,
                 intent: autoplay ? .autoplayRead(requestID: request) : .present)
             ReaderRunLog.write("CATALOG resume dispatched source=kindle autoplay=\(autoplay)")
             return ContentResumeResult(itemID: id, contentChanged: false)
@@ -65,7 +65,7 @@ final class ResumeCoordinator {
         if record.sourceKind == .youtube {
             guard mode == .read else { throw ContentResumeError.unsupportedMode }
             guard let url = record.sourceURL,
-                  YouTubeRouteCenter.shared.open(url, entry: .history, autoplay: autoplay) else {
+                  player.youtubeRoutes.open(url, entry: .history, autoplay: autoplay) else {
                 throw ContentResumeError.missingResource
             }
             return ContentResumeResult(itemID: id, contentChanged: false)

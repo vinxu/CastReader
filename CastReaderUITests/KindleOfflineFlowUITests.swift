@@ -435,6 +435,19 @@ final class KindleOfflineFlowUITests: XCTestCase {
         capture("24-zoom-entire-page")
         canvas.doubleTap(); wait { canvas.value as? String != "100%" }
         canvas.doubleTap(); wait { canvas.value as? String == "100%" }
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            canvas.pinch(withScale: 2, velocity: 1)
+            wait { canvas.value as? String != "100%" }
+            let zoom = canvas.value as? String
+            XCUIDevice.shared.orientation = .landscapeLeft
+            wait { self.app.frame.width > self.app.frame.height }
+            XCTAssertEqual(canvas.value as? String, zoom)
+            capture("24-ipad-zoom-preserved-landscape")
+            XCUIDevice.shared.orientation = .portrait
+            wait { self.app.frame.height > self.app.frame.width }
+            XCTAssertEqual(canvas.value as? String, zoom)
+            canvas.doubleTap(); wait { canvas.value as? String == "100%" }
+        }
         XCTAssertTrue(canvas.frame.insetBy(dx: -1, dy: -1).contains(enlarged.frame))
         tap("offlineBookZoomClose")
     }

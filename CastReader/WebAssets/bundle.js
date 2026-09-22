@@ -42128,12 +42128,40 @@ var __CRWeb = (() => {
   function createMarkRenderer(getParaEl, initialColor) {
     const svgs = /* @__PURE__ */ new Map();
     let color = initialColor;
-    const shown = /* @__PURE__ */ new Set();
+    const shown = /* @__PURE__ */ new Map();
+    const observedWindows = /* @__PURE__ */ new WeakSet();
+    let animateDrawing = true;
+    let pendingRelayout = 0;
+    function scheduleRelayout() {
+      if (pendingRelayout || shown.size === 0) return;
+      pendingRelayout = requestAnimationFrame(() => {
+        pendingRelayout = 0;
+        relayout();
+      });
+    }
+    function relayout() {
+      const marks = Array.from(shown.values());
+      svgs.forEach((svg) => svg.replaceChildren());
+      shown.clear();
+      animateDrawing = false;
+      try {
+        marks.forEach(show);
+      } finally {
+        animateDrawing = true;
+      }
+    }
     function ensureSvg(doc) {
+      var _a;
       const root2 = doc.documentElement;
       const body = doc.body;
       const host = body || root2;
       if (!host) return null;
+      const ownerWindow = doc.defaultView;
+      if (ownerWindow && !observedWindows.has(ownerWindow)) {
+        observedWindows.add(ownerWindow);
+        ownerWindow.addEventListener("resize", scheduleRelayout);
+        (_a = doc.fonts) == null ? void 0 : _a.addEventListener("loadingdone", scheduleRelayout);
+      }
       const width = Math.max((root2 == null ? void 0 : root2.scrollWidth) || 0, (body == null ? void 0 : body.scrollWidth) || 0, 1);
       const height = Math.max((root2 == null ? void 0 : root2.scrollHeight) || 0, (body == null ? void 0 : body.scrollHeight) || 0, 1);
       const existing = svgs.get(doc);
@@ -42199,6 +42227,7 @@ var __CRWeb = (() => {
       path5.setAttribute("stroke-linecap", "round");
       path5.setAttribute("stroke-linejoin", "round");
       s.appendChild(path5);
+      if (!animateDrawing) return;
       try {
         const len = (_b = (_a = path5.getTotalLength) == null ? void 0 : _a.call(path5)) != null ? _b : 120;
         path5.style.strokeDasharray = String(len);
@@ -42233,7 +42262,7 @@ var __CRWeb = (() => {
       const sy = ownerWindow.scrollY;
       const lineRects = rects.filter((rc) => rc.width >= 2 && rc.height >= 2);
       if (!lineRects.length) return;
-      shown.add(m.id);
+      shown.set(m.id, m);
       const last2 = lineRects[lineRects.length - 1];
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       lineRects.forEach((rc) => {
@@ -42287,6 +42316,8 @@ var __CRWeb = (() => {
       }
     }
     function clear() {
+      cancelAnimationFrame(pendingRelayout);
+      pendingRelayout = 0;
       shown.clear();
       svgs.forEach((svg) => {
         try {
@@ -42299,7 +42330,7 @@ var __CRWeb = (() => {
     function setColor(hex) {
       color = hex;
     }
-    return { show, clear, setColor };
+    return { show, clear, setColor, relayout };
   }
 
   // ../../../MyProject/readout-desktop/src/shared/highlight-palette.ts
@@ -52711,6 +52742,40 @@ var __CRWeb = (() => {
     const paraElements = /* @__PURE__ */ new Map();
     const extractedParaElements = /* @__PURE__ */ new Map();
     const paraOffsets = /* @__PURE__ */ new Map();
+    const paragraphTapDocuments = /* @__PURE__ */ new WeakSet();
+    function installParagraphTaps(doc) {
+      if (paragraphTapDocuments.has(doc)) return;
+      paragraphTapDocuments.add(doc);
+      doc.addEventListener("click", (e) => {
+        var _a2, _b, _c, _d;
+        const target = e.target;
+        const el = (_a2 = target == null ? void 0 : target.closest) == null ? void 0 : _a2.call(target, "[data-cr-para]");
+        const index = el ? (_b = [...paraElements].find(([, candidate]) => candidate === el)) == null ? void 0 : _b[0] : void 0;
+        if (index !== void 0) {
+          post("paragraphTapped", { paragraphIndex: index });
+          return;
+        }
+        if (doc !== document || ((_c = target == null ? void 0 : target.closest) == null ? void 0 : _c.call(target, 'a,button,input,select,textarea,[role="button"],[role="dialog"]'))) return;
+        for (const [paragraphIndex, candidate] of paraElements) {
+          const owner = candidate.ownerDocument;
+          const frame = (_d = owner.defaultView) == null ? void 0 : _d.frameElement;
+          if (!frame || frame.ownerDocument !== doc) continue;
+          const box = frame.getBoundingClientRect();
+          const sx = box.width / Math.max(1, frame.offsetWidth);
+          const sy = box.height / Math.max(1, frame.offsetHeight);
+          const x = (e.clientX - box.left) / sx - frame.clientLeft;
+          const y = (e.clientY - box.top) / sy - frame.clientTop;
+          const range2 = owner.createRange();
+          range2.selectNodeContents(candidate);
+          for (const rect of Array.from(range2.getClientRects())) {
+            if (rect.width < 1 || rect.height < 1 || x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue;
+            if (deps.acceptHighlightRect && !deps.acceptHighlightRect(candidate, rect)) continue;
+            post("paragraphTapped", { paragraphIndex });
+            return;
+          }
+        }
+      }, true);
+    }
     let color = "#FD5F01";
     const markRenderer = createMarkRenderer((i) => paraElements.get(i), color);
     const overlayNodes = /* @__PURE__ */ new Set();
@@ -52862,12 +52927,14 @@ var __CRWeb = (() => {
       wcSeg = -1;
       wcRanges = [];
       paraCursor = 0;
+      for (const element of extractedParaElements.values()) element.removeAttribute("data-cr-para");
       paraElements.clear();
       extractedParaElements.clear();
       paraOffsets.clear();
       const out = [];
       paras.forEach((p, i) => {
         const el = p.element;
+        installParagraphTaps(el.ownerDocument);
         try {
           el.setAttribute("data-cr-para", String(i));
         } catch (e) {
@@ -53095,15 +53162,13 @@ var __CRWeb = (() => {
       },
       clearMarks() {
         markRenderer.clear();
+      },
+      relayoutMarks() {
+        markRenderer.relayout();
       }
     };
     window.CR = CR;
-    document.addEventListener("click", (e) => {
-      var _a2;
-      const t = e.target;
-      const el = (_a2 = t == null ? void 0 : t.closest) == null ? void 0 : _a2.call(t, "[data-cr-para]");
-      if (el) post("paragraphTapped", { paragraphIndex: Number(el.getAttribute("data-cr-para")) });
-    }, true);
+    installParagraphTaps(document);
     (_a = deps.onInstalled) == null ? void 0 : _a.call(deps, { extract: doExtract });
     function ready() {
       post("ready", { version: "m1" });
@@ -54473,6 +54538,16 @@ var __CRWeb = (() => {
       },
       refresh(arg) {
         var _a;
+        const reflow = recordArg(arg);
+        if (reflow.reflowDirection === "next" || reflow.reflowDirection === "prev") {
+          if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent || reflow.reflowBaseline !== playBooksSignature()) return;
+          changeReasonInFlight = "refresh";
+          changeBaseline = committedSignature;
+          changeMetadata = null;
+          turnPlayBooksPage(reflow.reflowDirection, "button");
+          commit("refresh");
+          return;
+        }
         const fallbackBaseline = committedSignature || playBooksSignature();
         const automatic = nonemptyString(recordArg(arg).turnID) ? automaticMetadata2(arg, fallbackBaseline) : null;
         const manual = manualMetadata2(arg, fallbackBaseline);
@@ -55324,14 +55399,28 @@ var __CRWeb = (() => {
     if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") <= 0.01) return null;
     const rect = iframe.getBoundingClientRect();
     if (rect.width <= 1 || rect.height <= 1) return null;
+    let viewport = topViewport();
+    for (let parent2 = iframe.parentElement; parent2; parent2 = parent2.parentElement) {
+      const parentStyle = getComputedStyle(parent2);
+      const paintClip = /(?:^|\s)(paint|strict|content)(?:\s|$)/.test(parentStyle.contain);
+      const clipsX = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowX);
+      const clipsY = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowY);
+      if (!clipsX && !clipsY) continue;
+      const box = parent2.getBoundingClientRect();
+      const sx = box.width / Math.max(1, parent2.offsetWidth);
+      const sy = box.height / Math.max(1, parent2.offsetHeight);
+      const left = box.left + parent2.clientLeft * sx;
+      const top = box.top + parent2.clientTop * sy;
+      viewport = {
+        left: clipsX ? Math.max(viewport.left, left) : viewport.left,
+        right: clipsX ? Math.min(viewport.right, left + parent2.clientWidth * sx) : viewport.right,
+        top: clipsY ? Math.max(viewport.top, top) : viewport.top,
+        bottom: clipsY ? Math.min(viewport.bottom, top + parent2.clientHeight * sy) : viewport.bottom
+      };
+    }
     const hit = intersect2(
-      {
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom
-      },
-      topViewport()
+      { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+      viewport
     );
     if (!hit) return null;
     const layoutWidth = Math.max(1, iframe.offsetWidth || rect.width);
@@ -55576,7 +55665,8 @@ var __CRWeb = (() => {
         });
       });
     }
-    return koboParagraphSnapshotQuality(output).ok ? output : [];
+    const quality = koboParagraphSnapshotQuality(output);
+    return quality.ok ? output : [];
   }
   function extractKoboParagraphs() {
     return extractKoboParagraphsFromClips(currentKoboFrameClips());
@@ -56395,7 +56485,7 @@ var __CRWeb = (() => {
           }
           const finalSignature = current;
           const returnedToBaseline = changeBaseline.length > 0 && finalSignature === changeBaseline;
-          if (returnedToBaseline && !forceExtract) {
+          if (returnedToBaseline && !forceExtract && reason !== "refresh") {
             if (reason === "manual") {
               postForFrame("googleBooksPageChanging", __spreadValues({
                 reason: "manual",
@@ -56731,13 +56821,29 @@ var __CRWeb = (() => {
         return attemptManualTurn(direction);
       },
       refresh(arg) {
-        var _a2;
+        var _a2, _b;
+        const reflow = recordArg2(arg);
+        if (reflow.reflowDirection === "next" || reflow.reflowDirection === "prev") {
+          if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent || reflow.reflowBaseline !== koboSignature()) return;
+          const direction = reflow.reflowDirection;
+          if (!methodAvailable("semantic", direction) && !methodAvailable("button", direction)) return;
+          beginLayoutRefresh("source-anchor");
+          if (methodAvailable("semantic", direction)) {
+            const invocation = invokeKoboSemanticPageTurn(direction);
+            void ((_a2 = invocation.completion) == null ? void 0 : _a2.catch(() => {
+            }));
+          } else {
+            turnKoboPage(direction, "button");
+          }
+          beginSettlement("refresh", 0, true);
+          return;
+        }
         const fallbackBaseline = committedSignature || koboSignature();
         const automatic = nonemptyString2(recordArg2(arg).turnID) ? automaticMetadata2(arg, fallbackBaseline) : null;
         const manual = manualMetadata2(arg, fallbackBaseline);
         if (automatic) {
           changeReasonInFlight = "auto";
-          changeBaseline = ((_a2 = liveLateAutoTurn()) == null ? void 0 : _a2.detectionBaselineSignature) || fallbackBaseline;
+          changeBaseline = ((_b = liveLateAutoTurn()) == null ? void 0 : _b.detectionBaselineSignature) || fallbackBaseline;
           changeMetadata = automatic;
           beginSettlement("auto", 0, true);
         } else if (manual) {
