@@ -10,6 +10,17 @@ import Foundation
 import Combine
 import CryptoKit
 
+enum QuickReadPrefetchLifetime {
+    // The mobile gateway expires jobs after two hours. Leave ten minutes for
+    // the remaining blocks; age starts before the plan request, not after TTS.
+    static let maximumAge: TimeInterval = 110 * 60
+
+    static func isUsable(createdAt: Date, now: Date) -> Bool {
+        let age = now.timeIntervalSince(createdAt)
+        return age >= 0 && age < maximumAge
+    }
+}
+
 enum ExplainOwnershipRecoveryPlan: Equatable {
     case preparedBlock(index: Int)
     case replayBlock(index: Int)
@@ -358,6 +369,7 @@ final class ExplainViewModel: ObservableObject {
     private let audio = AudioPlayerService.shared
     private let settings = AppSettings.shared
     private let injectedQuickReadService: QuickReadService?
+    private let now: () -> Date
     private var consecutiveShortWeReadPages = 0
     private let maxConsecutiveShortWeReadPages = 4
     private let speechGenerator: any ParagraphSpeechGenerating
@@ -378,6 +390,8 @@ final class ExplainViewModel: ObservableObject {
     private var enqueuedStreamingBlocks: [Int: UInt64] = [:]
 
     struct PrefetchedFirstBlock {
+        let createdAt: Date
+        let request: ExtractPlanRequest
         let jobId: String
         let totalBlocks: Int
         let outputLanguage: String
@@ -395,9 +409,16 @@ final class ExplainViewModel: ObservableObject {
                 depth == settings.explainDepth &&
                 voiceID == settings.voice(for: outputLanguage)
         }
+
+        @MainActor func isReusable(at date: Date = Date()) -> Bool {
+            matchesCurrentSettings && QuickReadPrefetchLifetime.isUsable(createdAt: createdAt, now: date)
+        }
     }
 
     private var jobId: String = ""
+    private var activePlanRequest: ExtractPlanRequest?
+    private var extractedSections: [Int: QuickreadSection] = [:]
+    private var attemptedUnavailableJobRecovery = false
     private var totalBlocks: Int = 0
     private var outputLanguage: String
     private var section0: QuickreadSection?
@@ -548,13 +569,15 @@ final class ExplainViewModel: ObservableObject {
 
     init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil,
          speechGenerator: (any ParagraphSpeechGenerating)? = nil,
-         quickReadService: QuickReadService? = nil) {
+         quickReadService: QuickReadService? = nil,
+         now: @escaping () -> Date = Date.init) {
         self.document = document
         let speechPage = document.sourceKind == .kindle
             ? KindleFootnoteSpeech.prepare(document: document, skipReferences: KindleFootnoteSpeech.isEnabled) : nil
         self.kindleSpeechPage = speechPage
         self.kindleSpeechDocument = speechPage.map { KindleFootnoteSpeech.explanationDocument(document, page: $0) }
         self.injectedQuickReadService = quickReadService
+        self.now = now
         self.speechGenerator = speechGenerator ?? TTSService.shared
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         let initialLanguage = VoiceCatalog.normalizedLanguage(
@@ -1202,8 +1225,8 @@ final class ExplainViewModel: ObservableObject {
 
     private func startFromPrefetched(_ prefetched: PrefetchedFirstBlock, allowAccessRefresh: Bool) {
         guard status == .idle || isErrorState else { return }
-        guard prefetched.matchesCurrentSettings else {
-            kindlePerfLog("prefetched-start discarded settings-changed")
+        guard prefetched.isReusable(at: now()) else {
+            kindlePerfLog("prefetched-start discarded stale-or-settings-changed ageSeconds=\(Int(now().timeIntervalSince(prefetched.createdAt)))")
             start()
             return
         }
@@ -1246,6 +1269,9 @@ final class ExplainViewModel: ObservableObject {
         }
         consecutiveShortWeReadPages = 0
         jobId = prefetched.jobId
+        activePlanRequest = prefetched.request
+        extractedSections = [0: prefetched.section0]
+        attemptedUnavailableJobRecovery = false
         totalBlocks = max(1, prefetched.totalBlocks)
         setOutputLanguage(prefetched.outputLanguage)
         section0 = prefetched.section0
@@ -1831,6 +1857,9 @@ final class ExplainViewModel: ObservableObject {
     private func runPlan(generation: UInt64) async {
         guard generation == contentGeneration, !Task.isCancelled else { return }
         let req = buildPlanRequest()
+        activePlanRequest = req
+        extractedSections.removeAll()
+        attemptedUnavailableJobRecovery = false
         let requestScope = pdfScopedParagraphs ?? doc.paragraphs
         let requestDigest = QuickReadFastLaneHandoff.scopeDigest(requestScope)
         let requestDiagnostic = String(
@@ -1963,6 +1992,7 @@ final class ExplainViewModel: ObservableObject {
         // plan.output_language 盖过（否则质道与快道开头语言/音色不一致）。非快道时才用 plan 返回的语言。
         setOutputLanguage(forcedExplainLang ?? plan.output_language ?? settings.explainLangOrNil ?? doc.language)
         section0 = plan.block_0                              // 质道首块 = iOS block_idxBase
+        extractedSections[0] = plan.block_0
         let scoped = pdfScopedParagraphs ?? doc.paragraphs   // 实际传后端的范围（PDF 逐批时是当前批，非整本）
         debugLog("explain PLAN total_blocks=%d idxBase=%d batchParas=%d batchChars=%d depth=%@ block0Events=%d",
                  plan.total_blocks, idxBase, scoped.count, scoped.reduce(0) { $0 + $1.text.count }, requestDepth, plan.block_0.events.count)
@@ -2013,6 +2043,11 @@ final class ExplainViewModel: ObservableObject {
                 self.isPreparingNext = false
             }
         } catch {
+            if case QuickReadError.jobUnavailable = error,
+               await recoverUnavailableJob(before: idx, generation: generation) {
+                await prepareAndEnqueue(block: idx, generation: generation)
+                return
+            }
             kindlePerfLog("prepare-enqueue error idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) error=\(error.localizedDescription)")
             await MainActor.run {
                 guard self.contentGeneration == generation else { return }
@@ -2025,6 +2060,63 @@ final class ExplainViewModel: ObservableObject {
                     errorCode: Self.analyticsErrorCode(error)
                 )
             }
+        }
+    }
+
+    /// A missing gateway job can be renewed once at a block boundary. Keep
+    /// already played audio and verify the regenerated prefix before reusing
+    /// its block indexes: a new outline must never silently skip narration.
+    private func recoverUnavailableJob(before index: Int, generation: UInt64) async -> Bool {
+        guard doc.sourceKind == .kindle, pro.isPro,
+              !attemptedUnavailableJobRecovery,
+              let request = activePlanRequest,
+              let qualityIndex = QuickReadFastLaneHandoff.qualityBlockIndex(
+                forPlaybackBlockIndex: index, indexBase: idxBase), qualityIndex > 0 else { return false }
+        let previousJobID = jobId
+        let previousSections = extractedSections
+        let expectedTotal = totalBlocks - idxBase
+        func stillOwned() -> Bool {
+            !Task.isCancelled && generation == contentGeneration && isActive
+                && ownsPlaybackSession && jobId == previousJobID
+        }
+        guard stillOwned(), (0..<qualityIndex).allSatisfy({ previousSections[$0] != nil }) else { return false }
+        attemptedUnavailableJobRecovery = true
+        isPreparingNext = true
+        stageText = AppLocalized("正在准备…")
+        kindlePerfLog("job-recovery begin next=\(index) verifiedPrefix=\(qualityIndex)")
+        do {
+            let box = PlanBlock0Box()
+            let done = try await quickReadService.extractPlan(request,
+                onStage: { _ in }, onBlock0: { box.set($0) })
+            guard stillOwned() else { return false }
+            guard let plan = box.value,
+                  max(1, done.total_blocks ?? plan.total_blocks) == expectedTotal,
+                  VoiceCatalog.normalizedLanguage(plan.output_language ?? outputLanguage) == playbackLanguage else {
+                kindlePerfLog("job-recovery rejected reason=plan-shape-changed")
+                return false
+            }
+            var verified: [Int: QuickreadSection] = [:]
+            for block in 0..<qualityIndex {
+                let section = block == 0 ? plan.block_0
+                    : try await quickReadService.extractBlock(jobId: plan.job_id, blockIdx: block)
+                guard stillOwned() else { return false }
+                guard section.text == previousSections[block]?.text else {
+                    kindlePerfLog("job-recovery rejected reason=played-prefix-changed block=\(block)")
+                    return false
+                }
+                verified[block] = section
+            }
+            guard stillOwned() else { return false }
+            jobId = plan.job_id
+            section0 = plan.block_0
+            extractedSections = verified
+            prepared = prepared.filter { $0.key < index }
+            kindlePerfLog("job-recovery ready next=\(index) preservedPlayedBlocks=\(index)")
+            return true
+        } catch {
+            guard stillOwned() else { return false }
+            kindlePerfLog("job-recovery failed next=\(index) error=\(error.localizedDescription)")
+            return false
         }
     }
 
@@ -2162,8 +2254,14 @@ final class ExplainViewModel: ObservableObject {
             }
             guard let s0 = section0 else { throw CancellationError() }
             section = s0
+        } else if let cachedSection = extractedSections[qIdx] {
+            section = cachedSection
         } else {
-            section = try await quickReadService.extractBlock(jobId: jobId, blockIdx: qIdx)
+            let requestJobID = jobId
+            section = try await quickReadService.extractBlock(jobId: requestJobID, blockIdx: qIdx)
+            guard generation == contentGeneration, requestJobID == jobId,
+                  !Task.isCancelled else { throw CancellationError() }
+            extractedSections[qIdx] = section
         }
         let sectionMs = elapsedMs(since: sectionStartedAt)
         let pb = try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage, detachedTTS: detachedTTS, publishIncrementally: true)
@@ -2720,8 +2818,10 @@ final class ExplainViewModel: ObservableObject {
         let requestedLanguage = settings.explainLanguage
         let depth = settings.explainDepth
         let req = buildPlanRequest(document: targetDocument, paras: targetDocument.paragraphs, prevSummary: previousSummary)
+        let createdAt = now()
         let box = PlanBlock0Box()
-        let done = try await QuickReadService.forDocument(targetDocument).extractPlan(
+        let service = injectedQuickReadService ?? QuickReadService.forDocument(targetDocument)
+        let done = try await service.extractPlan(
             req,
             onStage: { _ in },
             onBlock0: { box.set($0) }
@@ -2747,6 +2847,8 @@ final class ExplainViewModel: ObservableObject {
         debugLog("prefetch first block READY job=%@ total=%d marks=%d text=%d fp=%@",
                  b.job_id, total, pb0.marks.count, pb0.text.count, String(textFingerprint.prefix(24)))
         return PrefetchedFirstBlock(
+            createdAt: createdAt,
+            request: req,
             jobId: b.job_id,
             totalBlocks: total,
             outputLanguage: lang,

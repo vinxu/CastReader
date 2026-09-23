@@ -63,6 +63,126 @@ final class SpeechPipelineTests: XCTestCase {
         try await verifyExplainStartAfterReadPause(explicitStart: true, pauseDuringPlan: false)
     }
 
+    func testExplainPrefetchRejectsExpiredAndFutureClockEntries() {
+        let created = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertTrue(QuickReadPrefetchLifetime.isUsable(createdAt: created, now: created.addingTimeInterval(60)))
+        XCTAssertFalse(QuickReadPrefetchLifetime.isUsable(createdAt: created, now: created.addingTimeInterval(110 * 60)))
+        XCTAssertFalse(QuickReadPrefetchLifetime.isUsable(createdAt: created, now: created.addingTimeInterval(2 * 3600 + 9 * 60)))
+        XCTAssertFalse(QuickReadPrefetchLifetime.isUsable(createdAt: created, now: created.addingTimeInterval(-1)))
+    }
+
+    func testExpiredExplainPrefetchReplansBeforePlayingCachedOpening() async throws {
+        try await verifyUnavailableExplainJob(scenario: "stale-prefetch")
+    }
+
+    func testUnavailableExplainJobResumesMissingBlockWithoutReplayingOpening() async throws {
+        try await verifyUnavailableExplainJob(scenario: "recover")
+    }
+
+    func testUnavailableExplainJobCannotReuseChangedPlanIndexes() async throws {
+        try await verifyUnavailableExplainJob(scenario: "changed-prefix")
+    }
+
+    func testUnavailableExplainJobRecoveryIsBounded() async throws {
+        try await verifyUnavailableExplainJob(scenario: "still-unavailable")
+    }
+
+    func testGenericExplain404DoesNotReplan() async throws {
+        try await verifyUnavailableExplainJob(scenario: "generic-404")
+    }
+
+    func testPauseDuringExplainJobRecoveryRemainsPaused() async throws {
+        try await verifyUnavailableExplainJob(scenario: "pause")
+    }
+
+    func testClosedExplainPageRejectsLateJobRecovery() async throws {
+        try await verifyUnavailableExplainJob(scenario: "close")
+    }
+
+    private func verifyUnavailableExplainJob(scenario: String) async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let previousLanguage = AppSettings.shared.explainLanguage
+        AppSettings.shared.explainLanguage = "en"
+        let opening = "This opening has already been explained."
+        let replacement = "This is a freshly prepared opening."
+        let remaining = "Only the remaining explanation should play next."
+        var clock = Date()
+        var plans = 0
+        func section(_ index: Int, _ text: String) -> [String: Any] {
+            ["id": "block-\(index)", "text": text, "style": "explain", "cinematic": ["events": []]]
+        }
+        let speech = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: 0.7))
+        }
+        let plan = ReadAloudHTTPFixture.forRequests { request, body in
+            if request.url?.path == "/api/quickread/extract-plan" {
+                plans += 1
+                let text = plans > 1 && ["stale-prefetch", "changed-prefix"].contains(scenario) ? replacement : opening
+                let block: [String: Any] = ["job_id": "lease-\(plans)", "output_language": "en",
+                    "total_blocks": 2, "block_0": section(0, text)]
+                let blockJSON = String(data: try! JSONSerialization.data(withJSONObject: block), encoding: .utf8)!
+                return .response(Data("event: block0\ndata: \(blockJSON)\n\nevent: done\ndata: {\"job_id\":\"lease-\(plans)\",\"total_blocks\":2}\n\n".utf8),
+                    delay: plans > 1 ? 0.45 : 0)
+            }
+            let index = body["block_idx"] as? Int ?? 0
+            if request.url?.path == "/api/quickread/extract-block",
+               body["job_id"] as? String == "lease-1" || scenario == "still-unavailable" {
+                let code = scenario == "generic-404" ? "ROUTE_NOT_FOUND" : "QUICKREAD_JOB_NOT_FOUND"
+                return .response(Data("{\"code\":\"\(code)\"}".utf8), status: 404)
+            }
+            let text = index == 0 ? (scenario == "stale-prefetch" && plans > 1 ? replacement : opening) : remaining
+            return .response(try! JSONSerialization.data(withJSONObject: ["section": section(index, text)]))
+        }
+        let document = ReadingDocument(title: "Expired Kindle task", sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: "This source page has an opening idea followed by a second idea that still needs to be explained to the listener.")])
+        let vm = ExplainViewModel(document: document, speechGenerator: speech.service(),
+            quickReadService: QuickReadService(session: plan.session, mobileSessionProvider: SpeechPipelineSessionProvider()),
+            now: { clock })
+        var played: [String] = []
+        audio.onSegmentComplete = { if let text = audio.currentSegment?.text { played.append(text) } }
+        defer {
+            vm.stop(); vm.deactivate(); audio.clearForAccountBoundary()
+            speech.close(); plan.close(); AppSettings.shared.explainLanguage = previousLanguage
+        }
+        if scenario == "stale-prefetch" {
+            let prefetched = try await vm.prefetchFirstBlock(for: document, previousSummary: nil, textFingerprint: "fixture")
+            clock = clock.addingTimeInterval(2 * 3600 + 9 * 60)
+            vm.startFromPrefetched(prefetched)
+        } else {
+            vm.startByUser()
+        }
+        if ["pause", "close"].contains(scenario) {
+            try await wait { plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count == 2 }
+            if scenario == "close" {
+                vm.stop(); vm.deactivate()
+                try await Task.sleep(nanoseconds: 700_000_000)
+                XCTAssertFalse(audio.isPlaying)
+                XCTAssertFalse(speech.requests.contains(remaining))
+                return
+            }
+            let session = try XCTUnwrap(audio.activePlaybackSession)
+            XCTAssertTrue(audio.pause(session: session))
+            try await wait { vm.currentBlockIndex == 1 }
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertTrue(audio.isExplicitlyPaused)
+            vm.togglePlayPause()
+        }
+        if ["changed-prefix", "still-unavailable", "generic-404"].contains(scenario) {
+            try await wait { if case .error = vm.status { return true }; return false }
+            XCTAssertEqual(played, [opening])
+            XCTAssertFalse(speech.requests.contains(remaining))
+        } else {
+            try await wait { vm.status == .completed }
+            XCTAssertEqual(played, [scenario == "stale-prefetch" ? replacement : opening, remaining])
+        }
+        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count,
+            scenario == "generic-404" ? 1 : 2)
+        if scenario != "stale-prefetch" {
+            XCTAssertEqual(speech.requests.filter { $0 == opening }.count, 1)
+        }
+    }
+
     func testPauseDuringExplicitExplainPreparationStillWins() async throws {
         try await verifyExplainStartAfterReadPause(explicitStart: true, pauseDuringPlan: true)
     }

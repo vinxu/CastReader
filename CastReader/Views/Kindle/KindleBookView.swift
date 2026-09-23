@@ -8026,7 +8026,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let pageKey = normalizedPageKey(rawPageKey)
         guard !pageKey.isEmpty else { return nil }
         if let prefetch = cachedExplainPrefetchCandidates[pageKey] {
-            if prefetch.textFingerprint == textFingerprint, prefetch.payload.matchesCurrentSettings {
+            if prefetch.textFingerprint == textFingerprint, prefetch.payload.isReusable() {
                 cachedExplainPrefetchCandidates[pageKey] = nil
                 if cachedExplainPrefetch?.pageKey == prefetch.pageKey {
                     cachedExplainPrefetch = nil
@@ -8037,15 +8037,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 return prefetch.payload
             }
             cachedExplainPrefetchCandidates[pageKey] = nil
-            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-mismatch")
+            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-settings-or-expiry-mismatch")
         }
         if let prefetch = cachedExplainPrefetch,
            normalizedPageKey(prefetch.pageKey) == pageKey {
             cachedExplainPrefetch = nil
-            if prefetch.textFingerprint == textFingerprint, prefetch.payload.matchesCurrentSettings {
+            if prefetch.textFingerprint == textFingerprint, prefetch.payload.isReusable() {
                 return prefetch.payload
             }
-            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-mismatch")
+            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-settings-or-expiry-mismatch")
         }
         return nil
     }
@@ -12501,7 +12501,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                cached.afterKey == afterKey,
                cached.pageKey == pageKey,
                cached.textFingerprint == fingerprint,
-               cached.payload.matchesCurrentSettings {
+               cached.payload.isReusable() {
                 KindleRunLog.write("KINDLE explain prefetch followup cached reason=\(reason) after=\(Self.keyLog(afterKey)) key=\(Self.keyLog(pageKey))")
                 return
             }
@@ -13781,7 +13781,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
            cached.afterKey == afterKey,
            cached.pageKey == pageKey,
            cached.textFingerprint == fingerprint,
-           cached.payload.matchesCurrentSettings {
+           cached.payload.isReusable() {
             return
         }
         if let confirmed = explainPagePreparation?.confirmedTargetKey, pageKey != confirmed { return }
