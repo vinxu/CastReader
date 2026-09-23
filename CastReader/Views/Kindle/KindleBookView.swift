@@ -6736,10 +6736,18 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     startPageKeyWatcher()
                     return .started
                 case .completed:
-                    vm.replay()
-                    startPageKeyWatcher()
-                    playbackCenter.activate(model: self)
-                    return .started
+                    let liveKey = normalizedPageKey(livePageKey)
+                    let visibleKey = normalizedPageKey(await currentVisibleKindlePageKey())
+                    guard retainsStartOwnership(), mode == requestedMode else { return .deferred }
+                    if !liveKey.isEmpty, liveKey == visibleKey {
+                        vm.replay()
+                        startPageKeyWatcher()
+                        playbackCenter.activate(model: self)
+                        return .started
+                    }
+                    // A staged auto turn can already be visible while the old
+                    // page VM is completed. Replay must use the visible page.
+                    KindleRunLog.write("KINDLE explain replay recapture live=\(Self.keyLog(liveKey)) visible=\(Self.keyLog(visibleKey))")
                 default:
                     break
                 }
@@ -12039,15 +12047,21 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   isAdvancingLivePage,
                   !isKindleSyncDialogVisible,
                   isReaderSurfaceAttached,
-                  webView.window != nil,
-                  !hasActivePlaybackSession else {
+                  webView.window != nil else {
                 return false
             }
             switch continuationMode {
             case .read:
                 return readVM === completedReadOwner && activeReadPageSession == completedReadSession
+                    && !hasActivePlaybackSession
             case .explain:
+                // Completed marks remain on screen while the next page is
+                // prepared; they are not an active audio session. Requiring
+                // !hasActivePlaybackSession here abandons every annotated page.
+                guard let completedExplainOwner else { return false }
                 return explainVM === completedExplainOwner
+                    && completedExplainOwner.status == .completed
+                    && !completedExplainOwner.isPlaying
             }
         }
 
