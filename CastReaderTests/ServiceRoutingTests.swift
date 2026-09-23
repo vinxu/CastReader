@@ -1128,17 +1128,25 @@ final class ServiceRoutingTests: XCTestCase {
             )
         )
 
-        let keys = MobileSessionStore.storageKeys(for: ServiceRouting.current)
-        let saved = [keys.session: KeychainStore.get(keys.session),
-                     keys.provider: KeychainStore.get(keys.provider),
-                     keys.identityToken: KeychainStore.get(keys.identityToken)]
+        // The shared store captures its route when first initialized. Other
+        // tests may change the process route later, so clear both route jars.
+        let keysByRoute = ServiceRoute.allCases.map(MobileSessionStore.storageKeys(for:))
+        let saved: [(String, String?)] = keysByRoute.flatMap { keys in
+            [
+                (keys.session, KeychainStore.get(keys.session)),
+                (keys.provider, KeychainStore.get(keys.provider)),
+                (keys.identityToken, KeychainStore.get(keys.identityToken)),
+            ]
+        }
         defer {
             for (key, value) in saved {
                 if let value { KeychainStore.set(value, for: key) }
                 else { KeychainStore.delete(key) }
             }
         }
-        _ = MobileSessionStore.detachLocalSession(for: ServiceRouting.current)
+        for route in ServiceRoute.allCases {
+            _ = MobileSessionStore.detachLocalSession(for: route)
+        }
         var requestCount = 0
         RoutingURLProtocol.handler = { request in
             requestCount += 1

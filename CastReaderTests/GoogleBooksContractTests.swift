@@ -1804,8 +1804,12 @@ final class GoogleBooksContractTests: XCTestCase {
             provider: "google",
             backendUserId: "backend-b"
         )
-        let scopeA = try XCTUnwrap(AccountContentScope(account: accountA))
-        let scopeB = try XCTUnwrap(AccountContentScope(account: accountB))
+        let scopeA = try XCTUnwrap(
+            AccountContentScope(account: accountA, route: .globalGateway)
+        )
+        let scopeB = try XCTUnwrap(
+            AccountContentScope(account: accountB, route: .globalGateway)
+        )
         let chinaScopeA = try XCTUnwrap(
             AccountContentScope(account: accountA, route: .chinaGateway)
         )

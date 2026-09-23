@@ -2713,7 +2713,10 @@ final class YouTubePlaybackLifecycleTests: XCTestCase {
 
         let prepared = AudioPlaybackTemporaryFiles.prepare(root: root)
 
-        XCTAssertEqual(prepared, oldOwned)
+        XCTAssertEqual(
+            prepared.resolvingSymlinksInPath(),
+            oldOwned.resolvingSymlinksInPath()
+        )
         XCTAssertFalse(FileManager.default.fileExists(atPath: ownedFile.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: legacySegment.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: legacyPrestage.path))
