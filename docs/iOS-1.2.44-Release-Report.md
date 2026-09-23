@@ -1,6 +1,6 @@
 # iOS 1.2.44（66）发布记录
 
-状态：**真机验收、全量可执行单测、归档验签已完成；尚未上传或送审。**
+状态：**已提交 App Store 审核；版本与审核单均为 `WAITING_FOR_REVIEW`。**
 
 ## 源码与版本
 
@@ -8,6 +8,7 @@
 - `3013b71` 的 iPhone/iPad 通用应用源码、iPad 分支 `bcd9778`、既有读写/音色/额度/EPUB/PDF/Kindle/多窗口等必备提交，以及本轮 Tab/Kindle 四个修复提交均经祖先关系核对包含。相对最新线上主线的应用变更只涉及 MainTab、Home、Kindle、Explain、QuickRead、本地化与六处版本/Build 配置。基线脚本 `build-voice-toc-integration.sh --check` 已通过。
 - 已装真机开发包的应用源码及资源与前轮修复验收 `aba9b0d` 完全一致，差异仅在项目版本配置；本次候选包含最新主线的其余文档、测试和商店物料。
 - 冻结提交 `6f7f546faadce8e79dcb470874e999ca22fa85f8`；301 个应用/组件/工程文件清单摘要 `f1c83d541b95a0f9427b799e7b7b51f722495a8e8129af9c60f99841449ece56`。逐文件清单在私有 `reports/ios-release-1.2.44/candidate-identity.json`，不含本机私有配置。
+- 真机验收后，纯测试前提修正及本报告纳入 `b1ffeed`；`main` 在远端 `426a09a` 未变化的前提下快进至该提交并推送。发布归档的 301 个应用与配置文件在合并前后逐文件复核均未变化，因此归档仍与正式主线应用源码一致。
 
 ## 商店与本地预检
 
@@ -37,6 +38,9 @@
 
 日志：`/tmp/CastReader1244-CN-1837-reader.log`、`/tmp/CastReader1244-CN-1841-reader.log`、`/tmp/CastReader1244-global-1855-reader.log`、`/tmp/CastReader1244-global-1902-reader.log`。国际 R-C 在 19:00:26 切社区，19:00:28 收到 200，19:00:44 自动进入下一段；19:01:06 切私人，19:01:08 收到 200 并真实播放，19:01:09、19:01:22 继续推进。19:01:55 切回 Bella 后播放常规音频。真机镜像 19:01 可见词高亮与翻页。音色后来一次误触选中其它社区声音，已于 19:03 显式恢复 Bella 并暂停。
 
-## 待完成发布门禁
+## 上传与审核提交
 
-两区核心门禁、真机可执行全量单测和 Release 归档签名门禁已通过。冻结清单中 301 个应用与配置文件在所有测试后逐文件复核未变化。下一步用官方 Xcode 导出上传；等待 Build 66 `VALID / APP_STORE_ELIGIBLE`，继承当前商店资料并只更新 11 语 `whatsNew`，绑定 Build、审核资料回读、audit 与 Review Submission。以版本和审核单均到 `WAITING_FOR_REVIEW` 为完成标准。
+- 官方 `xcodebuild -exportArchive` 使用原归档和仓库 `scripts/AppStoreExportOptions.plist`。首次尝试经本机代理时，Apple 内容交付在同一分片反复出现校验和不匹配，Build 66 尚未出现在 ASC，故停止该失败的重传；保留原归档，在去除进程代理环境后重试成功，Xcode 返回 `Upload succeeded / EXPORT SUCCEEDED`。未改变应用二进制或提高 Build 号。
+- ASC Build **66** ID `844cef9b-209d-455f-ad78-f9b036337fe1` 于 `2026-09-23T13:19:47Z` 上传；后续回读 `VALID / APP_STORE_ELIGIBLE`，`usesNonExemptEncryption=false`。
+- 新版 1.2.44 ID `00f5fd32-714e-4744-98aa-b60ebfae8184`，待发布 App Info ID `7dda1882-212e-4c08-80a4-cdcf1bdd95db`。仅更新 11 语 `whatsNew`，提交前后回读与文案文件 11/11 相同；标题保护审计显示 11/11 未改变，原有 55 张截图全部 `COMPLETE`，`es-MX` 与 `zh-Hant` 继续继承主语言。审核资料存在、审计零错误。未改价格、订阅、地区、App Privacy、年龄分级、法律声明或自动发布策略。
+- Build 66 已绑定并回读一致。Review Submission ID `1e755484-850a-41d5-936c-f2de8139c03a`，于 **2026-09-23 13:24:35.998 UTC** 提交；正式回读审核单和 1.2.44 版本均为 **`WAITING_FOR_REVIEW`**，版本维持 `AFTER_APPROVAL`。审核单含本版唯一版本项。
