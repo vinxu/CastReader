@@ -404,14 +404,22 @@ struct HomeView: View {
         }
 
         .onAppear {
-            onReviewPresentationBlockedChanged(isProcessingContent)
+            onReviewPresentationBlockedChanged(!isSurfaceActive || isProcessingContent)
             #if DEBUG
             handleCaptureLaunchTextIfNeeded()
             handleGoogleDrivePickerLaunchIfNeeded()
             #endif
         }
         .onChange(of: isProcessingContent) { isProcessing in
-            onReviewPresentationBlockedChanged(isProcessing)
+            onReviewPresentationBlockedChanged(!isSurfaceActive || isProcessing)
+        }
+        .onChange(of: isSurfaceActive) { active in
+            onReviewPresentationBlockedChanged(!active || isProcessingContent)
+            if !active {
+                cancelCloudHistoryReopen()
+                accountScopedImportTask?.cancel()
+                accountScopedImportTask = nil
+            }
         }
         .onDisappear {
             // A pushed Home destination is not the stable Home root either.

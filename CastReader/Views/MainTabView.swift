@@ -234,24 +234,87 @@ struct MainTabView: View {
         } else if AdaptiveLayout.isPad {
             if #available(iOS 18.0, *) { tabs.tabViewStyle(.sidebarAdaptable) }
             else { tabs }
-        } else { tabs }
+        } else { iPhoneTabs }
     }
 
     private var tabs: some View {
         TabView(selection: $selectedTab) {
             tabPage(0).tabItem { Label("首页", systemImage: "house.fill") }.tag(0)
-            if AdaptiveLayout.isPad {
-                tabPage(3).tabItem { Label("文库", systemImage: "books.vertical") }.tag(3)
-            } else {
-                Color.clear.tabItem {
-                    Image(uiImage: Self.plusTabImage).renderingMode(.original)
-                    Text("")
-                }.tag(1)
-            }
+            tabPage(3).tabItem { Label("文库", systemImage: "books.vertical") }.tag(3)
             tabPage(2).tabItem { Label("音色", systemImage: "waveform") }.tag(2)
-            if AdaptiveLayout.isPad {
-                tabPage(4).tabItem { Label("设置", systemImage: "gearshape") }.tag(4)
+            tabPage(4).tabItem { Label("设置", systemImage: "gearshape") }.tag(4)
+        }
+    }
+
+    private var iPhoneTabs: some View {
+        ZStack {
+            tabPage(0)
+                .opacity(selectedTab == 0 ? 1 : 0)
+                .allowsHitTesting(selectedTab == 0)
+                .accessibilityHidden(selectedTab != 0)
+            tabPage(2)
+                .opacity(selectedTab == 2 ? 1 : 0)
+                .allowsHitTesting(selectedTab == 2)
+                .accessibilityHidden(selectedTab != 2)
+            if selectedTab == 3 || selectedTab == 4 {
+                tabPage(selectedTab)
             }
+        }
+        .animation(nil, value: selectedTab)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !importRouter.hideMainChrome {
+                iPhoneTabBar
+                    .padding(.bottom, 6)
+            }
+        }
+        .onChange(of: selectedTab) { newTab in
+            if newTab != 2 { VoiceSamplePlayer.shared.stop() }
+        }
+    }
+
+    private var iPhoneTabBar: some View {
+        HStack(spacing: 0) {
+            iPhoneTabButton(0, title: "首页", symbol: "house.fill")
+            Button {
+                selectIPhoneTab(0)
+                importRouter.openQuickImport()
+            } label: {
+                Image(uiImage: Self.plusTabImage)
+                    .resizable()
+                    .frame(width: 40, height: 40)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("plusImportButton")
+            .accessibilityLabel(Text(AppLocalized("导入内容")))
+            iPhoneTabButton(2, title: "音色", symbol: "waveform")
+        }
+        .frame(width: 216, height: 50)
+        .background(.regularMaterial, in: Capsule())
+        .frame(maxWidth: .infinity)
+    }
+
+    private func iPhoneTabButton(_ tab: Int, title: LocalizedStringKey, symbol: String) -> some View {
+        Button { selectIPhoneTab(tab) } label: {
+            VStack(spacing: 2) {
+                Image(systemName: symbol)
+                    .font(.system(size: 19, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 10, weight: .medium))
+            }
+            .foregroundStyle(selectedTab == tab ? AppTheme.primary : AppTheme.mutedForeground)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func selectIPhoneTab(_ tab: Int) {
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            selectedTab = tab
         }
     }
 
@@ -330,10 +393,6 @@ struct MainTabView: View {
                     selectedTab = 0
                     importRouter.openQuickImport()
                 }
-            }
-
-            if !AdaptiveLayout.isPad && !importRouter.hideMainChrome {
-                plusTapTarget
             }
 
             // Mini Player 悬浮在 tab bar 上方（有会话且阅读器收起时）
@@ -2063,21 +2122,6 @@ struct MainTabView: View {
         }
         return image.withRenderingMode(.alwaysOriginal)
     }()
-
-    private var plusTapTarget: some View {
-        Button {
-            selectedTab = 0
-            importRouter.openQuickImport()
-        } label: {
-            Color.clear
-                .frame(width: 88, height: 58)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("plusImportButton")
-        .accessibilityLabel(Text(AppLocalized("导入内容")))
-        .offset(y: 4)
-    }
 
     /// 剪贴板选朗读/解读 → 构建文档 → 进入对应播放（autoplay 直接开播，链路最短）。
     private func handleClipboard(_ kind: ClipboardImportViewModel.Kind, mode: ReaderMode) {
