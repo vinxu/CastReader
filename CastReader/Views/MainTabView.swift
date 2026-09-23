@@ -67,6 +67,43 @@ private struct TabContentBottomKey: PreferenceKey {
     }
 }
 
+private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
+    @Binding var selection: Int
+    let plusImage: UIImage
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIView(context: Context) -> UITabBar {
+        let bar = UITabBar()
+        bar.items = [
+            UITabBarItem(title: AppLocalized("首页"), image: UIImage(systemName: "house.fill"), tag: 0),
+            UITabBarItem(title: nil, image: plusImage, tag: 1),
+            UITabBarItem(title: AppLocalized("音色"), image: UIImage(systemName: "waveform"), tag: 2)
+        ]
+        bar.delegate = context.coordinator
+        bar.selectedItem = bar.items?.first(where: { $0.tag == selection })
+        return bar
+    }
+
+    func updateUIView(_ bar: UITabBar, context: Context) {
+        context.coordinator.parent = self
+        if bar.selectedItem?.tag != selection {
+            bar.selectedItem = bar.items?.first(where: { $0.tag == selection })
+        }
+    }
+
+    final class Coordinator: NSObject, UITabBarDelegate {
+        var parent: ReaderNativeIPhoneTabBar
+
+        init(_ parent: ReaderNativeIPhoneTabBar) { self.parent = parent }
+
+        func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
+            guard item.tag != 1 else { return }
+            parent.selection = item.tag
+        }
+    }
+}
+
 struct MainTabView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Where the floating player sits. Purely visual — the space tab content
@@ -234,15 +271,28 @@ struct MainTabView: View {
         } else if AdaptiveLayout.isPad {
             if #available(iOS 18.0, *) { tabs.tabViewStyle(.sidebarAdaptable) }
             else { tabs }
-        } else { iPhoneTabs }
+        } else if #available(iOS 26.0, *) {
+            iPhoneTabs
+        } else {
+            tabs
+        }
     }
 
     private var tabs: some View {
         TabView(selection: $selectedTab) {
             tabPage(0).tabItem { Label("首页", systemImage: "house.fill") }.tag(0)
-            tabPage(3).tabItem { Label("文库", systemImage: "books.vertical") }.tag(3)
+            if AdaptiveLayout.isPad {
+                tabPage(3).tabItem { Label("文库", systemImage: "books.vertical") }.tag(3)
+            } else {
+                Color.clear.tabItem {
+                    Image(uiImage: Self.plusTabImage).renderingMode(.original)
+                    Text("")
+                }.tag(1)
+            }
             tabPage(2).tabItem { Label("音色", systemImage: "waveform") }.tag(2)
-            tabPage(4).tabItem { Label("设置", systemImage: "gearshape") }.tag(4)
+            if AdaptiveLayout.isPad {
+                tabPage(4).tabItem { Label("设置", systemImage: "gearshape") }.tag(4)
+            }
         }
     }
 
@@ -265,6 +315,7 @@ struct MainTabView: View {
             if !importRouter.hideMainChrome {
                 iPhoneTabBar
                     .padding(.bottom, 6)
+                    .offset(y: max(0, (readerScene.window?.safeAreaInsets.bottom ?? 34) - 14))
             }
         }
         .onChange(of: selectedTab) { newTab in
@@ -273,49 +324,12 @@ struct MainTabView: View {
     }
 
     private var iPhoneTabBar: some View {
-        HStack(spacing: 0) {
-            iPhoneTabButton(0, title: "首页", symbol: "house.fill")
-            Button {
-                selectIPhoneTab(0)
-                importRouter.openQuickImport()
-            } label: {
-                Image(uiImage: Self.plusTabImage)
-                    .resizable()
-                    .frame(width: 40, height: 40)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("plusImportButton")
-            .accessibilityLabel(Text(AppLocalized("导入内容")))
-            iPhoneTabButton(2, title: "音色", symbol: "waveform")
+        ZStack {
+            ReaderNativeIPhoneTabBar(selection: $selectedTab, plusImage: Self.plusTabImage)
+                .frame(height: 50)
+            plusTapTarget
         }
-        .frame(width: 216, height: 50)
-        .background(.regularMaterial, in: Capsule())
         .frame(maxWidth: .infinity)
-    }
-
-    private func iPhoneTabButton(_ tab: Int, title: LocalizedStringKey, symbol: String) -> some View {
-        Button { selectIPhoneTab(tab) } label: {
-            VStack(spacing: 2) {
-                Image(systemName: symbol)
-                    .font(.system(size: 19, weight: .semibold))
-                Text(title)
-                    .font(.system(size: 10, weight: .medium))
-            }
-            .foregroundStyle(selectedTab == tab ? AppTheme.primary : AppTheme.mutedForeground)
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func selectIPhoneTab(_ tab: Int) {
-        var transaction = Transaction(animation: nil)
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
-            selectedTab = tab
-        }
     }
 
     @ViewBuilder
@@ -393,6 +407,11 @@ struct MainTabView: View {
                     selectedTab = 0
                     importRouter.openQuickImport()
                 }
+            }
+
+            if !AdaptiveLayout.isPad && !importRouter.hideMainChrome {
+                if #available(iOS 26.0, *) { EmptyView() }
+                else { plusTapTarget }
             }
 
             // Mini Player 悬浮在 tab bar 上方（有会话且阅读器收起时）
@@ -2122,6 +2141,21 @@ struct MainTabView: View {
         }
         return image.withRenderingMode(.alwaysOriginal)
     }()
+
+    private var plusTapTarget: some View {
+        Button {
+            selectedTab = 0
+            importRouter.openQuickImport()
+        } label: {
+            Color.clear
+                .frame(width: 88, height: 58)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("plusImportButton")
+        .accessibilityLabel(Text(AppLocalized("导入内容")))
+        .offset(y: 4)
+    }
 
     /// 剪贴板选朗读/解读 → 构建文档 → 进入对应播放（autoplay 直接开播，链路最短）。
     private func handleClipboard(_ kind: ClipboardImportViewModel.Kind, mode: ReaderMode) {
