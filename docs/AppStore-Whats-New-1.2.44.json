@@ -1,0 +1,13 @@
+{
+  "en-US": "Fixed Kindle AI explanations stopping after an automatic page turn or replaying the previous page. Improved long-session playback recovery and made iPhone tab switching smoother with native animations.",
+  "zh-Hans": "修复 Kindle 解读自动翻页后可能停播或重播上一页的问题，提升长时间使用后的续播可靠性。优化 iPhone 底部标签切换，保留系统原生动画。",
+  "zh-Hant": "修正 Kindle AI 解讀自動翻頁後可能停止播放或重播上一頁的問題，提升長時間使用後的續播穩定性。改善 iPhone 底部分頁切換，保留系統原生動畫。",
+  "ja": "KindleのAI解説が自動改ページ後に停止したり、前のページを再生したりする問題を修正しました。長時間使用後の再生継続と、iPhoneの標準アニメーションを使ったタブ切り替えも改善しました。",
+  "es-ES": "Corregimos un problema por el que las explicaciones de Kindle podían detenerse tras pasar de página automáticamente o volver a reproducir la página anterior. Mejoramos la continuidad y el cambio entre pestañas con animaciones nativas en iPhone.",
+  "es-MX": "Corregimos un problema por el que las explicaciones de Kindle podían detenerse tras pasar de página automáticamente o volver a reproducir la página anterior. Mejoramos la continuidad y el cambio entre pestañas con animaciones nativas en iPhone.",
+  "fr-FR": "Correction d’un problème qui pouvait interrompre les explications Kindle après un changement de page automatique ou relire la page précédente. La reprise de lecture et le changement d’onglet avec les animations natives sur iPhone sont améliorés.",
+  "de-DE": "Ein Fehler wurde behoben, bei dem Kindle-Erklärungen nach dem automatischen Seitenwechsel stoppten oder die vorherige Seite erneut abspielten. Auch die Wiedergabe nach längerer Nutzung und der Tabwechsel mit nativen iPhone-Animationen wurden verbessert.",
+  "pt-BR": "Corrigimos um problema que podia interromper as explicações do Kindle após a mudança automática de página ou reproduzir a página anterior novamente. Melhoramos a continuidade da reprodução e a troca de abas com animações nativas no iPhone.",
+  "it": "Risolto un problema per cui le spiegazioni Kindle potevano fermarsi dopo il cambio pagina automatico o riprodurre la pagina precedente. Migliorate la continuità della riproduzione e la navigazione tra le schede con animazioni native su iPhone.",
+  "hi": "Kindle की AI व्याख्या के अपने आप पेज बदलने के बाद रुकने या पिछला पेज दोबारा चलने की समस्या ठीक की गई। लंबे समय के उपयोग के बाद प्लेबैक और iPhone पर मूल एनिमेशन के साथ टैब बदलना बेहतर हुआ।"
+}
