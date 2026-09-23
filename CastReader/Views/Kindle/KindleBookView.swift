@@ -861,7 +861,7 @@ struct KindleBookView: View {
                 } else if let vm = model.explainVM {
                     switch vm.status {
                     case .idle, .error: startCurrentMode()
-                    case .completed: vm.replay()
+                    case .completed: startCurrentMode()
                     case .streaming: vm.togglePlayPause()
                     case .planning: break
                     }
@@ -1300,7 +1300,7 @@ private struct KindleExplainPlaybackBar: View {
     @ViewBuilder
     private var centerControl: some View {
         if sleepTimer.requiresExplicitResume {
-            playButton(isLoading: false, isPlaying: false) { vm.ensurePlaying() }
+            playButton(isLoading: false, isPlaying: false, action: start)
         } else {
         switch vm.status {
         case .idle:
@@ -1322,7 +1322,7 @@ private struct KindleExplainPlaybackBar: View {
                 playButton(isLoading: true, isPlaying: false, action: {})
                     .disabled(true)
             } else {
-                Button { vm.replay() } label: {
+                Button(action: start) {
                     Image(systemName: "arrow.clockwise.circle.fill")
                         .font(.system(size: compact ? 40 : 48))
                         .foregroundColor(AppTheme.primary)
@@ -1549,7 +1549,7 @@ private struct KindleLandscapeExplainOverlay: View {
             if isContinuingPage {
                 ProgressView().frame(width: 38, height: 38)
             } else {
-                Button { vm.replay() } label: {
+                Button(action: start) {
                     Image(systemName: "arrow.clockwise.circle.fill")
                         .font(.system(size: 38))
                         .foregroundColor(AppTheme.primary)
@@ -6736,10 +6736,22 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     startPageKeyWatcher()
                     return .started
                 case .completed:
-                    vm.replay()
-                    startPageKeyWatcher()
-                    playbackCenter.activate(model: self)
-                    return .started
+                    let liveKey = normalizedPageKey(livePageKey)
+                    let visibleKey = normalizedPageKey(await currentVisibleKindlePageKey())
+                    guard retainsStartOwnership(), mode == requestedMode else { return .deferred }
+                    if !liveKey.isEmpty, liveKey == visibleKey {
+                        if vm.isContinuingLivePage {
+                            vm.ensurePlaying()
+                        } else {
+                            vm.replay()
+                        }
+                        startPageKeyWatcher()
+                        playbackCenter.activate(model: self)
+                        return .started
+                    }
+                    // A staged auto turn can already be visible while the old
+                    // page VM is completed. Replay must use the visible page.
+                    KindleRunLog.write("KINDLE explain replay recapture live=\(Self.keyLog(liveKey)) visible=\(Self.keyLog(visibleKey))")
                 default:
                     break
                 }
@@ -8014,7 +8026,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let pageKey = normalizedPageKey(rawPageKey)
         guard !pageKey.isEmpty else { return nil }
         if let prefetch = cachedExplainPrefetchCandidates[pageKey] {
-            if prefetch.textFingerprint == textFingerprint, prefetch.payload.matchesCurrentSettings {
+            if prefetch.textFingerprint == textFingerprint, prefetch.payload.isReusable() {
                 cachedExplainPrefetchCandidates[pageKey] = nil
                 if cachedExplainPrefetch?.pageKey == prefetch.pageKey {
                     cachedExplainPrefetch = nil
@@ -8025,15 +8037,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 return prefetch.payload
             }
             cachedExplainPrefetchCandidates[pageKey] = nil
-            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-mismatch")
+            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-settings-or-expiry-mismatch")
         }
         if let prefetch = cachedExplainPrefetch,
            normalizedPageKey(prefetch.pageKey) == pageKey {
             cachedExplainPrefetch = nil
-            if prefetch.textFingerprint == textFingerprint, prefetch.payload.matchesCurrentSettings {
+            if prefetch.textFingerprint == textFingerprint, prefetch.payload.isReusable() {
                 return prefetch.payload
             }
-            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-mismatch")
+            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-settings-or-expiry-mismatch")
         }
         return nil
     }
@@ -12039,15 +12051,21 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   isAdvancingLivePage,
                   !isKindleSyncDialogVisible,
                   isReaderSurfaceAttached,
-                  webView.window != nil,
-                  !hasActivePlaybackSession else {
+                  webView.window != nil else {
                 return false
             }
             switch continuationMode {
             case .read:
                 return readVM === completedReadOwner && activeReadPageSession == completedReadSession
+                    && !hasActivePlaybackSession
             case .explain:
+                // Completed marks remain on screen while the next page is
+                // prepared; they are not an active audio session. Requiring
+                // !hasActivePlaybackSession here abandons every annotated page.
+                guard let completedExplainOwner else { return false }
                 return explainVM === completedExplainOwner
+                    && completedExplainOwner.status == .completed
+                    && !completedExplainOwner.isPlaying
             }
         }
 
@@ -12483,7 +12501,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                cached.afterKey == afterKey,
                cached.pageKey == pageKey,
                cached.textFingerprint == fingerprint,
-               cached.payload.matchesCurrentSettings {
+               cached.payload.isReusable() {
                 KindleRunLog.write("KINDLE explain prefetch followup cached reason=\(reason) after=\(Self.keyLog(afterKey)) key=\(Self.keyLog(pageKey))")
                 return
             }
@@ -13763,7 +13781,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
            cached.afterKey == afterKey,
            cached.pageKey == pageKey,
            cached.textFingerprint == fingerprint,
-           cached.payload.matchesCurrentSettings {
+           cached.payload.isReusable() {
             return
         }
         if let confirmed = explainPagePreparation?.confirmedTargetKey, pageKey != confirmed { return }

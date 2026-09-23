@@ -67,6 +67,43 @@ private struct TabContentBottomKey: PreferenceKey {
     }
 }
 
+private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
+    @Binding var selection: Int
+    let plusImage: UIImage
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIView(context: Context) -> UITabBar {
+        let bar = UITabBar()
+        bar.items = [
+            UITabBarItem(title: AppLocalized("首页"), image: UIImage(systemName: "house.fill"), tag: 0),
+            UITabBarItem(title: nil, image: plusImage, tag: 1),
+            UITabBarItem(title: AppLocalized("音色"), image: UIImage(systemName: "waveform"), tag: 2)
+        ]
+        bar.delegate = context.coordinator
+        bar.selectedItem = bar.items?.first(where: { $0.tag == selection })
+        return bar
+    }
+
+    func updateUIView(_ bar: UITabBar, context: Context) {
+        context.coordinator.parent = self
+        if bar.selectedItem?.tag != selection {
+            bar.selectedItem = bar.items?.first(where: { $0.tag == selection })
+        }
+    }
+
+    final class Coordinator: NSObject, UITabBarDelegate {
+        var parent: ReaderNativeIPhoneTabBar
+
+        init(_ parent: ReaderNativeIPhoneTabBar) { self.parent = parent }
+
+        func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
+            guard item.tag != 1 else { return }
+            parent.selection = item.tag
+        }
+    }
+}
+
 struct MainTabView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Where the floating player sits. Purely visual — the space tab content
@@ -234,7 +271,11 @@ struct MainTabView: View {
         } else if AdaptiveLayout.isPad {
             if #available(iOS 18.0, *) { tabs.tabViewStyle(.sidebarAdaptable) }
             else { tabs }
-        } else { tabs }
+        } else if #available(iOS 26.0, *) {
+            iPhoneTabs
+        } else {
+            tabs
+        }
     }
 
     private var tabs: some View {
@@ -253,6 +294,42 @@ struct MainTabView: View {
                 tabPage(4).tabItem { Label("设置", systemImage: "gearshape") }.tag(4)
             }
         }
+    }
+
+    private var iPhoneTabs: some View {
+        ZStack {
+            tabPage(0)
+                .opacity(selectedTab == 0 ? 1 : 0)
+                .allowsHitTesting(selectedTab == 0)
+                .accessibilityHidden(selectedTab != 0)
+            tabPage(2)
+                .opacity(selectedTab == 2 ? 1 : 0)
+                .allowsHitTesting(selectedTab == 2)
+                .accessibilityHidden(selectedTab != 2)
+            if selectedTab == 3 || selectedTab == 4 {
+                tabPage(selectedTab)
+            }
+        }
+        .animation(nil, value: selectedTab)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if !importRouter.hideMainChrome {
+                iPhoneTabBar
+                    .padding(.bottom, 6)
+                    .offset(y: max(0, (readerScene.window?.safeAreaInsets.bottom ?? 34) - 14))
+            }
+        }
+        .onChange(of: selectedTab) { newTab in
+            if newTab != 2 { VoiceSamplePlayer.shared.stop() }
+        }
+    }
+
+    private var iPhoneTabBar: some View {
+        ZStack {
+            ReaderNativeIPhoneTabBar(selection: $selectedTab, plusImage: Self.plusTabImage)
+                .frame(height: 50)
+            plusTapTarget
+        }
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
@@ -333,7 +410,8 @@ struct MainTabView: View {
             }
 
             if !AdaptiveLayout.isPad && !importRouter.hideMainChrome {
-                plusTapTarget
+                if #available(iOS 26.0, *) { EmptyView() }
+                else { plusTapTarget }
             }
 
             // Mini Player 悬浮在 tab bar 上方（有会话且阅读器收起时）

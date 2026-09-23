@@ -37006,6 +37006,64 @@
         }
       }
     },
+    "解读任务已失效，请重新开始解读" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Erklärung ist nicht mehr verfügbar. Bitte starte sie erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This explanation is no longer available. Please start it again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta explicación ya no está disponible. Vuelve a iniciarla."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette explication n’est plus disponible. Veuillez la relancer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "यह व्याख्या अब उपलब्ध नहीं है। कृपया इसे फिर से शुरू करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa spiegazione non è più disponibile. Riavviala."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この解説は利用できなくなりました。もう一度開始してください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta explicação não está mais disponível. Inicie-a novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解读任务已失效，请重新开始解读"
+          }
+        }
+      }
+    },
     "解读任务线路状态已丢失，请重新开始解读" : {
       "localizations" : {
         "de" : {

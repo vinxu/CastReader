@@ -216,6 +216,7 @@ enum QuickReadError: Error, LocalizedError {
     case textTooShort
     case computeSessionExpired
     case missingJobTransport
+    case jobUnavailable
 
     var errorDescription: String? {
         switch self {
@@ -227,6 +228,7 @@ enum QuickReadError: Error, LocalizedError {
         case .noBlock0: return AppLocalized("解读未返回首块内容")
         case .computeSessionExpired: return AppLocalized("解读算力凭据已过期")
         case .missingJobTransport: return AppLocalized("解读任务线路状态已丢失，请重新开始解读")
+        case .jobUnavailable: return AppLocalized("解读任务已失效，请重新开始解读")
         }
     }
 }
@@ -600,6 +602,9 @@ actor QuickReadService {
         data: Data,
         transport: QuickReadTransportKind
     ) -> QuickReadError {
+        if status == 404, structuredErrorCode(in: data) == "QUICKREAD_JOB_NOT_FOUND" {
+            return .jobUnavailable
+        }
         if status == 400, structuredErrorCode(in: data) == "text_too_short" {
             return .textTooShort
         }
@@ -619,7 +624,7 @@ actor QuickReadService {
             guard let object = value as? [String: Any] else { return nil }
             for key in ["errorCode", "error_code", "code", "error"] {
                 if let code = object[key] as? String,
-                   ["COMPUTE_SESSION_EXPIRED", "text_too_short"].contains(code) {
+                   ["COMPUTE_SESSION_EXPIRED", "text_too_short", "QUICKREAD_JOB_NOT_FOUND"].contains(code) {
                     return code
                 }
             }
@@ -963,6 +968,8 @@ actor QuickReadService {
                 let (data, response) = try await self.networkSession(for: transport).data(for: req)
                 if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
                     self.debugLog("\(label) HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(data))")
+                    let code = Self.structuredErrorCode(in: data)
+                    ReaderRunLog.write("QUICKREAD continuation failed operation=\(label) status=\(http.statusCode) jobUnavailable=\(code == "QUICKREAD_JOB_NOT_FOUND")")
                     throw Self.responseError(status: http.statusCode, data: data, transport: transport)
                 }
                 do {
