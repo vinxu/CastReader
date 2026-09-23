@@ -143,7 +143,7 @@ class CastReaderUITestsLaunchTests: XCTestCase {
         selectVoice("vl_b4bb75aa2d3e56fd90a2")
         waitFor(120) { playing(read) }
         observe(40, "cn-read-community")
-        selectVoice("vc_12e286594652455dae539cabbf93c2c0", privateVoice: true)
+        selectVoice("vc_63a448ca35794f57b0aea0e189a68cb3", privateVoice: true)
         waitFor(120) { playing(read) }
         observe(35, "cn-read-private")
         read.tap()
@@ -167,7 +167,7 @@ class CastReaderUITestsLaunchTests: XCTestCase {
         waitFor(120) { explain.exists && playing(explain) }
         observe(40, "cn-explain-community")
         waitFor(180) { replay.exists }
-        selectVoice("vc_12e286594652455dae539cabbf93c2c0", privateVoice: true)
+        selectVoice("vc_63a448ca35794f57b0aea0e189a68cb3", privateVoice: true)
         waitFor(120) { explain.exists && explain.isEnabled }
         if !playing(explain) { explain.tap() }
         waitFor(120) { replay.exists }

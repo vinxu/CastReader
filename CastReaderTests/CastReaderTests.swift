@@ -328,6 +328,9 @@ class CastReaderTests: XCTestCase {
 
     @MainActor
     func testBoundLibraryOnboardingV3ResumesTheExactDeferredStep() throws {
+        let previousRegion = AppRegion.overrideRegion
+        AppRegion.overrideRegion = .global
+        defer { AppRegion.overrideRegion = previousRegion }
         let suite = "BoundLibraryV3ResumeTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -384,6 +387,9 @@ class CastReaderTests: XCTestCase {
 
     @MainActor
     func testBoundLibraryOnboardingV1DismissalMigratesWithoutForcingV3() throws {
+        let previousRegion = AppRegion.overrideRegion
+        AppRegion.overrideRegion = .global
+        defer { AppRegion.overrideRegion = previousRegion }
         let suite = "BoundLibraryV1MigrationTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
