@@ -861,7 +861,7 @@ struct KindleBookView: View {
                 } else if let vm = model.explainVM {
                     switch vm.status {
                     case .idle, .error: startCurrentMode()
-                    case .completed: vm.replay()
+                    case .completed: startCurrentMode()
                     case .streaming: vm.togglePlayPause()
                     case .planning: break
                     }
@@ -1300,7 +1300,7 @@ private struct KindleExplainPlaybackBar: View {
     @ViewBuilder
     private var centerControl: some View {
         if sleepTimer.requiresExplicitResume {
-            playButton(isLoading: false, isPlaying: false) { vm.ensurePlaying() }
+            playButton(isLoading: false, isPlaying: false, action: start)
         } else {
         switch vm.status {
         case .idle:
@@ -1322,7 +1322,7 @@ private struct KindleExplainPlaybackBar: View {
                 playButton(isLoading: true, isPlaying: false, action: {})
                     .disabled(true)
             } else {
-                Button { vm.replay() } label: {
+                Button(action: start) {
                     Image(systemName: "arrow.clockwise.circle.fill")
                         .font(.system(size: compact ? 40 : 48))
                         .foregroundColor(AppTheme.primary)
@@ -1549,7 +1549,7 @@ private struct KindleLandscapeExplainOverlay: View {
             if isContinuingPage {
                 ProgressView().frame(width: 38, height: 38)
             } else {
-                Button { vm.replay() } label: {
+                Button(action: start) {
                     Image(systemName: "arrow.clockwise.circle.fill")
                         .font(.system(size: 38))
                         .foregroundColor(AppTheme.primary)
@@ -6740,7 +6740,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     let visibleKey = normalizedPageKey(await currentVisibleKindlePageKey())
                     guard retainsStartOwnership(), mode == requestedMode else { return .deferred }
                     if !liveKey.isEmpty, liveKey == visibleKey {
-                        vm.replay()
+                        if vm.isContinuingLivePage {
+                            vm.ensurePlaying()
+                        } else {
+                            vm.replay()
+                        }
                         startPageKeyWatcher()
                         playbackCenter.activate(model: self)
                         return .started
