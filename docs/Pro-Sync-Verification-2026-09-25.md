@@ -49,9 +49,11 @@ Android 两区 Release 单测、lint、全球 APK/AAB、中国 APK 在同一次�
 
 交付目录内 `iOS/制品校验.json`、`Android/制品校验.json` 保存源码提交、签名、生产配置及验证状态；证据不含签名密码、会话令牌或用户私人音色 URL。
 
-当前设备：iPhone 15 Pro Max 开发连接 tunnelState=unavailable、ddiServicesAvailable=false；Android 只有 emulator-5554，没有连接真机。不能以配对记录、模拟器画面、HTTP 200 或单测总数代替候选包的真实播放。
+2026-09-25 14:42–14:49（Asia/Shanghai）按用户最新送审要求续跑：ASC 再次确认线上 1.2.44（66）、最高 Build 66 且无活动审核单；11 语线上文案与既有快照完全一致，55 张截图均 COMPLETE。Google Play 读回仍为 1.0.53（60）。安卓核对已发布应用源码 d4e63164898e850ea5d56671acaa084e1145e0ef 到候选的祖先关系，通过；Pad 分支独有的 23 个提交全部排除，本轮没有阅读 UI、资源、Manifest 改动。此次提交范围为 iOS App Store 与安卓 Google Play，中国直装包保留为制品，不切换线上下载。
 
-仍须在最终正式候选完成 Global 英文、CN 中文的朗读/解读 × Kokoro、社区 vl_、私人 vc_：实际生成、播放推进、跨段/块、高亮/原文标注及切换，再验证同账号购买恢复与跨端状态。通过后才上传 App Store/Google Play 和发布 CN APK；目前均未执行。
+当前设备：iPhone 15 Pro Max 开发连接已恢复，候选 1.2.45（67）同源码、Release 配置的开发签名 App 已保留数据覆盖安装并成功启动；iPhone 镜像仍要求在手机端完成一次解锁验证，尚不能观察和操作播放。Android 只有 emulator-5554，没有连接真机，未覆盖另一 Pad 任务的模拟器。不能以安装/启动成功、配对记录、模拟器画面、HTTP 200 或单测总数代替候选包的真实播放。
+
+仍须在最终正式候选完成 Global 英文、CN 中文的朗读/解读 × Kokoro、社区 vl_、私人 vc_：实际生成、播放推进、跨段/块、高亮/原文标注及切换，再验证同账号购买恢复与跨端状态。通过后才按本轮范围上传 App Store/Google Play；目前均未上传/送审。恢复连接的精确记录见 reports/ios-release-1.2.45/submission-resume-state.json；安卓源码排除记录见 reports/pro-sync/submission-scope.json。
 
 证据目录：
 - iOS：reports/pro-sync/ 与 reports/ios-release-1.2.45/。
