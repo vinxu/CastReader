@@ -92,11 +92,25 @@ final class ReaderViewportTests: XCTestCase {
         try await show(host)
         let scroll = try XCTUnwrap(descendants(host.view, as: UIScrollView.self).first(where: { $0.isScrollEnabled }))
         let visible = scroll.bounds.inset(by: scroll.adjustedContentInset)
-        let target = try XCTUnwrap(descendants(host.view, as: ReaderUITextView.self).first { view in
-            guard let rect = view.rects(forCharRange: NSRange(location: 0, length: 9)).first else { return false }
+        // A paragraph need not naturally start in the bottom 10% on every
+        // iPad size/font. Arrange a real visible paragraph at that position
+        // before testing playback follow; do not depend on line-height luck.
+        let candidates = descendants(host.view, as: ReaderUITextView.self).compactMap { view -> (ReaderUITextView, CGFloat)? in
+            guard let rect = view.rects(forCharRange: NSRange(location: 0, length: 9)).first else { return nil }
             let y = view.convert(rect, to: scroll).minY
-            return y > visible.minY + visible.height * 0.90 && y < visible.maxY - 15
+            return y > visible.midY ? (view, y) : nil
+        }
+        let (target, targetY) = try XCTUnwrap(candidates.min {
+            abs($0.1 - visible.maxY) < abs($1.1 - visible.maxY)
         })
+        scroll.setContentOffset(CGPoint(x: scroll.contentOffset.x,
+            y: scroll.contentOffset.y + targetY - visible.minY - visible.height * 0.93), animated: false)
+        try await settle()
+        let arrangedRect = try XCTUnwrap(target.rects(forCharRange: NSRange(location: 0, length: 9)).first)
+        let arrangedVisible = scroll.bounds.inset(by: scroll.adjustedContentInset)
+        let arrangedY = target.convert(arrangedRect, to: scroll).minY
+        XCTAssertGreaterThan(arrangedY, arrangedVisible.minY + arrangedVisible.height * 0.90)
+        XCTAssertLessThan(arrangedY, arrangedVisible.maxY - 15)
         let index = try XCTUnwrap(Int(target.text.split(separator: " ")[1]))
         let start = scroll.contentOffset.y
         var offsets: [CGFloat] = []
