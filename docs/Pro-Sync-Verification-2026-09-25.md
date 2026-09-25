@@ -1,6 +1,6 @@
 # Pro 跨端同步修复与发布验证 · 2026-09-25
 
-当前结论：已复现并修复移动端“本地购买标记覆盖服务端 false”的缺陷，多渠道权益聚合回归通过。真实设备的最终朗读/解读及购买恢复验收尚未完成，因此移动端尚未上传/送审，也不能宣称全部端到端验收完成。
+当前结论：已复现并修复移动端“本地购买标记覆盖服务端 false”的缺陷，多渠道权益聚合回归通过。2026-09-25 已正式提交 iOS 1.2.45（67）和 Google Play 1.0.54（61），回读分别为 WAITING_FOR_REVIEW 与审核中，审核后自动发布。用户在知悉真机验收未完成后明确要求直接提交；真实设备最终朗读/解读及购买恢复为 NOT_RUN，不能宣称全部端到端验收完成。
 
 ## 权益规则
 
@@ -30,15 +30,15 @@
 - iOS：最新已发布 1.2.44 的 main 基线 b8fcc99a8476e291d4e504001fd8194d1c1523b9；候选 1.2.45（67），修复 c43e48e，测试夹具修订 66fc2e1，均已推送并合入 main。保留 App/Share/Widget、一包支持 iPhone/iPad 和 iPad 四向旋转。
 - Android：Play Console 当天读回最新线上及最高上传制品 1.0.53（60），生产 100% 且无待发布变更；以已发布源码后继 d3d7828 为基线，候选 1.0.54（61），提交 4cf9de529bbf06114a0ef97c607a6049c59c825f 已推送。未混入另一工作树仍在开发的 Pad 功能。
 - 后端：生产运行代码无需新增修改或部署；只补充数据库回归测试 d78abe9b，已推送独立分支。没有新增过期字段、后台轮询或支付策略。
-- Chrome 控制台已读回扩展 1.2.46 待审核、1.2.45 线上；没有替换已提交包。
+- 本次移动端提交没有替换扩展包；扩展发布状态由扩展专项记录管理。
 
-## 发布状态与剩余门禁
+## 发布状态与验证边界
 
-iOS 的 Release 编译、归档、App Store 分发签名和本地 IPA 导出全部成功；九语资源、App/Share/Widget 版本、iPhone/iPad 设备族及 iPad 四向旋转校验通过。归档通过 54 项测试夹具排除检查，导出的 IPA 另检查 54 项夹具和 2 项 Pro 调试标记，均无命中。IPA 是商店分发包，尚未上传，不能当作任意真机可直接安装的调试包。
+iOS 的 Release 编译、归档、App Store 分发签名和本地 IPA 导出全部成功；九语资源、App/Share/Widget 版本、iPhone/iPad 设备族及 iPad 四向旋转校验通过。归档通过 54 项测试夹具排除检查，导出的 IPA 另检查 54 项夹具和 2 项 Pro 调试标记，均无命中。IPA 是商店分发包，已通过官方 Xcode 上传，不能当作任意真机可直接安装的调试包。
 
 Android 两区 Release 单测、lint、全球 APK/AAB、中国 APK 在同一次冻结源码构建中成功完成。lint 无 Error/Fatal，Global 有 480 项、CN 有 485 项非阻断 Warning，未隐藏或标成已修复。三个制品签名均与现有发布证书一致。APK 实际清单确认 package=com.same.castreader、版本 1.0.54（61）、minSdk=24、targetSdk=36、不可调试；CN 无 Play Billing 权限或 Play/Google services/YouTube 包查询，保留支付宝活动和钱包查询，生产手机号 fallback 关闭。AAB 签名通过，与已审计全球 APK 使用同一冻结源码及配置。
 
-交付目录：`/Users/xuxuheng/Desktop/CastReader-Pro-Sync-20260925/`。以下均是候选制品，不表示已经通过真机验收或发布：
+交付目录：`/Users/xuxuheng/Desktop/CastReader-Pro-Sync-20260925/`。以下为本次冻结制品；iOS 和全球 AAB 已上传送审，APK 保留本地。送审不表示真机验收或商店发布已经完成：
 
 | 制品 | 相对交付目录的路径 | 字节数 | SHA-256 |
 |---|---|---:|---|
@@ -53,7 +53,13 @@ Android 两区 Release 单测、lint、全球 APK/AAB、中国 APK 在同一次�
 
 当前设备：iPhone 15 Pro Max 开发连接已恢复，候选 1.2.45（67）同源码、Release 配置的开发签名 App 已保留数据覆盖安装并成功启动；iPhone 镜像仍要求在手机端完成一次解锁验证，尚不能观察和操作播放。Android 只有 emulator-5554，没有连接真机，未覆盖另一 Pad 任务的模拟器。不能以安装/启动成功、配对记录、模拟器画面、HTTP 200 或单测总数代替候选包的真实播放。
 
-仍须在最终正式候选完成 Global 英文、CN 中文的朗读/解读 × Kokoro、社区 vl_、私人 vc_：实际生成、播放推进、跨段/块、高亮/原文标注及切换，再验证同账号购买恢复与跨端状态。通过后才按本轮范围上传 App Store/Google Play；目前均未上传/送审。恢复连接的精确记录见 reports/ios-release-1.2.45/submission-resume-state.json；安卓源码排除记录见 reports/pro-sync/submission-scope.json。
+最终正式候选的 Global 英文、CN 中文朗读/解读 × Kokoro、社区 vl_、私人 vc_ 的真实生成、播放推进、跨段/块、高亮/原文标注及切换，以及真实商店购买恢复联合验收均未完成。用户在获知上述限制后明确要求“直接提交和进行送审”，本次按明确指令提交；未修改后续发布 SOP，不把缺失项记作通过。授权与设备记录见 reports/ios-release-1.2.45/submission-authorization.json 和 submission-resume-state.json；安卓源码排除记录见安卓工作树 reports/pro-sync/submission-scope.json。
+
+最终商店回读：
+
+- iOS：2026-09-25 15:12:50 +08:00，版本 ae746723-b147-4254-bd52-52b3ce7d8345 与审核单 cb9eea26-98e2-4888-b80a-f15cd0fbb04b 均 WAITING_FOR_REVIEW；Build c2ddecfa-6045-4eeb-b451-b6b3d1cc5e97 为 VALID / APP_STORE_ELIGIBLE。11 语 What’s New 回读一致，其他元数据、标题及审核资料保留，55 张截图 COMPLETE，审核后自动发布。
+- Google Play：2026-09-25 15:05 +08:00，正式版 61（1.0.54）提交 51，回读审核中；单一版本变更，9/9 语言更新说明一致，100% 原有目标国家，设备支持无增减，审核后自动发布。Play 的一项非阻断提示为依赖原生库未附 native debug symbols，ReTrace mapping 已附。
+- 商店回执分别保存在交付目录 iOS/App-Store-送审回执.json 与 Android/Google-Play-送审回执.json；详细 iOS 记录见 docs/iOS-1.2.45-Release-Report.md，安卓记录见安卓工作树 docs/Android-1.0.54-Pro-Sync-Release-Report.md。
 
 证据目录：
 - iOS：reports/pro-sync/ 与 reports/ios-release-1.2.45/。
