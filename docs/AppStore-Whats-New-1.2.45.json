@@ -1,0 +1,13 @@
+{
+  "en-US": "Improved Pro subscription status and synchronization across devices. Fixed cases where an expired or unsuccessful subscription could leave an outdated Pro status, and improved status refresh on unstable connections.",
+  "zh-Hans": "修复部分订阅到期或扣款失败后 Pro 状态未更新的问题，改善账号切换和跨设备会员同步，以及网络不稳定时的权益刷新。",
+  "zh-Hant": "修正部分訂閱到期或扣款失敗後 Pro 狀態未更新的問題，改善帳號切換和跨裝置會員同步，以及網路不穩定時的權益重新整理。",
+  "ja": "Pro サブスクリプションの状態とデバイス間の同期を改善しました。有効期限切れや支払い失敗後に古い Pro 状態が残る場合を修正し、不安定なネットワークでの状態更新も改善しました。",
+  "es-ES": "Mejoramos el estado de la suscripción Pro y la sincronización entre dispositivos. Corregimos casos en los que una suscripción vencida o un pago fallido dejaban un estado Pro desactualizado, y mejoramos la actualización con conexiones inestables.",
+  "es-MX": "Mejoramos el estado de la suscripción Pro y la sincronización entre dispositivos. Corregimos casos en los que una suscripción vencida o un pago fallido dejaban un estado Pro desactualizado, y mejoramos la actualización con conexiones inestables.",
+  "fr-FR": "Amélioration de l’état de l’abonnement Pro et de la synchronisation entre appareils. Correction de cas où un abonnement expiré ou un paiement échoué laissait un ancien statut Pro, et amélioration de l’actualisation sur les connexions instables.",
+  "de-DE": "Verbesserte Anzeige des Pro-Abostatus und Synchronisierung zwischen Geräten. Fehler behoben, durch die nach einem abgelaufenen Abo oder einer fehlgeschlagenen Zahlung ein veralteter Pro-Status bestehen blieb. Stabilere Aktualisierung bei schwacher Verbindung.",
+  "pt-BR": "Melhoramos o status da assinatura Pro e a sincronização entre dispositivos. Corrigimos casos em que uma assinatura vencida ou um pagamento recusado mantinham um status Pro desatualizado e melhoramos a atualização em conexões instáveis.",
+  "it": "Migliorati lo stato dell’abbonamento Pro e la sincronizzazione tra dispositivi. Corretti casi in cui un abbonamento scaduto o un pagamento non riuscito mantenevano uno stato Pro non aggiornato. Migliorato l’aggiornamento con connessioni instabili.",
+  "hi": "Pro सदस्यता की स्थिति और अलग-अलग डिवाइस के बीच सिंक में सुधार। सदस्यता समाप्त होने या भुगतान विफल होने के बाद पुरानी Pro स्थिति दिखने की समस्या ठीक की गई है। अस्थिर नेटवर्क पर स्थिति अपडेट करने में भी सुधार किया गया है।"
+}

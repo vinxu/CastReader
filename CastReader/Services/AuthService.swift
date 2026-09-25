@@ -472,6 +472,9 @@ final class AuthService: NSObject, ObservableObject {
         let signedOutEpoch = accountTransitionEpoch
         accountBoundaryID = UUID()
         account = nil
+        // Clear both sources synchronously; an async sign-out task or old
+        // StoreKit/status response must not leave or resurrect the old crown.
+        ProManager.shared.clearEntitlementsForAccountTransition()
         AppSettings.shared.clearActiveClonedVoice()
         Task {
             await MobileSessionStore.shared.revokeDetachedSession(detachedToken)
@@ -481,10 +484,6 @@ final class AuthService: NSObject, ObservableObject {
         Task { @MainActor [weak self] in
             guard let self,
                   self.accountTransitionEpoch == signedOutEpoch,
-                  self.account == nil else { return }
-            ProManager.shared.clearServerEntitlement()   // 先本地清，避免 refreshServer 失败时 serverPro 滞留为 true
-            await ProManager.shared.refreshServer()       // 再按 device_id 维度刷新
-            guard self.accountTransitionEpoch == signedOutEpoch,
                   self.account == nil else { return }
             ProManager.shared.refreshSyncState(reason: "sign-out")
         }
@@ -587,9 +586,9 @@ final class AuthService: NSObject, ObservableObject {
         // inside the same scope retain the current StoreKit snapshot.
         if changedAccountBoundary {
             ProManager.shared.clearEntitlementsForAccountTransition()
-        } else {
-            ProManager.shared.clearServerEntitlement()
         }
+        // Profile-only updates keep the same account's last successful Pro
+        // response. A network failure must not erase it or restore StoreKit.
         persist()
     }
 

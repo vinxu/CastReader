@@ -1,98 +1,35 @@
 # Pro 一致性标准
 
-> 声音克隆的创建、固定试听、正文应用、120 分钟结算及全球/中国双区域隔离，统一遵循 [《声音克隆跨端权限与技术架构统一规范》](./声音克隆-跨端权限与技术架构统一规范.md)。声音克隆专项规范优先于旧客户端中的创建名额或槽位逻辑。
+更新：2026-09-25。本节取代历史“本地商店 Pro OR 服务端 Pro”的规则。
 
-适用范围：同一产品区域内的 iOS、Android、Web、浏览器扩展，以及扩展/网页上的上传文件朗读页。所有端必须使用同一套 Pro 判定口径，不允许出现同一区域、同一账号在某一端是 Pro、另一端是 Free 的状态不一致。
+## 账号权益
 
-全球区与中国区是两个完全隔离的账号、数据库、会话和权益域，不共享用户或 Pro 状态。本规范中的“跨端一致”只在同一产品区域和 route-local 账号内成立；客户端不得根据 VPN/IP 把一个已登录账号切换到另一权益域。
+- 同一账号的有效订阅按渠道合并。Stripe、Apple、Google Play、支付宝任一有效付费订阅或有效试用即可授予 Pro；一笔失败记录不能覆盖另一笔有效订阅。
+- 订阅到期、试用到期未订阅、扣款失败且没有其他有效订阅时，服务端返回 `pro=false`。取消续订但仍在已付费期限内保持 Pro。
+- 服务端统一判断账单状态；客户端不重新计算订阅到期时间，不复制订阅表规则。
+- 本地 StoreKit/Play 购买记录是待校验和上报的购买凭据，不能独立授予 Pro、覆盖服务端 false。新购买完成服务端确认后，各端同步 true。
 
-## 目标
+## 客户端同步
 
-- 一个用户只要在同一产品区域的任一端拥有有效 Pro 订阅，登录该区域同一账号后所有端都应识别为 Pro。
-- Web/Stripe、iOS StoreKit、Android Play Billing、扩展登录态都必须汇总到统一的服务端权益状态。
-- 权益异常优先检查身份字段和服务端状态，不把“让用户退出重登”或“等待发包”作为默认解决方案。
+- iOS、安卓以最近一次成功且属于当前账号的服务端 `pro=true/false` 决定权限和显示。
+- 网络错误、5xx、缺少有效布尔字段不是 false：保留同账号上次成功结果。已确认的 false 也不能因错误恢复为 true。
+- 启动、前台恢复、登录、购买和恢复购买沿用现有刷新点。不要把状态查询加入逐词、音频帧或逐段播放回调。
+- 退出登录及换账号清除旧权益，并丢弃旧账号、旧查询的迟到响应。相同账号的昵称/头像更新不应清掉成功状态。
+- 权益刷新不清空播放器，不把临时查询失败变成播放错误。后台或断网期间无法承诺立即获知账单变更；下一次成功刷新收敛。
+- 免费额度按日归属；Pro 属于账号，不因跨过午夜失效。
 
-## 统一身份模型
+## 身份与服务
 
-- `user_id` 的标准含义是当前产品区域 readout-web/better-auth 的后端 `user.id`；它不能跨全球区和中国区使用。
-- Google `sub`、Apple user id、OAuth `account_id` 都是 provider account id，不是订阅主键；服务端必须把它们归一化到后端 `user.id` 后再查订阅。
-- `email` 是跨端识别 Web/Stripe Pro 的重要兜底字段；客户端登录后只要能拿到 email，就必须传给 Pro 状态接口。
-- `device_id` 只用于匿名额度、设备绑定和缓存兜底，不能作为登录用户 Pro 判定的唯一依据。
+- 移动端现行接口为 `GET /api/mobile/pro/status/v2`，携带当前线路的 `cms_` 会话及 `X-Auth-Provider: session`。服务端以 canonical user id 判断权益。
+- 新版移动端不依靠客户端自报 email/user_id/device_id 授权；Android 仍有已发布无 session 的 legacy 兼容路径，保持原有校验，不借本次修改扩张它。
+- 官网和扩展现有公开显示接口 `/api/pro/status` 的参数是身份解析提示，不是受保护服务的授权证明；受保护请求依旧需要对应会话。
+- 不按 VPN/IP 切换账号所属线路，不复制区域账号、音色或额度。跨端同步须属于同一服务端账号，不能把同邮箱的不同区域身份擅自合并。
 
-## 统一接口
+## 发布前验证
 
-同一区域内所有客户端和上传文件朗读页必须调用该区域同一个公开状态接口。`webBaseURL` 必须由账号所属 route-local 配置确定；不要根据网络位置擅自把全球与中国接口互相替换。统一的是路径、参数、响应与判权口径，不是跨区域共用数据库。
-
-```text
-GET {webBaseURL}/api/pro/status?device_id=&user_id=&email=&local_date=
-POST {webBaseURL}/api/pro/listen-track
-```
-
-请求规则：
-
-- `device_id`：必须传，用于匿名额度、设备绑定、诊断。
-- `user_id`：登录后必须传；优先传后端 `user.id`，兼容期可传 Google/Apple provider id，但服务端必须归一化。
-- `email`：登录后只要可得就必须传，尤其是 Google 登录和 Web/Stripe 购买用户。
-- `local_date`：必须传客户端本地日期，用于免费额度日切。
-
-响应规则：
-
-- 所有端只读取统一响应里的 `pro`、`plan`、`account`、`listenRemaining`、`explainRemaining/freeRemaining` 等字段。
-- 不允许某个端或某个页面绕过 `/api/pro/status` 自己查询订阅表或复写 Pro 判定。
-
-## 服务端判权标准
-
-服务端返回 `pro: true` 的条件至少包括：
-
-- normalized `user_id` 对应的用户有 active/trialing Pro subscription。
-- `email` 对应用户有 active/trialing Pro subscription。
-- `device_id` 已绑定到拥有 active/trialing Pro subscription 的用户。
-- 后续如果接入 Apple/Google Play 服务端收据校验，也必须写入同一套 entitlement 结果，不新增平行逻辑。
-
-服务端必须做到：
-
-- 同时接受后端 `user.id` 和 provider `account_id`，并统一解析到后端 `user.id`。
-- 通过 `email` 找到有效订阅时，应 best-effort 绑定或修正当前 `device_id/user_id` 的关联。
-- 订阅状态以服务端为跨端权威；本地商店权益只作为对应平台的即时本地权益。
-
-## 客户端判权标准
-
-- iOS：`isPro = storeKitPro || serverPro`。
-- Android：`isPro = googlePlayPro || serverPro`。
-- Web/扩展/上传文件朗读页：以 `/api/pro/status` 的 `serverPro` 为统一权威。
-- 客户端启动、前台恢复、登录成功、退出登录、购买成功、恢复购买、账号信息变化后，都必须刷新 `/api/pro/status`。
-- 已登录用户调用额度消耗或播放上报时，也必须传 `device_id + user_id + email`。
-
-## 禁止项
-
-- 禁止把 Google sub、Apple user id 直接当作订阅表 `user_id` 查询且不做归一化。
-- 禁止登录用户只传 `device_id` 查 Pro。
-- 禁止扩展上传文件朗读页使用与扩展主入口不同的 Pro 逻辑。
-- 禁止一个端只认本地订阅、另一个端只认服务端订阅，导致权益不一致。
-- 禁止在未验证 `/api/pro/status` 前要求用户反复退出登录。
-
-## 必测矩阵
-
-每次改 Pro、登录、订阅、额度、上传文件朗读页时，至少验证：
-
-| 场景 | 期望 |
-| --- | --- |
-| Web/Stripe Pro 用户用 `email` 查询 | `pro: true` |
-| 同一用户用后端 `user.id` 查询 | `pro: true` |
-| 同一用户用 Google/Apple provider `account_id` 查询 | `pro: true` |
-| 同一用户登录 iOS/Android 后查询 | `serverPro: true`，客户端显示 Pro |
-| 同一用户打开 Web、扩展主入口、扩展上传文件朗读页 | 都显示 Pro |
-| 随机 `user_id/device_id/email` 查询 | `pro: false`，仍返回免费额度 |
-| 登录后朗读/解读上报 | 上报请求包含 `device_id + user_id + email` |
-
-## 诊断流程
-
-遇到“某端不是 Pro”时，按顺序检查：
-
-1. 客户端实际发出的 `device_id/user_id/email/local_date`。
-2. `/api/pro/status` 对同一组参数的线上返回。
-3. `user_id` 是否是后端 `user.id`，如果是 provider id，服务端是否归一化成功。
-4. email 是否能命中 active/trialing subscription。
-5. 客户端是否刷新了状态、是否错误缓存了 free 状态。
-
-只有确认服务端已经返回 `pro: true`、客户端仍显示 Free 时，才进入客户端缓存/UI 刷新排查。
+1. 实际反馈账号只读查询，脱敏响应重放；确认测试没有改变订阅、绑定或额度。
+2. 成功 false 覆盖旧本地购买标记；之后查询失败仍是 false。
+3. 成功 true 在查询失败时保留；另一渠道购买成功后由 false 恢复 true。
+4. 旧 true/false 迟到均不能覆盖新查询；登出/换账号不能串号。
+5. 多渠道数据库验证：失败 Stripe + 有效 Apple/Play/支付宝；全部过期；有效试用；试用转付费失败；已付费剩余期限。
+6. 当前发布源码的朗读、解读与声音切换门禁仍须完成，自动化状态测试不能替代真实播放。

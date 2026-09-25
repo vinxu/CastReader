@@ -47,6 +47,7 @@
 		13E62A4F1772C735B00651F8 /* AppRegionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4032907836A160A2498BB58 /* AppRegionTests.swift */; };
 		15303BC03E296E46E410C377 /* OReillyContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D2A791F7A5F65648C787404 /* OReillyContractTests.swift */; };
 		160EB608C787ECCC04F1436A /* CloudHistoryReopenService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AEF236149E99331E32C8510 /* CloudHistoryReopenService.swift */; };
+		17DA2F2B2E9D524118906F8A /* ProStatusSynchronizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC0966041AF3C8CDBEA4BEA /* ProStatusSynchronizationTests.swift */; };
 		188454A4A128F2B9E17F8B00 /* TextReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4635DFCE285FD3F831DD58F9 /* TextReaderView.swift */; };
 		19D6D34E32F761A4BD9EA455 /* TTSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075E9F81D7FA6BAEDD4A775 /* TTSService.swift */; };
 		1AA1CA41CC604536FB016D70 /* WeReadLibraryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF6331C40127B3CFD74830D /* WeReadLibraryViews.swift */; };
@@ -604,6 +605,7 @@
 		8838921BDBDEB6D3F936FB12 /* OCRLayoutFixtureTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OCRLayoutFixtureTests.swift; sourceTree = "<group>"; };
 		89BA55070D914058CDAC46F8 /* KindleVisionFootnoteFixtureTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleVisionFootnoteFixtureTests.swift; sourceTree = "<group>"; };
 		8C3D87F6C73929AB2BCD1B5B /* KindlePageFlipProbeScriptTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindlePageFlipProbeScriptTests.swift; sourceTree = "<group>"; };
+		8FC0966041AF3C8CDBEA4BEA /* ProStatusSynchronizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProStatusSynchronizationTests.swift; sourceTree = "<group>"; };
 		9133B9B6202C7F305D0909BB /* KindleFootnoteSpeechTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleFootnoteSpeechTests.swift; sourceTree = "<group>"; };
 		92763406584E79DA9A4ADFF1 /* VoiceCloneRecorder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceCloneRecorder.swift; sourceTree = "<group>"; };
 		92AECD969B51CF76994BFE15 /* GoogleBooksBindingUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleBooksBindingUITests.swift; sourceTree = "<group>"; };
@@ -1029,6 +1031,7 @@
 				7AC765406F52420B9EB0E8C7 /* PDFImportMemoryTests.swift */,
 				EA923C3170CBEA3554C76537 /* DocumentImagePreservationTests.swift */,
 				431AFC32B908D7CC0FAD1C55 /* ReaderDropImportTests.swift */,
+				8FC0966041AF3C8CDBEA4BEA /* ProStatusSynchronizationTests.swift */,
 			);
 			path = CastReaderTests;
 			sourceTree = "<group>";
@@ -1952,6 +1955,7 @@
 				64A1058EB09BD082C875F694 /* PDFImportMemoryTests.swift in Sources */,
 				EF3571A0CD72089581B307F3 /* DocumentImagePreservationTests.swift in Sources */,
 				98615DFFB66C4C98A8A48FF3 /* ReaderDropImportTests.swift in Sources */,
+				17DA2F2B2E9D524118906F8A /* ProStatusSynchronizationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2147,7 +2151,7 @@
 				CASTREADER_INTERNAL_DISTRIBUTION_CONTROLS = YES;
 				CODE_SIGN_ENTITLEMENTS = CastReader/CastReader.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_PREVIEWS = YES;
@@ -2164,7 +2168,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.44;
+				MARKETING_VERSION = 1.2.45;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -2186,7 +2190,7 @@
 				CASTREADER_INTERNAL_DISTRIBUTION_CONTROLS = NO;
 				CODE_SIGN_ENTITLEMENTS = CastReader/CastReader.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_PREVIEWS = YES;
@@ -2203,7 +2207,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.44;
+				MARKETING_VERSION = 1.2.45;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -2299,12 +2303,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Widget/CastReaderWidget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Widget/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.44;
+				MARKETING_VERSION = 1.2.45;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2323,12 +2327,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Share Extension/CastReaderShareExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Share Extension/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.44;
+				MARKETING_VERSION = 1.2.45;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2346,12 +2350,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Widget/CastReaderWidget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Widget/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.44;
+				MARKETING_VERSION = 1.2.45;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2371,12 +2375,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Share Extension/CastReaderShareExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Share Extension/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.44;
+				MARKETING_VERSION = 1.2.45;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

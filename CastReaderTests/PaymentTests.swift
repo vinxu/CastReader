@@ -571,10 +571,10 @@ final class PaymentTests: XCTestCase {
     }
 
     @MainActor
-    func testStoreKitPurchase_unlocksPro() async throws {
+    func testStoreKitPurchase_requiresServerConfirmationForCrossPlatformPro() async throws {
         try await seedStoreKitPurchase(ProManager.monthlyID)
         XCTAssertTrue(ProManager.shared.storeKitPro, "购买后 storeKitPro=true")
-        XCTAssertTrue(ProManager.shared.isPro, "购买后 isPro=true")
+        XCTAssertEqual(ProManager.shared.isPro, ProManager.shared.serverPro, "本地购买凭据上报后，以服务端账号权益为准")
     }
 
     @MainActor
@@ -597,9 +597,9 @@ final class PaymentTests: XCTestCase {
             ProManager.shared.storeKitLocalPro,
             "同一账号范围内的资料补全不能清除 StoreKit 快照"
         )
-        XCTAssertFalse(
+        XCTAssertTrue(
             ProManager.shared.serverPro,
-            "资料变更后应等待同一账号的服务端权益重新确认"
+            "同账号资料补全保留最近一次成功的服务端权益，避免弱网下丢失 Pro"
         )
         ProManager.shared.setEntitlementsForTesting(storeKit: true, server: true)
 

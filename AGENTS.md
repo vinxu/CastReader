@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Pro 查询结果优先（2026-09-25）
+
+当前规则见 `docs/Pro一致性标准.md`。iOS/Android 权限以当前账号最近一次成功的服务端 `pro` 布尔值为准，StoreKit/Play 本地购买标记不再 OR 放行。所有有效渠道在服务端合并；网络错误保留同账号上次成功结果，旧查询和旧账号响应不得覆盖新状态。本轮不增加客户端权益到期字段或逐段查询。下方历史架构说明中的 OR/公开查询描述不能覆盖现行规则。
+
 ## 1.2.43 iPhone / iPad 通用版本已送审（2026-09-22）
 
 - 最新通用发布归档源码为主线合并 `fe64420dad87d7262c3d7de144a4b30c5ee7feb3`，在最新 iPhone 基线 `8298f84` 上正式合并 iPad `bcd9778`，所有必备祖先保留。验收/归档工作树：`/Users/xuxuheng/.codex/worktrees/castreader-ipad-adaptation/CastReader`；应用/配置 309 文件摘要 `a08ee45fbac599cf4e21e97fa6f136dcaf9c777e00ef539f14dd1c2ac8b30466`。

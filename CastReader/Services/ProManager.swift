@@ -68,12 +68,12 @@ final class ProManager: ObservableObject {
     }
     #endif
 
-    /// 当前设备可用 Pro。跨端 Pro 真相是账号维度的 serverPro；StoreKit 本地权益只作为短期兼容放行。
+    /// 最近一次成功的账号查询为准，尤其不能用旧 StoreKit true 覆盖服务端 false。
     var isPro: Bool {
         #if DEBUG
         if debugForcePro { return true }
         #endif
-        return storeKitLocalPro || serverPro
+        return serverPro
     }
 
     var isCrossPlatformPro: Bool {
@@ -85,6 +85,24 @@ final class ProManager: ObservableObject {
     /// 当前 `serverPro` 对应的账号身份。邮箱账号与纯手机号账号都必须参与，
     /// 否则两个无邮箱手机号账号之间切换且网络失败时会短暂沿用前一个人的权益。
     private var serverIdentity: String?
+    private var serverReadSequence: UInt64 = 0
+    private var storeKitReadSequence: UInt64 = 0
+
+    struct ServerRead {
+        let sequence: UInt64
+        let accountBoundary: UUID
+    }
+
+    func beginServerRead() -> ServerRead {
+        serverReadSequence &+= 1
+        return ServerRead(sequence: serverReadSequence,
+                          accountBoundary: AuthService.shared.accountBoundaryID)
+    }
+
+    func isCurrentServerRead(_ read: ServerRead) -> Bool {
+        read.sequence == serverReadSequence
+            && read.accountBoundary == AuthService.shared.accountBoundaryID
+    }
 
     private init() {}
 
@@ -112,19 +130,22 @@ final class ProManager: ObservableObject {
     }
 
     private func refreshServer(allowGrowthBootstrapRetry: Bool) async {
+        var read = beginServerRead()
         let userId = Self.normalizedIdentityComponent(
             await AuthService.shared.ensureBackendUserIdForPro()
         )
+        guard isCurrentServerRead(read) else { return }
         let email = Self.normalizedEmail(AuthService.shared.normalizedEmail)
         let identity = Self.serverIdentityKey(userId: userId, email: email)
 
         if identity == nil {
             debugLog("status account identity missing; authenticated quota unavailable")
-            clearServerEntitlement()
+            clearEntitlementsForAccountTransition()
             return
         } else if serverIdentity != nil && serverIdentity != identity {
             debugLog("status account changed; clearing previous server entitlement before refresh")
-            clearServerEntitlement()
+            clearEntitlementsForAccountTransition()
+            read = beginServerRead()
         }
         #if DEBUG
         // Explicit UI automation uses a deterministic local cms_ token to
@@ -133,13 +154,18 @@ final class ProManager: ObservableObject {
         // close the test account under the production rejection policy.
         if let token = await MobileSessionStore.shared.sessionToken(),
            MobileSessionStore.isExplicitUITestSessionToken(token) {
-            clearServerEntitlement()
+            guard isCurrentServerRead(read) else { return }
+            clearEntitlementsForAccountTransition()
             return
         }
         #endif
-        guard await AuthService.shared.ensureMobileSession() else {
-            debugLog("status mobile session missing; clearing server entitlement")
-            clearServerEntitlement()
+        guard isCurrentServerRead(read) else { return }
+        let hasSession = await AuthService.shared.ensureMobileSession()
+        guard isCurrentServerRead(read) else { return }
+        guard hasSession else {
+            // Failure to refresh a bearer is not an authoritative free result.
+            // A confirmed 401 below follows the separate account rejection path.
+            if allowGrowthBootstrapRetry { scheduleGrowthBootstrapRetry() }
             return
         }
 
@@ -150,23 +176,27 @@ final class ProManager: ObservableObject {
         // into the legacy daily quota for its first session.
         let analyticsDelivery = await ProductAnalytics.shared
             .ensureCurrentAppSessionDelivered()
+        guard isCurrentServerRead(read) else { return }
         let identityLinked = await AuthService.shared
             .linkGrowthIdentityIfAuthenticated()
+        guard isCurrentServerRead(read) else { return }
 
         let quotaRead = VoiceCloneStore.shared.beginQuotaRead()
         let outcome = await ProBackendService.shared.fetchStatus()
+        guard isCurrentServerRead(read) else { return }
         let status: ProStatusDTO
         switch outcome {
         case .success(let value):
             status = value
         case .unauthorized(let rejectedToken):
             debugLog("status mobile session unauthorized; clearing server entitlement")
-            clearServerEntitlement()
+            clearEntitlementsForAccountTransition()
             await AuthService.shared.handleRejectedMobileSession(
                 rejectedToken: rejectedToken
             )
             return
         case .unavailable:
+            applyServerEntitlement(nil, userId: userId, email: email, read: read)
             if allowGrowthBootstrapRetry {
                 scheduleGrowthBootstrapRetry()
             }
@@ -174,7 +204,7 @@ final class ProManager: ObservableObject {
         }
         guard Self.normalizedIdentityComponent(status.resolvedUserId) == userId else {
             debugLog("status principal mismatch; clearing server entitlement")
-            clearServerEntitlement()
+            clearEntitlementsForAccountTransition()
             guard AuthService.shared.proUserId == userId else { return }
             let rejectedToken = await MobileSessionStore.shared.sessionToken()
             await AuthService.shared.handleRejectedMobileSession(
@@ -182,10 +212,7 @@ final class ProManager: ObservableObject {
             )
             return
         }
-        serverPro = Self.shouldAdoptServerPro(status.pro, userId: userId, email: email)
-        serverPlan = status.plan
-        serverAccount = status.account
-        serverIdentity = identity
+        applyServerEntitlement(status, userId: userId, email: email, read: read)
         // 服务端是账号资料的权威来源：邮箱验证码登录（better-auth 响应常不带
         // name/image）和 Apple 二次登录（Apple 只在首次授权给资料）都会拿到空的
         // 昵称/头像，这里把它们补回来，同一个后端账号在各端显示才一致。
@@ -205,6 +232,22 @@ final class ProManager: ObservableObject {
         }
     }
 
+    /// Apply the entitlement part of an already authenticated status response.
+    @discardableResult
+    func applyServerEntitlement(
+        _ status: ProStatusDTO?, userId: String?, email: String?, read: ServerRead
+    ) -> Bool {
+        guard isCurrentServerRead(read), let status,
+              Self.normalizedIdentityComponent(status.resolvedUserId)
+                == Self.normalizedIdentityComponent(userId),
+              Self.serverIdentityKey(userId: userId, email: email) != nil else { return false }
+        serverPro = Self.shouldAdoptServerPro(status.pro, userId: userId, email: email)
+        serverPlan = status.plan
+        serverAccount = status.account
+        serverIdentity = Self.serverIdentityKey(userId: userId, email: email)
+        return true
+    }
+
     /// One bounded retry in the current foreground is enough to cover a
     /// transient collector/link failure without creating a polling loop. A
     /// later foreground refresh remains the normal recovery path.
@@ -219,6 +262,7 @@ final class ProManager: ObservableObject {
 
     /// 登出时清服务端权益（避免 refreshServer 网络失败 fail-open 时 serverPro 滞留为旧的 true）。
     func clearServerEntitlement() {
+        serverReadSequence &+= 1
         growthStatusRetryTask?.cancel()
         growthStatusRetryTask = nil
         serverPro = false
@@ -234,6 +278,7 @@ final class ProManager: ObservableObject {
     /// boundary so the next account cannot briefly inherit a crown while its
     /// own transaction tokens and server entitlement are still refreshing.
     func clearEntitlementsForAccountTransition() {
+        storeKitReadSequence &+= 1
         setStoreKitLocalPro(false, reason: "account-transition")
         clearServerEntitlement()
     }
@@ -393,10 +438,20 @@ final class ProManager: ObservableObject {
     }
 
     #if DEBUG
+    static func makeForTesting() -> ProManager {
+        let manager = ProManager()
+        manager.debugForcePro = false
+        return manager
+    }
+
     /// 仅测试：直接注入资格集合，确定性验证「无资格 → 不得承诺试用」的门控
     /// （StoreKitTest 的 buyProduct 在本仓库测试宿主下抛 notEntitled，无法用真实购买驱动翻转）。
     func setIntroOfferEligibilityForTesting(_ ids: Set<String>) {
         introOfferEligibleIDs = ids
+    }
+
+    func setLocalStoreKitForTesting(_ active: Bool) {
+        setStoreKitLocalPro(active, reason: "test-storekit-refresh")
     }
 
     /// 仅测试：构造账号切换前的内存权益快照，验证新账号不会继承旧账号会员。
@@ -436,6 +491,9 @@ final class ProManager: ObservableObject {
     }
 
     func refreshEntitlements() async {
+        storeKitReadSequence &+= 1
+        let sequence = storeKitReadSequence
+        let accountBoundary = AuthService.shared.accountBoundaryID
         var active = false
         var latestSignedTransaction: String?
         var latestExpiration = Date.distantPast
@@ -462,8 +520,12 @@ final class ProManager: ObservableObject {
                 }
             }
         }
+        guard sequence == storeKitReadSequence,
+              accountBoundary == AuthService.shared.accountBoundaryID else { return }
         setStoreKitLocalPro(active, reason: "refresh-entitlements")
         await refreshIntroOfferEligibility()
+        guard sequence == storeKitReadSequence,
+              accountBoundary == AuthService.shared.accountBoundaryID else { return }
         // 上报只要已登录就尝试：verify-apple 实际依赖 cms_ 会话（无会话时自 SKIP），
         // 拿 email 当前置条件会漏掉 Apple 无 email 但有会话的账号。
         if active,
