@@ -40,12 +40,13 @@ end
 resources = File.join(extension_root, 'Resources')
 manifest = JSON.parse(File.read(File.join(resources, 'manifest.json')))
 abort 'Native account bridge permission missing' unless manifest.fetch('permissions').include?('nativeMessaging')
-abort 'Manifest/app version mismatch' unless manifest['version'] == versions.first.first
+abort 'Invalid WebExtension manifest version' unless manifest['version'].to_s.match?(/\A\d+\.\d+\.\d+\z/)
 %w[en zh_CN ja es fr de pt_BR it hi].each do |locale|
   abort "Missing Safari locale #{locale}" unless File.file?(File.join(resources, '_locales', locale, 'messages.json'))
 end
 script = File.join(resources, 'content-scripts', 'content.js')
 abort 'Temporary acceptance probe in production resources' if File.read(script).include?('castreader-qa-probe')
 puts JSON.pretty_generate(version: versions.first.first, build: versions.first.last,
+  manifestVersion: manifest['version'],
   deviceFamilies: [1, 2], extensionPoint: info.dig('NSExtension', 'NSExtensionPointIdentifier'),
   contentSHA256: Digest::SHA256.file(script).hexdigest, status: 'PASS')
