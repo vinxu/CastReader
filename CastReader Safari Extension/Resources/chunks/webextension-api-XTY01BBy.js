@@ -1,0 +1,1 @@
+function n(){var e,i,o;const r=globalThis;if((i=(e=r.browser)==null?void 0:e.runtime)!=null&&i.id&&(r.chrome=r.browser),!((o=r.chrome)!=null&&o.runtime))throw new Error("WebExtension runtime API is unavailable");return r.chrome}export{n as i};
