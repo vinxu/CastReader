@@ -1,5 +1,7 @@
 # iPhone / iPad Safari 朗读适配验收
 
+> 后续更正：本轮纯文本/Range 验收遗漏了 WebKit inline 高亮像素残留。后续修复和复测请见 [高亮残留修复报告](Safari-Highlight-Repaint-2026-09-26.md)。最新版真机包已安装，真机 Safari 验收仍待完成。
+
 日期：2026-09-26。范围：本地开发候选，普通英文文章的前台朗读；没有提交 App Store。
 
 ## 环境与方法

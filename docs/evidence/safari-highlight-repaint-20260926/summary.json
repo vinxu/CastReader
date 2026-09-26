@@ -1,0 +1,64 @@
+{
+  "iphone-overlay-final": {
+    "utcInterval": [
+      "11:49:06",
+      "11:52:00"
+    ],
+    "playingSamples": 474,
+    "wordSamples": 467,
+    "timestampDistanceP95ms": 64.13,
+    "paragraphs": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "maxScrollY": 1916,
+    "offscreenSamples": 0,
+    "ttsErrors": 0,
+    "anchorLoss": {
+      "lost": 0,
+      "detached": 0
+    }
+  },
+  "ipad-overlay-final": {
+    "utcInterval": [
+      "12:09:36",
+      "12:14:29"
+    ],
+    "playingSamples": 636,
+    "wordSamples": 631,
+    "timestampDistanceP95ms": 57.21,
+    "paragraphs": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "maxScrollY": 1449,
+    "offscreenSamples": 0,
+    "ttsErrors": 0,
+    "anchorLoss": {
+      "lost": 0,
+      "detached": 0
+    }
+  }
+}
