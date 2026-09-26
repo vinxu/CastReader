@@ -6,6 +6,7 @@
 
 - 本轮 ASC 回读线上 1.2.45（67）为 `READY_FOR_SALE`，最大已上传 Build 67，无活跃审核单。线上源码在远端 `main` 的 `baccb69aacf845b348347015dd84af7879ae006d` 中。
 - 从该远端主线建立 `codex/ios-release-1.2.46`，以双亲合并 `e1e10d988adc9d7612add70ebf37ecae6759aacf` 纳入 Safari 分支 `2b26f99`；版本配置提交 `9960e13`。此前已发布的 `b6dd4d7`、`fe64420`、`66fc2e1` 和全部基线脚本要求的提交均保留。
+- **正式主线已快进并推送至 `09bb80e`**，包括集成、版本、测试/商店记录和包装校验脚本。此后的报告更新不改应用源码。基于测试和真机包的 390 文件清单再次逐文件核对全部一致，主线不包含主目录旧分支的未提交改动。首次 Git 传输受本机代理影响（扩展分支 HTTP 408），回读旧远端引用后使用仅本次命令的直连重传成功，没有强推或改系统代理。
 - App、Share、Widget、Safari 的 Debug / Release 全部统一为 **1.2.46（68）**，`TARGETED_DEVICE_FAMILY=1,2`。Safari bundle ID 为 `com.same.castreader.SafariExtension`，扩展点 `com.apple.Safari.web-extension`，由 App 依赖并嵌入 PlugIns，沿用 App Group 和专用 Safari Keychain。
 - 原生 TTS、QuickRead、播放器、Kindle/WeRead/Kobo 等实现没有被旧分支替换。原生差异仅 Safari 会话投影、账户边界清理、URL 导航、设置跳转，以及对应工程、entitlements 和资源。
 - 扩展源码提交 `31f8c7b`；完整 WXT iOS 输出与原生资源同步验证通过。生产 `content.js` SHA-256：`192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75`，与前轮两台模拟器和用户手机已安装候选的修复脚本相同。没有临时 QA textarea 探针。
@@ -48,6 +49,7 @@ Safari 的真机连续播放、高亮/滚动及新包账户/Pro 衔接也仍需�
 - 审核说明将旧版本开头摘要压缩为本版 Safari 启用、网站授权和核心控件测试步骤，保留账户/审核资料及其它审核说明；共 3,939 字符，回读一致。首次尝试因追加后超长而在本地拒绝，未提交超长内容。
 - 现有 55 张截图保留，草稿逐张回读全部 `COMPLETE`；`zh-Hant`、`es-MX` 沿用主语言回退。不改价格、订阅、地区、隐私、年龄分级、类别或法律声明；继承审核后自动发布 `AFTER_APPROVAL`。
 - 尚无本版上传 Build ID、归档或 Review Submission ID。没有宣称草稿等于送审。
+- 最终精确版本回读仍为 `PREPARE_FOR_SUBMISSION / AFTER_APPROVAL`，没有正式提交审核。
 
 ## 证据与续跑
 
