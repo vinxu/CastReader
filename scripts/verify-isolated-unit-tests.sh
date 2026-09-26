@@ -6,7 +6,7 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 device="${CASTREADER_TEST_SIMULATOR:-BFCF61DE-9C45-4467-8996-6F4E03AE7725}"
 isolated="$(mktemp -d /tmp/CastReaderIsolatedTests.XXXXXX)"
 derived="$isolated/DerivedData"
-report="$root/reports/ios-release-1.2.43/isolated-$(date +%Y%m%dT%H%M%S)"
+report="${CASTREADER_TEST_REPORT:-$root/reports/ios-release-1.2.43/isolated-$(date +%Y%m%dT%H%M%S)}"
 mkdir -p "$report"
 /usr/bin/python3 - "$root" "$isolated" "$report" <<'PY'
 import pathlib, subprocess, sys, json, hashlib
@@ -51,7 +51,8 @@ ent_path=pathlib.Path(sys.argv[1])/'Build/Intermediates.noindex/CastReader.build
 ent=plistlib.loads(ent_path.read_bytes())
 assert b'group.com.same.castreader.releasechecks' in (app/'CastReader').read_bytes()
 assert ent['com.apple.security.application-groups']==['group.com.same.castreader.releasechecks']
-assert all(s.endswith('.com.same.castreader.releasechecks') for s in ent['keychain-access-groups'])
+allowed_keychain_suffixes = ('.com.same.castreader.releasechecks', '.com.same.castreader.releasechecks.safari')
+assert all(s.endswith(allowed_keychain_suffixes) for s in ent['keychain-access-groups'])
 source=max(products.glob('CastReader_CastReader_*.xctestrun'),key=lambda p:p.stat().st_mtime)
 run=plistlib.loads(source.read_bytes())
 for config in run['TestConfigurations']:
