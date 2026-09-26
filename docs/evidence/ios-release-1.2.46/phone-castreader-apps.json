@@ -1,0 +1,16 @@
+[
+  {
+    "bundleIdentifier": "com.same.castreader.releasechecks1244",
+    "name": "CastReader",
+    "version": "1.2.44",
+    "shortVersion": null,
+    "url": "file:///private/var/containers/Bundle/Application/C75C1A50-63C9-4EF3-9264-0C3CD6282057/CastReader.app/"
+  },
+  {
+    "bundleIdentifier": "com.same.castreader",
+    "name": "CastReader",
+    "version": "1.2.46",
+    "shortVersion": null,
+    "url": "file:///private/var/containers/Bundle/Application/03A51D29-10B2-47E4-9DB0-4F40F735DFAC/CastReader.app/"
+  }
+]

@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## iOS 1.2.46 Safari 发布候选（2026-09-27）
+
+- 用户现已明确授权将 Safari 支持合入最新 iOS，并面向 iPhone 和 iPad 提交 App Store；这取代下方历史“仅 Mac / 暂不启用移动 Safari”的范围限制。
+- 本轮从远端 `main` 的 `baccb69` 建立 `codex/ios-release-1.2.46`，双亲合并 `e1e10d9` 纳入 Safari 候选 `2b26f99`。线上 1.2.45（67）已 READY_FOR_SALE。四组件候选 1.2.46（68），设备族均 1/2；不得从主目录旧分支打包。
+- Safari 原生资源对应扩展源码 `31f8c7b`，`content.js` SHA-256 为 `192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75`。入包前运行 `ruby scripts/verify_safari_extension.rb`；发布 preflight 显式使用 `--include-safari`，该选项不豁免真实核心验收。
+- 目前仍为发布候选，不是已送审基线。唯一状态记录：`docs/iOS-1.2.46-Release-Report.md`。
+
 ## iOS 1.2.45 Pro 同步送审（2026-09-25）
 
 - 基于最新线上 1.2.44（66）的 `b8fcc99` 增量修复，归档源码 `66fc2e1`，App/Share/Widget 1.2.45（67），保留 iPhone/iPad 通用与四向旋转。版本及审核单 `cb9eea26-98e2-4888-b80a-f15cd0fbb04b` 于 15:12:50 +08:00 回读 WAITING_FOR_REVIEW，审核后自动发布。详见 `docs/iOS-1.2.45-Release-Report.md`。

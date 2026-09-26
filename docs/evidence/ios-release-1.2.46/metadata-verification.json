@@ -1,0 +1,16 @@
+{
+  "versionID": "f835f4df-b17b-4c1b-a71f-50de22006ae7",
+  "locales": 11,
+  "patchedFields": [
+    "description",
+    "whatsNew"
+  ],
+  "reviewNotesCharacters": 3939,
+  "unchangedFields": [
+    "keywords",
+    "promotionalText",
+    "supportUrl",
+    "marketingUrl"
+  ],
+  "submitted": false
+}

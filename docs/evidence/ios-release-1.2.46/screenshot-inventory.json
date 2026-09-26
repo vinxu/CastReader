@@ -1,0 +1,405 @@
+{
+  "versionID": "f835f4df-b17b-4c1b-a71f-50de22006ae7",
+  "screenshots": [
+    {
+      "locale": "de-DE",
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "id": "e4a7874e-e227-4960-b060-54ecd83409a1",
+          "images": [
+            {
+              "id": "e60dd2cf-4437-4b44-b496-8425bddd440e",
+              "fileName": "01-kindle.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "98f1ac9e-621b-44b7-baac-78b13373827b",
+              "fileName": "02-read-aloud.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "782f55c4-fa1c-4391-9d88-8a0ff80f7a02",
+              "fileName": "03-explain.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "d493a20b-9e4b-4060-a0d1-47f6311e9937",
+              "fileName": "04-import.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "bf833acd-67c4-4ad8-97e6-af77d17c7dba",
+              "fileName": "05-voices-1.2.40.png",
+              "state": "COMPLETE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locale": "zh-Hant",
+      "sets": [
+
+      ]
+    },
+    {
+      "locale": "zh-Hans",
+      "sets": [
+        {
+          "displayType": "APP_IPAD_PRO_3GEN_129",
+          "id": "f6fa2239-2a5a-4b2f-be6c-4b75b1eccb1d",
+          "images": [
+            {
+              "id": "d8e5d96f-63a1-4e16-9f25-ba19adf23b6d",
+              "fileName": "01-home-817cb876cd8e.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "2b5d852c-534f-4d81-986e-e5546a5702f2",
+              "fileName": "02-kindle-read-7b0b206647fb.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "8a82c624-b1ed-46b9-8974-9cc826da9e7f",
+              "fileName": "03-kindle-explain-38c0d7dca222.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "eeb7cfd0-2919-4eac-b90f-db1d7b584c9a",
+              "fileName": "04-voices-9eb2899d20a7.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "958bd4dc-6303-4f4e-a88c-532fd25d38aa",
+              "fileName": "05-import-988271b7559a.png",
+              "state": "COMPLETE"
+            }
+          ]
+        },
+        {
+          "displayType": "APP_IPHONE_67",
+          "id": "5bb06b65-590a-42fc-915d-6c78b8263c75",
+          "images": [
+            {
+              "id": "fa7d7a6e-7121-4c28-9885-d41f4b9e7706",
+              "fileName": "01-kindle-weread.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "d3dac44b-8323-4f71-befb-6797e416ba83",
+              "fileName": "02-read-aloud.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "1b15e173-e444-415b-97db-a0909f61f75c",
+              "fileName": "03-explain.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "1b5c39f1-e9b6-40bc-86f5-089ed1e0e4f4",
+              "fileName": "04-import.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "2ce21bf7-ce2e-419b-804e-a324d3ad9a40",
+              "fileName": "05-voices-1.2.40.png",
+              "state": "COMPLETE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locale": "hi",
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "id": "85afd44a-563f-4fae-acc3-09e0ab6133b1",
+          "images": [
+            {
+              "id": "df1def4d-b2cb-4e83-b4b4-bc209474d5dd",
+              "fileName": "01-kindle.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "24490dea-4378-495d-befb-9ba064b3b7d7",
+              "fileName": "02-read-aloud.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "fa5ff82f-262d-4b28-8d16-db702781cf28",
+              "fileName": "03-explain.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "2325a245-1567-4292-a691-b210087dadbc",
+              "fileName": "04-import.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "87b14e4d-2b95-4d0d-8eb8-9f2a5832329b",
+              "fileName": "05-voices-1.2.40.png",
+              "state": "COMPLETE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locale": "ja",
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "id": "4c41c155-349e-4662-845f-0f16732d35b5",
+          "images": [
+            {
+              "id": "badf01a2-f851-4d9e-93e9-e8cdddf2d5ea",
+              "fileName": "01-kindle.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "020f057b-2db6-4881-be08-9bdd3446f7fe",
+              "fileName": "02-read-aloud.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "a087edc3-70fa-46f7-8a89-407df5c78e7f",
+              "fileName": "03-explain.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "a0af3495-dbb3-4f91-a317-ade680b3e47c",
+              "fileName": "04-import.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "6c55b243-fb0f-4890-ba31-086a56c6b9cf",
+              "fileName": "05-voices-1.2.40.png",
+              "state": "COMPLETE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locale": "es-ES",
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "id": "60fe3257-c174-44d5-97d5-9956ca18f0fc",
+          "images": [
+            {
+              "id": "66f7b163-6c6f-4c20-ad81-3b72e9c6c7c9",
+              "fileName": "01-kindle.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "f4eeb8d0-2407-4a3c-86e4-bd366ad91f98",
+              "fileName": "02-read-aloud.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "cb22501f-e04d-4453-9084-d8fd30ef206c",
+              "fileName": "03-explain.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "79bd52b9-9cf3-4b79-8c15-9dbca0a43b35",
+              "fileName": "04-import.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "6be13f76-0cd8-49ec-939a-e590f7599b0d",
+              "fileName": "05-voices-1.2.40.png",
+              "state": "COMPLETE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locale": "pt-BR",
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "id": "b2617e0e-5918-4682-bb82-48eddf639498",
+          "images": [
+            {
+              "id": "c9c5897a-7735-4a8c-a62f-2eb899728a7f",
+              "fileName": "01-kindle.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "d7d28040-8667-4ebf-8326-afe604f6774c",
+              "fileName": "02-read-aloud.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "5fb8d76e-d410-48f3-98d7-1384edf19f37",
+              "fileName": "03-explain.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "e2044584-1c0a-425b-a5eb-f9a087ad74aa",
+              "fileName": "04-import.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "686424bd-dfdf-49b1-b720-00282d4edd7c",
+              "fileName": "05-voices-1.2.40.png",
+              "state": "COMPLETE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locale": "fr-FR",
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "id": "62b38fc9-32cd-48fa-8bf2-3d406bea2bc9",
+          "images": [
+            {
+              "id": "1c865e6e-9dce-46d6-819a-23b930b045d5",
+              "fileName": "01-kindle.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "f62a7728-f057-42d2-acd8-3dcb92c027b3",
+              "fileName": "02-read-aloud.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "b880ab14-3861-474c-86a4-51d91954b3ed",
+              "fileName": "03-explain.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "16eafb49-a086-40e5-90c3-45d4f43ffa0a",
+              "fileName": "04-import.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "d6632684-f3e0-435a-8b92-fe57c74fd667",
+              "fileName": "05-voices-1.2.40.png",
+              "state": "COMPLETE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locale": "es-MX",
+      "sets": [
+
+      ]
+    },
+    {
+      "locale": "en-US",
+      "sets": [
+        {
+          "displayType": "APP_IPAD_PRO_3GEN_129",
+          "id": "f61e2e9e-0fc3-4eb0-a0a2-cf395442304c",
+          "images": [
+            {
+              "id": "7cbf073a-e0cd-404e-9dfe-ca2c6adf2257",
+              "fileName": "01-home-96cfb8851830.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "9c20a715-34ba-4daa-8deb-dd625a9c83ee",
+              "fileName": "02-kindle-read-867082d600f0.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "6c4e0d6e-3246-4b14-9311-d1e9c981eb22",
+              "fileName": "03-kindle-explain-67b39cb8fef9.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "ca041523-d532-4964-9da2-56d25d5fca29",
+              "fileName": "04-voices-acbac66a74a6.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "438506c3-2f85-4517-b345-9477f555308b",
+              "fileName": "05-import-ad0490f8acd1.png",
+              "state": "COMPLETE"
+            }
+          ]
+        },
+        {
+          "displayType": "APP_IPHONE_67",
+          "id": "083c0213-65f0-4185-8e41-c5023fc45af1",
+          "images": [
+            {
+              "id": "7c0872d3-2747-4166-b8da-d7155a5f2d8b",
+              "fileName": "01-kindle.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "e2c39e74-c0e6-42d6-8fa6-d5cd57c98f98",
+              "fileName": "02-read-aloud.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "f9703468-fee0-4979-9c09-42ac9f5d1677",
+              "fileName": "03-explain.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "79395535-b32a-4779-98ca-f5b2eb25089b",
+              "fileName": "04-import.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "f2b74895-5fca-4edc-9448-d536f7f35f47",
+              "fileName": "05-voices-1.2.40.png",
+              "state": "COMPLETE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "locale": "it",
+      "sets": [
+        {
+          "displayType": "APP_IPHONE_67",
+          "id": "5ec555c1-0c1c-4253-b892-e39e45cb2ec0",
+          "images": [
+            {
+              "id": "612c27ed-292e-455a-96f9-e0a78bc4435f",
+              "fileName": "01-kindle.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "c2dc7720-548f-4c8e-b272-9d1d1342a74a",
+              "fileName": "02-read-aloud.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "ad5ff471-8bfb-4872-b3f9-38e56210fbdc",
+              "fileName": "03-explain.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "3ec42d1d-ea74-4802-a5e8-b818cf8b207c",
+              "fileName": "04-import.png",
+              "state": "COMPLETE"
+            },
+            {
+              "id": "8bae3d2c-17d9-406b-8684-6e34ccc5bc71",
+              "fileName": "05-voices-1.2.40.png",
+              "state": "COMPLETE"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "count": 55,
+  "status": "PASS"
+}

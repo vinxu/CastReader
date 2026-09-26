@@ -1,0 +1,91 @@
+{
+  "appPath": "/Users/xuxuheng/Desktop/CastReader-Safari-Release-20260927/DeviceDerivedData/Build/Products/Release-iphoneos/CastReader.app",
+  "status": "PASS",
+  "products": [
+    {
+      "bundle": "CastReader.app",
+      "bundleID": "com.same.castreader",
+      "version": "1.2.46",
+      "build": "68",
+      "deviceFamilies": [
+        1,
+        2
+      ],
+      "extensionPoint": null,
+      "developmentSigned": true,
+      "appGroups": [
+        "group.com.same.castreader"
+      ],
+      "keychainGroups": [
+        "KQW6UNZE8J.com.same.castreader",
+        "KQW6UNZE8J.com.same.castreader.safari"
+      ]
+    },
+    {
+      "bundle": "CastReader Safari Extension.appex",
+      "bundleID": "com.same.castreader.SafariExtension",
+      "version": "1.2.46",
+      "build": "68",
+      "deviceFamilies": [
+        1,
+        2
+      ],
+      "extensionPoint": "com.apple.Safari.web-extension",
+      "developmentSigned": true,
+      "appGroups": [
+        "group.com.same.castreader"
+      ],
+      "keychainGroups": [
+        "KQW6UNZE8J.com.same.castreader.safari"
+      ]
+    },
+    {
+      "bundle": "CastReader Share Extension.appex",
+      "bundleID": "com.same.castreader.ShareExtension",
+      "version": "1.2.46",
+      "build": "68",
+      "deviceFamilies": [
+        1,
+        2
+      ],
+      "extensionPoint": "com.apple.share-services",
+      "developmentSigned": true,
+      "appGroups": [
+        "group.com.same.castreader"
+      ],
+      "keychainGroups": null
+    },
+    {
+      "bundle": "CastReader Widget.appex",
+      "bundleID": "com.same.castreader.Widget",
+      "version": "1.2.46",
+      "build": "68",
+      "deviceFamilies": [
+        1,
+        2
+      ],
+      "extensionPoint": "com.apple.widgetkit-extension",
+      "developmentSigned": true,
+      "appGroups": [
+        "group.com.same.castreader"
+      ],
+      "keychainGroups": null
+    }
+  ],
+  "contentSHA256": "192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75",
+  "compiledLocales": [
+    "de.lproj",
+    "en.lproj",
+    "es.lproj",
+    "fr.lproj",
+    "hi.lproj",
+    "it.lproj",
+    "ja.lproj",
+    "pt-BR.lproj",
+    "pt.lproj",
+    "zh-Hans.lproj"
+  ],
+  "encryption": false,
+  "internalDistributionControls": false,
+  "isAppStoreArchive": false
+}

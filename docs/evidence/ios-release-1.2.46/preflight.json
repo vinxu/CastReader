@@ -1,0 +1,76 @@
+{
+  "project": "/Users/xuxuheng/.codex/worktrees/ios-release-1-2-46/CastReader",
+  "workspace": "/Users/xuxuheng/.codex/worktrees/ios-release-1-2-46/CastReader/CastReader.xcworkspace",
+  "marketingVersion": "1.2.46",
+  "buildNumber": "68",
+  "releaseTargets": [
+    {
+      "target": "CastReader",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.46",
+      "buildNumber": "68"
+    },
+    {
+      "target": "CastReader",
+      "configuration": "Release",
+      "marketingVersion": "1.2.46",
+      "buildNumber": "68"
+    },
+    {
+      "target": "CastReader Share Extension",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.46",
+      "buildNumber": "68"
+    },
+    {
+      "target": "CastReader Share Extension",
+      "configuration": "Release",
+      "marketingVersion": "1.2.46",
+      "buildNumber": "68"
+    },
+    {
+      "target": "CastReader Widget",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.46",
+      "buildNumber": "68"
+    },
+    {
+      "target": "CastReader Widget",
+      "configuration": "Release",
+      "marketingVersion": "1.2.46",
+      "buildNumber": "68"
+    },
+    {
+      "target": "CastReader Safari Extension",
+      "configuration": "Debug",
+      "marketingVersion": "1.2.46",
+      "buildNumber": "68"
+    },
+    {
+      "target": "CastReader Safari Extension",
+      "configuration": "Release",
+      "marketingVersion": "1.2.46",
+      "buildNumber": "68"
+    }
+  ],
+  "locales": [
+    "en-US",
+    "zh-Hans",
+    "ja",
+    "es-ES",
+    "fr-FR",
+    "pt-BR",
+    "it",
+    "hi",
+    "de-DE",
+    "zh-Hant",
+    "es-MX"
+  ],
+  "metadata": "/Users/xuxuheng/.codex/worktrees/ios-release-1-2-46/CastReader/docs/CastReader-AppStore-Metadata-1.2.46.md",
+  "whatsNew": "/Users/xuxuheng/.codex/worktrees/ios-release-1-2-46/CastReader/docs/AppStore-Whats-New-1.2.46.json",
+  "appStoreConnectKeyMode": "600",
+  "xcode": [
+    "Xcode 26.6",
+    "Build version 17F113"
+  ]
+}

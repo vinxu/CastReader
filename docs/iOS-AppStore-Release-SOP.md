@@ -9,6 +9,7 @@
 - 读当前 `AGENTS.md`、最新发布记录及差异，选已验证发布工作树，记录 commit、应用源码/配置摘要、版本、Build。**不要默认从主目录旧分支打包。** 每次从远端 `main` 的最新发布基线建立发布分支，功能先正式 merge 到主线，不从孤立功能分支归档。运行 `bash scripts/build-voice-toc-integration.sh --check`：缺少已发管线、目录、本轮修复或插图原页分支任何祖先就停止打包。发布报告必须保存各必备提交的祖先校验，不以版本号或单文件复制代替合并。
 - `release_ops.rb inspect` 一次读取商店版本、最大 Build、已有审核单；后续用保存的 ID 续跑。App / Share / Widget 同版同 Build，Build 高于已上传最大值。
 - 短预检一次检查签名身份、密钥权限、三个组件、九语资源、11 语文案和发布夹具。Xcode 账号在长构建前确认团队可用；不把本地有证书当作上传登录有效。
+- 用户明确授权移动 Safari 发布时，App / Share / Widget / Safari 四组件均须同版同 Build、设备族 1/2，运行 `ruby scripts/verify_safari_extension.rb`，并给 preflight 增加 `--include-safari`。需验收真实 iPhone/iPad Safari 的高亮、滚动、跨段续播、暂停/恢复、换音色、变速和停止清理；静态配置通过不代替这些效果。历史未完成 Safari 禁止入包的规则仍适用于未授权或未通过验收的候选。
 - 将当前 ASC 元数据及截图作为基线，只列本次要改的字段/图片。历史模板不能覆盖用户现有资料或删除操作。
 
 ## 2. 必过：朗读/解读 × Kokoro/克隆
