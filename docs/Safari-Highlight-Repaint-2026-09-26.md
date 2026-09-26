@@ -70,7 +70,7 @@ native baseline check / simulator build / device build / codesign verification
 
 原生候选工作树 `codex/ios-safari-iphone-20260926`，已确认发布基线 `ffc7c8f` 是祖先。本次只同步扩展生成资源，未覆盖原生阅读子系统。
 
-2026-09-26 20:03（北京时间）成功安装 `com.same.castreader` 1.2.45（68）到连接的 iPhone，随后通过 devicectl 回读版本。普通模拟器包与真机包 content.js SHA-256 一致，详见 [builds.json](evidence/safari-highlight-repaint-20260926/builds.json)。安装后手机自动锁屏，自动启动被系统拒绝，因此不把“安装成功”记为真机 Safari 验收通过。
+2026-09-26 20:03（北京时间）成功安装 `com.same.castreader` 1.2.45（68）到连接的 iPhone，随后通过 devicectl 回读版本。普通模拟器包与真机包 content.js SHA-256 一致，详见 [builds.json](evidence/safari-highlight-repaint-20260926/builds.json)。安装后手机自动锁屏，自动启动被系统拒绝，因此不把“安装成功”记为真机 Safari 验收通过。后续镜像一度恢复并进入 Safari、刷新了现有维基百科页面，但控制连接反复变为 Connection Paused / Computer Use is not active，重建会话后仍复发，未完成稳定的真机朗读回归。
 
 发布门禁保持未放行：仍需最新版真机 Safari 回归，以及正式提审工作流的原生 Read/Explain、账号/订阅等检查。本轮没有重新证明所有语言、克隆音色、复杂嵌套滚动/iframe、PDF、iPad 分屏、后台锁屏和弱网场景，也不宣称与 Chrome/Mac Safari 的全部网页行为完全一致。
 
