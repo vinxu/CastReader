@@ -24,3 +24,5 @@
 - Safari 双区路由、会话及账号模拟合同通过；iOS Safari 发布资源门禁 177 项通过，Chrome/Safari 对齐门禁 263 项通过。发布门禁已适配 1.2.45 新的多窗口 `ReaderSceneContext` URL 入口。
 - 专用 iPhone 15 Pro Max / iOS 26.5 模拟器中的 `SafariExtensionContractTests` 11 项全部通过，含真实签名 Keychain 读写、线路和账号边界、一次性跳转。
 - 真机网页朗读、音频时钟、高亮、滚动、会员跳转、关闭重启仍为 **NOT_RUN**；上述静态与模拟器结果均不替代 Safari 真机验收。
+
+源码与包标识：iOS 分支 `codex/ios-safari-iphone-20260926`，集成提交 `0bc80b8`、资源提交 `7463091`，基线 `ffc7c8f` 是当前候选祖先；扩展源码 `readout-desktop` 为 `76e3e58`，其多窗口路由门禁修订为 `c216af4`。已安装 Debug 包的 App 可执行文件 SHA-256 为 `35aa95d2e736ced7c7b2979cc5f2a080d40ce4c32e8414160ade49cf8c9e18f4`，Safari appex 可执行文件为 `a2c057ea88c4b699d63ce0159db89b3039c36d414a15e7a863b7b34006e0ca30`，打包 manifest 为 `e949f4d920c0a23765b3d2eeec4b03504a9e1e3621de129217abc399d7be9fd7`。
