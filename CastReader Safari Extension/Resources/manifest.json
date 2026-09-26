@@ -16,6 +16,7 @@
     "scripting",
     "contextMenus",
     "alarms",
+    "nativeMessaging",
     "*://api.castreader.ai/*",
     "*://api.castreader.cn/*",
     "*://quickread.castreader.cn/*",

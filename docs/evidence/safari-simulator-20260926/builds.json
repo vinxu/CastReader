@@ -1,0 +1,21 @@
+{
+  "extensionSourceCommit": "0c28af8",
+  "acceptance": {
+    "path": "/tmp/CastReaderSafariIPhone68-Acceptance-Final.app",
+    "version": "1.2.45",
+    "build": "68",
+    "probePresent": true,
+    "manifestSHA256": "3a2d7aeea4702ab07b374b27bb41827c0b1e29f1de494d8b81107aa705545b59",
+    "contentSHA256": "2d100947945cf171a380989b10d038517fd7f1fa747a53d731d537314275d137",
+    "nativeSHA256": "ece7df4dde1bf5793d202154ff1e56baa78b760405bdb6ddc4868540ccd43a10"
+  },
+  "ordinary": {
+    "path": "/tmp/CastReaderSafariIPhone68-Simulator/Build/Products/Debug-iphonesimulator/CastReader.app",
+    "version": "1.2.45",
+    "build": "68",
+    "probePresent": false,
+    "manifestSHA256": "3a2d7aeea4702ab07b374b27bb41827c0b1e29f1de494d8b81107aa705545b59",
+    "contentSHA256": "31882328f8ff5602fa2a02c382981ed885477ad9720e8f9aba92bc0a1ef45a20",
+    "nativeSHA256": "952797642f54d9e9be0cc862d99bebf9348d0cb4b44e2812685d55f7b4e891d3"
+  }
+}
