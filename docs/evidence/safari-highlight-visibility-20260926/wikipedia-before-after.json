@@ -1,0 +1,62 @@
+{
+  "before": {
+    "playing_samples": 16,
+    "playing_with_word_range": 1,
+    "max_lost_anchors": 7,
+    "max_detached_anchors": 0,
+    "max_tts_errors": 0,
+    "scroll_positions": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "paused_times": [
+      11.11873524341652,
+      11.11873524341652
+    ],
+    "last_state": "idle"
+  },
+  "after": {
+    "playing_samples": 16,
+    "playing_with_word_range": 16,
+    "max_lost_anchors": 0,
+    "max_detached_anchors": 0,
+    "max_tts_errors": 0,
+    "scroll_positions": [
+      3380,
+      3380,
+      3380,
+      3380,
+      3380,
+      3380,
+      3380,
+      3380,
+      3380,
+      3801,
+      3801,
+      3958,
+      3958,
+      3958,
+      3958,
+      4596
+    ],
+    "paused_times": [
+      11.06318252974996,
+      11.06318252974996
+    ],
+    "last_state": "idle"
+  }
+}

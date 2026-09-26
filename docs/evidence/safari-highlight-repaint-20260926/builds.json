@@ -1,0 +1,31 @@
+{
+  "qa": {
+    "version": "1.2.45",
+    "build": "68",
+    "bundle": "/tmp/CastReaderSafariIPhone68-Simulator/Build/Products/Debug-iphonesimulator/CastReader.app",
+    "contentSHA256": "82bc73247634feee011982457123cc20a5909cf3f703855e72fab6481ead9abd",
+    "manifestVersion": "1.2.46"
+  },
+  "productionSimulator": {
+    "version": "1.2.45",
+    "build": "68",
+    "bundle": "/tmp/CastReaderSafariIPhone68-ProductionSimulator/Build/Products/Debug-iphonesimulator/CastReader.app",
+    "contentSHA256": "0da4c2ebe2fad97011d1c76593ea2b18715853984115cb0e833c21f05b1ede68",
+    "manifestVersion": "1.2.46"
+  },
+  "productionDevice": {
+    "version": "1.2.45",
+    "build": "68",
+    "bundle": "/tmp/CastReaderSafariIPhone68-RepaintDevice/Build/Products/Debug-iphoneos/CastReader.app",
+    "contentSHA256": "0da4c2ebe2fad97011d1c76593ea2b18715853984115cb0e833c21f05b1ede68",
+    "manifestVersion": "1.2.46"
+  },
+  "physicalInstall": {
+    "time": "2026-09-26T20:03:33+08:00",
+    "bundleID": "com.same.castreader",
+    "version": "1.2.45",
+    "build": "68",
+    "installed": true,
+    "automaticLaunch": "blocked by device auto-lock; no physical Safari regression claimed"
+  }
+}

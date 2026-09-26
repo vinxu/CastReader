@@ -1,0 +1,155 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -workspace CastReader.xcworkspace -scheme CastReader -destination "platform=iOS Simulator,id=098A257C-0F26-41A6-A8D6-83E1C563BDEE" -derivedDataPath /tmp/CastReaderSafariIPhone68-SurfaceSimulator "-only-testing:CastReaderUITests/SafariLiveReadingUITests/testInstalledSafariReadingControls" -resultBundlePath /tmp/SafariFinalProductionUI5.xcresult
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  ZIPFoundation: https://github.com/weichsel/ZIPFoundation @ 0.9.20
+  SwiftSoup: https://github.com/scinfu/SwiftSoup.git @ 2.13.5
+
+Writing result bundle at path:
+	/tmp/SafariFinalProductionUI5.xcresult
+
+2026-09-27 00:07:39.643391+0800 CastReaderUITests-Runner[10953:148845] [Default] Running tests...
+2026-09-27 00:07:39.663812+0800 CastReaderUITests-Runner[10953:148910] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-27 00:07:40.290.
+Test Suite 'CastReaderUITests.xctest' started at 2026-09-27 00:07:40.290.
+Test Suite 'SafariLiveReadingUITests' started at 2026-09-27 00:07:40.290.
+Test Case '-[CastReaderUITests.SafariLiveReadingUITests testInstalledSafariReadingControls]' started.
+    t =     0.00s Start Test at 2026-09-27 00:07:40.291
+    t =     0.02s Set Up
+    t =     0.02s Open com.apple.mobilesafari
+    t =     0.02s     Activate com.apple.mobilesafari
+    t =     0.03s         Wait for com.apple.mobilesafari to idle
+2026-09-27 00:07:40.335354+0800 CastReaderUITests-Runner[10953:148907] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+    t =     0.08s Checking existence of `Alert (First Match)`
+    t =     0.17s Waiting 20.0s for WebView (First Match) to exist
+objc[10953]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x106fb8310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10605c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.17s     Checking `Expect predicate `existsNoRetry == 1` for object WebView (First Match)`
+    t =     1.17s         Checking existence of `WebView (First Match)`
+    t =     1.19s Checking existence of `"ReloadButton" Button`
+    t =     1.24s Find the Application 'com.apple.mobilesafari'
+    t =     1.38s Added attachment named 'safari-before-reading'
+    t =     1.38s Checking existence of `"CastReader QA status" TextView`
+    t =     1.40s Requesting snapshot of accessibility hierarchy for app with pid 10933
+    t =     1.55s Requesting snapshot of accessibility hierarchy for app with pid 10933
+    t =     1.57s Added attachment named 'safari-controls-before-reading'
+    t =     1.57s Checking existence of `Button (First Match)`
+    t =     1.60s Waiting 45.0s for Button (First Match) to exist
+    t =     2.66s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     2.67s         Checking existence of `Button (First Match)`
+    t =     2.89s Tap Button (First Match)
+    t =     2.89s     Wait for com.apple.mobilesafari to idle
+    t =     3.38s     Find the Button (First Match)
+    t =     3.50s     Check for interrupting elements affecting "Read this page" Button
+    t =     3.58s     Synthesize event
+    t =     3.88s     Wait for com.apple.mobilesafari to idle
+    t =     3.88s Waiting 45.0s for Button (First Match) to exist
+    t =     4.96s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     4.96s         Checking existence of `Button (First Match)`
+    t =     5.08s         Capturing element debug description
+    t =     5.95s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     5.95s         Checking existence of `Button (First Match)`
+    t =     6.07s         Capturing element debug description
+    t =     6.93s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     6.93s         Checking existence of `Button (First Match)`
+    t =     7.03s         Capturing element debug description
+    t =     7.91s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     7.91s         Checking existence of `Button (First Match)`
+    t =     8.08s         Capturing element debug description
+    t =     8.94s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     8.95s         Checking existence of `Button (First Match)`
+    t =     9.06s         Capturing element debug description
+    t =     9.95s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =     9.95s         Checking existence of `Button (First Match)`
+    t =    10.07s         Capturing element debug description
+    t =    10.94s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    10.94s         Checking existence of `Button (First Match)`
+    t =    11.06s         Capturing element debug description
+    t =    11.92s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    11.92s         Checking existence of `Button (First Match)`
+    t =    12.04s         Capturing element debug description
+    t =    12.92s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    12.92s         Checking existence of `Button (First Match)`
+    t =    13.04s         Capturing element debug description
+    t =    13.91s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    13.91s         Checking existence of `Button (First Match)`
+    t =    14.02s         Capturing element debug description
+    t =    14.89s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    14.89s         Checking existence of `Button (First Match)`
+    t =    18.02s Find the Application 'com.apple.mobilesafari'
+    t =    18.22s Added attachment named 'safari-playing-0'
+    t =    18.22s Checking existence of `"CastReader QA status" TextView`
+    t =    21.34s Find the Application 'com.apple.mobilesafari'
+    t =    21.54s Added attachment named 'safari-playing-1'
+    t =    21.54s Checking existence of `"CastReader QA status" TextView`
+    t =    24.67s Find the Application 'com.apple.mobilesafari'
+    t =    24.87s Added attachment named 'safari-playing-2'
+    t =    24.87s Checking existence of `"CastReader QA status" TextView`
+    t =    28.00s Find the Application 'com.apple.mobilesafari'
+    t =    28.20s Added attachment named 'safari-playing-3'
+    t =    28.20s Checking existence of `"CastReader QA status" TextView`
+    t =    31.31s Find the Application 'com.apple.mobilesafari'
+    t =    31.51s Added attachment named 'safari-playing-4'
+    t =    31.51s Checking existence of `"CastReader QA status" TextView`
+    t =    34.63s Find the Application 'com.apple.mobilesafari'
+    t =    34.83s Added attachment named 'safari-playing-5'
+    t =    34.83s Checking existence of `"CastReader QA status" TextView`
+    t =    37.95s Find the Application 'com.apple.mobilesafari'
+    t =    38.15s Added attachment named 'safari-playing-6'
+    t =    38.15s Checking existence of `"CastReader QA status" TextView`
+    t =    41.27s Find the Application 'com.apple.mobilesafari'
+    t =    41.47s Added attachment named 'safari-playing-7'
+    t =    41.47s Checking existence of `"CastReader QA status" TextView`
+    t =    41.59s Waiting 45.0s for Button (First Match) to exist
+    t =    42.66s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    42.66s         Checking existence of `Button (First Match)`
+    t =    42.77s Tap Button (First Match)
+    t =    42.77s     Wait for com.apple.mobilesafari to idle
+    t =    42.77s     Find the Button (First Match)
+    t =    42.87s     Check for interrupting elements affecting "Pause" Button
+    t =    42.95s     Synthesize event
+    t =    43.25s     Wait for com.apple.mobilesafari to idle
+    t =    43.25s Waiting 5.0s for Button (First Match) to exist
+    t =    44.32s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    44.32s         Checking existence of `Button (First Match)`
+    t =    44.45s         Capturing element debug description
+    t =    45.30s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    45.31s         Checking existence of `Button (First Match)`
+    t =    45.42s         Capturing element debug description
+    t =    46.28s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    46.29s         Checking existence of `Button (First Match)`
+    t =    46.40s         Capturing element debug description
+    t =    47.26s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    47.26s         Checking existence of `Button (First Match)`
+    t =    47.37s         Capturing element debug description
+    t =    48.25s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    48.26s         Checking existence of `Button (First Match)`
+    t =    48.37s         Capturing element debug description
+    t =    48.37s     Checking existence of `Button (First Match)`
+    t =    48.47s Collecting debug information to assist test failure triage
+    t =    48.47s     Requesting snapshot of accessibility hierarchy for app with pid 10933
+/Users/xuxuheng/.codex/worktrees/ios-safari-iphone-20260926/CastReader/CastReaderUITests/CastReaderUITests.swift:70: error: -[CastReaderUITests.SafariLiveReadingUITests testInstalledSafariReadingControls] : XCTAssertTrue failed
+    t =    48.70s Tear Down
+Test Case '-[CastReaderUITests.SafariLiveReadingUITests testInstalledSafariReadingControls]' failed (48.862 seconds).
+Test Suite 'SafariLiveReadingUITests' failed at 2026-09-27 00:08:29.153.
+	 Executed 1 test, with 1 failure (0 unexpected) in 48.862 (48.862) seconds
+Test Suite 'CastReaderUITests.xctest' failed at 2026-09-27 00:08:29.153.
+	 Executed 1 test, with 1 failure (0 unexpected) in 48.862 (48.863) seconds
+Test Suite 'Selected tests' failed at 2026-09-27 00:08:29.153.
+	 Executed 1 test, with 1 failure (0 unexpected) in 48.862 (48.864) seconds
+2026-09-27 00:08:53.978 xcodebuild[10924:145012] [MT] IDETestOperationsObserverDebug: 75.886 elapsed -- Testing started completed.
+2026-09-27 00:08:53.978 xcodebuild[10924:145012] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-27 00:08:53.978 xcodebuild[10924:145012] [MT] IDETestOperationsObserverDebug: 75.886 sec, +75.886 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/SafariFinalProductionUI5.xcresult
+
+Failing tests:
+	SafariLiveReadingUITests.testInstalledSafariReadingControls()
+
+** TEST EXECUTE FAILED **
+
+Testing started

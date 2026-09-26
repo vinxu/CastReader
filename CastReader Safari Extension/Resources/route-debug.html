@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CastReader — 网络线路</title>
+    <style>
+      :root {
+        --bg: #f4f4f7; --fg: #1c1c22; --dim: #6b6b76; --card: #fff;
+        --border: #e4e4ea; --cn: #c0432a; --global: #1f6f4a; --warn: #fbeae6;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0e0e16; --fg: #e8e8ef; --dim: #9a9aac; --card: #15151f;
+          --border: #23232f; --cn: #ff8a6b; --global: #5fd39b; --warn: #2a1713;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 24px; background: var(--bg); color: var(--fg);
+        font: 14px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      main { max-width: 860px; margin: 0 auto; }
+      h1 { font-size: 18px; margin: 0 0 4px; }
+      .sub { color: var(--dim); margin: 0 0 20px; }
+      .card {
+        background: var(--card); border: 1px solid var(--border);
+        border-radius: 10px; padding: 16px; margin-bottom: 16px;
+      }
+      .now { font-size: 20px; font-weight: 600; }
+      .now.cn { color: var(--cn); }
+      .now.global { color: var(--global); }
+      dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 12px 0 0; }
+      dt { color: var(--dim); }
+      dd { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+      button {
+        font: inherit; padding: 7px 14px; border-radius: 7px; cursor: pointer;
+        border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+      }
+      button[aria-pressed='true'] { border-color: currentColor; font-weight: 600; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+      th { color: var(--dim); font-weight: 500; }
+      td.host { font-family: ui-monospace, Menlo, monospace; }
+      tr.bad { background: var(--warn); }
+      .empty { color: var(--dim); padding: 12px 0; }
+    </style>
+    <script type="module" crossorigin src="/chunks/route-debug-C0G-ImAn.js"></script>
+    <link rel="modulepreload" crossorigin href="/chunks/_virtual_wxt-html-plugins-DPbbfBKe.js">
+  </head>
+  <body>
+    <main>
+      <h1>网络线路</h1>
+      <p class="sub">
+        切换后立即生效，朗读和解读都以后台判定为准，不用刷新网页。
+        日志只存在本机，不上报。
+      </p>
+
+      <section class="card">
+        <div id="now" class="now">读取中…</div>
+        <dl>
+          <dt>网关</dt><dd id="gateway">—</dd>
+          <dt>判定来源</dt><dd id="provenance">—</dd>
+        </dl>
+        <div class="row">
+          <button id="auto" aria-pressed="false">自动判定</button>
+          <button id="cn" aria-pressed="false">强制中国区</button>
+          <button id="global" aria-pressed="false">强制国际区</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="row" style="margin: 0 0 12px; justify-content: space-between">
+          <strong>出网记录</strong>
+          <span>
+            <button id="copy">复制全部</button>
+            <button id="clear">清空</button>
+          </span>
+        </div>
+        <table>
+          <thead>
+            <tr><th>时间</th><th>类型</th><th>线路</th><th>host</th><th>耗时</th><th>说明</th></tr>
+          </thead>
+          <tbody id="log"></tbody>
+        </table>
+        <div id="empty" class="empty">还没有记录。去网页上点一次朗读或解读。</div>
+      </section>
+    </main>
+  </body>
+</html>

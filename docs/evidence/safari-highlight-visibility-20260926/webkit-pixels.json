@@ -1,0 +1,58 @@
+[
+  {
+    "surface": "light",
+    "system": "light",
+    "mode": "word",
+    "pass": true,
+    "blend": "multiply"
+  },
+  {
+    "surface": "light",
+    "system": "dark",
+    "mode": "word",
+    "pass": true,
+    "blend": "multiply"
+  },
+  {
+    "surface": "light",
+    "system": "light",
+    "mode": "sentence",
+    "pass": true,
+    "blend": "multiply"
+  },
+  {
+    "surface": "light",
+    "system": "dark",
+    "mode": "sentence",
+    "pass": true,
+    "blend": "multiply"
+  },
+  {
+    "surface": "dark",
+    "system": "light",
+    "mode": "word",
+    "pass": true,
+    "blend": "screen"
+  },
+  {
+    "surface": "dark",
+    "system": "dark",
+    "mode": "word",
+    "pass": true,
+    "blend": "screen"
+  },
+  {
+    "surface": "dark",
+    "system": "light",
+    "mode": "sentence",
+    "pass": true,
+    "blend": "screen"
+  },
+  {
+    "surface": "dark",
+    "system": "dark",
+    "mode": "sentence",
+    "pass": true,
+    "blend": "screen"
+  }
+]

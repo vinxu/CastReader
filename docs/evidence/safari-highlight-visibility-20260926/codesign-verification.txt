@@ -1,0 +1,2 @@
+2026-09-27: codesign --verify --deep --strict /tmp/CastReaderSafariIPhone68-SurfaceDevice/Build/Products/Debug-iphoneos/CastReader.app
+Exit code: 0

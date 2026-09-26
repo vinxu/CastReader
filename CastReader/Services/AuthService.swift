@@ -139,6 +139,7 @@ enum AccountContentIsolation {
         }
         let didChangeScope = activeStorageID != scope.storageID
         if didChangeScope {
+            SafariExtensionBridge.invalidateForAccountBoundary()
             advanceBoundaryRevision()
             AudioPlayerService.shared.clearForAccountBoundary()
             ReaderSceneRegistry.shared.resetForAccountBoundary()
@@ -206,6 +207,7 @@ enum AccountContentIsolation {
         }
         #endif
 
+        SafariExtensionBridge.invalidateForAccountBoundary()
         activeStorageID = nil
         AccountContentScopeBridge.deactivate()
         BoundLibraryOnboardingStore.shared.deactivateAccountScope()

@@ -13,6 +13,7 @@
 	<key>keychain-access-groups</key>
 	<array>
 		<string>$(AppIdentifierPrefix)com.same.castreader</string>
+		<string>$(AppIdentifierPrefix)com.same.castreader.safari</string>
 	</array>
 </dict>
 </plist>

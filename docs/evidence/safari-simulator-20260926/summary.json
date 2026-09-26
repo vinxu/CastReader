@@ -1,0 +1,424 @@
+{
+  "samplingIntervalMs": 250,
+  "rawSHA256": "dbbedcf6da31e02934d6ee6404925058eb2631f09bbb9d300497dfd7d22c8c21",
+  "measurement": "Live audio currentTime versus timestamp interval of the actual CSS Highlight DOM Range. Not acoustic alignment, ASR, or continuous coverage between samples.",
+  "runs": {
+    "ipad-before-native-permission": {
+      "samples": 363,
+      "playingSamples": 0,
+      "highlightSamples": 0,
+      "paragraphs": [],
+      "voices": [],
+      "rates": [],
+      "widths": [
+        820
+      ],
+      "scrollRange": [
+        0,
+        46
+      ],
+      "wordTimestampDistanceP95Ms": null,
+      "offscreenHighlightSamples": 0,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [],
+      "lastState": {
+        "status": "idle",
+        "playbackState": "idle",
+        "currentTime": 0,
+        "totalSegments": 0,
+        "paragraphIndex": null
+      }
+    },
+    "ipad-fixed": {
+      "samples": 2631,
+      "playingSamples": 439,
+      "highlightSamples": 435,
+      "paragraphs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "voices": [
+        "af_bella",
+        "af_heart"
+      ],
+      "rates": [
+        1.25
+      ],
+      "widths": [
+        820,
+        1180
+      ],
+      "scrollRange": [
+        0,
+        1410
+      ],
+      "wordTimestampDistanceP95Ms": 64.73,
+      "offscreenHighlightSamples": 0,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [
+        {
+          "segment": 4,
+          "audioTime": 6.740017992657079,
+          "observedSeconds": 18.398,
+          "samples": 74
+        }
+      ],
+      "lastState": {
+        "status": "ready",
+        "playbackState": "idle",
+        "currentTime": 9.72,
+        "totalSegments": 13,
+        "paragraphIndex": 12
+      }
+    },
+    "ipad-reflow-final": {
+      "samples": 574,
+      "playingSamples": 243,
+      "highlightSamples": 242,
+      "paragraphs": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "voices": [
+        "af_heart"
+      ],
+      "rates": [
+        0.75
+      ],
+      "widths": [
+        820,
+        1180
+      ],
+      "scrollRange": [
+        0,
+        0
+      ],
+      "wordTimestampDistanceP95Ms": 47.87,
+      "offscreenHighlightSamples": 0,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [],
+      "lastState": {
+        "status": "idle",
+        "playbackState": "idle",
+        "currentTime": 0,
+        "totalSegments": 0,
+        "paragraphIndex": null
+      }
+    },
+    "ipad-reflow-mid-final": {
+      "samples": 1663,
+      "playingSamples": 505,
+      "highlightSamples": 504,
+      "paragraphs": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "voices": [
+        "af_heart"
+      ],
+      "rates": [
+        0.75
+      ],
+      "widths": [
+        820,
+        1180
+      ],
+      "scrollRange": [
+        0,
+        1410
+      ],
+      "wordTimestampDistanceP95Ms": 67.09,
+      "offscreenHighlightSamples": 13,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [],
+      "lastState": {
+        "status": "idle",
+        "playbackState": "idle",
+        "currentTime": 0,
+        "totalSegments": 0,
+        "paragraphIndex": null
+      }
+    },
+    "ipad-reflow-paragraph-final": {
+      "samples": 868,
+      "playingSamples": 272,
+      "highlightSamples": 270,
+      "paragraphs": [
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "voices": [
+        "af_heart"
+      ],
+      "rates": [
+        0.75
+      ],
+      "widths": [
+        820,
+        1180
+      ],
+      "scrollRange": [
+        0,
+        1410
+      ],
+      "wordTimestampDistanceP95Ms": 54.62,
+      "offscreenHighlightSamples": 0,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [],
+      "lastState": {
+        "status": "ready",
+        "playbackState": "paused",
+        "currentTime": 9.696,
+        "totalSegments": 6,
+        "paragraphIndex": 12
+      }
+    },
+    "ipad-touch-fixed": {
+      "samples": 2089,
+      "playingSamples": 641,
+      "highlightSamples": 635,
+      "paragraphs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "voices": [
+        "af_bella",
+        "af_heart"
+      ],
+      "rates": [
+        0.75,
+        1.25
+      ],
+      "widths": [
+        820,
+        1180
+      ],
+      "scrollRange": [
+        0,
+        1410
+      ],
+      "wordTimestampDistanceP95Ms": 59.53,
+      "offscreenHighlightSamples": 6,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [
+        {
+          "segment": 8,
+          "audioTime": 4.658901174251201,
+          "observedSeconds": 45.384,
+          "samples": 181
+        }
+      ],
+      "lastState": {
+        "status": "idle",
+        "playbackState": "idle",
+        "currentTime": 0,
+        "totalSegments": 0,
+        "paragraphIndex": null
+      }
+    },
+    "iphone-portrait": {
+      "samples": 468,
+      "playingSamples": 0,
+      "highlightSamples": 0,
+      "paragraphs": [],
+      "voices": [],
+      "rates": [],
+      "widths": [
+        430
+      ],
+      "scrollRange": [
+        0,
+        0
+      ],
+      "wordTimestampDistanceP95Ms": null,
+      "offscreenHighlightSamples": 0,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [],
+      "lastState": {
+        "status": "error",
+        "playbackState": "idle",
+        "currentTime": 0,
+        "totalSegments": 0,
+        "paragraphIndex": null
+      }
+    },
+    "iphone-portrait-fixed": {
+      "samples": 1665,
+      "playingSamples": 565,
+      "highlightSamples": 564,
+      "paragraphs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "voices": [
+        "af_bella",
+        "af_heart"
+      ],
+      "rates": [
+        1,
+        1.25
+      ],
+      "widths": [
+        430
+      ],
+      "scrollRange": [
+        0,
+        2337
+      ],
+      "wordTimestampDistanceP95Ms": 77.54,
+      "offscreenHighlightSamples": 0,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [
+        {
+          "segment": 4,
+          "audioTime": 0.7974515980989951,
+          "observedSeconds": 24.696,
+          "samples": 99
+        }
+      ],
+      "lastState": {
+        "status": "ready",
+        "playbackState": "paused",
+        "currentTime": 9.72,
+        "totalSegments": 3,
+        "paragraphIndex": 12
+      }
+    },
+    "iphone-reflow-final": {
+      "samples": 988,
+      "playingSamples": 126,
+      "highlightSamples": 126,
+      "paragraphs": [
+        10,
+        11,
+        12
+      ],
+      "voices": [
+        "af_bella"
+      ],
+      "rates": [
+        1
+      ],
+      "widths": [
+        430,
+        814
+      ],
+      "scrollRange": [
+        0,
+        1949
+      ],
+      "wordTimestampDistanceP95Ms": 72.53,
+      "offscreenHighlightSamples": 0,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [],
+      "lastState": {
+        "status": "ready",
+        "playbackState": "paused",
+        "currentTime": 9.72,
+        "totalSegments": 4,
+        "paragraphIndex": 12
+      }
+    },
+    "iphone-stop-restart": {
+      "samples": 386,
+      "playingSamples": 143,
+      "highlightSamples": 143,
+      "paragraphs": [
+        10,
+        11,
+        12
+      ],
+      "voices": [
+        "af_bella"
+      ],
+      "rates": [
+        1
+      ],
+      "widths": [
+        430,
+        814
+      ],
+      "scrollRange": [
+        0,
+        1949
+      ],
+      "wordTimestampDistanceP95Ms": 64.37,
+      "offscreenHighlightSamples": 44,
+      "maxTTSErrors": 0,
+      "maxLostAnchors": 0,
+      "maxDetachedAnchors": 0,
+      "pauseHolds": [],
+      "lastState": {
+        "status": "idle",
+        "playbackState": "idle",
+        "currentTime": 0,
+        "totalSegments": 0,
+        "paragraphIndex": null
+      }
+    }
+  }
+}

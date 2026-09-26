@@ -1,0 +1,37 @@
+{
+  "iphone_production": {
+    "status": "PASS",
+    "finished_at": "2026-09-27T00:13:26+08:00",
+    "result_bundle": "/tmp/SafariFinalProductionUI6.xcresult",
+    "page": "https://en.wikipedia.org/w/index.php?title=Reading&useskin=minerva",
+    "scope": [
+      "pause",
+      "rate 1x to 0.75x",
+      "voice Bella to Heart",
+      "resume",
+      "cross paragraph continuation",
+      "stop clears highlights"
+    ],
+    "limitations": [
+      "Button assertions supplemented by visual review; no acoustic alignment measurement.",
+      "This noncanonical article URL uses generic extraction and also reads navigation labels. Canonical /wiki/Reading anchor loss regression was tested separately."
+    ]
+  },
+  "ipad_production": {
+    "status": "PASS",
+    "finished_at": "2026-09-27T00:04:15+08:00",
+    "result_bundle": "/tmp/SafariFinalIPadUI2.xcresult",
+    "page": "https://en.wikipedia.org/wiki/Reading",
+    "scope": [
+      "pause",
+      "open speed menu and select existing 1x",
+      "voice Heart to Bella",
+      "resume",
+      "cross paragraph continuation",
+      "autoscroll",
+      "stop clears highlights"
+    ]
+  },
+  "physical_iphone_playback": "NOT_RUN",
+  "physical_iphone_latest_installed_and_extension_container_verified": "PASS"
+}

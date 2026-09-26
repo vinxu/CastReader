@@ -824,6 +824,7 @@ final class ProManager: ObservableObject {
     }
 
     func refreshSyncState(reason: String) {
+        SafariExtensionBridge.scheduleSyncFromApp()
         let hasEmail = AuthService.shared.hasSyncableAccount
         let pending = storeKitLocalPro && !serverPro
         needsEmailSync = pending

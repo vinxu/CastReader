@@ -1,0 +1,269 @@
+
+> castreader-extension@1.2.46 check:safari:chrome-parity /Users/xuxuheng/.codex/worktrees/safari-iphone-adaptation-20260926/readout-desktop
+> node scripts/check-safari-chrome-parity.mjs
+
+✓ .output/chrome-mv3/manifest.json exists
+✓ .output/safari-macos-mv2/manifest.json exists
+✓ .output/safari-ios-mv2/manifest.json exists
+✓ package.json exists
+✓ macOS: version equals Chrome 1.2.46
+✓ macOS: version equals package 1.2.46
+✓ macOS: retains Chrome permission activeTab
+✓ macOS: retains Chrome permission storage
+✓ macOS: retains Chrome permission scripting
+✓ macOS: retains Chrome permission contextMenus
+✓ macOS: retains Chrome permission alarms
+✓ macOS: retains Chrome permission *://api.castreader.ai/*
+✓ macOS: retains Chrome permission *://api.castreader.cn/*
+✓ macOS: retains Chrome permission *://quickread.castreader.cn/*
+✓ macOS: retains Chrome permission *://castreader.ai/*
+✓ macOS: retains Chrome permission *://*.cos.accelerate.myqcloud.com/*
+✓ macOS: retains Chrome permission https://zqxgmqygirtpttnrvjpf.supabase.co/*
+✓ macOS: retains Chrome permission *://weread.qq.com/*
+✓ macOS: retains Chrome permission *://www.youtube.com/*
+✓ macOS: retains Chrome permission https://read.amazon.com/*
+✓ macOS: retains Chrome permission https://read.amazon.co.uk/*
+✓ macOS: retains Chrome permission https://read.amazon.ca/*
+✓ macOS: retains Chrome permission https://read.amazon.com.au/*
+✓ macOS: retains Chrome permission https://read.amazon.co.jp/*
+✓ macOS: retains Chrome permission https://lesen.amazon.de/*
+✓ macOS: retains Chrome permission https://read.amazon.de/*
+✓ macOS: retains Chrome permission https://lire.amazon.fr/*
+✓ macOS: retains Chrome permission https://read.amazon.fr/*
+✓ macOS: retains Chrome permission https://leggi.amazon.it/*
+✓ macOS: retains Chrome permission https://read.amazon.it/*
+✓ macOS: retains Chrome permission https://leer.amazon.es/*
+✓ macOS: retains Chrome permission https://read.amazon.es/*
+✓ macOS: retains Chrome permission https://read.amazon.in/*
+✓ macOS: retains Chrome permission https://ler.amazon.com.br/*
+✓ macOS: retains Chrome permission https://read.amazon.com.br/*
+✓ macOS: retains Chrome permission https://leer.amazon.com.mx/*
+✓ macOS: retains Chrome permission https://read.amazon.com.mx/*
+✓ macOS: retains Chrome permission https://lezen.amazon.nl/*
+✓ macOS: retains Chrome permission https://read.amazon.nl/*
+✓ macOS: retains Chrome permission https://read.amazon.cn/*
+✓ macOS: retains Chrome permission *://docs.google.com/*
+✓ macOS: retains Chrome permission <all_urls>
+✓ macOS: retains Chrome isolated script content.js
+✓ macOS: retains Chrome isolated script google-docs-hook.js
+✓ macOS: retains Chrome isolated script ireader-hook.js
+✓ macOS: retains Chrome isolated script kindle-hook.js
+✓ macOS: retains Chrome isolated script voice-clone-auth.js
+✓ macOS: retains Chrome isolated script weread-hook.js
+✓ macOS: retains Chrome isolated script youtube-hook.js
+✓ iOS: version equals Chrome 1.2.46
+✓ iOS: version equals package 1.2.46
+✓ iOS: retains Chrome permission activeTab
+✓ iOS: retains Chrome permission storage
+✓ iOS: retains Chrome permission scripting
+✓ iOS: retains Chrome permission contextMenus
+✓ iOS: retains Chrome permission alarms
+✓ iOS: retains Chrome permission *://api.castreader.ai/*
+✓ iOS: retains Chrome permission *://api.castreader.cn/*
+✓ iOS: retains Chrome permission *://quickread.castreader.cn/*
+✓ iOS: retains Chrome permission *://castreader.ai/*
+✓ iOS: retains Chrome permission *://*.cos.accelerate.myqcloud.com/*
+✓ iOS: retains Chrome permission https://zqxgmqygirtpttnrvjpf.supabase.co/*
+✓ iOS: retains Chrome permission *://weread.qq.com/*
+✓ iOS: retains Chrome permission *://www.youtube.com/*
+✓ iOS: retains Chrome permission https://read.amazon.com/*
+✓ iOS: retains Chrome permission https://read.amazon.co.uk/*
+✓ iOS: retains Chrome permission https://read.amazon.ca/*
+✓ iOS: retains Chrome permission https://read.amazon.com.au/*
+✓ iOS: retains Chrome permission https://read.amazon.co.jp/*
+✓ iOS: retains Chrome permission https://lesen.amazon.de/*
+✓ iOS: retains Chrome permission https://read.amazon.de/*
+✓ iOS: retains Chrome permission https://lire.amazon.fr/*
+✓ iOS: retains Chrome permission https://read.amazon.fr/*
+✓ iOS: retains Chrome permission https://leggi.amazon.it/*
+✓ iOS: retains Chrome permission https://read.amazon.it/*
+✓ iOS: retains Chrome permission https://leer.amazon.es/*
+✓ iOS: retains Chrome permission https://read.amazon.es/*
+✓ iOS: retains Chrome permission https://read.amazon.in/*
+✓ iOS: retains Chrome permission https://ler.amazon.com.br/*
+✓ iOS: retains Chrome permission https://read.amazon.com.br/*
+✓ iOS: retains Chrome permission https://leer.amazon.com.mx/*
+✓ iOS: retains Chrome permission https://read.amazon.com.mx/*
+✓ iOS: retains Chrome permission https://lezen.amazon.nl/*
+✓ iOS: retains Chrome permission https://read.amazon.nl/*
+✓ iOS: retains Chrome permission https://read.amazon.cn/*
+✓ iOS: retains Chrome permission *://docs.google.com/*
+✓ iOS: retains Chrome permission <all_urls>
+✓ iOS: retains Chrome isolated script content.js
+✓ iOS: retains Chrome isolated script google-docs-hook.js
+✓ iOS: retains Chrome isolated script ireader-hook.js
+✓ iOS: retains Chrome isolated script kindle-hook.js
+✓ iOS: retains Chrome isolated script voice-clone-auth.js
+✓ iOS: retains Chrome isolated script weread-hook.js
+✓ iOS: retains Chrome isolated script youtube-hook.js
+✓ MAIN-world mapping exists for google-docs-intercept.js
+✓ macOS: bundles google-docs-intercept.js
+✓ macOS: declares google-docs-hook.js
+✓ macOS: exposes google-docs-intercept.js to its MAIN-world hook
+✓ iOS: bundles google-docs-intercept.js
+✓ iOS: declares google-docs-hook.js
+✓ iOS: exposes google-docs-intercept.js to its MAIN-world hook
+✓ MAIN-world mapping exists for ireader-antidebug.js
+✓ macOS: bundles ireader-antidebug.js
+✓ macOS: declares ireader-hook.js
+✓ macOS: exposes ireader-antidebug.js to its MAIN-world hook
+✓ iOS: bundles ireader-antidebug.js
+✓ iOS: declares ireader-hook.js
+✓ iOS: exposes ireader-antidebug.js to its MAIN-world hook
+✓ MAIN-world mapping exists for kindle-intercept.js
+✓ macOS: bundles kindle-intercept.js
+✓ macOS: declares kindle-hook.js
+✓ macOS: exposes kindle-intercept.js to its MAIN-world hook
+✓ iOS: bundles kindle-intercept.js
+✓ iOS: declares kindle-hook.js
+✓ iOS: exposes kindle-intercept.js to its MAIN-world hook
+✓ MAIN-world mapping exists for weread-intercept.js
+✓ macOS: bundles weread-intercept.js
+✓ macOS: declares weread-hook.js
+✓ macOS: exposes weread-intercept.js to its MAIN-world hook
+✓ iOS: bundles weread-intercept.js
+✓ iOS: declares weread-hook.js
+✓ iOS: exposes weread-intercept.js to its MAIN-world hook
+✓ MAIN-world mapping exists for youtube-bridge.js
+✓ macOS: bundles youtube-bridge.js
+✓ macOS: declares youtube-hook.js
+✓ macOS: exposes youtube-bridge.js to its MAIN-world hook
+✓ iOS: bundles youtube-bridge.js
+✓ iOS: declares youtube-hook.js
+✓ iOS: exposes youtube-bridge.js to its MAIN-world hook
+✓ macOS: locale set equals Chrome
+✓ .output/chrome-mv3/_locales/de/messages.json exists
+✓ .output/safari-macos-mv2/_locales/de/messages.json exists
+✓ macOS: de message keys equal Chrome
+✓ .output/chrome-mv3/_locales/en/messages.json exists
+✓ .output/safari-macos-mv2/_locales/en/messages.json exists
+✓ macOS: en message keys equal Chrome
+✓ .output/chrome-mv3/_locales/es/messages.json exists
+✓ .output/safari-macos-mv2/_locales/es/messages.json exists
+✓ macOS: es message keys equal Chrome
+✓ .output/chrome-mv3/_locales/fr/messages.json exists
+✓ .output/safari-macos-mv2/_locales/fr/messages.json exists
+✓ macOS: fr message keys equal Chrome
+✓ .output/chrome-mv3/_locales/hi/messages.json exists
+✓ .output/safari-macos-mv2/_locales/hi/messages.json exists
+✓ macOS: hi message keys equal Chrome
+✓ .output/chrome-mv3/_locales/it/messages.json exists
+✓ .output/safari-macos-mv2/_locales/it/messages.json exists
+✓ macOS: it message keys equal Chrome
+✓ .output/chrome-mv3/_locales/ja/messages.json exists
+✓ .output/safari-macos-mv2/_locales/ja/messages.json exists
+✓ macOS: ja message keys equal Chrome
+✓ .output/chrome-mv3/_locales/pt_BR/messages.json exists
+✓ .output/safari-macos-mv2/_locales/pt_BR/messages.json exists
+✓ macOS: pt_BR message keys equal Chrome
+✓ .output/chrome-mv3/_locales/zh_CN/messages.json exists
+✓ .output/safari-macos-mv2/_locales/zh_CN/messages.json exists
+✓ macOS: zh_CN message keys equal Chrome
+✓ iOS: locale set equals Chrome
+✓ .output/chrome-mv3/_locales/de/messages.json exists
+✓ .output/safari-ios-mv2/_locales/de/messages.json exists
+✓ iOS: de message keys equal Chrome
+✓ .output/chrome-mv3/_locales/en/messages.json exists
+✓ .output/safari-ios-mv2/_locales/en/messages.json exists
+✓ iOS: en message keys equal Chrome
+✓ .output/chrome-mv3/_locales/es/messages.json exists
+✓ .output/safari-ios-mv2/_locales/es/messages.json exists
+✓ iOS: es message keys equal Chrome
+✓ .output/chrome-mv3/_locales/fr/messages.json exists
+✓ .output/safari-ios-mv2/_locales/fr/messages.json exists
+✓ iOS: fr message keys equal Chrome
+✓ .output/chrome-mv3/_locales/hi/messages.json exists
+✓ .output/safari-ios-mv2/_locales/hi/messages.json exists
+✓ iOS: hi message keys equal Chrome
+✓ .output/chrome-mv3/_locales/it/messages.json exists
+✓ .output/safari-ios-mv2/_locales/it/messages.json exists
+✓ iOS: it message keys equal Chrome
+✓ .output/chrome-mv3/_locales/ja/messages.json exists
+✓ .output/safari-ios-mv2/_locales/ja/messages.json exists
+✓ iOS: ja message keys equal Chrome
+✓ .output/chrome-mv3/_locales/pt_BR/messages.json exists
+✓ .output/safari-ios-mv2/_locales/pt_BR/messages.json exists
+✓ iOS: pt_BR message keys equal Chrome
+✓ .output/chrome-mv3/_locales/zh_CN/messages.json exists
+✓ .output/safari-ios-mv2/_locales/zh_CN/messages.json exists
+✓ iOS: zh_CN message keys equal Chrome
+✓ macOS: TTS and timestamps bundled
+✓ macOS: voice catalog bundled
+✓ macOS: premium voice assets bundled
+✓ macOS: Reader entry bundled
+✓ macOS: selection reading bundled
+✓ macOS: QuickRead capture bundled
+✓ macOS: Pro status bundled
+✓ macOS: listen quota bundled
+✓ macOS: Web login session bundled
+✓ macOS: Web login bridge bundled
+✓ macOS: account identity cache bundled
+✓ macOS: progress memory bundled
+✓ macOS: brainrot assets bundled
+✓ macOS: site-rule sync bundled
+✓ macOS: feedback flow bundled
+✓ iOS: TTS and timestamps bundled
+✓ iOS: voice catalog bundled
+✓ iOS: premium voice assets bundled
+✓ iOS: Reader entry bundled
+✓ iOS: selection reading bundled
+✓ iOS: QuickRead capture bundled
+✓ iOS: Pro status bundled
+✓ iOS: listen quota bundled
+✓ iOS: Web login session bundled
+✓ iOS: Web login bridge bundled
+✓ iOS: account identity cache bundled
+✓ iOS: progress memory bundled
+✓ iOS: brainrot assets bundled
+✓ iOS: site-rule sync bundled
+✓ iOS: feedback flow bundled
+✓ macOS: legacy QuickRead direct contract retained
+✓ macOS: Chrome website pricing/Stripe funnel retained
+✓ macOS: Chrome account unlink retained
+✓ macOS: email-primary checkout binding retained
+✓ macOS: account mismatch protection retained
+✓ iOS: legacy QuickRead direct/key contract is excluded
+✓ iOS: dedicated CN QuickRead ingress is retained
+✓ iOS: QuickRead uses the native authenticated gateway contract
+✓ iOS: native GET_ENTITLEMENT contract bundled
+✓ iOS: native GET_MOBILE_SESSION contract bundled
+✓ iOS: native OPEN_PRO contract bundled
+✓ iOS: native OPEN_ACCOUNT contract bundled
+✓ iOS: native SIGN_OUT contract bundled
+✓ iOS: dual-route contract bundles serviceRoute
+✓ iOS: dual-route contract bundles https://api.castreader.cn
+✓ iOS: dual-route contract bundles https://quickread.castreader.cn
+✓ iOS: China gateway host permission retained
+✓ iOS: dedicated CN QuickRead host permission retained
+✓ iOS: Stripe checkout is excluded from App Store build
+✓ iOS: native account unlink/sign-out replacement retained
+✓ iOS: App Store purchase disclosure bundled
+✓ iOS StoreKit authority contains ai.castreader.pro.monthly
+✓ iOS StoreKit authority contains ai.castreader.pro.yearly
+✓ iOS StoreKit authority contains Transaction.currentEntitlements
+✓ iOS StoreKit authority contains Transaction.updates
+✓ iOS StoreKit authority contains AppStore.sync()
+✓ iOS StoreKit authority contains verifyAppleTransaction
+✓ iOS StoreKit authority contains appAccountToken
+✓ iOS purchase UI contains 恢复购买
+✓ iOS purchase UI contains 服务条款
+✓ iOS purchase UI contains 隐私政策
+✓ iOS purchase UI contains displayPrice
+✓ iOS purchase intent and StoreKit service both require a signed-in account
+✓ iOS native handler implements GET_ENTITLEMENT
+✓ iOS native handler implements GET_MOBILE_SESSION
+✓ iOS native handler implements OPEN_PRO
+✓ iOS native handler implements OPEN_ACCOUNT
+✓ iOS native handler implements SIGN_OUT
+✓ iOS native handler returns serviceRoute
+✓ iOS native handler uses shared route normalization and rejects mismatched account/route snapshots
+✓ iOS containing app mirrors its frozen service route into App Group
+✓ Web Apple Pro authority contains src/app/api/pro/verify-apple/route.ts
+✓ Web Apple Pro authority contains src/app/api/pro/apple-webhook/route.ts
+✓ Web Apple Pro authority contains src/shared/pro/apple-storekit.ts
+✓ Web Apple Pro authority contains src/shared/models/apple-storekit-pro.ts
+✓ Web uses Apple official server library
+✓ Web verifies Apple JWS certificate chain
+✓ Web verifies the CastReader bundle ID
+
+Safari/Chrome parity gate passed (263 checks).
