@@ -8,6 +8,122 @@
 import XCTest
 import UIKit
 
+/// Opt-in UI evidence for the installed extension. Pixel attachments still need
+/// review; a passing button-state test alone does not prove highlight visibility.
+final class SafariLiveReadingUITests: XCTestCase {
+    func testInstalledSafariReadingControls() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_SAFARI_LIVE_UI"] == "1")
+        continueAfterFailure = false
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.mobilesafari")
+        safari.activate()
+        // A manually opened, site-specific simulator permission prompt may be
+        // pending. Grant only the current public test website for this day.
+        let wikipediaPermission = safari.alerts.matching(NSPredicate(format: "label CONTAINS %@ AND label CONTAINS %@", "CastReader", "en.wikipedia.org")).firstMatch
+        if wikipediaPermission.exists {
+            wikipediaPermission.buttons["Allow for One Day"].tap()
+            RunLoop.current.run(until: Date().addingTimeInterval(2))
+            safari.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.45)).tap()
+        }
+        XCTAssertTrue(safari.webViews.firstMatch.waitForExistence(timeout: 20))
+        // A tab can retain an old content script after reinstalling the app.
+        let reload = safari.buttons["ReloadButton"]
+        if reload.exists { reload.tap() }
+        func evidence(_ name: String) {
+            let picture = XCTAttachment(screenshot: safari.screenshot())
+            picture.name = name
+            picture.lifetime = .keepAlways
+            add(picture)
+            let diagnostic = safari.textViews["CastReader QA status"]
+            if diagnostic.exists, let value = diagnostic.value as? String {
+                let status = XCTAttachment(string: value)
+                status.name = name + "-diagnostic"
+                status.lifetime = .keepAlways
+                add(status)
+            }
+        }
+        func button(_ labels: [String]) -> XCUIElement {
+            safari.buttons.matching(NSPredicate(format: "label IN %@", labels)).firstMatch
+        }
+        func settle(_ seconds: TimeInterval) {
+            RunLoop.current.run(until: Date().addingTimeInterval(seconds))
+        }
+        evidence("safari-before-reading")
+        let tree = XCTAttachment(string: safari.debugDescription)
+        tree.name = "safari-controls-before-reading"
+        tree.lifetime = .keepAlways
+        add(tree)
+        let pause = button(["Pause", "暂停"])
+        if !pause.exists {
+            let start = button(["Read this page", "朗读当前页", "Resume", "继续", "恢复"])
+            XCTAssertTrue(start.waitForExistence(timeout: 45), "Enable the installed CastReader extension on the open test page")
+            start.tap()
+        }
+        XCTAssertTrue(pause.waitForExistence(timeout: 45))
+        for index in 0..<8 {
+            settle(3)
+            evidence("safari-playing-\(index)")
+        }
+        // Start this pause check during sustained playback. On a short heading
+        // the same primary button can become "cancel loading" before the tap.
+        let pauseDeadline = Date().addingTimeInterval(90)
+        var playingSince: Date?
+        while Date() < pauseDeadline {
+            if pause.exists {
+                if playingSince == nil { playingSince = Date() }
+                if Date().timeIntervalSince(playingSince!) >= 8 { break }
+            } else {
+                playingSince = nil
+            }
+            settle(0.2)
+        }
+        XCTAssertNotNil(playingSince)
+        XCTAssertTrue(pause.exists)
+        XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(playingSince!), 8)
+        pause.tap()
+        let resume = button(["Resume", "继续", "恢复"])
+        XCTAssertTrue(resume.waitForExistence(timeout: 5))
+        evidence("safari-paused-start")
+        settle(3)
+        evidence("safari-paused-end")
+        let speed = safari.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Speed", "速度"])).firstMatch
+        XCTAssertTrue(speed.exists)
+        speed.tap()
+        let slowerRate = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "0.75x")).firstMatch
+        XCTAssertTrue(slowerRate.waitForExistence(timeout: 5))
+        slowerRate.tap()
+        evidence("safari-rate-changed")
+        let chooseVoice = button(["Choose voice", "选择音色"])
+        XCTAssertTrue(chooseVoice.exists)
+        chooseVoice.tap()
+        let voiceTree = XCTAttachment(string: safari.debugDescription)
+        voiceTree.name = "safari-voice-options"
+        voiceTree.lifetime = .keepAlways
+        add(voiceTree)
+        let bella = safari.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND NOT label CONTAINS[c] %@", "Bella", "preview")).firstMatch
+        XCTAssertTrue(bella.waitForExistence(timeout: 10))
+        let voiceToSelect = bella.label.contains("Current voice")
+            ? safari.buttons.matching(NSPredicate(format: "label CONTAINS %@ AND NOT label CONTAINS[c] %@", "Heart", "preview")).firstMatch
+            : bella
+        XCTAssertTrue(voiceToSelect.exists)
+        voiceToSelect.tap()
+        evidence("safari-voice-changed")
+        XCTAssertTrue(resume.waitForExistence(timeout: 30))
+        resume.tap()
+        // Changing voice can require a fresh cloud generation, just like start.
+        XCTAssertTrue(pause.waitForExistence(timeout: 45))
+        for index in 0..<8 {
+            settle(3)
+            evidence("safari-resumed-\(index)")
+        }
+        let stop = button(["Stop", "停止", "Stop reading", "停止朗读"])
+        XCTAssertTrue(stop.exists)
+        stop.tap()
+        settle(2)
+        evidence("safari-stopped")
+        XCTAssertFalse(pause.exists)
+    }
+}
+
 class CastReaderUITests: XCTestCase {
 
     func testGrowthReadyStartsListeningBeforeTrialPaywall() {

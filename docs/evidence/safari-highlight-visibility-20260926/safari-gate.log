@@ -1,0 +1,186 @@
+
+> castreader-extension@1.2.46 check:safari /Users/xuxuheng/.codex/worktrees/safari-iphone-adaptation-20260926/readout-desktop
+> node scripts/check-safari-release.mjs
+
+✓ macos: staged manifest exists
+✓ macos: manifest is Safari MV2
+✓ macos: version matches package 1.2.46
+✓ macos: de Safari name satisfies Apple's 40-character limit
+✓ macos: en Safari name satisfies Apple's 40-character limit
+✓ macos: es Safari name satisfies Apple's 40-character limit
+✓ macos: fr Safari name satisfies Apple's 40-character limit
+✓ macos: hi Safari name satisfies Apple's 40-character limit
+✓ macos: it Safari name satisfies Apple's 40-character limit
+✓ macos: ja Safari name satisfies Apple's 40-character limit
+✓ macos: pt_BR Safari name satisfies Apple's 40-character limit
+✓ macos: zh_CN Safari name satisfies Apple's 40-character limit
+✓ macos: background page is event-driven
+✓ macos: unsupported MAIN world keys removed
+✓ macos: Chrome offscreen API is not requested
+✓ macos: no loopback hosts
+✓ macos: all-page content permission retained
+✓ macos: general reader content script declared
+✓ macos: google-docs-hook.js declared
+✓ macos: google-docs-hook.js bundled
+✓ macos: ireader-hook.js declared
+✓ macos: ireader-hook.js bundled
+✓ macos: kindle-hook.js declared
+✓ macos: kindle-hook.js bundled
+✓ macos: weread-hook.js declared
+✓ macos: weread-hook.js bundled
+✓ macos: youtube-hook.js declared
+✓ macos: youtube-hook.js bundled
+✓ macos: google-docs-intercept.js web-accessible
+✓ macos: google-docs-intercept.js bundled
+✓ macos: ireader-antidebug.js web-accessible
+✓ macos: ireader-antidebug.js bundled
+✓ macos: kindle-intercept.js web-accessible
+✓ macos: kindle-intercept.js bundled
+✓ macos: weread-intercept.js web-accessible
+✓ macos: weread-intercept.js bundled
+✓ macos: youtube-bridge.js web-accessible
+✓ macos: youtube-bridge.js bundled
+✓ macos: reader.html bundled
+✓ macos: welcome.html bundled
+✓ macos: assets bundled
+✓ macos: tesseract-wasm/eng.traineddata bundled
+✓ macos: tesseract-wasm/chi_sim.traineddata bundled
+✓ macos: tesseract-wasm/chi_tra.traineddata bundled
+✓ macos: tesseract-wasm/jpn.traineddata bundled
+✓ macos: tesseract-wasm/spa.traineddata bundled
+✓ macos: tesseract-wasm/fra.traineddata bundled
+✓ macos: tesseract-wasm/deu.traineddata bundled
+✓ macos: tesseract-wasm/por.traineddata bundled
+✓ macos: tesseract-wasm/ita.traineddata bundled
+✓ macos: tesseract-wasm/hin.traineddata bundled
+✓ macos: tesseract-wasm/tesseract-core.wasm bundled
+✓ macos: internal eval page removed
+✓ macos: QuickRead key placeholder absent
+✓ macos: legacy compiled QuickRead key remains injected
+✓ macos: legacy x-api-key direct request path remains available
+✓ macos: production QuickRead endpoint present
+✓ macos: Safari analytics opt-in gate bundled
+✓ macos: simulator-only observation probe is absent
+✓ macos: primary controls are Safari WebDriver-testable
+✓ macos: YouTube MAIN-world fallback bundled in primary script
+✓ macos: YouTube CSP nonce propagation bundled
+✓ macos: YouTube nonce-authorized inline bridge bundled
+✓ macos: website pricing route retained
+✓ macos: iOS native purchase path tree-shaken
+✓ ios: staged manifest exists
+✓ ios: manifest is Safari MV2
+✓ ios: version matches package 1.2.46
+✓ ios: de Safari name satisfies Apple's 40-character limit
+✓ ios: en Safari name satisfies Apple's 40-character limit
+✓ ios: es Safari name satisfies Apple's 40-character limit
+✓ ios: fr Safari name satisfies Apple's 40-character limit
+✓ ios: hi Safari name satisfies Apple's 40-character limit
+✓ ios: it Safari name satisfies Apple's 40-character limit
+✓ ios: ja Safari name satisfies Apple's 40-character limit
+✓ ios: pt_BR Safari name satisfies Apple's 40-character limit
+✓ ios: zh_CN Safari name satisfies Apple's 40-character limit
+✓ ios: background page is event-driven
+✓ ios: unsupported MAIN world keys removed
+✓ ios: Chrome offscreen API is not requested
+✓ ios: no loopback hosts
+✓ ios: all-page content permission retained
+✓ ios: general reader content script declared
+✓ ios: google-docs-hook.js declared
+✓ ios: google-docs-hook.js bundled
+✓ ios: ireader-hook.js declared
+✓ ios: ireader-hook.js bundled
+✓ ios: kindle-hook.js declared
+✓ ios: kindle-hook.js bundled
+✓ ios: weread-hook.js declared
+✓ ios: weread-hook.js bundled
+✓ ios: youtube-hook.js declared
+✓ ios: youtube-hook.js bundled
+✓ ios: google-docs-intercept.js web-accessible
+✓ ios: google-docs-intercept.js bundled
+✓ ios: ireader-antidebug.js web-accessible
+✓ ios: ireader-antidebug.js bundled
+✓ ios: kindle-intercept.js web-accessible
+✓ ios: kindle-intercept.js bundled
+✓ ios: weread-intercept.js web-accessible
+✓ ios: weread-intercept.js bundled
+✓ ios: youtube-bridge.js web-accessible
+✓ ios: youtube-bridge.js bundled
+✓ ios: reader.html bundled
+✓ ios: welcome.html bundled
+✓ ios: assets bundled
+✓ ios: tesseract-wasm/eng.traineddata bundled
+✓ ios: tesseract-wasm/chi_sim.traineddata bundled
+✓ ios: tesseract-wasm/chi_tra.traineddata bundled
+✓ ios: tesseract-wasm/jpn.traineddata bundled
+✓ ios: tesseract-wasm/spa.traineddata bundled
+✓ ios: tesseract-wasm/fra.traineddata bundled
+✓ ios: tesseract-wasm/deu.traineddata bundled
+✓ ios: tesseract-wasm/por.traineddata bundled
+✓ ios: tesseract-wasm/ita.traineddata bundled
+✓ ios: tesseract-wasm/hin.traineddata bundled
+✓ ios: tesseract-wasm/tesseract-core.wasm bundled
+✓ ios: internal eval page removed
+✓ ios: QuickRead key placeholder absent
+✓ ios: compiled QuickRead key absent from every packaged file
+✓ ios: legacy x-api-key direct request path is tree-shaken
+✓ ios: legacy direct QuickRead endpoint/config path is tree-shaken
+✓ ios: dedicated CN QuickRead ingress is bundled
+✓ ios: Safari analytics opt-in gate bundled
+✓ ios: simulator-only observation probe is absent
+✓ ios: primary controls are Safari WebDriver-testable
+✓ ios: YouTube MAIN-world fallback bundled in primary script
+✓ ios: YouTube CSP nonce propagation bundled
+✓ ios: YouTube nonce-authorized inline bridge bundled
+✓ ios: native account/session permission declared
+✓ ios: website pricing route absent
+✓ ios: native StoreKit/account bridge bundled
+✓ ios: App Store purchase copy bundled
+✓ macos: app and Safari extension configuration sets match (Debug, Release)
+✓ macos Debug: app/extension marketing versions align (1.2.46)
+✓ macos Debug: app/extension build numbers align (5)
+✓ macos Debug: app bundle id configured
+✓ macos Debug: Safari extension bundle id configured
+✓ macos Debug: Apple team configured for app and extension
+✓ macos Release: app/extension marketing versions align (1.2.46)
+✓ macos Release: app/extension build numbers align (5)
+✓ macos Release: app bundle id configured
+✓ macos Release: Safari extension bundle id configured
+✓ macos Release: Apple team configured for app and extension
+✓ macos: all target configurations use one marketing version
+✓ macos: all target configurations use one build number
+✓ macos: Xcode marketing version matches package 1.2.46
+✓ macos: App Store category configured
+✓ ios: containing app Xcode project exists
+✓ ios: Safari extension target exists
+✓ ios: app and Safari extension configuration sets match (Debug, Release)
+✓ ios Debug: app/extension marketing versions align (1.2.45)
+✓ ios Debug: app/extension build numbers align (68)
+✓ ios Debug: app bundle id configured
+✓ ios Debug: Safari extension bundle id configured
+✓ ios Debug: Apple team configured for app and extension
+✓ ios Release: app/extension marketing versions align (1.2.45)
+✓ ios Release: app/extension build numbers align (68)
+✓ ios Release: app bundle id configured
+✓ ios Release: Safari extension bundle id configured
+✓ ios Release: Apple team configured for app and extension
+✓ ios: all target configurations use one marketing version
+✓ ios: all target configurations use one build number
+✓ ios: entitlement bridge embedded in app
+✓ ios: Safari one-time handoff reaches native router
+✓ ios: Safari handoff is expiring, single-use and account-bound
+✓ ios: Safari account, purchase and sign-out confirmation routes are wired
+✓ ios: shared native contract owns the App Group
+✓ ios: CastReader/CastReader.entitlements exists
+✓ ios: CastReader/CastReader.entitlements uses shared App Group
+✓ ios: CastReader Safari Extension/CastReaderSafariExtension.entitlements exists
+✓ ios: CastReader Safari Extension/CastReaderSafariExtension.entitlements uses shared App Group
+✓ ios: CastReader Safari Extension/SafariWebExtensionHandler.swift exists
+✓ ios: CastReader Safari Extension/SafariWebExtensionHandler.swift uses shared App Group
+✓ ios: CastReader/Services/SafariExtensionBridge.swift exists
+✓ ios: CastReader/Services/SafariExtensionBridge.swift uses shared App Group
+✓ ios: native handler supports GET_ENTITLEMENT
+✓ ios: native handler supports OPEN_PRO
+✓ ios: native handler supports OPEN_ACCOUNT
+✓ ios: native handler supports SIGN_OUT
+
+Safari release gate passed (180 checks).

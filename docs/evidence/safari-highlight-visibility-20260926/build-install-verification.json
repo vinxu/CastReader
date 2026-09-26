@@ -1,0 +1,47 @@
+{
+  "app": "1.2.45 (68)",
+  "extension_manifest": "1.2.46",
+  "installed_at": "2026-09-26T23:47:41+08:00",
+  "safari_restarted_at": "2026-09-26T23:48:47+08:00",
+  "content_script_sha256": {
+    "extension_build": "192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75",
+    "native_resources": "192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75",
+    "device_app": "192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75",
+    "simulator_app": "192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75"
+  },
+  "installed_castreader_apps": [
+    {
+      "appClip": false,
+      "builtByDeveloper": true,
+      "bundleIdentifier": "com.same.castreader",
+      "bundleVersion": "68",
+      "defaultApp": false,
+      "hidden": false,
+      "internalApp": false,
+      "name": "CastReader",
+      "removable": true,
+      "url": "file:///private/var/containers/Bundle/Application/0AD06E56-4B50-4CC7-A7DF-FC9D47FF4E08/CastReader.app/",
+      "version": "1.2.45"
+    },
+    {
+      "appClip": false,
+      "builtByDeveloper": true,
+      "bundleIdentifier": "com.same.castreader.releasechecks1244",
+      "bundleVersion": "66",
+      "defaultApp": false,
+      "hidden": false,
+      "internalApp": false,
+      "name": "CastReader",
+      "removable": true,
+      "url": "file:///private/var/containers/Bundle/Application/C75C1A50-63C9-4EF3-9264-0C3CD6282057/CastReader.app/",
+      "version": "1.2.44"
+    }
+  ],
+  "running_safari_extension": {
+    "executable": "file:///private/var/containers/Bundle/Application/0AD06E56-4B50-4CC7-A7DF-FC9D47FF4E08/CastReader.app/PlugIns/CastReader%20Safari%20Extension.appex/CastReader%20Safari%20Extension",
+    "processIdentifier": 20854
+  },
+  "runtime_container_matches_latest_install": true,
+  "physical_playback_acceptance": "NOT_RUN: current computer-control tool unavailable; XCTest driver refused connection",
+  "production_qa_probe": false
+}

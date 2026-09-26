@@ -1,0 +1,94 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -workspace CastReader.xcworkspace -scheme CastReader -destination "platform=iOS Simulator,id=7238F928-F218-405F-BEB6-F338D95F89D9" -derivedDataPath /tmp/CastReaderSafariIPhone68-SurfaceSimulator "-only-testing:CastReaderUITests/SafariLiveReadingUITests/testInstalledSafariReadingControls" -resultBundlePath /tmp/SafariFinalIPadUI.xcresult
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  SwiftSoup: https://github.com/scinfu/SwiftSoup.git @ 2.13.5
+  ZIPFoundation: https://github.com/weichsel/ZIPFoundation @ 0.9.20
+
+Writing result bundle at path:
+	/tmp/SafariFinalIPadUI.xcresult
+
+2026-09-26 23:48:35.862406+0800 CastReaderUITests-Runner[9126:98056] [Default] Running tests...
+2026-09-26 23:48:36.063971+0800 CastReaderUITests-Runner[9126:98056] [UIKit App Config] Update the Info.plist: Launch screens will soon be required.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-09-26 23:48:36.333.
+Test Suite 'CastReaderUITests.xctest' started at 2026-09-26 23:48:36.333.
+Test Suite 'SafariLiveReadingUITests' started at 2026-09-26 23:48:36.333.
+Test Case '-[CastReaderUITests.SafariLiveReadingUITests testInstalledSafariReadingControls]' started.
+    t =     0.00s Start Test at 2026-09-26 23:48:36.334
+    t =     0.48s Set Up
+    t =     0.51s Open com.apple.mobilesafari
+    t =     0.51s     Activate com.apple.mobilesafari
+    t =     0.57s         Wait for com.apple.mobilesafari to idle
+    t =     0.68s Waiting 20.0s for WebView (First Match) to exist
+objc[9126]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1087fc310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x107884398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     1.70s     Checking `Expect predicate `existsNoRetry == 1` for object WebView (First Match)`
+    t =     1.70s         Checking existence of `WebView (First Match)`
+    t =     1.75s Checking existence of `"ReloadButton" Button`
+    t =     3.97s Tap "ReloadButton" Button
+    t =     3.97s     Wait for com.apple.mobilesafari to idle
+    t =     3.97s     Find the "ReloadButton" Button
+    t =     5.71s     Check for interrupting elements affecting "ReloadButton" Button
+    t =     6.59s         Wait for com.apple.springboard to idle
+    t =     6.77s     Synthesize event
+    t =     7.18s     Wait for com.apple.mobilesafari to idle
+    t =     7.90s Find the Application 'com.apple.mobilesafari'
+    t =     8.24s Added attachment named 'safari-before-reading'
+    t =     8.24s Checking existence of `"CastReader QA status" TextView`
+    t =     8.51s Requesting snapshot of accessibility hierarchy for app with pid 6787
+    t =    12.10s Requesting snapshot of accessibility hierarchy for app with pid 6787
+    t =    15.32s Added attachment named 'safari-controls-before-reading'
+    t =    15.33s Checking existence of `Button (First Match)`
+    t =    16.63s Waiting 15.0s for Button (First Match) to exist
+    t =    17.71s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    17.71s         Checking existence of `Button (First Match)`
+    t =    19.00s         Capturing element debug description
+    t =    19.65s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    19.65s         Checking existence of `Button (First Match)`
+    t =    20.96s         Capturing element debug description
+    t =    21.72s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    21.72s         Checking existence of `Button (First Match)`
+    t =    23.12s         Capturing element debug description
+    t =    23.66s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    23.66s         Checking existence of `Button (First Match)`
+    t =    25.01s         Capturing element debug description
+    t =    25.66s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    25.67s         Checking existence of `Button (First Match)`
+    t =    27.02s         Capturing element debug description
+    t =    27.67s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    27.67s         Checking existence of `Button (First Match)`
+    t =    29.02s         Capturing element debug description
+    t =    29.66s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    29.66s         Checking existence of `Button (First Match)`
+    t =    31.01s         Capturing element debug description
+    t =    31.64s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    31.65s         Checking existence of `Button (First Match)`
+    t =    31.93s         Capturing element debug description
+    t =    31.93s     Checking existence of `Button (First Match)`
+    t =    34.05s Collecting debug information to assist test failure triage
+    t =    34.05s     Requesting snapshot of accessibility hierarchy for app with pid 6787
+/Users/xuxuheng/.codex/worktrees/ios-safari-iphone-20260926/CastReader/CastReaderUITests/CastReaderUITests.swift:50: error: -[CastReaderUITests.SafariLiveReadingUITests testInstalledSafariReadingControls] : XCTAssertTrue failed - Enable the installed CastReader extension on the open test page
+    t =    37.25s Tear Down
+Test Case '-[CastReaderUITests.SafariLiveReadingUITests testInstalledSafariReadingControls]' failed (37.356 seconds).
+Test Suite 'SafariLiveReadingUITests' failed at 2026-09-26 23:49:13.691.
+	 Executed 1 test, with 1 failure (0 unexpected) in 37.356 (37.358) seconds
+Test Suite 'CastReaderUITests.xctest' failed at 2026-09-26 23:49:13.692.
+	 Executed 1 test, with 1 failure (0 unexpected) in 37.356 (37.358) seconds
+Test Suite 'Selected tests' failed at 2026-09-26 23:49:13.692.
+	 Executed 1 test, with 1 failure (0 unexpected) in 37.356 (37.359) seconds
+2026-09-26 23:49:42.607 xcodebuild[9083:97557] [MT] IDETestOperationsObserverDebug: 71.067 elapsed -- Testing started completed.
+2026-09-26 23:49:42.608 xcodebuild[9083:97557] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-09-26 23:49:42.608 xcodebuild[9083:97557] [MT] IDETestOperationsObserverDebug: 71.067 sec, +71.067 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/SafariFinalIPadUI.xcresult
+
+Failing tests:
+	SafariLiveReadingUITests.testInstalledSafariReadingControls()
+
+** TEST EXECUTE FAILED **
+
+Testing started
