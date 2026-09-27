@@ -12,6 +12,65 @@ import Foundation
 import Combine
 import UIKit
 
+/// Keep native paragraph layout immutable while speech arrives sentence by
+/// sentence. Audio timing/resume offsets remain in processed text; only the
+/// final visual range is projected onto the complete paragraph. Cache the
+/// normalization once per streamed prefix, not on every playback tick.
+struct NativeReadingTextProjection {
+    let source: String
+    let output: String
+    private let outputRanges: [NSRange]
+    private let sourceRanges: [NSRange]
+    private let matchingPrefix: Bool
+
+    init(source: String, output: String) {
+        self.source = source
+        self.output = output
+        func normalized(_ text: String) -> (characters: [Character], ranges: [NSRange]) {
+            var characters: [Character] = []
+            var ranges: [NSRange] = []
+            var offset = 0
+            for character in text {
+                let value = String(character)
+                let range = NSRange(location: offset, length: value.utf16.count)
+                offset += range.length
+                guard value.unicodeScalars.contains(where: { CharacterSet.alphanumerics.contains($0) }) else { continue }
+                for folded in value.lowercased().precomposedStringWithCanonicalMapping {
+                    characters.append(folded)
+                    ranges.append(range)
+                }
+            }
+            return (characters, ranges)
+        }
+        let src = normalized(source), out = normalized(output)
+        sourceRanges = src.ranges
+        outputRanges = out.ranges
+        matchingPrefix = src.characters.count >= out.characters.count
+            && src.characters.prefix(out.characters.count).elementsEqual(out.characters)
+    }
+
+    func sourceRange(for range: NSRange) -> NSRange? {
+        guard range.location != NSNotFound, range.location >= 0, range.length > 0,
+              range.location <= output.utf16.count,
+              range.length <= output.utf16.count - range.location else { return nil }
+        if source.hasPrefix(output) { return range }
+        if matchingPrefix,
+           let first = outputRanges.firstIndex(where: { NSMaxRange($0) > range.location }),
+           let last = outputRanges.lastIndex(where: { $0.location < NSMaxRange(range) }),
+           first <= last, sourceRanges.indices.contains(last) {
+            return NSRange(location: sourceRanges[first].location,
+                           length: NSMaxRange(sourceRanges[last]) - sourceRanges[first].location)
+        }
+        // Normalization can remove ornaments or change punctuation. Reuse the
+        // verified resume anchor rather than guessing an offset or matching a
+        // repeated word elsewhere in the paragraph.
+        guard let anchor = ReadingResumeContract.captureVisual(
+            output: output, offset: range.location, length: range.length, source: source
+        ) else { return nil }
+        return NSRange(location: anchor.utf16Offset, length: anchor.utf16Length)
+    }
+}
+
 enum ReadAloudOwnershipRecoveryPlan: Equatable {
     case reloadCachedParagraph
     case regenerateParagraph
@@ -643,6 +702,7 @@ final class ReadAloudViewModel: ObservableObject {
     private var audioSessionToken: AudioPlaybackSessionToken?
 
     private var segmentsByParagraph: [Int: [AudioSegment]] = [:]
+    private var nativeTextProjection: NativeReadingTextProjection?
     private var generationTask: Task<Void, Never>?
     private var liveWebTurnIntentSuspended = false
     private var listenCapRefreshTask: Task<Void, Never>?
@@ -5485,11 +5545,20 @@ final class ReadAloudViewModel: ObservableObject {
     // MARK: - 供 TextReaderView 取每段显示文本
 
     func displayText(for paragraphIndex: Int) -> String {
-        if paragraphIndex == currentParagraphIndex,
-           let processed = processedDisplayText, !processed.isEmpty {
-            return processed
-        }
+        // A streamed prefix is not a complete paragraph. Replacing the source
+        // with it removes every pending sentence and changes all following rows.
         return paras[paragraphIndex].text
+    }
+
+    func displayHighlightRange(for paragraphIndex: Int) -> NSRange? {
+        guard paragraphIndex == currentParagraphIndex,
+              paras.indices.contains(paragraphIndex), let range = highlightRange else { return nil }
+        let source = paras[paragraphIndex].text
+        let output = processedDisplayText ?? source
+        if nativeTextProjection?.source != source || nativeTextProjection?.output != output {
+            nativeTextProjection = NativeReadingTextProjection(source: source, output: output)
+        }
+        return nativeTextProjection?.sourceRange(for: range)
     }
 }
 

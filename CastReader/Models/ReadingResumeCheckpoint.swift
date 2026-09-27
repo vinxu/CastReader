@@ -48,8 +48,8 @@ struct ReadingResumeReflowCursor: Codable, Equatable {
     }
 }
 
-/// Source coordinates are used only to reveal a saved position before audio is
-/// ready. Live highlighting continues to use the processed TTS output.
+/// Source coordinates reveal a saved position before audio is ready and anchor
+/// a processed-text visual range onto the native reader's stable paragraph.
 struct ReadingResumeVisualCursor: Codable, Equatable {
     let sourceFingerprint: String
     let utf16Offset: Int

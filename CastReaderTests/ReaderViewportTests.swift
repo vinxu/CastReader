@@ -39,6 +39,74 @@ final class ReaderViewportTests: XCTestCase {
         (view as? T).map { [$0] } ?? [] + view.subviews.flatMap { descendants($0, as: type) }
     }
 
+    func testStreamingSentencesKeepWholeParagraphAndFollowingRowInPlace() async throws {
+        let sentences = [
+            "大屏幕能够容纳舒适的文字行宽和清楚的操作区域。",
+            "设备旋转时，文字会重新排版，但当前句子的含义没有改变。",
+            "应用需要重新找到同一句话，把阅读位置、高亮和原文标注放回正确的地方。",
+            "调整字号时也需要遵守同样的原则。"
+        ]
+        let text = sentences.joined()
+        let next = "下面的内容在分句加载时不能上下跳动。"
+        let document = ReadingDocument(title: "Streaming layout", sourceKind: .text, language: "zh",
+            paragraphs: [ReadingParagraph(id: 0, text: text), ReadingParagraph(id: 1, text: next)])
+        let vm = ReadAloudViewModel(document: document, historyStore: HistoryStore(directory: directory))
+        defer { vm.stop() }
+        vm.currentParagraphIndex = 0
+        vm.autoScrollEnabled = false
+        let host = UIHostingController(rootView: TextReaderView(document: document, readVM: vm,
+            explainVM: ExplainViewModel(document: document), mode: .read, refocusToken: 0))
+        try await show(host)
+        let first = try XCTUnwrap(descendants(host.view, as: ReaderUITextView.self).first { $0.text == text })
+        let following = try XCTUnwrap(descendants(host.view, as: ReaderUITextView.self).first { $0.text == next })
+        let originalHeight = first.bounds.height
+        let originalNextY = following.convert(following.bounds, to: host.view).minY
+        var prefix = ""
+        for sentence in sentences {
+            let offset = prefix.utf16.count
+            prefix += sentence
+            vm.processedDisplayText = prefix
+            vm.highlightRange = NSRange(location: offset, length: sentence.utf16.count)
+            try await settle()
+            XCTAssertEqual(first.text, text, "Pending sentences must stay visible")
+            XCTAssertEqual(first.bounds.height, originalHeight, accuracy: 0.5)
+            XCTAssertEqual(following.convert(following.bounds, to: host.view).minY, originalNextY, accuracy: 0.5)
+            let range = try XCTUnwrap(vm.displayHighlightRange(for: 0))
+            XCTAssertEqual((text as NSString).substring(with: range), sentence)
+        }
+        vm.currentParagraphIndex = 1
+        vm.processedDisplayText = next
+        try await settle()
+        XCTAssertEqual(first.text, text)
+        XCTAssertEqual(first.bounds.height, originalHeight, accuracy: 0.5)
+    }
+
+    func testNativeHighlightProjectionPreservesRepeatedWordsUnicodeAndNormalization() throws {
+        let source = "Café 👩🏽‍💻 said: ‘read   it’.\nThen read it again. 中文继续。"
+        let output = "Café 👩🏽‍💻 said: 'read it'.Then read it again.中文继续。"
+        let projection = NativeReadingTextProjection(source: source, output: output)
+        for word in ["Café", "again", "中文继续"] {
+            let range = (output as NSString).range(of: word)
+            let result = try XCTUnwrap(projection.sourceRange(for: range))
+            XCTAssertEqual((source as NSString).substring(with: result), word)
+        }
+        let repeated = (output as NSString).range(of: "read", options: .backwards)
+        XCTAssertEqual(try XCTUnwrap(projection.sourceRange(for: repeated)),
+                       (source as NSString).range(of: "read", options: .backwards))
+        XCTAssertNil(projection.sourceRange(for: NSRange(location: NSNotFound, length: 1)))
+        XCTAssertNil(projection.sourceRange(for: NSRange(location: 0, length: output.utf16.count + 1)))
+        let mismatch = NativeReadingTextProjection(source: "A different paragraph.", output: "Unrelated text.")
+        XCTAssertNil(mismatch.sourceRange(for: NSRange(location: 0, length: 9)))
+    }
+
+    func testBottomReservationIncludesCustomTabWithoutPlayerAndUsesUnionWithPlayer() {
+        XCTAssertEqual(BottomOverlayMetrics.requiredInset(contentBottom: 800, playerTop: nil, tabBarTop: 746), 54)
+        XCTAssertEqual(BottomOverlayMetrics.requiredInset(contentBottom: 800, playerTop: 662, tabBarTop: 746), 138)
+        XCTAssertEqual(BottomOverlayMetrics.requiredInset(contentBottom: 800, playerTop: 662, tabBarTop: nil), 138)
+        XCTAssertEqual(BottomOverlayMetrics.requiredInset(contentBottom: 800, playerTop: nil, tabBarTop: nil), 0)
+        XCTAssertEqual(BottomOverlayMetrics.requiredInset(contentBottom: 720, playerTop: nil, tabBarTop: 800), 0)
+    }
+
     func testEPUBParagraphTransitionDoesNotVisitTopBeforeWordFocus() async throws {
         try await verifyNativeTransition(source: .epub)
     }

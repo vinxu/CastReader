@@ -95,11 +95,6 @@ struct TextReaderView: View {
             .onChange(of: readVM.epubNavigationParagraphIndex) { _ in scheduleRefocus(proxy) }
             // Word ticks are handled after ReaderTextView updates its range
             // and layout, rather than scrolling using the previous UIView state.
-            .onChange(of: readVM.processedDisplayText) { _ in
-                // Streaming can change a huge lazy row's measured height and
-                // evict it from the viewport. Reacquire the row, then the word.
-                if mode == .read { scheduleRefocus(proxy) }
-            }
             .onAppear {
                 scheduleRefocus(proxy)
             }
@@ -194,7 +189,7 @@ struct TextReaderView: View {
         let text = (mode == .read) ? readVM.displayText(for: para.id) : para.text
         ReaderTextView(
             text: text,
-            highlightRange: isCurrent ? readVM.highlightRange : nil,
+            highlightRange: isCurrent ? readVM.displayHighlightRange(for: para.id) : nil,
             isCurrent: mode == .read ? isCurrent : true,
             fontSize: fontSize(for: para.type),
             lineSpacing: appearance.lineSpacing,
@@ -221,7 +216,7 @@ struct TextReaderView: View {
             return nsRange(mark.charRange, in: paragraph.text)
         }
         guard isCurrent, readVM.epubNavigationParagraphIndex == nil else { return nil }
-        return readVM.highlightRange ?? readVM.initialResumeViewportRange
+        return readVM.displayHighlightRange(for: paragraph.id) ?? readVM.initialResumeViewportRange
             ?? (text.isEmpty ? nil : NSRange(location: 0, length: 1))
     }
 

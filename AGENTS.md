@@ -2,6 +2,8 @@
 
 ## iOS 1.2.46 Safari 发布候选（2026-09-27）
 
+- 当前增量候选已提升到 **1.2.46（69）**：修复悬浮 Tab 未计入首页底部避让、流式分句使正文变短再增长。全量 1,893 通过、0 失败、8 条件跳过；iPad 布局套件 10/10。Build 68 已上传但不送审；本版最终提交状态以发布报告为准。
+
 - 用户现已明确授权将 Safari 支持合入最新 iOS，并面向 iPhone 和 iPad 提交 App Store；这取代下方历史“仅 Mac / 暂不启用移动 Safari”的范围限制。
 - 本轮从远端 `main` 的 `baccb69` 建立 `codex/ios-release-1.2.46`，双亲合并 `e1e10d9` 纳入 Safari 候选 `2b26f99`。线上 1.2.45（67）已 READY_FOR_SALE。四组件候选 1.2.46（68），设备族均 1/2；不得从主目录旧分支打包。
 - Safari 原生资源对应扩展源码 `31f8c7b`，`content.js` SHA-256 为 `192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75`。入包前运行 `ruby scripts/verify_safari_extension.rb`；发布 preflight 显式使用 `--include-safari`，该选项不豁免真实核心验收。
@@ -272,9 +274,9 @@ App 九语、商店 11 locale。文案以当前 ASC 资料与本版差异为准�
 
 Kindle 离线书由 `KindleOfflineBookReaderModel` 配合 `SystemSpeechPlaybackService` 使用原生 `AVSpeechSynthesizer`。下载只保存整本页图、封面与顺序清单；朗读时按需用端上 Vision OCR 识别，不能把 OCR 加回下载串行流程。入口在播放器“更多”中保存、设置的“离线书籍”中读取。中文/日文按句子高亮，英文按词高亮；收起阅读器保留迷你播放器。跨页期间暂停能力以模型的 `canPausePlayback` 为准，不能仅用瞬时语音状态或页面 loading 状态禁用暂停。
 
-## TTS 文本渲染 — 直接渲染 TTS 文本，不映射回原文
+## TTS 文本渲染 — 完整正文与流式音频分离（2026-09-27）
 
-TTS 返回的 `processedText` 与原文有差异（标点/空格规范化）。**不要把 timestamps 映射回原文**（会找不到/不同步）。朗读当前段渲染 `processedDisplayText`（segments 的 `text` 拼接），高亮在其中按词定位；未生成段落渲染 `paragraph.text`。`AudioSegment{text, timestamps:[TTSTimestamp{word,start,end}], unprocessedText, speaker?}`。
+用户真机指出分句到达时正文缩短再增长、下方内容跳动，因此原生 TextReaderView 始终排版完整 `paragraph.text`。`processedDisplayText` 仍是已收到 segments 的 `text` 拼接；时间戳、`highlightRange`、音频恢复游标继续在此坐标内计算，不直接在原文查 timestamp word。只有显示时通过 `NativeReadingTextProjection` 投影已定位的字符范围：完整语义前缀校验、UTF-16 边界、重复词顺序及规范化差异；不匹配时复用已验证的恢复锚点，不能用猜测偏移或任意同名词放行。新增分句到达前后正文高度/下一段位置不变与高亮定位回归。Web、PDF、照片的渲染管线不改变。
 
 ## TTS 播放竞态 — `moreSegmentsExpected` 标志
 

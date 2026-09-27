@@ -8,7 +8,7 @@
 import StoreKit
 import SwiftUI
 
-/// How far the floating mini player currently reaches up into tab content.
+/// How far floating controls currently reach up into tab content.
 ///
 /// Published from `MainTabView`, which is the only place that can measure both
 /// edges, and consumed by each scrollable screen. It has to be consumed *inside*
@@ -25,6 +25,14 @@ final class BottomOverlayMetrics: ObservableObject {
     func update(_ newValue: CGFloat) {
         guard abs(height - newValue) > 0.5 else { return }
         height = newValue
+    }
+
+    static func requiredInset(contentBottom: CGFloat?, playerTop: CGFloat?, tabBarTop: CGFloat?) -> CGFloat {
+        guard let bottom = contentBottom,
+              let top = [playerTop, tabBarTop].compactMap({ $0 }).min() else { return 0 }
+        // The player and tab bar overlap the same bottom region. Adding their
+        // heights would reserve that region twice.
+        return max(0, bottom - top)
     }
 }
 
@@ -61,6 +69,16 @@ private struct MiniPlayerTopKey: PreferenceKey {
 /// same space. Measured rather than assumed so no tab-bar height constant is
 /// needed.
 private struct TabContentBottomKey: PreferenceKey {
+    static var defaultValue: CGFloat?
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        value = nextValue() ?? value
+    }
+}
+
+/// The custom iPhone bar lives outside NavigationStack, whose scroll views
+/// do not inherit that outer safe-area inset. Reserve its measured overlap
+/// through the same in-screen path as the floating player.
+private struct FloatingTabBarTopKey: PreferenceKey {
     static var defaultValue: CGFloat?
     static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
         value = nextValue() ?? value
@@ -159,6 +177,7 @@ struct MainTabView: View {
     @State private var voiceBrowserLaunchRequest: VoiceBrowserLaunchRequest?
     @State private var miniPlayerTop: CGFloat?
     @State private var tabContentBottom: CGFloat?
+    @State private var floatingTabBarTop: CGFloat?
     @State private var isImportingSharedContent = false
     @State private var shareInboxItems: [ShareInboxItem] = []
     @State private var shareInboxUnreadCount = 0
@@ -315,6 +334,14 @@ struct MainTabView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if !importRouter.hideMainChrome {
                 iPhoneTabBar
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: FloatingTabBarTopKey.self,
+                                value: proxy.frame(in: .named(Self.rootSpace)).minY
+                            )
+                        }
+                    }
                     .padding(.bottom, 6)
                     .offset(y: max(0, (readerScene.window?.safeAreaInsets.bottom ?? 34) - 14))
             }
@@ -528,6 +555,10 @@ struct MainTabView: View {
         }
         .onPreferenceChange(TabContentBottomKey.self) { value in
             tabContentBottom = value
+            publishOverlap()
+        }
+        .onPreferenceChange(FloatingTabBarTopKey.self) { value in
+            floatingTabBarTop = value
             publishOverlap()
         }
         .onAppear {
@@ -2118,11 +2149,11 @@ struct MainTabView: View {
     /// Both edges are measured in the same coordinate space, so this stays
     /// correct if the player's height, its padding, or the tab bar ever change.
     private func publishOverlap() {
-        guard let top = miniPlayerTop, let bottom = tabContentBottom else {
-            readerScene.bottomMetrics.update(0)
-            return
-        }
-        readerScene.bottomMetrics.update(max(0, bottom - top))
+        readerScene.bottomMetrics.update(BottomOverlayMetrics.requiredInset(
+            contentBottom: tabContentBottom,
+            playerTop: miniPlayerTop,
+            tabBarTop: floatingTabBarTop
+        ))
     }
 
     private static let plusTabImage: UIImage = {
