@@ -1,7 +1,28 @@
 {
   "identifier" : "CASTREADER_PRO_CONFIG",
   "nonRenewingSubscriptions" : [],
-  "products" : [],
+  "products" : [
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "CR_CLONE_MINUTES_120",
+      "localizations" : [
+        {
+          "description" : "120 extra minutes for clone voice generation. Pro required.",
+          "displayName" : "120 Clone Voice Minutes",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "增加 120 分钟克隆音色生成额度，需要 Pro。",
+          "displayName" : "克隆音色 120 分钟",
+          "locale" : "zh_CN"
+        }
+      ],
+      "productID" : "ai.castreader.clone.minutes120",
+      "referenceName" : "Clone Voice 120 Minutes",
+      "type" : "Consumable"
+    }
+  ],
   "settings" : {
     "_applicationInternalID" : "0",
     "_developerTeamID" : "0",

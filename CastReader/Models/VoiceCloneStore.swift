@@ -35,6 +35,7 @@ final class VoiceCloneStore: ObservableObject {
     private let service: any VoiceCloneStoreServicing
     private let defaults: UserDefaults
     private let isSignedIn: @MainActor () -> Bool
+    private var creditObserver: AnyCancellable?
     private var labels: [String: String] = [:]
     private var referenceLanguages: [String: String] = [:]
     private var cachedIdentities: [String: VoiceCloneIdentity] = [:]
@@ -66,6 +67,9 @@ final class VoiceCloneStore: ObservableObject {
         self.service = service
         self.defaults = defaults
         self.isSignedIn = isSignedIn
+        creditObserver = CloneCreditStore.shared.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
     }
 
     func activateAccountScope(storageID: String) {
@@ -120,6 +124,10 @@ final class VoiceCloneStore: ObservableObject {
 
     var canApply: Bool {
         guard ProManager.shared.isPro else { return false }
+        if let credits = CloneCreditStore.shared.currentBalance, credits.enabled {
+            if creditBaseResetHasPassed(credits) { return true }
+            return credits.canApply ?? false
+        }
         if isQuotaBlocked { return false }
         // The app may stay open across the UTC monthly reset. A stale exhausted
         // snapshot must not keep the voice locked after its reset time; the next
@@ -129,10 +137,21 @@ final class VoiceCloneStore: ObservableObject {
     }
 
     var isQuotaBlocked: Bool {
+        if let credits = CloneCreditStore.shared.currentBalance, credits.enabled, let remaining = credits.availableMs {
+            return remaining <= 0 && !creditBaseResetHasPassed(credits)
+        }
         guard let remaining = capability.monthlyRemainingSeconds,
               remaining <= 0 else { return false }
         guard let resetAt = capability.resetAt else { return true }
         return resetAt > Date()
+    }
+
+    private func creditBaseResetHasPassed(_ balance: CloneCreditBalance) -> Bool {
+        guard let raw = balance.baseResetAt else { return false }
+        let parser = ISO8601DateFormatter()
+        parser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let date = parser.date(from: raw) ?? ISO8601DateFormatter().date(from: raw)
+        return date.map { $0 <= Date() } ?? false
     }
 
     var remainingMinutes: Int? {
@@ -851,6 +870,7 @@ final class VoiceCloneStore: ObservableObject {
     }
 
     func applyQuotaHeaders(_ response: HTTPURLResponse, readSequence: UInt64? = nil) {
+        CloneCreditStore.shared.applyGenerationResponse(response)
         applyCapability(VoiceCloneResponseParser.quotaCapability(from: response), readSequence: readSequence)
     }
 
@@ -885,7 +905,8 @@ final class VoiceCloneStore: ObservableObject {
             }
         case .quotaExhausted(let resetAt):
             markQuotaExhausted(resetAt: resetAt)
-            VoiceCloneAccessCoordinator.shared.prompt = .message(cloneError.localizedDescription)
+            VoiceCloneAccessCoordinator.shared.prompt = CloneCreditStore.shared.currentBalance?.enabled == true
+                ? .credits : .message(cloneError.localizedDescription)
         default:
             break
         }

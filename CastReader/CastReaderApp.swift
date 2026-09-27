@@ -163,7 +163,11 @@ struct RootAuthGate: View {
             // Exercise the real Kobo connection UI against a local four-page
             // shelf. The fixture and its isolated WebView/store exist only in
             // Debug builds; release builds always use the normal auth gate.
-            if ProcessInfo.processInfo.arguments.contains("-CastReaderMultiWindowFixture") {
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderCloneCreditFixture") {
+                #if targetEnvironment(simulator)
+                CloneCreditAcceptanceFixture()
+                #endif
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderMultiWindowFixture") {
                 IPadMultiWindowAcceptanceFixture(scene: readerScene)
             } else if ProcessInfo.processInfo.arguments.contains("-CastReaderIPadFormFixture") {
                 IPadFormAcceptanceFixture()
@@ -281,6 +285,7 @@ final class AppStartupCoordinator: ObservableObject {
         AdAttributionService.shared.start()
         AnalyticsLibrarySyncReceiptOutbox.shared.start()
         ProManager.shared.start()
+        CloneCreditStore.shared.start()
         QuotaManager.shared.rollIfNewDay()
         VoiceCatalogService.shared.start()
         NetworkReachability.shared.start()

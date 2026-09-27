@@ -1184,11 +1184,12 @@ private extension Data {
 final class VoiceCloneAccessCoordinator: ObservableObject {
     static let shared = VoiceCloneAccessCoordinator()
     enum Prompt: Identifiable {
-        case signIn, paywall, message(String)
+        case signIn, paywall, credits, message(String)
         var id: String {
             switch self {
             case .signIn: return "signIn"
             case .paywall: return "paywall"
+            case .credits: return "credits"
             case .message(let value): return "message-\(value)"
             }
         }
@@ -1197,8 +1198,49 @@ final class VoiceCloneAccessCoordinator: ObservableObject {
     @Published var prompt: Prompt? {
         willSet {
             if newValue != nil, prompt == nil { presentationSceneID = ReaderSceneRegistry.shared.presentationContext?.id }
+            if newValue?.id != "credits" {
+                finishCreditWaits(resume: false)
+            }
             if newValue == nil { presentationSceneID = nil }
         }
+    }
+
+    private var creditWaits: [UUID: CheckedContinuation<Bool, Error>] = [:]
+    @Published private(set) var hasCreditWaiters = false
+
+    /// Keep the current paragraph, generated prefix and request ID alive while
+    /// the user tops up. Dismissal and playback cancellation release the wait.
+    func waitForCreditPurchase() async throws -> Bool {
+        let id = UUID()
+        return try await withTaskCancellationHandler {
+            try Task.checkCancellation()
+            return try await withCheckedThrowingContinuation { continuation in
+                creditWaits[id] = continuation
+                hasCreditWaiters = true
+                prompt = .credits
+            }
+        } onCancel: {
+            Task { @MainActor [weak self] in
+                self?.creditWaits.removeValue(forKey: id)?.resume(throwing: CancellationError())
+                self?.hasCreditWaiters = self?.creditWaits.isEmpty == false
+                if self?.hasCreditWaiters == false, self?.prompt?.id == "credits" {
+                    self?.prompt = nil
+                }
+            }
+        }
+    }
+
+    func continueAfterCreditPurchase(store: CloneCreditStore = .shared) {
+        guard store.currentBalance?.canApply == true else { return }
+        finishCreditWaits(resume: true)
+        prompt = nil
+    }
+
+    private func finishCreditWaits(resume: Bool) {
+        let waits = creditWaits.values
+        creditWaits.removeAll()
+        hasCreditWaiters = false
+        for continuation in waits { continuation.resume(returning: resume) }
     }
 }
 

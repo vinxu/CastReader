@@ -691,6 +691,25 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         }
     }
 
+    private func waitForCloneCreditPurchase(priority: TTSRequestPriority,
+        boundary: AccountContentBoundaryToken?, resetAt: Date?) async throws -> Bool {
+        guard priority == .interactive else { return false }
+        let enabled = await MainActor.run {
+            guard boundary.map(AccountContentIsolation.isCurrent) ?? true else { return false }
+            guard CloneCreditStore.shared.currentBalance?.enabled == true else {
+                VoiceCloneAccessCoordinator.shared.prompt = .message(VoiceCloneError.quotaExhausted(resetAt).localizedDescription)
+                return false
+            }
+            return true
+        }
+        guard enabled else { return false }
+        let resume = try await VoiceCloneAccessCoordinator.shared.waitForCreditPurchase()
+        try Task.checkCancellation()
+        let current = await MainActor.run { boundary.map(AccountContentIsolation.isCurrent) ?? true }
+        guard current else { throw CancellationError() }
+        return resume
+    }
+
     private func requestClonedVoiceTTS(
         body: Data,
         voiceID: String,
@@ -752,14 +771,11 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             throw VoiceCloneError.proRequired
         }
         if accessState.blocked {
-            let error = VoiceCloneError.quotaExhausted(accessState.resetAt)
-            await MainActor.run {
-                guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
-                if priority == .interactive {
-                    VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
-                }
+            if try await waitForCloneCreditPurchase(priority: priority, boundary: expectedBoundary, resetAt: accessState.resetAt) {
+                return try await requestClonedVoiceTTS(body: body, voiceID: voiceID, priority: priority,
+                    requestID: requestID, accountBoundary: expectedBoundary)
             }
-            throw error
+            throw VoiceCloneError.quotaExhausted(accessState.resetAt)
         }
         if !accessState.canApply {
             await MainActor.run {
@@ -773,6 +789,7 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         guard let url = URL(string: Constants.API.clonedVoiceTTS) else {
             throw APIError.invalidURL
         }
+        let creditEnvironment = await MainActor.run { CloneCreditStore.shared.billingEnvironment }
         let remainingSeconds = deadline - ProcessInfo.processInfo.systemUptime
         guard remainingSeconds > 0 else { throw VoiceCloneError.temporaryUnavailable }
         var request = URLRequest(url: url)
@@ -785,6 +802,7 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
         request.setValue(priority.rawValue, forHTTPHeaderField: "X-TTS-Priority")
         request.setValue(requestID, forHTTPHeaderField: "X-Request-ID")
+        request.setValue(creditEnvironment, forHTTPHeaderField: "X-Clone-Billing-Environment")
 
         let quotaRead = await MainActor.run { VoiceCloneStore.shared.beginQuotaRead() }
         let data: Data
@@ -858,10 +876,11 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                 let error = VoiceCloneError.quotaExhausted(resetAt)
                 await MainActor.run {
                     guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
-                    let applied = VoiceCloneStore.shared.markQuotaExhausted(resetAt: resetAt, readSequence: quotaRead)
-                    if applied, priority == .interactive {
-                        VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
-                    }
+                    _ = VoiceCloneStore.shared.markQuotaExhausted(resetAt: resetAt, readSequence: quotaRead)
+                }
+                if try await waitForCloneCreditPurchase(priority: priority, boundary: expectedBoundary, resetAt: resetAt) {
+                    return try await requestClonedVoiceTTS(body: body, voiceID: voiceID, priority: priority,
+                        requestID: requestID, accountBoundary: expectedBoundary)
                 }
                 throw error
             }
