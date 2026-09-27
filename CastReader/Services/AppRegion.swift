@@ -306,8 +306,8 @@ extension AppRegion {
     /// 继续使用原有的错误与重试路径，不在发行区域层面删除功能。
     var availableBoundLibraries: [BoundLibraryOnboardingSource] {
         switch self {
-        case .global: return [.kindle, .weread, .googleBooks, .kobo, .oreilly]
-        case .cn: return [.weread, .kindle, .googleBooks, .kobo, .oreilly]
+        case .global: return [.kindle, .weread, .googleBooks, .kobo, .oreilly, .ao3]
+        case .cn: return [.weread, .kindle, .googleBooks, .kobo, .oreilly, .ao3]
         }
     }
 

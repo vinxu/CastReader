@@ -206,9 +206,9 @@ final class ExplainViewModel: ObservableObject {
     private var webDoc: ReadingDocument? = nil
     private var deferredWebAutoplay = DeferredAutoplayGate()
     private var doc: ReadingDocument { webDoc ?? kindleSpeechDocument ?? document }
-    func loadWebParagraphs(_ p: [ReadingParagraph], language: String? = nil) {
+    func loadWebParagraphs(_ p: [ReadingParagraph], language: String? = nil, sourceURL: String? = nil) {
         webDoc = ReadingDocument(id: document.id, title: document.title, sourceKind: .web,
-                                 language: language ?? document.language, paragraphs: p, sourceURL: document.sourceURL)
+                                 language: language ?? document.language, paragraphs: p, sourceURL: sourceURL ?? document.sourceURL)
         if deferredWebAutoplay.contentBecameReady(isReady: !doc.readableParagraphs.isEmpty) {
             ensurePlaying()
         }
@@ -511,7 +511,10 @@ final class ExplainViewModel: ObservableObject {
         onPlaybackOwnershipRevoked?()
     }
 
+    var onAO3Pause: (() -> Void)?
+
     func pauseOwnedPlayback() {
+        onAO3Pause?()
         if let token = audioSessionToken { _ = audio.pause(session: token) }
     }
 
@@ -606,6 +609,8 @@ final class ExplainViewModel: ObservableObject {
     var shouldResumeAfterManualLivePageTurn: Bool {
         if accessRefreshTask != nil { return true }
         guard isActive else { return false }
+        if AO3PageUpdate.isAO3URL(document.sourceURL), ownsAudioQueue,
+           audio.hasPlaybackRequest, !audio.isExplicitlyPaused { return true }
         if ownsAudioQueue, audio.isPlaying { return true }
         guard ownsAudioQueue else {
             switch status {

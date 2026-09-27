@@ -253,6 +253,7 @@ struct HomeView: View {
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
     @ObservedObject private var googleBooksStore = GoogleBooksLibraryStore.shared
     @ObservedObject private var koboStore = KoboLibraryStore.shared
+    @ObservedObject private var ao3Store = AO3LibraryStore.shared
     @ObservedObject private var oreillyStore = OReillyLibraryStore.shared
     @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
     @ObservedObject private var growthLoop = GrowthLoopConversionCoordinator.shared
@@ -759,6 +760,7 @@ struct HomeView: View {
             || !googleBooksStore.books.isEmpty
             || !koboStore.books.isEmpty
             || !oreillyStore.books.isEmpty
+            || !ao3Store.books.isEmpty
             || (showsWeReadModule && !weReadStore.books.isEmpty)
     }
 
@@ -767,6 +769,7 @@ struct HomeView: View {
             || !googleBooksStore.needsConnection
             || !koboStore.needsConnection
             || !oreillyStore.needsConnection
+            || !ao3Store.needsConnection
             || (showsWeReadModule && !weReadStore.needsConnection)
     }
 
@@ -800,6 +803,7 @@ struct HomeView: View {
         GoogleBooksHomeSection()
         KoboHomeSection()
         OReillyHomeSection()
+        AO3HomeSection()
         if showsWeReadModule {
             WeReadHomeSection()
         }
@@ -864,6 +868,7 @@ struct HomeView: View {
         case .googleBooks: !googleBooksStore.books.isEmpty
         case .kobo: !koboStore.books.isEmpty
         case .oreilly: !oreillyStore.books.isEmpty
+        case .ao3: !ao3Store.books.isEmpty
         }
         let actionTitle: String = switch source {
         case .kindle:
@@ -874,6 +879,8 @@ struct HomeView: View {
             hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定 Google Play 图书")
         case .kobo:
             hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定 Kobo")
+        case .ao3:
+            hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定 AO3")
         case .oreilly:
             hasBooks
                 ? AppLocalized("打开一本书")
@@ -950,6 +957,10 @@ struct HomeView: View {
             } else {
                 onRequestLibraryConnection(.kobo)
             }
+        case .ao3:
+            if let book = ao3Store.homeBooks.first {
+                AO3ReaderLauncher.open(book, using: coordinator)
+            } else { onRequestLibraryConnection(.ao3) }
         case .oreilly:
             if let book = oreillyStore.homeBooks.first {
                 OReillyReaderLauncher.open(
@@ -1631,6 +1642,7 @@ private struct BoundLibraryActivationCard: View {
         case .googleBooks: return "book.pages"
         case .kobo: return "book.closed.fill"
         case .oreilly: return "text.book.closed.fill"
+        case .ao3: return "book.pages"
         case nil: return "link.circle.fill"
         }
     }

@@ -771,7 +771,9 @@ final class HistoryStore: ObservableObject {
         case .epub, .pdf, .docx: return document.fileData.map(ReadingResumeContract.fingerprint)
         case .photo: return document.imageData.map(ReadingResumeContract.fingerprint)
         case .text: return ReadingResumeContract.fingerprint(document.fullText)
-        case .web: return document.sourceURL.map(ReadingResumeContract.fingerprint)
+        case .web:
+            if document.id.hasPrefix("ao3-") { return ReadingResumeContract.fingerprint(document.id) }
+            return document.sourceURL.map(ReadingResumeContract.fingerprint)
         default: return nil
         }
     }

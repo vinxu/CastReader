@@ -168,6 +168,7 @@ enum AccountContentIsolation {
         GoogleBooksLibraryStore.shared.activateAccountScope(scope)
         KoboLibraryStore.shared.activateAccountScope(scope)
         OReillyLibraryStore.shared.activateAccountScope(scope)
+        AO3LibraryStore.shared.activateAccountScope(scope)
         return scope.storageID
     }
 
@@ -203,6 +204,7 @@ enum AccountContentIsolation {
             GoogleBooksLibraryStore.shared.activateLegacyTestingScope()
             KoboLibraryStore.shared.activateLegacyTestingScope()
             OReillyLibraryStore.shared.activateLegacyTestingScope()
+            AO3LibraryStore.shared.activateLegacyTestingScope()
             return
         }
         #endif
@@ -223,6 +225,7 @@ enum AccountContentIsolation {
         GoogleBooksLibraryStore.shared.deactivateAccountScope()
         KoboLibraryStore.shared.deactivateAccountScope()
         OReillyLibraryStore.shared.deactivateAccountScope()
+        AO3LibraryStore.shared.deactivateAccountScope()
     }
 }
 

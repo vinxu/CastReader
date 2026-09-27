@@ -28,6 +28,25 @@ function fingerprint(value: string): string {
   return (hash >>> 0).toString(16)
 }
 
+function chapterMetadata() {
+  const work = location.pathname.match(/^\/works\/(\d+)(?:\/chapters\/\d+)?$/)?.[1]
+  const chapter = (selector: string): string | null => {
+    const raw = document.querySelector<HTMLAnchorElement>(selector)?.href
+    if (!raw || !work) return null
+    const url = new URL(raw, location.href)
+    if (url.origin !== location.origin || !new RegExp(`^/works/${work}/chapters/[0-9]+$`).test(url.pathname)) return null
+    url.search = ''; url.hash = 'workskin'
+    return url.href
+  }
+  const greeting = document.querySelector('#greeting')
+  const profile = [...(greeting?.querySelectorAll<HTMLAnchorElement>('a[href]') || [])]
+    .map(a => new URL(a.href)).find(u => u.origin === location.origin && /^\/users\/[^/]+\/?$/.test(u.pathname))
+  const account = greeting?.querySelector('a[href*="/users/logout"]') && profile
+    ? decodeURIComponent(profile.pathname.split('/')[2]) : null
+  return { workID: work || null, account,
+    nextURL: chapter('li.chapter.next a'), previousURL: chapter('li.chapter.previous a') }
+}
+
 export function makeAO3Reader() {
   const newDocumentID = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`
   let documentID = newDocumentID()
@@ -85,7 +104,7 @@ export function makeAO3Reader() {
       return paragraphs
     },
     pageMeta(): Record<string, unknown> {
-      return { source: 'ao3', documentID, url: location.href, state, signature }
+      return { source: 'ao3', documentID, url: location.href, state, signature, ...chapterMetadata() }
     },
     install(extract: (reason?: string) => void): void {
       let timer: ReturnType<typeof setTimeout> | undefined

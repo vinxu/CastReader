@@ -186,6 +186,7 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
     case googleBooks = "google_books"
     case kobo
     case oreilly
+    case ao3
 
     var id: String { rawValue }
 
@@ -196,6 +197,7 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
         case .googleBooks: return .googleBooks
         case .kobo: return .kobo
         case .oreilly: return .oreilly
+        case .ao3: return .url
         }
     }
 
@@ -206,6 +208,7 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
         case .googleBooks: return .googleBooks
         case .kobo: return .kobo
         case .oreilly: return .oreilly
+        case .ao3: return .web
         }
     }
 
@@ -216,6 +219,7 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
         case .googleBooks: return .googleBooks
         case .kobo: return .kobo
         case .oreilly: return .oreilly
+        case .ao3: return .web
         }
     }
 
