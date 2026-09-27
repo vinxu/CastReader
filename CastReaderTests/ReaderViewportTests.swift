@@ -93,6 +93,11 @@ final class ReaderViewportTests: XCTestCase {
         let repeated = (output as NSString).range(of: "read", options: .backwards)
         XCTAssertEqual(try XCTUnwrap(projection.sourceRange(for: repeated)),
                        (source as NSString).range(of: "read", options: .backwards))
+        let decomposed = "Cafe\u{301} then continue."
+        let composed = "Café then continue."
+        let accents = NativeReadingTextProjection(source: composed, output: decomposed)
+        XCTAssertEqual(try XCTUnwrap(accents.sourceRange(for: (decomposed as NSString).range(of: "then"))),
+                       (composed as NSString).range(of: "then"))
         XCTAssertNil(projection.sourceRange(for: NSRange(location: NSNotFound, length: 1)))
         XCTAssertNil(projection.sourceRange(for: NSRange(location: 0, length: output.utf16.count + 1)))
         let mismatch = NativeReadingTextProjection(source: "A different paragraph.", output: "Unrelated text.")

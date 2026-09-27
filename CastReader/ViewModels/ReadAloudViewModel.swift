@@ -53,7 +53,10 @@ struct NativeReadingTextProjection {
         guard range.location != NSNotFound, range.location >= 0, range.length > 0,
               range.location <= output.utf16.count,
               range.length <= output.utf16.count - range.location else { return nil }
-        if source.hasPrefix(output) { return range }
+        // String.hasPrefix treats composed/decomposed accents as equal even
+        // when their UTF-16 offsets differ. Only identical code units can use
+        // the audio range directly.
+        if source.utf16.starts(with: output.utf16) { return range }
         if matchingPrefix,
            let first = outputRanges.firstIndex(where: { NSMaxRange($0) > range.location }),
            let last = outputRanges.lastIndex(where: { $0.location < NSMaxRange(range) }),
