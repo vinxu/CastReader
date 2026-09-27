@@ -882,7 +882,7 @@ struct ReaderHostView: View {
     ) -> (() -> Void)? {
         guard ReaderPlaybackNavigationContract.usesPageTurns(
             for: document.sourceKind
-        ) || AO3PageUpdate.isAO3URL(document.sourceURL) else {
+        ) else {
             return nil
         }
         return {

@@ -87,7 +87,7 @@
       "mx",
       "nl"
     ],
-    "librarySource": ["kindle", "weread", "google_books", "kobo", "oreilly", "ao3"],
+    "librarySource": ["kindle", "weread", "google_books", "kobo", "oreilly"],
     "libraryConnectionStage": [
       "entry_tapped",
       "connection_presented",
@@ -166,7 +166,7 @@
     "onboardingOutcome": ["shown", "tapped", "started", "success", "failed", "skipped", "done"],
     "onboardingSource": [
       "app", "apple", "google", "email", "phone", "kindle", "weread",
-      "google_books", "kobo", "oreilly", "ao3", "file", "camera", "photo_library",
+      "google_books", "kobo", "oreilly", "file", "camera", "photo_library",
       "clipboard", "url", "text", "unknown", "other"
     ],
     "adAttributionAttemptOutcome": [

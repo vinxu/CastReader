@@ -162,7 +162,6 @@ enum AnalyticsOnboardingSource: String, Codable, CaseIterable, Sendable {
     case googleBooks = "google_books"
     case kobo
     case oreilly
-    case ao3
     case file
     case camera
     case photoLibrary = "photo_library"
@@ -270,7 +269,6 @@ enum AnalyticsLibrarySource: String, Codable, CaseIterable, Sendable {
     case googleBooks = "google_books"
     case kobo
     case oreilly
-    case ao3
 }
 
 enum AnalyticsLibraryConnectionStage: String, Codable, CaseIterable, Sendable {
@@ -828,7 +826,7 @@ final class AnalyticsLibrarySyncReceiptOutbox: @unchecked Sendable {
     static func requiresDurableReceipt(_ source: AnalyticsLibrarySource) -> Bool {
         switch source {
         case .kindle, .weread, .googleBooks, .kobo: return true
-        case .oreilly, .ao3: return false
+        case .oreilly: return false
         }
     }
 }

@@ -1291,7 +1291,7 @@ class CastReaderUITests: XCTestCase {
                         .waitForExistence(timeout: 5),
                     "Shelf-source screen failed for \(configuration.language), \(appearance)"
                 )
-                for source in ["kindle", "weread", "google_books", "kobo", "oreilly", "ao3"] {
+                for source in ["kindle", "weread", "google_books", "kobo", "oreilly"] {
                     XCTAssertTrue(
                         app.buttons["shelfSourcePrimaryAction.\(source)"]
                             .waitForExistence(timeout: 2),
@@ -2304,7 +2304,7 @@ class CastReaderUITests: XCTestCase {
     }
 
     /// 统一书架页仍必须提供其他书库；首启本身只保留一条 Kindle 路径。
-    func testOnboardingOffersAllSixBoundLibraries() {
+    func testOnboardingOffersAllFiveBoundLibraries() {
         let app = launchZh()
         app.buttons["homeShelfSourcesButton"].tap()
         XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.kindle"].waitForExistence(timeout: 6))
@@ -2312,7 +2312,6 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.google_books"].exists)
         XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.kobo"].exists)
         XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.oreilly"].exists)
-        XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.ao3"].exists)
     }
 
     func testSettingsCanReopenLibraryOnboardingAfterDismissal() {
@@ -2446,24 +2445,20 @@ class CastReaderUITests: XCTestCase {
     }
 
     /// 统一书架来源页承载所有商业阅读平台，新增平台不再挤占首页。
-    func testShelfSourcesOffersAllSixPlatforms() {
+    func testShelfSourcesOffersAllFivePlatforms() {
         let app = launchZh()
         openShelfSources(in: app)
 
-        for source in ["kindle", "weread", "google_books", "kobo", "oreilly", "ao3"] {
+        for source in ["kindle", "weread", "google_books", "kobo", "oreilly"] {
             XCTAssertTrue(
                 app.buttons["shelfSourcePrimaryAction.\(source)"]
                     .waitForExistence(timeout: 5),
                 "统一书架来源页缺少平台：\(source)"
             )
         }
-        let ao3 = app.buttons["shelfSourcePrimaryAction.ao3"]
-        for _ in 0..<5 where !ao3.isHittable { app.swipeUp() }
-        XCTAssertTrue(ao3.isHittable)
-        keepScreenshot(of: app, named: "AO3-shelf-source-entry")
     }
 
-    func testChinaRegionHidesYouTubeEntryButStillOffersAllSixShelfPlatforms() {
+    func testChinaRegionHidesYouTubeEntryButStillOffersAllFiveShelfPlatforms() {
         let app = XCUIApplication()
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
@@ -2483,7 +2478,7 @@ class CastReaderUITests: XCTestCase {
         )
         openShelfSources(in: app)
 
-        for source in ["weread", "kindle", "google_books", "kobo", "oreilly", "ao3"] {
+        for source in ["weread", "kindle", "google_books", "kobo", "oreilly"] {
             XCTAssertTrue(
                 app.buttons["shelfSourcePrimaryAction.\(source)"]
                     .waitForExistence(timeout: 5),
@@ -2693,11 +2688,6 @@ class CastReaderUITests: XCTestCase {
 
     /// 书架来源是首页右上角常驻入口，不受账号绑定或首页是否已有书影响。
     private func openShelfSources(in app: XCUIApplication) {
-        // Playback tests can leave StoreKit's in-app review sheet pending.
-        // Dismiss it without submitting a rating before testing source entry.
-        if app.buttons["star"].firstMatch.exists, app.buttons["Not Now"].exists {
-            app.buttons["Not Now"].tap()
-        }
         let sources = app.buttons["homeShelfSourcesButton"]
         XCTAssertTrue(sources.waitForExistence(timeout: 5), "首页右上角缺少书架来源入口")
         XCTAssertTrue(sources.isHittable, "首页右上角书架来源入口不可点击")

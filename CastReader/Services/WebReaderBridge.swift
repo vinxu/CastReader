@@ -127,21 +127,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var didInit = false
     private var didAutoStart = false
     private var isAO3 = false
-    private var ao3NextURL: URL?
-    private var ao3PreviousURL: URL?
-    private var ao3PendingURL: String?
-    private var ao3TurnTimeout: Task<Void, Never>?
-    var makeAO3Preloader: () -> AO3ChapterPreloader = { AO3ChapterPreloader() }
-    private var ao3Preloader: AO3ChapterPreloader?
-    private var ao3Preview: AO3ChapterPreloader.Page?
-    private var ao3ExplainTask: Task<Void, Never>?
-    private var ao3Explanation: ExplainViewModel.PrefetchedFirstBlock?
-    private var ao3SpeechTask: Task<Void, Never>?
-    private var ao3Speech: (page: String, signature: String, voice: String, language: String, segments: [AudioSegment])?
-    private var ao3PreviewGeneration = UUID()
-    private var ao3BoundBookID: String?
-    private var ao3ScopeRevision = UUID()
-
     private var ao3DocumentID: String?
     private var ao3RetiredDocuments = Set<String>()
     private var ao3Signature = ""
@@ -567,8 +552,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         self.expectsDynamicWebContent = expectsDynamicWebContent
         self.isAO3 = expectsDynamicWebContent && AO3PageUpdate.isAO3URL(readerURL)
         self.ao3PageKey = AO3PageUpdate.pageKey(readerURL)
-        self.ao3ScopeRevision = AO3LibraryStore.shared.revision
-        self.ao3BoundBookID = AO3LibraryStore.shared.book(for: bookID)?.id
         self.isWeRead = isWeRead
         self.livePlatform = livePlatform
         self.liveBookID = bookID
@@ -727,10 +710,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// let the existing stable-page transaction decide whether to restart the
     /// active Read/Explain mode after the new page commits.
     func requestUserPageTurn(_ direction: LiveWebPageTurnDirection) {
-        if isAO3 {
-            requestAO3Page(direction, automatic: false)
-            return
-        }
         guard didInit, isApplicationActive else {
             ReaderRunLog.write(
                 "LIVEWEB page button ignored direction=\(direction.rawValue) " +
@@ -846,42 +825,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             // state; the new WebView is not a new automatic-play request.
             if !readVM.stagedLiveWebParagraphTexts.isEmpty { didAutoStart = true }
             ao3Blocked = false
-            invalidateAO3Content(message: AppLocalized("正在加载 AO3 章节…"))
-            readVM.onDocumentFinished = { [weak self] _ in
-                guard let self, self.isReadMode else { return }
-                self.requestAO3Page(.next, automatic: true)
-            }
-            explainVM.onDocumentFinished = { [weak self] in
-                guard let self, !self.isReadMode else { return }
-                self.requestAO3Page(.next, automatic: true)
-            }
-            explainVM.onPlaybackIntentChanged = { [weak self] in
-                self?.ao3ResumeExplain = false
-            }
-            explainVM.onAO3Pause = { [weak self] in self?.ao3ResumeExplain = false }
-            AO3LibraryStore.shared.$revision.dropFirst()
-                .sink { [weak self] revision in
-                    guard let self, revision != self.ao3ScopeRevision else { return }
-                    self.stopAO3Preparation()
-                    self.invalidateAO3Content(message: AppLocalized("AO3 绑定已改变，请从书架重新打开。"))
-                    self.ao3ResumeRead = false; self.ao3ResumeExplain = false
-                }.store(in: &cancellables)
-            explainVM.$isPlaying
-                .receive(on: RunLoop.main)
-                .sink { [weak self] playing in
-                    if playing { self?.prepareAO3ExplanationIfNeeded() }
-                }.store(in: &cancellables)
-            readVM.$currentParagraphIndex
-                .receive(on: RunLoop.main)
-                .sink { [weak self] index in
-                    self?.saveAO3Position(index)
-                    self?.prepareAO3SpeechIfNeeded()
-                }.store(in: &cancellables)
-            readVM.$isPlaying
-                .receive(on: RunLoop.main)
-                .sink { [weak self] playing in
-                    if playing { self?.prepareAO3SpeechIfNeeded() }
-                }.store(in: &cancellables)
+            invalidateAO3Content(message: AppLocalized("请先在网页中完成 AO3 提示，再继续"))
         }
 
         if isWeRead {
@@ -1448,133 +1392,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         onRendered(paras)
     }
 
-    func stopAO3Preparation() {
-        guard isAO3 else { return }
-        ao3TurnTimeout?.cancel(); ao3TurnTimeout = nil
-        ao3PendingURL = nil; ao3ResumeRead = false; ao3ResumeExplain = false
-        cancelAO3Preview()
-    }
-    #if DEBUG
-    var ao3PreparedChapterURL: String? { ao3Preview?.url }
-    var ao3PreparedSpeechCount: Int { ao3Speech?.segments.count ?? 0 }
-    var ao3HasPreparedExplanation: Bool { ao3Explanation?.isReusable() == true }
-    #endif
-
-    private func saveAO3Position(_ index: Int) {
-        guard isAO3, didInit, !ao3Blocked, let id = ao3BoundBookID,
-              let url = ao3PageKey, let texts = readVM?.stagedLiveWebParagraphTexts,
-              texts.indices.contains(index), AO3LibraryStore.shared.revision == ao3ScopeRevision else { return }
-        AO3LibraryStore.shared.updatePosition(id: id, url: url, paragraph: index, text: texts[index])
-    }
-
-    private func cancelAO3Preview() {
-        ao3PreviewGeneration = UUID()
-        ao3Preloader?.cancel(); ao3Preloader = nil
-        ao3Preview = nil; ao3Speech = nil; ao3Explanation = nil
-        ao3SpeechTask?.cancel(); ao3SpeechTask = nil
-        ao3ExplainTask?.cancel(); ao3ExplainTask = nil
-    }
-
-    private func preloadAO3Chapter() {
-        guard let next = ao3NextURL, let webView else { cancelAO3Preview(); return }
-        if ao3Preview?.url == AO3PageUpdate.pageKey(next.absoluteString) { return }
-        cancelAO3Preview()
-        let generation = ao3PreviewGeneration
-        let loader = makeAO3Preloader(); ao3Preloader = loader
-        loader.load(next, store: webView.configuration.websiteDataStore) { [weak self] page in
-            guard let self, self.ao3PreviewGeneration == generation,
-                  self.ao3ScopeRevision == AO3LibraryStore.shared.revision else { return }
-            self.ao3Preloader = nil
-            if let id = self.ao3BoundBookID {
-                guard let book = AO3LibraryStore.shared.book(for: id),
-                      page?.account?.lowercased() == book.account.lowercased() else { return }
-            }
-            self.ao3Preview = page
-            self.prepareAO3SpeechIfNeeded()
-            self.prepareAO3ExplanationIfNeeded()
-        }
-    }
-
-    private func prepareAO3SpeechIfNeeded() {
-        guard isAO3, isReadMode, didInit, ao3PendingURL == nil,
-              let vm = readVM, vm.isPlaying, vm.canContinueAcrossLivePageBoundary,
-              vm.currentParagraphIndex >= max(0, vm.stagedLiveWebParagraphTexts.count - 2),
-              let preview = ao3Preview, let first = preview.paragraphs.first else { return }
-        let language = resolveReadingLanguage(preview.paragraphs.prefix(30).joined(separator: " "))
-        let voice = AppSettings.shared.voice(for: language)
-        if let speech = ao3Speech, speech.page == preview.url, speech.voice == voice { return }
-        guard ao3SpeechTask == nil else { return }
-        let generation = ao3PreviewGeneration
-        ao3SpeechTask = Task { @MainActor [weak self, weak vm] in
-            guard let self, let vm else { return }
-            defer { if self.ao3PreviewGeneration == generation { self.ao3SpeechTask = nil } }
-            guard let segments = try? await vm.prepareAO3OpeningSpeech(text: first, language: language, voice: voice),
-                  !segments.isEmpty, !Task.isCancelled,
-                  self.ao3PreviewGeneration == generation,
-                  self.ao3ScopeRevision == AO3LibraryStore.shared.revision,
-                  AppSettings.shared.voice(for: language) == voice else { return }
-            self.ao3Speech = (preview.url, preview.signature, voice, language, segments)
-        }
-    }
-
-    private func prepareAO3ExplanationIfNeeded() {
-        guard isAO3, !isReadMode, didInit, ao3PendingURL == nil,
-              let vm = explainVM, vm.isPlaying, ProManager.shared.isPro,
-              let page = ao3Preview, ao3ExplainTask == nil,
-              page.paragraphs.reduce(0, { $0 + $1.count }) <= 32_000 else { return }
-        if ao3Explanation?.isReusable() == true { return }
-        let language = resolveReadingLanguage(page.paragraphs.prefix(30).joined(separator: " "))
-        let document = ReadingDocument(title: vm.document.title, sourceKind: .web, language: language,
-            paragraphs: page.paragraphs.enumerated().map { ReadingParagraph(id: $0.offset, text: $0.element) }, sourceURL: page.url)
-        let generation = ao3PreviewGeneration
-        ao3ExplainTask = Task { @MainActor [weak self, weak vm] in
-            guard let self, let vm else { return }
-            defer { if self.ao3PreviewGeneration == generation { self.ao3ExplainTask = nil } }
-            guard let prepared = try? await vm.prefetchFirstBlock(for: document, previousSummary: nil, textFingerprint: page.signature),
-                  !Task.isCancelled, self.ao3PreviewGeneration == generation,
-                  self.ao3ScopeRevision == AO3LibraryStore.shared.revision,
-                  !self.isReadMode, prepared.isReusable() else { return }
-            self.ao3Explanation = prepared
-        }
-    }
-
-    private func requestAO3Page(_ direction: LiveWebPageTurnDirection, automatic: Bool) {
-        guard let webView, ao3ScopeRevision == AO3LibraryStore.shared.revision else { return }
-        if automatic {
-            guard didInit, ao3PendingURL == nil,
-                  AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback(),
-                  !isReadMode || readVM?.isPlaybackPausedByUser == false else { return }
-        }
-        guard let target = direction == .next ? ao3NextURL : ao3PreviousURL else {
-            if automatic { explainVM?.finishLivePageContinuation() }
-            return
-        }
-        // Manual navigation replaces any pending automatic turn. Old speech
-        // and marks are invalidated before starting the destination request.
-        let continuingRead = ao3ResumeRead || readVM?.shouldResumeAfterManualLivePageTurn == true
-        let continuingExplain = ao3ResumeExplain || explainVM?.shouldResumeAfterManualLivePageTurn == true
-        if let index = readVM?.currentParagraphIndex { saveAO3Position(index) }
-        invalidateAO3Content(message: AppLocalized("正在加载 AO3 章节…"))
-        ao3ResumeRead = isReadMode && (automatic || continuingRead)
-        ao3ResumeExplain = !isReadMode && (automatic || continuingExplain)
-        ao3ResumeText = nil
-        if isReadMode, ao3ResumeRead {
-            readVM?.status = .loading
-            readVM?.isBuffering = true
-        }
-        ao3PendingURL = AO3PageUpdate.pageKey(target.absoluteString)
-        didAutoStart = true
-        ao3TurnTimeout?.cancel()
-        let destination = ao3PendingURL
-        ao3TurnTimeout = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 25_000_000_000)
-            guard let self, !Task.isCancelled, self.ao3PendingURL == destination else { return }
-            self.ao3ResumeRead = false; self.ao3ResumeExplain = false; self.ao3PendingURL = nil
-            self.invalidateAO3Content(message: AppLocalized("AO3 章节加载失败，请点翻页按钮重试。"))
-        }
-        webView.load(URLRequest(url: target))
-    }
-
     private func invalidateAO3Content(message: String) {
         if !ao3Blocked || didInit {
             ao3ResumeRead = readVM?.shouldResumeAfterManualLivePageTurn == true
@@ -1599,16 +1416,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               !ao3RetiredDocuments.contains(update.documentID) else { return }
         if let active = ao3DocumentID, active != update.documentID { return }
         ao3DocumentID = update.documentID
-        guard ao3ScopeRevision == AO3LibraryStore.shared.revision else { return }
-        if let id = ao3BoundBookID {
-            guard let book = AO3LibraryStore.shared.book(for: id),
-                  AO3URLPolicy.workID(update.pageKey) == book.workID,
-                  (payload["account"] as? String)?.lowercased() == book.account.lowercased() else {
-                ao3ResumeRead = false; ao3ResumeExplain = false
-                invalidateAO3Content(message: AppLocalized("请使用已绑定的 AO3 账号登录，或返回书架重新同步。"))
-                return
-            }
-        }
         if let notice = update.notice {
             invalidateAO3Content(message: notice)
             return
@@ -1619,16 +1426,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         if didInit && (changedPage || ao3Signature != update.signature) {
             invalidateAO3Content(message: AppLocalized("暂时无法读取 AO3 正文，请在网页中重试"))
         }
-        if changedPage {
-            ao3ResumeText = nil
-            readVM?.discardReadingResumeForConfirmedNavigation()
-        }
-        ao3TurnTimeout?.cancel(); ao3TurnTimeout = nil; ao3PendingURL = nil
-        let work = AO3URLPolicy.workID(update.pageKey) ?? ""
-        ao3NextURL = AO3URLPolicy.chapterURL(payload["nextURL"] as? String, inWork: work)
-        ao3PreviousURL = AO3URLPolicy.chapterURL(payload["previousURL"] as? String, inWork: work)
+        if changedPage { ao3ResumeText = nil }
         ao3PageKey = update.pageKey
-        readVM?.confirmAO3ChapterURL(update.pageKey)
         if didInit && !ao3Blocked && ao3Signature == update.signature {
             // Same prose, new DOM nodes (e.g. bfcache/page re-render). Rebind
             // highlights without restarting the active audio generation.
@@ -1641,40 +1440,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         readVM?.webContentBlockMessage = nil
         explainVM?.webContentBlockMessage = nil
         readVM?.status = .pending
-        readVM?.isBuffering = false
         explainVM?.status = .idle
-        onRendered(paras, allowAutoStart: false, restorePosition: !changedPage)
+        onRendered(paras, allowAutoStart: false)
         if let text = ao3ResumeText, let index = paras.firstIndex(where: { $0.text == text }) {
             readVM?.restoreReadingPosition(index)
         }
-        if !changedPage, let id = ao3BoundBookID,
-           let position = AO3LibraryStore.shared.book(for: id)?.position,
-           AO3PageUpdate.pageKey(position.url) == update.pageKey,
-           paras.indices.contains(position.paragraph), paras[position.paragraph].text == position.text {
-            if readVM?.resumeNotice != nil { readVM?.discardReadingResumeForConfirmedNavigation() }
-            readVM?.restoreReadingPosition(position.paragraph)
-        }
-        if let id = ao3BoundBookID {
-            let index = max(0, readVM?.currentParagraphIndex ?? 0)
-            if paras.indices.contains(index) {
-                AO3LibraryStore.shared.updatePosition(id: id, url: update.pageKey, paragraph: index, text: paras[index].text)
-            }
-        }
-        let prepared = ao3Speech.flatMap { candidate -> [AudioSegment]? in
-            guard candidate.page == update.pageKey, candidate.signature == update.signature,
-                  candidate.voice == AppSettings.shared.voice(for: candidate.language),
-                  ao3Preview?.paragraphs == paras.map(\.text) else { return nil }
-            return candidate.segments
-        }
-        let preparedExplanation = ao3Explanation.flatMap { candidate -> ExplainViewModel.PrefetchedFirstBlock? in
-            guard ao3Preview?.url == update.pageKey, ao3Preview?.paragraphs == paras.map(\.text),
-                  candidate.textFingerprint == update.signature, candidate.isReusable() else { return nil }
-            return candidate
-        }
-        let resumeRead = ao3ResumeRead && readVM?.isPlaybackPausedByUser == false
+        let resumeRead = ao3ResumeRead
         let resumeExplain = ao3ResumeExplain
-        cancelAO3Preview()
-        preloadAO3Chapter()
         ao3ResumeRead = false
         ao3ResumeExplain = false
         ao3ResumeText = nil
@@ -1682,14 +1454,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         // every time a website overlay disappears after the user paused.
         defer { didAutoStart = true }
         guard AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback() else { return }
-        if resumeRead && isReadMode {
-            if let prepared { readVM?.startWithPrefetchedSegments(prepared, paragraphIndex: 0) }
-            else { readVM?.ensurePlaying() }
-        }
-        else if resumeExplain && !isReadMode {
-            if let preparedExplanation { explainVM?.startFromPrefetched(preparedExplanation) }
-            else { explainVM?.ensurePlaying() }
-        }
+        if resumeRead && isReadMode { readVM?.ensurePlaying() }
+        else if resumeExplain && !isReadMode { explainVM?.ensurePlaying() }
         else { startAutoPlaybackIfNeeded() }
     }
 
@@ -3303,8 +3069,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private func onRendered(
         _ paras: [WebRenderedParagraph],
         weReadBoundary: WeReadPageSpeechBoundary? = nil,
-        allowAutoStart: Bool = true,
-        restorePosition: Bool = true
+        allowAutoStart: Bool = true
     ) {
         guard let readVM, !paras.isEmpty else { return }
         let rps = paras.map { ReadingParagraph(id: $0.paragraphIndex, text: $0.text, type: .paragraph) }
@@ -3312,8 +3077,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let detected = resolveReadingLanguage(rps.prefix(30).map { $0.text }.joined(separator: " "))
         print("[WebReader] 🌐 detected language=\(detected)")
         HistoryStore.shared.updateDetectedLanguage(documentID: readVM.document.id, language: detected)
-        readVM.loadWebParagraphs(rps, language: detected, weReadBoundary: weReadBoundary, restorePosition: restorePosition)
-        explainVM?.loadWebParagraphs(rps, language: detected, sourceURL: isAO3 ? ao3PageKey : nil)
+        readVM.loadWebParagraphs(rps, language: detected, weReadBoundary: weReadBoundary)
+        explainVM?.loadWebParagraphs(rps, language: detected)
 
         let segs = rps.map { ["paragraphIndex": $0.id, "text": $0.text] as [String: Any] }
         call("init", ["segments": segs, "color": AppSettings.shared.highlightColorHex])
@@ -6934,11 +6699,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// 切朗读/解读模式：启停 DOM 高亮层。
     func setActive(readMode: Bool) {
         let modeChanged = readMode != isReadMode
-        if isAO3, modeChanged {
-            ao3ResumeRead = false; ao3ResumeExplain = false
-            ao3SpeechTask?.cancel(); ao3SpeechTask = nil; ao3Speech = nil
-            ao3ExplainTask?.cancel(); ao3ExplainTask = nil; ao3Explanation = nil
-        }
         if isGoogleBooks, readMode != isReadMode, !readMode {
             // Remove the read-owned speculative suffix before Explain claims
             // AudioPlayer ownership; afterwards removal is intentionally
@@ -7520,12 +7280,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             weReadNetworkRetryTask = nil
         }
         if isAO3 {
-            if let index = readVM?.currentParagraphIndex { saveAO3Position(index) }
             if let id = ao3DocumentID { ao3RetiredDocuments.insert(id) }
             ao3DocumentID = nil
-            if ao3PendingURL == nil {
-                invalidateAO3Content(message: AppLocalized("正在加载 AO3 章节…"))
-            }
+            invalidateAO3Content(message: AppLocalized("暂时无法读取 AO3 正文，请在网页中重试"))
         }
         ReaderWebAppearanceCenter.shared.resetReaderFrame(in: webView)
         updateHomeValidationReadiness()
@@ -7628,14 +7385,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        if isAO3 {
-            if (error as NSError).code != NSURLErrorCancelled {
-                ao3TurnTimeout?.cancel(); ao3TurnTimeout = nil; ao3PendingURL = nil
-                ao3ResumeRead = false; ao3ResumeExplain = false
-                invalidateAO3Content(message: AppLocalized("AO3 章节加载失败，请点翻页按钮重试。"))
-            }
-            return
-        }
         if isGoogleBooks {
             handleGoogleBooksNavigationFailure(webView, error: error, phase: "provisional")
             return
@@ -7644,14 +7393,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        if isAO3 {
-            if (error as NSError).code != NSURLErrorCancelled {
-                ao3TurnTimeout?.cancel(); ao3TurnTimeout = nil; ao3PendingURL = nil
-                ao3ResumeRead = false; ao3ResumeExplain = false
-                invalidateAO3Content(message: AppLocalized("AO3 章节加载失败，请点翻页按钮重试。"))
-            }
-            return
-        }
         if isGoogleBooks {
             handleGoogleBooksNavigationFailure(webView, error: error, phase: "committed")
             return

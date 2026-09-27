@@ -550,7 +550,6 @@ final class GrowthLoopConversionCoordinator: ObservableObject {
         case .googleBooks: return AppLocalized("Google Play 图书")
         case .kobo: return "Kobo"
         case .oreilly: return "O’Reilly Learning"
-        case .ao3: return "AO3"
         }
     }
 }
@@ -563,7 +562,6 @@ private extension AnalyticsOnboardingSource {
         case .googleBooks: self = .googleBooks
         case .kobo: self = .kobo
         case .oreilly: self = .oreilly
-        case .ao3: self = .ao3
         }
     }
 }

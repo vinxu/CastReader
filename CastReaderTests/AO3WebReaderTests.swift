@@ -23,10 +23,10 @@ private final class AO3TestReader {
     let web: WKWebView
     let window: UIWindow
     let relay: AO3TestRelay
-    init(url: String, speech: (any ParagraphSpeechGenerating)? = nil, pages: [String: String]? = nil, quickRead: QuickReadService? = nil) throws {
+    init(url: String) throws {
         let document = try XCTUnwrap(DocumentBuilder.fromWebURL(url))
-        read = ReadAloudViewModel(document: document, speechGenerator: speech)
-        explain = ExplainViewModel(document: document, speechGenerator: speech, quickReadService: quickRead)
+        read = ReadAloudViewModel(document: document)
+        explain = ExplainViewModel(document: document)
         relay = AO3TestRelay(bridge)
         let content = WKUserContentController()
         content.add(relay, name: "castreader")
@@ -35,12 +35,7 @@ private final class AO3TestReader {
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = content
         configuration.websiteDataStore = .nonPersistent()
-        if let pages {
-            web = AO3FixtureWebView(configuration: configuration, pages: pages)
-            bridge.makeAO3Preloader = { AO3ChapterPreloader { AO3FixtureWebView(configuration: $0, pages: pages) } }
-        } else {
-            web = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: configuration)
-        }
+        web = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: configuration)
         bridge.webView = web
         bridge.configure(expectsDynamicWebContent: true, readerURL: url)
         bridge.attach(readVM: read, explainVM: explain)
@@ -51,8 +46,6 @@ private final class AO3TestReader {
         window.rootViewController!.view.addSubview(web)
     }
     func close() {
-        bridge.stopAO3Preparation()
-        read.stop(); explain.stop()
         read.deactivate(); explain.deactivate()
         web.stopLoading(); web.removeFromSuperview(); window.isHidden = true
         web.configuration.userContentController.removeScriptMessageHandler(forName: "castreader")
@@ -198,193 +191,5 @@ final class AO3WebReaderTests: XCTestCase {
         XCTAssertNil(AO3PageUpdate(payload, currentURL: url.replacingOccurrences(of: "231697481", with: "228985126")))
         XCTAssertFalse(AO3PageUpdate.isAO3URL("https://archiveofourown.org.example.com/works/1"))
         XCTAssertFalse(AO3PageUpdate.isAO3URL("file://archiveofourown.org/works/1"))
-    }
-}
-
-
-@MainActor
-final class AO3FixtureWebView: WKWebView {
-    let pages: [String: String]
-    init(configuration: WKWebViewConfiguration, pages: [String: String]) {
-        self.pages = pages
-        super.init(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: configuration)
-    }
-    required init?(coder: NSCoder) { fatalError() }
-    override func load(_ request: URLRequest) -> WKNavigation? {
-        guard let url = request.url, let key = AO3PageUpdate.pageKey(url.absoluteString), let page = pages[key] else { return nil }
-        return loadHTMLString(page, baseURL: url)
-    }
-}
-
-private actor AO3SpeechFixture: ParagraphSpeechGenerating {
-    private(set) var inputs: [String] = []
-    func generateTTSForParagraph(paragraphIndex: Int, text: String, voice: String?, speed: Double,
-        language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
-        continuation: TTSContinuation?, onCheckpoint: ((TTSContinuation) async -> Void)?,
-        onSegmentReady: @escaping (AudioSegment) async -> Void) async throws {
-        inputs.append(text)
-        await onSegmentReady(AudioSegment(paragraphIndex: paragraphIndex, segmentIndex: 0,
-            audioData: ReadAloudHTTPFixture.wav(duration: 3),
-            timestamps: [TTSTimestamp(word: text, startTime: 0, endTime: 2.8)],
-            duration: 3, text: text, isWavFormat: true))
-    }
-}
-
-extension AO3WebReaderTests {
-    private func chapterPages() -> [String: String] {
-        (1...3).reduce(into: [:]) { result, chapter in
-            let navigation = "<ul class='actions'>" +
-                (chapter > 1 ? "<li class='chapter previous'><a href='/works/1/chapters/\(chapter - 1)#workskin'>Previous</a></li>" : "") +
-                (chapter < 3 ? "<li class='chapter next'><a href='/works/1/chapters/\(chapter + 1)#workskin'>Next</a></li>" : "") + "</ul>"
-            result["https://archiveofourown.org/works/1/chapters/\(chapter)"] = html(body: "<p>Chapter \(chapter) prose. The traveler followed the river home and remembered the journey.</p>").replacingOccurrences(of: "</body>", with: navigation + "</body>")
-        }
-    }
-    private func withPlaybackReader(_ body: (AO3TestReader, AO3SpeechFixture) async throws -> Void) async throws {
-        let auto = AppSettings.shared.autoPlay, pro = ProManager.shared.debugForcePro
-        AppSettings.shared.autoPlay = false; ProManager.shared.debugForcePro = true
-        let speech = AO3SpeechFixture(), pages = chapterPages()
-        let reader = try AO3TestReader(url: "https://archiveofourown.org/works/1/chapters/1", speech: speech, pages: pages)
-        defer { reader.close(); AppSettings.shared.autoPlay = auto; ProManager.shared.debugForcePro = pro }
-        reader.web.load(URLRequest(url: URL(string: "https://archiveofourown.org/works/1/chapters/1")!))
-        try await wait { reader.read.stagedLiveWebParagraphTexts == ["Chapter 1 prose. The traveler followed the river home and remembered the journey."] }
-        try await body(reader, speech)
-    }
-    func testPreloadedChapterDoesNotReplaceCurrentDOMAndNaturalCompletionContinuesAudio() async throws {
-        try await withPlaybackReader { reader, speech in
-            try await wait { reader.bridge.ao3PreparedChapterURL?.hasSuffix("/2") == true }
-            XCTAssertEqual(reader.read.stagedLiveWebParagraphTexts, ["Chapter 1 prose. The traveler followed the river home and remembered the journey."])
-            XCTAssertFalse(reader.read.isPlaying)
-            reader.read.start()
-            try await wait { reader.read.isPlaying && reader.bridge.ao3PreparedSpeechCount > 0 }
-            try await wait { (try await reader.web.evaluateJavaScript("document.querySelectorAll('.cr-hl-ov').length")) as? Int ?? 0 > 0 }
-            try await wait { reader.read.stagedLiveWebParagraphTexts == ["Chapter 2 prose. The traveler followed the river home and remembered the journey."] && reader.read.isPlaying }
-            XCTAssertEqual(reader.explain.stagedLiveWebParagraphTexts, ["Chapter 2 prose. The traveler followed the river home and remembered the journey."])
-            let requests = await speech.inputs
-            XCTAssertEqual(requests.filter { $0 == "Chapter 2 prose. The traveler followed the river home and remembered the journey." }.count, 1, "Promote preloaded audio without generating it twice")
-        }
-    }
-    func testManualPreviousDuringAutomaticTurnWinsAndPausedNavigationStaysPaused() async throws {
-        try await withPlaybackReader { reader, _ in
-            reader.bridge.requestUserPageTurn(.next)
-            try await wait { reader.read.stagedLiveWebParagraphTexts == ["Chapter 2 prose. The traveler followed the river home and remembered the journey."] }
-            reader.read.pausePlayback()
-            reader.bridge.requestUserPageTurn(.next)
-            try await wait { reader.read.stagedLiveWebParagraphTexts == ["Chapter 3 prose. The traveler followed the river home and remembered the journey."] }
-            XCTAssertFalse(reader.read.isPlaying)
-            reader.bridge.requestUserPageTurn(.previous)
-            try await wait { reader.read.stagedLiveWebParagraphTexts == ["Chapter 2 prose. The traveler followed the river home and remembered the journey."] }
-            reader.read.start()
-            try await wait { reader.read.isPlaying }
-            reader.read.onDocumentFinished?(nil)
-            reader.bridge.requestUserPageTurn(.previous)
-            try await wait { reader.read.stagedLiveWebParagraphTexts == ["Chapter 1 prose. The traveler followed the river home and remembered the journey."] }
-            XCTAssertFalse(reader.read.stagedLiveWebParagraphTexts.contains("Chapter 3 prose. The traveler followed the river home and remembered the journey."))
-        }
-    }
-    func testReplayUsesCommittedChapterAndPauseDuringTurnPreventsLateAudio() async throws {
-        try await withPlaybackReader { reader, speech in
-            reader.read.start()
-            try await wait { reader.read.isPlaying }
-            reader.bridge.requestUserPageTurn(.next)
-            reader.read.pausePlayback()
-            try await wait { reader.read.stagedLiveWebParagraphTexts == ["Chapter 2 prose. The traveler followed the river home and remembered the journey."] }
-            XCTAssertFalse(reader.read.isPlaying)
-            reader.read.jump(to: 0)
-            try await wait { reader.read.isPlaying }
-            XCTAssertEqual(AudioPlayerService.shared.currentSegment?.text, "Chapter 2 prose. The traveler followed the river home and remembered the journey.")
-            reader.read.pausePlayback()
-            reader.read.jump(to: 0)
-            try await wait { reader.read.isPlaying }
-            XCTAssertEqual(AudioPlayerService.shared.currentSegment?.text, "Chapter 2 prose. The traveler followed the river home and remembered the journey.")
-            let requests = await speech.inputs
-            XCTAssertFalse(requests.isEmpty)
-        }
-    }
-    func testPreloadNoticeNeverBecomesPlayableAndFailureLeavesCurrentChapterIntact() async throws {
-        let pages = chapterPages().merging(["https://archiveofourown.org/works/1/chapters/2": html(notice: true)]) { _, new in new }
-        let reader = try AO3TestReader(url: "https://archiveofourown.org/works/1/chapters/1", pages: pages)
-        let auto = AppSettings.shared.autoPlay; AppSettings.shared.autoPlay = false
-        defer { reader.close(); AppSettings.shared.autoPlay = auto }
-        reader.web.load(URLRequest(url: URL(string: "https://archiveofourown.org/works/1/chapters/1")!))
-        try await wait { reader.read.stagedLiveWebParagraphTexts == ["Chapter 1 prose. The traveler followed the river home and remembered the journey."] }
-        try await Task.sleep(nanoseconds: 700_000_000)
-        XCTAssertNil(reader.bridge.ao3PreparedChapterURL)
-        XCTAssertEqual(reader.read.stagedLiveWebParagraphTexts, ["Chapter 1 prose. The traveler followed the river home and remembered the journey."])
-        reader.bridge.requestUserPageTurn(.next)
-        try await wait { reader.read.webContentBlockMessage != nil }
-        XCTAssertTrue(reader.read.stagedLiveWebParagraphTexts.isEmpty)
-        XCTAssertTrue(reader.explain.stagedLiveWebParagraphTexts.isEmpty)
-    }
-}
-
-
-private actor AO3FixtureSessionProvider: MobileSessionProviding {
-    func sessionToken() -> String? { "cms_fixture" }
-    func refreshSession() -> String? { "cms_fixture" }
-    func invalidateSession() {}
-    func rejectSession(_ token: String?) {}
-}
-
-extension AO3WebReaderTests {
-    func testExplainReplayAndManualChapterTurnReplaceNarrationAndOriginalTextTogether() async throws {
-        let auto = AppSettings.shared.autoPlay, pro = ProManager.shared.debugForcePro
-        AppSettings.shared.autoPlay = false; ProManager.shared.debugForcePro = true
-        var chapterText = "Chapter 1 prose. The traveler followed the river home and remembered the journey."
-        var jobSources: [String: String] = [:]
-        let plan = ReadAloudHTTPFixture.forRequests { request, body in
-            if request.url?.path == "/api/quickread/extract-plan" {
-                let source = body["markdown"] as? String ?? body["text"] as? String ?? chapterText
-                let job = UUID().uuidString
-                jobSources[job] = source
-                let mark: [String: Any] = ["action":"underline", "text":source, "at":0.1]
-                let section: [String: Any] = ["id":"block-0", "text":"Explanation of \(source)", "style":"explain", "cinematic":["events":[mark]]]
-                let block: [String: Any] = ["job_id":job, "output_language":"en", "total_blocks":1, "block_0":section]
-                let json = String(data: try! JSONSerialization.data(withJSONObject: block), encoding: .utf8)!
-                return .response(Data("event: block0\ndata: \(json)\n\nevent: done\ndata: {\"total_blocks\":1}\n\n".utf8))
-            }
-            let source = jobSources[body["job_id"] as? String ?? ""] ?? chapterText
-            let mark: [String: Any] = ["action":"underline", "text":source, "at":0.1]
-            let section: [String: Any] = ["id":"block-0", "text":"Explanation of \(source)", "style":"explain", "cinematic":["events":[mark]]]
-            return .response(try! JSONSerialization.data(withJSONObject: ["section":section]))
-        }
-        let reader = try AO3TestReader(url: "https://archiveofourown.org/works/1/chapters/1", speech: AO3SpeechFixture(), pages: chapterPages(),
-            quickRead: QuickReadService(session: plan.session, mobileSessionProvider: AO3FixtureSessionProvider()))
-        defer { reader.close(); plan.close(); AppSettings.shared.autoPlay = auto; ProManager.shared.debugForcePro = pro }
-        reader.web.load(URLRequest(url: URL(string: "https://archiveofourown.org/works/1/chapters/1")!))
-        try await wait { reader.read.stagedLiveWebParagraphTexts == ["Chapter 1 prose. The traveler followed the river home and remembered the journey."] }
-        reader.bridge.setActive(readMode: false)
-        reader.explain.start()
-        try await wait { reader.explain.isPlaying }
-        try await wait { reader.bridge.ao3HasPreparedExplanation }
-        let countBeforeReplay = plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count
-        reader.explain.replay()
-        try await wait { reader.explain.isPlaying }
-        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, countBeforeReplay)
-        chapterText = "Chapter 2 prose. The traveler followed the river home and remembered the journey."
-        reader.bridge.requestUserPageTurn(.next)
-        try await wait { reader.explain.stagedLiveWebParagraphTexts == ["Chapter 2 prose. The traveler followed the river home and remembered the journey."] && reader.explain.isPlaying }
-        XCTAssertEqual(reader.read.stagedLiveWebParagraphTexts, ["Chapter 2 prose. The traveler followed the river home and remembered the journey."])
-        XCTAssertTrue(AudioPlayerService.shared.currentSegment?.text.contains("Chapter 2") == true)
-        try await wait { !reader.explain.activeMarks.isEmpty }
-        XCTAssertTrue(reader.explain.activeMarks.allSatisfy { $0.paragraphIndex == 0 })
-        XCTAssertGreaterThanOrEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, 2)
-    }
-}
-
-
-extension AO3WebReaderTests {
-    func testLastChapterEndsOnceAndPlaybackButtonReplaysItsOpening() async throws {
-        try await withPlaybackReader { reader, _ in
-            reader.bridge.requestUserPageTurn(.next)
-            try await wait { reader.read.stagedLiveWebParagraphTexts.first?.hasPrefix("Chapter 2") == true }
-            reader.bridge.requestUserPageTurn(.next)
-            try await wait { reader.read.stagedLiveWebParagraphTexts.first?.hasPrefix("Chapter 3") == true }
-            reader.read.start()
-            try await wait { reader.read.isFinished }
-            XCTAssertTrue(reader.web.url?.path.hasSuffix("/3") == true)
-            reader.read.togglePlayPause()
-            try await wait { reader.read.isPlaying && !reader.read.isFinished }
-            XCTAssertTrue(AudioPlayerService.shared.currentSegment?.text.hasPrefix("Chapter 3") == true)
-        }
     }
 }

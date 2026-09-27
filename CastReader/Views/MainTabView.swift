@@ -1918,12 +1918,6 @@ struct MainTabView: View {
                 onboarding: libraryOnboarding,
                 autoplay: true
             )
-        case .ao3:
-            guard let book = AO3LibraryStore.shared.homeBooks.first else {
-                requestLibraryConnection(.ao3, entryPoint: "growth_library_ready")
-                return
-            }
-            AO3ReaderLauncher.open(book, using: coordinator, autoplay: true)
         case .oreilly:
             guard let book = OReillyLibraryStore.shared.homeBooks.first
                     ?? OReillyLibraryStore.shared.books.first else {
@@ -2124,8 +2118,6 @@ struct MainTabView: View {
                 analyticsSession: route.analyticsSession,
                 entryTapAlreadyTracked: true
             )
-        case .ao3:
-            AO3LibraryConnectView()
         case .oreilly:
             OReillyLibraryConnectView(
                 analyticsSession: route.analyticsSession,
@@ -2729,7 +2721,6 @@ private extension BoundLibraryOnboardingSource {
         case .googleBooks: .googleBooks
         case .kobo: .kobo
         case .oreilly: .oreilly
-        case .ao3: .ao3
         }
     }
 }

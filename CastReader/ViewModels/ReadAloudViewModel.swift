@@ -1150,8 +1150,6 @@ final class ReadAloudViewModel: ObservableObject {
         guard !isPlaybackPausedByUser else { return false }
         if accessRetryTask != nil { return true }
         guard isActive, !isFinished else { return false }
-        if AO3PageUpdate.isAO3URL(document.sourceURL), ownsAudioQueue,
-           audio.hasPlaybackRequest, !audio.isExplicitlyPaused { return true }
         if ownsAudioQueue, audio.isPlaying { return true }
         guard ownsAudioQueue else {
             return status.isLoading || status.isStreaming || isBuffering
@@ -1513,8 +1511,7 @@ final class ReadAloudViewModel: ObservableObject {
     func loadWebParagraphs(
         _ p: [ReadingParagraph],
         language: String? = nil,
-        weReadBoundary: WeReadPageSpeechBoundary? = nil,
-        restorePosition: Bool = true
+        weReadBoundary: WeReadPageSpeechBoundary? = nil
     ) {
         cloneRequestIDs.removeAll(keepingCapacity: false)
         webParagraphs = p
@@ -1525,7 +1522,7 @@ final class ReadAloudViewModel: ObservableObject {
         }
         webAudioSegments = []
         recomputeReadableIndices()
-        if restorePosition { restoreSavedReadingPosition() }
+        restoreSavedReadingPosition()
         if deferredWebAutoplay.contentBecameReady(isReady: !readableIndices.isEmpty) {
             ensurePlaying()
         }
@@ -2263,17 +2260,8 @@ final class ReadAloudViewModel: ObservableObject {
     // MARK: - Durable read position
 
     private var readingProgressID: String { playbackBookID ?? document.id }
-    private var ao3ConfirmedChapterURL: String?
-    func confirmAO3ChapterURL(_ url: String) {
-        guard AO3PageUpdate.isAO3URL(document.sourceURL) else { return }
-        ao3ConfirmedChapterURL = AO3PageUpdate.pageKey(url)
-    }
     private var readingProgressVariant: String? {
-        if AO3PageUpdate.isAO3URL(document.sourceURL),
-           let url = ao3ConfirmedChapterURL ?? AO3PageUpdate.pageKey(document.sourceURL) {
-            return "ao3-" + ReadingResumeContract.fingerprint(url)
-        }
-        return document.sourceKind == .youtube ? youtubeTranscriptCacheKey?.storageKey : nil
+        document.sourceKind == .youtube ? youtubeTranscriptCacheKey?.storageKey : nil
     }
 
     private func restoreSavedReadingPosition() {
@@ -2415,12 +2403,6 @@ final class ReadAloudViewModel: ObservableObject {
             }
         }
         if historyStore.saveReadingCheckpoint(checkpoint, for: readingProgressID, boundary: progressBoundaryToken, variant: readingProgressVariant) {
-            if AO3PageUpdate.isAO3URL(document.sourceURL) {
-                // The default projection drives Continue cards; restoration
-                // uses the chapter-specific copy so repeated prose in another
-                // chapter cannot inherit the old word cursor.
-                _ = historyStore.saveReadingCheckpoint(checkpoint, for: readingProgressID, boundary: progressBoundaryToken)
-            }
             lastReadingCheckpoint = checkpoint
             lastReadingCheckpointWrite = now
             if force {
@@ -2733,10 +2715,6 @@ final class ReadAloudViewModel: ObservableObject {
         isPlaybackPausedByUser = false
         liveWebTurnIntentSuspended = false
         if currentParagraphIndex < 0 { start(); return }
-        if isFinished, AO3PageUpdate.isAO3URL(document.sourceURL), let first = readableIndices.first {
-            jump(to: first)
-            return
-        }
         if !audio.isPlaying,
            presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
                self?.togglePlayPause()
@@ -2896,12 +2874,6 @@ final class ReadAloudViewModel: ObservableObject {
     /// 点击段落跳读。
     func jump(to paragraphIndex: Int) {
         guard requireWebContentReady() else { return }
-        if AO3PageUpdate.isAO3URL(document.sourceURL) {
-            // An explicit paragraph tap/replay supersedes an earlier Pause.
-            isPlaybackPausedByUser = false
-            liveWebTurnIntentSuspended = false
-            audio.sleepTimer.resumeByUser()
-        }
         jump(to: paragraphIndex, allowAccessRefresh: true)
     }
 
@@ -2946,17 +2918,6 @@ final class ReadAloudViewModel: ObservableObject {
             paragraphIndex,
             allowAccessRefresh: allowAccessRefresh
         )
-    }
-
-    /// Bounded next-chapter audio uses the same injectable, quota-aware speech
-    /// provider as ordinary paragraph read-ahead. Caller verifies page/voice
-    /// identity again after WebKit commits the real destination.
-    func prepareAO3OpeningSpeech(text: String, language: String, voice: String) async throws -> [AudioSegment] {
-        guard AO3PageUpdate.isAO3URL(document.sourceURL), canContinueAcrossLivePageBoundary,
-              !text.isEmpty, text.utf16.count <= 2_000 else { return [] }
-        return try await speechGenerator.generatePrefetchSegments(
-            paragraphIndex: 0, text: SpeechTextSanitizer.sanitizedForTTS(text),
-            voice: voice, language: language, includeVoiceCode: includeVoiceCodeForTTS)
     }
 
     /// 用外部已经生成好的首段音频启动朗读。Kindle 页级预加载会使用这个入口：

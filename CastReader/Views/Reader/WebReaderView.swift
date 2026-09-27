@@ -389,9 +389,6 @@ struct WebReaderView: UIViewRepresentable {
             config.websiteDataStore = livePlatform.websiteDataStore
             config.defaultWebpagePreferences.preferredContentMode = .mobile
         }
-        if AO3PageUpdate.isAO3URL(document.sourceURL) {
-            config.websiteDataStore = CommercialWebSession.websiteDataStore
-        }
         if document.sourceKind == .weread {
             config.websiteDataStore = CommercialWebSession.websiteDataStore
             // Match the binding/shelf browser from the first request. A Mac UA
