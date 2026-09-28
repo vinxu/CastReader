@@ -34,3 +34,7 @@ Kindle 功能分支 `bbe7ef7`：114 项受影响真机测试通过；最终实�
 2026-09-29 03:42 中国区发布完成：`release-20260929034148`，源码 `036a5a9067daa50a46353e93363d88b6c1779b60`，运行时账本、声音邀请数据库、声音克隆合同及入口健康检查通过。`cloneCredits` 与 Global 合同一致，两区未授权余额查询和清理均返回 401。CN 15 分钟清理定时器已启用并执行成功（purged=0），仅清除过期重放音频结果，不删除订单或余额。首次本机组装因磁盘不足停止，清理本轮可重建编译缓存后复用已构建产物成功上线；没有切换过失败候选。
 
 正式发布 PR：<https://github.com/vinxu/CastReader/pull/2>，目前为草稿；代码已推送，尚待最终真机放行后合入 main。服务端 PR #56 / #57 已合并。原始证据目录：`/Users/xuxuheng/Desktop/CastReader-1.2.47-Release/evidence/`；保留私有日志，不提交任何会话、凭据、收据或正文。
+
+2026-09-29 03:51 正式配置包已完成：Release 开发签名 `BUILD SUCCEEDED`，四组件均为 1.2.47（70）及 iPhone/iPad，`codesign --verify --deep --strict` 通过；204 文件/54 个夹具标志扫描为 0 命中，Debug 阳性对照有效，内部控制为 `NO`，Safari content.js 摘要与 1.2.46 一致。应用/组件/WebReader/工程 416 文件冻结清单摘要为 `55506dd555d32ef0170cc08bf38ed16b10d355d8108ae145c7225c5e1c499dff`（`candidate-source-identity.json`）。此包是用于最终真机验收的开发签名 Release 包，尚未归档或上传。
+
+安装再次失败：CoreDevice error 1011，找不到已配对 iPhone；Xcode Devices 为 Disconnected，USB 列表未检测到 iPhone。镜像会间歇恢复，但仍运行前轮包，不能代替最终包安装和测试。当前交付仍未完成：App Store 版本为 PREPARE_FOR_SUBMISSION；最终完整真机单测、两区核心格、解读耗尽购买续播及审核截图待恢复物理连接后进行。未以历史测试、编译成功或服务端通过冒充这些真机验收。
