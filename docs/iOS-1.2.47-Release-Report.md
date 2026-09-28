@@ -30,3 +30,7 @@ Kindle 功能分支 `bbe7ef7`：114 项受影响真机测试通过；最终实�
 - 额度 IAP `6816697780`、SKU `ai.castreader.clone.minutes120`、版本 `f267f0a8-d537-4fa7-9cc1-1796fc44b71c` 已回读 11 语商品名称/说明；不修改价格或销售地区。正式真机购买页审核截图仍待采集。
 - 新提交工具支持 Apple 新版 IAP version 审核项，保留精确审核对象校验与模糊写入恢复；6 个隔离模拟 API 用例通过。在线 dry-run 计划为同一审核单的 App 版本 + IAP 版本两个项目，尚未执行提交。
 - 全量真机隔离单测包已构建成功（独立 bundle `com.same.castreader.releasechecks1247`），未运行的原因是 Xcode tunnel unavailable。镜像可恢复但不等于安装通道可用；USB 设备列表当前没有 iPhone。不得将编译成功记为完整单测或核心实测通过。
+
+2026-09-29 03:42 中国区发布完成：`release-20260929034148`，源码 `036a5a9067daa50a46353e93363d88b6c1779b60`，运行时账本、声音邀请数据库、声音克隆合同及入口健康检查通过。`cloneCredits` 与 Global 合同一致，两区未授权余额查询和清理均返回 401。CN 15 分钟清理定时器已启用并执行成功（purged=0），仅清除过期重放音频结果，不删除订单或余额。首次本机组装因磁盘不足停止，清理本轮可重建编译缓存后复用已构建产物成功上线；没有切换过失败候选。
+
+正式发布 PR：<https://github.com/vinxu/CastReader/pull/2>，目前为草稿；代码已推送，尚待最终真机放行后合入 main。服务端 PR #56 / #57 已合并。原始证据目录：`/Users/xuxuheng/Desktop/CastReader-1.2.47-Release/evidence/`；保留私有日志，不提交任何会话、凭据、收据或正文。
