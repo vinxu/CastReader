@@ -144,13 +144,17 @@ final class CloneCreditStore: ObservableObject {
     private var pending = Set<UInt64>()
     private var observers = Set<AnyCancellable>()
     private var environment = "Production"
+    private var verifiedStoreEnvironment: String?
+    private let storeEnvironment: @Sendable () async -> String?
 
     init(client: CloneCreditClient = CloneCreditClient(),
          account: @escaping @MainActor () -> String? = { AuthService.shared.account?.backendUserId },
-         hasPro: @escaping @MainActor () -> Bool = { ProManager.shared.isPro }) {
+         hasPro: @escaping @MainActor () -> Bool = { ProManager.shared.isPro },
+         storeEnvironment: @escaping @Sendable () async -> String? = { await CloneCreditStore.currentStoreEnvironment() }) {
         self.client = client
         self.account = account
         self.hasPro = hasPro
+        self.storeEnvironment = storeEnvironment
     }
 
     deinit { listener?.cancel(); retryTask?.cancel() }
@@ -184,7 +188,7 @@ final class CloneCreditStore: ObservableObject {
         scope = account()
         balance = nil
         message = nil
-        environment = scope.flatMap { UserDefaults.standard.string(forKey: "clone-credit-environment.\($0)") } ?? "Production"
+        environment = verifiedStoreEnvironment ?? "Production"
         if CloneCreditClient.acceptanceBaseURL != nil { environment = "Sandbox" }
         pending.removeAll()
         hasPendingDelivery = false
@@ -198,6 +202,14 @@ final class CloneCreditStore: ObservableObject {
         sequence &+= 1
         let read = sequence
         do {
+            let currentEnvironment = await storeEnvironment()
+            guard owner == account(), read == sequence else { return }
+            verifiedStoreEnvironment = currentEnvironment
+            if let currentEnvironment, currentEnvironment != environment,
+               CloneCreditClient.acceptanceBaseURL == nil {
+                environment = currentEnvironment
+                balance = nil
+            }
             async let products = Product.products(for: [Self.productID])
             let snapshot = try await client.request(environment: environment)
             let loadedProducts = try? await products
@@ -270,14 +282,16 @@ final class CloneCreditStore: ObservableObject {
             guard owner == account() else { return true }
             sequence &+= 1
             scope = owner
-            apply(snapshot)
-            environment = snapshot.environment ?? "Production"
-            if CloneCreditClient.acceptanceBaseURL == nil {
-                UserDefaults.standard.set(environment, forKey: "clone-credit-environment.\(owner)")
+            // Finish old Sandbox deliveries on a production install, but never
+            // replace its production balance with a different environment.
+            let matchesRuntime = Self.acceptsBalanceEnvironment(snapshot.environment, current: verifiedStoreEnvironment)
+            if matchesRuntime {
+                environment = snapshot.environment ?? "Production"
+                apply(snapshot)
             }
             pending.remove(transaction.id)
             hasPendingDelivery = !pending.isEmpty
-            message = snapshot.delivery?.refunded == true ? AppLocalized("这笔购买已退款") : AppLocalized("120 分钟额度已到账")
+            message = matchesRuntime ? (snapshot.delivery?.refunded == true ? AppLocalized("这笔购买已退款") : AppLocalized("120 分钟额度已到账")) : nil
             return true
         } catch {
             guard owner == account() else { return false }
@@ -309,7 +323,24 @@ final class CloneCreditStore: ObservableObject {
         apply(snapshot)
     }
 
+    nonisolated static func acceptsBalanceEnvironment(_ incoming: String?, current: String?) -> Bool {
+        current == nil || incoming == nil || incoming == current
+    }
+
+    nonisolated static func currentStoreEnvironment() async -> String? {
+        if CloneCreditClient.acceptanceBaseURL != nil { return "Sandbox" }
+        if let result = try? await AppTransaction.shared,
+           case .verified(let transaction) = result {
+            if transaction.environment == .production { return "Production" }
+            if transaction.environment == .sandbox { return "Sandbox" }
+        }
+        // Development installs may not have an app transaction before purchase.
+        // Never infer the runtime from a previous account's UserDefaults value.
+        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" ? "Sandbox" : nil
+    }
+
     private func apply(_ snapshot: CloneCreditBalance) {
+        guard Self.acceptsBalanceEnvironment(snapshot.environment, current: verifiedStoreEnvironment) else { return }
         if snapshot.environment == balance?.environment,
            let incoming = snapshot.revision, let current = balance?.revision, incoming < current { return }
         balance = snapshot

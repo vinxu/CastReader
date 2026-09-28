@@ -16,6 +16,9 @@ final class CloneCreditPurchaseTests: XCTestCase {
     private var store: CloneCreditStore!
 
     override func setUp() async throws {
+        guard ProcessInfo.processInfo.environment["CASTREADER_CLONE_CREDIT_LOOPBACK_TESTS"] == "1" else {
+            throw XCTSkip("Requires the explicit disposable PostgreSQL / loopback StoreKit harness; online Sandbox is tested on the physical device separately")
+        }
         session = try SKTestSession(configurationFileNamed: "Configuration")
         session.resetToDefaultState()
         session.disableDialogs = true
@@ -39,7 +42,7 @@ final class CloneCreditPurchaseTests: XCTestCase {
     private func makeStore(owner: String? = nil, token: String? = nil) -> CloneCreditStore {
         let id = owner ?? self.owner, bearer = token ?? self.token
         return CloneCreditStore(client: CloneCreditClient(baseURL: base,
-            token: { bearer }, refreshToken: { nil }), account: { id }, hasPro: { true })
+            token: { bearer }, refreshToken: { nil }), account: { id }, hasPro: { true }, storeEnvironment: { nil })
     }
 
     @discardableResult
@@ -278,4 +281,19 @@ final class CloneCreditPurchaseTests: XCTestCase {
         XCTAssertEqual(store.currentBalance?.purchasedRemainingMs, 7_200_000)
     }
 
+}
+
+
+final class CloneCreditEnvironmentTests: XCTestCase {
+    func testProductionRuntimeRejectsRecoveredSandboxBalance() {
+        XCTAssertFalse(CloneCreditStore.acceptsBalanceEnvironment("Sandbox", current: "Production"))
+        XCTAssertTrue(CloneCreditStore.acceptsBalanceEnvironment("Production", current: "Production"))
+    }
+    func testSandboxRuntimeCannotBeOverwrittenByLateProductionResponse() {
+        XCTAssertFalse(CloneCreditStore.acceptsBalanceEnvironment("Production", current: "Sandbox"))
+        XCTAssertTrue(CloneCreditStore.acceptsBalanceEnvironment("Sandbox", current: "Sandbox"))
+    }
+    func testDevelopmentRuntimeMayLearnEnvironmentFromVerifiedPurchase() {
+        XCTAssertTrue(CloneCreditStore.acceptsBalanceEnvironment("Sandbox", current: nil))
+    }
 }
