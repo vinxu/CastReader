@@ -1,0 +1,202 @@
+{
+  "note": "AVPlayer event intervals, not acoustic silence. Voice-switch intervals excluded; duplicate request keys include voice generation.",
+  "startPrefix": "02:09:20.731",
+  "transitions": [
+    {
+      "at": "02:09:37.203",
+      "from": "0-0",
+      "to": "1-0",
+      "gapMs": 168,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:09:45.842",
+      "from": "1-0",
+      "to": "2-0",
+      "gapMs": 182,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:09:52.356",
+      "from": "2-0",
+      "to": "3-0",
+      "gapMs": 174,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:09:58.179",
+      "from": "3-0",
+      "to": "4-0",
+      "gapMs": 185,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:10:05.140",
+      "from": "4-0",
+      "to": "5-0",
+      "gapMs": 218,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:10:13.431",
+      "from": "5-0",
+      "to": "6-0",
+      "gapMs": 158,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:10:23.533",
+      "from": "6-0",
+      "to": "7-0",
+      "gapMs": 160,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:10:30.526",
+      "from": "7-0",
+      "to": "8-0",
+      "gapMs": 173,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:10:37.744",
+      "from": "8-0",
+      "to": "9-0",
+      "gapMs": 207,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:10:43.680",
+      "from": "9-0",
+      "to": "10-0",
+      "gapMs": 176,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:10:52.177",
+      "from": "10-0",
+      "to": "11-0",
+      "gapMs": 235,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:10:59.014",
+      "from": "11-0",
+      "to": "12-0",
+      "gapMs": 178,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "02:11:09.870",
+      "from": "12-0",
+      "to": "13-0",
+      "gapMs": 906,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:15.526",
+      "from": "13-0",
+      "to": "13-1",
+      "gapMs": 209,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:21.469",
+      "from": "13-1",
+      "to": "14-0",
+      "gapMs": 234,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:24.902",
+      "from": "14-0",
+      "to": "15-0",
+      "gapMs": 230,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:29.772",
+      "from": "15-0",
+      "to": "16-0",
+      "gapMs": 242,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:31.333",
+      "from": "16-0",
+      "to": "17-0",
+      "gapMs": 237,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:35.671",
+      "from": "17-0",
+      "to": "18-0",
+      "gapMs": 225,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:36.488",
+      "from": "18-0",
+      "to": "19-0",
+      "gapMs": 281,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:45.540",
+      "from": "19-0",
+      "to": "20-0",
+      "gapMs": 229,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:49.513",
+      "from": "20-0",
+      "to": "21-0",
+      "gapMs": 249,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:58.511",
+      "from": "21-0",
+      "to": "21-1",
+      "gapMs": 246,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:11:59.859",
+      "from": "21-1",
+      "to": "22-0",
+      "gapMs": 304,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "02:12:06.057",
+      "from": "22-0",
+      "to": "22-1",
+      "gapMs": 229,
+      "voiceGeneration": 1
+    }
+  ],
+  "transitionCount": 25,
+  "medianMs": 225,
+  "maxMs": 906,
+  "over600ms": [
+    {
+      "at": "02:11:09.870",
+      "from": "12-0",
+      "to": "13-0",
+      "gapMs": 906,
+      "voiceGeneration": 1
+    }
+  ],
+  "ttsRequestCount": 35,
+  "duplicateParagraphParts": [],
+  "cloneResponseCount": 16,
+  "voiceSwitches": [
+    {
+      "begin": "02:11:01.718",
+      "finished": "02:11:06.471"
+    }
+  ]
+}

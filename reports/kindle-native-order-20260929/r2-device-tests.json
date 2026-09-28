@@ -1,0 +1,8 @@
+{
+  "device": "iPhone 15 Pro Max",
+  "os": "iOS 26.7 (23H24)",
+  "tests": 86,
+  "failures": 0,
+  "result": "passed",
+  "note": "r3 repeats only affected classes; counts overlap r2"
+}

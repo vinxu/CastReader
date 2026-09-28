@@ -1,0 +1,53 @@
+23:58:57.307 [active] KINDLE_SENTENCE accepted units=6 bridged=0 pending=true key=4c22db4f95d9
+23:58:57.385 [active] KINDLE_SENTENCE opened units=6 pending=true key=4c22db4f95d9
+23:59:20.086 [active] KINDLE_SENTENCE accepted units=7 bridged=1 pending=true key=f302814ee809
+23:59:20.117 [active] KINDLE_SENTENCE source-ready elapsedMs=1474 from=4c22db4f95d9 to=f302814ee809
+23:59:20.120 [active] KINDLE_SENTENCE appended count=7 cursor=6 vm=retained
+23:59:33.433 [active] KINDLE_SENTENCE presented p=6 w=3 key=f302814ee809
+23:59:56.119 [active] KINDLE_SENTENCE accepted units=9 bridged=1 pending=false key=b7a8fc0eaa41
+23:59:56.150 [active] KINDLE_SENTENCE source-ready elapsedMs=1494 from=f302814ee809 to=b7a8fc0eaa41
+23:59:56.154 [active] KINDLE_SENTENCE appended count=9 cursor=13 vm=retained
+00:00:14.048 [active] KINDLE_SENTENCE presented p=13 w=24 key=b7a8fc0eaa41
+00:00:30.255 [active] KINDLE_SENTENCE accepted units=6 bridged=0 pending=true key=21ebe2dba8aa
+00:00:30.294 [active] KINDLE_SENTENCE source-ready elapsedMs=1618 from=b7a8fc0eaa41 to=21ebe2dba8aa
+00:00:30.299 [active] KINDLE_SENTENCE appended count=6 cursor=22 vm=retained
+00:00:47.392 [active] KINDLE_SENTENCE presented p=22 w=0 key=21ebe2dba8aa
+00:01:57.014 [active] KINDLE_SENTENCE accepted units=5 bridged=1 pending=false key=9e45e23e8452
+00:01:57.084 [active] KINDLE_SENTENCE source-ready elapsedMs=1661 from=21ebe2dba8aa to=9e45e23e8452
+00:01:57.088 [active] KINDLE_SENTENCE appended count=5 cursor=28 vm=retained
+00:02:09.026 [active] KINDLE_SENTENCE presented p=28 w=11 key=9e45e23e8452
+00:02:26.482 [active] KINDLE_SENTENCE accepted units=5 bridged=0 pending=true key=0dd383b8f107
+00:02:26.518 [active] KINDLE_SENTENCE source-ready elapsedMs=1537 from=9e45e23e8452 to=0dd383b8f107
+00:02:26.523 [active] KINDLE_SENTENCE appended count=5 cursor=33 vm=retained
+00:02:37.262 [active] KINDLE_SENTENCE presented p=33 w=0 key=0dd383b8f107
+00:02:54.916 [active] KINDLE_SENTENCE accepted units=8 bridged=1 pending=true key=a725e22ac58a
+00:02:54.952 [active] KINDLE_SENTENCE source-ready elapsedMs=1682 from=0dd383b8f107 to=a725e22ac58a
+00:02:54.957 [active] KINDLE_SENTENCE appended count=8 cursor=38 vm=retained
+00:03:07.031 [active] KINDLE_SENTENCE presented p=38 w=10 key=a725e22ac58a
+00:03:19.574 [active] KINDLE_SENTENCE accepted units=7 bridged=1 pending=true key=59298982ce74
+00:03:19.614 [active] KINDLE_SENTENCE source-ready elapsedMs=1536 from=a725e22ac58a to=59298982ce74
+00:03:19.619 [active] KINDLE_SENTENCE appended count=7 cursor=46 vm=retained
+00:03:33.184 [active] KINDLE_SENTENCE presented p=46 w=17 key=59298982ce74
+00:03:53.655 [active] KINDLE_SENTENCE accepted units=6 bridged=1 pending=true key=e4039c926543
+00:03:53.693 [active] KINDLE_SENTENCE source-ready elapsedMs=1666 from=59298982ce74 to=e4039c926543
+00:03:53.699 [active] KINDLE_SENTENCE appended count=6 cursor=53 vm=retained
+00:04:04.699 [active] KINDLE_SENTENCE presented p=53 w=2 key=e4039c926543
+00:04:18.898 [active] KINDLE_SENTENCE accepted units=9 bridged=1 pending=true key=1018e0c56d27
+00:04:18.939 [active] KINDLE_SENTENCE source-ready elapsedMs=1756 from=e4039c926543 to=1018e0c56d27
+00:04:18.946 [active] KINDLE_SENTENCE appended count=9 cursor=59 vm=retained
+00:04:32.128 [active] KINDLE_SENTENCE presented p=59 w=15 key=1018e0c56d27
+00:04:43.132 [active] KINDLE_SENTENCE accepted units=7 bridged=1 pending=false key=fdedb5d59724
+00:04:43.176 [active] KINDLE_SENTENCE source-ready elapsedMs=1713 from=1018e0c56d27 to=fdedb5d59724
+00:04:43.184 [active] KINDLE_SENTENCE appended count=7 cursor=68 vm=retained
+00:05:06.975 [active] KINDLE_SENTENCE presented p=68 w=14 key=fdedb5d59724
+00:05:32.772 [active] KINDLE_SENTENCE accepted units=5 bridged=0 pending=true key=d1d537341dc7
+00:05:32.825 [active] KINDLE_SENTENCE source-ready elapsedMs=1963 from=fdedb5d59724 to=d1d537341dc7
+00:05:32.833 [active] KINDLE_SENTENCE appended count=5 cursor=75 vm=retained
+00:05:43.500 [active] KINDLE_SENTENCE presented p=75 w=0 key=d1d537341dc7
+00:06:03.522 [active] KINDLE_SENTENCE accepted units=6 bridged=1 pending=true key=abfd1db9c1e4
+00:06:03.582 [active] KINDLE_SENTENCE source-ready elapsedMs=2029 from=d1d537341dc7 to=abfd1db9c1e4
+00:06:03.591 [active] KINDLE_SENTENCE appended count=6 cursor=80 vm=retained
+00:06:14.074 [active] KINDLE_SENTENCE presented p=80 w=1 key=abfd1db9c1e4
+00:06:30.158 [active] KINDLE_SENTENCE accepted units=6 bridged=1 pending=false key=749194a3e009
+00:06:30.212 [active] KINDLE_SENTENCE source-ready elapsedMs=2040 from=abfd1db9c1e4 to=749194a3e009
+00:06:30.221 [active] KINDLE_SENTENCE appended count=6 cursor=86 vm=retained

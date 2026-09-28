@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "randomizedMutations": 5000,
+  "ownershipChecks": 20000,
+  "source": "scripts/test-kindle-native-pages.mjs",
+  "offlineRegressions": [
+    "candidates",
+    "original-image",
+    "source",
+    "wait"
+  ]
+}

@@ -35,6 +35,24 @@ private actor CloneIdentityFailureSpeech: ParagraphSpeechGenerating {
     }
 }
 
+private actor CloneReplayCountingSpeech: ParagraphSpeechGenerating {
+    private(set) var requests: [Int] = []
+    let segments: [AudioSegment]
+    init(_ segments: [AudioSegment]) { self.segments = segments }
+    func generateTTSForParagraph(
+        paragraphIndex: Int, text: String, voice: String?, speed: Double,
+        language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
+        continuation: TTSContinuation?, onCheckpoint: ((TTSContinuation) async -> Void)?,
+        onSegmentReady: @escaping (AudioSegment) async -> Void
+    ) async throws {
+        requests.append(paragraphIndex)
+        for segment in segments where segment.paragraphIndex == paragraphIndex {
+            try Task.checkCancellation()
+            await onSegmentReady(segment)
+        }
+    }
+}
+
 @MainActor
 final class ReadingResumeTests: XCTestCase {
     private var directory: URL!
@@ -136,6 +154,37 @@ final class ReadingResumeTests: XCTestCase {
         XCTAssertNotNil(requests[0].1)
         XCTAssertEqual(requests[0].1, requests[1].1, "Same failed speech retries must not reserve quota twice")
         XCTAssertNotEqual(requests[1].1, requests[2].1, "A new page must not inherit the prior page's idempotency key")
+    }
+
+    func testCloneParagraphReplayAndReadAheadReuseDeliveredAudio() async throws {
+        let settings = AppSettings.shared
+        let previous = settings.voice(for: "en")
+        settings.setVoice("vl_credit_replay_test", for: "en")
+        let audio = AudioPlayerService.shared
+        let first = segment(0, text: "Rain falls.", paragraph: 0, duration: 0.8)
+        let second = segment(0, text: "Plants grow.", paragraph: 1, duration: 0.8)
+        let doc = ReadingDocument(id: UUID().uuidString, title: "Clone replay", sourceKind: .text,
+                                  language: "en", paragraphs: paragraphs([first.text, second.text]))
+        let speech = CloneReplayCountingSpeech([first, second])
+        let vm = ReadAloudViewModel(document: doc, historyStore: HistoryStore(directory: directory),
+                                   speechGenerator: speech)
+        defer {
+            vm.stop(); vm.deactivate()
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+        }
+        vm.dbgGenerate(0)
+        try await waitUntil("Initial clone generation plays both paragraphs") { vm.isFinished }
+        let originalRequests = await speech.requests
+        XCTAssertEqual(originalRequests, [0, 1])
+        vm.dbgGenerate(0)
+        try await waitUntil("Cached replay starts with the original audio") {
+            audio.currentSegment?.id == first.id && audio.hasAudibleProgress
+        }
+        try await waitUntil("Cached successor completes without another generation") { vm.isFinished }
+        let replayRequests = await speech.requests
+        XCTAssertEqual(replayRequests, originalRequests,
+                       "Replaying cached clone paragraphs must not call the billable producer again")
     }
 
     func testUntimedChineseResumeAcceptsVerifiedSplitAndMergedAudio() throws {

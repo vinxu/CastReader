@@ -1,0 +1,11 @@
+00:39:45.268 [active] KINDLE_SENTENCE accepted units=2 bridged=0 pending=true key=3615e00d3455
+00:39:45.332 [active] KINDLE_SENTENCE opened units=2 pending=true key=3615e00d3455
+00:39:46.987 [active] KINDLE_SENTENCE accepted units=2 bridged=1 pending=false key=ac565e5262a9
+00:39:46.991 [active] KINDLE_SENTENCE source-ready elapsedMs=999 from=3615e00d3455 to=ac565e5262a9
+00:39:46.992 [active] KINDLE_SENTENCE appended count=2 cursor=2 vm=retained
+00:40:10.582 [active] KINDLE_SENTENCE presented p=2 w=35 key=ac565e5262a9
+00:40:13.142 [active] KINDLE_SENTENCE accepted units=3 bridged=0 pending=true key=0f4e47e62e7f
+00:40:13.182 [active] KINDLE_SENTENCE source-ready elapsedMs=1804 from=ac565e5262a9 to=0f4e47e62e7f
+00:40:13.185 [active] KINDLE_SENTENCE appended count=3 cursor=4 vm=retained
+00:40:23.431 [active] KINDLE_SENTENCE presented p=4 w=0 key=0f4e47e62e7f
+00:40:24.171 [active] KINDLE_SENTENCE source-failed actionAttempted=false error=Could not capture the Kindle page: sentence-visual-hold-unavailable

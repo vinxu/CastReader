@@ -13,6 +13,8 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
     private weak var previousKeyWindow: UIWindow?
     private var model: KindleBookViewModel!
     private var fixtureReaderURL: URL!
+    private var fixtureDefaultsName: String!
+    private var fixtureHistoryDirectory: URL!
 
     override func setUp() {
         super.setUp()
@@ -40,7 +42,12 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
             lastReadPageKey: nil,
             lastReadURL: nil
         )
-        model = KindleBookViewModel(book: book, websiteDataStore: .nonPersistent())
+        fixtureDefaultsName = "kindle-settings-ownership-" + UUID().uuidString
+        let defaults = UserDefaults(suiteName: fixtureDefaultsName)!
+        fixtureHistoryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(fixtureDefaultsName)
+        model = KindleBookViewModel(book: book, websiteDataStore: .nonPersistent(),
+            libraryStore: KindleLibraryStore(defaults: defaults),
+            historyStore: HistoryStore(directory: fixtureHistoryDirectory))
         model.webView.navigationDelegate = nil
         window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
         let controller = UIViewController()
@@ -61,6 +68,8 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         window = nil
         previousKeyWindow?.makeKey()
         previousKeyWindow = nil
+        UserDefaults.standard.removePersistentDomain(forName: fixtureDefaultsName)
+        try? FileManager.default.removeItem(at: fixtureHistoryDirectory)
         super.tearDown()
     }
 
@@ -317,6 +326,52 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
             XCTAssertFalse(AudioPlayerService.shared.isPlaying, scenario)
             withExtendedLifetime(navigation) { }
         }
+    }
+
+    func testReflowCloseDoesNotSearchForOldPagePixelsOnNextPlay() async throws {
+        try await loadNativeFontCommitFixture()
+        try await openAndCommitNativeFont()
+        model.closeReadingSettings()
+        try await waitUntil { !self.model.isApplyingReadingSettings }
+        XCTAssertFalse(model.coldListeningRestorePendingForTesting,
+                       "Explicit reflow starts from the visible page, never the old raster fingerprint")
+        XCTAssertFalse(AudioPlayerService.shared.isPlaying)
+    }
+
+    func testNativeSearchRollbackUsesLogicalIndexAfterOriginalRasterWasEvicted() async throws {
+        try await loadNativeSearchFixture()
+        let origin: [String: Any] = ["key": "native:evicted", "native": ["active": true, "book": "fixture", "epoch": 4, "index": 0]]
+        let key = try await model.restoreNativeSearchOriginForTesting(origin)
+        XCTAssertEqual(key, "native:current:0")
+        let result = try await settingsJSON("JSON.stringify({index:fixtureIndex,moves:fixtureMoves})")
+        XCTAssertEqual(result["index"] as? Int, 0)
+        XCTAssertEqual(result["moves"] as? [String], Array(repeating: "previous", count: 4))
+    }
+
+    func testNativeSearchRollbackRejectsChangedLayoutBeforeDispatch() async throws {
+        try await loadNativeSearchFixture()
+        let origin: [String: Any] = ["native": ["active": true, "book": "fixture", "epoch": 3, "index": 0]]
+        do {
+            _ = try await model.restoreNativeSearchOriginForTesting(origin)
+            XCTFail("Cannot use a relative index from another layout")
+        } catch { }
+        let count = try await model.webView.evaluateJavaScript("fixtureMoves.length") as? Int
+        XCTAssertEqual(count, 0)
+    }
+
+    private func loadNativeSearchFixture() async throws {
+        try await loadFixture()
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        _ = try await model.webView.evaluateJavaScript("""
+        window.fixtureIndex=4;window.fixtureMoves=[];
+        window.__crKindleState=()=>JSON.stringify({key:'native:current:'+fixtureIndex,pixelFingerprint:'pixels',
+          native:{active:true,book:'fixture',epoch:4,index:fixtureIndex,currentId:'native:current:'+fixtureIndex}});
+        window.__crKindleSemanticPageTurn=(direction)=>{
+          fixtureMoves.push(direction);fixtureIndex+=direction==='previous'?-1:1;
+          return JSON.stringify({ok:true,dispatchCount:1,nativeEpoch:4,targetIndex:fixtureIndex,expectedTargetKey:'native:current:'+fixtureIndex});
+        };true;
+        """)
     }
 
     func testDoneDoesNotReloadOrRewriteAnUnrelatedPreferenceMismatch() async throws {

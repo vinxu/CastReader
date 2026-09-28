@@ -1,0 +1,21 @@
+01:56:17.738 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=-1 accepted=Y
+01:56:18.371 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=-2 accepted=Y
+01:56:18.990 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=-3 accepted=Y
+01:56:19.616 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=-4 accepted=Y
+01:56:20.237 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=-3 accepted=Y
+01:56:20.812 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=-2 accepted=Y
+01:56:21.370 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=-1 accepted=Y
+01:56:21.977 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=0 accepted=Y
+01:56:22.580 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=1 accepted=Y
+01:56:23.182 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=2 accepted=Y
+01:56:23.787 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=3 accepted=Y
+01:56:24.373 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=4 accepted=Y
+01:56:24.929 [active] KINDLE playback restore wait reason=user-position-search-rollback key=d651735c51ab current=97256096613e phase=direct attempt=0 top=-9999 bottom=-9999 observed=-1/0 held=-1/54 jsReason=no-stored-anchor
+01:56:24.931 [active] KINDLE playback anchor-restore miss reason=user-position-search-rollback key=d651735c51ab target=? before=? after=? delta=? ageMs=? jsReason=anchor-missing
+01:56:24.931 [active] KINDLE playback restore miss reason=user-position-search-rollback key=d651735c51ab
+01:56:26.144 [active] KINDLE_SENTENCE accepted units=2 bridged=0 pending=true key=97256096613e
+01:56:26.240 [active] KINDLE_SENTENCE opened units=2 pending=true key=97256096613e
+01:56:26.387 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=5 accepted=Y
+01:56:26.988 [active] KINDLE_SENTENCE accepted units=2 bridged=1 pending=false key=4166219ebfbb
+01:56:26.992 [active] KINDLE_SENTENCE source-ready elapsedMs=640 from=97256096613e to=4166219ebfbb
+01:56:26.994 [active] KINDLE_SENTENCE appended count=2 cursor=2 vm=retained
