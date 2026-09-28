@@ -396,9 +396,10 @@ final class PaymentTests: XCTestCase {
     }
 
     func testOnlyVerifiedStoreKitTransactionsMayBeFinished() {
-        XCTAssertTrue(ProManager.shouldFinishStoreKitTransaction(isVerified: true))
+        XCTAssertTrue(ProManager.shouldFinishStoreKitTransaction(isVerified: true, serverConfirmed: true))
+        XCTAssertFalse(ProManager.shouldFinishStoreKitTransaction(isVerified: true, serverConfirmed: false))
         XCTAssertFalse(
-            ProManager.shouldFinishStoreKitTransaction(isVerified: false),
+            ProManager.shouldFinishStoreKitTransaction(isVerified: false, serverConfirmed: false),
             "unverified charged transactions must remain available for retry"
         )
     }

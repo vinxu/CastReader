@@ -11,6 +11,56 @@ import Combine
 import UIKit
 import CryptoKit
 
+/// Last successful server answer, stored in the private Keychain. This is a
+/// presentation/continuity cache, never a credential for protected APIs.
+@MainActor
+final class ProServerSnapshotCache {
+    struct Snapshot: Codable {
+        let version: Int
+        let userId: String
+        let route: String
+        let pro: Bool
+        let plan: String?
+    }
+    let read: () -> String?
+    let write: (String?) -> Void
+
+    init(read: @escaping () -> String?, write: @escaping (String?) -> Void) {
+        self.read = read
+        self.write = write
+    }
+
+    static func keychain(route: ServiceRoute) -> ProServerSnapshotCache {
+        let key = route.isolatedStorageKey("pro_server_snapshot_v1")
+        return ProServerSnapshotCache(read: { KeychainStore.get(key) }, write: { value in
+            if let value { KeychainStore.set(value, for: key) }
+            else { KeychainStore.delete(key) }
+        })
+    }
+
+    static func memory() -> ProServerSnapshotCache {
+        var value: String?
+        return ProServerSnapshotCache(read: { value }, write: { value = $0 })
+    }
+
+    func load(userId: String, route: ServiceRoute) -> Snapshot? {
+        guard let text = read(), let data = text.data(using: .utf8),
+              let value = try? JSONDecoder().decode(Snapshot.self, from: data),
+              value.version == 1, value.userId == userId,
+              value.route == route.rawValue else { return nil }
+        return value
+    }
+
+    func save(userId: String, route: ServiceRoute, pro: Bool, plan: String?) {
+        let value = Snapshot(version: 1, userId: userId, route: route.rawValue, pro: pro, plan: plan)
+        guard let data = try? JSONEncoder().encode(value),
+              let text = String(data: data, encoding: .utf8) else { return }
+        write(text)
+    }
+
+    func clear() { write(nil) }
+}
+
 @MainActor
 final class ProManager: ObservableObject {
     static let shared = ProManager()
@@ -82,6 +132,9 @@ final class ProManager: ObservableObject {
 
     private var updatesTask: Task<Void, Never>?
     private var growthStatusRetryTask: Task<Void, Never>?
+    private var purchaseSyncRetryTask: Task<Void, Never>?
+    private var purchaseSyncRetryCount = 0
+    private let serverSnapshotCache: ProServerSnapshotCache
     /// 当前 `serverPro` 对应的账号身份。邮箱账号与纯手机号账号都必须参与，
     /// 否则两个无邮箱手机号账号之间切换且网络失败时会短暂沿用前一个人的权益。
     private var serverIdentity: String?
@@ -104,9 +157,12 @@ final class ProManager: ObservableObject {
             && read.accountBoundary == AuthService.shared.accountBoundaryID
     }
 
-    private init() {}
+    private init(serverSnapshotCache: ProServerSnapshotCache? = nil) {
+        self.serverSnapshotCache = serverSnapshotCache ?? .keychain(route: ServiceRouting.current)
+    }
 
     func start() {
+        restoreCurrentAccountSnapshot()
         updatesTask?.cancel()
         updatesTask = listenForTransactions()
         Task {
@@ -117,6 +173,8 @@ final class ProManager: ObservableObject {
 
     /// 刷新 StoreKit 权益 + 服务端 Pro/额度。在启动/前台/登录/购买后调用。
     func refresh() async {
+        restoreCurrentAccountSnapshot()
+        purchaseSyncRetryCount = 0
         await refreshEntitlements()
         await refreshServer()
     }
@@ -124,6 +182,7 @@ final class ProManager: ObservableObject {
     /// 用 cms_ 会话拉取服务端 Pro/额度；服务端从 canonical user + ingress route
     /// 派生额度主体，客户端 device_id 只保留为兼容字段，不能决定权益或额度。
     func refreshServer() async {
+        restoreCurrentAccountSnapshot()
         growthStatusRetryTask?.cancel()
         growthStatusRetryTask = nil
         await refreshServer(allowGrowthBootstrapRetry: true)
@@ -245,7 +304,28 @@ final class ProManager: ObservableObject {
         serverPlan = status.plan
         serverAccount = status.account
         serverIdentity = Self.serverIdentityKey(userId: userId, email: email)
+        if let userId = Self.normalizedIdentityComponent(userId) {
+            serverSnapshotCache.save(userId: userId, route: ServiceRouting.current,
+                                     pro: status.pro, plan: status.plan)
+        }
         return true
+    }
+
+    private func restoreCurrentAccountSnapshot() {
+        guard AuthService.shared.isSignedIn, let userId = AuthService.shared.proUserId else { return }
+        restoreServerSnapshot(userId: userId, email: AuthService.shared.normalizedEmail,
+                              route: ServiceRouting.current)
+    }
+
+    /// Called only for the restored, authenticated canonical account. A new
+    /// successful false always supersedes cache and local StoreKit evidence.
+    func restoreServerSnapshot(userId: String, email: String?, route: ServiceRoute) {
+        guard serverIdentity == nil,
+              let snapshot = serverSnapshotCache.load(userId: userId, route: route) else { return }
+        serverPro = snapshot.pro
+        serverPlan = snapshot.plan
+        serverIdentity = Self.serverIdentityKey(userId: userId, email: email)
+        refreshSyncState(reason: "restore-server-snapshot")
     }
 
     /// One bounded retry in the current foreground is enough to cover a
@@ -269,6 +349,7 @@ final class ProManager: ObservableObject {
         serverPlan = nil
         serverAccount = nil
         serverIdentity = nil
+        serverSnapshotCache.clear()
         VoiceCloneStore.shared.clearEntitlementStatus()
         refreshSyncState(reason: "clear-server")
     }
@@ -278,6 +359,9 @@ final class ProManager: ObservableObject {
     /// boundary so the next account cannot briefly inherit a crown while its
     /// own transaction tokens and server entitlement are still refreshing.
     func clearEntitlementsForAccountTransition() {
+        purchaseSyncRetryTask?.cancel()
+        purchaseSyncRetryTask = nil
+        purchaseSyncRetryCount = 0
         storeKitReadSequence &+= 1
         setStoreKitLocalPro(false, reason: "account-transition")
         clearServerEntitlement()
@@ -366,8 +450,10 @@ final class ProManager: ObservableObject {
             )
     }
 
-    nonisolated static func shouldFinishStoreKitTransaction(isVerified: Bool) -> Bool {
-        isVerified
+    nonisolated static func shouldFinishStoreKitTransaction(
+        isVerified: Bool, serverConfirmed: Bool
+    ) -> Bool {
+        isVerified && serverConfirmed
     }
 
     /// 打开系统「管理订阅」面板（模拟器不支持）。
@@ -438,8 +524,8 @@ final class ProManager: ObservableObject {
     }
 
     #if DEBUG
-    static func makeForTesting() -> ProManager {
-        let manager = ProManager()
+    static func makeForTesting(serverSnapshotCache: ProServerSnapshotCache? = nil) -> ProManager {
+        let manager = ProManager(serverSnapshotCache: serverSnapshotCache ?? .memory())
         manager.debugForcePro = false
         return manager
     }
@@ -496,6 +582,7 @@ final class ProManager: ObservableObject {
         let accountBoundary = AuthService.shared.accountBoundaryID
         var active = false
         var latestSignedTransaction: String?
+        var latestTransaction: Transaction?
         var latestExpiration = Date.distantPast
         let expectedAccountToken = await expectedStoreKitAccountToken()
         for await result in Transaction.currentEntitlements {
@@ -517,6 +604,7 @@ final class ProManager: ObservableObject {
                 if expiration > latestExpiration {
                     latestExpiration = expiration
                     latestSignedTransaction = result.jwsRepresentation
+                    latestTransaction = t
                 }
             }
         }
@@ -530,9 +618,49 @@ final class ProManager: ObservableObject {
         // 拿 email 当前置条件会漏掉 Apple 无 email 但有会话的账号。
         if active,
            AuthService.shared.isSignedIn,
-           let latestSignedTransaction {
-            let synced = await ProBackendService.shared.verifyAppleTransaction(latestSignedTransaction)
+           let latestSignedTransaction, let latestTransaction {
+            let synced = await synchronizeTransaction(latestTransaction, signedTransaction: latestSignedTransaction)
             debugLog("storekit-server-sync result=\(synced ? "Y" : "N")")
+        }
+    }
+
+    /// Leaving the transaction unfinished makes StoreKit the durable delivery
+    /// queue. The foreground retries are bounded; later launch/restore retries
+    /// use the same receipt and the server's idempotent ownership checks.
+    private func synchronizeTransaction(_ transaction: Transaction, signedTransaction: String) async -> Bool {
+        let boundary = AuthService.shared.accountBoundaryID
+        let expected = await expectedStoreKitAccountToken()
+        guard boundary == AuthService.shared.accountBoundaryID,
+              AuthService.shared.isSignedIn,
+              Self.transactionBelongsToCurrentAccount(appAccountToken: transaction.appAccountToken,
+                                                      expectedAccountToken: expected) else { return false }
+        let synced = await ProBackendService.shared.verifyAppleTransaction(
+            signedTransaction, expectedAccountBoundary: boundary)
+        guard boundary == AuthService.shared.accountBoundaryID else { return false }
+        if Self.shouldFinishStoreKitTransaction(isVerified: true, serverConfirmed: synced) {
+            await transaction.finish()
+            purchaseSyncRetryTask?.cancel()
+            purchaseSyncRetryTask = nil
+            purchaseSyncRetryCount = 0
+        } else {
+            schedulePurchaseSyncRetry(boundary: boundary)
+        }
+        return synced
+    }
+
+    private func schedulePurchaseSyncRetry(boundary: UUID) {
+        let delays: [UInt64] = [2, 10, 30]
+        guard purchaseSyncRetryTask == nil, purchaseSyncRetryCount < delays.count else { return }
+        let delay = delays[purchaseSyncRetryCount]
+        purchaseSyncRetryCount += 1
+        purchaseSyncRetryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: delay * 1_000_000_000)
+            guard !Task.isCancelled, let self,
+                  boundary == AuthService.shared.accountBoundaryID else { return }
+            self.purchaseSyncRetryTask = nil
+            await self.refreshEntitlements()
+            guard boundary == AuthService.shared.accountBoundaryID else { return }
+            await self.refreshServer()
         }
     }
 
@@ -647,9 +775,8 @@ final class ProManager: ObservableObject {
                     debugTransaction("purchase verified", t)
                     let transactionEnvironment = Self.analyticsEnvironment(for: t)
                     let offerType = Self.analyticsOfferType(for: t)
-                    if Self.shouldFinishStoreKitTransaction(isVerified: true) {
-                        await t.finish()
-                    }
+                    await synchronizeTransaction(t, signedTransaction: verification.jwsRepresentation)
+                    guard purchaseBoundary == AuthService.shared.accountBoundaryID else { return false }
                     await refresh()
                     ProductAnalytics.shared.track(
                         .purchaseResult,
@@ -690,9 +817,6 @@ final class ProManager: ObservableObject {
                     // a legitimate charged purchase whose certificate check is
                     // temporarily failing; preserve it for Transaction.updates
                     // or an explicit restore after verification succeeds.
-                    if Self.shouldFinishStoreKitTransaction(isVerified: false) {
-                        await t.finish()
-                    }
                     await refresh()
                     ProductAnalytics.shared.track(
                         .purchaseResult,
@@ -798,7 +922,13 @@ final class ProManager: ObservableObject {
                     continue
                 }
                 await ProManager.shared.debugTransaction("transaction update", t)
-                await t.finish()
+                if t.revocationDate != nil || (t.expirationDate ?? .distantFuture) <= Date() {
+                    // Terminal StoreKit updates grant nothing; acknowledge them
+                    // and let the authoritative account query converge.
+                    await t.finish()
+                } else {
+                    await ProManager.shared.synchronizeTransaction(t, signedTransaction: update.jwsRepresentation)
+                }
                 await ProManager.shared.refresh()
             }
         }

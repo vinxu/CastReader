@@ -406,13 +406,16 @@ actor ProBackendService {
     /// Upload an Apple-signed StoreKit 2 transaction under the authenticated
     /// first-party mobile session. The server verifies Apple's JWS chain and
     /// binds the entitlement to the session's email-backed account.
-    func verifyAppleTransaction(_ signedTransaction: String) async -> Bool {
+    func verifyAppleTransaction(_ signedTransaction: String, expectedAccountBoundary: UUID) async -> Bool {
         guard !signedTransaction.isEmpty,
               let url = URL(string: Constants.API.proVerifyApple) else { return false }
+        let context = await Self.growthClientContext()
+        guard await AuthService.shared.accountBoundaryID == expectedAccountBoundary else { return false }
         return await performAppleVerification(
             signedTransaction: signedTransaction,
             url: url,
-            context: await Self.growthClientContext(),
+            context: context,
+            expectedAccountBoundary: expectedAccountBoundary,
             canRefreshSession: true
         )
     }
@@ -421,8 +424,10 @@ actor ProBackendService {
         signedTransaction: String,
         url: URL,
         context: GrowthClientContext,
+        expectedAccountBoundary: UUID,
         canRefreshSession: Bool
     ) async -> Bool {
+        guard await AuthService.shared.accountBoundaryID == expectedAccountBoundary else { return false }
         var token = await MobileSessionStore.shared.sessionToken()
         if token == nil, canRefreshSession {
             token = await MobileSessionStore.shared.refreshSession()
@@ -431,19 +436,22 @@ actor ProBackendService {
             Self.debugLog("verify-apple SKIP mobile-session-missing")
             return false
         }
+        guard await AuthService.shared.accountBoundaryID == expectedAccountBoundary else { return false }
         do {
             let request = try Self.makeAppleVerificationRequest(
                 url: url, bearerToken: token, signedTransaction: signedTransaction,
                 context: context, localDate: Self.localDay()
             )
             let (data, response) = try await session.data(for: request)
+            guard await AuthService.shared.accountBoundaryID == expectedAccountBoundary else { return false }
             guard let http = response as? HTTPURLResponse else { return false }
             if http.statusCode == 401, canRefreshSession,
-               await MobileSessionStore.shared.refreshSession() != nil {
+               await MobileSessionStore.shared.refreshSession(replacing: token) != nil {
                 return await performAppleVerification(
                     signedTransaction: signedTransaction,
                     url: url,
                     context: context,
+                    expectedAccountBoundary: expectedAccountBoundary,
                     canRefreshSession: false
                 )
             }

@@ -93,6 +93,85 @@ final class ProStatusSynchronizationTests: XCTestCase {
                                        email: nil, read: manager.beginServerRead())
     }
 
+    func testColdRestartRestoresLastSuccessfulServerProThroughNetworkFailure() throws {
+        let cache = ProServerSnapshotCache.memory()
+        let before = ProManager.makeForTesting(serverSnapshotCache: cache)
+        apply(try activeStatus(), to: before)
+        let after = ProManager.makeForTesting(serverSnapshotCache: cache)
+        after.restoreServerSnapshot(userId: "support-replay-account", email: nil, route: ServiceRouting.current)
+        apply(nil, to: after)
+        XCTAssertTrue(after.isPro)
+        XCTAssertFalse(after.storeKitLocalPro, "Cached server membership must not invent a StoreKit purchase")
+    }
+
+    func testColdRestartRetainsAuthoritativeFalseDespiteOldLocalPurchase() throws {
+        let cache = ProServerSnapshotCache.memory()
+        let before = ProManager.makeForTesting(serverSnapshotCache: cache)
+        apply(try activeStatus(), to: before)
+        apply(try revokedStatus(), to: before)
+        let after = ProManager.makeForTesting(serverSnapshotCache: cache)
+        after.setLocalStoreKitForTesting(true)
+        after.restoreServerSnapshot(userId: "support-replay-account", email: nil, route: ServiceRouting.current)
+        apply(nil, to: after)
+        XCTAssertFalse(after.isPro)
+    }
+
+    func testRestoredServerProClearsPendingPurchaseSyncPresentation() throws {
+        let cache = ProServerSnapshotCache.memory()
+        let before = ProManager.makeForTesting(serverSnapshotCache: cache)
+        apply(try activeStatus(), to: before)
+        let after = ProManager.makeForTesting(serverSnapshotCache: cache)
+        after.setLocalStoreKitForTesting(true)
+        XCTAssertTrue(after.needsEmailSync)
+        after.restoreServerSnapshot(userId: "support-replay-account", email: nil, route: ServiceRouting.current)
+        XCTAssertTrue(after.isPro)
+        XCTAssertFalse(after.needsEmailSync)
+    }
+
+    func testSnapshotCannotCrossAccountOrRouteAndSignOutDeletesIt() throws {
+        let cache = ProServerSnapshotCache.memory()
+        let before = ProManager.makeForTesting(serverSnapshotCache: cache)
+        apply(try activeStatus(), to: before)
+        let other = ProManager.makeForTesting(serverSnapshotCache: cache)
+        other.restoreServerSnapshot(userId: "other", email: nil, route: ServiceRouting.current)
+        XCTAssertFalse(other.isPro)
+        let otherRoute: ServiceRoute = ServiceRouting.current == .globalGateway ? .chinaGateway : .globalGateway
+        other.restoreServerSnapshot(userId: "support-replay-account", email: nil, route: otherRoute)
+        XCTAssertFalse(other.isPro)
+        before.clearEntitlementsForAccountTransition()
+        other.restoreServerSnapshot(userId: "support-replay-account", email: nil, route: ServiceRouting.current)
+        XCTAssertFalse(other.isPro)
+        XCTAssertNil(cache.read())
+    }
+
+    func testDelayedFalseCannotPoisonPersistentTrue() throws {
+        let cache = ProServerSnapshotCache.memory()
+        let before = ProManager.makeForTesting(serverSnapshotCache: cache)
+        let stale = before.beginServerRead()
+        apply(try activeStatus(), to: before)
+        XCTAssertFalse(before.applyServerEntitlement(try revokedStatus(), userId: "support-replay-account", email: nil, read: stale))
+        let after = ProManager.makeForTesting(serverSnapshotCache: cache)
+        after.restoreServerSnapshot(userId: "support-replay-account", email: "updated@example.invalid", route: ServiceRouting.current)
+        XCTAssertTrue(after.isPro)
+    }
+
+    func testCorruptSnapshotFailsClosedAndLocalPurchaseNeverPersistsPro() {
+        let cache = ProServerSnapshotCache.memory()
+        cache.write("broken")
+        let manager = ProManager.makeForTesting(serverSnapshotCache: cache)
+        manager.restoreServerSnapshot(userId: "support-replay-account", email: nil, route: ServiceRouting.current)
+        XCTAssertFalse(manager.isPro)
+        cache.clear()
+        manager.setLocalStoreKitForTesting(true)
+        XCTAssertNil(cache.read())
+    }
+
+    func testVerifiedButUndeliveredPurchaseMustRemainUnfinished() {
+        XCTAssertFalse(ProManager.shouldFinishStoreKitTransaction(isVerified: true, serverConfirmed: false))
+        XCTAssertFalse(ProManager.shouldFinishStoreKitTransaction(isVerified: false, serverConfirmed: true))
+        XCTAssertTrue(ProManager.shouldFinishStoreKitTransaction(isVerified: true, serverConfirmed: true))
+    }
+
     func testUnavailableNeverBecomesFalseOrResurrectsTrue() throws {
         let manager = ProManager.makeForTesting()
         apply(try activeStatus(), to: manager)
