@@ -34,6 +34,7 @@ final class CloneCreditPurchaseTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        guard !token.isEmpty else { return }
         _ = try? await control("fault")
         session?.clearTransactions()
         store = nil
