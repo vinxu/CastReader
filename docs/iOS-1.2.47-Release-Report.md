@@ -20,3 +20,13 @@ Kindle 功能分支 `bbe7ef7`：114 项受影响真机测试通过；最终实�
 | Global/英语 | NOT_RUN | NOT_RUN / NOT_RUN | NOT_RUN | NOT_RUN / NOT_RUN |
 
 最终源码、完整隔离单测、两区核心实测、服务端部署、归档身份、11 语商店差异、Build VALID 与审核单状态在完成后补齐。任何 NOT_RUN 不计为通过。
+
+商店准备：1.2.47 草稿 ID `138a0a05-56de-42f7-b841-31fdfb842418`，待发布 App Info `acf27d07-c6bd-48e9-abaa-af0f93b723e7`；已仅更新并回读 11 语 whatsNew，description/keywords/promotionalText/supportUrl/marketingUrl 保持基线不变。现有 55 张截图已备份，未替换。Xcode 中开发团队已确认可用。
+
+2026-09-29 服务端与商店准备进展：
+
+- Global 已通过正式工作流 `36471567236`，源码 `6acd3933db95926b7426e1d068e936f30fb24324`，候选 `readout-kokzmoito-castreader.vercel.app`，发布 ID `dpl_DptAVPWCZ8iDrXeNWiCexMSvjB8x`。新鲜 PostgreSQL 额度测试、Apple 归属/隔离、已有音色目录、实际赠送/匿名赠送、Kindle 真实模型、Pro 一致性和阅读修复回执门禁通过；两域名切换与正式线路回读通过。`cloneCredits` 的 enabled/salesEnabled/sandboxIsolated 为 true，包容量 7,200,000 ms。
+- CN 原正式源码 `2251845f` 的 10 个应用提交已在 beta 有 patch-equivalent 实现，剩余压缩配置和记录通过 PR #57 合并，未用旧分支替换最新应用。CN 候选 `036a5a9067daa50a46353e93363d88b6c1779b60` 同时继承两区正式基线，应用/依赖与 Global 上述已验证源码逐文件一致。CN 独立部署仍在进行中。
+- 额度 IAP `6816697780`、SKU `ai.castreader.clone.minutes120`、版本 `f267f0a8-d537-4fa7-9cc1-1796fc44b71c` 已回读 11 语商品名称/说明；不修改价格或销售地区。正式真机购买页审核截图仍待采集。
+- 新提交工具支持 Apple 新版 IAP version 审核项，保留精确审核对象校验与模糊写入恢复；6 个隔离模拟 API 用例通过。在线 dry-run 计划为同一审核单的 App 版本 + IAP 版本两个项目，尚未执行提交。
+- 全量真机隔离单测包已构建成功（独立 bundle `com.same.castreader.releasechecks1247`），未运行的原因是 Xcode tunnel unavailable。镜像可恢复但不等于安装通道可用；USB 设备列表当前没有 iPhone。不得将编译成功记为完整单测或核心实测通过。
