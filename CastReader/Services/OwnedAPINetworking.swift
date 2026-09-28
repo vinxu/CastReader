@@ -62,6 +62,14 @@ enum OwnedAPIRedirectPolicy {
         originalURL: URL?,
         proposedURL: URL?
     ) -> Bool {
+        #if DEBUG
+        if let previewHost = CloneCreditClient.acceptanceBaseURL?.host,
+           originalURL?.host == previewHost {
+            return proposedURL?.scheme == "https" && proposedURL?.host == previewHost
+                && proposedURL?.user == nil && proposedURL?.password == nil
+                && (proposedURL?.port == nil || proposedURL?.port == 443)
+        }
+        #endif
         guard isCastReaderOwnedHost(originalURL?.host) else { return true }
         // CN QuickRead is a separate, compile-time-pinned first-party ingress.
         // A redirect may stay on that exact host, but it must never replay a

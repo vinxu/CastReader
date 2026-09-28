@@ -55,6 +55,7 @@ actor CloneCreditClient {
     }
 
     nonisolated static var endpointBaseURL: URL {
+        if let preview = acceptanceBaseURL { return preview }
         #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
         if let index = arguments.firstIndex(of: "-CastReaderCloneCreditsBaseURL"), arguments.indices.contains(index + 1),
@@ -63,6 +64,32 @@ actor CloneCreditClient {
         }
         #endif
         return URL(string: Constants.API.webURL)!
+    }
+
+    /// Opt-in device acceptance against an immutable deployment owned by our
+    /// Vercel team. Release builds cannot redirect credentials to a preview.
+    nonisolated static var acceptanceBaseURL: URL? {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        guard ServiceRouting.current == .globalGateway,
+              let i = args.firstIndex(of: "-CastReaderCloneCreditsPreview"), args.indices.contains(i + 1),
+              let c = URLComponents(string: args[i + 1]), c.scheme == "https",
+              c.user == nil, c.password == nil, c.port == nil, c.query == nil, c.fragment == nil,
+              c.path.isEmpty || c.path == "/", let host = c.host,
+              host.range(of: #"^readout(?:-web)?-[a-z0-9]+-castreader\.vercel\.app$"#, options: .regularExpression) != nil else { return nil }
+        return c.url
+        #else
+        return nil
+        #endif
+    }
+
+    nonisolated static func prepareAcceptanceRequest(_ request: inout URLRequest) {
+        #if DEBUG
+        guard let host = acceptanceBaseURL?.host, request.url?.host == host else { return }
+        if let secret = ProcessInfo.processInfo.environment["CASTREADER_CREDITS_PREVIEW_BYPASS"], !secret.isEmpty {
+            request.setValue(secret, forHTTPHeaderField: "x-vercel-protection-bypass")
+        }
+        #endif
     }
 
     func request(signedTransaction: String? = nil, environment: String = "Production", canRefreshSession: Bool = true) async throws -> CloneCreditBalance {
@@ -75,6 +102,7 @@ actor CloneCreditClient {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
         request.setValue(environment, forHTTPHeaderField: "X-Clone-Billing-Environment")
+        Self.prepareAcceptanceRequest(&request)
         if let signedTransaction {
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -157,6 +185,7 @@ final class CloneCreditStore: ObservableObject {
         balance = nil
         message = nil
         environment = scope.flatMap { UserDefaults.standard.string(forKey: "clone-credit-environment.\($0)") } ?? "Production"
+        if CloneCreditClient.acceptanceBaseURL != nil { environment = "Sandbox" }
         pending.removeAll()
         hasPendingDelivery = false
         retryTask?.cancel()
@@ -243,7 +272,9 @@ final class CloneCreditStore: ObservableObject {
             scope = owner
             apply(snapshot)
             environment = snapshot.environment ?? "Production"
-            UserDefaults.standard.set(environment, forKey: "clone-credit-environment.\(owner)")
+            if CloneCreditClient.acceptanceBaseURL == nil {
+                UserDefaults.standard.set(environment, forKey: "clone-credit-environment.\(owner)")
+            }
             pending.remove(transaction.id)
             hasPendingDelivery = !pending.isEmpty
             message = snapshot.delivery?.refunded == true ? AppLocalized("这笔购买已退款") : AppLocalized("120 分钟额度已到账")

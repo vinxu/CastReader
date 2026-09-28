@@ -803,6 +803,7 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         request.setValue(priority.rawValue, forHTTPHeaderField: "X-TTS-Priority")
         request.setValue(requestID, forHTTPHeaderField: "X-Request-ID")
         request.setValue(creditEnvironment, forHTTPHeaderField: "X-Clone-Billing-Environment")
+        CloneCreditClient.prepareAcceptanceRequest(&request)
 
         let quotaRead = await MainActor.run { VoiceCloneStore.shared.beginQuotaRead() }
         let data: Data

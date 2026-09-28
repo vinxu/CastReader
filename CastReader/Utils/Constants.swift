@@ -62,7 +62,7 @@ enum Constants {
         /// compatibility, so a reverse-proxy compatibility rule cannot silently
         /// strip or misclassify the account session used for private voices.
         static var clonedVoiceTTS: String {
-            "\(baseURL)/api/voice-clone/captioned-speech"
+            "\(CloneCreditClient.acceptanceBaseURL?.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/")) ?? baseURL)/api/voice-clone/captioned-speech"
         }
         static var ttsCatalog: String {
             "\(ServiceRouting.current.apiGatewayBaseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
