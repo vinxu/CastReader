@@ -199,7 +199,7 @@ Apple 的 [App Review Guidelines 3.1.1](https://developer.apple.com/app-store/re
 11. 保留当前发布版 Kindle/WeRead/Kobo 恢复、播放器失败恢复等核心能力；真实设备完成克隆长文、解读和额度耗尽后继续。
 12. 若为首个 Consumable，按 Apple 要求随新 iOS 版本一并提审；准备商品审核截图及可操作账号，不把“商品已建好”当作用户已可购买。[Apple 提交内购说明](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-an-in-app-purchase)。
 
-本次交付为规划。尚未创建 App Store 商品、变更价格或账本，也未修改功能代码。
+以上为 9 月 27 日规划时的范围；后续实现和实际验收状态以以下记录为准，尚未正式交付。
 
 ## 2026-09-28 实现与验收记录
 
@@ -209,3 +209,10 @@ Apple 的 [App Review Guidelines 3.1.1](https://developer.apple.com/app-store/re
 - 最新构建通过；上线开关关闭时保持旧额度提示。
 - 后端详情和成本核算位于 `/Users/xuxuheng/Documents/.worktrees/readout-web-clone-credits/docs/clone-credits-acceptance-2026-09-28.md` 与 `docs/clone-credits-cost-2026-09-28.md`。真实运营毛利尚未证实；短音频推理成本不能代表全部成本。
 - 当前剩余：Apple 在线 Sandbox 设备登录与签名交易/退款回调；全应用 Read/Explain 界面续播；共享账单权威和受保护候选环境部署验收。未迁移生产库、未开启真实销售、未提交 App Store 新版本。
+
+### 真机镜像验收准备
+
+- 用户要求改用真机镜像。已连接镜像并确认现有 App 为 Pro，但当前安装的版本没有本轮加购入口；未播放用户书籍或改变个人额度。
+- 重新拉取 `origin/main`，确认候选源码 `ff67df9` 是最新发布记录 `9eb758b` 的增量修改，集成基线检查通过。
+- 真机 Debug 包编译和签名校验通过，开发描述文件包含目标 iPhone。产物：`/tmp/CastReader-Clone-Credits-device/Build/Products/Debug-iphoneos/CastReader.app`；日志：`/tmp/clone-credits-device-build.log`。
+- 尚未安装：CoreDevice 显示设备 `unavailable`，随后镜像工具提示 Mac 锁屏。已请求解锁 Mac 并用 USB 连接 iPhone。真机购买、到账、扣额、续播均记为 **NOT_RUN**，不能用已有模拟器结果替代。
