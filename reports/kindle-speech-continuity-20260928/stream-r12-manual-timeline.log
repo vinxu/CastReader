@@ -1,0 +1,7 @@
+00:08:25.739 [active] KINDLE_SENTENCE cancelled reason=paused-page-turn
+00:08:26.332 [active] KINDLE page turn dispatch-only result next old=abfd1db9c1e4 target=749194a3e009 strategy=adopt-prepared-next tried= reason=
+00:08:43.960 [active] KINDLE page turn dispatch-only result next old=749194a3e009 target=0a7b2a21f29b strategy=react-paired-action tried= reason=
+00:08:44.515 [active] KINDLE page turn dispatch-only result next old=0a7b2a21f29b target=4466c548859f strategy=react-paired-action tried= reason=
+00:08:45.058 [active] KINDLE page turn dispatch-only result next old=4466c548859f target=bb754c31fa6c strategy=react-paired-action tried= reason=
+00:09:19.979 [active] KINDLE page turn dispatch-only result previous old=bb754c31fa6c target=4466c548859f strategy=react-paired-action tried= reason=
+00:09:20.519 [active] KINDLE page turn dispatch-only result previous old=4466c548859f target=0a7b2a21f29b strategy=react-paired-action tried= reason=

@@ -1,0 +1,99 @@
+{
+  "note": "AVPlayer event intervals, not acoustic silence; 00:29:12 to user pause at 00:31:10.503.",
+  "transitions": [
+    {
+      "from": "0-0",
+      "to": "0-1",
+      "gapMs": 133
+    },
+    {
+      "from": "0-1",
+      "to": "1-0",
+      "gapMs": 180
+    },
+    {
+      "from": "1-0",
+      "to": "1-1",
+      "gapMs": 127
+    },
+    {
+      "from": "1-1",
+      "to": "2-0",
+      "gapMs": 157
+    },
+    {
+      "from": "2-0",
+      "to": "3-0",
+      "gapMs": 199
+    },
+    {
+      "from": "3-0",
+      "to": "3-1",
+      "gapMs": 174
+    },
+    {
+      "from": "3-1",
+      "to": "4-0",
+      "gapMs": 161
+    },
+    {
+      "from": "4-0",
+      "to": "5-0",
+      "gapMs": 201
+    },
+    {
+      "from": "5-0",
+      "to": "6-0",
+      "gapMs": 169
+    },
+    {
+      "from": "6-0",
+      "to": "6-1",
+      "gapMs": 170
+    },
+    {
+      "from": "6-1",
+      "to": "7-0",
+      "gapMs": 200
+    },
+    {
+      "from": "7-0",
+      "to": "8-0",
+      "gapMs": 241
+    },
+    {
+      "from": "8-0",
+      "to": "9-0",
+      "gapMs": 209
+    },
+    {
+      "from": "9-0",
+      "to": "10-0",
+      "gapMs": 160
+    },
+    {
+      "from": "10-0",
+      "to": "11-0",
+      "gapMs": 205
+    },
+    {
+      "from": "11-0",
+      "to": "12-0",
+      "gapMs": 195
+    },
+    {
+      "from": "12-0",
+      "to": "13-0",
+      "gapMs": 236
+    },
+    {
+      "from": "13-0",
+      "to": "14-0",
+      "gapMs": 209
+    }
+  ],
+  "ttsRequestCount": 23,
+  "speechParagraphCount": 19,
+  "duplicateParagraphPartCount": 0,
+  "voice": "af_heart (preset)"
+}

@@ -1,0 +1,580 @@
+{
+  "note": "AVPlayer event intervals, not acoustic silence. Voice-switch intervals excluded; duplicate request keys include voice generation.",
+  "startPrefix": "00:59:01",
+  "transitions": [
+    {
+      "at": "00:59:12.475",
+      "from": "0-0",
+      "to": "1-0",
+      "gapMs": 179,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "00:59:20.277",
+      "from": "1-0",
+      "to": "1-1",
+      "gapMs": 150,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "00:59:21.509",
+      "from": "1-1",
+      "to": "2-0",
+      "gapMs": 200,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "00:59:24.478",
+      "from": "2-0",
+      "to": "3-0",
+      "gapMs": 175,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "00:59:33.280",
+      "from": "3-0",
+      "to": "3-1",
+      "gapMs": 122,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "00:59:34.275",
+      "from": "3-1",
+      "to": "4-0",
+      "gapMs": 201,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "00:59:42.479",
+      "from": "4-0",
+      "to": "5-0",
+      "gapMs": 199,
+      "voiceGeneration": 0
+    },
+    {
+      "at": "00:59:51.502",
+      "from": "5-0",
+      "to": "5-1",
+      "gapMs": 2258,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "00:59:55.256",
+      "from": "5-1",
+      "to": "6-0",
+      "gapMs": 182,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:00.116",
+      "from": "6-0",
+      "to": "6-1",
+      "gapMs": 2218,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:08.032",
+      "from": "6-1",
+      "to": "7-0",
+      "gapMs": 208,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:10.968",
+      "from": "7-0",
+      "to": "7-1",
+      "gapMs": 171,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:11.812",
+      "from": "7-1",
+      "to": "8-0",
+      "gapMs": 226,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:14.576",
+      "from": "8-0",
+      "to": "8-1",
+      "gapMs": 1537,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:22.790",
+      "from": "8-1",
+      "to": "9-0",
+      "gapMs": 195,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:25.575",
+      "from": "9-0",
+      "to": "9-1",
+      "gapMs": 133,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:31.939",
+      "from": "9-1",
+      "to": "10-0",
+      "gapMs": 184,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:34.329",
+      "from": "10-0",
+      "to": "11-0",
+      "gapMs": 191,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:37.500",
+      "from": "11-0",
+      "to": "11-1",
+      "gapMs": 136,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:44.269",
+      "from": "11-1",
+      "to": "12-0",
+      "gapMs": 195,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:46.159",
+      "from": "12-0",
+      "to": "12-1",
+      "gapMs": 169,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:52.285",
+      "from": "12-1",
+      "to": "13-0",
+      "gapMs": 212,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:55.150",
+      "from": "13-0",
+      "to": "13-1",
+      "gapMs": 175,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:56.562",
+      "from": "13-1",
+      "to": "14-0",
+      "gapMs": 176,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:59.240",
+      "from": "14-0",
+      "to": "14-1",
+      "gapMs": 163,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:04.345",
+      "from": "14-1",
+      "to": "15-0",
+      "gapMs": 207,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:06.490",
+      "from": "15-0",
+      "to": "15-1",
+      "gapMs": 189,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:12.543",
+      "from": "15-1",
+      "to": "16-0",
+      "gapMs": 248,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:15.177",
+      "from": "16-0",
+      "to": "17-0",
+      "gapMs": 242,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:18.148",
+      "from": "17-0",
+      "to": "17-1",
+      "gapMs": 199,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:26.129",
+      "from": "17-1",
+      "to": "18-0",
+      "gapMs": 238,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:29.725",
+      "from": "18-0",
+      "to": "18-1",
+      "gapMs": 190,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:35.613",
+      "from": "18-1",
+      "to": "19-0",
+      "gapMs": 220,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:38.853",
+      "from": "19-0",
+      "to": "19-1",
+      "gapMs": 257,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:41.690",
+      "from": "19-1",
+      "to": "20-0",
+      "gapMs": 328,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:44.512",
+      "from": "20-0",
+      "to": "20-1",
+      "gapMs": 156,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:49.369",
+      "from": "20-1",
+      "to": "21-0",
+      "gapMs": 261,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:50.831",
+      "from": "21-0",
+      "to": "21-1",
+      "gapMs": 226,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:54.431",
+      "from": "21-1",
+      "to": "22-0",
+      "gapMs": 178,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:01:57.315",
+      "from": "22-0",
+      "to": "22-1",
+      "gapMs": 228,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:04.197",
+      "from": "22-1",
+      "to": "23-0",
+      "gapMs": 179,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:06.755",
+      "from": "23-0",
+      "to": "23-1",
+      "gapMs": 208,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:12.824",
+      "from": "23-1",
+      "to": "24-0",
+      "gapMs": 249,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:15.825",
+      "from": "24-0",
+      "to": "24-1",
+      "gapMs": 210,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:17.230",
+      "from": "24-1",
+      "to": "25-0",
+      "gapMs": 219,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:18.060",
+      "from": "25-0",
+      "to": "26-0",
+      "gapMs": 263,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:20.614",
+      "from": "26-0",
+      "to": "26-1",
+      "gapMs": 161,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:25.460",
+      "from": "26-1",
+      "to": "27-0",
+      "gapMs": 192,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:27.986",
+      "from": "27-0",
+      "to": "27-1",
+      "gapMs": 164,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:30.891",
+      "from": "27-1",
+      "to": "28-0",
+      "gapMs": 205,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:33.606",
+      "from": "28-0",
+      "to": "28-1",
+      "gapMs": 767,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:40.321",
+      "from": "28-1",
+      "to": "29-0",
+      "gapMs": 184,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:43.170",
+      "from": "29-0",
+      "to": "29-1",
+      "gapMs": 209,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:48.934",
+      "from": "29-1",
+      "to": "30-0",
+      "gapMs": 257,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:51.087",
+      "from": "30-0",
+      "to": "30-1",
+      "gapMs": 165,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:58.636",
+      "from": "30-1",
+      "to": "31-0",
+      "gapMs": 209,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:00.098",
+      "from": "31-0",
+      "to": "31-1",
+      "gapMs": 155,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:04.995",
+      "from": "31-1",
+      "to": "32-0",
+      "gapMs": 218,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:06.892",
+      "from": "32-0",
+      "to": "32-1",
+      "gapMs": 167,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:10.275",
+      "from": "32-1",
+      "to": "33-0",
+      "gapMs": 246,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:12.858",
+      "from": "33-0",
+      "to": "33-1",
+      "gapMs": 204,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:18.978",
+      "from": "33-1",
+      "to": "34-0",
+      "gapMs": 293,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:21.421",
+      "from": "34-0",
+      "to": "34-1",
+      "gapMs": 204,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:27.359",
+      "from": "34-1",
+      "to": "35-0",
+      "gapMs": 235,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:30.059",
+      "from": "35-0",
+      "to": "35-1",
+      "gapMs": 178,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:31.985",
+      "from": "35-1",
+      "to": "36-0",
+      "gapMs": 248,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:35.382",
+      "from": "36-0",
+      "to": "36-1",
+      "gapMs": 1102,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:43.226",
+      "from": "36-1",
+      "to": "37-0",
+      "gapMs": 217,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:45.796",
+      "from": "37-0",
+      "to": "37-1",
+      "gapMs": 211,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:50.638",
+      "from": "37-1",
+      "to": "38-0",
+      "gapMs": 257,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:53.466",
+      "from": "38-0",
+      "to": "38-1",
+      "gapMs": 274,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:04:00.717",
+      "from": "38-1",
+      "to": "39-0",
+      "gapMs": 292,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:04:02.318",
+      "from": "39-0",
+      "to": "39-1",
+      "gapMs": 225,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:04:09.678",
+      "from": "39-1",
+      "to": "40-0",
+      "gapMs": 225,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:04:11.977",
+      "from": "40-0",
+      "to": "40-1",
+      "gapMs": 230,
+      "voiceGeneration": 1
+    }
+  ],
+  "transitionCount": 75,
+  "medianMs": 208,
+  "maxMs": 2258,
+  "over600ms": [
+    {
+      "at": "00:59:51.502",
+      "from": "5-0",
+      "to": "5-1",
+      "gapMs": 2258,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:00.116",
+      "from": "6-0",
+      "to": "6-1",
+      "gapMs": 2218,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:00:14.576",
+      "from": "8-0",
+      "to": "8-1",
+      "gapMs": 1537,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:02:33.606",
+      "from": "28-0",
+      "to": "28-1",
+      "gapMs": 767,
+      "voiceGeneration": 1
+    },
+    {
+      "at": "01:03:35.382",
+      "from": "36-0",
+      "to": "36-1",
+      "gapMs": 1102,
+      "voiceGeneration": 1
+    }
+  ],
+  "ttsRequestCount": 81,
+  "duplicateParagraphParts": [],
+  "cloneResponseCount": 71,
+  "voiceSwitches": [
+    {
+      "begin": "00:59:42.718",
+      "finished": "00:59:47.563"
+    }
+  ]
+}

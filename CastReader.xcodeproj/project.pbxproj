@@ -38,6 +38,7 @@
 		0E888A2F97A2C94769F61364 /* KindleOfflineOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19C696BF56DC2D16E3117C34 /* KindleOfflineOCRService.swift */; };
 		0F42FDE5990EDD63834170A6 /* KoboContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3905510F9015271DBA3CD0D /* KoboContractTests.swift */; };
 		0F9D6E56B915FA5DB4D0537C /* ReadingResumeCheckpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 503BAE67D5C11770714B5B72 /* ReadingResumeCheckpoint.swift */; };
+		0FCE55FCB6D7F035829A1AE5 /* KindleSpeechTextPlanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF58264FBF7E096A310D3B5C /* KindleSpeechTextPlanTests.swift */; };
 		101E4D375DB6E35CC07DB94F /* KindleOfflinePlaybackCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F3D82F116FCA2156DE0831D /* KindleOfflinePlaybackCenter.swift */; };
 		10757E43FA45D96BC7F380DC /* KoboModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F8E038E798D5F3D55349ED /* KoboModels.swift */; };
 		10CA302D247691B44165D574 /* DocumentImportPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02ED8C503898C9BDB962CC80 /* DocumentImportPipeline.swift */; };
@@ -109,6 +110,7 @@
 		43042D5FDBCC5705599847A1 /* kindle-paired-footnotes-reported-page.png in Resources */ = {isa = PBXBuildFile; fileRef = 37DAD5AD911E5950950067CF /* kindle-paired-footnotes-reported-page.png */; };
 		43222177B639B5CCDBD5CDC8 /* ReaderTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A5EC5FE2A5C178FCCC6A740 /* ReaderTextView.swift */; };
 		438D1E305B7277CE04136EC6 /* PhotoRegionPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325BE6ACD59F1CBDDC0A8565 /* PhotoRegionPicker.swift */; };
+		446A146051671CBC07D1A917 /* KindleSpeechProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05830E083C294485E5E7FCAF /* KindleSpeechProjection.swift */; };
 		450C97F16D4B4310FD35F93E /* ReaderMoreButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DED4CAF3A29BB9776226E5 /* ReaderMoreButton.swift */; };
 		465517A4D1277E4CCB1C76F5 /* VoiceDiscovery in Resources */ = {isa = PBXBuildFile; fileRef = 3C9E5DEE25E5A55EF2BB15E1 /* VoiceDiscovery */; };
 		46D193EC74973B8FB8941B30 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C02A0DA8EAECC475D1D7997 /* Constants.swift */; };
@@ -126,10 +128,12 @@
 		4F6F85386B9274924B24AB96 /* voice-clone.html in Resources */ = {isa = PBXBuildFile; fileRef = 45B735B740C174490C64100C /* voice-clone.html */; };
 		5013850A08EB56F7E12B9C43 /* ReaderAppearanceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D4B10030B7B7DB5EBDE51C7 /* ReaderAppearanceSettings.swift */; };
 		50595C07CB0493DCD6DF13C6 /* AdaptiveLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C88938FE0CCDAC08F1EE807 /* AdaptiveLayout.swift */; };
+		515A8A30B96D12478C56D8CA /* KindleSpeechTextPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B48D7AB58AD3E1CE870615A /* KindleSpeechTextPlan.swift */; };
 		53A51A9FBF12662A9D5DE0B0 /* KindleOfflineBookStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7DE1871ADE557008666868E /* KindleOfflineBookStoreTests.swift */; };
 		53BF17A0AE0C00C86E7C930E /* KindlePrefetchHorizonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA3559B028A98D135F4544A /* KindlePrefetchHorizonTests.swift */; };
 		5436B385C50EA67937D67AA2 /* PDFOCRGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD275537BB4B32FE31C7349D /* PDFOCRGeometry.swift */; };
 		55C94E5A63B58FF7013C4ACC /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 144EE6CDB40D731B0BBC9411 /* APIService.swift */; };
+		56996CFD086A9B4D338333E3 /* KindleSentenceBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C7224A73E87A447B006ABD /* KindleSentenceBufferTests.swift */; };
 		569E30EB915FA2F8E80F0F9F /* OfflineDownloadsEntryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ABFCB12FA08FDAC7E34A31F /* OfflineDownloadsEntryCard.swift */; };
 		574FDD44C7D16765246A2831 /* ReadingDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8E1F3F9B55D193AB2EE331 /* ReadingDocument.swift */; };
 		57ABF89A132D57AA22021DDF /* OCRTokenGeometryCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57B54CB5453E596A8FF73D5 /* OCRTokenGeometryCoverageTests.swift */; };
@@ -325,6 +329,7 @@
 		D4FE373651D89F68C7C3B97F /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F977619F990E63A25E8D54 /* Extensions.swift */; };
 		D648749393A02215528E8982 /* MarkdownParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE83A44BF9B2CB95D430708 /* MarkdownParser.swift */; };
 		D7367AE2293598DBC7ED7BE0 /* KindlePageFlipProbeScriptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C3D87F6C73929AB2BCD1B5B /* KindlePageFlipProbeScriptTests.swift */; };
+		D8558F2F33FAF97A8AC55FDC /* KindleSentenceBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4810574EA30EA4FB89AB1F81 /* KindleSentenceBuffer.swift */; };
 		D85E21EB3E00EC79F165F916 /* CloudStorageModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505A8EC1DA33A2E8F0E494B4 /* CloudStorageModels.swift */; };
 		D88CE11C4DBC8F504810A649 /* SleepTimerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83101A28E5DA013B76347863 /* SleepTimerUITests.swift */; };
 		D99001C59AB8AFCD3D459EF6 /* ProductAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33BE0CA82F7535C299208B88 /* ProductAnalyticsTests.swift */; };
@@ -449,12 +454,14 @@
 		04E0733B5543E86966CE408F /* KoboLibraryViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KoboLibraryViews.swift; sourceTree = "<group>"; };
 		0538339ACBEB86AF70BA159C /* KindleFirstLaunchFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleFirstLaunchFlowView.swift; sourceTree = "<group>"; };
 		0545B73586C10C3C45E1DBC8 /* ShareViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		05830E083C294485E5E7FCAF /* KindleSpeechProjection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleSpeechProjection.swift; sourceTree = "<group>"; };
 		0595DA2DAD6B52D471AB9313 /* home-pro-alice.jpg */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.jpeg; path = "home-pro-alice.jpg"; sourceTree = "<group>"; };
 		06778BF8CF82DBBACB1A8C2A /* SeededGenerator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SeededGenerator.swift; sourceTree = "<group>"; };
 		070F8A7B64ECF6188661B7FA /* BoundLibrarySourcesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BoundLibrarySourcesView.swift; sourceTree = "<group>"; };
 		07393DDBD5FF2908CCBEFB0A /* LocalDocumentCacheTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LocalDocumentCacheTests.swift; sourceTree = "<group>"; };
 		07C5692102E30283E5300278 /* ReaderHostView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReaderHostView.swift; sourceTree = "<group>"; };
 		0872B9FD1954366BEDD17635 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		08C7224A73E87A447B006ABD /* KindleSentenceBufferTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleSentenceBufferTests.swift; sourceTree = "<group>"; };
 		08F16D17FB6FE542A5C01941 /* YouTubeTranscriptTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = YouTubeTranscriptTests.swift; sourceTree = "<group>"; };
 		0A65E9DEEB7017D92A3F7198 /* Localizable.xcstrings */ = {isa = PBXFileReference; includeInIndex = 1; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		0ADD0D90DBC6F22026840E16 /* KindleReadingSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleReadingSettingsView.swift; sourceTree = "<group>"; };
@@ -555,6 +562,7 @@
 		467FF23EFFB3CA089945B18F /* DocumentBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DocumentBuilder.swift; sourceTree = "<group>"; };
 		47BB70ACE37ACD57BD248B3E /* KindlePageTurnEvidenceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindlePageTurnEvidenceTests.swift; sourceTree = "<group>"; };
 		47D3C2E5319E8F7D1B2DF6B1 /* ContentCatalog.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentCatalog.swift; sourceTree = "<group>"; };
+		4810574EA30EA4FB89AB1F81 /* KindleSentenceBuffer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleSentenceBuffer.swift; sourceTree = "<group>"; };
 		48D9703C788196326AACDB7B /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		4AE83A44BF9B2CB95D430708 /* MarkdownParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownParser.swift; sourceTree = "<group>"; };
 		4BA8D71DB39FA40708D1B8A5 /* LiveWebPlatform.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LiveWebPlatform.swift; sourceTree = "<group>"; };
@@ -606,6 +614,7 @@
 		69BA3B3164EA18913284E5A0 /* tesseract-wasm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = "tesseract-wasm"; sourceTree = "<group>"; };
 		69F977619F990E63A25E8D54 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		6AEF236149E99331E32C8510 /* CloudHistoryReopenService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CloudHistoryReopenService.swift; sourceTree = "<group>"; };
+		6B48D7AB58AD3E1CE870615A /* KindleSpeechTextPlan.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleSpeechTextPlan.swift; sourceTree = "<group>"; };
 		6BAF8F6D5D87ABEF823DC402 /* KindleFootnoteSpeech.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleFootnoteSpeech.swift; sourceTree = "<group>"; };
 		6C2440FCF286F3BCF19EE6A9 /* AuthService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		6C435B5A70582649C83CDE8E /* tts-voice-catalog-envelope.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "tts-voice-catalog-envelope.json"; sourceTree = "<group>"; };
@@ -772,6 +781,7 @@
 		DE2F63E9249F3AF95EDFE95D /* PhoneSignInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneSignInView.swift; sourceTree = "<group>"; };
 		DEBBC802715FD4368B8C6263 /* HomeProUpsellCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeProUpsellCard.swift; sourceTree = "<group>"; };
 		DF3973DE960B8A34B079704A /* kindle-footnote-bracketed-reference.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = "kindle-footnote-bracketed-reference.png"; sourceTree = "<group>"; };
+		DF58264FBF7E096A310D3B5C /* KindleSpeechTextPlanTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleSpeechTextPlanTests.swift; sourceTree = "<group>"; };
 		DFF6331C40127B3CFD74830D /* WeReadLibraryViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeReadLibraryViews.swift; sourceTree = "<group>"; };
 		E051EFD79C32F5A9AD9FD8E8 /* SystemIntegrationStores.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemIntegrationStores.swift; sourceTree = "<group>"; };
 		E25A6A4891628A378455E3C7 /* KindleWebViewContainerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleWebViewContainerTests.swift; sourceTree = "<group>"; };
@@ -1141,6 +1151,8 @@
 				8FC0966041AF3C8CDBEA4BEA /* ProStatusSynchronizationTests.swift */,
 				87142870A29E9F4F88BE8E4D /* SafariExtensionContractTests.swift */,
 				EA29C088E4E8F2A9F01FDEE0 /* CloneCreditPurchaseTests.swift */,
+				DF58264FBF7E096A310D3B5C /* KindleSpeechTextPlanTests.swift */,
+				08C7224A73E87A447B006ABD /* KindleSentenceBufferTests.swift */,
 			);
 			path = CastReaderTests;
 			sourceTree = "<group>";
@@ -1213,6 +1225,8 @@
 				5C79E18CCA4EB5B4DC4683E5 /* KindleViewportTextAlignment.swift */,
 				A0FAD17DDD21524D6B839554 /* ReaderWindowKeyboard.swift */,
 				8671C1704E5D3B7DE69E4E9C /* ReaderDropImport.swift */,
+				6B48D7AB58AD3E1CE870615A /* KindleSpeechTextPlan.swift */,
+				05830E083C294485E5E7FCAF /* KindleSpeechProjection.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -1499,6 +1513,7 @@
 				C4E0A49E750B20B908325B49 /* SafariExtensionBridge.swift */,
 				408F15760A5EE928CE96CFB6 /* SafariExtensionContract.swift */,
 				60E5CDFEAED75410F1ADB794 /* CloneCreditStore.swift */,
+				4810574EA30EA4FB89AB1F81 /* KindleSentenceBuffer.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -2062,6 +2077,9 @@
 				DDDA7251DE975E9375084345 /* SafariExtensionContract.swift in Sources */,
 				80DC380A9C76F7A71FCFE555 /* CloneCreditStore.swift in Sources */,
 				CE4D2F3BE7444A8591EB4DDD /* CloneCreditPurchaseView.swift in Sources */,
+				515A8A30B96D12478C56D8CA /* KindleSpeechTextPlan.swift in Sources */,
+				D8558F2F33FAF97A8AC55FDC /* KindleSentenceBuffer.swift in Sources */,
+				446A146051671CBC07D1A917 /* KindleSpeechProjection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2143,6 +2161,8 @@
 				17DA2F2B2E9D524118906F8A /* ProStatusSynchronizationTests.swift in Sources */,
 				14EFD7AB206899990E0246A5 /* SafariExtensionContractTests.swift in Sources */,
 				9569C605DE2D36480C8473A0 /* CloneCreditPurchaseTests.swift in Sources */,
+				0FCE55FCB6D7F035829A1AE5 /* KindleSpeechTextPlanTests.swift in Sources */,
+				56996CFD086A9B4D338333E3 /* KindleSentenceBufferTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

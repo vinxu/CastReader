@@ -1,0 +1,19 @@
+{
+  "result": "Passed",
+  "passed": 82,
+  "failed": 0,
+  "skipped": 0,
+  "device": "iPhone 15 Pro Max",
+  "os": "iOS 26.7 (23H24)",
+  "xcresult": "/tmp/kindle-stream-device-r16.xcresult",
+  "coverage": [
+    "sentence planning",
+    "adjacency and exact source spans",
+    "OCR source projection",
+    "continuous append/cancellation/pause/retry/retirement",
+    "speed-aware prefetch",
+    "manual page queue",
+    "reading settings ownership",
+    "navigation position"
+  ]
+}

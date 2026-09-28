@@ -3,9 +3,16 @@ import XCTest
 
 @MainActor
 final class KindlePrefetchHorizonTests: XCTestCase {
+    private var originalSpeed = 1.0
     override func setUp() async throws {
         try await super.setUp()
         useRegularVoiceForTest(language: "en")
+        originalSpeed = AppSettings.shared.speed
+        AppSettings.shared.speed = 1
+    }
+    override func tearDown() async throws {
+        AppSettings.shared.speed = originalSpeed
+        try await super.tearDown()
     }
 
     private func candidates(_ count: Int, chars: Int = 12, duration: Double? = nil) -> [KindleParagraphPrefetchHorizon.Candidate] {
