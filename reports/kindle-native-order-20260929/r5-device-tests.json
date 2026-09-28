@@ -1,0 +1,13 @@
+{
+  "device": "iPhone 15 Pro Max",
+  "os": "iOS 26.7 (23H24)",
+  "tests": 113,
+  "failures": 0,
+  "result": "passed",
+  "suites": {
+    "KindleContinuousInputTests": 7,
+    "KindlePrefetchHorizonTests": 17,
+    "ReadingResumeTests": 89
+  },
+  "note": "Physical test-without-building of r5 signed build; counts overlap prior rounds."
+}

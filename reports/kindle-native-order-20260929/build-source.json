@@ -1,0 +1,19 @@
+{
+  "baseCommit": "6e9ad9232d9f80b9bb585010fe621868f09d99c6",
+  "releaseAncestor": "b6dd4d7",
+  "previousAppUUID": "1D5DAA68-48A6-385F-9896-793540FB05DE",
+  "r5AppUUID": "79583890-958E-3E1A-8D09-D84E207D62D9",
+  "buildResult": "TEST BUILD SUCCEEDED",
+  "target": "physical iOS device",
+  "files": {
+    "CastReader/Services/KindleNativePageScript.swift": "ccd6165d7211129fc183750050e81b8862c884fb3b2814e26b0c691dbc47391b",
+    "CastReader/Services/KindleWebScripts.swift": "1dc399997936208dfc1c08d18dcf47eb55a6a938d4ae60a7af32d832ee293b0f",
+    "CastReader/Views/Kindle/KindleBookView.swift": "b40e5c42c3664864d1bf9dcf6128edfc7f751fe6792ebaf36237eca6036f56ac",
+    "CastReader/ViewModels/ReadAloudViewModel.swift": "d0479ab15ee1fc429a867a74b209e8de9b21964e4011bcc278cfe766f4581201",
+    "CastReaderTests/KindleNativePageScriptTests.swift": "804b5305e91bb32dc997fb5d05a978e703ddebe433193a568dc9e183f4b5a070",
+    "CastReaderTests/KindleReadingSettingsOwnershipTests.swift": "e44b99676e5c101b5f93861dc807a3eb3bd1725a0556bccf00288820d9dcd9a2",
+    "CastReaderTests/KindleSentenceBufferTests.swift": "cdfeb4aa5abca34b0dc998d0c1055edf346017ffed8c6235e424d6f1c13c7987",
+    "scripts/test-kindle-native-pages.mjs": "6c98c9f0c9f75406d30a8fff581dc30083fc1da6db52de3aa2e6fb3055e8fa6a"
+  },
+  "r6AppUUID": "8187388B-B393-37E8-9942-190BC48753F2"
+}

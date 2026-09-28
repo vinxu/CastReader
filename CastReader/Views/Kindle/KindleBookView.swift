@@ -2607,6 +2607,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     var explainAdvanceReadyForTesting: (() -> Void)?
     func bindLivePlaybackForTesting(document: ReadingDocument) { bindLivePlayback(document: document) }
     func waitForStablePageForTesting() async throws { try await waitForKindleImageStable() }
+    var coldListeningRestorePendingForTesting: Bool { needsColdListeningPageRestore }
+    func restoreNativeSearchOriginForTesting(_ state: [String: Any]) async throws -> String? {
+        try await restoreNativeSearchOrigin(state, isCurrent: { true })
+    }
     #endif
     private var pendingPersistentAnchor: KindleListeningAnchor?
     private var listeningAnchorPersistTask: Task<Void, Never>?
@@ -4462,7 +4466,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         confirmUserNavigation(id: id, state: state)
     }
 
-    private func restoreColdNavigationPosition(_ position: KindleNavigationPosition) async {
+    private func restoreColdNavigationPosition(_ position: KindleNavigationPosition) async throws {
         guard needsColdListeningPageRestore, !isKindleSyncDialogVisible,
               store.positionStorageGeneration == positionStorageGeneration else { return }
         func stillCurrent() -> Bool {
@@ -4476,9 +4480,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             needsColdListeningPageRestore = false
             return
         }
+        var initialState: [String: Any]?
         do {
             try await ensureCaptureScriptInstalled(reason: "cold-user-position")
-            let initialKey = await currentVisibleKindlePageKey()
+            initialState = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
             let directions: [KindlePageTurnDirection] = Array(repeating: .previous, count: 4)
                 + Array(repeating: .next, count: 8)
             for step in 0...directions.count {
@@ -4504,16 +4509,45 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 guard step < directions.count else { break }
                 _ = try await requestKindlePageTurnTarget(directions[step], oldKey: state["key"] as? String ?? "")
             }
-            if stillCurrent() {
-                _ = await restorePlaybackKeyVisibility(initialKey, reason: "user-position-search-rollback", maxSteps: 2)
-            }
         } catch {
             KindleRunLog.write("KINDLE user position restore deferred error=\(error.localizedDescription)")
+        }
+        if stillCurrent(), let initialState {
+            if let key = try await restoreNativeSearchOrigin(initialState, isCurrent: stillCurrent) {
+                pendingCaptureKey = key
+            } else {
+                _ = await restorePlaybackKeyVisibility(initialState["key"] as? String ?? "", reason: "user-position-search-rollback", maxSteps: 2)
+            }
         }
         if stillCurrent() {
             needsColdListeningPageRestore = false
             KindleRunLog.write("KINDLE user position uses visible page reason=location-unavailable")
         }
+    }
+
+    private func restoreNativeSearchOrigin(_ origin: [String: Any], isCurrent: () -> Bool) async throws -> String? {
+        guard let saved = origin["native"] as? [String: Any], Self.boolValue(saved["active"]),
+              let epoch = Self.int(from: saved["epoch"]), let targetIndex = Self.int(from: saved["index"]),
+              let sourceBook = saved["book"] as? String else { return nil }
+        for step in 0...12 {
+            guard isCurrent(), !Task.isCancelled else { throw CancellationError() }
+            let state = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
+            guard isCurrent(), !Task.isCancelled else { throw CancellationError() }
+            guard let native = state["native"] as? [String: Any],
+                  Self.int(from: native["epoch"]) == epoch, native["book"] as? String == sourceBook,
+                  let index = Self.int(from: native["index"]),
+                  let key = (state["key"] as? String)?.nilIfEmpty,
+                  native["currentId"] as? String == key else {
+                throw KindleBookError.captureFailed("native-search-origin-scope-changed")
+            }
+            if index == targetIndex {
+                KindleRunLog.write("KINDLE native search rollback index=\(index) steps=\(step) confirmed=Y")
+                return key
+            }
+            guard step < 12 else { break }
+            _ = try await requestKindlePageTurnTarget(index > targetIndex ? .previous : .next, oldKey: key)
+        }
+        throw KindleBookError.captureFailed("native-search-origin-not-restored")
     }
 
     func reload() {
@@ -5538,9 +5572,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         readingSettingsTask = nil
         isApplyingReadingSettings = true
         isReadingSettingsPresented = false
-        // The range can reflow across page boundaries. Re-capture on the next
-        // explicit Play; old paragraph indices are no longer valid evidence.
-        needsColdListeningPageRestore = true
+        // The settings UI explicitly promises Play from the current page.
+        // Old raster hashes and paragraph indices belong to the previous layout;
+        // searching them after reflow can move the reader several pages away.
+        let settingsNavigation = beginUserNavigation(reason: "reading-settings-close")
+        needsColdListeningPageRestore = false
         liveDocument = nil
         livePage = nil
         livePageKey = nil
@@ -5580,6 +5616,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     if await self.setReadingSettingsPageModeLocked(true, revision: revision, bookID: expectedBookID, viewportGeneration: expectedViewportGeneration, phase: "close-relock") {
                         guard ownsPage() else { return }
                         self.readingSettingsSessionActive = false
+                        if let navigation = settingsNavigation {
+                            await self.captureUserNavigation(id: navigation.id)
+                        }
                         return
                     }
                     break
@@ -6599,7 +6638,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if let prepare = startDocumentPreparationForTesting { return try await prepare() }
         #endif
         if mode == .read {
-            await restoreColdListeningPageIfNeeded()
+            try await restoreColdListeningPageIfNeeded()
         }
         return try await ensureLiveDocument(force: true)
     }
@@ -6607,9 +6646,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// Amazon may reopen its prefetched page after process death. Resolve the
     /// durable content key before OCR builds a new paragraph index; the generic
     /// resume checkpoint then verifies the paragraph and seeks the saved word.
-    private func restoreColdListeningPageIfNeeded() async {
+    private func restoreColdListeningPageIfNeeded() async throws {
         if let position = store.navigationPositions[book.id] {
-            await restoreColdNavigationPosition(position)
+            try await restoreColdNavigationPosition(position)
             return
         }
         guard needsColdListeningPageRestore, !isKindleSyncDialogVisible,
@@ -6631,7 +6670,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // hash before accepting any page; never use an estimated page number.
         // This handles a provider's one-page-ahead prefetch bookmark without
         // crawling an entire long book or silently choosing a nearby sentence.
-        let originalKey = await currentVisibleKindlePageKey()
+        let originalState = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
+        let originalKey = originalState["key"] as? String ?? ""
         let directions: [KindlePageTurnDirection] = Array(repeating: .previous, count: 4)
             + Array(repeating: .next, count: 8)
         for step in 0...directions.count {
@@ -6659,7 +6699,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
         }
         if !Task.isCancelled, AccountContentIsolation.isCurrent(boundary), needsColdListeningPageRestore {
-            _ = await restorePlaybackKeyVisibility(originalKey, reason: "cold-resume-rollback", maxSteps: 2)
+            if let key = try await restoreNativeSearchOrigin(originalState, isCurrent: {
+                !Task.isCancelled && AccountContentIsolation.isCurrent(boundary) && self.needsColdListeningPageRestore
+                    && !self.isKindleSyncDialogVisible
+            }) {
+                pendingCaptureKey = key
+                needsColdListeningPageRestore = false
+            } else {
+                _ = await restorePlaybackKeyVisibility(originalKey, reason: "cold-resume-rollback", maxSteps: 2)
+            }
         }
         KindleRunLog.write("KINDLE cold-resume page restored=false source=text-hash")
     }
@@ -7426,11 +7474,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let beforeState = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
         let beforeFingerprint = (beforeState["pixelFingerprint"] as? String)?.nilIfEmpty
         let beforeProgress = KindleTurnContract.progressNumber(beforeState["progress"] as? String)
-        guard beforeFingerprint != nil else {
+        let beforeNative = beforeState["native"] as? [String: Any]
+        guard beforeFingerprint != nil || Self.boolValue(beforeNative?["active"]) else {
             throw KindleBookError.captureFailed("visible-pixel-fingerprint-unavailable")
         }
 
-        var result = try await requestKindlePageTurn(direction)
+        var result = try await requestKindlePageTurn(direction, expectedFromKey: oldKey)
         let dispatchCount = Self.int(from: result["dispatchCount"])
         if dispatchCount == 0 {
             onDispatchEvidence?(.notDispatched)
@@ -7439,6 +7488,34 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         guard Self.boolValue(result["ok"]), dispatchCount == 1 else {
             throw KindleBookError.captureFailed(result["reason"] as? String ?? "semantic-page-action-unavailable")
+        }
+
+        if let epoch = Self.int(from: result["nativeEpoch"]),
+           let targetIndex = Self.int(from: result["targetIndex"]) {
+            let expectedKey = result["expectedTargetKey"] as? String ?? ""
+            for _ in 0..<96 {
+                try Task.checkCancellation()
+                try requireReaderOperation(.pageTurn, reason: "native-confirm-\(direction.logName)")
+                let state = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
+                if let native = state["native"] as? [String: Any] {
+                    guard Self.int(from: native["epoch"]) == epoch else {
+                        throw KindleBookError.captureFailed("native-pagination-scope-changed")
+                    }
+                    let key = native["currentId"] as? String ?? ""
+                    if Self.int(from: native["index"]) == targetIndex, !key.isEmpty,
+                       state["key"] as? String == key, expectedKey.isEmpty || key == expectedKey {
+                        result["targetKey"] = key
+                        result["confirmedState"] = state
+                        lastConfirmedTurnFingerprint = state["pixelFingerprint"] as? String
+                        KindleRunLog.write("KINDLE_TURN_CONFIRM source=native-cache epoch=\(epoch) index=\(targetIndex) accepted=Y")
+                        return (key, result)
+                    }
+                }
+                // Page-object + mounted-surface confirmation has no mandatory
+                // pair of 200 ms pixel samples. Identical-looking pages work.
+                try await Task.sleep(nanoseconds: 50_000_000)
+            }
+            throw KindleBookError.captureFailed("native-page-turn-unconfirmed")
         }
 
         var lastFingerprint: String?
@@ -7484,7 +7561,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         throw KindleBookError.captureFailed("semantic-page-turn-unconfirmed")
     }
 
-    func requestKindlePageTurn(_ direction: KindlePageTurnDirection) async throws -> [String: Any] {
+    func requestKindlePageTurn(_ direction: KindlePageTurnDirection, expectedFromKey: String? = nil) async throws -> [String: Any] {
         try requireReaderOperation(.pageTurn, reason: "dispatch-\(direction.logName)")
         try Task.checkCancellation()
         let settingsRevision = readingSettingsRevision
@@ -7519,12 +7596,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "'", with: "\\'")
         let progressionFallback = persistedKindleLanguageProfile()?.pageProgressionFallback.rawValue ?? "ltr"
+        let fromJSON = String(data: try JSONEncoder().encode(expectedFromKey ?? ""), encoding: .utf8)!
+        let requestID = UUID().uuidString
         let script = """
         (function() {
           if (typeof window.__crKindleSemanticPageTurn !== 'function') {
             return JSON.stringify({ ok:false, reason:'semantic-page-action-unavailable', dispatchCount:0 });
           }
-          return window.__crKindleSemanticPageTurn('\(escapedDirection)', '\(progressionFallback)');
+          return window.__crKindleSemanticPageTurn('\(escapedDirection)', '\(progressionFallback)', \(fromJSON), '\(requestID)');
         })()
         """
         return try await evaluateJSON(script)
@@ -9947,6 +10026,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func buildKindleSentenceStream(page: CapturedKindlePage, base: ReadingDocument) async throws -> ReadingDocument {
+        try await validateNativePageKey(page.key, displayed: true)
         cancelKindleSentenceStream(reason: "new-reading-window")
         let sourceStart = liveStartIndexKind == .sourceParagraph ? liveStartParagraphIndex : nil
         let session = KindleSentenceStreamSession(scope: .init(bookID: book.id,
@@ -9974,6 +10054,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             guard let self, let session, self.sentenceStream === session else { return }
             session.demand = (token, count)
             self.fulfilKindleSentenceDemand(session)
+        }
+        guard session.inputToken != nil else {
+            cancelKindleSentenceStream(reason: "input-owner-not-configured")
+            throw KindleBookError.captureFailed("sentence-input-owner-not-configured")
         }
         if session.buffer.currentPageKey == page.key {
             let key = try await installLiveOverlay(page: page, document: base)
@@ -10137,6 +10221,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let actual = try await installLiveOverlay(page: prepared.page, document: prepared.document)
         try requireOwner()
         guard actual == session.confirmedKey else { throw KindleBookError.captureFailed("sentence-overlay-page-mismatch") }
+        try await validateNativePageKey(actual, displayed: true)
+        try requireOwner()
         try acceptKindleSentencePage(prepared, session: session)
         session.attemptedOldKey = nil
         session.confirmedKey = nil
@@ -12640,7 +12726,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         var latestKey = ""
         for sample in 0..<8 {
             guard !Task.isCancelled else { return "" }
-            latestKey = normalizedPageKey(await currentVisibleKindlePageKey())
+            if oldKey.hasPrefix("native:") {
+                let fromJSON = String(data: try! JSONEncoder().encode(oldKey), encoding: .utf8)!
+                let payload = try? await evaluateJSON("JSON.stringify({key:window.__crKindleNativePages?.confirmed(\(fromJSON), 1) || ''})")
+                latestKey = normalizedPageKey(payload?["key"] as? String)
+            } else {
+                latestKey = normalizedPageKey(await currentVisibleKindlePageKey())
+            }
             if !latestKey.isEmpty, latestKey != oldKey { return latestKey }
             if sample < 7 {
                 do {
@@ -12658,8 +12750,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         targetKey rawTargetKey: String?,
         mode continuationMode: ReaderMode
     ) async throws -> KindleCachedPage {
-        try await waitForKindleImageStable()
         let targetKey = normalizedPageKey(rawTargetKey)
+        if targetKey.hasPrefix("native:") {
+            try await validateNativePageKey(targetKey, displayed: true)
+        } else {
+            try await waitForKindleImageStable()
+        }
         let visibleKey = normalizedPageKey(await currentVisibleKindlePageKey())
         guard !targetKey.isEmpty, visibleKey == targetKey else {
             throw KindleBookError.captureFailed("auto-next-visible-key-mismatch:\(visibleKey)")
@@ -14801,11 +14897,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// Now the only place the capture bootstrap is injected — it used to run here
     /// *and* at document start on every navigation, paying the 207KB parse twice.
     /// Metadata is already installed by the user script, so it is not repeated.
+    private var nativePageConfigurationScript: String {
+        let bookJSON = String(data: try! JSONEncoder().encode(book.id), encoding: .utf8)!
+        return "window.__crKindleNativeOrderEnabled = \(usesKindleSentenceStream ? "true" : "false"); window.__crKindleNativeBook = \(bookJSON);"
+    }
+
     private func installCaptureScript() {
         guard readerOperationAllowed(.readerSetup, reason: "install-capture-script") else { return }
         guard KindleStorefront.matches(url: webView.url) else { return }
         webView.evaluateJavaScript(
-            KindleWebScripts.restrictedToKnownStorefronts(KindleWebScripts.pageCaptureBootstrap),
+            KindleWebScripts.restrictedToKnownStorefronts(nativePageConfigurationScript + KindleWebScripts.pageCaptureBootstrap),
             completionHandler: nil
         )
     }
@@ -14823,6 +14924,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         (function() {
           try {
             \(KindleWebScripts.metadataBootstrap)
+            \(nativePageConfigurationScript)
             \(KindleWebScripts.pageCaptureBootstrap)
           } catch (e) {
             return JSON.stringify({
@@ -14985,6 +15087,18 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return (result["key"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// OCR may outlive a native cache slot, a manual turn, or a layout epoch.
+    /// A stale native identity is never accepted by pixel similarity alone.
+    private func validateNativePageKey(_ key: String, displayed: Bool) async throws {
+        guard key.hasPrefix("native:") else { return }
+        try Task.checkCancellation()
+        let keyJSON = String(data: try JSONEncoder().encode(key), encoding: .utf8)!
+        let payload = try await evaluateJSON("JSON.stringify({ok:window.__crKindleNativePages?.valid(\(keyJSON), \(displayed ? "true" : "false")) === true})")
+        guard Self.boolValue(payload["ok"]) else {
+            throw KindleBookError.captureFailed("native-page-owner-changed")
+        }
+    }
+
     private func captureVisiblePage(pageIndex: Int, targetKey: String? = nil) async throws -> CapturedKindlePage {
         try requireReaderOperation(.capture, reason: "visible-page")
         var lastReason = "no-visible-kindle-image"
@@ -15018,7 +15132,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                       String(describing: payload["visibleArea"] ?? "?"),
                       String(describing: payload["bandVisibleArea"] ?? "?"))
                 #endif
-                return try await makeCapturedPage(from: payload, pageIndex: pageIndex)
+                let captured = try await makeCapturedPage(from: payload, pageIndex: pageIndex)
+                try await validateNativePageKey(captured.key, displayed: true)
+                return captured
             }
             lastReason = payload["reason"] as? String ?? lastReason
             try await Task.sleep(nanoseconds: 350_000_000)
@@ -15150,6 +15266,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 page = try await makeCapturedPage(from: capture, pageIndex: pages.count)
             }
             try Task.checkCancellation()
+            try await validateNativePageKey(page.key, displayed: false)
             guard !page.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
             seen.insert(key)
             pages.append(page)
@@ -15209,6 +15326,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             encoding: encoding
         )
         #endif
+        try await validateNativePageKey(payload["key"] as? String ?? "", displayed: false)
         return CapturedKindlePage(
             pageIndex: pageIndex,
             key: key,

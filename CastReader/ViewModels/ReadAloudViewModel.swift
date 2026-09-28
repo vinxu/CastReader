@@ -806,7 +806,10 @@ final class ReadAloudViewModel: ObservableObject {
 
     @discardableResult
     func configureKindleContinuousInput(demand: @escaping (UUID, Int) -> Void) -> UUID? {
-        guard document.sourceKind == .kindle, currentParagraphIndex < 0,
+        // init/metadata binding may already have restored a durable paragraph
+        // cursor. That is still an unstarted VM and must accept its source
+        // producer; otherwise reopening a book stops at the first visual page.
+        guard document.sourceKind == .kindle, !isActive, generationEpoch == 0,
               kindleContinuousInput == nil else { return nil }
         let input = KindleContinuousInput(demand: demand)
         kindleContinuousInput = input
@@ -3789,6 +3792,13 @@ final class ReadAloudViewModel: ObservableObject {
                                 paused: (self.audio.isExplicitlyPaused || self.isPlaybackPausedByUser) && !needsResume)
                             if canGenerate || needsResume || (demand.segments.isEmpty && !autoPlay) {
                                 demand.beginRequest(checkpoint)
+                                if autoPlay, let voiceSwitchID {
+                                    // A switch may resume only a few seconds from
+                                    // this unit's end. Prepare the next confirmed
+                                    // unit during preset synthesis, not after the
+                                    // replacement voice has started playing.
+                                    self.preloadNext(after: index, preparingVoiceSwitch: voiceSwitchID)
+                                }
                                 return .interactive
                             }
                             if !self.audio.isExplicitlyPaused { self.preloadNext(after: index) }
@@ -4172,10 +4182,15 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// A single bounded window serves every reader and both voice families.
     /// Future paragraphs remain ordered; a partial paragraph can be promoted.
-    private func preloadNext(after index: Int) {
+    private func preloadNext(after index: Int, preparingVoiceSwitch: UUID? = nil) {
+        let mayPrepareBeforeCurrentAudio = preparingVoiceSwitch != nil
+            && preparingVoiceSwitch == activeVoiceSwitchID
+            && kindleContinuousInput != nil
+            && !VoiceOption.requiresGenerationQuota(playbackVoiceID)
+        guard preparingVoiceSwitch == nil || mayPrepareBeforeCurrentAudio else { return }
         guard isActive, ownsAudioQueue, !audio.hasTerminalPlaybackFailure,
               !audio.isExplicitlyPaused, !isPlaybackPausedByUser,
-              segmentsByParagraph[index]?.isEmpty == false,
+              (segmentsByParagraph[index]?.isEmpty == false || mayPrepareBeforeCurrentAudio),
               let position = readableIndices.firstIndex(of: index),
               canStartAudio(persistentYouTubeCacheHit: false) else { return }
         requestKindleSourceIfNeeded()

@@ -222,6 +222,42 @@ final class KindleContinuousInputTests: XCTestCase {
         XCTAssertEqual(vm.document.id, document.id)
     }
 
+    func testRestoredParagraphCursorStillConnectsContinuousSourceBeforePlayback() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = HistoryStore(directory: directory)
+        let first = "Already read sentence."
+        let restored = "Continue at this saved sentence."
+        let next = "The next confirmed page continues."
+        let document = ReadingDocument(title: "Restored continuous fixture", sourceKind: .kindle, language: "en",
+            paragraphs: [.init(id: 0, text: first), .init(id: 1, text: restored)])
+        store.record(document)
+        let checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: document.paragraphs)
+            .checkpoint(sourceKind: .kindle, paragraphIndex: 1, audio: nil))
+        XCTAssertTrue(store.saveReadingCheckpoint(checkpoint, for: document.id, boundary: store.progressBoundaryToken))
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: 0.35))
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: document, audioService: audio,
+                                   ttsService: fixture.service(), historyStore: store)
+        defer { vm.deactivate(); audio.stop() }
+        XCTAssertEqual(vm.currentParagraphIndex, 1)
+        var demands = 0
+        let token = try XCTUnwrap(vm.configureKindleContinuousInput { _, _ in demands += 1 })
+        XCTAssertNil(vm.configureKindleContinuousInput { _, _ in XCTFail("Duplicate source owner") })
+        var played: [Int] = []
+        audio.onSegmentComplete = { if let id = audio.currentSegment?.paragraphIndex { played.append(id) } }
+        vm.start()
+        try await waitUntil { demands == 1 && played == [1] }
+        XCTAssertFalse(vm.isFinished)
+        XCTAssertTrue(vm.appendKindleSpeech([.init(id: 2, text: next)], token: token, afterCount: 2, endOfContent: true))
+        try await waitUntil { vm.isFinished }
+        XCTAssertEqual(played, [1, 2])
+        XCTAssertEqual(fixture.requests, [restored, next])
+    }
+
     func testPauseAtPageBoundaryAcceptsSourceWithoutAutoplayAndResumesExactlyOnce() async throws {
         let fixture = ReadAloudHTTPFixture { input, _ in
             .response(ReadAloudHTTPFixture.body(input, duration: 0.35))
@@ -322,5 +358,49 @@ final class KindleContinuousInputTests: XCTestCase {
         vm.deactivate()
         XCTAssertFalse(vm.appendKindleSpeech([appended], token: token, afterCount: 1))
         XCTAssertFalse(fixture.requests.contains(appended.text))
+    }
+
+    private func verifyPresetSwitchReadAhead(paused: Bool) async throws {
+        let first = "The current complete sentence."
+        let next = "The following confirmed sentence."
+        let fixture = ReadAloudHTTPFixture { input, attempt in
+            .response(ReadAloudHTTPFixture.body(input, duration: 20),
+                      delay: input == first && attempt > 1 ? 1.5 : 0)
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: .init(title: "Switch read-ahead fixture", sourceKind: .kindle,
+            language: "en", paragraphs: [.init(id: 0, text: first), .init(id: 1, text: next)]),
+            audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        _ = try XCTUnwrap(vm.configureKindleContinuousInput { _, _ in })
+        vm.dbgGenerate(0)
+        try await waitUntil { audio.hasAudibleProgress && vm.dbgPrefetchedIndex == 1 }
+        if paused { vm.pausePlayback() }
+        let settings = AppSettings.shared
+        let replacement = settings.voice(for: "en") == "af_bella" ? "af_nicole" : "af_bella"
+        XCTAssertTrue(settings.setVoice(replacement, for: "en"))
+        try await waitUntil { fixture.requests.filter { $0 == first }.count == 2 }
+        if paused {
+            await vm.dbgWaitGeneration()
+            XCTAssertEqual(fixture.requests.filter { $0 == next }.count, 1)
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertTrue(audio.isExplicitlyPaused)
+        } else {
+            try await waitUntil { fixture.requests.filter { $0 == next }.count == 2 }
+            XCTAssertTrue(vm.dbgSegments(for: 0).isEmpty,
+                          "Read-ahead must begin while the replacement current unit is still generating")
+            await vm.dbgWaitGeneration()
+            XCTAssertEqual(fixture.requests.filter { $0 == next }.count, 2,
+                           "Completing the foreground request must not duplicate its concurrent read-ahead")
+        }
+    }
+
+    func testPresetVoiceSwitchPreparesConfirmedSuccessorBeforeReplacementAudio() async throws {
+        try await verifyPresetSwitchReadAhead(paused: false)
+    }
+
+    func testPausedVoiceSwitchDoesNotStartEarlyReadAheadOrPlayback() async throws {
+        try await verifyPresetSwitchReadAhead(paused: true)
     }
 }

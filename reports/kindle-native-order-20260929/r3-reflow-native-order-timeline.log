@@ -1,0 +1,42 @@
+02:09:20.614 [active] KINDLE_SENTENCE accepted units=2 bridged=0 pending=true key=c40e443b5d37
+02:09:20.716 [active] KINDLE_SENTENCE opened units=2 pending=true key=c40e443b5d37
+02:09:20.877 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=1 accepted=Y
+02:09:21.608 [active] KINDLE_SENTENCE accepted units=3 bridged=1 pending=true key=dde98d4358b5
+02:09:21.612 [active] KINDLE_SENTENCE source-ready elapsedMs=779 from=c40e443b5d37 to=dde98d4358b5
+02:09:21.614 [active] KINDLE_SENTENCE appended count=3 cursor=2 vm=retained
+02:09:46.359 [active] KINDLE_SENTENCE presented p=2 w=5 key=dde98d4358b5
+02:09:46.747 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=2 accepted=Y
+02:09:47.051 [active] KINDLE_SENTENCE accepted units=2 bridged=1 pending=true key=dcabbeb69ff3
+02:09:47.090 [active] KINDLE_SENTENCE source-ready elapsedMs=521 from=dde98d4358b5 to=dcabbeb69ff3
+02:09:47.093 [active] KINDLE_SENTENCE appended count=2 cursor=5 vm=retained
+02:10:05.378 [active] KINDLE_SENTENCE presented p=5 w=2 key=dcabbeb69ff3
+02:10:05.890 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=3 accepted=Y
+02:10:06.135 [active] KINDLE_SENTENCE accepted units=3 bridged=1 pending=true key=5458419e9ad5
+02:10:06.175 [active] KINDLE_SENTENCE source-ready elapsedMs=541 from=dcabbeb69ff3 to=5458419e9ad5
+02:10:06.179 [active] KINDLE_SENTENCE appended count=3 cursor=7 vm=retained
+02:10:25.185 [active] KINDLE_SENTENCE presented p=7 w=15 key=5458419e9ad5
+02:10:25.584 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=4 accepted=Y
+02:10:25.790 [active] KINDLE_SENTENCE accepted units=3 bridged=1 pending=false key=15589e43c2be
+02:10:25.873 [active] KINDLE_SENTENCE source-ready elapsedMs=473 from=5458419e9ad5 to=15589e43c2be
+02:10:25.877 [active] KINDLE_SENTENCE appended count=3 cursor=10 vm=retained
+02:10:44.935 [active] KINDLE_SENTENCE presented p=10 w=8 key=15589e43c2be
+02:10:45.322 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=5 accepted=Y
+02:10:45.613 [active] KINDLE_SENTENCE accepted units=4 bridged=0 pending=false key=b387e1bed742
+02:10:45.663 [active] KINDLE_SENTENCE source-ready elapsedMs=532 from=15589e43c2be to=b387e1bed742
+02:10:45.669 [active] KINDLE_SENTENCE appended count=4 cursor=13 vm=retained
+02:11:09.873 [active] KINDLE_SENTENCE presented p=13 w=0 key=b387e1bed742
+02:11:10.363 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=6 accepted=Y
+02:11:10.605 [active] KINDLE_SENTENCE accepted units=4 bridged=0 pending=false key=f5143f127b8c
+02:11:10.647 [active] KINDLE_SENTENCE source-ready elapsedMs=564 from=b387e1bed742 to=f5143f127b8c
+02:11:10.652 [active] KINDLE_SENTENCE appended count=4 cursor=17 vm=retained
+02:11:31.293 [active] KINDLE_SENTENCE presented p=17 w=0 key=f5143f127b8c
+02:11:31.934 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=7 accepted=Y
+02:11:32.290 [active] KINDLE_SENTENCE accepted units=3 bridged=0 pending=false key=624a081ac356
+02:11:32.355 [active] KINDLE_SENTENCE source-ready elapsedMs=719 from=f5143f127b8c to=624a081ac356
+02:11:32.361 [active] KINDLE_SENTENCE appended count=3 cursor=21 vm=retained
+02:11:49.470 [active] KINDLE_SENTENCE presented p=21 w=0 key=624a081ac356
+02:11:50.109 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=3 index=8 accepted=Y
+02:11:50.552 [active] KINDLE_SENTENCE accepted units=3 bridged=0 pending=false key=6b72de9667df
+02:11:50.619 [active] KINDLE_SENTENCE source-ready elapsedMs=821 from=624a081ac356 to=6b72de9667df
+02:11:50.626 [active] KINDLE_SENTENCE appended count=3 cursor=24 vm=retained
+02:12:07.616 [active] KINDLE_SENTENCE paused held=true p=22

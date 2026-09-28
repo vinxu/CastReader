@@ -1,0 +1,35 @@
+{
+  "start": "02:09:20.731",
+  "end": "02:12:07.616",
+  "presentedNextPages": 7,
+  "oldPositionSearches": 0,
+  "nativeEpoch": 3,
+  "confirmedIndexes": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "byVoiceGeneration": [
+    {
+      "voiceGeneration": 0,
+      "transitionCount": 12,
+      "medianMs": 177.0,
+      "maxMs": 235,
+      "over600ms": 0
+    },
+    {
+      "voiceGeneration": 1,
+      "transitionCount": 13,
+      "medianMs": 237,
+      "maxMs": 906,
+      "over600ms": 1
+    }
+  ],
+  "assessment": "Page identity, cross-page sentences and reflow passed; one 906 ms first-successor gap after switching to preset requires r5 verification.",
+  "intervalDefinition": "AVPlayer item-finished to next-item playing; voice-switch loading interval excluded, not acoustic silence."
+}
