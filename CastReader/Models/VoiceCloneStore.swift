@@ -905,8 +905,14 @@ final class VoiceCloneStore: ObservableObject {
             }
         case .quotaExhausted(let resetAt):
             markQuotaExhausted(resetAt: resetAt)
-            VoiceCloneAccessCoordinator.shared.prompt = CloneCreditStore.shared.currentBalance?.enabled == true
-                ? .credits : .message(cloneError.localizedDescription)
+            if CloneCreditStore.shared.currentBalance?.enabled == true {
+                // Do not race the purchase sheet with the legacy error alert
+                // hosted by the voice picker for this same quota failure.
+                errorMessage = nil
+                VoiceCloneAccessCoordinator.shared.prompt = .credits
+            } else {
+                VoiceCloneAccessCoordinator.shared.prompt = .message(cloneError.localizedDescription)
+            }
         default:
             break
         }
