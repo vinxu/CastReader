@@ -3553,6 +3553,28 @@ final class ReadAloudViewModel: ObservableObject {
         lastWordKey = ""
         status = .loading
 
+        // A paragraph jump/replay must not sell the same in-memory clone audio
+        // again. Keep voice-switch cursor handling below unchanged.
+        if continuation == nil, voiceOverride == nil,
+           let cached = cachedClonedAudio(index, voice: voice) {
+            segmentsByParagraph[index] = cached
+            processedDisplayText = cached.map(\.text).joined()
+            let loaded: Bool
+            if let cursor = pendingReadingAudioCursor {
+                loaded = loadResumedReadingAudio(cached, cursor: cursor, isComplete: true,
+                                                autoPlay: autoPlay, session: session)
+            } else {
+                loaded = audio.loadSegments(cached, autoPlay: autoPlay, session: session)
+            }
+            if loaded {
+                _ = finishGeneratedAudio(paragraph: index, epoch: epoch, session: session)
+                ReaderRunLog.write("READ clone replay cache-hit para=\(index)")
+                preloadNext(after: index)
+            }
+            finishVoiceSwitch(voiceSwitchID)
+            return
+        }
+
         if voiceOverride != nil, progressBoundaryToken == historyStore.progressBoundaryToken,
            accountBoundaryToken.map(AccountContentIsolation.isCurrent) ?? true,
            let cursor = pendingReadingAudioCursor,
@@ -3753,6 +3775,15 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func voiceAudioKey(_ paragraph: Int, voice: String) -> String {
         "\(resumeDocumentIndex.fingerprint)|\(paragraph)|\(voice)|\(docLanguage)"
+    }
+
+    private func cachedClonedAudio(_ paragraph: Int, voice: String) -> [AudioSegment]? {
+        guard VoiceOption.requiresGenerationQuota(voice),
+              progressBoundaryToken == historyStore.progressBoundaryToken,
+              accountBoundaryToken.map(AccountContentIsolation.isCurrent) ?? true,
+              let cached = completedVoiceAudio.first(where: { $0.key == voiceAudioKey(paragraph, voice: voice) })?.segments,
+              !cached.isEmpty, cached.allSatisfy({ !$0.audioData.isEmpty }) else { return nil }
+        return cached
     }
 
     private func cacheCompletedVoiceAudio(_ paragraph: Int) {
@@ -4059,6 +4090,18 @@ final class ReadAloudViewModel: ObservableObject {
         let epoch = generationEpoch
         let para = paras[nextIndex]
         let voice = settings.voice(for: docLanguage)
+        if let cached = cachedClonedAudio(nextIndex, voice: voice) {
+            let stream = SpeechStreamBuffer(paragraphIndex: nextIndex, voice: voice,
+                                           language: docLanguage, requestID: nil)
+            cached.forEach { stream.append($0) }
+            stream.finished = true
+            readAheadStreams[nextIndex] = stream
+            kindlePrefetchedSegments[nextIndex] = cached
+            audio.prestageSegments(cached)
+            synchronizeNextPrefetch(after: currentParagraphIndex)
+            ReaderRunLog.write("READ clone prefetch cache-hit para=\(nextIndex)")
+            return
+        }
         let stream = SpeechStreamBuffer(paragraphIndex: nextIndex, voice: voice,
             language: docLanguage, requestID: stableCloneRequestID(paragraphIndex: nextIndex, voice: voice))
         readAheadStreams[nextIndex] = stream
