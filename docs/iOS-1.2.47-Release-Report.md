@@ -1,52 +1,58 @@
 # iOS 1.2.47（70）发布记录
 
-状态：合并完成，发布验收进行中；尚未上传或提交审核。
+状态（2026-09-29 12:20 CST）：功能整合及真机验收通过，待主线合并、正式归档上传和最终提交。尚未进入审核。
 
-本轮以当前 App Store 1.2.46（69）、远端 main `9eb758b` 为基线，将 Pro 克隆音色额度购买与 Kindle 原生 BLOB 页序、跨页整句和播放预取修复合入独立发布分支。保留 Safari、Share、Widget、阅读位置恢复和其他已发布子系统。四组件目标版本均为 1.2.47（70）。
+## 发布身份与范围
 
-ASC 基线版本 ID：`f835f4df-b17b-4c1b-a71f-50de22006ae7`，READY_FOR_SALE；基线 App Info：`a3a05161-de19-4dd4-8c99-363187f758c7`。最大已上传 Build 69，当前无活跃审核单。沿用 AFTER_APPROVAL。
+从 App Store 1.2.46（69）、main `9eb758b` 增量整合 Pro 克隆音色额度购买、Kindle 原生 BLOB 页序与跨页整句/预取修复。保留 Safari、Share、Widget、阅读位置恢复和其他已发布子系统。四组件均为 1.2.47（70）。发布 PR：<https://github.com/vinxu/CastReader/pull/2>。
 
-## 本轮验收
+验收源码 `60ec3823844e429c9b3dc224be5164cd8f399849`；416 个应用/组件/WebReader/工程文件冻结摘要 `9f2ee75b8b30cddc7aef445517d6c49cdca3a535d175ab6c6dc3148514f76b5c`。12:20 逐文件复核 0 变化。`build-voice-toc-integration.sh --check` 全部祖先门禁通过，包含发布基线 b6dd4d7 与既有导航/插图/播放实现。此后报告和审核资料更新不改变验收应用。
 
-Kindle 功能分支 `bbe7ef7`：114 项受影响真机测试通过；最终实书连续自动呈现 8 个下一页，23 次 AVPlayer 切换中位 168 ms、最大 243 ms，未出现 >600 ms 样本，31 次 TTS 请求无重复。包含切克隆→Bella、暂停和手动 Next/Previous 往返。指标来自应用事件，不是声学静音测量，也不是任意网络的零停顿保证。详见 [Kindle 真机记录](Kindle-原生缓存页序与真机验收-2026-09-29.md)。
+设备为 iPhone 15 Pro Max，iOS 26.7（23H24）。本轮按用户要求仅使用真机和镜像，没有使用模拟器。正常 Debug 包禁用 Debug Pro，两区使用真实服务端账号/接口；12:05 安装相同源码开发签名 Release 包，未传测试参数。尚未声称实测 App Store 分发签名包。
 
-额度购买：已完成私人 Preview 的真实 Apple Sandbox 购买、取消、重启补单、重复入账幂等及实际时长扣费；仍需完成发布配置与解读耗尽购买续播验收。历史隔离数据库/模拟器测试单列，不替代本轮真机。用户已要求本轮不使用模拟器。
+私有原始证据统一位于 `/Users/xuxuheng/Desktop/CastReader-1.2.47-Release/evidence/`。该目录误删后已由用户授权从 Finder 回收站原样恢复，期间产生的续验文件也已保留并合入，无覆盖冲突；不提交会话、收据、密钥、私有正文。
 
-提交前审查补充：iOS App Review 的 Sandbox 订阅使用隔离账本，沙盒购买必须 Apple 验签、账号归属匹配，不写生产订阅/订单。客户端余额环境依据当前签名 StoreKit 环境，不沿用上次沙盒购买的偏好值。中国和全球账号/声音按现行发布架构隔离；退款通知需送达相应区域账本。
+## 两区核心服务
 
 | 地区/语言 | Read Kokoro | Read clone vl/vc | Explain Kokoro | Explain clone vl/vc |
 |---|---|---|---|---|
-| CN/中文 | NOT_RUN | NOT_RUN / NOT_RUN | NOT_RUN | NOT_RUN / NOT_RUN |
-| Global/英语 | NOT_RUN | NOT_RUN / NOT_RUN | NOT_RUN | NOT_RUN / NOT_RUN |
+| CN / 中文 | PASS | PASS / PASS | PASS | PASS / PASS |
+| Global / 英语 | PASS | PASS / PASS | PASS | PASS / PASS |
 
-最终源码、完整隔离单测、两区核心实测、服务端部署、归档身份、11 语商店差异、Build VALID 与审核单状态在完成后补齐。任何 NOT_RUN 不计为通过。
+Global：英文自有 Shortcut Text，19 段、1,400 字符，指纹 `3c53af97e197f6b1`。常规 `af_bella` → 社区 `vl_d1efb23a380bdaa2f6b0` → 私人 `vc_62934fe77f764051aa341b4b076bbb85` → 常规，均有新生成、实际播放推进及词高亮/滚动。暂停时换声先准备而不抢播，显式继续后推进。英语新 QuickRead 作业 `qrc_axCdCTGKuI_aH6QhbTGeVZS137A_6jBQ`，六块讲解，实际走 `api.castreader.ai`；各声音播放讲解并推进下一块，原文高亮/下划线可见，切回 Bella 完成。证据：`global-final-core-console-r2.log`、`reader-log-global*.log`、`live-ui-observations.json`。
 
-商店准备：1.2.47 草稿 ID `138a0a05-56de-42f7-b841-31fdfb842418`，待发布 App Info `acf27d07-c6bd-48e9-abaa-af0f93b723e7`；已仅更新并回读 11 语 whatsNew，description/keywords/promotionalText/supportUrl/marketingUrl 保持基线不变。现有 55 张截图已备份，未替换。Xcode 中开发团队已确认可用。
+CN：中文自有 Shortcut Text，5 段、491 字符，指纹 `e4cbc325f46c8462`。常规 `zf_001` → 社区 `vl_65b2c4daaea282b057a7` → 私人 `vc_63a448ca35794f57b0aea0e189a68cb3` → 常规，两种模式均新生成并实际播放；朗读句段高亮/连续跨段有效。11:54:05 新 QuickRead 计划生成三块中文讲解，使用现有短块等价管线，讲解与原文不同；有效阅读/主动回忆高亮、中心意思圈注和工具段下划线可见，社区/私人均推进下一块。切回常规后最后一块 12:04:24 完成。TTS/账号走 `api.castreader.cn`，QuickRead 走 `quickread.castreader.cn`。CN 作业 ID 未从中断的 console 留存，不编造；reader 中新计划及块身份、实际音频/产品效果保留于 `reader-log-cn-final-r2.log` 和分阶段日志。
 
-2026-09-29 服务端与商店准备进展：
+12:02 私人解读已准备音频重播自动推进，前/中/后三次账本均为 50 笔成功、288,888 ms，无新扣费。11:47 一次本机使用手机引起系统音频中断，恢复后位置保留，单列外部中断，不记作应用自动停顿。当前声音均为 warm；冷准备、迟到响应、快速切换、未知额度和失败恢复由确定性测试覆盖，不声称生产冷启动实测。
 
-- Global 已通过正式工作流 `36471567236`，源码 `6acd3933db95926b7426e1d068e936f30fb24324`，候选 `readout-kokzmoito-castreader.vercel.app`，发布 ID `dpl_DptAVPWCZ8iDrXeNWiCexMSvjB8x`。新鲜 PostgreSQL 额度测试、Apple 归属/隔离、已有音色目录、实际赠送/匿名赠送、Kindle 真实模型、Pro 一致性和阅读修复回执门禁通过；两域名切换与正式线路回读通过。`cloneCredits` 的 enabled/salesEnabled/sandboxIsolated 为 true，包容量 7,200,000 ms。
-- CN 原正式源码 `2251845f` 的 10 个应用提交已在 beta 有 patch-equivalent 实现，剩余压缩配置和记录通过 PR #57 合并，未用旧分支替换最新应用。CN 候选 `036a5a9067daa50a46353e93363d88b6c1779b60` 同时继承两区正式基线，应用/依赖与 Global 上述已验证源码逐文件一致。CN 独立部署仍在进行中。
-- 额度 IAP `6816697780`、SKU `ai.castreader.clone.minutes120`、版本 `f267f0a8-d537-4fa7-9cc1-1796fc44b71c` 已回读 11 语商品名称/说明；不修改价格或销售地区。正式真机购买页审核截图仍待采集。
-- 新提交工具支持 Apple 新版 IAP version 审核项，保留精确审核对象校验与模糊写入恢复；6 个隔离模拟 API 用例通过。在线 dry-run 计划为同一审核单的 App 版本 + IAP 版本两个项目，尚未执行提交。
-- 全量真机隔离单测包已构建成功（独立 bundle `com.same.castreader.releasechecks1247`），未运行的原因是 Xcode tunnel unavailable。镜像可恢复但不等于安装通道可用；USB 设备列表当前没有 iPhone。不得将编译成功记为完整单测或核心实测通过。
+Release 配置补验：12:06 社区朗读跨段至完成；12:07 私人声音重新生成，12:08 实际播放连续推进 0→12 段并高亮/滚动；12:09 新英语解读六块，私人声播放至 Part 2、Part 3，原文圈注/高亮同步。`release-final-console.log` 记录 voice ID、新音频时长/就绪和播放完成，`live-ui-observations.json` 记录界面观察。Release 的 DEBUG reader 文件日志关闭，`reader-log-release-final.log` 仍止于 CN 12:04，不将其冒充 Release 播放日志。签名严格验证、204 文件/54 标志夹具扫描为 0 命中，Debug 阳性对照有效；内部控制关闭，无 RepositorySnapshot，Safari content.js 摘要 `192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75` 与已发版一致。
 
-2026-09-29 03:42 中国区发布完成：`release-20260929034148`，源码 `036a5a9067daa50a46353e93363d88b6c1779b60`，运行时账本、声音邀请数据库、声音克隆合同及入口健康检查通过。`cloneCredits` 与 Global 合同一致，两区未授权余额查询和清理均返回 401。CN 15 分钟清理定时器已启用并执行成功（purged=0），仅清除过期重放音频结果，不删除订单或余额。首次本机组装因磁盘不足停止，清理本轮可重建编译缓存后复用已构建产物成功上线；没有切换过失败候选。
+## Kindle 验收
 
-正式发布 PR：<https://github.com/vinxu/CastReader/pull/2>，目前为草稿；代码已推送，尚待最终真机放行后合入 main。服务端 PR #56 / #57 已合并。原始证据目录：`/Users/xuxuheng/Desktop/CastReader-1.2.47-Release/evidence/`；保留私有日志，不提交任何会话、凭据、收据或正文。
+Kindle 合入来源 `bbe7ef7`：114 项受影响真机测试通过；实书连续自动呈现 8 个下一页，23 次 AVPlayer 切换中位 168 ms、最大 243 ms，没有 >600 ms 样本；31 次 TTS 请求无重复。覆盖克隆→Bella、暂停、手动 Next/Previous 往返和字号重排。原生 Map 页面索引、书籍 epoch/渲染所有权校验、相邻页与跨页句子映射避免旧 BLOB 错配；预取随声音和位置失效。详见 [Kindle 真机记录](Kindle-原生缓存页序与真机验收-2026-09-29.md)。事件间隔不是声学静音测量，也不保证任意网络绝对零停顿。最终整合未改动这部分实现，复用证据并通过最终真机回归。
 
-2026-09-29 03:51 正式配置包已完成：Release 开发签名 `BUILD SUCCEEDED`，四组件均为 1.2.47（70）及 iPhone/iPad，`codesign --verify --deep --strict` 通过；204 文件/54 个夹具标志扫描为 0 命中，Debug 阳性对照有效，内部控制为 `NO`，Safari content.js 摘要与 1.2.46 一致。应用/组件/WebReader/工程 416 文件冻结清单摘要为 `55506dd555d32ef0170cc08bf38ed16b10d355d8108ae145c7225c5e1c499dff`（`candidate-source-identity.json`）。此包是用于最终真机验收的开发签名 Release 包，尚未归档或上传。
+## 额度购买与成本
 
-安装再次失败：CoreDevice error 1011，找不到已配对 iPhone；Xcode Devices 为 Disconnected，USB 列表未检测到 iPhone。镜像会间歇恢复，但仍运行前轮包，不能代替最终包安装和测试。当前交付仍未完成：App Store 版本为 PREPARE_FOR_SUBMISSION；最终完整真机单测、两区核心格、解读耗尽购买续播及审核截图待恢复物理连接后进行。未以历史测试、编译成功或服务端通过冒充这些真机验收。
+有效 Pro 可在正余额或零余额购买，每月包含 120 分钟；120 分钟消耗型内购，月额度优先，购买余额不失效，Pro 到期保留购买余额。仅成功新生成按实际时长结算，缓存重播/固定试听不扣费。商品 `6816697780`，SKU `ai.castreader.clone.minutes120`，价格保持 CN ¥18 / US $2.99。
 
-2026-09-29 上午连接恢复后的进展：
+两笔真实 Apple Sandbox 购买各 7,200,000 ms、各仅入账一次：10:25 正余额购买成功，10:31 再次购买取消及同步余额不变；11:13 确认零余额后从解读选声门禁购买成功，重选原社区声、重新生成并从保留末块播放完成。第二笔仅因两次真实生成扣 20,760 ms。此路径是选声门禁购买/重试/续播，不冒称实测后台耗尽专用 Continue 按钮。专用 Sandbox 账号临时零余额夹具已于 11:18 还原，保留真实新订单与使用；Production 账本未变。此前私人 Preview 的补单/幂等验收与最终正式 API 真机购买分开记录。12:15 Global 最终账本：Sandbox 86 笔成功、600,648 ms；Production 82 笔、798,025 ms，仍为基线。
 
-- 正常 Debug 1.2.47（70）已通过 USB 安装到原 `com.same.castreader`，保留用户数据。Release 开发签名包已重新构建，四组件版本、iPhone/iPad、严格签名、54 个夹具标志扫描及 Safari 摘要复核通过；独立 DerivedData 移至桌面发布目录，避免此前临时构建目录被清理。
-- 09:54 确认手机 `passcodeRequired=false` 后，首次完整真机回归执行了 1,950 项，32 项跳过，25 个用例失败（29 个断言/异常）。失败包含真机无法读取 Mac 源码路径、BLOB 测试仍要求旧的截断哈希，以及两处以生成完成/HTTP 失败时间代替音频缓冲就绪/播完时间的测试同步问题。
-- 真机测试改为在 XCTest 包中携带白名单源码、合同与本地化快照；不包含 Secrets、会话、收据或正式 App 资源外的用户数据，也不进入发布 App。BLOB 断言校验测试图片完整 SHA-256；预取断言等待下一段缓冲就绪；失败续播断言等待已缓冲前缀自然播完再重试缺失后缀。26 项定向真机回归通过、0 失败、0 跳过，正在补跑完整套件。
-- 本轮没有修改 App/Share/Widget/Safari/WebReader 的 415 个冻结文件；工程改动仅为测试目标的助手与构建资料。Release 包不包含 `RepositorySnapshot`。最终完整回归与两区实际播放仍按上表记录，不用定向回归替代核心格。
-- App 审核备注已更新为本版购买路径并回读验证，3,364 字符，其余审核联系/登录字段不变。本地 11 语元数据文档的 What's New 已与已上传 JSON 一致。Apple 文档提示首次内购需通过网站随 App 二进制送审；最终提交时需核实同批包含本版 App 和额度商品，不能只提交其中一项。
+用户授权赠送当前 CN 测试账号真实服务端 Pro 7 天，2026-10-06 11:31 CST 到期、无续费；仅该账号加入现有沙盒测试名单。未改变其他账号权限/订单。测试准备时旧会员过期及缺 Sandbox 资格导致的拒绝保留，不计为通过。
 
-10:17 回归收尾：`physical-unit-tests-r5-full` 执行 1,950 项，1,929 通过、20 跳过、1 失败；失败项发现额度购买新增 22 条文案缺少日/西/法/德/巴葡/意/印地语。已补齐 154 个译文，保留中英文和其他现有条目。受影响的完整 `LocalizationCatalogTests` 在同一真机上复测 50 项全部通过。合并两份真实结果后为 1,930 通过、20 跳过、0 未解决失败；这不是伪称一次全绿的 xcodebuild，失败原始记录保留。
+成本依据服务端 `docs/clone-credits-cost-2026-09-28.md`：GPU/存储 $0.4435556/小时、实测 RTF 0.08518，120 分钟音频边际推算约 $0.0756；730 小时持续实例固定成本约 $323.80/月，尚需计利用率、Apple 分成、税费和其他运维，不把边际推算当全成本利润。
 
-20 项跳过包括 10 项依赖 Mac localhost 的 StoreKit/额度集成夹具，另 10 项需要未提供的本地真实文档或显式实网开关；真实购买及核心服务仍通过产品真机流程验收，不将这些跳过算作通过。明细见发布证据 `physical-unit-tests-combined.json`。此次变更的正式应用资源仅为购买文案本地化；Debug/Release 包均已重建。更新的 Debug 1.2.47（70）已装机并按 Global 正式线路启动，禁用 Debug Pro，不使用私人 Preview 或注入音频。
+## 回归结果
+
+首次真机全套暴露测试设施路径、旧哈希和异步断言问题，修正仅影响测试；26 项定向复测通过。完整 r5 为 1,950 项：1,929 通过、20 跳过、1 本地化失败；补齐 22 条购买文案 × 7 语共 154 个译文后，受影响完整 LocalizationCatalogTests 50 项全通过。合并真实结果为 **1,930 通过、20 跳过、0 未解决失败**，不声称单次全绿。20 跳过为 10 项 Mac localhost IAP/额度夹具、10 项需本地真实文件或显式实网开关的用例。真实购买和服务矩阵另行通过。证据 `physical-unit-tests-combined.json`，失败原始结果保留。最终 Debug/Release 已重建并装机。
+
+## 服务端与商店
+
+Global：源码 `6acd3933db95926b7426e1d068e936f30fb24324`，工作流 `36471567236`，部署 `dpl_DptAVPWCZ8iDrXeNWiCexMSvjB8x`。CN：源码 `036a5a9067daa50a46353e93363d88b6c1779b60`，部署 `release-20260929034148`；应用/依赖与 Global 一致，保留 CN 运维配置。签名校验、账号归属、隔离账本、幂等、原子预留/退款及健康检查通过，cloneCredits enabled/salesEnabled/sandboxIsolated 为 true。CN 清理每 15 分钟仅清过期重放音频，不删订单余额。
+
+ASC App `6757636395`；基线版本 `f835f4df-b17b-4c1b-a71f-50de22006ae7`，App Info `a3a05161-de19-4dd4-8c99-363187f758c7`。本版草稿 `138a0a05-56de-42f7-b841-31fdfb842418`；待发布 App Info `acf27d07-c6bd-48e9-abaa-af0f93b723e7`。11 语 What's New 已更新并回读，其他文案、标题/副标题、55 张有效截图保持原样；审核备注购买步骤已更新，联系/账号字段不变。发布方式 AFTER_APPROVAL 保持。
+
+IAP 版本 `f267f0a8-d537-4fa7-9cc1-1796fc44b71c`，11 语商品名称/说明与审核备注已完成。12:18 从真机亮屏导出未经编辑的 1290×2796 购买页，`iap-review-credits-final.png` 已目视确认。先前黑图/锁屏图不上传。最终同批需包含 App 版本与 IAP 版本；提交工具 6 个隔离模拟 API 测试及两项目在线 dry-run 通过。
+
+## 待补最终回执
+
+主线合并提交、不可变归档/IPA 摘要、Build ID 与 VALID/APP_STORE_ELIGIBLE、审核截图 COMPLETE、最终 audit、Review Submission ID/时间，以及版本和审核单 WAITING_FOR_REVIEW 状态在完成后填写。当前不得把验收通过或草稿当成审核完成。
