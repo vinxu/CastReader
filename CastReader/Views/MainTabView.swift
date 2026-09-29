@@ -804,6 +804,8 @@ struct MainTabView: View {
                             }
                         }
                 }
+            case .credits:
+                CloneCreditPurchaseView(fromQuotaExhaustion: true)
             }
         }
         .sheet(

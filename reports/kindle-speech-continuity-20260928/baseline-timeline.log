@@ -1,0 +1,27 @@
+22:51:05.738 [active] KINDLE read queue page-only current=d79eccf794a9 currentChunks=7
+22:51:19.415 [active] KINDLE read preload tts-ready reason=page-preload after=d79eccf794a9 key=627e11a1059d p=0 resumePreferred=-1 segs=1 epoch=2
+22:51:29.920 [active] KINDLE read preload tts-ready reason=page-preload after=d79eccf794a9 key=d87f25350f4e p=0 resumePreferred=-1 segs=2 epoch=2
+22:52:02.960 [active] KINDLE read continuous armed reason=prepared-page-tail serial=1 old=d79eccf794a9 next=627e11a1059d predecessor=6-0 segs=1
+22:52:03.571 [active] KINDLE read continuous tail-threshold serial=1 remainingMs=3971 leadMs=4000
+22:52:03.571 [active] KINDLE read continuous visual-turn begin trigger=tail-lead serial=1 old=d79eccf794a9 target=627e11a1059d
+22:52:03.634 [active] KINDLE_HANDOFF serial=1 stage=begin elapsedMs=0
+22:52:04.128 [active] KINDLE_HANDOFF serial=1 stage=turn-confirmed elapsedMs=494
+22:52:04.688 [active] KINDLE_HANDOFF serial=1 stage=page-prepared elapsedMs=1054
+22:52:04.701 [active] KINDLE_HANDOFF serial=1 stage=overlay-audio-ready elapsedMs=1067
+22:52:04.701 [active] KINDLE read continuous visual-turn ready serial=1 target=627e11a1059d actual=627e11a1059d fingerprint=match
+22:52:07.742 [active] KINDLE read continuous audio-boundary serial=1 key=627e11a1059d
+22:52:07.794 [active] KINDLE read queue page-only current=627e11a1059d currentChunks=9
+22:52:07.883 [active] KINDLE read continuous committed serial=1 old=d79eccf794a9 new=627e11a1059d p=0 segs=1
+22:52:20.032 [active] KINDLE read preload tts-ready reason=page-preload after=627e11a1059d key=3250b068738f p=0 resumePreferred=-1 segs=2 epoch=3
+22:52:51.984 [active] KINDLE read continuous armed reason=prepared-page-tail serial=2 old=627e11a1059d next=3250b068738f predecessor=8-1 segs=2
+22:52:54.760 [active] KINDLE read continuous tail-threshold serial=2 remainingMs=3961 leadMs=4000
+22:52:54.761 [active] KINDLE read continuous visual-turn begin trigger=tail-lead serial=2 old=627e11a1059d target=3250b068738f
+22:52:54.824 [active] KINDLE_HANDOFF serial=2 stage=begin elapsedMs=0
+22:52:55.327 [active] KINDLE_HANDOFF serial=2 stage=turn-confirmed elapsedMs=503
+22:52:55.895 [active] KINDLE_HANDOFF serial=2 stage=page-prepared elapsedMs=1071
+22:52:55.935 [active] KINDLE_HANDOFF serial=2 stage=overlay-audio-ready elapsedMs=1111
+22:52:55.936 [active] KINDLE read continuous visual-turn ready serial=2 target=3250b068738f actual=3250b068738f fingerprint=match
+22:52:59.037 [active] KINDLE read continuous audio-boundary serial=2 key=3250b068738f
+22:52:59.095 [active] KINDLE read queue page-only current=3250b068738f currentChunks=10
+22:52:59.192 [active] KINDLE read continuous committed serial=2 old=627e11a1059d new=3250b068738f p=0 segs=2
+22:53:11.698 [active] KINDLE read preload tts-ready reason=page-preload after=3250b068738f key=68faa65d1128 p=0 resumePreferred=-1 segs=2 epoch=4

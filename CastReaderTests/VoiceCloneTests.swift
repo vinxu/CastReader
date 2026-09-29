@@ -575,9 +575,7 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testSemanticMismatchMigrationMessageIsLocalized() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let repositoryRoot = TestRepository.root
         let data = try Data(
             contentsOf: repositoryRoot
                 .appendingPathComponent("CastReader/Localizable.xcstrings")
@@ -600,9 +598,7 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testVoiceIdentityUXCopyIsCompleteInEverySupportedLocale() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let repositoryRoot = TestRepository.root
         let data = try Data(
             contentsOf: repositoryRoot
                 .appendingPathComponent("CastReader/Localizable.xcstrings")
@@ -661,9 +657,7 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testVoiceGiftCopyIsCompleteInEverySupportedLocale() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let repositoryRoot = TestRepository.root
         let data = try Data(
             contentsOf: repositoryRoot
                 .appendingPathComponent("CastReader/Localizable.xcstrings")
@@ -753,9 +747,7 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testChinaVoiceGiftCopyDescribesRecordPreviewSubmitWithoutRevocation() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let repositoryRoot = TestRepository.root
         let data = try Data(
             contentsOf: repositoryRoot
                 .appendingPathComponent("CastReader/Localizable.xcstrings")
@@ -1421,9 +1413,7 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testCreationUXMakesTheSampleOptional() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let repositoryRoot = TestRepository.root
         let viewSource = try String(
             contentsOf: repositoryRoot
                 .appendingPathComponent("CastReader/Views/Settings/VoiceCloneCreatedView.swift"),
@@ -2702,8 +2692,7 @@ final class VoiceCloneTests: XCTestCase {
 
     func testUnifiedVoiceLibraryDecodesOwnerGiftAndIncompleteSnapshotLossily() throws {
         let data = try Data(
-            contentsOf: URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent()
+            contentsOf: TestRepository.root.appendingPathComponent("CastReaderTests")
                 .appendingPathComponent("Fixtures/voice-gift-library-v1.json")
         )
 
@@ -2811,8 +2800,7 @@ final class VoiceCloneTests: XCTestCase {
         )
 
         let sent = try VoiceCloneResponseParser.sentGiftInvitations(from: Data(
-            contentsOf: URL(fileURLWithPath: #filePath)
-                .deletingLastPathComponent()
+            contentsOf: TestRepository.root.appendingPathComponent("CastReaderTests")
                 .appendingPathComponent("Fixtures/voice-gift-sent-requests-v1.json")
         ))
         XCTAssertEqual(sent.schemaVersion, "voice-gift-v1")
@@ -2982,9 +2970,7 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("直接分享链接"))
         XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("无需填写邮箱"))
         XCTAssertFalse(globalBenefit.contains("永久"))
-        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let source = try String(contentsOf: TestRepository.root
             .appendingPathComponent("CastReader/Views/Settings/VoiceCloneCreatedView.swift"))
         XCTAssertFalse(source.contains("pendingInvitationRow"))
         XCTAssertFalse(source.contains("pendingSectionTitle"))
@@ -3077,9 +3063,7 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testVoiceCreationSheetHandoffUsesDismissCallbacksInsteadOfTimingGuess() throws {
-        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let source = try String(contentsOf: TestRepository.root
             .appendingPathComponent("CastReader/Views/Settings/VoiceCloneCreatedView.swift"))
         XCTAssertTrue(source.contains("onDismiss: resumeCreationAfterLogin"))
         XCTAssertTrue(source.contains("onDismiss: resumeCreationAfterSheetDismiss"))
@@ -3089,9 +3073,7 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testMainTabRemainsTheOnlyLaunchRequestOwner() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let repositoryRoot = TestRepository.root
         let mainTab = try String(contentsOf: repositoryRoot
             .appendingPathComponent("CastReader/Views/MainTabView.swift"))
         let browser = try String(contentsOf: repositoryRoot
@@ -3102,9 +3084,7 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testVoiceInviteHomeIllustrationProvidesLightAndDarkAssets() throws {
-        let assetURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let assetURL = TestRepository.root
             .appendingPathComponent("CastReader/Assets.xcassets/HomeVoiceInviteIllustration.imageset")
         XCTAssertTrue(FileManager.default.fileExists(
             atPath: assetURL.appendingPathComponent("home-voice-invite.png").path
@@ -3241,8 +3221,7 @@ final class VoiceCloneTests: XCTestCase {
         )
         let fixtureObject = try XCTUnwrap(
             JSONSerialization.jsonObject(with: Data(
-                contentsOf: URL(fileURLWithPath: #filePath)
-                    .deletingLastPathComponent()
+                contentsOf: TestRepository.root.appendingPathComponent("CastReaderTests")
                     .appendingPathComponent("Fixtures/voice-gift-create-request-v1.json")
             )) as? [String: Any]
         )

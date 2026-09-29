@@ -331,6 +331,10 @@ final class SpeechPipelineTests: XCTestCase {
         vm.dbgGenerate(0)
         try await wait { if case .error = vm.status { return true }; return false }
         XCTAssertEqual(vm.currentParagraphIndex, 1)
+        // An HTTP failure can arrive before AVPlayer finishes the buffered
+        // prefix. Verify that it drains without a retry, regardless of device
+        // handoff latency, before asking for the missing tail.
+        try await wait { completed.count == 2 }
         XCTAssertEqual(completed, ["First.", "Second prefix. "])
         XCTAssertTrue(player.moreSegmentsExpected)
         vm.ensurePlaying()

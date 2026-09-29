@@ -3,14 +3,26 @@
 # application and private Keychain/app-group namespace on the existing simulator.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-device="${CASTREADER_TEST_SIMULATOR:-BFCF61DE-9C45-4467-8996-6F4E03AE7725}"
+device="${CASTREADER_TEST_DEVICE:-${CASTREADER_TEST_SIMULATOR:-BFCF61DE-9C45-4467-8996-6F4E03AE7725}}"
+platform="iOS Simulator"
+product_platform="iphonesimulator"
+build_destination="platform=$platform,id=$device"
+signing_args=()
+if [[ -n "${CASTREADER_TEST_DEVICE:-}" ]]; then
+  platform="iOS"
+  product_platform="iphoneos"
+  build_destination="generic/platform=iOS"
+  signing_args=(-allowProvisioningUpdates DEVELOPMENT_TEAM=KQW6UNZE8J)
+fi
 isolated="$(mktemp -d /tmp/CastReaderIsolatedTests.XXXXXX)"
 derived="$isolated/DerivedData"
 report="${CASTREADER_TEST_REPORT:-$root/reports/ios-release-1.2.43/isolated-$(date +%Y%m%dT%H%M%S)}"
 mkdir -p "$report"
-/usr/bin/python3 - "$root" "$isolated" "$report" <<'PY'
+/usr/bin/python3 - "$root" "$isolated" "$report" "${CASTREADER_TEST_NAMESPACE:-releasechecks}" <<'PY'
 import pathlib, subprocess, sys, json, hashlib
-root, dest, report=map(pathlib.Path,sys.argv[1:])
+root, dest, report=map(pathlib.Path,sys.argv[1:4])
+namespace=sys.argv[4]
+assert namespace.isalnum() and namespace.startswith("releasechecks")
 paths=subprocess.check_output(['git','ls-files','-z'],cwd=root).decode().split('\0')
 # Local build settings stay local; never include their contents in evidence.
 paths += ['Secrets.xcconfig']
@@ -27,6 +39,7 @@ for name in paths:
   text=text.replace('com.same.CastReaderUITests','com.same.CastReaderReleaseUITests')
   text=text.replace('ai.castreader.auth','ai.castreader.releasechecks.auth')
   text=text.replace('com.microsoft.adalcache','com.microsoft.releasechecks.adalcache')
+  text=text.replace('releasechecks',namespace)
   copied=text.encode('utf-8')
  except UnicodeDecodeError: pass
  target=dest/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(copied)
@@ -36,22 +49,23 @@ for name in paths:
 (report/'workspace.txt').write_text(str(dest)+'\n')
 PY
 cd "$isolated"
-xcodebuild -workspace CastReader.xcworkspace -scheme CastReader -destination "platform=iOS Simulator,id=$device" -derivedDataPath "$derived" build-for-testing > "$report/build.log" 2>&1
-/usr/bin/python3 - "$derived" <<'PY'
+xcodebuild -workspace CastReader.xcworkspace -scheme CastReader -destination "$build_destination" -derivedDataPath "$derived" "${signing_args[@]}" build-for-testing > "$report/build.log" 2>&1
+/usr/bin/python3 - "$derived" "$product_platform" "${CASTREADER_TEST_NAMESPACE:-releasechecks}" <<'PY'
 import pathlib,plistlib,subprocess,sys
 products=pathlib.Path(sys.argv[1])/'Build/Products'
-app=products/'Debug-iphonesimulator/CastReader.app'
+platform=sys.argv[2]; namespace=sys.argv[3]
+app=products/f'Debug-{platform}/CastReader.app'
 info=plistlib.loads((app/'Info.plist').read_bytes())
-assert info['CFBundleIdentifier']=='com.same.castreader.releasechecks'
-assert info['CastReaderPrivateKeychainAccessGroup'].endswith('.com.same.castreader.releasechecks')
+assert info['CFBundleIdentifier']==f'com.same.castreader.{namespace}'
+assert info['CastReaderPrivateKeychainAccessGroup'].endswith(f'.com.same.castreader.{namespace}')
 signed=subprocess.run(['codesign','-d','--entitlements',':-',str(app)],capture_output=True,check=True).stdout
 # Simulator entitlements live in the Mach-O simulated entitlement section,
 # while the outer ad-hoc signature may have an empty entitlement dictionary.
 ent_path=pathlib.Path(sys.argv[1])/'Build/Intermediates.noindex/CastReader.build/Debug-iphonesimulator/CastReader.build/CastReader.app-Simulated.xcent'
-ent=plistlib.loads(ent_path.read_bytes())
-assert b'group.com.same.castreader.releasechecks' in (app/'CastReader').read_bytes()
-assert ent['com.apple.security.application-groups']==['group.com.same.castreader.releasechecks']
-allowed_keychain_suffixes = ('.com.same.castreader.releasechecks', '.com.same.castreader.releasechecks.safari')
+ent=plistlib.loads(ent_path.read_bytes() if platform=='iphonesimulator' else signed)
+assert f'group.com.same.castreader.{namespace}'.encode() in (app/'CastReader').read_bytes()
+assert ent['com.apple.security.application-groups']==[f'group.com.same.castreader.{namespace}']
+allowed_keychain_suffixes = (f'.com.same.castreader.{namespace}', f'.com.same.castreader.{namespace}.safari')
 assert all(s.endswith(allowed_keychain_suffixes) for s in ent['keychain-access-groups'])
 source=max(products.glob('CastReader_CastReader_*.xctestrun'),key=lambda p:p.stat().st_mtime)
 run=plistlib.loads(source.read_bytes())
@@ -61,8 +75,12 @@ for config in run['TestConfigurations']:
   target.setdefault('CommandLineArguments',[]).append('-CastReaderPlatformContractAcceptance')
 (products/'Isolated.xctestrun').write_bytes(plistlib.dumps(run))
 PY
+if [[ "${CASTREADER_TEST_BUILD_ONLY:-0}" == "1" ]]; then
+  printf 'Isolated test build ready: %s\n' "$isolated"
+  exit 0
+fi
 status=0
-xcodebuild -xctestrun "$derived/Build/Products/Isolated.xctestrun" -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO -only-testing:CastReaderTests -skip-testing:CastReaderTests/PaymentTests -resultBundlePath "$report/tests.xcresult" test-without-building > "$report/tests.log" 2>&1 || status=$?
+xcodebuild -xctestrun "$derived/Build/Products/Isolated.xctestrun" -destination "platform=$platform,id=$device" -parallel-testing-enabled NO -only-testing:CastReaderTests -skip-testing:CastReaderTests/PaymentTests -resultBundlePath "$report/tests.xcresult" test-without-building > "$report/tests.log" 2>&1 || status=$?
 xcrun xcresulttool get test-results summary --path "$report/tests.xcresult" --format json > "$report/summary.json"
 printf 'Isolated unit tests exit=%s; report=%s\n' "$status" "$report"
 exit "$status"

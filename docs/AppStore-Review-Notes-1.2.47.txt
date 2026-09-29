@@ -1,0 +1,22 @@
+Version 1.2.47 adds cloned-voice generation credits and fixes Kindle page ordering, cross-page sentences and playback handoffs. Please review ai.castreader.clone.minutes120 with this app version.
+
+CREDIT PURCHASE REVIEW
+Sign in with Apple or Google. Activate CastReader Pro using the App Review sandbox, then open Voice > My Voices > Generation allowance > Buy more credits. Existing Pro members can purchase with a positive or zero balance. The sheet displays monthly and purchased balances and the StoreKit price. One consumable adds 120 minutes. Each Pro month includes 120 minutes; included minutes are used first. Purchased minutes do not expire and remain stored if Pro ends; active Pro is required to purchase or use them.
+
+Community and personal cloned voices use the same allowance. Only successfully generated audio duration is charged; fixed previews and replaying generated audio do not deduct minutes. The insufficient-allowance sheet offers Continue reading or explaining after purchase. Sync balance and pending purchases retries interrupted delivery. Apple-verified sandbox purchases and subscriptions use isolated test ledgers, with no external payment required.
+
+CORE EXPERIENCE
+CastReader is a text-to-speech utility, not a bookstore. Tap the central + button to paste text or import a PDF, EPUB, DOCX or image. Read Aloud reads the original with synchronized highlighting. Explain generates and reads an explanation while annotations appear on the original. Choose a voice and playback speed in the reader. Eligible new Pro subscribers may receive a 7-day introductory trial; StoreKit determines eligibility and displays the applicable subscription terms.
+
+Reviewers may use Sign in with Apple. Mainland China also supports +86 mobile verification. Account and payment regions follow the App Store distribution region; regional service routing is selected at cold launch. Connected libraries are optional and use the reviewer's own authorized accounts; no third-party demo credentials are provided. The app supplies no proprietary book catalog.
+
+KINDLE
+Connect an authorized Kindle account and open a book. Verify next/previous page navigation, continuous reading across pages and voice changes. More > Save Entire Book Offline saves accessible pages while the app stays in the foreground. Settings > Offline Books opens saved items. Page images remain on-device; offline recognition and speech use system services.
+
+SAFARI AND IPAD
+Enable CastReader under Settings > Apps > Safari > Extensions (Settings > Safari on older iOS). Open https://en.wikipedia.org/wiki/Reading, allow website access, then use CastReader's reading control. Check highlighting, scrolling, pause/resume, voice, speed and Stop. Account/Pro controls open the app. iPad supports rotation and resizing.
+
+YOUTUBE
+Home > Listen to YouTube > Paste Video Link, or the Share Extension, accepts public videos with available captions. CastReader generates speech from caption text in the caption language. It never plays, downloads, saves or converts YouTube audio/video. Unavailable or restricted captions produce an explanatory state. No YouTube login is requested. The app is not affiliated with YouTube or Google.
+
+Other connected reading services remain available. AO3 notices require the user's own action. The app imports and reads content the user is authorized to access.

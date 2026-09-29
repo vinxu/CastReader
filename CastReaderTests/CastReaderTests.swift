@@ -1245,7 +1245,11 @@ class CastReaderTests: XCTestCase {
         let result = try XCTUnwrap(captured)
         XCTAssertEqual(result["ready"] as? Bool, true)
         XCTAssertEqual(result["count"] as? Int, 1, "页面内联脚本创建 blob 前必须已安装 hook")
-        XCTAssertEqual((result["key"] as? String)?.count, 16)
+        XCTAssertEqual(
+            result["key"] as? String,
+            "4353a1de7e0dcc4e87350e22d5c9ee9f3e70e8ce9c31533ec991bee8870c4814",
+            "页面内容身份必须保留完整 SHA-256，不能截断后混淆不同页面"
+        )
         XCTAssertTrue((result["live"] as? String)?.hasPrefix("blob:") == true)
         XCTAssertEqual(result["held"] as? Int, 1)
         XCTAssertEqual(
@@ -2199,9 +2203,7 @@ final class LocalizationCatalogTests: XCTestCase {
     private let translatedLocales = ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"]
 
     private var repositoryRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestRepository.root
     }
 
     private func catalog(named name: String) throws -> [String: Any] {

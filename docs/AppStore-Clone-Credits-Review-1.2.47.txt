@@ -1,0 +1,7 @@
+This is the first submission of ai.castreader.clone.minutes120, together with app version 1.2.47.
+
+Sign in with Apple or Google and activate an existing CastReader Pro subscription using the App Review sandbox. Open Voice > My Voices, then tap Buy more credits in the Generation allowance section. The purchase sheet shows the included monthly balance, purchased balance and StoreKit price. A Pro user may buy with either a positive or zero balance.
+
+One consumable purchase adds 120 minutes of voice generation to the signed-in account. Community clone voices and personal cloned voices share this allowance. Each Pro month includes 120 minutes; the included minutes are used first. Purchased minutes do not expire. If Pro ends, purchased minutes remain stored and become usable again when Pro is active.
+
+Only successfully generated audio duration is charged. Fixed previews and replaying already generated audio do not consume more minutes. If a generation stops for insufficient allowance, the same sheet offers Continue reading or explaining after purchase. Sync balance and pending purchases retries delivery if interrupted. App Review sandbox purchases and subscriptions are verified by Apple and use an isolated test ledger.

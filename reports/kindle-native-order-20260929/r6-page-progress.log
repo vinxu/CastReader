@@ -1,0 +1,68 @@
+02:42:58.662 [active] KINDLE geometry reason=pre-capture-朗读 ok=true window=430.0x932.0 screenScale=3.00 swiftFrame=-53.8|51.3|537.5|864.4 visibleSurface=430.0x714.3 swiftWeb=537.5x864.4 swiftScroll=537.5x864.4 inset=0.0,0.0,0.0,0.0 viewport=538x864 domToSwift=0.9991|1.0005 dpr=3 visual=538x864@1 key=92b1ef302514 kind=native-page rect=53|60|432|714 swiftBlob=53.0|60.0|431.6|714.3 blobVisible=-0.8|0.0|431.6|714.3 blobWindow=-0.8|111.4|431.6|714.3 coverage=1.004|1.000 natural=1296x2142 scale=0.3333333333333333|0.3333333333333333 aspectErr=0 visibleNorm=0...1 chromeHidden=3
+02:42:59.460 [active] KINDLE geometry reason=post-overlay-朗读 ok=true window=430.0x932.0 screenScale=3.00 swiftFrame=-53.8|51.3|537.5|864.4 visibleSurface=430.0x714.3 swiftWeb=537.5x864.4 swiftScroll=537.5x864.4 inset=0.0,0.0,0.0,0.0 viewport=538x864 domToSwift=0.9991|1.0005 dpr=3 visual=538x864@1 key=92b1ef302514 kind=native-page rect=53|60|432|714 swiftBlob=53.0|60.0|431.6|714.3 blobVisible=-0.8|0.0|431.6|714.3 blobWindow=-0.8|111.4|431.6|714.3 coverage=1.004|1.000 natural=1296x2142 scale=0.3333333333333333|0.3333333333333333 aspectErr=0 visibleNorm=0...1 chromeHidden=3
+02:42:59.474 [active] KINDLE_SENTENCE accepted units=3 bridged=0 pending=false key=92b1ef302514
+02:42:59.567 [active] KINDLE_SENTENCE opened units=3 pending=false key=92b1ef302514
+02:42:59.716 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=1 accepted=Y
+02:42:59.716 [active] KINDLE auto next turn-only old=92b1ef302514 target=85c466449ece ok=true strategy=native-cache-navigation reason=sentence-source tried=
+02:43:00.030 [active] KINDLE OCR snapshot source=native-cache key=85c466449ece after=92b1ef302514 natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=451 decodeMs=0 ocrMs=393 layout=single:aspect=0.61 center=0.1707 left=0.1603 right=0.1677 paras=3 words=159 chars=949
+02:43:00.394 [active] KINDLE_SENTENCE accepted units=3 bridged=0 pending=false key=85c466449ece
+02:43:00.399 [active] KINDLE_SENTENCE source-ready elapsedMs=748 from=92b1ef302514 to=85c466449ece
+02:43:00.401 [active] KINDLE_SENTENCE appended count=3 cursor=3 vm=retained
+02:43:00.733 [active] KINDLE OCR snapshot source=native-cache key=06d28b9521da after=92b1ef302514 natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=476 decodeMs=0 ocrMs=643 layout=single:aspect=0.61 center=0.1557 left=0.1637 right=0.1690 paras=1 words=180 chars=1016
+02:43:26.593 [active] KINDLE_SENTENCE presented p=3 w=0 key=85c466449ece
+02:43:26.985 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=2 accepted=Y
+02:43:26.985 [active] KINDLE auto next turn-only old=85c466449ece target=06d28b9521da ok=true strategy=native-cache-navigation reason=sentence-source tried=
+02:43:27.157 [active] KINDLE_SENTENCE accepted units=3 bridged=0 pending=true key=06d28b9521da
+02:43:27.223 [active] KINDLE_SENTENCE source-ready elapsedMs=424 from=85c466449ece to=06d28b9521da
+02:43:27.226 [active] KINDLE_SENTENCE appended count=3 cursor=6 vm=retained
+02:43:27.426 [active] KINDLE OCR snapshot source=native-cache key=c8b3a8463e92 after=85c466449ece natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=437 decodeMs=0 ocrMs=571 layout=single:aspect=0.61 center=0.1722 left=0.1530 right=0.1497 paras=4 words=156 chars=909
+02:43:46.307 [active] KINDLE_SENTENCE presented p=6 w=0 key=06d28b9521da
+02:43:46.775 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=3 accepted=Y
+02:43:46.776 [active] KINDLE auto next turn-only old=06d28b9521da target=c8b3a8463e92 ok=true strategy=native-cache-navigation reason=sentence-source tried=
+02:43:46.959 [active] KINDLE_SENTENCE accepted units=3 bridged=1 pending=false key=c8b3a8463e92
+02:43:46.993 [active] KINDLE_SENTENCE source-ready elapsedMs=417 from=06d28b9521da to=c8b3a8463e92
+02:43:46.997 [active] KINDLE_SENTENCE appended count=3 cursor=9 vm=retained
+02:43:47.248 [active] KINDLE OCR snapshot source=native-cache key=33e4fc941b11 after=06d28b9521da natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=405 decodeMs=0 ocrMs=606 layout=single:aspect=0.61 center=0.1392 left=0.1617 right=0.1450 paras=6 words=139 chars=807
+02:44:11.204 [active] KINDLE_SENTENCE presented p=9 w=11 key=c8b3a8463e92
+02:44:11.513 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=4 accepted=Y
+02:44:11.514 [active] KINDLE auto next turn-only old=c8b3a8463e92 target=33e4fc941b11 ok=true strategy=native-cache-navigation reason=sentence-source tried=
+02:44:11.738 [active] KINDLE_SENTENCE accepted units=3 bridged=0 pending=false key=33e4fc941b11
+02:44:11.777 [active] KINDLE_SENTENCE source-ready elapsedMs=414 from=c8b3a8463e92 to=33e4fc941b11
+02:44:11.781 [active] KINDLE_SENTENCE appended count=3 cursor=12 vm=retained
+02:44:12.040 [active] KINDLE OCR snapshot source=native-cache key=996e9509e8bb after=c8b3a8463e92 natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=459 decodeMs=0 ocrMs=607 layout=single:aspect=0.61 center=0.1692 left=0.1643 right=0.1444 paras=3 words=156 chars=938
+02:44:31.206 [active] KINDLE_SENTENCE presented p=12 w=0 key=33e4fc941b11
+02:44:31.677 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=5 accepted=Y
+02:44:31.678 [active] KINDLE auto next turn-only old=33e4fc941b11 target=996e9509e8bb ok=true strategy=native-cache-navigation reason=sentence-source tried=
+02:44:31.881 [active] KINDLE_SENTENCE accepted units=3 bridged=0 pending=false key=996e9509e8bb
+02:44:31.926 [active] KINDLE_SENTENCE source-ready elapsedMs=479 from=33e4fc941b11 to=996e9509e8bb
+02:44:31.930 [active] KINDLE_SENTENCE appended count=3 cursor=15 vm=retained
+02:44:32.219 [active] KINDLE OCR snapshot source=native-cache key=e1a0d7609862 after=33e4fc941b11 natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=459 decodeMs=0 ocrMs=703 layout=single:aspect=0.61 center=0.1392 left=0.1550 right=0.1464 paras=5 words=157 chars=939
+02:44:48.762 [active] KINDLE_SENTENCE presented p=15 w=0 key=996e9509e8bb
+02:44:49.376 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=6 accepted=Y
+02:44:49.377 [active] KINDLE auto next turn-only old=996e9509e8bb target=e1a0d7609862 ok=true strategy=native-cache-navigation reason=sentence-source tried=
+02:44:49.651 [active] KINDLE_SENTENCE accepted units=2 bridged=0 pending=true key=e1a0d7609862
+02:44:49.707 [active] KINDLE_SENTENCE source-ready elapsedMs=675 from=996e9509e8bb to=e1a0d7609862
+02:44:49.713 [active] KINDLE_SENTENCE appended count=2 cursor=18 vm=retained
+02:44:49.966 [active] KINDLE OCR snapshot source=native-cache key=36e608460022 after=996e9509e8bb natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=455 decodeMs=0 ocrMs=896 layout=single:aspect=0.61 center=0.1811 left=0.1856 right=0.1564 paras=5 words=151 chars=931
+02:45:09.164 [active] KINDLE_SENTENCE presented p=18 w=0 key=e1a0d7609862
+02:45:09.735 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=7 accepted=Y
+02:45:09.735 [active] KINDLE auto next turn-only old=e1a0d7609862 target=36e608460022 ok=true strategy=native-cache-navigation reason=sentence-source tried=
+02:45:10.005 [active] KINDLE_SENTENCE accepted units=3 bridged=1 pending=true key=36e608460022
+02:45:10.059 [active] KINDLE_SENTENCE source-ready elapsedMs=602 from=e1a0d7609862 to=36e608460022
+02:45:10.066 [active] KINDLE_SENTENCE appended count=3 cursor=20 vm=retained
+02:45:10.355 [active] KINDLE OCR snapshot source=native-cache key=74ef949d17ff after=e1a0d7609862 natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=457 decodeMs=0 ocrMs=821 layout=single:aspect=0.61 center=0.1647 left=0.1743 right=0.1484 paras=3 words=152 chars=933
+02:45:30.095 [active] KINDLE_SENTENCE presented p=20 w=32 key=36e608460022
+02:45:30.778 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=8 accepted=Y
+02:45:30.779 [active] KINDLE auto next turn-only old=36e608460022 target=74ef949d17ff ok=true strategy=native-cache-navigation reason=sentence-source tried=
+02:45:31.241 [active] KINDLE_SENTENCE accepted units=3 bridged=1 pending=false key=74ef949d17ff
+02:45:31.337 [active] KINDLE_SENTENCE source-ready elapsedMs=888 from=36e608460022 to=74ef949d17ff
+02:45:31.349 [active] KINDLE_SENTENCE appended count=3 cursor=23 vm=retained
+02:45:31.713 [active] KINDLE OCR snapshot source=native-cache key=e8b1a96ec10f after=36e608460022 natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=449 decodeMs=0 ocrMs=1168 layout=single:aspect=0.61 center=0.1542 left=0.1564 right=0.1504 paras=4 words=151 chars=900
+02:45:49.818 [active] KINDLE_SENTENCE presented p=23 w=2 key=74ef949d17ff
+02:45:50.319 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=9 accepted=Y
+02:45:50.320 [active] KINDLE auto next turn-only old=74ef949d17ff target=e8b1a96ec10f ok=true strategy=native-cache-navigation reason=sentence-source tried=
+02:45:50.610 [active] KINDLE_SENTENCE accepted units=3 bridged=0 pending=false key=e8b1a96ec10f
+02:45:50.666 [active] KINDLE_SENTENCE source-ready elapsedMs=542 from=74ef949d17ff to=e8b1a96ec10f
+02:45:50.673 [active] KINDLE_SENTENCE appended count=3 cursor=26 vm=retained
+02:45:50.959 [active] KINDLE OCR snapshot source=native-cache key=5a47781cdff2 after=74ef949d17ff natural=1296x2142 rendered=1296x2142 bitmap=1296x2142 encoding=png dataKb=421 decodeMs=0 ocrMs=790 layout=single:aspect=0.61 center=0.1168 left=0.1317 right=0.1164 paras=6 words=149 chars=846
+02:45:52.910 [active] KINDLE_SENTENCE paused held=true p=23

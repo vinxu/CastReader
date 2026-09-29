@@ -4918,17 +4918,10 @@ enum KindleWebScripts {
 
       async function contentKey(blob) {
         try {
-          var size = blob.size || 0;
-          var head = await blob.slice(0, 256).arrayBuffer();
-          var buf = new ArrayBuffer(8 + head.byteLength);
-          var view = new DataView(buf);
-          view.setUint32(0, Math.floor(size / 0x100000000), false);
-          view.setUint32(4, size >>> 0, false);
-          new Uint8Array(buf, 8).set(new Uint8Array(head));
-          var digest = await crypto.subtle.digest('SHA-256', buf);
+          var digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
           var bytes = new Uint8Array(digest);
           var hex = '';
-          for (var i = 0; i < 8; i++) hex += bytes[i].toString(16).padStart(2, '0');
+          for (var i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, '0');
           return hex;
         } catch (_) {
           return String(Date.now()) + '-' + Math.floor(Math.random() * 100000);
@@ -4962,7 +4955,8 @@ enum KindleWebScripts {
     static let pageCaptureBootstrap = """
     (function() {
       \(uiSemanticHelpers)
-      var crKindleInstallVersion = 46;
+      \(KindleNativePageScript.bootstrap)
+      var crKindleInstallVersion = 47;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -5854,7 +5848,9 @@ enum KindleWebScripts {
           return false;
         }
       };
-      window.__crKindleSemanticPageTurn = function(direction, fallbackProgression) {
+      window.__crKindleSemanticPageTurn = function(direction, fallbackProgression, expectedFrom, requestID) {
+        var native = crKindleNative();
+        if (native) return JSON.stringify(native.dispatch(direction, expectedFrom, requestID));
         var attempts = [];
         var fingerprint = '';
         var dispatched = null;
@@ -6357,17 +6353,10 @@ enum KindleWebScripts {
       try { ensureBottomSafeSpacer(); } catch (e) {}
       async function contentKey(blob) {
         try {
-          var size = blob.size || 0;
-          var head = await blob.slice(0, 256).arrayBuffer();
-          var buf = new ArrayBuffer(8 + head.byteLength);
-          var view = new DataView(buf);
-          view.setUint32(0, Math.floor(size / 0x100000000), false);
-          view.setUint32(4, size >>> 0, false);
-          new Uint8Array(buf, 8).set(new Uint8Array(head));
-          var digest = await crypto.subtle.digest('SHA-256', buf);
+          var digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
           var bytes = new Uint8Array(digest);
           var hex = '';
-          for (var i = 0; i < 8; i++) hex += bytes[i].toString(16).padStart(2, '0');
+          for (var i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, '0');
           return hex;
         } catch (e) {
           return String(Date.now()) + '-' + Math.floor(Math.random() * 100000);
@@ -6571,7 +6560,39 @@ enum KindleWebScripts {
         }
         return offlineCandidateElements;
       }
+      function crKindleNative() {
+        if (!window.__crKindleNativeOrderEnabled || !window.__crKindleNativePages) return null;
+        var native = window.__crKindleNativePages;
+        native.refresh();
+        return native.engaged() ? native : null;
+      }
+      function crKindleNativeCandidate(native, index) {
+        var c = native.candidate(index, imageElementContentRect);
+        if (c) {
+          c.visible = c.el.isConnected ? visibleArea(c.rect) : 0;
+          c.bandVisible = c.el.isConnected ? readingBandArea(c.rect) : 0;
+        }
+        return c;
+      }
+      function crKindleNativeSnapshot(c, maxWidth, quality, metadataOnly) {
+        if (!c) return {ok:false, reason:'native-page-not-ready'};
+        var shot = metadataOnly ? {ok:true, key:c.key, pixelFingerprint:crKindleImagePixelFingerprint(c.img)}
+          : draw(c.img, c.key, maxWidth, quality, c.rect, c);
+        shot.kind = c.kind; shot.nativeIndex = c.nativeIndex; shot.nativeEpoch = c.nativeEpoch;
+        shot.sessionId = window.__crKindleProbe.liveSessionId || 0;
+        shot.source = 'native-cache';
+        return shot;
+      }
       function candidates(offline) {
+        var native = !offline && crKindleNative();
+        if (native) {
+          var state = native.state(), list = [];
+          for (var i = state.index - 1; i <= state.index + 2; i++) {
+            var c = crKindleNativeCandidate(native, i);
+            if (c && c.el.isConnected) list.push(c);
+          }
+          return list;
+        }
         var out = [];
         var elements = offline ? offlineElements() : null;
         (elements ? elements.images : Array.from(document.querySelectorAll('img'))).forEach(function(img) {
@@ -6808,6 +6829,7 @@ enum KindleWebScripts {
         return null;
       }
       function orderedCandidates() {
+        if (crKindleNative()) return candidates().sort(function(a, b) { return a.nativeIndex - b.nativeIndex; });
         var list = candidates()
           .filter(function(c) { return c && c.key && c.rect && c.rect.height > 40 && c.rect.width > 40; })
           .sort(function(a, b) {
@@ -6820,6 +6842,11 @@ enum KindleWebScripts {
       }
       function nextCandidateAfterKey(key) {
         key = String(key || '');
+        var native = crKindleNative();
+        if (native) {
+          var index = native.indexFor(key);
+          return index == null ? null : crKindleNativeCandidate(native, index + 1);
+        }
         var list = orderedCandidates();
         if (!list.length) return crKindleHeldCandidateAfterKey(key);
         var idx = -1;
@@ -7178,6 +7205,10 @@ enum KindleWebScripts {
         }
       };
       function findReplacementCandidate(candidate, key) {
+        if (String(key || (candidate && candidate.key) || '').indexOf('native:') === 0) {
+          var native = crKindleNative(), wanted = String(key || candidate.key);
+          return native && native.valid(wanted, true) ? crKindleNativeCandidate(native, native.indexFor(wanted)) : null;
+        }
         var list = candidates();
         var wantedKey = String(key || (candidate && candidate.key) || '');
         var wantedSrc = String((candidate && candidate.src) || '');
@@ -7208,6 +7239,11 @@ enum KindleWebScripts {
         return best;
       }
       function currentReadingCandidate(offline) {
+        var native = !offline && crKindleNative();
+        if (native) {
+          var index = native.currentIndex();
+          return index == null ? null : crKindleNativeCandidate(native, index);
+        }
         var list = candidates(offline);
         if (!list.length) return null;
         var anchorX = Math.max(1, Number(innerWidth || document.documentElement.clientWidth || 1)) * 0.5;
@@ -7239,6 +7275,11 @@ enum KindleWebScripts {
       }
       function refreshCandidate(candidate) {
         if (!candidate || !candidate.el) return null;
+        if (String(candidate.key || '').indexOf('native:') === 0) {
+          var native = crKindleNative();
+          if (!native || !native.valid(candidate.key, true)) return null;
+          return crKindleNativeCandidate(native, native.indexFor(candidate.key));
+        }
         try {
           if (!candidate.el.isConnected) {
             candidate = findReplacementCandidate(candidate, candidate.key);
@@ -7427,6 +7468,11 @@ enum KindleWebScripts {
       window.__crKindleCandidateSnapshotNearCurrent = function(offset, maxWidth, quality) {
         try {
           offset = Number(offset || 0);
+          var native = crKindleNative();
+          if (native) {
+            var ci = native.currentIndex();
+            return JSON.stringify(crKindleNativeSnapshot(ci == null ? null : crKindleNativeCandidate(native, ci + offset), maxWidth, quality));
+          }
           var list = orderedCandidates();
           if (!list.length) {
             return JSON.stringify({ ok:false, reason:'no-candidates', offset:offset, heldKeys: window.__crKindleProbe.keyToLiveUrl.size, url: location.href });
@@ -7466,7 +7512,8 @@ enum KindleWebScripts {
         try {
           key = String(key || '');
           if (!key) return JSON.stringify({ ok:false, reason:'empty-key', url:location.href });
-          var c = crKindleCandidateForKey(key) || crKindleHeldCandidateForStableKey(key);
+          var c = crKindleCandidateForKey(key);
+          if (!c && !crKindleNative()) c = crKindleHeldCandidateForStableKey(key);
           if (!c || !c.img || !c.img.complete || !(c.img.naturalWidth > 0)) {
             var list = orderedCandidates();
             return JSON.stringify({
@@ -7500,6 +7547,12 @@ enum KindleWebScripts {
           afterKey = String(afterKey || window.__crKindleProbe.liveKey || '');
           if (!afterKey) return JSON.stringify({ ok:false, reason:'empty-after-key', url:location.href });
           var next = nextCandidateAfterKey(afterKey);
+          if (crKindleNative()) {
+            var nativeShot = crKindleNativeSnapshot(next, maxWidth, quality);
+            nativeShot.afterKey = afterKey; nativeShot.prefetch = true;
+            nativeShot.orderDelta = 1; nativeShot.orderStatus = next ? 'ok' : 'unavailable';
+            return JSON.stringify(nativeShot);
+          }
           var ordered = orderedCandidates();
           function orderedBrief() {
             return ordered.map(function(x) {
@@ -7576,6 +7629,11 @@ enum KindleWebScripts {
       window.__crKindlePrefetchSnapshotForKey = function(key, maxWidth, quality) {
         try {
           key = String(key || '');
+          var native = crKindleNative();
+          if (native) {
+            var index = native.indexFor(key);
+            return JSON.stringify(crKindleNativeSnapshot(index == null ? null : crKindleNativeCandidate(native, index), maxWidth, quality));
+          }
           var c = crKindleHeldCandidateForStableKey(key) || crKindleCandidateForKey(key);
           if (!c || !c.img || !c.img.complete || !(c.img.naturalWidth > 0)) {
             return JSON.stringify({ ok:false, reason:'prefetch-image-unavailable', key:key });
@@ -7593,6 +7651,20 @@ enum KindleWebScripts {
           afterKey = String(afterKey || window.__crKindleProbe.liveKey || '');
           limit = Math.max(1, Math.min(12, Number(limit || 12)));
           if (!afterKey) return JSON.stringify({ ok:false, reason:'empty-after-key', pages:[], url:location.href });
+          var native = crKindleNative();
+          if (native) {
+            var index = native.indexFor(afterKey), nativePages = [];
+            // Never jump over a missing slot. Only the next two real cache slots
+            // can be prepared, independent of Blob or Promise arrival order.
+            if (index != null) for (var step = 1; step <= Math.min(limit, 2); step++) {
+              var c = crKindleNativeCandidate(native, index + step);
+              if (!c) break;
+              var shot = crKindleNativeSnapshot(c, maxWidth, quality, metadataOnly);
+              shot.afterKey = afterKey; shot.prefetch = true; shot.orderIndex = step;
+              nativePages.push(shot);
+            }
+            return JSON.stringify({ok:nativePages.length > 0, pages:nativePages, reason:nativePages.length ? '' : 'native-adjacent-unavailable'});
+          }
 
           var seen = {};
           var pages = [];
@@ -7834,6 +7906,8 @@ enum KindleWebScripts {
       }
       function crKindleCandidateForKey(key) {
         key = String(key || '');
+        var native = crKindleNative();
+        if (native) return native.valid(key, true) ? crKindleNativeCandidate(native, native.indexFor(key)) : null;
         var locked = lockedLiveCandidateForKey(key);
         if (locked) return locked;
         if (!key) return bestCandidate();
@@ -9272,6 +9346,7 @@ enum KindleWebScripts {
         return JSON.stringify({
           ok: true,
           key: key,
+          native: crKindleNative() ? crKindleNative().state() : null,
           kind: c && c.kind ? c.kind : '',
           rect: c && c.rect ? { left:Math.round(c.rect.left), top:Math.round(c.rect.top), width:Math.round(c.rect.width), height:Math.round(c.rect.height) } : null,
           preciseRect: c && c.rect ? crKindlePreciseRect(c.rect) : null,
@@ -9300,6 +9375,12 @@ enum KindleWebScripts {
       };
       window.__crKindleLiveKeys = function() {
         try {
+          var native = crKindleNative();
+          if (native) {
+            var state = native.state(), keys = [];
+            for (var index = state.index - 1; index <= state.index + 2; index++) { var key = native.id(index); if (key) keys.push(key); }
+            return JSON.stringify({ok:true, keys:keys, current:state.currentId, bestKey:state.currentId, visibleKeys:candidates().map(function(c){ return c.key; })});
+          }
           var visible = orderedCandidates().map(function(c) { return String((c && c.key) || ''); }).filter(Boolean);
           var observed = (window.__crKindleProbe.observedPageKeys || []).map(function(k) { return String(k || ''); }).filter(Boolean);
           var held = (window.__crKindleProbe.heldPageKeys || []).map(function(k) { return String(k || ''); }).filter(Boolean);

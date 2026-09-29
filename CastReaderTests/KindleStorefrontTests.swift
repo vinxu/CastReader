@@ -54,21 +54,13 @@ final class KindleStorefrontTests: XCTestCase {
         let securityNegativeURLs: [String]
     }
 
-    private var repositoryRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-    }
-
     private func loadContract() throws -> Contract {
-        let url = repositoryRoot
-            .appendingPathComponent("docs/contracts/kindle-storefronts-v1.json")
+        let url = TestRepository.root.appendingPathComponent("docs/contracts/kindle-storefronts-v1.json")
         return try JSONDecoder().decode(Contract.self, from: Data(contentsOf: url))
     }
 
     private func loadCases() throws -> ContractCases {
-        let url = repositoryRoot
-            .appendingPathComponent("docs/contracts/kindle-storefront-contract-cases-v1.json")
+        let url = TestRepository.root.appendingPathComponent("docs/contracts/kindle-storefront-contract-cases-v1.json")
         return try JSONDecoder().decode(ContractCases.self, from: Data(contentsOf: url))
     }
 

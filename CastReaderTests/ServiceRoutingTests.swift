@@ -389,9 +389,7 @@ final class ServiceRoutingTests: XCTestCase {
     }
 
     func testAppLaunchBootstrapsRouteBeforeCreatingVisitorIdentityOrMainUI() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let repositoryRoot = TestRepository.root
         let appSourceURL = repositoryRoot.appendingPathComponent("CastReader/CastReaderApp.swift")
         guard FileManager.default.fileExists(atPath: appSourceURL.path) else {
             throw XCTSkip("startup-order source contract requires the repository checkout")

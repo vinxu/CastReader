@@ -5,10 +5,13 @@ struct VoiceGenerationQuotaSummary: View {
     @ObservedObject private var store = VoiceCloneStore.shared
     @ObservedObject private var pro = ProManager.shared
     @State private var showsExplanation = false
+    @State private var showsPurchase = false
+    @ObservedObject private var credits = CloneCreditStore.shared
 
     var title: String.LocalizationValue = "生成额度"
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
         HStack(spacing: 8) {
             Text(AppLocalized(title))
                 .font(.subheadline.weight(.semibold))
@@ -29,6 +32,14 @@ struct VoiceGenerationQuotaSummary: View {
             .accessibilityLabel(Text(AppLocalized("额度说明")))
             .accessibilityValue(Text(balanceLabel))
         }
+        if pro.isPro, credits.currentBalance?.enabled == true {
+            Button(AppLocalized("购买更多额度")) { showsPurchase = true }
+                .font(.subheadline.weight(.semibold))
+                .accessibilityIdentifier("cloneCreditOpen")
+        }
+        }
+        .sheet(isPresented: $showsPurchase) { CloneCreditPurchaseView() }
+        .task { await credits.refresh() }
         .accessibilityIdentifier("voiceGenerationQuotaSummary")
         .alert(AppLocalized("生成额度"), isPresented: $showsExplanation) {
             Button(AppLocalized("完成"), role: .cancel) {}
@@ -38,6 +49,9 @@ struct VoiceGenerationQuotaSummary: View {
     }
 
     private var balanceLabel: String {
+        if pro.isPro, let balance = credits.currentBalance, balance.enabled, let available = balance.availableMs {
+            return CloneCreditPurchaseView.duration(available)
+        }
         let quota = store.quotaPresentation
         if pro.isPro, let remaining = quota.remainingSeconds {
             return String(format: AppLocalized("%@ / %@ 剩余"), duration(remaining), duration(quota.limitSeconds))
@@ -50,7 +64,11 @@ struct VoiceGenerationQuotaSummary: View {
         let pro = ProManager.shared
         var value = AppLocalized("所有月额度音色与我的声音共享 2 小时/月，所有语言通用。") + "\n\n"
             + AppLocalized("按成功生成的音频时长计量；试听和重复播放已生成的音频不扣额度。")
-        if pro.isPro {
+        if pro.isPro, let balance = CloneCreditStore.shared.currentBalance, balance.enabled {
+            value += "\n\n" + AppLocalized("本月基础剩余") + ": " + CloneCreditPurchaseView.duration(balance.baseRemainingMs ?? 0)
+            value += "\n" + AppLocalized("加购剩余") + ": " + CloneCreditPurchaseView.duration(balance.purchasedRemainingMs ?? 0)
+            value += "\n\n" + AppLocalized("加购额度长期有效，优先使用每月基础额度。仅 Pro 会员可购买及使用；Pro 到期后保留加购余额。")
+        } else if pro.isPro {
             if let remaining = store.quotaPresentation.remainingSeconds {
                 value += "\n\n" + String(format: AppLocalized("本月剩余 %lld 分钟"), Int64(max(0, remaining) / 60))
             }

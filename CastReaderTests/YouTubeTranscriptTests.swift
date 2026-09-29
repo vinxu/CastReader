@@ -1365,9 +1365,7 @@ final class YouTubeTranscriptGroupingTests: XCTestCase {
     }
 
     func testMatchesVersionedCrossPlatformGoldenUtterances() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let repositoryRoot = TestRepository.root
         let fixtureURL = repositoryRoot
             .appendingPathComponent("docs/contracts/youtube-caption-semantics-v3.json")
         let contract = try JSONDecoder().decode(

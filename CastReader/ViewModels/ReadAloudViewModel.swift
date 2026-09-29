@@ -619,7 +619,7 @@ enum KindleParagraphPrefetchHorizon {
         let estimatedSeconds: Double
         let additionalCharacters: Int
     }
-    static func select(_ candidates: [Candidate], speed: Double) -> Selection {
+    static func select(_ candidates: [Candidate], speed: Double, targetSeconds: Double = 12) -> Selection {
         let rate = speed.isFinite && speed > 0 ? speed : 1
         var selected: [Int] = []
         var seconds = 0.0
@@ -627,7 +627,7 @@ enum KindleParagraphPrefetchHorizon {
         for candidate in candidates {
             guard selected.count < 8 else { break }
             if selected.count >= 2 {
-                guard seconds < 12 else { break }
+                guard seconds < targetSeconds else { break }
                 guard candidate.utf16Count <= 1600 - extraCharacters else { break }
                 extraCharacters += candidate.utf16Count
             }
@@ -645,7 +645,7 @@ enum KindleParagraphPrefetchHorizon {
 @MainActor
 final class ReadAloudViewModel: ObservableObject {
 
-    let document: ReadingDocument
+    private(set) var document: ReadingDocument
     let analyticsContext: AnalyticsContentContext
 
     // 渲染状态
@@ -791,6 +791,130 @@ final class ReadAloudViewModel: ObservableObject {
     /// 于是一本意大利语书读到那样一页就换成英语音色；用户的选择不能被下一页推翻。
     private var correctedLanguage: String? = nil
     private var paras: [ReadingParagraph] { webParagraphs ?? document.paragraphs }
+    /// Kindle's speech producer can outlive a visual page. Appending confirmed
+    /// speech units must not replace this VM or its currently playing queue.
+    private final class KindleContinuousInput {
+        let token = UUID()
+        let demand: (UUID, Int) -> Void
+        var inFlight = false
+        var waiting = false
+        var ended = false
+        var sourceFailed = false
+        init(demand: @escaping (UUID, Int) -> Void) { self.demand = demand }
+    }
+    private var kindleContinuousInput: KindleContinuousInput?
+
+    @discardableResult
+    func configureKindleContinuousInput(demand: @escaping (UUID, Int) -> Void) -> UUID? {
+        // init/metadata binding may already have restored a durable paragraph
+        // cursor. That is still an unstarted VM and must accept its source
+        // producer; otherwise reopening a book stops at the first visual page.
+        guard document.sourceKind == .kindle, !isActive, generationEpoch == 0,
+              kindleContinuousInput == nil else { return nil }
+        let input = KindleContinuousInput(demand: demand)
+        kindleContinuousInput = input
+        webParagraphs = document.paragraphs
+        return input.token
+    }
+
+    /// The expected count is the append cursor. Repeated deliveries, an old
+    /// navigation generation, and a retired playback owner cannot append twice.
+    @discardableResult
+    func appendKindleSpeech(
+        _ additions: [ReadingParagraph], token: UUID, afterCount: Int, endOfContent: Bool = false
+    ) -> Bool {
+        guard let input = kindleContinuousInput, input.token == token, !input.ended,
+              isActive, ownsAudioQueue,
+              progressBoundaryToken == historyStore.progressBoundaryToken,
+              accountBoundaryToken.map(AccountContentIsolation.isCurrent) ?? true,
+              paras.count == afterCount,
+              additions.enumerated().allSatisfy({ $0.element.id == afterCount + $0.offset }) else { return false }
+        webParagraphs = paras + additions
+        // Consumers such as Kindle resume/refocus must see the same source
+        // window as the player, including units appended after the first page.
+        document.paragraphs = webParagraphs ?? []
+        recomputeReadableIndices()
+        input.inFlight = false
+        input.sourceFailed = false
+        input.ended = endOfContent
+        if input.waiting, !isPlaybackPausedByUser, !audio.isExplicitlyPaused {
+            input.waiting = false
+            advance()
+        } else if !isPlaybackPausedByUser, currentParagraphIndex >= 0 {
+            preloadNext(after: currentParagraphIndex)
+        }
+        return true
+    }
+
+    private func requestKindleSourceIfNeeded(force: Bool = false) {
+        guard let input = kindleContinuousInput, !input.ended, !input.inFlight,
+              isActive, ownsAudioQueue, !isPlaybackPausedByUser,
+              !audio.isExplicitlyPaused else { return }
+        let remaining = readableIndices.filter { $0 >= currentParagraphIndex }.reduce(0.0) { total, index in
+            if index == currentParagraphIndex, audio.duration > 0 {
+                return total + max(0, audio.duration - audio.currentTime)
+            }
+            let ready = segmentsByParagraph[index] ?? kindlePrefetchedSegments[index]
+            return total + (ready?.reduce(0) { $0 + $1.duration }
+                            ?? max(1, Double(paras[index].text.count) / 24))
+        } / max(0.25, Double(audio.playbackRate))
+        guard force || remaining <= 24 else { return }
+        input.inFlight = true
+        input.demand(input.token, paras.count)
+    }
+
+    /// Source failures pause the retained window and can be retried by Play.
+    /// They must not turn a missing page into a successful end of the book.
+    func failKindleSource(token: UUID, message: String) {
+        guard let input = kindleContinuousInput, input.token == token else { return }
+        input.inFlight = false
+        input.sourceFailed = true
+        isPlaybackPausedByUser = true
+        audio.pause()
+        status = .error(message)
+    }
+
+    private func resumeKindleSourceWaitIfNeeded() -> Bool {
+        guard let input = kindleContinuousInput, input.waiting || input.sourceFailed,
+              ownsAudioQueue else { return false }
+        guard currentAudioIsQuotaExempt || pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+            refreshAccessThenRetryResume()
+            return true
+        }
+        input.sourceFailed = false
+        isPlaybackPausedByUser = false
+        if input.waiting {
+            if readableIndices.contains(where: { $0 > currentParagraphIndex }) || input.ended {
+                input.waiting = false
+                advance()
+            } else {
+                status = .loading
+                if let token = audioSessionToken { _ = audio.play(session: token) }
+                requestKindleSourceIfNeeded(force: true)
+            }
+        } else {
+            status = .ready
+            if let token = audioSessionToken { _ = audio.play(session: token) }
+            requestKindleSourceIfNeeded(force: true)
+        }
+        return true
+    }
+
+    @discardableResult
+    func retireKindleSpeech(before index: Int, token: UUID) -> Bool {
+        guard kindleContinuousInput?.token == token, ownsAudioQueue,
+              index > 0, index < currentParagraphIndex, index <= paras.count else { return false }
+        var window = paras
+        for retired in 0..<index where window[retired].type != .code {
+            window[retired] = ReadingParagraph(id: retired, text: "", type: .code)
+            segmentsByParagraph.removeValue(forKey: retired)
+            kindlePrefetchedSegments.removeValue(forKey: retired)
+        }
+        webParagraphs = window
+        document.paragraphs = window
+        recomputeReadableIndices()
+        return true
+    }
     /// 有效朗读语言：用户更正 > .web 源从正文检测的语言 > document.language。
     private var docLanguage: String { correctedLanguage ?? webLanguage ?? document.language }
     @Published var webAudioSegments: [AudioSegment] = []   // 扁平全局顺序（供 bridge 转 JS audioSegments）
@@ -2578,6 +2702,16 @@ final class ReadAloudViewModel: ObservableObject {
         guard requireWebContentReady() else { return }
         guard resumeNotice == nil, readablePageTask == nil else { return }
         isPlaybackPausedByUser = false
+        if let input = kindleContinuousInput, input.waiting {
+            if readableIndices.contains(where: { $0 > currentParagraphIndex }) || input.ended {
+                input.waiting = false
+                advance()
+            } else {
+                _ = audio.play(session: audioSessionToken)
+                requestKindleSourceIfNeeded(force: true)
+            }
+            return
+        }
         if currentParagraphIndex >= 0, ownsAudioQueue,
            audio.currentSegment != nil || status.isLoading || status.isStreaming {
             ensurePlaying()
@@ -2725,6 +2859,7 @@ final class ReadAloudViewModel: ObservableObject {
             pausePlayback()
             return
         }
+        if resumeKindleSourceWaitIfNeeded() { return }
         if case .error = status {
             retryCurrentParagraph()
             return
@@ -2781,6 +2916,7 @@ final class ReadAloudViewModel: ObservableObject {
         guard resumeNotice == nil else { return }
         isPlaybackPausedByUser = false
         liveWebTurnIntentSuspended = false
+        if resumeKindleSourceWaitIfNeeded() { return }
         if case .error = status, currentParagraphIndex >= 0 {
             retryCurrentParagraph()
             return
@@ -3553,6 +3689,28 @@ final class ReadAloudViewModel: ObservableObject {
         lastWordKey = ""
         status = .loading
 
+        // A paragraph jump/replay must not sell the same in-memory clone audio
+        // again. Keep voice-switch cursor handling below unchanged.
+        if continuation == nil, voiceOverride == nil,
+           let cached = cachedClonedAudio(index, voice: voice) {
+            segmentsByParagraph[index] = cached
+            processedDisplayText = cached.map(\.text).joined()
+            let loaded: Bool
+            if let cursor = pendingReadingAudioCursor {
+                loaded = loadResumedReadingAudio(cached, cursor: cursor, isComplete: true,
+                                                autoPlay: autoPlay, session: session)
+            } else {
+                loaded = audio.loadSegments(cached, autoPlay: autoPlay, session: session)
+            }
+            if loaded {
+                _ = finishGeneratedAudio(paragraph: index, epoch: epoch, session: session)
+                ReaderRunLog.write("READ clone replay cache-hit para=\(index)")
+                preloadNext(after: index)
+            }
+            finishVoiceSwitch(voiceSwitchID)
+            return
+        }
+
         if voiceOverride != nil, progressBoundaryToken == historyStore.progressBoundaryToken,
            accountBoundaryToken.map(AccountContentIsolation.isCurrent) ?? true,
            let cursor = pendingReadingAudioCursor,
@@ -3572,11 +3730,17 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         let requestedText = suffixPlan?.text ?? paras[index].resolvedSpeechText
-        let effectiveContinuation = continuation ?? suffixPlan.map {
-            TTSContinuation(requestUnits: ClonedTTSStartup.requestUnits(
-                SpeechTextSanitizer.sanitizedForTTS($0.text), language: docLanguage, voice: voice),
-                nextSegmentIndex: $0.nextSegmentIndex)
-        }
+        let effectiveContinuation: TTSContinuation? = continuation ?? {
+            guard suffixPlan != nil || kindleContinuousInput != nil else { return nil }
+            let text = SpeechTextSanitizer.sanitizedForTTS(requestedText)
+            // Kindle has already planned complete, bounded speech units. A
+            // second "fast opening" split makes 3x playback outrun its suffix
+            // and can cut the same cross-page sentence we just assembled.
+            let units = kindleContinuousInput != nil ? [text]
+                : ClonedTTSStartup.requestUnits(text, language: docLanguage, voice: voice)
+            return TTSContinuation(requestUnits: units,
+                nextSegmentIndex: suffixPlan?.nextSegmentIndex ?? 0)
+        }()
         if let suffixPlan {
             ReaderRunLog.write("READ voice switch suffix para=\(index) skippedChars=\(suffixPlan.prefix.map(\.text).joined().utf16.count) requestChars=\(requestedText.utf16.count)")
         }
@@ -3628,6 +3792,13 @@ final class ReadAloudViewModel: ObservableObject {
                                 paused: (self.audio.isExplicitlyPaused || self.isPlaybackPausedByUser) && !needsResume)
                             if canGenerate || needsResume || (demand.segments.isEmpty && !autoPlay) {
                                 demand.beginRequest(checkpoint)
+                                if autoPlay, let voiceSwitchID {
+                                    // A switch may resume only a few seconds from
+                                    // this unit's end. Prepare the next confirmed
+                                    // unit during preset synthesis, not after the
+                                    // replacement voice has started playing.
+                                    self.preloadNext(after: index, preparingVoiceSwitch: voiceSwitchID)
+                                }
                                 return .interactive
                             }
                             if !self.audio.isExplicitlyPaused { self.preloadNext(after: index) }
@@ -3753,6 +3924,15 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func voiceAudioKey(_ paragraph: Int, voice: String) -> String {
         "\(resumeDocumentIndex.fingerprint)|\(paragraph)|\(voice)|\(docLanguage)"
+    }
+
+    private func cachedClonedAudio(_ paragraph: Int, voice: String) -> [AudioSegment]? {
+        guard VoiceOption.requiresGenerationQuota(voice),
+              progressBoundaryToken == historyStore.progressBoundaryToken,
+              accountBoundaryToken.map(AccountContentIsolation.isCurrent) ?? true,
+              let cached = completedVoiceAudio.first(where: { $0.key == voiceAudioKey(paragraph, voice: voice) })?.segments,
+              !cached.isEmpty, cached.allSatisfy({ !$0.audioData.isEmpty }) else { return nil }
+        return cached
     }
 
     private func cacheCompletedVoiceAudio(_ paragraph: Int) {
@@ -4002,12 +4182,18 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// A single bounded window serves every reader and both voice families.
     /// Future paragraphs remain ordered; a partial paragraph can be promoted.
-    private func preloadNext(after index: Int) {
+    private func preloadNext(after index: Int, preparingVoiceSwitch: UUID? = nil) {
+        let mayPrepareBeforeCurrentAudio = preparingVoiceSwitch != nil
+            && preparingVoiceSwitch == activeVoiceSwitchID
+            && kindleContinuousInput != nil
+            && !VoiceOption.requiresGenerationQuota(playbackVoiceID)
+        guard preparingVoiceSwitch == nil || mayPrepareBeforeCurrentAudio else { return }
         guard isActive, ownsAudioQueue, !audio.hasTerminalPlaybackFailure,
               !audio.isExplicitlyPaused, !isPlaybackPausedByUser,
-              segmentsByParagraph[index]?.isEmpty == false,
+              (segmentsByParagraph[index]?.isEmpty == false || mayPrepareBeforeCurrentAudio),
               let position = readableIndices.firstIndex(of: index),
               canStartAudio(persistentYouTubeCacheHit: false) else { return }
+        requestKindleSourceIfNeeded()
         for key in Array(readAheadStreams.keys) where key < index {
             readAheadStreams.removeValue(forKey: key)?.task?.cancel()
             kindlePrefetchedSegments.removeValue(forKey: key)
@@ -4017,7 +4203,8 @@ final class ReadAloudViewModel: ObservableObject {
                 utf16Count: SpeechTextSanitizer.sanitizedForTTS(paras[next].resolvedSpeechText).utf16.count,
                 readyDuration: kindlePrefetchedSegments[next].map { $0.reduce(0) { $0 + $1.duration } })
         }
-        let selection = KindleParagraphPrefetchHorizon.select(candidates, speed: Double(audio.playbackRate))
+        let selection = KindleParagraphPrefetchHorizon.select(candidates, speed: Double(audio.playbackRate),
+            targetSeconds: kindleContinuousInput == nil ? 12 : 24)
         // One future producer, plus the foreground producer. Scheduler limits
         // are unchanged. Never cancel an admitted HTTP request just to replan.
         if !readAheadStreams.values.contains(where: { !$0.finished }),
@@ -4033,7 +4220,7 @@ final class ReadAloudViewModel: ObservableObject {
         let pending = readAheadStreams.values.filter { !$0.promoted && $0 !== stream }
         let segments = pending.flatMap(\.segments)
         let seconds = segments.reduce(0) { $0 + max(0, $1.duration) } / max(0.25, Double(audio.playbackRate))
-        let target = stream?.targetSeconds ?? 12
+        let target = max(stream?.targetSeconds ?? 12, kindleContinuousInput == nil ? 12 : 24)
         return seconds < target && segments.count < 64
             && segments.reduce(0, { $0 + $1.audioData.count }) < 4 * 1024 * 1024
     }
@@ -4059,12 +4246,28 @@ final class ReadAloudViewModel: ObservableObject {
         let epoch = generationEpoch
         let para = paras[nextIndex]
         let voice = settings.voice(for: docLanguage)
+        if let cached = cachedClonedAudio(nextIndex, voice: voice) {
+            let stream = SpeechStreamBuffer(paragraphIndex: nextIndex, voice: voice,
+                                           language: docLanguage, requestID: nil)
+            cached.forEach { stream.append($0) }
+            stream.finished = true
+            readAheadStreams[nextIndex] = stream
+            kindlePrefetchedSegments[nextIndex] = cached
+            audio.prestageSegments(cached)
+            synchronizeNextPrefetch(after: currentParagraphIndex)
+            ReaderRunLog.write("READ clone prefetch cache-hit para=\(nextIndex)")
+            return
+        }
         let stream = SpeechStreamBuffer(paragraphIndex: nextIndex, voice: voice,
             language: docLanguage, requestID: stableCloneRequestID(paragraphIndex: nextIndex, voice: voice))
         readAheadStreams[nextIndex] = stream
         prefetchedYouTubeAudioIsQuotaExempt = false
         let generator = speechGenerator
         let includeVoiceCode = includeVoiceCodeForTTS
+        let plannedContinuation = kindleContinuousInput.map { _ in
+            TTSContinuation(requestUnits: [SpeechTextSanitizer.sanitizedForTTS(para.resolvedSpeechText)],
+                            nextSegmentIndex: 0)
+        }
         ReaderRunLog.write("READ prefetch start para=\(nextIndex) epoch=\(epoch) chars=\(para.resolvedSpeechText.utf16.count) streaming=Y")
         let task = Task { [weak self] in
             do {
@@ -4073,7 +4276,7 @@ final class ReadAloudViewModel: ObservableObject {
                     text: SpeechTextSanitizer.sanitizedForTTS(para.resolvedSpeechText),
                     voice: voice, speed: 1, language: stream.language,
                     includeVoiceCode: includeVoiceCode, speaker: para.speaker,
-                    cloneRequestID: stream.requestID, continuation: nil,
+                    cloneRequestID: stream.requestID, continuation: plannedContinuation,
                     beforeRequest: { [weak self] checkpoint in
                         guard let self else { throw CancellationError() }
                         return try await self.prepareBufferedRequest(stream, checkpoint: checkpoint,
@@ -4440,6 +4643,12 @@ final class ReadAloudViewModel: ObservableObject {
         }
         let nextPos = pos + 1
         guard nextPos < readableIndices.count else {
+            if let input = kindleContinuousInput, !input.ended {
+                input.waiting = true
+                status = .loading
+                requestKindleSourceIfNeeded(force: true)
+                return
+            }
             status = .ready
             isFinished = true
             NSLog("CRDBG read document finished para=%d readable=%d", currentParagraphIndex, readableIndices.count)
@@ -4655,6 +4864,7 @@ final class ReadAloudViewModel: ObservableObject {
         accountListen(t)
         saveYouTubeProgress(t)
         updateHighlight(t)
+        requestKindleSourceIfNeeded()
         updateNowPlayingCaption(t)
         signalPageBoundaryIfNeeded(t)
     }
@@ -4993,7 +5203,8 @@ final class ReadAloudViewModel: ObservableObject {
                 // the OCR word stream. It must not depend on `segs.count`: that
                 // count grows while TTS streams and previously repartitioned an
                 // already-playing Chinese/Japanese/Hindi segment on screen.
-                let words = document.paragraphs[currentParagraphIndex].words.map(\.text)
+                guard paras.indices.contains(currentParagraphIndex) else { return }
+                let words = paras[currentParagraphIndex].words.map(\.text)
                 if let range = Self.alignedPhotoWordRange(
                     words: words,
                     segmentTexts: segs.map(\.text),
@@ -5107,13 +5318,13 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func ensureOCRWordAligned() {
-        guard currentParagraphIndex >= 0, currentParagraphIndex < document.paragraphs.count else { return }
+        guard paras.indices.contains(currentParagraphIndex) else { return }
         let segs = wordHighlightSegments(segmentsByParagraph[currentParagraphIndex] ?? [])
         if ocrAlignedPara == currentParagraphIndex && ocrAlignedSegCount == segs.count { return }
         let allowFallback = document.sourceKind != .kindle
         ocrWordRanges = OCRWordAligner.mapTimestampWordRanges(
             segs.flatMap(\.timestamps),
-            in: document.paragraphs[currentParagraphIndex],
+            in: paras[currentParagraphIndex],
             allowFallback: allowFallback,
             allowBoundedFallback: document.sourceKind == .kindle
         )
@@ -5248,8 +5459,8 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// photo：把当前 TTS 词对齐到 OCR 词（游标只前进，匹配优先，否则顺移）。
     private func advancePhotoCursor(toward word: String) {
-        guard currentParagraphIndex >= 0, currentParagraphIndex < document.paragraphs.count else { return }
-        let words = document.paragraphs[currentParagraphIndex].words
+        guard paras.indices.contains(currentParagraphIndex) else { return }
+        let words = paras[currentParagraphIndex].words
         guard !words.isEmpty else { photoHighlightWordIndex = nil; photoHighlightWordRange = nil; return }
         let target = normalize(word)
         let window = 6
