@@ -38,3 +38,15 @@ Kindle 功能分支 `bbe7ef7`：114 项受影响真机测试通过；最终实�
 2026-09-29 03:51 正式配置包已完成：Release 开发签名 `BUILD SUCCEEDED`，四组件均为 1.2.47（70）及 iPhone/iPad，`codesign --verify --deep --strict` 通过；204 文件/54 个夹具标志扫描为 0 命中，Debug 阳性对照有效，内部控制为 `NO`，Safari content.js 摘要与 1.2.46 一致。应用/组件/WebReader/工程 416 文件冻结清单摘要为 `55506dd555d32ef0170cc08bf38ed16b10d355d8108ae145c7225c5e1c499dff`（`candidate-source-identity.json`）。此包是用于最终真机验收的开发签名 Release 包，尚未归档或上传。
 
 安装再次失败：CoreDevice error 1011，找不到已配对 iPhone；Xcode Devices 为 Disconnected，USB 列表未检测到 iPhone。镜像会间歇恢复，但仍运行前轮包，不能代替最终包安装和测试。当前交付仍未完成：App Store 版本为 PREPARE_FOR_SUBMISSION；最终完整真机单测、两区核心格、解读耗尽购买续播及审核截图待恢复物理连接后进行。未以历史测试、编译成功或服务端通过冒充这些真机验收。
+
+2026-09-29 上午连接恢复后的进展：
+
+- 正常 Debug 1.2.47（70）已通过 USB 安装到原 `com.same.castreader`，保留用户数据。Release 开发签名包已重新构建，四组件版本、iPhone/iPad、严格签名、54 个夹具标志扫描及 Safari 摘要复核通过；独立 DerivedData 移至桌面发布目录，避免此前临时构建目录被清理。
+- 09:54 确认手机 `passcodeRequired=false` 后，首次完整真机回归执行了 1,950 项，32 项跳过，25 个用例失败（29 个断言/异常）。失败包含真机无法读取 Mac 源码路径、BLOB 测试仍要求旧的截断哈希，以及两处以生成完成/HTTP 失败时间代替音频缓冲就绪/播完时间的测试同步问题。
+- 真机测试改为在 XCTest 包中携带白名单源码、合同与本地化快照；不包含 Secrets、会话、收据或正式 App 资源外的用户数据，也不进入发布 App。BLOB 断言校验测试图片完整 SHA-256；预取断言等待下一段缓冲就绪；失败续播断言等待已缓冲前缀自然播完再重试缺失后缀。26 项定向真机回归通过、0 失败、0 跳过，正在补跑完整套件。
+- 本轮没有修改 App/Share/Widget/Safari/WebReader 的 415 个冻结文件；工程改动仅为测试目标的助手与构建资料。Release 包不包含 `RepositorySnapshot`。最终完整回归与两区实际播放仍按上表记录，不用定向回归替代核心格。
+- App 审核备注已更新为本版购买路径并回读验证，3,364 字符，其余审核联系/登录字段不变。本地 11 语元数据文档的 What's New 已与已上传 JSON 一致。Apple 文档提示首次内购需通过网站随 App 二进制送审；最终提交时需核实同批包含本版 App 和额度商品，不能只提交其中一项。
+
+10:17 回归收尾：`physical-unit-tests-r5-full` 执行 1,950 项，1,929 通过、20 跳过、1 失败；失败项发现额度购买新增 22 条文案缺少日/西/法/德/巴葡/意/印地语。已补齐 154 个译文，保留中英文和其他现有条目。受影响的完整 `LocalizationCatalogTests` 在同一真机上复测 50 项全部通过。合并两份真实结果后为 1,930 通过、20 跳过、0 未解决失败；这不是伪称一次全绿的 xcodebuild，失败原始记录保留。
+
+20 项跳过包括 10 项依赖 Mac localhost 的 StoreKit/额度集成夹具，另 10 项需要未提供的本地真实文档或显式实网开关；真实购买及核心服务仍通过产品真机流程验收，不将这些跳过算作通过。明细见发布证据 `physical-unit-tests-combined.json`。此次变更的正式应用资源仅为购买文案本地化；Debug/Release 包均已重建。更新的 Debug 1.2.47（70）已装机并按 Global 正式线路启动，禁用 Debug Pro，不使用私人 Preview 或注入音频。

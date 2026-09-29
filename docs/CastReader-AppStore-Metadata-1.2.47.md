@@ -1,4 +1,4 @@
-# App Store 1.2.47 — current baseline plus Safari support
+# App Store 1.2.47 — clone credit purchases and Kindle continuity
 
 ## es-ES — `es-ES`
 
@@ -69,7 +69,7 @@ Términos de uso (EULA): https://www.apple.com/legal/internet-services/itunes/de
 ```
 
 ```text
-La lectura en Safari llega al iPhone y al iPad. Activa la extensión CastReader en los ajustes de Safari para escuchar páginas web con resaltado sincronizado y desplazamiento automático. Pausa, reanuda, cambia de voz y ajusta la velocidad sin salir de la página. También mejoramos la visibilidad y la limpieza del resaltado en enlaces, textos con distintos formatos y secciones plegadas.
+Los miembros Pro ya pueden comprar minutos adicionales de voz clonada en cualquier momento. Mejoramos la correspondencia de páginas de Kindle, la lectura de frases entre páginas y las pausas de reproducción al pasar de página o cambiar de voz.
 ```
 
 ## ja — `ja`
@@ -141,7 +141,7 @@ CASTREADER PRO
 ```
 
 ```text
-iPhoneとiPadのSafariで拡張機能による読み上げが使えるようになりました。Safariの設定でCastReaderを有効にすると、ウェブページ上でハイライトと自動スクロールに合わせて読み上げを楽しめます。ページを離れずに一時停止、再開、音声の切り替え、速度の調整ができます。リンクや複雑な書式、折りたたまれたセクションでのハイライトの表示と消去も改善しました。
+Pro メンバーは、クローン音声の利用時間をいつでも追加購入できるようになりました。Kindle のページ画像の対応と前後のページ移動を改善し、ページをまたぐ文を続けて読み上げます。ページ送りや音声切り替え時の再生停止も修正しました。
 ```
 
 ## zh-Hans — `zh-Hans`
@@ -210,7 +210,7 @@ CASTREADER PRO
 ```
 
 ```text
-新增 iPhone 和 iPad Safari 扩展朗读。在 Safari 设置中启用 CastReader，即可直接在网页上听读，配合同步高亮与自动滚动。无需离开网页，即可暂停、继续、切换音色和调整语速。本次还改善了链接、混合排版和折叠章节中的高亮显示与清除效果。
+Pro 会员现在可以随时加购克隆音色额度。优化 Kindle 页面图片匹配和前后翻页，支持跨页完整句朗读，并修复翻页、切换音色时的播放停顿问题。
 ```
 
 ## pt-BR — `pt-BR`
@@ -282,7 +282,7 @@ Termos de Uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/s
 ```
 
 ```text
-A leitura no Safari chegou ao iPhone e ao iPad. Ative a extensão CastReader nos ajustes do Safari para ouvir páginas da web com destaque sincronizado e rolagem automática. Pause, retome, troque a voz e ajuste a velocidade sem sair da página. Também melhoramos a visibilidade e a remoção do destaque em links, textos com formatação variada e seções recolhidas.
+Membros Pro agora podem comprar minutos adicionais de voz clonada a qualquer momento. Melhoramos a correspondência das páginas do Kindle, a leitura de frases entre páginas e corrigimos pausas ao virar a página ou trocar de voz.
 ```
 
 ## it — `it`
@@ -354,7 +354,7 @@ Termini di utilizzo (EULA): https://www.apple.com/legal/internet-services/itunes
 ```
 
 ```text
-La lettura in Safari arriva su iPhone e iPad. Attiva l’estensione CastReader nelle impostazioni di Safari per ascoltare le pagine web con evidenziazione sincronizzata e scorrimento automatico. Metti in pausa, riprendi, cambia voce e regola la velocità senza lasciare la pagina. Abbiamo anche migliorato la visibilità e la rimozione dell’evidenziazione nei link, nei testi con formattazioni diverse e nelle sezioni compresse.
+Gli utenti Pro possono ora acquistare minuti aggiuntivi per le voci clonate in qualsiasi momento. Migliorata la corrispondenza delle pagine Kindle e la lettura delle frasi tra una pagina e l’altra. Corrette le pause durante il cambio di pagina o di voce.
 ```
 
 ## fr-FR — `fr-FR`
@@ -426,7 +426,7 @@ Conditions d’utilisation (EULA) : https://www.apple.com/legal/internet-service
 ```
 
 ```text
-La lecture dans Safari est désormais disponible sur iPhone et iPad. Activez l’extension CastReader dans les réglages de Safari pour écouter les pages web avec surlignage synchronisé et défilement automatique. Mettez en pause, reprenez, changez de voix et réglez la vitesse sans quitter la page. Le surlignage s’affiche et s’efface mieux dans les liens, les textes aux formats variés et les sections repliées.
+Les membres Pro peuvent désormais acheter des minutes supplémentaires de voix clonée à tout moment. Cette mise à jour améliore la correspondance des pages Kindle, préserve les phrases entre deux pages et corrige les interruptions lors du changement de page ou de voix.
 ```
 
 ## es-MX — `es-MX`
@@ -498,7 +498,7 @@ Términos de uso (EULA): https://www.apple.com/legal/internet-services/itunes/de
 ```
 
 ```text
-La lectura en Safari llega al iPhone y al iPad. Activa la extensión CastReader en la configuración de Safari para escuchar páginas web con resaltado sincronizado y desplazamiento automático. Pausa, reanuda, cambia de voz y ajusta la velocidad sin salir de la página. También mejoramos la visibilidad y la limpieza del resaltado en enlaces, textos con distintos formatos y secciones contraídas.
+Los miembros Pro ya pueden comprar minutos adicionales de voz clonada en cualquier momento. Mejoramos la correspondencia de páginas de Kindle, la lectura de frases entre páginas y las pausas de reproducción al cambiar de página o de voz.
 ```
 
 ## zh-Hant — `zh-Hant`
@@ -570,7 +570,7 @@ CASTREADER PRO
 ```
 
 ```text
-新增 iPhone 和 iPad Safari 擴充功能朗讀。在 Safari 設定中啟用 CastReader，即可直接在網頁上聽讀，搭配同步反白與自動捲動。無須離開網頁，即可暫停、繼續、切換聲音和調整語速。本次也改善了連結、混合排版和摺疊章節中的反白顯示與清除效果。
+Pro 會員現在可以隨時加購複製聲音額度。改善 Kindle 頁面圖片比對與前後翻頁，支援跨頁完整句朗讀，並修正翻頁、切換聲音時的播放停頓問題。
 ```
 
 ## en-US — `en-US`
@@ -642,7 +642,7 @@ Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/st
 ```
 
 ```text
-Safari reading is now available on iPhone and iPad. Enable the CastReader extension in Safari settings to listen directly on web pages, with synchronized highlighting and automatic scrolling. Pause, resume, change voices and adjust playback speed without leaving the page. This update also improves highlight visibility and cleanup on pages with links, mixed formatting and collapsed sections.
+Pro members can now purchase additional cloned-voice minutes at any time. This update also improves Kindle page matching, keeps sentences together across page turns, and fixes playback pauses when turning pages or changing voices.
 ```
 
 ## de-DE — `de-DE`
@@ -714,7 +714,7 @@ Nutzungsbedingungen (EULA): https://www.apple.com/legal/internet-services/itunes
 ```
 
 ```text
-Vorlesen in Safari ist jetzt auf iPhone und iPad verfügbar. Aktiviere die CastReader-Erweiterung in den Safari-Einstellungen, um Webseiten mit synchroner Hervorhebung und automatischem Scrollen anzuhören. Pausiere, setze die Wiedergabe fort und ändere Stimme oder Tempo direkt auf der Seite. Hervorhebungen werden bei Links, gemischter Formatierung und eingeklappten Abschnitten zuverlässiger angezeigt und entfernt.
+Pro-Mitglieder können jetzt jederzeit zusätzliche Minuten für geklonte Stimmen kaufen. Dieses Update verbessert die Zuordnung von Kindle-Seiten und liest Sätze über Seitengrenzen hinweg weiter. Wiedergabepausen beim Umblättern und Stimmenwechsel wurden behoben.
 ```
 
 ## hi — `hi`
@@ -786,5 +786,5 @@ CastReader का हर दिन मुफ़्त उपयोग करे�
 ```
 
 ```text
-अब iPhone और iPad पर Safari में वेब पेज सुनें। Safari की सेटिंग में CastReader एक्सटेंशन चालू करें और पेज पर ही आवाज़ के साथ हाइलाइट तथा अपने आप स्क्रॉल होने की सुविधा पाएँ। पेज छोड़े बिना रोकें, फिर शुरू करें, आवाज़ बदलें और गति चुनें। लिंक, अलग-अलग फ़ॉर्मैट वाले टेक्स्ट और बंद सेक्शन में हाइलाइट दिखने और हटने के तरीके को भी बेहतर बनाया गया है।
+Pro सदस्य अब किसी भी समय क्लोन की गई आवाज़ के लिए अतिरिक्त मिनट खरीद सकते हैं। Kindle पेज की छवियों का मिलान और आगे-पीछे पेज बदलना बेहतर किया गया है। पेज बदलने पर वाक्य पूरे पढ़े जाते हैं और पेज या आवाज़ बदलते समय आने वाले प्लेबैक विराम ठीक किए गए हैं।
 ```

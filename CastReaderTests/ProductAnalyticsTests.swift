@@ -3,9 +3,7 @@ import XCTest
 
 final class ProductAnalyticsTests: XCTestCase {
     func testCanonicalContractMatchesIOSCasesAndLegacyMappings() throws {
-        let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let root = TestRepository.root
         let contractURL = root.appendingPathComponent("docs/analytics/mobile-events-v2.json")
         guard FileManager.default.fileExists(atPath: contractURL.path) else {
             throw XCTSkip("工程内 analytics 合同仅在 host 测试环境可读")
@@ -1231,9 +1229,7 @@ final class ProductAnalyticsTests: XCTestCase {
 @MainActor
 final class AppFirstOpenServiceTests: XCTestCase {
     func testProductionStartupFreezesClassificationBeforeAppDefaultsAndStartsDelivery() throws {
-        let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let root = TestRepository.root
         let appURL = root.appendingPathComponent("CastReader/CastReaderApp.swift")
         guard FileManager.default.fileExists(atPath: appURL.path) else {
             throw XCTSkip("startup source contract requires the repository checkout")

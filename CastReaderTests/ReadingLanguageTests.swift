@@ -753,9 +753,7 @@ final class ReadingLanguageTests: XCTestCase {
     // MARK: - Helpers
 
     private func repositorySources(_ paths: [String]) throws -> [String: String] {
-        let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()   // CastReaderTests
-            .deletingLastPathComponent()   // repository root
+        let root = TestRepository.root
         var sources: [String: String] = [:]
         for path in paths {
             sources[path] = try String(

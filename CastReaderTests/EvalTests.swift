@@ -248,6 +248,20 @@ final class EvalTests: XCTestCase {
     第三段。链式预取保证播放始终领先当前一段，连续朗读不卡顿。
     """
 
+    /// The foreground producer deliberately waits once its audio buffer is full.
+    /// Observe the completed next-page buffer without waiting for a 30-second
+    /// foreground fixture to drain or for the app scene to replace its owner.
+    @MainActor
+    private func waitForReadyPrefetch(_ vm: ReadAloudViewModel, index: Int) async throws {
+        for _ in 0..<250 {
+            if vm.dbgPrefetchedIndex == index,
+               vm.dbgPrefetchingIndex != index,
+               !vm.dbgPrefetchedSegments.isEmpty { return }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTFail("Next paragraph did not finish prefetching within five seconds")
+    }
+
     /// Prefetch requires an owned foreground paragraph with playable audio.
     /// Exercise that prerequisite through generation rather than seeding VM state.
     @MainActor
@@ -266,8 +280,7 @@ final class EvalTests: XCTestCase {
         await vm.dbgPreloadNext(after: readable[0])
         XCTAssertTrue(fixture.requests.isEmpty, "Inactive readers must not consume prefetch quota")
         vm.dbgGenerate(readable[0])
-        await vm.dbgWaitGeneration()
-        await vm.dbgWaitPrefetch()
+        try await waitForReadyPrefetch(vm, index: readable[1])
 
         XCTAssertEqual(vm.dbgPrefetchedIndex, readable[1])
         let segment = try XCTUnwrap(vm.dbgPrefetchedSegments.first)
@@ -296,8 +309,7 @@ final class EvalTests: XCTestCase {
         XCTAssertEqual(readable.count, 2)
 
         vm.dbgGenerate(readable[0])
-        await vm.dbgWaitGeneration()
-        await vm.dbgWaitPrefetch()
+        try await waitForReadyPrefetch(vm, index: readable[1])
         let cached = vm.dbgPrefetchedSegments
         XCTAssertFalse(cached.isEmpty)
         let requestCount = fixture.requests.count

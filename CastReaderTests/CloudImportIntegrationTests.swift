@@ -736,9 +736,7 @@ final class CloudImportIntegrationTests: XCTestCase {
     }
 
     func testCloudImportCoreHasNoBackendUploadDependency() throws {
-        let repositoryRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let repositoryRoot = TestRepository.root
         let relativePaths = [
             "CastReader/Models/CloudStorageModels.swift",
             "CastReader/Services/CloudStorageProvider.swift",
