@@ -1,6 +1,6 @@
 # iOS 1.2.47（70）发布记录
 
-状态（2026-09-29 12:20 CST）：功能整合及真机验收通过，待主线合并、正式归档上传和最终提交。尚未进入审核。
+状态：**已于 2026-09-29 12:46:34 CST 提交，App 1.2.47（70）、额度商品和 Review Submission 均为 WAITING_FOR_REVIEW。** 审核通过后自动发布；此状态不表示已经审核通过或上线。
 
 ## 发布身份与范围
 
@@ -53,6 +53,21 @@ ASC App `6757636395`；基线版本 `f835f4df-b17b-4c1b-a71f-50de22006ae7`，App
 
 IAP 版本 `f267f0a8-d537-4fa7-9cc1-1796fc44b71c`，11 语商品名称/说明与审核备注已完成。12:18 从真机亮屏导出未经编辑的 1290×2796 购买页，`iap-review-credits-final.png` 已目视确认。先前黑图/锁屏图不上传。最终同批需包含 App 版本与 IAP 版本；提交工具 6 个隔离模拟 API 测试及两项目在线 dry-run 通过。
 
-## 待补最终回执
+## 最终归档与提交回执
 
-主线合并提交、不可变归档/IPA 摘要、Build ID 与 VALID/APP_STORE_ELIGIBLE、审核截图 COMPLETE、最终 audit、Review Submission ID/时间，以及版本和审核单 WAITING_FOR_REVIEW 状态在完成后填写。当前不得把验收通过或草稿当成审核完成。
+PR #2 已合入 main，归档提交 `fadb18a727c96c6ada3353e08882fe1ed34ccf74`；416 个验收应用文件逐一一致，归档前祖先门禁再次通过。正式 `xcodebuild archive` 成功，仅用仓库 AppStoreExportOptions.plist 经官方 `-exportArchive` 上传一次。2026-09-29 12:40:40 CST 回执 success，errors/warnings 均为空；无改包或重复上传。
+
+归档 `/Users/xuxuheng/Desktop/CastReader-1.2.47-Release/CastReader-1.2.47-70.xcarchive`，归档文件清单 SHA-256 `53b8e53eaa4e5cecc7ce7c6a8d7d608654eccf5e0b831d3bd319cedc71cf30e8`。官方 export 仅向归档根 Info.plist 写入成功分发记录，App/扩展全部原文件未变化；含该记录的最终清单摘要 `102b5aeaa49b6b433abe851eccc2f05fec026a9c6a5f8dd489e7d3e6f0924d3f`。开发签名归档由官方 export 重新分发签名；不把归档 get-task-allow 值冒称最终商店签名。九语各 1,520 个编译 key、四组件版本/设备族/团队/严格签名及加密声明通过；203 文件/54 标志扫描 0 命中。
+
+Build ID `e0d0175f-e83f-47a9-8055-3bba0f09fd19`，70 / 1.2.47，`VALID / APP_STORE_ELIGIBLE`，usesNonExemptEncryption=false，准确绑定本版。最终 ASC audit 无错误：11 locale、原标题/副标题全部不变，55 张截图均 COMPLETE（9 语 iPhone 45 张 + 中英文 iPad 10 张；zh-Hant、es-MX 沿用主语言回退）。审核资料、AFTER_APPROVAL 均保留。
+
+内购审核截图 `d463dec3-f954-4c3f-b3de-c95a1dfe7a9e` 已 COMPLETE、无错误/警告；商品先到 READY_TO_SUBMIT，再由 ASC 网站加入同一审核草稿。dry-run 精确验证只有本版 App 和目标 IAP 版本两项，最终从网站执行提交。
+
+- 提交时间：**2026-09-29T04:46:34.519Z / 北京时间 12:46:34**。
+- Review Submission：`e0120f7a-1331-468f-adb9-0b1f045c352a`，**WAITING_FOR_REVIEW**。
+- App version：`138a0a05-56de-42f7-b841-31fdfb842418`，**WAITING_FOR_REVIEW**，构建 70。
+- IAP `6816697780` / `ai.castreader.clone.minutes120`，**WAITING_FOR_REVIEW**，对应版本 `f267f0a8-d537-4fa7-9cc1-1796fc44b71c`。
+
+ASC 网页显示“已提交 2 个项目”，两项均“等待审核”；官方 API 回读上述状态，且没有再次执行写入。审核单内 item 的 API 子状态仍为 READY_FOR_REVIEW 是该接口返回值，不能把它与父审核单、App 或 IAP 的实际 WAITING_FOR_REVIEW 混淆。
+
+[查看审核单](https://appstoreconnect.apple.com/apps/6757636395/distribution/reviewsubmissions/details/e0120f7a-1331-468f-adb9-0b1f045c352a)。可提交的去敏回执、最终测试与源身份摘要见 [reports/ios-release-1.2.47](../reports/ios-release-1.2.47/)。原始私有证据留在上述本地目录。

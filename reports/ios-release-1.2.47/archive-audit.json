@@ -1,0 +1,85 @@
+{
+  "archive": "/Users/xuxuheng/Desktop/CastReader-1.2.47-Release/CastReader-1.2.47-70.xcarchive",
+  "products": [
+    {
+      "bundle": "com.same.castreader",
+      "version": "1.2.47",
+      "build": "70",
+      "families": [
+        1,
+        2
+      ],
+      "executableSHA256": "51cbda9cca792c56ca1776695046df4fcedb9fc47afd7be0511110bc34ad20c1",
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": true
+    },
+    {
+      "bundle": "com.same.castreader.SafariExtension",
+      "version": "1.2.47",
+      "build": "70",
+      "families": [
+        1,
+        2
+      ],
+      "executableSHA256": "615c641eadf478443ea67cf03723b7f8692ffdcce0f69ffe195769812e8a6590",
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": true
+    },
+    {
+      "bundle": "com.same.castreader.ShareExtension",
+      "version": "1.2.47",
+      "build": "70",
+      "families": [
+        1,
+        2
+      ],
+      "executableSHA256": "41a4d4cf8018ef115c62ca900ad37a4a0f2a54a8b161598c4c9baffc2c929fd3",
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": true
+    },
+    {
+      "bundle": "com.same.castreader.Widget",
+      "version": "1.2.47",
+      "build": "70",
+      "families": [
+        1,
+        2
+      ],
+      "executableSHA256": "15a67dd0be9aff0b54511189099d4ec6e91c25691c382ae7446343a49d265803",
+      "team": "KQW6UNZE8J",
+      "getTaskAllow": true
+    }
+  ],
+  "compiledLanguages": [
+    "de.lproj",
+    "en.lproj",
+    "es.lproj",
+    "fr.lproj",
+    "hi.lproj",
+    "it.lproj",
+    "ja.lproj",
+    "pt-BR.lproj",
+    "pt.lproj",
+    "zh-Hans.lproj"
+  ],
+  "compiledKeysPerLocale": {
+    "en": 1520,
+    "zh-Hans": 1520,
+    "ja": 1520,
+    "es": 1520,
+    "fr": 1520,
+    "de": 1520,
+    "pt-BR": 1520,
+    "it": 1520,
+    "hi": 1520
+  },
+  "nonExemptEncryption": false,
+  "safariContentSHA256": "192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75",
+  "archiveFileCount": 216,
+  "archiveManifestSHA256": "53b8e53eaa4e5cecc7ce7c6a8d7d608654eccf5e0b831d3bd319cedc71cf30e8",
+  "postOfficialExportManifestSHA256": "102b5aeaa49b6b433abe851eccc2f05fec026a9c6a5f8dd489e7d3e6f0924d3f",
+  "officialExportChangedFiles": [
+    "Info.plist"
+  ],
+  "allArchivedAppAndExtensionFilesUnchanged": true
+}

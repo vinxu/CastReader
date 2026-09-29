@@ -1,0 +1,38 @@
+{
+  "version": "1.2.47",
+  "build": "70",
+  "sourceCommit": "60ec3823844e429c9b3dc224be5164cd8f399849",
+  "archiveCommit": "fadb18a727c96c6ada3353e08882fe1ed34ccf74",
+  "sourceFileCount": 416,
+  "sourceManifestSHA256": "9f2ee75b8b30cddc7aef445517d6c49cdca3a535d175ab6c6dc3148514f76b5c",
+  "device": "iPhone 15 Pro Max, iOS 26.7 (23H24)",
+  "simulatorUsed": false,
+  "regionalMatrix": {
+    "CN/zh": {
+      "ReadRegular": "PASS",
+      "ReadCommunity": "PASS",
+      "ReadPrivate": "PASS",
+      "ExplainRegular": "PASS",
+      "ExplainCommunity": "PASS",
+      "ExplainPrivate": "PASS"
+    },
+    "Global/en": {
+      "ReadRegular": "PASS",
+      "ReadCommunity": "PASS",
+      "ReadPrivate": "PASS",
+      "ExplainRegular": "PASS",
+      "ExplainCommunity": "PASS",
+      "ExplainPrivate": "PASS"
+    }
+  },
+  "releaseConfigurationSupplement": "PASS, normal development-signed Release app; actual generation/playback/highlights/marks and continuation",
+  "rawEvidenceDirectory": "/Users/xuxuheng/Desktop/CastReader-1.2.47-Release/evidence",
+  "evidenceLimitations": [
+    "Warm voices; cold preparation covered by deterministic tests",
+    "Core tests use development signatures, not App Store installation",
+    "Release DEBUG reader file logging inactive; console and UI observations used",
+    "Kindle handoff metrics are application events, not acoustic silence measurement",
+    "Confirmed-zero purchase exercised selection-gate retry/resume; dedicated background Continue button not claimed",
+    "Physical full run plus affected localization rerun combined; 20 documented skips"
+  ]
+}

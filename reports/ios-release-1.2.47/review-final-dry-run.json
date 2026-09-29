@@ -1,0 +1,29 @@
+{
+  "mode": "dry-run",
+  "selectedSubmission": {
+    "id": "e0120f7a-1331-468f-adb9-0b1f045c352a",
+    "state": "READY_FOR_REVIEW",
+    "submittedDate": null,
+    "items": [
+      {
+        "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw",
+        "state": "READY_FOR_REVIEW",
+        "appStoreVersionId": null,
+        "inAppPurchaseVersionId": "f267f0a8-d537-4fa7-9cc1-1796fc44b71c"
+      },
+      {
+        "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2",
+        "state": "READY_FOR_REVIEW",
+        "appStoreVersionId": "138a0a05-56de-42f7-b841-31fdfb842418",
+        "inAppPurchaseVersionId": null
+      }
+    ]
+  },
+  "plannedWrites": [
+    {
+      "method": "PATCH",
+      "path": "/v1/reviewSubmissions/<id>",
+      "submitted": true
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "evidenceMode": "Full physical suite plus affected complete localization suite after 154 additive translations; raw failed runs retained. Not a single all-green xcodebuild invocation.",
+  "fullRun": "physical-unit-tests-r5-full",
+  "affectedRerun": "physical-unit-tests-r6-localization",
+  "totals": {
+    "Passed": 1930,
+    "Skipped": 20
+  },
+  "skipped": [
+    "CloneCreditPurchaseTests/testAnotherAccountCannotClaimPendingTransaction()",
+    "CloneCreditPurchaseTests/testAskToBuyDoesNotCreditBeforeApprovalAndUpdatesDeliverAfterApproval()",
+    "CloneCreditPurchaseTests/testCancellationDoesNotChargeOrBlockAnotherPurchase()",
+    "CloneCreditPurchaseTests/testDismissedAndCancelledCreditWaitsReleaseTheRequest()",
+    "CloneCreditPurchaseTests/testExhaustedRequestWaitsForPurchaseAndResumesOnlyAfterDelivery()",
+    "CloneCreditPurchaseTests/testLostAcknowledgementRecoversOnFreshStoreWithoutDoubleCredit()",
+    "CloneCreditPurchaseTests/testPaymentOutageRecoveryAndProExpiryRetainsPaidBalance()",
+    "CloneCreditPurchaseTests/testPurchaseAtPositiveBalanceRepeatPurchaseAndServerReplay()",
+    "CloneCreditPurchaseTests/testPurchasedBalancePaysForLiveGeneratedAudioAndReplayIsFree()",
+    "CloneCreditPurchaseTests/testZeroBalancePurchaseGenerateReplayAndFailureRelease()",
+    "EpubNativeEngineTests/testDocumentBuilderFromEPUB()",
+    "EpubNativeEngineTests/testParseRealEpub()",
+    "EpubNavigationTests/testAllLocalEPUBsProduceSafeIndexedNavigationOrRejectInvalidFiles()",
+    "EpubNavigationTests/testReportedEPUBUsesGuideAndEveryDestinationResolves()",
+    "EvalTests/testExplainAnchorRate_Live()",
+    "GoogleBooksWebBridgeTests/testRealPlayBooksShellInstallsRelayOnly()",
+    "LocalDocumentCacheTests/testUserPDFReopenPerformanceSample()",
+    "PDFImportMemoryTests/testReportedMoneyPDFImportsEveryPageWithoutExcessiveRasterMemory()",
+    "ServiceRoutingTests/testLiveDirectPresetNineLanguagesAndSourceBoundaries()",
+    "YouTubeTranscriptServiceTests/testOptInLiveExtractionForInjectedPublicURL()"
+  ],
+  "unresolvedFailures": []
+}

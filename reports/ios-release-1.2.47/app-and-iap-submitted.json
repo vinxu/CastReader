@@ -1,0 +1,11 @@
+{
+  "iap": {
+    "id": "6816697780",
+    "state": "WAITING_FOR_REVIEW"
+  },
+  "version": {
+    "id": "138a0a05-56de-42f7-b841-31fdfb842418",
+    "state": "WAITING_FOR_REVIEW",
+    "releaseType": "AFTER_APPROVAL"
+  }
+}

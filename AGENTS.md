@@ -1,5 +1,13 @@
 # AGENTS.md
 
+## iOS 1.2.47 额度购买与 Kindle 修复已送审（2026-09-29）
+
+- 最新已验收并送审的应用基线为 main 合并 `fadb18a727c96c6ada3353e08882fe1ed34ccf74`（PR #2）；验收应用源码 `60ec382` 的 416 文件与该归档逐一一致，冻结摘要 `9f2ee75b8b30cddc7aef445517d6c49cdca3a535d175ab6c6dc3148514f76b5c`。工作树 `/Users/xuxuheng/.codex/worktrees/ios-release-1.2.47/CastReader`，不得从主目录旧分支覆盖真机。
+- App/Share/Widget/Safari 均为 **1.2.47（70）**、设备族 1/2；保留 1.2.46 Safari 原资源。包含 Pro 克隆音色额度购买、Kindle 原生 BLOB 页序/跨页整句/预取与播放衔接修复。
+- 仅真机验收：CN 中文与 Global 英语 Read/Explain × 常规/社区/私人声音全部通过，另有 Release 配置补验；真实 Apple Sandbox 正余额与零余额购买、取消、入账/扣费/续播及缓存不扣费已验证。完整单测与受影响本地化复测合计 1,930 通过、20 明确跳过、0 未解决失败，不是单次全绿结果。
+- Build `e0d0175f-e83f-47a9-8055-3bba0f09fd19` 为 VALID / APP_STORE_ELIGIBLE；审核单 `e0120f7a-1331-468f-adb9-0b1f045c352a` 于北京时间 **12:46:34** 提交，App 与商品 `ai.castreader.clone.minutes120` 同批，版本/商品/审核单均 WAITING_FOR_REVIEW。审核通过自动发布，不冒称已上线。完整证据与边界见 `docs/iOS-1.2.47-Release-Report.md`。
+- 后续发布从最新远端 main 增量迭代，保留上述实现，继续运行 `bash scripts/build-voice-toc-integration.sh --check`；下方旧版本基线只作历史记录。
+
 ## iOS 1.2.46 Safari 已送审（2026-09-27）
 
 - 最终应用源码 `3051b15` 已合入并推送 `main`；App/Share/Widget/Safari **1.2.46（69）**，均支持 iPhone/iPad。Build `5db69625-49f7-4f61-ad16-e591ae07d047` 为 VALID / APP_STORE_ELIGIBLE；审核单 `dbe9c7b9-9cc8-4aa1-a78e-0f4dfd0d962f` 于北京时间 **12:51:55** 提交，版本与审核单均 WAITING_FOR_REVIEW，审核通过自动发布。最终布局自动回归通过，但新布局最后一次真机目测因镜像超时未完成，用户随后明确要求直接提交；不得把该项写成 PASS。详见 `docs/iOS-1.2.46-Release-Report.md`。

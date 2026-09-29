@@ -1,0 +1,17 @@
+{
+  "adamId": "6757636395",
+  "destination": "upload",
+  "identifier": "e0d0175f-e83f-47a9-8055-3bba0f09fd19",
+  "task": "distribute",
+  "teamID": "KQW6UNZE8J",
+  "uploadDestination": "App Store",
+  "uploadedBuildNumber": "70",
+  "uploadEvent": {
+    "date": "2026-09-29T04:40:40Z",
+    "shortTitle": "Uploaded",
+    "state": "success",
+    "title": "Uploaded to Apple",
+    "errors": [],
+    "warnings": []
+  }
+}
