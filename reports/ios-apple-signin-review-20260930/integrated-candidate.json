@@ -439,5 +439,16 @@
     "Four-platform final acceptance, including missing narration timing, Google cold chapter transition and Kobo access verification",
     "iPhone small-screen login and real Apple authorization/cancellation checks"
   ],
-  "unrelatedWorktreeModified": false
+  "unrelatedWorktreeModified": false,
+  "userReleaseAuthorization": {
+    "date": "2026-09-30",
+    "instruction": "直接提交和审核，合并起来提交；剩余问题下个版本迭代，不等待其他 agent 的后续测试。",
+    "frozenCandidate": "2c6c8c9",
+    "scope": [
+      "2f89c00 Apple login parity",
+      "d390c0d four-platform pagination"
+    ],
+    "coreGate": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+    "futureReleaseGatesUnchanged": true
+  }
 }

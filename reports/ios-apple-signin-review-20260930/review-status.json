@@ -31,5 +31,16 @@
   "loginFixCommit": "2f89c00",
   "integrationCommit": "e6c4c5d29790d44e685a26463085374b369fde83",
   "candidateBuild": 71,
-  "releaseGate": "NOT_RUN for final integrated candidate; d390c0d reports outstanding acceptance failures and missing evidence."
+  "releaseGate": "User explicitly authorized submitting the frozen integrated candidate despite incomplete final core-service and four-platform acceptance; missing evidence remains NOT_RUN.",
+  "userReleaseAuthorization": {
+    "date": "2026-09-30",
+    "instruction": "直接提交和审核，合并起来提交；剩余问题下个版本迭代，不等待其他 agent 的后续测试。",
+    "frozenCandidate": "2c6c8c9",
+    "scope": [
+      "2f89c00 Apple login parity",
+      "d390c0d four-platform pagination"
+    ],
+    "coreGate": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+    "futureReleaseGatesUnchanged": true
+  }
 }

@@ -1,3 +1,8 @@
+RESUBMISSION — BUILD 71 — GUIDELINE 4
+Sign in with Apple is now a full-width native Apple button with the complete “Continue with Apple” label. It appears first, directly above the Google or phone login button, with the same width and 50-point height. Both options are visible without scrolling, including iPad portrait and landscape. The native Apple button adapts to light and dark appearance. Please open Settings > Sign in to verify the updated login screen. This replaces the small Apple icon shown in Build 70.
+
+This build also includes pagination, playback handoff and subtitle improvements for connected Kindle, WeRead, Google Play Books and Kobo reading flows. The cloned-voice credits feature and its associated in-app purchase remain part of this submission.
+
 Version 1.2.47 adds cloned-voice generation credits and fixes Kindle page ordering, cross-page sentences and playback handoffs. Please review ai.castreader.clone.minutes120 with this app version.
 
 CREDIT PURCHASE REVIEW
