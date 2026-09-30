@@ -1,0 +1,59 @@
+{
+  "devicesAndConfigurations": [
+    {
+      "device": {
+        "architecture": "arm64",
+        "deviceId": "BA9ADC22-E48F-49F1-B771-F9C42C57BA13",
+        "deviceName": "CastReader Login Review iPad",
+        "modelName": "iPad Air 11-inch (M3)",
+        "osBuildNumber": "23F77",
+        "osVersion": "26.5",
+        "platform": "iOS Simulator"
+      },
+      "expectedFailures": 0,
+      "failedTests": 0,
+      "passedTests": 26,
+      "skippedTests": 0,
+      "testPlanConfiguration": {
+        "configurationId": "1",
+        "configurationName": "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription": "CastReader · Built with macOS 26.2",
+  "expectedFailures": 0,
+  "failedTests": 0,
+  "finishTime": 1790782871.197,
+  "passedTests": 26,
+  "result": "Passed",
+  "skippedTests": 0,
+  "startTime": 1790782532.142,
+  "statistics": [],
+  "testFailures": [],
+  "title": "Test - CastReader",
+  "topInsights": [],
+  "totalTestCount": 26,
+  "resultBundle": "/tmp/CastReaderAppleSignInIntegrated71-20260930.xcresult",
+  "scope": "25 AppRegionTests plus one login layout UI test covering en/de global and zh-Hans CN, each portrait/landscape, including declining CN consent. Does not establish real Apple account authorization or core reading-service acceptance.",
+  "earlierAttempts": [
+    {
+      "result": "build setup failure",
+      "reason": "Ignored Secrets.xcconfig absent from new worktree; existing local configuration securely copied."
+    },
+    {
+      "result": "25 unit passed; layout failed during rotation",
+      "reason": "UIKit accessibility geometry sampled before rotation settled; added bounded orientation/frame wait in UI test only. Application source unchanged."
+    },
+    {
+      "result": "login UI passed before feature integration",
+      "resultBundle": "/tmp/CastReaderAppleSignInReview20260930-r3.xcresult"
+    }
+  ],
+  "extraChecks": [
+    "release ancestry gate PASS",
+    "preflight four products 1.2.47 (71), 11 ASC locales PASS",
+    "WeRead JS contracts PASS",
+    "native painted-position/same-chapter restore contract PASS",
+    "Safari packaged resources and version contract PASS"
+  ]
+}
