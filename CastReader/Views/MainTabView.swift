@@ -162,7 +162,7 @@ struct MainTabView: View {
     @StateObject private var voiceCloneStore = VoiceCloneStore.shared
     @StateObject private var auth = AuthService.shared
     @StateObject private var growthLoop = GrowthLoopConversionCoordinator.shared
-    @ObservedObject private var audioPlayer = AudioPlayerService.shared
+    private let audioPlayer = AudioPlayerService.shared
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openWindow) private var openWindow
     @State private var viewport = CGSize.zero
@@ -386,8 +386,7 @@ struct MainTabView: View {
             HomeView(
                     shareInboxUnreadCount: shareInboxUnreadCount,
                     isSurfaceActive: selectedTab == 0
-                        && !coordinator.isReaderPresented
-                        && !offlineCenter.isPresented,
+                        && !hasPresentedReader,
                     onOpenShareInbox: {
                         reloadShareInbox(showWhenPending: false)
                         markShareInboxSeen()
@@ -665,6 +664,11 @@ struct MainTabView: View {
             isRegionResolved = true
         }
         .onChange(of: reviewOpportunityState) {
+            restartReviewRequestMonitor()
+        }
+        .onReceive(audioPlayer.reviewQuiescencePublisher) { _ in
+            // Read the committed player state, including a recheck inside the
+            // two-second review gate. Media time updates do not invalidate UI.
             restartReviewRequestMonitor()
         }
         .onChange(of: coordinator.session?.id) { sessionID in

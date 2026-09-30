@@ -1,3 +1,4 @@
+import { sourceText, sourceRange } from './source-text'
 // 解读手写标注渲染：复用扩展 handwritten-marks 的画笔，把 native 下发的
 // {paragraphIndex, charStart, charEnd, action, seed} 在 DOM 段落上定位 Range → SVG 叠层手写动画。
 // SVG 用 document 绝对坐标（随页面滚动），覆盖全文。
@@ -114,24 +115,7 @@ export function createMarkRenderer(
 
   // 在 element 的 textContent 第 [start,end) 字符建 Range（按 text node 累积偏移）。
   function charRange(el: HTMLElement, start: number, end: number): Range | null {
-    const doc = el.ownerDocument
-    const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT)
-    let offset = 0
-    let startNode: Node | null = null
-    let startOff = 0
-    let endNode: Node | null = null
-    let endOff = 0
-    let node: Node | null
-    while ((node = walker.nextNode())) {
-      const len = node.textContent?.length ?? 0
-      if (!startNode && offset + len > start) { startNode = node; startOff = start - offset }
-      if (offset + len >= end) { endNode = node; endOff = end - offset; break }
-      offset += len
-    }
-    if (!startNode || !endNode) return null
-    const r = doc.createRange()
-    try { r.setStart(startNode, Math.max(0, startOff)); r.setEnd(endNode, Math.max(0, endOff)) } catch { return null }
-    return r
+    return sourceRange(el, start, end)
   }
 
   function appendPath(s: SVGSVGElement, d: string, strokeWidth: number, opacity: number): void {

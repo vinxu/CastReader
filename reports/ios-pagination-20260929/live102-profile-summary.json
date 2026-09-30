@@ -1,0 +1,337 @@
+{
+  "main_thread_cpu_ms": 6815.0,
+  "boundary_sampled_cpu_ms": 54.0,
+  "boundary_interval": [
+    "17:57:17.297",
+    "17:57:17.448"
+  ],
+  "boundary_app_frames_inclusive_ms": [
+    [
+      "static CastReaderApp.$main()",
+      41.0
+    ],
+    [
+      "__debug_main_executable_dylib_entry_point",
+      41.0
+    ],
+    [
+      "closure #1 in closure #11 in KindleBookViewModel.bindLivePlayback(document:)",
+      13.0
+    ],
+    [
+      "KindleBookViewModel.advanceToNextExplainPageIfNeeded()",
+      13.0
+    ],
+    [
+      "partial apply for closure #1 in closure #11 in KindleBookViewModel.bindLivePlayback(document:)",
+      13.0
+    ],
+    [
+      "thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)",
+      13.0
+    ],
+    [
+      "partial apply for thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)",
+      13.0
+    ],
+    [
+      "KindleBookViewModel.advanceByNativePageTurnAndContinue(oldKey:continuationMode:status:reason:appReviewReadSession:recoveryAttempt:preparedExplainTurn:)",
+      10.0
+    ],
+    [
+      "KindleBookViewModel.activatePreparedNextPage(_:oldKey:startOverride:startKindOverride:stagedExplainTurn:)",
+      10.0
+    ],
+    [
+      "KindleBookViewModel.resetViewModels(document:restoresReadingPosition:)",
+      9.0
+    ],
+    [
+      "ExplainViewModel.init(document:analyticsContext:speechGenerator:quickReadService:now:)",
+      7.0
+    ],
+    [
+      "ExplainViewModel.__allocating_init(document:analyticsContext:speechGenerator:quickReadService:now:)",
+      7.0
+    ],
+    [
+      "KindleBookViewModel.makeExplainVM(document:)",
+      7.0
+    ],
+    [
+      "static KindleFootnoteSpeech.prepare(document:skipReferences:)",
+      7.0
+    ],
+    [
+      "static KindleFootnoteSpeech.pairedFootnotes(_:)",
+      6.0
+    ],
+    [
+      "static KindleFootnoteSpeech.matches(_:_:)",
+      4.0
+    ],
+    [
+      "NSRegularExpression.__allocating_init(pattern:options:)",
+      4.0
+    ],
+    [
+      "@nonobjc NSRegularExpression.init(pattern:options:)",
+      4.0
+    ],
+    [
+      "KindleBookView.body.getter",
+      3.0
+    ],
+    [
+      "protocol witness for View.body.getter in conformance KindleBookView",
+      3.0
+    ],
+    [
+      "KindleBookViewModel.mode.getter",
+      2.0
+    ],
+    [
+      "AudioPlayerService.handlePlayerDidFinishPlaying(itemID:)",
+      2.0
+    ],
+    [
+      "AudioPlayerService.playerDidFinishPlaying(_:)",
+      2.0
+    ],
+    [
+      "@objc AudioPlayerService.playerDidFinishPlaying(_:)",
+      2.0
+    ],
+    [
+      "closure #1 in closure #1 in KindleBookView.body.getter",
+      2.0
+    ],
+    [
+      "closure #5 in closure #1 in KindleBookView.header.getter",
+      2.0
+    ],
+    [
+      "closure #1 in KindleBookView.body.getter",
+      2.0
+    ],
+    [
+      "closure #1 in KindleBookView.header.getter",
+      2.0
+    ],
+    [
+      "closure #3 in closure #5 in closure #1 in KindleBookView.header.getter",
+      2.0
+    ],
+    [
+      "KindleBookView.header.getter",
+      2.0
+    ],
+    [
+      "static KindleFootnoteSpeech.markers(_:)",
+      2.0
+    ],
+    [
+      "KindleBookViewModel.handleContinuousReadHandoffProgress(currentTime:duration:segment:)",
+      1.0
+    ],
+    [
+      "thunk for @escaping @callee_guaranteed (@unowned Double, @unowned Double, @guaranteed AudioSegment?) -> ()",
+      1.0
+    ],
+    [
+      "__swift_memcpy1_1",
+      1.0
+    ],
+    [
+      "closure #6 in KindleBookViewModel.bindLivePlayback(document:)",
+      1.0
+    ],
+    [
+      "closure #1 in closure #2 in SpeedMenu.body.getter",
+      1.0
+    ],
+    [
+      "closure #3 in closure #1 in closure #2 in SpeedMenu.body.getter",
+      1.0
+    ],
+    [
+      "protocol witness for View.body.getter in conformance SpeedMenu",
+      1.0
+    ],
+    [
+      "SpeedMenu.body.getter",
+      1.0
+    ],
+    [
+      "closure #2 in SpeedMenu.body.getter",
+      1.0
+    ]
+  ],
+  "app_frames_inclusive_ms": [
+    [
+      "static CastReaderApp.$main()",
+      6606.0
+    ],
+    [
+      "__debug_main_executable_dylib_entry_point",
+      6606.0
+    ],
+    [
+      "protocol witness for View.body.getter in conformance SpeedMenu",
+      222.0
+    ],
+    [
+      "SpeedMenu.body.getter",
+      219.0
+    ],
+    [
+      "thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)",
+      203.0
+    ],
+    [
+      "partial apply for thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)",
+      203.0
+    ],
+    [
+      "closure #1 in AudioPlayerService.addTimeObserver()",
+      173.0
+    ],
+    [
+      "thunk for @escaping @callee_guaranteed @Sendable (@unowned CMTime) -> ()",
+      173.0
+    ],
+    [
+      "AudioPlayerService.currentTime.setter",
+      126.0
+    ],
+    [
+      "closure #2 in SpeedMenu.body.getter",
+      104.0
+    ],
+    [
+      "closure #1 in closure #2 in SpeedMenu.body.getter",
+      95.0
+    ],
+    [
+      "thunk for @escaping @callee_guaranteed (@unowned Double, @unowned Double, @guaranteed AudioSegment?) -> ()",
+      82.0
+    ],
+    [
+      "closure #6 in KindleBookViewModel.bindLivePlayback(document:)",
+      82.0
+    ],
+    [
+      "KindleBookViewModel.maybePrepareExplainPageDuringAudioTail()",
+      77.0
+    ],
+    [
+      "closure #3 in closure #1 in closure #2 in SpeedMenu.body.getter",
+      76.0
+    ],
+    [
+      "thunk for @escaping @callee_guaranteed @Sendable () -> ()",
+      57.0
+    ],
+    [
+      "closure #1 in closure #2 in ReaderSceneRegistry.register(_:)",
+      56.0
+    ],
+    [
+      "Collection.map<A, B>(_:)",
+      55.0
+    ],
+    [
+      "ExplainViewModel.prefetchFirstBlock(for:previousSummary:textFingerprint:)",
+      51.0
+    ],
+    [
+      "closure #1 in KindleBookViewModel.startExplainFirstBlockPrefetch(afterKey:pageKey:document:epoch:)",
+      51.0
+    ],
+    [
+      "partial apply for closure #1 in KindleBookViewModel.startExplainFirstBlockPrefetch(afterKey:pageKey:document:epoch:)",
+      51.0
+    ],
+    [
+      "UIImage.__allocating_init(data:)",
+      50.0
+    ],
+    [
+      "@nonobjc UIImage.init(data:)",
+      50.0
+    ],
+    [
+      "AppLocalized(_:)",
+      48.0
+    ],
+    [
+      "static KindleFootnoteSpeech.prepare(document:skipReferences:)",
+      48.0
+    ],
+    [
+      "implicit closure #1 in closure #1 in closure #2 in ReaderSceneRegistry.register(_:)",
+      43.0
+    ],
+    [
+      "partial apply for implicit closure #1 in closure #1 in closure #2 in ReaderSceneRegistry.register(_:)",
+      43.0
+    ],
+    [
+      "closure #1 in KindleBookViewModel.startCachingNextPage(afterKey:)",
+      42.0
+    ],
+    [
+      "KindleBookViewModel.captureCandidatePages(afterKey:limit:onCaptured:)",
+      42.0
+    ],
+    [
+      "partial apply for closure #1 in KindleBookViewModel.startCachingNextPage(afterKey:)",
+      42.0
+    ],
+    [
+      "KindleBookViewModel.cacheNextPage(afterKey:epoch:)",
+      42.0
+    ],
+    [
+      "closure #1 in ExplainViewModel.bind()",
+      41.0
+    ],
+    [
+      "static KindleFootnoteSpeech.pairedFootnotes(_:)",
+      41.0
+    ],
+    [
+      "key path getter for ReaderSceneContext.ownsPlayback : ReaderSceneContext",
+      40.0
+    ],
+    [
+      "ReaderSceneContext.ownsPlayback.getter",
+      40.0
+    ],
+    [
+      "ExplainViewModel.onTick(_:)",
+      39.0
+    ],
+    [
+      "AudioPlayerService.hasAudibleProgress.setter",
+      34.0
+    ],
+    [
+      "AudioPlayerService.preparationKey(_:)",
+      33.0
+    ],
+    [
+      "static KindleFootnoteSpeech.matches(_:_:)",
+      32.0
+    ],
+    [
+      "closure #1 in closure #11 in KindleBookViewModel.bindLivePlayback(document:)",
+      31.0
+    ]
+  ],
+  "profile_interval": [
+    "17:56:54.504",
+    "17:57:36.528"
+  ],
+  "limitations": "Statistical inclusive CPU samples overlap. Phone use/audio route interruption occurred in same recording at 17:56:57.807; not continuous acceptance."
+}

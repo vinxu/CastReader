@@ -1,0 +1,173 @@
+{
+  "candidate": 96,
+  "explain_turns": [
+    {
+      "begin": "16:21:47.494",
+      "prior_end": "16:21:47.450",
+      "playing": "16:21:47.692",
+      "ended_to_playing_ms": 242,
+      "begin_to_playing_ms": 198,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=28",
+      "interrupted_within_boundary": false
+    },
+    {
+      "begin": "16:23:24.994",
+      "prior_end": "16:23:24.947",
+      "playing": "16:23:25.158",
+      "ended_to_playing_ms": 211,
+      "begin_to_playing_ms": 164,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=29",
+      "interrupted_within_boundary": false
+    },
+    {
+      "begin": "16:23:53.442",
+      "prior_end": "16:23:53.359",
+      "playing": "16:23:53.668",
+      "ended_to_playing_ms": 309,
+      "begin_to_playing_ms": 226,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=33",
+      "interrupted_within_boundary": false
+    },
+    {
+      "begin": "16:24:20.480",
+      "prior_end": "16:24:20.397",
+      "playing": "16:24:20.700",
+      "ended_to_playing_ms": 303,
+      "begin_to_playing_ms": 220,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=33",
+      "interrupted_within_boundary": false
+    },
+    {
+      "begin": "16:24:44.648",
+      "prior_end": "16:24:44.566",
+      "playing": "16:24:44.864",
+      "ended_to_playing_ms": 298,
+      "begin_to_playing_ms": 216,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=33",
+      "interrupted_within_boundary": false
+    },
+    {
+      "begin": "16:25:12.691",
+      "prior_end": "16:25:12.603",
+      "playing": "16:25:12.934",
+      "ended_to_playing_ms": 331,
+      "begin_to_playing_ms": 243,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=39",
+      "interrupted_within_boundary": false
+    },
+    {
+      "begin": "16:25:46.825",
+      "prior_end": "16:25:46.773",
+      "playing": "16:25:47.058",
+      "ended_to_playing_ms": 285,
+      "begin_to_playing_ms": 233,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40",
+      "interrupted_within_boundary": false
+    },
+    {
+      "begin": "16:26:16.448",
+      "prior_end": "16:26:16.359",
+      "playing": "16:26:16.712",
+      "ended_to_playing_ms": 353,
+      "begin_to_playing_ms": 264,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40",
+      "interrupted_within_boundary": false
+    },
+    {
+      "begin": "16:26:44.971",
+      "prior_end": "16:26:44.875",
+      "playing": "16:26:45.241",
+      "ended_to_playing_ms": 366,
+      "begin_to_playing_ms": 270,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40",
+      "interrupted_within_boundary": false
+    },
+    {
+      "begin": "16:27:16.770",
+      "prior_end": "16:27:16.712",
+      "playing": "16:27:17.053",
+      "ended_to_playing_ms": 341,
+      "begin_to_playing_ms": 283,
+      "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=55",
+      "interrupted_within_boundary": false
+    }
+  ],
+  "read_handoffs": [
+    {
+      "ended": "16:28:01.661",
+      "playing": "16:28:01.771",
+      "interval_ms": 110
+    },
+    {
+      "ended": "16:28:03.692",
+      "playing": "16:28:03.824",
+      "interval_ms": 132
+    },
+    {
+      "ended": "16:28:17.632",
+      "playing": "16:28:17.782",
+      "interval_ms": 150
+    },
+    {
+      "ended": "16:28:21.891",
+      "playing": "16:28:22.024",
+      "interval_ms": 133
+    },
+    {
+      "ended": "16:28:38.663",
+      "playing": "16:28:38.811",
+      "interval_ms": 148
+    },
+    {
+      "ended": "16:28:55.495",
+      "playing": "16:28:55.613",
+      "interval_ms": 118
+    },
+    {
+      "ended": "16:29:08.294",
+      "playing": "16:29:08.403",
+      "interval_ms": 109
+    },
+    {
+      "ended": "16:29:13.141",
+      "playing": "16:29:13.310",
+      "interval_ms": 169
+    },
+    {
+      "ended": "16:29:27.896",
+      "playing": "16:29:28.012",
+      "interval_ms": 116
+    },
+    {
+      "ended": "16:29:32.675",
+      "playing": "16:29:32.817",
+      "interval_ms": 142
+    }
+  ],
+  "interruptions": [
+    [
+      "16:22:06.882",
+      "AUDIO interruption began segment=1-0"
+    ],
+    [
+      "16:22:10.893",
+      "AUDIO interruption ended segment=1-0"
+    ],
+    [
+      "16:22:33.945",
+      "AUDIO interruption began segment=1-0"
+    ]
+  ],
+  "mode_switch": {
+    "requested": "16:27:42.839",
+    "source_confirmed": "16:27:43.153",
+    "started": "16:27:43.421",
+    "earlier_UI_clicks": "No app receipt captured; cause unclassified"
+  },
+  "measurement": "Application event clock; no acoustic recording. Interrupted/resumed/control windows are separate, not a continuous long-run pass.",
+  "raw_sha256": {
+    "/tmp/castreader-kindlelive96-probe.log": "f382b725ba8d380dfc88632baa096f7c3fb0fc4fa6e35cb8f3ee891a0b0f58b6",
+    "/tmp/castreader-kindlelive96-reader.log": "9ba8dbd286e4affe618c6848aed75cdf974f3af44725cdd7c95fb7c3506bdf4e"
+  },
+  "final_acceptance": false
+}

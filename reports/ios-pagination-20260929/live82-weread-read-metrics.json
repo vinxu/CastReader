@@ -1,0 +1,33 @@
+{
+  "candidate": "82",
+  "platform": "weread",
+  "observed_start": "11:51:00.000",
+  "cutoff": "11:53:00.000",
+  "observed_end_seconds": 42731.526,
+  "metric": "event timestamps, not acoustic silence",
+  "turns": [
+    {
+      "id": "C891A23B-9D9F-490D-83B6-9F923DE73B4F",
+      "requested": 42727.294,
+      "hold": 42727.294
+    }
+  ],
+  "release_to_playing": {
+    "samples": 0,
+    "p95_ms": null,
+    "max_ms": null
+  },
+  "native_request_to_commit": {
+    "samples": 0,
+    "p95_ms": null,
+    "max_ms": null
+  },
+  "hold_to_playing": {
+    "samples": 0,
+    "p95_ms": null,
+    "max_ms": null
+  },
+  "prepared_adoptions": 0,
+  "errors": [],
+  "final_acceptance": false
+}

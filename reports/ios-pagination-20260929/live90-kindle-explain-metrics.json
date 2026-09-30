@@ -1,0 +1,60 @@
+{
+  "candidate": 90,
+  "platform": "kindle",
+  "mode": "explain",
+  "voice": "af_heart",
+  "rate": 1.5,
+  "first_play": "14:26:48.833",
+  "rows": [
+    {
+      "old_key": "6dffb20e7ab0",
+      "audio_ended": "14:27:20.771",
+      "turn_begin": "14:27:20.840",
+      "next_playing": "14:27:21.342",
+      "ended_to_turn_ms": 69,
+      "ended_to_playing_ms": 571
+    },
+    {
+      "old_key": "56563cfc69ae",
+      "audio_ended": "14:27:50.614",
+      "turn_begin": "14:27:50.658",
+      "next_playing": "14:27:51.160",
+      "ended_to_turn_ms": 44,
+      "ended_to_playing_ms": 546
+    },
+    {
+      "old_key": "0f9f0bf79abf",
+      "audio_ended": "14:28:20.046",
+      "turn_begin": "14:28:20.085",
+      "next_playing": "14:28:20.627",
+      "ended_to_turn_ms": 39,
+      "ended_to_playing_ms": 581
+    },
+    {
+      "old_key": "6540e087b3ee",
+      "audio_ended": "14:28:43.103",
+      "turn_begin": "14:28:43.182",
+      "next_playing": "14:28:43.824",
+      "ended_to_turn_ms": 79,
+      "ended_to_playing_ms": 721
+    },
+    {
+      "old_key": "af7d5a3dd379",
+      "audio_ended": "14:29:12.286",
+      "turn_begin": "14:29:12.339",
+      "next_playing": "14:29:12.866",
+      "ended_to_turn_ms": 53,
+      "ended_to_playing_ms": 580
+    }
+  ],
+  "metric": "Application event times; not acoustic silence",
+  "visual_observations": [
+    "Circles, underlines and highlights on currently displayed source on multiple page screenshots",
+    "Paused page and caption remained unchanged from14:29 to14:33, over60seconds; no auto revival observed."
+  ],
+  "sources": {
+    "/tmp/castreader-kindlelive90-reader.log": "d8968e4dde9cf50e60447d07240bc85ec0d17840bed4eaacc08776e2faa6c7ee",
+    "/tmp/castreader-pagination-live90.log": "27d664626fdf74297586131597c61d6dc4278a095e5b81bbf5fb7276b00d2592"
+  },
+  "final_acceptance": false
+}

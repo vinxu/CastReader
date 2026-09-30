@@ -1,0 +1,58 @@
+{
+  "candidate": "83",
+  "platform": "weread",
+  "observed_start": "12:00:00.000",
+  "cutoff": "12:06:00.000",
+  "observed_end_seconds": 43367.885,
+  "metric": "event timestamps, not acoustic silence",
+  "turns": [
+    {
+      "id": "7CF3B878-59A5-483B-865B-F98B72C5FFE2",
+      "requested": 43256.791,
+      "hold": 43256.792,
+      "release": 43256.912,
+      "playing": 43257.046,
+      "release_to_playing_ms": 134.0,
+      "request_to_commit_ms": 104.0,
+      "hold_to_playing_ms": 254.0
+    },
+    {
+      "id": "D36B3C8B-8B8A-4E28-92BA-FF91D14398F2",
+      "requested": 43296.835,
+      "hold": 43296.835,
+      "release": 43296.963,
+      "playing": 43297.067,
+      "release_to_playing_ms": 104.0,
+      "request_to_commit_ms": 113.0,
+      "hold_to_playing_ms": 232.0
+    },
+    {
+      "id": "9AB365F6-99B9-4477-AB8F-0D50C7F23B40",
+      "requested": 43337.481,
+      "hold": 43337.482,
+      "release": 43337.608,
+      "playing": 43337.721,
+      "release_to_playing_ms": 113.0,
+      "request_to_commit_ms": 117.0,
+      "hold_to_playing_ms": 239.0
+    }
+  ],
+  "release_to_playing": {
+    "samples": 3,
+    "p95_ms": 134.0,
+    "max_ms": 134.0
+  },
+  "native_request_to_commit": {
+    "samples": 3,
+    "p95_ms": 117.0,
+    "max_ms": 117.0
+  },
+  "hold_to_playing": {
+    "samples": 3,
+    "p95_ms": 254.0,
+    "max_ms": 254.0
+  },
+  "prepared_adoptions": 2,
+  "errors": [],
+  "final_acceptance": false
+}

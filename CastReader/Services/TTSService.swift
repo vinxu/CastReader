@@ -7,6 +7,39 @@
 //
 
 import Foundation
+
+enum TTSPartlySourceCoverage {
+    struct Accepted { let processedText: String; let remainingText: String }
+
+    static func validate(input: String, processed: String?, remaining: String?) throws -> Accepted {
+        // Coverage comes from the exact source suffix, not from a model's
+        // pronunciation echo (which may expand numbers or abbreviations).
+        let tail = (remaining ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let inputTrimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !inputTrimmed.isEmpty, tail.isEmpty ||
+                (tail.utf16.count < inputTrimmed.utf16.count && inputTrimmed.hasSuffix(tail)) else {
+            throw TTSError.generationFailed("invalid_partly_remainder")
+        }
+        let consumed = tail.isEmpty ? input : String(inputTrimmed.dropLast(tail.count))
+        guard SpeechTextSanitizer.containsSpeakableContent(consumed) else {
+            throw TTSError.generationFailed("invalid_partly_consumed_source")
+        }
+        let text = processed.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 } ?? consumed
+        if !tail.isEmpty {
+            // A pronunciation rewrite need not equal the source. However an
+            // exact source prefix extending into the declared remainder is a
+            // provable overlap and would speak those words twice.
+            func lexical(_ value: String) -> [UnicodeScalar] {
+                value.lowercased().unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }
+            }
+            let spoken = lexical(text), prefix = lexical(consumed), source = lexical(inputTrimmed)
+            guard spoken.count <= prefix.count || !source.starts(with: spoken) else {
+                throw TTSError.generationFailed("overlapping_partly_source")
+            }
+        }
+        return Accepted(processedText: text, remainingText: tail)
+    }
+}
 import UIKit
 import AVFoundation
 
@@ -84,6 +117,13 @@ enum TTSRequestPriority: String, Sendable {
 struct TTSContinuation: Equatable, Sendable {
     let requestUnits: [String]
     let nextSegmentIndex: Int
+    let requiresSourceTiming: Bool
+
+    init(requestUnits: [String], nextSegmentIndex: Int, requiresSourceTiming: Bool = false) {
+        self.requestUnits = requestUnits
+        self.nextSegmentIndex = nextSegmentIndex
+        self.requiresSourceTiming = requiresSourceTiming
+    }
 }
 
 // MARK: - TTS Service
@@ -117,6 +157,19 @@ protocol ParagraphSpeechGenerating {
 }
 
 extension ParagraphSpeechGenerating {
+    /// Live pages need the producer's raw source timing even when the UI uses
+    /// sentence highlights. Preserve one complete natural input for this job.
+    func generatePagePrefetchSegments(paragraphIndex: Int, text: String, voice: String?,
+                                      speed: Double = 1, language: String) async throws -> [AudioSegment] {
+        var result: [AudioSegment] = []
+        try await generateBufferedSpeech(paragraphIndex: paragraphIndex, text: text,
+            voice: voice, speed: speed, language: language, includeVoiceCode: true,
+            speaker: nil, cloneRequestID: nil,
+            continuation: TTSContinuation(requestUnits: [text], nextSegmentIndex: 0, requiresSourceTiming: true),
+            beforeRequest: { _ in .readAhead }, onSegmentReady: { result.append($0) })
+        return result
+    }
+
     func generateBufferedSpeech(
         paragraphIndex: Int, text: String, voice: String?, speed: Double, language: String,
         includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
@@ -298,17 +351,19 @@ actor TTSService: ParagraphSpeechGenerating {
             for: language
         )
 
-        let requestUnits = continuation?.requestUnits ?? ClonedTTSStartup.requestUnits(
+        let originalUnits = continuation?.requestUnits ?? ClonedTTSStartup.requestUnits(
             SpeechTextSanitizer.sanitizedForTTS(text),
             language: language, voice: resolvedVoice
         )
+        let requestUnits = continuation?.requiresSourceTiming == true
+            ? originalUnits.map(SpeechTextSanitizer.livePageRequest) : originalUnits
         for (unitIndex, requestUnit) in requestUnits.enumerated() {
             var remainingText = requestUnit
             while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
                 try Task.checkCancellation()
                 let checkpoint = TTSContinuation(
                     requestUnits: [remainingText] + Array(requestUnits.dropFirst(unitIndex + 1)),
-                    nextSegmentIndex: segmentIndex)
+                    nextSegmentIndex: segmentIndex, requiresSourceTiming: continuation?.requiresSourceTiming == true)
                 let presetPriority = try await beforeRequest(checkpoint)
                 try Task.checkCancellation()
                 let networkRequestID = Self.cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex,
@@ -323,11 +378,17 @@ actor TTSService: ParagraphSpeechGenerating {
                     includeVoiceCode: includeVoiceCode,
                     priority: presetPriority == .interactive ? .interactive : .prefetch,
                     requestID: networkRequestID,
-                    presetPriority: presetPriority
+                    presetPriority: presetPriority,
+                    requiresSourceTiming: continuation?.requiresSourceTiming == true
                 )
                 try Task.checkCancellation()
                 guard let audioData = Data(base64Encoded: response.audio) else {
                     throw TTSError.generationFailed("audio_decode_failed")
+                }
+                let coverage = try TTSPartlySourceCoverage.validate(
+                    input: remainingText, processed: response.processedText, remaining: response.unprocessedText)
+                if continuation?.requiresSourceTiming == true {
+                    ReaderRunLog.write("PAGINATION timing_response paragraph=\(paragraphIndex) part=\(segmentIndex) sourceUTF16=\(coverage.processedText.utf16.count) cueCount=\(response.safeTimestamps.count) cueUTF16=\(response.safeTimestamps.reduce(0) { $0 + $1.word.utf16.count })")
                 }
                 let rawSegment = AudioSegment(
                     paragraphIndex: paragraphIndex,
@@ -338,10 +399,11 @@ actor TTSService: ParagraphSpeechGenerating {
                         language: language
                     ),
                     duration: response.safeDuration,
-                    text: response.processedText ?? remainingText,
+                    text: coverage.processedText,
                     isWavFormat: response.audioFormat?.lowercased() == "wav",
                     unprocessedText: response.unprocessedText ?? "",
-                    speaker: speaker
+                    speaker: speaker,
+                    timingTimestamps: response.safeTimestamps
                 )
                 let segment = ensureDuration(rawSegment)
                 await onSegmentReady(segment)
@@ -349,7 +411,7 @@ actor TTSService: ParagraphSpeechGenerating {
 
                 if let unprocessed = response.unprocessedText,
                    !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    remainingText = SpeechTextSanitizer.sanitizedForTTS(unprocessed)
+                    remainingText = coverage.remainingText
                 } else {
                     break
                 }
@@ -379,8 +441,10 @@ actor TTSService: ParagraphSpeechGenerating {
         }
 
         var segmentIndex = continuation?.nextSegmentIndex ?? 0
-        let requestUnits = continuation?.requestUnits
+        let originalUnits = continuation?.requestUnits
             ?? ClonedTTSStartup.requestUnits(text, language: language, voice: voice)
+        let requestUnits = continuation?.requiresSourceTiming == true
+            ? originalUnits.map(SpeechTextSanitizer.livePageRequest) : originalUnits
 
         // Segment-timed languages first split into natural sentences. The inner
         // loop still consumes a backend partial response without dropping text.
@@ -394,7 +458,7 @@ actor TTSService: ParagraphSpeechGenerating {
             if let onCheckpoint {
                 await onCheckpoint(TTSContinuation(
                     requestUnits: [remainingText] + Array(requestUnits.dropFirst(unitIndex + 1)),
-                    nextSegmentIndex: segmentIndex
+                    nextSegmentIndex: segmentIndex, requiresSourceTiming: continuation?.requiresSourceTiming == true
                 ))
             }
             try Task.checkCancellation()
@@ -411,7 +475,7 @@ actor TTSService: ParagraphSpeechGenerating {
                     speed: speed,
                     language: language,
                     includeVoiceCode: includeVoiceCode,
-                    requestID: networkRequestID
+                    requestID: networkRequestID, requiresSourceTiming: continuation?.requiresSourceTiming == true
                 )
 
                 try Task.checkCancellation()
@@ -439,19 +503,19 @@ actor TTSService: ParagraphSpeechGenerating {
                     language: language
                 )
                 let duration = response.safeDuration
-                // 用 processedText 作为本 segment 文本（不是整段剩余文本）
-                let segmentText = response.processedText ?? remainingText
-
+                let coverage = try TTSPartlySourceCoverage.validate(
+                    input: remainingText, processed: response.processedText, remaining: response.unprocessedText)
                 let rawSegment = AudioSegment(
                     paragraphIndex: paragraphIndex,
                     segmentIndex: segmentIndex,
                     audioData: audioData,
                     timestamps: timestamps,
                     duration: duration,
-                    text: segmentText,
+                    text: coverage.processedText,
                     isWavFormat: response.audioFormat?.lowercased() == "wav",
                     unprocessedText: response.unprocessedText ?? "",
-                    speaker: speaker
+                    speaker: speaker,
+                    timingTimestamps: response.safeTimestamps
                 )
                 // 中文云端常无 duration（且无词时间戳）→ 用真实音频时长兜底，供解读时间线/进度。
                 // 词时间戳不合成：朗读对齐扩展，无词时间戳语言走句子级高亮。
@@ -463,7 +527,7 @@ actor TTSService: ParagraphSpeechGenerating {
                 segmentIndex += 1
 
                 if let unprocessed = response.unprocessedText, !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    remainingText = SpeechTextSanitizer.sanitizedForTTS(unprocessed)
+                    remainingText = coverage.remainingText
                     ttsDebugLog("[TTSService] 📊 More text to process, continuing with segment #\(segmentIndex)")
                 } else {
                     ttsDebugLog("[TTSService] 📊 All text processed for paragraph \(paragraphIndex)")
@@ -521,7 +585,8 @@ actor TTSService: ParagraphSpeechGenerating {
             text: seg.text,
             isWavFormat: seg.isWavFormat,
             unprocessedText: seg.unprocessedText,
-            speaker: seg.speaker
+            speaker: seg.speaker,
+            timingTimestamps: seg.timingTimestamps
         )
     }
 

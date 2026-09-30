@@ -1,0 +1,241 @@
+{
+  "sampled_cpu_ms": 41656.0,
+  "main_thread_cpu_ms": 40440.0,
+  "missing_stack_ms": 2.0,
+  "category_inclusive_ms": {
+    "History": 14537.0,
+    "HomeView": 15978.0,
+    "SwiftUI": 53.0,
+    "KindleRunLog": 37.0,
+    "DateFormatter": 8.0,
+    "RegularExpression": 47.0,
+    "PhotoAnchor": 8.0,
+    "KindleExplainVisualHoldView": 5.0,
+    "HandwrittenMark": 1.0
+  },
+  "app_frames_inclusive_ms": [
+    [
+      "protocol witness for View.body.getter in conformance HomeView",
+      14735.0
+    ],
+    [
+      "HomeView.body.getter",
+      14734.0
+    ],
+    [
+      "closure #1 in HomeView.body.getter",
+      14282.0
+    ],
+    [
+      "closure #1 in closure #1 in HomeView.body.getter",
+      14241.0
+    ],
+    [
+      "closure #1 in closure #1 in closure #1 in HomeView.body.getter",
+      14224.0
+    ],
+    [
+      "HomeView.continueRecords.getter",
+      14026.0
+    ],
+    [
+      "HistoryStore.latestReadingCheckpoint(for:)",
+      8305.0
+    ],
+    [
+      "HistoryStore.latestCheckpointEntry(for:)",
+      8287.0
+    ],
+    [
+      "HomeView.continueSection.getter",
+      6819.0
+    ],
+    [
+      "closure #1 in HomeView.continueSection.getter",
+      6815.0
+    ],
+    [
+      "closure #2 in closure #1 in HomeView.continueSection.getter",
+      6784.0
+    ],
+    [
+      "static ReadingResumeContract.fingerprint(_:)",
+      6047.0
+    ],
+    [
+      "HistoryStore.hasLocalResource(for:)",
+      5644.0
+    ],
+    [
+      "closure #1 in static ReadingResumeContract.fingerprint(_:)",
+      5014.0
+    ],
+    [
+      "HistoryStore.payloadURL(_:in:)",
+      2987.0
+    ],
+    [
+      "closure #1 in closure #2 in closure #1 in HomeView.continueSection.getter",
+      1158.0
+    ],
+    [
+      "HistoryStore.visibleRecords.getter",
+      333.0
+    ],
+    [
+      "HomeView.supportedTypes.getter",
+      317.0
+    ],
+    [
+      "initializeWithCopy for HistoryRecord",
+      250.0
+    ],
+    [
+      "partial apply for closure #5 in HistoryStore.latestCheckpointEntry(for:)",
+      246.0
+    ],
+    [
+      "closure #5 in HistoryStore.latestCheckpointEntry(for:)",
+      246.0
+    ],
+    [
+      "HistoryStore.cachedCheckpoint(at:)",
+      180.0
+    ],
+    [
+      "destroy for HistoryRecord",
+      148.0
+    ],
+    [
+      "HistoryStore.records.getter",
+      133.0
+    ],
+    [
+      "closure #6 in KindleBookViewModel.bindLivePlayback(document:)",
+      122.0
+    ],
+    [
+      "HistoryStore.syncContinueSnapshots()",
+      122.0
+    ],
+    [
+      "KindleBookViewModel.maybePrepareExplainPageDuringAudioTail()",
+      119.0
+    ],
+    [
+      "HistoryStore.refreshProgressProjection(immediate:)",
+      113.0
+    ],
+    [
+      "HistoryStore.flushProgressProjection()",
+      113.0
+    ],
+    [
+      "partial apply for closure #1 in HistoryStore.latestCheckpointEntry(for:)",
+      105.0
+    ],
+    [
+      "HistoryRecord.sourceKind.getter",
+      80.0
+    ],
+    [
+      "closure #1 in AudioPlayerService.addTimeObserver()",
+      67.0
+    ],
+    [
+      "KindleBookViewModel.advanceToNextExplainPageIfNeeded()",
+      59.0
+    ],
+    [
+      "partial apply for closure #1 in closure #11 in KindleBookViewModel.bindLivePlayback(document:)",
+      59.0
+    ],
+    [
+      "closure #1 in closure #11 in KindleBookViewModel.bindLivePlayback(document:)",
+      59.0
+    ]
+  ],
+  "leaf_frames_ms": [
+    [
+      "0x2508f7615",
+      2779.0
+    ],
+    [
+      "0x2508f7835",
+      2591.0
+    ],
+    [
+      "<deduplicated_symbol>",
+      1285.0
+    ],
+    [
+      "AG::Graph::UpdateStack::update()",
+      879.0
+    ],
+    [
+      "AG::Graph::propagate_dirty(AG::AttributeID)",
+      551.0
+    ],
+    [
+      "___chkstk_darwin",
+      544.0
+    ],
+    [
+      "AG::LayoutDescriptor::Compare::operator()(unsigned char const*, unsigned char const*, unsigned char const*, unsigned long, unsigned long, unsigned int)",
+      347.0
+    ],
+    [
+      "__CFStringAppendFormatCore",
+      333.0
+    ],
+    [
+      "0x19db970f9",
+      314.0
+    ],
+    [
+      "AG::Subgraph::update(unsigned int)",
+      313.0
+    ],
+    [
+      "find1<A>(_:key:filter:)",
+      310.0
+    ],
+    [
+      "0x19dba7e71",
+      297.0
+    ],
+    [
+      "__CFStringCreateImmutableFunnel3",
+      274.0
+    ],
+    [
+      "0x19db9a619",
+      272.0
+    ],
+    [
+      "DYLD-STUB$$swift_bridgeObjectRetain",
+      262.0
+    ],
+    [
+      "0x19db97151",
+      249.0
+    ],
+    [
+      "0x2c2d959e5",
+      232.0
+    ],
+    [
+      "DYLD-STUB$$swift_bridgeObjectRelease",
+      231.0
+    ],
+    [
+      "0x19db971c1",
+      225.0
+    ],
+    [
+      "0x19db97081",
+      222.0
+    ]
+  ],
+  "measurement": "Statistical running CPU samples; inclusive categories overlap; instrumentation interval excluded from normal latency acceptance."
+}

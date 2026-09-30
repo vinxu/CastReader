@@ -1,0 +1,42 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00008130-001C64800C60001C",
+        "deviceName" : "iPhone (66)",
+        "modelName" : "iPhone 15 Pro Max",
+        "osBuildNumber" : "23H24",
+        "osVersion" : "26.7",
+        "platform" : "iOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 52,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1790687027.883,
+  "passedTests" : 52,
+  "result" : "Passed",
+  "skippedTests" : 0,
+  "startTime" : 1790686971.517,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 52
+}

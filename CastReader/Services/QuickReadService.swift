@@ -654,20 +654,22 @@ actor QuickReadService {
         var attempt = 0
         let startedAt = Date()
         while true {
+            try Task.checkCancellation()
             do { return try await operation() }
             catch {
+                try Task.checkCancellation()
                 attempt += 1
                 guard attempt < maxAttempts,
                       Date().timeIntervalSince(startedAt) < retryBudget,
                       Self.isRetryable(error) else { throw error }
                 let backoff = min(4.0, 0.6 * pow(2.0, Double(attempt - 1)))
-                try? await Task.sleep(nanoseconds: UInt64(backoff * 1_000_000_000))
+                try await Task.sleep(nanoseconds: UInt64(backoff * 1_000_000_000))
             }
         }
     }
 
     private static func isRetryable(_ error: Error) -> Bool {
-        if error is URLError { return true }                        // 网络层（超时 / 断连 / DNS）
+        if let error = error as? URLError { return error.code != .cancelled }
         if case QuickReadError.httpError(let code) = error {
             // 429 明确不重试：服务器在要求退避，亚秒级盲重试只会把限流窗口
             // 越打越满（2026-08-19 实测：多路预取叠加重试 = 19 秒 17 连发）。

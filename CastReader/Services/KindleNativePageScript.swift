@@ -120,9 +120,20 @@ enum KindleNativePageScript {
         return e && e.page === navigation.currentView?.renderedPage &&
           e.page.renderResult.pageElement.isConnected && s && s.isConnected ? i : null;
       }
+      function sourceRange(index) {
+        var p = get(index)?.page?.page;
+        var start = p?.startPositionId, end = p?.endPositionId;
+        return Number.isFinite(start) && Number.isFinite(end) && start >= 0 && end > start ? [start,end] : null;
+      }
+      function sameSource(a, b) {
+        var left = sourceRange(a), right = sourceRange(b);
+        return !!left && !!right && left[0] === right[0] && left[1] === right[1];
+      }
       function candidate(index, geometry) {
         var entry = get(index), s = surface(entry);
         if (!entry || !s) return null;
+        var active = currentIndex();
+        if (active != null && index !== active && sameSource(active, index)) return null;
         var img = s;
         if (s.tagName === 'CANVAS') {
           // Adapt a decoded native canvas to the existing image/OCR interface.
@@ -152,15 +163,20 @@ enum KindleNativePageScript {
         var ci = currentIndex();
         return {active:engaged, epoch:epoch, book:book, index:navigation?.currentIndex ?? null,
           currentId:ci == null ? '' : id(ci), previousId:ci == null ? '' : id(ci - 1),
-          nextId:ci == null ? '' : id(ci + 1)};
+          nextId:ci == null ? '' : id(ci + 1),
+          sourceRange:ci == null ? null : sourceRange(ci),
+          nextSourceRepeated:ci != null && sameSource(ci, ci + 1)};
       }
       function dispatch(direction, expectedFrom, requestID) {
         if (requestID && requests.has(requestID)) return requests.get(requestID);
         refresh(true);
         var s = state(), step = direction === 'previous' ? -1 : 1;
         if (!s.currentId || (expectedFrom && expectedFrom !== s.currentId)) return {ok:false, dispatchCount:0, reason:'native-origin-not-current'};
+        // Kindle can cache the final source interval under more relative
+        // indices. A new cache identity alone is not a new source page.
+        if (sameSource(s.index, s.index + step)) return {ok:false, dispatchCount:0, reason:'native-source-unchanged'};
         turn = {from:s.currentId, epoch:epoch, index:s.index, targetIndex:s.index + step,
-          targetId:id(s.index + step), step:step};
+          targetId:id(s.index + step), sourceRange:sourceRange(s.index), step:step};
         var result = {ok:true, strategy:'native-cache-navigation', dispatchCount:1,
           nativeEpoch:epoch, fromKey:s.currentId, fromIndex:s.index, targetIndex:turn.targetIndex,
           expectedTargetKey:turn.targetId, semanticAction:step === 1 ? 'NextPage' : 'PreviousPage'};
@@ -177,6 +193,8 @@ enum KindleNativePageScript {
       function confirmed(from, step) {
         var s = state();
         if (!turn || turn.from !== from || turn.step !== step || turn.epoch !== epoch) return '';
+        var range = sourceRange(s.index);
+        if (range && turn.sourceRange && range[0] === turn.sourceRange[0] && range[1] === turn.sourceRange[1]) return '';
         // A changed process is a new pagination scope. Caller must rebuild;
         // no acceptance based on a different image or a later cache index.
         return s.index === turn.targetIndex && s.currentId &&

@@ -612,7 +612,8 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         includeVoiceCode: Bool = true,
         priority: TTSRequestPriority = .interactive,
         requestID: String? = nil,
-        presetPriority: PresetTTSRequestScheduler.Priority? = nil
+        presetPriority: PresetTTSRequestScheduler.Priority? = nil,
+        requiresSourceTiming: Bool = false
     ) async throws -> TTSResponse {
         // Preset compute follows the frozen account region, but uses its own
         // anonymous transport. Clone authorization remains on the account API.
@@ -642,7 +643,8 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             voice: resolvedVoice,
             speed: speed,
             language: canonicalLanguage,
-            includeVoiceCode: includeVoiceCode
+            includeVoiceCode: includeVoiceCode,
+            requiresSourceTiming: requiresSourceTiming
         )
         let bodyData = try JSONEncoder().encode(ttsRequest)
         apiDebugLog("[TTSRoute] language=\(canonicalLanguage) voice=\(resolvedVoice) clone=\(isClonedVoice ? "Y" : "N")")

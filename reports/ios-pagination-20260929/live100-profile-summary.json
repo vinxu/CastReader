@@ -1,0 +1,142 @@
+{
+  "sampled_cpu_ms": 8275.0,
+  "main_thread_cpu_ms": 5977.0,
+  "missing_stack_ms": 2.0,
+  "category_inclusive_ms": {
+    "History": 185.0,
+    "PhotoAnchor": 7.0,
+    "HomeView": 13.0,
+    "HandwrittenMark": 4.0,
+    "RegularExpression": 53.0,
+    "KindleRunLog": 2.0,
+    "MainTabView": 2.0,
+    "KindleExplainVisualHoldView": 1.0
+  },
+  "app_frames_inclusive_ms": [
+    [
+      "__debug_main_executable_dylib_entry_point",
+      5695.0
+    ],
+    [
+      "static CastReaderApp.$main()",
+      5695.0
+    ],
+    [
+      "thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)",
+      274.0
+    ],
+    [
+      "partial apply for thunk for @escaping @isolated(any) @callee_guaranteed @async () -> (@out A)",
+      274.0
+    ],
+    [
+      "protocol witness for View.body.getter in conformance SpeedMenu",
+      227.0
+    ],
+    [
+      "SpeedMenu.body.getter",
+      225.0
+    ],
+    [
+      "HistoryStore.syncContinueSnapshots()",
+      158.0
+    ],
+    [
+      "Collection.map<A, B>(_:)",
+      158.0
+    ],
+    [
+      "ContentCatalog.continuing.getter",
+      150.0
+    ],
+    [
+      "ReadAloudViewModel.flushReadingProgress()",
+      149.0
+    ],
+    [
+      "HistoryStore.flushProgressProjection()",
+      148.0
+    ],
+    [
+      "HistoryStore.refreshProgressProjection(immediate:)",
+      148.0
+    ],
+    [
+      "ContentCatalog.items.getter",
+      147.0
+    ],
+    [
+      "partial apply for closure #1 in ContentCatalog.items.getter",
+      146.0
+    ],
+    [
+      "closure #1 in ContentCatalog.items.getter",
+      146.0
+    ],
+    [
+      "closure #3 in ReadAloudViewModel.bind()",
+      143.0
+    ],
+    [
+      "ReadAloudViewModel.handlePlaybackState(_:)",
+      143.0
+    ],
+    [
+      "thunk for @escaping @callee_guaranteed (@unowned Double, @unowned Double, @guaranteed AudioSegment?) -> ()",
+      135.0
+    ],
+    [
+      "closure #6 in KindleBookViewModel.bindLivePlayback(document:)",
+      133.0
+    ],
+    [
+      "KindleBookViewModel.maybePrepareExplainPageDuringAudioTail()",
+      123.0
+    ],
+    [
+      "closure #2 in SpeedMenu.body.getter",
+      106.0
+    ],
+    [
+      "thunk for @escaping @callee_guaranteed @Sendable (@unowned CMTime) -> ()",
+      96.0
+    ],
+    [
+      "closure #1 in closure #2 in SpeedMenu.body.getter",
+      92.0
+    ],
+    [
+      "HistoryStore.latestReadingCheckpoint(for:)",
+      91.0
+    ],
+    [
+      "HistoryStore.latestCheckpointEntry(for:)",
+      91.0
+    ],
+    [
+      "closure #1 in AudioPlayerService.addTimeObserver()",
+      91.0
+    ],
+    [
+      "closure #1 in KindleBookViewModel.startExplainFirstBlockPrefetch(afterKey:pageKey:document:epoch:)",
+      89.0
+    ],
+    [
+      "partial apply for closure #1 in KindleBookViewModel.startExplainFirstBlockPrefetch(afterKey:pageKey:document:epoch:)",
+      89.0
+    ],
+    [
+      "ExplainViewModel.prefetchFirstBlock(for:previousSummary:textFingerprint:)",
+      88.0
+    ],
+    [
+      "Sequence.map<A, B>(_:)",
+      86.0
+    ]
+  ],
+  "profile_interval": [
+    "17:08:50.673",
+    "17:09:31.868"
+  ],
+  "measurement": "Statistical running CPU samples; inclusive categories overlap; profiler interval excluded from normal latency acceptance."
+}

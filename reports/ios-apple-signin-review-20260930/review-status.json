@@ -1,0 +1,46 @@
+{
+  "checkedOn": "2026-09-30",
+  "timezone": "Asia/Shanghai",
+  "source": "App Store Connect official REST API; review reason supplied by user",
+  "appId": "6757636395",
+  "versionId": "138a0a05-56de-42f7-b841-31fdfb842418",
+  "version": "1.2.47",
+  "build": "70",
+  "versionState": "REJECTED",
+  "submissionId": "e0120f7a-1331-468f-adb9-0b1f045c352a",
+  "submissionState": "UNRESOLVED_ISSUES",
+  "iapId": "6816697780",
+  "iapProductId": "ai.castreader.clone.minutes120",
+  "iapState": "IN_REVIEW",
+  "releaseType": "AFTER_APPROVAL",
+  "highestUploadedBuild": 70,
+  "reviewSourceCommit": "fadb18a727c96c6ada3353e08882fe1ed34ccf74",
+  "repairBaseCommit": "f1c423e312cdcfbf121b11428aa7867b35488a84",
+  "rootCause": "LoginView displays Apple as a 44x44 circular icon below a full-width 50pt Google or phone button in both regions.",
+  "recommendation": "Superseded by user instruction: integrate d390c0d with Apple login parity, validate and resubmit a new binary on the existing 1.2.47 version.",
+  "alternative": "If fixing before release, upload a new binary as 1.2.47 (next available build, currently 71), edit the rejected App item and resubmit the existing submission. Preserve the IAP item still in review.",
+  "replyDraftSent": false,
+  "appStoreWritesPerformed": false,
+  "browserMessageRead": "NOT_RUN: the in-app browser redirects to App Store Connect login; API read access succeeded.",
+  "references": [
+    "https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple",
+    "https://developer.apple.com/app-store/review/",
+    "https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/manage-a-submission-with-unresolved-issues/"
+  ],
+  "requestedFeatureCommit": "d390c0d8347723abd3fcbd221efed64d9994bc2d",
+  "loginFixCommit": "2f89c00",
+  "integrationCommit": "e6c4c5d29790d44e685a26463085374b369fde83",
+  "candidateBuild": 71,
+  "releaseGate": "User explicitly authorized submitting the frozen integrated candidate despite incomplete final core-service and four-platform acceptance; missing evidence remains NOT_RUN.",
+  "userReleaseAuthorization": {
+    "date": "2026-09-30",
+    "instruction": "直接提交和审核，合并起来提交；剩余问题下个版本迭代，不等待其他 agent 的后续测试。",
+    "frozenCandidate": "2c6c8c9",
+    "scope": [
+      "2f89c00 Apple login parity",
+      "d390c0d four-platform pagination"
+    ],
+    "coreGate": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+    "futureReleaseGatesUnchanged": true
+  }
+}

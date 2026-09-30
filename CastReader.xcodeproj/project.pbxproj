@@ -42,6 +42,7 @@
 		101E4D375DB6E35CC07DB94F /* KindleOfflinePlaybackCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F3D82F116FCA2156DE0831D /* KindleOfflinePlaybackCenter.swift */; };
 		10757E43FA45D96BC7F380DC /* KoboModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F8E038E798D5F3D55349ED /* KoboModels.swift */; };
 		10CA302D247691B44165D574 /* DocumentImportPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02ED8C503898C9BDB962CC80 /* DocumentImportPipeline.swift */; };
+		1148A708DAC1ECFA8019201A /* PaginationContinuityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2A0B5D5F0F79B557F07131 /* PaginationContinuityTests.swift */; };
 		12789698AE4E5FABD007E1DE /* CloudStorageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CF1BA6923CD47F6015FDB93 /* CloudStorageViews.swift */; };
 		128C2FE9D4285C17A8C2BC66 /* VoiceBrowseData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8F7C7838C24816CF0E877C /* VoiceBrowseData.swift */; };
 		135DCB13C5CF56BC2DE2E706 /* KindleOfflinePageStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B1B9D99E9FCC94BEFFEA5DF /* KindleOfflinePageStoreTests.swift */; };
@@ -66,6 +67,7 @@
 		23E8B18E27BC8781EED42D9E /* KindleLibraryRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC91885A86BDF81320C1A443 /* KindleLibraryRecoveryService.swift */; };
 		23F47233BA84ECF8CA8EF1FC /* CastReaderAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB0BCBBBA71BD63C4FC8790 /* CastReaderAppIntents.swift */; };
 		24406F0CDD3BC46EB18D53FF /* EpubTOCSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B377C635AEE963337764544 /* EpubTOCSheet.swift */; };
+		24A589973F3720B6CF203929 /* ExplainSubtitleTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C865742D45094D3DD70862C /* ExplainSubtitleTimeline.swift */; };
 		252C987DBF624288FE6E2710 /* GoogleBooksContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B441596BE0DA08C3D4F7054A /* GoogleBooksContractTests.swift */; };
 		260E4FB185AA8EF5B8EC355F /* content-scripts in Resources */ = {isa = PBXBuildFile; fileRef = 011661583A00E8BE891BC037 /* content-scripts */; };
 		2673969F59938F696A05C711 /* KindleNativePageScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00E69F0EFB8C8BD76FE73BC /* KindleNativePageScript.swift */; };
@@ -160,6 +162,7 @@
 		64900A3590C6E76B40B327D4 /* ReaderDropImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8671C1704E5D3B7DE69E4E9C /* ReaderDropImport.swift */; };
 		64A1058EB09BD082C875F694 /* PDFImportMemoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC765406F52420B9EB0E8C7 /* PDFImportMemoryTests.swift */; };
 		66CD8B1B2501DF36C7C00507 /* kindle-footnote-math-exponent.png in Resources */ = {isa = PBXBuildFile; fileRef = 62A18D9DB5D61D20787F0267 /* kindle-footnote-math-exponent.png */; };
+		66D35CAD0849417AEB6AF354 /* ExplainSubtitleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 302B262E2FA6B0110082B4B7 /* ExplainSubtitleTests.swift */; };
 		66EE801F903863D15D67DFD7 /* KindleFootnoteSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BAF8F6D5D87ABEF823DC402 /* KindleFootnoteSpeech.swift */; };
 		67DFC48EFA05558011D7D22A /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187851CA43919EEC09E8D79B /* UserAccount.swift */; };
 		67E91A65DF3BC40D0B2B2D37 /* VoiceCloneAudioUploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E499715E5AE9F5EA1C32CAEE /* VoiceCloneAudioUploadViewModel.swift */; };
@@ -522,6 +525,7 @@
 		2C88938FE0CCDAC08F1EE807 /* AdaptiveLayout.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AdaptiveLayout.swift; sourceTree = "<group>"; };
 		2F1170791C6F934173139B1B /* MiniPlayerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MiniPlayerView.swift; sourceTree = "<group>"; };
 		3016B414620473902E47B37D /* KindleStorefrontTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleStorefrontTests.swift; sourceTree = "<group>"; };
+		302B262E2FA6B0110082B4B7 /* ExplainSubtitleTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExplainSubtitleTests.swift; sourceTree = "<group>"; };
 		304417FB3E27CFBACFAF4D9E /* GoogleBooksLibraryStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleBooksLibraryStore.swift; sourceTree = "<group>"; };
 		30A6A393E2658F5CFDD50564 /* PhotoOCRCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhotoOCRCache.swift; sourceTree = "<group>"; };
 		30CD67F9A43D3CD497E28C81 /* YouTubeExtractionOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = YouTubeExtractionOverlay.swift; sourceTree = "<group>"; };
@@ -597,6 +601,7 @@
 		5BB0BCBBBA71BD63C4FC8790 /* CastReaderAppIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CastReaderAppIntents.swift; sourceTree = "<group>"; };
 		5C3B7221D4A5C74362466556 /* kindle-footnote-baseline-number.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; path = "kindle-footnote-baseline-number.png"; sourceTree = "<group>"; };
 		5C79E18CCA4EB5B4DC4683E5 /* KindleViewportTextAlignment.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleViewportTextAlignment.swift; sourceTree = "<group>"; };
+		5C865742D45094D3DD70862C /* ExplainSubtitleTimeline.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExplainSubtitleTimeline.swift; sourceTree = "<group>"; };
 		5CE5AF76E965881B57FA8FCD /* ExplainControlBar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExplainControlBar.swift; sourceTree = "<group>"; };
 		5CF8763DFD904B9F457AEA72 /* OCRWordInkBoundsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OCRWordInkBoundsTests.swift; sourceTree = "<group>"; };
 		5D4B10030B7B7DB5EBDE51C7 /* ReaderAppearanceSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReaderAppearanceSettings.swift; sourceTree = "<group>"; };
@@ -783,6 +788,7 @@
 		DA7F44E0DA5F1A244F8F9916 /* OCRVisionCancellationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OCRVisionCancellationTests.swift; sourceTree = "<group>"; };
 		DBC51174F1503B670B07F832 /* OReillyLibraryStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OReillyLibraryStore.swift; sourceTree = "<group>"; };
 		DC2307DC560054A8D7E0F928 /* TTSTimestamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSTimestamp.swift; sourceTree = "<group>"; };
+		DC2A0B5D5F0F79B557F07131 /* PaginationContinuityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PaginationContinuityTests.swift; sourceTree = "<group>"; };
 		DDFB24159547D5E59260F893 /* WeReadOpeningPlaybackTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeReadOpeningPlaybackTests.swift; sourceTree = "<group>"; };
 		DE2F63E9249F3AF95EDFE95D /* PhoneSignInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneSignInView.swift; sourceTree = "<group>"; };
 		DEBBC802715FD4368B8C6263 /* HomeProUpsellCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeProUpsellCard.swift; sourceTree = "<group>"; };
@@ -1161,6 +1167,8 @@
 				08C7224A73E87A447B006ABD /* KindleSentenceBufferTests.swift */,
 				975622463A9710F7B1D3960E /* KindleNativePageScriptTests.swift */,
 				9BD423EBBDB2BEF84A268F16 /* TestRepository.swift */,
+				DC2A0B5D5F0F79B557F07131 /* PaginationContinuityTests.swift */,
+				302B262E2FA6B0110082B4B7 /* ExplainSubtitleTests.swift */,
 			);
 			path = CastReaderTests;
 			sourceTree = "<group>";
@@ -1235,6 +1243,7 @@
 				8671C1704E5D3B7DE69E4E9C /* ReaderDropImport.swift */,
 				6B48D7AB58AD3E1CE870615A /* KindleSpeechTextPlan.swift */,
 				05830E083C294485E5E7FCAF /* KindleSpeechProjection.swift */,
+				5C865742D45094D3DD70862C /* ExplainSubtitleTimeline.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -2113,6 +2122,7 @@
 				D8558F2F33FAF97A8AC55FDC /* KindleSentenceBuffer.swift in Sources */,
 				446A146051671CBC07D1A917 /* KindleSpeechProjection.swift in Sources */,
 				2673969F59938F696A05C711 /* KindleNativePageScript.swift in Sources */,
+				24A589973F3720B6CF203929 /* ExplainSubtitleTimeline.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2198,6 +2208,8 @@
 				56996CFD086A9B4D338333E3 /* KindleSentenceBufferTests.swift in Sources */,
 				D1892FC87C5D1677AE68B604 /* KindleNativePageScriptTests.swift in Sources */,
 				1400FC0A52A11D43B159D5F5 /* TestRepository.swift in Sources */,
+				1148A708DAC1ECFA8019201A /* PaginationContinuityTests.swift in Sources */,
+				66D35CAD0849417AEB6AF354 /* ExplainSubtitleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2283,7 +2295,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Safari Extension/CastReaderSafariExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Safari Extension/Info.plist";
@@ -2422,7 +2434,7 @@
 				CASTREADER_INTERNAL_DISTRIBUTION_CONTROLS = YES;
 				CODE_SIGN_ENTITLEMENTS = CastReader/CastReader.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_PREVIEWS = YES;
@@ -2461,7 +2473,7 @@
 				CASTREADER_INTERNAL_DISTRIBUTION_CONTROLS = NO;
 				CODE_SIGN_ENTITLEMENTS = CastReader/CastReader.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_PREVIEWS = YES;
@@ -2576,7 +2588,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Widget/CastReaderWidget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Widget/Info.plist";
@@ -2600,7 +2612,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Share Extension/CastReaderShareExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Share Extension/Info.plist";
@@ -2623,7 +2635,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Widget/CastReaderWidget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Widget/Info.plist";
@@ -2648,7 +2660,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Safari Extension/CastReaderSafariExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Safari Extension/Info.plist";
@@ -2672,7 +2684,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Share Extension/CastReaderShareExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Share Extension/Info.plist";

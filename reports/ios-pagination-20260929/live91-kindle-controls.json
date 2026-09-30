@@ -1,0 +1,26 @@
+{
+  "candidate": 91,
+  "pause": {
+    "visible_pause_until": "14:52:12 manual action",
+    "duration_observed_minutes": 7,
+    "late_autoplay_observed": false,
+    "limitation": "Mirror disconnected during pause; reconnect rendered same caption and page. Application logs corroborate no intervening playback."
+  },
+  "manual_previous": {
+    "requested": "14:52:12.289",
+    "displayed_page": "8444f160ee3e",
+    "prepared_hidden_page": "ad05b0373371",
+    "restored_displayed_page": "14:52:12.983",
+    "final_previous": "560d7849bb6b",
+    "confirmed": "14:52:13.058",
+    "unwanted_autoplay": "14:52:22.333",
+    "result": "FAIL: paused Explain navigation resumed audio; transient hidden prepared page was visible while cancelling the hold."
+  },
+  "foreground": {
+    "result": "FAIL: attempted repeated old page overlay installation on intentionally prepared successor",
+    "errors": [
+      "live-candidate-not-visible"
+    ]
+  },
+  "final_acceptance": false
+}

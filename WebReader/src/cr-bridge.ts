@@ -1,3 +1,4 @@
+import { sourceText, sourceRange } from './source-text'
 // window.CR：native↔JS 桥（句子级高亮用 overlay div，不用 CSS Custom Highlight——
 // iOS WKWebView 的 CSS.highlights set/clear 后旧像素不重绘、会残留，overlay 用 DOM 元素确定清除）。
 
@@ -19,12 +20,14 @@ type ExtractedPara = {
   sourceParagraphIndex?: number
   sourceStart?: number
   sourceEnd?: number
+  sourceSpeechEnd?: number
 }
 interface CRDeps {
   extract: () => ExtractedPara[]
   /** Optional site geometry guard for overlay fragments. Google Books uses it
    * to reject a line that crosses its dynamic page clip. */
   acceptHighlightRect?: (el: HTMLElement, rect: DOMRect) => boolean
+  clipHighlightRect?: (el: HTMLElement, rect: DOMRect) => DOMRect | null
   /** 每次 rendered 附带的页面级信息（Play Books 的 reason/signature）。 */
   pageMeta?: () => Record<string, unknown>
   /** 由站点适配自行触发首次/后续提取（Play Books 靠翻页监听驱动）。 */
@@ -46,23 +49,7 @@ function showDbg(s: string): void {
 
 // 在 element 的 textContent 第 [start,end) 字符建 Range（用 element 所在文档）。
 function charRangeInElement(el: HTMLElement, start: number, end: number): Range | null {
-  const doc = el.ownerDocument
-  const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT)
-  let offset = 0
-  let sNode: Node | null = null, sOff = 0
-  let eNode: Node | null = null, eOff = 0
-  let node: Node | null
-  while ((node = walker.nextNode())) {
-    const len = node.textContent?.length ?? 0
-    if (!sNode && offset + len > start) { sNode = node; sOff = start - offset }
-    if (offset + len >= end) { eNode = node; eOff = end - offset; break }
-    offset += len
-  }
-  if (!sNode) return null
-  if (!eNode) { eNode = sNode; eOff = (sNode.textContent?.length ?? 0) }
-  const r = doc.createRange()
-  try { r.setStart(sNode, Math.max(0, sOff)); r.setEnd(eNode, Math.max(0, eOff)) } catch { return null }
-  return r
+  return sourceRange(el, start, end)
 }
 
 function isCJKCh(ch: string): boolean {
@@ -215,10 +202,12 @@ export function initBridge(deps: CRDeps): void {
         deps.acceptHighlightRect &&
         !deps.acceptHighlightRect(el, rc)
       ) return
+      const painted = el && deps.clipHighlightRect ? deps.clipHighlightRect(el, rc) : rc
+      if (!painted) return
       const d = ownerDocument.createElement('div')
       d.className = 'cr-hl-ov'
       d.style.cssText =
-        `position:absolute;left:${rc.left + sx}px;top:${rc.top + sy}px;width:${rc.width}px;height:${rc.height}px;` +
+        `position:absolute;left:${painted.left + sx}px;top:${painted.top + sy}px;width:${painted.width}px;height:${painted.height}px;` +
         `background:${hexToRgba(color, 0.34)};pointer-events:none;z-index:2147483000;border-radius:3px;mix-blend-mode:multiply`
       host.appendChild(d)
       overlayNodes.add(d)
@@ -250,7 +239,7 @@ export function initBridge(deps: CRDeps): void {
 
   // segment 的词序列 → 在 el 虚拟全文里从 startCursor 前向逐词匹配成 Range[]（失配推 null，连续失配向前找长词重锚）。
   function buildWordRanges(el: HTMLElement, words: string[], startCursor: number): { ranges: Array<Range | null>; cursor: number } {
-    const fullText = el.textContent || ''
+    const fullText = sourceText(el)
     const lower = fullText.toLowerCase()
     const ranges: Array<Range | null> = []
     let searchPos = Math.max(0, Math.min(startCursor, fullText.length))
@@ -283,7 +272,9 @@ export function initBridge(deps: CRDeps): void {
     return { ranges, cursor: searchPos }
   }
 
+  let extractionRevision = 0
   function doExtract(reason?: string): void {
+    const revision = ++extractionRevision
     let paras: ExtractedPara[] = []
     try { paras = extract() } catch (e) { post('error', { stage: 'extract', message: String(e) }) }
     // A page-local mapping and its overlay must have the same lifetime.
@@ -317,6 +308,8 @@ export function initBridge(deps: CRDeps): void {
         row.extendedUTF16Length = p.speechText.length
         row.speechText = p.speechText
       }
+      row.domUTF16Start = p.charOffset || 0
+      if (p.speechText && typeof p.sourceStart === 'number') row.sourceSpeechEnd = p.sourceSpeechEnd ?? (p.sourceStart + p.speechText.length)
       if (typeof p.sourceParagraphIndex === 'number') row.sourceParagraphIndex = p.sourceParagraphIndex
       if (typeof p.sourceStart === 'number') row.sourceUTF16Start = p.sourceStart
       if (typeof p.sourceEnd === 'number') row.sourceUTF16End = p.sourceEnd
@@ -327,7 +320,42 @@ export function initBridge(deps: CRDeps): void {
     if (deps.pageMeta) {
       try { Object.assign(payload, deps.pageMeta()) } catch { /* */ }
     }
-    post('rendered', payload)
+    const cue = payload.sourcePresentation as {
+      id?: string; sourceParagraphIndex?: number; sourceStart?: number;
+      sourceEnd?: number; text?: string
+    } | undefined
+    delete payload.sourcePresentation
+    const send = (): void => post('rendered', payload)
+    // Paint the exact timed source during the native page transaction. Native
+    // still validates the committed page and ownership before releasing audio,
+    // but need not send the same range back across WebKit and wait two MORE
+    // frames. Unknown/changed source uses the ordinary host-confirmed path.
+    const targets = cue && reason === 'auto' && typeof cue.id === 'string' &&
+      typeof cue.text === 'string' && cue.text.length > 0 &&
+      Number.isSafeInteger(cue.sourceParagraphIndex) &&
+      Number.isSafeInteger(cue.sourceStart) && Number.isSafeInteger(cue.sourceEnd) &&
+      cue.sourceStart! >= 0 && cue.sourceEnd! > cue.sourceStart!
+      ? paras.filter(p => p.sourceParagraphIndex === cue.sourceParagraphIndex &&
+          typeof p.sourceStart === 'number' && typeof p.sourceEnd === 'number' &&
+          p.sourceStart < cue.sourceEnd! && p.sourceEnd > cue.sourceStart!) : []
+    const target = targets.length === 1 ? targets[0] : undefined
+    const start = target && cue ? Math.max(target.sourceStart!, cue.sourceStart!) : 0
+    const end = target && cue ? Math.min(target.sourceEnd!, cue.sourceEnd!) : 0
+    const domStart = target ? (target.charOffset || 0) + start - target.sourceStart! : 0
+    const expected = cue?.text?.slice(start - cue.sourceStart!, end - cue.sourceStart!)
+    if (target && cue && end > start &&
+        sourceText(target.element).slice(domStart, domStart + end - start) === expected &&
+        setOverlay(target.element, domStart, domStart + end - start) > 0) {
+      const painted = [...overlayNodes]
+      const signature = payload.signature
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (revision !== extractionRevision || deps.pageMeta?.().signature !== signature) return
+        if (painted.every(node => node.isConnected && overlayNodes.has(node))) {
+          payload.presentedOperationID = cue.id
+        }
+        send()
+      }))
+    } else { send() }
     ;(window as unknown as { __crLastRendered?: unknown }).__crLastRendered = out
     log(`extracted ${out.length} paragraphs${reason ? ' reason=' + reason : ''}`)
   }
@@ -335,6 +363,15 @@ export function initBridge(deps: CRDeps): void {
   const CR = {
     version: 'm1',
     extract: doExtract,
+    confirmPresentation(arg: { holdID: string; signature: string }): void {
+      const acknowledge = () => {
+        const meta = deps.pageMeta?.() || {}
+        const ready = meta.signature === arg.signature && [...overlayNodes].some(node =>
+          node.isConnected && [...node.getClientRects()].some(r => r.width > 0 && r.height > 0))
+        post('pagePresentationReady', { ...meta, holdID: arg.holdID, ready })
+      }
+      requestAnimationFrame(() => requestAnimationFrame(acknowledge))
+    },
     // 本地 DOCX：native 传 base64 字节 → mammoth 转 HTML 注入 DOM → 复用 Visual Zone 提取（不上传后端）。
     renderDocx(arg: { base64: string }): void {
       try {

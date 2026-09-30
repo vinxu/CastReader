@@ -1,0 +1,542 @@
+{
+  "raw_log": "/private/tmp/castreader-pagination-live62-final-reader.log",
+  "raw_sha256": "38c5870a4f32e58d2f60c2035ae162c84e2bb4829b601c9df00b999c4642185b",
+  "measurement": "Application event clock; includes native turn time separately; no acoustic claim",
+  "summary": {
+    "preset": {
+      "all_commits": 8,
+      "all_audible_paths": {
+        "count": 8,
+        "request_to_commit_ms": {
+          "samples": 8,
+          "p95": 373,
+          "max": 373
+        },
+        "commit_to_playing_ms": {
+          "samples": 8,
+          "p95": 120,
+          "max": 120
+        },
+        "ended_to_playing_ms": {
+          "samples": 8,
+          "p95": 472,
+          "max": 472
+        }
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 8,
+        "request_to_commit_ms": {
+          "samples": 8,
+          "p95": 373,
+          "max": 373
+        },
+        "commit_to_playing_ms": {
+          "samples": 8,
+          "p95": 120,
+          "max": 120
+        },
+        "ended_to_playing_ms": {
+          "samples": 8,
+          "p95": 472,
+          "max": 472
+        }
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    },
+    "clone": {
+      "all_commits": 17,
+      "all_audible_paths": {
+        "count": 16,
+        "request_to_commit_ms": {
+          "samples": 16,
+          "p95": 411,
+          "max": 411
+        },
+        "commit_to_playing_ms": {
+          "samples": 16,
+          "p95": 9343,
+          "max": 9343
+        },
+        "ended_to_playing_ms": {
+          "samples": 16,
+          "p95": 10102,
+          "max": 10102
+        }
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 14,
+        "request_to_commit_ms": {
+          "samples": 14,
+          "p95": 385,
+          "max": 385
+        },
+        "commit_to_playing_ms": {
+          "samples": 14,
+          "p95": 176,
+          "max": 176
+        },
+        "ended_to_playing_ms": {
+          "samples": 14,
+          "p95": 519,
+          "max": 519
+        }
+      },
+      "other_or_cold_audible_paths": {
+        "count": 2,
+        "request_to_commit_ms": {
+          "samples": 2,
+          "p95": 411,
+          "max": 411
+        },
+        "commit_to_playing_ms": {
+          "samples": 2,
+          "p95": 9343,
+          "max": 9343
+        },
+        "ended_to_playing_ms": {
+          "samples": 2,
+          "p95": 10102,
+          "max": 10102
+        }
+      },
+      "without_audio": [
+        {
+          "line": 1380,
+          "outcome": "short_page_without_audio"
+        }
+      ]
+    }
+  },
+  "rows": [
+    {
+      "commit_line": 107,
+      "commit_ms": 2133650,
+      "request_ms": 2133333,
+      "prior_audio_end_ms": 2133332,
+      "source": "kpg-yuaj8f-4",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 317,
+      "playing_line": 125,
+      "playing_ms": 2133756,
+      "commit_to_playing_ms": 106,
+      "ended_to_playing_ms": 424
+    },
+    {
+      "commit_line": 162,
+      "commit_ms": 2150956,
+      "request_ms": 2150639,
+      "prior_audio_end_ms": 2150639,
+      "source": "kpg-8zudgt-4",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 317,
+      "playing_line": 180,
+      "playing_ms": 2151060,
+      "commit_to_playing_ms": 104,
+      "ended_to_playing_ms": 421
+    },
+    {
+      "commit_line": 217,
+      "commit_ms": 2171442,
+      "request_ms": 2171110,
+      "prior_audio_end_ms": 2171110,
+      "source": "kpg-zpb5vv-5",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 332,
+      "playing_line": 235,
+      "playing_ms": 2171538,
+      "commit_to_playing_ms": 96,
+      "ended_to_playing_ms": 428
+    },
+    {
+      "commit_line": 267,
+      "commit_ms": 2185448,
+      "request_ms": 2185126,
+      "prior_audio_end_ms": 2185126,
+      "source": "kpg-1w7mabn-4",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 322,
+      "playing_line": 284,
+      "playing_ms": 2185546,
+      "commit_to_playing_ms": 98,
+      "ended_to_playing_ms": 420
+    },
+    {
+      "commit_line": 328,
+      "commit_ms": 2203752,
+      "request_ms": 2203407,
+      "prior_audio_end_ms": 2203406,
+      "source": "kpg-1yfre5n-5",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 345,
+      "playing_line": 346,
+      "playing_ms": 2203846,
+      "commit_to_playing_ms": 94,
+      "ended_to_playing_ms": 440
+    },
+    {
+      "commit_line": 377,
+      "commit_ms": 2216389,
+      "request_ms": 2216016,
+      "prior_audio_end_ms": 2216014,
+      "source": "kpg-1kv4473-2",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 373,
+      "playing_line": 394,
+      "playing_ms": 2216486,
+      "commit_to_playing_ms": 97,
+      "ended_to_playing_ms": 472
+    },
+    {
+      "commit_line": 416,
+      "commit_ms": 2227498,
+      "request_ms": 2227154,
+      "prior_audio_end_ms": 2227153,
+      "source": "kpg-10ym4ti-3",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 344,
+      "playing_line": 433,
+      "playing_ms": 2227598,
+      "commit_to_playing_ms": 100,
+      "ended_to_playing_ms": 445
+    },
+    {
+      "commit_line": 475,
+      "commit_ms": 2245193,
+      "request_ms": 2244843,
+      "prior_audio_end_ms": 2244842,
+      "source": "kpg-1pkdxh4-4",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 350,
+      "playing_line": 493,
+      "playing_ms": 2245313,
+      "commit_to_playing_ms": 120,
+      "ended_to_playing_ms": 471
+    },
+    {
+      "commit_line": 606,
+      "commit_ms": 2279953,
+      "request_ms": 2279592,
+      "prior_audio_end_ms": 2279591,
+      "source": "kpg-1b7gzl7-3",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 361,
+      "playing_line": 625,
+      "playing_ms": 2280075,
+      "commit_to_playing_ms": 122,
+      "ended_to_playing_ms": 484
+    },
+    {
+      "commit_line": 681,
+      "commit_ms": 2298243,
+      "request_ms": 2297881,
+      "prior_audio_end_ms": 2297880,
+      "source": "kpg-1awpgrq-2",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 362,
+      "playing_line": 699,
+      "playing_ms": 2298353,
+      "commit_to_playing_ms": 110,
+      "ended_to_playing_ms": 473
+    },
+    {
+      "commit_line": 758,
+      "commit_ms": 2318180,
+      "request_ms": 2317838,
+      "prior_audio_end_ms": 2317837,
+      "source": "kpg-1y2gcdl-4",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 342,
+      "playing_line": 776,
+      "playing_ms": 2318356,
+      "commit_to_playing_ms": 176,
+      "ended_to_playing_ms": 519
+    },
+    {
+      "commit_line": 837,
+      "commit_ms": 2336173,
+      "request_ms": 2335835,
+      "prior_audio_end_ms": 2335834,
+      "source": "kpg-1v4nd2k-3",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 338,
+      "playing_line": 855,
+      "playing_ms": 2336283,
+      "commit_to_playing_ms": 110,
+      "ended_to_playing_ms": 449
+    },
+    {
+      "commit_line": 915,
+      "commit_ms": 2353169,
+      "request_ms": 2352814,
+      "prior_audio_end_ms": 2352813,
+      "source": "kpg-1wf7r9v-5",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 355,
+      "playing_line": 933,
+      "playing_ms": 2353280,
+      "commit_to_playing_ms": 111,
+      "ended_to_playing_ms": 467
+    },
+    {
+      "commit_line": 987,
+      "commit_ms": 2367325,
+      "request_ms": 2366978,
+      "prior_audio_end_ms": 2366977,
+      "source": "kpg-1r9vnct-2",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 347,
+      "playing_line": 1005,
+      "playing_ms": 2367436,
+      "commit_to_playing_ms": 111,
+      "ended_to_playing_ms": 459
+    },
+    {
+      "commit_line": 1040,
+      "commit_ms": 2382231,
+      "request_ms": 2381857,
+      "prior_audio_end_ms": 2381856,
+      "source": "kpg-16o7r2x-2",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 374,
+      "playing_line": 1058,
+      "playing_ms": 2382341,
+      "commit_to_playing_ms": 110,
+      "ended_to_playing_ms": 485
+    },
+    {
+      "commit_line": 1122,
+      "commit_ms": 2402385,
+      "request_ms": 2402026,
+      "prior_audio_end_ms": 2402025,
+      "source": "kpg-1es67td-3",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 359,
+      "playing_line": 1141,
+      "playing_ms": 2402517,
+      "commit_to_playing_ms": 132,
+      "ended_to_playing_ms": 492
+    },
+    {
+      "commit_line": 1191,
+      "commit_ms": 2420230,
+      "request_ms": 2419862,
+      "prior_audio_end_ms": 2419861,
+      "source": "kpg-1bkzqgj-2",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 368,
+      "playing_line": 1209,
+      "playing_ms": 2420341,
+      "commit_to_playing_ms": 111,
+      "ended_to_playing_ms": 480
+    },
+    {
+      "commit_line": 1239,
+      "commit_ms": 2434486,
+      "request_ms": 2434122,
+      "prior_audio_end_ms": 2434121,
+      "source": "kpg-jdhx4m-2",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 364,
+      "playing_line": 1257,
+      "playing_ms": 2434592,
+      "commit_to_playing_ms": 106,
+      "ended_to_playing_ms": 471
+    },
+    {
+      "commit_line": 1292,
+      "commit_ms": 2449502,
+      "request_ms": 2449124,
+      "prior_audio_end_ms": 2449120,
+      "source": "kpg-cmwtif-9",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 378,
+      "playing_line": 1310,
+      "playing_ms": 2449609,
+      "commit_to_playing_ms": 107,
+      "ended_to_playing_ms": 489
+    },
+    {
+      "commit_line": 1380,
+      "commit_ms": 2475096,
+      "request_ms": 2474754,
+      "prior_audio_end_ms": 2474753,
+      "source": "kpg-nrdy56-1",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": false,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": false,
+      "outcome": "short_page_without_audio",
+      "request_to_commit_ms": 342,
+      "short_page_line": 1387
+    },
+    {
+      "commit_line": 1393,
+      "commit_ms": 2475512,
+      "request_ms": 2475101,
+      "prior_audio_end_ms": 2474753,
+      "source": "kpg-eoj4ts-3",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": false,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": false,
+      "outcome": "playing",
+      "request_to_commit_ms": 411,
+      "playing_line": 1425,
+      "playing_ms": 2484855,
+      "commit_to_playing_ms": 9343,
+      "ended_to_playing_ms": 10102
+    },
+    {
+      "commit_line": 1446,
+      "commit_ms": 2493421,
+      "request_ms": 2493069,
+      "prior_audio_end_ms": 2493068,
+      "source": "kpg-1yzza4d-3",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": false,
+      "pending_producer_adopted": true,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 352,
+      "playing_line": 1474,
+      "playing_ms": 2493876,
+      "commit_to_playing_ms": 455,
+      "ended_to_playing_ms": 808
+    },
+    {
+      "commit_line": 1498,
+      "commit_ms": 2505621,
+      "request_ms": 2505236,
+      "prior_audio_end_ms": 2505235,
+      "source": "kpg-1rd91ti-3",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 385,
+      "playing_line": 1516,
+      "playing_ms": 2505734,
+      "commit_to_playing_ms": 113,
+      "ended_to_playing_ms": 499
+    },
+    {
+      "commit_line": 1581,
+      "commit_ms": 2527053,
+      "request_ms": 2526697,
+      "prior_audio_end_ms": 2526696,
+      "source": "kpg-otfsbi-2",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 356,
+      "playing_line": 1600,
+      "playing_ms": 2527156,
+      "commit_to_playing_ms": 103,
+      "ended_to_playing_ms": 460
+    },
+    {
+      "commit_line": 1644,
+      "commit_ms": 2542723,
+      "request_ms": 2542366,
+      "prior_audio_end_ms": 2542365,
+      "source": "kpg-qb59y7-3",
+      "voice": "vc_e0ca236c50974d32a0272b4a7823ef25",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 357,
+      "playing_line": 1664,
+      "playing_ms": 2542835,
+      "commit_to_playing_ms": 112,
+      "ended_to_playing_ms": 470
+    }
+  ],
+  "final_acceptance": false,
+  "candidate": 62
+}

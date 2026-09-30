@@ -165,13 +165,20 @@ struct LoginView: View {
         }
     }
 
-    /// 手机号是中国区首选完整按钮；Google 与邮箱仅在全球版展示。
-    /// Apple 在两套区域中都保持小图标入口。
+    /// Apple 在两区均以完整系统按钮展示，与手机号 / Google 同宽、同高。
+    /// 主登录方式相邻且同时可见；邮箱保留为全球区验证码入口。
     private var channelStack: some View {
         VStack(spacing: 14) {
+            AppleSignInActionButton(action: { request(.apple) })
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .disabled(auth.isWorking)
+                .accessibilityIdentifier("login.apple")
             phoneButton
             googleButton
-            secondaryChannelRow
+            if AppRegion.current.showsEmailSignIn {
+                emailIconButton
+            }
             if AppRegion.current.showsEmailSignIn, emailFlowExpanded {
                 emailSection
             }
@@ -311,6 +318,7 @@ struct LoginView: View {
                 .cornerRadius(12)
             }
             .disabled(auth.isWorking)
+            .accessibilityIdentifier("login.google")
         } else if AppRegion.current.showsGoogleSignIn {
             Text("Google 登录未配置（需填入 Constants.GoogleOAuth.clientID）")
                 .font(.caption2).foregroundColor(AppTheme.mutedForeground)
@@ -324,19 +332,6 @@ struct LoginView: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 2)
             .background(AppTheme.background.opacity(0.22), in: Capsule())
-    }
-
-    /// Apple 两区均展示；邮箱小图标仅作为全球区兜底通道。
-    private var secondaryChannelRow: some View {
-        HStack(spacing: 18) {
-            AppleSignInIconButton(action: { request(.apple) })
-            .disabled(auth.isWorking)
-            .accessibilityIdentifier("login.apple")
-            if AppRegion.current.showsEmailSignIn {
-                emailIconButton
-            }
-        }
-        .frame(maxWidth: .infinity)
     }
 
     /// 邮箱验证码的收起态：兜底通道（Google/Apple 都不可用时才需要），点开展成表单。

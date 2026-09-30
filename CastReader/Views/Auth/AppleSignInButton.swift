@@ -3,7 +3,7 @@
 //  CastReader
 //
 //  原生 Sign in with Apple。需 entitlement com.apple.developer.applesignin。
-//  提供两种形态：标准按钮（sheet 场景）与圆形图标按钮（登录墙的次要通道）。
+//  使用系统标准按钮；带动作入口的版本保留登录页统一的协议同意流程。
 //
 
 import SwiftUI
@@ -35,26 +35,46 @@ struct AppleSignInButton: View {
     }
 }
 
-/// 圆形图标形态的 Apple 登录。
-///
-/// `SignInWithAppleButton` 的样式是固定的，做不成圆形图标，所以这里自己发起
-/// `ASAuthorizationController`，授权结果仍交给 `AuthService.handleAppleAuthorization`
-/// 处理（存档、换 backendUserId、刷 Pro 的逻辑完全共用）。
-///
-/// 按 Apple 品牌规范：纯黑/纯白 Apple 标志、周围留足空白、不加描边以外的装饰。
-struct AppleSignInIconButton: View {
+/// 系统负责 Apple 标志、完整标题和本地化；点击先进入与其他登录方式相同的
+/// consent gate，再由现有 AppleSignInCoordinator 发起授权。
+struct AppleSignInActionButton: View {
+    @Environment(\.colorScheme) private var colorScheme
     var action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Image(systemName: "apple.logo")
-                .font(.system(size: 19, weight: .medium))
-                .foregroundColor(AppTheme.foreground)
-                .frame(width: 44, height: 44)
-                .background(AppTheme.surface, in: Circle())
-                .overlay(Circle().stroke(AppTheme.border))
-        }
-        .accessibilityLabel(Text(AppLocalized("使用 Apple 登录")))
+        NativeAppleSignInActionButton(
+            style: colorScheme == .dark ? .white : .black,
+            action: action
+        )
+        // ASAuthorizationAppleIDButton 的样式只能在初始化时设置。
+        .id(colorScheme)
+    }
+}
+
+private struct NativeAppleSignInActionButton: UIViewRepresentable {
+    @Environment(\.isEnabled) private var isEnabled
+    let style: ASAuthorizationAppleIDButton.Style
+    var action: () -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(action: action) }
+
+    func makeUIView(context: Context) -> ASAuthorizationAppleIDButton {
+        let button = ASAuthorizationAppleIDButton(type: .continue, style: style)
+        button.cornerRadius = 12
+        button.accessibilityIdentifier = "login.apple"
+        button.addTarget(context.coordinator, action: #selector(Coordinator.activate), for: .touchUpInside)
+        return button
+    }
+
+    func updateUIView(_ button: ASAuthorizationAppleIDButton, context: Context) {
+        button.isEnabled = isEnabled
+        context.coordinator.action = action
+    }
+
+    final class Coordinator: NSObject {
+        var action: () -> Void
+        init(action: @escaping () -> Void) { self.action = action }
+        @objc func activate() { action() }
     }
 }
 

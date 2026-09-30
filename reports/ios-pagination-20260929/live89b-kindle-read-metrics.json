@@ -1,0 +1,158 @@
+{
+  "candidate": 89,
+  "platform": "kindle",
+  "mode": "read",
+  "voice": "af_heart",
+  "rate": 1.5,
+  "start": "14:09:50.000",
+  "paused": "14:14:23.838",
+  "automatic_presentations": 7,
+  "source_failures": [],
+  "gaps": [
+    {
+      "ended": "14:10:04.917",
+      "playing": "14:10:05.012",
+      "milliseconds": 95
+    },
+    {
+      "ended": "14:10:20.647",
+      "playing": "14:10:20.749",
+      "milliseconds": 102
+    },
+    {
+      "ended": "14:10:27.409",
+      "playing": "14:10:27.510",
+      "milliseconds": 101
+    },
+    {
+      "ended": "14:10:42.047",
+      "playing": "14:10:42.137",
+      "milliseconds": 90
+    },
+    {
+      "ended": "14:10:46.177",
+      "playing": "14:10:46.275",
+      "milliseconds": 98
+    },
+    {
+      "ended": "14:10:58.907",
+      "playing": "14:10:58.998",
+      "milliseconds": 91
+    },
+    {
+      "ended": "14:11:03.327",
+      "playing": "14:11:03.472",
+      "milliseconds": 145
+    },
+    {
+      "ended": "14:11:19.664",
+      "playing": "14:11:19.777",
+      "milliseconds": 113
+    },
+    {
+      "ended": "14:11:34.452",
+      "playing": "14:11:34.561",
+      "milliseconds": 109
+    },
+    {
+      "ended": "14:11:41.096",
+      "playing": "14:11:41.248",
+      "milliseconds": 152
+    },
+    {
+      "ended": "14:11:51.021",
+      "playing": "14:11:51.121",
+      "milliseconds": 100
+    },
+    {
+      "ended": "14:11:59.903",
+      "playing": "14:12:00.021",
+      "milliseconds": 118
+    },
+    {
+      "ended": "14:12:11.513",
+      "playing": "14:12:11.637",
+      "milliseconds": 124
+    },
+    {
+      "ended": "14:12:24.100",
+      "playing": "14:12:24.203",
+      "milliseconds": 103
+    },
+    {
+      "ended": "14:12:28.900",
+      "playing": "14:12:29.013",
+      "milliseconds": 113
+    },
+    {
+      "ended": "14:12:42.976",
+      "playing": "14:12:43.092",
+      "milliseconds": 116
+    },
+    {
+      "ended": "14:12:47.760",
+      "playing": "14:12:47.886",
+      "milliseconds": 126
+    },
+    {
+      "ended": "14:12:59.065",
+      "playing": "14:12:59.185",
+      "milliseconds": 120
+    },
+    {
+      "ended": "14:13:14.400",
+      "playing": "14:13:14.509",
+      "milliseconds": 109
+    },
+    {
+      "ended": "14:13:18.252",
+      "playing": "14:13:18.402",
+      "milliseconds": 150
+    },
+    {
+      "ended": "14:13:19.449",
+      "playing": "14:13:19.573",
+      "milliseconds": 124
+    },
+    {
+      "ended": "14:13:34.578",
+      "playing": "14:13:34.697",
+      "milliseconds": 119
+    },
+    {
+      "ended": "14:13:47.891",
+      "playing": "14:13:48.022",
+      "milliseconds": 131
+    },
+    {
+      "ended": "14:13:52.655",
+      "playing": "14:13:52.772",
+      "milliseconds": 117
+    },
+    {
+      "ended": "14:14:07.151",
+      "playing": "14:14:07.255",
+      "milliseconds": 104
+    },
+    {
+      "ended": "14:14:11.933",
+      "playing": "14:14:12.055",
+      "milliseconds": 122
+    }
+  ],
+  "handoff_stats": {
+    "samples": 26,
+    "p95_ms": 150,
+    "max_ms": 152
+  },
+  "resume": {
+    "first_play": "14:09:54.789",
+    "regenerated_unit_duration": 21.504,
+    "restored_seconds": 6.376217730833333,
+    "next_audio_ready": "14:09:54.792",
+    "first_handoff_ms": 95,
+    "interpretation": "Early successor request confirmed before foreground response. This longer remaining suffix does not independently retest the under1.5s startup gate and is not a paired comparison against the earlier6.211s sample."
+  },
+  "metric": "Player event intervals, not acoustic silence",
+  "final_acceptance": false
+}

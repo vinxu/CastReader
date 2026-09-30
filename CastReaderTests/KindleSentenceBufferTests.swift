@@ -403,4 +403,61 @@ final class KindleContinuousInputTests: XCTestCase {
     func testPausedVoiceSwitchDoesNotStartEarlyReadAheadOrPlayback() async throws {
         try await verifyPresetSwitchReadAhead(paused: true)
     }
+
+    func testNearEndResumePreparesSuccessorBeforeFirstPlayback() async throws {
+        try await verifyNearEndResume(pauseWhilePreparing: false)
+    }
+
+    func testPauseDuringNearEndResumePreparationPreventsLateAutoplay() async throws {
+        try await verifyNearEndResume(pauseWhilePreparing: true)
+    }
+
+    private func verifyNearEndResume(pauseWhilePreparing: Bool) async throws {
+        let first = "Already spoken words continue here"
+        let next = "The following confirmed sentence."
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            guard input == first else {
+                return .response(ReadAloudHTTPFixture.body(input, duration: 2), delay: 1.2)
+            }
+            var body = try! JSONSerialization.jsonObject(with: ReadAloudHTTPFixture.body(input, duration: 4)) as! [String: Any]
+            body["timestamps"] = input.split(separator: " ").enumerated().map { index, word in
+                ["word": String(word), "start_time": index == 4 ? 3.6 : Double(index) * 0.9,
+                 "end_time": index == 4 ? 4.0 : Double(index + 1) * 0.9] as [String: Any]
+            }
+            return .response(try! JSONSerialization.data(withJSONObject: body), delay: 0.3)
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let words = first.split(separator: " ").enumerated().map {
+            OCRWord(id: $0.offset, text: String($0.element),
+                    bboxNorm: CGRect(x: 0.1, y: 0.8, width: 0.1, height: 0.04))
+        }
+        let vm = ReadAloudViewModel(document: .init(id: UUID().uuidString,
+            title: "Near-end resume", sourceKind: .kindle, language: "en",
+            paragraphs: [.init(id: 0, text: first, words: words), .init(id: 1, text: next)]),
+            audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        _ = try XCTUnwrap(vm.configureKindleContinuousInput { _, _ in })
+        XCTAssertTrue(vm.prepareKindleWordStart(paragraphIndex: 0, wordIndex: 4))
+        vm.start()
+        try await waitUntil { fixture.requests.contains(next) }
+        XCTAssertNil(audio.currentSegment, "A restored final word must not outrun the cold successor")
+        if pauseWhilePreparing {
+            vm.pausePlayback()
+            await vm.dbgWaitGeneration()
+            try await Task.sleep(nanoseconds: 1_400_000_000)
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertTrue(vm.isPlaybackPausedByUser)
+            XCTAssertEqual(vm.currentParagraphIndex, 0)
+            vm.togglePlayPause()
+        } else {
+            try await waitUntil { audio.hasAudibleProgress }
+            XCTAssertEqual(vm.dbgPrefetchedIndex, 1,
+                           "The successor must already be ready when the short restored suffix starts")
+            XCTAssertGreaterThanOrEqual(audio.playbackPosition, 3.6, "Already-read speech must stay skipped")
+        }
+        try await waitUntil { vm.currentParagraphIndex == 1 && audio.hasAudibleProgress }
+        XCTAssertEqual(fixture.requests.filter { $0 == first }.count, 1)
+        XCTAssertEqual(fixture.requests.filter { $0 == next }.count, 1)
+    }
 }

@@ -1,0 +1,29 @@
+{
+  "candidate": 83,
+  "voice": "af_heart",
+  "rate": 1.5,
+  "platform": "weread",
+  "mode": "explain",
+  "log": "/tmp/castreader-pagination-live83b-reader.log",
+  "raw_sha256": "cccfafcd6f3aa36f82d7ca8f2bcf968e88ce05788a7dd2d41a45f3fcab7e7885",
+  "rows": [
+    {
+      "commit_ms": 43580070.0,
+      "playing_ms": 43580208.0,
+      "commit_to_playing_ms": 138,
+      "prior_end_to_playing_ms": 248,
+      "prepared_hit": true,
+      "decoded": true
+    },
+    {
+      "commit_ms": 43621286.0,
+      "playing_ms": 43621437.0,
+      "commit_to_playing_ms": 151,
+      "prior_end_to_playing_ms": 258,
+      "prepared_hit": true,
+      "decoded": true
+    }
+  ],
+  "measurement": "application event clock, not acoustic",
+  "final_acceptance": false
+}

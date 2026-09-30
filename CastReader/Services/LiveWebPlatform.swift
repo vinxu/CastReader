@@ -260,6 +260,7 @@ enum LiveWebPlatformID: String, Equatable {
         "googleBooksPagePreview",
         "googleBooksSpeechPreview",
         "googleBooksPreviewDiagnostic",
+        "pagePresentationReady",
         "googleBooksLocation",
     ]
 }
