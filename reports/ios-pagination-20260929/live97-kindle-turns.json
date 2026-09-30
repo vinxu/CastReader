@@ -1,0 +1,461 @@
+{
+  "candidate": 97,
+  "turns": [
+    {
+      "begin": "16:32:55.156",
+      "prior_end": "16:32:55.072",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=33"
+      },
+      "playing": "16:32:55.382",
+      "ended_to_playing_ms": 310,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:33:23.897",
+      "prior_end": "16:33:23.812",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=35"
+      },
+      "playing": "16:33:24.093",
+      "ended_to_playing_ms": 281,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:33:53.206",
+      "prior_end": "16:33:53.122",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=35"
+      },
+      "playing": "16:33:53.434",
+      "ended_to_playing_ms": 312,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:34:20.739",
+      "prior_end": "16:34:20.649",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=38"
+      },
+      "playing": "16:34:20.992",
+      "ended_to_playing_ms": 343,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:34:47.977",
+      "prior_end": "16:34:47.876",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40"
+      },
+      "playing": "16:34:48.252",
+      "ended_to_playing_ms": 376,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:35:20.485",
+      "prior_end": "16:35:20.387",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40"
+      },
+      "playing": "16:35:20.759",
+      "ended_to_playing_ms": 372,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:35:48.965",
+      "prior_end": "16:35:48.904",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:35:49.235",
+      "ended_to_playing_ms": 331,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:36:13.849",
+      "prior_end": "16:36:13.787",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=42"
+      },
+      "playing": "16:36:14.120",
+      "ended_to_playing_ms": 333,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:36:40.153",
+      "prior_end": "16:36:40.055",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:36:40.432",
+      "ended_to_playing_ms": 377,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:37:03.909",
+      "prior_end": "16:37:03.808",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:37:04.186",
+      "ended_to_playing_ms": 378,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:37:36.586",
+      "prior_end": "16:37:36.483",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:37:36.819",
+      "ended_to_playing_ms": 336,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:37:59.944",
+      "prior_end": "16:37:59.881",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:38:00.165",
+      "ended_to_playing_ms": 284,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:38:40.067",
+      "prior_end": "16:38:39.967",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=54"
+      },
+      "playing": "16:38:40.363",
+      "ended_to_playing_ms": 396,
+      "profiler_overlap": true,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:39:08.187",
+      "prior_end": "16:39:08.084",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=42"
+      },
+      "playing": "16:39:08.412",
+      "ended_to_playing_ms": 328,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:39:37.515",
+      "prior_end": "16:39:37.415",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=42"
+      },
+      "playing": "16:39:37.738",
+      "ended_to_playing_ms": 323,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:40:05.346",
+      "prior_end": "16:40:05.246",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:40:05.625",
+      "ended_to_playing_ms": 379,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:40:32.069",
+      "prior_end": "16:40:32.014",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=42"
+      },
+      "playing": "16:40:32.291",
+      "ended_to_playing_ms": 277,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:41:04.699",
+      "prior_end": "16:41:04.598",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=54"
+      },
+      "playing": "16:41:05.002",
+      "ended_to_playing_ms": 404,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:41:32.535",
+      "prior_end": "16:41:32.436",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:41:32.773",
+      "ended_to_playing_ms": 337,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:42:00.300",
+      "prior_end": "16:42:00.198",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40"
+      },
+      "playing": "16:42:00.568",
+      "ended_to_playing_ms": 370,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:42:08.001",
+      "prior_end": "16:42:07.905",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=39"
+      },
+      "playing": "16:42:08.248",
+      "ended_to_playing_ms": 343,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:42:16.331",
+      "prior_end": "16:42:16.230",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=44"
+      },
+      "playing": "16:42:16.597",
+      "ended_to_playing_ms": 367,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:42:28.725",
+      "prior_end": "16:42:28.663",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40"
+      },
+      "playing": "16:42:28.980",
+      "ended_to_playing_ms": 317,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:42:44.437",
+      "prior_end": "16:42:44.375",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:42:44.641",
+      "ended_to_playing_ms": 266,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:42:55.267",
+      "prior_end": "16:42:55.172",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40"
+      },
+      "playing": "16:42:55.514",
+      "ended_to_playing_ms": 342,
+      "profiler_overlap": false,
+      "book_end_repeat_window": false
+    },
+    {
+      "begin": "16:43:03.674",
+      "prior_end": "16:43:03.575",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40"
+      },
+      "playing": "16:43:03.881",
+      "ended_to_playing_ms": 306,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:43:12.388",
+      "prior_end": "16:43:12.290",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40"
+      },
+      "playing": "16:43:12.633",
+      "ended_to_playing_ms": 343,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:43:24.064",
+      "prior_end": "16:43:23.965",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:43:24.316",
+      "ended_to_playing_ms": 351,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:43:37.278",
+      "prior_end": "16:43:37.177",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:43:37.526",
+      "ended_to_playing_ms": 349,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:43:47.561",
+      "prior_end": "16:43:47.461",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:43:47.771",
+      "ended_to_playing_ms": 310,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:43:56.286",
+      "prior_end": "16:43:56.225",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=45"
+      },
+      "playing": "16:43:56.537",
+      "ended_to_playing_ms": 312,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:44:03.647",
+      "prior_end": "16:44:03.592",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=39"
+      },
+      "playing": "16:44:03.853",
+      "ended_to_playing_ms": 261,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:44:12.556",
+      "prior_end": "16:44:12.456",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=40"
+      },
+      "playing": "16:44:12.764",
+      "ended_to_playing_ms": 308,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:44:19.100",
+      "prior_end": "16:44:19.004",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=39"
+      },
+      "playing": "16:44:19.354",
+      "ended_to_playing_ms": 350,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:44:30.975",
+      "prior_end": "16:44:30.875",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=42"
+      },
+      "playing": "16:44:31.234",
+      "ended_to_playing_ms": 359,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:44:48.090",
+      "prior_end": "16:44:48.034",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=39"
+      },
+      "playing": "16:44:48.340",
+      "ended_to_playing_ms": 306,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:45:02.198",
+      "prior_end": "16:45:02.099",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=39"
+      },
+      "playing": "16:45:02.460",
+      "ended_to_playing_ms": 361,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:45:08.352",
+      "prior_end": "16:45:08.251",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=46"
+      },
+      "playing": "16:45:08.612",
+      "ended_to_playing_ms": 361,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:45:19.515",
+      "prior_end": "16:45:19.415",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:45:19.775",
+      "ended_to_playing_ms": 360,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    },
+    {
+      "begin": "16:45:26.970",
+      "prior_end": "16:45:26.872",
+      "phases": {
+        "reveal": "[active] KINDLE explain native reveal confirmed=true waitMs=41"
+      },
+      "playing": "16:45:27.219",
+      "ended_to_playing_ms": 347,
+      "profiler_overlap": false,
+      "book_end_repeat_window": true
+    }
+  ],
+  "normal_pre_terminal_samples": 24,
+  "normal_pre_terminal_p95_ms": 379,
+  "profiler_interval": [
+    "16:38:03.395",
+    "16:38:44.906"
+  ],
+  "failed_cases": [
+    "End-of-book page repeatedly narrated despite different native cache keys; conservatively exclude every turn after16:43 from performance acceptance.",
+    "Mirroring Pause/Back coordinate actions had no application receipt; stopped process through devicectl at16:47:45. UI control acceptance pending."
+  ],
+  "raw_sha256": {
+    "/tmp/castreader-kindlelive97-reader.log": "09fe4d691c42c3fcbb0ba603278075f5506b0dcf32e270a2053edeb953f2ad23",
+    "/tmp/castreader-kindlelive97-probe.log": "c4d647aa268c86d295fbe60ec91f077733916a56c81573c4c8e60fcf69a5c3cc"
+  },
+  "measurement": "Application clocks; no acoustic claim. Timing does not validate distinct source pages.",
+  "final_acceptance": false
+}

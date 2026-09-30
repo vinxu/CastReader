@@ -34,6 +34,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     static let handlerName = "castreader"
 
     weak var webView: WKWebView?
+    var pageSpeechGenerator: ParagraphSpeechGenerating = TTSService.shared
     #if DEBUG
     var onGoogleBooksLocationRecordedForTesting: ((String) -> Void)?
     private var liveAcceptanceAutomaticReadTurns = 0
@@ -149,6 +150,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var weReadResumeVisited = Set<String>()
     private var weReadResumeDirectAttempted = false
     private var weReadResumeTimeout: Task<Void, Never>?
+    private var weReadResumeRevision: UInt64 = 0
 
     /// Actual platform. `isGoogleBooks` below is retained as the private name
     /// of the proven paginated-DOM engine while Kobo migrates onto it.
@@ -221,6 +223,30 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var googleBooksCurrentBoundarySourceUTF16End: Int?
     private var pendingGoogleBooksBoundaryTurn: GoogleBooksBoundaryTurn?
     private var googleBooksCarryAdvance: GoogleBooksCarryAdvance?
+    private var googleBooksPresentationDeadline: Task<Void, Never>?
+    private var googleBooksPresentationRetry: Task<Void, Never>?
+    private func awaitGoogleBooksPresentation(_ holdID: UUID) {
+        googleBooksPresentationDeadline?.cancel()
+        googleBooksPresentationDeadline = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 8_000_000_000)
+            guard !Task.isCancelled, let self,
+                  AudioPlayerService.shared.pagePresentationHoldID == holdID else { return }
+            ReaderRunLog.write("PAGINATION anchor_ack_timeout platform=\(self.livePlatform?.rawValue ?? "web")")
+            self.readVM?.invalidateWebContent(message: AppLocalized("网络连接失败，请重试。"))
+        }
+    }
+    private func confirmGoogleBooksPresentation(presentedHoldID: UUID? = nil) {
+        guard let id = AudioPlayerService.shared.pagePresentationHoldID else { return }
+        if presentedHoldID == id {
+            googleBooksPresentationDeadline?.cancel()
+            googleBooksPresentationRetry?.cancel()
+            googleBooksPresentationRetry = nil
+            _ = AudioPlayerService.shared.finishPagePresentation(id)
+            ReaderRunLog.write("PAGINATION native_page_and_cue_painted platform=\(livePlatform?.rawValue ?? "web") hold=\(id)")
+            return
+        }
+        call("confirmPresentation", ["holdID": id.uuidString, "signature": lastGoogleBooksSignature])
+    }
     private var activeGoogleBooksCarry: GoogleBooksActiveCarry?
     private var pendingGoogleBooksPagePreview: GoogleBooksPagePreview?
     private var preparedGoogleBooksReadPage: GoogleBooksPreparedReadPage?
@@ -237,6 +263,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var preparedGoogleBooksExplanation:
         GoogleBooksPreparedExplanation?
     private var googleBooksExplainPrefetchTask: Task<Void, Never>?
+    private var pendingGoogleBooksExplanation: GoogleBooksPendingExplanation?
+    private var googleBooksExplainPrefetchGeneration: UInt64 = 0
     private var continuousGoogleBooksHandoff: GoogleBooksContinuousHandoff?
     private var googleBooksContinuousSerial = 0
     private var googleBooksResumeReadAfterTurn = false
@@ -253,11 +281,18 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var koboOpeningCheckpoint: ReadingResumeCheckpoint?
     private var koboResumeVisited: Set<String> = []
     private var koboResumeSteps = 0
+    private var koboResumeLocationAttempted = false
     private var koboResumeLastSignature: String?
     private var koboResumeTimeout: Task<Void, Never>?
+    private var koboResumeNavigationTask: Task<Void, Never>?
+    private var koboResumeNavigationGeneration = UUID()
+    private var koboResumeNavigationPayload: (signature: String, payload: [String: Any])?
+    private var koboResumeLatestPayload: [String: Any]?
+    private var koboResumeReadySignature: String?
     private var koboSessionRecoveryTask: Task<Void, Never>?
     private var koboInitialReaderRecovery = KoboInitialReaderRecoveryPolicy()
     private var koboInitialReaderAccountBoundary: AccountContentBoundaryToken?
+    private var googleBooksImageOnlySurface = false
     private var googleBooksReadinessRetries = 0
     private var googleBooksReadinessTask: Task<Void, Never>?
     private var googleBooksMainFrameWatchdogTask: Task<Void, Never>?
@@ -267,6 +302,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var weReadNetworkRetryTask: Task<Void, Never>?
     private var lastWeReadEvidence: WeReadPageEvidence?
     private var pendingWeReadTurn = false
+    private var expectedWeReadTargetContentFingerprint: String?
     private var automaticAppReviewContinuation = AppReviewAutomaticPageContinuation()
     private var suppressAppReviewContinuationForPendingTurn = false
     private var pendingWeReadManualTurn = false
@@ -288,6 +324,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var pendingWeReadPreview: WeReadPagePreview?
     private var preparedWeReadPage: WeReadPreparedPage?
     private var weReadPreviewTask: Task<Void, Never>?
+    private var weReadPreviewGeneration: UInt64 = 0
     private var preparedWeReadExplanation: WeReadPreparedExplanation?
     private var pendingWeReadExplanation: WeReadPendingExplanation?
     private var weReadExplainPrefetchTask: Task<Void, Never>?
@@ -353,6 +390,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let preview: WeReadPagePreview
         let voiceID: String
         let segments: [AudioSegment]
+        let following: [LivePagePreparedSpeech]
     }
 
     private struct WeReadPreparedExplanation {
@@ -444,13 +482,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private struct GoogleBooksCarryAdvance {
         let turn: GoogleBooksBoundaryTurn
         let segmentID: String
-        let turnTime: Double
+        let sourceUTF16End: Int
     }
 
     private struct GoogleBooksActiveCarry {
         let segmentID: String
-        let startTime: Double
-        let endTime: Double
+        let sourceUTF16Start: Int
+        let sourceUTF16End: Int
         let paragraphIndex: Int
         let domUTF16Start: Int
         let domUTF16End: Int
@@ -461,7 +499,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let sourceSignature: String
         let contentFingerprint: String
         let readPage: [ReadingParagraph]
+        let readSourceSlices: [LiveWebPageSourceSlice]
         let explainPage: [ReadingParagraph]
+        let explainSourceSlices: [LiveWebPageSourceSlice]
         let language: String
         let preparedParagraphIndex: Int
         let preparedText: String
@@ -483,6 +523,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private struct GoogleBooksPreparedExplanation {
         let preview: GoogleBooksPagePreview
         let payload: ExplainViewModel.PrefetchedFirstBlock
+        let voiceID: String
+        let depth: String
+        let requestedLanguage: String
+    }
+
+    private struct GoogleBooksPendingExplanation {
+        let preview: GoogleBooksPagePreview
+        let task: Task<ExplainViewModel.PrefetchedFirstBlock, Error>
+        let voiceLanguage: String
         let voiceID: String
         let depth: String
         let requestedLanguage: String
@@ -516,6 +565,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private struct WeReadPageCandidate {
+        var presentedOperationID: UUID? = nil
+        let sourceSlices: [WeReadSourceTextSlice]
         let priorFingerprint: String
         let fingerprint: String
         let evidence: WeReadPageEvidence
@@ -537,8 +588,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let segmentID: String
         let boundaryTime: Double
         let paragraphIndex: Int
-        let visibleUTF16Length: Int
-        var didPaint = false
+        let sourceUTF16Start: Int
+        let sourceUTF16End: Int
+        let needsAnotherPage: Bool
+        var lastPaintedRange: NSRange?
     }
 
     func configure(
@@ -572,8 +625,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             ? openingCheckpoint ?? HistoryStore.shared.readingCheckpoint(for: bookID) : nil
         self.koboResumeVisited = []
         self.koboResumeSteps = 0
+        self.koboResumeLocationAttempted = false
         self.koboResumeLastSignature = nil
         self.koboResumeTimeout?.cancel()
+        resetKoboResumeNavigation()
         self.koboInitialReaderRecovery = KoboInitialReaderRecoveryPolicy()
         self.koboInitialReaderAccountBoundary = AccountContentIsolation.captureBoundaryToken()
         self.koboSessionRecoveryTask?.cancel()
@@ -710,7 +765,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// let the existing stable-page transaction decide whether to restart the
     /// active Read/Explain mode after the new page commits.
     func requestUserPageTurn(_ direction: LiveWebPageTurnDirection) {
-        guard didInit, isApplicationActive else {
+        guard (didInit || googleBooksImageOnlySurface), isApplicationActive else {
             ReaderRunLog.write(
                 "LIVEWEB page button ignored direction=\(direction.rawValue) " +
                 "ready=\(didInit ? "Y" : "N") active=\(isApplicationActive ? "Y" : "N")"
@@ -875,6 +930,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     self?.maybeStartWeReadExplainPrefetch()
                 }
                 .store(in: &cancellables)
+            explainVM.$adjacentPlanRevision
+                .dropFirst()
+                .receive(on: RunLoop.main)
+                .sink { [weak self] _ in
+                    self?.maybeStartWeReadExplainPrefetch()
+                }
+                .store(in: &cancellables)
             explainVM.$currentBlockIndex
                 .removeDuplicates()
                 .receive(on: RunLoop.main)
@@ -889,7 +951,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     if let handoff = self.continuousWeReadHandoff {
                         self.beginWeReadVisualTurnIfAtBoundary(handoff)
                     }
+                    self.maybeStartWeReadPreviewPrefetch()
                     self.updateWeReadCarryHighlightIfNeeded()
+                }
+                .store(in: &cancellables)
+            AudioPlayerService.shared.$isPlaying
+                .removeDuplicates()
+                .receive(on: RunLoop.main)
+                .sink { [weak self] playing in
+                    guard playing else { return }
+                    self?.maybeStartWeReadPreviewPrefetch()
+                    self?.maybeArmWeReadContinuousHandoff(reason: "media-started")
                 }
                 .store(in: &cancellables)
         }
@@ -940,6 +1012,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     self?.maybeStartGoogleBooksExplainPrefetch()
                 }
                 .store(in: &cancellables)
+            explainVM.$adjacentPlanRevision
+                .dropFirst()
+                .receive(on: RunLoop.main)
+                .sink { [weak self] _ in
+                    self?.maybeStartGoogleBooksExplainPrefetch()
+                }
+                .store(in: &cancellables)
             explainVM.$currentBlockIndex
                 .removeDuplicates()
                 .receive(on: RunLoop.main)
@@ -952,6 +1031,19 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 .sink { [weak self] _ in
                     guard let self else { return }
                     self.updateGoogleBooksCarryHighlightIfNeeded()
+                }
+                .store(in: &cancellables)
+            AudioPlayerService.shared.$isPlaying
+                .removeDuplicates()
+                .receive(on: RunLoop.main)
+                .sink { [weak self] playing in
+                    guard playing else { return }
+                    // TTS may finish before AVPlayer becomes audible. Its
+                    // ready status alone must not permanently suppress preload.
+                    self?.maybeStartGoogleBooksReadPreload()
+                    self?.maybeStartGoogleBooksSpeechPreload()
+                    self?.maybeArmGoogleBooksContinuousHandoff(reason: "media-started")
+                    self?.maybeArmGoogleBooksSpeechContinuousHandoff(reason: "media-started")
                 }
                 .store(in: &cancellables)
             NotificationCenter.default.publisher(
@@ -1012,11 +1104,33 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     func attachWeReadTOC(_ controller: WeReadTOCController, bookID: String) {
         weReadTOCController = controller
-        weReadOpeningCheckpoint = HistoryStore.shared.readingCheckpoint(for: bookID)
-        weReadOpeningAnchor = WeReadLibraryStore.shared.anchor(for: bookID)
+        prepareWeReadOpeningResume(checkpoint: HistoryStore.shared.readingCheckpoint(for: bookID),
+                                 anchor: WeReadLibraryStore.shared.anchor(for: bookID))
         controller.configure(bookID: bookID)
         controller.onLoad = { [weak self] in self?.requestWeReadTOC() }
         controller.onSelect = { [weak self] entry in self?.jumpToWeReadTOCEntry(entry) }
+    }
+
+    func prepareWeReadOpeningResume(checkpoint: ReadingResumeCheckpoint?, anchor: WeReadReadingAnchor?) {
+        cancelWeReadOpeningResume()
+        weReadOpeningCheckpoint = checkpoint
+        if let checkpoint, let location = checkpoint.weReadLocation,
+           location.isValid(for: readVM?.document.id ?? "") {
+            weReadOpeningAnchor = WeReadReadingAnchor(bookID: location.bookID, readerURL: location.readerURL,
+                pageFingerprint: "", progressLabel: nil, updatedAt: checkpoint.updatedAt,
+                chapterUID: location.chapterUID, chapterOffset: location.chapterOffset)
+        } else {
+            weReadOpeningAnchor = anchor
+        }
+        weReadResumeVisited.removeAll()
+        weReadResumeDirectAttempted = false
+    }
+
+    private func cancelWeReadOpeningResume() {
+        weReadResumeRevision &+= 1
+        weReadResumeTimeout?.cancel()
+        weReadResumeTimeout = nil
+        weReadOpeningCheckpoint = nil
     }
 
     // MARK: - JS → native
@@ -1153,6 +1267,33 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
             print("[WebReader] 📄 rendered paragraphs=\(paras.count)")
             receiveRendered(paras)
+        case "pagePresentationReady":
+            guard acceptsActiveGoogleBooksFrameEvent(msg.payload),
+                  (msg.payload["signature"] as? String) == lastGoogleBooksSignature,
+                  let rawID = msg.payload["holdID"] as? String, let id = UUID(uuidString: rawID),
+                  AudioPlayerService.shared.pagePresentationHoldID == id else { return }
+            if msg.payload["ready"] as? Bool == true {
+                googleBooksPresentationDeadline?.cancel()
+                googleBooksPresentationRetry?.cancel()
+                googleBooksPresentationRetry = nil
+                _ = AudioPlayerService.shared.finishPagePresentation(id)
+            } else if googleBooksPresentationRetry == nil {
+                // A receipt can beat the current cue's paint (or a queued old
+                // clock sample). Keep media held and retry the exact page; an
+                // unpaintable target still fails at the existing deadline.
+                let signature = lastGoogleBooksSignature
+                ReaderRunLog.write("PAGINATION anchor_pending platform=\(livePlatform?.rawValue ?? "web") hold=\(id)")
+                googleBooksPresentationRetry = Task { @MainActor [weak self] in
+                    do { try await Task.sleep(nanoseconds: 16_000_000) } catch { return }
+                    guard let self else { return }
+                    self.googleBooksPresentationRetry = nil
+                    guard AudioPlayerService.shared.pagePresentationHoldID == id,
+                          self.lastGoogleBooksSignature == signature else { return }
+                    self.activeGoogleBooksCarry?.lastPaintedDOMUTF16End = nil
+                    self.updateGoogleBooksCarryHighlightIfNeeded()
+                    self.confirmGoogleBooksPresentation()
+                }
+            }
         case "googleBooksTurnRequested":
             guard acceptsActiveGoogleBooksFrameEvent(msg.payload) else { return }
             guard pendingGoogleBooksTurn,
@@ -1173,10 +1314,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 ReaderRunLog.write("GBOOKS ignored failure with stale turn identity")
                 return
             }
-            finishGoogleBooksTurn(
-                reason: "javascript-no-change",
-                preserveLateResult: (msg.payload["lateEligible"] as? Bool) != false
-            )
+            let reachedBookEnd = livePlatform == .kobo &&
+                KoboBookEndContract.isConfirmed(msg.payload["nativeBookEnd"])
+            finishGoogleBooksTurn(reason: reachedBookEnd ? "native-book-end" : "javascript-no-change",
+                preserveLateResult: !reachedBookEnd && (msg.payload["lateEligible"] as? Bool) != false)
         case "googleBooksPageChanging":
             guard acceptsActiveGoogleBooksFrameEvent(msg.payload) else { return }
             prepareForGoogleBooksPageChange(msg.payload)
@@ -1282,6 +1423,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         case "wereadNonTextPage":
             receiveWeReadNonTextPage()
         case "wereadExtractionState":
+            // An unpainted opening can temporarily have neither page button.
+            // Only wereadContentUnavailable or a revalidated restore deadline
+            // proves failure; an extraction diagnostic cannot retire paint.
             let layouts = Int(Self.double(msg.payload["layouts"]) ?? 0)
             let calls = Int(Self.double(msg.payload["fillTextCalls"]) ?? 0)
             let draws = Int(Self.double(msg.payload["draws"]) ?? 0)
@@ -1312,6 +1456,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         case "wereadPageChanging":
             prepareForWeReadPageChange(msg.payload)
         case "wereadTurnRequested":
+            expectedWeReadTargetContentFingerprint = msg.payload["targetContentFingerprint"] as? String
             pendingWeReadActionID = (msg.payload["actionID"] as? String) ?? pendingWeReadActionID
             NSLog("CRDBG WeRead semantic turn requested %@", "\(msg.payload)")
         case "wereadTurnRejected":
@@ -1662,6 +1807,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
         guard !pendingWeReadTOCJump else { return }
 
+        cancelWeReadOpeningResume()
+
         if checkingVisibleStart,
            entry.hasUniqueCatalogHeading(weReadTOCController?.entries ?? []),
            let encoded = try? JSONEncoder().encode(entry.title),
@@ -1698,14 +1845,25 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         pendingWeReadTOCEntry = entry
         pendingWeReadActionID = "toc-jump:\(entry.chapterUID.isEmpty ? String(entry.chapterIndex) : entry.chapterUID)"
         resumeReadAfterWeReadTurn = wasReading
-        resumeExplainAfterWeReadTurn = wasExplaining
+        // Manual chapter selection cancels Explain; the new chapter awaits
+        // an explicit start, just like manual previous/next navigation.
+        resumeExplainAfterWeReadTurn = false
         pendingWeReadBoundaryTurn = nil
         activeWeReadCarry = nil
         cancelWeReadContinuousHandoff(reason: "toc-jump")
         invalidateWeReadPreview(reason: "toc-jump")
         invalidateWeReadExplainPrefetch(reason: "toc-jump")
-        if wasReading { readVM?.stop() }
-        if wasExplaining { explainVM?.stop() }
+        // A chapter intent immediately retires both source documents. Even a
+        // paused/inactive mode can otherwise be started from its toolbar while
+        // the new canvas is visible but extraction has not committed yet.
+        readVM?.stop()
+        explainVM?.stop()
+        readVM?.stageInactiveLiveWebPage([])
+        explainVM?.stageInactiveLiveWebPage([])
+        weReadContentBlocked = true
+        let pendingMessage = AppLocalized("正在同步当前书页，请稍后重试。")
+        readVM?.webContentBlockMessage = pendingMessage
+        explainVM?.webContentBlockMessage = pendingMessage
         call("clearHighlight")
         call("clearMarks")
 
@@ -1744,8 +1902,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     private func failWeReadTOCJump(reason: String) {
         guard pendingWeReadTOCJump || weReadTOCController?.isJumping == true else { return }
-        let shouldResumeRead = resumeReadAfterWeReadTurn
-        let shouldResumeExplain = resumeExplainAfterWeReadTurn
         pendingWeReadTOCJump = false
         pendingWeReadTOCEntry = nil
         pendingWeReadManualTurn = false
@@ -1758,14 +1914,16 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         weReadManualIntentTimeout?.cancel()
         weReadManualIntentTimeout = nil
         weReadTOCController?.failJump()
-        if shouldResumeRead, isReadMode { readVM?.start() }
-        if shouldResumeExplain, !isReadMode { explainVM?.start() }
+        // A timeout provides no evidence that the old chapter is still visible.
+        // Only a fresh page commit can restore a playable source.
         ReaderRunLog.write("WEREAD toc jump failed reason=\(reason)")
     }
 
     /// A cover is a navigation surface, not the previous chapter's audio.
     private func receiveWeReadNonTextPage() {
         guard isWeRead else { return }
+        if !weReadResumeVisited.isEmpty { cancelWeReadOpeningResume() }
+        onWeReadSurfaceStable?()
         finishWeReadEntryRecoveryIfNeeded()
         let hadText = readVM?.hasReadableWebContent == true
         if hadText {
@@ -1846,7 +2004,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// just the player leaves delayed TTS, explanation marks and turn timeouts
     /// able to restart the previous page.
     private func invalidateWeReadContent(reason: String) {
-        guard isWeRead, !weReadContentBlocked else { return }
+        guard isWeRead else { return }
+        cancelWeReadOpeningResume()
+        onWeReadSurfaceStable?()
+        guard !weReadContentBlocked else { return }
         weReadContentBlocked = true
         didInit = false
         didAutoStart = true // Recovery requires an explicit Play, not opening Auto Play.
@@ -1870,11 +2031,16 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         if pendingWeReadTOCJump { failWeReadTOCJump(reason: reason) }
         lastWeReadFingerprint = ""
         lastWeReadEvidence = nil
-        let message = reason == "access-gate"
+        let message = reason == "resume-unverified"
+            ? AppLocalized("正在同步当前书页，请稍后重试。")
+            : reason == "access-gate"
             ? AppLocalized("请先在微信读书页面恢复正文，再继续播放。")
             : AppLocalized("网络连接失败，请重试。")
         readVM?.invalidateWebContent(message: message)
         explainVM?.invalidateWebContent(message: message)
+        // Native rejection must retire JS's duplicate-page key too; otherwise
+        // returning to the same real page never publishes a fresh source.
+        webView?.evaluateJavaScript("window.CastReaderWeRead?.invalidateSource?.()")
         call("clearHighlight")
         call("clearMarks")
         ReaderRunLog.write("WEREAD content blocked reason=\(reason)")
@@ -1895,7 +2061,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               fingerprint != lastWeReadFingerprint || isRefresh else { return }
         finishWeReadEntryRecoveryIfNeeded()
         let prior = lastWeReadFingerprint
-        if !prior.isEmpty,
+        if !prior.isEmpty, !weReadContentBlocked,
            !WeReadExplainPageEventContract.shouldHandleVisualChange(
                isReadMode: isReadMode,
                reason: (payload["reason"] as? String) ?? "canvas",
@@ -1977,6 +2143,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 .removingPrefix(restoredPrefixUTF16Length, from: 0)
         }
         let candidate = WeReadPageCandidate(
+            presentedOperationID: (payload["presentedOperationID"] as? String).flatMap(UUID.init(uuidString:)),
+            sourceSlices: slices,
             priorFingerprint: prior,
             fingerprint: fingerprint,
             evidence: evidence,
@@ -2037,18 +2205,21 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         weReadEntryReadinessTask = nil
         if ReadingResumeDocumentIndex(paragraphs: candidate.page).resolve(checkpoint) != nil
             || ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: candidate.page) != nil {
-            weReadResumeTimeout?.cancel()
-            weReadOpeningCheckpoint = nil
+            cancelWeReadOpeningResume()
             ReaderRunLog.write("WEREAD resume page matched turns=\(weReadResumeVisited.count)")
             return false
         }
         guard weReadResumeVisited.count < 64,
               weReadResumeVisited.insert(candidate.fingerprint).inserted,
               let webView else {
-            weReadOpeningCheckpoint = nil
+            cancelWeReadOpeningResume()
             return false
         }
+        onWeReadNeedsLoadingCover?()
         weReadResumeTimeout?.cancel()
+        weReadResumeRevision &+= 1
+        let revision = weReadResumeRevision
+        let account = AccountContentIsolation.captureBoundaryToken()
         // One action per observed page. The fallback supports old checkpoints
         // that did not yet save the official chapter offset.
         var directScript = "false"
@@ -2064,25 +2235,47 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         ReaderRunLog.write("WEREAD resume finding page attempt=\(weReadResumeVisited.count) direct=\(weReadResumeDirectAttempted)")
         let script = "(() => { if (\(directScript)) return true; return window.CastReaderWeRead?.nextPage?.() === true; })()"
         webView.evaluateJavaScript(script) { [weak self] result, error in
-            guard let self, self.weReadOpeningCheckpoint != nil else { return }
+            guard let self, self.webView === webView,
+                  self.weReadOpeningCheckpoint != nil, self.weReadResumeRevision == revision,
+                  AccountContentIsolation.captureBoundaryToken() == account else { return }
             if error != nil || (result as? Bool) != true {
-                self.webView?.evaluateJavaScript("window.CastReaderWeReadTOC?.resumeDiagnostics?.()") { value, _ in
-                    if let value = value as? String {
-                        ReaderRunLog.write("WEREAD resume navigation diagnostic \(value.prefix(1800))")
-                    }
-                }
-                self.weReadOpeningCheckpoint = nil
-                self.commitWeReadPage(candidate)
+                self.finishWeReadOpeningResume(candidate, revision: revision, account: account)
                 return
             }
+            // A newer page can arrive before this JS completion. Never let an
+            // old completion replace the newer page's deadline or commit it.
+            self.weReadResumeTimeout?.cancel()
             self.weReadResumeTimeout = Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: 6_000_000_000)
-                guard let self, !Task.isCancelled, self.weReadOpeningCheckpoint != nil else { return }
-                self.weReadOpeningCheckpoint = nil
-                self.commitWeReadPage(candidate)
+                guard let self, !Task.isCancelled, self.weReadResumeRevision == revision,
+                      self.weReadOpeningCheckpoint != nil else { return }
+                self.finishWeReadOpeningResume(candidate, revision: revision, account: account)
             }
         }
         return true
+    }
+
+    private func finishWeReadOpeningResume(_ candidate: WeReadPageCandidate, revision: UInt64,
+                                          account: AccountContentBoundaryToken?) {
+        guard let webView, weReadResumeRevision == revision else { return }
+        webView.evaluateJavaScript("(() => { const r=window.CastReaderWeRead; return {...r?.snapshot?.(), opening:r?.openingPageState?.().kind}; })()") { [weak self] value, _ in
+            guard let self, self.webView === webView, self.weReadResumeRevision == revision,
+                  self.weReadOpeningCheckpoint != nil,
+                  AccountContentIsolation.captureBoundaryToken() == account else { return }
+            let state = value as? [String: Any]
+            self.cancelWeReadOpeningResume()
+            if state?["fingerprint"] as? String == candidate.fingerprint,
+               state?["ready"] as? Bool == true, state?["opening"] as? String == "reading" {
+                self.commitWeReadPage(candidate)
+                self.onWeReadSurfaceStable?()
+            } else {
+                // An accepted turn may have reached a paywall/blank surface.
+                // Keep the saved checkpoint, retire the old source, and wait
+                // for a newly observed page instead of publishing old prose.
+                self.invalidateWeReadContent(reason: "resume-unverified")
+                ReaderRunLog.write("WEREAD resume stopped without verified visible source")
+            }
+        }
     }
 
     /// The WebView predicts one visible page ahead from the same transient HTML
@@ -2137,8 +2330,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         )
         if pendingWeReadPreview?.sourceFingerprint != sourceFingerprint ||
             pendingWeReadPreview?.contentFingerprint != contentFingerprint {
+            weReadPreviewGeneration &+= 1
             weReadPreviewTask?.cancel()
             weReadPreviewTask = nil
+            preparedWeReadPage?.following.forEach { $0.discardIfSpeculative() }
             preparedWeReadPage = nil
             invalidateWeReadExplainPrefetch(reason: "prediction-changed")
         }
@@ -2156,9 +2351,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               didInit,
               let readVM,
               readVM.isActive,
-              readVM.isOnLastReadableParagraph,
-              readVM.currentTTSCompleteForPageHandoff,
+              readVM.canPrepareAdjacentLivePageAudio,
               continuousWeReadHandoff == nil,
+              !pendingWeReadTurn,
               let preview = pendingWeReadPreview,
               preview.sourceFingerprint == lastWeReadFingerprint else { return }
         let voiceID = AppSettings.shared.voice(for: preview.language)
@@ -2169,13 +2364,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 maybeArmWeReadContinuousHandoff(reason: "preload-cache")
                 return
             }
+            prepared.following.forEach { $0.discardIfSpeculative() }
             preparedWeReadPage = nil
         }
         guard weReadPreviewTask == nil else { return }
+        weReadPreviewGeneration &+= 1
+        let generation = weReadPreviewGeneration
         let token = "\(preview.sourceFingerprint)|\(preview.contentFingerprint)|\(voiceID)"
         weReadPreviewTask = Task { [weak self] in
             do {
-                let segments = try await TTSService.shared.generatePrefetchSegments(
+                guard let generator = self?.pageSpeechGenerator else { return }
+                let segments = try await generator.generatePagePrefetchSegments(
                     paragraphIndex: preview.preparedParagraphIndex,
                     text: preview.preparedText,
                     voice: voiceID,
@@ -2183,7 +2382,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     language: preview.language
                 )
                 try Task.checkCancellation()
-                guard let self else { return }
+                guard let self, self.weReadPreviewGeneration == generation else { return }
                 self.weReadPreviewTask = nil
                 let currentVoice = AppSettings.shared.voice(for: preview.language)
                 let currentToken = self.pendingWeReadPreview.map {
@@ -2192,21 +2391,59 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 guard token == currentToken,
                       preview.sourceFingerprint == self.lastWeReadFingerprint,
                       !segments.isEmpty else { return }
+                let following = self.prepareWeReadFollowingReserves(preview, voiceID: voiceID,
+                    opening: segments, generation: generation, generator: generator)
                 self.preparedWeReadPage = WeReadPreparedPage(
                     preview: preview,
                     voiceID: voiceID,
-                    segments: segments
+                    segments: segments,
+                    following: following
                 )
                 ReaderRunLog.write(
                     "WEREAD preload audio ready source=\(String(preview.sourceFingerprint.prefix(12))) next=\(String(preview.contentFingerprint.prefix(12))) voice=\(voiceID) segs=\(segments.count)"
                 )
                 self.maybeArmWeReadContinuousHandoff(reason: "preload-ready")
             } catch is CancellationError {
-                self?.weReadPreviewTask = nil
+                guard let self, self.weReadPreviewGeneration == generation else { return }
+                self.weReadPreviewTask = nil
             } catch {
-                self?.weReadPreviewTask = nil
+                guard let self, self.weReadPreviewGeneration == generation else { return }
+                self.weReadPreviewTask = nil
                 ReaderRunLog.write("WEREAD preload audio failed error=\(error.localizedDescription)")
             }
+        }
+    }
+
+    private func prepareWeReadFollowingReserves(_ preview: WeReadPagePreview, voiceID: String,
+        opening: [AudioSegment], generation: UInt64, generator: any ParagraphSpeechGenerating) -> [LivePagePreparedSpeech] {
+        let audio = AudioPlayerService.shared
+        guard !VoiceOption.requiresGenerationQuota(voiceID),
+              opening.reduce(0, { $0 + max(0, $1.duration) }) / max(0.25, Double(audio.playbackRate)) < 3 else { return [] }
+        // Two known paragraphs, one page and a shared 20s/4MiB reserve. The
+        // final cross-page source unit keeps its existing whole-sentence owner.
+        let indices = preview.page.indices.filter {
+            $0 > preview.preparedParagraphIndex && preview.page[$0].type.isReadable &&
+                SpeechTextSanitizer.containsSpeakableContent(preview.page[$0].resolvedSpeechText) &&
+                !(preview.boundary?.isCrossPage == true && preview.boundary?.paragraphIndex == $0)
+        }.prefix(2)
+        return indices.map { index in
+            let source = preview.page[index].resolvedSpeechText
+            let reserve = LivePagePreparedSpeech(paragraphIndex: index, sourceText: source,
+                                                 voice: voiceID, language: preview.language)
+            reserve.start(generator: generator, audio: audio,
+                speechInput: SpeechTextSanitizer.livePageRequest(source), isCurrent: { [weak self] in
+                    guard let self else { return false }
+                    return self.weReadPreviewGeneration == generation && self.isReadMode && self.readVM?.isActive == true
+                        && self.pendingWeReadPreview?.sourceFingerprint == preview.sourceFingerprint
+                        && self.pendingWeReadPreview?.contentFingerprint == preview.contentFingerprint
+                        && AppSettings.shared.voice(for: preview.language) == voiceID
+                }, fitsBudget: { [weak self] in
+                    guard let self, let prepared = self.preparedWeReadPage else { return false }
+                    let buffered = prepared.segments + prepared.following.flatMap { $0.stream.segments }
+                    return buffered.reduce(0, { $0 + $1.audioData.count }) < 4 * 1024 * 1024
+                        && buffered.reduce(0, { $0 + max(0, $1.duration) }) / max(0.25, Double(audio.playbackRate)) < 20
+                })
+            return reserve
         }
     }
 
@@ -2221,7 +2458,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               let vm = explainVM,
               vm.isActive,
               vm.status.isActive,
-              vm.currentBlockIndex >= 0,
+              vm.canPlanAdjacentLivePage,
               let preview = pendingWeReadPreview,
               preview.sourceFingerprint == lastWeReadFingerprint else { return }
 
@@ -2255,6 +2492,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             paragraphs: preview.page,
             sourceURL: vm.document.sourceURL
         )
+        guard ExplainViewModel.canPrefetchExplanation(target) else { return }
         let previousSummary = vm.currentContinuitySummary()
         ReaderRunLog.write(
             "WEREAD explain preload start source=\(String(preview.sourceFingerprint.prefix(12))) next=\(String(preview.contentFingerprint.prefix(12))) paras=\(preview.page.count)"
@@ -2389,6 +2627,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               isReadMode,
               !pendingWeReadTurn,
               let vm = readVM,
+              vm.currentWeReadBoundaryCue == nil,
               vm.canContinueAcrossLivePageBoundary,
               let prepared = preparedWeReadPage else { return }
         let selectedVoice = AppSettings.shared.voice(for: prepared.preview.language)
@@ -2420,7 +2659,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 text: segment.text,
                 isWavFormat: segment.isWavFormat,
                 unprocessedText: segment.unprocessedText,
-                speaker: segment.speaker
+                speaker: segment.speaker,
+                timingTimestamps: segment.timingTimestamps
             )
         }
         let handoff = WeReadContinuousHandoff(
@@ -2448,6 +2688,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             self.requestWeReadNextPage()
             return false
         }
+        _ = audio.armQueuedTailPresentationBoundary { [weak self] _ in
+            guard let self, self.continuousWeReadHandoff?.serial == serial else { return }
+            self.requestWeReadNextPage()
+        }
         let appendedAfter = audio.appendPreparedSegmentsForContinuousPlayback(rebased)
         guard appendedAfter == predecessor else {
             cancelWeReadContinuousHandoff(reason: "queue-boundary-changed")
@@ -2469,19 +2713,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             pendingWeReadBoundaryTurn = nil
         }
         maybeArmWeReadContinuousHandoff(reason: "audio-tail")
-        if let handoff = continuousWeReadHandoff {
-            beginWeReadVisualTurnIfAtBoundary(handoff)
-        } else {
-            // Visual correctness cannot depend on speculative TTS. Even when
-            // no preview audio exists, turn at the consumed source boundary;
-            // the immutable cross-page sentence remains the carry item.
+        if AudioPlayerService.shared.pagePresentationHoldID != nil {
             requestWeReadNextPage()
+        } else if let handoff = continuousWeReadHandoff {
+            beginWeReadVisualTurnIfAtBoundary(handoff)
         }
     }
 
     private func beginWeReadVisualTurnIfAtBoundary(_ handoff: WeReadContinuousHandoff) {
         let audio = AudioPlayerService.shared
         if let cue = handoff.boundaryCue {
+            guard audio.pagePresentationHoldID != nil else { return }
             guard WeReadCrossPageSpeechContract.shouldRequestTurn(
                 currentSegmentID: audio.currentSegment?.id,
                 cue: cue,
@@ -2492,15 +2734,60 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             requestWeReadNextPage()
             return
         }
-        let remaining = max(0, audio.duration - audio.currentTime)
-        guard WeReadContinuousPageHandoffContract.shouldBeginVisualTurn(
-            currentSegmentID: audio.currentSegment?.id,
-            predecessorSegmentID: handoff.predecessorSegmentID,
-            remainingAudioSeconds: remaining,
-            playbackRate: audio.playbackRate,
-            leadSeconds: weReadVisualTurnLeadSeconds
-        ) else { return }
-        requestWeReadNextPage()
+        // Whole-page boundaries are driven by the media-end observer or the
+        // queued-successor gate. Preparation lead time cannot move the page.
+
+    }
+
+    private func paintPreparedOpening(_ segment: AudioSegment?, source: String, paragraph: Int) {
+        guard let segment,
+              let range = WeReadCrossPageSpeechContract.sourceRange(source: source,
+                segments: [segment], segmentID: segment.id, time: 0), range.length > 0 else { return }
+        call("highlightRange", ["paragraphIndex": paragraph,
+            "charStart": range.location, "charEnd": NSMaxRange(range),
+            "segSeq": 0, "segmentTexts": []])
+    }
+
+    private func confirmWeReadPresentation(_ candidate: WeReadPageCandidate, holdID: UUID?) {
+        guard let holdID, let webView else { return }
+        if candidate.presentedOperationID == holdID {
+            // Native canvas + exact source highlight were painted together in
+            // JS before this page receipt. Do not add another WebKit round trip
+            // and two additional frames on the audible handoff path.
+            _ = AudioPlayerService.shared.finishPagePresentation(holdID)
+            updateWeReadCarryHighlightIfNeeded()
+            return
+        }
+        let fingerprint = candidate.fingerprint
+        let content = candidate.evidence.contentFingerprint
+        Task { @MainActor [weak self, weak webView] in
+            guard let self, let webView else { return }
+            // WebKit resolves this promise after the frame containing the
+            // highlight has been painted. No fixed delay stands in for paint.
+            let deadline = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                guard !Task.isCancelled, let self, self.lastWeReadFingerprint == fingerprint,
+                      AudioPlayerService.shared.pagePresentationHoldID == holdID else { return }
+                ReaderRunLog.write("PAGINATION anchor_ack_timeout platform=weread")
+                self.readVM?.invalidateWebContent(message: AppLocalized("网络连接失败，请重试。"))
+            }
+            defer { deadline.cancel() }
+            let script = "return await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(window.CR?.confirmPresentation?.({contentFingerprint: content}) === true))));"
+            let result = try? await webView.callAsyncJavaScript(script,
+                arguments: ["content": content], in: nil, contentWorld: .page)
+            guard self.lastWeReadFingerprint == fingerprint,
+                  AudioPlayerService.shared.pagePresentationHoldID == holdID else { return }
+            if result as? Bool == true {
+                _ = AudioPlayerService.shared.finishPagePresentation(holdID)
+                self.updateWeReadCarryHighlightIfNeeded()
+            } else {
+                if let state = try? await webView.callAsyncJavaScript(
+                    "return window.CR?.presentationState?.({contentFingerprint: content})", arguments: ["content": content], in: nil, contentWorld: .page) {
+                    ReaderRunLog.write("PAGINATION anchor_ack_rejected platform=weread state=\(state)")
+                }
+                self.readVM?.invalidateWebContent(message: AppLocalized("音频播放失败，请重试"))
+            }
+        }
     }
 
     private func commitWeReadPage(_ candidate: WeReadPageCandidate) {
@@ -2508,6 +2795,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let committedTOCEntry = pendingWeReadTOCEntry
         guard candidate.priorFingerprint == lastWeReadFingerprint,
               candidate.fingerprint != lastWeReadFingerprint || refresh != nil else { return }
+
+        if let bookID = readVM?.document.id, let url = candidate.readerURL,
+           let uid = candidate.chapterUID, let offset = candidate.chapterOffset {
+            readVM?.registerWeReadLocation(WeReadReadingLocation(bookID: bookID, readerURL: url,
+                chapterUID: uid, chapterOffset: offset), paragraphs: candidate.page)
+        }
 
         let deferredPreview = deferredWeReadPreview
         deferredWeReadPreview = nil
@@ -2527,6 +2820,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let selectedVoice = AppSettings.shared.voice(for: candidate.language)
         let continuous = continuousWeReadHandoff
         let boundaryTurn = pendingWeReadBoundaryTurn
+        let presentationHoldID = AudioPlayerService.shared.pagePresentationHoldID
         let canCommitContinuously = continuous.map {
             let visiblePreparedText = candidate.page.indices.contains($0.preparedParagraphIndex)
                 ? candidate.page[$0.preparedParagraphIndex].text
@@ -2545,6 +2839,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 )
         } ?? false
         let canCommitBoundaryCarry = !suppressAppReviewContinuationForPendingTurn &&
+            (expectedWeReadTargetContentFingerprint == nil || expectedWeReadTargetContentFingerprint == candidate.evidence.contentFingerprint) &&
             candidate.isConfirmedTurn &&
             candidate.carryParagraphIndex != nil &&
             candidate.carryUTF16Length > 0 &&
@@ -2661,10 +2956,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             let segments = candidate.page.map {
                 ["paragraphIndex": $0.id, "text": $0.text] as [String: Any]
             }
-            call("init", [
-                "segments": segments,
-                "color": AppSettings.shared.highlightColorHex,
-            ])
+            if presentationHoldID == nil || candidate.presentedOperationID != presentationHoldID {
+                call("init", [
+                    "segments": segments,
+                    "color": AppSettings.shared.highlightColorHex,
+                ])
+            }
 
             if isReadMode {
                 if let appReviewReadSession,
@@ -2680,29 +2977,24 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                         candidate.page,
                         language: candidate.language,
                         preparedSegments: continuous.segments,
-                        weReadBoundary: candidate.boundary
+                        weReadBoundary: candidate.boundary,
+                        following: preparedWeReadFollowingReserves(for: candidate)
                     ) == true
                     if committedContinuously { committedHandoff = continuous }
                 }
                 if committedContinuously, let continuous = committedHandoff {
-                    if let cue = continuous.boundaryCue,
-                       let paragraphIndex = candidate.carryParagraphIndex,
-                       candidate.carryUTF16Length > 0 {
-                        let visibleLength = candidate.carryUTF16Length
-                        activeWeReadCarry = WeReadActiveCarry(
-                            segmentID: cue.segmentID,
-                            boundaryTime: cue.boundaryTime,
-                            paragraphIndex: paragraphIndex,
-                            visibleUTF16Length: visibleLength
-                        )
-                    } else {
-                        activeWeReadCarry = nil
-                    }
+                    configureWeReadActiveCarry(candidate, cue: continuous.boundaryCue)
                     AudioPlayerService.shared.canStartQueuedSegment = nil
                     continuousWeReadHandoff = nil
                     invalidateWeReadPreview(reason: "continuous-committed")
                     AudioPlayerService.shared.resumeGatedSegmentIfPossible()
                     updateWeReadCarryHighlightIfNeeded()
+                    if activeWeReadCarry == nil, candidate.page.indices.contains(continuous.preparedParagraphIndex) {
+                        paintPreparedOpening(continuous.segments.first,
+                            source: candidate.page[continuous.preparedParagraphIndex].text,
+                            paragraph: continuous.preparedParagraphIndex)
+                    }
+                    confirmWeReadPresentation(candidate, holdID: presentationHoldID)
                     ReaderRunLog.write(
                         "WEREAD continuous committed serial=\(continuous.serial) next=\(String(candidate.fingerprint.prefix(12)))"
                     )
@@ -2715,23 +3007,16 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                             candidate.page,
                             language: candidate.language,
                             carrySegmentID: turn.cue.segmentID,
-                            weReadBoundary: candidate.boundary
+                            weReadBoundary: candidate.boundary,
+                            prepared: preparedWeReadCarryParagraph(for: candidate),
+                            following: preparedWeReadFollowingReserves(for: candidate)
                         ) == true
                     } == true
                     if committedCarry, let turn = boundaryTurn {
-                        if let paragraphIndex = candidate.carryParagraphIndex,
-                           candidate.carryUTF16Length > 0 {
-                            activeWeReadCarry = WeReadActiveCarry(
-                                segmentID: turn.cue.segmentID,
-                                boundaryTime: turn.cue.boundaryTime,
-                                paragraphIndex: paragraphIndex,
-                                visibleUTF16Length: candidate.carryUTF16Length
-                            )
-                        } else {
-                            activeWeReadCarry = nil
-                        }
+                        configureWeReadActiveCarry(candidate, cue: turn.cue)
                         invalidateWeReadPreview(reason: "boundary-carry-committed")
                         updateWeReadCarryHighlightIfNeeded()
+                        confirmWeReadPresentation(candidate, holdID: presentationHoldID)
                         ReaderRunLog.write(
                             "WEREAD boundary carry committed next=\(String(candidate.fingerprint.prefix(12))) trim=\(candidate.carryUTF16Length)"
                         )
@@ -2782,27 +3067,78 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
     }
 
-    /// While one natural sentence spans two visual pages, the audio item stays
-    /// unchanged. Paint the visible continuation only after its proportional
-    /// source position is reached; the next API segment then replaces it via
-    /// the normal segment-driven highlighter.
+    private func preparedWeReadCarryParagraph(for candidate: WeReadPageCandidate) -> ReadAloudViewModel.PreparedLiveWebParagraph? {
+        guard let prepared = preparedWeReadPage,
+              candidate.language == prepared.preview.language,
+              candidate.page.indices.contains(prepared.preview.preparedParagraphIndex) else { return nil }
+        let source = candidate.page[prepared.preview.preparedParagraphIndex].resolvedSpeechText
+        guard WeReadContinuousPageHandoffContract.canReleasePreparedAudio(
+            sourceFingerprint: prepared.preview.sourceFingerprint,
+            previousFingerprint: candidate.priorFingerprint,
+            predictedContentFingerprint: prepared.preview.contentFingerprint,
+            visibleContentFingerprint: candidate.evidence.contentFingerprint,
+            preparedText: prepared.preview.preparedText,
+            visiblePreparedText: source,
+            preparedVoiceID: prepared.voiceID,
+            selectedVoiceID: AppSettings.shared.voice(for: candidate.language)
+        ) else { return nil }
+        return .init(paragraphIndex: prepared.preview.preparedParagraphIndex,
+                     sourceText: source, voiceID: prepared.voiceID,
+                     language: candidate.language, segments: prepared.segments)
+    }
+
+    private func preparedWeReadFollowingReserves(for candidate: WeReadPageCandidate) -> [LivePagePreparedSpeech] {
+        guard let prepared = preparedWeReadPage,
+              prepared.preview.sourceFingerprint == candidate.priorFingerprint,
+              prepared.preview.contentFingerprint == candidate.evidence.contentFingerprint,
+              prepared.preview.language == candidate.language,
+              prepared.voiceID == AppSettings.shared.voice(for: candidate.language) else { return [] }
+        return prepared.following
+    }
+
+    private func configureWeReadActiveCarry(_ candidate: WeReadPageCandidate, cue: WeReadBoundaryAudioCue?) {
+        guard let cue, let cursor = cue.consumedCursor,
+              let index = candidate.carryParagraphIndex,
+              candidate.sourceSlices.indices.contains(index),
+              let start = candidate.sourceSlices[index].sourceUTF16Start,
+              candidate.carryUTF16Length > 0 else { activeWeReadCarry = nil; return }
+        let end = start + candidate.carryUTF16Length
+        activeWeReadCarry = WeReadActiveCarry(segmentID: cue.segmentID, boundaryTime: cue.boundaryTime,
+            paragraphIndex: index, sourceUTF16Start: start, sourceUTF16End: end,
+            needsAnotherPage: end < cursor.sourceUTF16End)
+    }
+
+    /// A natural source unit may span more than two native pages. Every
+    /// confirmed page keeps its own source interval while the producer and
+    /// audio item retain their original identity.
     private func updateWeReadCarryHighlightIfNeeded() {
         guard var carry = activeWeReadCarry else { return }
         let audio = AudioPlayerService.shared
-        guard audio.currentSegment?.id == carry.segmentID else {
+        guard let segment = audio.currentSegment,
+              segment.id == carry.segmentID || readVM?.currentSegmentBelongsToLiveWebCarry == true else {
             activeWeReadCarry = nil
             return
         }
-        guard !carry.didPaint, audio.currentTime + 0.02 >= carry.boundaryTime else { return }
-        carry.didPaint = true
+        if carry.needsAnotherPage, !pendingWeReadTurn, audio.pagePresentationHoldID == nil {
+            let baseline = lastWeReadFingerprint
+            _ = readVM?.armLiveWebCarryBoundary(sourceUTF16End: carry.sourceUTF16End) { [weak self] cue in
+                guard let self, self.lastWeReadFingerprint == baseline,
+                      AudioPlayerService.shared.pagePresentationHoldID != nil else { return }
+                self.pendingWeReadBoundaryTurn = WeReadBoundaryTurn(sourceFingerprint: baseline, cue: cue)
+                self.requestWeReadNextPage()
+            }
+        }
+        guard let range = readVM?.liveWebSourceRange(segmentID: segment.id, time: audio.playbackPosition) else { return }
+        let start = max(carry.sourceUTF16Start, range.location)
+        let end = min(carry.sourceUTF16End, NSMaxRange(range))
+        guard end > start else { return }
+        let visible = NSRange(location: start - carry.sourceUTF16Start, length: end - start)
+        guard carry.lastPaintedRange != visible else { return }
+        carry.lastPaintedRange = visible
         activeWeReadCarry = carry
-        call("highlightRange", [
-            "paragraphIndex": carry.paragraphIndex,
-            "charStart": 0,
-            "charEnd": carry.visibleUTF16Length,
-            "segSeq": 0,
-            "segmentTexts": [],
-        ])
+        call("highlightRange", ["paragraphIndex": carry.paragraphIndex,
+            "charStart": visible.location, "charEnd": NSMaxRange(visible),
+            "segSeq": 0, "segmentTexts": []])
     }
 
     private func requestWeReadNextPage() {
@@ -2838,7 +3174,25 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             if !isReadMode { explainVM?.finishLivePageContinuation() }
             return
         }
-        webView.evaluateJavaScript("window.CastReaderWeRead && window.CastReaderWeRead.nextPage && window.CastReaderWeRead.nextPage()") { [weak self] value, error in
+        var presentation: [String: Any] = [:]
+        if isReadMode, let id = AudioPlayerService.shared.pagePresentationHoldID {
+            if let cue = pendingWeReadBoundaryTurn?.cue, let cursor = cue.consumedCursor,
+               let range = readVM?.liveWebSourceRange(segmentID: cue.segmentID,
+                    time: cue.continuationTime ?? cue.boundaryTime) {
+                presentation = ["id": id.uuidString,
+                    "sourceLayoutFingerprint": cursor.sourceLayoutFingerprint ?? "",
+                    "sourceParagraphIndex": cursor.sourceParagraphIndex,
+                    "sourceStart": range.location, "sourceEnd": NSMaxRange(range)]
+            } else if let handoff = continuousWeReadHandoff, let segment = handoff.segments.first,
+                      let range = WeReadCrossPageSpeechContract.sourceRange(source: handoff.preparedText,
+                        segments: [segment], segmentID: segment.id, time: 0) {
+                presentation = ["id": id.uuidString, "paragraphIndex": handoff.preparedParagraphIndex,
+                    "charStart": range.location, "charEnd": NSMaxRange(range)]
+            }
+        }
+        let argument = (try? JSONSerialization.data(withJSONObject: ["presentation": presentation]))
+            .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        webView.evaluateJavaScript("window.CastReaderWeRead?.nextPage?.(\(argument)) === true") { [weak self] value, error in
             guard let self else { return }
             if let error { NSLog("CRDBG WeRead nextPage error %@", "\(error)") }
             if (value as? Bool) != true {
@@ -2848,6 +3202,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 self.pendingWeReadBoundaryTurn = nil
                 self.weReadTurnRequestedAt = nil
                 self.cancelWeReadContinuousHandoff(reason: "semantic-next-unavailable")
+                if AudioPlayerService.shared.pagePresentationHoldID != nil {
+                    self.readVM?.invalidateWebContent(message: AppLocalized("网络连接失败，请重试。"))
+                }
                 if !self.isReadMode { self.explainVM?.finishLivePageContinuation() }
                 return
             }
@@ -2866,6 +3223,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 self.resumeReadAfterWeReadTurn = false
                 self.resumeExplainAfterWeReadTurn = false
                 self.cancelWeReadContinuousHandoff(reason: "turn-confirmation-timeout")
+                if AudioPlayerService.shared.pagePresentationHoldID != nil {
+                    self.readVM?.invalidateWebContent(message: AppLocalized("网络连接失败，请重试。"))
+                }
                 if !self.isReadMode { self.explainVM?.finishLivePageContinuation() }
                 ReaderRunLog.write("WEREAD page turn confirmation timeout no-retry")
             }
@@ -2878,9 +3238,22 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// or a native refresh. This mirrors the extension and prevents mark/status
     /// repaints from feeding back into stop -> reload -> start.
     private func prepareForWeReadPageChange(_ payload: [String: Any]) {
+        if isWeRead, payload["reason"] as? String == "manual-intent" {
+            cancelWeReadOpeningResume()
+        }
         guard isWeRead, didInit else { return }
         let reason = (payload["reason"] as? String) ?? "canvas"
+        if reason == "manual-intent", !isReadMode {
+            // Manual navigation ends Explain, including an automatic turn that
+            // the user superseded. A later page/ready callback cannot revive it.
+            pendingWeReadTurn = false
+            weReadTurnTimeout?.cancel()
+            resumeExplainAfterWeReadTurn = false
+            invalidateWeReadExplainPrefetch(reason: "manual-navigation")
+            explainVM?.stop()
+        }
         if reason == "manual-intent" {
+            expectedWeReadTargetContentFingerprint = nil
             automaticAppReviewContinuation.cancel()
             suppressAppReviewContinuationForPendingTurn = true
         }
@@ -2975,8 +3348,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 }
             }
         }
-        call("clearHighlight")
-        call("clearMarks")
+        // For an owned native automatic turn, JS clears the old surface before
+        // invoking its page button and paints the target in that transaction.
+        // A delayed host clear would erase that new cue during its paint fence.
+        if !isReadMode || suppressAppReviewContinuationForPendingTurn ||
+            !(isExpectedContinuousTurn || isExpectedBoundaryCarry) {
+            call("clearHighlight")
+            call("clearMarks")
+        }
         ReaderRunLog.write(
             "WEREAD page changing reason=\(payload["reason"] ?? "canvas") read=\(resumeReadAfterWeReadTurn ? "Y" : "N") explain=\(resumeExplainAfterWeReadTurn ? "Y" : "N")"
         )
@@ -3013,8 +3392,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func invalidateWeReadPreview(reason: String, preservePrediction: Bool = false) {
+        weReadPreviewGeneration &+= 1
         weReadPreviewTask?.cancel()
         weReadPreviewTask = nil
+        preparedWeReadPage?.following.forEach { $0.discardIfSpeculative() }
         if !preservePrediction {
             pendingWeReadPreview = nil
             deferredWeReadPreview = nil
@@ -3059,6 +3440,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private func cancelWeReadContinuousHandoff(reason: String) {
         guard let handoff = continuousWeReadHandoff else { return }
         let audio = AudioPlayerService.shared
+        audio.cancelPendingPresentationBoundary(segmentID: handoff.predecessorSegmentID)
         _ = audio.removePendingSegments(withIDs: handoff.segmentIDs)
         audio.canStartQueuedSegment = nil
         continuousWeReadHandoff = nil
@@ -3195,12 +3577,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let explainParagraphs = slices.map(\.text).enumerated().map {
             ReadingParagraph(id: $0.offset, text: $0.element, type: .paragraph)
         }
-        let readDOMCharacterOffsets = GoogleBooksCrossPageContract.domCharacterOffsets(
-            in: slices,
-            through: consumedCursor
-        )
-        let explainDOMCharacterOffsets = slices.map {
-            max(0, $0.sourceUTF16Start ?? 0)
+        let explainDOMCharacterOffsets = raw.enumerated().map { index, item in
+            Int(Self.double(item["domUTF16Start"]) ?? Double(slices[index].sourceUTF16Start ?? 0))
+        }
+        let readDOMCharacterOffsets = slices.enumerated().map { index, slice in
+            explainDOMCharacterOffsets[index] + max(0, slice.text.utf16.count - texts[index].utf16.count)
         }
 
         var boundary: LiveWebPageSpeechBoundary?
@@ -3224,7 +3605,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 let speech = GoogleBooksCrossPageContract.remainingSpeechText(
                     rawSpeech,
                     sourceUTF16Start: speechOrigin,
-                    domCharacterOffset: readDOMCharacterOffsets[lastIndex],
+                    domCharacterOffset: sourceStart + readDOMCharacterOffsets[lastIndex] - explainDOMCharacterOffsets[lastIndex],
                     sourceParagraphIndex: sourceParagraphIndex,
                     consumedCursor: consumedCursor
                 )
@@ -3297,7 +3678,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             carryUTF16Length: consumption.carryUTF16Length,
             carryDOMUTF16Start: consumption.carryParagraphIndex.flatMap { index in
                 guard slices.indices.contains(index) else { return nil }
-                return slices[index].sourceUTF16Start
+                return explainDOMCharacterOffsets[index]
             }
         )
     }
@@ -3522,7 +3903,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             sourceSignature: sourceSignature,
             contentFingerprint: contentFingerprint,
             readPage: parsed.paragraphs,
+            readSourceSlices: parsed.sourceSlices.enumerated().map { index, slice in
+                let start = slice.sourceUTF16Start.map {
+                    $0 + parsed.readDOMCharacterOffsets[index] - parsed.explainDOMCharacterOffsets[index]
+                }
+                let text = parsed.paragraphs[index].text
+                return LiveWebPageSourceSlice(visibleParagraphIndex: index,
+                    sourceParagraphIndex: slice.sourceParagraphIndex,
+                    sourceUTF16Start: start, sourceUTF16End: start.map { $0 + text.utf16.count }, text: text)
+            },
             explainPage: parsed.explainParagraphs,
+            explainSourceSlices: parsed.explainSourceSlices,
             language: parsed.language,
             preparedParagraphIndex: preparedInput.id,
             preparedText: preparedInput.text
@@ -3685,11 +4076,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             Self.nonemptyGoogleBooksString(
                 payload["contentFingerprint"]
             ) ?? "-"
+        let layoutDiagnostic = (payload["layoutDiagnostic"] as? String)
+            .map { String($0.prefix(1_500)).replacingOccurrences(of: "\n", with: " ") } ?? "-"
         ReaderRunLog.write(
             "GBOOKS preview diagnostic event=\(event) " +
             "source=\(String(sourceSignature.prefix(12))) " +
             "attempt=\(min(attempt, 99_999)) " +
-            "fingerprint=\(String(fingerprint.prefix(12)))"
+            "fingerprint=\(String(fingerprint.prefix(12))) layout=\(layoutDiagnostic)"
         )
     }
 
@@ -3711,18 +4104,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 == activeGoogleBooksFrameSessionID else {
             return
         }
-        // The visible page always owns network priority until its first audio
-        // item is playable. A speculative next-page request that starts first
-        // can double the user's initial wait on constrained mobile networks.
-        if readVM.isWaitingForPlayableAudio {
-            if googleBooksSpeechPreloadTask != nil {
-                invalidateGoogleBooksSpeechPreload(
-                    reason: "foreground-first-audio",
-                    preserveCandidate: true
-                )
-            }
-            return
-        }
+        // Defer NEW speculative work while foreground media is unavailable.
+        // An admitted producer remains valid through AVPlayer item transitions;
+        // cancelling it here discarded partly responses on every SwiftUI update.
+        // The shared scheduler already prioritizes foreground requests, and
+        // source/voice/mode invalidation separately owns producer cancellation.
+        if readVM.isWaitingForPlayableAudio { return }
         // Speculative next page: the language it will be spoken in follows the same
         // three kinds of evidence, but a prediction never defines the book.
         let language = resolveReadingLanguage(candidate.text, remember: false)
@@ -3758,8 +4145,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         )
         googleBooksSpeechPreloadTask = Task { [weak self] in
             do {
+                guard let generator = self?.pageSpeechGenerator else { return }
                 let segments =
-                    try await TTSService.shared.generatePrefetchSegments(
+                    try await generator.generatePagePrefetchSegments(
                         paragraphIndex: 0,
                         text: candidate.text,
                         voice: voiceID,
@@ -3843,15 +4231,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               let preview = pendingGoogleBooksPagePreview,
               preview.sourceSignature == lastGoogleBooksSignature else { return }
 
-        if readVM.isWaitingForPlayableAudio {
-            if googleBooksReadPreloadTask != nil {
-                invalidateGoogleBooksReadPreload(
-                    reason: "foreground-first-audio",
-                    preservePrediction: true
-                )
-            }
-            return
-        }
+        // A short current-item buffering transition is not source invalidation.
+        // Keep admitted next-page work; only defer starting a new producer.
+        if readVM.isWaitingForPlayableAudio { return }
         let voiceID = AppSettings.shared.voice(for: preview.language)
         if let prepared = preparedGoogleBooksReadPage {
             if prepared.preview.sourceSignature == preview.sourceSignature,
@@ -3872,7 +4254,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             "\(preview.sourceSignature)|\(preview.contentFingerprint)|\(voiceID)"
         googleBooksReadPreloadTask = Task { [weak self] in
             do {
-                let segments = try await TTSService.shared.generatePrefetchSegments(
+                guard let generator = self?.pageSpeechGenerator else { return }
+                let segments = try await generator.generatePagePrefetchSegments(
                     paragraphIndex: preview.preparedParagraphIndex,
                     text: preview.preparedText,
                     voice: voiceID,
@@ -3941,7 +4324,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               let vm = explainVM,
               vm.isActive,
               vm.status.isActive,
-              vm.currentBlockIndex >= 0,
+              vm.canPlanAdjacentLivePage,
               let preview = pendingGoogleBooksPagePreview,
               preview.sourceSignature == lastGoogleBooksSignature else {
             return
@@ -3984,6 +4367,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             paragraphs: preview.explainPage,
             sourceURL: vm.document.sourceURL
         )
+        guard ExplainViewModel.canPrefetchExplanation(target) else { return }
         let previousSummary = vm.currentContinuitySummary()
         ReaderRunLog.write(
             "GBOOKS explain preload start " +
@@ -3991,15 +4375,22 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             "next=\(String(preview.contentFingerprint.prefix(12))) " +
             "paras=\(preview.explainPage.count)"
         )
+        let generation = googleBooksExplainPrefetchGeneration
+        let work = Task {
+            try await vm.prefetchFirstBlock(for: target, previousSummary: previousSummary,
+                                           textFingerprint: preview.contentFingerprint)
+        }
+        let voiceLanguage = settings.explainLangOrNil ?? preview.language
+        pendingGoogleBooksExplanation = GoogleBooksPendingExplanation(
+            preview: preview, task: work, voiceLanguage: voiceLanguage,
+            voiceID: settings.voice(for: voiceLanguage), depth: depth, requestedLanguage: requestedLanguage)
         googleBooksExplainPrefetchTask = Task { [weak self] in
             guard let self else { return }
             do {
-                let payload = try await vm.prefetchFirstBlock(
-                    for: target,
-                    previousSummary: previousSummary,
-                    textFingerprint: preview.contentFingerprint
-                )
+                let payload = try await work.value
                 try Task.checkCancellation()
+                guard generation == self.googleBooksExplainPrefetchGeneration else { return }
+                self.pendingGoogleBooksExplanation = nil
                 let currentSettings = AppSettings.shared
                 let currentToken = [
                     self.pendingGoogleBooksPagePreview?.sourceSignature ?? "",
@@ -4034,8 +4425,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     "blocks=\(payload.totalBlocks)"
                 )
             } catch is CancellationError {
+                guard generation == self.googleBooksExplainPrefetchGeneration else { return }
+                self.pendingGoogleBooksExplanation = nil
                 self.googleBooksExplainPrefetchTask = nil
             } catch {
+                guard generation == self.googleBooksExplainPrefetchGeneration else { return }
+                self.pendingGoogleBooksExplanation = nil
                 self.googleBooksExplainPrefetchTask = nil
                 ReaderRunLog.write(
                     "GBOOKS explain preload miss " +
@@ -4045,9 +4440,38 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
     }
 
+    private func takePendingGoogleBooksExplanation(
+        sourceSignature: String, visibleParagraphs: [ReadingParagraph],
+        visibleSourceSlices: [LiveWebPageSourceSlice]
+    ) -> Task<ExplainViewModel.PrefetchedFirstBlock, Error>? {
+        guard preparedGoogleBooksExplanation == nil,
+              let pending = pendingGoogleBooksExplanation else { return nil }
+        let settings = AppSettings.shared
+        guard GoogleBooksExplainPagePrefetchContract.canConsume(
+            sourceSignature: pending.preview.sourceSignature, previousSignature: sourceSignature,
+            predictedContentFingerprint: pending.preview.contentFingerprint,
+            payloadTextFingerprint: pending.preview.contentFingerprint,
+            predictedParagraphs: pending.preview.explainPage.map(\.text),
+            visibleParagraphs: visibleParagraphs.map(\.text),
+            predictedSourceSlices: pending.preview.explainSourceSlices, visibleSourceSlices: visibleSourceSlices,
+            preparedVoiceID: pending.voiceID, selectedVoiceID: settings.voice(for: pending.voiceLanguage),
+            preparedDepth: pending.depth, selectedDepth: settings.explainDepth,
+            requestedLanguage: pending.requestedLanguage, selectedLanguage: settings.explainLanguage
+        ) else { return nil }
+        // Retire only the observer. The new VM generation adopts the one
+        // producer and owns cancellation while the outstanding media arrives.
+        pendingGoogleBooksExplanation = nil
+        googleBooksExplainPrefetchGeneration &+= 1
+        googleBooksExplainPrefetchTask?.cancel()
+        googleBooksExplainPrefetchTask = nil
+        ReaderRunLog.write("GBOOKS explain preload adopted next=\(String(pending.preview.contentFingerprint.prefix(12)))")
+        return pending.task
+    }
+
     private func consumeGoogleBooksExplainPrefetch(
         sourceSignature: String,
-        visibleParagraphs: [ReadingParagraph]
+        visibleParagraphs: [ReadingParagraph],
+        visibleSourceSlices: [LiveWebPageSourceSlice]
     ) -> ExplainViewModel.PrefetchedFirstBlock? {
         guard let prepared = preparedGoogleBooksExplanation else {
             invalidateGoogleBooksExplainPrefetch(
@@ -4075,6 +4499,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 predictedParagraphs:
                     prepared.preview.explainPage.map(\.text),
                 visibleParagraphs: visibleParagraphs.map(\.text),
+                predictedSourceSlices: prepared.preview.explainSourceSlices,
+                visibleSourceSlices: visibleSourceSlices,
                 preparedVoiceID: prepared.voiceID,
                 selectedVoiceID: selectedVoice,
                 preparedDepth: prepared.depth,
@@ -4091,6 +4517,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func invalidateGoogleBooksExplainPrefetch(reason: String) {
+        googleBooksExplainPrefetchGeneration &+= 1
+        pendingGoogleBooksExplanation?.task.cancel()
+        pendingGoogleBooksExplanation = nil
         googleBooksExplainPrefetchTask?.cancel()
         googleBooksExplainPrefetchTask = nil
         preparedGoogleBooksExplanation = nil
@@ -4111,6 +4540,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               !pendingGoogleBooksManualTurn,
               googleBooksFailedTurnSignature != lastGoogleBooksSignature,
               let vm = readVM,
+              vm.currentWeReadBoundaryCue == nil,
               vm.isActive,
               vm.canContinueAcrossLivePageBoundary,
               let prepared = preparedGoogleBooksReadPage,
@@ -4150,7 +4580,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 text: segment.text,
                 isWavFormat: segment.isWavFormat,
                 unprocessedText: segment.unprocessedText,
-                speaker: segment.speaker
+                speaker: segment.speaker,
+                timingTimestamps: segment.timingTimestamps
             )
         }
         let handoff = GoogleBooksContinuousHandoff(
@@ -4192,6 +4623,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
             return false
         }
+        _ = audio.armQueuedTailPresentationBoundary { [weak self] hold in
+            guard let self, self.continuousGoogleBooksHandoff?.serial == serial else { return }
+            self.awaitGoogleBooksPresentation(hold)
+            self.requestGoogleBooksNextPage()
+        }
         let appendedAfter = audio.appendPreparedSegmentsForContinuousPlayback(
             rebased
         )
@@ -4230,6 +4666,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               pendingGoogleBooksPagePreview == nil,
               preparedGoogleBooksReadPage == nil,
               let vm = readVM,
+              vm.currentWeReadBoundaryCue == nil,
               vm.isActive,
               vm.canContinueAcrossLivePageBoundary,
               let prepared = preparedGoogleBooksSpeechPreview,
@@ -4307,6 +4744,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
             return false
         }
+        _ = audio.armQueuedTailPresentationBoundary { [weak self] hold in
+            guard let self, self.continuousGoogleBooksSpeechHandoff?.serial == serial else { return }
+            self.awaitGoogleBooksPresentation(hold)
+            self.requestGoogleBooksNextPage()
+        }
         let appendedAfter =
             audio.appendPreparedSegmentsForContinuousPlayback(rebased)
         guard appendedAfter == predecessor else {
@@ -4335,6 +4777,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             return false
         }
         let audio = AudioPlayerService.shared
+        audio.cancelPendingPresentationBoundary(segmentID: handoff.predecessorSegmentID)
         let wasGated = audio.isQueuedSegmentGated
         _ = audio.removePendingSegments(withIDs: handoff.segmentIDs)
         audio.canStartQueuedSegment = nil
@@ -4359,6 +4802,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             return false
         }
         let audio = AudioPlayerService.shared
+        audio.cancelPendingPresentationBoundary(segmentID: handoff.predecessorSegmentID)
         let wasGated = audio.isQueuedSegmentGated
         _ = audio.removePendingSegments(
             withIDs: handoff.segmentIDs
@@ -4392,7 +4836,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 text: segment.text,
                 isWavFormat: segment.isWavFormat,
                 unprocessedText: segment.unprocessedText,
-                speaker: segment.speaker
+                speaker: segment.speaker,
+                timingTimestamps: segment.timingTimestamps
             )
         }
     }
@@ -4411,6 +4856,19 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 preservePrediction: false
             )
         }
+        return matchingPreparedGoogleBooksReadPage(
+            previousSignature: previousSignature,
+            visibleParagraphs: visibleParagraphs
+        )
+    }
+
+    /// Inspect without retiring the producer or its cache. A carried source
+    /// sentence owns the player until it ends; its verified successor must
+    /// transfer with it before the old page's speculation is invalidated.
+    private func matchingPreparedGoogleBooksReadPage(
+        previousSignature: String,
+        visibleParagraphs: [ReadingParagraph]
+    ) -> GoogleBooksPreparedReadPage? {
         guard isReadMode, let prepared = preparedGoogleBooksReadPage else {
             return nil
         }
@@ -4435,6 +4893,18 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             return nil
         }
         return prepared
+    }
+
+    private func preparedGoogleBooksCarryParagraph(
+        previousSignature: String,
+        page: GoogleBooksParsedPage
+    ) -> ReadAloudViewModel.PreparedLiveWebParagraph? {
+        guard let prepared = matchingPreparedGoogleBooksReadPage(
+            previousSignature: previousSignature, visibleParagraphs: page.paragraphs
+        ), prepared.preview.language == page.language else { return nil }
+        return .init(paragraphIndex: prepared.preview.preparedParagraphIndex,
+                     sourceText: prepared.preview.preparedText, voiceID: prepared.voiceID,
+                     language: page.language, segments: prepared.segments)
     }
 
     private func invalidateGoogleBooksReadPreload(
@@ -4688,6 +5158,41 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             reason = .refresh
         }
 
+        // A real decoded cover is usable for navigation, but cannot initialize
+        // Read/Explain with an empty document. Keep this separate from didInit:
+        // the first text page must still perform full source/geometry setup.
+        if livePlatform == .googleBooks, rawCount == 0,
+           payload["surfaceKind"] as? String == "image-only",
+           !signature.isEmpty,
+           activeGoogleBooksFrameSessionID == nil
+                || activeGoogleBooksFrameSessionID == incomingSessionID,
+           !didInit || authorizedManual || authorizedAutomatic
+                || (!pendingGoogleBooksTurn && !pendingGoogleBooksManualTurn) {
+            if didInit || pendingGoogleBooksManualTurn || pendingGoogleBooksTurn {
+                invalidateGoogleBooksLivePage(reason: "image-only-page", clearConsumedCursor: true)
+                readVM?.stop()
+                explainVM?.stop()
+                readVM?.stageInactiveLiveWebPage([])
+                explainVM?.stageInactiveLiveWebPage([])
+                didInit = false
+                didAutoStart = true
+                googleBooksRecoveryOwner = nil
+                googleBooksRecoveryShouldResume = false
+            }
+            activeGoogleBooksFrameSessionID = incomingSessionID
+            googleBooksImageOnlySurface = true
+            lastGoogleBooksSignature = signature
+            googleBooksMainFrameWatchdogTask?.cancel()
+            googleBooksMainFrameWatchdogTask = nil
+            googleBooksReadinessTask?.cancel()
+            googleBooksReadinessTask = nil
+            googleBooksReadinessRetries = 0
+            googleBooksAwaitingReaderRecovery = false
+            livePlatform?.clearReaderError()
+            ReaderRunLog.write("GBOOKS visible image-only page ready for navigation")
+            return
+        }
+
         var shouldAdoptIncomingSession = false
         if let activeSessionID = activeGoogleBooksFrameSessionID,
            activeSessionID != incomingSessionID {
@@ -4845,6 +5350,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
         if restoreOpeningKoboPageIfNeeded(parsed.paragraphs, payload: payload, signature: signature) { return }
 
+        if livePlatform == .kobo, let location = payload["koboLocation"] as? [String: Any],
+           let bookUUID = location["bookUUID"] as? String,
+           let percentage = Self.double(location["percentage"]) {
+            readVM.registerKoboLocation(KoboReadingLocation(bookUUID: bookUUID, percentage: percentage),
+                                        paragraphs: parsed.paragraphs)
+        }
+
         if reason == .refresh, didInit, isReadMode,
            let anchor = readVM.makeWeReadPlaybackResumeAnchor(),
            let oldMapping = googleBooksReadDOMSegments.first(where: { $0["paragraphIndex"] as? Int == readVM.currentParagraphIndex }),
@@ -4999,6 +5511,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 carry.lastPaintedDOMUTF16End = nil
                 activeGoogleBooksCarry = carry
                 updateGoogleBooksCarryHighlightIfNeeded()
+                confirmGoogleBooksPresentation()
             } else if !isReadMode,
                       !googleBooksPageVisualsAreSuspended {
                 shownMarkIds.removeAll()
@@ -5114,6 +5627,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 && applicableLateTurn?.shouldResume == true
         let wasAutomaticTurn =
             wasPendingAutomaticTurn || wasResumableLateTurn
+        let presentedHoldID: UUID? = {
+            guard isReadMode, wasPendingAutomaticTurn, reason == .auto,
+                  let raw = payload["presentedOperationID"] as? String,
+                  let id = UUID(uuidString: raw),
+                  id == AudioPlayerService.shared.pagePresentationHoldID else { return nil }
+            return id
+        }()
         let shouldResumeRecovery =
             googleBooksRecoveryShouldResume
                 && googleBooksRecoveryOwner == expectedTurnOwner
@@ -5292,6 +5812,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         // the identical cursor or it would restore and repeat the carried text.
         googleBooksPageCompletionCursor = parsed.nextCursor
         googleBooksCurrentBoundarySourceUTF16End = parsed.boundarySourceVisibleEnd
+        googleBooksImageOnlySurface = false
         googleBooksReadinessTask?.cancel()
         googleBooksReadinessTask = nil
         googleBooksReadinessRetries = 0
@@ -5353,7 +5874,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         googleBooksResumeReadAfterTurn = false
         googleBooksResumeExplainAfterTurn = false
         shownMarkIds.removeAll()
-        call("clearHighlight")
+        if presentedHoldID == nil { call("clearHighlight") }
         call("clearMarks")
 
         let activeParagraphs = isReadMode ? parsed.paragraphs : parsed.explainParagraphs
@@ -5395,6 +5916,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 )
                 audio.resumeGatedSegmentIfPossible()
                 updateGoogleBooksCarryHighlightIfNeeded()
+                if activeGoogleBooksCarry == nil, let first = handoff.segments.first,
+                   parsed.paragraphs.indices.contains(first.paragraphIndex) {
+                    paintPreparedOpening(first, source: parsed.paragraphs[first.paragraphIndex].text,
+                        paragraph: first.paragraphIndex)
+                }
+                confirmGoogleBooksPresentation(presentedHoldID: presentedHoldID)
                 ReaderRunLog.write(
                     "GBOOKS continuous committed serial=\(handoff.serial) " +
                     "next=\(String(handoff.preview.contentFingerprint.prefix(12)))"
@@ -5449,6 +5976,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 )
                 audio.resumeGatedSegmentIfPossible()
                 updateGoogleBooksCarryHighlightIfNeeded()
+                if activeGoogleBooksCarry == nil, let first = handoff.segments.first,
+                   parsed.paragraphs.indices.contains(first.paragraphIndex) {
+                    paintPreparedOpening(first, source: parsed.paragraphs[first.paragraphIndex].text,
+                        paragraph: first.paragraphIndex)
+                }
+                confirmGoogleBooksPresentation(presentedHoldID: presentedHoldID)
                 ReaderRunLog.write(
                     "GBOOKS speech continuous committed " +
                     "serial=\(handoff.serial) " +
@@ -5476,7 +6009,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 parsed.paragraphs,
                 language: parsed.language,
                 carrySegmentID: boundaryTurn.cue.segmentID,
-                weReadBoundary: parsed.boundary
+                weReadBoundary: parsed.boundary,
+                prepared: preparedGoogleBooksCarryParagraph(
+                    previousSignature: previousCommittedSignature, page: parsed
+                )
            ) {
             explainVM?.stageInactiveLiveWebPage(
                 parsed.explainParagraphs,
@@ -5487,30 +6023,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 parsed: parsed
             )
             updateGoogleBooksCarryHighlightIfNeeded()
-            if !hasSpeakableContent {
-                // One natural sentence can cover an entire middle visual page.
-                // Keep the immutable carry audio and absolute cursor. The next
-                // visual page is requested only when playback reaches this
-                // middle page's own source edge, not immediately on commit.
-                pendingGoogleBooksBoundaryTurn = boundaryTurn
-                if let domStart = parsed.carryDOMUTF16Start,
-                   let consumedEnd = boundaryTurn.cue.consumedCursor?.sourceUTF16End {
-                    googleBooksCarryAdvance = GoogleBooksCarryAdvance(
-                        turn: boundaryTurn,
-                        segmentID: boundaryTurn.cue.segmentID,
-                        turnTime: GoogleBooksCrossPageContract.visualTurnTime(
-                            boundaryTime: boundaryTurn.cue.boundaryTime,
-                            segmentDuration: boundaryTurn.cue.segmentDuration,
-                            sourceBoundaryUTF16End:
-                                boundaryTurn.sourceBoundaryUTF16End,
-                            visibleCarryUTF16End:
-                                domStart + parsed.carryUTF16Length,
-                            consumedUTF16End: consumedEnd
-                        )
-                    )
-                    maybeAdvanceGoogleBooksCarryPage()
-                }
-            }
+            confirmGoogleBooksPresentation(presentedHoldID: presentedHoldID)
             ReaderRunLog.write(
                 "GBOOKS boundary carry committed trim=\(parsed.carryUTF16Length)"
             )
@@ -5640,6 +6153,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             )
             let explainPrefetched:
                 ExplainViewModel.PrefetchedFirstBlock?
+            var pendingExplanation: Task<ExplainViewModel.PrefetchedFirstBlock, Error>?
             if shouldResume {
                 let preloadSourceSignature =
                     wasAutomaticTurn
@@ -5648,10 +6162,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                                 ?? previousCommittedSignature
                         )
                         : previousCommittedSignature
+                pendingExplanation = takePendingGoogleBooksExplanation(
+                    sourceSignature: preloadSourceSignature,
+                    visibleParagraphs: parsed.explainParagraphs,
+                    visibleSourceSlices: parsed.explainSourceSlices)
                 explainPrefetched =
                     consumeGoogleBooksExplainPrefetch(
                         sourceSignature: preloadSourceSignature,
-                        visibleParagraphs: parsed.explainParagraphs
+                        visibleParagraphs: parsed.explainParagraphs,
+                        visibleSourceSlices: parsed.explainSourceSlices
                     )
             } else {
                 invalidateGoogleBooksExplainPrefetch(
@@ -5662,151 +6181,101 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             explainVM?.replaceLiveWebPage(
                 parsed.explainParagraphs,
                 language: parsed.language,
-                autoplay: shouldResume,
+                autoplay: shouldResume && pendingExplanation == nil,
                 prefetched: explainPrefetched
             )
+            if let pendingExplanation { explainVM?.startFromPendingPagePrefetch(pendingExplanation) }
         }
     }
 
-    private func configureGoogleBooksActiveCarry(
-        _ boundaryTurn: GoogleBooksBoundaryTurn,
-        parsed: GoogleBooksParsedPage
-    ) {
-        guard let paragraphIndex = parsed.carryParagraphIndex,
+    private func configureGoogleBooksActiveCarry(_ boundaryTurn: GoogleBooksBoundaryTurn, parsed: GoogleBooksParsedPage) {
+        guard let index = parsed.carryParagraphIndex,
               let domStart = parsed.carryDOMUTF16Start,
-              parsed.carryUTF16Length > 0 else {
-            activeGoogleBooksCarry = nil
-            return
+              parsed.sourceSlices.indices.contains(index),
+              let sourceStart = parsed.sourceSlices[index].sourceUTF16Start,
+              parsed.carryUTF16Length > 0 else { activeGoogleBooksCarry = nil; return }
+        let sourceEnd = sourceStart + parsed.carryUTF16Length
+        activeGoogleBooksCarry = GoogleBooksActiveCarry(segmentID: boundaryTurn.cue.segmentID,
+            sourceUTF16Start: sourceStart, sourceUTF16End: sourceEnd,
+            paragraphIndex: index, domUTF16Start: domStart,
+            domUTF16End: domStart + parsed.carryUTF16Length, lastPaintedDOMUTF16End: nil)
+        if let consumedEnd = boundaryTurn.cue.consumedCursor?.sourceUTF16End, sourceEnd < consumedEnd {
+            googleBooksCarryAdvance = GoogleBooksCarryAdvance(turn: boundaryTurn,
+                segmentID: boundaryTurn.cue.segmentID, sourceUTF16End: sourceEnd)
         }
-        let domEnd = domStart + parsed.carryUTF16Length
-        let visibleCarryStart = max(
-            domStart,
-            boundaryTurn.sourceBoundaryUTF16End
-        )
-        guard let consumedEnd =
-                boundaryTurn.cue.consumedCursor?.sourceUTF16End,
-              domEnd > visibleCarryStart else {
-            activeGoogleBooksCarry = nil
-            return
-        }
-        activeGoogleBooksCarry = GoogleBooksActiveCarry(
-            segmentID: boundaryTurn.cue.segmentID,
-            startTime: GoogleBooksCrossPageContract.visualTurnTime(
-                boundaryTime: boundaryTurn.cue.boundaryTime,
-                segmentDuration: boundaryTurn.cue.segmentDuration,
-                sourceBoundaryUTF16End:
-                    boundaryTurn.sourceBoundaryUTF16End,
-                visibleCarryUTF16End: visibleCarryStart,
-                consumedUTF16End: consumedEnd
-            ),
-            endTime: GoogleBooksCrossPageContract.visualTurnTime(
-                boundaryTime: boundaryTurn.cue.boundaryTime,
-                segmentDuration: boundaryTurn.cue.segmentDuration,
-                sourceBoundaryUTF16End:
-                    boundaryTurn.sourceBoundaryUTF16End,
-                visibleCarryUTF16End: domEnd,
-                consumedUTF16End: consumedEnd
-            ),
-            paragraphIndex: paragraphIndex,
-            domUTF16Start: visibleCarryStart,
-            domUTF16End: domEnd,
-            lastPaintedDOMUTF16End: nil
-        )
     }
 
     private func handleGoogleBooksPageBoundaryApproaching() {
-        guard isGoogleBooks,
-              isReadMode else { return }
-        // `currentWeReadBoundaryCue` is currently derived from a UTF-16
-        // character fraction, not a reliable TTS word timestamp. It may be
-        // used to prepare work, but it has no authority to move the visible
-        // Google page before the AVPlayerItem actually ends.
-        //
-        // Prepared audio remains behind `canStartQueuedSegment`: when the old
-        // item ends, that gate requests one physical turn and releases only
-        // after the exact new page commits. Without prepared audio,
-        // `onDocumentFinished` takes the same item-end path.
-        pendingGoogleBooksBoundaryTurn = nil
-        maybeArmGoogleBooksContinuousHandoff(reason: "audio-tail")
-        maybeArmGoogleBooksSpeechContinuousHandoff(
-            reason: "audio-tail"
-        )
-        let canTurnEarly = GoogleBooksAudioPageBoundaryContract
-            .canRequestPhysicalTurn(after: .estimatedBoundary)
-        ReaderRunLog.write(
-            "GBOOKS page boundary observed; physical turn " +
-            (canTurnEarly ? "authorized" : "deferred until audio item end")
-        )
-        if canTurnEarly {
+        guard isGoogleBooks, isReadMode else { return }
+        if let cue = readVM?.currentWeReadBoundaryCue,
+           let sourceEnd = googleBooksCurrentBoundarySourceUTF16End,
+           let hold = AudioPlayerService.shared.pagePresentationHoldID {
+            pendingGoogleBooksBoundaryTurn = GoogleBooksBoundaryTurn(sourceFingerprint: lastGoogleBooksSignature,
+                cue: cue, sourceBoundaryUTF16End: sourceEnd)
+            awaitGoogleBooksPresentation(hold)
             requestGoogleBooksNextPage()
+            return
         }
+        if let hold = AudioPlayerService.shared.pagePresentationHoldID {
+            // A whole-page end is authoritative even if speculative audio
+            // has not arrived. Never wait for the next paragraph to finish.
+            awaitGoogleBooksPresentation(hold)
+            requestGoogleBooksNextPage()
+            return
+        }
+        // Preparation lead time has no authority to move the visible page.
+        maybeArmGoogleBooksContinuousHandoff(reason: "audio-tail")
+        maybeArmGoogleBooksSpeechContinuousHandoff(reason: "audio-tail")
     }
 
     private func maybeAdvanceGoogleBooksCarryPage() {
         guard let advance = googleBooksCarryAdvance else { return }
-        guard GoogleBooksAudioPageBoundaryContract
-            .canRequestPhysicalTurn(after: .estimatedBoundary) else {
-            googleBooksCarryAdvance = nil
-            ReaderRunLog.write(
-                "GBOOKS proportional carry edge ignored; wait for audio item end"
-            )
-            return
+        let baseline = lastGoogleBooksSignature
+        _ = readVM?.armLiveWebCarryBoundary(sourceUTF16End: advance.sourceUTF16End) { [weak self] cue in
+            guard let self, self.lastGoogleBooksSignature == baseline,
+                  let hold = AudioPlayerService.shared.pagePresentationHoldID else { return }
+            self.googleBooksCarryAdvance = nil
+            self.pendingGoogleBooksBoundaryTurn = GoogleBooksBoundaryTurn(sourceFingerprint: baseline,
+                cue: cue, sourceBoundaryUTF16End: advance.sourceUTF16End)
+            self.awaitGoogleBooksPresentation(hold)
+            self.requestGoogleBooksNextPage()
         }
-        let audio = AudioPlayerService.shared
-        guard audio.currentSegment?.id == advance.segmentID else {
-            googleBooksCarryAdvance = nil
-            return
-        }
-        guard audio.currentTime + 0.02 >= advance.turnTime else { return }
-        googleBooksCarryAdvance = nil
-        pendingGoogleBooksBoundaryTurn = advance.turn
-        ReaderRunLog.write(
-            "GBOOKS multi-page carry reached visual edge time=\(advance.turnTime)"
-        )
-        requestGoogleBooksNextPage()
     }
 
-    /// Paint the visible continuation using absolute source-DOM coordinates.
-    /// CR's ordinary paragraph offset already points *after* the consumed
-    /// prefix for future narration, so a carry needs this one explicit range.
-    /// Progress follows the immutable audio segment instead of highlighting a
-    /// whole middle page as soon as it appears.
+    /// Map real cue coverage back into the current live DOM fragment.
     private func updateGoogleBooksCarryHighlightIfNeeded() {
         maybeAdvanceGoogleBooksCarryPage()
-        guard !googleBooksPageVisualsAreSuspended else { return }
-        guard var carry = activeGoogleBooksCarry else { return }
+        guard !googleBooksPageVisualsAreSuspended, var carry = activeGoogleBooksCarry else { return }
         let audio = AudioPlayerService.shared
-        guard audio.currentSegment?.id == carry.segmentID else {
-            activeGoogleBooksCarry = nil
+        guard let current = audio.currentSegment,
+              current.id == carry.segmentID || readVM?.currentSegmentBelongsToLiveWebCarry == true else {
+            activeGoogleBooksCarry = nil; return
+        }
+        guard let range = readVM?.liveWebSourceRange(segmentID: current.id, time: audio.playbackPosition) else {
+            if audio.pagePresentationHoldID != nil {
+                ReaderRunLog.write("PAGINATION carry_anchor_missing segment=\(current.id) time=\(audio.currentTime) source=\(carry.sourceUTF16Start)..<\(carry.sourceUTF16End)")
+            }
             return
         }
-        guard audio.currentTime + 0.02 >= carry.startTime else { return }
-        let duration = max(0.001, carry.endTime - carry.startTime)
-        let fraction = min(
-            1,
-            max(0, (audio.currentTime - carry.startTime) / duration)
-        )
-        let length = carry.domUTF16End - carry.domUTF16Start
-        let paintedEnd = min(
-            carry.domUTF16End,
-            carry.domUTF16Start + max(1, Int((Double(length) * fraction).rounded(.up)))
-        )
-        guard carry.lastPaintedDOMUTF16End != paintedEnd else { return }
-        carry.lastPaintedDOMUTF16End = paintedEnd
+        if audio.pagePresentationHoldID != nil {
+            ReaderRunLog.write("PAGINATION carry_anchor segment=\(current.id) time=\(audio.currentTime) cue=\(range.location)..<\(NSMaxRange(range)) source=\(carry.sourceUTF16Start)..<\(carry.sourceUTF16End) dom=\(carry.domUTF16Start)")
+        }
+        let start = max(carry.sourceUTF16Start, range.location)
+        let end = min(carry.sourceUTF16End, NSMaxRange(range))
+        guard end > start else { return }
+        let domStart = carry.domUTF16Start + start - carry.sourceUTF16Start
+        let domEnd = carry.domUTF16Start + end - carry.sourceUTF16Start
+        guard carry.lastPaintedDOMUTF16End != domEnd else { return }
+        carry.lastPaintedDOMUTF16End = domEnd
         activeGoogleBooksCarry = carry
-        call("highlightRange", [
-            "paragraphIndex": carry.paragraphIndex,
-            "charStart": 0,
-            "charEnd": 0,
-            "domCharStart": carry.domUTF16Start,
-            "domCharEnd": paintedEnd,
-        ])
+        call("highlightRange", ["paragraphIndex": carry.paragraphIndex,
+            "charStart": 0, "charEnd": 0, "domCharStart": domStart, "domCharEnd": domEnd])
     }
 
     /// 用户手动翻页（滑动/点击/键盘）：立刻停掉旧页的音频，记住原本是否在播，
     /// 新页提交后再决定要不要续播。自动翻页由 native 自己发起，不走这里。
     private func prepareForGoogleBooksPageChange(_ payload: [String: Any]) {
-        guard isGoogleBooks, didInit else { return }
+        guard isGoogleBooks, (didInit || googleBooksImageOnlySurface) else { return }
         guard (payload["reason"] as? String) == "manual" else { return }
         guard let identity = googleBooksManualTurnIdentity(from: payload) else {
             ReaderRunLog.write("GBOOKS ignored manual event without intent identity")
@@ -5823,6 +6292,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 ReaderRunLog.write("GBOOKS ignored stale manual intent")
                 return
             }
+            googleBooksImageOnlySurface = false
             updateHomeValidationReadiness()
             let audioWasGated =
                 AudioPlayerService.shared.isQueuedSegmentGated
@@ -5859,8 +6329,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 audioWasGated || cancelledCompletedGate
             googleBooksResumeReadAfterTurn =
                 shouldResumeReadBeforeCancellation
-            googleBooksResumeExplainAfterTurn =
-                !isReadMode && (explainVM?.shouldResumeAfterManualLivePageTurn == true)
+            googleBooksResumeExplainAfterTurn = false
+            if !isReadMode {
+                invalidateGoogleBooksExplainPrefetch(reason: "manual-navigation")
+                explainVM?.stop()
+            }
             clearGoogleBooksPageVisuals(reason: "manual-turn")
             // Entitlement refresh may have started before a VM became active.
             // It still belongs to the old page and must never activate after a
@@ -6092,7 +6565,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         if isApplicationActive {
             // 主帧只有转发壳，真正的翻页在跨源阅读帧里执行。
             googleBooksTurnActionDeferredForForeground = false
-            call("gbNextPage", googleBooksTurnIdentity?.payload ?? [:])
+            var payload = googleBooksTurnIdentity?.payload ?? [:]
+            if isReadMode, let hold = AudioPlayerService.shared.pagePresentationHoldID {
+                payload["sourcePresentation"] = googleBooksSourcePresentation(holdID: hold)
+            }
+            call("gbNextPage", payload)
             armGoogleBooksTurnTimeout()
         } else {
             googleBooksTurnSuspendedInBackground = true
@@ -6100,6 +6577,48 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             ReaderRunLog.write("GBOOKS next page deferred until foreground")
         }
         return true
+    }
+
+    /// A prepared whole-page successor has the same exact source contract as
+    /// a carried cue. Let WebKit paint its first real cue with the native page,
+    /// avoiding another host round trip after the previous media item ended.
+    private func googleBooksSourcePresentation(holdID: UUID) -> [String: Any]? {
+        if let cue = pendingGoogleBooksBoundaryTurn?.cue, let cursor = cue.consumedCursor,
+           let range = readVM?.liveWebSourceRange(segmentID: cue.segmentID,
+                time: cue.continuationTime ?? cue.boundaryTime),
+           let text = readVM?.liveWebSourceText(in: range) {
+            return ["id": holdID.uuidString, "sourceParagraphIndex": cursor.sourceParagraphIndex,
+                "sourceStart": range.location, "sourceEnd": NSMaxRange(range), "text": text]
+        }
+        let source: String
+        let paragraph: Int
+        let origin: Int
+        let segment: AudioSegment
+        if let handoff = continuousGoogleBooksHandoff,
+           handoff.preview.sourceSignature == lastGoogleBooksSignature,
+           handoff.voiceID == AppSettings.shared.voice(for: handoff.preview.language),
+           let first = handoff.segments.first,
+           let slice = handoff.preview.readSourceSlices.first(where: {
+               $0.visibleParagraphIndex == handoff.preview.preparedParagraphIndex
+           }), let index = slice.sourceParagraphIndex, let start = slice.sourceUTF16Start,
+           slice.text == handoff.preview.preparedText {
+            source = slice.text; paragraph = index; origin = start; segment = first
+        } else if let handoff = continuousGoogleBooksSpeechHandoff,
+                  handoff.prepared.candidate.sourceSignature == lastGoogleBooksSignature,
+                  handoff.prepared.candidate.originFrameSessionID == activeGoogleBooksFrameSessionID,
+                  handoff.prepared.voiceID == AppSettings.shared.voice(for: handoff.prepared.language),
+                  let first = handoff.segments.first {
+            source = handoff.prepared.candidate.text
+            paragraph = handoff.prepared.candidate.sourceParagraphIndex
+            origin = handoff.prepared.candidate.sourceUTF16Start
+            segment = first
+        } else { return nil }
+        guard origin >= 0, let range = WeReadCrossPageSpeechContract.sourceRange(source: source,
+            segments: [segment], segmentID: segment.id, time: 0), range.length > 0,
+            NSMaxRange(range) <= source.utf16.count else { return nil }
+        return ["id": holdID.uuidString, "sourceParagraphIndex": paragraph,
+            "sourceStart": origin + range.location, "sourceEnd": origin + NSMaxRange(range),
+            "text": (source as NSString).substring(with: range)]
     }
 
     private func armGoogleBooksTurnTimeout() {
@@ -6210,6 +6729,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         googleBooksConsumedCursor = nil
         automaticAppReviewContinuation.cancel()
         if owner == .explain { explainVM?.finishLivePageContinuation() }
+        if reason == "native-book-end", owner == .read,
+           AudioPlayerService.shared.finishDrainedPageAtBookEnd() {
+            googleBooksPresentationDeadline?.cancel()
+            googleBooksPresentationRetry?.cancel()
+            googleBooksPresentationRetry = nil
+            ReaderRunLog.write("PAGINATION native_book_end_drained platform=kobo")
+        }
         if GoogleBooksPageVisualStateContract.shouldRestoreAfterFailedTurn(
             preserveLateResult: preserveLateResult
         ) {
@@ -6220,6 +6746,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func handleEmptyGoogleBooksPage(reason: GoogleBooksPageEventReason) {
+        guard !googleBooksImageOnlySurface else { return }
         if didInit, !googleBooksAwaitingReaderRecovery {
             if pendingGoogleBooksTurn {
                 ReaderRunLog.write(
@@ -6311,6 +6838,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         reason: String,
         clearConsumedCursor: Bool
     ) {
+        googleBooksImageOnlySurface = false
         updateHomeValidationReadiness()
         rememberGoogleBooksRecoveryPlaybackIntent()
         activeGoogleBooksFrameSessionID = nil
@@ -6411,6 +6939,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         guard !didInit, livePlatform == .kobo else { return false }
         if koboOfficialRecoveryInProgress { return true }
         guard let checkpoint = koboOpeningCheckpoint else { return false }
+        koboResumeLatestPayload = payload
         googleBooksReadinessTask?.cancel()
         googleBooksReadinessTask = nil
         if ReadingResumeDocumentIndex(paragraphs: page).resolve(checkpoint) != nil ||
@@ -6418,40 +6947,129 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             ReaderRunLog.write("KOBO resume page matched turns=\(koboResumeVisited.count)")
             koboOpeningCheckpoint = nil
             koboResumeTimeout?.cancel()
+            resetKoboResumeNavigation()
             return false
         }
         if koboResumeLastSignature == signature { return true }
         guard koboResumeSteps < 64, let webView else {
             koboOpeningCheckpoint = nil
+            resetKoboResumeNavigation()
             return false
         }
+        guard koboResumeReadySignature == signature else {
+            awaitKoboResumeNavigation(payload: payload, signature: signature)
+            return true
+        }
+        koboResumeReadySignature = nil
         koboResumeVisited.insert(signature)
         koboResumeLastSignature = signature
+        let location = checkpoint.koboLocation
+        let useLocation = !koboResumeLocationAttempted
+            && location?.isValid(for: readVM?.document.sourceURL) == true
+        if useLocation { koboResumeLocationAttempted = true }
         let backwards = (1...3).contains(koboResumeSteps)
-        koboResumeSteps += 1
+        if !useLocation { koboResumeSteps += 1 }
         koboResumeTimeout?.cancel()
-        ReaderRunLog.write("KOBO resume finding page attempt=\(koboResumeSteps) direction=\(backwards ? "prev" : "next")")
+        ReaderRunLog.write("KOBO resume finding page attempt=\(koboResumeSteps) direction=\(useLocation ? "saved-location" : backwards ? "prev" : "next")")
         let action = backwards ? "prevPage" : "nextPage"
-        webView.evaluateJavaScript("window.CastReaderKobo?.\(action)?.() === true") { [weak self] result, error in
-            guard let self, self.koboOpeningCheckpoint != nil else { return }
-            if error != nil || result as? Bool != true {
-                if error == nil && (backwards || self.koboResumeSteps == 1) {
+        let resumeGeneration = koboResumeNavigationGeneration
+        let accountBoundary = AccountContentIsolation.captureBoundaryToken()
+        let arguments: [String: Any] = useLocation ? [
+            "bookUUID": location!.bookUUID.lowercased(), "percentage": location!.percentage
+        ] : [:]
+        let script = useLocation
+            ? "return window.CastReaderKobo?.restoreLocation?.({bookUUID,percentage}) === true"
+            : "return window.CastReaderKobo?.\(action)?.() === true"
+        Task { @MainActor [weak self, weak webView] in
+            guard let self, let webView, self.webView === webView,
+                  self.koboOpeningCheckpoint != nil, !self.didInit,
+                  self.koboResumeNavigationGeneration == resumeGeneration,
+                  accountBoundary == AccountContentIsolation.captureBoundaryToken() else { return }
+            let outcome: Result<Any, Error>
+            do {
+                outcome = .success(try await webView.callAsyncJavaScript(
+                    script, arguments: arguments, in: nil, contentWorld: .page))
+            } catch { outcome = .failure(error) }
+            guard self.koboOpeningCheckpoint != nil,
+                  self.koboResumeNavigationGeneration == resumeGeneration,
+                  accountBoundary == AccountContentIsolation.captureBoundaryToken(),
+                  self.webView === webView else { return }
+            let result = try? outcome.get()
+            if result as? Bool != true {
+                if useLocation {
+                    // Old readers and unsupported layouts retain the bounded
+                    // source-verified search. A rejected hint is not a match.
+                    self.koboResumeLastSignature = nil
+                } else if case .success = outcome, backwards || self.koboResumeSteps == 1 {
                     // The last book page cannot move forward, but its saved
                     // listening word can still be on an adjacent prior page.
                     if backwards { self.koboResumeSteps = 4 }
                     self.koboResumeLastSignature = nil
                 } else { self.koboOpeningCheckpoint = nil }
-                self.receiveGoogleBooksPage(payload)
+                self.receiveGoogleBooksPage(self.koboResumeLatestPayload ?? payload)
                 return
             }
             self.koboResumeTimeout = Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: 6_000_000_000)
-                guard let self, !Task.isCancelled, self.koboOpeningCheckpoint != nil else { return }
-                self.koboOpeningCheckpoint = nil
-                self.receiveGoogleBooksPage(payload)
+                guard let self, !Task.isCancelled, self.koboOpeningCheckpoint != nil,
+                      self.koboResumeNavigationGeneration == resumeGeneration,
+                      accountBoundary == AccountContentIsolation.captureBoundaryToken() else { return }
+                if useLocation { self.koboResumeLastSignature = nil }
+                else { self.koboOpeningCheckpoint = nil }
+                self.receiveGoogleBooksPage(self.koboResumeLatestPayload ?? payload)
             }
         }
         return true
+    }
+
+    private func resetKoboResumeNavigation() {
+        koboResumeNavigationTask?.cancel()
+        koboResumeNavigationTask = nil
+        koboResumeNavigationGeneration = UUID()
+        koboResumeNavigationPayload = nil
+        koboResumeLatestPayload = nil
+        koboResumeReadySignature = nil
+    }
+
+    /// Rendering and the provider's navigation service become ready at
+    /// different times. Hold the newest source page until navigation is
+    /// usable; a rejected pre-initialization click is not a searched page.
+    private func awaitKoboResumeNavigation(payload: [String: Any], signature: String) {
+        koboResumeNavigationPayload = (signature, payload)
+        guard koboResumeNavigationTask == nil, let webView else { return }
+        let generation = koboResumeNavigationGeneration
+        let boundary = AccountContentIsolation.captureBoundaryToken()
+        let deadline = ProcessInfo.processInfo.systemUptime + 15
+        koboResumeNavigationTask = Task { @MainActor [weak self, weak webView] in
+            while !Task.isCancelled {
+                guard let self, let webView, self.webView === webView,
+                      self.koboResumeNavigationGeneration == generation,
+                      self.koboOpeningCheckpoint != nil, !self.didInit,
+                      !self.koboOfficialRecoveryInProgress,
+                      boundary == AccountContentIsolation.captureBoundaryToken() else { return }
+                let ready = (try? await webView.evaluateJavaScript(
+                    "window.CastReaderKobo?.navigationReady?.() === true"
+                )) as? Bool == true
+                guard !Task.isCancelled,
+                      self.koboResumeNavigationGeneration == generation,
+                      self.koboOpeningCheckpoint != nil, !self.didInit,
+                      boundary == AccountContentIsolation.captureBoundaryToken(),
+                      let latest = self.koboResumeNavigationPayload else { return }
+                if ready || ProcessInfo.processInfo.systemUptime >= deadline {
+                    self.koboResumeNavigationTask = nil
+                    self.koboResumeNavigationPayload = nil
+                    if ready {
+                        self.koboResumeReadySignature = latest.signature
+                    } else {
+                        self.koboOpeningCheckpoint = nil
+                        ReaderRunLog.write("KOBO resume navigation unavailable after readiness deadline; checkpoint retained")
+                    }
+                    self.receiveGoogleBooksPage(latest.payload)
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+        }
     }
 
     /// Play 图书是 SPA，翻页只改 URL 的 pg 参数 —— 地址本身就是可续读的进度锚。
@@ -7014,6 +7632,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func finishWeReadLayoutIfStable(_ payload: [String: Any]) {
+        guard weReadOpeningCheckpoint == nil else { return }
         onWeReadSurfaceStable?()
         guard let refresh = weReadRefreshState else { return }
         let fingerprint = (payload["fingerprint"] as? String) ?? ""
@@ -7275,6 +7894,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         _ webView: WKWebView,
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
+        lastActiveDOMCommand = nil
         if isWeRead {
             weReadNetworkRetryTask?.cancel()
             weReadNetworkRetryTask = nil
@@ -7293,6 +7913,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             if allowsLiveMainFrameNavigation(webView.url) {
                 googleBooksNetworkRetries = 0
                 if (!didInit || googleBooksAwaitingReaderRecovery),
+                   !googleBooksImageOnlySurface,
                    googleBooksReadinessTask == nil,
                    googleBooksMainFrameWatchdogTask == nil {
                     // Main-frame success does not prove that Google created the
@@ -7483,6 +8104,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             didRequestKoboSessionRefresh = true
             koboOfficialRecoveryInProgress = true
             koboResumeTimeout?.cancel()
+            resetKoboResumeNavigation()
             googleBooksReadinessTask?.cancel()
             googleBooksReadinessTask = nil
             koboSessionRecoveryTask?.cancel()
@@ -7742,6 +8364,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
     }
 
+    // SwiftUI updates on every audio tick. Mode changes are page-scoped
+    // commands, not clock ticks; avoid flooding WebKit while it paints a turn.
+    private var lastActiveDOMCommand: String?
+
     /// 调 window.CR.<fn>(<jsonPayload>)。
     func call(_ fn: String, _ payload: [String: Any] = [:]) {
         guard let webView = webView else { return }
@@ -7757,11 +8383,22 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
            let s = String(data: data, encoding: .utf8) {
             arg = s
         }
+        if fn == "init" { lastActiveDOMCommand = nil }
+        let activeKey = "\(ObjectIdentifier(webView))|\(activeGoogleBooksFrameSessionID ?? "main")|\(payload["active"] as? Bool == true)"
+        if fn == "setActive", didInit {
+            guard lastActiveDOMCommand != activeKey else { return }
+            lastActiveDOMCommand = activeKey
+        }
         let dbg = payload["audioSegmentIndex"] ?? payload["paragraphIndex"] ?? (payload["audioSegments"] != nil ? "segs=\((payload["audioSegments"] as? [Any])?.count ?? 0)" : "")
         NSLog("CRDBG →JS %@(%@)", fn, "\(dbg)")
         let js = "window.CR && window.CR.\(fn) && window.CR.\(fn)(\(arg))"
-        webView.evaluateJavaScript(js) { _, err in
-            if let err = err { print("[WebReader] call \(fn) error: \(err)") }
+        webView.evaluateJavaScript(js) { [weak self] _, err in
+            if let err = err {
+                if fn == "setActive", self?.lastActiveDOMCommand == activeKey {
+                    self?.lastActiveDOMCommand = nil
+                }
+                print("[WebReader] call \(fn) error: \(err)")
+            }
         }
     }
 
@@ -7811,7 +8448,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 speechUTF16Length: speech,
                 sourceLayoutFingerprint: value["sourceLayoutFingerprint"] as? String,
                 sourceParagraphIndex: double(value["sourceParagraphIndex"]).map { Int($0) },
-                sourceSpeechEnd: double(value["sourceSpeechEnd"]).map { Int($0) }
+                sourceSpeechEnd: double(value["sourceSpeechEnd"]).map { Int($0) },
+                followingPageUTF16Offsets: (value["pageBoundaryUTF16Offsets"] as? [Any] ?? []).prefix(12).compactMap { exactNonnegativeInteger($0) }
             )
             if boundary.isCrossPage { return boundary }
         }

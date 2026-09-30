@@ -1,0 +1,318 @@
+{
+  "candidate": 100,
+  "rows": [
+    {
+      "begin": "17:08:50.811",
+      "prior_end": "17:08:50.772",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:08:50.822",
+        "lock": "17:08:50.828",
+        "receipt": "17:08:50.841",
+        "source_activated": "17:08:50.849",
+        "paint": "17:08:50.869",
+        "restart": "17:08:50.875",
+        "media_ready": "17:08:50.900"
+      },
+      "playing": "17:08:50.970",
+      "ended_to_playing_ms": 198,
+      "profile_overlap": true
+    },
+    {
+      "begin": "17:09:12.640",
+      "prior_end": "17:09:12.607",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:09:12.648",
+        "lock": "17:09:12.651",
+        "receipt": "17:09:12.659",
+        "source_activated": "17:09:12.668",
+        "paint": "17:09:12.688",
+        "restart": "17:09:12.694",
+        "media_ready": "17:09:12.713"
+      },
+      "playing": "17:09:12.792",
+      "ended_to_playing_ms": 185,
+      "profile_overlap": true
+    },
+    {
+      "begin": "17:09:45.363",
+      "prior_end": "17:09:45.320",
+      "outcome": "playing",
+      "staged_target": false,
+      "phase": {
+        "script": "17:09:45.368",
+        "lock": "17:09:45.371",
+        "source_activated": "17:09:45.656",
+        "restart": "17:09:45.663",
+        "media_ready": "17:09:45.682"
+      },
+      "playing": "17:09:45.762",
+      "ended_to_playing_ms": 442,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:10:10.292",
+      "prior_end": "17:10:10.253",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:10:10.300",
+        "lock": "17:10:10.303",
+        "receipt": "17:10:10.313",
+        "source_activated": "17:10:10.322",
+        "paint": "17:10:10.344",
+        "restart": "17:10:10.350",
+        "media_ready": "17:10:10.367"
+      },
+      "playing": "17:10:10.433",
+      "ended_to_playing_ms": 180,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:10:33.576",
+      "prior_end": "17:10:33.547",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:10:33.581",
+        "lock": "17:10:33.585",
+        "receipt": "17:10:33.592",
+        "source_activated": "17:10:33.601",
+        "paint": "17:10:33.618",
+        "restart": "17:10:33.624",
+        "media_ready": "17:10:33.649"
+      },
+      "playing": "17:10:33.712",
+      "ended_to_playing_ms": 165,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:10:51.494",
+      "prior_end": "17:10:51.459",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:10:51.502",
+        "lock": "17:10:51.506",
+        "receipt": "17:10:51.516",
+        "source_activated": "17:10:51.525",
+        "paint": "17:10:51.542",
+        "restart": "17:10:51.547",
+        "media_ready": "17:10:51.570"
+      },
+      "playing": "17:10:51.632",
+      "ended_to_playing_ms": 173,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:11:27.689",
+      "prior_end": "17:11:27.650",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:11:27.698",
+        "lock": "17:11:27.705",
+        "receipt": "17:11:27.714",
+        "source_activated": "17:11:27.723",
+        "paint": "17:11:27.744",
+        "restart": "17:11:27.749",
+        "media_ready": "17:11:27.766"
+      },
+      "playing": "17:11:27.822",
+      "ended_to_playing_ms": 172,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:11:58.278",
+      "prior_end": "17:11:58.247",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:11:58.284",
+        "lock": "17:11:58.286",
+        "receipt": "17:11:58.293",
+        "source_activated": "17:11:58.301",
+        "paint": "17:11:58.319",
+        "restart": "17:11:58.324",
+        "media_ready": "17:11:58.347"
+      },
+      "playing": "17:11:58.406",
+      "ended_to_playing_ms": 159,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:12:19.063",
+      "prior_end": "17:12:19.021",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:12:19.071",
+        "lock": "17:12:19.075",
+        "receipt": "17:12:19.082",
+        "source_activated": "17:12:19.091",
+        "paint": "17:12:19.109",
+        "restart": "17:12:19.115",
+        "media_ready": "17:12:19.137"
+      },
+      "playing": "17:12:19.199",
+      "ended_to_playing_ms": 178,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:12:50.039",
+      "prior_end": "17:12:50.000",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:12:50.048",
+        "lock": "17:12:50.054",
+        "receipt": "17:12:50.064",
+        "source_activated": "17:12:50.073",
+        "paint": "17:12:50.095",
+        "restart": "17:12:50.101",
+        "media_ready": "17:12:50.117"
+      },
+      "playing": "17:12:50.176",
+      "ended_to_playing_ms": 176,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:13:20.178",
+      "prior_end": "17:13:20.146",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:13:20.186",
+        "lock": "17:13:20.189",
+        "receipt": "17:13:20.196",
+        "source_activated": "17:13:20.205",
+        "paint": "17:13:20.221",
+        "restart": "17:13:20.227",
+        "media_ready": "17:13:20.243"
+      },
+      "playing": "17:13:20.311",
+      "ended_to_playing_ms": 165,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:13:51.567",
+      "prior_end": "17:13:51.536",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:13:51.575",
+        "lock": "17:13:51.579",
+        "receipt": "17:13:51.588",
+        "source_activated": "17:13:51.597",
+        "paint": "17:13:51.616",
+        "restart": "17:13:51.622",
+        "media_ready": "17:13:51.640"
+      },
+      "playing": "17:13:51.721",
+      "ended_to_playing_ms": 185,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:14:16.768",
+      "prior_end": "17:14:16.737",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:14:16.777",
+        "lock": "17:14:16.779",
+        "receipt": "17:14:16.787",
+        "source_activated": "17:14:16.795",
+        "paint": "17:14:16.815",
+        "restart": "17:14:16.821",
+        "media_ready": "17:14:16.846"
+      },
+      "playing": "17:14:16.911",
+      "ended_to_playing_ms": 174,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:14:33.407",
+      "prior_end": "17:14:33.376",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:14:33.414",
+        "lock": "17:14:33.418",
+        "receipt": "17:14:33.429",
+        "source_activated": "17:14:33.437",
+        "paint": "17:14:33.454",
+        "restart": "17:14:33.460",
+        "media_ready": "17:14:33.477"
+      },
+      "playing": "17:14:33.540",
+      "ended_to_playing_ms": 164,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:14:57.420",
+      "prior_end": "17:14:57.407",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:14:57.444",
+        "lock": "17:14:57.448",
+        "receipt": "17:14:57.457",
+        "source_activated": "17:14:57.467",
+        "paint": "17:14:57.489",
+        "restart": "17:14:57.496",
+        "media_ready": "17:14:57.519"
+      },
+      "playing": "17:14:57.584",
+      "ended_to_playing_ms": 177,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:15:28.711",
+      "prior_end": "17:15:28.696",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "script": "17:15:28.735",
+        "lock": "17:15:28.739",
+        "receipt": "17:15:28.748",
+        "source_activated": "17:15:28.757",
+        "paint": "17:15:28.779",
+        "restart": "17:15:28.785",
+        "media_ready": "17:15:28.808"
+      },
+      "playing": "17:15:28.869",
+      "ended_to_playing_ms": 173,
+      "profile_overlap": false
+    }
+  ],
+  "ordinary_events": {
+    "count": 14,
+    "p95_ms": 442,
+    "max_ms": 442
+  },
+  "profile_interval": [
+    "17:08:50.673",
+    "17:09:31.868"
+  ],
+  "raw_sha256": {
+    "/tmp/castreader-kindlelive100-reader.log": "eb55b1892be22430bbed638f944a93b51d26dc6eb8a938d419858b79cc628bf9",
+    "/tmp/castreader-kindlelive100-probe.log": "7afe8be00efed6474c7e95c6f2eca12d49b7bb2cb8014db69380534ccf462307"
+  },
+  "measurement": "Application event intervals, not acoustic silence. No final long-duration or chapter coverage claimed.",
+  "final_acceptance": false,
+  "archived_evidence": {
+    "live100-kindle-reader.log.gz": {
+      "uncompressed_sha256": "eb55b1892be22430bbed638f944a93b51d26dc6eb8a938d419858b79cc628bf9",
+      "compressed_sha256": "ae9b8624f7f2b53470989d80d54f18ec2473e372ab2087879c54d16a6c56cb94",
+      "bytes": 70673
+    },
+    "live100-kindle-probe-session.log.gz": {
+      "uncompressed_sha256": "7ab7ba2733aa5df55919e1f685622be2127ae20d2030404995224609e05f14c2",
+      "compressed_sha256": "7e81b7a70e24b6aa3b7e32360f403777e8a92aa320d2e6200bfaffee0a8f1da3",
+      "bytes": 151965
+    }
+  }
+}

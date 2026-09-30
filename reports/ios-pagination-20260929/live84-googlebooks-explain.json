@@ -1,0 +1,147 @@
+{
+  "raw_log": "/private/tmp/castreader-pagination-live84-google-explain.log",
+  "raw_sha256": "972992445b02d47ced244da6c0e72d915756162f1d4562983e2e6d3892655c54",
+  "measurement": "Application event clock; includes native turn time separately; no acoustic claim",
+  "summary": {
+    "preset": {
+      "all_commits": 4,
+      "all_audible_paths": {
+        "count": 4,
+        "request_to_commit_ms": {
+          "samples": 4,
+          "p95": 133,
+          "max": 133
+        },
+        "commit_to_playing_ms": {
+          "samples": 4,
+          "p95": 104,
+          "max": 104
+        },
+        "ended_to_playing_ms": {
+          "samples": 4,
+          "p95": 230,
+          "max": 230
+        }
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 4,
+        "request_to_commit_ms": {
+          "samples": 4,
+          "p95": 133,
+          "max": 133
+        },
+        "commit_to_playing_ms": {
+          "samples": 4,
+          "p95": 104,
+          "max": 104
+        },
+        "ended_to_playing_ms": {
+          "samples": 4,
+          "p95": 230,
+          "max": 230
+        }
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    },
+    "clone": {
+      "all_commits": 0,
+      "all_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    }
+  },
+  "rows": [
+    {
+      "commit_line": 84,
+      "commit_ms": 44664884,
+      "request_ms": 44664762,
+      "prior_audio_end_ms": 44664761,
+      "source": "0,66,430,593,66,24,819,t",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 122,
+      "playing_line": 101,
+      "playing_ms": 44664979,
+      "commit_to_playing_ms": 95,
+      "ended_to_playing_ms": 218
+    },
+    {
+      "commit_line": 129,
+      "commit_ms": 44677619,
+      "request_ms": 44677486,
+      "prior_audio_end_ms": 44677486,
+      "source": "0,66,430,593,66,24,826,G",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 133,
+      "playing_line": 148,
+      "playing_ms": 44677716,
+      "commit_to_playing_ms": 97,
+      "ended_to_playing_ms": 230
+    },
+    {
+      "commit_line": 181,
+      "commit_ms": 44696791,
+      "request_ms": 44696668,
+      "prior_audio_end_ms": 44696668,
+      "source": "0,66,430,593,66,24,805,p",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 123,
+      "playing_line": 199,
+      "playing_ms": 44696893,
+      "commit_to_playing_ms": 102,
+      "ended_to_playing_ms": 225
+    },
+    {
+      "commit_line": 231,
+      "commit_ms": 44711455,
+      "request_ms": 44711334,
+      "prior_audio_end_ms": 44711333,
+      "source": "0,66,430,593,66,24,754,w",
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 121,
+      "playing_line": 251,
+      "playing_ms": 44711559,
+      "commit_to_playing_ms": 104,
+      "ended_to_playing_ms": 226
+    }
+  ],
+  "final_acceptance": false,
+  "candidate": 84
+}

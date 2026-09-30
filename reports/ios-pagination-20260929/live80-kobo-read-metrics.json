@@ -1,0 +1,246 @@
+{
+  "candidate": "80",
+  "observed_start": "11:27:24.000",
+  "observed_end_seconds": 41616.944,
+  "metric": "event timestamps, not acoustic silence",
+  "turns": [
+    {
+      "id": "49FAB26E-1DED-434C-A316-5CB3279644D8",
+      "requested": 41259.892,
+      "hold": 41259.892,
+      "release": 41260.285,
+      "playing": 41260.402,
+      "release_to_playing_ms": 117.0,
+      "request_to_commit_ms": 333.0,
+      "hold_to_playing_ms": 510.0
+    },
+    {
+      "id": "00B4A040-57DC-4C4A-96A3-0AA02978BEA4",
+      "requested": 41278.621,
+      "hold": 41278.707,
+      "release": 41279.041,
+      "playing": 41279.199,
+      "release_to_playing_ms": 158.0,
+      "request_to_commit_ms": 345.0,
+      "hold_to_playing_ms": 492.0
+    },
+    {
+      "id": "6B6EB9B7-FE24-470B-B44C-873B711A168D",
+      "requested": 41300.244,
+      "hold": 41300.244,
+      "release": 41300.669,
+      "playing": 41300.826,
+      "release_to_playing_ms": 157.0,
+      "request_to_commit_ms": 353.0,
+      "hold_to_playing_ms": 582.0
+    },
+    {
+      "id": "1C6B3999-9F9E-4EF4-887F-BA9D433CA27B",
+      "requested": 41312.742,
+      "hold": 41312.743,
+      "release": 41313.176,
+      "playing": 41313.315,
+      "release_to_playing_ms": 139.0,
+      "request_to_commit_ms": 358.0,
+      "hold_to_playing_ms": 572.0
+    },
+    {
+      "id": "17679A84-4020-4225-9E50-25852620D8A6",
+      "requested": 41331.2,
+      "hold": 41331.291,
+      "release": 41331.666,
+      "playing": 41331.814,
+      "release_to_playing_ms": 148.0,
+      "request_to_commit_ms": 376.0,
+      "hold_to_playing_ms": 523.0
+    },
+    {
+      "id": "B37175E0-E149-4575-91AE-665591945A34",
+      "requested": 41351.754,
+      "hold": 41351.754,
+      "release": 41352.154,
+      "playing": 41352.315,
+      "release_to_playing_ms": 161.0,
+      "request_to_commit_ms": 336.0,
+      "hold_to_playing_ms": 561.0
+    },
+    {
+      "id": "F7D68C42-2DA4-40B8-B5F3-38D0BED46112",
+      "requested": 41366.068,
+      "hold": 41366.068,
+      "release": 41366.481,
+      "playing": 41366.609,
+      "release_to_playing_ms": 128.0,
+      "request_to_commit_ms": 342.0,
+      "hold_to_playing_ms": 541.0
+    },
+    {
+      "id": "851D9010-DEAB-4603-A480-953A9569AEDE",
+      "requested": 41381.455,
+      "hold": 41381.455,
+      "release": 41381.853,
+      "playing": 41381.973,
+      "release_to_playing_ms": 120.0,
+      "request_to_commit_ms": 329.0,
+      "hold_to_playing_ms": 518.0
+    },
+    {
+      "id": "2938C9C3-A9B2-4AA7-9A0A-7A1BB30DAFA0",
+      "requested": 41398.932,
+      "hold": 41398.933,
+      "release": 41399.356,
+      "playing": 41399.491,
+      "release_to_playing_ms": 135.0,
+      "request_to_commit_ms": 340.0,
+      "hold_to_playing_ms": 558.0
+    },
+    {
+      "id": "90729E72-7D25-48F2-8DB7-61FCC70E076D",
+      "requested": 41415.049,
+      "hold": 41415.05,
+      "release": 41415.46,
+      "playing": 41415.58,
+      "release_to_playing_ms": 120.0,
+      "request_to_commit_ms": 345.0,
+      "hold_to_playing_ms": 530.0
+    },
+    {
+      "id": "91B9022D-1D43-4B9F-8B2D-F717B5D42C53",
+      "requested": 41430.465,
+      "hold": 41430.465,
+      "release": 41430.89,
+      "playing": 41431.023,
+      "release_to_playing_ms": 133.0,
+      "request_to_commit_ms": 346.0,
+      "hold_to_playing_ms": 558.0
+    },
+    {
+      "id": "84066912-422E-4404-89AB-E366AD57B45F",
+      "requested": 41445.576,
+      "hold": 41445.576,
+      "release": 41445.98,
+      "playing": 41446.141,
+      "release_to_playing_ms": 161.0,
+      "request_to_commit_ms": 339.0,
+      "hold_to_playing_ms": 565.0
+    },
+    {
+      "id": "B657AD62-914C-4B26-A477-2A5BBD75A551",
+      "requested": 41462.346,
+      "hold": 41462.346,
+      "release": 41462.764,
+      "playing": 41462.926,
+      "release_to_playing_ms": 162.0,
+      "request_to_commit_ms": 348.0,
+      "hold_to_playing_ms": 580.0
+    },
+    {
+      "id": "EE271351-C0C3-4854-9DFA-72FE731457C8",
+      "requested": 41477.944,
+      "hold": 41478.033,
+      "release": 41478.4,
+      "playing": 41478.548,
+      "release_to_playing_ms": 148.0,
+      "request_to_commit_ms": 361.0,
+      "hold_to_playing_ms": 515.0
+    },
+    {
+      "id": "ECCB1FD1-1CCE-4B8C-9EB2-8ED28587BFDB",
+      "requested": 41491.584,
+      "hold": 41491.585,
+      "release": 41492.0,
+      "playing": 41492.143,
+      "release_to_playing_ms": 143.0,
+      "request_to_commit_ms": 345.0,
+      "hold_to_playing_ms": 558.0
+    },
+    {
+      "id": "408F63F4-BCBA-448D-BAF3-A721C6190840",
+      "requested": 41506.309,
+      "hold": 41506.31,
+      "release": 41506.746,
+      "playing": 41506.922,
+      "release_to_playing_ms": 176.0,
+      "request_to_commit_ms": 360.0,
+      "hold_to_playing_ms": 612.0
+    },
+    {
+      "id": "6C31275B-71A6-4709-8CDE-CE5425C915A5",
+      "requested": 41523.121,
+      "hold": 41523.223,
+      "release": 41523.549,
+      "playing": 41523.696,
+      "release_to_playing_ms": 147.0,
+      "request_to_commit_ms": 348.0,
+      "hold_to_playing_ms": 473.0
+    },
+    {
+      "id": "86289258-BB71-4DC0-90A3-8F0D6A9860DB",
+      "requested": 41539.668,
+      "hold": 41539.668,
+      "release": 41540.154,
+      "playing": 41540.362,
+      "release_to_playing_ms": 208.0,
+      "request_to_commit_ms": 381.0,
+      "hold_to_playing_ms": 694.0
+    },
+    {
+      "id": "78C17225-9AD3-4A59-A06D-9C8DB7180CAB",
+      "requested": 41555.307,
+      "hold": 41555.308,
+      "release": 41555.718,
+      "playing": 41555.877,
+      "release_to_playing_ms": 159.0,
+      "request_to_commit_ms": 346.0,
+      "hold_to_playing_ms": 569.0
+    },
+    {
+      "id": "64358E49-B8ED-49FD-A423-E853F7FC1529",
+      "requested": 41574.622,
+      "hold": 41574.709,
+      "release": 41575.053,
+      "playing": 41575.225,
+      "release_to_playing_ms": 172.0,
+      "request_to_commit_ms": 349.0,
+      "hold_to_playing_ms": 516.0
+    },
+    {
+      "id": "B2148840-B263-4B2F-80DA-06E43CF20BEA",
+      "requested": 41589.961,
+      "hold": 41589.962,
+      "release": 41590.391,
+      "playing": 41590.563,
+      "release_to_playing_ms": 172.0,
+      "request_to_commit_ms": 353.0,
+      "hold_to_playing_ms": 601.0
+    },
+    {
+      "id": "125F30F8-3067-4E84-BEF9-F878C7E7F9A0",
+      "requested": 41605.398,
+      "hold": 41605.398,
+      "release": 41605.825,
+      "playing": 41605.96,
+      "release_to_playing_ms": 135.0,
+      "request_to_commit_ms": 358.0,
+      "hold_to_playing_ms": 562.0
+    }
+  ],
+  "release_to_playing": {
+    "samples": 22,
+    "p95_ms": 176.0,
+    "max_ms": 208.0
+  },
+  "native_request_to_commit": {
+    "samples": 22,
+    "p95_ms": 376.0,
+    "max_ms": 381.0
+  },
+  "hold_to_playing": {
+    "samples": 22,
+    "p95_ms": 612.0,
+    "max_ms": 694.0
+  },
+  "prepared_adoptions": 7,
+  "errors": [],
+  "final_acceptance": false
+}

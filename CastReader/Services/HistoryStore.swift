@@ -1424,7 +1424,9 @@ final class HistoryStore: ObservableObject {
                                    paragraphs: [], sourceURL: url)
         case .weread:
             let latestBook = WeReadLibraryStore.shared.book(for: rec.id)
-            guard let url = latestBook?.effectiveReaderURL ?? rec.sourceURL else {
+            let checkpoint = readingCheckpoint(for: rec.id)
+            let savedLocation = checkpoint?.weReadLocation.flatMap { $0.isValid(for: rec.id) ? $0.readerURL : nil }
+            guard let url = latestBook?.readerURL(resuming: checkpoint) ?? savedLocation ?? rec.sourceURL else {
                 return nil
             }
             return ReadingDocument(

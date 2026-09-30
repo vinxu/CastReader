@@ -1,0 +1,32 @@
+{
+  "candidate": 93,
+  "voice": "af_heart",
+  "actual_rate": 1.5,
+  "first_playing": "15:23:12.490",
+  "warm_turns": [
+    {
+      "prior_end": "15:23:42.826",
+      "begin": "15:23:42.898",
+      "next_playing": "15:23:43.143",
+      "ended_to_playing_ms": 317,
+      "staged_overlay": true
+    }
+  ],
+  "foreground_result": "FAIL",
+  "foreground_events": {
+    "inactive": "15:24:20.786",
+    "transient_surface": "814x297",
+    "hold_cancelled": "15:24:21.796",
+    "paused_displayed_page": "372bed128413",
+    "hidden_prepared_page": "48e0f3649a15",
+    "foreground": "15:24:32.005",
+    "visible_page_after_return": "48e0f3649a15",
+    "unrequested_playback": false
+  },
+  "limitation": "Short real-book diagnostic. Application clocks are not acoustic silence. Paused Previous/Next not repeated after the foreground failure; final matrix remains unaccepted.",
+  "source_logs": {
+    "/tmp/castreader-kindlelive93-reader.log": "483b371003bca5d390a7358bf5f7c19b13722f713cf7f984626d5ba940afe261",
+    "/tmp/castreader-kindlelive93-probe.log": "9ae5a530358d5f9f2d1f571064baf773dbac4417c40c823413039e8cc9fbdc9a"
+  },
+  "final_acceptance": false
+}

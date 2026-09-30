@@ -122,6 +122,12 @@ enum GoogleWebSession {
 }
 
 enum GoogleBooksWebScripts {
+    static let nativeLayoutBridge: String = {
+        guard let url = Bundle.main.url(forResource: "play-books-native", withExtension: "js", subdirectory: "WebAssets"),
+              let source = try? String(contentsOf: url, encoding: .utf8) else { return "" }
+        return source
+    }()
+
     static let homeURL = URL(string: "https://play.google.com/books")!
     /// 「我的图书」书架。Play 图书网页版有多个入口，扫描脚本对三种都写宽。
     static let shelfURL = URL(string: "https://play.google.com/books")!

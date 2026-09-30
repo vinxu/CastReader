@@ -1,0 +1,25 @@
+{
+  "candidate": 66,
+  "raw_log": "/tmp/castreader-pagination-live66.log",
+  "raw_sha256": "28a54f9fcab576618ac4ca3990a8317e5c1ba3c3e641d16382d0ceb5904dec5c",
+  "type": "console-only retrospective; does not replace source-bound reader log or observed acoustic validation",
+  "counts": {
+    "live_page_explanation_completed": 475,
+    "marks_hit": 1906
+  },
+  "page_completion_window": [
+    "01:09:33.307",
+    "03:25:29.749"
+  ],
+  "final_audio_playing_event": [
+    "03:25:26.106"
+  ],
+  "system_interruption_observed": true,
+  "device_disconnected": true,
+  "final_acceptance": false,
+  "limitations": [
+    "Unobserved continuation after 01:13; cannot establish no user intervention or correct source/highlight/semantics.",
+    "Physical device reader diagnostic cannot currently be exported; do not infer page commit timing from console-only block logs.",
+    "Candidate 66 is superseded by uninstalled candidate 68; elapsed time does not transfer."
+  ]
+}

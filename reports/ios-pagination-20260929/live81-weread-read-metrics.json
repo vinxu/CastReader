@@ -1,0 +1,148 @@
+{
+  "candidate": "81",
+  "platform": "weread",
+  "observed_start": "11:38:34.487",
+  "cutoff": "11:46:55.000",
+  "observed_end_seconds": 42365.02,
+  "metric": "event timestamps, not acoustic silence",
+  "turns": [
+    {
+      "id": "5C5DBD96-638F-428C-88C1-71E568ABFE70",
+      "requested": 41965.853,
+      "hold": 41965.854,
+      "release": 41965.999,
+      "playing": 41966.123,
+      "release_to_playing_ms": 124.0,
+      "request_to_commit_ms": 126.0,
+      "hold_to_playing_ms": 269.0
+    },
+    {
+      "id": "D05980A0-D032-4A54-BFF7-CBB958FBC9F0",
+      "requested": 41991.749,
+      "hold": 41991.75,
+      "release": 41991.905,
+      "playing": 41992.015,
+      "release_to_playing_ms": 110.0,
+      "request_to_commit_ms": 146.0,
+      "hold_to_playing_ms": 265.0
+    },
+    {
+      "id": "5566A8EB-EDB8-4E1A-B196-97B4434D8573",
+      "requested": 42034.606,
+      "hold": 42034.606,
+      "release": 42034.754,
+      "playing": 42034.886,
+      "release_to_playing_ms": 132.0,
+      "request_to_commit_ms": 127.0,
+      "hold_to_playing_ms": 280.0
+    },
+    {
+      "id": "ACC67280-5500-433E-AC33-08B8163779C7",
+      "requested": 42067.961,
+      "hold": 42067.962,
+      "release": 42068.131,
+      "playing": 42068.269,
+      "release_to_playing_ms": 138.0,
+      "request_to_commit_ms": 159.0,
+      "hold_to_playing_ms": 307.0
+    },
+    {
+      "id": "7DE8908B-D30C-4786-93AA-D5EEDF51BBC2",
+      "requested": 42102.118,
+      "hold": 42102.118,
+      "release": 42102.277,
+      "playing": 42102.415,
+      "release_to_playing_ms": 138.0,
+      "request_to_commit_ms": 147.0,
+      "hold_to_playing_ms": 297.0
+    },
+    {
+      "id": "646558F3-B68F-4182-8B5D-7259C4F9F257",
+      "requested": 42148.872,
+      "hold": 42148.872,
+      "release": 42149.009,
+      "playing": 42149.151,
+      "release_to_playing_ms": 142.0,
+      "request_to_commit_ms": 116.0,
+      "hold_to_playing_ms": 279.0
+    },
+    {
+      "id": "016B6DA0-9D3D-4579-B5F8-38E33B796A1C",
+      "requested": 42189.948,
+      "hold": 42189.949,
+      "release": 42190.077,
+      "playing": 42190.209,
+      "release_to_playing_ms": 132.0,
+      "request_to_commit_ms": 111.0,
+      "hold_to_playing_ms": 260.0
+    },
+    {
+      "id": "756175BE-B2E7-439F-B8EA-24CBAE213296",
+      "requested": 42221.009,
+      "hold": 42221.01,
+      "release": 42221.141,
+      "playing": 42221.278,
+      "release_to_playing_ms": 137.0,
+      "request_to_commit_ms": 121.0,
+      "hold_to_playing_ms": 268.0
+    },
+    {
+      "id": "3ADDAE8C-19E1-43B0-9D8C-936C77412AFD",
+      "requested": 42253.477,
+      "hold": 42253.478,
+      "release": 42253.634,
+      "playing": 42253.791,
+      "release_to_playing_ms": 157.0,
+      "request_to_commit_ms": 135.0,
+      "hold_to_playing_ms": 313.0
+    },
+    {
+      "id": "4D96606F-5356-414B-B514-523FE4848EA0",
+      "requested": 42289.36,
+      "hold": 42289.361,
+      "release": 42289.521,
+      "playing": 42289.682,
+      "release_to_playing_ms": 161.0,
+      "request_to_commit_ms": 137.0,
+      "hold_to_playing_ms": 321.0
+    },
+    {
+      "id": "9FA28AD2-25CF-4966-AEBD-577A36AEC60C",
+      "requested": 42326.522,
+      "hold": 42326.523,
+      "release": 42326.739,
+      "playing": 42326.914,
+      "release_to_playing_ms": 175.0,
+      "request_to_commit_ms": 200.0,
+      "hold_to_playing_ms": 391.0
+    },
+    {
+      "id": "B8221EF5-7ECD-483E-8196-B76779B41940",
+      "requested": 42364.605,
+      "hold": 42364.606,
+      "release": 42364.78,
+      "playing": 42364.963,
+      "release_to_playing_ms": 183.0,
+      "request_to_commit_ms": 158.0,
+      "hold_to_playing_ms": 357.0
+    }
+  ],
+  "release_to_playing": {
+    "samples": 12,
+    "p95_ms": 183.0,
+    "max_ms": 183.0
+  },
+  "native_request_to_commit": {
+    "samples": 12,
+    "p95_ms": 200.0,
+    "max_ms": 200.0
+  },
+  "hold_to_playing": {
+    "samples": 12,
+    "p95_ms": 391.0,
+    "max_ms": 391.0
+  },
+  "prepared_adoptions": 8,
+  "errors": [],
+  "final_acceptance": false
+}

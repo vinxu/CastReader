@@ -1,3 +1,5 @@
+import { readPlayBooksSnapshot, playBooksSnapshotDiagnostic, appendPlayBooksPage, nextPlayBooksPage, type PlayBooksUnit, type PlayBooksSnapshot } from './play-books-native-pages'
+import { sourceText, sourceRange } from './source-text'
 // Google Play Books（play.google.com/books/reader）适配。
 //
 // 页面结构（与扩展 readout-desktop/src/extractors/play-books.ts 同一套契约）：
@@ -34,6 +36,7 @@ export type PlayBooksPara = {
   sourceEnd: number
   /** 仅末段：补到自然句末的朗读文本（跨页断句）。 */
   speechText?: string
+  sourceSpeechEnd?: number
 }
 
 export type PlayBooksSpeechPreview = {
@@ -182,6 +185,22 @@ function viewportRect(): Rect {
  * 渲同一 segment 做排版测量，测量副本几乎完全在屏外，用「交集/自身面积」筛掉。 */
 export function pickVisiblePages(pages: HTMLElement[]): HTMLElement[] {
   if (pages.length === 0) return []
+  const nativeView = document.querySelector('reader-horizontal-view')
+  const shown = nativeView?.querySelector<HTMLElement>('reader-page.shown reader-rendered-page.-gb-text')
+  if (nativeView && !shown) return []
+  if (shown) {
+    const layout = (p: HTMLElement) => `${p.className}|${p.style.width}|${p.style.height}`
+    pages = pages.filter(p => {
+      const owner = p.closest('reader-page')
+      if (!owner?.classList.contains('shown') || layout(p) !== layout(shown)) return false
+      for (let node: HTMLElement | null = p; node; node = node.parentElement) {
+        const s = getComputedStyle(node)
+        if (s.display === 'none' || s.visibility === 'hidden' || Number(s.opacity || '1') < 0.99) return false
+        if (node === nativeView) break
+      }
+      return !!p.querySelector('.gb-segment')
+    })
+  }
   const vp = viewportRect()
   const minArea = (vp.right - vp.left) * (vp.bottom - vp.top) * 0.05
   const cands: Array<{ el: HTMLElement; left: number }> = []
@@ -205,7 +224,7 @@ export function pickVisiblePages(pages: HTMLElement[]): HTMLElement[] {
       const area = hit ? (hit.right - hit.left) * (hit.bottom - hit.top) : 0
       if (area > bestArea) { bestArea = area; best = page }
     }
-    return best ? [best] : []
+    return best && bestArea > 0 ? [best] : []
   }
   cands.sort((a, b) => a.left - b.left)
   return cands.map((c) => c.el)
@@ -231,34 +250,8 @@ function paragraphNodes(page: HTMLElement): HTMLElement[] {
 type TextBoundary = { node: Node; offset: number }
 
 /** JavaScript 字符串、DOM Range 与 native 的 NSRange 都以 UTF-16 code unit 计数。 */
-function textBoundaryAt(el: HTMLElement, index: number): TextBoundary | null {
-  const doc = el.ownerDocument
-  const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT)
-  let offset = 0
-  let node: Node | null
-  while ((node = walker.nextNode())) {
-    const len = node.textContent?.length ?? 0
-    if (index <= offset + len) return { node, offset: Math.max(0, index - offset) }
-    offset += len
-  }
-  return null
-}
-
 function textRange(el: HTMLElement, start: number, end: number): Range | null {
-  if (start < 0 || end <= start) return null
-  const textLength = (el.textContent || '').length
-  if (end > textLength) return null
-  const startBoundary = textBoundaryAt(el, start)
-  const endBoundary = textBoundaryAt(el, end)
-  if (!startBoundary || !endBoundary) return null
-  const range = el.ownerDocument.createRange()
-  try {
-    range.setStart(startBoundary.node, startBoundary.offset)
-    range.setEnd(endBoundary.node, endBoundary.offset)
-  } catch {
-    return null
-  }
-  return range
+  return sourceRange(el, start, end)
 }
 
 function writingModeFor(el: HTMLElement): string {
@@ -348,7 +341,7 @@ function alignEndToCodePoint(text: string, index: number): number {
  * Range.getClientRects() 已包含 transform 后的真实碎片坐标，因此同一算法覆盖三种布局。
  */
 export function visibleCharRange(el: HTMLElement, clip: Rect): { start: number; end: number } | null {
-  const text = el.textContent || ''
+  const text = sourceText(el)
   if (text.length === 0) return null
   const writingMode = writingModeFor(el)
   if (!rangeHasCompleteBlockFragment(
@@ -409,19 +402,25 @@ export function visibleCharRange(el: HTMLElement, clip: Rect): { start: number; 
  */
 export function visibleCharRanges(
   el: HTMLElement,
-  clip: Rect
+  clip: Rect,
+  acceptsFragment?: (rect: DOMRect) => boolean
 ): Array<{ start: number; end: number }> {
-  const text = el.textContent || ''
+  const text = sourceText(el)
   if (text.length === 0) return []
   const writingMode = writingModeFor(el)
   const ranges: Array<{ start: number; end: number }> = []
 
-  const hasVisibleFragment = (start: number, end: number): boolean =>
-    rangeHasCompleteBlockFragment(
+  const hasVisibleFragment = (start: number, end: number): boolean => {
+    if (acceptsFragment) {
+      const range = textRange(el, start, end)
+      return !!range && Array.from(range.getClientRects()).some(acceptsFragment)
+    }
+    return rangeHasCompleteBlockFragment(
       textRange(el, start, end),
       clip,
       writingMode
     )
+  }
 
   const isFullyVisible = (start: number, end: number): boolean => {
     const range = textRange(el, start, end)
@@ -432,6 +431,10 @@ export function visibleCharRanges(
       const rect = rects[index]
       if (rect.width <= 0 || rect.height <= 0) continue
       sawRect = true
+      if (acceptsFragment) {
+        if (!acceptsFragment(rect)) return false
+        continue
+      }
       const hit = intersect(rect, clip)
       if (!hit) return false
       const blockComplete = rectHasCompleteBlockCoverage(
@@ -825,7 +828,50 @@ function extractPlayBooksParagraphsFromClips(
   return out
 }
 
+/** Native sliced/reopened relationships, including verified measuring pages,
+ * own source ranges. An unrelated offscreen DOM node is never a successor. */
+function nativeParagraphs(snapshot: PlayBooksSnapshot, keys: Set<string>): PlayBooksPara[] {
+  const units: PlayBooksUnit[] = []
+  let previous: PlayBooksSnapshot['pages'][number] | undefined
+  for (const page of snapshot.pages) {
+    if (previous && (page.segment !== previous.segment || page.index !== previous.index + 1)) {
+      // Prevent an unconfirmed continuation across a missing native page.
+      if (units.at(-1)?.sliced) units.at(-1)!.sliced = false
+    }
+    appendPlayBooksPage(units, page)
+    previous = page
+  }
+  const out: PlayBooksPara[] = []
+  for (const unit of units) {
+    const origin = unit.fragments[0]
+    const identity = stableHash32(`${location.pathname}${location.search}|${snapshot.layout}|${origin.page.id}:${origin.block}`)
+    for (const fragment of unit.fragments) {
+      if (!keys.has(fragment.page.key)) continue
+      const block = fragment.page.blocks[fragment.block]
+      if (!block.element.isConnected && snapshot.visible.some(p => p.key === fragment.page.key)) return []
+      block.element.dataset.crNativeNormalized = 'true'
+      const para: PlayBooksPara = { text: unit.text.slice(fragment.start, fragment.end),
+        element: block.element, exactText: true, charOffset: 0, sourceParagraphIndex: identity,
+        sourceStart: fragment.start, sourceEnd: fragment.end }
+      const isVisibleTail = fragment.page.key === [...keys].at(-1) && fragment.block === fragment.page.blocks.length - 1
+      if (isVisibleTail && !endsAtSentence(para.text)) {
+        const end = extendToSentenceEnd(unit.text, fragment.end)
+        if (end > fragment.end) {
+          para.speechText = unit.text.slice(fragment.start, end)
+          para.sourceSpeechEnd = end
+        }
+      }
+      out.push(para)
+    }
+  }
+  return out
+}
+
 export function extractPlayBooksParagraphs(): PlayBooksPara[] {
+  if (document.querySelector('reader-horizontal-view')) {
+    const snapshot = readPlayBooksSnapshot()
+    return snapshot?.ready ? nativeParagraphs(snapshot, new Set(snapshot.visible.map(p => p.key))) : []
+  }
   const pageClips = currentPlayBooksPageClips()
   refreshPlayBooksPageEdgeGuards(pageClips)
   return extractPlayBooksParagraphsFromClips(pageClips)
@@ -945,6 +991,7 @@ function nextNaturalSentenceRange(
  * sentence. It never scrolls, turns, focuses, styles, or writes to the DOM.
  */
 export function extractPlayBooksNextSpeechPreview(): PlayBooksSpeechPreview | null {
+  if (document.querySelector('reader-horizontal-view')) return null
   const current = extractPlayBooksParagraphs()
   const tail = current[current.length - 1]
   if (!tail) return null
@@ -1045,6 +1092,18 @@ export function extractPlayBooksNextPagePreview(): {
   paragraphs: PlayBooksPara[]
   contentFingerprint: string
 } | null {
+  if (document.querySelector('reader-horizontal-view')) {
+    const snapshot = readPlayBooksSnapshot()
+    if (!snapshot?.ready) return null
+    let page = nextPlayBooksPage(snapshot, snapshot.visible.at(-1)!)
+    const keys: string[] = []
+    for (let index = 0; index < snapshot.columns && page; index++) {
+      keys.push(page.key); page = nextPlayBooksPage(snapshot, page)
+    }
+    if (!keys.length) return null
+    const paragraphs = nativeParagraphs(snapshot, new Set(keys))
+    return paragraphs.length ? { paragraphs, contentFingerprint: candidateFingerprint(paragraphs) } : null
+  }
   const currentClips = currentPlayBooksPageClips()
   const current = extractPlayBooksParagraphsFromClips(currentClips)
   if (currentClips.length === 0 || current.length === 0) return null
@@ -1183,7 +1242,7 @@ function structuralPagerButton(direction: 'next' | 'prev'): HTMLElement | null {
   const anchors: HTMLElement[] = []
   for (const el of Array.from(document.querySelectorAll('span, div, p'))) {
     if (!(el instanceof HTMLElement)) continue
-    const text = el.textContent || ''
+    const text = sourceText(el)
     if (text.length > 40 || !/\d+\s*\/\s*\d+\s*$/.test(text)) continue
     const rect = el.getBoundingClientRect()
     if (rect.width <= 0 || rect.width > 240 || rect.height <= 0) continue
@@ -1214,6 +1273,11 @@ function structuralPagerButton(direction: 'next' | 'prev'): HTMLElement | null {
 }
 
 function clickablePageButton(direction: 'next' | 'prev'): HTMLElement | null {
+  const icon = direction === 'next' ? 'chevron_right' : 'chevron_left'
+  const native = Array.from(document.querySelectorAll('button')).find(button =>
+    button.querySelector('mat-icon')?.textContent?.trim() === icon && usablePagerControl(button))
+  if (native) { lastButtonDiscovery = 'structural'; return native }
+
   // aria-label 词表按语言排：en / ja / zh 是实测过的历史词表；it/es/fr/de/pt/nl/hi/ko
   // 是 1.0.30 补的兜底（attr 选择器的 i 标志只折叠 ASCII，非 ASCII 词避开首字母大写）。
   const selectors = direction === 'next'
@@ -1328,9 +1392,50 @@ export function turnPlayBooksPage(
   return 'none'
 }
 
+/** A decoded, visible book image is a ready navigation surface, even though
+ * it has no TTS text. Never use a hidden measurement page or a toolbar icon. */
+function visibleImageOnlyPages(): HTMLElement[] {
+  const horizontal = document.querySelector('reader-horizontal-view')
+  const candidates = horizontal
+    ? Array.from(horizontal.querySelectorAll<HTMLElement>('reader-page.shown reader-rendered-page'))
+    : pickVisiblePages(Array.from(document.querySelectorAll<HTMLElement>(PAGE_SEL)))
+  return candidates.filter(page => {
+    if ((page.textContent || '').trim()) return false
+    let clip: Rect | null = viewportRect()
+    for (let node: HTMLElement | null = page; node && clip; node = node.parentElement) {
+      const style = getComputedStyle(node)
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || '1') < 0.99) return false
+      if (node === page || /(hidden|clip|scroll|auto)/.test(style.overflow + style.overflowX + style.overflowY)) {
+        clip = intersect(clip, node.getBoundingClientRect())
+      }
+    }
+    if (!clip) return false
+    return Array.from(page.querySelectorAll('img,svg image')).some(img => {
+      if (img instanceof HTMLImageElement) {
+        if (!img.complete || img.naturalWidth < 64 || img.naturalHeight < 64) return false
+      } else {
+        // Google's EPUB cover is an SVG <image>, not an HTMLImageElement.
+        // Its native loaded page supplies readiness; an unresolved preload
+        // or a synthetic SVG shape must not win ownership.
+        if (!(img instanceof SVGImageElement) || !img.href.baseVal ||
+            !page.closest('reader-page.shown.-gb-loaded')) return false
+      }
+      const style = getComputedStyle(img)
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || '1') < 0.99) return false
+      const hit = intersect(clip!, img.getBoundingClientRect())
+      return !!hit && (hit.right - hit.left) * (hit.bottom - hit.top) > window.innerWidth * window.innerHeight * 0.1
+    })
+  })
+}
+
+export function playBooksSurfaceKind(): 'image-only' | undefined {
+  return visibleImageOnlyPages().length > 0 ? 'image-only' : undefined
+}
+
 /** 便宜的页面指纹：不做二分，只看可见 page 的几何 + segment 位移 + 文本头尾。 */
 export function playBooksSignature(): string {
-  const pages = pickVisiblePages(Array.from(document.querySelectorAll(PAGE_SEL)) as HTMLElement[])
+  let pages = pickVisiblePages(Array.from(document.querySelectorAll(PAGE_SEL)) as HTMLElement[])
+  if (pages.length === 0) pages = visibleImageOnlyPages()
   if (pages.length === 0) return ''
   const parts: string[] = []
   for (const page of pages) {
@@ -1357,6 +1462,7 @@ type PlayBooksAutomaticTurnMetadata = {
   turnID: string
   baselineSignature: string
   originFrameSessionID: string
+  sourcePresentation?: unknown
 }
 
 type PlayBooksManualTurnMetadata = {
@@ -1430,6 +1536,8 @@ export function installPlayBooksReader(
   let committedSignature = playBooksSignature()
   let observedSignature = committedSignature
   let pendingAuto = false
+  let pendingNativeTarget: string | null = null
+  let nativeTurnObservation = 0
   let pendingAutoMetadata: PlayBooksAutomaticTurnMetadata | null = null
   let lateAutoTurn: PlayBooksLateAutomaticTurn | null = null
   let settleTimer: ReturnType<typeof setTimeout> | null = null
@@ -1486,6 +1594,7 @@ export function installPlayBooksReader(
             event: 'geometry-miss',
             sourceSignature,
             attempt,
+            layoutDiagnostic: playBooksSnapshotDiagnostic(),
           })
         }
         const speechPreview = extractPlayBooksNextSpeechPreview()
@@ -1533,11 +1642,13 @@ export function installPlayBooksReader(
           sourceParagraphIndex: p.sourceParagraphIndex,
           sourceUTF16Start: p.sourceStart,
           sourceUTF16End: p.sourceEnd,
+          domUTF16Start: p.charOffset,
         }
         if (p.speechText && p.speechText !== p.text) {
           row.boundaryUTF16Offset = p.text.length
           row.extendedUTF16Length = p.speechText.length
           row.speechText = p.speechText
+          row.sourceSpeechEnd = p.sourceSpeechEnd ?? (p.sourceStart + p.speechText.length)
         }
         return row
       })
@@ -1558,6 +1669,9 @@ export function installPlayBooksReader(
   }
 
   const clearAutoTurn = (): void => {
+    if (nativeTurnObservation) cancelAnimationFrame(nativeTurnObservation)
+    nativeTurnObservation = 0
+    pendingNativeTarget = null
     pendingAuto = false
     pendingAutoMetadata = null
     pendingTurnMethod = null
@@ -1592,6 +1706,8 @@ export function installPlayBooksReader(
         nonemptyOpaqueString(value.baselineSignature) || fallbackBaseline,
       originFrameSessionID:
         nonemptyString(value.originFrameSessionID) || frameSessionID,
+      ...(value.sourcePresentation && typeof value.sourcePresentation === 'object'
+        ? { sourcePresentation: value.sourcePresentation } : {}),
     }
   }
 
@@ -1627,6 +1743,27 @@ export function installPlayBooksReader(
     }
   }
 
+  // Native loaded/shown identity is stronger evidence than a fixed delay.
+  // Require the exact neighbor captured before dispatch, fully visible layers,
+  // no unfinished native animation, and matching geometry across paint frames.
+  const nativePresentationWitness = (): string | null => {
+    if (!pendingAuto || !pendingNativeTarget || manualSwipeActive) return null
+    const snapshot = readPlayBooksSnapshot()
+    if (!snapshot?.ready || snapshot.visible[0]?.key !== pendingNativeTarget) return null
+    const geometry: number[][] = []
+    for (const page of snapshot.visible) {
+      for (let node: HTMLElement | null = page.element; node; node = node.parentElement) {
+        const style = getComputedStyle(node)
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || '1') < 0.99) return null
+        if (node.getAnimations?.().some(animation => animation.playState === 'running' || animation.pending)) return null
+      }
+      const r = page.element.getBoundingClientRect()
+      if (r.width <= 0 || r.height <= 0 || r.left < -0.5 || r.right > innerWidth + 0.5) return null
+      geometry.push([r.left, r.top, r.width, r.height])
+    }
+    return JSON.stringify([snapshot.layout, snapshot.visible.map(page => page.key), geometry])
+  }
+
   /**
    * 不能在首次 geometry mutation 后固定等 260ms 就提取：iOS edge swipe 的
    * rubber-band 会先移动、再弹回，CSS columns 动画也会分多阶段更新。只有同一签名
@@ -1641,6 +1778,8 @@ export function installPlayBooksReader(
     settleCandidate = playBooksSignature()
     settleCandidateSince = Date.now()
     settleStableSamples = 1
+    let nativeWitness = reason === 'auto' ? nativePresentationWitness() : null
+    let nativeSamples = nativeWitness ? 1 : 0
 
     const verifyStable = (): void => {
       settleTimer = setTimeout(() => {
@@ -1651,15 +1790,21 @@ export function installPlayBooksReader(
           settleCandidate = current
           settleCandidateSince = Date.now()
           settleStableSamples = 1
+          nativeWitness = null
+          nativeSamples = 0
           verifyStable()
           return
         }
 
         settleStableSamples += 1
-        if (
+        const witness = reason === 'auto' ? nativePresentationWitness() : null
+        nativeSamples = witness && witness === nativeWitness ? nativeSamples + 1 : witness ? 1 : 0
+        nativeWitness = witness
+        const nativePresented = !!witness && nativeSamples >= 2
+        if (reason === 'auto' && pendingNativeTarget ? !nativePresented : (
           settleStableSamples < 2 ||
           Date.now() - settleCandidateSince < MIN_STABLE_MS
-        ) {
+        )) {
           verifyStable()
           return
         }
@@ -1672,7 +1817,7 @@ export function installPlayBooksReader(
 
         // 跨 segment 时新章可能先给空 DOM；保持同一 reason 等可读内容，而不是
         // 把空页提交给 native 或额外再做一次物理翻页。
-        if (extractPlayBooksParagraphs().length === 0 && attempt < 6) {
+        if (extractPlayBooksParagraphs().length === 0 && playBooksSurfaceKind() !== 'image-only' && attempt < 6) {
           settleCandidateSince = Date.now()
           settleStableSamples = 1
           commit(reason, attempt + 1, forceExtract)
@@ -1732,10 +1877,10 @@ export function installPlayBooksReader(
             ...payloadFor(committedMetadata),
           })
         }
-        requestExtract(reason, payloadFor(committedMetadata))
+        requestExtract(reason, { ...payloadFor(committedMetadata), presentation: nativePresented ? 'native-paint' : 'stable-geometry' })
         clearSettledChange(reason)
         scheduleNextPagePreview()
-      }, STABILITY_POLL_MS)
+      }, reason === 'auto' && pendingNativeTarget ? 16 : STABILITY_POLL_MS)
     }
     verifyStable()
   }
@@ -1787,7 +1932,20 @@ export function installPlayBooksReader(
     // Clear inside the same reader-frame task that performs the physical turn
     // so the old overlay cannot survive until native's stable-page commit.
     clearPageVisuals()
+    const nativeBaseline = direction === 'next' ? readPlayBooksSnapshot() : null
+    const lastVisible = nativeBaseline?.visible.at(-1)
+    pendingNativeTarget = nativeBaseline?.ready && lastVisible
+      ? nextPlayBooksPage(nativeBaseline, lastVisible)?.key || null : null
     pendingTurnMethod = turnPlayBooksPage(direction, method)
+    if (pendingNativeTarget) {
+      const observeNativeTurn = (): void => {
+        nativeTurnObservation = 0
+        if (!pendingAuto) return
+        observePageChange()
+        if (pendingAuto) nativeTurnObservation = requestAnimationFrame(observeNativeTurn)
+      }
+      nativeTurnObservation = requestAnimationFrame(observeNativeTurn)
+    }
     if (pendingTurnMethod === 'none') {
       clearAutoTurn()
       postForFrame('googleBooksTurnFailed', {
@@ -2084,7 +2242,7 @@ export function installPlayBooksReader(
     if (direction) postManualIntent('page-key', direction)
   }, true)
 
-  setInterval(() => {
+  const observePageChange = (): void => {
     const signature = playBooksSignature()
     if (!signature || signature === observedSignature) return
     observedSignature = signature
@@ -2122,13 +2280,14 @@ export function installPlayBooksReader(
           : null
     }
     commit(reason)
-  }, 250)
+  }
+  setInterval(observePageChange, 250)
 
   // 首屏：等 reader-rendered-page 出现再提取。
   let waited = 0
   const boot = setInterval(() => {
     waited += 200
-    if (document.querySelector(`${PAGE_SEL} ${SEGMENT_SEL}`) || waited >= 15000) {
+    if (document.querySelector(`${PAGE_SEL} ${SEGMENT_SEL}`) || playBooksSurfaceKind() === 'image-only' || waited >= 15000) {
       clearInterval(boot)
       committedSignature = playBooksSignature()
       observedSignature = committedSignature
@@ -2145,7 +2304,7 @@ export function installPlayBooksRelay(): void {
     'init', 'extract', 'highlightRange', 'highlightWord', 'clearHighlight',
     'setColor', 'setActive', 'scrollTo', 'setAutoScroll', 'showMark', 'clearMarks',
     'gbNextPage', 'gbPrevPage', 'gbManualPage', 'gbRefresh', 'gbRetargetTurnBaseline',
-    'gbCompleteTurn',
+    'gbCompleteTurn', 'confirmPresentation',
   ]
   type RelayTurnContext = {
     arg: Record<string, unknown>

@@ -326,6 +326,12 @@ struct WebReaderView: UIViewRepresentable {
         // bridge.  Normal sites continue to use the generic DOM-zone bundle.
         if document.sourceKind == .weread {
             controller.addUserScript(WKUserScript(
+                source: WeReadWebScripts.nativePageBridge,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true,
+                in: .page
+            ))
+            controller.addUserScript(WKUserScript(
                 source: WeReadWebScripts.canvasIntercept,
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true,
@@ -344,6 +350,8 @@ struct WebReaderView: UIViewRepresentable {
                 in: .page
             ))
         } else if document.sourceKind == .googleBooks {
+            controller.addUserScript(WKUserScript(source: GoogleBooksWebScripts.nativeLayoutBridge,
+                injectionTime: .atDocumentStart, forMainFrameOnly: false, in: .page))
             // Play 图书的正文在跨源 iframe（books.googleusercontent.com）里，
             // 所以 bundle 必须注入**所有帧**：顶层壳装 CR 转发，阅读帧装真正的桥。
             controller.addUserScript(WKUserScript(

@@ -673,9 +673,34 @@ final class ReadAloudViewModel: ObservableObject {
     private var paragraphContinuation: ParagraphContinuation?
     private var pendingPrefetchAdvanceFrom: Int?
     private let historyStore: HistoryStore
+    /// A source-confirmed page turn already chose its starting position. Only
+    /// cold/open owners may relocate a checkpoint from an earlier page.
+    private let restoresSavedReadingPosition: Bool
     private let speechGenerator: any ParagraphSpeechGenerating
     private let progressBoundaryToken: UUID?
     private var resumeDocumentIndex = ReadingResumeDocumentIndex(paragraphs: [])
+    private var koboPageLocations: [(fingerprint: String, location: KoboReadingLocation)] = []
+    private var weReadPageLocations: [(fingerprint: String, location: WeReadReadingLocation)] = []
+
+    func registerWeReadLocation(_ location: WeReadReadingLocation, paragraphs: [ReadingParagraph]) {
+        guard document.sourceKind == .weread, location.isValid(for: document.id) else { return }
+        let fingerprint = ReadingResumeDocumentIndex(paragraphs: paragraphs).fingerprint
+        weReadPageLocations.removeAll { $0.fingerprint == fingerprint && $0.location == location }
+        weReadPageLocations.append((fingerprint, location))
+        if weReadPageLocations.count > 2 { weReadPageLocations.removeFirst() }
+    }
+
+    /// Bind a native bookmark to the exact speech source, not the latest
+    /// visible page. A continuous handover can flush the old audio cursor
+    /// after the new page has already committed.
+    func registerKoboLocation(_ location: KoboReadingLocation?, paragraphs: [ReadingParagraph]) {
+        guard document.sourceKind == .kobo, let location,
+              location.isValid(for: document.sourceURL) else { return }
+        let fingerprint = ReadingResumeDocumentIndex(paragraphs: paragraphs).fingerprint
+        koboPageLocations.removeAll { $0.fingerprint == fingerprint && $0.location == location }
+        koboPageLocations.append((fingerprint, location))
+        if koboPageLocations.count > 2 { koboPageLocations.removeFirst() }
+    }
     private var pendingReadingAudioCursor: ReadingResumeAudioCursor?
     private var lastReadingCheckpoint: ReadingResumeCheckpoint?
     private var lastReadingCheckpointWrite = Date.distantPast
@@ -727,7 +752,12 @@ final class ReadAloudViewModel: ObservableObject {
     /// `generate` can resurrect an inactive VM and clear the new mode's queue.
     private var prefetchPromotionTask: Task<Void, Never>?
     private var readAheadStreams: [Int: SpeechStreamBuffer] = [:]
+    // The read-ahead window owns its decoded media until promotion/cancellation.
+    // Replacing the current paragraph's queue must not discard later decoders.
+    private var readAheadMediaLeases: [Int: AudioPlayerService.PreparedMediaLease] = [:]
     private var foregroundStream: SpeechStreamBuffer?
+    private var shortStartupPreparation: (id: UUID, nextIndex: Int)?
+    private var invalidPagePrefetchIndices = Set<Int>()
     private var completedVoiceAudio: [(key: String, segments: [AudioSegment])] = []
     private var prefetchingIndex: Int? = nil     // 正在预取中的段
     private var prefetchedIndex: Int? = nil       // 已预取完成、可秒接的段
@@ -763,6 +793,80 @@ final class ReadAloudViewModel: ObservableObject {
         let paragraphIndex: Int
     }
     private var pendingLiveWebResume: PendingLiveWebResume?
+    /// A visual turn does not own the immutable source-unit producer. Keep
+    /// its original paragraph/epoch until every partly response is committed.
+    private struct PendingCarryPage {
+        let paragraphs: [ReadingParagraph]
+        let language: String
+        let boundary: WeReadPageSpeechBoundary?
+        let prepared: PreparedLiveWebParagraph?
+        let following: [LivePagePreparedSpeech]
+    }
+    struct PreparedLiveWebParagraph {
+        let paragraphIndex: Int
+        let sourceText: String
+        let voiceID: String
+        let language: String
+        let segments: [AudioSegment]
+    }
+    private var pendingCarryPage: PendingCarryPage?
+    private var adoptedPageReserves: [Int: LivePagePreparedSpeech] = [:]
+    private struct CarrySpeechTiming {
+        let source: String
+        let boundary: WeReadPageSpeechBoundary
+        let segments: [AudioSegment]
+        var sourceOrigin: Int { (boundary.sourceSpeechEnd ?? source.utf16.count) - source.utf16.count }
+    }
+    private var retainedCarryTiming: CarrySpeechTiming?
+    private var currentCarryTiming: CarrySpeechTiming? {
+        if let retainedCarryTiming, currentSegmentBelongsToLiveWebCarry { return retainedCarryTiming }
+        guard let boundary = weReadSpeechBoundary, paras.indices.contains(boundary.paragraphIndex),
+              let segments = segmentsByParagraph[boundary.paragraphIndex] else { return nil }
+        return CarrySpeechTiming(source: paras[boundary.paragraphIndex].resolvedSpeechText, boundary: boundary, segments: segments)
+    }
+    func liveWebSourceRange(segmentID: String, time: Double) -> NSRange? {
+        guard let timing = currentCarryTiming,
+              let range = WeReadCrossPageSpeechContract.sourceRange(source: timing.source,
+                segments: timing.segments, segmentID: segmentID, time: time) else { return nil }
+        return NSRange(location: timing.sourceOrigin + range.location, length: range.length)
+    }
+    func liveWebSourceText(in range: NSRange) -> String? {
+        guard let timing = currentCarryTiming, range.location >= timing.sourceOrigin,
+              NSMaxRange(range) <= timing.sourceOrigin + timing.source.utf16.count else { return nil }
+        return (timing.source as NSString).substring(with:
+            NSRange(location: range.location - timing.sourceOrigin, length: range.length))
+    }
+    @discardableResult
+    func armLiveWebCarryBoundary(sourceUTF16End: Int, reached: @escaping (WeReadBoundaryAudioCue) -> Void) -> Bool {
+        guard ownsAudioQueue, let session = audioSessionToken, let timing = currentCarryTiming,
+              sourceUTF16End < (timing.boundary.sourceSpeechEnd ?? 0),
+              case let .cue(sequence, time) = WeReadCrossPageSpeechContract.audioBoundary(source: timing.source,
+                boundaryUTF16Offset: sourceUTF16End - timing.sourceOrigin, segments: timing.segments),
+              timing.segments.indices.contains(sequence) else { return false }
+        let segment = timing.segments[sequence]
+        let cue = WeReadBoundaryAudioCue(segmentID: segment.id, segmentSequence: sequence,
+            boundaryTime: time, segmentDuration: segment.duration,
+            continuationTime: WeReadCrossPageSpeechContract.continuationTime(source: timing.source,
+                boundaryUTF16Offset: sourceUTF16End - timing.sourceOrigin, segments: timing.segments),
+            consumedCursor: timing.boundary.sourceParagraphIndex.flatMap { paragraph in
+                timing.boundary.sourceSpeechEnd.map { WeReadConsumedTextCursor(
+                    sourceLayoutFingerprint: timing.boundary.sourceLayoutFingerprint,
+                    sourceParagraphIndex: paragraph, sourceUTF16End: $0) }
+            })
+        let epoch = generationEpoch
+        return audio.armPagePresentationBoundary(segmentID: segment.id, time: time, session: session,
+            continuationTime: cue.continuationTime) { [weak self] _ in
+            guard let self, self.isActive, self.generationEpoch == epoch, self.audioSessionToken == session,
+                  self.ownsAudioQueue else { return }
+            reached(cue)
+        }
+    }
+    private var liveWebCarrySegmentIDs = Set<String>()
+    var currentSegmentBelongsToLiveWebCarry: Bool {
+        guard let segment = audio.currentSegment else { return false }
+        return (isAwaitingLiveWebCarryCompletion && liveWebCarrySegmentIDs.contains(segment.id))
+            || (pendingCarryPage != nil && segment.paragraphIndex == currentParagraphIndex)
+    }
     private var isAwaitingLiveWebCarryCompletion = false
     private var pendingLiveWebCarryStartIndex: Int?
     /// Exact, confirmed WeRead-page audio prepared while the immutable
@@ -990,6 +1094,9 @@ final class ReadAloudViewModel: ObservableObject {
         // bypassing start(). Bind the book whenever we claim its audio session;
         // Kindle's page-turn watcher also uses this identity after TTS is ready.
         applyPlaybackMetadata()
+        // Continue Listening can restore directly into generate(), bypassing
+        // start(). Bind the selected rate before preparing any media as well.
+        applySpeed()
         isPlaying = false
         isBuffering = false
         return token
@@ -1070,12 +1177,14 @@ final class ReadAloudViewModel: ObservableObject {
         audioService: AudioPlayerService = .shared,
         ttsService: TTSService = .shared,
         historyStore: HistoryStore = .shared,
-        speechGenerator: (any ParagraphSpeechGenerating)? = nil
+        speechGenerator: (any ParagraphSpeechGenerating)? = nil,
+        restoresSavedReadingPosition: Bool = true
     ) {
         self.audio = audioService
         self.tts = ttsService
         self.document = document
         self.historyStore = historyStore
+        self.restoresSavedReadingPosition = restoresSavedReadingPosition
         self.speechGenerator = speechGenerator ?? ttsService
         self.progressBoundaryToken = historyStore.progressBoundaryToken
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
@@ -1167,15 +1276,48 @@ final class ReadAloudViewModel: ObservableObject {
     /// finished generating all of its own segments. At that point, appending the
     /// next page's prepared audio cannot reorder a still-streaming current page.
     var isOnLastReadableParagraph: Bool {
-        currentParagraphIndex >= 0 && currentParagraphIndex == readableIndices.last
+        (currentParagraphIndex >= 0 && currentParagraphIndex == readableIndices.last)
+            || isPlayingFullyConsumedLivePageCarry
+    }
+
+    private var isPlayingFullyConsumedLivePageCarry: Bool {
+        document.sourceKind.isLiveWebLibrary && ownsAudioQueue && !isFinished && status.isReady
+            && isAwaitingLiveWebCarryCompletion && pendingLiveWebCarryStartIndex == nil
+            && currentSegmentBelongsToLiveWebCarry && !audio.moreSegmentsExpected
     }
 
     var currentTTSCompleteForPageHandoff: Bool {
+        if isPlayingFullyConsumedLivePageCarry { return true }
         guard ownsAudioQueue, !isFinished, status.isReady,
               let current = audio.currentSegment,
               current.paragraphIndex == currentParagraphIndex,
               segmentsByParagraph[currentParagraphIndex]?.contains(where: { $0.id == current.id }) == true,
               !audio.moreSegmentsExpected else { return false }
+        return true
+    }
+
+    /// Prepare one adjacent page while this page still has a playable reserve.
+    /// A completed short final paragraph also qualifies; queuing remains gated
+    /// separately on the actual last paragraph and visible-source confirmation.
+    var canPrepareAdjacentLivePageAudio: Bool {
+        if isPlayingFullyConsumedLivePageCarry {
+            return !isPlaybackPausedByUser && !audio.isExplicitlyPaused && audio.isPlaying
+        }
+        guard currentTTSCompleteForPageHandoff, !isPlaybackPausedByUser,
+              !audio.isExplicitlyPaused, audio.isPlaying,
+              let position = readableIndices.firstIndex(of: currentParagraphIndex),
+              let current = audio.currentSegment,
+              let parts = segmentsByParagraph[currentParagraphIndex],
+              let partIndex = parts.firstIndex(where: { $0.id == current.id }) else { return false }
+        var seconds = max(0, current.duration - audio.playbackPosition)
+            + parts.dropFirst(partIndex + 1).reduce(0) { $0 + max(0, $1.duration) }
+        for index in readableIndices.dropFirst(position + 1) {
+            guard let stream = readAheadStreams[index], stream.finished,
+                  stream.failure == nil, !stream.segments.isEmpty else {
+                return seconds / max(0.25, Double(audio.playbackRate)) >= 12
+            }
+            seconds += stream.segments.reduce(0) { $0 + max(0, $1.duration) }
+        }
         return true
     }
 
@@ -1221,22 +1363,25 @@ final class ReadAloudViewModel: ObservableObject {
               let boundary = weReadSpeechBoundary,
               boundary.isCrossPage,
               let segments = segmentsByParagraph[boundary.paragraphIndex],
-              let mapped = WeReadCrossPageSpeechContract.boundarySegment(
-                segmentTexts: segments.map(\.text),
-                boundaryUTF16Offset: boundary.visibleUTF16Offset
-              ),
-              mapped.sequence >= 0,
-              mapped.sequence < segments.count else { return nil }
-        let segment = segments[mapped.sequence]
+              paras.indices.contains(boundary.paragraphIndex),
+              case let .cue(sequence, time) = WeReadCrossPageSpeechContract.audioBoundary(
+                source: paras[boundary.paragraphIndex].resolvedSpeechText,
+                boundaryUTF16Offset: boundary.visibleUTF16Offset,
+                segments: segments
+              ), segments.indices.contains(sequence) else { return nil }
+        let segment = segments[sequence]
         let duration = audio.currentSegment?.id == segment.id && audio.duration > 0.01
             ? audio.duration
             : segment.duration
         guard duration > 0.01 else { return nil }
         return WeReadBoundaryAudioCue(
             segmentID: segment.id,
-            segmentSequence: mapped.sequence,
-            boundaryTime: duration * mapped.fraction,
+            segmentSequence: sequence,
+            boundaryTime: time,
             segmentDuration: duration,
+            continuationTime: WeReadCrossPageSpeechContract.continuationTime(
+                source: paras[boundary.paragraphIndex].resolvedSpeechText,
+                boundaryUTF16Offset: boundary.visibleUTF16Offset, segments: segments),
             consumedCursor: boundary.sourceParagraphIndex.flatMap { sourceParagraphIndex in
                 boundary.sourceSpeechEnd.map {
                     WeReadConsumedTextCursor(
@@ -1831,7 +1976,8 @@ final class ReadAloudViewModel: ObservableObject {
         _ p: [ReadingParagraph],
         language: String,
         preparedSegments: [AudioSegment],
-        weReadBoundary: WeReadPageSpeechBoundary? = nil
+        weReadBoundary: WeReadPageSpeechBoundary? = nil,
+        following: [LivePagePreparedSpeech] = []
     ) -> Bool {
         guard ownsAudioQueue,
               !p.isEmpty,
@@ -1843,7 +1989,7 @@ final class ReadAloudViewModel: ObservableObject {
         generationTask?.cancel()
         generationTask = nil
         resetLiveWebCarryPrewarmState()
-        clearPrefetch()
+        clearPrefetch(preservingPreparedIDs: Set(preparedSegments.map(\.id)))
         cloneRequestIDs.removeAll(keepingCapacity: false)
         isAwaitingLiveWebCarryCompletion = false
         pendingLiveWebCarryStartIndex = nil
@@ -1879,6 +2025,7 @@ final class ReadAloudViewModel: ObservableObject {
         setMoreSegmentsExpected(false)
         status = .ready
 
+        adoptLivePageReserves(following)
         preloadNext(after: preparedParagraph)
         return true
     }
@@ -1893,20 +2040,36 @@ final class ReadAloudViewModel: ObservableObject {
         _ p: [ReadingParagraph],
         language: String,
         carrySegmentID: String,
-        weReadBoundary: WeReadPageSpeechBoundary? = nil
+        weReadBoundary: WeReadPageSpeechBoundary? = nil,
+        prepared: PreparedLiveWebParagraph? = nil,
+        following: [LivePagePreparedSpeech] = []
     ) -> Bool {
         guard ownsAudioQueue,
               !p.isEmpty,
               !isFinished,
               audio.currentSegment?.id == carrySegmentID else { return false }
 
+        if audio.moreSegmentsExpected {
+            pendingCarryPage = PendingCarryPage(paragraphs: p, language: language, boundary: weReadBoundary, prepared: prepared, following: following)
+            webHighlight = nil
+            // Do not cancel or replace generationTask, its source, epoch or
+            // queue. The final response transfers the confirmed visual page.
+            ReaderRunLog.write("PAGINATION carry producer retained epoch=\(generationEpoch)")
+            return true
+        }
+        let carriedTiming = currentCarryTiming
+        let carriedIDs = Set((carriedTiming?.segments ?? segmentsByParagraph[currentParagraphIndex] ?? []).map(\.id))
+        pendingCarryPage = nil
         discardReadingResumeForConfirmedNavigation()
         invalidateAccessRetry()
-        generationEpoch &+= 1
+        // Automatic visual ownership stays in the same source-unit epoch.
+        // Manual navigation/voice changes still revoke it through their reset.
         let epoch = generationEpoch
         generationTask?.cancel()
         generationTask = nil
         resetLiveWebCarryPrewarmState()
+        liveWebCarrySegmentIDs = carriedIDs
+        retainedCarryTiming = carriedTiming
         clearPrefetch()
         cloneRequestIDs.removeAll(keepingCapacity: false)
         webParagraphs = p
@@ -1931,21 +2094,73 @@ final class ReadAloudViewModel: ObservableObject {
         pendingLiveWebCarryStartIndex = readableIndices.first
         setMoreSegmentsExpected(false)
         status = .ready
+        adoptLivePageReserves(following)
         if let startIndex = pendingLiveWebCarryStartIndex,
            let session = audioSessionToken {
             startLiveWebCarryPrewarm(
                 paragraphIndex: startIndex,
                 epoch: epoch,
-                session: session
+                session: session,
+                prepared: prepared
             )
         }
         return true
+    }
+
+    private func adoptLivePageReserves(_ reserves: [LivePagePreparedSpeech]) {
+        guard ownsAudioQueue, let session = audioSessionToken else { return }
+        let epoch = generationEpoch
+        for reserve in reserves {
+            let stream = reserve.stream, index = stream.paragraphIndex
+            guard !reserve.adopted, stream.failure == nil, paras.indices.contains(index),
+                  readableIndices.contains(index), reserve.sourceText == paras[index].resolvedSpeechText,
+                  stream.voice == settings.voice(for: docLanguage), stream.language == docLanguage,
+                  pageCueRejection(stream.segments, paragraph: index) == nil else {
+                reserve.discardIfSpeculative()
+                continue
+            }
+            readAheadStreams[index] = stream
+            adoptedPageReserves[index] = reserve
+            readAheadMediaLeases[index] = reserve.mediaLease
+            reserve.mediaLease = nil
+            if !stream.segments.isEmpty { kindlePrefetchedSegments[index] = stream.segments }
+            reserve.adopt(request: { [weak self] checkpoint in
+                guard let self else { throw CancellationError() }
+                return try await self.prepareBufferedRequest(stream, checkpoint: checkpoint, epoch: epoch, session: session)
+            }, segment: { [weak self] segment in
+                self?.receiveBufferedSegment(segment, stream: stream, epoch: epoch, session: session)
+            }, completion: { [weak self] error in
+                guard let self, self.isCurrent(stream, epoch: epoch, session: session), !Task.isCancelled else { return }
+                self.adoptedPageReserves.removeValue(forKey: index)
+                if let error {
+                    self.kindlePrefetchFailures.insert(index)
+                    self.synchronizeNextPrefetch(after: self.currentParagraphIndex)
+                    if stream.promoted {
+                        self.status = .error(error.localizedDescription)
+                        _ = self.audio.setMoreSegmentsExpected(!stream.segments.isEmpty, session: session)
+                    }
+                } else if stream.promoted {
+                    _ = self.finishGeneratedAudio(paragraph: index, epoch: epoch, session: session)
+                    self.readAheadStreams.removeValue(forKey: index)
+                    self.preloadNext(after: index)
+                } else {
+                    self.kindlePrefetchedSegments[index] = stream.segments
+                    self.synchronizeNextPrefetch(after: self.currentParagraphIndex)
+                    self.preloadNext(after: self.currentParagraphIndex)
+                }
+            })
+            ReaderRunLog.write("READ adjacent reserve adopted para=\(index) pending=\(!stream.finished) buffered=\(stream.segments.count)")
+        }
+        synchronizeNextPrefetch(after: currentParagraphIndex)
     }
 
     /// Clears page-local exact prewarm state. The caller owns cancellation of
     /// `generationTask`; keeping cancellation explicit avoids accidentally
     /// stopping ordinary foreground generation from an unrelated reset.
     private func resetLiveWebCarryPrewarmState() {
+        pendingCarryPage = nil
+        liveWebCarrySegmentIDs.removeAll()
+        retainedCarryTiming = nil
         liveWebCarryPrewarmIndex = nil
         liveWebCarryPrewarmEpoch = nil
         liveWebCarryPrewarmSession = nil
@@ -1970,7 +2185,7 @@ final class ReadAloudViewModel: ObservableObject {
         language: String,
         serial: UInt64
     ) -> Bool {
-        guard document.sourceKind == .weread,
+        guard [.weread, .googleBooks, .kobo].contains(document.sourceKind),
               isActive,
               generationEpoch == epoch,
               liveWebCarryPrewarmEpoch == epoch,
@@ -2013,9 +2228,10 @@ final class ReadAloudViewModel: ObservableObject {
     private func startLiveWebCarryPrewarm(
         paragraphIndex: Int,
         epoch: UInt64,
-        session: AudioPlaybackSessionToken
+        session: AudioPlaybackSessionToken,
+        prepared: PreparedLiveWebParagraph? = nil
     ) {
-        guard document.sourceKind == .weread,
+        guard [.weread, .googleBooks, .kobo].contains(document.sourceKind),
               isAwaitingLiveWebCarryCompletion,
               paras.indices.contains(paragraphIndex),
               audioSessionToken == session,
@@ -2046,18 +2262,42 @@ final class ReadAloudViewModel: ObservableObject {
             "serial=\(serial) chars=\(sourceText.utf16.count)"
         )
 
+        if let prepared, prepared.paragraphIndex == paragraphIndex,
+           prepared.sourceText == sourceText, prepared.voiceID == voiceID,
+           prepared.language == language, !prepared.segments.isEmpty,
+           prepared.segments.allSatisfy({ $0.paragraphIndex == paragraphIndex }) {
+            // The coordinator already confirmed the predicted page identity.
+            // Retain this generation across the carried sentence instead of
+            // discarding it and submitting the same text again at the page edge.
+            for segment in prepared.segments {
+                receiveLiveWebCarryPrewarmSegment(segment, paragraphIndex: paragraphIndex,
+                    epoch: epoch, session: session, sourceText: sourceText,
+                    voiceID: voiceID, language: language, serial: serial)
+            }
+            finishLiveWebCarryPrewarm(paragraphIndex: paragraphIndex, epoch: epoch,
+                session: session, sourceText: sourceText, voiceID: voiceID,
+                language: language, serial: serial)
+            ReaderRunLog.write("WEREAD carry adopted prepared para=\(paragraphIndex) segments=\(prepared.segments.count)")
+            return
+        }
+
         generationTask = Task { [weak self] in
             guard let self else { return }
             do {
-                _ = try await self.speechGenerator.generatePrefetchSegments(
+                try await self.speechGenerator.generateBufferedSpeech(
                     paragraphIndex: paragraphIndex,
                     text: SpeechTextSanitizer.sanitizedForTTS(sourceText),
                     voice: voiceID,
                     speed: 1.0,
                     language: language,
                     includeVoiceCode: self.includeVoiceCodeForTTS,
-                    speaker: paragraph.speaker
-                ) { [weak self] rawSegment in
+                    speaker: paragraph.speaker,
+                    cloneRequestID: nil,
+                    continuation: TTSContinuation(requestUnits: [WeReadCrossPageSpeechContract.speechInput(
+                        SpeechTextSanitizer.sanitizedForTTS(sourceText), boundary: self.weReadSpeechBoundary,
+                        paragraphIndex: paragraphIndex, language: language)], nextSegmentIndex: 0, requiresSourceTiming: true),
+                    beforeRequest: { _ in .readAhead },
+                    onSegmentReady: { [weak self] rawSegment in
                     self?.receiveLiveWebCarryPrewarmSegment(
                         rawSegment,
                         paragraphIndex: paragraphIndex,
@@ -2068,7 +2308,7 @@ final class ReadAloudViewModel: ObservableObject {
                         language: language,
                         serial: serial
                     )
-                }
+                })
                 try Task.checkCancellation()
                 self.finishLiveWebCarryPrewarm(
                     paragraphIndex: paragraphIndex,
@@ -2143,9 +2383,18 @@ final class ReadAloudViewModel: ObservableObject {
             text: rawSegment.text,
             isWavFormat: rawSegment.isWavFormat,
             unprocessedText: rawSegment.unprocessedText,
-            speaker: rawSegment.speaker
+            speaker: rawSegment.speaker,
+            timingTimestamps: rawSegment.timingTimestamps
         )
+        if let boundary = weReadSpeechBoundary, boundary.isCrossPage, boundary.paragraphIndex == paragraphIndex,
+           let reason = WeReadCrossPageSpeechContract.boundaryRejection(source: sourceText,
+                boundary: boundary, segments: liveWebCarryPrewarmSegments + [segment]) {
+            failLiveWebCarryPrewarm(TTSError.generationFailed(reason), paragraphIndex: paragraphIndex,
+                epoch: epoch, session: session, sourceText: sourceText, voiceID: voiceID, language: language, serial: serial)
+            return
+        }
         liveWebCarryPrewarmSegments.append(segment)
+        audio.prestageSegments([segment])
         ReaderRunLog.write(
             "WEREAD exact prewarm segment para=\(paragraphIndex) " +
             "seg=\(rawSegment.segmentIndex) buffered=\(liveWebCarryPrewarmSegments.count) " +
@@ -2389,7 +2638,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func restoreSavedReadingPosition() {
-        guard !hasObservedReadingPlayback,
+        guard restoresSavedReadingPosition, !hasObservedReadingPlayback,
               !readableIndices.isEmpty,
               progressBoundaryToken == historyStore.progressBoundaryToken else { return }
         let key = readingProgressID + ":" + resumeDocumentIndex.fingerprint
@@ -2443,6 +2692,19 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     func flushReadingProgress() {
+        // Both modes observe the shared player. Only the current queue owner
+        // can persist listening; an inactive Read VM must not rescan all
+        // history and invalidate the root at every Explain media boundary.
+        // Explicit pause/deactivation calls arrive before releasing ownership.
+        guard ownsAudioQueue else { return }
+        // A user pause can arrive after AVPlayer has advanced but before the
+        // VM's asynchronously delivered clock/state subscription. Capture the
+        // player's owned audible evidence now; do not lose that first word or
+        // retain an older chapter merely because the UI tick is still queued.
+        if ownsAudioQueue, audio.hasAudibleProgress, !audio.isBuffering,
+           audio.currentSegment?.paragraphIndex == currentParagraphIndex {
+            hasObservedReadingPlayback = true
+        }
         saveReadingProgress(force: true)
         historyStore.flushProgressProjection()
     }
@@ -2514,6 +2776,18 @@ final class ReadAloudViewModel: ObservableObject {
         ), var checkpoint = resumeDocumentIndex.checkpoint(
             sourceKind: document.sourceKind, paragraphIndex: currentParagraphIndex, audio: cursor, now: now
         ) else { return }
+        let weReadLocations = weReadPageLocations.filter { $0.fingerprint == checkpoint.structureFingerprint }
+        if let location = weReadLocations.last?.location,
+           weReadLocations.allSatisfy({ $0.location == location }) {
+            checkpoint.weReadLocation = location
+        }
+        let pageLocations = koboPageLocations.filter {
+            $0.fingerprint == checkpoint.structureFingerprint
+        }
+        if let location = pageLocations.last?.location,
+           pageLocations.allSatisfy({ $0.location == location }) {
+            checkpoint.koboLocation = location
+        }
         if paras.indices.contains(currentParagraphIndex) {
             checkpoint.visual = ReadingResumeContract.captureVisual(
                 output: segments.map(\.text).joined(), offset: cursor.outputUTF16Offset,
@@ -2712,6 +2986,10 @@ final class ReadAloudViewModel: ObservableObject {
             }
             return
         }
+        if ownsAudioQueue, currentSegmentBelongsToLiveWebCarry {
+            ensurePlaying()
+            return
+        }
         if currentParagraphIndex >= 0, ownsAudioQueue,
            audio.currentSegment != nil || status.isLoading || status.isStreaming {
             ensurePlaying()
@@ -2845,10 +3123,28 @@ final class ReadAloudViewModel: ObservableObject {
         guard requireWebContentReady() else { return }
         if isPreparingReadablePage { pausePlayback(); return }
         audio.sleepTimer.resumeByUser()
-        guard prepareReadingAudioResumeRetry() else { return }
+        if resumeNotice != nil {
+            // Play is an explicit choice to hear the verified visible source.
+            // A failed historical cursor must not turn this button into a no-op.
+            // Automatic start/restore still waits for a matching source; only
+            // this user action may start the current paragraph from its beginning.
+            guard let index = readableIndices.contains(currentParagraphIndex)
+                ? currentParagraphIndex : readableIndices.first else { return }
+            isPlaybackPausedByUser = false
+            liveWebTurnIntentSuspended = false
+            resumeSourceRange = nil
+            resumeSourceParagraphIndex = -1
+            ReaderRunLog.write("READ explicit play uses visible source=\(document.sourceKind.rawValue) para=\(index) reason=saved-cursor-unavailable")
+            jump(to: index)
+            return
+        }
         isPlaybackPausedByUser = false
         liveWebTurnIntentSuspended = false
-        if currentParagraphIndex < 0 { start(); return }
+        if ownsAudioQueue, audio.isPlaying || (audio.pagePresentationHoldID != nil && audio.hasPlaybackRequest) {
+            pausePlayback()
+            return
+        }
+        if currentParagraphIndex < 0, !currentSegmentBelongsToLiveWebCarry { start(); return }
         if !audio.isPlaying,
            presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
                self?.togglePlayPause()
@@ -2861,6 +3157,14 @@ final class ReadAloudViewModel: ObservableObject {
         }
         if resumeKindleSourceWaitIfNeeded() { return }
         if case .error = status {
+            // Validation failures retire the audio session. Explicit Retry
+            // must acquire a fresh session before retryCurrentParagraph's
+            // active-owner guard; otherwise the visible Retry button does nothing.
+            if !ownsAudioQueue {
+                activate()
+                applyPlaybackMetadata()
+                applySpeed()
+            }
             retryCurrentParagraph()
             return
         }
@@ -2931,7 +3235,7 @@ final class ReadAloudViewModel: ObservableObject {
         }) {
             return
         }
-        if currentParagraphIndex < 0 {
+        if currentParagraphIndex < 0, !currentSegmentBelongsToLiveWebCarry {
             start()
             return
         }
@@ -3729,17 +4033,21 @@ final class ReadAloudViewModel: ObservableObject {
             finishVoiceSwitch(voiceSwitchID)
             return
         }
-        let requestedText = suffixPlan?.text ?? paras[index].resolvedSpeechText
+        let requestedText = WeReadCrossPageSpeechContract.speechInput(
+            suffixPlan?.text ?? paras[index].resolvedSpeechText,
+            boundary: suffixPlan == nil ? weReadSpeechBoundary : nil,
+            paragraphIndex: index, language: docLanguage)
         let effectiveContinuation: TTSContinuation? = continuation ?? {
-            guard suffixPlan != nil || kindleContinuousInput != nil else { return nil }
+            guard suffixPlan != nil || kindleContinuousInput != nil || document.sourceKind.isLiveWebLibrary else { return nil }
             let text = SpeechTextSanitizer.sanitizedForTTS(requestedText)
             // Kindle has already planned complete, bounded speech units. A
             // second "fast opening" split makes 3x playback outrun its suffix
             // and can cut the same cross-page sentence we just assembled.
-            let units = kindleContinuousInput != nil ? [text]
+            let units = (kindleContinuousInput != nil || weReadSpeechBoundary?.paragraphIndex == index) ? [text]
                 : ClonedTTSStartup.requestUnits(text, language: docLanguage, voice: voice)
             return TTSContinuation(requestUnits: units,
-                nextSegmentIndex: suffixPlan?.nextSegmentIndex ?? 0)
+                nextSegmentIndex: suffixPlan?.nextSegmentIndex ?? 0,
+                            requiresSourceTiming: document.sourceKind.isLiveWebLibrary)
         }()
         if let suffixPlan {
             ReaderRunLog.write("READ voice switch suffix para=\(index) skippedChars=\(suffixPlan.prefix.map(\.text).joined().utf16.count) requestChars=\(requestedText.utf16.count)")
@@ -3798,6 +4106,11 @@ final class ReadAloudViewModel: ObservableObject {
                                     // unit during preset synthesis, not after the
                                     // replacement voice has started playing.
                                     self.preloadNext(after: index, preparingVoiceSwitch: voiceSwitchID)
+                                } else if autoPlay, self.pendingReadingAudioCursor != nil {
+                                    // A restored cursor can leave only one word
+                                    // in this unit. Give its confirmed successor
+                                    // the same synthesis lead as a voice switch.
+                                    self.preloadNext(after: index, preparingResume: true)
                                 }
                                 return .interactive
                             }
@@ -3806,6 +4119,9 @@ final class ReadAloudViewModel: ObservableObject {
                         }
                     }, onSegmentReady: { [weak self] segment in
                     demand.append(segment)
+                    await self?.prepareBodyBeforeShortOpening(segment, paragraph: index,
+                        epoch: epoch, session: session, autoPlay: autoPlay)
+                    guard !Task.isCancelled else { return }
                     self?.appendSegment(
                         segment,
                         paragraph: index,
@@ -3919,6 +4235,10 @@ final class ReadAloudViewModel: ObservableObject {
         paragraphContinuation = nil
         status = .ready
         cacheCompletedVoiceAudio(paragraph)
+        if let page = pendingCarryPage, let carryID = audio.currentSegment?.id {
+            _ = commitLiveWebPageDuringActiveCarry(page.paragraphs, language: page.language,
+                carrySegmentID: carryID, weReadBoundary: page.boundary, prepared: page.prepared, following: page.following)
+        }
         return true
     }
 
@@ -3964,6 +4284,13 @@ final class ReadAloudViewModel: ObservableObject {
             NSLog("CRDBG drop stale TTS segment para=%d epoch=%llu current=%llu", paragraph, epoch, generationEpoch)
             return
         }
+        if let reason = pageCueRejection((segmentsByParagraph[paragraph] ?? []) + [segment], paragraph: paragraph) {
+            // The invalid part never enters either the coverage ledger or queue.
+            ReaderRunLog.write("PAGINATION cue_rejected reason=\(reason) generation=\(epoch) mono=\(ProcessInfo.processInfo.systemUptime)")
+            stop()
+            status = .error(AppLocalized("音频播放失败，请重试"))
+            return
+        }
         segmentsByParagraph[paragraph, default: []].append(segment)
         let segs = segmentsByParagraph[paragraph] ?? []
         ReaderRunLog.write(
@@ -3972,6 +4299,7 @@ final class ReadAloudViewModel: ObservableObject {
         )
         processedDisplayText = segs.map { $0.text }.joined()
         if document.sourceKind.isWebRendered { webAudioSegments.append(segment) }
+        signalPageBoundaryIfNeeded(audio.currentTime)
         let shouldAutoPlay = autoPlay && !liveWebTurnIntentSuspended
             && !audio.isExplicitlyPaused
         if let cursor = pendingReadingAudioCursor {
@@ -4182,9 +4510,62 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// A single bounded window serves every reader and both voice families.
     /// Future paragraphs remain ordered; a partial paragraph can be promoted.
-    private func preloadNext(after index: Int, preparingVoiceSwitch: UUID? = nil) {
-        let mayPrepareBeforeCurrentAudio = preparingVoiceSwitch != nil
-            && preparingVoiceSwitch == activeVoiceSwitchID
+    private func prepareBodyBeforeShortOpening(_ segment: AudioSegment, paragraph: Int,
+        epoch: UInt64, session: AudioPlaybackSessionToken, autoPlay: Bool) async {
+        guard autoPlay, !VoiceOption.requiresGenerationQuota(playbackVoiceID),
+              generationEpoch == epoch, audioSessionToken == session, isActive,
+              pendingLiveWebResume == nil,
+              segment.unprocessedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              segment.duration > 0,
+              !isPlaybackPausedByUser, !audio.isExplicitlyPaused,
+              let position = readableIndices.firstIndex(of: paragraph), position + 1 < readableIndices.count else { return }
+        let rate = max(0.25, Double(audio.playbackRate))
+        let isShortOpening = [.googleBooks, .kobo].contains(document.sourceKind)
+            && pendingReadingAudioCursor == nil && segmentsByParagraph[paragraph]?.isEmpty != false
+            && segment.segmentIndex == 0 && segment.duration / rate < 1.5
+            && weReadSpeechBoundary?.paragraphIndex != paragraph
+        let isShortResume: Bool
+        if kindleContinuousInput != nil, let cursor = pendingReadingAudioCursor {
+            let available = (segmentsByParagraph[paragraph] ?? []) + [segment]
+            if case let .seek(index, seconds) = ReadingResumeContract.resolveAudio(cursor, segments: available, isComplete: true),
+               index == available.count - 1 {
+                isShortResume = max(0, segment.duration - seconds) / rate < 1.5
+            } else {
+                isShortResume = false
+            }
+        } else {
+            isShortResume = false
+        }
+        guard isShortOpening || isShortResume else { return }
+        // Live page paragraphs start inside the committed viewport. Do not
+        // issue a request for a speculative next page just to pad a title.
+        let next = readableIndices[position + 1], id = UUID()
+        shortStartupPreparation = (id, next)
+        defer {
+            if shortStartupPreparation?.id == id { shortStartupPreparation = nil }
+        }
+        audio.prestageSegments([segment])
+        if readAheadStreams[next] == nil { startPrefetch(next) }
+        let deadline = ProcessInfo.processInfo.systemUptime + 6
+        while !Task.isCancelled, generationEpoch == epoch, audioSessionToken == session,
+              isActive, !audio.hasTerminalPlaybackFailure,
+              !isPlaybackPausedByUser, !audio.isExplicitlyPaused,
+              ProcessInfo.processInfo.systemUptime < deadline {
+            guard let stream = readAheadStreams[next], stream.failure == nil else { break }
+            if let body = stream.segments.first, audio.isPreparedForPlayback(body) {
+                ReaderRunLog.write("PAGINATION short_opening_ready paragraph=\(paragraph) next=\(next) mono=\(ProcessInfo.processInfo.systemUptime)")
+                break
+            }
+            if stream.finished, stream.segments.isEmpty { break }
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+    }
+
+    private func preloadNext(after index: Int, preparingVoiceSwitch: UUID? = nil, preparingResume: Bool = false) {
+        guard pendingCarryPage == nil else { return }
+        let hasEarlyPreparationIntent = (preparingVoiceSwitch != nil && preparingVoiceSwitch == activeVoiceSwitchID)
+            || (preparingResume && pendingReadingAudioCursor != nil)
+        let mayPrepareBeforeCurrentAudio = hasEarlyPreparationIntent
             && kindleContinuousInput != nil
             && !VoiceOption.requiresGenerationQuota(playbackVoiceID)
         guard preparingVoiceSwitch == nil || mayPrepareBeforeCurrentAudio else { return }
@@ -4197,6 +4578,15 @@ final class ReadAloudViewModel: ObservableObject {
         for key in Array(readAheadStreams.keys) where key < index {
             readAheadStreams.removeValue(forKey: key)?.task?.cancel()
             kindlePrefetchedSegments.removeValue(forKey: key)
+        }
+        for key in Array(readAheadMediaLeases.keys) where key < index {
+            readAheadMediaLeases.removeValue(forKey: key)
+        }
+        // A bounded decoder slot may have been unavailable when a farther
+        // paragraph arrived. Refill in reading order after a slot is taken.
+        for key in readAheadStreams.keys.sorted() {
+            guard let stream = readAheadStreams[key], !stream.promoted else { continue }
+            readAheadMediaLeases[key] = audio.retainPreparedSegments(stream.segments)
         }
         let candidates = readableIndices.dropFirst(position + 1).map { next in
             KindleParagraphPrefetchHorizon.Candidate(index: next,
@@ -4253,7 +4643,7 @@ final class ReadAloudViewModel: ObservableObject {
             stream.finished = true
             readAheadStreams[nextIndex] = stream
             kindlePrefetchedSegments[nextIndex] = cached
-            audio.prestageSegments(cached)
+            readAheadMediaLeases[nextIndex] = audio.retainPreparedSegments(cached)
             synchronizeNextPrefetch(after: currentParagraphIndex)
             ReaderRunLog.write("READ clone prefetch cache-hit para=\(nextIndex)")
             return
@@ -4264,10 +4654,11 @@ final class ReadAloudViewModel: ObservableObject {
         prefetchedYouTubeAudioIsQuotaExempt = false
         let generator = speechGenerator
         let includeVoiceCode = includeVoiceCodeForTTS
-        let plannedContinuation = kindleContinuousInput.map { _ in
-            TTSContinuation(requestUnits: [SpeechTextSanitizer.sanitizedForTTS(para.resolvedSpeechText)],
-                            nextSegmentIndex: 0)
-        }
+        let plannedContinuation: TTSContinuation? = (kindleContinuousInput != nil || document.sourceKind.isLiveWebLibrary)
+            ? TTSContinuation(requestUnits: [SpeechTextSanitizer.sanitizedForTTS(
+                WeReadCrossPageSpeechContract.speechInput(para.resolvedSpeechText, boundary: weReadSpeechBoundary,
+                    paragraphIndex: nextIndex, language: docLanguage))], nextSegmentIndex: 0,
+                requiresSourceTiming: document.sourceKind.isLiveWebLibrary) : nil
         ReaderRunLog.write("READ prefetch start para=\(nextIndex) epoch=\(epoch) chars=\(para.resolvedSpeechText.utf16.count) streaming=Y")
         let task = Task { [weak self] in
             do {
@@ -4336,6 +4727,12 @@ final class ReadAloudViewModel: ObservableObject {
                 paragraphContinuation = ParagraphContinuation(paragraphIndex: stream.paragraphIndex,
                     voice: stream.voice, language: stream.language, checkpoint: checkpoint)
             }
+            if shortStartupPreparation?.nextIndex == stream.paragraphIndex,
+               !stream.promoted, !stream.segments.isEmpty {
+                // One first body part is sufficient for the opening gate.
+                try await Task.sleep(nanoseconds: 20_000_000)
+                continue
+            }
             if (stream.promoted || readAheadFitsBudget(excluding: nil)),
                stream.canRequest(currentSegmentID: stream.promoted ? audio.currentSegment?.id : nil,
                                  position: stream.promoted ? audio.playbackPosition : 0,
@@ -4351,13 +4748,25 @@ final class ReadAloudViewModel: ObservableObject {
     private func receiveBufferedSegment(_ segment: AudioSegment, stream: SpeechStreamBuffer,
                                         epoch: UInt64, session: AudioPlaybackSessionToken) {
         guard isCurrent(stream, epoch: epoch, session: session), !stream.finished else { return }
+        if let reason = pageCueRejection(stream.segments + [segment], paragraph: stream.paragraphIndex) {
+            // Reject before either the speculative ledger or playback queue.
+            // Promotion must obey the same source contract as foreground TTS.
+            invalidPagePrefetchIndices.insert(stream.paragraphIndex)
+            stream.failure = TTSError.generationFailed(reason)
+            stream.finished = true
+            stream.task?.cancel()
+            synchronizeNextPrefetch(after: currentParagraphIndex)
+            ReaderRunLog.write("PAGINATION prefetch_cue_rejected paragraph=\(stream.paragraphIndex) reason=\(reason)")
+            if stream.promoted { stop(); status = .error(AppLocalized("音频播放失败，请重试")) }
+            return
+        }
         stream.append(segment)
         if stream.promoted {
             appendSegment(segment, paragraph: stream.paragraphIndex, epoch: epoch,
                           session: session, autoPlay: true, voiceSwitchID: nil)
         } else {
             synchronizeNextPrefetch(after: currentParagraphIndex)
-            audio.prestageSegments([segment])
+            readAheadMediaLeases[stream.paragraphIndex] = audio.retainPreparedSegments(stream.segments)
             ReaderRunLog.write("READ prefetch playable para=\(stream.paragraphIndex) seg=\(segment.segmentIndex) buffered=\(stream.segments.count)")
             if pendingPrefetchAdvanceFrom == currentParagraphIndex,
                !audio.isExplicitlyPaused, !isPlaybackPausedByUser {
@@ -4388,9 +4797,13 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     /// 取消并清空预取缓存（jump / stop / 重新 generate 时）。
-    private func clearPrefetch() {
+    private func clearPrefetch(preservingPreparedIDs: Set<String> = []) {
+        shortStartupPreparation = nil
+        invalidPagePrefetchIndices.removeAll()
         readAheadStreams.values.forEach { $0.task?.cancel() }
         readAheadStreams.removeAll()
+        adoptedPageReserves.removeAll()
+        readAheadMediaLeases.removeAll()
         foregroundStream = nil
         pendingPrefetchAdvanceFrom = nil
         kindlePrefetchedSegments.removeAll()
@@ -4404,7 +4817,7 @@ final class ReadAloudViewModel: ObservableObject {
         prefetchedSegments = []
         prefetchedYouTubeAudioIsQuotaExempt = false
         // Whatever was staged for the discarded prefetch will never be played.
-        audio.discardPrestagedSegments()
+        audio.discardPrestagedSegments(preserving: preservingPreparedIDs)
     }
 
     /// 把已预取的下一段缓存「转正」为当前段：重置高亮状态 + 一次性入队播放（无 TTS 等待），并继续预取再下一段。
@@ -4416,6 +4829,11 @@ final class ReadAloudViewModel: ObservableObject {
         hasObservedReadingPlayback = false
         guard let session = ensureAudioSessionClaim() else { return }
         let segs = prefetchedSegments
+        if let reason = pageCueRejection(segs, paragraph: index) {
+            ReaderRunLog.write("PAGINATION promotion_cue_rejected paragraph=\(index) reason=\(reason)")
+            stop(); status = .error(AppLocalized("音频播放失败，请重试"))
+            return
+        }
         let stream = readAheadStreams[index]
         stream?.promoted = true
         if let stream, !stream.finished { generationTask = stream.task }
@@ -4460,11 +4878,15 @@ final class ReadAloudViewModel: ObservableObject {
 
         // loadSegments resets producer state, so restore it after installing
         // the first playable prefix. Later callbacks append to this same queue.
+        didSignalPageBoundaryApproaching = false
+        signalPageBoundaryIfNeeded(0)
         guard audio.loadSegments(
             segs,
             autoPlay: !liveWebTurnIntentSuspended && !audio.isExplicitlyPaused,
             session: session
         ) else { return }
+        // Keep this paragraph's lease until advancing past it: only its first
+        // part has been taken, and the queued tail must retain its decoders too.
         let producing = stream.map { !$0.finished || $0.failure != nil } ?? false
         _ = audio.setMoreSegmentsExpected(producing, session: session)
         if let error = stream?.failure {
@@ -4551,6 +4973,12 @@ final class ReadAloudViewModel: ObservableObject {
             let startIndex = pendingLiveWebCarryStartIndex
             isAwaitingLiveWebCarryCompletion = false
             pendingLiveWebCarryStartIndex = nil
+            // Transport indexes restart on every visual page. Once this
+            // source unit finishes, its ids and absolute origin must retire
+            // before another paragraph can reuse e.g. "1-0". Keep the exact
+            // successor's producer/decoded buffer alive for promotion.
+            liveWebCarrySegmentIDs.removeAll()
+            retainedCarryTiming = nil
             if let startIndex {
                 let hasExactPrewarm: Bool
                 if let epoch = liveWebCarryPrewarmEpoch,
@@ -4674,6 +5102,10 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         let nextIndex = readableIndices[nextPos]
+        if invalidPagePrefetchIndices.contains(nextIndex) {
+            stop(); status = .error(AppLocalized("音频播放失败，请重试"))
+            return
+        }
         let hasReadyPrefetch = prefetchedIndex == nextIndex
             && !prefetchedSegments.isEmpty
         let readyPrefetchIsQuotaExempt = hasReadyPrefetch
@@ -4992,30 +5424,55 @@ final class ReadAloudViewModel: ObservableObject {
     private func signalPageBoundaryIfNeeded(_ time: Double) {
         guard !didSignalPageBoundaryApproaching,
               document.sourceKind.isLiveWebLibrary,
-              isOnLastReadableParagraph,
-              currentTTSCompleteForPageHandoff,
-              let segment = audio.currentSegment,
-              audio.duration > 0 else { return }
+              isOnLastReadableParagraph else { return }
 
-        if let cue = currentWeReadBoundaryCue {
-            guard WeReadCrossPageSpeechContract.shouldRequestTurn(
-                currentSegmentID: segment.id,
-                cue: cue,
-                currentTime: time,
-                playbackRate: audio.playbackRate,
-                leadSeconds: weReadBoundaryTurnLeadSeconds
-            ) else { return }
-            didSignalPageBoundaryApproaching = true
-            onPageBoundaryApproaching?()
+        if [.weread, .googleBooks, .kobo].contains(document.sourceKind),
+           let cue = currentWeReadBoundaryCue, let session = audioSessionToken {
+            // Turn after the final source word; keep the decoder advancing
+            // through measured silence, holding only if the page misses the
+            // next audible word's deadline. The UI tick owns neither edge.
+            let epoch = generationEpoch
+            _ = audio.armPagePresentationBoundary(segmentID: cue.segmentID,
+                time: cue.boundaryTime, session: session, continuationTime: cue.continuationTime) { [weak self] _ in
+                guard let self, self.isActive, self.generationEpoch == epoch,
+                      self.audioSessionToken == session, self.ownsAudioQueue else { return }
+                self.didSignalPageBoundaryApproaching = true
+                self.onPageBoundaryApproaching?()
+            }
             return
         }
 
-        guard segmentsByParagraph[currentParagraphIndex]?.last?.id == segment.id else { return }
+        // A source boundary without usable timing is pending or rejected; it
+        // must never silently become an end-of-sentence/next-paragraph turn.
+        if weReadSpeechBoundary?.isCrossPage == true { return }
+
+        guard currentTTSCompleteForPageHandoff, let segment = audio.currentSegment,
+              audio.duration > 0,
+              segmentsByParagraph[currentParagraphIndex]?.last?.id == segment.id else { return }
+        if [.weread, .googleBooks, .kobo].contains(document.sourceKind), onPageBoundaryApproaching != nil,
+           let session = audioSessionToken {
+            let epoch = generationEpoch
+            _ = audio.armPagePresentationBoundary(segmentID: segment.id, time: audio.duration, session: session, atItemEnd: true) { [weak self] _ in
+                guard let self, self.isActive, self.generationEpoch == epoch,
+                      self.audioSessionToken == session, self.ownsAudioQueue else { return }
+                self.didSignalPageBoundaryApproaching = true
+                self.onPageBoundaryApproaching?()
+            }
+            return
+        }
         let remaining = max(0, audio.duration - time)
         let wallClock = remaining / max(0.25, Double(audio.playbackRate))
         guard wallClock <= WeReadContinuousPageHandoffContract.visualTurnLeadSeconds else { return }
         didSignalPageBoundaryApproaching = true
         onPageBoundaryApproaching?()
+    }
+
+    private func pageCueRejection(_ segments: [AudioSegment], paragraph: Int) -> String? {
+        guard document.sourceKind.isLiveWebLibrary,
+              let boundary = weReadSpeechBoundary, boundary.isCrossPage,
+              boundary.paragraphIndex == paragraph, paras.indices.contains(paragraph) else { return nil }
+        return WeReadCrossPageSpeechContract.boundaryRejection(
+            source: paras[paragraph].resolvedSpeechText, boundary: boundary, segments: segments)
     }
 
     private func updateNowPlayingCaption(_ t: Double) {
@@ -5111,12 +5568,14 @@ final class ReadAloudViewModel: ObservableObject {
                 text: segment.text,
                 isWavFormat: segment.isWavFormat,
                 unprocessedText: segment.unprocessedText,
-                speaker: segment.speaker
+                speaker: segment.speaker,
+                timingTimestamps: segment.timingTimestamps
             )
         }
     }
 
     private func updateHighlight(_ t: Double) {
+        guard pendingCarryPage == nil else { return }
         // A live web page can replace its paragraph array on a resize/page
         // commit while Combine still has one queued currentTime tick from the
         // old AVPlayerItem. Never index the replaceable page model until both
@@ -5132,6 +5591,26 @@ final class ReadAloudViewModel: ObservableObject {
             guard let segPos = segs.firstIndex(where: { $0.id == seg.id }) else { return }
             let total = (paras[currentParagraphIndex].text as NSString).length
             let base = segs.prefix(segPos).reduce(0) { $0 + ($1.text as NSString).length }
+
+            if document.sourceKind == .weread, !hasReliableWordHighlight(seg) {
+                let range = WeReadCrossPageSpeechContract.sentenceSourceRange(
+                    source: paras[currentParagraphIndex].resolvedSpeechText, segments: segs,
+                    segmentID: seg.id, time: t)
+                // Chinese timestamps remain available for source navigation
+                // even when the UI uses sentence highlighting. Never paint an
+                // entire multi-sentence media part as one visual sentence.
+                if let range, min(NSMaxRange(range), total) > range.location {
+                    setWebHighlight(WebHighlightCmd(paragraphIndex: currentParagraphIndex,
+                        charStart: range.location, charEnd: min(NSMaxRange(range), total),
+                        segSeq: segPos, segmentTexts: []))
+                } else {
+                    // An ambiguous cue must not fall back to painting all of
+                    // the transport part, nor leave an obsolete sentence lit.
+                    setWebHighlight(WebHighlightCmd(paragraphIndex: currentParagraphIndex,
+                        charStart: 0, charEnd: 0, segSeq: segPos, segmentTexts: []))
+                }
+                return
+            }
 
             // 当前音频段有可靠词时间戳 → 逐词：下发词数组+索引+segment序号，JS 在 DOM 虚拟全文前向匹配（不靠字符偏移，对齐扩展 highlight-sync）。
             if hasReliableWordHighlight(seg) {

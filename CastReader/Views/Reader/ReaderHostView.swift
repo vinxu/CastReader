@@ -1423,18 +1423,6 @@ private struct ReadControlBar: View {
                 .fixedSize(horizontal: true, vertical: false)
             }
         }
-        .safeAreaInset(edge: .top, spacing: 8) {
-            if let notice = vm.resumeNotice {
-                Text(notice)
-                    .font(.footnote)
-                    .foregroundStyle(AppTheme.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(12)
-                    .frame(maxWidth: 420)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    .accessibilityIdentifier("readingResumeNotice")
-            }
-        }
     }
 
     private func playbackStatus(
@@ -1571,18 +1559,6 @@ private struct ReaderLandscapeReadOverlay: View {
                 .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
             }
         }
-        .safeAreaInset(edge: .top, spacing: 8) {
-            if let notice = vm.resumeNotice {
-                Text(notice)
-                    .font(.footnote)
-                    .foregroundStyle(AppTheme.foreground)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(12)
-                    .frame(maxWidth: 420)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    .accessibilityIdentifier("readingResumeNotice")
-            }
-        }
     }
 
     private func playbackStatus(
@@ -1672,7 +1648,7 @@ private struct ReaderLandscapeExplainOverlay: View {
     @ViewBuilder
     private var caption: some View {
         if shouldShowCaption {
-            ExplainPlaybackCaptionBubble(text: vm.explanationText, maxWidth: 760)
+            ExplainPlaybackCaption(vm: vm, maxWidth: 760)
         }
     }
 
@@ -1809,32 +1785,44 @@ private extension View {
 
 enum ReaderRunLog {
     #if DEBUG
-    private static let lock = NSLock()
+    private static let queue = DispatchQueue(label: "ai.castreader.reader-diagnostics", qos: .utility)
+    // Accessed only on queue. Do not format dates or open/seek a file on the
+    // playback/render executor for every cue: observation must not add a gap.
+    private static let formatter: DateFormatter = {
+        let value = DateFormatter(); value.dateFormat = "HH:mm:ss.SSS"; return value
+    }()
+    private static var handle: FileHandle?
+    private static let acceptanceLogName: String? = {
+        guard ProcessInfo.processInfo.arguments.contains("-CastReaderLivePlatformAcceptance") else { return nil }
+        let formatter = DateFormatter(); formatter.dateFormat = "yyyyMMdd-HHmmss"
+        let name = "reader-pagination-\(formatter.string(from: Date())).log"
+        NSLog("PAGINATION live diagnostic file=%@", name)
+        return name
+    }()
     #endif
 
     static func write(_ message: String) {
         #if DEBUG
-        // Player, scheduler and URLSession metrics arrive on different queues.
-        // Serialize seek+append so concurrent request traces cannot overwrite.
-        lock.lock()
-        defer { lock.unlock() }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss.SSS"
-        let line = "\(formatter.string(from: Date())) \(message)\n"
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        let url = docs.appendingPathComponent("reader-refocus.log")
-        if !FileManager.default.fileExists(atPath: url.path) {
-            try? Data(line.utf8).write(to: url, options: .atomic)
-            return
-        }
-        guard let handle = try? FileHandle(forWritingTo: url) else { return }
-        do {
-            try handle.seekToEnd()
-            try handle.write(contentsOf: Data(line.utf8))
-            try handle.close()
-        } catch {
-            try? handle.close()
+        // Keep the timestamp at the event, not at eventual file delivery.
+        let occurredAt = Date()
+        queue.async {
+            let line = "\(formatter.string(from: occurredAt)) \(message)\n"
+            if handle == nil {
+                let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+                    ?? FileManager.default.temporaryDirectory
+                let url = docs.appendingPathComponent(acceptanceLogName ?? "reader-refocus.log")
+                if !FileManager.default.fileExists(atPath: url.path) {
+                    FileManager.default.createFile(atPath: url.path, contents: nil)
+                }
+                handle = try? FileHandle(forWritingTo: url)
+                try? handle?.seekToEnd()
+            }
+            do {
+                try handle?.write(contentsOf: Data(line.utf8))
+            } catch {
+                try? handle?.close()
+                handle = nil
+            }
         }
         #endif
     }

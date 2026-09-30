@@ -1,0 +1,218 @@
+{
+  "candidate": "84",
+  "platform": "googleBooks",
+  "observed_start": "12:13:30.000",
+  "cutoff": "12:23:55.000",
+  "observed_end_seconds": 44634.978,
+  "metric": "event timestamps, not acoustic silence",
+  "turns": [
+    {
+      "id": "436DC6C4-51AD-47A3-8E01-10613355CE9C",
+      "requested": 44072.918,
+      "hold": 44073.055,
+      "release": 44073.144,
+      "playing": 44073.237,
+      "release_to_playing_ms": 93.0,
+      "request_to_commit_ms": 81.0,
+      "hold_to_playing_ms": 182.0
+    },
+    {
+      "id": "01DBF937-E297-4B17-A9CF-FC59FC4542BC",
+      "requested": 44103.436,
+      "hold": 44103.584,
+      "release": 44103.687,
+      "playing": 44103.778,
+      "release_to_playing_ms": 91.0,
+      "request_to_commit_ms": 87.0,
+      "hold_to_playing_ms": 194.0
+    },
+    {
+      "id": "9F3F231F-C17B-46D2-88B6-106316DCFB64",
+      "requested": 44133.329,
+      "hold": 44133.329,
+      "release": 44133.479,
+      "playing": 44133.576,
+      "release_to_playing_ms": 97.0,
+      "request_to_commit_ms": 84.0,
+      "hold_to_playing_ms": 247.0
+    },
+    {
+      "id": "1346EBC0-9A3B-4522-A1AE-41DE8F4B7BD0",
+      "requested": 44164.016,
+      "hold": 44164.095,
+      "release": 44164.202,
+      "playing": 44164.326,
+      "release_to_playing_ms": 124.0,
+      "request_to_commit_ms": 102.0,
+      "hold_to_playing_ms": 231.0
+    },
+    {
+      "id": "87D6FA80-77BF-44AB-8C62-954BB5C3EA64",
+      "requested": 44194.091,
+      "hold": 44194.178,
+      "release": 44194.313,
+      "playing": 44194.469,
+      "release_to_playing_ms": 156.0,
+      "request_to_commit_ms": 127.0,
+      "hold_to_playing_ms": 291.0
+    },
+    {
+      "id": "9C4E9FC1-8252-4669-91E2-19A694D50EB1",
+      "requested": 44225.434,
+      "hold": 44225.519,
+      "release": 44225.649,
+      "playing": 44225.775,
+      "release_to_playing_ms": 126.0,
+      "request_to_commit_ms": 107.0,
+      "hold_to_playing_ms": 256.0
+    },
+    {
+      "id": "B0F73B6F-D94C-4587-B0ED-219EEFB5F80B",
+      "requested": 44253.721,
+      "hold": 44253.722,
+      "release": 44253.892,
+      "playing": 44254.07,
+      "release_to_playing_ms": 178.0,
+      "request_to_commit_ms": 102.0,
+      "hold_to_playing_ms": 348.0
+    },
+    {
+      "id": "379EECE3-B569-443D-B691-45EF0797BEA6",
+      "requested": 44284.788,
+      "hold": 44284.874,
+      "release": 44285.061,
+      "playing": 44285.187,
+      "release_to_playing_ms": 126.0,
+      "request_to_commit_ms": 109.0,
+      "hold_to_playing_ms": 313.0
+    },
+    {
+      "id": "203EC449-0A21-4260-86DC-35B7DDFDB49E",
+      "requested": 44317.618,
+      "hold": 44317.797,
+      "release": 44317.883,
+      "playing": 44318.056,
+      "release_to_playing_ms": 173.0,
+      "request_to_commit_ms": 104.0,
+      "hold_to_playing_ms": 259.0
+    },
+    {
+      "id": "31B10AB0-1823-4E18-A306-0820BB4FDEFC",
+      "requested": 44348.688,
+      "hold": 44348.688,
+      "release": 44348.86,
+      "playing": 44348.989,
+      "release_to_playing_ms": 129.0,
+      "request_to_commit_ms": 98.0,
+      "hold_to_playing_ms": 301.0
+    },
+    {
+      "id": "6C70729B-328E-417B-8727-E07E9C5980F0",
+      "requested": 44379.964,
+      "hold": 44379.964,
+      "release": 44380.158,
+      "playing": 44380.29,
+      "release_to_playing_ms": 132.0,
+      "request_to_commit_ms": 97.0,
+      "hold_to_playing_ms": 326.0
+    },
+    {
+      "id": "223108F6-0983-47AA-9A2C-41BFDB6BDB49",
+      "requested": 44411.256,
+      "hold": 44411.343,
+      "release": 44411.521,
+      "playing": 44411.648,
+      "release_to_playing_ms": 127.0,
+      "request_to_commit_ms": 108.0,
+      "hold_to_playing_ms": 305.0
+    },
+    {
+      "id": "53D8787A-08D1-465F-BE7B-8AE837662A1C",
+      "requested": 44440.449,
+      "hold": 44440.449,
+      "release": 44440.631,
+      "playing": 44440.833,
+      "release_to_playing_ms": 202.0,
+      "request_to_commit_ms": 99.0,
+      "hold_to_playing_ms": 384.0
+    },
+    {
+      "id": "B0C7A8D6-C90F-4C18-A8E5-9E209E87787D",
+      "requested": 44471.527,
+      "hold": 44471.615,
+      "release": 44471.72,
+      "playing": 44471.857,
+      "release_to_playing_ms": 137.0,
+      "request_to_commit_ms": 109.0,
+      "hold_to_playing_ms": 242.0
+    },
+    {
+      "id": "469F5B1C-F3C9-4894-A5FE-FD4A1DD93A22",
+      "requested": 44502.436,
+      "hold": 44502.584,
+      "release": 44502.694,
+      "playing": 44502.87,
+      "release_to_playing_ms": 176.0,
+      "request_to_commit_ms": 112.0,
+      "hold_to_playing_ms": 286.0
+    },
+    {
+      "id": "E6952C75-F254-4E22-99B3-48028C05C5EC",
+      "requested": 44531.481,
+      "hold": 44531.481,
+      "release": 44531.646,
+      "playing": 44531.776,
+      "release_to_playing_ms": 130.0,
+      "request_to_commit_ms": 101.0,
+      "hold_to_playing_ms": 295.0
+    },
+    {
+      "id": "77266244-6184-4947-BA03-2CCE24A0DAFF",
+      "requested": 44562.445,
+      "hold": 44562.579,
+      "release": 44562.671,
+      "playing": 44562.842,
+      "release_to_playing_ms": 171.0,
+      "request_to_commit_ms": 114.0,
+      "hold_to_playing_ms": 263.0
+    },
+    {
+      "id": "4FF47B6B-65DC-4D74-A005-042F61F7F2D1",
+      "requested": 44590.76,
+      "hold": 44590.847,
+      "release": 44590.951,
+      "playing": 44591.088,
+      "release_to_playing_ms": 137.0,
+      "request_to_commit_ms": 108.0,
+      "hold_to_playing_ms": 241.0
+    },
+    {
+      "id": "DF50262C-14A1-4159-BAD1-3DF546D2BDBF",
+      "requested": 44620.194,
+      "hold": 44620.375,
+      "release": 44620.459,
+      "playing": 44620.59,
+      "release_to_playing_ms": 131.0,
+      "request_to_commit_ms": 109.0,
+      "hold_to_playing_ms": 215.0
+    }
+  ],
+  "release_to_playing": {
+    "samples": 19,
+    "p95_ms": 202.0,
+    "max_ms": 202.0
+  },
+  "native_request_to_commit": {
+    "samples": 19,
+    "p95_ms": 127.0,
+    "max_ms": 127.0
+  },
+  "hold_to_playing": {
+    "samples": 19,
+    "p95_ms": 384.0,
+    "max_ms": 384.0
+  },
+  "prepared_adoptions": 17,
+  "errors": [],
+  "final_acceptance": false
+}

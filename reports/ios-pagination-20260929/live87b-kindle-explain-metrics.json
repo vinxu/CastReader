@@ -1,0 +1,74 @@
+{
+  "candidate": 87,
+  "platform": "kindle",
+  "mode": "explain",
+  "observed_start": "13:54:00",
+  "pause_requested_approximately": "13:56:00",
+  "automatic_presentations": 3,
+  "turns": [
+    {
+      "previous_end": "13:54:41.045",
+      "turn_begin": "13:54:42.645",
+      "playing": "13:54:43.195",
+      "end_to_turn_ms": 1600,
+      "end_to_playing_ms": 2150
+    },
+    {
+      "previous_end": "13:55:04.846",
+      "turn_begin": "13:55:06.830",
+      "playing": "13:55:07.370",
+      "end_to_turn_ms": 1984,
+      "end_to_playing_ms": 2524
+    },
+    {
+      "previous_end": "13:55:32.536",
+      "turn_begin": "13:55:33.595",
+      "playing": "13:55:34.131",
+      "end_to_turn_ms": 1059,
+      "end_to_playing_ms": 1595
+    }
+  ],
+  "all_successors_prefetched": true,
+  "source_preparation_events": [
+    "13:54:25.453 [active] KINDLE explain tail-preparation begin old=0c24af96cf4a remainingMs=15446",
+    "13:54:25.577 [active] KINDLE script install reason=explain-tail-preparation ok=true turn=1 state=1 version=47 jsReason=",
+    "13:54:25.639 [active] KINDLE auto next turn-only old=0c24af96cf4a target=cdb325741930 ok=true strategy=native-cache-navigation reason=explain-tail-preparation tried=",
+    "13:54:29.554 [active] KINDLE explain tail-preparation ready old=0c24af96cf4a next=cdb325741930 elapsedMs=4064",
+    "13:54:43.046 [active] KINDLE explain restart after-turn begin reason=explain-auto-next-page key=cdb325741930 prefetched=Y",
+    "13:54:43.071 [active] KINDLE explain restart after-turn started reason=explain-auto-next-page key=cdb325741930",
+    "13:54:48.732 [active] KINDLE explain tail-preparation begin old=cdb325741930 remainingMs=15983",
+    "13:54:48.825 [active] KINDLE script install reason=explain-tail-preparation ok=true turn=1 state=1 version=47 jsReason=",
+    "13:54:48.896 [active] KINDLE auto next turn-only old=cdb325741930 target=b97e114ffa2e ok=true strategy=native-cache-navigation reason=explain-tail-preparation tried=",
+    "13:54:52.838 [active] KINDLE explain tail-preparation ready old=cdb325741930 next=b97e114ffa2e elapsedMs=4106",
+    "13:55:07.240 [active] KINDLE explain restart after-turn begin reason=explain-auto-next-page key=b97e114ffa2e prefetched=Y",
+    "13:55:07.266 [active] KINDLE explain restart after-turn started reason=explain-auto-next-page key=b97e114ffa2e",
+    "13:55:16.422 [active] KINDLE explain tail-preparation begin old=b97e114ffa2e remainingMs=15987",
+    "13:55:16.517 [active] KINDLE script install reason=explain-tail-preparation ok=true turn=1 state=1 version=47 jsReason=",
+    "13:55:16.617 [active] KINDLE auto next turn-only old=b97e114ffa2e target=976fc7c27475 ok=true strategy=native-cache-navigation reason=explain-tail-preparation tried=",
+    "13:55:16.665 [active] KINDLE explain tail-preparation ready old=b97e114ffa2e next=976fc7c27475 elapsedMs=243",
+    "13:55:34.005 [active] KINDLE explain restart after-turn begin reason=explain-auto-next-page key=976fc7c27475 prefetched=Y",
+    "13:55:34.031 [active] KINDLE explain restart after-turn started reason=explain-auto-next-page key=976fc7c27475",
+    "13:55:43.402 [active] KINDLE explain tail-preparation begin old=976fc7c27475 remainingMs=15995",
+    "13:55:43.500 [active] KINDLE script install reason=explain-tail-preparation ok=true turn=1 state=1 version=47 jsReason=",
+    "13:55:43.600 [active] KINDLE auto next turn-only old=976fc7c27475 target=ad7d9cb6afcd ok=true strategy=native-cache-navigation reason=explain-tail-preparation tried=",
+    "13:55:44.208 [active] KINDLE explain tail-preparation ready old=976fc7c27475 next=ad7d9cb6afcd elapsedMs=806"
+  ],
+  "finding": "Prepared next-page audio and source exist before page completion, but completion awaits the remaining handwritten-mark animation and then commits the next page. The end-to-playing delay remains 1.595–2.524 seconds in these three samples.",
+  "measurement": "Native log events, not acoustic audio capture. Screenshots showed annotations on matching current-page text.",
+  "final_acceptance": false,
+  "pause_observation": {
+    "last_playing": "13:55:51.691",
+    "paused_observed": "13:56:00",
+    "still_paused_observed": "13:57:03",
+    "next_user_action": "13:57:13.419",
+    "at_least_seconds_without_revival": 63
+  },
+  "manual_navigation": {
+    "previous_request": "13:57:13",
+    "next_request": "13:57:32.942",
+    "returned_original_page_key": "976fc7c27475",
+    "next_confirmed": "13:57:34.549",
+    "screenshot": "Observed same page opening The gallery into which we had entered was very wide, with marks on its text. Screenshot viewed through CUA; no exported image file.",
+    "prepared_next_adopted": true
+  }
+}

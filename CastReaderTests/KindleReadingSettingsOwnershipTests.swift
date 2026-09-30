@@ -81,6 +81,52 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         try await assertVoicePanelKeepsViewport(mode: .explain)
     }
 
+    func testInactiveAppSwitcherGeometryPreservesActualReaderViewport() async throws {
+        try await loadFixture(initializeControls: false)
+        let portrait = CGSize(width: 430, height: 714)
+        let transientLandscape = CGSize(width: 814, height: 297)
+        let crop = KindleViewportCrop(scale: 1.25, heightScale: 864.0 / 714.0,
+                                      offsetX: -53.75, offsetY: -60)
+        let fit = KindleViewportPresentationFit(scale: 0.98, translationX: 2, translationY: 1)
+        let host = KindleWebViewContainer(webView: model.webView, crop: crop, presentationFit: fit)
+        host.frame = CGRect(origin: .zero, size: portrait)
+        window.rootViewController!.view.addSubview(host)
+        host.layoutIfNeeded()
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        let bounds = model.webView.bounds
+        let center = model.webView.center
+        let transform = model.webView.transform
+        try await waitForCSSViewport(bounds.size)
+
+        model.setApplicationActive(false)
+        model.updateReaderSurfaceSize(transientLandscape)
+        model.noteReaderLayoutChange(reason: "orientation")
+        model.notePlaybackLayoutChange(reason: "orientation")
+        let snapshot = try XCTUnwrap(model.readerViewportSnapshot)
+        let renderSize = KindleReaderSurfaceContract.renderSize(measured: transientLandscape,
+            stable: snapshot.surfaceSize, isPlayerOverlayPresented: true)
+        XCTAssertEqual(renderSize, portrait)
+        host.frame.size = renderSize
+        host.crop = model.effectiveViewportCrop(forSurfaceSize: transientLandscape)
+        host.presentationFit = model.effectiveViewportPresentationFit(forSurfaceSize: transientLandscape)
+        host.layoutIfNeeded()
+        XCTAssertEqual(model.webView.bounds, bounds)
+        XCTAssertEqual(model.webView.center, center)
+        XCTAssertEqual(model.webView.transform, transform)
+        try await assertCSSViewport(bounds.size)
+        do {
+            _ = try await model.refreshReaderLayoutState(reason: "reader-size")
+            XCTFail("An inactive layout callback must not reflow the prepared page or restart its owner")
+        } catch { }
+
+        model.setApplicationActive(true)
+        XCTAssertNil(model.readerViewportSnapshot)
+        XCTAssertEqual(KindleReaderSurfaceContract.renderSize(measured: transientLandscape,
+            stable: portrait, isPlayerOverlayPresented: false), transientLandscape,
+            "A real foreground rotation must still use the current surface")
+    }
+
     private func assertVoicePanelKeepsViewport(mode: ReaderMode) async throws {
         let center = PlaybackVoicePanelCenter.shared
         center.dismiss()

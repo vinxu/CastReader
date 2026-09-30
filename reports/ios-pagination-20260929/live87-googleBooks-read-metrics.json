@@ -1,0 +1,58 @@
+{
+  "candidate": "87",
+  "platform": "googleBooks",
+  "observed_start": "12:46:45.000",
+  "cutoff": "12:48:45.000",
+  "observed_end_seconds": 46124.638,
+  "metric": "event timestamps, not acoustic silence",
+  "turns": [
+    {
+      "id": "960D97BD-1804-4714-858D-EFCEC3F33C9A",
+      "requested": 46052.161,
+      "hold": 46052.161,
+      "release": 46052.31,
+      "playing": 46052.395,
+      "release_to_playing_ms": 85.0,
+      "request_to_commit_ms": 79.0,
+      "hold_to_playing_ms": 234.0
+    },
+    {
+      "id": "40BECB42-1477-4BA4-B8FE-8DCE5A3B6942",
+      "requested": 46082.765,
+      "hold": 46082.765,
+      "release": 46082.909,
+      "playing": 46083.01,
+      "release_to_playing_ms": 101.0,
+      "request_to_commit_ms": 75.0,
+      "hold_to_playing_ms": 245.0
+    },
+    {
+      "id": "FE79F42E-859F-4C4F-ADAF-C0AE4CF738C3",
+      "requested": 46114.354,
+      "hold": 46114.499,
+      "release": 46114.53,
+      "playing": 46114.669,
+      "release_to_playing_ms": 139.0,
+      "request_to_commit_ms": 165.0,
+      "hold_to_playing_ms": 170.0
+    }
+  ],
+  "release_to_playing": {
+    "samples": 3,
+    "p95_ms": 139.0,
+    "max_ms": 139.0
+  },
+  "native_request_to_commit": {
+    "samples": 3,
+    "p95_ms": 165.0,
+    "max_ms": 165.0
+  },
+  "hold_to_playing": {
+    "samples": 3,
+    "p95_ms": 245.0,
+    "max_ms": 245.0
+  },
+  "prepared_adoptions": 1,
+  "errors": [],
+  "final_acceptance": false
+}

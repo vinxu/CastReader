@@ -1,0 +1,76 @@
+{
+  "candidate": 95,
+  "session": "95b",
+  "automatic_turns": [
+    {
+      "begin": "16:07:45.750",
+      "prior_end": "16:07:45.707",
+      "playing": "16:07:45.998",
+      "ended_to_playing_ms": 291,
+      "begin_to_playing_ms": 248
+    },
+    {
+      "begin": "16:08:14.819",
+      "prior_end": "16:08:14.745",
+      "playing": "16:08:15.086",
+      "ended_to_playing_ms": 341,
+      "begin_to_playing_ms": 267
+    },
+    {
+      "begin": "16:08:38.408",
+      "prior_end": "16:08:38.338",
+      "playing": "16:08:38.662",
+      "ended_to_playing_ms": 324,
+      "begin_to_playing_ms": 254
+    },
+    {
+      "begin": "16:09:09.610",
+      "prior_end": "16:09:09.530",
+      "playing": "16:09:09.880",
+      "ended_to_playing_ms": 350,
+      "begin_to_playing_ms": 270
+    },
+    {
+      "begin": "16:09:34.157",
+      "prior_end": "16:09:34.075",
+      "playing": "16:09:34.440",
+      "ended_to_playing_ms": 365,
+      "begin_to_playing_ms": 283
+    },
+    {
+      "begin": "16:10:05.612",
+      "prior_end": "16:10:05.528",
+      "playing": "16:10:05.894",
+      "ended_to_playing_ms": 366,
+      "begin_to_playing_ms": 282
+    },
+    {
+      "begin": "16:10:39.136",
+      "prior_end": "16:10:39.046",
+      "playing": "16:10:39.428",
+      "ended_to_playing_ms": 382,
+      "begin_to_playing_ms": 292
+    }
+  ],
+  "controls": {
+    "pause_observed": "16:11 screenshot before Previous; exact tap time not logged",
+    "previous_requested": "16:11:53.856",
+    "previous_confirmed": "16:11:54.606",
+    "resume": false,
+    "original_key": "1f60fdc50f9c",
+    "previous_key": "de40464964d5",
+    "next_returned_same_visible_text": true,
+    "paused_more_than_60s_after_next": true,
+    "resume_requested": "16:13; actual new page session installed16:13:40.855",
+    "visual_limit": "Sampled screenshots, not a full-frame recording",
+    "next_confirmed": "16:12:31.416",
+    "next_key": "1f60fdc50f9c"
+  },
+  "measurement": "Application event clock; no acoustic recording. Complete four-platform acceptance has not passed.",
+  "raw_sha256": {
+    "/tmp/castreader-kindlelive95b-probe.log": "dbc07b59a1f3e5d2d947b91d5f1b71aec932e3f09fe0f73c64d4597816b18780",
+    "/tmp/castreader-kindlelive95b-reader.log": "fc2e429d257fb3b51076178cef66d727df3010cd28e828cbb9f5893372efbde4"
+  },
+  "final_acceptance": false,
+  "automatic_turns_window": "First uninterrupted playback before explicit Pause; later resumed playback excluded from this metric"
+}

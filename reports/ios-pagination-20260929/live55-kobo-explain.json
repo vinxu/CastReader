@@ -1,0 +1,342 @@
+{
+  "candidate": 55,
+  "source_identity": "e73a28b7496dbbc35627d5833f5b6f47b34aeb103933425033cc97beaa368294",
+  "platform": "Kobo",
+  "mode": "Explain",
+  "book": "Falls From Grace",
+  "voice": "My Voice 21 (private clone)",
+  "playback_rate": 1.5,
+  "first_playing_at": "23:38:12.058",
+  "paused_by_tester_at": "23:43:10 approximately",
+  "final_acceptance": false,
+  "scope": "Event timings, not acoustic A/B; short directed regression for successor producer, not final build long run. All handovers retained, including native animation.",
+  "auto_turns": 17,
+  "hit_metrics": {
+    "native_request_to_commit_ms": {
+      "count": 15,
+      "p95_ms": 399.0,
+      "max_ms": 399.0
+    },
+    "commit_to_playing_ms": {
+      "count": 15,
+      "p95_ms": 195.0,
+      "max_ms": 195.0
+    },
+    "ended_to_playing_ms": {
+      "count": 15,
+      "p95_ms": 580.0,
+      "max_ms": 580.0
+    }
+  },
+  "turns": [
+    {
+      "request_at": "23:38:26.583",
+      "request": 85106.583,
+      "previous_item_ended": 85106.581,
+      "commit": 85106.906,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85107.058,
+      "native_request_to_commit_ms": 323.0,
+      "commit_to_playing_ms": 152.0,
+      "ended_to_playing_ms": 477.0
+    },
+    {
+      "request_at": "23:38:39.806",
+      "request": 85119.806,
+      "previous_item_ended": 85119.805,
+      "commit": 85120.109,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85120.234,
+      "native_request_to_commit_ms": 303.0,
+      "commit_to_playing_ms": 125.0,
+      "ended_to_playing_ms": 429.0
+    },
+    {
+      "request_at": "23:38:59.301",
+      "request": 85139.301,
+      "previous_item_ended": 85139.3,
+      "commit": 85139.602,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85139.736,
+      "native_request_to_commit_ms": 301.0,
+      "commit_to_playing_ms": 134.0,
+      "ended_to_playing_ms": 436.0
+    },
+    {
+      "request_at": "23:39:19.007",
+      "request": 85159.007,
+      "previous_item_ended": 85159.006,
+      "commit": 85159.31,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85159.479,
+      "native_request_to_commit_ms": 303.0,
+      "commit_to_playing_ms": 169.0,
+      "ended_to_playing_ms": 473.0
+    },
+    {
+      "request_at": "23:39:33.611",
+      "request": 85173.611,
+      "previous_item_ended": 85173.61,
+      "commit": 85173.914,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85174.055,
+      "native_request_to_commit_ms": 303.0,
+      "commit_to_playing_ms": 141.0,
+      "ended_to_playing_ms": 445.0
+    },
+    {
+      "request_at": "23:39:49.928",
+      "request": 85189.928,
+      "previous_item_ended": 85189.927,
+      "commit": 85190.226,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85190.367,
+      "native_request_to_commit_ms": 298.0,
+      "commit_to_playing_ms": 141.0,
+      "ended_to_playing_ms": 440.0
+    },
+    {
+      "request_at": "23:40:08.149",
+      "request": 85208.149,
+      "previous_item_ended": 85208.148,
+      "commit": 85208.451,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85208.61,
+      "native_request_to_commit_ms": 302.0,
+      "commit_to_playing_ms": 159.0,
+      "ended_to_playing_ms": 462.0
+    },
+    {
+      "request_at": "23:40:25.916",
+      "request": 85225.916,
+      "previous_item_ended": 85225.915,
+      "commit": 85226.282,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85226.467,
+      "native_request_to_commit_ms": 366.0,
+      "commit_to_playing_ms": 185.0,
+      "ended_to_playing_ms": 552.0
+    },
+    {
+      "request_at": "23:40:40.802",
+      "request": 85240.802,
+      "previous_item_ended": 85240.8,
+      "commit": 85241.153,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85241.317,
+      "native_request_to_commit_ms": 351.0,
+      "commit_to_playing_ms": 164.0,
+      "ended_to_playing_ms": 517.0
+    },
+    {
+      "request_at": "23:41:03.238",
+      "request": 85263.238,
+      "previous_item_ended": 85263.236,
+      "commit": 85263.548,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85263.713,
+      "native_request_to_commit_ms": 310.0,
+      "commit_to_playing_ms": 165.0,
+      "ended_to_playing_ms": 477.0
+    },
+    {
+      "request_at": "23:41:23.008",
+      "request": 85283.008,
+      "previous_item_ended": 85283.007,
+      "commit": 85283.306,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85283.471,
+      "native_request_to_commit_ms": 298.0,
+      "commit_to_playing_ms": 165.0,
+      "ended_to_playing_ms": 464.0
+    },
+    {
+      "request_at": "23:41:27.090",
+      "request": 85287.09,
+      "previous_item_ended": 85287.089,
+      "commit": 85287.474,
+      "playing": 85295.27,
+      "native_request_to_commit_ms": 384.0,
+      "commit_to_playing_ms": 7796.0,
+      "ended_to_playing_ms": 8181.0
+    },
+    {
+      "request_at": "23:41:41.251",
+      "request": 85301.251,
+      "previous_item_ended": 85301.25,
+      "commit": 85301.608,
+      "decoded_adopted": true,
+      "playing": 85303.912,
+      "native_request_to_commit_ms": 357.0,
+      "commit_to_playing_ms": 2304.0,
+      "ended_to_playing_ms": 2662.0
+    },
+    {
+      "request_at": "23:42:05.230",
+      "request": 85325.23,
+      "previous_item_ended": 85325.229,
+      "commit": 85325.609,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85325.782,
+      "native_request_to_commit_ms": 379.0,
+      "commit_to_playing_ms": 173.0,
+      "ended_to_playing_ms": 553.0
+    },
+    {
+      "request_at": "23:42:19.590",
+      "request": 85339.59,
+      "previous_item_ended": 85339.589,
+      "commit": 85339.969,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85340.164,
+      "native_request_to_commit_ms": 379.0,
+      "commit_to_playing_ms": 195.0,
+      "ended_to_playing_ms": 575.0
+    },
+    {
+      "request_at": "23:42:38.857",
+      "request": 85358.857,
+      "previous_item_ended": 85358.855,
+      "commit": 85359.227,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85359.411,
+      "native_request_to_commit_ms": 370.0,
+      "commit_to_playing_ms": 184.0,
+      "ended_to_playing_ms": 556.0
+    },
+    {
+      "request_at": "23:42:56.272",
+      "request": 85376.272,
+      "previous_item_ended": 85376.271,
+      "commit": 85376.671,
+      "prefetch": "hit",
+      "decoded_adopted": true,
+      "playing": 85376.851,
+      "native_request_to_commit_ms": 399.0,
+      "commit_to_playing_ms": 180.0,
+      "ended_to_playing_ms": 580.0
+    }
+  ],
+  "successor_events": [
+    {
+      "at": "23:38:42.466",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-d48b0f427e62"
+    },
+    {
+      "at": "23:38:42.471",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-d48b0f427e62"
+    },
+    {
+      "at": "23:38:57.085",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-cd653714e8f2"
+    },
+    {
+      "at": "23:38:59.639",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-cd653714e8f2"
+    },
+    {
+      "at": "23:39:33.230",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-0d22ec564f11"
+    },
+    {
+      "at": "23:39:33.955",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-0d22ec564f11"
+    },
+    {
+      "at": "23:39:50.605",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-4288e2a24ba2"
+    },
+    {
+      "at": "23:39:50.642",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-4288e2a24ba2"
+    },
+    {
+      "at": "23:40:06.725",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-ef92104572e2"
+    },
+    {
+      "at": "23:40:08.497",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-ef92104572e2"
+    },
+    {
+      "at": "23:40:26.072",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-5695fdf35784"
+    },
+    {
+      "at": "23:40:26.332",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-5695fdf35784"
+    },
+    {
+      "at": "23:40:44.845",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-a8ea740c0417"
+    },
+    {
+      "at": "23:40:44.848",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-a8ea740c0417"
+    },
+    {
+      "at": "23:40:59.502",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-6f789b31fc7a"
+    },
+    {
+      "at": "23:41:03.594",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-6f789b31fc7a"
+    },
+    {
+      "at": "23:41:52.807",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-117faac17fee"
+    },
+    {
+      "at": "23:41:52.808",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-117faac17fee"
+    },
+    {
+      "at": "23:42:25.701",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-64f4e7556110"
+    },
+    {
+      "at": "23:42:25.739",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-64f4e7556110"
+    },
+    {
+      "at": "23:42:38.854",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-8b0d49c69e8c"
+    },
+    {
+      "at": "23:42:39.275",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-8b0d49c69e8c"
+    },
+    {
+      "at": "23:43:00.005",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-9b751c969fd1"
+    },
+    {
+      "at": "23:43:00.044",
+      "event": "EXPLAIN prefetched successor adopted block=1 job=job-redacted-9b751c969fd1"
+    },
+    {
+      "at": "23:43:14.746",
+      "event": "EXPLAIN prefetched successor ready block=1 job=job-redacted-5b6707a5c668"
+    }
+  ],
+  "publication_redaction": {
+    "category": "temporary QuickRead job capabilities",
+    "matches": 25,
+    "original_sha256": "24970cad7ee8a23a0d84f442b29f202d20ec0c6562c135e33ee72410442aa91a",
+    "original_retained_locally": true
+  }
+}

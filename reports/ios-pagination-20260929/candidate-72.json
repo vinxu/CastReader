@@ -1,0 +1,102 @@
+{
+  "base_commit": "f1c423e312cdcfbf121b11428aa7867b35488a84",
+  "branch": "codex/ios-four-platform-pagination-20260929",
+  "extension_source_commit": "9694b2c3dd368b959012309cadf508ab2cad4b67",
+  "source_identity_algorithm": "SHA256 of sorted path TAB file-SHA256 LF",
+  "candidate": "1.2.48 (71) Debug iteration 72",
+  "source_identity": "e5992dcc29361f99137bbaad54f1f1dee0d53aa129f53627d2bceb4a704a8f10",
+  "source_files": {
+    "CastReader.xcodeproj/project.pbxproj": "39b6306ceadcf4b1f173f3b5a45c887244973409a286882b700ef8c1ef707cb6",
+    "CastReader/Models/GoogleBooksModels.swift": "b14869c10a1dd6fb8df9fca54bf4cbc4be11d861125ff00a05b9e1594a96e7ad",
+    "CastReader/Models/ReadingResumeCheckpoint.swift": "b2730e69809e1b5eea9c73bc2990a1c19a397e94b3a2b9512e314f618dbc4da0",
+    "CastReader/Models/TTSTimestamp.swift": "adf284ffd57f8e7287a299dcfc3bce4c731604873bd207d42f89e690e241c236",
+    "CastReader/Models/WeReadModels.swift": "a302a4ab855b4b4e7fce6c2b37c8d290064ca624fd2e82722b82a915c07ba01f",
+    "CastReader/Services/APIService.swift": "c01f88cb386972a5d5998e90cea928a6c29addb93f8f0caebc2f52e2403c0c42",
+    "CastReader/Services/AudioPlayerService.swift": "72d634d6744809a0be665c6bb8f28c36213403ba40e328f6ea2dc16867eb082d",
+    "CastReader/Services/GoogleBooksWebScripts.swift": "feead9c3e53f970b8a378301ec9129df493b8169fc0d17cc527441ddee139ed9",
+    "CastReader/Services/HistoryStore.swift": "858bae4bfbf0b28ed722312787397b2fecc1c7ba5aed7c4c56059a2ff2eb1653",
+    "CastReader/Services/LiveWebPlatform.swift": "432c7212b7953ff4ae7726a0daf4256ce0dc14ef547e61b9065d9af99a513dc1",
+    "CastReader/Services/QuickReadService.swift": "b3a9a8b1e7b29ffca8548dd6e95031f3737b3f730da4d707ab2f72e15c060653",
+    "CastReader/Services/TTSService.swift": "b5733d23dce93a14a3f931f91b9cba45437a625b3173caae2b9d7d990d791ef7",
+    "CastReader/Services/WeReadWebScripts.swift": "ee36cb320ad2f301ba0191406399c6dd2b3074a8f44b247e6b07d68aa0ca1291",
+    "CastReader/Services/WebReaderBridge.swift": "3b0e25ceeb5bf16c9c3d28bdfb877b123c7c84468a2ff4d6ea4ffd1df3bd2b9c",
+    "CastReader/Utils/LanguageDetector.swift": "714d1bf8f32859abc3e4f0a54f2bf735eab28f7b6f84c143d35c6f12095902c8",
+    "CastReader/ViewModels/ExplainViewModel.swift": "a46b88befab43857241e9d0a4a93b2d7624fb089743b5accd72eb8123b02c62f",
+    "CastReader/ViewModels/ReadAloudViewModel.swift": "68164c404a302481bc5c04450d577b6865ec0d815ddffdeb90cb0f6a577c28b7",
+    "CastReader/Views/Home/HomeView.swift": "da5fccc536c86bcd582d8d4bcd82df03a5c95e0ddbbb552e92448509b2286289",
+    "CastReader/Views/Kindle/KindleBookView.swift": "9b2659ebb6371c72da3f9db2eeaa943abdac27ef868ee7670a0879d61d8d1263",
+    "CastReader/Views/Reader/ReaderHostView.swift": "5d75d33f3657b81a9e370c08e81707d0d37b343ce1c9177bd1468c5c0f397e9f",
+    "CastReader/Views/Reader/WebReaderView.swift": "fc5d201191180dc111c25c1c1abb9a51681e1a67a72e401fbc150ea82165e427",
+    "CastReader/Views/WeRead/WeReadLibraryViews.swift": "862f798713d15a353547934a0eb946773b9b0ba4262ee73856bf49e30ec55fa6",
+    "CastReader/WebAssets/bundle.js": "3f5d9e7428f280bce110f38698b4f0fa57772e3aad4bb6c6e4734b92f5714f14",
+    "CastReader/WebAssets/play-books-native.js": "c49e4944dd5852531396e40054dfe5957f12aae9de0b3a47e19bff052ca3912b",
+    "CastReader/WebAssets/weread-native.js": "d0bb844668e98707f85bc7c6b984796a16b24d0d5fead5453c3d2253cc82dd25",
+    "CastReaderTests/Fixtures/google-books-webreader-xctest.js": "ccf3825c52ce5aba4c7f8ef9635d64b5cd7c99d76dd30f0062db2c7844a6c00f",
+    "CastReaderTests/GoogleBooksContractTests.swift": "e63006dcc4ab11f53715f168ee197ffc66f15b2a3c4ae053ab0c40b3820dc70d",
+    "CastReaderTests/GoogleBooksWebBridgeTests.swift": "e401b21e2675dcc0735d796ac79c416985c8540ff78450a47d8152b0315a4e97",
+    "CastReaderTests/KindleNativePageScriptTests.swift": "777542f0b143fa5780240ceb16e5797ab6fb22cf81d717e7021750127d356718",
+    "CastReaderTests/PaginationContinuityTests.swift": "96f6a851feda4cc964d7ff493404d39d18d5355d917ede000c7ea6c235020d42",
+    "CastReaderTests/ReadAloudContinuationTests.swift": "1a95ba5106615a53bc09cb2f8e78f520637adc37022a8fb41437862ca44f854f",
+    "CastReaderTests/ReadingResumeTests.swift": "b8cd5dfb944f629267c16b0820de30e745ba0c2bb98fe466d501d0b89b24ea43",
+    "CastReaderTests/SpeechPipelineTests.swift": "5fe5dcab20fa1a91dd44ea3c5ad926354c65a23791d37cb1f1b7f0e48473e7d4",
+    "CastReaderTests/WeReadPageAvailabilityTests.swift": "53b1cefdd59fd1aaa030b564824d83b7644c44a47c82ad4f38f649bfc0331d69",
+    "WebReader/build-pagination-fixture.mjs": "25e84c3429b90767faf40e0ea7db403495e6fff984b81af65972e5fd5bf96715",
+    "WebReader/build.mjs": "59b3548fd97c1e4d38a6a54b0c7e8bad0f30e30e92f7dfcb8579e8bc90ba6c0a",
+    "WebReader/kobo-fixture-test.mjs": "0525cad5a10ba0e455185bbb6125ce74f43616d836d10c36e8cd2083eb8ad1d3",
+    "WebReader/src/cr-bridge.ts": "ff24bbdd37e09ad1ef27e78382cdd87a599be9f6a22bfbcad04d84af2a63d18c",
+    "WebReader/src/entry.ts": "4519292fbd911690bd34775272ef0b8c6d75c23d1206812dc3d3883b31d8143e",
+    "WebReader/src/kobo.ts": "a5da1793d24c09ea2fa502c251ac9321145c0ab8cc0c88465916f94c6d086bd5",
+    "WebReader/src/mark-renderer.ts": "74d9d8d8c5a7c4466c51a961b9bd33f4741d7278d3b62de9f37efcb3b59ac2ca",
+    "WebReader/src/play-books-native-entry.ts": "dd7accd9e957d808c46158a6b3456195dcb63321d1d8176ef81d8b141f671187",
+    "WebReader/src/play-books-native-pages.ts": "ff70866d90ade87370ddeca6b61c7adccd65d4ded82aace279a4752a75da392e",
+    "WebReader/src/play-books.ts": "3ea8e1a7aa300a5b0e12e5200597335cbfd8cec5b6e13012983ed5534812330e",
+    "WebReader/src/source-text.ts": "8290ebd8a37100e02613ffddb0149287ad44132ca7b5c3d72a785dc44397962d",
+    "WebReader/src/weread-native-entry.ts": "5113140789d984c0688e80cacdb89f5b7374612a620c65e9eee130a40cc1a158",
+    "WebReader/src/weread-native.ts": "14ac0194e43096f7aceb04640208d22b712199228748c2780a3f4c99a626a98f",
+    "WebReader/weread-native-resume-test.mjs": "6b9d9110439d416d124fc81ac3890f7761488bc29c96fde213eea85f4e308238",
+    "scripts/analyze-live-explain-turns.py": "b15c2c421618603d8d37f9bfb37452e62322fc1efafab695a53347f7e96d3d9e",
+    "scripts/test-weread-ios-contract.mjs": "5ae9eb962fce3dab88ca4b6521737066bffd97fa900cdf2c63f9fcc27855f52b"
+  },
+  "dylib_uuid": "C0CFDDBE-F6DC-3E68-BC8D-3C7B3B451C8C",
+  "build": "build72 succeeded",
+  "changes": [
+    "WeRead opening restore callbacks and timeouts are scoped to the current observed page revision and account. Timeout revalidates current visibility before any fallback commit; otherwise clears stale source.",
+    "Resume search has a loading cover; catalog/manual intent or unavailable surface invalidates pending restore.",
+    "Captured native reader supplies painted chapter offset and same-chapter provider scrollTo; no guessed offset or cross-chapter jump.",
+    "Retire both JS duplicate-page key and native source when resume visibility cannot be verified; same-page recovery must publish anew.",
+    "Persist WeRead native location with actually heard source checkpoint; homepage, library and history reopen choose that chapter over the later visible page.",
+    "Flush snapshots owned AVPlayer audible progress before saving, closing the first-audible-sample vs VM subscription race on immediate Pause."
+  ],
+  "physical_tests": {
+    "core72": {
+      "executed": 203,
+      "passed": 202,
+      "failed": 1,
+      "suites": {
+        "ReadingResume": 91,
+        "SpeechPipeline": 40,
+        "WeReadPageAvailability": 24,
+        "PaginationContinuity": "47 pass / 1 fail"
+      },
+      "failure": "testCarryPauseTapAndResumeKeepTheSameSourceAudio: position remained 0.3 after a 200ms post-resume observation; original failure retained."
+    },
+    "carry72_same_binary": {
+      "iterations": 3,
+      "passed": 3,
+      "failed": 0,
+      "interpretation": "Intermittent resume latency under broader workload remains unresolved; reruns do not erase core72 failure."
+    }
+  },
+  "logs": [
+    "/tmp/castreader-pagination-build72.log",
+    "/tmp/castreader-pagination-core72.log",
+    "/tmp/castreader-pagination-carry72.log"
+  ],
+  "final_acceptance": false,
+  "live72": {
+    "result": "FAIL opening; manual catalog recovery PASS",
+    "log": "/tmp/castreader-pagination-live72-reader.log",
+    "sha256": "fb8ed6f42fe234013b64d3f576231f42a3a98df8a5872e32618c59430b01d76b",
+    "details": "10:21:46 transient missing controls was classified unavailable; paint evidence erased; visible chapter but no native source. Manual catalog fourth chapter recovered10:22:38. Actual Explain starts10:24:29, early next plan10:24:25.67, one subsequent automatic turn observed. No final acceptance."
+  }
+}

@@ -10,6 +10,7 @@
 
 import CryptoKit
 import Foundation
+import CoreFoundation
 
 // MARK: - 书籍
 
@@ -232,6 +233,28 @@ enum GoogleBooksBookValidator {
 
 // MARK: - Reader Web 安全边界
 
+enum KoboBookEndContract {
+    /// The bridge additionally checks the active frame and exact pending turn
+    /// identity before accepting this evidence. Progress percentages alone
+    /// never authorize natural completion.
+    static func isConfirmed(_ raw: Any?) -> Bool {
+        func index(_ raw: Any?) -> Int? {
+            guard let number = raw as? NSNumber,
+                  CFGetTypeID(number) != CFBooleanGetTypeID(),
+                  number.doubleValue.isFinite,
+                  number.doubleValue.rounded(.down) == number.doubleValue,
+                  number.doubleValue >= 0, number.doubleValue <= 9_007_199_254_740_991 else { return nil }
+            return number.intValue
+        }
+        guard let value = raw as? [String: Any],
+              let pages = index(value["pagesOfBook"]),
+              let first = index(value["firstPage"]),
+              let last = index(value["lastPage"]),
+              pages > 0, first >= 0, first <= last else { return false }
+        return last == pages - 1
+    }
+}
+
 /// `WKScriptMessage` cannot be constructed in unit tests, so native extracts
 /// only these immutable primitives from `WKFrameInfo` before crossing to the
 /// main actor. The policy below is intentionally independent of WebKit.
@@ -259,6 +282,7 @@ enum GoogleBooksWebAccessPolicy {
         "googleBooksPagePreview",
         "googleBooksSpeechPreview",
         "googleBooksPreviewDiagnostic",
+        "pagePresentationReady",
     ]
 
     /// The top-level WKWebView must never leave the one supported reader
@@ -1195,6 +1219,8 @@ enum GoogleBooksExplainPagePrefetchContract {
         payloadTextFingerprint: String,
         predictedParagraphs: [String],
         visibleParagraphs: [String],
+        predictedSourceSlices: [LiveWebPageSourceSlice],
+        visibleSourceSlices: [LiveWebPageSourceSlice],
         preparedVoiceID: String,
         selectedVoiceID: String,
         preparedDepth: String,
@@ -1204,6 +1230,11 @@ enum GoogleBooksExplainPagePrefetchContract {
     ) -> Bool {
         !predictedContentFingerprint.isEmpty
             && predictedContentFingerprint == payloadTextFingerprint
+            && !predictedSourceSlices.isEmpty
+            && predictedSourceSlices == visibleSourceSlices
+            && predictedSourceSlices.allSatisfy {
+                $0.sourceParagraphIndex != nil && $0.sourceUTF16Start != nil && $0.sourceUTF16End != nil
+            }
             && predictedParagraphs == visibleParagraphs
             && preparedDepth == selectedDepth
             && requestedLanguage == selectedLanguage

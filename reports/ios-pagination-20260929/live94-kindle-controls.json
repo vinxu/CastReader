@@ -1,0 +1,33 @@
+{
+  "candidate": 94,
+  "voice": "af_heart",
+  "actual_rate": 1.5,
+  "foreground": {
+    "result": "PASS for sampled case",
+    "inactive": "15:30:27.446",
+    "active": "15:30:33.847",
+    "displayed_page": "b6cabe9e2b2d",
+    "prepared_page": "01464171b2b7",
+    "same_source_caption_marks_retained": true,
+    "inactive_orientation_repair_rejected": true,
+    "no_autoplay_observed_until": "15:31:16 manual Previous"
+  },
+  "manual_previous": {
+    "requested": "15:31:16",
+    "restored_displayed": "b6cabe9e2b2d",
+    "final_target": "feb1633f0214",
+    "confirmed": "15:31:17.107",
+    "resume": false,
+    "no_autoplay_observed_until": "15:32:25 Next",
+    "presentation_result": "FAIL: hidden prepared page flashed before the final correct previous page"
+  },
+  "manual_next": {
+    "requested": "15:32:25.749",
+    "confirmed": "15:32:25.841",
+    "target": "b6cabe9e2b2d",
+    "resume": false,
+    "paused_screenshot_observed": "15:33 (screen minute resolution; before 15:33:54 test launch)"
+  },
+  "limitation": "Control sample, not final duration or acoustic acceptance. Previous stayed paused for69s before Next; Next returned to the original page and was still paused in the later15:33 screenshot.",
+  "final_acceptance": false
+}

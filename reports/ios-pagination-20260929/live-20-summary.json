@@ -1,0 +1,30 @@
+{
+  "candidate_iteration": 20,
+  "platform": "WeRead",
+  "mode": "Read",
+  "book": "茶花女",
+  "voice": "preset zf_001",
+  "automatic_turns_observed": 4,
+  "edges": [
+    {
+      "media_clock_delta_ms": -0.001,
+      "hold_to_presentation_release_ms": 116.811
+    },
+    {
+      "media_clock_delta_ms": 0.2348,
+      "hold_to_presentation_release_ms": 117.594
+    },
+    {
+      "media_clock_delta_ms": 0.0,
+      "hold_to_presentation_release_ms": 103.338
+    },
+    {
+      "media_clock_delta_ms": 0.0,
+      "hold_to_presentation_release_ms": 130.663
+    }
+  ],
+  "remaining_unreleased_holds": 0,
+  "source_cue_rejections": 0,
+  "is_final_candidate_acceptance": false,
+  "acoustic_silence_measured": false
+}

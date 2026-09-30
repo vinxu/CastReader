@@ -62,6 +62,16 @@ struct WeReadBook: Identifiable, Codable, Equatable {
     }
 
     var effectiveReaderURL: String { lastReaderURL ?? readerURL }
+
+    @MainActor var resumeReaderURL: String {
+        readerURL(resuming: HistoryStore.shared.readingCheckpoint(for: id))
+    }
+
+    func readerURL(resuming checkpoint: ReadingResumeCheckpoint?) -> String {
+        if checkpoint?.sourceKind == .weread, let location = checkpoint?.weReadLocation,
+           location.isValid(for: id) { return location.readerURL }
+        return effectiveReaderURL
+    }
 }
 
 struct WeReadReadingAnchor: Codable, Equatable {
@@ -625,11 +635,8 @@ enum WeReadExplainPagePrefetchContract {
         !sourceFingerprint.isEmpty &&
             sourceFingerprint == previousFingerprint &&
             !predictedContentFingerprint.isEmpty &&
-            (predictedContentFingerprint == visibleContentFingerprint ||
-                WeReadSpeculativeTextContract.evaluate(
-                    predicted: predictedText,
-                    visible: visibleText
-                ).isCompatible) &&
+            predictedContentFingerprint == visibleContentFingerprint &&
+            predictedText == visibleText &&
             payloadTextFingerprint == predictedContentFingerprint &&
             !preparedVoiceID.isEmpty && preparedVoiceID == selectedVoiceID &&
             preparedDepth == selectedDepth
@@ -731,6 +738,7 @@ struct WeReadPageSpeechBoundary: Equatable {
     let sourceLayoutFingerprint: String?
     let sourceParagraphIndex: Int?
     let sourceSpeechEnd: Int?
+    let followingPageUTF16Offsets: [Int]
 
     init(
         paragraphIndex: Int,
@@ -738,7 +746,8 @@ struct WeReadPageSpeechBoundary: Equatable {
         speechUTF16Length: Int,
         sourceLayoutFingerprint: String? = nil,
         sourceParagraphIndex: Int? = nil,
-        sourceSpeechEnd: Int? = nil
+        sourceSpeechEnd: Int? = nil,
+        followingPageUTF16Offsets: [Int] = []
     ) {
         self.paragraphIndex = paragraphIndex
         self.visibleUTF16Offset = visibleUTF16Offset
@@ -746,7 +755,10 @@ struct WeReadPageSpeechBoundary: Equatable {
         self.sourceLayoutFingerprint = sourceLayoutFingerprint
         self.sourceParagraphIndex = sourceParagraphIndex
         self.sourceSpeechEnd = sourceSpeechEnd
+        self.followingPageUTF16Offsets = Array(Set(followingPageUTF16Offsets.filter { $0 > visibleUTF16Offset && $0 < speechUTF16Length })).sorted()
     }
+
+    var allPageUTF16Offsets: [Int] { [visibleUTF16Offset] + followingPageUTF16Offsets }
 
     var isCrossPage: Bool {
         paragraphIndex >= 0 && visibleUTF16Offset > 0 && speechUTF16Length > visibleUTF16Offset
@@ -760,7 +772,8 @@ struct WeReadPageSpeechBoundary: Equatable {
             speechUTF16Length: max(0, speechUTF16Length - length),
             sourceLayoutFingerprint: sourceLayoutFingerprint,
             sourceParagraphIndex: sourceParagraphIndex,
-            sourceSpeechEnd: sourceSpeechEnd
+            sourceSpeechEnd: sourceSpeechEnd,
+            followingPageUTF16Offsets: followingPageUTF16Offsets.map { $0 - length }
         )
     }
 }
@@ -769,6 +782,9 @@ struct WeReadBoundaryAudioCue: Equatable {
     let segmentID: String
     let segmentSequence: Int
     let boundaryTime: Double
+    /// First audible cue on the next page in this same media item. The
+    /// measured interval may render the page without suspending the decoder.
+    let continuationTime: Double?
     let segmentDuration: Double
     let consumedCursor: WeReadConsumedTextCursor?
 
@@ -777,11 +793,13 @@ struct WeReadBoundaryAudioCue: Equatable {
         segmentSequence: Int,
         boundaryTime: Double,
         segmentDuration: Double,
+        continuationTime: Double? = nil,
         consumedCursor: WeReadConsumedTextCursor? = nil
     ) {
         self.segmentID = segmentID
         self.segmentSequence = segmentSequence
         self.boundaryTime = boundaryTime
+        self.continuationTime = continuationTime
         self.segmentDuration = segmentDuration
         self.consumedCursor = consumedCursor
     }
@@ -843,6 +861,189 @@ struct WeReadPageConsumption: Equatable {
 /// per request, so a cross-page sentence remains one audio item rather than two
 /// clipped requests with an audible restart.
 enum WeReadCrossPageSpeechContract {
+    enum BoundaryTiming {
+        case pending
+        case rejected(String)
+        case cue(sequence: Int, time: Double)
+    }
+
+    private static func isSingleLatinWord(_ text: String) -> Bool {
+        let word = text.replacingOccurrences(of: "\u{00ad}", with: "")
+            .trimmingCharacters(in: .punctuationCharacters.union(.whitespacesAndNewlines))
+        return word.range(of: "^[\\p{Latin}\\p{M}]+(?:['’\\-][\\p{Latin}\\p{M}]+)*$",
+                          options: .regularExpression) != nil
+    }
+
+    /// Validate the consumed source and actual cues before committing audio.
+    /// A character ratio is never a timestamp. A sentence-sized Chinese cue
+    /// that straddles the page must request finer timing from its producer.
+    static func audioBoundary(
+        source: String, boundaryUTF16Offset: Int, segments: [AudioSegment],
+        knownPageUTF16Offsets: [Int] = []
+    ) -> BoundaryTiming {
+        func units(_ text: String) -> [(value: String, start: Int, end: Int)] {
+            var end = 0
+            return text.unicodeScalars.compactMap { scalar in
+                let start = end
+                end += scalar.utf16.count
+                guard CharacterSet.alphanumerics.contains(scalar) else { return nil }
+                return (String(scalar).lowercased(), start, end)
+            }
+        }
+        let sourceUnits = units(source)
+        let boundary = sourceUnits.prefix { $0.end <= boundaryUTF16Offset }.count
+        guard boundary > 0, boundary < sourceUnits.count else { return .rejected("invalid_source_boundary") }
+        var sourceCursor = 0
+        var result: BoundaryTiming = .pending
+        for (sequence, segment) in segments.enumerated() {
+            let text = units(segment.text).map(\.value)
+            guard !text.isEmpty, sourceCursor + text.count <= sourceUnits.count,
+                  text == sourceUnits[sourceCursor..<(sourceCursor + text.count)].map(\.value) else {
+                return .rejected("speech_source_mismatch")
+            }
+            var cueCursor = sourceCursor
+            var previousTime = 0.0
+            for timestamp in segment.timingTimestamps {
+                let token = units(timestamp.word).map(\.value)
+                if token.isEmpty { continue }
+                let end = cueCursor + token.count
+                guard timestamp.startTime.isFinite, timestamp.endTime.isFinite,
+                      timestamp.startTime >= previousTime - 0.001,
+                      timestamp.endTime > timestamp.startTime,
+                      timestamp.endTime <= segment.duration + 0.15,
+                      end <= sourceCursor + text.count,
+                      token == sourceUnits[cueCursor..<end].map(\.value) else {
+                    return .rejected("invalid_source_cue")
+                }
+                if cueCursor < boundary, end > boundary {
+                    let sourceWord = (source as NSString).substring(with: NSRange(
+                        location: sourceUnits[cueCursor].start,
+                        length: sourceUnits[end - 1].end - sourceUnits[cueCursor].start))
+                    guard isSingleLatinWord(timestamp.word), isSingleLatinWord(sourceWord),
+                          knownPageUTF16Offsets.filter({ $0 > sourceUnits[cueCursor].start && $0 < sourceUnits[end - 1].end }).count <= 1 else {
+                        return .rejected("cross_page_coarse_cue")
+                    }
+                    // Match the extension: one word can have visible fragments
+                    // on two pages. Keep the first fragment until the real word
+                    // ends, then turn before the following cue. Never split the
+                    // word's audio or invent a timestamp inside that word.
+                    if case .pending = result {
+                        result = .cue(sequence: sequence, time: timestamp.endTime)
+                    }
+                }
+                // Remember the boundary, but validate the WHOLE part before
+                // publishing it. A malformed later cue must not enter the queue.
+                if case .pending = result {
+                    if cueCursor == boundary { result = .cue(sequence: sequence, time: timestamp.startTime) }
+                    else if end == boundary { result = .cue(sequence: sequence, time: timestamp.endTime) }
+                }
+                cueCursor = end
+                previousTime = timestamp.endTime
+            }
+            guard cueCursor == sourceCursor + text.count else { return .rejected("source_cue_coverage_missing") }
+            sourceCursor += text.count
+        }
+        return result
+    }
+
+    static func boundaryRejection(source: String, boundary: WeReadPageSpeechBoundary, segments: [AudioSegment]) -> String? {
+        for offset in boundary.allPageUTF16Offsets {
+            if case let .rejected(reason) = audioBoundary(source: source, boundaryUTF16Offset: offset,
+                segments: segments, knownPageUTF16Offsets: boundary.allPageUTF16Offsets) {
+                return reason
+            }
+        }
+        return nil
+    }
+
+    /// Only a validated, same-item cue grants a presentation window. Never
+    /// estimate silence from character counts or bridge across two decoders.
+    static func continuationTime(source: String, boundaryUTF16Offset: Int,
+                                 segments: [AudioSegment]) -> Double? {
+        guard case let .cue(sequence, end) = audioBoundary(source: source,
+            boundaryUTF16Offset: boundaryUTF16Offset, segments: segments) else { return nil }
+        let boundary = (source as NSString).substring(to: boundaryUTF16Offset)
+            .unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }.count
+        var cursor = 0
+        for (index, segment) in segments.enumerated() {
+            for cue in segment.timingTimestamps {
+                let count = cue.word.unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }.count
+                guard count > 0 else { continue }
+                if cursor >= boundary {
+                    return index == sequence && cue.startTime >= end ? cue.startTime : nil
+                }
+                cursor += count
+            }
+        }
+        return nil
+    }
+
+    /// The same ordered cue stream also locates highlights after a visual
+    /// turn. Return source UTF-16 coordinates, never a time/character ratio.
+    static func sourceRange(source: String, segments: [AudioSegment], segmentID: String, time: Double) -> NSRange? {
+        var sourceUnits: [(value: String, start: Int, end: Int)] = []
+        var offset = 0
+        for scalar in source.unicodeScalars {
+            let start = offset; offset += scalar.utf16.count
+            if CharacterSet.alphanumerics.contains(scalar) {
+                sourceUnits.append((String(scalar).lowercased(), start, offset))
+            }
+        }
+        var cursor = 0
+        for segment in segments {
+            var ranges: [(TTSTimestamp, NSRange)] = []
+            for cue in segment.timingTimestamps {
+                let tokens = cue.word.unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }.map { String($0).lowercased() }
+                if tokens.isEmpty { continue }
+                let end = cursor + tokens.count
+                guard end <= sourceUnits.count, tokens == sourceUnits[cursor..<end].map(\.value) else { return nil }
+                ranges.append((cue, NSRange(location: sourceUnits[cursor].start,
+                    length: sourceUnits[end - 1].end - sourceUnits[cursor].start)))
+                cursor = end
+            }
+            if segment.id == segmentID {
+                // At a page edge, paint the following real cue before releasing
+                // media; punctuation silence does not invent another source cue.
+                return (ranges.first { time < $0.0.endTime - 0.001 } ?? ranges.last)?.1
+            }
+        }
+        return nil
+    }
+
+    /// A media part is a transport unit, not a visual sentence. Use its real
+    /// lexical cue to select ONE source sentence without splitting the audio.
+    static func sentenceSourceRange(source: String, segments: [AudioSegment],
+                                    segmentID: String, time: Double) -> NSRange? {
+        let sentences = ReadingSentenceContract.nsRanges(in: source, lineBreakIsBoundary: true)
+        // A source unit containing one sentence needs no internal transition.
+        // Multiple sentences require a real cue; never interpolate their time.
+        if sentences.count == 1 { return sentences[0] }
+        guard let cue = sourceRange(source: source, segments: segments, segmentID: segmentID, time: time) else { return nil }
+        let matches = sentences.filter { NSIntersectionRange($0, cue).length > 0 }
+        guard matches.count == 1 else { return nil }
+        return matches[0]
+    }
+
+    /// A whitespace cue hint stays inside one natural-sentence request. It
+    /// carries no punctuation and never grants permission to invent timing.
+    static func speechInput(_ source: String, boundary: WeReadPageSpeechBoundary?,
+                            paragraphIndex: Int, language: String) -> String {
+        guard language.lowercased().hasPrefix("zh"), let boundary, boundary.isCrossPage,
+              boundary.paragraphIndex == paragraphIndex else { return source }
+        var result = source
+        // Descending original UTF-16 offsets keep every native page edge
+        // inside one immutable request, even when one sentence spans 3+ pages.
+        for offset in boundary.allPageUTF16Offsets.sorted(by: >) {
+            guard offset > 0, offset < result.utf16.count,
+                  let index = String.Index(utf16Offset: offset, in: result).samePosition(in: result.unicodeScalars),
+                  let start = String.Index(index, within: result) else { continue }
+            let before = result[..<start], after = result[start...]
+            guard before.last?.isWhitespace != true, after.first?.isWhitespace != true else { continue }
+            result = String(before) + " " + after
+        }
+        return result
+    }
+
     static func shouldApplyConsumedCursor(
         pendingSemanticTurn: Bool,
         continuationSuppressed: Bool

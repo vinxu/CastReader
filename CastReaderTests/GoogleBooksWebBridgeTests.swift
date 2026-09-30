@@ -31,7 +31,37 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, nextUnavailable: true)
     }
 
-    private func verifyKoboOpeningCheckpoint(bookmarkLeads: Bool, nextUnavailable: Bool = false) async throws {
+    func testKoboOpeningCheckpointWaitsForNavigationWithoutSpendingSearchAttempts() async throws {
+        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, navigationDelayed: true)
+    }
+
+    func testKoboSavedPageArrivingBeforeNavigationCancelsPendingSearch() async throws {
+        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, navigationDelayed: true,
+                                             savedPageBeforeNavigation: true)
+    }
+
+    func testKoboRefreshDuringAcceptedTurnDoesNotDispatchAnotherSearch() async throws {
+        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, refreshDuringTurn: true)
+    }
+
+    func testKoboDistantNativeLocationStillRequiresExactSavedSource() async throws {
+        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, nativeLocation: true)
+    }
+
+    func testKoboRejectedNativeLocationFallsBackToVerifiedSearch() async throws {
+        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, nativeLocation: true,
+                                             nativeLocationAccepted: false)
+    }
+
+    func testKoboNativeLocationFromAnotherBookIsNeverUsed() async throws {
+        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, nativeLocation: true,
+                                             nativeLocationWrongBook: true)
+    }
+
+    private func verifyKoboOpeningCheckpoint(bookmarkLeads: Bool, nextUnavailable: Bool = false,
+        navigationDelayed: Bool = false, savedPageBeforeNavigation: Bool = false,
+        refreshDuringTurn: Bool = false, nativeLocation: Bool = false,
+        nativeLocationAccepted: Bool = true, nativeLocationWrongBook: Bool = false) async throws {
         let url = "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"
         let target = ReadingParagraph(id: 0, text: "This is the exact saved listening paragraph.")
         var document = ReadingDocument(id: "kobo-lagging-fixture", title: "Kobo resume fixture",
@@ -39,8 +69,13 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let history = HistoryStore(directory: directory)
         history.record(document)
-        let checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: [target])
+        var checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: [target])
             .checkpoint(sourceKind: .kobo, paragraphIndex: 0, audio: nil))
+        if nativeLocation {
+            checkpoint.koboLocation = KoboReadingLocation(
+                bookUUID: nativeLocationWrongBook ? "f0000002-1111-4111-8111-000000000001"
+                    : "f0000001-1111-4111-8111-000000000001", percentage: 0.78)
+        }
         XCTAssertTrue(history.saveReadingCheckpoint(checkpoint, for: document.id, boundary: history.progressBoundaryToken))
         let storedCheckpoint = try XCTUnwrap(history.readingCheckpoint(for: document.id))
         XCTAssertEqual(storedCheckpoint.activity?.listenedSeconds, 0)
@@ -72,11 +107,14 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
             web.stopLoading()
             try? FileManager.default.removeItem(at: directory)
         }
-        let booted = expectation(description: "first intermediate page held while requesting next page")
         configuration.userContentController.addUserScript(WKUserScript(source: """
         window.turns = 0;
         window.previousTurns = 0;
+        window.locationJumps = [];
+        window.navigationIsReady = \(navigationDelayed ? "false" : "true");
         window.CastReaderKobo = {
+          navigationReady: () => window.navigationIsReady,
+          restoreLocation: (value) => { window.locationJumps.push(value); return \(nativeLocationAccepted ? "true" : "false"); },
           nextPage: () => { window.turns++; return \(nextUnavailable ? "false" : "true"); },
           prevPage: () => { window.previousTurns++; return true; }
         };
@@ -90,15 +128,75 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         window.emitPage('An earlier provider page.', 'earlier-page');
         """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         web.loadHTMLString("<html><body>Reader fixture</body></html>", baseURL: URL(string: url))
+        if navigationDelayed {
+            for _ in 0..<80 {
+                if (try? await web.evaluateJavaScript("typeof window.emitPage === 'function'")) as? Bool == true { break }
+                try await Task.sleep(nanoseconds: 25_000_000)
+            }
+            try await Task.sleep(nanoseconds: 400_000_000)
+            let turns = try await web.evaluateJavaScript("window.turns + window.previousTurns") as? Int
+            XCTAssertEqual(turns, 0, "An unavailable provider transport must not consume checkpoint search attempts")
+            XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+            XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
+            if savedPageBeforeNavigation {
+                _ = try await web.callAsyncJavaScript("window.emitPage(text, 'saved-page')",
+                    arguments: ["text": target.text], in: nil, contentWorld: .page)
+                try await Task.sleep(nanoseconds: 150_000_000)
+            }
+            _ = try await web.evaluateJavaScript("window.navigationIsReady = true")
+            if savedPageBeforeNavigation {
+                try await Task.sleep(nanoseconds: 300_000_000)
+                let turns = try await web.evaluateJavaScript("window.turns + window.previousTurns") as? Int
+                XCTAssertEqual(turns, 0, "Late navigation readiness must not revive a completed checkpoint search")
+                XCTAssertEqual(read.stagedLiveWebParagraphTexts, [target.text])
+                XCTAssertNil(read.resumeNotice)
+                XCTAssertFalse(read.isPlaying)
+                XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
+                return
+            }
+        }
+        let expectsLocationJump = nativeLocation && !nativeLocationWrongBook && nativeLocationAccepted
+        let booted = expectation(description: "first intermediate page held while requesting saved page")
         Task { @MainActor in
             for _ in 0..<80 {
-                if (try? await web.evaluateJavaScript("window.turns")) as? Int == 1 { booted.fulfill(); return }
+                let expression = expectsLocationJump ? "window.locationJumps.length" : "window.turns"
+                if (try? await web.evaluateJavaScript(expression)) as? Int == 1 { booted.fulfill(); return }
                 try? await Task.sleep(nanoseconds: 25_000_000)
             }
         }
         await fulfillment(of: [booted], timeout: 3)
         XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
         XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
+        if nativeLocation {
+            let jumps = try await web.evaluateJavaScript("window.locationJumps.length") as? Int
+            XCTAssertEqual(jumps, nativeLocationWrongBook ? 0 : 1)
+        }
+        if expectsLocationJump {
+            let value = try await web.evaluateJavaScript("window.locationJumps[0].percentage") as? Double
+            XCTAssertEqual(value, 0.78)
+            let turns = try await web.evaluateJavaScript("window.turns + window.previousTurns") as? Int
+            XCTAssertEqual(turns, 0, "Distant native positioning must precede the bounded nearby search")
+            // A valid native jump can land on an adjacent page after reflow.
+            // It is not evidence that the saved paragraph is now visible.
+            _ = try await web.evaluateJavaScript("window.emitPage('Nearby but not the saved paragraph.', 'hint-target-mismatch')")
+            for _ in 0..<80 {
+                if (try? await web.evaluateJavaScript("window.turns")) as? Int == 1 { break }
+                try await Task.sleep(nanoseconds: 25_000_000)
+            }
+            XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+            XCTAssertFalse(read.isPlaying)
+            XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
+            let retryJumps = try await web.evaluateJavaScript("window.locationJumps.length") as? Int
+            XCTAssertEqual(retryJumps, 1, "A hint must not form a jump loop when the source does not match")
+        }
+        if refreshDuringTurn {
+            _ = try await web.evaluateJavaScript("window.navigationIsReady = false; window.emitPage('Transient layout while native turn settles.', 'refresh-during-turn')")
+            try await Task.sleep(nanoseconds: 400_000_000)
+            let turns = try await web.evaluateJavaScript("window.turns + window.previousTurns") as? Int
+            XCTAssertEqual(turns, 1, "A refresh event is not permission to overtake an accepted native turn")
+            XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+            XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
+        }
         if nextUnavailable {
             for _ in 0..<80 {
                 if (try? await web.evaluateJavaScript("window.previousTurns")) as? Int == 1 { break }
@@ -640,6 +738,94 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
     }
 
     // MARK: - 测试
+
+    func testDecodedCoverIsNavigationSurfaceWithoutFabricatingText() async throws {
+        let svg = Data("<svg xmlns='http://www.w3.org/2000/svg' width='240' height='400'><rect width='240' height='400' fill='teal'/></svg>".utf8).base64EncodedString()
+        let html = """
+        <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>html,body{margin:0;width:100%;height:100%}reader-horizontal-view,reader-page,reader-rendered-page{display:block;width:100%;height:100%}img{width:100%;height:100%;object-fit:contain}</style></head>
+        <body><reader-horizontal-view><reader-page class="shown"><reader-rendered-page class="-gb-image"><img src="data:image/svg+xml;base64,\(svg)"></reader-rendered-page></reader-page></reader-horizontal-view></body></html>
+        """
+        let payload = try await loadReaderFrame(html)
+        XCTAssertEqual(payload["surfaceKind"] as? String, "image-only")
+        XCTAssertFalse((payload["signature"] as? String ?? "").isEmpty)
+        XCTAssertTrue(paragraphs(payload).isEmpty, "An image must never become made-up TTS text")
+    }
+
+    func testExactNativeAutomaticPageUsesPaintWitnessInsteadOfFixedDelay() async throws {
+        try await verifyNativeAutomaticPaintGate(fade: false)
+    }
+
+    func testNativeAutomaticPageWaitsUntilFadeFinishes() async throws {
+        try await verifyNativeAutomaticPaintGate(fade: true)
+    }
+
+    private func verifyNativeAutomaticPaintGate(fade: Bool) async throws {
+        let html = """
+        <html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+        html,body{margin:0;width:100%;height:100%;overflow:hidden}reader-horizontal-view,reader-page,reader-rendered-page{display:block;position:absolute;inset:0}reader-page:not(.shown){left:1000px}p{font-size:24px;line-height:32px}
+        </style></head><body><reader-horizontal-view>
+        <reader-page id="page-0-0" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:390px;height:700px"><div class="gb-segment"><p>First complete source page.</p></div></reader-rendered-page></reader-page>
+        <reader-page id="page-0-1" class="-gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:390px;height:700px"><div class="gb-segment"><p>Second exact native source page.</p></div></reader-rendered-page></reader-page>
+        </reader-horizontal-view><button id="next" aria-label="Next Page" style="position:absolute;bottom:0;right:0;z-index:10">Next</button><script>
+        window.turnCount=0;window.turnAt=0;window.fadeEnded=0;
+        document.getElementById('next').onclick=function(){
+          window.turnCount++; window.turnAt=performance.now();
+          document.getElementById('page-0-0').classList.remove('shown');
+          var target=document.getElementById('page-0-1');target.classList.add('shown');
+          if (\(fade ? "true" : "false")) {
+            target.animate([{opacity:0},{opacity:1}],{duration:550}).finished.then(function(){window.fadeEnded=performance.now()});
+          }
+        };
+        </script></body></html>
+        """
+        let initial = try await loadReaderFrame(html)
+        let frame = try XCTUnwrap(initial["frameSessionID"] as? String)
+        let baseline = try XCTUnwrap(initial["signature"] as? String)
+        var committed: [String: Any]?
+        let arrived = expectation(description: "native painted successor")
+        inbox.onMessage = { type, payload in
+            if type == "rendered", payload["reason"] as? String == "auto" {
+                committed = payload; arrived.fulfill()
+            }
+        }
+        _ = try await webView.callAsyncJavaScript("window.CastReaderGoogleBooks.nextPage({turnID:'native-paint-test',baselineSignature:baseline,originFrameSessionID:frame})", arguments: ["baseline":baseline,"frame":frame], in:nil,contentWorld:.page)
+        await fulfillment(of: [arrived], timeout: 3)
+        inbox.onMessage = nil
+        XCTAssertEqual(committed?["presentation"] as? String, "native-paint")
+        XCTAssertEqual(paragraphs(committed ?? [:]).first?["text"] as? String, "Second exact native source page.")
+        let timing = try await webView.evaluateJavaScript("[window.turnCount,performance.now()-window.turnAt,window.fadeEnded]") as? [Double]
+        XCTAssertEqual(timing?.first, 1)
+        if fade {
+            XCTAssertGreaterThan(timing?[2] ?? 0, 0, "Transparent native transition must not release audio")
+        } else {
+            XCTAssertLessThan(timing?[1] ?? 10000, 300, "Native ready path must not pay the legacy 420ms stability window")
+        }
+    }
+
+    func testNativeLoadedSVGCoverIsReadyWithoutReadingHiddenAnchor() async throws {
+        let svg = Data("<svg xmlns='http://www.w3.org/2000/svg' width='240' height='400'><rect width='240' height='400' fill='teal'/></svg>".utf8).base64EncodedString()
+        let html = """
+        <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>html,body{margin:0;width:100%;height:100%}reader-horizontal-view,reader-page,reader-rendered-page,.gb-segment{display:block;width:100%;height:100%}svg{width:100%;height:100%}</style></head>
+        <body><reader-horizontal-view><reader-page class="shown -gb-loaded"><reader-rendered-page class="-gb-text"><div class="gb-segment"><div style="display:none"><a id="cover-anchor"></a></div><svg viewBox="0 0 240 400"><image width="240" height="400" href="data:image/svg+xml;base64,\(svg)"/></svg></div></reader-rendered-page></reader-page></reader-horizontal-view></body></html>
+        """
+        let payload = try await loadReaderFrame(html)
+        XCTAssertEqual(payload["surfaceKind"] as? String, "image-only")
+        XCTAssertTrue(paragraphs(payload).isEmpty)
+    }
+
+    func testHiddenCoverDoesNotClaimAnEmptyLoadingPage() async throws {
+        let svg = Data("<svg xmlns='http://www.w3.org/2000/svg' width='240' height='400'><rect width='240' height='400' fill='teal'/></svg>".utf8).base64EncodedString()
+        let html = """
+        <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>html,body{margin:0;width:100%;height:100%}reader-horizontal-view,reader-page,reader-rendered-page{display:block;position:absolute;width:100%;height:100%}img{width:100%;height:100%}</style></head>
+        <body><reader-horizontal-view><reader-page class="shown"><reader-rendered-page class="-gb-text"><div class="gb-segment"></div></reader-rendered-page></reader-page><reader-page style="visibility:hidden"><reader-rendered-page class="-gb-image"><img src="data:image/svg+xml;base64,\(svg)"></reader-rendered-page></reader-page></reader-horizontal-view></body></html>
+        """
+        let payload = try await loadReaderFrame(html)
+        XCTAssertNil(payload["surfaceKind"])
+        XCTAssertTrue(paragraphs(payload).isEmpty)
+    }
 
     func testOnlyTheVisiblePageIsExtracted() async throws {
         let payload = try await loadReaderFrame()

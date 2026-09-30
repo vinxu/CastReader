@@ -75,7 +75,7 @@ struct WeReadHomeSection: View {
             sourceKind: .weread,
             language: book.initialReadingLanguage,
             paragraphs: [],
-            sourceURL: book.effectiveReaderURL,
+            sourceURL: book.resumeReaderURL,
             coverURL: book.coverURL
         )
         let context = ProductAnalytics.shared.beginContentIntent(
@@ -286,7 +286,7 @@ struct WeReadLibraryView: View {
             sourceKind: .weread,
             language: book.initialReadingLanguage,
             paragraphs: [],
-            sourceURL: book.effectiveReaderURL,
+            sourceURL: book.resumeReaderURL,
             coverURL: book.coverURL
         )
         let context = ProductAnalytics.shared.beginContentIntent(

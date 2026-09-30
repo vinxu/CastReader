@@ -106,6 +106,122 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         try await js("document.body.innerHTML='<div class=readerError><h2>网络异常</h2><button>重新加载</button></div>'")
     }
 
+    private func reopenWithCheckpoint(_ text: String, html: String) throws {
+        read.stop(); explain.stop()
+        read.stageInactiveLiveWebPage([]); explain.stageInactiveLiveWebPage([])
+        web.configuration.userContentController.removeScriptMessageHandler(forName: "castreader")
+        bridge = WebReaderBridge()
+        bridge.webView = web
+        bridge.configure(expectsDynamicWebContent: true, isWeRead: true, readerURL: url)
+        bridge.attach(readVM: read, explainVM: explain)
+        let checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: [ReadingParagraph(id: 0, text: text)])
+            .checkpoint(sourceKind: .weread, paragraphIndex: 0, audio: nil))
+        bridge.prepareWeReadOpeningResume(checkpoint: checkpoint, anchor: nil)
+        web.configuration.userContentController.add(bridge, name: "castreader")
+        web.navigationDelegate = bridge
+        web.loadHTMLString(html, baseURL: URL(string: url))
+    }
+
+    func testOpeningWithoutPaintOrControlsRemainsPendingUntilBodyArrives() async throws {
+        try reopenWithCheckpoint(first, html: """
+        <html><meta name="viewport" content="width=device-width,initial-scale=1"><body class="wr_page_reader">
+        <div class="horizontalReaderCoverPage" style="display:none">Hidden cover template</div>
+        <div class="wr_readerContent"></div>
+        </body></html>
+        """)
+        try await Task.sleep(for: .seconds(1))
+        let kind = try await web.evaluateJavaScript("window.CastReaderWeRead.openingPageState().kind")
+        XCTAssertEqual(kind as? String, "waiting")
+        XCTAssertNil(read.webContentBlockMessage, "An unpainted body is not an unavailable source")
+        try await js("document.querySelector('.wr_readerContent').innerHTML='<p>\(first)</p>'")
+        try await wait { self.read.stagedLiveWebParagraphTexts == [self.first] }
+        XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [first])
+        XCTAssertNil(read.webContentBlockMessage)
+    }
+
+    func testResumeTimeoutNeverCommitsPageRetiredByUnclassifiedTrialWall() async throws {
+        try reopenWithCheckpoint("A saved passage that is no longer available.", html: """
+        <html><meta name="viewport" content="width=device-width,initial-scale=1"><body class="wr_page_reader">
+        <script>window.paintDiscards=0;window.__castReaderWeReadNative={snapshot(){return null},prepareNavigation(){window.paintDiscards++}}</script>
+        <div class="wr_readerContent"><p>\(first)</p></div>
+        <button class="renderTarget_pager_button renderTarget_pager_button_right" onclick="window.turns=(window.turns||0)+1;document.body.innerHTML='<main>试读结束</main>'">下一页</button>
+        </body></html>
+        """)
+        try await wait({ self.read.webContentBlockMessage != nil }, timeout: 12)
+        XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+        XCTAssertTrue(explain.stagedLiveWebParagraphTexts.isEmpty)
+        XCTAssertFalse(audio.isPlaying)
+        let turns = try await web.evaluateJavaScript("window.turns")
+        XCTAssertEqual(turns as? Int, 1)
+        let paintDiscards = try await web.evaluateJavaScript("window.paintDiscards")
+        XCTAssertEqual(paintDiscards as? Int, 0, "Source retirement must not demand another native paint")
+        // Returning to that same first page must commit it freshly. The old
+        // implementation had already published its fingerprint at timeout,
+        // so the new real page was rejected and Explain remained empty.
+        try await js("document.body.innerHTML='<div class=wr_readerContent><p>\(first)</p></div>'")
+        try await wait { self.read.stagedLiveWebParagraphTexts == [self.first] }
+        XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [first])
+        XCTAssertNil(read.webContentBlockMessage)
+    }
+
+    func testResumeMatchingNewPageCannotBeReplacedByOldTimeout() async throws {
+        try reopenWithCheckpoint(second, html: """
+        <html><meta name="viewport" content="width=device-width,initial-scale=1"><body class="wr_page_reader">
+        <div class="wr_readerContent"><p>\(first)</p></div>
+        <button class="renderTarget_pager_button renderTarget_pager_button_right" onclick="window.turns=(window.turns||0)+1;document.querySelector('p').textContent='\(second)'">下一页</button>
+        </body></html>
+        """)
+        try await wait({ self.read.stagedLiveWebParagraphTexts == [self.second] }, timeout: 10)
+        try await Task.sleep(for: .seconds(6.3))
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [second])
+        XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [second])
+        XCTAssertFalse(audio.isPlaying)
+        let turns = try await web.evaluateJavaScript("window.turns")
+        XCTAssertEqual(turns as? Int, 1)
+    }
+
+    func testFailedCatalogJumpCannotExplainRetiredChapter() async throws {
+        let catalog = WeReadTOCController()
+        bridge.attachWeReadTOC(catalog, bookID: read.document.id)
+        // Real catalog selection path, with the provider refusing to confirm
+        // the route. Neither inactive mode may retain the old source.
+        try await js("window.CastReaderWeReadTOC={jump(){return false}}")
+        catalog.onSelect?(WeReadTOCEntry(index: 1, chapterIndex: 2, chapterUID: "2", title: "New chapter"))
+        try await wait { self.read.webContentBlockMessage != nil }
+        XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+        XCTAssertTrue(explain.stagedLiveWebParagraphTexts.isEmpty)
+        bridge.setActive(readMode: false)
+        explain.start()
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertFalse(explain.isPlaying)
+        XCTAssertFalse(audio.hasQueuedSegments)
+        XCTAssertTrue(planFixture.capturedRequests.isEmpty, "Retired chapter must not be sent to explanation generation")
+        try await js("document.querySelector('.wr_readerContent p').textContent='\(second)'")
+        try await wait { self.explain.stagedLiveWebParagraphTexts == [self.second] }
+        XCTAssertNil(read.webContentBlockMessage)
+        XCTAssertNil(explain.webContentBlockMessage)
+        XCTAssertFalse(audio.isPlaying, "A late page must not revive the cancelled explanation")
+    }
+
+    func testCatalogJumpCancelsGeneratingExplanationWithoutRestarting() async throws {
+        let catalog = WeReadTOCController()
+        bridge.attachWeReadTOC(catalog, bookID: read.document.id)
+        planReply = .response(Data("{\"error\":\"unsupported_content\"}".utf8), status: 400, delay: 1)
+        bridge.setActive(readMode: false)
+        explain.start()
+        try await wait { !self.planFixture.capturedRequests.isEmpty }
+        let requestCount = planFixture.capturedRequests.count
+        try await js("window.CastReaderWeReadTOC={jump(){document.querySelector('p').textContent='\(second)';return true}}")
+        catalog.onSelect?(WeReadTOCEntry(index: 1, chapterIndex: 2, chapterUID: "2", title: "New chapter"))
+        try await wait { self.explain.stagedLiveWebParagraphTexts == [self.second] }
+        try await Task.sleep(for: .milliseconds(1400))
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertFalse(explain.status.isActive)
+        XCTAssertEqual(planFixture.capturedRequests.count, requestCount,
+                       "Manual chapter selection must not start a new explanation or accept the retired reply")
+        XCTAssertTrue(explain.activeMarks.isEmpty)
+    }
+
     func testIPadViewportReflowRetainsPausedReadAndMarkGeometry() async throws {
         let container = WebReaderContainerView(webView: web, isWeRead: true, isKobo: false,
             initialSurfaceSize: web.bounds.size, loadAction: {})
@@ -254,6 +370,29 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         XCTAssertFalse(audio.hasQueuedSegments)
         read.ensurePlaying()
         XCTAssertFalse(audio.isPlaying)
+    }
+
+    func testNativeTrialGateWithDivActionIgnoresHiddenTemplateAndStopsVisibleGate() async throws {
+        try await js("""
+        document.querySelector('.wr_readerContent').insertAdjacentHTML('beforeend',
+          '<div class="wr_horizontal_reader_needPay_container" style="display:none">' +
+          '<div class="wr_horizontal_reader_needPay_content_title">试读结束</div>' +
+          '<div class="wr_horizontal_reader_needPay_content_action wr_horizontal_reader_needPay_content_action_Login">' +
+          '<div class="wr_horizontal_reader_needPay_content_action_title">登录后获得专属福利 · 百万好书免费读</div></div></div>');
+        """)
+        try await Task.sleep(for: .milliseconds(400))
+        XCTAssertNil(read.webContentBlockMessage)
+        read.dbgGenerate(0)
+        try await wait { self.audio.isWaitingForNextSegment }
+        try await js("document.querySelector('.wr_horizontal_reader_needPay_container').style.display='block'")
+        try await wait { self.read.webContentBlockMessage != nil }
+        let opening = try await web.evaluateJavaScript("window.CastReaderWeRead.openingPageState().kind")
+        XCTAssertEqual(opening as? String, "unavailable")
+        XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+        XCTAssertTrue(explain.stagedLiveWebParagraphTexts.isEmpty)
+        XCTAssertFalse(audio.hasQueuedSegments)
+        read.ensurePlaying(); explain.ensurePlaying()
+        XCTAssertFalse(audio.hasPlaybackRequest)
     }
 
     func testErrorStopsExplanationAndClearsItsCachedNarration() async throws {

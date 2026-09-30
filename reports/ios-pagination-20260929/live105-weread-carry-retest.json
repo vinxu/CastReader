@@ -1,0 +1,665 @@
+{
+  "raw_sha256": "3226f185af97e79b2a060eb705cd95428bd67e1093e55b9f66a56c5b1e5edfbe",
+  "interval": [
+    73380000,
+    73635662
+  ],
+  "measurement": "Keep all live Read presentation holds and natural media handoffs for audit.\n\nMeasures application events. It does not establish acoustic silence, source\ncoverage, every-frame geometry, or chapter completion.",
+  "final_acceptance": false,
+  "holds": [
+    {
+      "hold": "5B1FE21F-787C-46CE-B708-5B265421EDBB",
+      "hold_at": "20:23:42.757",
+      "hold_ms": 73422757,
+      "line": 3063,
+      "segment": "7-0",
+      "cue": "4.419833333333333",
+      "outcome": "playing",
+      "commit_at": "20:23:42.803",
+      "commit_ms": 73422803,
+      "hold_to_commit_ms": 46,
+      "release_at": "20:23:42.810",
+      "release_ms": 73422810,
+      "hold_to_release_ms": 53,
+      "release_intent": "true",
+      "playing_at": "20:23:42.838",
+      "playing_ms": 73422838,
+      "hold_to_playing_ms": 81,
+      "resumed_segment": "7-0",
+      "release_to_playing_ms": 28,
+      "commit_to_playing_ms": 35
+    },
+    {
+      "hold": "9CBDCC8D-49B2-4FAA-91AA-BA62C3836E57",
+      "hold_at": "20:23:45.193",
+      "hold_ms": 73425193,
+      "line": 3090,
+      "segment": "7-0",
+      "cue": "7.896",
+      "outcome": "playing",
+      "commit_at": "20:23:45.280",
+      "commit_ms": 73425280,
+      "hold_to_commit_ms": 87,
+      "release_at": "20:23:45.287",
+      "release_ms": 73425287,
+      "hold_to_release_ms": 94,
+      "release_intent": "true",
+      "playing_at": "20:23:45.334",
+      "playing_ms": 73425334,
+      "hold_to_playing_ms": 141,
+      "resumed_segment": "0-800005000",
+      "release_to_playing_ms": 47,
+      "commit_to_playing_ms": 54
+    },
+    {
+      "hold": "FDFE29C5-D7FA-432B-A1BB-C0DC406DD394",
+      "hold_at": "20:24:01.903",
+      "hold_ms": 73441903,
+      "line": 3207,
+      "segment": "3-1",
+      "cue": "8.487833333333334",
+      "outcome": "playing",
+      "commit_at": "20:24:01.972",
+      "commit_ms": 73441972,
+      "hold_to_commit_ms": 69,
+      "release_at": "20:24:01.986",
+      "release_ms": 73441986,
+      "hold_to_release_ms": 83,
+      "release_intent": "true",
+      "playing_at": "20:24:02.009",
+      "playing_ms": 73442009,
+      "hold_to_playing_ms": 106,
+      "resumed_segment": "3-1",
+      "release_to_playing_ms": 23,
+      "commit_to_playing_ms": 37
+    },
+    {
+      "hold": "B50D0ABF-92F5-4009-B7CD-9A48D5F78CE8",
+      "hold_at": "20:24:51.368",
+      "hold_ms": 73491368,
+      "line": 3308,
+      "segment": "4-0",
+      "cue": "2.6130416666666667",
+      "outcome": "playing",
+      "commit_at": "20:24:51.465",
+      "commit_ms": 73491465,
+      "hold_to_commit_ms": 97,
+      "release_at": "20:24:51.479",
+      "release_ms": 73491479,
+      "hold_to_release_ms": 111,
+      "release_intent": "true",
+      "playing_at": "20:24:51.504",
+      "playing_ms": 73491504,
+      "hold_to_playing_ms": 136,
+      "resumed_segment": "4-0",
+      "release_to_playing_ms": 25,
+      "commit_to_playing_ms": 39
+    },
+    {
+      "hold": "AD9C0378-B451-45A9-A22B-994C44941B0B",
+      "hold_at": "20:25:35.582",
+      "hold_ms": 73535582,
+      "line": 3481,
+      "segment": "7-0",
+      "cue": "1.49475",
+      "outcome": "playing",
+      "commit_at": "20:25:35.662",
+      "commit_ms": 73535662,
+      "hold_to_commit_ms": 80,
+      "release_at": "20:25:35.676",
+      "release_ms": 73535676,
+      "hold_to_release_ms": 94,
+      "release_intent": "true",
+      "playing_at": "20:25:35.701",
+      "playing_ms": 73535701,
+      "hold_to_playing_ms": 119,
+      "resumed_segment": "7-0",
+      "release_to_playing_ms": 25,
+      "commit_to_playing_ms": 39
+    },
+    {
+      "hold": "B21244B4-091A-4DB5-B9F9-997D00B56954",
+      "hold_at": "20:26:14.177",
+      "hold_ms": 73574177,
+      "line": 3710,
+      "segment": "8-0",
+      "cue": "3.94625",
+      "outcome": "playing",
+      "commit_at": "20:26:14.283",
+      "commit_ms": 73574283,
+      "hold_to_commit_ms": 106,
+      "release_at": "20:26:14.298",
+      "release_ms": 73574298,
+      "hold_to_release_ms": 121,
+      "release_intent": "true",
+      "playing_at": "20:26:14.324",
+      "playing_ms": 73574324,
+      "hold_to_playing_ms": 147,
+      "resumed_segment": "8-0",
+      "release_to_playing_ms": 26,
+      "commit_to_playing_ms": 41
+    },
+    {
+      "hold": "0A201599-BA00-4B01-BFA8-973B5A543CA1",
+      "hold_at": "20:26:38.296",
+      "hold_ms": 73598296,
+      "line": 3951,
+      "segment": "11-0",
+      "cue": "4.484875000000001",
+      "outcome": "playing",
+      "commit_at": "20:26:38.386",
+      "commit_ms": 73598386,
+      "hold_to_commit_ms": 90,
+      "release_at": "20:26:38.399",
+      "release_ms": 73598399,
+      "hold_to_release_ms": 103,
+      "release_intent": "true",
+      "playing_at": "20:26:38.420",
+      "playing_ms": 73598420,
+      "hold_to_playing_ms": 124,
+      "resumed_segment": "11-0",
+      "release_to_playing_ms": 21,
+      "commit_to_playing_ms": 34
+    },
+    {
+      "hold": "DB153F4F-C823-4FEE-853C-FBCA2B57A03E",
+      "hold_at": "20:27:13.984",
+      "hold_ms": 73633984,
+      "line": 4099,
+      "segment": "5-0",
+      "cue": "13.632",
+      "outcome": "playing",
+      "commit_at": "20:27:14.064",
+      "commit_ms": 73634064,
+      "hold_to_commit_ms": 80,
+      "release_at": "20:27:14.072",
+      "release_ms": 73634072,
+      "hold_to_release_ms": 88,
+      "release_intent": "true",
+      "playing_at": "20:27:14.117",
+      "playing_ms": 73634117,
+      "hold_to_playing_ms": 133,
+      "resumed_segment": "0-800006000",
+      "release_to_playing_ms": 45,
+      "commit_to_playing_ms": 53
+    }
+  ],
+  "natural_media_handoffs": [
+    {
+      "ended_at": "20:23:03.860",
+      "playing_at": "20:23:03.921",
+      "from_segment": "0-0",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 61,
+      "line": 2928
+    },
+    {
+      "ended_at": "20:23:16.742",
+      "playing_at": "20:23:16.812",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 70,
+      "line": 2966
+    },
+    {
+      "ended_at": "20:23:21.693",
+      "playing_at": "20:23:21.759",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 66,
+      "line": 2994
+    },
+    {
+      "ended_at": "20:23:26.702",
+      "playing_at": "20:23:26.770",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 68,
+      "line": 3009
+    },
+    {
+      "ended_at": "20:23:30.201",
+      "playing_at": "20:23:30.260",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 59,
+      "line": 3027
+    },
+    {
+      "ended_at": "20:23:33.722",
+      "playing_at": "20:23:33.785",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 63,
+      "line": 3039
+    },
+    {
+      "ended_at": "20:23:39.674",
+      "playing_at": "20:23:39.752",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 78,
+      "line": 3052
+    },
+    {
+      "ended_at": "20:23:45.287",
+      "playing_at": "20:23:45.334",
+      "from_segment": "7-0",
+      "to_segment": "0-800005000",
+      "ended_to_playing_ms": 47,
+      "line": 3118
+    },
+    {
+      "ended_at": "20:23:46.243",
+      "playing_at": "20:23:46.325",
+      "from_segment": "0-800005000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 82,
+      "line": 3143
+    },
+    {
+      "ended_at": "20:23:49.013",
+      "playing_at": "20:23:49.085",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 72,
+      "line": 3162
+    },
+    {
+      "ended_at": "20:23:51.823",
+      "playing_at": "20:23:51.897",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 74,
+      "line": 3183
+    },
+    {
+      "ended_at": "20:23:56.130",
+      "playing_at": "20:23:56.178",
+      "from_segment": "3-0",
+      "to_segment": "3-1",
+      "ended_to_playing_ms": 48,
+      "line": 3192
+    },
+    {
+      "ended_at": "20:24:05.122",
+      "playing_at": "20:24:05.189",
+      "from_segment": "3-1",
+      "to_segment": "1-850120000",
+      "ended_to_playing_ms": 67,
+      "line": 3241
+    },
+    {
+      "ended_at": "20:24:30.711",
+      "playing_at": "20:24:30.782",
+      "from_segment": "1-850120000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 71,
+      "line": 3274
+    },
+    {
+      "ended_at": "20:24:41.212",
+      "playing_at": "20:24:41.278",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 66,
+      "line": 3293
+    },
+    {
+      "ended_at": "20:24:49.524",
+      "playing_at": "20:24:49.608",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 84,
+      "line": 3306
+    },
+    {
+      "ended_at": "20:24:54.254",
+      "playing_at": "20:24:54.330",
+      "from_segment": "4-0",
+      "to_segment": "1-850130000",
+      "ended_to_playing_ms": 76,
+      "line": 3348
+    },
+    {
+      "ended_at": "20:25:02.041",
+      "playing_at": "20:25:02.105",
+      "from_segment": "1-850130000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 64,
+      "line": 3384
+    },
+    {
+      "ended_at": "20:25:07.864",
+      "playing_at": "20:25:07.941",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 77,
+      "line": 3415
+    },
+    {
+      "ended_at": "20:25:17.051",
+      "playing_at": "20:25:17.109",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 58,
+      "line": 3433
+    },
+    {
+      "ended_at": "20:25:19.992",
+      "playing_at": "20:25:20.057",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 65,
+      "line": 3448
+    },
+    {
+      "ended_at": "20:25:27.462",
+      "playing_at": "20:25:27.526",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 64,
+      "line": 3466
+    },
+    {
+      "ended_at": "20:25:34.493",
+      "playing_at": "20:25:34.565",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 72,
+      "line": 3479
+    },
+    {
+      "ended_at": "20:25:41.752",
+      "playing_at": "20:25:41.817",
+      "from_segment": "7-0",
+      "to_segment": "0-850140000",
+      "ended_to_playing_ms": 65,
+      "line": 3522
+    },
+    {
+      "ended_at": "20:25:46.543",
+      "playing_at": "20:25:46.618",
+      "from_segment": "0-850140000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 75,
+      "line": 3561
+    },
+    {
+      "ended_at": "20:25:50.413",
+      "playing_at": "20:25:50.482",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 69,
+      "line": 3602
+    },
+    {
+      "ended_at": "20:25:53.383",
+      "playing_at": "20:25:53.458",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 75,
+      "line": 3623
+    },
+    {
+      "ended_at": "20:25:56.663",
+      "playing_at": "20:25:56.731",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 68,
+      "line": 3643
+    },
+    {
+      "ended_at": "20:26:04.743",
+      "playing_at": "20:26:04.812",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 69,
+      "line": 3671
+    },
+    {
+      "ended_at": "20:26:08.323",
+      "playing_at": "20:26:08.394",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 71,
+      "line": 3683
+    },
+    {
+      "ended_at": "20:26:10.222",
+      "playing_at": "20:26:10.278",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 56,
+      "line": 3695
+    },
+    {
+      "ended_at": "20:26:11.445",
+      "playing_at": "20:26:11.524",
+      "from_segment": "7-0",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 79,
+      "line": 3708
+    },
+    {
+      "ended_at": "20:26:14.943",
+      "playing_at": "20:26:15.018",
+      "from_segment": "8-0",
+      "to_segment": "1-850150000",
+      "ended_to_playing_ms": 75,
+      "line": 3752
+    },
+    {
+      "ended_at": "20:26:17.244",
+      "playing_at": "20:26:17.316",
+      "from_segment": "1-850150000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 72,
+      "line": 3774
+    },
+    {
+      "ended_at": "20:26:18.874",
+      "playing_at": "20:26:18.952",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 78,
+      "line": 3801
+    },
+    {
+      "ended_at": "20:26:20.784",
+      "playing_at": "20:26:20.858",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 74,
+      "line": 3834
+    },
+    {
+      "ended_at": "20:26:23.514",
+      "playing_at": "20:26:23.584",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 70,
+      "line": 3861
+    },
+    {
+      "ended_at": "20:26:25.613",
+      "playing_at": "20:26:25.676",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 63,
+      "line": 3876
+    },
+    {
+      "ended_at": "20:26:28.872",
+      "playing_at": "20:26:28.928",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 56,
+      "line": 3900
+    },
+    {
+      "ended_at": "20:26:30.494",
+      "playing_at": "20:26:30.573",
+      "from_segment": "7-0",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 79,
+      "line": 3912
+    },
+    {
+      "ended_at": "20:26:32.053",
+      "playing_at": "20:26:32.117",
+      "from_segment": "8-0",
+      "to_segment": "9-0",
+      "ended_to_playing_ms": 64,
+      "line": 3924
+    },
+    {
+      "ended_at": "20:26:33.664",
+      "playing_at": "20:26:33.739",
+      "from_segment": "9-0",
+      "to_segment": "10-0",
+      "ended_to_playing_ms": 75,
+      "line": 3936
+    },
+    {
+      "ended_at": "20:26:35.211",
+      "playing_at": "20:26:35.278",
+      "from_segment": "10-0",
+      "to_segment": "11-0",
+      "ended_to_playing_ms": 67,
+      "line": 3949
+    },
+    {
+      "ended_at": "20:26:42.973",
+      "playing_at": "20:26:43.044",
+      "from_segment": "11-0",
+      "to_segment": "1-850160000",
+      "ended_to_playing_ms": 71,
+      "line": 3991
+    },
+    {
+      "ended_at": "20:26:48.901",
+      "playing_at": "20:26:48.963",
+      "from_segment": "1-850160000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 62,
+      "line": 4033
+    },
+    {
+      "ended_at": "20:26:54.153",
+      "playing_at": "20:26:54.227",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 74,
+      "line": 4069
+    },
+    {
+      "ended_at": "20:26:56.854",
+      "playing_at": "20:26:56.929",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 75,
+      "line": 4081
+    },
+    {
+      "ended_at": "20:27:04.773",
+      "playing_at": "20:27:04.857",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 84,
+      "line": 4095
+    },
+    {
+      "ended_at": "20:27:14.072",
+      "playing_at": "20:27:14.117",
+      "from_segment": "5-0",
+      "to_segment": "0-800006000",
+      "ended_to_playing_ms": 45,
+      "line": 4129
+    }
+  ],
+  "page_commits": [
+    {
+      "at": "20:23:42.803",
+      "line": 3067,
+      "event": "WEREAD page commit prior=f9001ef7 next=6b93025f confirmed=true epoch=23 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=15 paras=1"
+    },
+    {
+      "at": "20:23:45.280",
+      "line": 3103,
+      "event": "WEREAD page commit prior=6b93025f next=37053bcc confirmed=true epoch=24 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=103 paras=4"
+    },
+    {
+      "at": "20:24:01.972",
+      "line": 3212,
+      "event": "WEREAD page commit prior=37053bcc next=8f5825bf confirmed=true epoch=25 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=326 paras=5"
+    },
+    {
+      "at": "20:24:51.465",
+      "line": 3322,
+      "event": "WEREAD page commit prior=8f5825bf next=968a37a6 confirmed=true epoch=26 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=285 paras=8"
+    },
+    {
+      "at": "20:25:35.662",
+      "line": 3495,
+      "event": "WEREAD page commit prior=968a37a6 next=b2f4301e confirmed=true epoch=27 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=240 paras=9"
+    },
+    {
+      "at": "20:26:14.283",
+      "line": 3724,
+      "event": "WEREAD page commit prior=b2f4301e next=35df7927 confirmed=true epoch=28 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=108 paras=12"
+    },
+    {
+      "at": "20:26:38.386",
+      "line": 3965,
+      "event": "WEREAD page commit prior=35df7927 next=a19ff322 confirmed=true epoch=29 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=224 paras=6"
+    },
+    {
+      "at": "20:27:14.064",
+      "line": 4111,
+      "event": "WEREAD page commit prior=a19ff322 next=158b154d confirmed=true epoch=30 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=197 paras=9"
+    }
+  ],
+  "failure_or_interruption_events": [],
+  "timing": {
+    "hold_to_commit_ms": {
+      "count": 8,
+      "p95_ms": 106,
+      "max_ms": 106
+    },
+    "hold_to_release_ms": {
+      "count": 8,
+      "p95_ms": 121,
+      "max_ms": 121
+    },
+    "hold_to_playing_ms": {
+      "count": 8,
+      "p95_ms": 147,
+      "max_ms": 147
+    },
+    "commit_to_playing_ms": {
+      "count": 8,
+      "p95_ms": 54,
+      "max_ms": 54
+    },
+    "release_to_playing_ms": {
+      "count": 8,
+      "p95_ms": 47,
+      "max_ms": 47
+    }
+  },
+  "natural_media_handoff_timing": {
+    "count": 49,
+    "p95_ms": 82,
+    "max_ms": 84
+  },
+  "candidate": 105,
+  "platform": "weread",
+  "raw_log": "/private/tmp/castreader-live105-reader-current.log",
+  "interval_clock": [
+    "20:23:00",
+    "20:27:15.662"
+  ],
+  "raw_log_archive": "live105-reader-through2059.log.gz",
+  "analysis_tool_sha256": "a006df2aad5e6390b05cdda6b8b3d9d184e0177db1addacca2d28505ff137d83"
+}

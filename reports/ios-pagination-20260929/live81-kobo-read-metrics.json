@@ -1,0 +1,101 @@
+{
+  "candidate": "81",
+  "observed_start": "11:36:00.000",
+  "observed_end_seconds": 41919.69,
+  "metric": "event timestamps, not acoustic silence",
+  "turns": [
+    {
+      "id": "2E8A9CB0-56FA-440A-8F4A-338D9352C228",
+      "requested": 41785.291,
+      "hold": 41785.291,
+      "release": 41785.731,
+      "playing": 41785.89,
+      "release_to_playing_ms": 159.0,
+      "request_to_commit_ms": 367.0,
+      "hold_to_playing_ms": 599.0
+    },
+    {
+      "id": "DD6C9052-569B-4ED5-85E8-36E8202A79E4",
+      "requested": 41805.038,
+      "hold": 41805.154,
+      "release": 41805.492,
+      "playing": 41805.656,
+      "release_to_playing_ms": 164.0,
+      "request_to_commit_ms": 365.0,
+      "hold_to_playing_ms": 502.0
+    },
+    {
+      "id": "DDECDB03-93AB-4F08-B71B-2D0D59D8F6FD",
+      "requested": 41824.167,
+      "hold": 41824.246,
+      "release": 41824.59,
+      "playing": 41824.713,
+      "release_to_playing_ms": 123.0,
+      "request_to_commit_ms": 348.0,
+      "hold_to_playing_ms": 467.0
+    },
+    {
+      "id": "21DA284A-E135-47F4-8F5B-DE99FB24790B",
+      "requested": 41843.957,
+      "hold": 41844.036,
+      "release": 41844.362,
+      "playing": 41844.554,
+      "release_to_playing_ms": 192.0,
+      "request_to_commit_ms": 332.0,
+      "hold_to_playing_ms": 518.0
+    },
+    {
+      "id": "670F9E60-85C5-4478-87AE-3D83C57B75DA",
+      "requested": 41854.402,
+      "hold": 41854.403
+    },
+    {
+      "id": "61108CD8-E67A-461C-BD2C-6C7DBF5207EE",
+      "requested": 41869.718,
+      "hold": 41869.8,
+      "release": 41870.13,
+      "playing": 41870.3,
+      "release_to_playing_ms": 170.0,
+      "request_to_commit_ms": 344.0,
+      "hold_to_playing_ms": 500.0
+    },
+    {
+      "id": "45082565-067A-4D6D-91A0-C454769F8C24",
+      "requested": 41885.543,
+      "hold": 41885.599,
+      "release": 41886.0,
+      "playing": 41886.162,
+      "release_to_playing_ms": 162.0,
+      "request_to_commit_ms": 369.0,
+      "hold_to_playing_ms": 563.0
+    },
+    {
+      "id": "6A7E9FF9-9C08-4343-BEFC-785910635D4D",
+      "requested": 41903.586,
+      "hold": 41903.586,
+      "release": 41903.978,
+      "playing": 41904.127,
+      "release_to_playing_ms": 149.0,
+      "request_to_commit_ms": 331.0,
+      "hold_to_playing_ms": 541.0
+    }
+  ],
+  "release_to_playing": {
+    "samples": 7,
+    "p95_ms": 192.0,
+    "max_ms": 192.0
+  },
+  "native_request_to_commit": {
+    "samples": 7,
+    "p95_ms": 369.0,
+    "max_ms": 369.0
+  },
+  "hold_to_playing": {
+    "samples": 7,
+    "p95_ms": 599.0,
+    "max_ms": 599.0
+  },
+  "prepared_adoptions": 6,
+  "errors": [],
+  "final_acceptance": false
+}

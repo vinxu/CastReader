@@ -8,8 +8,8 @@ import { fileURLToPath } from 'node:url'
 const root = fileURLToPath(new URL('.', import.meta.url))
 const extension = resolve(process.env.READOUT_DESKTOP_SOURCE || resolve(root, '../../MyProject/readout-desktop/src'))
 
-const APP_OUT = '../CastReader/WebAssets/bundle.js'
-const XCTEST_OUT = '../CastReaderTests/Fixtures/google-books-webreader-xctest.js'
+const APP_OUT = resolve(root, '../CastReader/WebAssets/bundle.js')
+const XCTEST_OUT = resolve(root, '../CastReaderTests/Fixtures/google-books-webreader-xctest.js')
 const FIXTURE_API_NAMES = [
   '__fixtureManualIntent',
   '__fixtureBeginManualSwipe',
@@ -21,6 +21,7 @@ const minify = process.argv.includes('--minify')
 async function buildBundle(outfile, enableXCTestFixtures) {
   mkdirSync(dirname(outfile), { recursive: true })
   const result = await esbuild.build({
+    absWorkingDir: root,
     entryPoints: ['src/entry.ts'],
     bundle: true,
     format: 'iife',
@@ -74,3 +75,16 @@ assertFixtureAPIMembership(XCTEST_OUT, true)
 console.log(`✅ built ${XCTEST_OUT} (CastReaderTests only, fixture APIs present)`)
 
 await import('./build-ao3.mjs')
+
+await esbuild.build({
+  absWorkingDir: root,
+  entryPoints: ['src/weread-native-entry.ts'], bundle: true, format: 'iife',
+  target: 'es2017', platform: 'browser', legalComments: 'none',
+  outfile: '../CastReader/WebAssets/weread-native.js',
+})
+
+await esbuild.build({
+  absWorkingDir: root, entryPoints: ['src/play-books-native-entry.ts'],
+  bundle: true, format: 'iife', target: 'es2017', platform: 'browser', legalComments: 'none',
+  outfile: '../CastReader/WebAssets/play-books-native.js',
+})

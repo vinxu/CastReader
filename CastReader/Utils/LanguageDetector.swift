@@ -185,6 +185,19 @@ enum LanguageDetector {
 }
 
 enum SpeechTextSanitizer {
+    /// Keep the live page's lexical source unchanged while making partly
+    /// suffixes stable under the service's punctuation normalization. The
+    /// right-hand letter is a lookahead so a-b-c is normalized in one pass.
+    static func livePageRequest(_ text: String) -> String {
+        var result = sanitizedForTTS(text)
+        result = result.replacingOccurrences(of: #"[‐‑‒–—―−]"#, with: "-", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"-{2,}"#, with: "-", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"([\p{L}\p{N}])-+(?=[\p{L}\p{N}])"#, with: "$1 ", options: .regularExpression)
+        result = result.replacingOccurrences(of: #"(?<=\s)-(?=\s)"#, with: "", options: .regularExpression)
+        return result.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     /// Text sent to TTS must contain speakable content, not Markdown markers or visual separators.
     static func sanitizedForTTS(_ text: String) -> String {
         var s = text

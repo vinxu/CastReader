@@ -1,0 +1,61 @@
+{
+  "candidate": 75,
+  "mode": "Read",
+  "platform": "WeRead",
+  "log": "/tmp/castreader-pagination-live75-reader.log",
+  "sha256": "20a7ad045fd94ad07ee28cc95fbfacbd51d69c4bd53ae6f2718bb5fe10dc2140",
+  "rows": [
+    {
+      "hold_line": 118,
+      "id": "0E152DDE-D5E5-4019-B9F2-C2F19AAE258A",
+      "hold_ms": 38982551,
+      "release_ms": 38982654,
+      "playing_ms": 38982740,
+      "hold_to_playing_ms": 189,
+      "release_to_playing_ms": 86
+    },
+    {
+      "hold_line": 273,
+      "id": "E93209A5-1C34-4D7B-ADA1-3F0D1150DF77",
+      "hold_ms": 39013625,
+      "release_ms": 39013746,
+      "playing_ms": 39013879,
+      "hold_to_playing_ms": 254,
+      "release_to_playing_ms": 133
+    },
+    {
+      "hold_line": 450,
+      "id": "C39B8526-5AD9-44B3-8027-9D180895EE1A",
+      "hold_ms": 39052063,
+      "release_ms": 39052180,
+      "playing_ms": 39052276,
+      "hold_to_playing_ms": 213,
+      "release_to_playing_ms": 96
+    },
+    {
+      "hold_line": 608,
+      "id": "E419EA43-BA90-4C37-9C02-27E8B7A0D50D",
+      "hold_ms": 39092505,
+      "release_ms": 39092600,
+      "playing_ms": 39092707,
+      "hold_to_playing_ms": 202,
+      "release_to_playing_ms": 107
+    },
+    {
+      "hold_line": 792,
+      "id": "D41593B5-550C-438F-B1F9-555C76CBC6F2",
+      "hold_ms": 39116059,
+      "release_ms": 39116167,
+      "playing_ms": 39116291,
+      "hold_to_playing_ms": 232,
+      "release_to_playing_ms": 124
+    }
+  ],
+  "cold_failure": {
+    "line": 478,
+    "following_audio_wait_ms": 8179,
+    "request_total_ms": 11151
+  },
+  "measurement": "Application event clock, not acoustic measurement",
+  "final_acceptance": false
+}

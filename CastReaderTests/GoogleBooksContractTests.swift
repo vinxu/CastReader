@@ -13,6 +13,21 @@ import WebKit
 
 final class GoogleBooksContractTests: XCTestCase {
 
+    func testKoboBookCompletionRequiresExactNativeLastPageNotRoundedPercentage() {
+        XCTAssertTrue(KoboBookEndContract.isConfirmed(["pagesOfBook": 100, "firstPage": 99, "lastPage": 99]))
+        XCTAssertTrue(KoboBookEndContract.isConfirmed(["pagesOfBook": 100, "firstPage": 98, "lastPage": 99]))
+        XCTAssertTrue(KoboBookEndContract.isConfirmed(["pagesOfBook": 1, "firstPage": 0, "lastPage": 0]))
+        for invalid: [String: Any] in [
+            ["pagesOfBook": 100, "firstPage": 98, "lastPage": 98, "percentage": 1],
+            ["pagesOfBook": 100, "firstPage": 100, "lastPage": 99],
+            ["pagesOfBook": 100, "firstPage": 0.5, "lastPage": 99],
+            ["pagesOfBook": "100", "firstPage": 99, "lastPage": 99],
+            ["pagesOfBook": true, "firstPage": 0, "lastPage": 0],
+            ["pagesOfBook": 100, "lastPage": 99],
+            ["percentage": 1], [:]
+        ] { XCTAssertFalse(KoboBookEndContract.isConfirmed(invalid), "Invalid end proof: \(invalid)") }
+    }
+
     func testReflowRevealRequiresUnambiguousNeighborDirection() {
         let old = (0..<3).map { i in LiveWebPageSourceSlice(visibleParagraphIndex: i,
             sourceParagraphIndex: 40 + i, sourceUTF16Start: 0, sourceUTF16End: 30,
@@ -1261,7 +1276,9 @@ final class GoogleBooksContractTests: XCTestCase {
             visible: [String] = ["next visible page"],
             voice: String = "voice-a",
             depth: String = "standard",
-            language: String = "auto"
+            language: String = "auto",
+            sourceID: Int? = 42,
+            start: Int = 10
         ) -> Bool {
             GoogleBooksExplainPagePrefetchContract.canConsume(
                 sourceSignature: "page-a",
@@ -1270,6 +1287,10 @@ final class GoogleBooksContractTests: XCTestCase {
                 payloadTextFingerprint: "fingerprint-b",
                 predictedParagraphs: ["next visible page"],
                 visibleParagraphs: visible,
+                predictedSourceSlices: [LiveWebPageSourceSlice(visibleParagraphIndex: 0,
+                    sourceParagraphIndex: 42, sourceUTF16Start: 10, sourceUTF16End: 27, text: "next visible page")],
+                visibleSourceSlices: [LiveWebPageSourceSlice(visibleParagraphIndex: 0,
+                    sourceParagraphIndex: sourceID, sourceUTF16Start: start, sourceUTF16End: start + 17, text: "next visible page")],
                 preparedVoiceID: "voice-a",
                 selectedVoiceID: voice,
                 preparedDepth: "standard",
@@ -1284,6 +1305,9 @@ final class GoogleBooksContractTests: XCTestCase {
         XCTAssertFalse(canConsume(voice: "voice-b"))
         XCTAssertFalse(canConsume(depth: "deep"))
         XCTAssertFalse(canConsume(language: "zh"))
+        XCTAssertFalse(canConsume(sourceID: 43), "Identical text on a different source is not the predicted page")
+        XCTAssertFalse(canConsume(start: 30), "Repeated text elsewhere in the paragraph cannot adopt the old job")
+        XCTAssertFalse(canConsume(sourceID: nil), "Missing source identity must remain a cold path")
     }
 
     // MARK: - 跨页断句

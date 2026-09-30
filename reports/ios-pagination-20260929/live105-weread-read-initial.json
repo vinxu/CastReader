@@ -1,0 +1,1374 @@
+{
+  "raw_sha256": "3226f185af97e79b2a060eb705cd95428bd67e1093e55b9f66a56c5b1e5edfbe",
+  "interval": [
+    72464000,
+    73080000
+  ],
+  "measurement": "Keep all live Read presentation holds and natural media handoffs for audit.\n\nMeasures application events. It does not establish acoustic silence, source\ncoverage, every-frame geometry, or chapter completion.",
+  "final_acceptance": false,
+  "holds": [
+    {
+      "hold": "5ADA77ED-207E-43B4-BF0E-9CF60B15AA1F",
+      "hold_at": "20:08:44.515",
+      "hold_ms": 72524515,
+      "line": 169,
+      "segment": "4-0",
+      "cue": "2.6130416666666667",
+      "outcome": "playing",
+      "commit_at": "20:08:44.631",
+      "commit_ms": 72524631,
+      "hold_to_commit_ms": 116,
+      "release_at": "20:08:44.646",
+      "release_ms": 72524646,
+      "hold_to_release_ms": 131,
+      "release_intent": "true",
+      "playing_at": "20:08:44.670",
+      "playing_ms": 72524670,
+      "hold_to_playing_ms": 155,
+      "resumed_segment": "4-0",
+      "release_to_playing_ms": 24,
+      "commit_to_playing_ms": 39
+    },
+    {
+      "hold": "CDAC97F9-9859-4ED9-8646-64683D45F1C4",
+      "hold_at": "20:09:28.740",
+      "hold_ms": 72568740,
+      "line": 342,
+      "segment": "7-0",
+      "cue": "1.4947916666666665",
+      "outcome": "playing",
+      "commit_at": "20:09:28.875",
+      "commit_ms": 72568875,
+      "hold_to_commit_ms": 135,
+      "release_at": "20:09:28.889",
+      "release_ms": 72568889,
+      "hold_to_release_ms": 149,
+      "release_intent": "true",
+      "playing_at": "20:09:28.914",
+      "playing_ms": 72568914,
+      "hold_to_playing_ms": 174,
+      "resumed_segment": "7-0",
+      "release_to_playing_ms": 25,
+      "commit_to_playing_ms": 39
+    },
+    {
+      "hold": "03165F06-11ED-4D77-9879-B7CD861A2CDC",
+      "hold_at": "20:10:07.405",
+      "hold_ms": 72607405,
+      "line": 571,
+      "segment": "8-0",
+      "cue": "3.94625",
+      "outcome": "playing",
+      "commit_at": "20:10:07.501",
+      "commit_ms": 72607501,
+      "hold_to_commit_ms": 96,
+      "release_at": "20:10:07.515",
+      "release_ms": 72607515,
+      "hold_to_release_ms": 110,
+      "release_intent": "true",
+      "playing_at": "20:10:07.536",
+      "playing_ms": 72607536,
+      "hold_to_playing_ms": 131,
+      "resumed_segment": "8-0",
+      "release_to_playing_ms": 21,
+      "commit_to_playing_ms": 35
+    },
+    {
+      "hold": "BEA28507-7160-419B-A944-EA6188B10986",
+      "hold_at": "20:10:31.554",
+      "hold_ms": 72631554,
+      "line": 812,
+      "segment": "11-0",
+      "cue": "4.484708333333334",
+      "outcome": "playing",
+      "commit_at": "20:10:31.672",
+      "commit_ms": 72631672,
+      "hold_to_commit_ms": 118,
+      "release_at": "20:10:31.680",
+      "release_ms": 72631680,
+      "hold_to_release_ms": 126,
+      "release_intent": "true",
+      "playing_at": "20:10:31.706",
+      "playing_ms": 72631706,
+      "hold_to_playing_ms": 152,
+      "resumed_segment": "11-0",
+      "release_to_playing_ms": 26,
+      "commit_to_playing_ms": 34
+    },
+    {
+      "hold": "7D5D8F82-620D-47BC-BCEC-A57623901279",
+      "hold_at": "20:11:07.241",
+      "hold_ms": 72667241,
+      "line": 960,
+      "segment": "5-0",
+      "cue": "13.632",
+      "outcome": "playing",
+      "commit_at": "20:11:07.330",
+      "commit_ms": 72667330,
+      "hold_to_commit_ms": 89,
+      "release_at": "20:11:07.337",
+      "release_ms": 72667337,
+      "hold_to_release_ms": 96,
+      "release_intent": "true",
+      "playing_at": "20:11:07.380",
+      "playing_ms": 72667380,
+      "hold_to_playing_ms": 139,
+      "resumed_segment": "0-800001000",
+      "release_to_playing_ms": 43,
+      "commit_to_playing_ms": 50
+    },
+    {
+      "hold": "AEF7DACD-B6A4-40F7-A1E9-E90739B5B886",
+      "hold_at": "20:11:39.121",
+      "hold_ms": 72699121,
+      "line": 1149,
+      "segment": "8-0",
+      "cue": "6.696",
+      "outcome": "playing",
+      "commit_at": "20:11:39.230",
+      "commit_ms": 72699230,
+      "hold_to_commit_ms": 109,
+      "release_at": "20:11:39.237",
+      "release_ms": 72699237,
+      "hold_to_release_ms": 116,
+      "release_intent": "true",
+      "playing_at": "20:11:39.283",
+      "playing_ms": 72699283,
+      "hold_to_playing_ms": 162,
+      "resumed_segment": "0-800002000",
+      "release_to_playing_ms": 46,
+      "commit_to_playing_ms": 53
+    },
+    {
+      "hold": "EBEC9917-E500-43D9-9117-4AA3E6ACC5C1",
+      "hold_at": "20:12:28.672",
+      "hold_ms": 72748672,
+      "line": 1308,
+      "segment": "5-1",
+      "cue": "7.56",
+      "outcome": "playing",
+      "commit_at": "20:12:28.765",
+      "commit_ms": 72748765,
+      "hold_to_commit_ms": 93,
+      "release_at": "20:12:28.772",
+      "release_ms": 72748772,
+      "hold_to_release_ms": 100,
+      "release_intent": "true",
+      "playing_at": "20:12:28.818",
+      "playing_ms": 72748818,
+      "hold_to_playing_ms": 146,
+      "resumed_segment": "0-800003000",
+      "release_to_playing_ms": 46,
+      "commit_to_playing_ms": 53
+    },
+    {
+      "hold": "E884E865-8BD8-4F13-87E7-FC91EE4829E2",
+      "hold_at": "20:13:11.110",
+      "hold_ms": 72791110,
+      "line": 1480,
+      "segment": "5-1",
+      "cue": "1.100625",
+      "outcome": "playing",
+      "commit_at": "20:13:11.186",
+      "commit_ms": 72791186,
+      "hold_to_commit_ms": 76,
+      "release_at": "20:13:11.195",
+      "release_ms": 72791195,
+      "hold_to_release_ms": 85,
+      "release_intent": "true",
+      "playing_at": "20:13:11.218",
+      "playing_ms": 72791218,
+      "hold_to_playing_ms": 108,
+      "resumed_segment": "5-1",
+      "release_to_playing_ms": 23,
+      "commit_to_playing_ms": 32
+    },
+    {
+      "hold": "9C8627AB-8DF3-4675-A59B-9966D0FA20B4",
+      "hold_at": "20:13:54.853",
+      "hold_ms": 72834853,
+      "line": 1626,
+      "segment": "5-0",
+      "cue": "6.9279166666666665",
+      "outcome": "playing",
+      "commit_at": "20:13:54.967",
+      "commit_ms": 72834967,
+      "hold_to_commit_ms": 114,
+      "release_at": "20:13:54.982",
+      "release_ms": 72834982,
+      "hold_to_release_ms": 129,
+      "release_intent": "true",
+      "playing_at": "20:13:55.007",
+      "playing_ms": 72835007,
+      "hold_to_playing_ms": 154,
+      "resumed_segment": "5-0",
+      "release_to_playing_ms": 25,
+      "commit_to_playing_ms": 40
+    },
+    {
+      "hold": "66A42F3F-90E5-4B65-8C2D-E91A7B205B51",
+      "hold_at": "20:14:39.536",
+      "hold_ms": 72879536,
+      "line": 1855,
+      "segment": "9-0",
+      "cue": "0.22666666666666657",
+      "outcome": "playing",
+      "commit_at": "20:14:39.672",
+      "commit_ms": 72879672,
+      "hold_to_commit_ms": 136,
+      "release_at": "20:14:39.680",
+      "release_ms": 72879680,
+      "hold_to_release_ms": 144,
+      "release_intent": "true",
+      "playing_at": "20:14:39.705",
+      "playing_ms": 72879705,
+      "hold_to_playing_ms": 169,
+      "resumed_segment": "9-0",
+      "release_to_playing_ms": 25,
+      "commit_to_playing_ms": 33
+    },
+    {
+      "hold": "D6D6D0BD-E7AF-485C-8EB6-824AA7686D96",
+      "hold_at": "20:15:23.511",
+      "hold_ms": 72923511,
+      "line": 2050,
+      "segment": "8-0",
+      "cue": "3.461125",
+      "outcome": "playing",
+      "commit_at": "20:15:23.593",
+      "commit_ms": 72923593,
+      "hold_to_commit_ms": 82,
+      "release_at": "20:15:23.607",
+      "release_ms": 72923607,
+      "hold_to_release_ms": 96,
+      "release_intent": "true",
+      "playing_at": "20:15:23.631",
+      "playing_ms": 72923631,
+      "hold_to_playing_ms": 120,
+      "resumed_segment": "8-0",
+      "release_to_playing_ms": 24,
+      "commit_to_playing_ms": 38
+    },
+    {
+      "hold": "2AC38A2D-A046-4DC1-8428-A623811A8E77",
+      "hold_at": "20:15:57.382",
+      "hold_ms": 72957382,
+      "line": 2250,
+      "segment": "6-2",
+      "cue": "3.36",
+      "outcome": "playing",
+      "commit_at": "20:15:57.477",
+      "commit_ms": 72957477,
+      "hold_to_commit_ms": 95,
+      "release_at": "20:15:57.484",
+      "release_ms": 72957484,
+      "hold_to_release_ms": 102,
+      "release_intent": "true",
+      "playing_at": "20:15:57.532",
+      "playing_ms": 72957532,
+      "hold_to_playing_ms": 150,
+      "resumed_segment": "0-800004000",
+      "release_to_playing_ms": 48,
+      "commit_to_playing_ms": 55
+    },
+    {
+      "hold": "43496E06-E9A7-4C5C-81A3-734E224CB22C",
+      "hold_at": "20:16:12.577",
+      "hold_ms": 72972577,
+      "line": 2331,
+      "segment": "3-0",
+      "cue": "4.291166666666667",
+      "outcome": "playing",
+      "commit_at": "20:16:12.682",
+      "commit_ms": 72972682,
+      "hold_to_commit_ms": 105,
+      "release_at": "20:16:12.696",
+      "release_ms": 72972696,
+      "hold_to_release_ms": 119,
+      "release_intent": "true",
+      "playing_at": "20:16:12.720",
+      "playing_ms": 72972720,
+      "hold_to_playing_ms": 143,
+      "resumed_segment": "3-0",
+      "release_to_playing_ms": 24,
+      "commit_to_playing_ms": 38
+    },
+    {
+      "hold": "0661F530-D917-47A9-ACA3-2756D957AF0B",
+      "hold_at": "20:16:56.536",
+      "hold_ms": 73016536,
+      "line": 2504,
+      "segment": "7-0",
+      "cue": "5.489833333333333",
+      "outcome": "playing",
+      "commit_at": "20:16:56.628",
+      "commit_ms": 73016628,
+      "hold_to_commit_ms": 92,
+      "release_at": "20:16:56.637",
+      "release_ms": 73016637,
+      "hold_to_release_ms": 101,
+      "release_intent": "true",
+      "playing_at": "20:16:56.660",
+      "playing_ms": 73016660,
+      "hold_to_playing_ms": 124,
+      "resumed_segment": "7-0",
+      "release_to_playing_ms": 23,
+      "commit_to_playing_ms": 32
+    },
+    {
+      "hold": "EE9E3482-1EA8-4F8F-83F0-0A62E27FD194",
+      "hold_at": "20:17:28.541",
+      "hold_ms": 73048541,
+      "line": 2670,
+      "segment": "6-0",
+      "cue": "1.1785416666666666",
+      "outcome": "playing",
+      "commit_at": "20:17:28.616",
+      "commit_ms": 73048616,
+      "hold_to_commit_ms": 75,
+      "release_at": "20:17:28.624",
+      "release_ms": 73048624,
+      "hold_to_release_ms": 83,
+      "release_intent": "true",
+      "playing_at": "20:17:28.648",
+      "playing_ms": 73048648,
+      "hold_to_playing_ms": 107,
+      "resumed_segment": "6-0",
+      "release_to_playing_ms": 24,
+      "commit_to_playing_ms": 32
+    }
+  ],
+  "natural_media_handoffs": [
+    {
+      "ended_at": "20:08:02.992",
+      "playing_at": "20:08:03.057",
+      "from_segment": "1-0",
+      "to_segment": "1-1",
+      "ended_to_playing_ms": 65,
+      "line": 112
+    },
+    {
+      "ended_at": "20:08:10.041",
+      "playing_at": "20:08:10.095",
+      "from_segment": "1-1",
+      "to_segment": "1-2",
+      "ended_to_playing_ms": 54,
+      "line": 121
+    },
+    {
+      "ended_at": "20:08:23.851",
+      "playing_at": "20:08:23.929",
+      "from_segment": "1-2",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 78,
+      "line": 136
+    },
+    {
+      "ended_at": "20:08:34.371",
+      "playing_at": "20:08:34.444",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 73,
+      "line": 154
+    },
+    {
+      "ended_at": "20:08:42.681",
+      "playing_at": "20:08:42.753",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 72,
+      "line": 167
+    },
+    {
+      "ended_at": "20:08:47.422",
+      "playing_at": "20:08:47.496",
+      "from_segment": "4-0",
+      "to_segment": "1-850010000",
+      "ended_to_playing_ms": 74,
+      "line": 209
+    },
+    {
+      "ended_at": "20:08:55.211",
+      "playing_at": "20:08:55.290",
+      "from_segment": "1-850010000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 79,
+      "line": 245
+    },
+    {
+      "ended_at": "20:09:01.031",
+      "playing_at": "20:09:01.102",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 71,
+      "line": 276
+    },
+    {
+      "ended_at": "20:09:10.219",
+      "playing_at": "20:09:10.274",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 55,
+      "line": 294
+    },
+    {
+      "ended_at": "20:09:13.160",
+      "playing_at": "20:09:13.217",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 57,
+      "line": 309
+    },
+    {
+      "ended_at": "20:09:20.631",
+      "playing_at": "20:09:20.711",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 80,
+      "line": 327
+    },
+    {
+      "ended_at": "20:09:27.651",
+      "playing_at": "20:09:27.723",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 72,
+      "line": 340
+    },
+    {
+      "ended_at": "20:09:34.960",
+      "playing_at": "20:09:35.028",
+      "from_segment": "7-0",
+      "to_segment": "0-850020000",
+      "ended_to_playing_ms": 68,
+      "line": 382
+    },
+    {
+      "ended_at": "20:09:39.751",
+      "playing_at": "20:09:39.827",
+      "from_segment": "0-850020000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 76,
+      "line": 422
+    },
+    {
+      "ended_at": "20:09:43.631",
+      "playing_at": "20:09:43.690",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 59,
+      "line": 463
+    },
+    {
+      "ended_at": "20:09:46.601",
+      "playing_at": "20:09:46.677",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 76,
+      "line": 484
+    },
+    {
+      "ended_at": "20:09:49.879",
+      "playing_at": "20:09:49.945",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 66,
+      "line": 505
+    },
+    {
+      "ended_at": "20:09:57.970",
+      "playing_at": "20:09:58.029",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 59,
+      "line": 532
+    },
+    {
+      "ended_at": "20:10:01.541",
+      "playing_at": "20:10:01.611",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 70,
+      "line": 544
+    },
+    {
+      "ended_at": "20:10:03.441",
+      "playing_at": "20:10:03.510",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 69,
+      "line": 556
+    },
+    {
+      "ended_at": "20:10:04.672",
+      "playing_at": "20:10:04.746",
+      "from_segment": "7-0",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 74,
+      "line": 569
+    },
+    {
+      "ended_at": "20:10:08.161",
+      "playing_at": "20:10:08.242",
+      "from_segment": "8-0",
+      "to_segment": "1-850030000",
+      "ended_to_playing_ms": 81,
+      "line": 614
+    },
+    {
+      "ended_at": "20:10:10.460",
+      "playing_at": "20:10:10.528",
+      "from_segment": "1-850030000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 68,
+      "line": 644
+    },
+    {
+      "ended_at": "20:10:12.081",
+      "playing_at": "20:10:12.153",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 72,
+      "line": 669
+    },
+    {
+      "ended_at": "20:10:13.990",
+      "playing_at": "20:10:14.060",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 70,
+      "line": 706
+    },
+    {
+      "ended_at": "20:10:16.722",
+      "playing_at": "20:10:16.796",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 74,
+      "line": 731
+    },
+    {
+      "ended_at": "20:10:18.830",
+      "playing_at": "20:10:18.890",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 60,
+      "line": 749
+    },
+    {
+      "ended_at": "20:10:22.091",
+      "playing_at": "20:10:22.166",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 75,
+      "line": 761
+    },
+    {
+      "ended_at": "20:10:23.731",
+      "playing_at": "20:10:23.807",
+      "from_segment": "7-0",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 76,
+      "line": 773
+    },
+    {
+      "ended_at": "20:10:25.291",
+      "playing_at": "20:10:25.364",
+      "from_segment": "8-0",
+      "to_segment": "9-0",
+      "ended_to_playing_ms": 73,
+      "line": 785
+    },
+    {
+      "ended_at": "20:10:26.902",
+      "playing_at": "20:10:26.967",
+      "from_segment": "9-0",
+      "to_segment": "10-0",
+      "ended_to_playing_ms": 65,
+      "line": 797
+    },
+    {
+      "ended_at": "20:10:28.461",
+      "playing_at": "20:10:28.536",
+      "from_segment": "10-0",
+      "to_segment": "11-0",
+      "ended_to_playing_ms": 75,
+      "line": 810
+    },
+    {
+      "ended_at": "20:10:36.261",
+      "playing_at": "20:10:36.329",
+      "from_segment": "11-0",
+      "to_segment": "1-850040000",
+      "ended_to_playing_ms": 68,
+      "line": 853
+    },
+    {
+      "ended_at": "20:10:42.189",
+      "playing_at": "20:10:42.245",
+      "from_segment": "1-850040000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 56,
+      "line": 894
+    },
+    {
+      "ended_at": "20:10:47.452",
+      "playing_at": "20:10:47.520",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 68,
+      "line": 930
+    },
+    {
+      "ended_at": "20:10:50.131",
+      "playing_at": "20:10:50.191",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 60,
+      "line": 942
+    },
+    {
+      "ended_at": "20:10:58.032",
+      "playing_at": "20:10:58.114",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 82,
+      "line": 956
+    },
+    {
+      "ended_at": "20:11:07.337",
+      "playing_at": "20:11:07.380",
+      "from_segment": "5-0",
+      "to_segment": "0-800001000",
+      "ended_to_playing_ms": 43,
+      "line": 990
+    },
+    {
+      "ended_at": "20:11:09.641",
+      "playing_at": "20:11:09.716",
+      "from_segment": "0-800001000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 75,
+      "line": 1011
+    },
+    {
+      "ended_at": "20:11:13.601",
+      "playing_at": "20:11:13.669",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 68,
+      "line": 1043
+    },
+    {
+      "ended_at": "20:11:14.779",
+      "playing_at": "20:11:14.829",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 50,
+      "line": 1055
+    },
+    {
+      "ended_at": "20:11:16.682",
+      "playing_at": "20:11:16.754",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 72,
+      "line": 1080
+    },
+    {
+      "ended_at": "20:11:18.821",
+      "playing_at": "20:11:18.892",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 71,
+      "line": 1101
+    },
+    {
+      "ended_at": "20:11:25.653",
+      "playing_at": "20:11:25.727",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 74,
+      "line": 1119
+    },
+    {
+      "ended_at": "20:11:27.782",
+      "playing_at": "20:11:27.848",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 66,
+      "line": 1131
+    },
+    {
+      "ended_at": "20:11:34.532",
+      "playing_at": "20:11:34.604",
+      "from_segment": "7-0",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 72,
+      "line": 1145
+    },
+    {
+      "ended_at": "20:11:39.237",
+      "playing_at": "20:11:39.283",
+      "from_segment": "8-0",
+      "to_segment": "0-800002000",
+      "ended_to_playing_ms": 46,
+      "line": 1177
+    },
+    {
+      "ended_at": "20:11:51.840",
+      "playing_at": "20:11:51.904",
+      "from_segment": "0-800002000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 64,
+      "line": 1212
+    },
+    {
+      "ended_at": "20:11:56.062",
+      "playing_at": "20:11:56.139",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 77,
+      "line": 1233
+    },
+    {
+      "ended_at": "20:12:05.221",
+      "playing_at": "20:12:05.281",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 60,
+      "line": 1260
+    },
+    {
+      "ended_at": "20:12:10.110",
+      "playing_at": "20:12:10.177",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 67,
+      "line": 1273
+    },
+    {
+      "ended_at": "20:12:14.692",
+      "playing_at": "20:12:14.765",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 73,
+      "line": 1294
+    },
+    {
+      "ended_at": "20:12:23.530",
+      "playing_at": "20:12:23.580",
+      "from_segment": "5-0",
+      "to_segment": "5-1",
+      "ended_to_playing_ms": 50,
+      "line": 1305
+    },
+    {
+      "ended_at": "20:12:28.772",
+      "playing_at": "20:12:28.818",
+      "from_segment": "5-1",
+      "to_segment": "0-800003000",
+      "ended_to_playing_ms": 46,
+      "line": 1336
+    },
+    {
+      "ended_at": "20:12:37.582",
+      "playing_at": "20:12:37.650",
+      "from_segment": "0-800003000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 68,
+      "line": 1388
+    },
+    {
+      "ended_at": "20:12:44.551",
+      "playing_at": "20:12:44.624",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 73,
+      "line": 1406
+    },
+    {
+      "ended_at": "20:12:45.742",
+      "playing_at": "20:12:45.813",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 71,
+      "line": 1418
+    },
+    {
+      "ended_at": "20:12:48.710",
+      "playing_at": "20:12:48.781",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 71,
+      "line": 1433
+    },
+    {
+      "ended_at": "20:12:54.422",
+      "playing_at": "20:12:54.481",
+      "from_segment": "4-0",
+      "to_segment": "4-1",
+      "ended_to_playing_ms": 59,
+      "line": 1455
+    },
+    {
+      "ended_at": "20:13:05.191",
+      "playing_at": "20:13:05.267",
+      "from_segment": "4-1",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 76,
+      "line": 1468
+    },
+    {
+      "ended_at": "20:13:10.260",
+      "playing_at": "20:13:10.318",
+      "from_segment": "5-0",
+      "to_segment": "5-1",
+      "ended_to_playing_ms": 58,
+      "line": 1477
+    },
+    {
+      "ended_at": "20:13:16.492",
+      "playing_at": "20:13:16.553",
+      "from_segment": "5-1",
+      "to_segment": "1-850050000",
+      "ended_to_playing_ms": 61,
+      "line": 1520
+    },
+    {
+      "ended_at": "20:13:26.082",
+      "playing_at": "20:13:26.160",
+      "from_segment": "1-850050000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 78,
+      "line": 1556
+    },
+    {
+      "ended_at": "20:13:31.483",
+      "playing_at": "20:13:31.558",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 75,
+      "line": 1575
+    },
+    {
+      "ended_at": "20:13:39.981",
+      "playing_at": "20:13:40.052",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 71,
+      "line": 1602
+    },
+    {
+      "ended_at": "20:13:46.412",
+      "playing_at": "20:13:46.471",
+      "from_segment": "4-0",
+      "to_segment": "4-1",
+      "ended_to_playing_ms": 59,
+      "line": 1611
+    },
+    {
+      "ended_at": "20:13:50.151",
+      "playing_at": "20:13:50.214",
+      "from_segment": "4-1",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 63,
+      "line": 1624
+    },
+    {
+      "ended_at": "20:13:56.371",
+      "playing_at": "20:13:56.432",
+      "from_segment": "5-0",
+      "to_segment": "1-850060000",
+      "ended_to_playing_ms": 61,
+      "line": 1667
+    },
+    {
+      "ended_at": "20:14:01.772",
+      "playing_at": "20:14:01.849",
+      "from_segment": "1-850060000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 77,
+      "line": 1699
+    },
+    {
+      "ended_at": "20:14:10.170",
+      "playing_at": "20:14:10.227",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 57,
+      "line": 1747
+    },
+    {
+      "ended_at": "20:14:14.712",
+      "playing_at": "20:14:14.779",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 67,
+      "line": 1768
+    },
+    {
+      "ended_at": "20:14:21.552",
+      "playing_at": "20:14:21.628",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 76,
+      "line": 1795
+    },
+    {
+      "ended_at": "20:14:26.532",
+      "playing_at": "20:14:26.606",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 74,
+      "line": 1810
+    },
+    {
+      "ended_at": "20:14:29.770",
+      "playing_at": "20:14:29.827",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 57,
+      "line": 1828
+    },
+    {
+      "ended_at": "20:14:31.912",
+      "playing_at": "20:14:31.983",
+      "from_segment": "7-0",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 71,
+      "line": 1840
+    },
+    {
+      "ended_at": "20:14:39.282",
+      "playing_at": "20:14:39.353",
+      "from_segment": "8-0",
+      "to_segment": "9-0",
+      "ended_to_playing_ms": 71,
+      "line": 1853
+    },
+    {
+      "ended_at": "20:14:47.161",
+      "playing_at": "20:14:47.222",
+      "from_segment": "9-0",
+      "to_segment": "1-850070000",
+      "ended_to_playing_ms": 61,
+      "line": 1897
+    },
+    {
+      "ended_at": "20:14:49.211",
+      "playing_at": "20:14:49.271",
+      "from_segment": "1-850070000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 60,
+      "line": 1916
+    },
+    {
+      "ended_at": "20:14:56.881",
+      "playing_at": "20:14:56.947",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 66,
+      "line": 1946
+    },
+    {
+      "ended_at": "20:15:01.672",
+      "playing_at": "20:15:01.745",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 73,
+      "line": 1967
+    },
+    {
+      "ended_at": "20:15:04.532",
+      "playing_at": "20:15:04.601",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 69,
+      "line": 1986
+    },
+    {
+      "ended_at": "20:15:10.812",
+      "playing_at": "20:15:10.885",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 73,
+      "line": 2013
+    },
+    {
+      "ended_at": "20:15:14.982",
+      "playing_at": "20:15:15.057",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 75,
+      "line": 2025
+    },
+    {
+      "ended_at": "20:15:18.131",
+      "playing_at": "20:15:18.187",
+      "from_segment": "7-0",
+      "to_segment": "7-1",
+      "ended_to_playing_ms": 56,
+      "line": 2034
+    },
+    {
+      "ended_at": "20:15:21.062",
+      "playing_at": "20:15:21.143",
+      "from_segment": "7-1",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 81,
+      "line": 2047
+    },
+    {
+      "ended_at": "20:15:27.353",
+      "playing_at": "20:15:27.429",
+      "from_segment": "8-0",
+      "to_segment": "1-850080000",
+      "ended_to_playing_ms": 76,
+      "line": 2090
+    },
+    {
+      "ended_at": "20:15:31.571",
+      "playing_at": "20:15:31.640",
+      "from_segment": "1-850080000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 69,
+      "line": 2120
+    },
+    {
+      "ended_at": "20:15:37.290",
+      "playing_at": "20:15:37.348",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 58,
+      "line": 2170
+    },
+    {
+      "ended_at": "20:15:42.123",
+      "playing_at": "20:15:42.194",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 71,
+      "line": 2194
+    },
+    {
+      "ended_at": "20:15:47.153",
+      "playing_at": "20:15:47.229",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 76,
+      "line": 2214
+    },
+    {
+      "ended_at": "20:15:49.781",
+      "playing_at": "20:15:49.855",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 74,
+      "line": 2228
+    },
+    {
+      "ended_at": "20:15:52.443",
+      "playing_at": "20:15:52.504",
+      "from_segment": "6-0",
+      "to_segment": "6-1",
+      "ended_to_playing_ms": 61,
+      "line": 2238
+    },
+    {
+      "ended_at": "20:15:55.024",
+      "playing_at": "20:15:55.087",
+      "from_segment": "6-1",
+      "to_segment": "6-2",
+      "ended_to_playing_ms": 63,
+      "line": 2247
+    },
+    {
+      "ended_at": "20:15:57.484",
+      "playing_at": "20:15:57.532",
+      "from_segment": "6-2",
+      "to_segment": "0-800004000",
+      "ended_to_playing_ms": 48,
+      "line": 2280
+    },
+    {
+      "ended_at": "20:15:58.493",
+      "playing_at": "20:15:58.564",
+      "from_segment": "0-800004000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 71,
+      "line": 2292
+    },
+    {
+      "ended_at": "20:16:02.924",
+      "playing_at": "20:16:02.997",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 73,
+      "line": 2316
+    },
+    {
+      "ended_at": "20:16:09.621",
+      "playing_at": "20:16:09.684",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 63,
+      "line": 2329
+    },
+    {
+      "ended_at": "20:16:15.032",
+      "playing_at": "20:16:15.103",
+      "from_segment": "3-0",
+      "to_segment": "1-850090000",
+      "ended_to_playing_ms": 71,
+      "line": 2372
+    },
+    {
+      "ended_at": "20:16:20.494",
+      "playing_at": "20:16:20.573",
+      "from_segment": "1-850090000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 79,
+      "line": 2408
+    },
+    {
+      "ended_at": "20:16:30.883",
+      "playing_at": "20:16:30.958",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 75,
+      "line": 2438
+    },
+    {
+      "ended_at": "20:16:34.483",
+      "playing_at": "20:16:34.556",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 73,
+      "line": 2456
+    },
+    {
+      "ended_at": "20:16:37.353",
+      "playing_at": "20:16:37.426",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 73,
+      "line": 2471
+    },
+    {
+      "ended_at": "20:16:44.103",
+      "playing_at": "20:16:44.165",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 62,
+      "line": 2489
+    },
+    {
+      "ended_at": "20:16:52.774",
+      "playing_at": "20:16:52.857",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 83,
+      "line": 2502
+    },
+    {
+      "ended_at": "20:17:05.123",
+      "playing_at": "20:17:05.180",
+      "from_segment": "7-0",
+      "to_segment": "1-850100000",
+      "ended_to_playing_ms": 57,
+      "line": 2545
+    },
+    {
+      "ended_at": "20:17:09.432",
+      "playing_at": "20:17:09.505",
+      "from_segment": "1-850100000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 73,
+      "line": 2586
+    },
+    {
+      "ended_at": "20:17:12.262",
+      "playing_at": "20:17:12.333",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 71,
+      "line": 2614
+    },
+    {
+      "ended_at": "20:17:19.103",
+      "playing_at": "20:17:19.183",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 80,
+      "line": 2643
+    },
+    {
+      "ended_at": "20:17:22.423",
+      "playing_at": "20:17:22.494",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 71,
+      "line": 2655
+    },
+    {
+      "ended_at": "20:17:27.663",
+      "playing_at": "20:17:27.735",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 72,
+      "line": 2668
+    },
+    {
+      "ended_at": "20:17:31.653",
+      "playing_at": "20:17:31.733",
+      "from_segment": "6-0",
+      "to_segment": "1-850110000",
+      "ended_to_playing_ms": 80,
+      "line": 2712
+    },
+    {
+      "ended_at": "20:17:34.033",
+      "playing_at": "20:17:34.108",
+      "from_segment": "1-850110000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 75,
+      "line": 2731
+    },
+    {
+      "ended_at": "20:17:43.674",
+      "playing_at": "20:17:43.746",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 72,
+      "line": 2752
+    },
+    {
+      "ended_at": "20:17:52.182",
+      "playing_at": "20:17:52.252",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 70,
+      "line": 2773
+    }
+  ],
+  "page_commits": [
+    {
+      "at": "20:08:44.631",
+      "line": 183,
+      "event": "WEREAD page commit prior=8f5825bf next=968a37a6 confirmed=true epoch=4 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=285 paras=8"
+    },
+    {
+      "at": "20:09:28.875",
+      "line": 356,
+      "event": "WEREAD page commit prior=968a37a6 next=b2f4301e confirmed=true epoch=5 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=240 paras=9"
+    },
+    {
+      "at": "20:10:07.501",
+      "line": 585,
+      "event": "WEREAD page commit prior=b2f4301e next=35df7927 confirmed=true epoch=6 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=108 paras=12"
+    },
+    {
+      "at": "20:10:31.672",
+      "line": 826,
+      "event": "WEREAD page commit prior=35df7927 next=a19ff322 confirmed=true epoch=7 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=224 paras=6"
+    },
+    {
+      "at": "20:11:07.330",
+      "line": 972,
+      "event": "WEREAD page commit prior=a19ff322 next=158b154d confirmed=true epoch=8 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=197 paras=9"
+    },
+    {
+      "at": "20:11:39.230",
+      "line": 1161,
+      "event": "WEREAD page commit prior=158b154d next=bb3e2a10 confirmed=true epoch=9 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=319 paras=6"
+    },
+    {
+      "at": "20:12:28.765",
+      "line": 1320,
+      "event": "WEREAD page commit prior=bb3e2a10 next=85a20e1f confirmed=true epoch=10 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=283 paras=6"
+    },
+    {
+      "at": "20:13:11.186",
+      "line": 1493,
+      "event": "WEREAD page commit prior=85a20e1f next=da613f1 confirmed=true epoch=11 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=294 paras=6"
+    },
+    {
+      "at": "20:13:54.967",
+      "line": 1640,
+      "event": "WEREAD page commit prior=da613f1 next=868ddf16 confirmed=true epoch=12 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=282 paras=10"
+    },
+    {
+      "at": "20:14:39.672",
+      "line": 1869,
+      "event": "WEREAD page commit prior=868ddf16 next=6d28813b confirmed=true epoch=13 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=288 paras=9"
+    },
+    {
+      "at": "20:15:23.593",
+      "line": 2063,
+      "event": "WEREAD page commit prior=6d28813b next=90fc5e33 confirmed=true epoch=14 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=218 paras=7"
+    },
+    {
+      "at": "20:15:57.477",
+      "line": 2262,
+      "event": "WEREAD page commit prior=90fc5e33 next=7a6d4d42 confirmed=true epoch=15 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=94 paras=4"
+    },
+    {
+      "at": "20:16:12.682",
+      "line": 2345,
+      "event": "WEREAD page commit prior=7a6d4d42 next=917248b confirmed=true epoch=16 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=284 paras=8"
+    },
+    {
+      "at": "20:16:56.628",
+      "line": 2518,
+      "event": "WEREAD page commit prior=917248b next=f906795b confirmed=true epoch=17 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=210 paras=7"
+    },
+    {
+      "at": "20:17:28.616",
+      "line": 2684,
+      "event": "WEREAD page commit prior=f906795b next=f93af3ea confirmed=true epoch=18 cols=374:715:1:wr_default_font:1|3300 geometry=native-glyphs glyphs=248 paras=8"
+    }
+  ],
+  "failure_or_interruption_events": [],
+  "timing": {
+    "hold_to_commit_ms": {
+      "count": 15,
+      "p95_ms": 136,
+      "max_ms": 136
+    },
+    "hold_to_release_ms": {
+      "count": 15,
+      "p95_ms": 149,
+      "max_ms": 149
+    },
+    "hold_to_playing_ms": {
+      "count": 15,
+      "p95_ms": 174,
+      "max_ms": 174
+    },
+    "commit_to_playing_ms": {
+      "count": 15,
+      "p95_ms": 55,
+      "max_ms": 55
+    },
+    "release_to_playing_ms": {
+      "count": 15,
+      "p95_ms": 48,
+      "max_ms": 48
+    }
+  },
+  "natural_media_handoff_timing": {
+    "count": 114,
+    "p95_ms": 80,
+    "max_ms": 83
+  },
+  "candidate": 105,
+  "platform": "weread",
+  "raw_log": "/private/tmp/castreader-live105-reader-current.log",
+  "interval_clock": [
+    "20:07:44",
+    "20:18:00"
+  ],
+  "raw_log_archive": "live105-reader-through2059.log.gz",
+  "analysis_tool_sha256": "a006df2aad5e6390b05cdda6b8b3d9d184e0177db1addacca2d28505ff137d83"
+}

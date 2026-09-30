@@ -15,15 +15,18 @@ import {
   isPlayBooksRelayContainer,
   playBooksFrameSessionID,
   playBooksSignature,
+  playBooksSurfaceKind,
 } from './play-books'
 import {
   acceptKoboHighlightRect,
+  clipKoboHighlightRect,
   extractKoboParagraphs,
   installKoboReader,
   isKoboReaderDescendantFrame,
   isKoboReaderMainFrame,
   koboFrameSessionID,
   koboSignature,
+  koboReadingLocation,
 } from './kobo'
 import {
   acceptOReillyHighlightRect,
@@ -96,6 +99,7 @@ function bootPlayBooks(): boolean {
       source: 'google-books',
       reason: pendingReason,
       signature: playBooksSignature(),
+      surfaceKind: playBooksSurfaceKind(),
       frameSessionID,
       ...pendingPageMetadata,
     }),
@@ -142,9 +146,11 @@ function bootKobo(): boolean {
   initBridge({
     extract: () => extractKoboParagraphs() as unknown as Para[],
     acceptHighlightRect: acceptKoboHighlightRect,
+    clipHighlightRect: clipKoboHighlightRect,
     autoExtract: false,
     pageMeta: () => ({
       source: 'kobo',
+      koboLocation: koboReadingLocation(),
       reason: pendingReason,
       signature: koboSignature(),
       frameSessionID,
