@@ -1581,6 +1581,76 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["login.email"].exists)
     }
 
+    /// Guideline 4: Apple must be a full, visible alternative to the other
+    /// primary provider, including the review device's landscape layout.
+    func testAppleLoginHasEquivalentProminence() {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        for (region, language, locale) in [
+            ("global", "en", "en_US"),
+            ("global", "de", "de_DE"),
+            ("cn", "zh-Hans", "zh_CN"),
+        ] {
+            let app = XCUIApplication()
+            app.launchArguments = [
+                "-AppleLanguages", "(\(language))", "-AppleLocale", locale,
+                "-CastReaderRegion", region, "-CastReaderServiceRoute", region,
+                "-CastReaderDisableDebugPro",
+                "-auth_account_v1", "RESET", "-auth_account_v1.cn", "RESET",
+            ]
+            XCUIDevice.shared.orientation = .portrait
+            app.launch()
+            dismissSelfOpenSystemAlertIfPresent()
+            let apple = app.buttons["login.apple"]
+            let other = app.buttons[region == "cn" ? "login.phone" : "login.google"]
+            XCTAssertTrue(apple.waitForExistence(timeout: 6))
+            XCTAssertTrue(other.exists)
+
+            let orientations: [UIDeviceOrientation] = UIDevice.current.userInterfaceIdiom == .pad
+                ? [.portrait, .landscapeLeft] : [.portrait]
+            for orientation in orientations {
+                XCUIDevice.shared.orientation = orientation
+                // UIKit's native button and the SwiftUI row can publish their
+                // accessibility frames at different points during rotation.
+                let settled = XCTNSPredicateExpectation(
+                    predicate: NSPredicate { _, _ in
+                        let window = app.windows.firstMatch.frame
+                        let orientationMatches = orientation == .portrait
+                            ? window.height > window.width : window.width > window.height
+                        return orientationMatches && apple.frame.width > 200
+                    },
+                    object: nil
+                )
+                XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 5), .completed)
+                XCTAssertTrue(apple.isHittable, "Apple login must be visible without scrolling")
+                XCTAssertTrue(other.isHittable)
+                XCTAssertGreaterThan(apple.frame.width, 200)
+                XCTAssertEqual(apple.frame.width, other.frame.width, accuracy: 1)
+                XCTAssertEqual(apple.frame.height, other.frame.height, accuracy: 1)
+                XCTAssertGreaterThanOrEqual(apple.frame.height, 50)
+                XCTAssertLessThan(apple.frame.maxY, other.frame.minY)
+                XCTAssertTrue(apple.label.localizedCaseInsensitiveContains("Apple"))
+                let window = app.windows.firstMatch.frame
+                XCTAssertTrue(window.contains(apple.frame))
+                XCTAssertTrue(window.contains(other.frame))
+                let picture = XCTAttachment(screenshot: app.screenshot())
+                picture.name = "login-parity-\(region)-\(language)-\(orientation.rawValue)"
+                picture.lifetime = .keepAlways
+                add(picture)
+            }
+
+            if region == "cn" {
+                // The native button must still route through the consent gate.
+                // Decline so this layout test never starts account authorization.
+                apple.tap()
+                let consent = app.alerts["服务条款与隐私政策"]
+                XCTAssertTrue(consent.waitForExistence(timeout: 3))
+                consent.buttons["不同意"].tap()
+                XCTAssertTrue(apple.isHittable)
+            }
+            app.terminate()
+        }
+    }
+
     /// 中国区首启走微信读书强绑定：四屏，没有站点确认屏，
     /// 也不应出现任何 Kindle / Google 图书 / Kobo / O'Reilly 的痕迹。
     func testFirstLaunchInChinaShowsWeReadOnboarding() {
@@ -1725,7 +1795,7 @@ class CastReaderUITests: XCTestCase {
             app.buttons["使用 Google 继续"].exists,
             "中国区不得展示不可用的 Google 登录入口"
         )
-        XCTAssertTrue(app.buttons["login.apple"].exists, "中国区必须保留 Apple 小图标入口")
+        XCTAssertTrue(app.buttons["login.apple"].exists, "中国区必须保留完整 Apple 登录按钮")
         XCTAssertFalse(app.buttons["login.email"].exists, "中国区不应展示尚未接通的邮箱登录")
 
         signInWithPresetPhoneCode(app)
