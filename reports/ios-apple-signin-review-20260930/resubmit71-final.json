@@ -1,0 +1,104 @@
+{
+  "checkedAt": "2026-09-30T16:10:54Z",
+  "submission": {
+    "id": "e0120f7a-1331-468f-adb9-0b1f045c352a",
+    "attributes": {
+      "platform": "IOS",
+      "submittedDate": "2026-09-30T16:10:52.181Z",
+      "state": "WAITING_FOR_REVIEW"
+    }
+  },
+  "version": {
+    "id": "138a0a05-56de-42f7-b841-31fdfb842418",
+    "attributes": {
+      "platform": "IOS",
+      "versionString": "1.2.47",
+      "appStoreState": "WAITING_FOR_REVIEW",
+      "appVersionState": "WAITING_FOR_REVIEW",
+      "copyright": "© 2026 CastReader Inc.",
+      "reviewType": "APP_STORE",
+      "releaseType": "AFTER_APPROVAL",
+      "earliestReleaseDate": null,
+      "usesIdfa": null,
+      "downloadable": true,
+      "createdDate": "2026-09-28T12:16:30-07:00"
+    }
+  },
+  "build": {
+    "id": "7356c4a6-2426-4e2e-ac96-c55e7d78c65f",
+    "attributes": {
+      "version": "71",
+      "uploadedDate": "2026-09-30T09:05:30-07:00",
+      "expirationDate": "2026-12-29T08:05:30-08:00",
+      "expired": false,
+      "minOsVersion": "17.6",
+      "lsMinimumSystemVersion": null,
+      "computedMinMacOsVersion": "14.6",
+      "computedMinVisionOsVersion": "1.3",
+      "iconAssetToken": {
+        "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/8c/8f/21/8c8f21aa-e9f4-b340-daa3-ae98311ab5af/AppIcon-0-0-2x_U007epad-0-6-0-85-220.png/{w}x{h}bb.{f}",
+        "width": 167,
+        "height": 167
+      },
+      "processingState": "VALID",
+      "buildAudienceType": "APP_STORE_ELIGIBLE",
+      "usesNonExemptEncryption": false
+    }
+  },
+  "iap": {
+    "id": "6816697780",
+    "attributes": {
+      "name": "Clone Voice 120 Minutes",
+      "productId": "ai.castreader.clone.minutes120",
+      "inAppPurchaseType": "CONSUMABLE",
+      "state": "WAITING_FOR_REVIEW",
+      "reviewNote": "This is the first submission of ai.castreader.clone.minutes120, together with app version 1.2.47.\n\nSign in with Apple or Google and activate an existing CastReader Pro subscription using the App Review sandbox. Open Voice > My Voices, then tap Buy more credits in the Generation allowance section. The purchase sheet shows the included monthly balance, purchased balance and StoreKit price. A Pro user may buy with either a positive or zero balance.\n\nOne consumable purchase adds 120 minutes of voice generation to the signed-in account. Community clone voices and personal cloned voices share this allowance. Each Pro month includes 120 minutes; the included minutes are used first. Purchased minutes do not expire. If Pro ends, purchased minutes remain stored and become usable again when Pro is active.\n\nOnly successfully generated audio duration is charged. Fixed previews and replaying already generated audio do not consume more minutes. If a generation stops for insufficient allowance, the same sheet offers Continue reading or explaining after purchase. Sync balance and pending purchases retries delivery if interrupted. App Review sandbox purchases and subscriptions are verified by Apple and use an isolated test ledger.",
+      "familySharable": false,
+      "contentHosting": null
+    }
+  },
+  "items": [
+    {
+      "type": "reviewSubmissionItems",
+      "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw",
+      "attributes": {
+        "state": "READY_FOR_REVIEW"
+      },
+      "relationships": {
+        "appStoreVersion": {
+          "data": null
+        },
+        "inAppPurchaseVersion": {
+          "data": {
+            "type": "inAppPurchaseVersions",
+            "id": "f267f0a8-d537-4fa7-9cc1-1796fc44b71c"
+          }
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw"
+      }
+    },
+    {
+      "type": "reviewSubmissionItems",
+      "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2",
+      "attributes": {
+        "state": "READY_FOR_REVIEW"
+      },
+      "relationships": {
+        "appStoreVersion": {
+          "data": {
+            "type": "appStoreVersions",
+            "id": "138a0a05-56de-42f7-b841-31fdfb842418"
+          }
+        },
+        "inAppPurchaseVersion": {
+          "data": null
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2"
+      }
+    }
+  ]
+}

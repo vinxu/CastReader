@@ -1,0 +1,13 @@
+{
+  "execute": true,
+  "submissionId": "e0120f7a-1331-468f-adb9-0b1f045c352a",
+  "appItemId": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2",
+  "appItemState": "REJECTED",
+  "preservedIapItemId": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw",
+  "buildId": "7356c4a6-2426-4e2e-ac96-c55e7d78c65f",
+  "steps": [
+    "Resolve corrected app item if REJECTED",
+    "Submit the existing submission",
+    "Read back app and submission states"
+  ]
+}

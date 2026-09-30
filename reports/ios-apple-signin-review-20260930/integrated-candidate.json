@@ -430,15 +430,10 @@
     "WebReader/tsconfig.json": "3fc69fcf9be5434986c75f293cc2b2e4f8ceb2b1b0b2a3c067ae505ff041e47e",
     "WebReader/weread-native-resume-test.mjs": "227c2f73c6ffd90493044e5ca00f84a67d98bc4b0ba69a5e3503e455809d3b00"
   },
-  "archiveCreated": false,
-  "uploaded": false,
-  "submitted": false,
-  "pendingSource": "Four-platform follow-up fixes and final acceptance are being completed in the existing feature checkout. Merge the resulting verified commit before final archive.",
-  "pendingAcceptance": [
-    "CN/Global real Read/Explain with Kokoro, community and private voices on the integrated final candidate",
-    "Four-platform final acceptance, including missing narration timing, Google cold chapter transition and Kobo access verification",
-    "iPhone small-screen login and real Apple authorization/cancellation checks"
-  ],
+  "archiveCreated": true,
+  "uploaded": true,
+  "submitted": true,
+  "pendingSource": null,
   "unrelatedWorktreeModified": false,
   "userReleaseAuthorization": {
     "date": "2026-09-30",
@@ -450,5 +445,41 @@
     ],
     "coreGate": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
     "futureReleaseGatesUnchanged": true
-  }
+  },
+  "deferredAcceptance": [
+    "CN/Global real Read/Explain with Kokoro, community and private voices on the integrated final candidate",
+    "Four-platform final acceptance, including missing narration timing, Google cold chapter transition and Kobo access verification",
+    "iPhone small-screen login and real Apple authorization/cancellation checks"
+  ],
+  "archiveSourceCommit": "2cf246a3a01ee191d376270eb392a95334e44853",
+  "pullRequest": "https://github.com/vinxu/CastReader/pull/3",
+  "ongoingFollowupChangesIncluded": false,
+  "coreMatrix": {
+    "CN / Chinese": {
+      "Read Kokoro": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Read clone vl_": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Read clone vc_": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Explain Kokoro": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Explain clone vl_": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Explain clone vc_": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION"
+    },
+    "Global / English": {
+      "Read Kokoro": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Read clone vl_": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Read clone vc_": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Explain Kokoro": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Explain clone vl_": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
+      "Explain clone vc_": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION"
+    }
+  },
+  "archivePath": "/Users/xuxuheng/Desktop/CastReader-1.2.47-71-Review/CastReader-1.2.47-71.xcarchive",
+  "releaseStage": "WAITING_FOR_REVIEW",
+  "uploadedAt": "2026-10-01T00:04:14+08:00",
+  "buildId": "7356c4a6-2426-4e2e-ac96-c55e7d78c65f",
+  "submissionId": "e0120f7a-1331-468f-adb9-0b1f045c352a",
+  "submittedAt": "2026-09-30T16:10:52.181Z",
+  "appVersionState": "WAITING_FOR_REVIEW",
+  "submissionState": "WAITING_FOR_REVIEW",
+  "iapState": "WAITING_FOR_REVIEW",
+  "releaseType": "AFTER_APPROVAL"
 }

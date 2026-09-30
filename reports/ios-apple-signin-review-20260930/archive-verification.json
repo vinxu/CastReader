@@ -1,0 +1,78 @@
+{
+  "sourceCommit": "2cf246a3a01ee191d376270eb392a95334e44853",
+  "sourceHash": "8bdfdec85cc3149e156e55c94f4f4dea5f51dd72eda85bfe09e22550e5d0e77f",
+  "archive": "/Users/xuxuheng/Desktop/CastReader-1.2.47-71-Review/CastReader-1.2.47-71.xcarchive",
+  "bundles": [
+    {
+      "name": "CastReader.app",
+      "bundleId": "com.same.castreader",
+      "version": "1.2.47",
+      "build": "71",
+      "deviceFamilies": [
+        1,
+        2
+      ],
+      "team": "KQW6UNZE8J",
+      "strictSignature": true,
+      "getTaskAllow": true,
+      "signingPhase": "archive; official export applies distribution signing"
+    },
+    {
+      "name": "CastReader Safari Extension.appex",
+      "bundleId": "com.same.castreader.SafariExtension",
+      "version": "1.2.47",
+      "build": "71",
+      "deviceFamilies": [
+        1,
+        2
+      ],
+      "team": "KQW6UNZE8J",
+      "strictSignature": true,
+      "getTaskAllow": true,
+      "signingPhase": "archive; official export applies distribution signing"
+    },
+    {
+      "name": "CastReader Share Extension.appex",
+      "bundleId": "com.same.castreader.ShareExtension",
+      "version": "1.2.47",
+      "build": "71",
+      "deviceFamilies": [
+        1,
+        2
+      ],
+      "team": "KQW6UNZE8J",
+      "strictSignature": true,
+      "getTaskAllow": true,
+      "signingPhase": "archive; official export applies distribution signing"
+    },
+    {
+      "name": "CastReader Widget.appex",
+      "bundleId": "com.same.castreader.Widget",
+      "version": "1.2.47",
+      "build": "71",
+      "deviceFamilies": [
+        1,
+        2
+      ],
+      "team": "KQW6UNZE8J",
+      "strictSignature": true,
+      "getTaskAllow": true,
+      "signingPhase": "archive; official export applies distribution signing"
+    }
+  ],
+  "compiledLocaleKeys": {
+    "de": 1520,
+    "zh-Hans": 1520,
+    "ja": 1520,
+    "en": 1520,
+    "es": 1520,
+    "it": 1520,
+    "pt-BR": 1520,
+    "fr": 1520,
+    "pt": 1,
+    "hi": 1520
+  },
+  "safariContentSHA256": "192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75",
+  "archiveManifestSHA256": "31d3af3bba106a8605efe6ca1f3af021594a05e810d82a857a7d2921f408ab69",
+  "passed": true
+}

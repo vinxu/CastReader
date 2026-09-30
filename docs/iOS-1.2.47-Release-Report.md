@@ -1,18 +1,29 @@
 # iOS 1.2.47 发布记录
 
-## 2026-09-30 拒审修复与 Build 71 重新提交（执行中）
+## 2026-10-01 Build 71 已重新提交审核
 
-官方 API 回读：本版 `138a0a05-56de-42f7-b841-31fdfb842418` 为 **REJECTED**；原审核单 `e0120f7a-1331-468f-adb9-0b1f045c352a` 为 **UNRESOLVED_ISSUES**。同批额度商品 `6816697780` 仍为 **IN_REVIEW**。用户提供的拒审通知指向 Guideline 4：Apple 登录入口与其他登录方式不对等。源码确认为 44×44 Apple 圆形小图标，对比 50pt 高的整行 Google / 手机号按钮。
+**2026-10-01 00:10:52 CST，App 1.2.47（71）、同批额度内购及原 Review Submission 均已回读为 WAITING_FOR_REVIEW。** 审核通过后自动发布（AFTER_APPROVAL）；当前状态不表示已经通过或上线。
 
-已在独立工作树 `/Users/xuxuheng/.codex/worktrees/ios-apple-signin-review/CastReader`、分支 `codex/ios-apple-signin-review` 准备修复。登录提交 `2f89c00` 使用系统 `ASAuthorizationAppleIDButton`，完整文字、与主按钮同宽同高，保留中国区原协议同意和现有授权回调。用户随后要求一并纳入四平台分页提交 `d390c0d8347723abd3fcbd221efed64d9994bc2d`；已以双亲合并 `e6c4c5d29790d44e685a26463085374b369fde83` 无冲突整合，保留已发布祖先。四组件统一为 **1.2.47（71）**，该 Build 尚未上传。
+Build 71 于 00:04:14 经官方 Xcode 上传成功，errors/warnings 均为空；Apple 处理为 VALID / APP_STORE_ELIGIBLE，usesNonExemptEncryption=false。保留原版本、原审核单与两个原 item，换绑新 Build，将被拒 App item 标记已解决后重新提交。没有创建重复版本/审核单，没有移除或重建 IAP。
 
-合并候选模拟器编译与回归通过：25 项 `AppRegionTests` + 1 项登录 UI 用例，共 **26 PASS、0 FAIL、0 SKIP**。UI 用例覆盖 iPad Air 11-inch (M3) / iOS 26.5 的英文、德文、中文横竖屏，验证无需滚动可见、同宽同高、完整标题以及中国区点击进入协议弹窗并可拒绝。早期旋转坐标采样失败保留，修正的是测试等待时序，未放宽尺寸要求。WeRead JavaScript、原生阅读位置恢复、发布祖先和 Safari 资源检查通过。最终记录、源码摘要与截图见 [拒审修复证据](../reports/ios-apple-signin-review-20260930/validation.json)。这些结果不代表真机 Apple 账号登录或完整服务验收。
+- Build ID：`7356c4a6-2426-4e2e-ac96-c55e7d78c65f`，71 / 1.2.47。
+- App version：`138a0a05-56de-42f7-b841-31fdfb842418`，WAITING_FOR_REVIEW。
+- Review Submission：`e0120f7a-1331-468f-adb9-0b1f045c352a`，WAITING_FOR_REVIEW；重新提交时间 `2026-09-30T16:10:52.181Z`。
+- IAP：`6816697780` / `ai.castreader.clone.minutes120`，WAITING_FOR_REVIEW；IAP version `f267f0a8-d537-4fa7-9cc1-1796fc44b71c` 保留。
 
-**用户于 2026-09-30 明确授权当前候选合包并直接提交审核，剩余问题下版迭代。** 本次按该指令对最终候选完整核心服务矩阵及四平台长时验收作一次性放行例外，不把缺失证据记为 PASS，也不改变后续版本默认门禁。冻结 `2c6c8c9` 的应用源码与 Build 71 配置；不等待、不纳入另一个 agent 仍在继续测试的后续改动，不覆盖其真机测试。
+[查看原审核单](https://appstoreconnect.apple.com/apps/6757636395/distribution/reviewsubmissions/details/e0120f7a-1331-468f-adb9-0b1f045c352a)；[最终 API 回执](../reports/ios-apple-signin-review-20260930/resubmit71-final.json)。
 
-延期项目：`d390c0d` 的 WeRead 原始词时间缺失（估算字幕）、Google 跨章节 8.543 秒冷启动、Kobo 真人验证阻断及四平台长时/iPad 验收缺口。最终候选 CN/Global × Read/Explain × Kokoro/clone（vl_/vc_）完整矩阵标为 **NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION**；9 月 29 日 Build 70 的历史 PASS 不冒充 Build 71 最终矩阵结果。
+9 月 30 日拒审原因是 Guideline 4：Apple 登录入口只是 44×44 圆形图标，其他主登录按钮为 50pt 高的整行按钮。修复使用原生 `ASAuthorizationAppleIDButton`，完整文字、同宽同高、显示在主登录区域第一项，保留中国区协议同意与现有授权回调。
 
-提交策略已按用户新指令改为修复后换包：继续现有 **1.2.47** 版本，绑定新的有效 Build，在原审核单编辑并更新被拒 App 项目后重新提交；保留同批 IAP。原先考虑的 Bug Fix Submissions 例外方案不再执行，未向苹果发送承诺下版修复的回复。实际上传前再次确认最大 Build；若 71 已被其他上传占用则顺延。
+发布范围冻结为登录修复 `2f89c00` + 用户指定四平台改进 `d390c0d8347723abd3fcbd221efed64d9994bc2d`；[PR #3](https://github.com/vinxu/CastReader/pull/3) 已正式合入 main。归档提交 **`2cf246a3a01ee191d376270eb392a95334e44853`**；422 个应用/组件/WebReader/工程文件与最终回归候选逐一一致，源码摘要 `8bdfdec85cc3149e156e55c94f4f4dea5f51dd72eda85bfe09e22550e5d0e77f`。App、Share、Widget、Safari 全部为 **1.2.47（71）**。没有纳入另一个 agent 仍在测试的后续改动，没有覆盖其真机。
+
+合包回归 **26 PASS、0 FAIL、0 SKIP**：25 项 AppRegionTests + 1 项登录 UI 用例，覆盖 iPad Air 11-inch (M3) / iOS 26.5 的英文、德文、中文横竖屏，同宽同高、无需滚动可见、完整标题及中国区协议弹窗/拒绝。最终结果 `/tmp/CastReaderAppleSignInIntegrated71-20260930.xcresult`。早期旋转坐标采样失败已修复测试等待时序，未放宽断言。WeRead 合约/恢复、发布祖先和 Safari 静态资源检查通过。完整证据见 [拒审修复记录](../reports/ios-apple-signin-review-20260930/validation.json)。
+
+**用户于 2026-09-30 明确要求当前候选直接合包送审，剩余问题下版迭代。** 本次最终候选 CN/Global × Read/Explain × Kokoro/clone（vl_/vc_）完整矩阵为 **NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION**；该次授权不改变后续版本默认门禁，不把 9 月 29 日 Build 70 的历史 PASS 冒充本包最终验收。延期项目包括 WeRead 原始词时间缺失（估算字幕）、Google 跨章节 8.543 秒冷启动、Kobo 真人验证阻断、四平台长时/iPad 验收缺口，以及 iPhone 小屏和真实 Apple 账号授权检查。
+
+正式归档位于 `/Users/xuxuheng/Desktop/CastReader-1.2.47-71-Review/CastReader-1.2.47-71.xcarchive`。四组件版本/设备族 1、2/团队/严格签名通过；九语各 1,520 个编译 key；205 文件、54 个夹具标志扫描 0 命中，Debug 阳性对照通过。Safari content.js 摘要 `192e07f0e15b8ce27ec088b2e62e17ecdb5a9491235e8b2243153e523d333a75` 与已发版一致。归档使用开发签名，官方 export 完成商店分发签名与上传，不将归档 get-task-allow 冒称最终分发权限。归档清单摘要上传前 `31d3af3bba106a8605efe6ca1f3af021594a05e810d82a857a7d2921f408ab69`、上传后 `90d4d9df635e17d826387b264db71e8f54b4584c6e83d1eb0c85bdf91bcdfa46`；仅根 Info.plist 新增官方分发记录，App 和扩展全部原文件不变。原 Build 70 归档保留。
+
+11 语 What's New 在原文后追加登录与四平台改进；审核备注更新为 3,833 字符，明确 Build 71 / Guideline 4 修复及验证入口。以上字段已写入并回读一致；其他版本文案、审核联系人/账号资料均保持原样。最终 ASC audit 为 0 errors：11 locale、原标题/副标题保持，55 张截图全部 COMPLETE（9 语 iPhone 45 张 + 中英文 iPad 10 张；zh-Hant、es-MX 沿用主语言回退）。内购、价格、地区、隐私、年龄及法律声明未改。发布方式保留 AFTER_APPROVAL。原始私有快照与构建日志位于 `/Users/xuxuheng/Desktop/CastReader-1.2.47-71-Review/evidence/`，不提交凭据或审核私人资料。
 
 以下为 2026-09-29 Build 70 的原始提交记录，审核状态仅在原时间有效。
 

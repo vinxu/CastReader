@@ -1,0 +1,15 @@
+{
+  "data": {
+    "type": "reviewSubmissionItems",
+    "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2",
+    "attributes": {
+      "state": "READY_FOR_REVIEW"
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2"
+    }
+  },
+  "links": {
+    "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2"
+  }
+}

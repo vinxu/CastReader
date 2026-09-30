@@ -1,0 +1,22 @@
+{
+  "verified": true,
+  "locales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "changedFields": [
+    "whatsNew",
+    "reviewNotes"
+  ],
+  "otherFieldsPreserved": true,
+  "reviewNotesSHA256": "b306bc1c94bd3505021caa56d820df32f47e67c83d2903a2a9da5750bcd7f0ff"
+}

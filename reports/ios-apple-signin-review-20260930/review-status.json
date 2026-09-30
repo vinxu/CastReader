@@ -1,26 +1,24 @@
 {
-  "checkedOn": "2026-09-30",
   "timezone": "Asia/Shanghai",
   "source": "App Store Connect official REST API; review reason supplied by user",
   "appId": "6757636395",
   "versionId": "138a0a05-56de-42f7-b841-31fdfb842418",
   "version": "1.2.47",
-  "build": "70",
-  "versionState": "REJECTED",
+  "build": "71",
+  "versionState": "WAITING_FOR_REVIEW",
   "submissionId": "e0120f7a-1331-468f-adb9-0b1f045c352a",
-  "submissionState": "UNRESOLVED_ISSUES",
+  "submissionState": "WAITING_FOR_REVIEW",
   "iapId": "6816697780",
   "iapProductId": "ai.castreader.clone.minutes120",
-  "iapState": "IN_REVIEW",
+  "iapState": "WAITING_FOR_REVIEW",
   "releaseType": "AFTER_APPROVAL",
-  "highestUploadedBuild": 70,
+  "highestUploadedBuild": 71,
   "reviewSourceCommit": "fadb18a727c96c6ada3353e08882fe1ed34ccf74",
   "repairBaseCommit": "f1c423e312cdcfbf121b11428aa7867b35488a84",
   "rootCause": "LoginView displays Apple as a 44x44 circular icon below a full-width 50pt Google or phone button in both regions.",
   "recommendation": "Superseded by user instruction: integrate d390c0d with Apple login parity, validate and resubmit a new binary on the existing 1.2.47 version.",
-  "alternative": "If fixing before release, upload a new binary as 1.2.47 (next available build, currently 71), edit the rejected App item and resubmit the existing submission. Preserve the IAP item still in review.",
   "replyDraftSent": false,
-  "appStoreWritesPerformed": false,
+  "appStoreWritesPerformed": true,
   "browserMessageRead": "NOT_RUN: the in-app browser redirects to App Store Connect login; API read access succeeded.",
   "references": [
     "https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple",
@@ -42,5 +40,21 @@
     ],
     "coreGate": "NOT_RUN / USER_AUTHORIZED_RELEASE_EXCEPTION",
     "futureReleaseGatesUnchanged": true
+  },
+  "metadataChangedFields": [
+    "whatsNew (11 locales)",
+    "reviewNotes"
+  ],
+  "initialInspectionDate": "2026-09-30",
+  "finalCheckedAt": "2026-09-30T16:10:54Z",
+  "buildId": "7356c4a6-2426-4e2e-ac96-c55e7d78c65f",
+  "resubmittedAt": "2026-09-30T16:10:52.181Z",
+  "releaseSourceCommit": "2cf246a3a01ee191d376270eb392a95334e44853",
+  "outcome": "Existing review submission resubmitted with new Build 71; App and IAP preserved and WAITING_FOR_REVIEW.",
+  "historicalInitialStates": {
+    "build": "70",
+    "version": "REJECTED",
+    "submission": "UNRESOLVED_ISSUES",
+    "iap": "IN_REVIEW"
   }
 }
