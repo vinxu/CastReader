@@ -1,0 +1,4 @@
+# Keep raw physical-device logs local: they contain temporary job capabilities
+# and source excerpts. Sanitized JSON analyses and manifests are versioned.
+*.log
+*.gz

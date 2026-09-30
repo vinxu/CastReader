@@ -1,0 +1,69 @@
+{
+  "candidate": 99,
+  "rows": [
+    {
+      "begin": "16:58:04.752",
+      "prior_end": "16:58:04.742",
+      "outcome": "playing",
+      "playing": "16:58:04.982",
+      "ended_to_playing_ms": 240,
+      "profile_overlap": true
+    },
+    {
+      "begin": "16:58:28.218",
+      "prior_end": "16:58:28.211",
+      "outcome": "playing",
+      "playing": "16:58:28.416",
+      "ended_to_playing_ms": 205,
+      "profile_overlap": true
+    },
+    {
+      "begin": "16:58:57.719",
+      "prior_end": "16:58:57.690",
+      "outcome": "playing",
+      "playing": "16:58:57.882",
+      "ended_to_playing_ms": 192,
+      "profile_overlap": false
+    },
+    {
+      "begin": "16:59:22.818",
+      "prior_end": "16:59:22.812",
+      "outcome": "playing",
+      "playing": "16:59:23.013",
+      "ended_to_playing_ms": 201,
+      "profile_overlap": false
+    },
+    {
+      "begin": "16:59:54.961",
+      "prior_end": "16:59:54.930",
+      "outcome": "playing",
+      "playing": "16:59:55.138",
+      "ended_to_playing_ms": 208,
+      "profile_overlap": false
+    },
+    {
+      "begin": "17:00:18.407",
+      "prior_end": "17:00:18.381",
+      "outcome": "abandoned",
+      "event": "[active] KINDLE \u89e3\u8bfb auto advance abandoned-context-change old=b3b017345d45 reason=explain-auto-next-page"
+    }
+  ],
+  "profile_interval": [
+    "16:58:03.267",
+    "16:58:44.474"
+  ],
+  "terminal_explain": {
+    "completed_at": "16:55:09.187",
+    "observed_idle_until": "16:56:21.192",
+    "same_source_replay": false,
+    "final_ink_retention": "Native hold removed after completion; final marks disappeared, corrected in candidate100 but not yet verified."
+  },
+  "control_input": "Raise action activated mirroring window; subsequent TOC and mode taps have app receipts. Prior unreceived clicks cannot be treated as app control failure.",
+  "failure": "17:00:18 normal fifth-chapter Explain automatic handoff abandoned-context-change; next page prepared but did not play. Not accepted. Detailed cancellation evidence added in100.",
+  "raw_sha256": {
+    "/tmp/castreader-kindlelive99-probe.log": "1c602e32553cc690bc6571ddd3b8d27fce0da9401738e707efb51dcf43f56628",
+    "/tmp/castreader-kindlelive99-reader.log": "9c6a7128c55a88ef520abe21f969e09b556dd63b41d787fc109a065ea8413d0d"
+  },
+  "measurement": "Application clock; no acoustic claim.",
+  "final_acceptance": false
+}

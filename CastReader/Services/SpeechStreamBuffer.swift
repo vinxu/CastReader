@@ -51,6 +51,93 @@ final class SpeechStreamBuffer {
     }
 }
 
+/// A speculative paragraph has one producer before and after its page is
+/// confirmed. Adoption changes its callback owner, never resubmits its text.
+@MainActor
+final class LivePagePreparedSpeech {
+    let sourceText: String
+    let stream: SpeechStreamBuffer
+    private(set) var adopted = false
+    var mediaLease: AudioPlayerService.PreparedMediaLease?
+    var ownedRequest: ((TTSContinuation) async throws -> PresetTTSRequestScheduler.Priority)?
+    var ownedSegment: ((AudioSegment) -> Void)?
+    var ownedCompletion: ((Error?) -> Void)?
+
+    init(paragraphIndex: Int, sourceText: String, voice: String, language: String) {
+        self.sourceText = sourceText
+        stream = SpeechStreamBuffer(paragraphIndex: paragraphIndex, voice: voice,
+                                    language: language, requestID: nil)
+    }
+
+    func start(generator: any ParagraphSpeechGenerating, audio: AudioPlayerService,
+               speechInput: String, isCurrent: @escaping () -> Bool,
+               fitsBudget: @escaping () -> Bool) {
+        guard stream.task == nil, !stream.finished else { return }
+        stream.task = Task { [weak self] in
+            guard let self else { return }
+            defer { self.stream.task = nil }
+            do {
+                try await generator.generateBufferedSpeech(
+                    paragraphIndex: self.stream.paragraphIndex, text: speechInput,
+                    voice: self.stream.voice, speed: 1, language: self.stream.language,
+                    includeVoiceCode: true, speaker: nil, cloneRequestID: nil,
+                    continuation: TTSContinuation(requestUnits: [speechInput], nextSegmentIndex: 0,
+                                                  requiresSourceTiming: true),
+                    beforeRequest: { [weak self] checkpoint in
+                        guard let self else { throw CancellationError() }
+                        self.stream.continuation = checkpoint
+                        while true {
+                            try Task.checkCancellation()
+                            if self.adopted {
+                                guard let request = self.ownedRequest else { throw CancellationError() }
+                                return try await request(checkpoint)
+                            }
+                            guard isCurrent() else { throw CancellationError() }
+                            if fitsBudget(), self.stream.canRequest(currentSegmentID: nil,
+                                position: 0, rate: Double(audio.playbackRate), paused: audio.isExplicitlyPaused) {
+                                self.stream.beginRequest(checkpoint)
+                                return .readAhead
+                            }
+                            try await Task.sleep(nanoseconds: 75_000_000)
+                        }
+                    }, onSegmentReady: { [weak self] segment in
+                        guard let self, !Task.isCancelled, !self.stream.finished else { return }
+                        if self.adopted {
+                            self.ownedSegment?(segment)
+                        } else if isCurrent() {
+                            self.stream.append(segment)
+                            self.mediaLease = audio.retainPreparedSegments(self.stream.segments)
+                            ReaderRunLog.write("READ adjacent reserve ready para=\(self.stream.paragraphIndex) seg=\(segment.segmentIndex)")
+                        }
+                    })
+                try Task.checkCancellation()
+                self.stream.finished = true
+                self.stream.continuation = nil
+                self.ownedCompletion?(nil)
+            } catch {
+                self.stream.finished = true
+                self.stream.failure = error
+                self.ownedCompletion?(error)
+            }
+        }
+    }
+
+    func adopt(request: @escaping (TTSContinuation) async throws -> PresetTTSRequestScheduler.Priority,
+               segment: @escaping (AudioSegment) -> Void, completion: @escaping (Error?) -> Void) {
+        precondition(!adopted)
+        adopted = true
+        ownedRequest = request
+        ownedSegment = segment
+        ownedCompletion = completion
+    }
+
+    func discardIfSpeculative() {
+        guard !adopted else { return }
+        stream.task?.cancel()
+        mediaLease = nil
+    }
+}
+
 /// Short narration units whose marks can be tied to spoken text without a
 /// later whole-block retiming. Unmatched/paraphrased anchors use server compose.
 enum ExplanationSpeechPlan {

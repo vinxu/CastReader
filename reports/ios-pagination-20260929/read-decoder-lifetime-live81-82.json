@@ -1,0 +1,708 @@
+{
+  "81": {
+    "window": [
+      "11:38:35.000",
+      "11:46:05.020"
+    ],
+    "unit": "prepared adoption to AVPlayer playing event; not acoustic measurement",
+    "groups_by_decoded": {
+      "False": {
+        "n": 79,
+        "median_ms": 190.0,
+        "p95_ms": 255.0,
+        "max_ms": 297.0
+      },
+      "True": {
+        "n": 27,
+        "median_ms": 130.0,
+        "p95_ms": 164.0,
+        "max_ms": 174.0
+      }
+    },
+    "events": [
+      {
+        "at": "11:39:03.210",
+        "segment": "1-0",
+        "decoded": false,
+        "start_ms": 156.0
+      },
+      {
+        "at": "11:39:03.794",
+        "segment": "2-0",
+        "decoded": false,
+        "start_ms": 153.0
+      },
+      {
+        "at": "11:39:05.594",
+        "segment": "3-0",
+        "decoded": true,
+        "start_ms": 97.0
+      },
+      {
+        "at": "11:39:10.998",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 178.0
+      },
+      {
+        "at": "11:39:18.330",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 175.0
+      },
+      {
+        "at": "11:39:19.928",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 157.0
+      },
+      {
+        "at": "11:39:23.085",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 151.0
+      },
+      {
+        "at": "11:39:26.847",
+        "segment": "1-850010000",
+        "decoded": true,
+        "start_ms": 126.0
+      },
+      {
+        "at": "11:39:28.051",
+        "segment": "2-0",
+        "decoded": false,
+        "start_ms": 167.0
+      },
+      {
+        "at": "11:39:33.406",
+        "segment": "3-0",
+        "decoded": true,
+        "start_ms": 123.0
+      },
+      {
+        "at": "11:39:38.415",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 169.0
+      },
+      {
+        "at": "11:39:40.486",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 184.0
+      },
+      {
+        "at": "11:39:45.586",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 184.0
+      },
+      {
+        "at": "11:39:47.425",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 178.0
+      },
+      {
+        "at": "11:39:51.906",
+        "segment": "0-800001000",
+        "decoded": true,
+        "start_ms": 109.0
+      },
+      {
+        "at": "11:39:52.970",
+        "segment": "1-0",
+        "decoded": true,
+        "start_ms": 112.0
+      },
+      {
+        "at": "11:39:57.490",
+        "segment": "2-0",
+        "decoded": true,
+        "start_ms": 73.0
+      },
+      {
+        "at": "11:40:04.498",
+        "segment": "3-0",
+        "decoded": false,
+        "start_ms": 171.0
+      },
+      {
+        "at": "11:40:07.643",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 193.0
+      },
+      {
+        "at": "11:40:14.115",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 183.0
+      },
+      {
+        "at": "11:40:18.443",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 190.0
+      },
+      {
+        "at": "11:40:20.128",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 158.0
+      },
+      {
+        "at": "11:40:22.719",
+        "segment": "8-0",
+        "decoded": false,
+        "start_ms": 168.0
+      },
+      {
+        "at": "11:40:27.729",
+        "segment": "9-0",
+        "decoded": false,
+        "start_ms": 159.0
+      },
+      {
+        "at": "11:40:36.115",
+        "segment": "1-850020000",
+        "decoded": true,
+        "start_ms": 174.0
+      },
+      {
+        "at": "11:40:39.875",
+        "segment": "2-0",
+        "decoded": true,
+        "start_ms": 130.0
+      },
+      {
+        "at": "11:40:44.865",
+        "segment": "3-0",
+        "decoded": false,
+        "start_ms": 194.0
+      },
+      {
+        "at": "11:40:45.860",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 183.0
+      },
+      {
+        "at": "11:40:50.702",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 184.0
+      },
+      {
+        "at": "11:40:53.972",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 211.0
+      },
+      {
+        "at": "11:40:59.383",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 174.0
+      },
+      {
+        "at": "11:41:03.686",
+        "segment": "8-0",
+        "decoded": false,
+        "start_ms": 231.0
+      },
+      {
+        "at": "11:41:08.133",
+        "segment": "0-800002000",
+        "decoded": true,
+        "start_ms": 136.0
+      },
+      {
+        "at": "11:41:10.244",
+        "segment": "1-0",
+        "decoded": true,
+        "start_ms": 130.0
+      },
+      {
+        "at": "11:41:13.227",
+        "segment": "2-0",
+        "decoded": true,
+        "start_ms": 136.0
+      },
+      {
+        "at": "11:41:19.512",
+        "segment": "3-0",
+        "decoded": false,
+        "start_ms": 203.0
+      },
+      {
+        "at": "11:41:20.832",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 178.0
+      },
+      {
+        "at": "11:41:22.741",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 234.0
+      },
+      {
+        "at": "11:41:24.362",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 222.0
+      },
+      {
+        "at": "11:41:29.168",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 201.0
+      },
+      {
+        "at": "11:41:34.943",
+        "segment": "8-0",
+        "decoded": false,
+        "start_ms": 168.0
+      },
+      {
+        "at": "11:41:38.846",
+        "segment": "9-0",
+        "decoded": false,
+        "start_ms": 202.0
+      },
+      {
+        "at": "11:41:42.279",
+        "segment": "0-800003000",
+        "decoded": true,
+        "start_ms": 136.0
+      },
+      {
+        "at": "11:41:46.226",
+        "segment": "1-0",
+        "decoded": true,
+        "start_ms": 117.0
+      },
+      {
+        "at": "11:41:49.911",
+        "segment": "2-0",
+        "decoded": false,
+        "start_ms": 205.0
+      },
+      {
+        "at": "11:41:53.993",
+        "segment": "3-0",
+        "decoded": false,
+        "start_ms": 184.0
+      },
+      {
+        "at": "11:41:57.434",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 174.0
+      },
+      {
+        "at": "11:42:00.775",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 196.0
+      },
+      {
+        "at": "11:42:02.637",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 255.0
+      },
+      {
+        "at": "11:42:04.878",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 214.0
+      },
+      {
+        "at": "11:42:08.602",
+        "segment": "8-0",
+        "decoded": false,
+        "start_ms": 170.0
+      },
+      {
+        "at": "11:42:16.258",
+        "segment": "9-0",
+        "decoded": false,
+        "start_ms": 169.0
+      },
+      {
+        "at": "11:42:20.724",
+        "segment": "10-0",
+        "decoded": false,
+        "start_ms": 166.0
+      },
+      {
+        "at": "11:42:22.741",
+        "segment": "11-0",
+        "decoded": false,
+        "start_ms": 204.0
+      },
+      {
+        "at": "11:42:27.783",
+        "segment": "12-0",
+        "decoded": false,
+        "start_ms": 209.0
+      },
+      {
+        "at": "11:42:30.975",
+        "segment": "1-850030000",
+        "decoded": true,
+        "start_ms": 96.0
+      },
+      {
+        "at": "11:42:33.483",
+        "segment": "2-0",
+        "decoded": true,
+        "start_ms": 127.0
+      },
+      {
+        "at": "11:42:39.025",
+        "segment": "3-0",
+        "decoded": false,
+        "start_ms": 189.0
+      },
+      {
+        "at": "11:42:40.459",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 181.0
+      },
+      {
+        "at": "11:42:44.229",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 184.0
+      },
+      {
+        "at": "11:42:49.042",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 168.0
+      },
+      {
+        "at": "11:42:55.207",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 194.0
+      },
+      {
+        "at": "11:42:56.784",
+        "segment": "8-0",
+        "decoded": false,
+        "start_ms": 189.0
+      },
+      {
+        "at": "11:43:01.444",
+        "segment": "9-0",
+        "decoded": false,
+        "start_ms": 208.0
+      },
+      {
+        "at": "11:43:07.621",
+        "segment": "10-0",
+        "decoded": false,
+        "start_ms": 186.0
+      },
+      {
+        "at": "11:43:10.592",
+        "segment": "1-850040000",
+        "decoded": true,
+        "start_ms": 146.0
+      },
+      {
+        "at": "11:43:11.976",
+        "segment": "2-0",
+        "decoded": true,
+        "start_ms": 123.0
+      },
+      {
+        "at": "11:43:15.799",
+        "segment": "3-0",
+        "decoded": true,
+        "start_ms": 120.0
+      },
+      {
+        "at": "11:43:20.029",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 207.0
+      },
+      {
+        "at": "11:43:25.039",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 241.0
+      },
+      {
+        "at": "11:43:27.840",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 181.0
+      },
+      {
+        "at": "11:43:31.902",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 165.0
+      },
+      {
+        "at": "11:43:34.395",
+        "segment": "8-0",
+        "decoded": false,
+        "start_ms": 188.0
+      },
+      {
+        "at": "11:43:41.144",
+        "segment": "0-800004000",
+        "decoded": true,
+        "start_ms": 134.0
+      },
+      {
+        "at": "11:43:44.129",
+        "segment": "1-0",
+        "decoded": true,
+        "start_ms": 136.0
+      },
+      {
+        "at": "11:43:45.703",
+        "segment": "2-0",
+        "decoded": false,
+        "start_ms": 178.0
+      },
+      {
+        "at": "11:43:54.475",
+        "segment": "3-0",
+        "decoded": false,
+        "start_ms": 264.0
+      },
+      {
+        "at": "11:43:59.042",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 240.0
+      },
+      {
+        "at": "11:44:02.552",
+        "segment": "4-1",
+        "decoded": true,
+        "start_ms": 135.0
+      },
+      {
+        "at": "11:44:07.809",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 178.0
+      },
+      {
+        "at": "11:44:08.797",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 200.0
+      },
+      {
+        "at": "11:44:14.678",
+        "segment": "1-850050000",
+        "decoded": true,
+        "start_ms": 158.0
+      },
+      {
+        "at": "11:44:23.806",
+        "segment": "2-0",
+        "decoded": true,
+        "start_ms": 130.0
+      },
+      {
+        "at": "11:44:27.541",
+        "segment": "3-0",
+        "decoded": false,
+        "start_ms": 203.0
+      },
+      {
+        "at": "11:44:29.941",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 236.0
+      },
+      {
+        "at": "11:44:35.522",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 188.0
+      },
+      {
+        "at": "11:44:39.183",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 224.0
+      },
+      {
+        "at": "11:44:41.272",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 230.0
+      },
+      {
+        "at": "11:44:51.467",
+        "segment": "1-850060000",
+        "decoded": true,
+        "start_ms": 164.0
+      },
+      {
+        "at": "11:44:54.504",
+        "segment": "2-0",
+        "decoded": true,
+        "start_ms": 143.0
+      },
+      {
+        "at": "11:44:56.796",
+        "segment": "3-0",
+        "decoded": false,
+        "start_ms": 252.0
+      },
+      {
+        "at": "11:45:00.670",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 198.0
+      },
+      {
+        "at": "11:45:06.866",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 198.0
+      },
+      {
+        "at": "11:45:08.362",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 219.0
+      },
+      {
+        "at": "11:45:11.341",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 186.0
+      },
+      {
+        "at": "11:45:17.792",
+        "segment": "8-0",
+        "decoded": false,
+        "start_ms": 216.0
+      },
+      {
+        "at": "11:45:20.895",
+        "segment": "9-0",
+        "decoded": false,
+        "start_ms": 250.0
+      },
+      {
+        "at": "11:45:28.303",
+        "segment": "1-850070000",
+        "decoded": true,
+        "start_ms": 110.0
+      },
+      {
+        "at": "11:45:33.802",
+        "segment": "2-0",
+        "decoded": true,
+        "start_ms": 154.0
+      },
+      {
+        "at": "11:45:35.976",
+        "segment": "3-0",
+        "decoded": false,
+        "start_ms": 219.0
+      },
+      {
+        "at": "11:45:39.795",
+        "segment": "4-0",
+        "decoded": false,
+        "start_ms": 259.0
+      },
+      {
+        "at": "11:45:41.054",
+        "segment": "5-0",
+        "decoded": false,
+        "start_ms": 248.0
+      },
+      {
+        "at": "11:45:45.134",
+        "segment": "6-0",
+        "decoded": false,
+        "start_ms": 254.0
+      },
+      {
+        "at": "11:45:51.520",
+        "segment": "7-0",
+        "decoded": false,
+        "start_ms": 246.0
+      },
+      {
+        "at": "11:45:58.855",
+        "segment": "8-0",
+        "decoded": false,
+        "start_ms": 232.0
+      },
+      {
+        "at": "11:46:02.476",
+        "segment": "9-0",
+        "decoded": false,
+        "start_ms": 297.0
+      }
+    ]
+  },
+  "82": {
+    "window": [
+      "11:51:40.000",
+      "11:52:07.293"
+    ],
+    "unit": "prepared adoption to AVPlayer playing event; not acoustic measurement",
+    "groups_by_decoded": {
+      "True": {
+        "n": 5,
+        "median_ms": 109.0,
+        "p95_ms": 115.0,
+        "max_ms": 115.0
+      }
+    },
+    "events": [
+      {
+        "at": "11:51:52.983",
+        "segment": "1-0",
+        "decoded": true,
+        "start_ms": 96.0
+      },
+      {
+        "at": "11:51:55.439",
+        "segment": "2-0",
+        "decoded": true,
+        "start_ms": 112.0
+      },
+      {
+        "at": "11:51:56.172",
+        "segment": "3-0",
+        "decoded": true,
+        "start_ms": 109.0
+      },
+      {
+        "at": "11:51:59.486",
+        "segment": "4-0",
+        "decoded": true,
+        "start_ms": 103.0
+      },
+      {
+        "at": "11:52:03.339",
+        "segment": "5-0",
+        "decoded": true,
+        "start_ms": 115.0
+      }
+    ]
+  }
+}

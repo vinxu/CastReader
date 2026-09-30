@@ -38,7 +38,7 @@ const services = {
   'UR/engine': {
     api: {
       getCurrentReadingRange() {
-        return {
+        return globalThis.__koboReadingRange || {
           percentageOfBook: 0.25,
           pagesOfBook: 100,
           begin: { pageIndexInBook: 24 },
@@ -285,8 +285,11 @@ async function run() {
     p.sourceEnd > p.sourceStart
   ), 'stable source coordinates are missing');
   assert(
-    paragraphs.every(p => !p.speechText || p.speechText === p.text),
-    'current page must not speak text from a future CSS column'
+    paragraphs.every((p, index) => !p.speechText ||
+      (index === paragraphs.length - 1 && p.speechText.startsWith(p.text) &&
+       p.speechText.length >= p.text.length &&
+       !p.speechText.includes('OFFSCREEN PREFETCH SENTINEL'))),
+    'only the visible tail may prepare its same-source natural sentence; current-page text remains clipped'
   );
   assert(KoboFixture.koboSignature().startsWith('kpg-'), 'page signature missing');
   const pagePreview = KoboFixture.extractKoboNextPagePreview();
@@ -315,6 +318,16 @@ async function run() {
     KoboFixture.koboSemanticTransportReady(),
     'Kobo semantic reader service did not become ready'
   );
+  const bookmarkBook = 'f0000001-1111-4111-8111-000000000001';
+  const bookmarkRange = {pagesOfBook:100, begin:{pageIndexInBook:77}, end:{pageIndexInBook:77}};
+  assert(KoboFixture.koboReadingLocationFromRange(bookmarkBook, bookmarkRange)?.percentage === .78,
+    'saved native percentage must address the visible page');
+  assert(KoboFixture.koboReadingLocationFromRange(bookmarkBook,
+    {...bookmarkRange,end:{pageIndexInBook:78}}) === null, 'do not guess a spread bookmark');
+  assert(KoboFixture.koboReadingLocationFromRange(bookmarkBook,
+    {...bookmarkRange,pagesOfBook:Infinity}) === null, 'non-finite page counts cannot be persisted');
+  assert(KoboFixture.koboReadingLocationFromRange('wrong-book',bookmarkRange) === null,
+    'native position must carry canonical book identity');
   assert(
     KoboFixture.koboProgressSliderReady(),
     'Kobo footer progress slider was not discovered'
@@ -529,12 +542,44 @@ async function run() {
   messages.length = 0;
   highlightClears = 0;
 
+  // A confirmed final native page completes without any transport side
+  // effect. A rounded 100% or missing indices is not book-end evidence.
+  assert(KoboFixture.koboBookEndFromRange({percentageOfBook:1,pagesOfBook:100}) === null,
+    'rounded progress cannot prove book end');
+  assert(KoboFixture.koboBookEndFromRange({pagesOfBook:100,begin:{pageIndexInBook:98},end:{pageIndexInBook:98}}) === null,
+    'penultimate page must remain navigable');
+  assert(KoboFixture.koboBookEndFromRange({pagesOfBook:100,begin:{pageIndexInBook:100},end:{pageIndexInBook:99}}) === null,
+    'reversed native range cannot prove book end');
+  window.__koboReadingRange = {pagesOfBook:100,percentageOfBook:1,
+    begin:{pageIndexInBook:99},end:{pageIndexInBook:99}};
+  const clicksBeforeEnd = clicks;
+  const endAccepted = window.CastReaderKobo.nextPage({turnID:'fixture-book-end',
+    baselineSignature:KoboFixture.koboSignature(),originFrameSessionID:'kbf-fixture'});
+  assert(endAccepted === false, 'book end must not launch a native turn');
+  assert(window.__koboURProgressTurns.length === 0 && clicks === clicksBeforeEnd,
+    'book end must not move the slider or click another page');
+  assert(!messages.some(message => message.type === 'googleBooksTurnRequested'),
+    'book end must not announce a physical turn');
+  assert(messages.some(message => message.type === 'googleBooksTurnFailed' &&
+    message.payload.turnID === 'fixture-book-end' && message.payload.lateEligible === false &&
+    message.payload.nativeBookEnd?.lastPage === 99), 'book end lost exact owned completion');
+  delete window.__koboReadingRange;
+  messages.length = 0;
+
+  // This case asserts the interval BEFORE native visual departure. Earlier
+  // manual cases mutate immediately; leaving that callback installed makes
+  // the request change the page before the assertion and correctly clears
+  // its highlight on the next animation frame. Hold this native operation
+  // pending so the subsequent manual-intent cancellation is deterministic.
+  window.__koboApplyProgressTurn = undefined;
   const autoStarted = window.CastReaderKobo.nextPage({
     turnID: 'fixture-auto',
     baselineSignature: KoboFixture.koboSignature(),
     originFrameSessionID: 'kbf-fixture'
   });
   assert(autoStarted === true, 'automatic turn was not accepted');
+  assert(window.CastReaderKobo.navigationReady() === false,
+    'checkpoint recovery must wait while an existing native turn is settling');
   await new Promise(resolve => setTimeout(resolve, 30));
   assert(clicks === 1, 'semantic Kobo turn must not click the desktop page control');
   assert(arrowRightCount === 0, 'automatic Kobo turn must not dispatch an untrusted key');

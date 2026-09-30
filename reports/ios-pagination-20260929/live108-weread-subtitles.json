@@ -1,0 +1,6253 @@
+{
+  "candidate": 108,
+  "source_manifest": "candidate-108.json",
+  "raw_log": "live108-weread-subtitles-reader.log.gz",
+  "raw_sha256": "1feb69b789a263215e35e1498407b77f6a822b97c2803088b660430008d47d91",
+  "platform": "weread",
+  "book": "La Dame aux Camelias",
+  "mode": "Explain",
+  "language": "en",
+  "voice": "af_heart",
+  "rate": 1.5,
+  "first_playing": "22:07:36.895",
+  "last_playing": "22:21:36.319",
+  "media_timing_counts": {
+    "words": 72,
+    "estimated": 1
+  },
+  "caption_cues": 516,
+  "exact_word_start_cues": 507,
+  "noninitial_media_clock_lag_seconds": {
+    "count": 433,
+    "min": 0.0009999999999976694,
+    "p95": 0.04899999999999949,
+    "max": 7.103999999999999
+  },
+  "clock_mismatch_events": [
+    {
+      "wall": "22:19:22.966",
+      "media": "0-0",
+      "range": [
+        244,
+        25
+      ],
+      "start": 14.328,
+      "clock": 21.432,
+      "exact": true
+    }
+  ],
+  "estimated_media": [
+    {
+      "wall": "22:10:15.168",
+      "media": "0-0",
+      "cue_count": 9,
+      "timing": "estimated",
+      "width": 366
+    }
+  ],
+  "automatic_page_commits": 24,
+  "visual_observations": [
+    {
+      "wall": "22:17",
+      "result": "Single complete visible line, no ellipsis, original text/marks retained; CUA mirror screenshot in chat"
+    }
+  ],
+  "end_state": "WeRead native page displayed load/network failure at22:21:36; Explain stopped. Cause not attributed to caption changes.",
+  "status": "not_final_pass",
+  "open": [
+    "Queued prior-page time briefly selected new pages last caption at22:19:22.966; candidate109 adds media-instance/session/generation fencing.",
+    "One block had estimated caption timing; not counted as exact acceptance."
+  ],
+  "acoustic_verification": false,
+  "cues": [
+    {
+      "wall": "22:07:36.798",
+      "media": "0-0",
+      "range": [
+        0,
+        30
+      ],
+      "start": 0.084,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:07:36.844",
+      "media": "0-0",
+      "range": [
+        0,
+        50
+      ],
+      "start": 0.084,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:07:38.925",
+      "media": "0-0",
+      "range": [
+        51,
+        43
+      ],
+      "start": 2.909,
+      "clock": 2.95,
+      "exact": true
+    },
+    {
+      "wall": "22:07:41.091",
+      "media": "0-0",
+      "range": [
+        95,
+        41
+      ],
+      "start": 6.159,
+      "clock": 6.2,
+      "exact": true
+    },
+    {
+      "wall": "22:07:42.725",
+      "media": "0-0",
+      "range": [
+        137,
+        11
+      ],
+      "start": 8.634,
+      "clock": 8.65,
+      "exact": true
+    },
+    {
+      "wall": "22:07:43.558",
+      "media": "0-0",
+      "range": [
+        149,
+        43
+      ],
+      "start": 9.859,
+      "clock": 9.9,
+      "exact": true
+    },
+    {
+      "wall": "22:07:44.994",
+      "media": "0-0",
+      "range": [
+        193,
+        48
+      ],
+      "start": 12.009,
+      "clock": 12.055,
+      "exact": true
+    },
+    {
+      "wall": "22:07:47.025",
+      "media": "0-0",
+      "range": [
+        242,
+        46
+      ],
+      "start": 15.059,
+      "clock": 15.1,
+      "exact": true
+    },
+    {
+      "wall": "22:07:48.858",
+      "media": "0-0",
+      "range": [
+        289,
+        45
+      ],
+      "start": 17.809,
+      "clock": 17.85,
+      "exact": true
+    },
+    {
+      "wall": "22:07:51.018",
+      "media": "1-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.063,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:07:52.778",
+      "media": "1-0",
+      "range": [
+        47,
+        19
+      ],
+      "start": 2.513,
+      "clock": 2.55,
+      "exact": true
+    },
+    {
+      "wall": "22:07:54.011",
+      "media": "1-0",
+      "range": [
+        67,
+        44
+      ],
+      "start": 4.388,
+      "clock": 4.4,
+      "exact": true
+    },
+    {
+      "wall": "22:07:55.677",
+      "media": "1-0",
+      "range": [
+        112,
+        38
+      ],
+      "start": 6.863,
+      "clock": 6.9,
+      "exact": true
+    },
+    {
+      "wall": "22:07:56.878",
+      "media": "1-0",
+      "range": [
+        151,
+        45
+      ],
+      "start": 8.663,
+      "clock": 8.7,
+      "exact": true
+    },
+    {
+      "wall": "22:07:58.711",
+      "media": "1-0",
+      "range": [
+        197,
+        45
+      ],
+      "start": 11.413,
+      "clock": 11.45,
+      "exact": true
+    },
+    {
+      "wall": "22:08:00.311",
+      "media": "1-0",
+      "range": [
+        243,
+        38
+      ],
+      "start": 13.813,
+      "clock": 13.85,
+      "exact": true
+    },
+    {
+      "wall": "22:08:02.030",
+      "media": "2-0",
+      "range": [
+        0,
+        48
+      ],
+      "start": 0.104,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:08:03.998",
+      "media": "2-0",
+      "range": [
+        49,
+        40
+      ],
+      "start": 2.804,
+      "clock": 2.85,
+      "exact": true
+    },
+    {
+      "wall": "22:08:05.664",
+      "media": "2-0",
+      "range": [
+        90,
+        49
+      ],
+      "start": 5.304,
+      "clock": 5.35,
+      "exact": true
+    },
+    {
+      "wall": "22:08:07.231",
+      "media": "2-0",
+      "range": [
+        140,
+        49
+      ],
+      "start": 7.679,
+      "clock": 7.7,
+      "exact": true
+    },
+    {
+      "wall": "22:08:08.964",
+      "media": "2-0",
+      "range": [
+        190,
+        7
+      ],
+      "start": 10.254,
+      "clock": 10.3,
+      "exact": true
+    },
+    {
+      "wall": "22:08:09.629",
+      "media": "0-0",
+      "range": [
+        0,
+        44
+      ],
+      "start": 0.077,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:08:11.321",
+      "media": "0-0",
+      "range": [
+        45,
+        47
+      ],
+      "start": 2.402,
+      "clock": 2.45,
+      "exact": true
+    },
+    {
+      "wall": "22:08:13.221",
+      "media": "0-0",
+      "range": [
+        93,
+        26
+      ],
+      "start": 5.252,
+      "clock": 5.3,
+      "exact": true
+    },
+    {
+      "wall": "22:08:14.821",
+      "media": "0-0",
+      "range": [
+        120,
+        48
+      ],
+      "start": 7.677,
+      "clock": 7.7,
+      "exact": true
+    },
+    {
+      "wall": "22:08:16.854",
+      "media": "0-0",
+      "range": [
+        169,
+        46
+      ],
+      "start": 10.727,
+      "clock": 10.75,
+      "exact": true
+    },
+    {
+      "wall": "22:08:18.354",
+      "media": "0-0",
+      "range": [
+        216,
+        11
+      ],
+      "start": 12.952,
+      "clock": 13.0,
+      "exact": true
+    },
+    {
+      "wall": "22:08:18.979",
+      "media": "1-0",
+      "range": [
+        0,
+        39
+      ],
+      "start": 0.077,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:08:20.604",
+      "media": "1-0",
+      "range": [
+        40,
+        44
+      ],
+      "start": 2.327,
+      "clock": 2.35,
+      "exact": true
+    },
+    {
+      "wall": "22:08:22.604",
+      "media": "1-0",
+      "range": [
+        85,
+        42
+      ],
+      "start": 5.302,
+      "clock": 5.35,
+      "exact": true
+    },
+    {
+      "wall": "22:08:24.337",
+      "media": "1-0",
+      "range": [
+        128,
+        11
+      ],
+      "start": 7.927,
+      "clock": 7.95,
+      "exact": true
+    },
+    {
+      "wall": "22:08:25.138",
+      "media": "1-0",
+      "range": [
+        140,
+        45
+      ],
+      "start": 9.127,
+      "clock": 9.15,
+      "exact": true
+    },
+    {
+      "wall": "22:08:26.571",
+      "media": "1-0",
+      "range": [
+        186,
+        45
+      ],
+      "start": 11.277,
+      "clock": 11.3,
+      "exact": true
+    },
+    {
+      "wall": "22:08:28.171",
+      "media": "1-0",
+      "range": [
+        232,
+        47
+      ],
+      "start": 13.689,
+      "clock": 13.7,
+      "exact": true
+    },
+    {
+      "wall": "22:08:30.271",
+      "media": "1-0",
+      "range": [
+        280,
+        46
+      ],
+      "start": 16.814,
+      "clock": 16.85,
+      "exact": true
+    },
+    {
+      "wall": "22:08:32.071",
+      "media": "1-0",
+      "range": [
+        327,
+        47
+      ],
+      "start": 19.514,
+      "clock": 19.55,
+      "exact": true
+    },
+    {
+      "wall": "22:08:33.871",
+      "media": "1-0",
+      "range": [
+        375,
+        9
+      ],
+      "start": 22.239,
+      "clock": 22.25,
+      "exact": true
+    },
+    {
+      "wall": "22:08:34.469",
+      "media": "2-0",
+      "range": [
+        0,
+        47
+      ],
+      "start": 0.097,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:08:36.527",
+      "media": "2-0",
+      "range": [
+        48,
+        48
+      ],
+      "start": 2.997,
+      "clock": 3.0,
+      "exact": true
+    },
+    {
+      "wall": "22:08:38.627",
+      "media": "2-0",
+      "range": [
+        97,
+        45
+      ],
+      "start": 6.147,
+      "clock": 6.15,
+      "exact": true
+    },
+    {
+      "wall": "22:08:40.327",
+      "media": "2-0",
+      "range": [
+        143,
+        5
+      ],
+      "start": 8.672,
+      "clock": 8.7,
+      "exact": true
+    },
+    {
+      "wall": "22:08:41.061",
+      "media": "2-0",
+      "range": [
+        149,
+        48
+      ],
+      "start": 9.797,
+      "clock": 9.8,
+      "exact": true
+    },
+    {
+      "wall": "22:08:42.894",
+      "media": "2-0",
+      "range": [
+        198,
+        47
+      ],
+      "start": 12.547,
+      "clock": 12.55,
+      "exact": true
+    },
+    {
+      "wall": "22:08:45.060",
+      "media": "2-0",
+      "range": [
+        246,
+        42
+      ],
+      "start": 15.75,
+      "clock": 15.8,
+      "exact": true
+    },
+    {
+      "wall": "22:08:47.060",
+      "media": "2-0",
+      "range": [
+        289,
+        44
+      ],
+      "start": 18.75,
+      "clock": 18.8,
+      "exact": true
+    },
+    {
+      "wall": "22:08:48.660",
+      "media": "2-0",
+      "range": [
+        334,
+        17
+      ],
+      "start": 21.15,
+      "clock": 21.2,
+      "exact": true
+    },
+    {
+      "wall": "22:08:49.633",
+      "media": "0-0",
+      "range": [
+        0,
+        43
+      ],
+      "start": 0.106,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:08:51.164",
+      "media": "0-0",
+      "range": [
+        44,
+        43
+      ],
+      "start": 2.181,
+      "clock": 2.2,
+      "exact": true
+    },
+    {
+      "wall": "22:08:52.997",
+      "media": "0-0",
+      "range": [
+        88,
+        39
+      ],
+      "start": 4.906,
+      "clock": 4.95,
+      "exact": true
+    },
+    {
+      "wall": "22:08:54.564",
+      "media": "0-0",
+      "range": [
+        128,
+        49
+      ],
+      "start": 7.256,
+      "clock": 7.3,
+      "exact": true
+    },
+    {
+      "wall": "22:08:56.664",
+      "media": "0-0",
+      "range": [
+        178,
+        15
+      ],
+      "start": 10.431,
+      "clock": 10.45,
+      "exact": true
+    },
+    {
+      "wall": "22:08:57.497",
+      "media": "0-0",
+      "range": [
+        194,
+        49
+      ],
+      "start": 11.651,
+      "clock": 11.7,
+      "exact": true
+    },
+    {
+      "wall": "22:08:59.397",
+      "media": "0-0",
+      "range": [
+        244,
+        43
+      ],
+      "start": 14.526,
+      "clock": 14.55,
+      "exact": true
+    },
+    {
+      "wall": "22:09:01.164",
+      "media": "0-0",
+      "range": [
+        288,
+        45
+      ],
+      "start": 17.151,
+      "clock": 17.2,
+      "exact": true
+    },
+    {
+      "wall": "22:09:02.763",
+      "media": "0-0",
+      "range": [
+        334,
+        38
+      ],
+      "start": 19.576,
+      "clock": 19.6,
+      "exact": true
+    },
+    {
+      "wall": "22:09:04.589",
+      "media": "1-0",
+      "range": [
+        0,
+        42
+      ],
+      "start": 0.063,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:09:06.414",
+      "media": "1-0",
+      "range": [
+        43,
+        43
+      ],
+      "start": 2.638,
+      "clock": 2.65,
+      "exact": true
+    },
+    {
+      "wall": "22:09:08.047",
+      "media": "1-0",
+      "range": [
+        87,
+        43
+      ],
+      "start": 5.088,
+      "clock": 5.1,
+      "exact": true
+    },
+    {
+      "wall": "22:09:09.746",
+      "media": "1-0",
+      "range": [
+        131,
+        16
+      ],
+      "start": 7.638,
+      "clock": 7.65,
+      "exact": true
+    },
+    {
+      "wall": "22:09:10.747",
+      "media": "1-0",
+      "range": [
+        148,
+        48
+      ],
+      "start": 9.138,
+      "clock": 9.15,
+      "exact": true
+    },
+    {
+      "wall": "22:09:12.647",
+      "media": "1-0",
+      "range": [
+        197,
+        49
+      ],
+      "start": 11.963,
+      "clock": 12.0,
+      "exact": true
+    },
+    {
+      "wall": "22:09:14.513",
+      "media": "1-0",
+      "range": [
+        247,
+        5
+      ],
+      "start": 14.763,
+      "clock": 14.8,
+      "exact": true
+    },
+    {
+      "wall": "22:09:14.974",
+      "media": "1-1",
+      "range": [
+        0,
+        42
+      ],
+      "start": 0.09,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:09:16.970",
+      "media": "1-1",
+      "range": [
+        43,
+        42
+      ],
+      "start": 2.865,
+      "clock": 2.9,
+      "exact": true
+    },
+    {
+      "wall": "22:09:18.904",
+      "media": "1-1",
+      "range": [
+        86,
+        45
+      ],
+      "start": 5.79,
+      "clock": 5.8,
+      "exact": true
+    },
+    {
+      "wall": "22:09:20.837",
+      "media": "1-1",
+      "range": [
+        132,
+        44
+      ],
+      "start": 8.665,
+      "clock": 8.7,
+      "exact": true
+    },
+    {
+      "wall": "22:09:22.803",
+      "media": "1-1",
+      "range": [
+        177,
+        47
+      ],
+      "start": 11.64,
+      "clock": 11.65,
+      "exact": true
+    },
+    {
+      "wall": "22:09:24.757",
+      "media": "2-0",
+      "range": [
+        0,
+        50
+      ],
+      "start": 0.095,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:09:26.783",
+      "media": "2-0",
+      "range": [
+        51,
+        42
+      ],
+      "start": 2.92,
+      "clock": 2.95,
+      "exact": true
+    },
+    {
+      "wall": "22:09:28.650",
+      "media": "2-0",
+      "range": [
+        94,
+        10
+      ],
+      "start": 5.72,
+      "clock": 5.75,
+      "exact": true
+    },
+    {
+      "wall": "22:09:29.450",
+      "media": "2-0",
+      "range": [
+        105,
+        42
+      ],
+      "start": 6.945,
+      "clock": 6.95,
+      "exact": true
+    },
+    {
+      "wall": "22:09:31.083",
+      "media": "2-0",
+      "range": [
+        148,
+        45
+      ],
+      "start": 9.37,
+      "clock": 9.4,
+      "exact": true
+    },
+    {
+      "wall": "22:09:33.117",
+      "media": "2-0",
+      "range": [
+        194,
+        43
+      ],
+      "start": 12.445,
+      "clock": 12.45,
+      "exact": true
+    },
+    {
+      "wall": "22:09:34.750",
+      "media": "2-0",
+      "range": [
+        238,
+        14
+      ],
+      "start": 14.87,
+      "clock": 14.9,
+      "exact": true
+    },
+    {
+      "wall": "22:09:35.663",
+      "media": "0-0",
+      "range": [
+        0,
+        48
+      ],
+      "start": 0.081,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:09:37.626",
+      "media": "0-0",
+      "range": [
+        49,
+        43
+      ],
+      "start": 2.806,
+      "clock": 2.85,
+      "exact": true
+    },
+    {
+      "wall": "22:09:39.527",
+      "media": "0-0",
+      "range": [
+        93,
+        42
+      ],
+      "start": 5.681,
+      "clock": 5.7,
+      "exact": true
+    },
+    {
+      "wall": "22:09:41.360",
+      "media": "0-0",
+      "range": [
+        136,
+        47
+      ],
+      "start": 8.406,
+      "clock": 8.45,
+      "exact": true
+    },
+    {
+      "wall": "22:09:43.326",
+      "media": "0-0",
+      "range": [
+        184,
+        43
+      ],
+      "start": 11.381,
+      "clock": 11.4,
+      "exact": true
+    },
+    {
+      "wall": "22:09:44.826",
+      "media": "0-0",
+      "range": [
+        228,
+        44
+      ],
+      "start": 13.606,
+      "clock": 13.65,
+      "exact": true
+    },
+    {
+      "wall": "22:09:46.560",
+      "media": "0-0",
+      "range": [
+        273,
+        13
+      ],
+      "start": 16.231,
+      "clock": 16.25,
+      "exact": true
+    },
+    {
+      "wall": "22:09:47.388",
+      "media": "1-0",
+      "range": [
+        0,
+        45
+      ],
+      "start": 0.063,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:09:49.313",
+      "media": "1-0",
+      "range": [
+        46,
+        21
+      ],
+      "start": 2.788,
+      "clock": 2.8,
+      "exact": true
+    },
+    {
+      "wall": "22:09:50.313",
+      "media": "1-0",
+      "range": [
+        68,
+        43
+      ],
+      "start": 4.288,
+      "clock": 4.3,
+      "exact": true
+    },
+    {
+      "wall": "22:09:52.046",
+      "media": "1-0",
+      "range": [
+        112,
+        44
+      ],
+      "start": 6.888,
+      "clock": 6.9,
+      "exact": true
+    },
+    {
+      "wall": "22:09:53.779",
+      "media": "1-0",
+      "range": [
+        157,
+        47
+      ],
+      "start": 9.488,
+      "clock": 9.5,
+      "exact": true
+    },
+    {
+      "wall": "22:09:55.980",
+      "media": "1-0",
+      "range": [
+        205,
+        36
+      ],
+      "start": 12.788,
+      "clock": 12.8,
+      "exact": true
+    },
+    {
+      "wall": "22:09:57.413",
+      "media": "1-0",
+      "range": [
+        242,
+        49
+      ],
+      "start": 14.913,
+      "clock": 14.95,
+      "exact": true
+    },
+    {
+      "wall": "22:09:59.346",
+      "media": "1-0",
+      "range": [
+        292,
+        5
+      ],
+      "start": 17.813,
+      "clock": 17.85,
+      "exact": true
+    },
+    {
+      "wall": "22:09:59.877",
+      "media": "2-0",
+      "range": [
+        0,
+        43
+      ],
+      "start": 0.092,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:10:02.080",
+      "media": "2-0",
+      "range": [
+        44,
+        48
+      ],
+      "start": 3.192,
+      "clock": 3.2,
+      "exact": true
+    },
+    {
+      "wall": "22:10:03.946",
+      "media": "2-0",
+      "range": [
+        93,
+        46
+      ],
+      "start": 5.967,
+      "clock": 6.0,
+      "exact": true
+    },
+    {
+      "wall": "22:10:06.013",
+      "media": "2-0",
+      "range": [
+        140,
+        21
+      ],
+      "start": 9.092,
+      "clock": 9.1,
+      "exact": true
+    },
+    {
+      "wall": "22:10:07.313",
+      "media": "2-0",
+      "range": [
+        162,
+        42
+      ],
+      "start": 11.017,
+      "clock": 11.05,
+      "exact": true
+    },
+    {
+      "wall": "22:10:08.913",
+      "media": "2-0",
+      "range": [
+        205,
+        37
+      ],
+      "start": 13.442,
+      "clock": 13.45,
+      "exact": true
+    },
+    {
+      "wall": "22:10:10.713",
+      "media": "2-0",
+      "range": [
+        243,
+        48
+      ],
+      "start": 16.106,
+      "clock": 16.15,
+      "exact": true
+    },
+    {
+      "wall": "22:10:12.713",
+      "media": "2-0",
+      "range": [
+        292,
+        47
+      ],
+      "start": 19.106,
+      "clock": 19.15,
+      "exact": true
+    },
+    {
+      "wall": "22:10:14.313",
+      "media": "2-0",
+      "range": [
+        340,
+        15
+      ],
+      "start": 21.531,
+      "clock": 21.55,
+      "exact": true
+    },
+    {
+      "wall": "22:10:15.168",
+      "media": "0-0",
+      "range": [
+        0,
+        49
+      ],
+      "start": 0.0,
+      "clock": 0.0,
+      "exact": false
+    },
+    {
+      "wall": "22:10:17.135",
+      "media": "0-0",
+      "range": [
+        50,
+        33
+      ],
+      "start": 2.838,
+      "clock": 2.85,
+      "exact": false
+    },
+    {
+      "wall": "22:10:18.469",
+      "media": "0-0",
+      "range": [
+        84,
+        48
+      ],
+      "start": 4.802,
+      "clock": 4.85,
+      "exact": false
+    },
+    {
+      "wall": "22:10:20.336",
+      "media": "0-0",
+      "range": [
+        133,
+        51
+      ],
+      "start": 7.639,
+      "clock": 7.65,
+      "exact": false
+    },
+    {
+      "wall": "22:10:22.269",
+      "media": "0-0",
+      "range": [
+        185,
+        36
+      ],
+      "start": 10.55,
+      "clock": 10.55,
+      "exact": false
+    },
+    {
+      "wall": "22:10:23.636",
+      "media": "0-0",
+      "range": [
+        222,
+        44
+      ],
+      "start": 12.587,
+      "clock": 12.6,
+      "exact": false
+    },
+    {
+      "wall": "22:10:25.402",
+      "media": "0-0",
+      "range": [
+        267,
+        47
+      ],
+      "start": 15.206,
+      "clock": 15.25,
+      "exact": false
+    },
+    {
+      "wall": "22:10:27.336",
+      "media": "0-0",
+      "range": [
+        315,
+        43
+      ],
+      "start": 18.117,
+      "clock": 18.15,
+      "exact": false
+    },
+    {
+      "wall": "22:10:29.035",
+      "media": "0-0",
+      "range": [
+        359,
+        40
+      ],
+      "start": 20.663,
+      "clock": 20.7,
+      "exact": false
+    },
+    {
+      "wall": "22:10:30.667",
+      "media": "1-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.076,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:10:32.369",
+      "media": "1-0",
+      "range": [
+        47,
+        38
+      ],
+      "start": 2.426,
+      "clock": 2.45,
+      "exact": true
+    },
+    {
+      "wall": "22:10:34.002",
+      "media": "1-0",
+      "range": [
+        86,
+        12
+      ],
+      "start": 4.876,
+      "clock": 4.9,
+      "exact": true
+    },
+    {
+      "wall": "22:10:34.835",
+      "media": "1-0",
+      "range": [
+        99,
+        46
+      ],
+      "start": 6.101,
+      "clock": 6.15,
+      "exact": true
+    },
+    {
+      "wall": "22:10:36.469",
+      "media": "1-0",
+      "range": [
+        146,
+        8
+      ],
+      "start": 8.551,
+      "clock": 8.6,
+      "exact": true
+    },
+    {
+      "wall": "22:10:37.169",
+      "media": "1-0",
+      "range": [
+        155,
+        49
+      ],
+      "start": 9.601,
+      "clock": 9.65,
+      "exact": true
+    },
+    {
+      "wall": "22:10:38.936",
+      "media": "1-0",
+      "range": [
+        205,
+        23
+      ],
+      "start": 12.276,
+      "clock": 12.3,
+      "exact": true
+    },
+    {
+      "wall": "22:10:39.969",
+      "media": "1-0",
+      "range": [
+        229,
+        44
+      ],
+      "start": 13.809,
+      "clock": 13.85,
+      "exact": true
+    },
+    {
+      "wall": "22:10:41.936",
+      "media": "1-0",
+      "range": [
+        274,
+        48
+      ],
+      "start": 16.758,
+      "clock": 16.8,
+      "exact": true
+    },
+    {
+      "wall": "22:10:43.969",
+      "media": "1-0",
+      "range": [
+        323,
+        5
+      ],
+      "start": 19.808,
+      "clock": 19.85,
+      "exact": true
+    },
+    {
+      "wall": "22:10:44.533",
+      "media": "2-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.125,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:10:46.729",
+      "media": "2-0",
+      "range": [
+        47,
+        46
+      ],
+      "start": 3.175,
+      "clock": 3.2,
+      "exact": true
+    },
+    {
+      "wall": "22:10:48.462",
+      "media": "2-0",
+      "range": [
+        94,
+        39
+      ],
+      "start": 5.775,
+      "clock": 5.8,
+      "exact": true
+    },
+    {
+      "wall": "22:10:50.264",
+      "media": "2-0",
+      "range": [
+        134,
+        44
+      ],
+      "start": 8.475,
+      "clock": 8.5,
+      "exact": true
+    },
+    {
+      "wall": "22:10:52.132",
+      "media": "2-0",
+      "range": [
+        179,
+        45
+      ],
+      "start": 11.25,
+      "clock": 11.3,
+      "exact": true
+    },
+    {
+      "wall": "22:10:54.134",
+      "media": "2-0",
+      "range": [
+        225,
+        45
+      ],
+      "start": 14.275,
+      "clock": 14.3,
+      "exact": true
+    },
+    {
+      "wall": "22:10:55.902",
+      "media": "2-0",
+      "range": [
+        271,
+        38
+      ],
+      "start": 16.9,
+      "clock": 16.95,
+      "exact": true
+    },
+    {
+      "wall": "22:10:57.570",
+      "media": "2-0",
+      "range": [
+        310,
+        19
+      ],
+      "start": 19.425,
+      "clock": 19.45,
+      "exact": true
+    },
+    {
+      "wall": "22:10:58.667",
+      "media": "0-0",
+      "range": [
+        0,
+        50
+      ],
+      "start": 0.07,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:11:00.978",
+      "media": "0-0",
+      "range": [
+        51,
+        47
+      ],
+      "start": 3.32,
+      "clock": 3.35,
+      "exact": true
+    },
+    {
+      "wall": "22:11:02.812",
+      "media": "0-0",
+      "range": [
+        99,
+        46
+      ],
+      "start": 6.095,
+      "clock": 6.1,
+      "exact": true
+    },
+    {
+      "wall": "22:11:04.713",
+      "media": "0-0",
+      "range": [
+        146,
+        24
+      ],
+      "start": 8.92,
+      "clock": 8.95,
+      "exact": true
+    },
+    {
+      "wall": "22:11:05.881",
+      "media": "0-0",
+      "range": [
+        171,
+        41
+      ],
+      "start": 10.691,
+      "clock": 10.7,
+      "exact": true
+    },
+    {
+      "wall": "22:11:07.481",
+      "media": "0-0",
+      "range": [
+        213,
+        46
+      ],
+      "start": 13.066,
+      "clock": 13.1,
+      "exact": true
+    },
+    {
+      "wall": "22:11:09.549",
+      "media": "0-0",
+      "range": [
+        260,
+        30
+      ],
+      "start": 16.191,
+      "clock": 16.2,
+      "exact": true
+    },
+    {
+      "wall": "22:11:11.182",
+      "media": "0-0",
+      "range": [
+        291,
+        46
+      ],
+      "start": 18.641,
+      "clock": 18.65,
+      "exact": true
+    },
+    {
+      "wall": "22:11:12.949",
+      "media": "0-0",
+      "range": [
+        338,
+        41
+      ],
+      "start": 21.291,
+      "clock": 21.3,
+      "exact": true
+    },
+    {
+      "wall": "22:11:14.716",
+      "media": "0-0",
+      "range": [
+        380,
+        10
+      ],
+      "start": 23.916,
+      "clock": 23.95,
+      "exact": true
+    },
+    {
+      "wall": "22:11:15.356",
+      "media": "1-0",
+      "range": [
+        0,
+        44
+      ],
+      "start": 0.097,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:11:16.953",
+      "media": "1-0",
+      "range": [
+        45,
+        45
+      ],
+      "start": 2.297,
+      "clock": 2.3,
+      "exact": true
+    },
+    {
+      "wall": "22:11:18.787",
+      "media": "1-0",
+      "range": [
+        91,
+        39
+      ],
+      "start": 5.047,
+      "clock": 5.05,
+      "exact": true
+    },
+    {
+      "wall": "22:11:20.254",
+      "media": "1-0",
+      "range": [
+        131,
+        9
+      ],
+      "start": 7.222,
+      "clock": 7.25,
+      "exact": true
+    },
+    {
+      "wall": "22:11:21.020",
+      "media": "1-0",
+      "range": [
+        141,
+        49
+      ],
+      "start": 8.397,
+      "clock": 8.4,
+      "exact": true
+    },
+    {
+      "wall": "22:11:22.721",
+      "media": "1-0",
+      "range": [
+        191,
+        19
+      ],
+      "start": 10.947,
+      "clock": 10.95,
+      "exact": true
+    },
+    {
+      "wall": "22:11:23.655",
+      "media": "1-0",
+      "range": [
+        211,
+        44
+      ],
+      "start": 12.324,
+      "clock": 12.35,
+      "exact": true
+    },
+    {
+      "wall": "22:11:25.088",
+      "media": "1-0",
+      "range": [
+        256,
+        47
+      ],
+      "start": 14.499,
+      "clock": 14.5,
+      "exact": true
+    },
+    {
+      "wall": "22:11:27.555",
+      "media": "1-0",
+      "range": [
+        304,
+        26
+      ],
+      "start": 18.199,
+      "clock": 18.2,
+      "exact": true
+    },
+    {
+      "wall": "22:11:28.888",
+      "media": "1-0",
+      "range": [
+        331,
+        49
+      ],
+      "start": 20.174,
+      "clock": 20.2,
+      "exact": true
+    },
+    {
+      "wall": "22:11:30.923",
+      "media": "1-0",
+      "range": [
+        381,
+        48
+      ],
+      "start": 23.224,
+      "clock": 23.252,
+      "exact": true
+    },
+    {
+      "wall": "22:11:32.789",
+      "media": "1-0",
+      "range": [
+        430,
+        23
+      ],
+      "start": 26.024,
+      "clock": 26.05,
+      "exact": true
+    },
+    {
+      "wall": "22:11:34.152",
+      "media": "2-0",
+      "range": [
+        0,
+        47
+      ],
+      "start": 0.091,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:11:35.979",
+      "media": "2-0",
+      "range": [
+        48,
+        47
+      ],
+      "start": 2.641,
+      "clock": 2.65,
+      "exact": true
+    },
+    {
+      "wall": "22:11:38.079",
+      "media": "2-0",
+      "range": [
+        96,
+        37
+      ],
+      "start": 5.766,
+      "clock": 5.8,
+      "exact": true
+    },
+    {
+      "wall": "22:11:40.112",
+      "media": "2-0",
+      "range": [
+        134,
+        48
+      ],
+      "start": 8.841,
+      "clock": 8.85,
+      "exact": true
+    },
+    {
+      "wall": "22:11:41.912",
+      "media": "2-0",
+      "range": [
+        183,
+        14
+      ],
+      "start": 11.516,
+      "clock": 11.55,
+      "exact": true
+    },
+    {
+      "wall": "22:11:42.712",
+      "media": "2-0",
+      "range": [
+        198,
+        49
+      ],
+      "start": 12.708,
+      "clock": 12.75,
+      "exact": true
+    },
+    {
+      "wall": "22:11:44.979",
+      "media": "2-0",
+      "range": [
+        248,
+        48
+      ],
+      "start": 16.108,
+      "clock": 16.15,
+      "exact": true
+    },
+    {
+      "wall": "22:11:47.012",
+      "media": "2-0",
+      "range": [
+        297,
+        42
+      ],
+      "start": 19.158,
+      "clock": 19.2,
+      "exact": true
+    },
+    {
+      "wall": "22:11:48.646",
+      "media": "2-0",
+      "range": [
+        340,
+        23
+      ],
+      "start": 21.633,
+      "clock": 21.65,
+      "exact": true
+    },
+    {
+      "wall": "22:11:49.739",
+      "media": "0-0",
+      "range": [
+        0,
+        47
+      ],
+      "start": 0.087,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:11:52.002",
+      "media": "0-0",
+      "range": [
+        48,
+        48
+      ],
+      "start": 3.262,
+      "clock": 3.3,
+      "exact": true
+    },
+    {
+      "wall": "22:11:54.002",
+      "media": "0-0",
+      "range": [
+        97,
+        31
+      ],
+      "start": 6.287,
+      "clock": 6.3,
+      "exact": true
+    },
+    {
+      "wall": "22:11:55.636",
+      "media": "0-0",
+      "range": [
+        129,
+        41
+      ],
+      "start": 8.713,
+      "clock": 8.75,
+      "exact": true
+    },
+    {
+      "wall": "22:11:56.802",
+      "media": "0-0",
+      "range": [
+        171,
+        42
+      ],
+      "start": 10.488,
+      "clock": 10.5,
+      "exact": true
+    },
+    {
+      "wall": "22:11:58.668",
+      "media": "0-0",
+      "range": [
+        214,
+        11
+      ],
+      "start": 13.263,
+      "clock": 13.3,
+      "exact": true
+    },
+    {
+      "wall": "22:11:59.391",
+      "media": "1-0",
+      "range": [
+        0,
+        39
+      ],
+      "start": 0.058,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:12:00.952",
+      "media": "1-0",
+      "range": [
+        40,
+        47
+      ],
+      "start": 2.208,
+      "clock": 2.25,
+      "exact": true
+    },
+    {
+      "wall": "22:12:02.919",
+      "media": "1-0",
+      "range": [
+        88,
+        44
+      ],
+      "start": 5.158,
+      "clock": 5.2,
+      "exact": true
+    },
+    {
+      "wall": "22:12:04.986",
+      "media": "1-0",
+      "range": [
+        133,
+        53
+      ],
+      "start": 8.283,
+      "clock": 8.3,
+      "exact": true
+    },
+    {
+      "wall": "22:12:07.019",
+      "media": "1-0",
+      "range": [
+        187,
+        48
+      ],
+      "start": 11.34,
+      "clock": 11.35,
+      "exact": true
+    },
+    {
+      "wall": "22:12:08.919",
+      "media": "1-0",
+      "range": [
+        236,
+        12
+      ],
+      "start": 14.19,
+      "clock": 14.2,
+      "exact": true
+    },
+    {
+      "wall": "22:12:09.658",
+      "media": "2-0",
+      "range": [
+        0,
+        48
+      ],
+      "start": 0.084,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:12:11.622",
+      "media": "2-0",
+      "range": [
+        49,
+        41
+      ],
+      "start": 2.809,
+      "clock": 2.85,
+      "exact": true
+    },
+    {
+      "wall": "22:12:13.556",
+      "media": "2-0",
+      "range": [
+        91,
+        48
+      ],
+      "start": 5.709,
+      "clock": 5.75,
+      "exact": true
+    },
+    {
+      "wall": "22:12:15.489",
+      "media": "2-0",
+      "range": [
+        140,
+        47
+      ],
+      "start": 8.609,
+      "clock": 8.65,
+      "exact": true
+    },
+    {
+      "wall": "22:12:17.089",
+      "media": "2-0",
+      "range": [
+        188,
+        53
+      ],
+      "start": 11.034,
+      "clock": 11.05,
+      "exact": true
+    },
+    {
+      "wall": "22:12:19.822",
+      "media": "2-0",
+      "range": [
+        242,
+        51
+      ],
+      "start": 15.109,
+      "clock": 15.15,
+      "exact": true
+    },
+    {
+      "wall": "22:12:22.156",
+      "media": "2-0",
+      "range": [
+        294,
+        26
+      ],
+      "start": 18.634,
+      "clock": 18.65,
+      "exact": true
+    },
+    {
+      "wall": "22:12:23.417",
+      "media": "0-0",
+      "range": [
+        0,
+        48
+      ],
+      "start": 0.088,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:12:25.348",
+      "media": "0-0",
+      "range": [
+        49,
+        29
+      ],
+      "start": 2.788,
+      "clock": 2.8,
+      "exact": true
+    },
+    {
+      "wall": "22:12:27.482",
+      "media": "0-0",
+      "range": [
+        79,
+        41
+      ],
+      "start": 5.963,
+      "clock": 6.0,
+      "exact": true
+    },
+    {
+      "wall": "22:12:28.682",
+      "media": "0-0",
+      "range": [
+        121,
+        48
+      ],
+      "start": 7.788,
+      "clock": 7.8,
+      "exact": true
+    },
+    {
+      "wall": "22:12:30.449",
+      "media": "0-0",
+      "range": [
+        170,
+        47
+      ],
+      "start": 10.413,
+      "clock": 10.45,
+      "exact": true
+    },
+    {
+      "wall": "22:12:32.049",
+      "media": "0-0",
+      "range": [
+        218,
+        49
+      ],
+      "start": 12.838,
+      "clock": 12.85,
+      "exact": true
+    },
+    {
+      "wall": "22:12:34.452",
+      "media": "1-0",
+      "range": [
+        0,
+        48
+      ],
+      "start": 0.052,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:12:36.312",
+      "media": "1-0",
+      "range": [
+        49,
+        46
+      ],
+      "start": 2.677,
+      "clock": 2.7,
+      "exact": true
+    },
+    {
+      "wall": "22:12:37.845",
+      "media": "1-0",
+      "range": [
+        96,
+        42
+      ],
+      "start": 4.952,
+      "clock": 5.0,
+      "exact": true
+    },
+    {
+      "wall": "22:12:39.446",
+      "media": "1-0",
+      "range": [
+        139,
+        34
+      ],
+      "start": 7.377,
+      "clock": 7.4,
+      "exact": true
+    },
+    {
+      "wall": "22:12:41.182",
+      "media": "0-0",
+      "range": [
+        0,
+        47
+      ],
+      "start": 0.059,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:12:42.852",
+      "media": "0-0",
+      "range": [
+        48,
+        23
+      ],
+      "start": 2.384,
+      "clock": 2.4,
+      "exact": true
+    },
+    {
+      "wall": "22:12:44.152",
+      "media": "0-0",
+      "range": [
+        72,
+        46
+      ],
+      "start": 4.309,
+      "clock": 4.35,
+      "exact": true
+    },
+    {
+      "wall": "22:12:45.652",
+      "media": "0-0",
+      "range": [
+        119,
+        42
+      ],
+      "start": 6.559,
+      "clock": 6.6,
+      "exact": true
+    },
+    {
+      "wall": "22:12:47.263",
+      "media": "0-0",
+      "range": [
+        162,
+        21
+      ],
+      "start": 8.984,
+      "clock": 9.017,
+      "exact": true
+    },
+    {
+      "wall": "22:12:48.385",
+      "media": "0-0",
+      "range": [
+        184,
+        44
+      ],
+      "start": 10.695,
+      "clock": 10.7,
+      "exact": true
+    },
+    {
+      "wall": "22:12:50.018",
+      "media": "0-0",
+      "range": [
+        229,
+        44
+      ],
+      "start": 13.12,
+      "clock": 13.15,
+      "exact": true
+    },
+    {
+      "wall": "22:12:51.485",
+      "media": "0-0",
+      "range": [
+        274,
+        49
+      ],
+      "start": 15.32,
+      "clock": 15.35,
+      "exact": true
+    },
+    {
+      "wall": "22:12:53.552",
+      "media": "0-0",
+      "range": [
+        324,
+        48
+      ],
+      "start": 18.42,
+      "clock": 18.45,
+      "exact": true
+    },
+    {
+      "wall": "22:12:55.185",
+      "media": "0-0",
+      "range": [
+        373,
+        5
+      ],
+      "start": 20.87,
+      "clock": 20.9,
+      "exact": true
+    },
+    {
+      "wall": "22:12:55.681",
+      "media": "1-0",
+      "range": [
+        0,
+        43
+      ],
+      "start": 0.127,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:12:57.275",
+      "media": "1-0",
+      "range": [
+        44,
+        42
+      ],
+      "start": 2.277,
+      "clock": 2.3,
+      "exact": true
+    },
+    {
+      "wall": "22:12:58.842",
+      "media": "1-0",
+      "range": [
+        87,
+        19
+      ],
+      "start": 4.627,
+      "clock": 4.65,
+      "exact": true
+    },
+    {
+      "wall": "22:12:59.942",
+      "media": "1-0",
+      "range": [
+        107,
+        43
+      ],
+      "start": 6.277,
+      "clock": 6.3,
+      "exact": true
+    },
+    {
+      "wall": "22:13:01.609",
+      "media": "1-0",
+      "range": [
+        151,
+        40
+      ],
+      "start": 8.752,
+      "clock": 8.8,
+      "exact": true
+    },
+    {
+      "wall": "22:13:03.075",
+      "media": "1-0",
+      "range": [
+        192,
+        50
+      ],
+      "start": 10.98,
+      "clock": 11.0,
+      "exact": true
+    },
+    {
+      "wall": "22:13:05.342",
+      "media": "1-0",
+      "range": [
+        243,
+        49
+      ],
+      "start": 14.38,
+      "clock": 14.4,
+      "exact": true
+    },
+    {
+      "wall": "22:13:07.242",
+      "media": "1-0",
+      "range": [
+        293,
+        48
+      ],
+      "start": 17.23,
+      "clock": 17.25,
+      "exact": true
+    },
+    {
+      "wall": "22:13:09.075",
+      "media": "1-0",
+      "range": [
+        342,
+        28
+      ],
+      "start": 19.955,
+      "clock": 20.0,
+      "exact": true
+    },
+    {
+      "wall": "22:13:10.313",
+      "media": "2-0",
+      "range": [
+        0,
+        49
+      ],
+      "start": 0.088,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:13:12.672",
+      "media": "2-0",
+      "range": [
+        50,
+        51
+      ],
+      "start": 3.413,
+      "clock": 3.45,
+      "exact": true
+    },
+    {
+      "wall": "22:13:14.639",
+      "media": "2-0",
+      "range": [
+        102,
+        26
+      ],
+      "start": 6.388,
+      "clock": 6.4,
+      "exact": true
+    },
+    {
+      "wall": "22:13:15.972",
+      "media": "2-0",
+      "range": [
+        129,
+        34
+      ],
+      "start": 8.363,
+      "clock": 8.4,
+      "exact": true
+    },
+    {
+      "wall": "22:13:17.138",
+      "media": "2-0",
+      "range": [
+        164,
+        41
+      ],
+      "start": 10.138,
+      "clock": 10.15,
+      "exact": true
+    },
+    {
+      "wall": "22:13:18.838",
+      "media": "2-0",
+      "range": [
+        206,
+        47
+      ],
+      "start": 12.663,
+      "clock": 12.7,
+      "exact": true
+    },
+    {
+      "wall": "22:13:20.738",
+      "media": "2-0",
+      "range": [
+        254,
+        47
+      ],
+      "start": 15.513,
+      "clock": 15.55,
+      "exact": true
+    },
+    {
+      "wall": "22:13:22.372",
+      "media": "2-0",
+      "range": [
+        302,
+        24
+      ],
+      "start": 17.963,
+      "clock": 18.0,
+      "exact": true
+    },
+    {
+      "wall": "22:13:23.308",
+      "media": "0-0",
+      "range": [
+        0,
+        47
+      ],
+      "start": 0.103,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:13:25.315",
+      "media": "0-0",
+      "range": [
+        48,
+        47
+      ],
+      "start": 2.853,
+      "clock": 2.9,
+      "exact": true
+    },
+    {
+      "wall": "22:13:27.182",
+      "media": "0-0",
+      "range": [
+        96,
+        50
+      ],
+      "start": 5.653,
+      "clock": 5.7,
+      "exact": true
+    },
+    {
+      "wall": "22:13:29.282",
+      "media": "0-0",
+      "range": [
+        147,
+        24
+      ],
+      "start": 8.803,
+      "clock": 8.85,
+      "exact": true
+    },
+    {
+      "wall": "22:13:30.215",
+      "media": "0-0",
+      "range": [
+        172,
+        47
+      ],
+      "start": 10.248,
+      "clock": 10.25,
+      "exact": true
+    },
+    {
+      "wall": "22:13:31.682",
+      "media": "0-0",
+      "range": [
+        220,
+        48
+      ],
+      "start": 12.448,
+      "clock": 12.45,
+      "exact": true
+    },
+    {
+      "wall": "22:13:33.581",
+      "media": "0-0",
+      "range": [
+        269,
+        41
+      ],
+      "start": 15.299,
+      "clock": 15.3,
+      "exact": true
+    },
+    {
+      "wall": "22:13:35.442",
+      "media": "1-0",
+      "range": [
+        0,
+        43
+      ],
+      "start": 0.071,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:13:37.102",
+      "media": "1-0",
+      "range": [
+        44,
+        48
+      ],
+      "start": 2.396,
+      "clock": 2.4,
+      "exact": true
+    },
+    {
+      "wall": "22:13:38.835",
+      "media": "1-0",
+      "range": [
+        93,
+        8
+      ],
+      "start": 4.971,
+      "clock": 5.0,
+      "exact": true
+    },
+    {
+      "wall": "22:13:39.534",
+      "media": "1-0",
+      "range": [
+        102,
+        49
+      ],
+      "start": 6.046,
+      "clock": 6.05,
+      "exact": true
+    },
+    {
+      "wall": "22:13:41.401",
+      "media": "1-0",
+      "range": [
+        152,
+        42
+      ],
+      "start": 8.821,
+      "clock": 8.85,
+      "exact": true
+    },
+    {
+      "wall": "22:13:43.613",
+      "media": "2-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.076,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:13:45.448",
+      "media": "2-0",
+      "range": [
+        47,
+        45
+      ],
+      "start": 2.601,
+      "clock": 2.65,
+      "exact": true
+    },
+    {
+      "wall": "22:13:47.515",
+      "media": "2-0",
+      "range": [
+        93,
+        38
+      ],
+      "start": 5.701,
+      "clock": 5.75,
+      "exact": true
+    },
+    {
+      "wall": "22:13:49.215",
+      "media": "2-0",
+      "range": [
+        132,
+        35
+      ],
+      "start": 8.276,
+      "clock": 8.3,
+      "exact": true
+    },
+    {
+      "wall": "22:13:50.982",
+      "media": "2-0",
+      "range": [
+        168,
+        44
+      ],
+      "start": 10.901,
+      "clock": 10.95,
+      "exact": true
+    },
+    {
+      "wall": "22:13:52.281",
+      "media": "2-0",
+      "range": [
+        213,
+        19
+      ],
+      "start": 12.876,
+      "clock": 12.9,
+      "exact": true
+    },
+    {
+      "wall": "22:13:53.221",
+      "media": "0-0",
+      "range": [
+        0,
+        42
+      ],
+      "start": 0.094,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:13:54.648",
+      "media": "0-0",
+      "range": [
+        43,
+        45
+      ],
+      "start": 2.019,
+      "clock": 2.05,
+      "exact": true
+    },
+    {
+      "wall": "22:13:56.248",
+      "media": "0-0",
+      "range": [
+        89,
+        33
+      ],
+      "start": 4.444,
+      "clock": 4.45,
+      "exact": true
+    },
+    {
+      "wall": "22:13:57.848",
+      "media": "0-0",
+      "range": [
+        123,
+        49
+      ],
+      "start": 6.844,
+      "clock": 6.85,
+      "exact": true
+    },
+    {
+      "wall": "22:13:59.615",
+      "media": "0-0",
+      "range": [
+        173,
+        42
+      ],
+      "start": 9.469,
+      "clock": 9.5,
+      "exact": true
+    },
+    {
+      "wall": "22:14:01.615",
+      "media": "0-0",
+      "range": [
+        216,
+        49
+      ],
+      "start": 12.494,
+      "clock": 12.5,
+      "exact": true
+    },
+    {
+      "wall": "22:14:03.648",
+      "media": "0-0",
+      "range": [
+        266,
+        49
+      ],
+      "start": 15.544,
+      "clock": 15.55,
+      "exact": true
+    },
+    {
+      "wall": "22:14:05.630",
+      "media": "1-0",
+      "range": [
+        0,
+        42
+      ],
+      "start": 0.081,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:14:07.291",
+      "media": "1-0",
+      "range": [
+        43,
+        10
+      ],
+      "start": 2.381,
+      "clock": 2.4,
+      "exact": true
+    },
+    {
+      "wall": "22:14:08.224",
+      "media": "1-0",
+      "range": [
+        54,
+        47
+      ],
+      "start": 3.756,
+      "clock": 3.8,
+      "exact": true
+    },
+    {
+      "wall": "22:14:10.125",
+      "media": "1-0",
+      "range": [
+        102,
+        42
+      ],
+      "start": 6.606,
+      "clock": 6.65,
+      "exact": true
+    },
+    {
+      "wall": "22:14:11.658",
+      "media": "1-0",
+      "range": [
+        145,
+        47
+      ],
+      "start": 8.906,
+      "clock": 8.95,
+      "exact": true
+    },
+    {
+      "wall": "22:14:13.557",
+      "media": "1-0",
+      "range": [
+        193,
+        46
+      ],
+      "start": 11.781,
+      "clock": 11.8,
+      "exact": true
+    },
+    {
+      "wall": "22:14:15.458",
+      "media": "1-0",
+      "range": [
+        240,
+        33
+      ],
+      "start": 14.631,
+      "clock": 14.65,
+      "exact": true
+    },
+    {
+      "wall": "22:14:16.791",
+      "media": "2-0",
+      "range": [
+        0,
+        47
+      ],
+      "start": 0.128,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:14:18.885",
+      "media": "2-0",
+      "range": [
+        48,
+        48
+      ],
+      "start": 3.003,
+      "clock": 3.05,
+      "exact": true
+    },
+    {
+      "wall": "22:14:20.351",
+      "media": "2-0",
+      "range": [
+        97,
+        27
+      ],
+      "start": 5.203,
+      "clock": 5.25,
+      "exact": true
+    },
+    {
+      "wall": "22:14:21.851",
+      "media": "2-0",
+      "range": [
+        125,
+        41
+      ],
+      "start": 7.453,
+      "clock": 7.5,
+      "exact": true
+    },
+    {
+      "wall": "22:14:23.184",
+      "media": "2-0",
+      "range": [
+        167,
+        44
+      ],
+      "start": 9.453,
+      "clock": 9.5,
+      "exact": true
+    },
+    {
+      "wall": "22:14:25.151",
+      "media": "2-0",
+      "range": [
+        212,
+        46
+      ],
+      "start": 12.403,
+      "clock": 12.45,
+      "exact": true
+    },
+    {
+      "wall": "22:14:26.884",
+      "media": "2-0",
+      "range": [
+        259,
+        24
+      ],
+      "start": 15.028,
+      "clock": 15.05,
+      "exact": true
+    },
+    {
+      "wall": "22:14:28.182",
+      "media": "0-0",
+      "range": [
+        0,
+        44
+      ],
+      "start": 0.088,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:14:29.674",
+      "media": "0-0",
+      "range": [
+        45,
+        47
+      ],
+      "start": 2.138,
+      "clock": 2.15,
+      "exact": true
+    },
+    {
+      "wall": "22:14:31.574",
+      "media": "0-0",
+      "range": [
+        93,
+        7
+      ],
+      "start": 4.988,
+      "clock": 5.0,
+      "exact": true
+    },
+    {
+      "wall": "22:14:32.241",
+      "media": "0-0",
+      "range": [
+        101,
+        47
+      ],
+      "start": 5.988,
+      "clock": 6.0,
+      "exact": true
+    },
+    {
+      "wall": "22:14:34.041",
+      "media": "0-0",
+      "range": [
+        149,
+        45
+      ],
+      "start": 8.688,
+      "clock": 8.7,
+      "exact": true
+    },
+    {
+      "wall": "22:14:35.574",
+      "media": "0-0",
+      "range": [
+        195,
+        47
+      ],
+      "start": 10.988,
+      "clock": 11.0,
+      "exact": true
+    },
+    {
+      "wall": "22:14:37.407",
+      "media": "0-0",
+      "range": [
+        243,
+        24
+      ],
+      "start": 13.713,
+      "clock": 13.75,
+      "exact": true
+    },
+    {
+      "wall": "22:14:38.701",
+      "media": "1-0",
+      "range": [
+        0,
+        40
+      ],
+      "start": 0.082,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:14:40.394",
+      "media": "1-0",
+      "range": [
+        41,
+        32
+      ],
+      "start": 2.407,
+      "clock": 2.45,
+      "exact": true
+    },
+    {
+      "wall": "22:14:41.961",
+      "media": "1-0",
+      "range": [
+        74,
+        47
+      ],
+      "start": 4.782,
+      "clock": 4.8,
+      "exact": true
+    },
+    {
+      "wall": "22:14:43.894",
+      "media": "1-0",
+      "range": [
+        122,
+        40
+      ],
+      "start": 7.682,
+      "clock": 7.7,
+      "exact": true
+    },
+    {
+      "wall": "22:14:45.494",
+      "media": "1-0",
+      "range": [
+        163,
+        46
+      ],
+      "start": 10.082,
+      "clock": 10.1,
+      "exact": true
+    },
+    {
+      "wall": "22:14:46.927",
+      "media": "1-0",
+      "range": [
+        210,
+        34
+      ],
+      "start": 12.232,
+      "clock": 12.25,
+      "exact": true
+    },
+    {
+      "wall": "22:14:48.661",
+      "media": "2-0",
+      "range": [
+        0,
+        37
+      ],
+      "start": 0.135,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:14:50.054",
+      "media": "2-0",
+      "range": [
+        38,
+        46
+      ],
+      "start": 1.985,
+      "clock": 2.0,
+      "exact": true
+    },
+    {
+      "wall": "22:14:51.921",
+      "media": "2-0",
+      "range": [
+        85,
+        24
+      ],
+      "start": 4.76,
+      "clock": 4.8,
+      "exact": true
+    },
+    {
+      "wall": "22:14:53.354",
+      "media": "2-0",
+      "range": [
+        110,
+        44
+      ],
+      "start": 6.91,
+      "clock": 6.95,
+      "exact": true
+    },
+    {
+      "wall": "22:14:55.221",
+      "media": "2-0",
+      "range": [
+        155,
+        42
+      ],
+      "start": 9.735,
+      "clock": 9.75,
+      "exact": true
+    },
+    {
+      "wall": "22:14:56.687",
+      "media": "2-0",
+      "range": [
+        198,
+        52
+      ],
+      "start": 11.91,
+      "clock": 11.95,
+      "exact": true
+    },
+    {
+      "wall": "22:14:58.454",
+      "media": "2-0",
+      "range": [
+        251,
+        30
+      ],
+      "start": 14.56,
+      "clock": 14.6,
+      "exact": true
+    },
+    {
+      "wall": "22:14:59.804",
+      "media": "0-0",
+      "range": [
+        0,
+        45
+      ],
+      "start": 0.109,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:15:01.871",
+      "media": "0-0",
+      "range": [
+        46,
+        42
+      ],
+      "start": 2.984,
+      "clock": 3.0,
+      "exact": true
+    },
+    {
+      "wall": "22:15:03.804",
+      "media": "0-0",
+      "range": [
+        89,
+        45
+      ],
+      "start": 5.859,
+      "clock": 5.9,
+      "exact": true
+    },
+    {
+      "wall": "22:15:05.337",
+      "media": "0-0",
+      "range": [
+        135,
+        42
+      ],
+      "start": 8.184,
+      "clock": 8.2,
+      "exact": true
+    },
+    {
+      "wall": "22:15:07.130",
+      "media": "1-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.124,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:15:08.990",
+      "media": "1-0",
+      "range": [
+        47,
+        49
+      ],
+      "start": 2.699,
+      "clock": 2.7,
+      "exact": true
+    },
+    {
+      "wall": "22:15:11.024",
+      "media": "1-0",
+      "range": [
+        97,
+        47
+      ],
+      "start": 5.724,
+      "clock": 5.75,
+      "exact": true
+    },
+    {
+      "wall": "22:15:12.890",
+      "media": "1-0",
+      "range": [
+        145,
+        47
+      ],
+      "start": 8.549,
+      "clock": 8.55,
+      "exact": true
+    },
+    {
+      "wall": "22:15:14.824",
+      "media": "1-0",
+      "range": [
+        193,
+        42
+      ],
+      "start": 11.424,
+      "clock": 11.45,
+      "exact": true
+    },
+    {
+      "wall": "22:15:16.490",
+      "media": "1-0",
+      "range": [
+        236,
+        8
+      ],
+      "start": 13.949,
+      "clock": 13.95,
+      "exact": true
+    },
+    {
+      "wall": "22:15:17.115",
+      "media": "0-0",
+      "range": [
+        0,
+        41
+      ],
+      "start": 0.095,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:15:18.881",
+      "media": "0-0",
+      "range": [
+        42,
+        41
+      ],
+      "start": 2.52,
+      "clock": 2.55,
+      "exact": true
+    },
+    {
+      "wall": "22:15:20.314",
+      "media": "0-0",
+      "range": [
+        84,
+        48
+      ],
+      "start": 4.695,
+      "clock": 4.7,
+      "exact": true
+    },
+    {
+      "wall": "22:15:22.047",
+      "media": "0-0",
+      "range": [
+        133,
+        16
+      ],
+      "start": 7.27,
+      "clock": 7.3,
+      "exact": true
+    },
+    {
+      "wall": "22:15:22.980",
+      "media": "0-0",
+      "range": [
+        150,
+        45
+      ],
+      "start": 8.695,
+      "clock": 8.7,
+      "exact": true
+    },
+    {
+      "wall": "22:15:24.347",
+      "media": "0-0",
+      "range": [
+        196,
+        47
+      ],
+      "start": 10.72,
+      "clock": 10.75,
+      "exact": true
+    },
+    {
+      "wall": "22:15:26.313",
+      "media": "0-0",
+      "range": [
+        244,
+        46
+      ],
+      "start": 13.695,
+      "clock": 13.7,
+      "exact": true
+    },
+    {
+      "wall": "22:15:28.080",
+      "media": "0-0",
+      "range": [
+        291,
+        30
+      ],
+      "start": 16.32,
+      "clock": 16.35,
+      "exact": true
+    },
+    {
+      "wall": "22:15:29.527",
+      "media": "1-0",
+      "range": [
+        0,
+        43
+      ],
+      "start": 0.106,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:15:31.390",
+      "media": "1-0",
+      "range": [
+        44,
+        50
+      ],
+      "start": 2.656,
+      "clock": 2.7,
+      "exact": true
+    },
+    {
+      "wall": "22:15:33.657",
+      "media": "1-0",
+      "range": [
+        95,
+        47
+      ],
+      "start": 6.081,
+      "clock": 6.1,
+      "exact": true
+    },
+    {
+      "wall": "22:15:35.757",
+      "media": "1-0",
+      "range": [
+        143,
+        46
+      ],
+      "start": 9.206,
+      "clock": 9.25,
+      "exact": true
+    },
+    {
+      "wall": "22:15:37.057",
+      "media": "1-0",
+      "range": [
+        190,
+        33
+      ],
+      "start": 11.156,
+      "clock": 11.2,
+      "exact": true
+    },
+    {
+      "wall": "22:15:38.428",
+      "media": "2-0",
+      "range": [
+        0,
+        41
+      ],
+      "start": 0.129,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:15:40.124",
+      "media": "2-0",
+      "range": [
+        42,
+        46
+      ],
+      "start": 2.403,
+      "clock": 2.45,
+      "exact": true
+    },
+    {
+      "wall": "22:15:42.123",
+      "media": "2-0",
+      "range": [
+        89,
+        47
+      ],
+      "start": 5.404,
+      "clock": 5.45,
+      "exact": true
+    },
+    {
+      "wall": "22:15:43.856",
+      "media": "2-0",
+      "range": [
+        137,
+        19
+      ],
+      "start": 8.029,
+      "clock": 8.05,
+      "exact": true
+    },
+    {
+      "wall": "22:15:44.870",
+      "media": "0-0",
+      "range": [
+        0,
+        45
+      ],
+      "start": 0.078,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:15:44.871",
+      "media": "0-0",
+      "range": [
+        154,
+        46
+      ],
+      "start": 9.379,
+      "clock": 9.384,
+      "exact": true
+    },
+    {
+      "wall": "22:15:44.871",
+      "media": "0-0",
+      "range": [
+        0,
+        45
+      ],
+      "start": 0.078,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:15:46.530",
+      "media": "0-0",
+      "range": [
+        46,
+        49
+      ],
+      "start": 2.378,
+      "clock": 2.4,
+      "exact": true
+    },
+    {
+      "wall": "22:15:48.497",
+      "media": "0-0",
+      "range": [
+        96,
+        44
+      ],
+      "start": 5.329,
+      "clock": 5.35,
+      "exact": true
+    },
+    {
+      "wall": "22:15:50.130",
+      "media": "0-0",
+      "range": [
+        141,
+        12
+      ],
+      "start": 7.754,
+      "clock": 7.8,
+      "exact": true
+    },
+    {
+      "wall": "22:15:51.196",
+      "media": "0-0",
+      "range": [
+        154,
+        46
+      ],
+      "start": 9.379,
+      "clock": 9.4,
+      "exact": true
+    },
+    {
+      "wall": "22:15:53.297",
+      "media": "0-0",
+      "range": [
+        201,
+        46
+      ],
+      "start": 12.529,
+      "clock": 12.55,
+      "exact": true
+    },
+    {
+      "wall": "22:15:54.830",
+      "media": "0-0",
+      "range": [
+        248,
+        49
+      ],
+      "start": 14.829,
+      "clock": 14.85,
+      "exact": true
+    },
+    {
+      "wall": "22:15:56.697",
+      "media": "0-0",
+      "range": [
+        298,
+        27
+      ],
+      "start": 17.628,
+      "clock": 17.65,
+      "exact": true
+    },
+    {
+      "wall": "22:15:58.112",
+      "media": "1-0",
+      "range": [
+        0,
+        49
+      ],
+      "start": 0.103,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:15:59.947",
+      "media": "1-0",
+      "range": [
+        50,
+        44
+      ],
+      "start": 2.603,
+      "clock": 2.65,
+      "exact": true
+    },
+    {
+      "wall": "22:16:01.546",
+      "media": "1-0",
+      "range": [
+        95,
+        20
+      ],
+      "start": 5.003,
+      "clock": 5.05,
+      "exact": true
+    },
+    {
+      "wall": "22:16:02.747",
+      "media": "1-0",
+      "range": [
+        116,
+        46
+      ],
+      "start": 6.828,
+      "clock": 6.85,
+      "exact": true
+    },
+    {
+      "wall": "22:16:04.513",
+      "media": "1-0",
+      "range": [
+        163,
+        37
+      ],
+      "start": 9.478,
+      "clock": 9.5,
+      "exact": true
+    },
+    {
+      "wall": "22:16:06.380",
+      "media": "1-0",
+      "range": [
+        201,
+        49
+      ],
+      "start": 12.28,
+      "clock": 12.3,
+      "exact": true
+    },
+    {
+      "wall": "22:16:08.247",
+      "media": "1-0",
+      "range": [
+        251,
+        47
+      ],
+      "start": 15.08,
+      "clock": 15.1,
+      "exact": true
+    },
+    {
+      "wall": "22:16:10.313",
+      "media": "1-0",
+      "range": [
+        299,
+        42
+      ],
+      "start": 18.155,
+      "clock": 18.2,
+      "exact": true
+    },
+    {
+      "wall": "22:16:12.014",
+      "media": "0-0",
+      "range": [
+        0,
+        44
+      ],
+      "start": 0.09,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:16:13.680",
+      "media": "0-0",
+      "range": [
+        45,
+        50
+      ],
+      "start": 2.365,
+      "clock": 2.4,
+      "exact": true
+    },
+    {
+      "wall": "22:16:15.513",
+      "media": "0-0",
+      "range": [
+        96,
+        47
+      ],
+      "start": 5.14,
+      "clock": 5.15,
+      "exact": true
+    },
+    {
+      "wall": "22:16:17.280",
+      "media": "0-0",
+      "range": [
+        144,
+        8
+      ],
+      "start": 7.79,
+      "clock": 7.8,
+      "exact": true
+    },
+    {
+      "wall": "22:16:17.946",
+      "media": "0-0",
+      "range": [
+        153,
+        43
+      ],
+      "start": 8.79,
+      "clock": 8.8,
+      "exact": true
+    },
+    {
+      "wall": "22:16:19.313",
+      "media": "0-0",
+      "range": [
+        197,
+        48
+      ],
+      "start": 10.84,
+      "clock": 10.85,
+      "exact": true
+    },
+    {
+      "wall": "22:16:20.946",
+      "media": "0-0",
+      "range": [
+        246,
+        48
+      ],
+      "start": 13.265,
+      "clock": 13.3,
+      "exact": true
+    },
+    {
+      "wall": "22:16:23.028",
+      "media": "1-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.076,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:16:25.090",
+      "media": "1-0",
+      "range": [
+        47,
+        39
+      ],
+      "start": 2.951,
+      "clock": 3.0,
+      "exact": true
+    },
+    {
+      "wall": "22:16:26.690",
+      "media": "1-0",
+      "range": [
+        87,
+        44
+      ],
+      "start": 5.376,
+      "clock": 5.4,
+      "exact": true
+    },
+    {
+      "wall": "22:16:28.356",
+      "media": "1-0",
+      "range": [
+        132,
+        40
+      ],
+      "start": 7.876,
+      "clock": 7.9,
+      "exact": true
+    },
+    {
+      "wall": "22:16:30.189",
+      "media": "1-0",
+      "range": [
+        173,
+        42
+      ],
+      "start": 10.601,
+      "clock": 10.65,
+      "exact": true
+    },
+    {
+      "wall": "22:16:31.756",
+      "media": "1-0",
+      "range": [
+        216,
+        41
+      ],
+      "start": 12.951,
+      "clock": 13.0,
+      "exact": true
+    },
+    {
+      "wall": "22:16:33.256",
+      "media": "1-0",
+      "range": [
+        258,
+        22
+      ],
+      "start": 15.201,
+      "clock": 15.25,
+      "exact": true
+    },
+    {
+      "wall": "22:16:34.097",
+      "media": "1-1",
+      "range": [
+        0,
+        41
+      ],
+      "start": 0.135,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:16:36.036",
+      "media": "1-1",
+      "range": [
+        42,
+        50
+      ],
+      "start": 2.785,
+      "clock": 2.8,
+      "exact": true
+    },
+    {
+      "wall": "22:16:38.136",
+      "media": "1-1",
+      "range": [
+        93,
+        46
+      ],
+      "start": 5.935,
+      "clock": 5.95,
+      "exact": true
+    },
+    {
+      "wall": "22:16:40.136",
+      "media": "1-1",
+      "range": [
+        140,
+        33
+      ],
+      "start": 8.935,
+      "clock": 8.95,
+      "exact": true
+    },
+    {
+      "wall": "22:16:41.759",
+      "media": "2-0",
+      "range": [
+        0,
+        48
+      ],
+      "start": 0.076,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:16:43.620",
+      "media": "2-0",
+      "range": [
+        49,
+        41
+      ],
+      "start": 2.651,
+      "clock": 2.7,
+      "exact": true
+    },
+    {
+      "wall": "22:16:45.386",
+      "media": "2-0",
+      "range": [
+        91,
+        45
+      ],
+      "start": 5.326,
+      "clock": 5.35,
+      "exact": true
+    },
+    {
+      "wall": "22:16:46.986",
+      "media": "2-0",
+      "range": [
+        137,
+        31
+      ],
+      "start": 7.701,
+      "clock": 7.75,
+      "exact": true
+    },
+    {
+      "wall": "22:16:48.386",
+      "media": "2-0",
+      "range": [
+        169,
+        46
+      ],
+      "start": 9.828,
+      "clock": 9.85,
+      "exact": true
+    },
+    {
+      "wall": "22:16:49.953",
+      "media": "2-0",
+      "range": [
+        216,
+        48
+      ],
+      "start": 12.153,
+      "clock": 12.2,
+      "exact": true
+    },
+    {
+      "wall": "22:16:52.053",
+      "media": "2-0",
+      "range": [
+        265,
+        47
+      ],
+      "start": 15.303,
+      "clock": 15.35,
+      "exact": true
+    },
+    {
+      "wall": "22:16:53.686",
+      "media": "2-0",
+      "range": [
+        313,
+        15
+      ],
+      "start": 17.753,
+      "clock": 17.8,
+      "exact": true
+    },
+    {
+      "wall": "22:16:54.429",
+      "media": "0-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.076,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:16:56.356",
+      "media": "0-0",
+      "range": [
+        47,
+        46
+      ],
+      "start": 2.751,
+      "clock": 2.8,
+      "exact": true
+    },
+    {
+      "wall": "22:16:58.356",
+      "media": "0-0",
+      "range": [
+        94,
+        46
+      ],
+      "start": 5.776,
+      "clock": 5.8,
+      "exact": true
+    },
+    {
+      "wall": "22:17:00.023",
+      "media": "0-0",
+      "range": [
+        141,
+        21
+      ],
+      "start": 8.251,
+      "clock": 8.3,
+      "exact": true
+    },
+    {
+      "wall": "22:17:00.902",
+      "media": "1-0",
+      "range": [
+        0,
+        44
+      ],
+      "start": 0.09,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:17:02.969",
+      "media": "1-0",
+      "range": [
+        45,
+        48
+      ],
+      "start": 2.965,
+      "clock": 3.0,
+      "exact": true
+    },
+    {
+      "wall": "22:17:04.403",
+      "media": "1-0",
+      "range": [
+        94,
+        12
+      ],
+      "start": 5.14,
+      "clock": 5.15,
+      "exact": true
+    },
+    {
+      "wall": "22:17:05.236",
+      "media": "1-0",
+      "range": [
+        107,
+        49
+      ],
+      "start": 6.365,
+      "clock": 6.4,
+      "exact": true
+    },
+    {
+      "wall": "22:17:07.569",
+      "media": "1-0",
+      "range": [
+        157,
+        49
+      ],
+      "start": 9.865,
+      "clock": 9.9,
+      "exact": true
+    },
+    {
+      "wall": "22:17:09.336",
+      "media": "1-0",
+      "range": [
+        207,
+        46
+      ],
+      "start": 12.54,
+      "clock": 12.55,
+      "exact": true
+    },
+    {
+      "wall": "22:17:11.235",
+      "media": "1-0",
+      "range": [
+        254,
+        47
+      ],
+      "start": 15.39,
+      "clock": 15.4,
+      "exact": true
+    },
+    {
+      "wall": "22:17:12.969",
+      "media": "1-0",
+      "range": [
+        302,
+        19
+      ],
+      "start": 17.965,
+      "clock": 18.0,
+      "exact": true
+    },
+    {
+      "wall": "22:17:13.997",
+      "media": "2-0",
+      "range": [
+        0,
+        44
+      ],
+      "start": 0.079,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:17:15.969",
+      "media": "2-0",
+      "range": [
+        45,
+        44
+      ],
+      "start": 2.804,
+      "clock": 2.85,
+      "exact": true
+    },
+    {
+      "wall": "22:17:17.869",
+      "media": "2-0",
+      "range": [
+        90,
+        43
+      ],
+      "start": 5.654,
+      "clock": 5.7,
+      "exact": true
+    },
+    {
+      "wall": "22:17:19.669",
+      "media": "2-0",
+      "range": [
+        134,
+        8
+      ],
+      "start": 8.354,
+      "clock": 8.4,
+      "exact": true
+    },
+    {
+      "wall": "22:17:20.369",
+      "media": "2-0",
+      "range": [
+        143,
+        46
+      ],
+      "start": 9.429,
+      "clock": 9.45,
+      "exact": true
+    },
+    {
+      "wall": "22:17:22.303",
+      "media": "2-0",
+      "range": [
+        190,
+        50
+      ],
+      "start": 12.329,
+      "clock": 12.35,
+      "exact": true
+    },
+    {
+      "wall": "22:17:24.569",
+      "media": "2-0",
+      "range": [
+        241,
+        46
+      ],
+      "start": 15.704,
+      "clock": 15.75,
+      "exact": true
+    },
+    {
+      "wall": "22:17:25.902",
+      "media": "2-0",
+      "range": [
+        288,
+        9
+      ],
+      "start": 17.729,
+      "clock": 17.75,
+      "exact": true
+    },
+    {
+      "wall": "22:17:26.529",
+      "media": "0-0",
+      "range": [
+        0,
+        43
+      ],
+      "start": 0.088,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:17:28.322",
+      "media": "0-0",
+      "range": [
+        44,
+        47
+      ],
+      "start": 2.588,
+      "clock": 2.6,
+      "exact": true
+    },
+    {
+      "wall": "22:17:30.389",
+      "media": "0-0",
+      "range": [
+        92,
+        43
+      ],
+      "start": 5.688,
+      "clock": 5.7,
+      "exact": true
+    },
+    {
+      "wall": "22:17:31.755",
+      "media": "0-0",
+      "range": [
+        136,
+        42
+      ],
+      "start": 7.738,
+      "clock": 7.75,
+      "exact": true
+    },
+    {
+      "wall": "22:17:33.522",
+      "media": "0-0",
+      "range": [
+        179,
+        16
+      ],
+      "start": 10.388,
+      "clock": 10.4,
+      "exact": true
+    },
+    {
+      "wall": "22:17:34.422",
+      "media": "0-0",
+      "range": [
+        196,
+        46
+      ],
+      "start": 11.709,
+      "clock": 11.75,
+      "exact": true
+    },
+    {
+      "wall": "22:17:36.256",
+      "media": "0-0",
+      "range": [
+        243,
+        45
+      ],
+      "start": 14.484,
+      "clock": 14.5,
+      "exact": true
+    },
+    {
+      "wall": "22:17:38.055",
+      "media": "0-0",
+      "range": [
+        289,
+        26
+      ],
+      "start": 17.184,
+      "clock": 17.2,
+      "exact": true
+    },
+    {
+      "wall": "22:17:39.028",
+      "media": "1-0",
+      "range": [
+        0,
+        42
+      ],
+      "start": 0.088,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:17:40.822",
+      "media": "1-0",
+      "range": [
+        43,
+        48
+      ],
+      "start": 2.588,
+      "clock": 2.6,
+      "exact": true
+    },
+    {
+      "wall": "22:17:42.556",
+      "media": "1-0",
+      "range": [
+        92,
+        6
+      ],
+      "start": 5.188,
+      "clock": 5.2,
+      "exact": true
+    },
+    {
+      "wall": "22:17:43.356",
+      "media": "1-0",
+      "range": [
+        99,
+        47
+      ],
+      "start": 6.363,
+      "clock": 6.4,
+      "exact": true
+    },
+    {
+      "wall": "22:17:45.389",
+      "media": "1-0",
+      "range": [
+        147,
+        38
+      ],
+      "start": 9.413,
+      "clock": 9.45,
+      "exact": true
+    },
+    {
+      "wall": "22:17:47.122",
+      "media": "1-0",
+      "range": [
+        186,
+        43
+      ],
+      "start": 12.013,
+      "clock": 12.05,
+      "exact": true
+    },
+    {
+      "wall": "22:17:48.655",
+      "media": "1-0",
+      "range": [
+        230,
+        18
+      ],
+      "start": 14.313,
+      "clock": 14.35,
+      "exact": true
+    },
+    {
+      "wall": "22:17:49.828",
+      "media": "2-0",
+      "range": [
+        0,
+        49
+      ],
+      "start": 0.1,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:17:51.822",
+      "media": "2-0",
+      "range": [
+        50,
+        46
+      ],
+      "start": 2.85,
+      "clock": 2.9,
+      "exact": true
+    },
+    {
+      "wall": "22:17:53.456",
+      "media": "2-0",
+      "range": [
+        97,
+        30
+      ],
+      "start": 5.325,
+      "clock": 5.35,
+      "exact": true
+    },
+    {
+      "wall": "22:17:54.955",
+      "media": "2-0",
+      "range": [
+        128,
+        47
+      ],
+      "start": 7.55,
+      "clock": 7.6,
+      "exact": true
+    },
+    {
+      "wall": "22:17:56.822",
+      "media": "2-0",
+      "range": [
+        176,
+        48
+      ],
+      "start": 10.375,
+      "clock": 10.4,
+      "exact": true
+    },
+    {
+      "wall": "22:17:58.722",
+      "media": "2-0",
+      "range": [
+        225,
+        31
+      ],
+      "start": 13.2,
+      "clock": 13.25,
+      "exact": true
+    },
+    {
+      "wall": "22:18:00.280",
+      "media": "0-0",
+      "range": [
+        0,
+        47
+      ],
+      "start": 0.092,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:18:01.916",
+      "media": "0-0",
+      "range": [
+        48,
+        49
+      ],
+      "start": 2.317,
+      "clock": 2.35,
+      "exact": true
+    },
+    {
+      "wall": "22:18:03.615",
+      "media": "0-0",
+      "range": [
+        98,
+        47
+      ],
+      "start": 4.892,
+      "clock": 4.9,
+      "exact": true
+    },
+    {
+      "wall": "22:18:05.716",
+      "media": "0-0",
+      "range": [
+        146,
+        50
+      ],
+      "start": 8.017,
+      "clock": 8.05,
+      "exact": true
+    },
+    {
+      "wall": "22:18:07.182",
+      "media": "0-0",
+      "range": [
+        197,
+        38
+      ],
+      "start": 10.217,
+      "clock": 10.25,
+      "exact": true
+    },
+    {
+      "wall": "22:18:08.634",
+      "media": "1-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.095,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:18:10.132",
+      "media": "1-0",
+      "range": [
+        47,
+        42
+      ],
+      "start": 2.145,
+      "clock": 2.15,
+      "exact": true
+    },
+    {
+      "wall": "22:18:12.098",
+      "media": "1-0",
+      "range": [
+        90,
+        40
+      ],
+      "start": 5.095,
+      "clock": 5.1,
+      "exact": true
+    },
+    {
+      "wall": "22:18:13.999",
+      "media": "1-0",
+      "range": [
+        131,
+        43
+      ],
+      "start": 7.945,
+      "clock": 7.95,
+      "exact": true
+    },
+    {
+      "wall": "22:18:15.565",
+      "media": "1-0",
+      "range": [
+        175,
+        48
+      ],
+      "start": 10.295,
+      "clock": 10.3,
+      "exact": true
+    },
+    {
+      "wall": "22:18:17.598",
+      "media": "1-0",
+      "range": [
+        224,
+        47
+      ],
+      "start": 13.345,
+      "clock": 13.35,
+      "exact": true
+    },
+    {
+      "wall": "22:18:19.199",
+      "media": "1-0",
+      "range": [
+        272,
+        13
+      ],
+      "start": 15.72,
+      "clock": 15.75,
+      "exact": true
+    },
+    {
+      "wall": "22:18:20.030",
+      "media": "1-1",
+      "range": [
+        0,
+        48
+      ],
+      "start": 0.096,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:18:22.132",
+      "media": "1-1",
+      "range": [
+        49,
+        45
+      ],
+      "start": 3.021,
+      "clock": 3.05,
+      "exact": true
+    },
+    {
+      "wall": "22:18:23.965",
+      "media": "1-1",
+      "range": [
+        95,
+        44
+      ],
+      "start": 5.796,
+      "clock": 5.8,
+      "exact": true
+    },
+    {
+      "wall": "22:18:25.899",
+      "media": "1-1",
+      "range": [
+        140,
+        45
+      ],
+      "start": 8.696,
+      "clock": 8.7,
+      "exact": true
+    },
+    {
+      "wall": "22:18:27.598",
+      "media": "1-1",
+      "range": [
+        186,
+        10
+      ],
+      "start": 11.221,
+      "clock": 11.25,
+      "exact": true
+    },
+    {
+      "wall": "22:18:28.134",
+      "media": "2-0",
+      "range": [
+        0,
+        45
+      ],
+      "start": 0.079,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:18:29.965",
+      "media": "2-0",
+      "range": [
+        46,
+        46
+      ],
+      "start": 2.604,
+      "clock": 2.65,
+      "exact": true
+    },
+    {
+      "wall": "22:18:31.598",
+      "media": "2-0",
+      "range": [
+        93,
+        51
+      ],
+      "start": 5.054,
+      "clock": 5.1,
+      "exact": true
+    },
+    {
+      "wall": "22:18:33.798",
+      "media": "2-0",
+      "range": [
+        145,
+        38
+      ],
+      "start": 8.379,
+      "clock": 8.4,
+      "exact": true
+    },
+    {
+      "wall": "22:18:35.531",
+      "media": "2-0",
+      "range": [
+        184,
+        49
+      ],
+      "start": 10.997,
+      "clock": 11.0,
+      "exact": true
+    },
+    {
+      "wall": "22:18:37.564",
+      "media": "2-0",
+      "range": [
+        234,
+        50
+      ],
+      "start": 14.022,
+      "clock": 14.05,
+      "exact": true
+    },
+    {
+      "wall": "22:18:39.699",
+      "media": "2-0",
+      "range": [
+        285,
+        44
+      ],
+      "start": 17.222,
+      "clock": 17.25,
+      "exact": true
+    },
+    {
+      "wall": "22:18:41.771",
+      "media": "0-0",
+      "range": [
+        0,
+        47
+      ],
+      "start": 0.124,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:18:43.539",
+      "media": "0-0",
+      "range": [
+        48,
+        34
+      ],
+      "start": 2.524,
+      "clock": 2.55,
+      "exact": true
+    },
+    {
+      "wall": "22:18:45.205",
+      "media": "0-0",
+      "range": [
+        83,
+        48
+      ],
+      "start": 5.049,
+      "clock": 5.05,
+      "exact": true
+    },
+    {
+      "wall": "22:18:46.938",
+      "media": "0-0",
+      "range": [
+        132,
+        9
+      ],
+      "start": 7.649,
+      "clock": 7.65,
+      "exact": true
+    },
+    {
+      "wall": "22:18:47.771",
+      "media": "0-0",
+      "range": [
+        142,
+        45
+      ],
+      "start": 8.899,
+      "clock": 8.9,
+      "exact": true
+    },
+    {
+      "wall": "22:18:49.305",
+      "media": "0-0",
+      "range": [
+        188,
+        48
+      ],
+      "start": 11.174,
+      "clock": 11.2,
+      "exact": true
+    },
+    {
+      "wall": "22:18:50.971",
+      "media": "0-0",
+      "range": [
+        237,
+        49
+      ],
+      "start": 13.699,
+      "clock": 13.7,
+      "exact": true
+    },
+    {
+      "wall": "22:18:52.838",
+      "media": "0-0",
+      "range": [
+        287,
+        48
+      ],
+      "start": 16.499,
+      "clock": 16.5,
+      "exact": true
+    },
+    {
+      "wall": "22:18:54.338",
+      "media": "0-0",
+      "range": [
+        336,
+        44
+      ],
+      "start": 18.724,
+      "clock": 18.75,
+      "exact": true
+    },
+    {
+      "wall": "22:18:56.307",
+      "media": "1-0",
+      "range": [
+        0,
+        53
+      ],
+      "start": 0.09,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:18:58.168",
+      "media": "1-0",
+      "range": [
+        54,
+        50
+      ],
+      "start": 2.69,
+      "clock": 2.7,
+      "exact": true
+    },
+    {
+      "wall": "22:19:00.134",
+      "media": "1-0",
+      "range": [
+        105,
+        21
+      ],
+      "start": 5.615,
+      "clock": 5.65,
+      "exact": true
+    },
+    {
+      "wall": "22:19:01.268",
+      "media": "1-0",
+      "range": [
+        127,
+        46
+      ],
+      "start": 7.315,
+      "clock": 7.35,
+      "exact": true
+    },
+    {
+      "wall": "22:19:02.635",
+      "media": "1-0",
+      "range": [
+        174,
+        40
+      ],
+      "start": 9.39,
+      "clock": 9.4,
+      "exact": true
+    },
+    {
+      "wall": "22:19:04.302",
+      "media": "1-0",
+      "range": [
+        215,
+        50
+      ],
+      "start": 11.89,
+      "clock": 11.9,
+      "exact": true
+    },
+    {
+      "wall": "22:19:06.268",
+      "media": "1-0",
+      "range": [
+        266,
+        39
+      ],
+      "start": 14.823,
+      "clock": 14.85,
+      "exact": true
+    },
+    {
+      "wall": "22:19:07.801",
+      "media": "1-0",
+      "range": [
+        306,
+        12
+      ],
+      "start": 17.148,
+      "clock": 17.15,
+      "exact": true
+    },
+    {
+      "wall": "22:19:08.518",
+      "media": "2-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.094,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:19:10.244",
+      "media": "2-0",
+      "range": [
+        47,
+        51
+      ],
+      "start": 2.469,
+      "clock": 2.5,
+      "exact": true
+    },
+    {
+      "wall": "22:19:12.444",
+      "media": "2-0",
+      "range": [
+        99,
+        38
+      ],
+      "start": 5.793,
+      "clock": 5.8,
+      "exact": true
+    },
+    {
+      "wall": "22:19:14.144",
+      "media": "2-0",
+      "range": [
+        138,
+        41
+      ],
+      "start": 8.319,
+      "clock": 8.35,
+      "exact": true
+    },
+    {
+      "wall": "22:19:15.378",
+      "media": "2-0",
+      "range": [
+        180,
+        45
+      ],
+      "start": 10.194,
+      "clock": 10.2,
+      "exact": true
+    },
+    {
+      "wall": "22:19:17.145",
+      "media": "2-0",
+      "range": [
+        226,
+        49
+      ],
+      "start": 12.819,
+      "clock": 12.85,
+      "exact": true
+    },
+    {
+      "wall": "22:19:19.044",
+      "media": "2-0",
+      "range": [
+        276,
+        46
+      ],
+      "start": 15.668,
+      "clock": 15.7,
+      "exact": true
+    },
+    {
+      "wall": "22:19:20.744",
+      "media": "2-0",
+      "range": [
+        323,
+        42
+      ],
+      "start": 18.218,
+      "clock": 18.25,
+      "exact": true
+    },
+    {
+      "wall": "22:19:22.112",
+      "media": "2-0",
+      "range": [
+        366,
+        15
+      ],
+      "start": 20.293,
+      "clock": 20.3,
+      "exact": true
+    },
+    {
+      "wall": "22:19:22.965",
+      "media": "0-0",
+      "range": [
+        0,
+        43
+      ],
+      "start": 0.128,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:19:22.966",
+      "media": "0-0",
+      "range": [
+        244,
+        25
+      ],
+      "start": 14.328,
+      "clock": 21.432,
+      "exact": true
+    },
+    {
+      "wall": "22:19:22.967",
+      "media": "0-0",
+      "range": [
+        0,
+        43
+      ],
+      "start": 0.128,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:19:24.894",
+      "media": "0-0",
+      "range": [
+        44,
+        42
+      ],
+      "start": 2.778,
+      "clock": 2.8,
+      "exact": true
+    },
+    {
+      "wall": "22:19:26.128",
+      "media": "0-0",
+      "range": [
+        87,
+        44
+      ],
+      "start": 4.603,
+      "clock": 4.651,
+      "exact": true
+    },
+    {
+      "wall": "22:19:27.928",
+      "media": "0-0",
+      "range": [
+        132,
+        15
+      ],
+      "start": 7.303,
+      "clock": 7.35,
+      "exact": true
+    },
+    {
+      "wall": "22:19:29.028",
+      "media": "0-0",
+      "range": [
+        148,
+        49
+      ],
+      "start": 8.978,
+      "clock": 9.0,
+      "exact": true
+    },
+    {
+      "wall": "22:19:30.895",
+      "media": "0-0",
+      "range": [
+        198,
+        45
+      ],
+      "start": 11.753,
+      "clock": 11.8,
+      "exact": true
+    },
+    {
+      "wall": "22:19:32.595",
+      "media": "0-0",
+      "range": [
+        244,
+        25
+      ],
+      "start": 14.328,
+      "clock": 14.35,
+      "exact": true
+    },
+    {
+      "wall": "22:19:33.731",
+      "media": "1-0",
+      "range": [
+        0,
+        47
+      ],
+      "start": 0.124,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:19:35.565",
+      "media": "1-0",
+      "range": [
+        48,
+        43
+      ],
+      "start": 2.649,
+      "clock": 2.65,
+      "exact": true
+    },
+    {
+      "wall": "22:19:36.998",
+      "media": "1-0",
+      "range": [
+        92,
+        41
+      ],
+      "start": 4.799,
+      "clock": 4.8,
+      "exact": true
+    },
+    {
+      "wall": "22:19:39.098",
+      "media": "1-0",
+      "range": [
+        134,
+        49
+      ],
+      "start": 7.924,
+      "clock": 7.95,
+      "exact": true
+    },
+    {
+      "wall": "22:19:40.731",
+      "media": "1-0",
+      "range": [
+        184,
+        47
+      ],
+      "start": 10.399,
+      "clock": 10.401,
+      "exact": true
+    },
+    {
+      "wall": "22:19:42.631",
+      "media": "1-0",
+      "range": [
+        232,
+        44
+      ],
+      "start": 13.249,
+      "clock": 13.25,
+      "exact": true
+    },
+    {
+      "wall": "22:19:44.298",
+      "media": "1-0",
+      "range": [
+        277,
+        34
+      ],
+      "start": 15.724,
+      "clock": 15.75,
+      "exact": true
+    },
+    {
+      "wall": "22:19:45.817",
+      "media": "2-0",
+      "range": [
+        0,
+        44
+      ],
+      "start": 0.123,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:19:47.611",
+      "media": "2-0",
+      "range": [
+        45,
+        23
+      ],
+      "start": 2.573,
+      "clock": 2.6,
+      "exact": true
+    },
+    {
+      "wall": "22:19:48.844",
+      "media": "2-0",
+      "range": [
+        69,
+        44
+      ],
+      "start": 4.448,
+      "clock": 4.45,
+      "exact": true
+    },
+    {
+      "wall": "22:19:50.311",
+      "media": "2-0",
+      "range": [
+        114,
+        48
+      ],
+      "start": 6.648,
+      "clock": 6.65,
+      "exact": true
+    },
+    {
+      "wall": "22:19:52.144",
+      "media": "2-0",
+      "range": [
+        163,
+        44
+      ],
+      "start": 9.398,
+      "clock": 9.4,
+      "exact": true
+    },
+    {
+      "wall": "22:19:53.811",
+      "media": "2-0",
+      "range": [
+        208,
+        40
+      ],
+      "start": 11.873,
+      "clock": 11.9,
+      "exact": true
+    },
+    {
+      "wall": "22:19:55.648",
+      "media": "0-0",
+      "range": [
+        0,
+        43
+      ],
+      "start": 0.105,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:19:57.350",
+      "media": "0-0",
+      "range": [
+        44,
+        26
+      ],
+      "start": 2.405,
+      "clock": 2.45,
+      "exact": true
+    },
+    {
+      "wall": "22:19:58.784",
+      "media": "0-0",
+      "range": [
+        71,
+        47
+      ],
+      "start": 4.58,
+      "clock": 4.6,
+      "exact": true
+    },
+    {
+      "wall": "22:20:00.784",
+      "media": "0-0",
+      "range": [
+        119,
+        45
+      ],
+      "start": 7.555,
+      "clock": 7.6,
+      "exact": true
+    },
+    {
+      "wall": "22:20:02.351",
+      "media": "0-0",
+      "range": [
+        165,
+        8
+      ],
+      "start": 9.93,
+      "clock": 9.95,
+      "exact": true
+    },
+    {
+      "wall": "22:20:02.851",
+      "media": "0-0",
+      "range": [
+        174,
+        46
+      ],
+      "start": 10.665,
+      "clock": 10.7,
+      "exact": true
+    },
+    {
+      "wall": "22:20:04.318",
+      "media": "0-0",
+      "range": [
+        221,
+        41
+      ],
+      "start": 12.865,
+      "clock": 12.9,
+      "exact": true
+    },
+    {
+      "wall": "22:20:06.109",
+      "media": "1-0",
+      "range": [
+        0,
+        37
+      ],
+      "start": 0.104,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:20:07.634",
+      "media": "1-0",
+      "range": [
+        38,
+        42
+      ],
+      "start": 2.154,
+      "clock": 2.2,
+      "exact": true
+    },
+    {
+      "wall": "22:20:09.734",
+      "media": "1-0",
+      "range": [
+        81,
+        41
+      ],
+      "start": 5.304,
+      "clock": 5.35,
+      "exact": true
+    },
+    {
+      "wall": "22:20:11.634",
+      "media": "1-0",
+      "range": [
+        123,
+        48
+      ],
+      "start": 8.155,
+      "clock": 8.2,
+      "exact": true
+    },
+    {
+      "wall": "22:20:13.267",
+      "media": "1-0",
+      "range": [
+        172,
+        44
+      ],
+      "start": 10.63,
+      "clock": 10.65,
+      "exact": true
+    },
+    {
+      "wall": "22:20:15.034",
+      "media": "1-0",
+      "range": [
+        217,
+        47
+      ],
+      "start": 13.28,
+      "clock": 13.3,
+      "exact": true
+    },
+    {
+      "wall": "22:20:16.900",
+      "media": "1-0",
+      "range": [
+        265,
+        17
+      ],
+      "start": 16.08,
+      "clock": 16.1,
+      "exact": true
+    },
+    {
+      "wall": "22:20:17.767",
+      "media": "1-0",
+      "range": [
+        283,
+        47
+      ],
+      "start": 17.352,
+      "clock": 17.4,
+      "exact": true
+    },
+    {
+      "wall": "22:20:19.734",
+      "media": "1-0",
+      "range": [
+        331,
+        50
+      ],
+      "start": 20.302,
+      "clock": 20.35,
+      "exact": true
+    },
+    {
+      "wall": "22:20:21.634",
+      "media": "1-0",
+      "range": [
+        382,
+        37
+      ],
+      "start": 23.177,
+      "clock": 23.2,
+      "exact": true
+    },
+    {
+      "wall": "22:20:23.085",
+      "media": "0-0",
+      "range": [
+        0,
+        42
+      ],
+      "start": 0.088,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:20:25.013",
+      "media": "0-0",
+      "range": [
+        43,
+        40
+      ],
+      "start": 2.763,
+      "clock": 2.8,
+      "exact": true
+    },
+    {
+      "wall": "22:20:26.914",
+      "media": "0-0",
+      "range": [
+        84,
+        42
+      ],
+      "start": 5.638,
+      "clock": 5.65,
+      "exact": true
+    },
+    {
+      "wall": "22:20:28.181",
+      "media": "0-0",
+      "range": [
+        127,
+        46
+      ],
+      "start": 7.513,
+      "clock": 7.55,
+      "exact": true
+    },
+    {
+      "wall": "22:20:30.180",
+      "media": "0-0",
+      "range": [
+        174,
+        47
+      ],
+      "start": 10.538,
+      "clock": 10.55,
+      "exact": true
+    },
+    {
+      "wall": "22:20:32.514",
+      "media": "0-0",
+      "range": [
+        222,
+        48
+      ],
+      "start": 14.038,
+      "clock": 14.05,
+      "exact": true
+    },
+    {
+      "wall": "22:20:34.147",
+      "media": "0-0",
+      "range": [
+        271,
+        7
+      ],
+      "start": 16.463,
+      "clock": 16.5,
+      "exact": true
+    },
+    {
+      "wall": "22:20:34.711",
+      "media": "1-0",
+      "range": [
+        0,
+        48
+      ],
+      "start": 0.088,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:20:37.043",
+      "media": "1-0",
+      "range": [
+        49,
+        45
+      ],
+      "start": 3.388,
+      "clock": 3.4,
+      "exact": true
+    },
+    {
+      "wall": "22:20:38.410",
+      "media": "1-0",
+      "range": [
+        95,
+        45
+      ],
+      "start": 5.438,
+      "clock": 5.45,
+      "exact": true
+    },
+    {
+      "wall": "22:20:40.544",
+      "media": "1-0",
+      "range": [
+        141,
+        20
+      ],
+      "start": 8.613,
+      "clock": 8.65,
+      "exact": true
+    },
+    {
+      "wall": "22:20:41.477",
+      "media": "1-0",
+      "range": [
+        162,
+        50
+      ],
+      "start": 10.023,
+      "clock": 10.05,
+      "exact": true
+    },
+    {
+      "wall": "22:20:43.278",
+      "media": "1-0",
+      "range": [
+        213,
+        53
+      ],
+      "start": 12.748,
+      "clock": 12.752,
+      "exact": true
+    },
+    {
+      "wall": "22:20:45.277",
+      "media": "1-0",
+      "range": [
+        267,
+        49
+      ],
+      "start": 15.748,
+      "clock": 15.75,
+      "exact": true
+    },
+    {
+      "wall": "22:20:47.711",
+      "media": "1-0",
+      "range": [
+        317,
+        44
+      ],
+      "start": 19.373,
+      "clock": 19.4,
+      "exact": true
+    },
+    {
+      "wall": "22:20:49.244",
+      "media": "1-0",
+      "range": [
+        362,
+        8
+      ],
+      "start": 21.698,
+      "clock": 21.7,
+      "exact": true
+    },
+    {
+      "wall": "22:20:49.857",
+      "media": "2-0",
+      "range": [
+        0,
+        41
+      ],
+      "start": 0.083,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:20:51.884",
+      "media": "2-0",
+      "range": [
+        42,
+        49
+      ],
+      "start": 2.933,
+      "clock": 2.95,
+      "exact": true
+    },
+    {
+      "wall": "22:20:53.617",
+      "media": "2-0",
+      "range": [
+        92,
+        46
+      ],
+      "start": 5.508,
+      "clock": 5.55,
+      "exact": true
+    },
+    {
+      "wall": "22:20:55.750",
+      "media": "2-0",
+      "range": [
+        139,
+        48
+      ],
+      "start": 8.733,
+      "clock": 8.75,
+      "exact": true
+    },
+    {
+      "wall": "22:20:57.850",
+      "media": "2-0",
+      "range": [
+        188,
+        24
+      ],
+      "start": 11.883,
+      "clock": 11.9,
+      "exact": true
+    },
+    {
+      "wall": "22:20:58.986",
+      "media": "0-0",
+      "range": [
+        0,
+        49
+      ],
+      "start": 0.063,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:21:00.947",
+      "media": "0-0",
+      "range": [
+        50,
+        52
+      ],
+      "start": 2.813,
+      "clock": 2.85,
+      "exact": true
+    },
+    {
+      "wall": "22:21:03.013",
+      "media": "0-0",
+      "range": [
+        103,
+        38
+      ],
+      "start": 5.913,
+      "clock": 5.95,
+      "exact": true
+    },
+    {
+      "wall": "22:21:04.913",
+      "media": "0-0",
+      "range": [
+        142,
+        46
+      ],
+      "start": 8.763,
+      "clock": 8.8,
+      "exact": true
+    },
+    {
+      "wall": "22:21:07.113",
+      "media": "0-0",
+      "range": [
+        189,
+        45
+      ],
+      "start": 12.088,
+      "clock": 12.1,
+      "exact": true
+    },
+    {
+      "wall": "22:21:08.680",
+      "media": "0-0",
+      "range": [
+        235,
+        20
+      ],
+      "start": 14.438,
+      "clock": 14.45,
+      "exact": true
+    },
+    {
+      "wall": "22:21:09.697",
+      "media": "1-0",
+      "range": [
+        0,
+        38
+      ],
+      "start": 0.088,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:21:11.557",
+      "media": "1-0",
+      "range": [
+        39,
+        41
+      ],
+      "start": 2.688,
+      "clock": 2.7,
+      "exact": true
+    },
+    {
+      "wall": "22:21:13.023",
+      "media": "1-0",
+      "range": [
+        81,
+        12
+      ],
+      "start": 4.888,
+      "clock": 4.9,
+      "exact": true
+    },
+    {
+      "wall": "22:21:13.756",
+      "media": "1-0",
+      "range": [
+        94,
+        42
+      ],
+      "start": 5.988,
+      "clock": 6.0,
+      "exact": true
+    },
+    {
+      "wall": "22:21:15.157",
+      "media": "1-0",
+      "range": [
+        137,
+        34
+      ],
+      "start": 8.063,
+      "clock": 8.1,
+      "exact": true
+    },
+    {
+      "wall": "22:21:16.790",
+      "media": "1-0",
+      "range": [
+        172,
+        49
+      ],
+      "start": 10.506,
+      "clock": 10.55,
+      "exact": true
+    },
+    {
+      "wall": "22:21:18.690",
+      "media": "1-0",
+      "range": [
+        222,
+        47
+      ],
+      "start": 13.381,
+      "clock": 13.4,
+      "exact": true
+    },
+    {
+      "wall": "22:21:20.890",
+      "media": "1-0",
+      "range": [
+        270,
+        44
+      ],
+      "start": 16.656,
+      "clock": 16.7,
+      "exact": true
+    },
+    {
+      "wall": "22:21:22.424",
+      "media": "1-0",
+      "range": [
+        315,
+        39
+      ],
+      "start": 18.981,
+      "clock": 19.0,
+      "exact": true
+    },
+    {
+      "wall": "22:21:24.437",
+      "media": "2-0",
+      "range": [
+        0,
+        48
+      ],
+      "start": 0.084,
+      "clock": 0.0,
+      "exact": true
+    },
+    {
+      "wall": "22:21:26.630",
+      "media": "2-0",
+      "range": [
+        49,
+        30
+      ],
+      "start": 3.184,
+      "clock": 3.2,
+      "exact": true
+    },
+    {
+      "wall": "22:21:28.296",
+      "media": "2-0",
+      "range": [
+        80,
+        51
+      ],
+      "start": 5.659,
+      "clock": 5.7,
+      "exact": true
+    },
+    {
+      "wall": "22:21:30.263",
+      "media": "2-0",
+      "range": [
+        132,
+        38
+      ],
+      "start": 8.634,
+      "clock": 8.65,
+      "exact": true
+    },
+    {
+      "wall": "22:21:31.930",
+      "media": "2-0",
+      "range": [
+        171,
+        47
+      ],
+      "start": 11.134,
+      "clock": 11.15,
+      "exact": true
+    },
+    {
+      "wall": "22:21:33.663",
+      "media": "2-0",
+      "range": [
+        219,
+        47
+      ],
+      "start": 13.734,
+      "clock": 13.75,
+      "exact": true
+    },
+    {
+      "wall": "22:21:35.463",
+      "media": "2-0",
+      "range": [
+        267,
+        10
+      ],
+      "start": 16.434,
+      "clock": 16.45,
+      "exact": true
+    },
+    {
+      "wall": "22:21:36.282",
+      "media": "0-0",
+      "range": [
+        0,
+        46
+      ],
+      "start": 0.071,
+      "clock": 0.0,
+      "exact": true
+    }
+  ],
+  "media": [
+    {
+      "wall": "22:07:36.798",
+      "media": "0-0",
+      "cue_count": 11,
+      "timing": "words",
+      "width": 280
+    },
+    {
+      "wall": "22:07:36.844",
+      "media": "0-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:07:51.018",
+      "media": "1-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:08:02.030",
+      "media": "2-0",
+      "cue_count": 5,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:08:09.629",
+      "media": "0-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:08:18.979",
+      "media": "1-0",
+      "cue_count": 10,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:08:34.469",
+      "media": "2-0",
+      "cue_count": 9,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:08:49.633",
+      "media": "0-0",
+      "cue_count": 9,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:09:04.589",
+      "media": "1-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:09:14.974",
+      "media": "1-1",
+      "cue_count": 5,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:09:24.757",
+      "media": "2-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:09:35.663",
+      "media": "0-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:09:47.388",
+      "media": "1-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:09:59.877",
+      "media": "2-0",
+      "cue_count": 9,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:10:15.168",
+      "media": "0-0",
+      "cue_count": 9,
+      "timing": "estimated",
+      "width": 366
+    },
+    {
+      "wall": "22:10:30.667",
+      "media": "1-0",
+      "cue_count": 10,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:10:44.533",
+      "media": "2-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:10:58.667",
+      "media": "0-0",
+      "cue_count": 10,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:11:15.355",
+      "media": "1-0",
+      "cue_count": 12,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:11:34.152",
+      "media": "2-0",
+      "cue_count": 9,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:11:49.739",
+      "media": "0-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:11:59.391",
+      "media": "1-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:12:09.657",
+      "media": "2-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:12:23.417",
+      "media": "0-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:12:34.452",
+      "media": "1-0",
+      "cue_count": 4,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:12:41.182",
+      "media": "0-0",
+      "cue_count": 10,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:12:55.681",
+      "media": "1-0",
+      "cue_count": 9,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:13:10.313",
+      "media": "2-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:13:23.308",
+      "media": "0-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:13:35.442",
+      "media": "1-0",
+      "cue_count": 5,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:13:43.613",
+      "media": "2-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:13:53.221",
+      "media": "0-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:14:05.630",
+      "media": "1-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:14:16.791",
+      "media": "2-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:14:28.182",
+      "media": "0-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:14:38.701",
+      "media": "1-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:14:48.661",
+      "media": "2-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:14:59.804",
+      "media": "0-0",
+      "cue_count": 4,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:15:07.130",
+      "media": "1-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:15:17.115",
+      "media": "0-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:15:29.527",
+      "media": "1-0",
+      "cue_count": 5,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:15:38.428",
+      "media": "2-0",
+      "cue_count": 4,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:15:44.870",
+      "media": "0-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:15:58.112",
+      "media": "1-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:16:12.014",
+      "media": "0-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:16:23.028",
+      "media": "1-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:16:34.097",
+      "media": "1-1",
+      "cue_count": 4,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:16:41.759",
+      "media": "2-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:16:54.429",
+      "media": "0-0",
+      "cue_count": 4,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:17:00.902",
+      "media": "1-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:17:13.997",
+      "media": "2-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:17:26.529",
+      "media": "0-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:17:39.028",
+      "media": "1-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:17:49.828",
+      "media": "2-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:18:00.280",
+      "media": "0-0",
+      "cue_count": 5,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:18:08.634",
+      "media": "1-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:18:20.030",
+      "media": "1-1",
+      "cue_count": 5,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:18:28.134",
+      "media": "2-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:18:41.771",
+      "media": "0-0",
+      "cue_count": 9,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:18:56.306",
+      "media": "1-0",
+      "cue_count": 8,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:19:08.518",
+      "media": "2-0",
+      "cue_count": 9,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:19:22.965",
+      "media": "0-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:19:33.731",
+      "media": "1-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:19:45.816",
+      "media": "2-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:19:55.648",
+      "media": "0-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:20:06.109",
+      "media": "1-0",
+      "cue_count": 10,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:20:23.085",
+      "media": "0-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:20:34.711",
+      "media": "1-0",
+      "cue_count": 9,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:20:49.856",
+      "media": "2-0",
+      "cue_count": 5,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:20:58.986",
+      "media": "0-0",
+      "cue_count": 6,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:21:09.697",
+      "media": "1-0",
+      "cue_count": 9,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:21:24.437",
+      "media": "2-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    },
+    {
+      "wall": "22:21:36.282",
+      "media": "0-0",
+      "cue_count": 7,
+      "timing": "words",
+      "width": 366
+    }
+  ]
+}

@@ -27,6 +27,7 @@ final class ReadAloudHTTPFixture {
     enum Reply {
         case response(Data, status: Int = 200, delay: Double = 0)
         case failure(URLError.Code, delay: Double = 0)
+        case stream([Data], interval: Double)
     }
     private let lock = NSLock()
     struct CapturedRequest { let path: String; let body: [String: Any] }
@@ -136,6 +137,7 @@ private final class ReadAloudFixtureURLProtocol: URLProtocol {
         let delay: Double
         switch reply {
         case .response(_, _, let value), .failure(_, let value): delay = value
+        case .stream: delay = 0
         }
         DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self else { return }
@@ -151,6 +153,19 @@ private final class ReadAloudFixtureURLProtocol: URLProtocol {
                 self.client?.urlProtocolDidFinishLoading(self)
             case .failure(let code, _):
                 self.client?.urlProtocol(self, didFailWithError: URLError(code))
+            case .stream(let chunks, let interval):
+                let response = HTTPURLResponse(url: self.request.url!, statusCode: 200,
+                    httpVersion: nil, headerFields: ["Content-Type": "text/event-stream"])!
+                self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+                for (index, data) in chunks.enumerated() {
+                    DispatchQueue.global().asyncAfter(deadline: .now() + Double(index) * interval) { [weak self] in
+                        guard let self else { return }
+                        self.deliveryLock.lock(); defer { self.deliveryLock.unlock() }
+                        guard !self.stopped else { return }
+                        self.client?.urlProtocol(self, didLoad: data)
+                        if index == chunks.count - 1 { self.client?.urlProtocolDidFinishLoading(self) }
+                    }
+                }
             }
         }
     }

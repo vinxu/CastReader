@@ -1,0 +1,14 @@
+{
+  "read_only": true,
+  "production_changed": false,
+  "request_id": "38680D5B-C8B2-4737-BF95-ECFF7233067F",
+  "request_key": "7e3c266aef940a9df2ea",
+  "captured_gateway_source_sha256": "e83932e7e1a343795ab1d0735f76ab764a406e588f7b7c9118b1de7262c8a685",
+  "gateway_events": [
+    "tts_gateway_recovery {\n  event: 'attempt_start',\n  requestKey: '7e3c266aef940a9df2ea',\n  policy: 'legacy',\n  attempt: 1,\n  stage: 'upstream_headers',\n  attemptTimeoutMs: 120000,\n  elapsedMs: 0\n}",
+    "tts_gateway_recovery {\n  event: 'upstream_headers',\n  requestKey: '7e3c266aef940a9df2ea',\n  policy: 'legacy',\n  attempt: 1,\n  stage: 'upstream_body',\n  status: 200,\n  elapsedMs: 1182\n}",
+    "tts_gateway_recovery {\n  event: 'upstream_body',\n  requestKey: '7e3c266aef940a9df2ea',\n  policy: 'legacy',\n  attempt: 1,\n  stage: 'response_validation',\n  status: 200,\n  bodyBytes: 507313,\n  elapsedMs: 1220\n}",
+    "tts_gateway_request {\n  requestKey: '7e3c266aef940a9df2ea',\n  method: 'POST',\n  path: '/api/captioned_speech_partly',\n  status: 200,\n  stage: 'response',\n  abortSource: null,\n  abortStage: null,\n  downstreamDisconnected: false,\n  requestBytes: 562,\n  elapsedMs: 1224,\n  clientPlatform: 'ios',\n  clientVersion: '1.2.48',\n  policy: 'legacy',\n  attempts: 1\n}"
+  ],
+  "conclusion": "Successful single upstream response; gateway may discard invalid/incomplete word timing. Raw upstream timestamp array not retained, precise rejection cause remains unverified."
+}

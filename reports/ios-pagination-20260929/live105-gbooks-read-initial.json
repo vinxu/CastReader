@@ -1,0 +1,672 @@
+{
+  "raw_sha256": "3226f185af97e79b2a060eb705cd95428bd67e1093e55b9f66a56c5b1e5edfbe",
+  "interval": [
+    74910000,
+    75505000
+  ],
+  "measurement": "Keep all live Read presentation holds and natural media handoffs for audit.\n\nMeasures application events. It does not establish acoustic silence, source\ncoverage, every-frame geometry, or chapter completion.",
+  "final_acceptance": false,
+  "holds": [
+    {
+      "hold": "873BDD32-14FC-4051-8240-85FF2359874E",
+      "hold_at": "20:49:23.296",
+      "hold_ms": 74963296,
+      "line": 4491,
+      "segment": "1-0",
+      "cue": "17.496",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:49:23.403",
+      "commit_ms": 74963403,
+      "hold_to_commit_ms": 107,
+      "playing_at": "20:49:26.248",
+      "playing_ms": 74966248,
+      "hold_to_playing_ms": 2952,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 2845
+    },
+    {
+      "hold": "2AECC962-CE75-4C07-92F0-D9411B20E7AB",
+      "hold_at": "20:49:58.191",
+      "hold_ms": 74998191,
+      "line": 4724,
+      "segment": "1-0",
+      "cue": "9.336",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:49:58.833",
+      "commit_ms": 74998833,
+      "hold_to_commit_ms": 642,
+      "playing_at": "20:50:01.797",
+      "playing_ms": 75001797,
+      "hold_to_playing_ms": 3606,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 2964
+    },
+    {
+      "hold": "C41E9690-7EA7-4CE8-B225-DFEB7F931568",
+      "hold_at": "20:50:33.159",
+      "hold_ms": 75033159,
+      "line": 4913,
+      "segment": "1-0",
+      "cue": "22.248",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:50:33.889",
+      "commit_ms": 75033889,
+      "hold_to_commit_ms": 730,
+      "playing_at": "20:50:35.935",
+      "playing_ms": 75035935,
+      "hold_to_playing_ms": 2776,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 2046
+    },
+    {
+      "hold": "D8303ED3-DCD3-4DBA-B406-A9E1AADF7ED9",
+      "hold_at": "20:51:06.854",
+      "hold_ms": 75066854,
+      "line": 5139,
+      "segment": "1-0",
+      "cue": "20.546916666666668",
+      "outcome": "playing",
+      "commit_at": "20:51:06.914",
+      "commit_ms": 75066914,
+      "hold_to_commit_ms": 60,
+      "release_at": "20:51:06.919",
+      "release_ms": 75066919,
+      "hold_to_release_ms": 65,
+      "release_intent": "true",
+      "playing_at": "20:51:06.942",
+      "playing_ms": 75066942,
+      "hold_to_playing_ms": 88,
+      "resumed_segment": "1-0",
+      "release_to_playing_ms": 23,
+      "commit_to_playing_ms": 28
+    },
+    {
+      "hold": "98356AA1-01BF-48F8-9E10-D910BAE93193",
+      "hold_at": "20:51:43.421",
+      "hold_ms": 75103421,
+      "line": 5366,
+      "segment": "1-1",
+      "cue": "7.344",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:51:44.156",
+      "commit_ms": 75104156,
+      "hold_to_commit_ms": 735,
+      "playing_at": "20:51:48.190",
+      "playing_ms": 75108190,
+      "hold_to_playing_ms": 4769,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 4034
+    },
+    {
+      "hold": "61BB6627-9202-4D34-8576-F3DB354C50BE",
+      "hold_at": "20:52:19.704",
+      "hold_ms": 75139704,
+      "line": 5582,
+      "segment": "1-1",
+      "cue": "7.104",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:52:20.477",
+      "commit_ms": 75140477,
+      "hold_to_commit_ms": 773,
+      "playing_at": "20:52:23.498",
+      "playing_ms": 75143498,
+      "hold_to_playing_ms": 3794,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 3021
+    },
+    {
+      "hold": "99024872-E398-44B8-8B58-C5BB66A94B53",
+      "hold_at": "20:52:55.280",
+      "hold_ms": 75175280,
+      "line": 5806,
+      "segment": "1-0",
+      "cue": "10.92",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:52:55.986",
+      "commit_ms": 75175986,
+      "hold_to_commit_ms": 706,
+      "playing_at": "20:52:57.705",
+      "playing_ms": 75177705,
+      "hold_to_playing_ms": 2425,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 1719
+    },
+    {
+      "hold": "B38554BA-8E68-4F49-946E-C33EF323BEDE",
+      "hold_at": "20:53:29.979",
+      "hold_ms": 75209979,
+      "line": 6049,
+      "segment": "1-0",
+      "cue": "11.352",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:53:30.766",
+      "commit_ms": 75210766,
+      "hold_to_commit_ms": 787,
+      "playing_at": "20:53:37.314",
+      "playing_ms": 75217314,
+      "hold_to_playing_ms": 7335,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 6548
+    },
+    {
+      "hold": "28C2A75C-9D04-4BA6-B733-6322CE3BCE8B",
+      "hold_at": "20:54:08.868",
+      "hold_ms": 75248868,
+      "line": 6258,
+      "segment": "1-0",
+      "cue": "15.864",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:54:09.583",
+      "commit_ms": 75249583,
+      "hold_to_commit_ms": 715,
+      "playing_at": "20:54:15.661",
+      "playing_ms": 75255661,
+      "hold_to_playing_ms": 6793,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 6078
+    },
+    {
+      "hold": "C9AEB401-E109-4981-9503-D6B0C9042FE0",
+      "hold_at": "20:54:47.868",
+      "hold_ms": 75287868,
+      "line": 6473,
+      "segment": "1-1",
+      "cue": "16.776",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:54:48.648",
+      "commit_ms": 75288648,
+      "hold_to_commit_ms": 780,
+      "playing_at": "20:54:50.819",
+      "playing_ms": 75290819,
+      "hold_to_playing_ms": 2951,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 2171
+    },
+    {
+      "hold": "FEEE32DC-4067-4B11-8004-0F033AF61238",
+      "hold_at": "20:55:21.145",
+      "hold_ms": 75321145,
+      "line": 6686,
+      "segment": "1-1",
+      "cue": "18.552",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:55:21.926",
+      "commit_ms": 75321926,
+      "hold_to_commit_ms": 781,
+      "playing_at": "20:55:26.524",
+      "playing_ms": 75326524,
+      "hold_to_playing_ms": 5379,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 4598
+    },
+    {
+      "hold": "BDF82E45-FB80-4F08-8906-C55BF628ED25",
+      "hold_at": "20:55:58.809",
+      "hold_ms": 75358809,
+      "line": 6902,
+      "segment": "1-0",
+      "cue": "19.2",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:55:59.473",
+      "commit_ms": 75359473,
+      "hold_to_commit_ms": 664,
+      "playing_at": "20:56:06.461",
+      "playing_ms": 75366461,
+      "hold_to_playing_ms": 7652,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 6988
+    },
+    {
+      "hold": "CB5C6A66-C42F-4132-9242-7DA7F404DB9E",
+      "hold_at": "20:56:38.447",
+      "hold_ms": 75398447,
+      "line": 7108,
+      "segment": "1-0",
+      "cue": "11.808",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:56:39.075",
+      "commit_ms": 75399075,
+      "hold_to_commit_ms": 628,
+      "playing_at": "20:56:42.725",
+      "playing_ms": 75402725,
+      "hold_to_playing_ms": 4278,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 3650
+    },
+    {
+      "hold": "91DE886D-6C17-4766-8920-51896364CC60",
+      "hold_at": "20:57:15.422",
+      "hold_ms": 75435422,
+      "line": 7337,
+      "segment": "0-2",
+      "cue": "10.392",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:57:16.114",
+      "commit_ms": 75436114,
+      "hold_to_commit_ms": 692,
+      "playing_at": "20:57:19.155",
+      "playing_ms": 75439155,
+      "hold_to_playing_ms": 3733,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 3041
+    },
+    {
+      "hold": "FFEE51C6-49ED-41FB-A5B3-B160380623AA",
+      "hold_at": "20:57:50.069",
+      "hold_ms": 75470069,
+      "line": 7571,
+      "segment": "2-0",
+      "cue": "5.928",
+      "outcome": "playing_without_explicit_visual_release",
+      "commit_at": "20:57:50.886",
+      "commit_ms": 75470886,
+      "hold_to_commit_ms": 817,
+      "playing_at": "20:57:55.726",
+      "playing_ms": 75475726,
+      "hold_to_playing_ms": 5657,
+      "resumed_segment": "0-0",
+      "commit_to_playing_ms": 4840
+    }
+  ],
+  "natural_media_handoffs": [
+    {
+      "ended_at": "20:49:05.655",
+      "playing_at": "20:49:05.726",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 71,
+      "line": 4396
+    },
+    {
+      "ended_at": "20:49:11.495",
+      "playing_at": "20:49:11.570",
+      "from_segment": "0-1",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 75,
+      "line": 4434
+    },
+    {
+      "ended_at": "20:49:34.681",
+      "playing_at": "20:49:34.742",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 61,
+      "line": 4581
+    },
+    {
+      "ended_at": "20:49:49.131",
+      "playing_at": "20:49:49.191",
+      "from_segment": "0-1",
+      "to_segment": "0-2",
+      "ended_to_playing_ms": 60,
+      "line": 4668
+    },
+    {
+      "ended_at": "20:49:51.832",
+      "playing_at": "20:49:51.907",
+      "from_segment": "0-2",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 75,
+      "line": 4692
+    },
+    {
+      "ended_at": "20:50:18.200",
+      "playing_at": "20:50:18.275",
+      "from_segment": "0-0",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 75,
+      "line": 4842
+    },
+    {
+      "ended_at": "20:50:48.021",
+      "playing_at": "20:50:48.088",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 67,
+      "line": 5029
+    },
+    {
+      "ended_at": "20:50:53.008",
+      "playing_at": "20:50:53.098",
+      "from_segment": "0-1",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 90,
+      "line": 5067
+    },
+    {
+      "ended_at": "20:51:07.962",
+      "playing_at": "20:51:09.220",
+      "from_segment": "1-0",
+      "to_segment": "0-850010000",
+      "ended_to_playing_ms": 1258,
+      "line": 5180
+    },
+    {
+      "ended_at": "20:51:21.501",
+      "playing_at": "20:51:21.567",
+      "from_segment": "0-850010000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 66,
+      "line": 5250
+    },
+    {
+      "ended_at": "20:51:38.412",
+      "playing_at": "20:51:38.476",
+      "from_segment": "1-0",
+      "to_segment": "1-1",
+      "ended_to_playing_ms": 64,
+      "line": 5341
+    },
+    {
+      "ended_at": "20:52:02.375",
+      "playing_at": "20:52:02.451",
+      "from_segment": "0-0",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 76,
+      "line": 5481
+    },
+    {
+      "ended_at": "20:52:14.853",
+      "playing_at": "20:52:14.917",
+      "from_segment": "1-0",
+      "to_segment": "1-1",
+      "ended_to_playing_ms": 64,
+      "line": 5557
+    },
+    {
+      "ended_at": "20:52:35.501",
+      "playing_at": "20:52:35.566",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 65,
+      "line": 5691
+    },
+    {
+      "ended_at": "20:52:47.880",
+      "playing_at": "20:52:47.953",
+      "from_segment": "0-1",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 73,
+      "line": 5764
+    },
+    {
+      "ended_at": "20:53:07.080",
+      "playing_at": "20:53:07.144",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 64,
+      "line": 5898
+    },
+    {
+      "ended_at": "20:53:19.960",
+      "playing_at": "20:53:20.020",
+      "from_segment": "0-1",
+      "to_segment": "0-2",
+      "ended_to_playing_ms": 60,
+      "line": 5981
+    },
+    {
+      "ended_at": "20:53:22.280",
+      "playing_at": "20:53:22.354",
+      "from_segment": "0-2",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 74,
+      "line": 6006
+    },
+    {
+      "ended_at": "20:53:49.977",
+      "playing_at": "20:53:50.038",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 61,
+      "line": 6157
+    },
+    {
+      "ended_at": "20:53:58.158",
+      "playing_at": "20:53:58.236",
+      "from_segment": "0-1",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 78,
+      "line": 6208
+    },
+    {
+      "ended_at": "20:54:21.498",
+      "playing_at": "20:54:23.155",
+      "from_segment": "0-0",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 1657,
+      "line": 6331
+    },
+    {
+      "ended_at": "20:54:36.568",
+      "playing_at": "20:54:36.629",
+      "from_segment": "1-0",
+      "to_segment": "1-1",
+      "ended_to_playing_ms": 61,
+      "line": 6418
+    },
+    {
+      "ended_at": "20:54:56.266",
+      "playing_at": "20:54:56.340",
+      "from_segment": "0-0",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 74,
+      "line": 6542
+    },
+    {
+      "ended_at": "20:55:08.665",
+      "playing_at": "20:55:08.723",
+      "from_segment": "1-0",
+      "to_segment": "1-1",
+      "ended_to_playing_ms": 58,
+      "line": 6619
+    },
+    {
+      "ended_at": "20:55:40.420",
+      "playing_at": "20:55:40.483",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 63,
+      "line": 6809
+    },
+    {
+      "ended_at": "20:55:45.880",
+      "playing_at": "20:55:45.958",
+      "from_segment": "0-1",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 78,
+      "line": 6843
+    },
+    {
+      "ended_at": "20:56:22.408",
+      "playing_at": "20:56:22.473",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 65,
+      "line": 7024
+    },
+    {
+      "ended_at": "20:56:30.457",
+      "playing_at": "20:56:30.531",
+      "from_segment": "0-1",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 74,
+      "line": 7073
+    },
+    {
+      "ended_at": "20:56:56.602",
+      "playing_at": "20:56:56.663",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 61,
+      "line": 7222
+    },
+    {
+      "ended_at": "20:57:08.382",
+      "playing_at": "20:57:08.448",
+      "from_segment": "0-1",
+      "to_segment": "0-2",
+      "ended_to_playing_ms": 66,
+      "line": 7299
+    },
+    {
+      "ended_at": "20:57:23.320",
+      "playing_at": "20:57:24.917",
+      "from_segment": "0-0",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 1597,
+      "line": 7408
+    },
+    {
+      "ended_at": "20:57:37.690",
+      "playing_at": "20:57:37.754",
+      "from_segment": "1-0",
+      "to_segment": "1-1",
+      "ended_to_playing_ms": 64,
+      "line": 7496
+    },
+    {
+      "ended_at": "20:57:45.991",
+      "playing_at": "20:57:46.068",
+      "from_segment": "1-1",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 77,
+      "line": 7549
+    },
+    {
+      "ended_at": "20:58:09.985",
+      "playing_at": "20:58:10.046",
+      "from_segment": "0-0",
+      "to_segment": "0-1",
+      "ended_to_playing_ms": 61,
+      "line": 7698
+    },
+    {
+      "ended_at": "20:58:11.235",
+      "playing_at": "20:58:11.309",
+      "from_segment": "0-1",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 74,
+      "line": 7719
+    }
+  ],
+  "page_commits": [
+    {
+      "at": "20:49:23.403",
+      "line": 4496,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,774,O tts.language=en tts.voice=af_heart tts.langHistory=en@our_good en@y_day,_a"
+    },
+    {
+      "at": "20:49:58.833",
+      "line": 4730,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,790,b tts.language=en tts.voice=af_heart tts.langHistory=en@our_good en@y_day,_a en@_time,_a"
+    },
+    {
+      "at": "20:50:33.889",
+      "line": 4918,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=Y sig=0,66,430,593,66,24,782,h tts.language=en tts.voice=af_heart tts.langHistory=en@our_good en@y_day,_a en@_time,_a en@ed_that_"
+    },
+    {
+      "at": "20:51:06.914",
+      "line": 5143,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,804,t tts.language=en tts.voice=af_heart tts.langHistory=en@our_good en@y_day,_a en@_time,_a en@ed_that_ en@rust_in_"
+    },
+    {
+      "at": "20:51:44.156",
+      "line": 5372,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,765,v tts.language=en tts.voice=af_heart tts.langHistory=en@our_good en@y_day,_a en@_time,_a en@ed_that_ en@rust_in_ en@ring_for"
+    },
+    {
+      "at": "20:52:20.477",
+      "line": 5587,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,803,o tts.language=en tts.voice=af_heart tts.langHistory=en@y_day,_a en@_time,_a en@ed_that_ en@rust_in_ en@ring_for en@_them,_a"
+    },
+    {
+      "at": "20:52:55.986",
+      "line": 5812,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,794,i tts.language=en tts.voice=af_heart tts.langHistory=en@_time,_a en@ed_that_ en@rust_in_ en@ring_for en@_them,_a en@e_feel_h"
+    },
+    {
+      "at": "20:53:30.766",
+      "line": 6055,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,765,p tts.language=en tts.voice=af_heart tts.langHistory=en@ed_that_ en@rust_in_ en@ring_for en@_them,_a en@e_feel_h en@not_care"
+    },
+    {
+      "at": "20:54:09.583",
+      "line": 6264,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,791,t tts.language=en tts.voice=af_heart tts.langHistory=en@rust_in_ en@ring_for en@_them,_a en@e_feel_h en@not_care en@r_hearts"
+    },
+    {
+      "at": "20:54:48.648",
+      "line": 6479,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,771,c tts.language=en tts.voice=af_heart tts.langHistory=en@ring_for en@_them,_a en@e_feel_h en@not_care en@r_hearts en@ible_sta"
+    },
+    {
+      "at": "20:55:21.926",
+      "line": 6692,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,797,I tts.language=en tts.voice=af_heart tts.langHistory=en@_them,_a en@e_feel_h en@not_care en@r_hearts en@ible_sta en@_put_und"
+    },
+    {
+      "at": "20:55:59.473",
+      "line": 6908,
+      "event": "GBOOKS page commit reason=auto paras=2 cross=N sig=0,66,430,593,66,24,776,i tts.language=en tts.voice=af_heart tts.langHistory=en@e_feel_h en@not_care en@r_hearts en@ible_sta en@_put_und en@ry,_and_"
+    },
+    {
+      "at": "20:56:39.075",
+      "line": 7113,
+      "event": "GBOOKS page commit reason=auto paras=1 cross=N sig=0,66,430,593,66,24,828,p tts.language=en tts.voice=af_heart tts.langHistory=en@not_care en@r_hearts en@ible_sta en@_put_und en@ry,_and_ en@ens_us_t"
+    },
+    {
+      "at": "20:57:16.114",
+      "line": 7343,
+      "event": "GBOOKS page commit reason=auto paras=3 cross=N sig=0,66,430,593,66,24,758,c tts.language=en tts.voice=af_heart tts.langHistory=en@r_hearts en@ible_sta en@_put_und en@ry,_and_ en@ens_us_t en@e_things"
+    },
+    {
+      "at": "20:57:50.886",
+      "line": 7577,
+      "event": "GBOOKS page commit reason=auto paras=3 cross=N sig=0,66,430,593,66,24,798,h tts.language=en tts.voice=af_heart tts.langHistory=en@ible_sta en@_put_und en@ry,_and_ en@ens_us_t en@e_things en@What_is_"
+    }
+  ],
+  "failure_or_interruption_events": [],
+  "timing": {
+    "hold_to_commit_ms": {
+      "count": 15,
+      "p95_ms": 817,
+      "max_ms": 817
+    },
+    "hold_to_release_ms": {
+      "count": 1,
+      "p95_ms": 65,
+      "max_ms": 65
+    },
+    "hold_to_playing_ms": {
+      "count": 15,
+      "p95_ms": 7652,
+      "max_ms": 7652
+    },
+    "commit_to_playing_ms": {
+      "count": 15,
+      "p95_ms": 6988,
+      "max_ms": 6988
+    },
+    "release_to_playing_ms": {
+      "count": 1,
+      "p95_ms": 23,
+      "max_ms": 23
+    }
+  },
+  "natural_media_handoff_timing": {
+    "count": 35,
+    "p95_ms": 1597,
+    "max_ms": 1657
+  },
+  "candidate": 105,
+  "platform": "gbooks",
+  "raw_log": "/private/tmp/castreader-live105-reader-current.log",
+  "interval_clock": [
+    "20:48:30",
+    "20:58:25"
+  ],
+  "raw_log_archive": "live105-reader-through2059.log.gz",
+  "analysis_tool_sha256": "a006df2aad5e6390b05cdda6b8b3d9d184e0177db1addacca2d28505ff137d83"
+}

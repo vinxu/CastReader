@@ -1,19 +1,58 @@
 import XCTest
+import Combine
 @testable import CastReader
 
 @MainActor
 final class SpeechPipelineTests: XCTestCase {
     private var root: URL!
     private var oldPro = false
+    private var oldSpeed: Double = 1
+    private var oldEnglishVoice = ""
+    private var oldChineseVoice = ""
+
+    func testReviewEligibilityIgnoresMediaTicksButTracksBufferedAndPlayingStates() async throws {
+        let audio = AudioPlayerService.shared
+        let token = audio.claimPlaybackSession(owner: .readAloud)
+        defer { audio.releasePlaybackSession(token) }
+        _ = audio.clearQueue(session: token)
+        _ = audio.setMoreSegmentsExpected(false, session: token)
+        audio.isPlaying = false
+        audio.isBuffering = false
+        var values: [Bool] = []
+        let observation = audio.reviewQuiescencePublisher.sink { values.append($0) }
+        defer { observation.cancel() }
+        try await wait { values == [true] }
+        for i in 0..<100 { audio.currentTime = Double(i) / 20 }
+        try await Task.sleep(for: .milliseconds(50))
+        XCTAssertEqual(values, [true], "Audio progress must not invalidate root navigation")
+        _ = audio.setMoreSegmentsExpected(true, session: token)
+        try await wait { values.last == false }
+        audio.isBuffering = true
+        audio.isPlaying = true
+        _ = audio.setMoreSegmentsExpected(false, session: token)
+        audio.isBuffering = false
+        try await Task.sleep(for: .milliseconds(50))
+        XCTAssertEqual(values, [true, false], "Buffered/playing transitions remain ineligible")
+        audio.isPlaying = false
+        try await wait { values == [true, false, true] }
+        audio.currentTime = 0
+    }
     override func setUp() async throws {
         root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        oldSpeed = Double(AppSettings.shared.speed)
+        oldEnglishVoice = AppSettings.shared.voice(for: "en")
+        oldChineseVoice = AppSettings.shared.voice(for: "zh")
+        AppSettings.shared.speed = 1
         oldPro = ProManager.shared.debugForcePro
         ProManager.shared.debugForcePro = true
         useRegularVoiceForTest(language: "en")
     }
     override func tearDown() async throws {
         ProManager.shared.debugForcePro = oldPro
+        AppSettings.shared.speed = oldSpeed
+        AppSettings.shared.setVoice(oldEnglishVoice, for: "en")
+        AppSettings.shared.setVoice(oldChineseVoice, for: "zh")
         try? FileManager.default.removeItem(at: root)
     }
     private func wait(_ condition: () -> Bool, timeout: Double = 6) async throws {
@@ -31,6 +70,462 @@ final class SpeechPipelineTests: XCTestCase {
                                    ttsService: fixture.service(), historyStore: HistoryStore(directory: root))
         if source.isWebRendered { vm.loadWebParagraphs(paragraphs, language: "en") }
         return (vm, player)
+    }
+
+    func testPrefetchedExplanationStartsBeforePlanDoneAndKeepsSameJob() async throws {
+        try await verifyEarlyPrefetchedPlan(stopBeforeDone: false)
+    }
+
+    func testFullyConsumedCarryCanPrepareSuccessorBeforeAudioEndsButNotWhilePaused() async throws {
+        let fixture = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: 3))
+        }
+        defer { fixture.close() }
+        let (vm, audio) = makeVM(.weread, fixture: fixture, texts: ["The carried sentence finishes on this page."])
+        defer { vm.stop(); vm.deactivate(); audio.stop() }
+        vm.start()
+        try await wait { audio.isPlaying && !audio.moreSegmentsExpected }
+        let current = try XCTUnwrap(audio.currentSegment)
+        XCTAssertTrue(vm.commitLiveWebPageDuringActiveCarry(
+            [ReadingParagraph(id: 0, text: "finishes on this page.", speechText: "")],
+            language: "en", carrySegmentID: current.id))
+        XCTAssertTrue(vm.isOnLastReadableParagraph)
+        XCTAssertTrue(vm.currentTTSCompleteForPageHandoff)
+        XCTAssertTrue(vm.canPrepareAdjacentLivePageAudio,
+                      "A carry-only visual page still owns real playable source audio")
+        vm.togglePlayPause()
+        XCTAssertFalse(vm.canPrepareAdjacentLivePageAudio)
+        let position = audio.playbackPosition
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.01)
+        vm.togglePlayPause()
+        try await wait { audio.isPlaying }
+        XCTAssertTrue(vm.canPrepareAdjacentLivePageAudio)
+    }
+
+    func testConfirmedShortOpeningAdoptsPendingSuccessorExactlyOnce() async throws {
+        try await verifyPendingAdjacentReserve(stopAfterAdoption: false)
+    }
+
+    func testStoppedPendingAdjacentReserveCannotRevivePlayback() async throws {
+        try await verifyPendingAdjacentReserve(stopAfterAdoption: true)
+    }
+
+    func testPausedPendingAdjacentReserveWaitsForExplicitResume() async throws {
+        try await verifyPendingAdjacentReserve(stopAfterAdoption: false, pauseAfterAdoption: true)
+    }
+
+    private func verifyPendingAdjacentReserve(stopAfterAdoption: Bool, pauseAfterAdoption: Bool = false) async throws {
+        let head = "Short opening."
+        let body = "The pending successor continues the confirmed source exactly once."
+        let fixture = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: text == head ? 1.2 : 2),
+                      delay: text == body ? 0.6 : 0)
+        }
+        defer { fixture.close() }
+        let (vm, audio) = makeVM(.weread, fixture: fixture, texts: ["Original page."])
+        defer { vm.stop(); vm.deactivate(); audio.stop() }
+        let voice = AppSettings.shared.voice(for: "en")
+        let generatedOpening = try await fixture.service().generatePagePrefetchSegments(
+            paragraphIndex: 0, text: head, voice: voice, language: "en")
+        // Production rebases the successor before queueing. Its page-local
+        // 0-0 transport ID must not masquerade as the predecessor's boundary.
+        let opening = generatedOpening.map { segment in
+            AudioSegment(paragraphIndex: segment.paragraphIndex, segmentIndex: 800_000_000 + segment.segmentIndex,
+                audioData: segment.audioData, timestamps: segment.timestamps, duration: segment.duration,
+                text: segment.text, isWavFormat: segment.isWavFormat, unprocessedText: segment.unprocessedText,
+                speaker: segment.speaker, timingTimestamps: segment.timingTimestamps)
+        }
+        let reserve = LivePagePreparedSpeech(paragraphIndex: 1, sourceText: body, voice: voice, language: "en")
+        vm.start()
+        try await wait { audio.isPlaying && !audio.moreSegmentsExpected }
+        var adopted = false
+        XCTAssertTrue(audio.armQueuedTailPresentationBoundary { hold in
+            reserve.start(generator: fixture.service(), audio: audio, speechInput: body,
+                          isCurrent: { !adopted }, fitsBudget: { true })
+            adopted = vm.commitContinuousLiveWebPage(
+                [ReadingParagraph(id: 0, text: head), ReadingParagraph(id: 1, text: body)],
+                language: "en", preparedSegments: opening, following: [reserve])
+            XCTAssertTrue(adopted)
+            XCTAssertTrue(reserve.adopted)
+            XCTAssertFalse(reserve.stream.finished)
+            XCTAssertTrue(audio.finishPagePresentation(hold))
+        })
+        XCTAssertNotNil(audio.appendPreparedSegmentsForContinuousPlayback(opening))
+        try await wait { adopted }
+        if stopAfterAdoption {
+            vm.stop()
+            try await Task.sleep(for: .milliseconds(1100))
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertNil(audio.currentSegment)
+            XCTAssertLessThanOrEqual(fixture.requests.filter { $0 == body }.count, 1)
+        } else {
+            if pauseAfterAdoption {
+                try await wait { audio.currentSegment?.text == head && audio.isPlaying }
+                vm.togglePlayPause()
+                let position = audio.playbackPosition
+                try await Task.sleep(for: .milliseconds(1100))
+                XCTAssertFalse(audio.isPlaying)
+                XCTAssertEqual(audio.currentSegment?.text, head)
+                XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.02)
+                vm.togglePlayPause()
+            }
+            try await wait { audio.currentSegment?.text == body && audio.isPlaying }
+            XCTAssertEqual(fixture.requests.filter { $0 == body }.count, 1,
+                           "Visible-page adoption must retain the in-flight producer")
+        }
+    }
+
+    func testStoppedEarlyPrefetchedPlanCannotReviveAfterDone() async throws {
+        try await verifyEarlyPrefetchedPlan(stopBeforeDone: true)
+    }
+
+    func testPagePrefetchPreparesOneSuccessorBeforeTakeAndNeverRegeneratesIt() async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let oldLanguage = AppSettings.shared.explainLanguage
+        AppSettings.shared.explainLanguage = "en"
+        let texts = ["The prepared opening introduces the idea.", "Its successor continues that same idea.", "Only playback demand prepares the final explanation."]
+        func section(_ index: Int) -> [String: Any] {
+            ["id": "block-\(index)", "text": texts[index], "style": "explain", "cinematic": ["events": []]]
+        }
+        let speech = ReadAloudHTTPFixture { text, _ in .response(ReadAloudHTTPFixture.body(text, duration: 0.9)) }
+        let plan = ReadAloudHTTPFixture.forRequests { request, body in
+            switch request.url?.path {
+            case "/api/quickread/extract-plan":
+                let first: [String: Any] = ["job_id": "bounded-page", "output_language": "en", "total_blocks": 3, "block_0": section(0)]
+                let json = String(data: try! JSONSerialization.data(withJSONObject: first), encoding: .utf8)!
+                return .response(Data("event: block0\ndata: \(json)\n\nevent: done\ndata: {\"job_id\":\"bounded-page\",\"total_blocks\":3}\n\n".utf8))
+            case "/api/quickread/extract-block":
+                return .response(try! JSONSerialization.data(withJSONObject: ["section": section(body["block_idx"] as? Int ?? 1)]))
+            default: return .response(Data("{\"events\":[]}".utf8))
+            }
+        }
+        let document = ReadingDocument(title: "Bounded producer", sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: "This page contains enough original source material to explain. Its prepared opening and following narration must keep their original production job across a page handover.")])
+        let vm = ExplainViewModel(document: document, speechGenerator: speech.service(),
+            quickReadService: QuickReadService(session: plan.session, mobileSessionProvider: SpeechPipelineSessionProvider()))
+        defer { vm.stop(); vm.deactivate(); audio.clearForAccountBoundary(); speech.close(); plan.close(); AppSettings.shared.explainLanguage = oldLanguage }
+        let payload = try await vm.prefetchFirstBlock(for: document, previousSummary: "Previous page context", textFingerprint: "page-b")
+        try await wait { speech.requests.contains(texts[1]) }
+        XCTAssertFalse(audio.isPlaying, "Speculation must remain inaudible")
+        XCTAssertFalse(speech.requests.contains(texts[2]), "Speculation is bounded to one successor")
+        var completions = 0
+        vm.onDocumentFinished = { completions += 1 }
+        vm.startFromPrefetched(payload)
+        try await wait({ completions == 1 }, timeout: 7)
+        for text in texts { XCTAssertEqual(speech.requests.filter { $0 == text }.count, 1) }
+        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, 1)
+        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-block" && ($0.body["block_idx"] as? Int) == 1 }.count, 1)
+    }
+
+    func testNextPagePlanMayRunButItsSpeechWaitsForAudiblePageSuccessor() async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let oldLanguage = AppSettings.shared.explainLanguage
+        AppSettings.shared.explainLanguage = "en"
+        let opening = "The audible page introduces the idea."
+        let successor = "Its immediate successor must be ready before speculative speech."
+        let future = "The following page has its own explanation."
+        func section(_ text: String) -> [String: Any] {
+            ["id": "block", "text": text, "style": "explain", "cinematic": ["events": []]]
+        }
+        let speech = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: 5), delay: text == successor ? 2 : 0)
+        }
+        let plan = ReadAloudHTTPFixture.forRequests { request, body in
+            switch request.url?.path {
+            case "/api/quickread/extract-plan":
+                let isFuture = (body["text"] as? String)?.hasPrefix("Future source") == true
+                let job = isFuture ? "future-job" : "audible-job"
+                let count = isFuture ? 1 : 2
+                let first: [String: Any] = ["job_id": job, "output_language": "en", "total_blocks": count,
+                    "block_0": section(isFuture ? future : opening)]
+                let json = String(data: try! JSONSerialization.data(withJSONObject: first), encoding: .utf8)!
+                return .response(Data("event: block0\ndata: \(json)\n\nevent: done\ndata: {\"job_id\":\"\(job)\",\"total_blocks\":\(count)}\n\n".utf8))
+            case "/api/quickread/extract-block":
+                return .response(try! JSONSerialization.data(withJSONObject: ["section": section(successor)]))
+            default:
+                let text = body["job_id"] as? String == "future-job" ? future : ((body["block_idx"] as? Int) == 1 ? successor : opening)
+                return .response(try! JSONSerialization.data(withJSONObject: ["section": section(text)]))
+            }
+        }
+        func document(_ prefix: String) -> ReadingDocument {
+            ReadingDocument(title: "Speech admission", sourceKind: .kindle, language: "en",
+                paragraphs: [ReadingParagraph(id: 0, text: prefix + " contains enough meaningful original source text for a complete explanation with a prepared opening and a following section.")])
+        }
+        let current = document("Current source")
+        let vm = ExplainViewModel(document: current, speechGenerator: speech.service(),
+            quickReadService: QuickReadService(session: plan.session, mobileSessionProvider: SpeechPipelineSessionProvider()))
+        defer { vm.stop(); vm.deactivate(); audio.clearForAccountBoundary(); speech.close(); plan.close(); AppSettings.shared.explainLanguage = oldLanguage }
+        let ready = try await vm.prefetchFirstBlock(for: current, previousSummary: nil, textFingerprint: "current")
+        vm.startFromPrefetched(ready)
+        try await wait { audio.isPlaying && speech.requests.contains(successor) }
+        let work = Task { try await vm.prefetchFirstBlock(for: document("Future source"), previousSummary: nil, textFingerprint: "future") }
+        defer { work.cancel() }
+        try await wait { plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count == 2 }
+        try await Task.sleep(nanoseconds: 250_000_000)
+        XCTAssertFalse(speech.requests.contains(future), "Future-page synthesis cannot jump ahead of the current successor")
+        _ = try await work.value
+        XCTAssertNotNil(vm.debugPreparedVoiceIDs[1], "The audible successor must finish first")
+        XCTAssertEqual(vm.currentBlockIndex, 0)
+        XCTAssertNotEqual(audio.currentSegment?.text, future, "Speculative audio remains inaudible")
+        XCTAssertEqual(speech.requests.filter { $0 == successor }.count, 1, "Adoption must not deadlock or regenerate its own successor")
+    }
+
+    func testAdjacentPlanStartsBeforeOpeningAudioButSpeechKeepsCurrentReserve() async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let oldLanguage = AppSettings.shared.explainLanguage
+        AppSettings.shared.explainLanguage = "en"
+        let opening = "The opening must receive the first speech slot."
+        let successor = "The current page also needs its complete successor."
+        let future = "The adjacent page is planned while the opening is still loading."
+        func section(_ text: String) -> [String: Any] {
+            ["id": "section", "text": text, "cinematic": ["events": []]]
+        }
+        let speech = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: 6),
+                      delay: text == opening ? 2 : text == successor ? 3 : 0)
+        }
+        let plan = ReadAloudHTTPFixture.forRequests { request, body in
+            let isFuture = (body["text"] as? String)?.hasPrefix("Future source") == true
+            let job = isFuture ? "early-next" : "early-current"
+            if request.url?.path == "/api/quickread/extract-plan" {
+                let count = isFuture ? 1 : 2
+                let first: [String: Any] = ["job_id": job, "output_language": "en", "total_blocks": count,
+                                           "block_0": section(isFuture ? future : opening)]
+                let done: [String: Any] = ["job_id": job, "total_blocks": count,
+                                          "page_summary": "The current page introduces the original idea."]
+                let a = String(data: try! JSONSerialization.data(withJSONObject: first), encoding: .utf8)!
+                let b = String(data: try! JSONSerialization.data(withJSONObject: done), encoding: .utf8)!
+                return .response(Data("event: block0\ndata: \(a)\n\nevent: done\ndata: \(b)\n\n".utf8))
+            }
+            if request.url?.path == "/api/quickread/extract-block" {
+                return .response(try! JSONSerialization.data(withJSONObject: ["section": section(successor)]))
+            }
+            return .response(Data("{\"events\":[]}".utf8))
+        }
+        func document(_ prefix: String) -> ReadingDocument {
+            ReadingDocument(title: "Early adjacent planning", sourceKind: .kindle, language: "en",
+                paragraphs: [ReadingParagraph(id: 0, text: prefix + " contains sufficient original text for a page explanation. This is the exact page source used to prepare the narration.")])
+        }
+        let vm = ExplainViewModel(document: document("Current source"), speechGenerator: speech.service(),
+            quickReadService: QuickReadService(session: plan.session, mobileSessionProvider: SpeechPipelineSessionProvider()))
+        defer { vm.stop(); vm.deactivate(); audio.clearForAccountBoundary(); speech.close(); plan.close(); AppSettings.shared.explainLanguage = oldLanguage }
+        XCTAssertFalse(vm.canPlanAdjacentLivePage)
+        vm.startByUser()
+        try await wait({ vm.adjacentPlanRevision > 0 && vm.canPlanAdjacentLivePage }, timeout: 1.5)
+        XCTAssertEqual(vm.currentBlockIndex, -1, "The bridge gets a planning event before opening media exists")
+        XCTAssertEqual(vm.currentContinuitySummary(), "The current page introduces the original idea.")
+        let next = Task { try await vm.prefetchFirstBlock(for: document("Future source"),
+            previousSummary: vm.currentContinuitySummary(), textFingerprint: "early-next-source") }
+        defer { next.cancel() }
+        try await wait({ plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count == 2 }, timeout: 1)
+        try await Task.sleep(nanoseconds: 250_000_000)
+        XCTAssertFalse(speech.requests.contains(future), "Early planning cannot steal the opening's speech capacity")
+        XCTAssertFalse(audio.isPlaying)
+        _ = try await next.value
+        XCTAssertNotNil(vm.debugPreparedVoiceIDs[0])
+        XCTAssertNotNil(vm.debugPreparedVoiceIDs[1])
+        XCTAssertEqual(vm.currentBlockIndex, 0)
+        XCTAssertNotEqual(audio.currentSegment?.text, future)
+        vm.togglePlayPause()
+        XCTAssertFalse(vm.canPlanAdjacentLivePage, "Pause must close early planning admission")
+        vm.stop()
+        XCTAssertFalse(vm.canPlanAdjacentLivePage)
+    }
+
+    func testPendingPageAdoptionKeepsSlowProducerPastFifteenSeconds() async throws {
+        try await verifyPendingPageAdoption(stop: false)
+    }
+
+    func testExplanationVoiceSwitchRefillsSuccessorBeforeCurrentBlockEnds() async throws {
+        try await verifyExplanationVoiceSwitchBuffer(paused: false)
+    }
+
+    func testPausedExplanationVoiceSwitchRefillsSuccessorOnResume() async throws {
+        try await verifyExplanationVoiceSwitchBuffer(paused: true)
+    }
+
+    private func verifyExplanationVoiceSwitchBuffer(paused: Bool) async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let oldLanguage = AppSettings.shared.explainLanguage
+        let oldVoice = AppSettings.shared.voice(for: "en")
+        AppSettings.shared.explainLanguage = "en"
+        let texts = ["This opening is long enough to prepare its successor before it ends.",
+                     "The same successor keeps its explanation and changes only its voice."]
+        func section(_ index: Int) -> [String: Any] {
+            ["id": "block-\(index)", "text": texts[index], "cinematic": ["events": []]]
+        }
+        let speech = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: text == texts[0] ? 5 : 1))
+        }
+        let plan = ReadAloudHTTPFixture.forRequests { request, body in
+            if request.url?.path == "/api/quickread/extract-plan" {
+                let first: [String: Any] = ["job_id": "revoice-buffer", "output_language": "en", "total_blocks": 2, "block_0": section(0)]
+                let json = String(data: try! JSONSerialization.data(withJSONObject: first), encoding: .utf8)!
+                return .response(Data("event: block0\ndata: \(json)\n\nevent: done\ndata: {\"job_id\":\"revoice-buffer\",\"total_blocks\":2}\n\n".utf8))
+            }
+            if request.url?.path == "/api/quickread/extract-block" {
+                return .response(try! JSONSerialization.data(withJSONObject: ["section": section(1)]))
+            }
+            return .response(try! JSONSerialization.data(withJSONObject: ["section": section(body["block_idx"] as? Int ?? 0)]))
+        }
+        let document = ReadingDocument(title: "Revoice buffer", sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: texts.joined(separator: " "))])
+        let vm = ExplainViewModel(document: document, speechGenerator: speech.service(),
+            quickReadService: QuickReadService(session: plan.session, mobileSessionProvider: SpeechPipelineSessionProvider()))
+        defer {
+            vm.stop(); vm.deactivate(); audio.clearForAccountBoundary(); speech.close(); plan.close()
+            AppSettings.shared.explainLanguage = oldLanguage; AppSettings.shared.setVoice(oldVoice, for: "en")
+        }
+        let payload = try await vm.prefetchFirstBlock(for: document, previousSummary: nil, textFingerprint: "revoice-page")
+        vm.startFromPrefetched(payload)
+        try await wait { audio.isPlaying && vm.debugPreparedVoiceIDs[1] == oldVoice }
+        if paused { vm.togglePlayPause() }
+        AppSettings.shared.setVoice("af_bella", for: "en")
+        try await wait { vm.debugPreparedVoiceIDs[0] == "af_bella" && VoiceSwitchStatusCenter.shared.progress == nil }
+        if paused {
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertNil(vm.debugPreparedVoiceIDs[1], "Explicit pause must backpressure future synthesis")
+            vm.ensurePlaying()
+        }
+        try await wait { vm.debugPreparedVoiceIDs[1] == "af_bella" }
+        XCTAssertEqual(vm.currentBlockIndex, 0, "Rebuild the successor during the current block, not at its end")
+        let successor = try XCTUnwrap(vm.debugPreparedSegments(block: 1).first)
+        try await wait { audio.isPreparedForPlayback(successor) }
+        let decoder = try XCTUnwrap(audio.preparedMediaForTesting(successor)?.player)
+        XCTAssertEqual(vm.currentBlockIndex, 0, "Decode the immediate successor before the audible block ends")
+        XCTAssertEqual(speech.requests.filter { $0 == texts[1] }.count, 2, "One synthesis per voice")
+        try await wait({ vm.currentBlockIndex == 1 && audio.isPlaying }, timeout: 7)
+        XCTAssertTrue(audio.activePlayerForTesting === decoder, "Block turnover must adopt the exact prepared decoder across clearQueue")
+        XCTAssertEqual(speech.requests.filter { $0 == texts[1] }.count, 2, "The prepared successor must not regenerate at takeover")
+        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, 1)
+        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-block" }.count, 1)
+    }
+
+    func testStoppedPendingPageAdoptionCancelsWithoutLateAudio() async throws {
+        try await verifyPendingPageAdoption(stop: true)
+    }
+
+    func testPendingPageAdoptionBeforeOpeningHasNoReserveDeadlock() async throws {
+        try await verifyPendingPageAdoption(stop: false, beforePlan: true)
+    }
+
+    func testIdleActivatedModeCanPreparePageWithoutWaitingForPlayback() async throws {
+        try await verifyPendingPageAdoption(stop: false, activateIdle: true)
+    }
+
+    private func verifyPendingPageAdoption(stop: Bool, beforePlan: Bool = false, activateIdle: Bool = false) async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let oldLanguage = AppSettings.shared.explainLanguage
+        AppSettings.shared.explainLanguage = "en"
+        let narration = "The original pending producer reaches this exact page without a second request."
+        let speech = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: 0.6), delay: stop || beforePlan || activateIdle ? 1 : 16)
+        }
+        let plan = ReadAloudHTTPFixture.forRequests { request, _ in
+            guard request.url?.path == "/api/quickread/extract-plan" else {
+                return .response(Data("{\"events\":[]}".utf8))
+            }
+            let first: [String: Any] = ["job_id": "pending-page", "output_language": "en", "total_blocks": 1,
+                "block_0": ["id": "block", "text": narration, "style": "explain", "cinematic": ["events": []]]]
+            let json = String(data: try! JSONSerialization.data(withJSONObject: first), encoding: .utf8)!
+            return .response(Data("event: block0\ndata: \(json)\n\nevent: done\ndata: {\"job_id\":\"pending-page\",\"total_blocks\":1}\n\n".utf8))
+        }
+        let document = ReadingDocument(title: "Pending page", sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: "This original text is long enough for a real explanation. The visible page takes an already running speculative job, including all pending audio and its cancellation ownership.")])
+        let vm = ExplainViewModel(document: document, speechGenerator: speech.service(),
+            quickReadService: QuickReadService(session: plan.session, mobileSessionProvider: SpeechPipelineSessionProvider()))
+        defer { vm.stop(); vm.deactivate(); audio.clearForAccountBoundary(); speech.close(); plan.close(); AppSettings.shared.explainLanguage = oldLanguage }
+        if activateIdle { vm.activate() }
+        let work = Task { try await vm.prefetchFirstBlock(for: document, previousSummary: nil, textFingerprint: "pending-target") }
+        if !beforePlan { try await wait { speech.requests.contains(narration) } }
+        vm.startFromPendingPagePrefetch(work)
+        if stop {
+            vm.stop(); vm.deactivate()
+            try await Task.sleep(nanoseconds: 1_500_000_000)
+            XCTAssertTrue(work.isCancelled)
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertNil(audio.currentSegment)
+        } else {
+            try await wait({ audio.hasAudibleProgress }, timeout: 22)
+            XCTAssertFalse(work.isCancelled)
+            XCTAssertEqual(audio.currentSegment?.text, narration)
+        }
+        XCTAssertEqual(speech.requests.filter { $0 == narration }.count, 1)
+        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, 1)
+    }
+
+    func testShortPageEligibilityUsesTargetLanguage() {
+        let english = ReadingDocument(title: "Title", sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: "Chapter Two")])
+        let chinese = ReadingDocument(title: "中文", sourceKind: .kindle, language: "zh",
+            paragraphs: [ReadingParagraph(id: 0, text: "当前页包含足够的中文正文，可以开始准备连续讲解。")])
+        XCTAssertFalse(ExplainViewModel.canPrefetchExplanation(english))
+        XCTAssertTrue(ExplainViewModel.canPrefetchExplanation(chinese))
+    }
+
+    private func verifyEarlyPrefetchedPlan(stopBeforeDone: Bool) async throws {
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        let oldLanguage = AppSettings.shared.explainLanguage
+        AppSettings.shared.explainLanguage = "en"
+        let first = "A prepared opening is ready before the plan finishes."
+        let second = "The same plan supplies the remaining explanation."
+        func section(_ text: String) -> [String: Any] {
+            ["id": "block", "text": text, "style": "explain", "cinematic": ["events": []]]
+        }
+        let speech = ReadAloudHTTPFixture { text, _ in .response(ReadAloudHTTPFixture.body(text, duration: 0.7)) }
+        let plan = ReadAloudHTTPFixture.forRequests { request, body in
+            switch request.url?.path {
+            case "/api/quickread/extract-plan":
+                let block: [String: Any] = ["job_id": "early-plan", "output_language": "en",
+                    "total_blocks": 0, "block_0": section(first)]
+                let json = String(data: try! JSONSerialization.data(withJSONObject: block), encoding: .utf8)!
+                return .stream([Data("event: block0\ndata: \(json)\n\nevent: stage\ndata: {\"stage\":\"planning\"}\n\n".utf8),
+                    Data("event: done\ndata: {\"job_id\":\"early-plan\",\"total_blocks\":2,\"page_summary\":\"The original idea is now established; continue with its consequence.\"}\n\n".utf8)], interval: 2.5)
+            case "/api/quickread/extract-block":
+                return .response(try! JSONSerialization.data(withJSONObject: ["section": section(second)]))
+            default:
+                return .response(try! JSONSerialization.data(withJSONObject: ["section": section((body["block_idx"] as? Int) == 1 ? second : first)]))
+            }
+        }
+        let document = ReadingDocument(title: "Early page", sourceKind: .kindle, language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: "This source page contains enough meaningful text for explanation. Its first idea and later idea must remain attached to one exact planning job during a page handover.")])
+        let vm = ExplainViewModel(document: document, speechGenerator: speech.service(),
+            quickReadService: QuickReadService(session: plan.session, mobileSessionProvider: SpeechPipelineSessionProvider()))
+        defer { vm.stop(); vm.deactivate(); audio.clearForAccountBoundary(); speech.close(); plan.close(); AppSettings.shared.explainLanguage = oldLanguage }
+        var completions = 0
+        vm.onDocumentFinished = { completions += 1 }
+        let began = Date()
+        let payload = try await vm.prefetchFirstBlock(for: document, previousSummary: nil, textFingerprint: "exact-target")
+        XCTAssertLessThan(Date().timeIntervalSince(began), 2, "Ready first media cannot wait for done")
+        vm.startFromPrefetched(payload)
+        try await wait { audio.hasAudibleProgress }
+        XCTAssertLessThan(Date().timeIntervalSince(began), 2.5)
+        XCTAssertEqual(completions, 0, "Placeholder total=0 cannot authorize early page completion")
+        if stopBeforeDone {
+            vm.stop(); vm.deactivate()
+            try await Task.sleep(nanoseconds: 2_700_000_000)
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertFalse(speech.requests.contains(second))
+            XCTAssertEqual(completions, 0)
+            XCTAssertNil(vm.currentContinuitySummary(), "A stopped producer cannot restore late page context")
+        } else {
+            try await wait({ completions == 1 }, timeout: 6)
+            XCTAssertEqual(speech.requests.filter { $0 == first }.count, 1)
+            XCTAssertEqual(speech.requests.filter { $0 == second }.count, 1)
+            XCTAssertTrue(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-block" }
+                .allSatisfy { $0.body["job_id"] as? String == "early-plan" })
+            XCTAssertEqual(vm.currentContinuitySummary(), "The original idea is now established; continue with its consequence.")
+            vm.loadWebParagraphs([ReadingParagraph(id: 0, text: "A different source revision.")])
+            XCTAssertNil(vm.currentContinuitySummary(), "A summary cannot attach to replaced source text")
+        }
+        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, 1)
     }
 
     func testRetainedReaderCannotStealNewDocumentOnVoiceChange() async throws {
@@ -444,6 +939,10 @@ final class SpeechPipelineTests: XCTestCase {
         let firstTimes = vm.debugPreparedMarkTimes
         XCTAssertEqual(firstTimes.count, 1)
         XCTAssertTrue(audio.moreSegmentsExpected)
+        XCTAssertLessThan(vm.explanationText.count, first.count,
+                          "Streaming a short unit must still display a single visual line")
+        XCTAssertLessThanOrEqual((vm.explanationText as NSString).size(withAttributes:
+            [.font: UIFont.systemFont(ofSize: 16, weight: .medium)]).width, 280)
         try await task.value
         XCTAssertEqual(vm.debugPreparedMarkTimes.count, 2)
         XCTAssertEqual(vm.debugPreparedMarkTimes.first, firstTimes.first, "Published marks must never move when later audio arrives")
@@ -455,6 +954,93 @@ final class SpeechPipelineTests: XCTestCase {
             .flatMap { ClonedTTSStartup.requestUnits($0.text, language: vm.playbackLanguage, voice: voice) }
         XCTAssertEqual(fixture.requests, expectedRequests.map { SpeechTextSanitizer.sanitizedForTTS($0).trimmingCharacters(in: .whitespacesAndNewlines) },
                        "Each language/voice-specific unit must be synthesized exactly once")
+    }
+
+    func testExplainSubtitlesFollowPlayerClockAtSpeedPauseSeekAndReusedMediaID() async throws {
+        let text = "First words. Second words. Last words."
+        let starts = [0.0, 0.3, 2.0, 2.3, 6.0, 6.3]
+        let words = ["First", "words", "Second", "words", "Last", "words"]
+        let times = zip(words, starts).map { TTSTimestamp(word: $0, startTime: $1, endTime: $1 + 0.2) }
+        let segment = AudioSegment(paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadAloudHTTPFixture.wav(duration: 8), timestamps: times, duration: 8,
+            text: text, isWavFormat: true)
+        let vm = ExplainViewModel(document: ReadingDocument(title: "Subtitle fixture", sourceKind: .text,
+            language: "en", paragraphs: [ReadingParagraph(id: 0, text: text)]))
+        let audio = AudioPlayerService.shared
+        defer { vm.stop(); vm.deactivate(); audio.stop() }
+        AppSettings.shared.speed = 1.5
+        vm.setSubtitleLayout(width: 280, font: UIFont.systemFont(ofSize: 16, weight: .medium))
+        vm.debugSeedCachedNarration([segment], voiceID: AppSettings.shared.voice(for: "en"))
+        vm.activate(); vm.ensurePlaying()
+        try await wait { audio.hasAudibleProgress && vm.explanationText == "First words." }
+        XCTAssertEqual(audio.playbackRate, 1.5)
+        try await wait { vm.explanationText == "Second words." }
+        XCTAssertGreaterThanOrEqual(audio.playbackPosition, 2)
+        XCTAssertLessThan(audio.playbackPosition, 2.4)
+        vm.togglePlayPause()
+        let pausedCaption = vm.explanationText
+        try await Task.sleep(for: .milliseconds(250))
+        XCTAssertEqual(vm.explanationText, pausedCaption)
+        XCTAssertTrue(vm.debugSeekSubtitle(to: 6.2))
+        try await wait { vm.explanationText == "Last words." }
+        XCTAssertTrue(vm.debugSeekSubtitle(to: 0.4))
+        try await wait { vm.explanationText == "First words." }
+        XCTAssertFalse(audio.isPlaying)
+        vm.stop(); vm.deactivate()
+        let next = AudioSegment(paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadAloudHTTPFixture.wav(duration: 3), timestamps: [], duration: 3,
+            text: "Different page.", isWavFormat: true)
+        vm.debugSeedCachedNarration([next], voiceID: AppSettings.shared.voice(for: "en"))
+        vm.activate(); vm.ensurePlaying()
+        try await wait { audio.hasAudibleProgress && vm.explanationText == "Different page." }
+    }
+
+    func testQueuedOldPageTickCannotFlashNewPagesFinalSubtitle() async throws {
+        let vm = ExplainViewModel(document: ReadingDocument(title: "Queued clock fixture", sourceKind: .text,
+            language: "en", paragraphs: [ReadingParagraph(id: 0, text: "Original page.")]))
+        let audio = AudioPlayerService.shared
+        defer { vm.stop(); vm.deactivate(); audio.stop() }
+        let first = AudioSegment(paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadAloudHTTPFixture.wav(duration: 8), timestamps: [], duration: 8,
+            text: "Original page.", isWavFormat: true)
+        let next = AudioSegment(paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadAloudHTTPFixture.wav(duration: 4), timestamps: [
+                TTSTimestamp(word: "New", startTime: 0, endTime: 0.4),
+                TTSTimestamp(word: "opening", startTime: 0.4, endTime: 0.8),
+                TTSTimestamp(word: "Final", startTime: 3, endTime: 3.4),
+                TTSTimestamp(word: "line", startTime: 3.4, endTime: 3.8)],
+            duration: 4, text: "New opening. Final line.", isWavFormat: true)
+        let voice = AppSettings.shared.voice(for: "en")
+        vm.debugSeedCachedNarration([first], voiceID: voice)
+        vm.activate(); vm.ensurePlaying()
+        try await wait { audio.hasAudibleProgress }
+        var captions: [String] = []
+        let subscription = vm.$explanationText.sink { captions.append($0) }
+        defer { subscription.cancel() }
+        audio.currentTime = 7.8 // Already emitted; delivery is queued on RunLoop.main.
+        vm.debugSeedCachedNarration([next], voiceID: voice, enqueueImmediately: true)
+        try await wait { audio.hasAudibleProgress && audio.currentSegment?.text == next.text }
+        XCTAssertEqual(vm.explanationText, "New opening.")
+        XCTAssertFalse(captions.contains("Final line."), "An old item clock must never reach the new page, even for one frame")
+    }
+
+    func testChineseExplanationRequestsRawTimingForSingleLineCaptions() async throws {
+        let oldLanguage = AppSettings.shared.explainLanguage
+        AppSettings.shared.explainLanguage = "zh"
+        useRegularVoiceForTest(language: "zh")
+        defer { AppSettings.shared.explainLanguage = oldLanguage }
+        let text = String(repeating: "第一部分的讲解文字需要真实时间", count: 5) + "。" +
+            String(repeating: "后续部分也需要按真实音频时间切换", count: 5) + "。"
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: 1))
+        }
+        let vm = ExplainViewModel(document: ReadingDocument(title: "Raw timing fixture", sourceKind: .text,
+            language: "zh", paragraphs: [ReadingParagraph(id: 0, text: text)]), speechGenerator: fixture.service())
+        defer { vm.stop(); vm.deactivate(); AudioPlayerService.shared.stop(); fixture.close() }
+        try await vm.debugPlayShortNarration(QuickreadSection(id: "raw-timing", text: text,
+            cinematic: QuickreadCinematic(events: [])))
+        XCTAssertGreaterThanOrEqual(fixture.capturedRequests.count, 2)
+        XCTAssertTrue(fixture.capturedRequests.allSatisfy { $0.body["return_timestamps"] as? Bool == true })
     }
 
     func testExplanationKeepsAmbiguousOrParaphrasedMarksOnComposePath() {
@@ -533,6 +1119,68 @@ extension SpeechPipelineTests {
 }
 
 extension SpeechPipelineTests {
+    func testKindlePreparedAudioTailUsesDecoderClockDespiteDelayedUITick() async throws {
+        let text = "The prepared explanation is already speaking on the current page. Its last annotation must finish with the decoder rather than a delayed interface timestamp."
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: 4))
+        }
+        let document = ReadingDocument(title: "Decoder deadline", sourceKind: .kindle,
+            language: "en", paragraphs: [ReadingParagraph(id: 0, text: text)])
+        let vm = ExplainViewModel(document: document, speechGenerator: fixture.service())
+        let audio = AudioPlayerService.shared
+        defer { vm.stop(); vm.deactivate(); audio.stop(); fixture.close() }
+        try await vm.debugPlayShortNarration(QuickreadSection(id: "decoder-deadline", text: text,
+            cinematic: QuickreadCinematic(events: [])))
+        try await wait { audio.playbackPosition > 0.4 && vm.preparedLivePageAudioTail != nil }
+        let before = try XCTUnwrap(vm.preparedLivePageAudioTail)
+        let uiTime = audio.currentTime
+        audio.currentTime = 0 // Simulate a queued UI sample, without rewinding the decoder.
+        let delayed = try XCTUnwrap(vm.preparedLivePageAudioTail)
+        audio.currentTime = uiTime
+        XCTAssertEqual(delayed.lastSegmentID, before.lastSegmentID)
+        XCTAssertEqual(delayed.remainingAudioSeconds, before.remainingAudioSeconds, accuracy: 0.03,
+                       "A stale UI timestamp must not add silence after the final ink")
+    }
+
+    func testKindleExplainManualNavigationPreservesExplicitPause() async throws {
+        let text = "A paused explanation must stay paused when selecting a different page. An explicit resume can continue the same prepared narration without creating another request."
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: 4))
+        }
+        let document = ReadingDocument(title: "Manual pause fixture", sourceKind: .kindle,
+            language: "en", paragraphs: [ReadingParagraph(id: 0, text: text)])
+        let vm = ExplainViewModel(document: document, speechGenerator: fixture.service())
+        let book = KindleBook(id: UUID().uuidString, asin: nil, title: "Pause fixture", author: "", coverURL: nil,
+            readerURL: "https://read.amazon.com/", progressLabel: "", storefrontID: "us", lastOpenedAt: nil,
+            lastSyncedAt: Date(), lastReadPageKey: nil, lastReadURL: nil)
+        let model = KindleBookViewModel(book: book, websiteDataStore: .nonPersistent())
+        model.webView.navigationDelegate = nil
+        model.mode = .explain
+        model.explainVM = vm
+        defer { model.destroy(); vm.stop(); vm.deactivate(); AudioPlayerService.shared.stop(); fixture.close() }
+        XCTAssertNotNil(ExplanationSpeechPlan.units(text: text, marks: []),
+                        "The short-narration fixture requires two playable speech units")
+        try await vm.debugPlayShortNarration(QuickreadSection(id: "pause-navigation", text: text,
+            cinematic: QuickreadCinematic(events: [])))
+        try await wait { vm.isPlaying && AudioPlayerService.shared.hasAudibleProgress }
+        XCTAssertTrue(model.shouldResumeAfterUserPageTurn)
+        vm.togglePlayPause()
+        XCTAssertFalse(model.shouldResumeAfterUserPageTurn,
+                       "An owned but paused AVPlayer item does not authorize autoplay after Previous/Next")
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertFalse(model.shouldResumeAfterUserPageTurn)
+        vm.ensurePlaying()
+        XCTAssertTrue(AudioPlayerService.shared.hasPlaybackRequest)
+        XCTAssertTrue(model.shouldResumeAfterUserPageTurn,
+                      "Resume intent must survive AVPlayer's transient waiting state")
+        try await wait { AudioPlayerService.shared.isPlaying && !AudioPlayerService.shared.isBuffering }
+        XCTAssertTrue(model.shouldResumeAfterUserPageTurn)
+    }
+
+    func testKindleFinalMarkDoesNotAddSilenceAfterKnownAudioTail() async throws {
+        try await exerciseKindleFinalInk(stopDuringDrain: false, playbackRate: 3)
+    }
+
     func testKindleBridgeWaitsForActualFinalMultilineMarkAfterAudioEnds() async throws {
         try await exerciseKindleFinalInk(stopDuringDrain: false)
     }
@@ -545,7 +1193,11 @@ extension SpeechPipelineTests {
         try await exerciseKindleFinalInk(stopDuringDrain: false, resumeDuringDrain: true)
     }
 
-    private func exerciseKindleFinalInk(stopDuringDrain: Bool, resumeDuringDrain: Bool = false) async throws {
+    private func exerciseKindleFinalInk(stopDuringDrain: Bool, resumeDuringDrain: Bool = false,
+                                       playbackRate: Double = 1) async throws {
+        let previousSpeed = AppSettings.shared.speed
+        AppSettings.shared.speed = playbackRate
+        defer { AppSettings.shared.speed = previousSpeed }
         let text = "The first important concept is attention, which lets us understand and remember what we read. The second important concept is memory, which helps us apply these ideas throughout the day."
         let fixture = ReadAloudHTTPFixture { input, _ in
             .response(ReadAloudHTTPFixture.body(input, duration: 0.4))
@@ -576,15 +1228,18 @@ extension SpeechPipelineTests {
         var turnCount = 0
         model.explainAdvanceReadyForTesting = { turnAt = ProcessInfo.processInfo.systemUptime; turnCount += 1 }
         try await vm.debugPlayShortNarration(section)
-        try await wait { vm.status == .completed }
-        let audioEndedAt = ProcessInfo.processInfo.systemUptime
-        XCTAssertNil(turnAt, "Audio completion alone must not advance the visible page")
+        var audioEndedAt: Double?
+        AudioPlayerService.shared.onSegmentComplete = { audioEndedAt = ProcessInfo.processInfo.systemUptime }
+        try await wait { !vm.activeMarks.isEmpty }
         let mark = try XCTUnwrap(vm.activeMarks.last)
         let timing = try XCTUnwrap(model.markAnimationClock.animations[mark.id])
-        XCTAssertEqual(timing.duration, 2.2, accuracy: 0.01)
-        XCTAssertGreaterThan(model.markAnimationClock.remaining(), 0.5)
+        XCTAssertGreaterThan(timing.duration, 0)
+        XCTAssertLessThanOrEqual(timing.duration, 2.2)
         let requestsAtCompletion = fixture.requests.count
-        if resumeDuringDrain { vm.togglePlayPause() }
+        if resumeDuringDrain {
+            vm.pauseOwnedPlayback()
+            vm.togglePlayPause()
+        }
         if stopDuringDrain {
             model.stopAll()
             try await Task.sleep(nanoseconds: 2_400_000_000)
@@ -593,11 +1248,14 @@ extension SpeechPipelineTests {
         } else {
             try await wait { turnAt != nil }
             let visibleAdvanceAt = try XCTUnwrap(turnAt)
-            XCTAssertGreaterThanOrEqual(visibleAdvanceAt - timing.startedAt, 2.3)
-            XCTAssertLessThan(visibleAdvanceAt - audioEndedAt, 2.5)
+            let ended = try XCTUnwrap(audioEndedAt)
+            XCTAssertGreaterThanOrEqual(visibleAdvanceAt - timing.startedAt, timing.duration,
+                "The whole multiline path must finish before the page can advance")
+            XCTAssertLessThan(visibleAdvanceAt - ended, 0.2,
+                "The final pen stroke must fit the known audio tail, including fast playback")
             XCTAssertEqual(turnCount, 1)
             XCTAssertEqual(fixture.requests.count, requestsAtCompletion)
-            print("PARITY_FIXED inkStartToTurnMs=\((visibleAdvanceAt - timing.startedAt) * 1000) audioEndToTurnMs=\((visibleAdvanceAt - audioEndedAt) * 1000)")
+            print("PARITY_FIXED inkStartToTurnMs=\((visibleAdvanceAt - timing.startedAt) * 1000) audioEndToTurnMs=\((visibleAdvanceAt - ended) * 1000)")
         }
     }
 }

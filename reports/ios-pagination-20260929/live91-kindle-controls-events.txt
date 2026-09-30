@@ -1,0 +1,9 @@
+14:51:57.020 [active] KINDLE refocus refresh error reason=foreground attempt=1 Could not attach highlights to the Kindle page: live-candidate-not-visible
+14:52:02.153 [active] KINDLE refocus refresh error reason=foreground attempt=2 Could not attach highlights to the Kindle page: live-candidate-not-visible
+14:52:12.289 [active] KINDLE page turn requested previous mode=解读 resume=true
+14:52:12.291 [active] KINDLE explain tail-preparation cancelled reason=manual-previous dispatched=true
+14:52:12.983 [active] KINDLE manual previous restored displayed page key=8444f160ee3e
+14:52:13.058 [active] KINDLE page turn only previous old=8444f160ee3e visibleOld=ad05b0373371 target=560d7849bb6b strategy=native-cache-navigation tried= resume=true
+14:52:14.781 [active] KINDLE manual resume started mode=解读 old=8444f160ee3e new=560d7849bb6b reason=manual-previous epoch=7
+14:52:53.610 [active] KINDLE explain overlay staged-consume key=8444f160ee3e
+14:53:17.963 [active] KINDLE explain overlay staged-consume key=ad05b0373371

@@ -1,0 +1,251 @@
+{
+  "candidate": 102,
+  "rows": [
+    {
+      "begin": "17:54:43.019",
+      "prior_end": "17:54:43.016",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:54:43.033",
+        "source_activated": "17:54:43.042",
+        "paint": "17:54:43.060",
+        "restart": "17:54:43.066",
+        "media_ready": "17:54:43.089",
+        "lock": "17:54:43.124"
+      },
+      "playing": "17:54:43.127",
+      "ended_to_playing_ms": 111,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "17:55:15.709",
+      "prior_end": "17:55:15.707",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:55:15.738",
+        "source_activated": "17:55:15.750",
+        "paint": "17:55:15.768",
+        "restart": "17:55:15.775",
+        "media_ready": "17:55:15.834"
+      },
+      "playing": "17:55:15.873",
+      "ended_to_playing_ms": 166,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "17:55:50.785",
+      "prior_end": "17:55:50.774",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:55:50.801",
+        "source_activated": "17:55:50.813",
+        "paint": "17:55:50.826",
+        "restart": "17:55:50.833",
+        "media_ready": "17:55:50.849",
+        "lock": "17:55:50.892"
+      },
+      "playing": "17:55:50.896",
+      "ended_to_playing_ms": 122,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "17:56:22.652",
+      "prior_end": "17:56:22.645",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:56:22.663",
+        "source_activated": "17:56:22.671",
+        "paint": "17:56:22.684",
+        "restart": "17:56:22.692",
+        "media_ready": "17:56:22.705",
+        "lock": "17:56:22.743"
+      },
+      "playing": "17:56:22.747",
+      "ended_to_playing_ms": 102,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "17:57:17.313",
+      "prior_end": "17:57:17.297",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:57:17.331",
+        "source_activated": "17:57:17.354",
+        "paint": "17:57:17.371",
+        "restart": "17:57:17.379",
+        "media_ready": "17:57:17.404"
+      },
+      "playing": "17:57:17.448",
+      "ended_to_playing_ms": 151,
+      "profile_overlap": true,
+      "control_window": false
+    },
+    {
+      "begin": "17:57:39.226",
+      "prior_end": "17:57:39.216",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:57:39.237",
+        "source_activated": "17:57:39.245",
+        "paint": "17:57:39.258",
+        "restart": "17:57:39.264",
+        "media_ready": "17:57:39.290"
+      },
+      "playing": "17:57:39.328",
+      "ended_to_playing_ms": 112,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "17:58:07.497",
+      "prior_end": "17:58:07.488",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:58:07.511",
+        "source_activated": "17:58:07.522",
+        "paint": "17:58:07.534",
+        "restart": "17:58:07.541",
+        "media_ready": "17:58:07.554"
+      },
+      "playing": "17:58:07.591",
+      "ended_to_playing_ms": 103,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "17:58:36.861",
+      "prior_end": "17:58:36.848",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:58:36.874",
+        "source_activated": "17:58:36.886",
+        "paint": "17:58:36.904",
+        "restart": "17:58:36.911",
+        "media_ready": "17:58:36.930"
+      },
+      "playing": "17:58:36.965",
+      "ended_to_playing_ms": 117,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "17:59:06.788",
+      "prior_end": "17:59:06.777",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:59:06.805",
+        "source_activated": "17:59:06.816",
+        "paint": "17:59:06.829",
+        "restart": "17:59:06.836",
+        "media_ready": "17:59:06.852",
+        "lock": "17:59:06.895"
+      },
+      "playing": "17:59:06.899",
+      "ended_to_playing_ms": 122,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "17:59:42.040",
+      "prior_end": "17:59:42.038",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "17:59:42.062",
+        "source_activated": "17:59:42.073",
+        "paint": "17:59:42.086",
+        "restart": "17:59:42.093",
+        "media_ready": "17:59:42.105",
+        "lock": "17:59:42.142"
+      },
+      "playing": "17:59:42.145",
+      "ended_to_playing_ms": 107,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "18:00:04.012",
+      "prior_end": "18:00:04.009",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "18:00:04.032",
+        "source_activated": "18:00:04.043",
+        "paint": "18:00:04.057",
+        "restart": "18:00:04.063",
+        "media_ready": "18:00:04.083"
+      },
+      "playing": "18:00:04.119",
+      "ended_to_playing_ms": 110,
+      "profile_overlap": false,
+      "control_window": false
+    },
+    {
+      "begin": "18:00:24.898",
+      "prior_end": "18:00:24.888",
+      "outcome": "playing",
+      "staged_target": true,
+      "phase": {
+        "receipt": "18:00:24.916",
+        "source_activated": "18:00:24.926",
+        "paint": "18:00:24.945",
+        "restart": "18:00:24.951",
+        "media_ready": "18:00:24.964",
+        "lock": "18:00:25.004"
+      },
+      "playing": "18:00:25.008",
+      "ended_to_playing_ms": 120,
+      "profile_overlap": false,
+      "control_window": false
+    }
+  ],
+  "ordinary_events": {
+    "count": 11,
+    "p95_ms": 166,
+    "max_ms": 166
+  },
+  "profile_interval": [
+    "17:56:54.504",
+    "17:57:36.528"
+  ],
+  "raw_sha256": {
+    "/tmp/castreader-kindlelive102-reader.log": "bf10a74b4d11bca37b59adfffad9639272269f6c626167db62f9a25308a7084c",
+    "/tmp/castreader-kindlelive102-probe.log": "9ad05ae0ecdf86324d31fc227705a6287c99c2bc7b7cf357cbd0963b3ed59944"
+  },
+  "measurement": "Application event intervals, not acoustic silence. No final long-duration or chapter coverage claimed.",
+  "final_acceptance": false,
+  "control_intervals": [
+    [
+      "17:56:40.000",
+      "17:57:03.000"
+    ],
+    [
+      "18:00:32.000",
+      null
+    ]
+  ],
+  "archived_evidence": {
+    "live102-kindle-reader.log.gz": "5360c1f24efb171f1c73f56df00087f86f4d7fcd4c2d1f723338dfd1f5b34bb5",
+    "live102-kindle-probe-session.log.gz": "733233899d66e6642ba31587163391e8006e6449813cbd3a34a0c48c5cacb5ff"
+  },
+  "pause_observation": {
+    "requested": "18:00:32.368",
+    "applied": "18:00:32.369",
+    "observed_through": "18:01:50",
+    "no_playback_resume": true,
+    "note": "Mirror screenshot retained same page, caption and Play icon. Background preparation completed at 18:00:35.945 without playback."
+  }
+}

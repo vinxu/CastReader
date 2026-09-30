@@ -1,0 +1,41 @@
+{
+  "candidate": 95,
+  "physical_regression_passed": 17,
+  "manual_previous": {
+    "classification": "Active navigation; not a paused-navigation pass",
+    "audio_interruption": "15:36:00.405",
+    "explicit_resumed_playing": "15:36:07.348",
+    "hold_begin": "15:36:07.670",
+    "request_resume": true,
+    "original_visible_page": "da2dd6533f43",
+    "prepared_hidden_page": "63eec3703be5",
+    "previous_target": "103b980de90c",
+    "target_confirmed": "15:36:08.518",
+    "hold_released": "15:36:08.531",
+    "final_correct_page_seen": true,
+    "limitation": "The sampled screenshot showed the correct target; no frame-by-frame recording. Paused variant still requires fresh test."
+  },
+  "automatic_turn_samples": [
+    {
+      "begin": "15:36:44.803",
+      "begin_ms": 56204803,
+      "prior_end_ms": 56204719,
+      "next_playing": "15:36:45.332",
+      "ended_to_playing_ms": 613
+    },
+    {
+      "begin": "15:37:16.184",
+      "begin_ms": 56236184,
+      "prior_end_ms": 56236102,
+      "next_playing": "15:37:16.511",
+      "ended_to_playing_ms": 409
+    }
+  ],
+  "mirror_blocker": "iPhone in Use; confirmed again at15:38. Waiting for phone lock.",
+  "measurement": "Application event times only, not acoustic silence; run affected by audio interruption and phone use.",
+  "source_sha256": {
+    "/tmp/castreader-kindlelive95-probe.log": "10d5be29a8f24401a263db70b07ddc620990194595364f075f56fb1b09c8e7ee",
+    "/tmp/castreader-kindlelive95-reader.log": "cdef51ea26840868921ca0191705c781adf698806c84ee1e4a3f2e8833a0c2f0"
+  },
+  "final_acceptance": false
+}

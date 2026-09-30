@@ -10,6 +10,7 @@ import AVFoundation
 import Combine
 import MediaPlayer
 import UIKit
+import CryptoKit
 
 enum AudioPlaybackOwner: String, Equatable, Sendable {
     case readAloud
@@ -399,8 +400,187 @@ class AudioPlayerService: NSObject, ObservableObject {
         }
     }
 
+    private struct PresentationBoundary {
+        let id: UUID
+        let session: AudioPlaybackSessionToken
+        let segmentID: String
+        let time: Double
+        let continuationTime: Double
+        let atItemEnd: Bool
+        let reached: (UUID) -> Void
+    }
+    private var presentationBoundary: PresentationBoundary?
+    private var presentationObserver: (player: AVPlayer, token: Any)?
+    private var presentationDeadlineObserver: (player: AVPlayer, token: Any)?
+    private var presentationHold: PresentationBoundary?
+    private var presentationSuspended = false
+    private var presentationMediaLimit: (itemID: ObjectIdentifier, time: Double)?
+    var pagePresentationHoldID: UUID? { presentationHold?.id }
+
+    /// The actual media clock owns this edge. A UI poll and a character ratio
+    /// cannot authorize playback into an unpainted page.
+    @discardableResult
+    func armPagePresentationBoundary(segmentID: String, time: Double,
+        session: AudioPlaybackSessionToken, atItemEnd: Bool = false,
+        continuationTime: Double? = nil, reached: @escaping (UUID) -> Void) -> Bool {
+        guard playbackOwnership.permitsPlayback(requestedBy: session),
+              time.isFinite, time >= 0, presentationHold == nil else { return false }
+        let deadline = continuationTime.flatMap { $0.isFinite && $0 >= time ? $0 : nil } ?? time
+        if let edge = presentationBoundary, edge.session == session,
+           edge.segmentID == segmentID, edge.time == time, edge.atItemEnd == atItemEnd,
+           edge.continuationTime == deadline { return true }
+        removePresentationObserver()
+        if playerItem?.forwardPlaybackEndTime.isValid == true { playerItem?.forwardPlaybackEndTime = .invalid }
+        presentationBoundary = PresentationBoundary(id: UUID(), session: session,
+            segmentID: segmentID, time: time, continuationTime: deadline, atItemEnd: atItemEnd, reached: reached)
+        ReaderRunLog.write("PAGINATION boundary_armed segment=\(segmentID) cue=\(time) deadline=\(deadline) generation=\(session.generation)")
+        installPresentationObserver()
+        return true
+    }
+
+    private func removePresentationObserver() {
+        if let observer = presentationObserver { observer.player.removeTimeObserver(observer.token) }
+        if let observer = presentationDeadlineObserver { observer.player.removeTimeObserver(observer.token) }
+        presentationObserver = nil
+        presentationDeadlineObserver = nil
+    }
+
+    private func installPresentationObserver() {
+        guard presentationObserver == nil, let edge = presentationBoundary,
+              edge.segmentID == currentSegment?.id,
+              playbackOwnership.permitsPlayback(requestedBy: edge.session), let player else { return }
+        if edge.atItemEnd {
+            // Container duration and server estimates may include MP3 padding.
+            // Only the real item-end notification can authorize this turn.
+            if currentItemDrained { reachPresentationBoundary(edge, player: player) }
+            return
+        }
+        if let item = playerItem, edge.continuationTime > playbackPosition,
+           edge.continuationTime < (currentSegment?.duration ?? 0) - 0.001 {
+            // AVPlayer itself stops at the source edge, even when the main
+            // executor is busy painting and delivers its observer late.
+            item.forwardPlaybackEndTime = CMTime(seconds: edge.continuationTime, preferredTimescale: 1_000_000)
+            presentationMediaLimit = (ObjectIdentifier(item), edge.continuationTime)
+        }
+        if edge.continuationTime > edge.time {
+            let token = player.addBoundaryTimeObserver(forTimes: [NSValue(time:
+                CMTime(seconds: edge.continuationTime, preferredTimescale: 1_000_000))], queue: .main) { [weak self, weak player] in
+                guard let self, let player else { return }
+                self.reachPresentationBoundary(edge, player: player)
+                self.suspendForPresentationIfNeeded(edge, player: player)
+            }
+            presentationDeadlineObserver = (player, token)
+        }
+        let reached = { [weak self, weak player] in
+            guard let self, let player else { return }
+            self.reachPresentationBoundary(edge, player: player)
+        }
+        if playbackPosition >= edge.time && hasPlaybackRequest {
+            // A late producer must hold immediately, never seek backwards and
+            // replay already audible content. Diagnostics retain the overshoot.
+            reached()
+        } else {
+            let token = player.addBoundaryTimeObserver(forTimes: [NSValue(time:
+                CMTime(seconds: edge.time, preferredTimescale: 1_000_000))], queue: .main, using: reached)
+            presentationObserver = (player, token)
+        }
+    }
+
+    private func reachPresentationBoundary(_ edge: PresentationBoundary, player: AVPlayer) {
+        guard player === self.player, presentationBoundary?.id == edge.id,
+              playbackOwnership.permitsPlayback(requestedBy: edge.session),
+              currentSegment?.id == edge.segmentID, hasPlaybackRequest else { return }
+        if let observer = presentationObserver { observer.player.removeTimeObserver(observer.token) }
+        presentationObserver = nil
+        presentationBoundary = nil
+        presentationHold = edge
+        presentationSuspended = false
+        currentTime = playbackPosition
+        ReaderRunLog.write("PAGINATION visual_requested id=\(edge.id) time=\(currentTime) cue=\(edge.time) deadline=\(edge.continuationTime) mono=\(ProcessInfo.processInfo.systemUptime)")
+        if currentItemDrained || playbackPosition + 0.001 >= edge.continuationTime {
+            suspendForPresentationIfNeeded(edge, player: player)
+        }
+        edge.reached(edge.id)
+    }
+
+    private func suspendForPresentationIfNeeded(_ edge: PresentationBoundary, player: AVPlayer) {
+        guard player === self.player, presentationHold?.id == edge.id,
+              !presentationSuspended, playbackOwnership.permitsPlayback(requestedBy: edge.session),
+              currentSegment?.id == edge.segmentID else { return }
+        presentationSuspended = true
+        player.pause()
+        currentTime = playbackPosition
+        isPlaying = false
+        isBuffering = true
+        updateNowPlayingInfo()
+        ReaderRunLog.write("PAGINATION visual_hold id=\(edge.id) generation=\(edge.session.generation) time=\(currentTime) cue=\(edge.time) mono=\(ProcessInfo.processInfo.systemUptime)")
+        if !currentItemDrained, player.status == .readyToPlay {
+            // The native endpoint protected the page even while the UI was
+            // busy. Now paused, re-prime the same decoder DURING rendering,
+            // rather than waiting for the visual acknowledgement to warm it.
+            if playerItem?.forwardPlaybackEndTime.isValid == true { playerItem?.forwardPlaybackEndTime = .invalid }
+            player.preroll(atRate: playbackRate) { [weak self, weak player] ready in
+                DispatchQueue.main.async {
+                    guard let self, player === self.player,
+                          self.presentationHold?.id == edge.id else { return }
+                    ReaderRunLog.write("PAGINATION resume_prepared id=\(edge.id) ready=\(ready) mono=\(ProcessInfo.processInfo.systemUptime)")
+                }
+            }
+        }
+    }
+
+    /// Called only after exact target identity and current anchor acknowledgement.
+    /// Explicit Pause/Stop and a new owner always win over a late acknowledgement.
+    @discardableResult
+    func finishPagePresentation(_ id: UUID) -> Bool {
+        guard let hold = presentationHold, hold.id == id,
+              playbackOwnership.permitsPlayback(requestedBy: hold.session),
+              currentSegment?.id == hold.segmentID else { return false }
+        let wasSuspended = presentationSuspended
+        removePresentationObserver()
+        presentationHold = nil
+        presentationSuspended = false
+        if playerItem?.forwardPlaybackEndTime.isValid == true { playerItem?.forwardPlaybackEndTime = .invalid }
+        isBuffering = false
+        ReaderRunLog.write("PAGINATION visual_release id=\(id) time=\(playbackPosition) suspended=\(wasSuspended) intent=\(hasPlaybackRequest) mono=\(ProcessInfo.processInfo.systemUptime)")
+        if currentItemDrained, let item = playerItem {
+            // End notification can precede the page acknowledgement. Deliver
+            // its completion once, then advance under the retained play intent.
+            handlePlayerDidFinishPlaying(itemID: ObjectIdentifier(item))
+        } else if wasSuspended && hasPlaybackRequest && !playbackSuspendedByInterruption {
+            guard !hasTerminalPlaybackFailure else { return true }
+            if playerItem?.status == .failed || player?.status == .failed {
+                _ = recoverPlaybackFailure(stage: .resume, error: playerItem?.error ?? player?.error)
+                return true
+            }
+            // This active session only paused for a page. Re-activating the
+            // shared audio session here serializes OS work after page paint.
+            player?.playImmediately(atRate: playbackRate)
+            isPlaying = player?.timeControlStatus == .playing
+            updateNowPlayingInfo()
+        }
+        return true
+    }
+
+    /// Exact native book-end evidence resolves a drained page, not a missing
+    /// paint. Never use it to skip an unfinished cross-page source cue.
+    @discardableResult
+    func finishDrainedPageAtBookEnd() -> Bool {
+        guard currentItemDrained, let hold = presentationHold, hold.atItemEnd else { return false }
+        return finishPagePresentation(hold.id)
+    }
+
+    private func revokePagePresentation() {
+        removePresentationObserver()
+        if playerItem?.forwardPlaybackEndTime.isValid == true { playerItem?.forwardPlaybackEndTime = .invalid }
+        presentationMediaLimit = nil
+        presentationBoundary = nil
+        presentationHold = nil
+        presentationSuspended = false
+    }
+
     private func permitsAutomaticPlayback() -> Bool {
-        guard sleepTimer.permitsAutomaticPlayback() else { return false }
+        guard sleepTimer.permitsAutomaticPlayback(), presentationHold == nil else { return false }
         guard let hold = readerAppearanceHold else { return true }
         return hold.session != playbackOwnership.activeSession
     }
@@ -414,6 +594,9 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     @Published var currentTime: Double = 0
+    /// Transport IDs (e.g. 0-0) repeat across pages. Async UI observers must
+    /// bind each queued clock event to the actual media instance as well.
+    var currentMediaIdentity: ObjectIdentifier? { playerItem.map(ObjectIdentifier.init) }
     @Published var duration: Double = 0
     @Published var playbackRate: Float = 1.0
     @Published var currentSegment: AudioSegment?
@@ -467,6 +650,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// completion (where isPlaying is also false).
     private(set) var isExplicitlyPaused = false
     private var currentItemDrained = false
+    private var currentItemCompletionDelivered = false
     private var queueCompletionDelivered = false
     private var progressEvidence = AudioPlaybackProgressEvidence()
     private var isSeekingInitialPosition = false
@@ -509,12 +693,45 @@ class AudioPlayerService: NSObject, ObservableObject {
         )
     }
 
+    /// Root navigation only needs this transition for review eligibility.
+    /// Observing the entire player redraws every root tab on every audio tick.
+    var reviewQuiescencePublisher: AnyPublisher<Bool, Never> {
+        Publishers.CombineLatest4($isPlaying, $isBuffering, $moreSegmentsExpected, $isWaitingForNextSegment)
+            .map { playing, buffering, expected, waiting in
+                AppReviewPresentationGate.playbackIsQuiescent(
+                    isPlaying: playing, isBuffering: buffering,
+                    moreSegmentsExpected: expected, isWaitingForNextSegment: waiting)
+            }
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .eraseToAnyPublisher()
+    }
+
     /// Last item currently owned by the player queue. Kindle uses this as the
     /// boundary marker when it appends the already-generated first utterance of
     /// the next page. The marker lets the page turn begin shortly before the
     /// audio queue crosses that boundary without interrupting the current item.
     var queuedTailSegmentID: String? {
         segmentsQueue.last?.id
+    }
+
+    /// Capture before appending a next-page queue; its real media end owns the
+    /// visual edge when a sentence finishes exactly at the current page end.
+    func armQueuedTailPresentationBoundary(reached: @escaping (UUID) -> Void) -> Bool {
+        guard let tail = segmentsQueue.last, let session = playbackOwnership.queueSession else { return false }
+        let end = tail.id == currentSegment?.id && duration > 0 ? duration : tail.duration
+        guard end.isFinite, end > 0 else { return false }
+        return armPagePresentationBoundary(segmentID: tail.id, time: end, session: session, atItemEnd: true, reached: reached)
+    }
+
+    func cancelPendingPresentationBoundary(segmentID: String) {
+        guard let edge = presentationBoundary, edge.segmentID == segmentID,
+              playbackOwnership.permitsPlayback(requestedBy: edge.session) else { return }
+        removePresentationObserver()
+        if currentSegment?.id == segmentID {
+            if playerItem?.forwardPlaybackEndTime.isValid == true { playerItem?.forwardPlaybackEndTime = .invalid }
+        }
+        presentationBoundary = nil
     }
 
     /// True when a prepared segment can be started even if no AVPlayer exists
@@ -785,13 +1002,25 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
     #endif
 
+    private var audioSessionIsActive = false
+
+    private func activateAudioSessionIfNeeded() throws {
+        guard !audioSessionIsActive else { return }
+        try AVAudioSession.sharedInstance().setActive(true)
+        audioSessionIsActive = true
+        #if DEBUG
+        let session = AVAudioSession.sharedInstance()
+        ReaderRunLog.write("AUDIO route ports=\(session.currentRoute.outputs.map { $0.portType.rawValue }.joined(separator: ",")) outputLatencyMs=\(session.outputLatency * 1_000) ioBufferMs=\(session.ioBufferDuration * 1_000) sampleRate=\(session.sampleRate)")
+        #endif
+    }
+
     private func setupAudioSession() {
         do {
             let session = AVAudioSession.sharedInstance()
             // Playback provides AirPlay/A2DP output implicitly. The explicit
             // allowAirPlay option is valid only for playAndRecord.
             try session.setCategory(.playback, mode: .spokenAudio, options: [])
-            try session.setActive(true)
+            try activateAudioSessionIfNeeded()
 
             // 监听音频中断（来电、其他 app 播放等）
             NotificationCenter.default.addObserver(
@@ -799,6 +1028,11 @@ class AudioPlayerService: NSObject, ObservableObject {
                 selector: #selector(handleAudioInterruption),
                 name: AVAudioSession.interruptionNotification,
                 object: session
+            )
+
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(handleMediaServicesReset),
+                name: AVAudioSession.mediaServicesWereResetNotification, object: session
             )
 
             // 监听音频路由变化（拔掉耳机等）
@@ -822,6 +1056,19 @@ class AudioPlayerService: NSObject, ObservableObject {
         }
     }
 
+    @objc private func handleMediaServicesReset(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.audioSessionIsActive = false
+            self.playbackSuspendedByInterruption = true
+            self.pauseRegardlessOfOwnership()
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [])
+            } catch { print("Failed to restore audio category: \(error)") }
+            ReaderRunLog.write("AUDIO media services reset; explicit play required")
+        }
+    }
+
     @objc private func handleAudioInterruption(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
@@ -833,6 +1080,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         case .began:
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
+                self.audioSessionIsActive = false
                 self.wasInterrupted = true
                 self.playbackSuspendedByInterruption = true
                 ReaderRunLog.write(
@@ -848,7 +1096,7 @@ class AudioPlayerService: NSObject, ObservableObject {
                 // 被其他 App / 系统中断后不要自动续播。保持暂停状态，等用户明确点击播放。
                 // 否则 AVAudioSession 给 shouldResume 时会把 UI 重新标成 playing，但实际声音可能已被别的 App 接管。
                 do {
-                    try AVAudioSession.sharedInstance().setActive(true)
+                    try self.activateAudioSessionIfNeeded()
                 } catch {
                     print("❌ Failed to reactivate audio session: \(error)")
                 }
@@ -1289,6 +1537,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         )
         guard !hasTerminalPlaybackFailure else { return false }
         segmentsQueue.append(segment)
+        if segmentsQueue.count > currentSegmentIndex + 1 { prestageSegments([segment]) }
 
         guard permitsAutomaticPlayback() else { return true }
         guard !playbackSuspendedByInterruption else {
@@ -1327,13 +1576,21 @@ class AudioPlayerService: NSObject, ObservableObject {
 
         // Clear existing queue and stop current playback, while retaining the
         // exact files pre-staged for this incoming paragraph.
+        let incomingIDs = Set(segments.map(\.id))
+        let incomingBoundary = presentationBoundary.flatMap { edge in
+            edge.session == effectiveSession && incomingIDs.contains(edge.segmentID) ? edge : nil
+        }
         stop(preservingPrestagedIDs: Set(segments.map(\.id)))
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
         _ = playbackOwnership.attachQueue(to: effectiveSession)
+        // The VM validates and arms a promoted source cue before queue commit.
+        // Retain only that incoming cue, never an old paragraph's hold.
+        presentationBoundary = incomingBoundary
 
         // Add new segments
         segmentsQueue.append(contentsOf: segments)
+        prestageSegments(segments)
 
         // Accept late generated audio into the queue, but do not start it after
         // a timer expiry. False is reserved for rejection/playback failure.
@@ -1375,6 +1632,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         let predecessor = segmentsQueue.last?.id
         let firstAppendedIndex = segmentsQueue.count
         segmentsQueue.append(contentsOf: segments)
+        prestageSegments(segments)
         print("🔊 appendPreparedSegments: Added \(segments.count) segments after \(predecessor ?? "none")")
 
         guard permitsAutomaticPlayback() else { return predecessor }
@@ -1393,71 +1651,178 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     // MARK: Boundary pre-staging
 
-    /// Files written ahead of playback, keyed by segment id.
-    ///
-    /// Measured on device, a paragraph boundary spends 50–72ms between staging
-    /// a segment and the item reporting `readyToPlay` — the disk write plus the
-    /// asset parse — and that shows up as a gap between paragraphs. Both can
-    /// happen while the previous paragraph is still playing.
-    private var stagedFiles: [String: URL] = [:]
-    private var stagedWarmupTasks: [String: Task<Void, Never>] = [:]
-    /// Bounded so a long prefetch chain cannot accumulate temp files.
-    private static let maximumStagedFiles = 6
+    /// A preparation lease owns both the decoded player and its file until
+    /// `take` transfers them. Status/preroll callbacks never mutate the active
+    /// queue. In particular, discarding an old page cannot pause an adopted player.
+    private final class PreparedMedia {
+        enum Ownership { case prepared, taken, released }
+        let url: URL
+        let player: AVPlayer
+        let item: AVPlayerItem
+        var segmentIDs: Set<String>
+        private(set) var ownership = Ownership.prepared
+        private(set) var decoded = false
+        private var observation: AnyCancellable?
+        private var prerollStarted = false
+        private var preparationRate: Float
+        private var prerollRevision = 0
 
-    /// Write these segments to disk and warm their assets now, so the boundary
-    /// only has to hand an already-parsed URL to the player.
-    ///
-    /// Safe to call repeatedly: already-staged segments are skipped, and a
-    /// failure simply leaves the ordinary in-line staging path to do the work.
-    func prestageSegments(_ segments: [AudioSegment]) {
-        guard !segments.isEmpty else { return }
-        for segment in segments {
-            guard stagedFiles[segment.id] == nil, !segment.audioData.isEmpty else { continue }
-            if stagedFiles.count >= Self.maximumStagedFiles { break }
-            let ext = segment.isWavFormat ? "wav" : "mp3"
-            let url = AudioPlaybackTemporaryFiles.fileURL(
-                in: playbackTemporaryDirectory,
-                prefix: "prestage_",
-                segmentID: segment.id,
-                fileExtension: ext
-            )
-            do {
-                try segment.audioData.write(to: url)
-            } catch {
-                continue
+        init(url: URL, segmentID: String, rate: Float) {
+            self.url = url
+            preparationRate = rate
+            segmentIDs = [segmentID]
+            item = AVPlayerItem(url: url)
+            item.audioTimePitchAlgorithm = .timeDomain
+            player = AVPlayer(playerItem: item)
+            // preroll prepares at rate zero and does not emit audio. Changing
+            // mute at takeover would reconfigure an already decoded renderer.
+            observation = player.publisher(for: \.status)
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] status in
+                    guard let self, self.ownership == .prepared,
+                          status == .readyToPlay else { return }
+                    self.prepare(rate: self.preparationRate)
+                }
+        }
+
+        func prepare(rate: Float) {
+            guard ownership == .prepared else { return }
+            if preparationRate != rate {
+                prerollRevision += 1
+                player.cancelPendingPrerolls()
+                preparationRate = rate
+                prerollStarted = false
+                decoded = false
             }
-            stagedFiles[segment.id] = url
-            // Parsing the asset is the expensive half. Doing it here means the
-            // item created at the boundary reaches `readyToPlay` almost at once.
-            let asset = AVURLAsset(url: url)
-            stagedWarmupTasks[segment.id]?.cancel()
-            stagedWarmupTasks[segment.id] = Task.detached(priority: .utility) {
-                _ = try? await asset.load(.duration, .tracks)
+            guard player.status == .readyToPlay, !prerollStarted else { return }
+            prerollStarted = true
+            let revision = prerollRevision
+            player.preroll(atRate: rate) { [weak self] finished in
+                DispatchQueue.main.async {
+                    guard let self, self.ownership == .prepared,
+                          self.prerollRevision == revision else { return }
+                    self.decoded = finished
+                    ReaderRunLog.write("AUDIO prepared decoded=\(finished) rate=\(rate) mono=\(ProcessInfo.processInfo.systemUptime)")
+                }
             }
         }
-    }
 
-    private func takeStagedFile(for segment: AudioSegment) -> URL? {
-        guard let url = stagedFiles.removeValue(forKey: segment.id) else { return nil }
-        // The warmup is normally already complete. Dropping our handle lets it
-        // finish without making it part of the next playback session.
-        stagedWarmupTasks.removeValue(forKey: segment.id)
-        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-        return url
-    }
+        func take() {
+            precondition(ownership == .prepared)
+            ownership = .taken
+            observation?.cancel()
+            observation = nil
+            if !decoded { player.cancelPendingPrerolls() }
+        }
 
-    /// Drop staged files that playback will never reach (jump, stop, new
-    /// generation). Temp files are cheap but not free.
-    func discardPrestagedSegments(
-        preserving preservedIDs: Set<String> = []
-    ) {
-        let discardedIDs = Set(stagedFiles.keys).subtracting(preservedIDs)
-        for id in discardedIDs {
-            stagedWarmupTasks.removeValue(forKey: id)?.cancel()
-            guard let url = stagedFiles.removeValue(forKey: id) else { continue }
+        func release() {
+            guard ownership == .prepared else { return }
+            ownership = .released
+            observation?.cancel()
+            observation = nil
+            player.cancelPendingPrerolls()
+            player.pause()
+            player.replaceCurrentItem(with: nil)
             try? FileManager.default.removeItem(at: url)
         }
     }
+
+    // AudioSegment.id is page-local and reused when the voice changes. Full
+    // audio bytes identify a lease; rebasing a segment for handoff preserves it.
+    /// A prepared explanation owns this pin until it is taken or discarded.
+    /// Clearing the previous page's queue cannot destroy the successor decoder.
+    final class PreparedMediaLease {
+        private let releasePin: () -> Void
+        fileprivate init(release: @escaping () -> Void) { releasePin = release }
+        deinit { releasePin() }
+    }
+
+    private var preparedMediaPins: [ObjectIdentifier: Int] = [:]
+
+    func retainPreparedSegments(_ segments: [AudioSegment]) -> PreparedMediaLease {
+        prestageSegments(segments)
+        // A byte-identical segment can be prepared again after its predecessor
+        // was taken. A lease pins that exact decoder, never a future cache entry.
+        let entries = Set(segments.map(preparationKey)).compactMap { key in
+            preparedMedia[key].map { (key, $0) }
+        }
+        for (_, media) in entries { preparedMediaPins[ObjectIdentifier(media), default: 0] += 1 }
+        return PreparedMediaLease { [weak self] in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                for (key, media) in entries {
+                    let identity = ObjectIdentifier(media)
+                    let remaining = (self.preparedMediaPins[identity] ?? 0) - 1
+                    if remaining > 0 {
+                        self.preparedMediaPins[identity] = remaining
+                    } else {
+                        self.preparedMediaPins.removeValue(forKey: identity)
+                        if self.preparedMedia[key] === media {
+                            self.preparedMedia.removeValue(forKey: key)
+                        }
+                        media.release()
+                    }
+                }
+            }
+        }
+    }
+
+    private var preparedMedia: [String: PreparedMedia] = [:]
+    private static let maximumPreparedMedia = 6
+
+    private func preparationKey(_ segment: AudioSegment) -> String {
+        SHA256.hash(data: segment.audioData).map { String(format: "%02x", $0) }.joined()
+            + (segment.isWavFormat ? ".wav" : ".mp3")
+    }
+
+    func prestageSegments(_ segments: [AudioSegment]) {
+        for segment in segments where !segment.audioData.isEmpty {
+            let key = preparationKey(segment)
+            if let existing = preparedMedia[key] {
+                existing.segmentIDs.insert(segment.id)
+                continue
+            }
+            guard preparedMedia.count < Self.maximumPreparedMedia else { break }
+            let url = playbackTemporaryDirectory.appendingPathComponent("prepared_" + UUID().uuidString + "_" + key)
+            do {
+                try FileManager.default.createDirectory(at: playbackTemporaryDirectory, withIntermediateDirectories: true)
+                try segment.audioData.write(to: url, options: .atomic)
+                preparedMedia[key] = PreparedMedia(url: url, segmentID: segment.id, rate: playbackRate)
+            } catch {
+                ReaderRunLog.write("AUDIO preparation failed reason=file_stage")
+            }
+        }
+    }
+
+    private func takePreparedMedia(for segment: AudioSegment) -> PreparedMedia? {
+        guard let media = preparedMedia.removeValue(forKey: preparationKey(segment)) else { return nil }
+        guard FileManager.default.fileExists(atPath: media.url.path), media.item.status != .failed else {
+            media.release()
+            return nil
+        }
+        media.take()
+        return media
+    }
+
+    func isPreparedForPlayback(_ segment: AudioSegment) -> Bool {
+        guard let media = preparedMedia[preparationKey(segment)] else { return false }
+        return media.ownership == .prepared && media.decoded && media.item.status == .readyToPlay
+    }
+
+    func discardPrestagedSegments(preserving preservedIDs: Set<String> = []) {
+        for (key, media) in preparedMedia where media.segmentIDs.isDisjoint(with: preservedIDs)
+            && preparedMediaPins[ObjectIdentifier(media), default: 0] == 0 {
+            preparedMedia.removeValue(forKey: key)
+            media.release()
+        }
+    }
+
+    #if DEBUG
+    func preparedMediaForTesting(_ segment: AudioSegment) -> (player: AVPlayer, decoded: Bool)? {
+        preparedMedia[preparationKey(segment)].map { ($0.player, $0.decoded) }
+    }
+    var activePlayerForTesting: AVPlayer? { player }
+    #endif
 
     /// Remove only not-yet-played handoff items. The current and historical
     /// queue prefix is preserved so cancellation cannot cut audible playback.
@@ -1538,6 +1903,13 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     @discardableResult
     func play(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        if presentationHold != nil {
+            guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
+            playbackIntentRevision &+= 1
+            isExplicitlyPaused = false
+            playbackRequested = true
+            return true
+        }
         guard permitsAutomaticPlayback() else { return false }
         if let externalPlayback {
             guard token == externalPlayback.token, isPlaybackSessionActive(externalPlayback.token) else { return false }
@@ -1592,7 +1964,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         progressEvidence = AudioPlaybackProgressEvidence()
         hasAudibleProgress = false
         do {
-            try AVAudioSession.sharedInstance().setActive(true)
+            try activateAudioSessionIfNeeded()
         } catch {
             print("❌ Failed to activate audio session before play: \(error)")
         }
@@ -1619,6 +1991,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// producer-transient state owned by the outgoing session. Otherwise a
     /// cancelled stream can leave the next mode permanently "buffering".
     private func suspendQueueForOwnershipChange() {
+        revokePagePresentation()
         // Claim/release fences the old queue; it is not a user Pause on the
         // new session (including a freshly created player's empty queue).
         pauseRegardlessOfOwnership(recordsUserIntent: false)
@@ -1661,7 +2034,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard playbackOwnership.permitsPlayback(requestedBy: token) else {
             return false
         }
-        if isPlaying {
+        if isPlaying || (presentationHold != nil && hasPlaybackRequest) {
             return pause(session: token)
         } else {
             sleepTimer.resumeByUser()
@@ -1686,6 +2059,10 @@ class AudioPlayerService: NSObject, ObservableObject {
         sleepTimer.endPlaybackSession()
         cancelArtworkLoad()
         stop(preservingPrestagedIDs: [])
+        // Account invalidation revokes even still-retained prefetch payloads.
+        for media in preparedMedia.values { media.release() }
+        preparedMedia.removeAll()
+        preparedMediaPins.removeAll()
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
         gatedSegmentIndex = nil
@@ -1706,6 +2083,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private func stop(preservingPrestagedIDs: Set<String>) {
+        revokePagePresentation()
         detachExternalPlayback()
         print("🔊 stop(): Stopping playback, player=\(player != nil ? "exists" : "nil")")
         removeTimeObserver()
@@ -1723,6 +2101,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         playbackRequested = false
         isExplicitlyPaused = false
         currentItemDrained = false
+        currentItemCompletionDelivered = false
         queueCompletionDelivered = false
         isSeekingInitialPosition = false
         recoveryBudget = AudioPlaybackRecoveryBudget()
@@ -1744,7 +2123,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         discardPrestagedSegments(preserving: preservingPrestagedIDs)
         AudioPlaybackTemporaryFiles.removeOwnedContents(
             in: playbackTemporaryDirectory,
-            preserving: Set(stagedFiles.values)
+            preserving: Set(preparedMedia.values.map(\.url))
         )
         print("🔊 stop(): Playback stopped, currentSegment is now nil")
     }
@@ -1792,6 +2171,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     func setPlaybackRate(_ rate: Float) {
         guard externalPlayback == nil else { return }
         playbackRate = rate
+        for media in preparedMedia.values { media.prepare(rate: rate) }
         if isPlaying, permitsAutomaticPlayback() {
             player?.playImmediately(atRate: rate)
         }
@@ -1940,12 +2320,14 @@ class AudioPlayerService: NSObject, ObservableObject {
             lastPlaybackFailureCode = nil
         }
         currentItemDrained = false
+        currentItemCompletionDelivered = false
         queueCompletionDelivered = false
         isExplicitlyPaused = !autoPlayWhenReady
         playbackRequested = autoPlayWhenReady
 
         // Release the previous asset and callbacks before removing its file.
         removeTimeObserver()
+        presentationMediaLimit = nil
         playerItemStatusCancellable?.cancel()
         player?.pause()
         player?.replaceCurrentItem(with: nil)
@@ -1977,11 +2359,12 @@ class AudioPlayerService: NSObject, ObservableObject {
 
         // A paragraph boundary is the one moment where this work is audible, so
         // reuse the file the prefetch already staged when there is one.
-        if recoveryPosition == nil, let staged = takeStagedFile(for: segment) {
-            currentTempFileURL = staged
-            ReaderRunLog.write("AUDIO stage reused segment=\(segment.id)")
+        if recoveryPosition == nil, let staged = takePreparedMedia(for: segment) {
+            currentTempFileURL = staged.url
+            ReaderRunLog.write("AUDIO prepared adopted segment=\(segment.id) decoded=\(staged.decoded) mono=\(ProcessInfo.processInfo.systemUptime)")
             playAudio(
-                from: staged,
+                from: staged.url,
+                prepared: staged,
                 initialProgress: initialProgress,
                 initialSeconds: recoveryPosition ?? initialTime,
                 autoPlayWhenReady: autoPlayWhenReady,
@@ -2020,6 +2403,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     private func playAudio(
         from url: URL,
+        prepared: PreparedMedia? = nil,
         initialProgress: Double? = nil,
         initialSeconds: Double? = nil,
         autoPlayWhenReady: Bool = true,
@@ -2029,14 +2413,13 @@ class AudioPlayerService: NSObject, ObservableObject {
 
         // Ensure audio session is active
         do {
-            try AVAudioSession.sharedInstance().setActive(true)
+            try activateAudioSessionIfNeeded()
         } catch {
             print("Failed to activate audio session: \(error)")
         }
 
-        let asset = AVURLAsset(url: url)
-        playerItem = AVPlayerItem(asset: asset)
-        playerItem?.audioTimePitchAlgorithm = .timeDomain
+        playerItem = prepared?.item ?? AVPlayerItem(url: url)
+        if prepared == nil { playerItem?.audioTimePitchAlgorithm = .timeDomain }
         playerItemSession = expectedSession
         progressEvidence = AudioPlaybackProgressEvidence()
         hasAudibleProgress = false
@@ -2046,21 +2429,24 @@ class AudioPlayerService: NSObject, ObservableObject {
         playerItemReadinessWorkItem = nil
 
         // Create or update player
-        if player == nil {
+        if let prepared {
+            playerStateCancellable?.cancel()
+            player = prepared.player
+        } else if player == nil {
             player = AVPlayer(playerItem: playerItem)
         } else {
             player?.replaceCurrentItem(with: playerItem)
         }
         observePlayerPlaybackState()
+        installPresentationObserver()
 
-        isBuffering = true
+        isBuffering = presentationHold != nil || playerItem?.status != .readyToPlay
 
         // Observe player item status
         guard let observedItem = playerItem else { return }
         playerItemStatusCancellable?.cancel()
-        playerItemStatusCancellable = observedItem.publisher(for: \.status)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self, weak observedItem] status in
+        var handledReady = false
+        let handleStatus: (AVPlayerItem.Status) -> Void = { [weak self, weak observedItem] status in
                 guard let self = self else { return }
                 guard let observedItem,
                       observedItem === self.playerItem,
@@ -2069,9 +2455,11 @@ class AudioPlayerService: NSObject, ObservableObject {
                 }
                 switch status {
                 case .readyToPlay:
+                    guard !handledReady else { return }
+                    handledReady = true
                     self.playerItemReadinessWorkItem?.cancel()
                     self.playerItemReadinessWorkItem = nil
-                    self.isBuffering = false
+                    self.isBuffering = self.presentationHold != nil
                     let seconds = observedItem.duration.seconds
                     // Check for valid duration (not NaN or infinite)
                     if seconds.isFinite && seconds > 0 {
@@ -2088,7 +2476,7 @@ class AudioPlayerService: NSObject, ObservableObject {
                                 guard let self,
                                       expectedItem === self.playerItem,
                                       self.currentItemCanPublishPlaybackState() else { return }
-                                guard completed, let expectedItem else {
+                                guard completed, expectedItem != nil else {
                                     if let expectedItem { self.reportPlaybackFailure(for: expectedItem, stage: .resume, error: nil) }
                                     return
                                 }
@@ -2159,6 +2547,10 @@ class AudioPlayerService: NSObject, ObservableObject {
             execute: readinessWorkItem
         )
 
+        playerItemStatusCancellable = observedItem.publisher(for: \.status)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveValue: handleStatus)
+
         // Add time observer
         addTimeObserver()
 
@@ -2175,6 +2567,9 @@ class AudioPlayerService: NSObject, ObservableObject {
             name: .AVPlayerItemFailedToPlayToEndTime,
             object: playerItem
         )
+        // Ready media already has a decoder. Install all observers, then start
+        // synchronously; the queued initial KVO notification is idempotent.
+        if observedItem.status == .readyToPlay { handleStatus(.readyToPlay) }
     }
 
     private var lastNowPlayingUpdateTime: Double = 0
@@ -2195,7 +2590,9 @@ class AudioPlayerService: NSObject, ObservableObject {
                     && (self.player?.rate ?? 0) > 0
             )
             self.hasAudibleProgress = self.progressEvidence.hasAdvanced
-            self.currentTime = time.seconds
+            // A queued periodic sample from before the source edge must not
+            // rewind the visual cursor while the actual decoder is held there.
+            self.currentTime = self.presentationHold == nil ? time.seconds : self.playbackPosition
 
             // Update Now Playing info every second for lock screen progress
             if abs(time.seconds - self.lastNowPlayingUpdateTime) >= 1.0 {
@@ -2218,11 +2615,13 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     private func observePlayerPlaybackState() {
         playerStateCancellable?.cancel()
-        playerStateCancellable = player?
+        let observedPlayer = player
+        playerStateCancellable = observedPlayer?
             .publisher(for: \.timeControlStatus)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.syncPlaybackStateFromPlayer(reason: "time-control")
+            .sink { [weak self, weak observedPlayer] _ in
+                guard let self, observedPlayer === self.player else { return }
+                self.syncPlaybackStateFromPlayer(reason: "time-control")
             }
     }
 
@@ -2238,7 +2637,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard currentItemCanPublishPlaybackState() else {
             return
         }
-        let waiting = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+        let waiting = presentationSuspended || player.timeControlStatus == .waitingToPlayAtSpecifiedRate
         if waiting {
             isBuffering = true
         } else if playerItem?.status == .readyToPlay
@@ -2272,6 +2671,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private func removeTimeObserver() {
+        removePresentationObserver()
         playerItemReadinessWorkItem?.cancel()
         playerItemReadinessWorkItem = nil
         if let observer = timeObserver {
@@ -2291,6 +2691,7 @@ class AudioPlayerService: NSObject, ObservableObject {
             return
         }
         let itemID = ObjectIdentifier(finishedItem)
+        ReaderRunLog.write("AUDIO native end item=\(itemID) current=\(playerItem.map { String(describing: ObjectIdentifier($0)) } ?? "nil") time=\(finishedItem.currentTime().seconds) duration=\(finishedItem.duration.seconds) limit=\(finishedItem.forwardPlaybackEndTime.seconds) main=\(Thread.isMainThread)")
         guard Thread.isMainThread else {
             DispatchQueue.main.async { [weak self] in
                 self?.handlePlayerDidFinishPlaying(itemID: itemID)
@@ -2309,6 +2710,20 @@ class AudioPlayerService: NSObject, ObservableObject {
             // pause or otherwise mutate the new current item.
             return
         }
+        if let limit = presentationMediaLimit, limit.itemID == itemID,
+           abs(playbackPosition - limit.time) <= 0.002 {
+            // Only the exact artificial endpoint belongs to the visual hold.
+            // MP3 padding and server duration estimates can differ from the
+            // genuine item end; comparing against full duration would swallow
+            // that real completion and strand the following paragraph.
+            if let edge = presentationBoundary, let player {
+                reachPresentationBoundary(edge, player: player)
+            }
+            if let edge = presentationHold, let player {
+                suspendForPresentationIfNeeded(edge, player: player)
+            }
+            return
+        }
         let finishedSession = playerItemSession
         // The terminal notification is authoritative even if time-control KVO
         // is delivered later. Publish this before invoking client callbacks so
@@ -2316,7 +2731,21 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentItemDrained = true
         isPlaying = false
         updateNowPlayingInfo()
-        guard permitsAutomaticPlayback() else { return }
+        // At an end-aligned cue, AVPlayer may send didEnd before its boundary
+        // observer. The source edge still owns the page presentation gate.
+        if let edge = presentationBoundary, edge.segmentID == currentSegment?.id,
+           let player, edge.atItemEnd || playbackPosition + 0.001 >= edge.time {
+            reachPresentationBoundary(edge, player: player)
+        }
+        // A synchronously acknowledged page can finish this same item and
+        // install its successor inside reachPresentationBoundary. The outer
+        // terminal callback still belongs to the old item; it must not mark
+        // the successor's completion as already delivered.
+        guard let itemAfterBoundary = playerItem,
+              ObjectIdentifier(itemAfterBoundary) == itemID,
+              playbackOwnership.permitsCallback(from: finishedSession) else { return }
+        guard permitsAutomaticPlayback(), !currentItemCompletionDelivered else { return }
+        currentItemCompletionDelivered = true
         print("🔊 playerDidFinishPlaying: Segment finished, currentIndex=\(currentSegmentIndex)")
         ReaderRunLog.write(
             "AUDIO item finished segment=\(currentSegment?.id ?? "nil") " +

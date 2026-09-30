@@ -1,0 +1,82 @@
+{
+  "candidate": "86",
+  "platform": "googleBooks",
+  "observed_start": "12:38:00.000",
+  "cutoff": "12:41:05.000",
+  "observed_end_seconds": 45664.996,
+  "metric": "event timestamps, not acoustic silence",
+  "turns": [
+    {
+      "id": "4F1B5A1D-BA09-41EA-875A-1D06650C44EC",
+      "requested": 45531.624,
+      "hold": 45531.625
+    },
+    {
+      "id": "F2451A15-ABE8-44BD-A4BD-EEBA3097E54E",
+      "requested": 45566.695,
+      "hold": 45566.695,
+      "release": 45566.857,
+      "playing": 45566.945,
+      "release_to_playing_ms": 88.0,
+      "request_to_commit_ms": 85.0,
+      "hold_to_playing_ms": 250.0
+    },
+    {
+      "id": "886F3C3A-010C-47E5-AD55-5466DE2239BF",
+      "requested": 45598.29,
+      "hold": 45598.469,
+      "release": 45598.504,
+      "playing": 45598.626,
+      "release_to_playing_ms": 122.0,
+      "request_to_commit_ms": 204.0,
+      "hold_to_playing_ms": 157.0
+    },
+    {
+      "id": "AA8D4973-E398-41E1-9C62-E84B729D4F77",
+      "requested": 45628.684,
+      "hold": 45628.764,
+      "release": 45628.879,
+      "playing": 45629.023,
+      "release_to_playing_ms": 144.0,
+      "request_to_commit_ms": 183.0,
+      "hold_to_playing_ms": 259.0
+    },
+    {
+      "id": "15B50979-FDCF-441A-95EE-DA7793F3CA53",
+      "requested": 45660.03,
+      "hold": 45660.123,
+      "release": 45660.281,
+      "playing": 45660.424,
+      "release_to_playing_ms": 143.0,
+      "request_to_commit_ms": 232.0,
+      "hold_to_playing_ms": 301.0
+    }
+  ],
+  "release_to_playing": {
+    "samples": 4,
+    "p95_ms": 144.0,
+    "max_ms": 144.0
+  },
+  "native_request_to_commit": {
+    "samples": 4,
+    "p95_ms": 232.0,
+    "max_ms": 232.0
+  },
+  "hold_to_playing": {
+    "samples": 4,
+    "p95_ms": 301.0,
+    "max_ms": 301.0
+  },
+  "prepared_adoptions": 3,
+  "errors": [],
+  "final_acceptance": false,
+  "unreleased_hold_failure": {
+    "hold_id": "4F1B5A1D-BA09-41EA-875A-1D06650C44EC",
+    "last_audio_end": "12:38:51.624",
+    "first_next_audio": "12:38:56.281",
+    "end_to_next_playing_ms": 4657,
+    "cause": "foreground-first-audio invalidation repeatedly cancelled next-page partly producer; page commit restarted synthesis",
+    "included_in_release_percentiles": false
+  },
+  "limitation": "Release percentiles cover retained holds only; the abandoned first hold above is a separate failure and is not hidden by those percentiles."
+}

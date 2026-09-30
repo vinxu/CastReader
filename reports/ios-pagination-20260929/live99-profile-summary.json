@@ -1,0 +1,118 @@
+{
+  "sampled_cpu_ms": 26452.0,
+  "main_thread_cpu_ms": 24231.0,
+  "missing_stack_ms": 0,
+  "category_inclusive_ms": {
+    "HomeView": 680.0,
+    "MainTabView": 632.0,
+    "PhotoAnchor": 12.0,
+    "History": 180.0,
+    "KindleExplainVisualHoldView": 1.0,
+    "HandwrittenMark": 1.0,
+    "RegularExpression": 77.0,
+    "KindleRunLog": 2.0
+  },
+  "app_frames_inclusive_ms": [
+    [
+      "closure #1 in MainTabView.body.getter",
+      599.0
+    ],
+    [
+      "protocol witness for View.body.getter in conformance HomeView",
+      579.0
+    ],
+    [
+      "HomeView.body.getter",
+      579.0
+    ],
+    [
+      "MainTabView.presentationContent.getter",
+      555.0
+    ],
+    [
+      "MainTabView.lifecycleContent.getter",
+      480.0
+    ],
+    [
+      "MainTabView.windowLifecycleContent.getter",
+      386.0
+    ],
+    [
+      "MainTabView.mainContent.getter",
+      332.0
+    ],
+    [
+      "HomeView.supportedTypes.getter",
+      294.0
+    ],
+    [
+      "closure #1 in MainTabView.mainContent.getter",
+      217.0
+    ],
+    [
+      "closure #1 in HomeView.body.getter",
+      175.0
+    ],
+    [
+      "closure #1 in AudioPlayerService.addTimeObserver()",
+      162.0
+    ],
+    [
+      "closure #1 in closure #1 in HomeView.body.getter",
+      138.0
+    ],
+    [
+      "HistoryStore.syncContinueSnapshots()",
+      137.0
+    ],
+    [
+      "MainTabView.adaptiveTabs.getter",
+      134.0
+    ],
+    [
+      "closure #1 in closure #1 in closure #1 in HomeView.body.getter",
+      126.0
+    ],
+    [
+      "HistoryStore.refreshProgressProjection(immediate:)",
+      126.0
+    ],
+    [
+      "HistoryStore.flushProgressProjection()",
+      126.0
+    ],
+    [
+      "MainTabView.iPhoneTabs.getter",
+      116.0
+    ],
+    [
+      "closure #1 in MainTabView.iPhoneTabs.getter",
+      97.0
+    ],
+    [
+      "static KindleFootnoteSpeech.prepare(document:skipReferences:)",
+      97.0
+    ],
+    [
+      "KindleBookViewModel.captureCandidatePages(afterKey:limit:onCaptured:)",
+      93.0
+    ],
+    [
+      "closure #1 in KindleBookViewModel.startCachingNextPage(afterKey:)",
+      93.0
+    ],
+    [
+      "KindleBookViewModel.cacheNextPage(afterKey:epoch:)",
+      93.0
+    ],
+    [
+      "partial apply for closure #1 in KindleBookViewModel.startCachingNextPage(afterKey:)",
+      93.0
+    ],
+    [
+      "static KindleFootnoteSpeech.pairedFootnotes(_:)",
+      82.0
+    ]
+  ],
+  "measurement": "Statistical running CPU samples; inclusive categories overlap; profiler interval excluded from normal latency acceptance."
+}

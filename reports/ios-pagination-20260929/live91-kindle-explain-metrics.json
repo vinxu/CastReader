@@ -1,0 +1,71 @@
+{
+  "candidate": 91,
+  "platform": "kindle",
+  "mode": "explain",
+  "voice": "af_heart",
+  "rate": 1.5,
+  "first_play": "14:41:58.063",
+  "paused_observed": "14:45",
+  "rows": [
+    {
+      "old_key": "ff6de90c6002",
+      "audio_ended": "14:42:24.646",
+      "turn_begin": "14:42:24.712",
+      "next_playing": "14:42:25.004",
+      "ended_to_turn_ms": 66,
+      "ended_to_playing_ms": 358
+    },
+    {
+      "old_key": "12cd3e6e92b5",
+      "audio_ended": "14:42:53.909",
+      "turn_begin": "14:42:53.982",
+      "next_playing": "14:42:54.287",
+      "ended_to_turn_ms": 73,
+      "ended_to_playing_ms": 378
+    },
+    {
+      "old_key": "f7e0d155eb5d",
+      "audio_ended": "14:43:24.500",
+      "turn_begin": "14:43:24.571",
+      "next_playing": "14:43:24.873",
+      "ended_to_turn_ms": 71,
+      "ended_to_playing_ms": 373
+    },
+    {
+      "old_key": "a33775a0754d",
+      "audio_ended": "14:43:58.894",
+      "turn_begin": "14:43:58.938",
+      "next_playing": "14:43:59.291",
+      "ended_to_turn_ms": 44,
+      "ended_to_playing_ms": 397
+    },
+    {
+      "old_key": "cc754a3f61a5",
+      "audio_ended": "14:44:32.443",
+      "turn_begin": "14:44:32.526",
+      "next_playing": "14:44:32.973",
+      "ended_to_turn_ms": 83,
+      "ended_to_playing_ms": 530
+    }
+  ],
+  "stage_receipts": [
+    "14:42:08.947 [active] KINDLE explain overlay staged key=12cd3e6e92b5",
+    "14:42:24.729 [active] KINDLE explain overlay staged-consume key=12cd3e6e92b5",
+    "14:42:38.278 [active] KINDLE explain overlay staged key=f7e0d155eb5d",
+    "14:42:53.996 [active] KINDLE explain overlay staged-consume key=f7e0d155eb5d",
+    "14:43:08.895 [active] KINDLE explain overlay staged key=a33775a0754d",
+    "14:43:24.586 [active] KINDLE explain overlay staged-consume key=a33775a0754d",
+    "14:43:43.269 [active] KINDLE explain overlay staged key=cc754a3f61a5",
+    "14:43:58.956 [active] KINDLE explain overlay staged-consume key=cc754a3f61a5",
+    "14:44:17.241 [active] KINDLE explain overlay staged key=8444f160ee3e",
+    "14:44:32.550 [active] KINDLE explain overlay staged-consume key=8444f160ee3e",
+    "14:44:42.761 [active] KINDLE explain overlay staged key=ad05b0373371"
+  ],
+  "metric": "Application event times, not acoustic silence",
+  "final_acceptance": false,
+  "sources": {
+    "/tmp/castreader-kindlelive91-reader.log": "9a68a0c7f94e7b1991d81255c3f6f787cf066413171476f7b3e9a8257360510c",
+    "/tmp/castreader-pagination-live91.log": "a98b623bc4b5a3f42ed444691404472edafb576f73f2aae1078ed96c8661b279",
+    "/tmp/castreader-kindlelive91-probe.log": "1072476d8a283a8be375f9cfc15a177243dbf911dd4543311c2b6403a2c042e3"
+  }
+}

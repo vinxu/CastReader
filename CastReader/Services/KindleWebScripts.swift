@@ -4956,7 +4956,7 @@ enum KindleWebScripts {
     (function() {
       \(uiSemanticHelpers)
       \(KindleNativePageScript.bootstrap)
-      var crKindleInstallVersion = 47;
+      var crKindleInstallVersion = 49;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -8618,6 +8618,7 @@ enum KindleWebScripts {
         }
       };
       window.__crKindleLiveClear = function() {
+        window.__crKindleProbe.preparedOverlay = null;
         crKindleRemoveLiveOverlay();
         window.__crKindleProbe.liveParagraphs = [];
         window.__crKindleProbe.liveKey = '';
@@ -8673,6 +8674,7 @@ enum KindleWebScripts {
       };
       window.__crKindleLiveSetPage = function(payload) {
         try {
+          window.__crKindleProbe.preparedOverlay = null;
           var data = typeof payload === 'string' ? JSON.parse(payload) : payload;
           var key = String((data && data.key) || '');
           var sessionId = Number((data && data.sessionId) || 0);
@@ -8747,6 +8749,39 @@ enum KindleWebScripts {
         } catch (e) {
           return JSON.stringify({ ok:false, reason:String(e) });
         }
+      };
+      // Preparation may happen under the native snapshot of the audible page.
+      // This receipt is single-use and refers to the actual mounted native
+      // object, capture session, OCR anchors and geometry, not similar text.
+      function crKindlePreparedOverlayState() {
+        var probe = window.__crKindleProbe, native = crKindleNative();
+        var key = String(probe.liveKey || ''), candidate = crKindleLiveCandidate();
+        var overlay = probe.liveOverlay, r = candidate && candidate.rect;
+        if (!native || !key || !probe.pageModeLocked || native.state().currentId !== key || !candidate ||
+            !candidate.el || !candidate.el.isConnected || !r || !overlay ||
+            !overlay.isConnected || overlay.getAttribute('data-cr-page-key') !== key ||
+            r.width <= 80 || r.height <= 80 || r.bottom <= 0 || r.top >= innerHeight) return null;
+        return {key:key, session:Number(probe.liveSessionId || 0), element:candidate.el,
+          overlay:overlay, paragraphs:probe.liveParagraphs,
+          geometry:JSON.stringify([r.left,r.top,r.width,r.height,innerWidth,innerHeight,devicePixelRatio,
+            overlay.getAttribute('data-cr-local-rect'),overlay.getAttribute('data-cr-overlay-position')])};
+      }
+      window.__crKindleLiveStagePage = function(ticket) {
+        var state = crKindlePreparedOverlayState();
+        window.__crKindleProbe.preparedOverlay = state && ticket ? {ticket:String(ticket), state:state} : null;
+        return JSON.stringify({ok:!!state && !!ticket, key:state ? state.key : ''});
+      };
+      window.__crKindleLiveTakeStagedPage = function(ticket, key, session) {
+        var probe = window.__crKindleProbe, receipt = probe.preparedOverlay;
+        // A stale consumer cannot consume a newer preparation's receipt.
+        if (!receipt || receipt.ticket !== String(ticket)) return JSON.stringify({ok:false});
+        probe.preparedOverlay = null;
+        var current = crKindlePreparedOverlayState(), prior = receipt.state;
+        var ok = !!current && current.key === String(key) && current.session === Number(session) &&
+          current.key === prior.key && current.session === prior.session &&
+          current.element === prior.element && current.overlay === prior.overlay &&
+          current.paragraphs === prior.paragraphs && current.geometry === prior.geometry;
+        return JSON.stringify({ok:ok, key:ok ? current.key : ''});
       };
       window.__crKindleLiveHighlightWord = function(paragraphIndex, wordIndex, sequence) {
         try {

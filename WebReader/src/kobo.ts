@@ -1,3 +1,4 @@
+import { sourceText, sourceRange } from './source-text'
 // Kobo Web Reader (readnow.kobo.com) adapter.
 //
 // Kobo keeps reflowable EPUB chapters in same-origin srcdoc iframes.  A frame
@@ -65,6 +66,7 @@ type AutomaticTurnMetadata = {
   turnID: string
   baselineSignature: string
   originFrameSessionID: string
+  sourcePresentation?: unknown
 }
 
 type ManualTurnMetadata = {
@@ -86,7 +88,7 @@ const MIN_PARA_CHARS = 2
 const MIN_FRAME_TEXT_CHARS = 2
 const FRAME_SESSION_PROPERTY = '__castreaderKoboFrameSessionID'
 const TYPOGRAPHY_STYLE_ID = 'castreader-kobo-typography'
-const KOBO_ADAPTER_VERSION = '2026-07-30-landscape-v3'
+const KOBO_ADAPTER_VERSION = '2026-09-29-native-clip-v4'
 const COMPLETE_BLOCK_FRAGMENT_RATIO = 0.98
 const COMPLETE_BLOCK_FRAGMENT_TOLERANCE = 0.5
 const AUTO_TURN_TOMBSTONE_TTL_MS = 30_000
@@ -431,6 +433,56 @@ function exactPageTargetFromAPI(
   }
 }
 
+export function koboReadingLocationFromRange(
+  bookUUID: string, raw: unknown
+): { bookUUID: string; percentage: number } | null {
+    if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(bookUUID)) return null
+    const range = raw as KoboReadingRange | null
+    const pages = range?.pagesOfBook
+    const first = range?.begin?.pageIndexInBook
+    const last = range?.end?.pageIndexInBook
+    if (typeof pages !== 'number' || !Number.isInteger(pages) || pages < 1 ||
+        typeof first !== 'number' || !Number.isInteger(first) || first < 0 || first >= pages ||
+        first !== last) return null
+    return { bookUUID: bookUUID.toLowerCase(), percentage: (first + 1) / pages }
+}
+
+export function koboReadingLocation(): { bookUUID: string; percentage: number } | null {
+  const transport = koboSemanticTransport
+  if (transport?.kind !== 'ur-engine') return null
+  const api = currentKoboURAPI(transport)
+  if (typeof api?.getCurrentReadingRange !== 'function') return null
+  try {
+    return koboReadingLocationFromRange(location.pathname.split('/').filter(Boolean)[0] || '',
+      api.getCurrentReadingRange.call(api))
+  } catch { return null }
+}
+
+/** Only exact native page indices prove the book edge. Rounded progress,
+ * unloaded next-chapter frames and missing controls do not prove completion. */
+export function koboBookEndFromRange(raw: unknown): {
+  pagesOfBook: number; firstPage: number; lastPage: number
+} | null {
+  const range = raw as KoboReadingRange | null
+  const pages = range?.pagesOfBook
+  const first = range?.begin?.pageIndexInBook
+  const last = range?.end?.pageIndexInBook
+  if (typeof pages !== 'number' || !Number.isInteger(pages) || pages < 1 ||
+      typeof first !== 'number' || !Number.isInteger(first) || first < 0 ||
+      typeof last !== 'number' || !Number.isInteger(last) || first > last ||
+      last !== pages - 1) return null
+  return { pagesOfBook: pages, firstPage: first, lastPage: last }
+}
+
+function currentKoboBookEnd(): ReturnType<typeof koboBookEndFromRange> {
+  const transport = koboSemanticTransport
+  if (transport?.kind !== 'ur-engine') return null
+  const api = currentKoboURAPI(transport)
+  if (typeof api?.getCurrentReadingRange !== 'function') return null
+  try { return koboBookEndFromRange(api.getCurrentReadingRange.call(api)) }
+  catch { return null }
+}
+
 export function koboSemanticTransportReady(
   direction: 'next' | 'prev' = 'next'
 ): boolean {
@@ -658,7 +710,7 @@ function documentHasReadableContent(doc: Document): boolean {
   if (!doc.body) return false
   if ((doc.body.textContent || '').trim().length < MIN_FRAME_TEXT_CHARS) return false
   return paragraphNodes(doc).some(
-    (element) => (element.textContent || '').trim().length >= MIN_PARA_CHARS
+    (element) => (sourceText(element)).trim().length >= MIN_PARA_CHARS
   )
 }
 
@@ -776,7 +828,7 @@ function frameClip(
   if (
     style.display === 'none' ||
     style.visibility === 'hidden' ||
-    Number(style.opacity || '1') <= 0.01
+    Number(style.opacity || '1') < 0.99
   ) return null
 
   const rect = iframe.getBoundingClientRect()
@@ -787,9 +839,12 @@ function frameClip(
   let viewport = topViewport()
   for (let parent = iframe.parentElement; parent; parent = parent.parentElement) {
     const parentStyle = getComputedStyle(parent)
+    if (parentStyle.display === 'none' || parentStyle.visibility === 'hidden' ||
+        Number(parentStyle.opacity || '1') < 0.99) return null
     const paintClip = /(?:^|\s)(paint|strict|content)(?:\s|$)/.test(parentStyle.contain)
-    const clipsX = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowX)
-    const clipsY = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowY)
+    const nativeBookView = parent.id === 'BookView'
+    const clipsX = nativeBookView || paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowX)
+    const clipsY = nativeBookView || paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowY)
     if (!clipsX && !clipsY) continue
     const box = parent.getBoundingClientRect()
     const sx = box.width / Math.max(1, parent.offsetWidth)
@@ -856,7 +911,8 @@ function allAccessibleFrames(): Array<{
     doc: Document
     frameIndex: number
   }> = []
-  const frames = Array.from(document.querySelectorAll('iframe'))
+  const nativeFrames = Array.from(document.querySelectorAll('#BookView .ReadingItem iframe[data-chapterurl], #BookView .ReadingItem iframe[srcdoc], iframe[data-chapterurl]'))
+  const frames = (nativeFrames.length ? nativeFrames : Array.from(document.querySelectorAll('iframe')))
     .filter((node): node is HTMLIFrameElement => node instanceof HTMLIFrameElement)
   frames.forEach((iframe, frameIndex) => {
     try {
@@ -1040,11 +1096,12 @@ function paragraphSourceID(
   const lastSpan = spans[spans.length - 1]?.id || ''
   const identity = [
     'kobo',
+    (element.ownerDocument.defaultView?.frameElement as HTMLIFrameElement | null)?.getAttribute('data-chapterurl') || '',
     chapterIdentity(element),
     `ordinal=${paragraphOrdinal}`,
     `spans=${firstSpan}..${lastSpan}`,
     logicalAttributes(element),
-    normalizeIdentityText(element.textContent || ''),
+    normalizeIdentityText(sourceText(element)),
   ].join('\u241F')
   return stableHash32(identity) || 1
 }
@@ -1075,8 +1132,7 @@ export function koboParagraphSnapshotQuality(
   let consecutiveShortPartials = 0
   let shortPartialCount = 0
   for (const paragraph of paragraphs) {
-    const sourceLength = paragraph.element.textContent?.length ??
-      paragraph.sourceEnd
+    const sourceLength = sourceText(paragraph.element).length
     const isPartial =
       paragraph.sourceStart > 0 || paragraph.sourceEnd < sourceLength
     const isShort =
@@ -1118,14 +1174,14 @@ function extractKoboParagraphsFromClips(clips: KoboFrame[]): KoboPara[] {
   for (const frame of clips) {
     const nodes = paragraphNodes(frame.doc)
     nodes.forEach((element, paragraphOrdinal) => {
-      const full = element.textContent || ''
+      const full = sourceText(element)
       if (full.trim().length < MIN_PARA_CHARS) return
       const id = paragraphSourceID(element, paragraphOrdinal)
       // Rotation can briefly expose non-adjacent CSS columns from the same
       // source paragraph. Keep their source slices separate: bounding the
       // first and last visible character would make TTS speak the invisible
       // column between them.
-      visibleCharRanges(element, frame.clip).forEach((range) => {
+      visibleCharRanges(element, frame.clip, rect => koboFragmentIntersection(rect, frame.clip) !== null).forEach((range) => {
         const trimmed = trimVisibleRange(full, range.start, range.end)
         if (!trimmed) return
         const key = `${id}:${trimmed.start}:${trimmed.end}`
@@ -1146,13 +1202,17 @@ function extractKoboParagraphsFromClips(clips: KoboFrame[]): KoboPara[] {
     })
   }
 
-  // Kobo must speak the exact visible slice. Extending this final paragraph
-  // to a sentence boundary can pull up to hundreds of characters from a
-  // future CSS column into the current page: audio then reads invisible text,
-  // TTS takes much longer, and the physical page turn is delayed. The
-  // dedicated next-page speech preview owns that continuation instead.
   const quality = koboParagraphSnapshotQuality(output)
-  return quality.ok ? output : []
+  if (!quality.ok) return []
+  // Synthesize the complete natural sentence once. Native now holds media
+  // at a real cue, turns the physical page, and binds its live source range.
+  const tail = output[output.length - 1]
+  if (tail && !/[。！？.!?;；][”’"'」』）)]*\s*$/u.test(tail.text)) {
+    const full = sourceText(tail.element)
+    const end = extendToSentenceEnd(full, tail.sourceEnd)
+    if (end > tail.sourceEnd) tail.speechText = full.slice(tail.sourceStart, end)
+  }
+  return output
 }
 
 /** Exact visible-page extraction. Never includes an off-screen preloaded frame. */
@@ -1160,18 +1220,23 @@ export function extractKoboParagraphs(): KoboPara[] {
   return extractKoboParagraphsFromClips(currentKoboFrameClips())
 }
 
-export function acceptKoboHighlightRect(
-  element: HTMLElement,
-  rect: DOMRect
-): boolean {
-  const clip = currentKoboFrameClips().find(
-    (value) => value.doc === element.ownerDocument
-  )
-  return !!clip && rectHasCompleteBlockCoverage(
-    rect,
-    clip.clip,
-    writingModeFor(element)
-  )
+/** Font ink can overhang a page by a few pixels (drop caps). Require
+ * 85% of EACH fragment's area, and paint only its actual page intersection. */
+function koboFragmentIntersection(rect: Rect, clip: Rect): Rect | null {
+  const hit = intersect(rect, clip)
+  const area = rectArea(rect)
+  return hit && area > 0 && rectArea(hit) / area >= 0.85 ? hit : null
+}
+
+export function clipKoboHighlightRect(element: HTMLElement, rect: DOMRect): DOMRect | null {
+  const frame = currentKoboFrameClips().find(value => value.doc === element.ownerDocument)
+  if (!frame) return null
+  const hit = koboFragmentIntersection(rect, frame.clip)
+  return hit ? new DOMRect(hit.left, hit.top, hit.right - hit.left, hit.bottom - hit.top) : null
+}
+
+export function acceptKoboHighlightRect(element: HTMLElement, rect: DOMRect): boolean {
+  return clipKoboHighlightRect(element, rect) !== null
 }
 
 function contentFingerprint(paragraphs: KoboPara[]): string {
@@ -1251,10 +1316,19 @@ function pageAdvanceVectors(frame: KoboFrame, anchor: HTMLElement): Array<{
     ]
   }
   const forward = direction === 'rtl' ? -1 : 1
+  // Kobo's viewport commonly already includes the inter-column gap (e.g.
+  // 430 = 380 + 50). Adding the gap to that viewport again previews 50px
+  // inside the next column, and may include the column after it as well.
+  const columnWidth = Number.parseFloat(style?.columnWidth || '')
+  const columnStride = columnWidth > 0 && Number.isFinite(columnWidth)
+    ? columnWidth + columnGap : 0
+  const columnsPerPage = columnStride > 0
+    ? Math.max(1, Math.floor((width + columnGap + 0.5) / columnStride)) : 1
+  const stride = columnStride > 0 ? columnsPerPage * columnStride : width + columnGap
   return [
-    { dx: forward * (width + columnGap), dy: 0 },
+    { dx: forward * stride, dy: 0 },
     { dx: 0, dy: height },
-    { dx: -forward * (width + columnGap), dy: 0 },
+    { dx: -forward * stride, dy: 0 },
   ]
 }
 
@@ -1284,7 +1358,7 @@ function firstSentenceAfter(
   sourceParagraphIndex: number,
   start: number
 ): KoboSpeechPreview | null {
-  const full = element.textContent || ''
+  const full = sourceText(element)
   let sourceStart = Math.max(0, Math.min(start, full.length))
   while (sourceStart < full.length && /\s/.test(full[sourceStart])) sourceStart++
   if (sourceStart >= full.length) return null
@@ -1437,7 +1511,7 @@ function controlLabel(element: HTMLElement): string {
     element.getAttribute('data-qa') || '',
     element.id || '',
     element.className || '',
-    element.textContent || '',
+    sourceText(element),
   ].join(' ').replace(/\s+/g, ' ').trim()
 }
 
@@ -1896,6 +1970,7 @@ export function installKoboReader(
   let pendingAutoMetadata: AutomaticTurnMetadata | null = null
   let pendingTurnMethod: KoboTurnMethod | null = null
   let pendingTurnBaseline = ''
+  let automaticTiming: { turnID: string; started: number; firstChange?: number } | null = null
   let lateAutoTurn: LateAutomaticTurn | null = null
   let preferredMethod: KoboTurnMethod | null = null
   let turnConfirmationTimer: ReturnType<typeof setTimeout> | null = null
@@ -2023,6 +2098,8 @@ export function installKoboReader(
         nonemptyOpaqueString(value.baselineSignature) || fallbackBaseline,
       originFrameSessionID:
         nonemptyString(value.originFrameSessionID) || frameSessionID,
+      ...(value.sourcePresentation && typeof value.sourcePresentation === 'object'
+        ? { sourcePresentation: value.sourcePresentation } : {}),
     }
   }
 
@@ -2169,7 +2246,7 @@ export function installKoboReader(
           : 2
         const requiredStableMS = isLayoutRefresh
           ? REFLOW_MIN_STABLE_MS
-          : MIN_STABLE_MS
+          : reason === 'auto' ? 0 : MIN_STABLE_MS
         if (
           settleStableSamples < requiredSamples ||
           Date.now() - settleCandidateSince < requiredStableMS ||
@@ -2180,7 +2257,9 @@ export function installKoboReader(
           return
         }
 
+        const stableAt = performance.now()
         const paragraphs = extractKoboParagraphs()
+        const validationFinishedAt = performance.now()
         if (paragraphs.length === 0 && attempt < 8) {
           beginSettlement(reason, attempt + 1, forceExtract)
           return
@@ -2275,11 +2354,23 @@ export function installKoboReader(
             ...payloadFor(committedMetadata),
           })
         }
+        const extractStartedAt = performance.now()
         requestExtract(reason, payloadFor(committedMetadata))
+        if (reason === 'auto' && automaticTiming &&
+            automaticTiming.turnID === (committedMetadata as AutomaticTurnMetadata | null)?.turnID) {
+          const timing = automaticTiming
+          postForFrame('log', { message: `turn timing id=${timing.turnID}` +
+            ` firstChangeMs=${((timing.firstChange ?? stableAt) - timing.started).toFixed(1)}` +
+            ` stableMs=${(stableAt - timing.started).toFixed(1)}` +
+            ` validationMs=${(validationFinishedAt - stableAt).toFixed(1)}` +
+            ` extractMs=${(performance.now() - extractStartedAt).toFixed(1)}` +
+            ` totalMs=${(performance.now() - timing.started).toFixed(1)}` })
+          automaticTiming = null
+        }
         layoutRefreshActive = false
         clearSettledChange(reason)
         scheduleNextPagePreview()
-      }, STABILITY_POLL_MS)
+      }, reason === 'auto' && !layoutRefreshActive ? 16 : STABILITY_POLL_MS)
     }
     verify()
   }
@@ -2364,8 +2455,23 @@ export function installKoboReader(
     arg?: unknown
   ): boolean => {
     if (pendingAuto) return false
+    const startedAt = performance.now()
     const visualBaseline = koboSignature() || committedSignature
     const metadata = automaticMetadata(arg, visualBaseline)
+    const bookEnd = direction === 'next' && !!visualBaseline &&
+      visualBaseline === committedSignature && metadata.baselineSignature === visualBaseline &&
+      !layoutRefreshActive && !pendingManualIntent && !changeReasonInFlight
+      ? currentKoboBookEnd() : null
+    if (bookEnd) {
+      // Finish the owned request without sending one extra native Next. At
+      // Kobo's book end that action can open a purchase/recommendation modal.
+      postForFrame('googleBooksTurnFailed', {
+        method: 'native-book-end', lateEligible: false,
+        nativeBookEnd: bookEnd, ...metadata,
+      })
+      return false
+    }
+    automaticTiming = { turnID: metadata.turnID, started: startedAt }
     const remembered = preferredMethod ? [preferredMethod] : []
     const candidates: KoboTurnMethod[] = [
       'semantic',
@@ -2395,6 +2501,14 @@ export function installKoboReader(
     }
 
     pendingAuto = true
+    // Observe this owned native operation on paint frames. The idle poll is
+    // only recovery; it must not add up to 250 ms to every audio boundary.
+    const observeTurnFrame = (): void => {
+      if (!pendingAuto) return
+      observePageChange()
+      if (pendingAuto) requestAnimationFrame(observeTurnFrame)
+    }
+    requestAnimationFrame(observeTurnFrame)
     pendingAutoMetadata = metadata
     lateAutoTurn = null
     clearManualIntent()
@@ -2650,6 +2764,36 @@ export function installKoboReader(
   }
 
   const api = {
+    restoreLocation(arg?: unknown): boolean {
+      const value = recordArg(arg)
+      const current = koboReadingLocation()
+      const transport = koboSemanticTransport
+      const percentage = value.percentage
+      if (!current || value.bookUUID !== current.bookUUID ||
+          typeof percentage !== 'number' || !Number.isFinite(percentage) || percentage < 0 || percentage > 1 ||
+          transport?.kind !== 'ur-engine' || pendingAuto || pendingManualIntent ||
+          changeReasonInFlight || layoutRefreshActive) return false
+      const native = currentKoboURAPI(transport)
+      if (typeof native?.goToPageByBookPercentage !== 'function') return false
+      try {
+        beginLayoutRefresh('saved-source-location')
+        const completion = native.goToPageByBookPercentage.call(native, percentage)
+        void Promise.resolve(completion).catch(() => {})
+        beginSettlement('refresh', 0, true)
+        return true
+      } catch {
+        beginSettlement('refresh', 0, true)
+        return false
+      }
+    },
+    navigationReady(): boolean {
+      // A page can render before UR/engine finishes initialization. Do not
+      // spend native checkpoint-search attempts on an unavailable transport.
+      if (pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return false
+      return (['next', 'prev'] as const).some(direction =>
+        (['semantic', 'slider', 'button'] as const).some(method =>
+          methodAvailable(method, direction)))
+    },
     nextPage(arg?: unknown): boolean {
       return attemptTurn('next', arg)
     },
@@ -2950,13 +3094,16 @@ export function installKoboReader(
     { passive: true }
   )
 
-  setInterval(() => {
+  const observePageChange = (): void => {
     observeViewportChange('poll')
     if (reportReaderFailureIfPresent()) return
     if (ensureKoboChapterTypography()) return
     refreshFrameListeners()
     const signature = koboSignature()
     if (!signature || signature === observedSignature) return
+    if (pendingAuto && automaticTiming && automaticTiming.firstChange === undefined) {
+      automaticTiming.firstChange = performance.now()
+    }
     observedSignature = signature
     const firstGeometryChange = changeReasonInFlight === null
     const freshManualIntent =
@@ -3009,7 +3156,8 @@ export function installKoboReader(
           : null
     }
     beginSettlement(reason)
-  }, 250)
+  }
+  setInterval(observePageChange, 250)
 
   let waited = 0
   const boot = setInterval(() => {

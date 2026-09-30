@@ -581,11 +581,17 @@ assert.match(
   /window\.__INITIAL_STATE__\?\.reader\?\.chapterInfos/,
   'legacy WeRead reader TOC identity must come from its Vue SSR state',
 );
-assert.match(
-  toc,
-  /const marker = 'window\.__INITIAL_STATE__='/,
-  'TOC recovery must parse the inline Vue SSR payload after hydration',
+// Assert the SSR parser's behavior, not its former local variable spelling.
+// A trailing native cleanup IIFE must never be executed as part of recovery.
+const parserStart = toc.indexOf('function serializedInitialState(');
+const parserEnd = toc.indexOf('function initialStateCatalog()', parserStart);
+assert.ok(parserStart >= 0 && parserEnd > parserStart, 'SSR parser must be present');
+const parsedSSR = vm.runInNewContext(
+  toc.slice(parserStart, parserEnd) + '; serializedInitialState(input)',
+  { input: 'window.__INITIAL_STATE__ = {"reader":{"chapterUid":"a}","chapterInfos":[{"chapterUid":"a}","title":"Quoted \\\"chapter\\\""}]}};(function(){throw new Error("must not run")})();' },
 );
+assert.equal(parsedSSR.reader.chapterInfos[0].title, 'Quoted "chapter"');
+assert.equal(parsedSSR.reader.chapterUid, 'a}');
 assert.doesNotMatch(
   toc,
   /\/web\/book\/chapterInfos|\/web\/book\/bookmarklist/,
@@ -599,10 +605,6 @@ assert.doesNotMatch(
 assert.match(toc, /readerCatalog_list/);
 assert.match(toc, /dispatchEvent\(new MouseEvent/);
 assert.match(toc, /clientX,\s*clientY/);
-assert.match(
-  toc,
-  /window\.CastReaderWeReadTOC = \{ load, jump, installNativeCatalog \}/,
-);
 assert.doesNotMatch(toc, /KeyboardEvent/);
 assert.match(webReaderSource, /source: WeReadWebScripts\.tocBridge/);
 assert.match(nativeBridgeSource, /pendingWeReadTOCJump/);
@@ -619,6 +621,11 @@ assert.match(readerHostSource, /Image\(systemName: "list\.bullet"\)/);
 class MockXHR {
   addEventListener() {}
   open() {}
+}
+class MockMutationObserver {
+  constructor(callback) { this.callback = callback; }
+  observe() {}
+  disconnect() {}
 }
 class MockMouseEvent {
   constructor(type, options = {}) {
@@ -637,6 +644,7 @@ const tocRows = ['第一章', '第二章', '第三章'].map((title, index) => ({
   dataset: {},
   textContent: title,
   querySelector(selector) {
+    if (selector.includes('.chapterItem_link')) return this;
     return selector.includes('title') ? { textContent: title } : null;
   },
   closest() { return null; },
@@ -650,6 +658,7 @@ const tocRows = ['第一章', '第二章', '第三章'].map((title, index) => ({
 }));
 const tocContext = {
   URL,
+  MutationObserver: MockMutationObserver,
   MouseEvent: MockMouseEvent,
   console,
   setTimeout,
@@ -685,6 +694,9 @@ const tocContext = {
 };
 tocContext.window = tocContext;
 vm.runInNewContext(toc, tocContext, { filename: 'WeRead.tocBridge.runtime.js' });
+for (const name of ['load', 'jump', 'installNativeCatalog']) {
+  assert.equal(typeof tocContext.CastReaderWeReadTOC[name], 'function', `TOC action ${name} remains available`);
+}
 await tocContext.CastReaderWeReadTOC.load();
 const publishedTOC = tocMessages.filter(message => message.type === 'wereadTOC').at(-1);
 assert.ok(publishedTOC, 'TOC bridge must publish chapter metadata');
@@ -735,6 +747,7 @@ const apiRows = ['序章', '第九章'].map((title, index) => ({
   dataset: {},
   textContent: title,
   querySelector(selector) {
+    if (selector.includes('.chapterItem_link')) return this;
     return selector.includes('title') ? { textContent: title } : null;
   },
   closest() { return null; },
@@ -748,6 +761,7 @@ const apiRows = ['序章', '第九章'].map((title, index) => ({
 }));
 const apiContext = {
   URL, URLSearchParams, MouseEvent: MockMouseEvent, console, setTimeout, clearTimeout,
+  MutationObserver: MockMutationObserver,
   fetch: apiFetch,
   location: apiLocation,
   document: {
@@ -855,15 +869,16 @@ assert.doesNotMatch(
   /webView\.load|\.reload\(|WeReadNativeTheme\.prepare|loginPollingTask\?\.cancel/,
   'theme changes must never navigate, reload, or cancel the active QR login session',
 );
-assert.match(webReaderSource, /preferredContentMode = \.mobile/);
-assert.doesNotMatch(webReaderSource, /preferredContentMode = \.desktop/);
+assert.match(webReaderSource, /if let livePlatform \{[^}]*preferredContentMode = \.mobile/);
+assert.match(webReaderSource, /if document\.sourceKind == \.weread \{\s*config\.websiteDataStore[^}]*preferredContentMode = \.desktop/,
+  'WeRead must request the desktop HorizontalReader that owns its native page array');
 assert.doesNotMatch(source, /wr_whiteTheme|wr_darkTheme|dataset\.theme/);
 
 // Backgrounding may transiently republish SwiftUI's color scheme. Lifecycle
 // state must be delivered first and WeRead theme reloads must be active-only,
 // otherwise `prepareWeReadReload` stops native TTS while WebKit is suspended.
 const updateUIViewStart = webReaderSource.indexOf('func updateUIView(');
-const updateUIViewEnd = webReaderSource.indexOf('/// 读取 app bundle', updateUIViewStart);
+const updateUIViewEnd = webReaderSource.indexOf('static func loadBundleJS', updateUIViewStart);
 assert.ok(updateUIViewStart >= 0 && updateUIViewEnd > updateUIViewStart, 'updateUIView lifecycle block missing');
 const updateUIView = webReaderSource.slice(updateUIViewStart, updateUIViewEnd);
 assert.match(updateUIView, /let isApplicationActive = scenePhase == \.active/);
@@ -876,7 +891,7 @@ assert.ok(
 
 assert.match(bridge, /preRenderContainer/);
 assert.match(bridge, /renderTargetContainer/);
-assert.match(bridge, /contentFingerprint=hash\(next\.map/);
+assert.match(bridge, /contentFingerprint=hash\(native\?\.pageIdentity\?/);
 assert.doesNotMatch(bridge, /\$\{columns\}\|\$\{progress\}/);
 assert.match(bridge, /function surface\(host\)/);
 assert.match(bridge, /function clipBox\(b,s\)/);
@@ -895,7 +910,7 @@ assert.doesNotMatch(
 );
 assert.match(
   bridge,
-  /window\.CR=\{init\(\)\{wordState=\{para:-1,seg:-1,cursor:0,last:-1\};clearHighlight\(\);currentMarks\.clear\(\);\}/,
+  /init\(\)\{wordState=\{para:-1,seg:-1,cursor:0,last:-1\};clearHighlight\(\);currentMarks\.clear\(\);\}/,
 );
 assert.match(bridge, /post\('wereadLayoutStable'/);
 assert.match(bridge, /relayout\(a\)/);
@@ -918,7 +933,7 @@ assert.match(bridge, /if\(\(snapshot\.draws\|\|\[\]\)\.length\)/);
 assert.match(bridge, /selected=\(p\.chars\|\|\[\]\)\.filter/);
 assert.match(bridge, /mappedGlyphs/);
 assert.match(bridge, /post\('wereadPagePreview'/);
-assert.match(bridge, /confidence:'drawImage'/);
+assert.match(bridge, /confidence:'native-pages'/);
 assert.match(bridge, /sourceFingerprint,contentFingerprint/);
 assert.match(bridge, /sourceCharStart/);
 assert.match(bridge, /sourceCharEnd/);
@@ -981,8 +996,11 @@ assert.match(bridge, /if\(host\.querySelector\('canvas'\)\)return/);
 assert.doesNotMatch(bridge, /if\(!host\|\|!layouts\.length\)return/);
 assert.match(bridge, /post\('wereadExtractionState'/);
 assert.match(bridge, /a\.segmentTexts\.length&&!resolved\)\{clearHighlight\(\);return;/);
-assert.equal((bridge.match(/button\.click\(\)/g) || []).length, 1);
-assert.doesNotMatch(bridge, /KeyboardEvent|ArrowRight|dispatchEvent\(new MouseEvent/);
+const turnPageBody = bridge.slice(bridge.indexOf('function turnPage('), bridge.indexOf('window.CastReaderWeRead={', bridge.indexOf('function turnPage(')));
+assert.ok(turnPageBody.length > 0);
+assert.equal((turnPageBody.match(/button\.click\(\)/g) || []).length, 1,
+  'a semantic page-turn operation must click its native control only once');
+assert.doesNotMatch(turnPageBody, /new KeyboardEvent|dispatchEvent\(new MouseEvent/);
 assert.doesNotMatch(bridge, /chapterInfos|decodeChapterResponse/);
 assert.match(webReaderSource, /webView\.navigationDelegate = context\.coordinator/);
 assert.match(webReaderSource, /showWeReadLoadingCover\(\)/);
@@ -1006,7 +1024,7 @@ const exactCarryCommit = readAloudSource.slice(
   readAloudSource.indexOf('private func setWebHighlight'),
 );
 assert.match(exactCarryCommit, /startLiveWebCarryPrewarm\(/);
-assert.match(exactCarryCommit, /generatePrefetchSegments\(/);
+assert.match(exactCarryCommit, /speechGenerator\.generateBufferedSpeech\(/);
 assert.match(exactCarryCommit, /liveWebCarryPrewarmIdentityIsCurrent\(/);
 assert.match(exactCarryCommit, /liveWebCarryPrewarmCanAcceptCallbacks\(/);
 assert.match(exactCarryCommit, /audio\.loadSegments\(/);
@@ -1070,7 +1088,7 @@ assert.match(
 );
 assert.match(
   readAloudSource,
-  /if segs\.count == 1, document\.sourceKind != \.weread/,
+  /if document\.sourceKind == \.kindle, !VoiceOption\.requiresGenerationQuota\(playbackVoiceID\) \{\s*preloadNext\(after: paragraph\)/,
   'WeRead must finish the current natural-sentence producer before competing for the next paragraph',
 );
 const cancelledTurnResume = readAloudSource.slice(
@@ -1097,15 +1115,28 @@ const finishProducer = audioPlayerSource.slice(
 );
 assert.match(
   finishProducer,
-  /DispatchQueue\.main\.async[\s\S]*?playbackOwnership\.permitsCallback[\s\S]*?currentSegment\?\.id == terminalSegmentID[\s\S]*?StreamingQueueDrainContract\.shouldCompletePlayback[\s\S]*?onPlaybackComplete\?\(\)/,
+  /DispatchQueue\.main\.async[\s\S]*?playbackOwnership\.permitsCallback[\s\S]*?currentSegment\?\.id == terminalSegmentID[\s\S]*?StreamingQueueDrainContract\.shouldCompletePlayback[\s\S]*?publishDrainedQueueCompletion\(\)/,
   'a drained exact producer must revalidate owner, terminal item, and queue state before completing asynchronously',
 );
 const previewPrefetch = nativeBridgeSource.slice(
   nativeBridgeSource.indexOf('private func maybeStartWeReadPreviewPrefetch'),
   nativeBridgeSource.indexOf('private func maybeArmWeReadContinuousHandoff'),
 );
-assert.match(previewPrefetch, /readVM\.isOnLastReadableParagraph/);
-assert.match(previewPrefetch, /readVM\.currentTTSCompleteForPageHandoff/);
+assert.match(previewPrefetch, /readVM\.canPrepareAdjacentLivePageAudio/);
+const adjacentPreparation = readAloudSource.slice(
+  readAloudSource.indexOf('var canPrepareAdjacentLivePageAudio'),
+  readAloudSource.indexOf('var preparedKindlePageAudioTail'),
+);
+assert.match(adjacentPreparation, /currentTTSCompleteForPageHandoff/);
+assert.match(adjacentPreparation, /!isPlaybackPausedByUser/);
+assert.match(adjacentPreparation, /audio\.isPlaying/);
+assert.match(adjacentPreparation, /stream\.finished/);
+assert.match(adjacentPreparation, />= 12/);
+const continuousAdmission = nativeBridgeSource.slice(
+  nativeBridgeSource.indexOf('private func maybeArmWeReadContinuousHandoff'),
+  nativeBridgeSource.indexOf('private func maybeArmWeReadContinuousHandoff') + 5000,
+);
+assert.match(continuousAdmission, /isLastReadableParagraph: vm\.isOnLastReadableParagraph/);
 assert.match(nativeBridgeSource, /scheduleWeReadForegroundProbe/);
 assert.doesNotMatch(nativeBridgeSource, /reason: "orientation"|weReadSurfaceDidChange|weReadSurfaceRelayoutTask/);
 assert.match(nativeBridgeSource, /foreground probe inconclusive preserve-live-webview/);
@@ -1137,7 +1168,7 @@ assert.match(readerHostSource, /static let portraitHeight: CGFloat = 72/);
 assert.match(readerHostSource, /static let consoleHeight: CGFloat = 64/);
 assert.match(
   readerHostSource,
-  /\.frame\(height: ReaderPlaybackBarLayoutContract\.reservedPortraitHeight\(for: mode\)\)/,
+  /\.frame\(height: AdaptiveLayout\.playbackHeight\(in: hostSize\)\)/,
 );
 assert.match(appSource, /supportedInterfaceOrientationsFor/);
 assert.match(appSource, /requestGeometryUpdate/);
@@ -1453,7 +1484,7 @@ const previewLayout = {
     })),
   }],
 };
-const previewContext = vm.createContext({ layoutForPreview: previewLayout });
+const previewContext = vm.createContext({ layoutForPreview: previewLayout, window: {} });
 new vm.Script(`
   const innerWidth=100,innerHeight=100;
   const layouts=[globalThis.layoutForPreview];
@@ -1496,8 +1527,20 @@ const predicted = previewContext.predictNextForTest(
   previewHost,
   [{ text: sourceText.slice(10, 20), sourceLayoutFingerprint: 'layout-1' }],
 );
-assert.equal(predicted.confidence, 'drawImage');
-assert.equal(predicted.paragraphs[0].text, sourceText.slice(20, 30));
+assert.equal(predicted, null, 'drawImage geometry alone cannot prove the next native page');
+previewContext.window.__castReaderWeReadNative = {
+  snapshot(host, successor) {
+    assert.equal(host, previewHost);
+    assert.equal(successor, true);
+    return { ready: true, pageIdentity: 'native-neighbor-2', items: [{ text: sourceText.slice(20, 30) }] };
+  },
+};
+const nativePredicted = previewContext.predictNextForTest({ draws: [liveDraw] }, previewHost, []);
+assert.equal(nativePredicted.confidence, 'native-pages');
+assert.equal(nativePredicted.pageIdentity, 'native-neighbor-2');
+assert.equal(nativePredicted.paragraphs[0].text, sourceText.slice(20, 30));
+previewContext.window.__castReaderWeReadNative.snapshot = () => ({ ready: false, items: [] });
+assert.equal(previewContext.predictNextForTest({}, previewHost, []), null);
 assert.equal(liveDraw.sx, 100, 'preview must not mutate the live source crop');
 
 // Newer WeRead builds can bypass the transient DOM/cropped-canvas mapping and
@@ -1510,7 +1553,7 @@ const directAnchorStart = bridge.indexOf('function attachDirectSource');
 const directAnchorEnd = bridge.indexOf('function choose', directAnchorStart);
 assert.ok(overlapStart >= 0 && overlapEnd > overlapStart, 'page overlap helper missing');
 assert.ok(directAnchorStart >= 0 && directAnchorEnd > directAnchorStart, 'direct source anchoring helper missing');
-const directAnchorContext = vm.createContext({ layoutForPreview: previewLayout });
+const directAnchorContext = vm.createContext({ layoutForPreview: previewLayout, window: {} });
 new vm.Script(`
   const layouts=[globalThis.layoutForPreview];
   const points=text=>{const a=[];for(let i=0;i<text.length;){const cp=text.codePointAt(i),ch=String.fromCodePoint(cp);a.push({ch,start:i,end:i+ch.length});i+=ch.length;}return a;};
@@ -1536,8 +1579,7 @@ const directPredicted = directAnchorContext.predictNextForTest(
   previewHost,
   anchored.items,
 );
-assert.equal(directPredicted.confidence, 'sequential');
-assert.equal(directPredicted.paragraphs[0].text, sourceText.slice(20, 30));
+assert.equal(directPredicted, null, 'source text offsets alone do not establish native page adjacency');
 
 // A visual page edge is not a sentence boundary. Extend only the final visible
 // slice through the source sentence terminator, then remove that carried prefix

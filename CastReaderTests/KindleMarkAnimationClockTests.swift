@@ -1,8 +1,105 @@
 import XCTest
+import SwiftUI
+import UIKit
 @testable import CastReader
 
 @MainActor
 final class KindleMarkAnimationClockTests: XCTestCase {
+    private final class HeldPage: ObservableObject {
+        @Published var visible = true
+    }
+
+    private struct HeldPageFixture: View {
+        @ObservedObject var page: HeldPage
+        let id: UUID
+        let fence: KindleVisualHoldReleaseFence
+        let appeared: () -> Void
+        var body: some View {
+            ZStack {
+                Color.blue
+                if page.visible {
+                    Color.white
+                        .background(KindleVisualHoldRemovalObserver(id: id, fence: fence))
+                        .onAppear(perform: appeared)
+                }
+            }
+        }
+    }
+
+    func testNativeRevealWaitsForMountedHoldRemovalAndDisplayFrame() async {
+        let fence = KindleVisualHoldReleaseFence(), page = HeldPage(), id = UUID()
+        let mounted = expectation(description: "Native hold mounted")
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
+        window.rootViewController = UIHostingController(rootView: HeldPageFixture(
+            page: page, id: id, fence: fence, appeared: { mounted.fulfill() }))
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true }
+        await fulfillment(of: [mounted], timeout: 2)
+        let start = CACurrentMediaTime()
+        let ready = await fence.waitForRemoval(of: id, while: { true }, remove: { page.visible = false })
+        XCTAssertTrue(ready, "Removing the actual SwiftUI hold must release the next-page start")
+        XCTAssertGreaterThan(CACurrentMediaTime() - start, 0)
+        XCTAssertLessThan(CACurrentMediaTime() - start, 0.5)
+    }
+
+    func testMissingOrStaleNativeRemovalNeverAuthorizesPlayback() async {
+        let fence = KindleVisualHoldReleaseFence()
+        for staleCallback in [false, true] {
+            let ready = await fence.waitForRemoval(of: UUID(), timeoutSeconds: 0.08, while: { true }, remove: {
+                if staleCallback { fence.didRemove(UUID()) }
+            })
+            XCTAssertFalse(ready)
+        }
+    }
+
+    func testCancelledNativeRevealCannotReleaseAReplacementHold() async {
+        let fence = KindleVisualHoldReleaseFence(), old = UUID(), replacement = UUID()
+        let registered = expectation(description: "Old reveal registered")
+        let pending = Task {
+            await fence.waitForRemoval(of: old, while: { true }, remove: { registered.fulfill() })
+        }
+        await fulfillment(of: [registered], timeout: 1)
+        pending.cancel()
+        let cancelled = await pending.value
+        XCTAssertFalse(cancelled)
+        let result = await fence.waitForRemoval(of: replacement, timeoutSeconds: 0.08, while: { true }, remove: {
+            fence.didRemove(old)
+        })
+        XCTAssertFalse(result, "An old removal cannot authorize a new page")
+    }
+
+    func testNavigationInvalidationWinsOverAlreadyRemovedNativeHold() async {
+        let fence = KindleVisualHoldReleaseFence(), id = UUID()
+        var owned = true
+        let result = await fence.waitForRemoval(of: id, while: { owned }, remove: {
+            fence.didRemove(id)
+            owned = false
+        })
+        XCTAssertFalse(result)
+    }
+
+    func testKnownAudioDeadlineFitsWholeStrokeAndRetainsPhaseAcrossRenderers() {
+        let clock = KindleMarkAnimationClock()
+        let id = UUID()
+        clock.begin(id, duration: 2.2, completeBy: 100.5, now: 100)
+        let animation = clock.animations[id]!
+        XCTAssertEqual(animation.duration, 0.38, accuracy: 0.001)
+        XCTAssertEqual(animation.progress(at: 100.38), 1, accuracy: 0.001)
+        XCTAssertEqual(clock.remaining(at: 100.5), 0, accuracy: 0.001)
+        clock.begin(id, duration: 2.2, completeBy: 102, now: 100.2)
+        XCTAssertEqual(clock.animations[id]?.startedAt, 100)
+        XCTAssertEqual(clock.animations[id]?.duration, animation.duration)
+    }
+
+    func testLateOrUnknownAudioDeadlineKeepsDrawingBounded() {
+        let clock = KindleMarkAnimationClock()
+        let late = UUID(), unknown = UUID()
+        clock.begin(late, duration: 2.2, completeBy: 99, now: 100)
+        clock.begin(unknown, duration: 2.2, completeBy: .nan, now: 100)
+        XCTAssertEqual(clock.animations[late]?.duration, 0.01)
+        XCTAssertEqual(clock.animations[unknown]?.duration, 2.2)
+    }
+
     func testHandoffKeepsPhaseAndCompletionDeadline() {
         let clock = KindleMarkAnimationClock()
         let id = UUID()

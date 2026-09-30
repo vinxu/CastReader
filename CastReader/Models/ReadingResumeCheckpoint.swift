@@ -14,6 +14,8 @@ struct ReadingResumeCheckpoint: Codable, Equatable {
     let audio: ReadingResumeAudioCursor?
     var visual: ReadingResumeVisualCursor? = nil
     var reflow: ReadingResumeReflowCursor? = nil
+    var koboLocation: KoboReadingLocation? = nil
+    var weReadLocation: WeReadReadingLocation? = nil
     let updatedAt: Date
     var activity: ReadingProgressActivity? = nil
 
@@ -21,6 +23,37 @@ struct ReadingResumeCheckpoint: Codable, Equatable {
         schemaVersion == 1 && paragraphIndex >= 0
             && paragraphFingerprint.count == 64 && structureFingerprint.count == 64
             && (audio?.isValid ?? true)
+    }
+}
+
+struct WeReadReadingLocation: Codable, Equatable {
+    let bookID: String
+    let readerURL: String
+    let chapterUID: String
+    let chapterOffset: Int
+
+    func isValid(for expectedBookID: String) -> Bool {
+        guard bookID == expectedBookID, !bookID.isEmpty,
+              !chapterUID.isEmpty, chapterUID.allSatisfy(\.isNumber), chapterOffset >= 0,
+              let url = URLComponents(string: readerURL) else { return false }
+        return url.scheme == "https" && url.host == "weread.qq.com"
+            && url.user == nil && url.password == nil && (url.port == nil || url.port == 443)
+            && url.path.hasPrefix("/web/reader/") && url.path.count > "/web/reader/".count
+    }
+}
+
+/// Provider position is a search hint, never proof that the saved words are
+/// visible. The existing paragraph/context hashes must still resolve after
+/// navigation, including after a font or viewport change.
+struct KoboReadingLocation: Codable, Equatable {
+    let bookUUID: String
+    let percentage: Double
+
+    func isValid(for sourceURL: String?) -> Bool {
+        guard let sourceURL, let expected = KoboBookValidator.bookUUID(from: sourceURL),
+              KoboBookValidator.isValidBookUUID(bookUUID) else { return false }
+        return bookUUID.lowercased() == expected.lowercased()
+            && percentage.isFinite && (0...1).contains(percentage)
     }
 }
 
@@ -189,7 +222,8 @@ enum ReadingResumeContract {
         let context = prior.map {
             AudioSegment(paragraphIndex: $0.paragraphIndex, segmentIndex: $0.segmentIndex,
                 audioData: Data(), timestamps: $0.timestamps, duration: $0.duration,
-                text: $0.text, isWavFormat: $0.isWavFormat, speaker: $0.speaker)
+                text: $0.text, isWavFormat: $0.isWavFormat, speaker: $0.speaker,
+                timingTimestamps: $0.timingTimestamps)
         }
         return SpeechSuffixPlan(text: suffix, prefix: context, nextSegmentIndex: prior.count)
     }

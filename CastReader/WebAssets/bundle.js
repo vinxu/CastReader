@@ -448,14 +448,14 @@ var __CRWeb = (() => {
 
   // ../../../CastReader/WebReader/node_modules/underscore/modules/_collectNonEnumProps.js
   function emulatedSet(keys2) {
-    var hash = {};
-    for (var l2 = keys2.length, i = 0; i < l2; ++i) hash[keys2[i]] = true;
+    var hash2 = {};
+    for (var l2 = keys2.length, i = 0; i < l2; ++i) hash2[keys2[i]] = true;
     return {
       contains: function(key) {
-        return hash[key] === true;
+        return hash2[key] === true;
       },
       push: function(key) {
-        hash[key] = true;
+        hash2[key] = true;
         return keys2.push(key);
       }
     };
@@ -1511,10 +1511,10 @@ var __CRWeb = (() => {
   // ../../../CastReader/WebReader/node_modules/underscore/modules/memoize.js
   function memoize(func, hasher) {
     var memoize2 = function(key) {
-      var cache = memoize2.cache;
+      var cache2 = memoize2.cache;
       var address = "" + (hasher ? hasher.apply(this, arguments) : key);
-      if (!has(cache, address)) cache[address] = func.apply(this, arguments);
-      return cache[address];
+      if (!has(cache2, address)) cache2[address] = func.apply(this, arguments);
+      return cache2[address];
     };
     memoize2.cache = {};
     return memoize2;
@@ -6022,19 +6022,19 @@ var __CRWeb = (() => {
           var makeGetter = function(propertyName) {
             return new Function("obj", "                                             \n        'use strict';                                                        \n        return obj.propertyName;                                             \n        ".replace("propertyName", propertyName));
           };
-          var getCompiled = function(name, compiler, cache) {
-            var ret2 = cache[name];
+          var getCompiled = function(name, compiler, cache2) {
+            var ret2 = cache2[name];
             if (typeof ret2 !== "function") {
               if (!isIdentifier2(name)) {
                 return null;
               }
               ret2 = compiler(name);
-              cache[name] = ret2;
-              cache[" size"]++;
-              if (cache[" size"] > 512) {
-                var keys2 = Object.keys(cache);
-                for (var i = 0; i < 256; ++i) delete cache[keys2[i]];
-                cache[" size"] = keys2.length - 256;
+              cache2[name] = ret2;
+              cache2[" size"]++;
+              if (cache2[" size"] > 512) {
+                var keys2 = Object.keys(cache2);
+                for (var i = 0; i < 256; ++i) delete cache2[keys2[i]];
+                cache2[" size"] = keys2.length - 256;
               }
             }
             return ret2;
@@ -8316,7 +8316,7 @@ var __CRWeb = (() => {
         superscript: "superscript",
         subscript: "subscript"
       };
-      function Text(value) {
+      function Text2(value) {
         return {
           type: types.text,
           value
@@ -8456,7 +8456,7 @@ var __CRWeb = (() => {
       exports2.document = exports2.Document = Document;
       exports2.paragraph = exports2.Paragraph = Paragraph;
       exports2.run = exports2.Run = Run;
-      exports2.text = exports2.Text = Text;
+      exports2.text = exports2.Text = Text2;
       exports2.tab = exports2.Tab = Tab;
       exports2.checkbox = exports2.Checkbox = Checkbox;
       exports2.Hyperlink = Hyperlink;
@@ -12182,13 +12182,13 @@ var __CRWeb = (() => {
           return node;
         },
         createDocumentFragment: function() {
-          var node = new DocumentFragment();
+          var node = new DocumentFragment2();
           node.ownerDocument = this;
           node.childNodes = new NodeList();
           return node;
         },
         createTextNode: function(data) {
-          var node = new Text();
+          var node = new Text2();
           node.ownerDocument = this;
           node.appendData(data);
           return node;
@@ -12418,9 +12418,9 @@ var __CRWeb = (() => {
         }
       };
       _extends(CharacterData, Node2);
-      function Text() {
+      function Text2() {
       }
-      Text.prototype = {
+      Text2.prototype = {
         nodeName: "#text",
         nodeType: TEXT_NODE3,
         splitText: function(offset) {
@@ -12436,7 +12436,7 @@ var __CRWeb = (() => {
           return newNode;
         }
       };
-      _extends(Text, CharacterData);
+      _extends(Text2, CharacterData);
       function Comment() {
       }
       Comment.prototype = {
@@ -12467,11 +12467,11 @@ var __CRWeb = (() => {
       }
       EntityReference.prototype.nodeType = ENTITY_REFERENCE_NODE;
       _extends(EntityReference, Node2);
-      function DocumentFragment() {
+      function DocumentFragment2() {
       }
-      DocumentFragment.prototype.nodeName = "#document-fragment";
-      DocumentFragment.prototype.nodeType = DOCUMENT_FRAGMENT_NODE;
-      _extends(DocumentFragment, Node2);
+      DocumentFragment2.prototype.nodeName = "#document-fragment";
+      DocumentFragment2.prototype.nodeType = DOCUMENT_FRAGMENT_NODE;
+      _extends(DocumentFragment2, Node2);
       function ProcessingInstruction() {
       }
       ProcessingInstruction.prototype.nodeType = PROCESSING_INSTRUCTION_NODE;
@@ -23976,9 +23976,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/conventions.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/conventions.js
   var require_conventions2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/conventions.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/conventions.js"(exports2) {
       "use strict";
       function find2(list, predicate, ac) {
         if (ac === void 0) {
@@ -24103,9 +24103,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom.js
   var require_dom2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom.js"(exports2) {
       var conventions = require_conventions2();
       var find2 = conventions.find;
       var NAMESPACE = conventions.NAMESPACE;
@@ -24926,13 +24926,13 @@ var __CRWeb = (() => {
           return node;
         },
         createDocumentFragment: function() {
-          var node = new DocumentFragment();
+          var node = new DocumentFragment2();
           node.ownerDocument = this;
           node.childNodes = new NodeList();
           return node;
         },
         createTextNode: function(data) {
-          var node = new Text();
+          var node = new Text2();
           node.ownerDocument = this;
           node.appendData(data);
           return node;
@@ -25130,9 +25130,9 @@ var __CRWeb = (() => {
         }
       };
       _extends(CharacterData, Node2);
-      function Text() {
+      function Text2() {
       }
-      Text.prototype = {
+      Text2.prototype = {
         nodeName: "#text",
         nodeType: TEXT_NODE3,
         splitText: function(offset) {
@@ -25148,7 +25148,7 @@ var __CRWeb = (() => {
           return newNode;
         }
       };
-      _extends(Text, CharacterData);
+      _extends(Text2, CharacterData);
       function Comment() {
       }
       Comment.prototype = {
@@ -25179,11 +25179,11 @@ var __CRWeb = (() => {
       }
       EntityReference.prototype.nodeType = ENTITY_REFERENCE_NODE;
       _extends(EntityReference, Node2);
-      function DocumentFragment() {
+      function DocumentFragment2() {
       }
-      DocumentFragment.prototype.nodeName = "#document-fragment";
-      DocumentFragment.prototype.nodeType = DOCUMENT_FRAGMENT_NODE;
-      _extends(DocumentFragment, Node2);
+      DocumentFragment2.prototype.nodeName = "#document-fragment";
+      DocumentFragment2.prototype.nodeType = DOCUMENT_FRAGMENT_NODE;
+      _extends(DocumentFragment2, Node2);
       function ProcessingInstruction() {
       }
       ProcessingInstruction.prototype.nodeType = PROCESSING_INSTRUCTION_NODE;
@@ -25517,9 +25517,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/entities.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/entities.js
   var require_entities2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/entities.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/entities.js"(exports2) {
       "use strict";
       var freeze = require_conventions2().freeze;
       exports2.XML_ENTITIES = freeze({
@@ -27660,9 +27660,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/sax.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/sax.js
   var require_sax2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/sax.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/sax.js"(exports2) {
       var NAMESPACE = require_conventions2().NAMESPACE;
       var nameStartChar = /[A-Z_a-z\xC0-\xD6\xD8-\xF6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/;
       var nameChar = new RegExp("[\\-\\.0-9" + nameStartChar.source.slice(1, -1) + "\\u00B7\\u0300-\\u036F\\u203F-\\u2040]");
@@ -28241,9 +28241,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom-parser.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom-parser.js
   var require_dom_parser2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom-parser.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom-parser.js"(exports2) {
       var conventions = require_conventions2();
       var dom = require_dom2();
       var entities = require_entities2();
@@ -28450,9 +28450,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/index.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/index.js
   var require_lib4 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/index.js"(exports2) {
       var dom = require_dom2();
       exports2.DOMImplementation = dom.DOMImplementation;
       exports2.XMLSerializer = dom.XMLSerializer;
@@ -39266,19 +39266,26 @@ var __CRWeb = (() => {
 
   // ../../../MyProject/readout-desktop/src/extractors/utils/shadow-dom-utils.ts
   var MAX_SHADOW_DEPTH = 5;
-  var MAX_SAMPLE = 100;
+  function isCastreaderOwnedHost(element) {
+    return element.id.startsWith("castreader-") || element.hasAttribute("data-castreader") || element.hasAttribute("data-castreader-voice-browser");
+  }
+  function isCastreaderOwnedElement(element) {
+    let current = element instanceof HTMLElement ? element : null;
+    while (current) {
+      if (isCastreaderOwnedHost(current)) return true;
+      current = getParentAcrossShadow(current);
+    }
+    return false;
+  }
   function hasShadowContent() {
     const all = document.querySelectorAll("*");
-    let checked = 0;
-    for (let i = 0; i < all.length && checked < MAX_SAMPLE; i++) {
-      const el = all[i];
-      if (!el.tagName.includes("-")) continue;
-      checked++;
-      if (el.shadowRoot) return true;
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].shadowRoot && !isCastreaderOwnedElement(all[i])) return true;
     }
     return false;
   }
   function getParentAcrossShadow(el) {
+    if (el.assignedSlot instanceof HTMLElement) return el.assignedSlot;
     const parent2 = el.parentElement;
     if (parent2) return parent2;
     const root2 = el.getRootNode();
@@ -39287,6 +39294,19 @@ var __CRWeb = (() => {
     }
     return null;
   }
+  function isRenderedInComposedTree(node) {
+    let directChild = node;
+    let parent2 = node.parentNode;
+    while (parent2 instanceof HTMLElement) {
+      if (parent2.shadowRoot) {
+        const assignedSlot = directChild instanceof Element || directChild instanceof Text ? directChild.assignedSlot : null;
+        return assignedSlot !== null;
+      }
+      directChild = parent2;
+      parent2 = parent2.parentNode;
+    }
+    return true;
+  }
   function deepQuerySelectorAll(root2, selector) {
     const results = [];
     deepQueryRecursive(root2, selector, results, 0);
@@ -39294,13 +39314,17 @@ var __CRWeb = (() => {
   }
   function deepQueryRecursive(root2, selector, results, depth) {
     if (depth > MAX_SHADOW_DEPTH) return;
+    if (root2 instanceof Element && isCastreaderOwnedElement(root2)) return;
     try {
       const matches = root2.querySelectorAll(selector);
       for (let i = 0; i < matches.length; i++) {
         const el = matches[i];
-        if (el instanceof HTMLElement) results.push(el);
+        if (el instanceof HTMLElement && !isCastreaderOwnedElement(el)) results.push(el);
       }
     } catch (e) {
+    }
+    if (root2 instanceof Element && root2.shadowRoot) {
+      deepQueryRecursive(root2.shadowRoot, selector, results, depth + 1);
     }
     let elements;
     try {
@@ -39310,7 +39334,7 @@ var __CRWeb = (() => {
     }
     for (let i = 0; i < elements.length; i++) {
       const el = elements[i];
-      if (el.shadowRoot) {
+      if (el.shadowRoot && !isCastreaderOwnedElement(el)) {
         deepQueryRecursive(el.shadowRoot, selector, results, depth + 1);
       }
     }
@@ -39320,17 +39344,32 @@ var __CRWeb = (() => {
       this.whatToShow = whatToShow;
       this.filter = filter2;
       this.walkerStack = [document.createTreeWalker(root2, whatToShow, filter2)];
+      this.pendingRootHost = null;
+      if (root2 instanceof Element && root2.shadowRoot && !isCastreaderOwnedElement(root2)) {
+        this.walkerStack.push(document.createTreeWalker(root2.shadowRoot, whatToShow, filter2));
+        this.pendingRootHost = root2;
+      }
     }
     nextNode() {
       while (this.walkerStack.length > 0) {
+        if (this.pendingRootHost) {
+          const host = this.pendingRootHost;
+          this.pendingRootHost = null;
+          const accepted = this.filter ? typeof this.filter === "function" ? this.filter(host) : this.filter.acceptNode(host) : NodeFilter.FILTER_ACCEPT;
+          if ((this.whatToShow & NodeFilter.SHOW_ELEMENT) !== 0 && accepted === NodeFilter.FILTER_ACCEPT) {
+            return host;
+          }
+        }
         const walker = this.walkerStack[this.walkerStack.length - 1];
         const node = walker.nextNode();
         if (node === null) {
           this.walkerStack.pop();
           continue;
         }
+        if (!isRenderedInComposedTree(node)) continue;
         if (node.nodeType === Node.ELEMENT_NODE && this.walkerStack.length <= MAX_SHADOW_DEPTH) {
           const el = node;
+          if (isCastreaderOwnedElement(el)) continue;
           if (el.shadowRoot) {
             const shadowWalker = document.createTreeWalker(
               el.shadowRoot,
@@ -39338,7 +39377,7 @@ var __CRWeb = (() => {
               this.filter
             );
             this.walkerStack.push(shadowWalker);
-            continue;
+            return node;
           }
         }
         return node;
@@ -39671,6 +39710,7 @@ var __CRWeb = (() => {
     const contentSelector = "p, li, h2, h3, h4, h5, h6, blockquote, dd, dt";
     const contentElements = _pageHasShadowContent ? deepQuerySelectorAll(document, contentSelector) : document.querySelectorAll(contentSelector);
     for (const el of contentElements) {
+      if (isCastreaderOwnedElement(el)) continue;
       const text = ((_a = el.textContent) == null ? void 0 : _a.trim()) || "";
       if (text.length < 25) continue;
       let inNoise = false;
@@ -39794,13 +39834,17 @@ var __CRWeb = (() => {
         if (text > 200) return main;
       }
     } else {
-      const article = document.querySelector("article");
-      if (article instanceof HTMLElement) {
+      const articles = Array.from(document.querySelectorAll("article")).filter(
+        (article) => !isCastreaderOwnedElement(article)
+      );
+      for (const article of articles) {
         const text = ((_c = article.textContent) == null ? void 0 : _c.trim().length) || 0;
         if (text > 200) return article;
       }
-      const main = document.querySelector('main, [role="main"]');
-      if (main instanceof HTMLElement) {
+      const mains = Array.from(
+        document.querySelectorAll('main, [role="main"]')
+      ).filter((main) => !isCastreaderOwnedElement(main));
+      for (const main of mains) {
         const text = ((_d = main.textContent) == null ? void 0 : _d.trim().length) || 0;
         if (text > 200) return main;
       }
@@ -39971,6 +40015,8 @@ var __CRWeb = (() => {
         var _a2;
         if (node.nodeType === Node.ELEMENT_NODE) {
           const el = node;
+          if (isCastreaderOwnedElement(el)) return NodeFilter.FILTER_REJECT;
+          if (el.shadowRoot) return NodeFilter.FILTER_ACCEPT;
           if (el.tagName === "BR") return NodeFilter.FILTER_ACCEPT;
           if (SKIP_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
           if (el.tagName === "PRE") return NodeFilter.FILTER_REJECT;
@@ -39978,6 +40024,7 @@ var __CRWeb = (() => {
         }
         const parent2 = node.parentElement;
         if (!parent2) return NodeFilter.FILTER_REJECT;
+        if (isCastreaderOwnedElement(parent2)) return NodeFilter.FILTER_REJECT;
         if (SKIP_TAGS.has(parent2.tagName)) return NodeFilter.FILTER_REJECT;
         const pcs = getComputedStyle(parent2);
         if (pcs.display === "none") return NodeFilter.FILTER_REJECT;
@@ -40000,7 +40047,7 @@ var __CRWeb = (() => {
     let currentNode;
     while (currentNode = walker.nextNode()) {
       if (currentNode.nodeType === Node.ELEMENT_NODE) {
-        consecutiveBrs++;
+        if (currentNode.tagName === "BR") consecutiveBrs++;
         continue;
       }
       const blockAncestor = findBlockAncestor(currentNode);
@@ -40029,6 +40076,7 @@ var __CRWeb = (() => {
     const preElements = _pageHasShadowContent ? deepQuerySelectorAll(contentRoot2, "pre") : contentRoot2.querySelectorAll("pre");
     for (const pre of preElements) {
       const el = pre;
+      if (isCastreaderOwnedElement(el)) continue;
       const text = (_b = el.textContent) == null ? void 0 : _b.trim();
       if (!text || text.length < 10) continue;
       if (!blockMap.has(el)) {
@@ -40255,6 +40303,8 @@ var __CRWeb = (() => {
         var _a2;
         if (node.nodeType === Node.ELEMENT_NODE) {
           const el = node;
+          if (isCastreaderOwnedElement(el)) return NodeFilter.FILTER_REJECT;
+          if (el.shadowRoot) return NodeFilter.FILTER_ACCEPT;
           if (el.tagName === "BR") return NodeFilter.FILTER_ACCEPT;
           if (SKIP_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
           if (el.tagName === "PRE") return NodeFilter.FILTER_REJECT;
@@ -40262,6 +40312,7 @@ var __CRWeb = (() => {
         }
         const parent2 = node.parentElement;
         if (!parent2) return NodeFilter.FILTER_REJECT;
+        if (isCastreaderOwnedElement(parent2)) return NodeFilter.FILTER_REJECT;
         if (SKIP_TAGS.has(parent2.tagName)) return NodeFilter.FILTER_REJECT;
         const pcs = getComputedStyle(parent2);
         if (pcs.display === "none") return NodeFilter.FILTER_REJECT;
@@ -40282,7 +40333,7 @@ var __CRWeb = (() => {
     let currentNode;
     while (currentNode = walker.nextNode()) {
       if (currentNode.nodeType === Node.ELEMENT_NODE) {
-        consecutiveBrs++;
+        if (currentNode.tagName === "BR") consecutiveBrs++;
         continue;
       }
       const blockAncestor = findBlockAncestor(currentNode);
@@ -40481,65 +40532,202 @@ var __CRWeb = (() => {
     "FORM",
     "FIELDSET"
   ]);
+  var TEXT_CAPTURE_INPUT_SELECTOR = 'textarea, input:not([type]), input[type="text"], input[type="email"], input[type="search"], input[type="tel"], input[type="url"], input[type="password"], [contenteditable]';
+  var EXPLICIT_TEXT_CAPTURE_WIDGET_PATTERN = /(?:^|[\s_-])(?:newsletter|signup|sign-up|subscribe|subscription|search-(?:form|box|widget|panel)|login|sign-in)(?:$|[\s_-])/i;
+  function queryZoneDescendants(element, selector) {
+    return _pageHasShadowContent ? deepQuerySelectorAll(element, selector) : Array.from(element.querySelectorAll(selector));
+  }
+  function isExplicitTextCaptureWidget(element) {
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    if (role === "search") return true;
+    if (element.tagName === "ARTICLE" || element.tagName === "MAIN" || role === "main") {
+      return false;
+    }
+    const signature = `${element.id || ""} ${typeof element.className === "string" ? element.className : ""}`;
+    return EXPLICIT_TEXT_CAPTURE_WIDGET_PATTERN.test(signature);
+  }
+  function renderedTextCaptureControls(element) {
+    return queryZoneDescendants(element, TEXT_CAPTURE_INPUT_SELECTOR).filter((control) => {
+      if (isCastreaderOwnedElement(control) || !isRenderedInComposedTree(control)) return false;
+      if (!isVisuallyVisible(control)) return false;
+      if (control.hasAttribute("contenteditable")) {
+        const value = (control.getAttribute("contenteditable") || "").toLowerCase();
+        if (value === "false") return false;
+      }
+      return true;
+    });
+  }
+  function hasOnlyIsolatedTextCaptureControls(element) {
+    const controls = renderedTextCaptureControls(element);
+    return controls.every((control) => {
+      let current = _pageHasShadowContent ? getParentAcrossShadow(control) : control.parentElement;
+      while (current && current !== element) {
+        if (current.tagName !== "FORM" && isOutputNoiseDomainOwner(current)) {
+          return true;
+        }
+        current = _pageHasShadowContent ? getParentAcrossShadow(current) : current.parentElement;
+      }
+      return false;
+    });
+  }
+  function countSubstantialProseBlocks(element) {
+    return queryZoneDescendants(element, "p, li, blockquote, pre, td").filter((candidate) => {
+      return composedVisibleTextLength(candidate) >= 40;
+    }).length;
+  }
+  function isPageScopeReadingForm(element) {
+    if (!hasOnlyIsolatedTextCaptureControls(element)) return false;
+    const formTextLength = composedVisibleTextLength(element);
+    const readingRoots = queryZoneDescendants(element, 'article, main, [role="main"]');
+    const elementRole = (element.getAttribute("role") || "").toLowerCase();
+    if (element.tagName === "ARTICLE" || element.tagName === "MAIN" || elementRole === "main") {
+      readingRoots.unshift(element);
+    }
+    const hasSubstantialReadingRoot = readingRoots.some((root2) => {
+      const rootTextLength = composedVisibleTextLength(root2);
+      return rootTextLength >= 200 && rootTextLength >= formTextLength * 0.35 && countSubstantialProseBlocks(root2) >= 1;
+    });
+    if (hasSubstantialReadingRoot) return true;
+    const legacyIslands = queryZoneDescendants(element, "section, div, table, tbody, td");
+    const hasLegacyProseIsland = legacyIslands.some((island) => {
+      if (isExplicitTextCaptureWidget(island)) return false;
+      if (queryZoneDescendants(island, TEXT_CAPTURE_INPUT_SELECTOR).length > 0) return false;
+      const islandTextLength = composedVisibleTextLength(island);
+      return islandTextLength >= 400 && islandTextLength >= formTextLength * 0.5 && countSubstantialProseBlocks(island) >= 5;
+    });
+    return hasLegacyProseIsland;
+  }
+  function isTextCaptureWidgetForm(element) {
+    if (element.tagName !== "FORM") return false;
+    if (isExplicitTextCaptureWidget(element)) return true;
+    if (isPageScopeReadingForm(element)) return false;
+    return renderedTextCaptureControls(element).length > 0;
+  }
   var _ancestorVisibilityCache = /* @__PURE__ */ new WeakMap();
+  var _outputNoiseDomainCache = /* @__PURE__ */ new WeakMap();
+  var _composedVisibleTextLengthCache = /* @__PURE__ */ new WeakMap();
   function isVisuallyVisible(el) {
     if (el.offsetWidth === 0 && el.offsetHeight === 0) return false;
-    if (el.getAttribute("aria-hidden") === "true") return false;
+    if (el.hasAttribute("hidden") || el.hasAttribute("inert") || el.getAttribute("aria-hidden") === "true") return false;
     const style = getComputedStyle(el);
-    if (style.visibility === "hidden") return false;
-    if (style.opacity === "0") return false;
+    if (style.visibility === "hidden" || style.visibility === "collapse") return false;
+    if (Number.parseFloat(style.opacity || "1") <= 0.01) return false;
+    if (style.contentVisibility === "hidden") return false;
     if (style.clipPath === "inset(50%)") return false;
     if (style.clip && style.clip !== "auto" && style.position === "absolute" && (el.offsetWidth <= 1 || el.offsetHeight <= 1)) return false;
     if (style.position === "absolute" || style.position === "fixed") {
       const rect = el.getBoundingClientRect();
       if (rect.bottom <= 0 || rect.right <= 0) return false;
     }
-    let anc = el.parentElement;
-    while (anc && anc !== document.body) {
+    let anc = parentElementForZone(el);
+    while (anc) {
       const cached = _ancestorVisibilityCache.get(anc);
       if (cached === false) return false;
       if (cached === true) {
-        anc = anc.parentElement;
+        anc = parentElementForZone(anc);
         continue;
       }
       if (anc.tagName === "DETAILS" && !anc.hasAttribute("open")) {
         _ancestorVisibilityCache.set(anc, false);
         return false;
       }
-      if (anc.getAttribute("aria-hidden") === "true") {
+      if (anc.hasAttribute("hidden") || anc.hasAttribute("inert") || anc.getAttribute("aria-hidden") === "true") {
         _ancestorVisibilityCache.set(anc, false);
         return false;
       }
-      if (anc.tagName === "FORM") {
-        const hasTextInput = anc.querySelector(
-          'input[type="email"], input[type="search"], input[type="tel"], input[type="url"], input[type="password"]'
-        ) != null;
-        const formCls = (anc.className || "").toLowerCase();
-        const isClassWidget = /newsletter|signup|subscribe/.test(formCls);
-        if (hasTextInput || isClassWidget) {
-          _ancestorVisibilityCache.set(anc, false);
-          return false;
-        }
-      }
       const astyle = getComputedStyle(anc);
       let hidden = false;
-      if (astyle.opacity === "0") hidden = true;
-      else if ((astyle.overflowY === "hidden" || astyle.overflow === "hidden") && anc.clientHeight === 0 && anc.scrollHeight > 50) hidden = true;
-      else if ((astyle.overflowX === "hidden" || astyle.overflow === "hidden") && anc.clientWidth === 0 && anc.scrollWidth > 50) hidden = true;
+      if (Number.parseFloat(astyle.opacity || "1") <= 0.01) hidden = true;
+      else if (astyle.contentVisibility === "hidden") hidden = true;
+      else if (astyle.clipPath === "inset(50%)") hidden = true;
+      else if ((astyle.overflowY === "hidden" || astyle.overflowY === "clip" || astyle.overflow === "hidden" || astyle.overflow === "clip") && anc.clientHeight === 0 && anc.scrollHeight > 50) hidden = true;
+      else if ((astyle.overflowX === "hidden" || astyle.overflowX === "clip" || astyle.overflow === "hidden" || astyle.overflow === "clip") && anc.clientWidth === 0 && anc.scrollWidth > 50) hidden = true;
       else if (astyle.position === "absolute" || astyle.position === "fixed") {
         const ancRect = anc.getBoundingClientRect();
         if (ancRect.bottom <= 0 || ancRect.right <= 0) hidden = true;
       }
       _ancestorVisibilityCache.set(anc, !hidden);
       if (hidden) return false;
-      anc = anc.parentElement;
+      anc = parentElementForZone(anc);
     }
     return true;
   }
+  function composedVisibleTextLength(root2) {
+    const cached = _composedVisibleTextLengthCache.get(root2);
+    if (cached !== void 0) return cached;
+    if (isCastreaderOwnedElement(root2) || !isVisuallyVisible(root2)) {
+      _composedVisibleTextLengthCache.set(root2, 0);
+      return 0;
+    }
+    const stack = [root2];
+    const seen = /* @__PURE__ */ new Set();
+    let total = 0;
+    while (stack.length > 0) {
+      const node = stack.pop();
+      if (seen.has(node)) continue;
+      seen.add(node);
+      if (node.nodeType === Node.TEXT_NODE) {
+        const parent2 = node.parentElement;
+        if (parent2 && !FIX_SKIP_TAGS.has(parent2.tagName) && !isCastreaderOwnedElement(parent2) && isVisuallyVisible(parent2)) {
+          total += (node.textContent || "").replace(/\s+/g, " ").trim().length;
+        }
+        continue;
+      }
+      if (node instanceof ShadowRoot || node instanceof DocumentFragment) {
+        for (let index = node.childNodes.length - 1; index >= 0; index--) {
+          stack.push(node.childNodes[index]);
+        }
+        continue;
+      }
+      if (!(node instanceof HTMLElement)) continue;
+      if (isCastreaderOwnedElement(node) || FIX_SKIP_TAGS.has(node.tagName) || !isVisuallyVisible(node)) {
+        continue;
+      }
+      if (node instanceof HTMLSlotElement) {
+        const assigned = node.assignedNodes({ flatten: true });
+        const children = assigned.length > 0 ? assigned : Array.from(node.childNodes);
+        for (let index = children.length - 1; index >= 0; index--) stack.push(children[index]);
+        continue;
+      }
+      const renderedRoot = node.shadowRoot || node;
+      for (let index = renderedRoot.childNodes.length - 1; index >= 0; index--) {
+        stack.push(renderedRoot.childNodes[index]);
+      }
+    }
+    _composedVisibleTextLengthCache.set(root2, total);
+    return total;
+  }
+  function indexComposedVisibleTextMass(blocks) {
+    _composedVisibleTextLengthCache = /* @__PURE__ */ new WeakMap();
+    for (const block of blocks) {
+      const mass = block.text.replace(/\s+/g, " ").trim().length;
+      if (mass === 0) continue;
+      let current = block.element;
+      let depth = 0;
+      while (current && depth < 40) {
+        _composedVisibleTextLengthCache.set(
+          current,
+          (_composedVisibleTextLengthCache.get(current) || 0) + mass
+        );
+        current = parentElementForZone(current);
+        depth++;
+      }
+    }
+  }
+  function renderedChildNodes(el) {
+    if (el.shadowRoot) {
+      const assigned = /* @__PURE__ */ new Set();
+      for (const slot of Array.from(el.shadowRoot.querySelectorAll("slot"))) {
+        for (const node of slot.assignedNodes({ flatten: true })) assigned.add(node);
+      }
+      return Array.from(assigned);
+    }
+    return Array.from(el.childNodes);
+  }
   function collectInlineText(el, parts) {
     var _a;
-    for (let i = 0; i < el.childNodes.length; i++) {
-      const child = el.childNodes[i];
+    for (const child of renderedChildNodes(el)) {
+      if (!isRenderedInComposedTree(child)) continue;
       if (child.nodeType === Node.TEXT_NODE) {
         const t = (_a = child.textContent) == null ? void 0 : _a.trim();
         if (t) parts.push(t);
@@ -40554,9 +40742,13 @@ var __CRWeb = (() => {
       if (cs.display === "block") continue;
       if (cs.display === "none") continue;
       if (parseFloat(cs.fontSize) === 0) continue;
-      if (cs.visibility === "hidden") continue;
-      if (cs.opacity === "0") continue;
+      if (cs.visibility === "hidden" || cs.visibility === "collapse") continue;
+      if (Number.parseFloat(cs.opacity || "1") <= 0.01) continue;
+      if (cs.contentVisibility === "hidden") continue;
+      if (child.hasAttribute("hidden") || child.hasAttribute("inert")) continue;
       if (child.getAttribute("aria-hidden") === "true") continue;
+      const role = (child.getAttribute("role") || "").toLowerCase();
+      if (role && OUTPUT_NOISE_ROLES.has(role)) continue;
       if (cs.cursor === "help") continue;
       collectInlineText(child, parts);
     }
@@ -40565,6 +40757,343 @@ var __CRWeb = (() => {
     const parts = [];
     collectInlineText(el, parts);
     return parts.join(" ").trim();
+  }
+  function hasCollectableZoneText(text) {
+    return text.trim().length > 0;
+  }
+  function blockScoreWeight(block) {
+    var _a;
+    return (_a = block.scoreWeight) != null ? _a : block.text.length;
+  }
+  function containsElementAcrossShadow(ancestor, element) {
+    if (ancestor === element || ancestor.contains(element)) return true;
+    if (!_pageHasShadowContent) return false;
+    let current = element;
+    while (current) {
+      if (current === ancestor) return true;
+      current = getParentAcrossShadow(current);
+    }
+    return false;
+  }
+  var OUTPUT_STRONG_NOISE_TAGS = /* @__PURE__ */ new Set(["NAV", "ASIDE"]);
+  var OUTPUT_NOISE_ROLES = /* @__PURE__ */ new Set([
+    "navigation",
+    "banner",
+    "contentinfo",
+    "complementary",
+    "toolbar",
+    "menu",
+    "menubar",
+    "search",
+    "tablist",
+    "tree",
+    "listbox",
+    "button",
+    "switch",
+    "checkbox",
+    "radio",
+    "option",
+    "tab",
+    "combobox",
+    "textbox",
+    "searchbox",
+    "slider",
+    "spinbutton"
+  ]);
+  var OUTPUT_NOISE_CONTAINER_TOKEN_PATTERN = /(?:^|[-_])(?:breadcrumbs?|pagination|pager|toolbar(?:-(?:container|content|wrapper|bar))?|reader-controls?(?:-(?:container|content|wrapper|bar))?|chapter-nav(?:-(?:container|content|wrapper|list|bar))?|related(?:-(?:posts?|articles?|stories?|reading|content|container|section|widget))?|recommended(?:-(?:content|container|section|widget))?|share(?:-(?:buttons?|links?|container))?|social(?:-(?:buttons?|links?|container))?|sidebar(?:-(?:container|content|panel|nav|wrapper))?|side-nav|sidenav|navbar|navigation(?:-(?:container|content|menu|list|wrapper|bar))?|nav(?:-(?:container|content|wrapper|list|bar))?|menu(?:-(?:container|content|list|panel|wrapper))?|toc(?:-(?:container|content|list|wrapper))?|table-of-contents|newsletter(?:-(?:signup|subscribe|container|content|wrapper|widget))?|signup(?:-(?:form|container|content|wrapper|widget))?|subscribe(?:-(?:form|container|content|wrapper|widget))?|search-(?:form|box|widget|panel))(?=$|__|--)/i;
+  var OUTPUT_ISOLATION_TAGS = /* @__PURE__ */ new Set(["LI", "TD", "TH"]);
+  function hasOutputNoiseContainerToken(signature) {
+    return signature.split(/\s+/).filter(Boolean).some((token) => OUTPUT_NOISE_CONTAINER_TOKEN_PATTERN.test(token));
+  }
+  var PROMOTION_COMPONENT_PATTERN = /(?:^|[\s_-])(?:subscription|subscribe|signup|sign-up|promotion|promo|paywall|offer|inline-message)(?:$|[\s_-])/i;
+  var SUBSCRIPTION_ACTION_LABEL_PATTERN = /^(?:subscribe(?:\s+now)?|start\s+(?:my\s+|your\s+|a\s+)?(?:subscription|free\s+trial)|订阅(?:现在)?|立即订阅)$/i;
+  function isSubscriptionAction(control, owner) {
+    if (!isRenderedInComposedTree(control) || !isVisuallyVisible(control)) return false;
+    const label = (control.getAttribute("aria-label") || control.textContent || "").replace(/\s+/g, " ").trim();
+    if (!SUBSCRIPTION_ACTION_LABEL_PATTERN.test(label)) return false;
+    const isButton = control.tagName === "BUTTON" || control.getAttribute("role") === "button";
+    if (!isButton) {
+      let current = parentElementForZone(control);
+      while (current && current !== owner) {
+        if (/^(P|BLOCKQUOTE|LI|FIGCAPTION)$/.test(current.tagName)) return false;
+        current = parentElementForZone(current);
+      }
+      try {
+        const url = new URL(control.getAttribute("href") || "", document.baseURI);
+        if (!/(?:^|\/)(?:subscribe|subscription|subscriptions)(?:\/|$)/i.test(url.pathname) && !/^(?:subscribe|subscription)\./i.test(url.hostname)) return false;
+      } catch (e) {
+        return false;
+      }
+    }
+    return true;
+  }
+  function isSubscriptionPromotionDomain(element) {
+    if (!/^(DIV|SECTION|HEADER|FOOTER|FORM)$/.test(element.tagName)) return false;
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    if (role === "main" || role === "article") return false;
+    const signature = [
+      element.id,
+      typeof element.className === "string" ? element.className : "",
+      ...["data-testid", "data-test-id", "data-component", "data-module", "data-type", "aria-label"].map((attribute) => element.getAttribute(attribute) || "")
+    ].join(" ").replace(/([a-z])([A-Z])/g, "$1-$2");
+    const hasComponentSignal = PROMOTION_COMPONENT_PATTERN.test(signature);
+    if (!hasComponentSignal && role !== "dialog") {
+      const position = getComputedStyle(element).position;
+      if (position !== "fixed" && position !== "sticky") {
+        const isCard = element.getAttribute("data-callout") === "true" || /(?:^|[\s_-])(?:callout|card|panel)(?:$|[\s_-])/i.test(signature);
+        if (!isCard || !renderedTextCaptureControls(element).some(
+          (control) => {
+            var _a;
+            return control.tagName === "INPUT" && ((_a = control.getAttribute("type")) == null ? void 0 : _a.toLowerCase()) === "email";
+          }
+        )) return false;
+        if (queryZoneDescendants(element, "h1,h2,h3,h4,h5,h6,blockquote,pre,table,ul,ol").length > 0 || countSubstantialProseBlocks(element) > 2) return false;
+      }
+    }
+    if (queryZoneDescendants(element, 'article, main, [role="main"], [role="article"], h1').length > 0) {
+      return false;
+    }
+    const actions = queryZoneDescendants(element, 'a[href], button, [role="button"]');
+    if (!actions.some((action) => isSubscriptionAction(action, element))) return false;
+    const textLength = composedVisibleTextLength(element);
+    return textLength >= 20 && textLength <= 1600 && countSubstantialProseBlocks(element) <= 6;
+  }
+  function parentElementForZone(element) {
+    return _pageHasShadowContent ? getParentAcrossShadow(element) : element.parentElement;
+  }
+  function hasSemanticContentAncestor(element) {
+    let current = parentElementForZone(element);
+    while (current && current !== document.body) {
+      if (current.tagName === "ARTICLE" || current.tagName === "MAIN" || (current.getAttribute("role") || "").toLowerCase() === "main") {
+        return true;
+      }
+      current = parentElementForZone(current);
+    }
+    return false;
+  }
+  function findNearestSemanticContentRoot(element) {
+    let current = element;
+    while (current) {
+      if (current.tagName === "ARTICLE" || current.tagName === "MAIN" || (current.getAttribute("role") || "").toLowerCase() === "main") {
+        return current;
+      }
+      if (current === document.body) break;
+      current = parentElementForZone(current);
+    }
+    return null;
+  }
+  function isOutputNoiseDomainOwner(element) {
+    const cached = _outputNoiseDomainCache.get(element);
+    if (cached !== void 0) return cached;
+    const remember = (value) => {
+      _outputNoiseDomainCache.set(element, value);
+      return value;
+    };
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    const signature = `${element.id || ""} ${typeof element.className === "string" ? element.className : ""}`;
+    if (OUTPUT_STRONG_NOISE_TAGS.has(element.tagName)) return remember(true);
+    if (OUTPUT_NOISE_ROLES.has(role)) return remember(true);
+    if (isExplicitTextCaptureWidget(element)) return remember(true);
+    if (hasOutputNoiseContainerToken(signature)) {
+      const isSemanticContent = element.tagName === "ARTICLE" || element.tagName === "MAIN" || role === "main";
+      const containsSemanticContent = isSemanticContent || (_pageHasShadowContent ? deepQuerySelectorAll(element, 'article, main, [role="main"]').length > 0 : element.querySelector('article, main, [role="main"]') !== null);
+      if (!containsSemanticContent) return remember(true);
+    }
+    if (isTextCaptureWidgetForm(element)) return remember(true);
+    if (isSubscriptionPromotionDomain(element)) return remember(true);
+    if ((element.tagName === "HEADER" || element.tagName === "FOOTER") && !hasSemanticContentAncestor(element)) {
+      return remember(true);
+    }
+    return remember(false);
+  }
+  function findOutputNoiseOwner(element) {
+    let current = element;
+    while (current && current !== document.body) {
+      if (isOutputNoiseDomainOwner(current)) return current;
+      current = parentElementForZone(current);
+    }
+    return null;
+  }
+  function findZoneNoiseOwner(container, blocks) {
+    if (container) {
+      const owner = findOutputNoiseOwner(container);
+      if (owner) return owner;
+    }
+    let representativeOwner = null;
+    for (const block of blocks) {
+      const owner = findOutputNoiseOwner(block.element);
+      if (!owner) return void 0;
+      if (!representativeOwner) representativeOwner = owner;
+    }
+    return representativeOwner || void 0;
+  }
+  function findOutputIsolationOwner(element, container) {
+    let current = element;
+    while (current && current !== container && current !== document.body) {
+      if (OUTPUT_ISOLATION_TAGS.has(current.tagName)) return current;
+      current = parentElementForZone(current);
+    }
+    return null;
+  }
+  function findIsolationGroupOwner(owner, container) {
+    let current = parentElementForZone(owner);
+    while (current && current !== container && current !== document.body) {
+      if (owner.tagName === "LI" && /^(UL|OL|DL)$/.test(current.tagName)) return current;
+      if (/^(TD|TH)$/.test(owner.tagName) && current.tagName === "TABLE") return current;
+      current = parentElementForZone(current);
+    }
+    return container || owner;
+  }
+  function countStructuralChildren(element) {
+    let count = 0;
+    for (const child of Array.from(element.children)) {
+      if (!(child instanceof HTMLElement)) continue;
+      const display = getComputedStyle(child).display;
+      if (display === "none") continue;
+      if (display !== "inline" && display !== "inline-block") count++;
+    }
+    return count;
+  }
+  function findOutputSequenceOwner(element, container) {
+    let current = parentElementForZone(element);
+    while (current && current !== container && current !== document.body) {
+      if (/^(ARTICLE|MAIN|SECTION|BLOCKQUOTE|UL|OL|DL|TABLE)$/.test(current.tagName)) {
+        return current;
+      }
+      if (countStructuralChildren(current) >= 2) return current;
+      current = parentElementForZone(current);
+    }
+    return container || current || element;
+  }
+  function hasSelectedZoneWitness(output, scoringBlocks, container) {
+    if (findOutputNoiseOwner(output.element)) return false;
+    if (output.outputId !== void 0 && scoringBlocks.some(
+      (score) => (score.memberOutputIds || (score.outputId !== void 0 ? [score.outputId] : [])).includes(output.outputId)
+    )) {
+      return true;
+    }
+    const isolationOwner = findOutputIsolationOwner(output.element, container);
+    if (isolationOwner) {
+      const groupOwner = findIsolationGroupOwner(isolationOwner, container);
+      return scoringBlocks.some(
+        (score) => !findOutputNoiseOwner(score.element) && containsElementAcrossShadow(groupOwner, score.element)
+      );
+    }
+    const sequenceOwner = findOutputSequenceOwner(output.element, container);
+    return scoringBlocks.some(
+      (score) => !findOutputNoiseOwner(score.element) && findOutputSequenceOwner(score.element, container) === sequenceOwner
+    );
+  }
+  function sortZoneBlocksInReadingOrder(blocks, scrollY) {
+    blocks.sort((a, b) => {
+      var _a, _b;
+      if (a.source === "br-split" && b.source === "br-split" && a.splitGroupId !== void 0 && a.splitGroupId === b.splitGroupId && a.splitIndex !== void 0 && b.splitIndex !== void 0) {
+        return a.splitIndex - b.splitIndex;
+      }
+      const ay = a.rect.top + scrollY;
+      const by = b.rect.top + scrollY;
+      if (Math.abs(ay - by) > 5) return ay - by;
+      if (Math.abs(a.rect.left - b.rect.left) > 2) return a.rect.left - b.rect.left;
+      return ((_a = a.domOrder) != null ? _a : 0) - ((_b = b.domOrder) != null ? _b : 0);
+    });
+  }
+  function canonicalizeZoneOutputBlocks(blocks) {
+    var _a, _b, _c;
+    const unique = blocks.slice();
+    const replacementIds = /* @__PURE__ */ new Map();
+    const normalize = (text) => text.replace(/\s+/g, " ").trim();
+    const dropped = /* @__PURE__ */ new Set();
+    const identitiesByElement = /* @__PURE__ */ new WeakMap();
+    for (let index = 0; index < unique.length; index++) {
+      const block = unique[index];
+      const normalizedText2 = normalize(block.text);
+      const sourceSlot = block.source === "br-split" ? `br:${(_a = block.splitGroupId) != null ? _a : "unknown"}:${(_c = (_b = block.splitIndex) != null ? _b : block.outputId) != null ? _c : index}` : "dom";
+      const identityKey = `${sourceSlot}\0${normalizedText2}`;
+      let identities = identitiesByElement.get(block.element);
+      if (!identities) {
+        identities = /* @__PURE__ */ new Map();
+        identitiesByElement.set(block.element, identities);
+      }
+      const retainedIndex = identities.get(identityKey);
+      if (retainedIndex === void 0) {
+        identities.set(identityKey, index);
+        continue;
+      }
+      dropped.add(index);
+      const droppedId = block.outputId;
+      const retainedId = unique[retainedIndex].outputId;
+      if (droppedId !== void 0 && retainedId !== void 0) {
+        replacementIds.set(droppedId, [retainedId]);
+      }
+    }
+    for (let i = 0; i < unique.length; i++) {
+      if (dropped.has(i)) continue;
+      const wrapper = unique[i];
+      const descendants = unique.filter(
+        (candidate, index) => index !== i && !dropped.has(index) && wrapper.element !== candidate.element && containsElementAcrossShadow(wrapper.element, candidate.element)
+      );
+      if (descendants.length === 0) continue;
+      const atomicDescendants = descendants.filter(
+        (candidate) => !descendants.some(
+          (other) => other !== candidate && other.element !== candidate.element && containsElementAcrossShadow(candidate.element, other.element)
+        )
+      );
+      sortZoneBlocksInReadingOrder(atomicDescendants, window.scrollY);
+      if (normalize(atomicDescendants.map((block) => block.text).join(" ")) === normalize(wrapper.text)) {
+        dropped.add(i);
+        if (wrapper.outputId !== void 0) {
+          replacementIds.set(
+            wrapper.outputId,
+            atomicDescendants.map((block) => block.outputId).filter((id) => id !== void 0)
+          );
+        }
+      }
+    }
+    const resolveReplacementIds = (id, visited = /* @__PURE__ */ new Set()) => {
+      if (visited.has(id)) return [];
+      const replacement = replacementIds.get(id);
+      if (!replacement) return [id];
+      visited.add(id);
+      const resolved = replacement.flatMap(
+        (candidate) => resolveReplacementIds(candidate, new Set(visited))
+      );
+      return Array.from(new Set(resolved));
+    };
+    for (const [id] of replacementIds) {
+      replacementIds.set(id, resolveReplacementIds(id));
+    }
+    return {
+      blocks: unique.filter((_3, index) => !dropped.has(index)),
+      replacementIds
+    };
+  }
+  function canonicalizeZoneScoringBlocks(blocks) {
+    var _a, _b, _c;
+    const canonical = [];
+    const identitiesByElement = /* @__PURE__ */ new WeakMap();
+    for (let index = 0; index < blocks.length; index++) {
+      const score = blocks[index];
+      const normalizedText2 = score.text.replace(/\s+/g, " ").trim();
+      const sourceSlot = score.source === "br-split" ? `br:${(_a = score.splitGroupId) != null ? _a : "unknown"}:${(_c = (_b = score.splitIndex) != null ? _b : score.outputId) != null ? _c : index}` : "dom";
+      const identityKey = `${sourceSlot}\0${normalizedText2}`;
+      let identities = identitiesByElement.get(score.element);
+      if (!identities) {
+        identities = /* @__PURE__ */ new Map();
+        identitiesByElement.set(score.element, identities);
+      }
+      const retained = identities.get(identityKey);
+      if (!retained) {
+        identities.set(identityKey, score);
+        canonical.push(score);
+        continue;
+      }
+      retained.memberOutputIds = Array.from(
+        /* @__PURE__ */ new Set([...retained.memberOutputIds || [], ...score.memberOutputIds || []])
+      );
+      retained.scoreWeight = Math.max(blockScoreWeight(retained), blockScoreWeight(score));
+      if (score.shortRunScore) retained.shortRunScore = true;
+    }
+    return canonical;
   }
   function findTightestAnchor(root2, target) {
     let best = null;
@@ -40601,20 +41130,80 @@ var __CRWeb = (() => {
     }
     return totalChars > 0 ? linkChars / totalChars : 0;
   }
+  function filterZonePositionNoise(scoringBlocks, outputBlocks, scrollY, label) {
+    let retainedScoring = scoringBlocks.slice();
+    let retainedOutput = outputBlocks.slice();
+    const viewportHeight = window.innerHeight;
+    const documentHeight2 = document.documentElement.scrollHeight;
+    if (retainedScoring.length > 5) {
+      const keepPositionBlock = (block) => {
+        const absoluteTop = block.rect.top + scrollY;
+        if (absoluteTop < viewportHeight * 0.08 && linkDensity(block.element) > 0.5) return false;
+        if (absoluteTop > documentHeight2 * 0.95 && linkDensity(block.element) > 0.3) return false;
+        return true;
+      };
+      retainedScoring = retainedScoring.filter(keepPositionBlock);
+      retainedOutput = retainedOutput.filter(keepPositionBlock);
+    }
+    let tailCutY = null;
+    if (retainedScoring.length > 8) {
+      const gaps = [];
+      for (let index = 1; index < retainedScoring.length; index++) {
+        const previousBottom = retainedScoring[index - 1].rect.top + scrollY + retainedScoring[index - 1].rect.height;
+        const currentTop = retainedScoring[index].rect.top + scrollY;
+        gaps.push({ idx: index, gap: currentTop - previousBottom });
+      }
+      const sortedGaps = gaps.map((entry) => entry.gap).sort((a, b) => a - b);
+      const medianGap = sortedGaps[Math.floor(sortedGaps.length / 2)];
+      const significantGapThreshold = Math.max(medianGap * 3, 60);
+      const tailStart = Math.floor(retainedScoring.length * 0.7);
+      const totalFilteredChars = retainedScoring.reduce(
+        (sum, block) => sum + block.text.length,
+        0
+      );
+      for (let gapIndex = gaps.length - 1; gapIndex >= 0; gapIndex--) {
+        const entry = gaps[gapIndex];
+        if (entry.idx < tailStart) break;
+        if (entry.gap <= significantGapThreshold) continue;
+        const tailBlocks = retainedScoring.slice(entry.idx);
+        const tailChars = tailBlocks.reduce((sum, block) => sum + block.text.length, 0);
+        if (tailChars > totalFilteredChars * 0.25) continue;
+        const tailLinkDensity = regionLinkDensity(tailBlocks);
+        if (tailLinkDensity <= 0.5) continue;
+        console.log(
+          `[Castreader] Zone: ${label} Y-gap truncation at block ${entry.idx}/${retainedScoring.length}, gap=${entry.gap.toFixed(0)}px, tailLD=${tailLinkDensity.toFixed(2)}, tailChars=${tailChars}`
+        );
+        tailCutY = retainedScoring[entry.idx].rect.top + scrollY;
+        retainedScoring = retainedScoring.slice(0, entry.idx);
+        break;
+      }
+    }
+    if (tailCutY !== null) {
+      retainedOutput = retainedOutput.filter(
+        (block) => block.rect.top + scrollY < tailCutY
+      );
+    }
+    return { scoringBlocks: retainedScoring, outputBlocks: retainedOutput };
+  }
   function extractZones() {
-    var _a, _b, _e, _f;
-    console.log("[extractZones v2026-04-24b] entry", { url: location.href });
+    var _a, _b, _e;
+    console.log("[extractZones v2026-08-02-lossless-output] entry", { url: location.href });
     if (!document.body) {
       window.__castreaderLastExtraction = { timestamp: Date.now(), url: location.href, earlyReturn: "no_body" };
       return { paragraphs: [], zones: [], selectedZoneIds: [] };
     }
     _pageHasShadowContent = hasShadowContent();
     _ancestorVisibilityCache = /* @__PURE__ */ new WeakMap();
+    _outputNoiseDomainCache = /* @__PURE__ */ new WeakMap();
+    _composedVisibleTextLengthCache = /* @__PURE__ */ new WeakMap();
     const allBlocks = [];
-    const seen = /* @__PURE__ */ new Set();
+    const outputBlocks = [];
+    let outputBlockId = 0;
+    let domOrder = 0;
     const walkerFilter = {
       acceptNode(node2) {
         const el = node2;
+        if (isCastreaderOwnedElement(el)) return NodeFilter.FILTER_REJECT;
         if (FIX_SKIP_TAGS.has(el.tagName)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
@@ -40632,8 +41221,10 @@ var __CRWeb = (() => {
       }
       if (!isVisuallyVisible(el)) continue;
       let hasSubstantialBlockChild = false;
-      for (let i = 0; i < el.children.length; i++) {
-        const c = el.children[i];
+      const visualChildren = renderedChildNodes(el).filter(
+        (child) => child instanceof HTMLElement
+      );
+      for (const c of visualChildren) {
         if (!(c instanceof HTMLElement)) continue;
         const isChildBlock = FIX_BLOCK_TAGS.has(c.tagName) || ORPHAN_BLOCK_BOUNDARY.has(c.tagName);
         const isComputedBlock = !isChildBlock && !FIX_SKIP_TAGS.has(c.tagName) && c.tagName !== "SPAN" && c.tagName !== "A" && (() => {
@@ -40657,8 +41248,7 @@ var __CRWeb = (() => {
         let brCount = 0;
         let hasTextBetweenBrs = false;
         let sawTextSinceLastBr = false;
-        for (let i = 0; i < el.childNodes.length; i++) {
-          const c = el.childNodes[i];
+        for (const c of renderedChildNodes(el)) {
           if (c.nodeType === Node.TEXT_NODE && (c.textContent || "").trim().length > 0) {
             sawTextSinceLastBr = true;
           } else if (c instanceof HTMLElement && c.tagName === "BR") {
@@ -40674,15 +41264,22 @@ var __CRWeb = (() => {
         continue;
       }
       const text = getOwnText(el);
-      if (text.length < 5) continue;
+      if (!hasCollectableZoneText(text)) continue;
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 && rect.height === 0) continue;
-      if (rect.height < 10) continue;
-      const key = text.substring(0, 100);
-      const isHeading = /^H[1-6]$/.test(el.tagName);
-      if (seen.has(key) && !isHeading) continue;
-      seen.add(key);
-      allBlocks.push({ text, element: el, rect });
+      const outputId = outputBlockId++;
+      const outputBlock = {
+        text,
+        element: el,
+        rect,
+        outputId,
+        domOrder: domOrder++,
+        memberOutputIds: [outputId],
+        source: "leaf"
+      };
+      outputBlocks.push(outputBlock);
+      if (text.length < 5 || rect.height < 10) continue;
+      allBlocks.push(outputBlock);
     }
     for (const container of nonLeafContainers) {
       let groupText = [];
@@ -40691,7 +41288,7 @@ var __CRWeb = (() => {
       let groupHasRawText = false;
       const flushGroup = () => {
         const text = groupText.join(" ").trim();
-        if (text.length >= 5 && groupElement) {
+        if (hasCollectableZoneText(text) && groupElement) {
           let anchor = groupElement;
           if (groupHasRawText && groupChildren.length > 0 && groupElement === container) {
             try {
@@ -40707,10 +41304,19 @@ var __CRWeb = (() => {
           }
           const rect = anchor.getBoundingClientRect();
           if (rect.width > 0 || rect.height > 0) {
-            const key = text.substring(0, 100);
-            if (!seen.has(key)) {
-              seen.add(key);
-              allBlocks.push({ text, element: anchor, rect });
+            const outputId = outputBlockId++;
+            const outputBlock = {
+              text,
+              element: anchor,
+              rect,
+              outputId,
+              domOrder: domOrder++,
+              memberOutputIds: [outputId],
+              source: "orphan"
+            };
+            outputBlocks.push(outputBlock);
+            if (text.length >= 5 && rect.height >= 10) {
+              allBlocks.push(outputBlock);
             }
           }
         }
@@ -40719,10 +41325,7 @@ var __CRWeb = (() => {
         groupChildren = [];
         groupHasRawText = false;
       };
-      const childSnapshot = [];
-      for (let i = 0; i < container.childNodes.length; i++) {
-        childSnapshot.push(container.childNodes[i]);
-      }
+      const childSnapshot = renderedChildNodes(container);
       for (const child of childSnapshot) {
         if (child.nodeType === Node.TEXT_NODE) {
           const t = (_a = child.textContent) == null ? void 0 : _a.trim();
@@ -40761,13 +41364,102 @@ var __CRWeb = (() => {
       }
       flushGroup();
     }
+    indexComposedVisibleTextMass(canonicalizeZoneOutputBlocks(outputBlocks).blocks);
+    if (outputBlocks.length > 0) {
+      const SHORT_RUN_MAX_TEXT = 12;
+      const SHORT_RUN_SCORE_WEIGHT = 60;
+      const COMPLETE_SHORT_SENTENCE = /[.!?。！？…](?:["'”’」』）)\]]+)?$/u;
+      const canonicalShortRunOutputs = canonicalizeZoneOutputBlocks(outputBlocks).blocks;
+      const fallbackGroups = /* @__PURE__ */ new Map();
+      for (const output of canonicalShortRunOutputs) {
+        if (findOutputNoiseOwner(output.element)) continue;
+        const owner = findOutputSequenceOwner(output.element);
+        const group2 = fallbackGroups.get(owner) || [];
+        group2.push(output);
+        fallbackGroups.set(owner, group2);
+      }
+      const scoresByOutputId = /* @__PURE__ */ new Map();
+      for (const score of allBlocks) {
+        const members = score.memberOutputIds || (score.outputId !== void 0 ? [score.outputId] : []);
+        for (const outputId of members) {
+          const scores = scoresByOutputId.get(outputId) || [];
+          scores.push(score);
+          scoresByOutputId.set(outputId, scores);
+        }
+      }
+      const promoteShortRun = (run) => {
+        if (run.length < 3) return;
+        const speechUnits = run.reduce(
+          (sum, block) => sum + (block.text.match(/[\p{L}\p{N}]/gu) || []).length,
+          0
+        );
+        if (speechUnits < run.length) return;
+        if (regionLinkDensity(run) > 0.5) return;
+        const completeCount = run.filter(
+          (block) => COMPLETE_SHORT_SENTENCE.test(block.text.trim())
+        ).length;
+        if (completeCount / run.length < 0.6) return;
+        const styleCounts = /* @__PURE__ */ new Map();
+        for (const block of run) {
+          const style = getComputedStyle(block.element);
+          const key = [
+            style.fontFamily,
+            style.fontSize,
+            style.lineHeight,
+            style.fontWeight,
+            style.textAlign
+          ].join("|");
+          styleCounts.set(key, (styleCounts.get(key) || 0) + 1);
+        }
+        const dominantStyleCount = Math.max(0, ...styleCounts.values());
+        if (dominantStyleCount / run.length < 0.6) return;
+        for (const output of run) {
+          const outputId = output.outputId;
+          const existingScores = outputId === void 0 ? allBlocks.filter((score) => score === output) : scoresByOutputId.get(outputId) || [];
+          if (existingScores.length > 0) {
+            for (const score of existingScores) {
+              score.scoreWeight = Math.max(blockScoreWeight(score), SHORT_RUN_SCORE_WEIGHT);
+              score.shortRunScore = true;
+            }
+          } else {
+            const promoted = __spreadProps(__spreadValues({}, output), {
+              scoreWeight: Math.max(output.text.length, SHORT_RUN_SCORE_WEIGHT),
+              shortRunScore: true
+            });
+            allBlocks.push(promoted);
+            if (outputId !== void 0) scoresByOutputId.set(outputId, [promoted]);
+          }
+        }
+      };
+      for (const group2 of fallbackGroups.values()) {
+        sortZoneBlocksInReadingOrder(group2, window.scrollY);
+        let run = [];
+        const flushRun = () => {
+          promoteShortRun(run);
+          run = [];
+        };
+        for (const output of group2) {
+          const isHeading = /^H[1-6]$/.test(output.element.tagName);
+          if (isHeading || output.text.length > SHORT_RUN_MAX_TEXT) {
+            flushRun();
+            continue;
+          }
+          run.push(output);
+        }
+        flushRun();
+      }
+    }
     if (allBlocks.length === 0) {
       window.__castreaderLastExtraction = { timestamp: Date.now(), url: location.href, earlyReturn: "no_blocks" };
       return { paragraphs: [], zones: [], selectedZoneIds: [] };
     }
     const MEGA_THRESHOLD = 2e3;
     const expandedBlocks = [];
+    const expandedOutputBlocks = outputBlocks.slice();
     const brSourceBlocksByGroup = /* @__PURE__ */ new Map();
+    const brScoreSeen = new Set(
+      allBlocks.map((candidate) => candidate.text.substring(0, 100))
+    );
     let brSplitGroupCounter = 0;
     for (const block of allBlocks) {
       if (block.text.length <= MEGA_THRESHOLD) {
@@ -40777,16 +41469,22 @@ var __CRWeb = (() => {
       const splitGroupId = `br-${brSplitGroupCounter++}`;
       const pendingSegments = collectBrSplitSegments(block.element, splitGroupId);
       const branchScopedPendingSegments = pendingSegments.map((pending) => {
-        const parents2 = pending.parents.filter((parent2) => block.element.contains(parent2));
+        const parents2 = pending.parents.filter(
+          (parent2) => containsElementAcrossShadow(block.element, parent2)
+        );
         let splitScope = block.element;
         if (parents2.length > 0) {
           let common = parents2[0];
           for (let i = 1; i < parents2.length && common; i++) {
-            while (common && !common.contains(parents2[i])) common = common.parentElement;
+            while (common && !containsElementAcrossShadow(common, parents2[i])) {
+              common = parentElementForZone(common);
+            }
           }
-          if (common && block.element.contains(common)) {
-            while (common !== block.element && common.parentElement && common.parentElement !== block.element && block.element.contains(common.parentElement)) {
-              common = common.parentElement;
+          if (common && containsElementAcrossShadow(block.element, common)) {
+            let parent2 = parentElementForZone(common);
+            while (common !== block.element && parent2 && parent2 !== block.element && containsElementAcrossShadow(block.element, parent2)) {
+              common = parent2;
+              parent2 = parentElementForZone(common);
             }
             splitScope = common;
           }
@@ -40818,23 +41516,25 @@ var __CRWeb = (() => {
           lca = parents2[0];
           for (let i = 1; i < parents2.length && lca; i++) {
             const other = parents2[i];
-            while (lca && !lca.contains(other)) {
-              lca = lca.parentElement;
+            while (lca && !containsElementAcrossShadow(lca, other)) {
+              lca = parentElementForZone(lca);
             }
           }
-          if (lca && !block.element.contains(lca)) lca = null;
+          if (lca && !containsElementAcrossShadow(block.element, lca)) lca = null;
         }
         const normalizedSegment = seg.replace(/\s+/g, " ").trim();
         let exactAnchor = ((_b = textNodes[0]) == null ? void 0 : _b.parentElement) || null;
-        while (exactAnchor && block.element.contains(exactAnchor)) {
-          const containsEveryTextNode = textNodes.every((textNode) => exactAnchor.contains(textNode));
+        while (exactAnchor && containsElementAcrossShadow(block.element, exactAnchor)) {
+          const containsEveryTextNode = textNodes.every(
+            (textNode) => containsElementAcrossShadow(exactAnchor, textNode.parentElement || exactAnchor)
+          );
           const normalizedAnchor = (exactAnchor.textContent || "").replace(/\s+/g, " ").trim();
           if (containsEveryTextNode && normalizedAnchor === normalizedSegment) break;
           if (exactAnchor === block.element) {
             exactAnchor = null;
             break;
           }
-          exactAnchor = exactAnchor.parentElement;
+          exactAnchor = parentElementForZone(exactAnchor);
         }
         if (exactAnchor) {
           anchor = exactAnchor;
@@ -40846,9 +41546,13 @@ var __CRWeb = (() => {
             range2.setStartBefore(firstTextNode);
             range2.setEndAfter(lastTextNode);
             const contents = range2.extractContents();
-            for (const clonedWithId of Array.from(contents.querySelectorAll("[id]"))) {
+            for (const clonedWithId of Array.from(
+              contents.querySelectorAll("[id]")
+            )) {
               const liveOwner = document.getElementById(clonedWithId.id);
-              if (liveOwner && liveOwner !== clonedWithId) clonedWithId.removeAttribute("id");
+              if (liveOwner && liveOwner !== clonedWithId) {
+                clonedWithId.removeAttribute("id");
+              }
             }
             const span = document.createElement("span");
             span.setAttribute("data-castreader-br-seg", "1");
@@ -40864,12 +41568,18 @@ var __CRWeb = (() => {
         }
         segments.push(__spreadProps(__spreadValues({}, pending), { el: anchor }));
       }
-      const sourceBlocks = segments.map((segment) => {
+      const segmentBlocks = segments.map((segment, index) => {
+        var _a2;
         const rect = segment.el.getBoundingClientRect();
+        const useRect = rect.width > 0 || rect.height > 0 ? rect : block.rect;
+        const outputId = outputBlockId++;
         return {
           text: segment.text,
           element: segment.el,
-          rect: rect.width > 0 || rect.height > 0 ? rect : block.rect,
+          rect: useRect,
+          outputId,
+          domOrder: ((_a2 = block.domOrder) != null ? _a2 : domOrder++) + (index + 1) / (segments.length + 1),
+          memberOutputIds: [outputId],
           source: segment.source,
           splitGroupId: segment.splitGroupId,
           splitIndex: segment.splitIndex,
@@ -40878,38 +41588,68 @@ var __CRWeb = (() => {
           brRunAfter: segment.brRunAfter
         };
       });
-      const scoringSegments = sourceBlocks.filter((segment) => segment.text.length >= 5);
-      if (sourceBlocks.length >= 3 && scoringSegments.length > 0) {
-        brSourceBlocksByGroup.set(splitGroupId, sourceBlocks);
-        const scoringByScope = /* @__PURE__ */ new Map();
-        for (const scoringSegment of scoringSegments) {
-          const scope = scoringSegment.splitScope || block.element;
-          const scoped = scoringByScope.get(scope) || [];
-          scoped.push(scoringSegment);
-          scoringByScope.set(scope, scoped);
+      if (segments.length >= 3) {
+        const originalOutputIndex = expandedOutputBlocks.findIndex(
+          (candidate) => candidate.outputId === block.outputId
+        );
+        const collectedSegments = segmentBlocks.filter(
+          (segment) => hasCollectableZoneText(segment.text)
+        );
+        if (originalOutputIndex >= 0 && collectedSegments.length > 0) {
+          expandedOutputBlocks.splice(originalOutputIndex, 1, ...collectedSegments);
         }
-        const retainedSegments = Array.from(scoringByScope.values()).flatMap((scoped) => dedupeBrSplitSegments(scoped, seen, block.text)).sort((left, right) => {
-          var _a2, _b2;
-          return ((_a2 = left.splitIndex) != null ? _a2 : 0) - ((_b2 = right.splitIndex) != null ? _b2 : 0);
-        });
-        for (const segment of retainedSegments) {
-          expandedBlocks.push(segment);
+      }
+      const scoringCandidates = segmentBlocks.filter(
+        (segment) => segment.text.length >= 5 && segment.rect.height >= 10
+      );
+      const scoringByScope = /* @__PURE__ */ new Map();
+      for (const scoringSegment of scoringCandidates) {
+        const scope = scoringSegment.splitScope || block.element;
+        const scoped = scoringByScope.get(scope) || [];
+        scoped.push(scoringSegment);
+        scoringByScope.set(scope, scoped);
+      }
+      const scoringSegments = Array.from(scoringByScope.values()).flatMap((scoped) => dedupeBrSplitSegments(scoped, brScoreSeen, block.text)).sort((left, right) => {
+        var _a2, _b2;
+        return ((_a2 = left.splitIndex) != null ? _a2 : 0) - ((_b2 = right.splitIndex) != null ? _b2 : 0);
+      });
+      if (segments.length >= 3 && scoringSegments.length > 0) {
+        brSourceBlocksByGroup.set(splitGroupId, segmentBlocks);
+        for (const score of scoringSegments) {
+          score.memberOutputIds = [];
         }
+        for (const output of segmentBlocks) {
+          const sameScopeScores = scoringSegments.filter(
+            (candidate) => candidate.splitScope === output.splitScope
+          );
+          if (sameScopeScores.length === 0) continue;
+          const nearestScore = sameScopeScores.reduce(
+            (best, candidate) => {
+              var _a2, _b2, _c, _d;
+              return Math.abs(((_a2 = candidate.splitIndex) != null ? _a2 : 0) - ((_b2 = output.splitIndex) != null ? _b2 : 0)) < Math.abs(((_c = best.splitIndex) != null ? _c : 0) - ((_d = output.splitIndex) != null ? _d : 0)) ? candidate : best;
+            }
+          );
+          if (output.outputId !== void 0) nearestScore.memberOutputIds.push(output.outputId);
+        }
+        expandedBlocks.push(...scoringSegments);
       } else {
         expandedBlocks.push(block);
       }
     }
+    const canonicalOutput = canonicalizeZoneOutputBlocks(expandedOutputBlocks);
+    const finalOutputBlocks = canonicalOutput.blocks;
+    indexComposedVisibleTextMass(finalOutputBlocks);
+    for (const score of expandedBlocks) {
+      const members = score.memberOutputIds || (score.outputId !== void 0 ? [score.outputId] : []);
+      score.memberOutputIds = Array.from(
+        new Set(
+          members.flatMap((id) => canonicalOutput.replacementIds.get(id) || [id])
+        )
+      );
+    }
+    const canonicalScoringBlocks = canonicalizeZoneScoringBlocks(expandedBlocks);
     const normText = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
-    const elementDepth = (el) => {
-      let d = 0;
-      let cur = el;
-      while (cur) {
-        d++;
-        cur = cur.parentElement;
-      }
-      return d;
-    };
-    const annotated = expandedBlocks.map((b) => __spreadProps(__spreadValues({}, b), { norm: normText(b.text) }));
+    const annotated = canonicalScoringBlocks.map((b) => __spreadProps(__spreadValues({}, b), { norm: normText(b.text) }));
     const droppedByDedup = /* @__PURE__ */ new Set();
     for (let i = 0; i < annotated.length; i++) {
       if (droppedByDedup.has(i)) continue;
@@ -40918,7 +41658,7 @@ var __CRWeb = (() => {
       for (let j = 0; j < annotated.length; j++) {
         if (i === j || droppedByDedup.has(j)) continue;
         const B = annotated[j];
-        if (A.element !== B.element && A.element.contains(B.element)) {
+        if (A.element !== B.element && containsElementAcrossShadow(A.element, B.element)) {
           descendants.push(B);
         }
       }
@@ -40940,20 +41680,6 @@ var __CRWeb = (() => {
         if (remainder.length <= 30 && coverage >= 0.6) {
           droppedByDedup.add(i);
         }
-      }
-    }
-    for (let i = 0; i < annotated.length; i++) {
-      if (droppedByDedup.has(i)) continue;
-      for (let j = i + 1; j < annotated.length; j++) {
-        if (droppedByDedup.has(j)) continue;
-        const A = annotated[i];
-        const B = annotated[j];
-        if (A.norm.length < 8 || A.norm !== B.norm) continue;
-        if (A.element.contains(B.element) || B.element.contains(A.element)) continue;
-        const depthA = elementDepth(A.element);
-        const depthB = elementDepth(B.element);
-        if (depthA <= depthB) droppedByDedup.add(i);
-        else droppedByDedup.add(j);
       }
     }
     const finalBlocks = annotated.filter((_3, i) => !droppedByDedup.has(i)).map((_c) => {
@@ -40979,49 +41705,87 @@ var __CRWeb = (() => {
     }
     if (window.__castreaderDebugZones) {
       console.log(
-        `[Zones] Phase 1.9 dedup: ${expandedBlocks.length} \u2192 ${finalBlocks.length} blocks (dropped ${droppedByDedup.size})`
+        `[Zones] Phase 1.9 dedup: ${expandedBlocks.length} raw / ${canonicalScoringBlocks.length} canonical \u2192 ${finalBlocks.length} blocks (dropped ${droppedByDedup.size})`
       );
     }
     const vw = window.innerWidth;
     const BUCKETS = 20;
     const bw = vw / BUCKETS;
     const buckets = new Array(BUCKETS).fill(0);
-    for (const b of finalBlocks) {
+    const readableBuckets = new Array(BUCKETS).fill(0);
+    const noiseBuckets = new Array(BUCKETS).fill(0);
+    const blockNoiseOwners = finalBlocks.map(
+      (block) => findOutputNoiseOwner(block.element)
+    );
+    for (let blockIndex = 0; blockIndex < finalBlocks.length; blockIndex++) {
+      const b = finalBlocks[blockIndex];
       const idx = Math.min(BUCKETS - 1, Math.max(0, Math.floor(b.rect.left / bw)));
-      buckets[idx] += b.text.length;
+      const mass = blockScoreWeight(b);
+      buckets[idx] += mass;
+      if (blockNoiseOwners[blockIndex]) noiseBuckets[idx] += mass;
+      else readableBuckets[idx] += mass;
     }
     const totalText = buckets.reduce((s, v) => s + v, 0);
-    const peakThreshold = totalText * 0.05;
-    const peaks = [];
-    for (let i = 0; i < BUCKETS; i++) {
-      if (buckets[i] < peakThreshold) continue;
-      const leftVal = i > 0 ? buckets[i - 1] : 0;
-      const rightVal = i < BUCKETS - 1 ? buckets[i + 1] : 0;
-      if (buckets[i] >= leftVal && buckets[i] >= rightVal) {
-        if (peaks.length > 0 && i - peaks[peaks.length - 1].idx <= 2) {
-          if (buckets[i] > peaks[peaks.length - 1].val) {
-            peaks[peaks.length - 1] = { idx: i, val: buckets[i] };
+    const nonNoiseText = readableBuckets.reduce((sum, value) => sum + value, 0);
+    const noiseText = noiseBuckets.reduce((sum, value) => sum + value, 0);
+    const collectHistogramPeaks = (histogram, threshold, source) => {
+      const found = [];
+      for (let i = 0; i < BUCKETS; i++) {
+        if (histogram[i] < threshold) continue;
+        const leftVal = i > 0 ? histogram[i - 1] : 0;
+        const rightVal = i < BUCKETS - 1 ? histogram[i + 1] : 0;
+        if (histogram[i] < leftVal || histogram[i] < rightVal) continue;
+        if (found.length > 0 && i - found[found.length - 1].idx <= 2) {
+          if (histogram[i] > found[found.length - 1].val) {
+            found[found.length - 1] = { idx: i, val: histogram[i], source };
           }
         } else {
-          peaks.push({ idx: i, val: buckets[i] });
+          found.push({ idx: i, val: histogram[i], source });
         }
       }
+      return found;
+    };
+    const peaks = [];
+    if (nonNoiseText > 0) {
+      peaks.push(
+        ...collectHistogramPeaks(readableBuckets, nonNoiseText * 0.05, "readable")
+      );
+    }
+    if (noiseText > 0) {
+      peaks.push(...collectHistogramPeaks(noiseBuckets, noiseText * 0.05, "noise"));
     }
     if (peaks.length === 0) {
       let bestIdx = 0;
       for (let i = 1; i < BUCKETS; i++) {
         if (buckets[i] > buckets[bestIdx]) bestIdx = i;
       }
-      peaks.push({ idx: bestIdx, val: buckets[bestIdx] });
+      peaks.push({
+        idx: bestIdx,
+        val: buckets[bestIdx],
+        source: nonNoiseText > 0 ? "readable" : "noise"
+      });
     }
+    peaks.sort((a, b) => a.idx - b.idx || (a.source === "readable" ? -1 : 1));
     const columns = [];
     const assignedBlocks = /* @__PURE__ */ new Set();
-    for (const peak of peaks) {
+    for (let peakIndex = 0; peakIndex < peaks.length; peakIndex++) {
+      const peak = peaks[peakIndex];
+      const expansionHistogram = peak.source === "readable" ? readableBuckets : noiseBuckets;
       const expandThresh = peak.val * 0.05;
       let left = peak.idx;
       let right = peak.idx;
-      while (left > 0 && buckets[left - 1] > expandThresh) left--;
-      while (right < BUCKETS - 1 && buckets[right + 1] > expandThresh) right++;
+      while (left > 0 && expansionHistogram[left - 1] > expandThresh) left--;
+      while (right < BUCKETS - 1 && expansionHistogram[right + 1] > expandThresh) right++;
+      const sameSourcePeaks = peaks.filter((candidate) => candidate.source === peak.source);
+      const sameSourceIndex = sameSourcePeaks.indexOf(peak);
+      if (sameSourceIndex > 0) {
+        const previous = sameSourcePeaks[sameSourceIndex - 1];
+        left = Math.max(left, Math.floor((previous.idx + peak.idx) / 2) + 1);
+      }
+      if (sameSourceIndex + 1 < sameSourcePeaks.length) {
+        const next = sameSourcePeaks[sameSourceIndex + 1];
+        right = Math.min(right, Math.floor((peak.idx + next.idx) / 2));
+      }
       const bandLeft = left * bw;
       const bandLeftMax = (right + 1) * bw;
       let bandRight = bandLeftMax;
@@ -41032,54 +41796,160 @@ var __CRWeb = (() => {
           if (blockRight > bandRight) bandRight = blockRight;
         }
       }
-      const nextPeakIdx = peaks.indexOf(peak) + 1;
-      if (nextPeakIdx < peaks.length) {
-        let nextLeft = peaks[nextPeakIdx].idx;
-        const nextExpandThresh = peaks[nextPeakIdx].val * 0.05;
-        while (nextLeft > 0 && buckets[nextLeft - 1] > nextExpandThresh) nextLeft--;
-        const nextBandLeft = nextLeft * bw;
+      if (sameSourceIndex + 1 < sameSourcePeaks.length) {
+        const nextBandLeft = (Math.floor((peak.idx + sameSourcePeaks[sameSourceIndex + 1].idx) / 2) + 1) * bw;
         if (bandRight > nextBandLeft) {
           bandRight = nextBandLeft;
         }
       }
       const colBlocks = [];
       let textLen = 0;
+      let scoreWeight = 0;
       for (let bi = 0; bi < finalBlocks.length; bi++) {
         if (assignedBlocks.has(bi)) continue;
         const b = finalBlocks[bi];
+        const blockSource = blockNoiseOwners[bi] ? "noise" : "readable";
+        if (blockSource !== peak.source) continue;
         if (b.rect.left >= bandLeft && b.rect.left < bandLeftMax) {
           colBlocks.push(b);
           textLen += b.text.length;
+          scoreWeight += blockScoreWeight(b);
           assignedBlocks.add(bi);
         }
       }
       if (colBlocks.length > 0) {
         columns.push({
           bandLeft,
-          bandRight,
           assignmentRight: bandLeftMax,
+          bandRight,
           blocks: colBlocks,
+          outputBlocks: [],
           textLength: textLen,
-          peakVal: peak.val
+          scoreWeight,
+          peakVal: peak.val,
+          source: peak.source
         });
       }
     }
     columns.sort((a, b) => a.bandLeft - b.bandLeft);
+    let recoveredIndentedListScoreCount = 0;
+    for (let blockIndex = 0; blockIndex < finalBlocks.length; blockIndex++) {
+      if (assignedBlocks.has(blockIndex)) continue;
+      const block = finalBlocks[blockIndex];
+      const blockSource = blockNoiseOwners[blockIndex] ? "noise" : "readable";
+      const isolationOwner = findOutputIsolationOwner(block.element);
+      if (!isolationOwner || isolationOwner.tagName !== "LI") continue;
+      const listOwner = findIsolationGroupOwner(isolationOwner);
+      let bestColumn = null;
+      let bestDistance = Infinity;
+      for (const column of columns) {
+        if (column.source !== blockSource) continue;
+        const hasStructuralOwner = column.blocks.some((score) => {
+          const scoreOwner = findOutputSequenceOwner(score.element);
+          return containsElementAcrossShadow(scoreOwner, listOwner) || containsElementAcrossShadow(listOwner, score.element);
+        });
+        if (!hasStructuralOwner) continue;
+        const distance = block.rect.left < column.bandLeft ? column.bandLeft - block.rect.left : block.rect.left >= column.assignmentRight ? block.rect.left - column.assignmentRight : 0;
+        if (distance > Math.min(160, vw * 0.15) || distance >= bestDistance) continue;
+        bestDistance = distance;
+        bestColumn = column;
+      }
+      if (!bestColumn) continue;
+      bestColumn.blocks.push(block);
+      bestColumn.textLength += block.text.length;
+      bestColumn.scoreWeight += blockScoreWeight(block);
+      bestColumn.bandRight = Math.max(bestColumn.bandRight, block.rect.left + block.rect.width);
+      assignedBlocks.add(blockIndex);
+      recoveredIndentedListScoreCount++;
+    }
+    let recoveredSemanticScoreCount = 0;
+    for (let blockIndex = 0; blockIndex < finalBlocks.length; blockIndex++) {
+      if (assignedBlocks.has(blockIndex) || blockNoiseOwners[blockIndex]) continue;
+      const block = finalBlocks[blockIndex];
+      const readingRoot = findNearestSemanticContentRoot(block.element);
+      if (!readingRoot) continue;
+      let bestColumn = null;
+      let bestDistance = Infinity;
+      for (const column of columns) {
+        if (column.source !== "readable") continue;
+        const sharesReadingRoot = column.blocks.some(
+          (score) => findNearestSemanticContentRoot(score.element) === readingRoot
+        );
+        if (!sharesReadingRoot) continue;
+        const distance = block.rect.left < column.bandLeft ? column.bandLeft - block.rect.left : block.rect.left >= column.assignmentRight ? block.rect.left - column.assignmentRight : 0;
+        if (distance > Math.min(160, vw * 0.15) || distance >= bestDistance) continue;
+        bestDistance = distance;
+        bestColumn = column;
+      }
+      if (!bestColumn) continue;
+      bestColumn.blocks.push(block);
+      bestColumn.textLength += block.text.length;
+      bestColumn.scoreWeight += blockScoreWeight(block);
+      bestColumn.bandRight = Math.max(
+        bestColumn.bandRight,
+        block.rect.left + block.rect.width
+      );
+      assignedBlocks.add(blockIndex);
+      recoveredSemanticScoreCount++;
+    }
+    const columnByOutputId = /* @__PURE__ */ new Map();
+    for (const column of columns) {
+      for (const score of column.blocks) {
+        for (const outputId of score.memberOutputIds || []) {
+          columnByOutputId.set(outputId, column);
+        }
+      }
+    }
+    let unmatchedOutputCount = 0;
+    for (const output of finalOutputBlocks) {
+      const outputSource = findOutputNoiseOwner(output.element) ? "noise" : "readable";
+      const mappedColumn = output.outputId !== void 0 ? columnByOutputId.get(output.outputId) : void 0;
+      if (mappedColumn) {
+        mappedColumn.outputBlocks.push(output);
+        continue;
+      }
+      const matches = columns.filter(
+        (column) => column.source === outputSource && output.rect.left >= column.bandLeft && output.rect.left < column.assignmentRight
+      );
+      if (matches.length > 0) {
+        const column = matches.reduce((best, candidate) => {
+          const bestCenter = (best.bandLeft + best.assignmentRight) / 2;
+          const candidateCenter = (candidate.bandLeft + candidate.assignmentRight) / 2;
+          return Math.abs(output.rect.left - candidateCenter) < Math.abs(output.rect.left - bestCenter) ? candidate : best;
+        });
+        column.outputBlocks.push(output);
+        continue;
+      }
+      const outputOwner = findOutputSequenceOwner(output.element);
+      let structuralColumn = null;
+      let structuralDistance = Infinity;
+      for (const column of columns) {
+        if (column.source !== outputSource) continue;
+        for (const score of column.blocks) {
+          if (findOutputSequenceOwner(score.element) !== outputOwner) continue;
+          const distance = Math.abs(
+            output.rect.top + output.rect.height / 2 - (score.rect.top + score.rect.height / 2)
+          );
+          if (distance < structuralDistance) {
+            structuralDistance = distance;
+            structuralColumn = column;
+          }
+        }
+      }
+      if (structuralColumn) structuralColumn.outputBlocks.push(output);
+      else unmatchedOutputCount++;
+    }
     const scrollY = window.scrollY;
     const zones = [];
     let zoneId = 0;
     let mainColIdx = 0;
     for (let i = 1; i < columns.length; i++) {
-      if (columns[i].textLength > columns[mainColIdx].textLength) mainColIdx = i;
+      if (columns[i].scoreWeight > columns[mainColIdx].scoreWeight) mainColIdx = i;
     }
     for (let colIdx = 0; colIdx < columns.length; colIdx++) {
       const col = columns[colIdx];
-      col.blocks.sort((a, b) => {
-        const ay = a.rect.top + scrollY;
-        const by = b.rect.top + scrollY;
-        if (Math.abs(ay - by) > 5) return ay - by;
-        return a.rect.left - b.rect.left;
-      });
+      sortZoneBlocksInReadingOrder(col.blocks, scrollY);
+      sortZoneBlocksInReadingOrder(col.outputBlocks, scrollY);
       const ancestorScores = /* @__PURE__ */ new Map();
       for (const block of col.blocks) {
         let cur = block.element;
@@ -41091,20 +41961,24 @@ var __CRWeb = (() => {
           const existing = ancestorScores.get(cur);
           if (existing) {
             existing.blockCount++;
-            existing.textLength += block.text.length;
+            existing.textLength += blockScoreWeight(block);
           } else {
-            ancestorScores.set(cur, { blockCount: 1, textLength: block.text.length, depth });
+            ancestorScores.set(cur, {
+              blockCount: 1,
+              textLength: blockScoreWeight(block),
+              depth
+            });
           }
         }
       }
       let bestAncestor = null;
       let bestScore = 0;
-      const totalColChars = col.textLength;
+      const totalColChars = col.scoreWeight;
       for (const [el, stats] of ancestorScores.entries()) {
         const coverage = totalColChars > 0 ? stats.textLength / totalColChars : 0;
         if (coverage < 0.5) continue;
-        const ancestorTextLen = (el.innerText || "").trim().length;
-        const tightness = ancestorTextLen > 0 ? stats.textLength / ancestorTextLen : 0;
+        const ancestorTextLen = composedVisibleTextLength(el);
+        const tightness = Math.min(1, stats.textLength / Math.max(1, ancestorTextLen));
         const depthBonus = Math.min(stats.depth, 8) / 8;
         const elRect = el.getBoundingClientRect();
         const widthRatio = elRect.width / vw;
@@ -41122,84 +41996,68 @@ var __CRWeb = (() => {
         }
       }
       let filteredBlocks = col.blocks;
+      let filteredOutputBlocks = col.outputBlocks;
+      let lcaExcludedBlocks = [];
       if (bestAncestor) {
-        filteredBlocks = col.blocks.filter((b) => {
-          if (bestAncestor.contains(b.element)) return true;
-          if (_pageHasShadowContent) {
-            let cur = b.element;
-            while (cur) {
-              if (cur === bestAncestor) return true;
-              cur = getParentAcrossShadow(cur);
-            }
-          }
-          return false;
-        });
+        filteredBlocks = col.blocks.filter(
+          (block) => containsElementAcrossShadow(bestAncestor, block.element)
+        );
+        lcaExcludedBlocks = col.blocks.filter((block) => !filteredBlocks.includes(block));
+        filteredOutputBlocks = col.outputBlocks.filter(
+          (block) => containsElementAcrossShadow(bestAncestor, block.element)
+        );
         const lcaTag = bestAncestor.tagName.toLowerCase();
         const lcaId = bestAncestor.id ? "#" + bestAncestor.id : "";
         const lcaCls = bestAncestor.className && typeof bestAncestor.className === "string" ? "." + bestAncestor.className.trim().split(/\s+/).slice(0, 2).join(".") : "";
         console.log(`[Castreader] Zone: col ${colIdx} LCA=<${lcaTag}${lcaId}${lcaCls}> score=${bestScore.toFixed(3)} ${filteredBlocks.length}/${col.blocks.length} blocks kept`);
       }
-      const vh = window.innerHeight;
-      const docH = document.documentElement.scrollHeight;
-      if (filteredBlocks.length > 5) {
-        filteredBlocks = filteredBlocks.filter((b) => {
-          const absTop = b.rect.top + scrollY;
-          if (absTop < vh * 0.08 && linkDensity(b.element) > 0.5) return false;
-          if (absTop > docH * 0.95 && linkDensity(b.element) > 0.3) return false;
-          return true;
-        });
-      }
-      if (filteredBlocks.length > 8) {
-        const gaps = [];
-        for (let i = 1; i < filteredBlocks.length; i++) {
-          const prevBottom = filteredBlocks[i - 1].rect.top + scrollY + filteredBlocks[i - 1].rect.height;
-          const curTop = filteredBlocks[i].rect.top + scrollY;
-          gaps.push({ idx: i, gap: curTop - prevBottom });
-        }
-        const sortedGaps = gaps.map((g) => g.gap).sort((a, b) => a - b);
-        const medianGap = sortedGaps[Math.floor(sortedGaps.length / 2)];
-        const significantGapThreshold = Math.max(medianGap * 3, 60);
-        const tailStart = Math.floor(filteredBlocks.length * 0.7);
-        const totalFilteredChars = filteredBlocks.reduce((s, b) => s + b.text.length, 0);
-        for (let gi = gaps.length - 1; gi >= 0; gi--) {
-          if (gaps[gi].idx < tailStart) break;
-          if (gaps[gi].gap > significantGapThreshold) {
-            const tailBlocks = filteredBlocks.slice(gaps[gi].idx);
-            const tailChars = tailBlocks.reduce((s, b) => s + b.text.length, 0);
-            if (tailChars > totalFilteredChars * 0.25) continue;
-            const tailLD = regionLinkDensity(tailBlocks);
-            if (tailLD > 0.5) {
-              console.log(`[Castreader] Zone: Y-gap truncation at block ${gaps[gi].idx}/${filteredBlocks.length}, gap=${gaps[gi].gap.toFixed(0)}px, tailLD=${tailLD.toFixed(2)}, tailChars=${tailChars}`);
-              filteredBlocks = filteredBlocks.slice(0, gaps[gi].idx);
-              break;
-            }
-          }
-        }
-      }
+      const positionedPrimary = filterZonePositionNoise(
+        filteredBlocks,
+        filteredOutputBlocks,
+        scrollY,
+        `col ${colIdx}`
+      );
+      filteredBlocks = positionedPrimary.scoringBlocks;
+      filteredOutputBlocks = positionedPrimary.outputBlocks;
+      filteredOutputBlocks = filteredOutputBlocks.filter(
+        (block) => block.element.isConnected && hasSelectedZoneWitness(block, filteredBlocks, bestAncestor || void 0)
+      );
+      sortZoneBlocksInReadingOrder(filteredOutputBlocks, scrollY);
       const pageCenterX = vw / 2;
       if (filteredBlocks.length > 0) {
         const bounds2 = computeBounds(filteredBlocks, scrollY);
         const textLen = filteredBlocks.reduce((s, b) => s + b.text.length, 0);
+        const zoneScoreWeight = filteredBlocks.reduce((s, b) => s + blockScoreWeight(b), 0);
         const zoneCenterX = bounds2.left + bounds2.width / 2;
         const centrality = 1 - Math.abs(zoneCenterX - pageCenterX) / (vw / 2 + 1);
+        const container = bestAncestor || void 0;
         zones.push({
           id: zoneId++,
           column: colIdx,
           section: 0,
           blocks: filteredBlocks,
+          outputBlocks: filteredOutputBlocks,
           bounds: bounds2,
           textLength: textLen,
-          score: textLen * centrality,
+          scoreWeight: zoneScoreWeight,
+          outputTextLength: filteredOutputBlocks.reduce((sum, block) => sum + block.text.length, 0),
+          score: zoneScoreWeight * centrality,
           isDefault: colIdx === mainColIdx,
-          container: bestAncestor || void 0
+          container,
+          noiseOwner: findZoneNoiseOwner(container, filteredBlocks)
         });
       }
       if (bestAncestor) {
-        const orphanBlocks = col.blocks.filter((b) => !filteredBlocks.includes(b));
-        const orphanChars = orphanBlocks.reduce((s, b) => s + b.text.length, 0);
-        if (orphanBlocks.length >= 2 && orphanChars >= 100) {
+        let remainingOrphanBlocks = lcaExcludedBlocks.slice();
+        let orphanSection = 1;
+        while (remainingOrphanBlocks.length >= 2) {
+          const orphanScoreWeight = remainingOrphanBlocks.reduce(
+            (sum, block) => sum + blockScoreWeight(block),
+            0
+          );
+          if (orphanScoreWeight < 100) break;
           const orphanAncestorScores = /* @__PURE__ */ new Map();
-          for (const block of orphanBlocks) {
+          for (const block of remainingOrphanBlocks) {
             let cur = block.element;
             let depth = 0;
             while (cur && cur !== document.body && depth < 15) {
@@ -41209,19 +42067,27 @@ var __CRWeb = (() => {
               const existing = orphanAncestorScores.get(cur);
               if (existing) {
                 existing.blockCount++;
-                existing.textLength += block.text.length;
+                existing.textLength += blockScoreWeight(block);
               } else {
-                orphanAncestorScores.set(cur, { blockCount: 1, textLength: block.text.length, depth });
+                orphanAncestorScores.set(cur, {
+                  blockCount: 1,
+                  textLength: blockScoreWeight(block),
+                  depth
+                });
               }
             }
           }
           let orphanLCA = null;
           let orphanBestScore = 0;
           for (const [el, stats] of orphanAncestorScores.entries()) {
-            const coverage = orphanChars > 0 ? stats.textLength / orphanChars : 0;
+            if (stats.blockCount < 2) continue;
+            const coverage = orphanScoreWeight > 0 ? stats.textLength / orphanScoreWeight : 0;
             if (coverage < 0.5) continue;
-            const ancestorTextLen = (el.innerText || "").trim().length;
-            const tightness = ancestorTextLen > 0 ? stats.textLength / ancestorTextLen : 0;
+            const ancestorTextLen = composedVisibleTextLength(el);
+            const tightness = Math.min(
+              1,
+              stats.textLength / Math.max(1, ancestorTextLen)
+            );
             const depthBonus = Math.min(stats.depth, 8) / 8;
             const score = coverage * tightness * (0.5 + 0.5 * depthBonus);
             if (score > orphanBestScore) {
@@ -41229,28 +42095,85 @@ var __CRWeb = (() => {
               orphanLCA = el;
             }
           }
-          let orphanFiltered = orphanBlocks;
+          let orphanFiltered = remainingOrphanBlocks;
           if (orphanLCA) {
-            orphanFiltered = orphanBlocks.filter((b) => orphanLCA.contains(b.element));
+            orphanFiltered = remainingOrphanBlocks.filter(
+              (block) => containsElementAcrossShadow(orphanLCA, block.element)
+            );
           }
-          if (orphanFiltered.length >= 2) {
-            const oBounds = computeBounds(orphanFiltered, scrollY);
-            const oTextLen = orphanFiltered.reduce((s, b) => s + b.text.length, 0);
-            const oCenterX = oBounds.left + oBounds.width / 2;
-            const oCentrality = 1 - Math.abs(oCenterX - pageCenterX) / (vw / 2 + 1);
-            console.log(`[Castreader] Zone: col ${colIdx} orphan recovery: ${orphanFiltered.length} blocks, ${oTextLen} chars, LCA=${(orphanLCA == null ? void 0 : orphanLCA.tagName) || "none"}`);
-            zones.push({
-              id: zoneId++,
-              column: colIdx,
-              section: 1,
-              blocks: orphanFiltered,
-              bounds: oBounds,
-              textLength: oTextLen,
-              score: oTextLen * oCentrality,
-              isDefault: false,
-              container: orphanLCA || void 0
-            });
+          if (orphanFiltered.length < 2) break;
+          const consumedScores = new Set(orphanFiltered);
+          remainingOrphanBlocks = remainingOrphanBlocks.filter(
+            (block) => !consumedScores.has(block)
+          );
+          const orphanMemberOutputIds = /* @__PURE__ */ new Set();
+          for (const score of orphanFiltered) {
+            for (const outputId of score.memberOutputIds || []) {
+              orphanMemberOutputIds.add(outputId);
+            }
+            if (score.outputId !== void 0) orphanMemberOutputIds.add(score.outputId);
           }
+          const orphanSequenceOwners = new Set(
+            orphanFiltered.map(
+              (score) => findOutputSequenceOwner(score.element, orphanLCA || void 0)
+            )
+          );
+          let orphanOutputBlocks = col.outputBlocks.filter((block) => {
+            if (block.outputId !== void 0 && orphanMemberOutputIds.has(block.outputId)) {
+              return true;
+            }
+            if (orphanLCA && !containsElementAcrossShadow(orphanLCA, block.element)) {
+              return false;
+            }
+            return orphanSequenceOwners.has(
+              findOutputSequenceOwner(block.element, orphanLCA || void 0)
+            );
+          });
+          orphanOutputBlocks = orphanOutputBlocks.filter(
+            (block) => block.element.isConnected && hasSelectedZoneWitness(block, orphanFiltered, orphanLCA || void 0)
+          );
+          sortZoneBlocksInReadingOrder(orphanFiltered, scrollY);
+          sortZoneBlocksInReadingOrder(orphanOutputBlocks, scrollY);
+          const positionedOrphan = filterZonePositionNoise(
+            orphanFiltered,
+            orphanOutputBlocks,
+            scrollY,
+            `col ${colIdx} orphan ${orphanSection}`
+          );
+          orphanFiltered = positionedOrphan.scoringBlocks;
+          orphanOutputBlocks = positionedOrphan.outputBlocks.filter(
+            (block) => block.element.isConnected && hasSelectedZoneWitness(block, orphanFiltered, orphanLCA || void 0)
+          );
+          const retainedOrphanScoreWeight = orphanFiltered.reduce(
+            (sum, block) => sum + blockScoreWeight(block),
+            0
+          );
+          if (orphanFiltered.length < 2 || retainedOrphanScoreWeight < 100) continue;
+          const oBounds = computeBounds(orphanFiltered, scrollY);
+          const oTextLen = orphanFiltered.reduce((s, b) => s + b.text.length, 0);
+          const oScoreWeight = retainedOrphanScoreWeight;
+          const oCenterX = oBounds.left + oBounds.width / 2;
+          const oCentrality = 1 - Math.abs(oCenterX - pageCenterX) / (vw / 2 + 1);
+          const orphanContainer = orphanLCA || void 0;
+          console.log(`[Castreader] Zone: col ${colIdx} orphan recovery ${orphanSection}: ${orphanFiltered.length} blocks, ${oTextLen} chars, LCA=${(orphanLCA == null ? void 0 : orphanLCA.tagName) || "none"}`);
+          zones.push({
+            id: zoneId++,
+            column: colIdx,
+            section: orphanSection++,
+            blocks: orphanFiltered,
+            outputBlocks: orphanOutputBlocks,
+            bounds: oBounds,
+            textLength: oTextLen,
+            scoreWeight: oScoreWeight,
+            outputTextLength: orphanOutputBlocks.reduce(
+              (sum, block) => sum + block.text.length,
+              0
+            ),
+            score: oScoreWeight * oCentrality,
+            isDefault: false,
+            container: orphanContainer,
+            noiseOwner: findZoneNoiseOwner(orphanContainer, orphanFiltered)
+          });
         }
       }
     }
@@ -41261,6 +42184,10 @@ var __CRWeb = (() => {
     };
     for (const zone of zones) {
       zone.scoreTrace = [{ rule: "base", multiplier: 1, after: zone.score }];
+      if (zone.noiseOwner) {
+        noiseZoneIds.add(zone.id);
+        bump(zone, "noise:ancestor_domain", 0.1);
+      }
       if (zone.container) {
         const tag = zone.container.tagName;
         const cls = (typeof zone.container.className === "string" ? zone.container.className : "").toLowerCase();
@@ -41278,8 +42205,10 @@ var __CRWeb = (() => {
           bump(zone, "boost:id_content_body", 1.3);
         }
         if (/\b(sidebar|side-bar|rail|aside)\b/.test(idSig) || (tag === "NAV" || tag === "ASIDE") || /\b(left-nav|right-nav)\b/.test(idSig)) {
-          noiseZoneIds.add(zone.id);
-          bump(zone, "noise:sidebar_nav_rail", 0.1);
+          if (!noiseZoneIds.has(zone.id)) {
+            noiseZoneIds.add(zone.id);
+            bump(zone, "noise:sidebar_nav_rail", 0.1);
+          }
         }
         if (/\b(related[-_]?(posts?|articles?|stories?|reading|content|container)|recommended|you-may-like|more-stories|trc_related|tbl-feed|taboola|outbrain)\b/.test(sig)) {
           noiseZoneIds.add(zone.id);
@@ -41300,13 +42229,21 @@ var __CRWeb = (() => {
         if (zoneLD > 0.6) {
           bump(zone, "penalty:link_density", 0.2);
         }
+        const shortRunBlocks = zone.blocks.filter((block) => block.shortRunScore === true);
+        const shortRunScoreWeight = shortRunBlocks.reduce(
+          (sum, block) => sum + blockScoreWeight(block),
+          0
+        );
+        const isCoherentShortRun = shortRunBlocks.length >= 3 && shortRunScoreWeight / Math.max(1, zone.scoreWeight) >= 0.6;
         const avgBlockLen = zone.textLength / Math.max(1, zone.blocks.length);
-        if (avgBlockLen < 30) {
+        if (isCoherentShortRun) {
+          bump(zone, "quality:coherent_short_run", 1.15);
+        } else if (avgBlockLen < 30) {
           bump(zone, "quality:avg_block_short", 0.3);
         } else if (avgBlockLen >= 60) {
           bump(zone, "quality:avg_block_long", 1.3);
         }
-        if (zone.blocks.length >= 4) {
+        if (zone.blocks.length >= 4 && !isCoherentShortRun) {
           const mean = avgBlockLen;
           let sumSqDiff = 0;
           for (const b of zone.blocks) {
@@ -41337,7 +42274,7 @@ var __CRWeb = (() => {
             let cur = zone.blocks[bi].element;
             let depth = 0;
             while (cur && cur !== document.body && depth < 10) {
-              cur = cur.parentElement;
+              cur = parentElementForZone(cur);
               if (!cur) break;
               depth++;
               const aTag = cur.tagName;
@@ -41356,9 +42293,13 @@ var __CRWeb = (() => {
     }
     zones.sort((a, b) => b.score - a.score);
     const selectedZoneIds = [];
-    if (zones.length > 0) {
-      const mainColumn = zones[0].column;
-      zones[0].isDefault = true;
+    for (const zone of zones) zone.isDefault = false;
+    const topContentZone = zones.find(
+      (zone) => !noiseZoneIds.has(zone.id) && zone.outputBlocks.length > 0
+    );
+    if (topContentZone) {
+      const mainColumn = topContentZone.column;
+      topContentZone.isDefault = true;
       for (const zone of zones) {
         if (zone.column === mainColumn && !noiseZoneIds.has(zone.id)) {
           selectedZoneIds.push(zone.id);
@@ -41366,129 +42307,21 @@ var __CRWeb = (() => {
       }
     }
     const selectedSet = new Set(selectedZoneIds);
-    const selectedScoreBlocks = [];
+    const selectedBlocks = [];
+    const selectedOutputIds = /* @__PURE__ */ new Set();
     for (const zone of zones) {
       if (selectedSet.has(zone.id)) {
-        selectedScoreBlocks.push(...zone.blocks);
-      }
-    }
-    const selectedBrScoreKeys = new Set(
-      selectedScoreBlocks.filter(
-        (block) => block.source === "br-split" && block.splitGroupId !== void 0 && block.splitIndex !== void 0
-      ).map((block) => `${block.splitGroupId}:${block.splitIndex}`)
-    );
-    const brProjectionByGroup = /* @__PURE__ */ new Map();
-    for (let column = 0; column < columns.length; column++) {
-      for (const block of columns[column].blocks) {
-        if (block.source !== "br-split" || block.splitGroupId === void 0 || block.splitIndex === void 0) {
-          continue;
-        }
-        const entries = brProjectionByGroup.get(block.splitGroupId) || [];
-        entries.push({
-          splitIndex: block.splitIndex,
-          splitScope: block.splitScope,
-          column,
-          selected: selectedBrScoreKeys.has(`${block.splitGroupId}:${block.splitIndex}`)
-        });
-        brProjectionByGroup.set(block.splitGroupId, entries);
-      }
-    }
-    const sourceColumn = (block) => {
-      const strictColumn = columns.findIndex(
-        (column) => block.rect.left >= column.bandLeft && block.rect.left < column.assignmentRight
-      );
-      if (strictColumn >= 0) return strictColumn;
-      return columns.findIndex(
-        (column) => block.rect.left >= column.bandLeft - 1 && block.rect.left < column.bandRight + 1
-      );
-    };
-    const selectedUnits = [];
-    const restoredBrGroups = /* @__PURE__ */ new Set();
-    for (const block of selectedScoreBlocks) {
-      if (block.source === "br-split" && block.splitGroupId) {
-        if (restoredBrGroups.has(block.splitGroupId)) continue;
-        const sourceBlocks = brSourceBlocksByGroup.get(block.splitGroupId);
-        if (sourceBlocks) {
-          restoredBrGroups.add(block.splitGroupId);
-          const projections = brProjectionByGroup.get(block.splitGroupId) || [];
-          const restored = sourceBlocks.filter((sourceBlock) => {
-            var _a2;
-            const column = sourceColumn(sourceBlock);
-            if (column < 0) return false;
-            let sameColumn = projections.filter(
-              (projection) => projection.column === column
-            );
-            if (sameColumn.length === 0) return false;
-            const sameScope = sameColumn.filter(
-              (projection) => projection.splitScope === sourceBlock.splitScope
-            );
-            if (sourceBlock.splitScope && sameScope.length === 0) return false;
-            if (sameScope.length > 0) sameColumn = sameScope;
-            const sourceIndex = (_a2 = sourceBlock.splitIndex) != null ? _a2 : 0;
-            sameColumn.sort(
-              (left, right) => Math.abs(left.splitIndex - sourceIndex) - Math.abs(right.splitIndex - sourceIndex) || left.splitIndex - right.splitIndex
-            );
-            return sameColumn[0].selected;
-          }).sort((left, right) => {
-            var _a2, _b2;
-            return ((_a2 = left.splitIndex) != null ? _a2 : 0) - ((_b2 = right.splitIndex) != null ? _b2 : 0);
-          });
-          if (restored.length > 0) {
-            selectedUnits.push({ anchor: restored[0], blocks: restored });
-          } else {
-            selectedUnits.push({ anchor: block, blocks: [block] });
+        for (const block of zone.outputBlocks) {
+          if (block.outputId !== void 0) {
+            if (selectedOutputIds.has(block.outputId)) continue;
+            selectedOutputIds.add(block.outputId);
           }
-          continue;
-        }
-      }
-      selectedUnits.push({ anchor: block, blocks: [block] });
-    }
-    selectedUnits.sort((a, b) => {
-      const ay = a.anchor.rect.top + scrollY;
-      const by = b.anchor.rect.top + scrollY;
-      if (Math.abs(ay - by) > 5) return ay - by;
-      return a.anchor.rect.left - b.anchor.rect.left;
-    });
-    const selectedBlocks = selectedUnits.flatMap((unit) => unit.blocks);
-    const containerBlockIndices = /* @__PURE__ */ new Set();
-    for (let i = 0; i < selectedBlocks.length; i++) {
-      const b = selectedBlocks[i];
-      if (b.source === "br-split") continue;
-      if (b.text.length < 100) continue;
-      let containCount = 0;
-      for (let j = 0; j < selectedBlocks.length; j++) {
-        if (j === i) continue;
-        if (selectedBlocks[j].text.length >= 20 && b.text.includes(selectedBlocks[j].text)) {
-          containCount++;
-          if (containCount >= 2) {
-            containerBlockIndices.add(i);
-            break;
-          }
+          selectedBlocks.push(block);
         }
       }
     }
-    const dedupedBlocks = [];
-    for (let i = 0; i < selectedBlocks.length; i++) {
-      if (containerBlockIndices.has(i)) continue;
-      const b = selectedBlocks[i];
-      if (b.source === "br-split") {
-        dedupedBlocks.push(b);
-        continue;
-      }
-      const isHeading = /^H[1-6]$/.test(((_e = b.element) == null ? void 0 : _e.tagName) || "");
-      if (b.text.length < 80 && !isHeading) {
-        let isDuplicate = false;
-        for (let j = Math.max(0, i - 3); j < Math.min(selectedBlocks.length, i + 4); j++) {
-          if (j === i || containerBlockIndices.has(j)) continue;
-          if (selectedBlocks[j].text.includes(b.text)) {
-            isDuplicate = true;
-            break;
-          }
-        }
-        if (isDuplicate) continue;
-      }
-      dedupedBlocks.push(b);
-    }
+    sortZoneBlocksInReadingOrder(selectedBlocks, scrollY);
+    const dedupedBlocks = selectedBlocks;
     for (const b of dedupedBlocks) {
       if (!b.element) continue;
       const target = b.text.replace(/\s+/g, " ").trim();
@@ -41513,14 +42346,19 @@ var __CRWeb = (() => {
       }
     } : {}));
     paragraphs = anchorParagraphsToTitle(paragraphs);
-    console.log(`[Castreader] Zone: ${allBlocks.length} raw \u2192 ${finalBlocks.length} blocks \u2192 ${columns.length} cols \u2192 ${zones.length} zones \u2192 ${paragraphs.length} paragraphs`);
+    const shortOutputCount = finalOutputBlocks.filter((block) => block.text.length < 5).length;
+    const selectedShortOutputCount = selectedBlocks.filter((block) => block.text.length < 5).length;
+    console.log(
+      `[Castreader] Zone: ${allBlocks.length} scoring raw \u2192 ${finalBlocks.length} scoring; ${finalOutputBlocks.length} output (${shortOutputCount} short) \u2192 ${columns.length} cols \u2192 ${zones.length} zones \u2192 ${paragraphs.length} paragraphs (${selectedShortOutputCount} short)`
+    );
     for (let i = 0; i < Math.min(5, paragraphs.length); i++) {
-      console.log(`  P${i}: "${paragraphs[i].text.substring(0, 80)}..." tag=${(_f = paragraphs[i].element) == null ? void 0 : _f.tagName}`);
+      console.log(`  P${i}: "${paragraphs[i].text.substring(0, 80)}..." tag=${(_e = paragraphs[i].element) == null ? void 0 : _e.tagName}`);
     }
     for (const z of zones) {
       const sel = selectedSet.has(z.id) ? "\u2605" : " ";
       const containerTag = z.container ? `<${z.container.tagName.toLowerCase()}${z.container.id ? "#" + z.container.id : ""}>` : "none";
-      console.log(`  ${sel} Zone#${z.id} col=${z.column} score=${z.score.toFixed(1)} blocks=${z.blocks.length} chars=${z.textLength} LCA=${containerTag}`);
+      const noiseOwnerTag = z.noiseOwner ? `<${z.noiseOwner.tagName.toLowerCase()}${z.noiseOwner.id ? "#" + z.noiseOwner.id : ""}>` : "none";
+      console.log(`  ${sel} Zone#${z.id} col=${z.column} score=${z.score.toFixed(1)} mass=${z.scoreWeight} blocks=${z.blocks.length} chars=${z.textLength} LCA=${containerTag} noiseOwner=${noiseOwnerTag}`);
       for (let i = 0; i < Math.min(3, z.blocks.length); i++) {
         console.log(`    b${i}: "${z.blocks[i].text.substring(0, 60)}..." y=${(z.blocks[i].rect.top + scrollY).toFixed(0)}`);
       }
@@ -41533,27 +42371,56 @@ var __CRWeb = (() => {
       const dump = {
         timestamp: Date.now(),
         url: location.href,
-        columns: columns.map((c, i) => ({ index: i, bandLeft: c.bandLeft, bandRight: c.bandRight })),
+        blockCounts: {
+          rawOutput: outputBlocks.length,
+          scoringRaw: allBlocks.length,
+          scoringFinal: finalBlocks.length,
+          canonicalOutput: finalOutputBlocks.length,
+          recoveredIndentedListScore: recoveredIndentedListScoreCount,
+          recoveredSemanticScore: recoveredSemanticScoreCount,
+          unmatchedOutput: unmatchedOutputCount,
+          shortOutput: shortOutputCount,
+          selectedOutput: selectedBlocks.length,
+          selectedShortOutput: selectedShortOutputCount
+        },
+        columns: columns.map((c, i) => ({
+          index: i,
+          bandLeft: c.bandLeft,
+          bandRight: c.bandRight,
+          textLength: c.textLength,
+          scoreWeight: c.scoreWeight
+        })),
         zones: zones.map((z) => {
-          var _a2, _b2;
+          var _a2, _b2, _c, _d;
           const c = z.container;
           const cls = c && typeof c.className === "string" ? c.className : "";
+          const noiseOwner = z.noiseOwner;
+          const noiseOwnerClass = noiseOwner && typeof noiseOwner.className === "string" ? noiseOwner.className : "";
           return {
             id: z.id,
             column: z.column,
             section: z.section,
             score: +z.score.toFixed(2),
             textLength: z.textLength,
+            scoreWeight: z.scoreWeight,
             blockCount: z.blocks.length,
+            outputTextLength: z.outputTextLength,
+            outputBlockCount: z.outputBlocks.length,
+            shortOutputBlockCount: z.outputBlocks.filter((block) => block.text.length < 5).length,
             selected: selectedSet.has(z.id),
             isDefault: z.isDefault,
             containerTag: (c == null ? void 0 : c.tagName) || null,
             containerId: (c == null ? void 0 : c.id) || null,
             containerClass: cls.slice(0, 120),
+            noiseOwnerTag: (noiseOwner == null ? void 0 : noiseOwner.tagName) || null,
+            noiseOwnerId: (noiseOwner == null ? void 0 : noiseOwner.id) || null,
+            noiseOwnerClass: noiseOwnerClass.slice(0, 120),
             bounds: z.bounds,
             scoreTrace: z.scoreTrace,
             firstBlockText: ((_a2 = z.blocks[0]) == null ? void 0 : _a2.text.slice(0, 100)) || "",
             lastBlockText: ((_b2 = z.blocks[z.blocks.length - 1]) == null ? void 0 : _b2.text.slice(0, 100)) || "",
+            firstOutputText: ((_c = z.outputBlocks[0]) == null ? void 0 : _c.text.slice(0, 100)) || "",
+            lastOutputText: ((_d = z.outputBlocks[z.outputBlocks.length - 1]) == null ? void 0 : _d.text.slice(0, 100)) || "",
             // Full block list — enables position-in-zone diagnosis (e.g., why
             // was H1 skipped? because it sits at block #14 after 13 breadcrumb
             // links? or because it's missing entirely?). Truncate each text to
@@ -41582,7 +42449,7 @@ var __CRWeb = (() => {
           } catch (e) {
           }
           const ancChain = [];
-          let anc = el.parentElement;
+          let anc = parentElementForZone(el);
           for (let k = 0; k < 6 && anc && anc !== document.body; k++) {
             const ancCs = (() => {
               try {
@@ -41594,7 +42461,7 @@ var __CRWeb = (() => {
             ancChain.push(
               `${anc.tagName}${anc.id ? "#" + anc.id : ""}${typeof anc.className === "string" && anc.className ? "." + anc.className.split(/\s+/).slice(0, 2).join(".") : ""}[pos=${(ancCs == null ? void 0 : ancCs.position) || "?"},ow=${anc.offsetWidth},oh=${anc.offsetHeight},op=${(ancCs == null ? void 0 : ancCs.opacity) || "?"},ov=${(ancCs == null ? void 0 : ancCs.overflow) || "?"}]`
             );
-            anc = anc.parentElement;
+            anc = parentElementForZone(anc);
           }
           return {
             i,
@@ -41638,16 +42505,51 @@ var __CRWeb = (() => {
   function anchorParagraphsToTitle(paragraphs) {
     if (paragraphs.length === 0) return paragraphs;
     const candidates = [];
-    const articleH1 = document.querySelector("article h1");
-    if (articleH1) candidates.push(articleH1);
-    const mainH1 = document.querySelector('[role="main"] h1, main h1');
-    if (mainH1 && !candidates.includes(mainH1)) candidates.push(mainH1);
-    const genericH1 = document.querySelector("h1");
-    if (genericH1 && !candidates.includes(genericH1)) candidates.push(genericH1);
+    const addCandidates = (selector) => {
+      const matches = _pageHasShadowContent ? deepQuerySelectorAll(document, selector) : Array.from(document.querySelectorAll(selector));
+      for (const match of matches) {
+        if (!candidates.includes(match)) candidates.push(match);
+      }
+    };
+    addCandidates("article h1");
+    addCandidates('[role="main"] h1, main h1');
+    addCandidates("h1");
+    const nearestSemanticRoot = (element) => {
+      let current = element;
+      while (current) {
+        const role = (current.getAttribute("role") || "").toLowerCase();
+        if (current.tagName === "ARTICLE" || current.tagName === "MAIN" || role === "main") {
+          return current;
+        }
+        current = parentElementForZone(current);
+      }
+      return null;
+    };
+    const selectedSemanticRoots = new Set(
+      paragraphs.map((paragraph) => nearestSemanticRoot(paragraph.element)).filter((root2) => root2 !== null)
+    );
+    const selectedSequenceOwners = new Set(
+      paragraphs.map((paragraph) => findOutputSequenceOwner(paragraph.element)).filter(
+        (owner) => owner !== document.body && owner !== document.documentElement
+      )
+    );
+    const belongsToSelectedReadingDomain = (h1) => {
+      if (paragraphs.some(
+        (paragraph) => paragraph.element === h1 || containsElementAcrossShadow(paragraph.element, h1) || containsElementAcrossShadow(h1, paragraph.element)
+      )) {
+        return true;
+      }
+      const semanticRoot = nearestSemanticRoot(h1);
+      if (semanticRoot && selectedSemanticRoots.has(semanticRoot)) return true;
+      return selectedSequenceOwners.has(findOutputSequenceOwner(h1));
+    };
     let titleEl = null;
     let titleText = "";
     for (const h1 of candidates) {
-      if (h1.offsetWidth === 0 || h1.offsetHeight === 0) continue;
+      if (isCastreaderOwnedElement(h1)) continue;
+      if (!isVisuallyVisible(h1)) continue;
+      if (findOutputNoiseOwner(h1)) continue;
+      if (!belongsToSelectedReadingDomain(h1)) continue;
       const text = (h1.innerText || "").replace(/\s+/g, " ").trim();
       if (text.length < 3 || text.length > 300) continue;
       titleEl = h1;
@@ -41656,7 +42558,7 @@ var __CRWeb = (() => {
     }
     if (!titleEl) return paragraphs;
     const titleIdx = paragraphs.findIndex(
-      (p) => p.element === titleEl || p.element.contains(titleEl) || titleEl.contains(p.element)
+      (p) => p.element === titleEl || containsElementAcrossShadow(p.element, titleEl) || containsElementAcrossShadow(titleEl, p.element)
     );
     if (titleIdx === 0) return paragraphs;
     if (titleIdx > 0) return paragraphs.slice(titleIdx);
@@ -42021,6 +42923,91 @@ var __CRWeb = (() => {
     }
   };
 
+  // src/source-text.ts
+  var cache = /* @__PURE__ */ new WeakMap();
+  function usesMappedSource(el) {
+    var _a, _b;
+    if (el.dataset.crNativeNormalized === "true") return true;
+    try {
+      return ((_b = (_a = el.ownerDocument.defaultView) == null ? void 0 : _a.top) == null ? void 0 : _b.location.hostname) === "readnow.kobo.com";
+    } catch (e) {
+      return false;
+    }
+  }
+  function mappedSource(el) {
+    const doc = el.ownerDocument, win = doc.defaultView;
+    const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+      let hidden = false;
+      for (let p = node.parentElement; p && el.dataset.crNativeNormalized !== "true"; p = p.parentElement) {
+        const style = win == null ? void 0 : win.getComputedStyle(p);
+        if (["SCRIPT", "STYLE", "NOSCRIPT"].includes(p.tagName) || p.hidden || (style == null ? void 0 : style.display) === "none" || /^(hidden|collapse)$/.test((style == null ? void 0 : style.visibility) || "") || Number((style == null ? void 0 : style.opacity) || "1") === 0) {
+          hidden = true;
+          break;
+        }
+        if (p === el) break;
+      }
+      if (!hidden) nodes.push(node);
+    }
+    const signature = nodes.map((n) => n.data).join("\0");
+    const prior = cache.get(el);
+    if ((prior == null ? void 0 : prior.signature) === signature && prior.nodes.length === nodes.length && prior.nodes.every((node2, i) => node2 === nodes[i])) {
+      return prior.source;
+    }
+    const source = { text: "", starts: [], ends: [] };
+    for (const text of nodes) {
+      for (let i = 0; i < text.data.length; i++) {
+        const char = text.data[i];
+        if (/[\u00ad\u200b\ufeff]/.test(char)) continue;
+        if (/\s/.test(char)) {
+          if (!source.text || source.text.endsWith(" ")) continue;
+          source.text += " ";
+        } else source.text += char;
+        source.starts.push({ node: text, offset: i });
+        source.ends.push({ node: text, offset: i + 1 });
+      }
+    }
+    if (source.text.endsWith(" ")) {
+      source.text = source.text.slice(0, -1);
+      source.starts.pop();
+      source.ends.pop();
+    }
+    cache.set(el, { signature, nodes, source });
+    return source;
+  }
+  function sourceText(el) {
+    return usesMappedSource(el) ? mappedSource(el).text : el.textContent || "";
+  }
+  function sourceRange(el, start, end) {
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end <= start) return null;
+    if (usesMappedSource(el)) {
+      const source = mappedSource(el), a2 = source.starts[start], b2 = source.ends[end - 1];
+      if (!a2 || !b2) return null;
+      const range3 = el.ownerDocument.createRange();
+      range3.setStart(a2.node, a2.offset);
+      range3.setEnd(b2.node, b2.offset);
+      return range3;
+    }
+    const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let cursor = 0, node, a, b;
+    while (node = walker.nextNode()) {
+      const text = node, next = cursor + text.length;
+      if (!a && start >= cursor && start < next) a = { node: text, offset: start - cursor };
+      if (a && end <= next) {
+        b = { node: text, offset: end - cursor };
+        break;
+      }
+      cursor = next;
+    }
+    if (!a || !b) return null;
+    const range2 = el.ownerDocument.createRange();
+    range2.setStart(a.node, a.offset);
+    range2.setEnd(b.node, b.offset);
+    return range2;
+  }
+
   // ../../../MyProject/readout-desktop/src/ui/handwritten-marks.ts
   var MARK_EASE = "cubic-bezier(0.62, 0.0, 0.22, 1)";
   function mulberry32(seed) {
@@ -42184,37 +43171,7 @@ var __CRWeb = (() => {
       return el;
     }
     function charRange(el, start, end) {
-      var _a, _b;
-      const doc = el.ownerDocument;
-      const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-      let offset = 0;
-      let startNode = null;
-      let startOff = 0;
-      let endNode = null;
-      let endOff = 0;
-      let node;
-      while (node = walker.nextNode()) {
-        const len = (_b = (_a = node.textContent) == null ? void 0 : _a.length) != null ? _b : 0;
-        if (!startNode && offset + len > start) {
-          startNode = node;
-          startOff = start - offset;
-        }
-        if (offset + len >= end) {
-          endNode = node;
-          endOff = end - offset;
-          break;
-        }
-        offset += len;
-      }
-      if (!startNode || !endNode) return null;
-      const r = doc.createRange();
-      try {
-        r.setStart(startNode, Math.max(0, startOff));
-        r.setEnd(endNode, Math.max(0, endOff));
-      } catch (e) {
-        return null;
-      }
-      return r;
+      return sourceRange(el, start, end);
     }
     function appendPath(s, d, strokeWidth, opacity) {
       var _a, _b;
@@ -48174,7 +49131,7 @@ var __CRWeb = (() => {
      * @returns {Annotation} annotation
      */
     add(type2, cfiRange, data, cb2, className, styles) {
-      let hash = encodeURI(cfiRange + type2);
+      let hash2 = encodeURI(cfiRange + type2);
       let cfi = new epubcfi_default(cfiRange);
       let sectionIndex = cfi.spinePos;
       let annotation = new Annotation({
@@ -48186,11 +49143,11 @@ var __CRWeb = (() => {
         className,
         styles
       });
-      this._annotations[hash] = annotation;
+      this._annotations[hash2] = annotation;
       if (sectionIndex in this._annotationsBySectionIndex) {
-        this._annotationsBySectionIndex[sectionIndex].push(hash);
+        this._annotationsBySectionIndex[sectionIndex].push(hash2);
       } else {
-        this._annotationsBySectionIndex[sectionIndex] = [hash];
+        this._annotationsBySectionIndex[sectionIndex] = [hash2];
       }
       let views = this.rendition.views();
       views.forEach((view) => {
@@ -48206,28 +49163,28 @@ var __CRWeb = (() => {
      * @param {string} type Type of annotation to add: "highlight", "underline", "mark"
      */
     remove(cfiRange, type2) {
-      let hash = encodeURI(cfiRange + type2);
-      if (hash in this._annotations) {
-        let annotation = this._annotations[hash];
+      let hash2 = encodeURI(cfiRange + type2);
+      if (hash2 in this._annotations) {
+        let annotation = this._annotations[hash2];
         if (type2 && annotation.type !== type2) {
           return;
         }
         let views = this.rendition.views();
         views.forEach((view) => {
-          this._removeFromAnnotationBySectionIndex(annotation.sectionIndex, hash);
+          this._removeFromAnnotationBySectionIndex(annotation.sectionIndex, hash2);
           if (annotation.sectionIndex === view.index) {
             annotation.detach(view);
           }
         });
-        delete this._annotations[hash];
+        delete this._annotations[hash2];
       }
     }
     /**
      * Remove an annotations by Section Index
      * @private
      */
-    _removeFromAnnotationBySectionIndex(sectionIndex, hash) {
-      this._annotationsBySectionIndex[sectionIndex] = this._annotationsAt(sectionIndex).filter((h) => h !== hash);
+    _removeFromAnnotationBySectionIndex(sectionIndex, hash2) {
+      this._annotationsBySectionIndex[sectionIndex] = this._annotationsAt(sectionIndex).filter((h) => h !== hash2);
     }
     /**
      * Get annotations by Section Index
@@ -48282,8 +49239,8 @@ var __CRWeb = (() => {
       let sectionIndex = view.index;
       if (sectionIndex in this._annotationsBySectionIndex) {
         let annotations = this._annotationsBySectionIndex[sectionIndex];
-        annotations.forEach((hash) => {
-          let annotation = this._annotations[hash];
+        annotations.forEach((hash2) => {
+          let annotation = this._annotations[hash2];
           annotation.attach(view);
         });
       }
@@ -48297,8 +49254,8 @@ var __CRWeb = (() => {
       let sectionIndex = view.index;
       if (sectionIndex in this._annotationsBySectionIndex) {
         let annotations = this._annotationsBySectionIndex[sectionIndex];
-        annotations.forEach((hash) => {
-          let annotation = this._annotations[hash];
+        annotations.forEach((hash2) => {
+          let annotation = this._annotations[hash2];
           annotation.detach(view);
         });
       }
@@ -52681,39 +53638,7 @@ var __CRWeb = (() => {
     }
   }
   function charRangeInElement(el, start, end) {
-    var _a, _b, _c, _d;
-    const doc = el.ownerDocument;
-    const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-    let offset = 0;
-    let sNode = null, sOff = 0;
-    let eNode = null, eOff = 0;
-    let node;
-    while (node = walker.nextNode()) {
-      const len = (_b = (_a = node.textContent) == null ? void 0 : _a.length) != null ? _b : 0;
-      if (!sNode && offset + len > start) {
-        sNode = node;
-        sOff = start - offset;
-      }
-      if (offset + len >= end) {
-        eNode = node;
-        eOff = end - offset;
-        break;
-      }
-      offset += len;
-    }
-    if (!sNode) return null;
-    if (!eNode) {
-      eNode = sNode;
-      eOff = (_d = (_c = sNode.textContent) == null ? void 0 : _c.length) != null ? _d : 0;
-    }
-    const r = doc.createRange();
-    try {
-      r.setStart(sNode, Math.max(0, sOff));
-      r.setEnd(eNode, Math.max(0, eOff));
-    } catch (e) {
-      return null;
-    }
-    return r;
+    return sourceRange(el, start, end);
   }
   function isCJKCh(ch) {
     if (!ch) return false;
@@ -52844,9 +53769,11 @@ var __CRWeb = (() => {
       rects.forEach((rc) => {
         if (rc.width < 2 || rc.height < 2) return;
         if (el && deps.acceptHighlightRect && !deps.acceptHighlightRect(el, rc)) return;
+        const painted = el && deps.clipHighlightRect ? deps.clipHighlightRect(el, rc) : rc;
+        if (!painted) return;
         const d = ownerDocument.createElement("div");
         d.className = "cr-hl-ov";
-        d.style.cssText = `position:absolute;left:${rc.left + sx}px;top:${rc.top + sy}px;width:${rc.width}px;height:${rc.height}px;background:${hexToRgba(color, 0.34)};pointer-events:none;z-index:2147483000;border-radius:3px;mix-blend-mode:multiply`;
+        d.style.cssText = `position:absolute;left:${painted.left + sx}px;top:${painted.top + sy}px;width:${painted.width}px;height:${painted.height}px;background:${hexToRgba(color, 0.34)};pointer-events:none;z-index:2147483000;border-radius:3px;mix-blend-mode:multiply`;
         host.appendChild(d);
         overlayNodes.add(d);
         n++;
@@ -52876,7 +53803,7 @@ var __CRWeb = (() => {
       return null;
     }
     function buildWordRanges(el, words, startCursor) {
-      const fullText = el.textContent || "";
+      const fullText = sourceText(el);
       const lower = fullText.toLowerCase();
       const ranges = [];
       let searchPos = Math.max(0, Math.min(startCursor, fullText.length));
@@ -52915,7 +53842,10 @@ var __CRWeb = (() => {
       }
       return { ranges, cursor: searchPos };
     }
+    let extractionRevision = 0;
     function doExtract(reason) {
+      var _a2;
+      const revision = ++extractionRevision;
       let paras = [];
       try {
         paras = extract2();
@@ -52933,6 +53863,7 @@ var __CRWeb = (() => {
       paraOffsets.clear();
       const out = [];
       paras.forEach((p, i) => {
+        var _a3;
         const el = p.element;
         installParagraphTaps(el.ownerDocument);
         try {
@@ -52950,6 +53881,8 @@ var __CRWeb = (() => {
           row.extendedUTF16Length = p.speechText.length;
           row.speechText = p.speechText;
         }
+        row.domUTF16Start = p.charOffset || 0;
+        if (p.speechText && typeof p.sourceStart === "number") row.sourceSpeechEnd = (_a3 = p.sourceSpeechEnd) != null ? _a3 : p.sourceStart + p.speechText.length;
         if (typeof p.sourceParagraphIndex === "number") row.sourceParagraphIndex = p.sourceParagraphIndex;
         if (typeof p.sourceStart === "number") row.sourceUTF16Start = p.sourceStart;
         if (typeof p.sourceEnd === "number") row.sourceUTF16End = p.sourceEnd;
@@ -52963,13 +53896,45 @@ var __CRWeb = (() => {
         } catch (e) {
         }
       }
-      post("rendered", payload);
+      const cue = payload.sourcePresentation;
+      delete payload.sourcePresentation;
+      const send = () => post("rendered", payload);
+      const targets = cue && reason === "auto" && typeof cue.id === "string" && typeof cue.text === "string" && cue.text.length > 0 && Number.isSafeInteger(cue.sourceParagraphIndex) && Number.isSafeInteger(cue.sourceStart) && Number.isSafeInteger(cue.sourceEnd) && cue.sourceStart >= 0 && cue.sourceEnd > cue.sourceStart ? paras.filter((p) => p.sourceParagraphIndex === cue.sourceParagraphIndex && typeof p.sourceStart === "number" && typeof p.sourceEnd === "number" && p.sourceStart < cue.sourceEnd && p.sourceEnd > cue.sourceStart) : [];
+      const target = targets.length === 1 ? targets[0] : void 0;
+      const start = target && cue ? Math.max(target.sourceStart, cue.sourceStart) : 0;
+      const end = target && cue ? Math.min(target.sourceEnd, cue.sourceEnd) : 0;
+      const domStart = target ? (target.charOffset || 0) + start - target.sourceStart : 0;
+      const expected = (_a2 = cue == null ? void 0 : cue.text) == null ? void 0 : _a2.slice(start - cue.sourceStart, end - cue.sourceStart);
+      if (target && cue && end > start && sourceText(target.element).slice(domStart, domStart + end - start) === expected && setOverlay(target.element, domStart, domStart + end - start) > 0) {
+        const painted = [...overlayNodes];
+        const signature = payload.signature;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          var _a3;
+          if (revision !== extractionRevision || ((_a3 = deps.pageMeta) == null ? void 0 : _a3.call(deps).signature) !== signature) return;
+          if (painted.every((node) => node.isConnected && overlayNodes.has(node))) {
+            payload.presentedOperationID = cue.id;
+          }
+          send();
+        }));
+      } else {
+        send();
+      }
+      ;
       window.__crLastRendered = out;
       log(`extracted ${out.length} paragraphs${reason ? " reason=" + reason : ""}`);
     }
     const CR = {
       version: "m1",
       extract: doExtract,
+      confirmPresentation(arg) {
+        const acknowledge = () => {
+          var _a2;
+          const meta = ((_a2 = deps.pageMeta) == null ? void 0 : _a2.call(deps)) || {};
+          const ready2 = meta.signature === arg.signature && [...overlayNodes].some((node) => node.isConnected && [...node.getClientRects()].some((r) => r.width > 0 && r.height > 0));
+          post("pagePresentationReady", __spreadProps(__spreadValues({}, meta), { holdID: arg.holdID, ready: ready2 }));
+        };
+        requestAnimationFrame(() => requestAnimationFrame(acknowledge));
+      },
       // 本地 DOCX：native 传 base64 字节 → mammoth 转 HTML 注入 DOM → 复用 Visual Zone 提取（不上传后端）。
       renderDocx(arg) {
         try {
@@ -53182,6 +54147,252 @@ var __CRWeb = (() => {
     }
   }
 
+  // src/play-books-native-pages.ts
+  var snapshotDiagnostic = "";
+  function playBooksSnapshotDiagnostic() {
+    return snapshotDiagnostic;
+  }
+  function normalizedText(raw) {
+    let text = "";
+    const starts = [], ends = [];
+    for (let i = 0; i < raw.length; i++) {
+      if (/[\u00ad\u200b\ufeff]/u.test(raw[i])) continue;
+      if (/\s/u.test(raw[i])) {
+        if (!text || text.endsWith(" ")) continue;
+        text += " ";
+      } else text += raw[i];
+      starts.push(i);
+      ends.push(i + 1);
+    }
+    if (text.endsWith(" ")) {
+      text = text.slice(0, -1);
+      starts.pop();
+      ends.pop();
+    }
+    return { text, starts, ends };
+  }
+  function hash(text) {
+    let value = 2166136261;
+    for (let i = 0; i < text.length; i++) value = Math.imul(value ^ text.charCodeAt(i), 16777619);
+    return (value >>> 0).toString(36);
+  }
+  function pageKey(id, blocks) {
+    return `${id}:${hash(JSON.stringify(blocks.map((block) => [block.text, block.reopened, block.sliced])))}`;
+  }
+  function measuredSourceCut(previous, next, visiblePrefix) {
+    const full = normalizedText(previous.raw), suffix = normalizedText(next.raw).text;
+    if (full.text.endsWith(suffix)) {
+      const length = full.text.length - suffix.length;
+      return length ? full.starts[length] : 0;
+    }
+    if (previous.closed || !Array.isArray(previous.boundaries) || !Array.isArray(next.boundaries)) return null;
+    const cuts = /* @__PURE__ */ new Set();
+    if (visiblePrefix !== void 0) {
+      const cut = visiblePrefix.length;
+      if (!previous.raw.startsWith(visiblePrefix) || cut <= 0 || cut >= previous.raw.length || previous.raw.slice(cut) !== next.raw.slice(0, previous.raw.length - cut)) return null;
+      cuts.add(cut);
+    }
+    for (const marker of previous.boundaries) {
+      const matches = next.boundaries.filter((other) => other.stream === marker.stream);
+      if (!matches.length) continue;
+      if (matches.length !== 1 || !Number.isInteger(marker.offset) || !Number.isInteger(matches[0].offset)) return null;
+      const cut = marker.offset - matches[0].offset;
+      if (cut < 0 || cut >= previous.raw.length || previous.raw.slice(cut) !== next.raw.slice(0, previous.raw.length - cut)) return null;
+      cuts.add(cut);
+    }
+    return cuts.size === 1 ? [...cuts][0] : null;
+  }
+  function measuredPages(group2, visible = []) {
+    var _a, _b, _c, _d;
+    if (!Array.isArray(group2.pages) || group2.pages.length > 128) return null;
+    const result2 = [];
+    for (let index = 0; index < group2.pages.length; index++) {
+      const source = group2.pages[index];
+      if (!Array.isArray(source.blocks)) return null;
+      let blocks = source.blocks.map((block) => __spreadProps(__spreadValues({}, block), { sliced: false }));
+      const next = (_b = (_a = group2.pages[index + 1]) == null ? void 0 : _a.blocks) == null ? void 0 : _b[0];
+      if (next) {
+        const cut = blocks.findIndex((block) => block.stream === next.stream);
+        if (cut >= 0) {
+          if (next.reopened) {
+            const live = (_c = visible.find((page) => page.index === index)) == null ? void 0 : _c.blocks[cut];
+            const position = measuredSourceCut(blocks[cut], next, (live == null ? void 0 : live.sliced) ? live.raw : void 0);
+            if (position === null) return null;
+            if (position > 0) {
+              blocks[cut].raw = blocks[cut].raw.slice(0, position);
+              blocks[cut].sliced = true;
+              blocks = blocks.slice(0, cut + 1);
+            } else blocks = blocks.slice(0, cut);
+          } else blocks = blocks.slice(0, cut);
+        } else if (!((_d = blocks.at(-1)) == null ? void 0 : _d.closed)) return null;
+      } else if (!source.closed) break;
+      result2.push(blocks.map((block) => {
+        const element = document.createElement("p");
+        element.textContent = block.raw;
+        return {
+          raw: block.raw,
+          text: normalizedText(block.raw).text,
+          element,
+          reopened: !!block.reopened,
+          sliced: !!block.sliced
+        };
+      }).filter((block) => /[\p{L}\p{N}]/u.test(block.text)));
+    }
+    return result2;
+  }
+  function addVerifiedMeasuredPages(pages, visible, rendered) {
+    let groups;
+    try {
+      groups = JSON.parse(document.documentElement.getAttribute("data-castreader-pb-layouts") || "[]");
+    } catch (e) {
+      snapshotDiagnostic += ";measurements=invalid-json";
+      return;
+    }
+    if (!Array.isArray(groups) || groups.length > 8) {
+      snapshotDiagnostic += ";measurements=invalid-schema";
+      return;
+    }
+    const outcomes = [];
+    const anchors = visible.flatMap((page) => {
+      var _a, _b;
+      return [
+        ...[...page.element.querySelectorAll(".gb-segment [id]")].map((anchor) => anchor.id),
+        ((_b = (_a = page.element.querySelector(".gb-segment")) == null ? void 0 : _a.getAttribute("ocean-position")) == null ? void 0 : _b.split("+")[0]) || ""
+      ];
+    }).filter((id) => id.startsWith("GBS."));
+    for (const group2 of [...groups].reverse()) {
+      const tag = `${group2.id}:${Array.isArray(group2.pages) ? group2.pages.length : -1}`;
+      if (group2.height !== parseFloat(rendered.style.height) || !group2.className || !String(group2.className).split(/\s+/).every((name) => rendered.classList.contains(name))) {
+        outcomes.push(`${tag}:layout`);
+        continue;
+      }
+      if (anchors.some((anchor) => {
+        var _a;
+        return !((_a = group2.anchors) == null ? void 0 : _a.includes(anchor));
+      })) {
+        outcomes.push(`${tag}:anchor`);
+        continue;
+      }
+      const prepared = measuredPages(group2, anchors.length ? visible : []);
+      if (!prepared) {
+        outcomes.push(`${tag}:source-cut`);
+        continue;
+      }
+      if (visible.some((page) => page.segment !== visible[0].segment || !prepared[page.index] || pageKey(page.id, prepared[page.index]) !== page.key)) {
+        outcomes.push(`${tag}:visible-mismatch:${prepared.length}`);
+        continue;
+      }
+      prepared.forEach((blocks, index) => {
+        var _a, _b;
+        const id = `page-${visible[0].segment}-${index}`;
+        const existing = pages.find((page) => page.id === id);
+        if (existing) {
+          if (index === prepared.length - 1 && ((_a = group2.pages[index]) == null ? void 0 : _a.closed)) existing.lastInSegment = true;
+        } else pages.push({
+          id,
+          segment: visible[0].segment,
+          index,
+          key: pageKey(id, blocks),
+          blocks,
+          element: document.createElement("div"),
+          lastInSegment: index === prepared.length - 1 && ((_b = group2.pages[index]) == null ? void 0 : _b.closed)
+        });
+      });
+      outcomes.push(`${tag}:accepted:${prepared.length}`);
+      break;
+    }
+    snapshotDiagnostic += `;anchors=${anchors.length};measurements=${outcomes.join(",") || "none"}`;
+  }
+  function findPlayBooksTurnButton(direction) {
+    const icon = direction === "next" ? "chevron_right" : "chevron_left";
+    return [...document.querySelectorAll("button")].find(
+      (button) => {
+        var _a, _b;
+        return ((_b = (_a = button.querySelector("mat-icon")) == null ? void 0 : _a.textContent) == null ? void 0 : _b.trim()) === icon;
+      }
+    ) || null;
+  }
+  function readPlayBooksSnapshot() {
+    var _a;
+    snapshotDiagnostic = "native=false";
+    const view = document.querySelector("reader-horizontal-view");
+    if (!view || getComputedStyle(view).direction === "rtl") return null;
+    const pages = [];
+    const current = view.querySelector("reader-page.shown reader-rendered-page.-gb-text");
+    if (!current) return null;
+    const pageLayout = (page) => `${innerWidth}:${innerHeight}:${page.className}:${page.style.width}:${page.style.height}`;
+    const layout = pageLayout(current);
+    for (const element of view.querySelectorAll("reader-page[id]")) {
+      const match = /^page-(\d+)-(\d+)$/.exec(element.id);
+      const rendered = element.querySelector("reader-rendered-page.-gb-text");
+      const segment = rendered == null ? void 0 : rendered.querySelector(".gb-segment");
+      if (!match || !rendered || !segment) continue;
+      const blocks = [...segment.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,blockquote")].filter((block) => !block.querySelector("p,h1,h2,h3,h4,h5,h6,li,blockquote")).map((element2) => {
+        const raw = element2.textContent || "";
+        return {
+          element: element2,
+          raw,
+          text: normalizedText(raw).text,
+          reopened: element2.hasAttribute("ocean-reopened-element"),
+          sliced: element2.hasAttribute("ocean-sliced-element")
+        };
+      }).filter((block) => /[\p{L}\p{N}]/u.test(block.text));
+      if (pageLayout(rendered) !== layout) continue;
+      pages.push({
+        id: element.id,
+        segment: Number(match[1]),
+        index: Number(match[2]),
+        element,
+        key: pageKey(element.id, blocks),
+        blocks
+      });
+    }
+    pages.sort((a, b) => a.segment - b.segment || a.index - b.index);
+    const visible = pages.filter((page) => {
+      if (!page.element.classList.contains("shown")) return false;
+      const rect = page.element.getBoundingClientRect();
+      const width = Math.max(0, Math.min(innerWidth, rect.right) - Math.max(0, rect.left));
+      const height = Math.max(0, Math.min(innerHeight, rect.bottom) - Math.max(0, rect.top));
+      return rect.width > 0 && rect.height > 0 && width * height >= rect.width * rect.height * 0.5;
+    });
+    if (!visible.length) return null;
+    snapshotDiagnostic = `native=true;visible=${visible.map((page) => page.id).join(",")};rendered=${pages.map((page) => page.id).join(",")}`;
+    addVerifiedMeasuredPages(pages, visible, current);
+    pages.sort((a, b) => a.segment - b.segment || a.index - b.index);
+    return {
+      layout,
+      pages,
+      visible,
+      ready: visible.every((page) => page.element.classList.contains("-gb-loaded") && page.blocks.length > 0),
+      last: ((_a = findPlayBooksTurnButton("next")) == null ? void 0 : _a.disabled) === true,
+      columns: view.querySelector("li.twopage") ? 2 : 1
+    };
+  }
+  function nextPlayBooksPage(snapshot, page) {
+    return snapshot.pages.find((next) => next.segment === page.segment && next.index === page.index + 1) || (page.lastInSegment ? snapshot.pages.find((next) => next.segment === page.segment + 1 && next.index === 0) : null) || null;
+  }
+  function appendPlayBooksPage(units, page) {
+    page.blocks.forEach((block, index) => {
+      const last2 = units.at(-1);
+      if (index === 0 && block.reopened && (last2 == null ? void 0 : last2.sliced)) {
+        const previous = last2.fragments.at(-1);
+        const raw = previous.page.blocks[previous.block].raw;
+        const separator = /\s$/u.test(raw) || /^\s/u.test(block.raw) ? " " : "";
+        const start = last2.text.length + separator.length;
+        last2.text += separator + block.text;
+        last2.fragments.push({ page, block: index, start, end: last2.text.length });
+        last2.sliced = block.sliced;
+      } else {
+        if (index === 0 && (last2 == null ? void 0 : last2.sliced)) throw new Error("play_books_unconfirmed_paragraph_continuation");
+        units.push({
+          text: block.text,
+          sliced: block.sliced,
+          fragments: [{ page, block: index, start: 0, end: block.text.length }]
+        });
+      }
+    });
+  }
+
   // src/play-books.ts
   var READER_PATH_SEGMENT = /(?:^|\/)books\/reader(?:\/|$)/;
   var PAGE_SEL = "reader-rendered-page";
@@ -53266,6 +54477,22 @@ var __CRWeb = (() => {
   }
   function pickVisiblePages(pages) {
     if (pages.length === 0) return [];
+    const nativeView = document.querySelector("reader-horizontal-view");
+    const shown = nativeView == null ? void 0 : nativeView.querySelector("reader-page.shown reader-rendered-page.-gb-text");
+    if (nativeView && !shown) return [];
+    if (shown) {
+      const layout = (p) => `${p.className}|${p.style.width}|${p.style.height}`;
+      pages = pages.filter((p) => {
+        const owner = p.closest("reader-page");
+        if (!(owner == null ? void 0 : owner.classList.contains("shown")) || layout(p) !== layout(shown)) return false;
+        for (let node = p; node; node = node.parentElement) {
+          const s = getComputedStyle(node);
+          if (s.display === "none" || s.visibility === "hidden" || Number(s.opacity || "1") < 0.99) return false;
+          if (node === nativeView) break;
+        }
+        return !!p.querySelector(".gb-segment");
+      });
+    }
     const vp = viewportRect();
     const minArea = (vp.right - vp.left) * (vp.bottom - vp.top) * 0.05;
     const cands = [];
@@ -53292,7 +54519,7 @@ var __CRWeb = (() => {
           best = page;
         }
       }
-      return best ? [best] : [];
+      return best && bestArea > 0 ? [best] : [];
     }
     cands.sort((a, b) => a.left - b.left);
     return cands.map((c) => c.el);
@@ -53310,34 +54537,8 @@ var __CRWeb = (() => {
     }
     return [];
   }
-  function textBoundaryAt(el, index) {
-    var _a, _b;
-    const doc = el.ownerDocument;
-    const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-    let offset = 0;
-    let node;
-    while (node = walker.nextNode()) {
-      const len = (_b = (_a = node.textContent) == null ? void 0 : _a.length) != null ? _b : 0;
-      if (index <= offset + len) return { node, offset: Math.max(0, index - offset) };
-      offset += len;
-    }
-    return null;
-  }
   function textRange(el, start, end) {
-    if (start < 0 || end <= start) return null;
-    const textLength = (el.textContent || "").length;
-    if (end > textLength) return null;
-    const startBoundary = textBoundaryAt(el, start);
-    const endBoundary = textBoundaryAt(el, end);
-    if (!startBoundary || !endBoundary) return null;
-    const range2 = el.ownerDocument.createRange();
-    try {
-      range2.setStart(startBoundary.node, startBoundary.offset);
-      range2.setEnd(endBoundary.node, endBoundary.offset);
-    } catch (e) {
-      return null;
-    }
-    return range2;
+    return sourceRange(el, start, end);
   }
   function writingModeFor(el) {
     var _a;
@@ -53383,7 +54584,7 @@ var __CRWeb = (() => {
     return current >= 56320 && current <= 57343 && previous >= 55296 && previous <= 56319 ? index + 1 : index;
   }
   function visibleCharRange(el, clip) {
-    const text = el.textContent || "";
+    const text = sourceText(el);
     if (text.length === 0) return null;
     const writingMode = writingModeFor(el);
     if (!rangeHasCompleteBlockFragment(
@@ -53427,16 +54628,22 @@ var __CRWeb = (() => {
     const end = alignEndToCodePoint(text, Math.min(text.length, lastSuffixStart + 1));
     return end > start ? { start, end } : null;
   }
-  function visibleCharRanges(el, clip) {
-    const text = el.textContent || "";
+  function visibleCharRanges(el, clip, acceptsFragment) {
+    const text = sourceText(el);
     if (text.length === 0) return [];
     const writingMode = writingModeFor(el);
     const ranges = [];
-    const hasVisibleFragment = (start, end) => rangeHasCompleteBlockFragment(
-      textRange(el, start, end),
-      clip,
-      writingMode
-    );
+    const hasVisibleFragment = (start, end) => {
+      if (acceptsFragment) {
+        const range2 = textRange(el, start, end);
+        return !!range2 && Array.from(range2.getClientRects()).some(acceptsFragment);
+      }
+      return rangeHasCompleteBlockFragment(
+        textRange(el, start, end),
+        clip,
+        writingMode
+      );
+    };
     const isFullyVisible = (start, end) => {
       const range2 = textRange(el, start, end);
       if (!range2) return false;
@@ -53446,6 +54653,10 @@ var __CRWeb = (() => {
         const rect = rects[index];
         if (rect.width <= 0 || rect.height <= 0) continue;
         sawRect = true;
+        if (acceptsFragment) {
+          if (!acceptsFragment(rect)) return false;
+          continue;
+        }
         const hit = intersect(rect, clip);
         if (!hit) return false;
         const blockComplete = rectHasCompleteBlockCoverage(
@@ -53571,12 +54782,12 @@ var __CRWeb = (() => {
     return out.sort().join("&");
   }
   function stableHash32(value) {
-    let hash = 2166136261;
+    let hash2 = 2166136261;
     for (let i = 0; i < value.length; i++) {
-      hash ^= value.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
+      hash2 ^= value.charCodeAt(i);
+      hash2 = Math.imul(hash2, 16777619);
     }
-    return hash >>> 0;
+    return hash2 >>> 0;
   }
   function sourceID(el) {
     const segment = el.closest(SEGMENT_SEL);
@@ -53742,7 +54953,53 @@ var __CRWeb = (() => {
     }
     return out;
   }
+  function nativeParagraphs(snapshot, keys2) {
+    var _a;
+    const units = [];
+    let previous;
+    for (const page of snapshot.pages) {
+      if (previous && (page.segment !== previous.segment || page.index !== previous.index + 1)) {
+        if ((_a = units.at(-1)) == null ? void 0 : _a.sliced) units.at(-1).sliced = false;
+      }
+      appendPlayBooksPage(units, page);
+      previous = page;
+    }
+    const out = [];
+    for (const unit of units) {
+      const origin = unit.fragments[0];
+      const identity2 = stableHash32(`${location.pathname}${location.search}|${snapshot.layout}|${origin.page.id}:${origin.block}`);
+      for (const fragment of unit.fragments) {
+        if (!keys2.has(fragment.page.key)) continue;
+        const block = fragment.page.blocks[fragment.block];
+        if (!block.element.isConnected && snapshot.visible.some((p) => p.key === fragment.page.key)) return [];
+        block.element.dataset.crNativeNormalized = "true";
+        const para = {
+          text: unit.text.slice(fragment.start, fragment.end),
+          element: block.element,
+          exactText: true,
+          charOffset: 0,
+          sourceParagraphIndex: identity2,
+          sourceStart: fragment.start,
+          sourceEnd: fragment.end
+        };
+        const isVisibleTail = fragment.page.key === [...keys2].at(-1) && fragment.block === fragment.page.blocks.length - 1;
+        if (isVisibleTail && !endsAtSentence(para.text)) {
+          const end = extendToSentenceEnd(unit.text, fragment.end);
+          if (end > fragment.end) {
+            para.speechText = unit.text.slice(fragment.start, end);
+            para.sourceSpeechEnd = end;
+          }
+        }
+        out.push(para);
+      }
+    }
+    return out;
+  }
   function extractPlayBooksParagraphs() {
+    if (document.querySelector("reader-horizontal-view")) {
+      const snapshot = readPlayBooksSnapshot();
+      return (snapshot == null ? void 0 : snapshot.ready) ? nativeParagraphs(snapshot, new Set(snapshot.visible.map((p) => p.key))) : [];
+    }
     const pageClips = currentPlayBooksPageClips();
     refreshPlayBooksPageEdgeGuards(pageClips);
     return extractPlayBooksParagraphsFromClips(pageClips);
@@ -53826,6 +55083,7 @@ var __CRWeb = (() => {
     return null;
   }
   function extractPlayBooksNextSpeechPreview() {
+    if (document.querySelector("reader-horizontal-view")) return null;
     const current = extractPlayBooksParagraphs();
     const tail = current[current.length - 1];
     if (!tail) return null;
@@ -53898,6 +55156,19 @@ var __CRWeb = (() => {
     return null;
   }
   function extractPlayBooksNextPagePreview() {
+    if (document.querySelector("reader-horizontal-view")) {
+      const snapshot = readPlayBooksSnapshot();
+      if (!(snapshot == null ? void 0 : snapshot.ready)) return null;
+      let page = nextPlayBooksPage(snapshot, snapshot.visible.at(-1));
+      const keys2 = [];
+      for (let index = 0; index < snapshot.columns && page; index++) {
+        keys2.push(page.key);
+        page = nextPlayBooksPage(snapshot, page);
+      }
+      if (!keys2.length) return null;
+      const paragraphs2 = nativeParagraphs(snapshot, new Set(keys2));
+      return paragraphs2.length ? { paragraphs: paragraphs2, contentFingerprint: candidateFingerprint(paragraphs2) } : null;
+    }
     const currentClips = currentPlayBooksPageClips();
     const current = extractPlayBooksParagraphsFromClips(currentClips);
     if (currentClips.length === 0 || current.length === 0) return null;
@@ -53991,7 +55262,7 @@ var __CRWeb = (() => {
     const anchors = [];
     for (const el of Array.from(document.querySelectorAll("span, div, p"))) {
       if (!(el instanceof HTMLElement)) continue;
-      const text = el.textContent || "";
+      const text = sourceText(el);
       if (text.length > 40 || !/\d+\s*\/\s*\d+\s*$/.test(text)) continue;
       const rect = el.getBoundingClientRect();
       if (rect.width <= 0 || rect.width > 240 || rect.height <= 0) continue;
@@ -54012,6 +55283,15 @@ var __CRWeb = (() => {
     return null;
   }
   function clickablePageButton(direction) {
+    const icon = direction === "next" ? "chevron_right" : "chevron_left";
+    const native = Array.from(document.querySelectorAll("button")).find((button) => {
+      var _a, _b;
+      return ((_b = (_a = button.querySelector("mat-icon")) == null ? void 0 : _a.textContent) == null ? void 0 : _b.trim()) === icon && usablePagerControl(button);
+    });
+    if (native) {
+      lastButtonDiscovery = "structural";
+      return native;
+    }
     const selectors = direction === "next" ? [
       'button[aria-label="Next Page"]',
       'button[aria-label*="next page" i]',
@@ -54116,8 +55396,39 @@ var __CRWeb = (() => {
     }
     return "none";
   }
+  function visibleImageOnlyPages() {
+    const horizontal = document.querySelector("reader-horizontal-view");
+    const candidates = horizontal ? Array.from(horizontal.querySelectorAll("reader-page.shown reader-rendered-page")) : pickVisiblePages(Array.from(document.querySelectorAll(PAGE_SEL)));
+    return candidates.filter((page) => {
+      if ((page.textContent || "").trim()) return false;
+      let clip = viewportRect();
+      for (let node = page; node && clip; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") < 0.99) return false;
+        if (node === page || /(hidden|clip|scroll|auto)/.test(style.overflow + style.overflowX + style.overflowY)) {
+          clip = intersect(clip, node.getBoundingClientRect());
+        }
+      }
+      if (!clip) return false;
+      return Array.from(page.querySelectorAll("img,svg image")).some((img) => {
+        if (img instanceof HTMLImageElement) {
+          if (!img.complete || img.naturalWidth < 64 || img.naturalHeight < 64) return false;
+        } else {
+          if (!(img instanceof SVGImageElement) || !img.href.baseVal || !page.closest("reader-page.shown.-gb-loaded")) return false;
+        }
+        const style = getComputedStyle(img);
+        if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") < 0.99) return false;
+        const hit = intersect(clip, img.getBoundingClientRect());
+        return !!hit && (hit.right - hit.left) * (hit.bottom - hit.top) > window.innerWidth * window.innerHeight * 0.1;
+      });
+    });
+  }
+  function playBooksSurfaceKind() {
+    return visibleImageOnlyPages().length > 0 ? "image-only" : void 0;
+  }
   function playBooksSignature() {
-    const pages = pickVisiblePages(Array.from(document.querySelectorAll(PAGE_SEL)));
+    let pages = pickVisiblePages(Array.from(document.querySelectorAll(PAGE_SEL)));
+    if (pages.length === 0) pages = visibleImageOnlyPages();
     if (pages.length === 0) return "";
     const parts = [];
     for (const page of pages) {
@@ -54179,6 +55490,8 @@ var __CRWeb = (() => {
     let committedSignature = playBooksSignature();
     let observedSignature = committedSignature;
     let pendingAuto = false;
+    let pendingNativeTarget = null;
+    let nativeTurnObservation = 0;
     let pendingAutoMetadata = null;
     let lateAutoTurn = null;
     let settleTimer = null;
@@ -54229,7 +55542,8 @@ var __CRWeb = (() => {
             postForFrame("googleBooksPreviewDiagnostic", {
               event: "geometry-miss",
               sourceSignature,
-              attempt
+              attempt,
+              layoutDiagnostic: playBooksSnapshotDiagnostic()
             });
           }
           const speechPreview = extractPlayBooksNextSpeechPreview();
@@ -54264,18 +55578,21 @@ var __CRWeb = (() => {
         if (token === lastPreviewToken) return;
         lastPreviewToken = token;
         const paragraphs = preview.paragraphs.map((p, paragraphIndex) => {
+          var _a;
           const row = {
             paragraphIndex,
             text: p.text,
             type: "paragraph",
             sourceParagraphIndex: p.sourceParagraphIndex,
             sourceUTF16Start: p.sourceStart,
-            sourceUTF16End: p.sourceEnd
+            sourceUTF16End: p.sourceEnd,
+            domUTF16Start: p.charOffset
           };
           if (p.speechText && p.speechText !== p.text) {
             row.boundaryUTF16Offset = p.text.length;
             row.extendedUTF16Length = p.speechText.length;
             row.speechText = p.speechText;
+            row.sourceSpeechEnd = (_a = p.sourceSpeechEnd) != null ? _a : p.sourceStart + p.speechText.length;
           }
           return row;
         });
@@ -54294,6 +55611,9 @@ var __CRWeb = (() => {
       manualSwipeActive = false;
     };
     const clearAutoTurn = () => {
+      if (nativeTurnObservation) cancelAnimationFrame(nativeTurnObservation);
+      nativeTurnObservation = 0;
+      pendingNativeTarget = null;
       pendingAuto = false;
       pendingAutoMetadata = null;
       pendingTurnMethod = null;
@@ -54316,11 +55636,11 @@ var __CRWeb = (() => {
     };
     const automaticMetadata2 = (arg, fallbackBaseline) => {
       const value = recordArg(arg);
-      return {
+      return __spreadValues({
         turnID: nonemptyString(value.turnID) || protocolID("auto"),
         baselineSignature: nonemptyOpaqueString(value.baselineSignature) || fallbackBaseline,
         originFrameSessionID: nonemptyString(value.originFrameSessionID) || frameSessionID
-      };
+      }, value.sourcePresentation && typeof value.sourcePresentation === "object" ? { sourcePresentation: value.sourcePresentation } : {});
     };
     const manualMetadata2 = (arg, fallbackBaseline) => {
       const value = recordArg(arg);
@@ -54341,11 +55661,31 @@ var __CRWeb = (() => {
         expiresAt: Date.now() + AUTO_TURN_TOMBSTONE_TTL_MS
       };
     };
+    const nativePresentationWitness = () => {
+      var _a, _b;
+      if (!pendingAuto || !pendingNativeTarget || manualSwipeActive) return null;
+      const snapshot = readPlayBooksSnapshot();
+      if (!(snapshot == null ? void 0 : snapshot.ready) || ((_a = snapshot.visible[0]) == null ? void 0 : _a.key) !== pendingNativeTarget) return null;
+      const geometry = [];
+      for (const page of snapshot.visible) {
+        for (let node = page.element; node; node = node.parentElement) {
+          const style = getComputedStyle(node);
+          if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") < 0.99) return null;
+          if ((_b = node.getAnimations) == null ? void 0 : _b.call(node).some((animation) => animation.playState === "running" || animation.pending)) return null;
+        }
+        const r = page.element.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0 || r.left < -0.5 || r.right > innerWidth + 0.5) return null;
+        geometry.push([r.left, r.top, r.width, r.height]);
+      }
+      return JSON.stringify([snapshot.layout, snapshot.visible.map((page) => page.key), geometry]);
+    };
     const commit = (reason, attempt = 0, forceExtract = false) => {
       if (settleTimer) clearTimeout(settleTimer);
       settleCandidate = playBooksSignature();
       settleCandidateSince = Date.now();
       settleStableSamples = 1;
+      let nativeWitness = reason === "auto" ? nativePresentationWitness() : null;
+      let nativeSamples = nativeWitness ? 1 : 0;
       const verifyStable = () => {
         settleTimer = setTimeout(() => {
           settleTimer = null;
@@ -54355,11 +55695,17 @@ var __CRWeb = (() => {
             settleCandidate = current;
             settleCandidateSince = Date.now();
             settleStableSamples = 1;
+            nativeWitness = null;
+            nativeSamples = 0;
             verifyStable();
             return;
           }
           settleStableSamples += 1;
-          if (settleStableSamples < 2 || Date.now() - settleCandidateSince < MIN_STABLE_MS) {
+          const witness = reason === "auto" ? nativePresentationWitness() : null;
+          nativeSamples = witness && witness === nativeWitness ? nativeSamples + 1 : witness ? 1 : 0;
+          nativeWitness = witness;
+          const nativePresented = !!witness && nativeSamples >= 2;
+          if (reason === "auto" && pendingNativeTarget ? !nativePresented : settleStableSamples < 2 || Date.now() - settleCandidateSince < MIN_STABLE_MS) {
             verifyStable();
             return;
           }
@@ -54367,7 +55713,7 @@ var __CRWeb = (() => {
             verifyStable();
             return;
           }
-          if (extractPlayBooksParagraphs().length === 0 && attempt < 6) {
+          if (extractPlayBooksParagraphs().length === 0 && playBooksSurfaceKind() !== "image-only" && attempt < 6) {
             settleCandidateSince = Date.now();
             settleStableSamples = 1;
             commit(reason, attempt + 1, forceExtract);
@@ -54415,10 +55761,10 @@ var __CRWeb = (() => {
               baselineSignature: changeBaseline
             }, payloadFor(committedMetadata)));
           }
-          requestExtract(reason, payloadFor(committedMetadata));
+          requestExtract(reason, __spreadProps(__spreadValues({}, payloadFor(committedMetadata)), { presentation: nativePresented ? "native-paint" : "stable-geometry" }));
           clearSettledChange(reason);
           scheduleNextPagePreview();
-        }, STABILITY_POLL_MS);
+        }, reason === "auto" && pendingNativeTarget ? 16 : STABILITY_POLL_MS);
       };
       verifyStable();
     };
@@ -54432,6 +55778,7 @@ var __CRWeb = (() => {
       return false;
     };
     const attemptTurn = (direction, arg) => {
+      var _a;
       if (pendingAuto) return false;
       const visualBaseline = playBooksSignature() || committedSignature;
       const metadata = automaticMetadata2(arg, visualBaseline);
@@ -54464,7 +55811,19 @@ var __CRWeb = (() => {
       pendingTurnBaseline = visualBaseline;
       announceTurnOwner(metadata);
       clearPageVisuals2();
+      const nativeBaseline = direction === "next" ? readPlayBooksSnapshot() : null;
+      const lastVisible = nativeBaseline == null ? void 0 : nativeBaseline.visible.at(-1);
+      pendingNativeTarget = (nativeBaseline == null ? void 0 : nativeBaseline.ready) && lastVisible ? ((_a = nextPlayBooksPage(nativeBaseline, lastVisible)) == null ? void 0 : _a.key) || null : null;
       pendingTurnMethod = turnPlayBooksPage(direction, method);
+      if (pendingNativeTarget) {
+        const observeNativeTurn = () => {
+          nativeTurnObservation = 0;
+          if (!pendingAuto) return;
+          observePageChange();
+          if (pendingAuto) nativeTurnObservation = requestAnimationFrame(observeNativeTurn);
+        };
+        nativeTurnObservation = requestAnimationFrame(observeNativeTurn);
+      }
       if (pendingTurnMethod === "none") {
         clearAutoTurn();
         postForFrame("googleBooksTurnFailed", __spreadValues({
@@ -54701,7 +56060,7 @@ var __CRWeb = (() => {
       const direction = directions[event.key];
       if (direction) postManualIntent("page-key", direction);
     }, true);
-    setInterval(() => {
+    const observePageChange = () => {
       const signature = playBooksSignature();
       if (!signature || signature === observedSignature) return;
       observedSignature = signature;
@@ -54717,11 +56076,12 @@ var __CRWeb = (() => {
         changeMetadata = reason === "auto" ? pendingAutoMetadata || (late == null ? void 0 : late.metadata) || null : reason === "manual" ? manualIntentMetadata : null;
       }
       commit(reason);
-    }, 250);
+    };
+    setInterval(observePageChange, 250);
     let waited = 0;
     const boot = setInterval(() => {
       waited += 200;
-      if (document.querySelector(`${PAGE_SEL} ${SEGMENT_SEL}`) || waited >= 15e3) {
+      if (document.querySelector(`${PAGE_SEL} ${SEGMENT_SEL}`) || playBooksSurfaceKind() === "image-only" || waited >= 15e3) {
         clearInterval(boot);
         committedSignature = playBooksSignature();
         observedSignature = committedSignature;
@@ -54748,7 +56108,8 @@ var __CRWeb = (() => {
       "gbManualPage",
       "gbRefresh",
       "gbRetargetTurnBaseline",
-      "gbCompleteTurn"
+      "gbCompleteTurn",
+      "confirmPresentation"
     ];
     let turnContext = null;
     const protocolArg = (arg) => {
@@ -54945,9 +56306,7 @@ var __CRWeb = (() => {
   var MIN_FRAME_TEXT_CHARS = 2;
   var FRAME_SESSION_PROPERTY2 = "__castreaderKoboFrameSessionID";
   var TYPOGRAPHY_STYLE_ID = "castreader-kobo-typography";
-  var KOBO_ADAPTER_VERSION = "2026-07-30-landscape-v3";
-  var COMPLETE_BLOCK_FRAGMENT_RATIO2 = 0.98;
-  var COMPLETE_BLOCK_FRAGMENT_TOLERANCE2 = 0.5;
+  var KOBO_ADAPTER_VERSION = "2026-09-29-native-clip-v4";
   var AUTO_TURN_TOMBSTONE_TTL_MS2 = 3e4;
   var REFLOW_MIN_STABLE_MS = 1250;
   var REFLOW_MIN_STABLE_SAMPLES = 5;
@@ -55153,6 +56512,50 @@ var __CRWeb = (() => {
       return null;
     }
   }
+  function koboReadingLocationFromRange(bookUUID, raw) {
+    var _a, _b;
+    if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(bookUUID)) return null;
+    const range2 = raw;
+    const pages = range2 == null ? void 0 : range2.pagesOfBook;
+    const first2 = (_a = range2 == null ? void 0 : range2.begin) == null ? void 0 : _a.pageIndexInBook;
+    const last2 = (_b = range2 == null ? void 0 : range2.end) == null ? void 0 : _b.pageIndexInBook;
+    if (typeof pages !== "number" || !Number.isInteger(pages) || pages < 1 || typeof first2 !== "number" || !Number.isInteger(first2) || first2 < 0 || first2 >= pages || first2 !== last2) return null;
+    return { bookUUID: bookUUID.toLowerCase(), percentage: (first2 + 1) / pages };
+  }
+  function koboReadingLocation() {
+    const transport = koboSemanticTransport;
+    if ((transport == null ? void 0 : transport.kind) !== "ur-engine") return null;
+    const api = currentKoboURAPI(transport);
+    if (typeof (api == null ? void 0 : api.getCurrentReadingRange) !== "function") return null;
+    try {
+      return koboReadingLocationFromRange(
+        location.pathname.split("/").filter(Boolean)[0] || "",
+        api.getCurrentReadingRange.call(api)
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+  function koboBookEndFromRange(raw) {
+    var _a, _b;
+    const range2 = raw;
+    const pages = range2 == null ? void 0 : range2.pagesOfBook;
+    const first2 = (_a = range2 == null ? void 0 : range2.begin) == null ? void 0 : _a.pageIndexInBook;
+    const last2 = (_b = range2 == null ? void 0 : range2.end) == null ? void 0 : _b.pageIndexInBook;
+    if (typeof pages !== "number" || !Number.isInteger(pages) || pages < 1 || typeof first2 !== "number" || !Number.isInteger(first2) || first2 < 0 || typeof last2 !== "number" || !Number.isInteger(last2) || first2 > last2 || last2 !== pages - 1) return null;
+    return { pagesOfBook: pages, firstPage: first2, lastPage: last2 };
+  }
+  function currentKoboBookEnd() {
+    const transport = koboSemanticTransport;
+    if ((transport == null ? void 0 : transport.kind) !== "ur-engine") return null;
+    const api = currentKoboURAPI(transport);
+    if (typeof (api == null ? void 0 : api.getCurrentReadingRange) !== "function") return null;
+    try {
+      return koboBookEndFromRange(api.getCurrentReadingRange.call(api));
+    } catch (e) {
+      return null;
+    }
+  }
   function koboSemanticTransportReady(direction = "next") {
     const transport = koboSemanticTransport;
     if (!transport) return false;
@@ -55290,12 +56693,12 @@ var __CRWeb = (() => {
     return `${value.length}:${value.slice(0, 96)}:${value.slice(-96)}`;
   }
   function stableHash322(value) {
-    let hash = 2166136261;
+    let hash2 = 2166136261;
     for (let index = 0; index < value.length; index++) {
-      hash ^= value.charCodeAt(index);
-      hash = Math.imul(hash, 16777619);
+      hash2 ^= value.charCodeAt(index);
+      hash2 = Math.imul(hash2, 16777619);
     }
-    return hash >>> 0;
+    return hash2 >>> 0;
   }
   function logicalAttributes2(element) {
     const values2 = [];
@@ -55328,7 +56731,7 @@ var __CRWeb = (() => {
     if (!doc.body) return false;
     if ((doc.body.textContent || "").trim().length < MIN_FRAME_TEXT_CHARS) return false;
     return paragraphNodes2(doc).some(
-      (element) => (element.textContent || "").trim().length >= MIN_PARA_CHARS2
+      (element) => sourceText(element).trim().length >= MIN_PARA_CHARS2
     );
   }
   function koboReaderFailureCode() {
@@ -55380,14 +56783,6 @@ var __CRWeb = (() => {
   function isVerticalWritingMode2(mode) {
     return /^(vertical|sideways)/i.test(mode);
   }
-  function rectHasCompleteBlockCoverage2(rect, clip, writingMode) {
-    const hit = intersect2(rect, clip);
-    if (!hit) return false;
-    const vertical = isVerticalWritingMode2(writingMode);
-    const full = vertical ? Math.max(0, rect.right - rect.left) : Math.max(0, rect.bottom - rect.top);
-    const visible = vertical ? Math.max(0, hit.right - hit.left) : Math.max(0, hit.bottom - hit.top);
-    return full > 0 && visible > 0 && visible + COMPLETE_BLOCK_FRAGMENT_TOLERANCE2 >= full * COMPLETE_BLOCK_FRAGMENT_RATIO2;
-  }
   function frameClip(iframe, doc, frameIndex) {
     var _a, _b;
     let style;
@@ -55396,15 +56791,17 @@ var __CRWeb = (() => {
     } catch (e) {
       return null;
     }
-    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") <= 0.01) return null;
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") < 0.99) return null;
     const rect = iframe.getBoundingClientRect();
     if (rect.width <= 1 || rect.height <= 1) return null;
     let viewport = topViewport();
     for (let parent2 = iframe.parentElement; parent2; parent2 = parent2.parentElement) {
       const parentStyle = getComputedStyle(parent2);
+      if (parentStyle.display === "none" || parentStyle.visibility === "hidden" || Number(parentStyle.opacity || "1") < 0.99) return null;
       const paintClip = /(?:^|\s)(paint|strict|content)(?:\s|$)/.test(parentStyle.contain);
-      const clipsX = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowX);
-      const clipsY = paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowY);
+      const nativeBookView = parent2.id === "BookView";
+      const clipsX = nativeBookView || paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowX);
+      const clipsY = nativeBookView || paintClip || /^(hidden|clip|scroll|auto)$/.test(parentStyle.overflowY);
       if (!clipsX && !clipsY) continue;
       const box = parent2.getBoundingClientRect();
       const sx = box.width / Math.max(1, parent2.offsetWidth);
@@ -55429,19 +56826,19 @@ var __CRWeb = (() => {
     const scaleY = rect.height / layoutHeight;
     const contentLeft = rect.left + iframe.clientLeft * scaleX;
     const contentTop = rect.top + iframe.clientTop * scaleY;
-    const innerWidth = Math.max(
+    const innerWidth2 = Math.max(
       1,
       ((_a = iframe.contentWindow) == null ? void 0 : _a.innerWidth) || iframe.clientWidth || layoutWidth
     );
-    const innerHeight = Math.max(
+    const innerHeight2 = Math.max(
       1,
       ((_b = iframe.contentWindow) == null ? void 0 : _b.innerHeight) || iframe.clientHeight || layoutHeight
     );
     const mapped = {
       left: Math.max(0, (hit.left - contentLeft) / scaleX),
       top: Math.max(0, (hit.top - contentTop) / scaleY),
-      right: Math.min(innerWidth, (hit.right - contentLeft) / scaleX),
-      bottom: Math.min(innerHeight, (hit.bottom - contentTop) / scaleY)
+      right: Math.min(innerWidth2, (hit.right - contentLeft) / scaleX),
+      bottom: Math.min(innerHeight2, (hit.bottom - contentTop) / scaleY)
     };
     if (mapped.right <= mapped.left || mapped.bottom <= mapped.top) return null;
     return {
@@ -55457,7 +56854,8 @@ var __CRWeb = (() => {
   }
   function allAccessibleFrames() {
     const result2 = [];
-    const frames = Array.from(document.querySelectorAll("iframe")).filter((node) => node instanceof HTMLIFrameElement);
+    const nativeFrames = Array.from(document.querySelectorAll("#BookView .ReadingItem iframe[data-chapterurl], #BookView .ReadingItem iframe[srcdoc], iframe[data-chapterurl]"));
+    const frames = (nativeFrames.length ? nativeFrames : Array.from(document.querySelectorAll("iframe"))).filter((node) => node instanceof HTMLIFrameElement);
     frames.forEach((iframe, frameIndex) => {
       try {
         const doc = iframe.contentDocument;
@@ -55503,8 +56901,8 @@ var __CRWeb = (() => {
       var _a, _b;
       const bodyStyle = frame.doc.body ? ownerStyle(frame.doc.body) : null;
       const rootStyle = ownerStyle(frame.doc.documentElement);
-      const innerWidth = ((_a = frame.iframe.contentWindow) == null ? void 0 : _a.innerWidth) || frame.iframe.clientWidth || 0;
-      const innerHeight = ((_b = frame.iframe.contentWindow) == null ? void 0 : _b.innerHeight) || frame.iframe.clientHeight || 0;
+      const innerWidth2 = ((_a = frame.iframe.contentWindow) == null ? void 0 : _a.innerWidth) || frame.iframe.clientWidth || 0;
+      const innerHeight2 = ((_b = frame.iframe.contentWindow) == null ? void 0 : _b.innerHeight) || frame.iframe.clientHeight || 0;
       return [
         frame.frameIndex,
         rounded(frame.outerRect.left),
@@ -55515,8 +56913,8 @@ var __CRWeb = (() => {
         rounded(frame.clip.top),
         rounded(frame.clip.right),
         rounded(frame.clip.bottom),
-        rounded(innerWidth),
-        rounded(innerHeight),
+        rounded(innerWidth2),
+        rounded(innerHeight2),
         (bodyStyle == null ? void 0 : bodyStyle.columnWidth) || "-",
         (bodyStyle == null ? void 0 : bodyStyle.columnGap) || "-",
         (rootStyle == null ? void 0 : rootStyle.writingMode) || "-"
@@ -55582,17 +56980,18 @@ var __CRWeb = (() => {
     ].join("|");
   }
   function paragraphSourceID(element, paragraphOrdinal) {
-    var _a, _b;
+    var _a, _b, _c, _d;
     const spans = Array.from(element.querySelectorAll(".koboSpan[id]")).filter(isHTMLElementNode);
     const firstSpan = ((_a = spans[0]) == null ? void 0 : _a.id) || "";
     const lastSpan = ((_b = spans[spans.length - 1]) == null ? void 0 : _b.id) || "";
     const identity2 = [
       "kobo",
+      ((_d = (_c = element.ownerDocument.defaultView) == null ? void 0 : _c.frameElement) == null ? void 0 : _d.getAttribute("data-chapterurl")) || "",
       chapterIdentity(element),
       `ordinal=${paragraphOrdinal}`,
       `spans=${firstSpan}..${lastSpan}`,
       logicalAttributes2(element),
-      normalizeIdentityText(element.textContent || "")
+      normalizeIdentityText(sourceText(element))
     ].join("\u241F");
     return stableHash322(identity2) || 1;
   }
@@ -55611,11 +57010,10 @@ var __CRWeb = (() => {
     };
   }
   function koboParagraphSnapshotQuality(paragraphs) {
-    var _a, _b;
     let consecutiveShortPartials = 0;
     let shortPartialCount = 0;
     for (const paragraph of paragraphs) {
-      const sourceLength = (_b = (_a = paragraph.element.textContent) == null ? void 0 : _a.length) != null ? _b : paragraph.sourceEnd;
+      const sourceLength = sourceText(paragraph.element).length;
       const isPartial = paragraph.sourceStart > 0 || paragraph.sourceEnd < sourceLength;
       const isShort = paragraph.text.trim().length <= MAX_TRANSIENT_PARTIAL_CHARS;
       if (isPartial && isShort) {
@@ -55642,10 +57040,10 @@ var __CRWeb = (() => {
     for (const frame of clips) {
       const nodes = paragraphNodes2(frame.doc);
       nodes.forEach((element, paragraphOrdinal) => {
-        const full = element.textContent || "";
+        const full = sourceText(element);
         if (full.trim().length < MIN_PARA_CHARS2) return;
         const id = paragraphSourceID(element, paragraphOrdinal);
-        visibleCharRanges(element, frame.clip).forEach((range2) => {
+        visibleCharRanges(element, frame.clip, (rect) => koboFragmentIntersection(rect, frame.clip) !== null).forEach((range2) => {
           const trimmed = trimVisibleRange(full, range2.start, range2.end);
           if (!trimmed) return;
           const key = `${id}:${trimmed.start}:${trimmed.end}`;
@@ -55666,20 +57064,31 @@ var __CRWeb = (() => {
       });
     }
     const quality = koboParagraphSnapshotQuality(output);
-    return quality.ok ? output : [];
+    if (!quality.ok) return [];
+    const tail = output[output.length - 1];
+    if (tail && !/[。！？.!?;；][”’"'」』）)]*\s*$/u.test(tail.text)) {
+      const full = sourceText(tail.element);
+      const end = extendToSentenceEnd(full, tail.sourceEnd);
+      if (end > tail.sourceEnd) tail.speechText = full.slice(tail.sourceStart, end);
+    }
+    return output;
   }
   function extractKoboParagraphs() {
     return extractKoboParagraphsFromClips(currentKoboFrameClips());
   }
+  function koboFragmentIntersection(rect, clip) {
+    const hit = intersect2(rect, clip);
+    const area = rectArea(rect);
+    return hit && area > 0 && rectArea(hit) / area >= 0.85 ? hit : null;
+  }
+  function clipKoboHighlightRect(element, rect) {
+    const frame = currentKoboFrameClips().find((value) => value.doc === element.ownerDocument);
+    if (!frame) return null;
+    const hit = koboFragmentIntersection(rect, frame.clip);
+    return hit ? new DOMRect(hit.left, hit.top, hit.right - hit.left, hit.bottom - hit.top) : null;
+  }
   function acceptKoboHighlightRect(element, rect) {
-    const clip = currentKoboFrameClips().find(
-      (value) => value.doc === element.ownerDocument
-    );
-    return !!clip && rectHasCompleteBlockCoverage2(
-      rect,
-      clip.clip,
-      writingModeFor2(element)
-    );
+    return clipKoboHighlightRect(element, rect) !== null;
   }
   function contentFingerprint(paragraphs) {
     if (paragraphs.length === 0) return "";
@@ -55742,10 +57151,14 @@ var __CRWeb = (() => {
       ];
     }
     const forward = direction === "rtl" ? -1 : 1;
+    const columnWidth = Number.parseFloat((style == null ? void 0 : style.columnWidth) || "");
+    const columnStride = columnWidth > 0 && Number.isFinite(columnWidth) ? columnWidth + columnGap : 0;
+    const columnsPerPage = columnStride > 0 ? Math.max(1, Math.floor((width + columnGap + 0.5) / columnStride)) : 1;
+    const stride = columnStride > 0 ? columnsPerPage * columnStride : width + columnGap;
     return [
-      { dx: forward * (width + columnGap), dy: 0 },
+      { dx: forward * stride, dy: 0 },
       { dx: 0, dy: height },
-      { dx: -forward * (width + columnGap), dy: 0 }
+      { dx: -forward * stride, dy: 0 }
     ];
   }
   function extractKoboNextPagePreview() {
@@ -55765,7 +57178,7 @@ var __CRWeb = (() => {
     return null;
   }
   function firstSentenceAfter(element, sourceParagraphIndex, start) {
-    const full = element.textContent || "";
+    const full = sourceText(element);
     let sourceStart = Math.max(0, Math.min(start, full.length));
     while (sourceStart < full.length && /\s/.test(full[sourceStart])) sourceStart++;
     if (sourceStart >= full.length) return null;
@@ -55886,7 +57299,7 @@ var __CRWeb = (() => {
       element.getAttribute("data-qa") || "",
       element.id || "",
       element.className || "",
-      element.textContent || ""
+      sourceText(element)
     ].join(" ").replace(/\s+/g, " ").trim();
   }
   function koboControlRoots() {
@@ -56217,6 +57630,7 @@ var __CRWeb = (() => {
     let pendingAutoMetadata = null;
     let pendingTurnMethod = null;
     let pendingTurnBaseline = "";
+    let automaticTiming = null;
     let lateAutoTurn = null;
     let preferredMethod = null;
     let turnConfirmationTimer = null;
@@ -56327,11 +57741,11 @@ var __CRWeb = (() => {
     };
     const automaticMetadata2 = (arg, fallbackBaseline) => {
       const value = recordArg2(arg);
-      return {
+      return __spreadValues({
         turnID: nonemptyString2(value.turnID) || protocolID2("auto"),
         baselineSignature: nonemptyOpaqueString2(value.baselineSignature) || fallbackBaseline,
         originFrameSessionID: nonemptyString2(value.originFrameSessionID) || frameSessionID
-      };
+      }, value.sourcePresentation && typeof value.sourcePresentation === "object" ? { sourcePresentation: value.sourcePresentation } : {});
     };
     const manualMetadata2 = (arg, fallbackBaseline) => {
       const value = recordArg2(arg);
@@ -56431,6 +57845,7 @@ var __CRWeb = (() => {
       settleStableSamples = 1;
       const verify = () => {
         settleTimer = setTimeout(() => {
+          var _a2;
           settleTimer = null;
           const current = koboSignature();
           const currentGeometry = koboGeometryKey();
@@ -56446,12 +57861,14 @@ var __CRWeb = (() => {
           settleStableSamples++;
           const isLayoutRefresh = layoutRefreshActive;
           const requiredSamples = isLayoutRefresh ? REFLOW_MIN_STABLE_SAMPLES : 2;
-          const requiredStableMS = isLayoutRefresh ? REFLOW_MIN_STABLE_MS : MIN_STABLE_MS;
+          const requiredStableMS = isLayoutRefresh ? REFLOW_MIN_STABLE_MS : reason === "auto" ? 0 : MIN_STABLE_MS;
           if (settleStableSamples < requiredSamples || Date.now() - settleCandidateSince < requiredStableMS || isLayoutRefresh && Date.now() < layoutRefreshQuietUntil || reason === "manual" && manualSwipeActive) {
             verify();
             return;
           }
+          const stableAt = performance.now();
           const paragraphs = extractKoboParagraphs();
+          const validationFinishedAt = performance.now();
           if (paragraphs.length === 0 && attempt < 8) {
             beginSettlement(reason, attempt + 1, forceExtract);
             return;
@@ -56527,11 +57944,17 @@ var __CRWeb = (() => {
               baselineSignature: changeBaseline
             }, payloadFor(committedMetadata)));
           }
+          const extractStartedAt = performance.now();
           requestExtract(reason, payloadFor(committedMetadata));
+          if (reason === "auto" && automaticTiming && automaticTiming.turnID === (committedMetadata == null ? void 0 : committedMetadata.turnID)) {
+            const timing = automaticTiming;
+            postForFrame("log", { message: `turn timing id=${timing.turnID} firstChangeMs=${(((_a2 = timing.firstChange) != null ? _a2 : stableAt) - timing.started).toFixed(1)} stableMs=${(stableAt - timing.started).toFixed(1)} validationMs=${(validationFinishedAt - stableAt).toFixed(1)} extractMs=${(performance.now() - extractStartedAt).toFixed(1)} totalMs=${(performance.now() - timing.started).toFixed(1)}` });
+            automaticTiming = null;
+          }
           layoutRefreshActive = false;
           clearSettledChange(reason);
           scheduleNextPagePreview();
-        }, STABILITY_POLL_MS);
+        }, reason === "auto" && !layoutRefreshActive ? 16 : STABILITY_POLL_MS);
       };
       verify();
     };
@@ -56587,8 +58010,19 @@ var __CRWeb = (() => {
     const attemptTurn = (direction, arg) => {
       var _a2;
       if (pendingAuto) return false;
+      const startedAt = performance.now();
       const visualBaseline = koboSignature() || committedSignature;
       const metadata = automaticMetadata2(arg, visualBaseline);
+      const bookEnd = direction === "next" && !!visualBaseline && visualBaseline === committedSignature && metadata.baselineSignature === visualBaseline && !layoutRefreshActive && !pendingManualIntent && !changeReasonInFlight ? currentKoboBookEnd() : null;
+      if (bookEnd) {
+        postForFrame("googleBooksTurnFailed", __spreadValues({
+          method: "native-book-end",
+          lateEligible: false,
+          nativeBookEnd: bookEnd
+        }, metadata));
+        return false;
+      }
+      automaticTiming = { turnID: metadata.turnID, started: startedAt };
       const remembered = preferredMethod ? [preferredMethod] : [];
       const candidates = [
         "semantic",
@@ -56610,6 +58044,12 @@ var __CRWeb = (() => {
         return false;
       }
       pendingAuto = true;
+      const observeTurnFrame = () => {
+        if (!pendingAuto) return;
+        observePageChange();
+        if (pendingAuto) requestAnimationFrame(observeTurnFrame);
+      };
+      requestAnimationFrame(observeTurnFrame);
       pendingAutoMetadata = metadata;
       lateAutoTurn = null;
       clearManualIntent();
@@ -56809,6 +58249,30 @@ var __CRWeb = (() => {
       beginSettlement("manual");
     }
     const api = {
+      restoreLocation(arg) {
+        const value = recordArg2(arg);
+        const current = koboReadingLocation();
+        const transport = koboSemanticTransport;
+        const percentage = value.percentage;
+        if (!current || value.bookUUID !== current.bookUUID || typeof percentage !== "number" || !Number.isFinite(percentage) || percentage < 0 || percentage > 1 || (transport == null ? void 0 : transport.kind) !== "ur-engine" || pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return false;
+        const native = currentKoboURAPI(transport);
+        if (typeof (native == null ? void 0 : native.goToPageByBookPercentage) !== "function") return false;
+        try {
+          beginLayoutRefresh("saved-source-location");
+          const completion = native.goToPageByBookPercentage.call(native, percentage);
+          void Promise.resolve(completion).catch(() => {
+          });
+          beginSettlement("refresh", 0, true);
+          return true;
+        } catch (e) {
+          beginSettlement("refresh", 0, true);
+          return false;
+        }
+      },
+      navigationReady() {
+        if (pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return false;
+        return ["next", "prev"].some((direction) => ["semantic", "slider", "button"].some((method) => methodAvailable(method, direction)));
+      },
       nextPage(arg) {
         return attemptTurn("next", arg);
       },
@@ -57023,13 +58487,16 @@ var __CRWeb = (() => {
       () => observeViewportChange("visual-viewport-resize"),
       { passive: true }
     );
-    setInterval(() => {
+    const observePageChange = () => {
       observeViewportChange("poll");
       if (reportReaderFailureIfPresent()) return;
       if (ensureKoboChapterTypography()) return;
       refreshFrameListeners();
       const signature = koboSignature();
       if (!signature || signature === observedSignature) return;
+      if (pendingAuto && automaticTiming && automaticTiming.firstChange === void 0) {
+        automaticTiming.firstChange = performance.now();
+      }
       observedSignature = signature;
       const firstGeometryChange = changeReasonInFlight === null;
       const freshManualIntent = pendingManualIntent && Date.now() <= manualIntentExpiresAt;
@@ -57046,7 +58513,8 @@ var __CRWeb = (() => {
         changeMetadata = reason === "auto" ? pendingAutoMetadata || (late == null ? void 0 : late.metadata) || null : reason === "manual" ? manualIntentMetadata : null;
       }
       beginSettlement(reason);
-    }, 250);
+    };
+    setInterval(observePageChange, 250);
     let waited = 0;
     const boot = setInterval(() => {
       waited += 200;
@@ -57146,12 +58614,12 @@ var __CRWeb = (() => {
   var oreillyNativeBottomOcclusion = 0;
   var activeSourceCursor = null;
   function stableHash323(value) {
-    let hash = 2166136261;
+    let hash2 = 2166136261;
     for (let index = 0; index < value.length; index++) {
-      hash ^= value.charCodeAt(index);
-      hash = Math.imul(hash, 16777619);
+      hash2 ^= value.charCodeAt(index);
+      hash2 = Math.imul(hash2, 16777619);
     }
-    return hash >>> 0;
+    return hash2 >>> 0;
   }
   function protocolID3(prefix) {
     try {
@@ -57386,7 +58854,7 @@ var __CRWeb = (() => {
     if (right <= left || bottom <= top) return null;
     return { left, top, right, bottom };
   }
-  function textBoundaryAt2(element, index) {
+  function textBoundaryAt(element, index) {
     var _a;
     const walker = element.ownerDocument.createTreeWalker(
       element,
@@ -57406,8 +58874,8 @@ var __CRWeb = (() => {
   function textRange2(element, start, end) {
     const length = (element.textContent || "").length;
     if (start < 0 || end <= start || end > length) return null;
-    const startBoundary = textBoundaryAt2(element, start);
-    const endBoundary = textBoundaryAt2(element, end);
+    const startBoundary = textBoundaryAt(element, start);
+    const endBoundary = textBoundaryAt(element, end);
     if (!startBoundary || !endBoundary) return null;
     const range2 = element.ownerDocument.createRange();
     try {
@@ -58770,6 +60238,7 @@ var __CRWeb = (() => {
         source: "google-books",
         reason: pendingReason,
         signature: playBooksSignature(),
+        surfaceKind: playBooksSurfaceKind(),
         frameSessionID
       }, pendingPageMetadata),
       onInstalled: ({ extract: doExtract }) => {
@@ -58805,9 +60274,11 @@ var __CRWeb = (() => {
     initBridge({
       extract: () => extractKoboParagraphs(),
       acceptHighlightRect: acceptKoboHighlightRect,
+      clipHighlightRect: clipKoboHighlightRect,
       autoExtract: false,
       pageMeta: () => __spreadValues({
         source: "kobo",
+        koboLocation: koboReadingLocation(),
         reason: pendingReason,
         signature: koboSignature(),
         frameSessionID

@@ -34,7 +34,8 @@ struct TTSRequest: Codable {
         voice: String = "af_heart",
         speed: Double = 1.0,
         language: String = "en",
-        includeVoiceCode: Bool = true
+        includeVoiceCode: Bool = true,
+        requiresSourceTiming: Bool = false
     ) {
         self.model = "kokoro"
         self.input = input
@@ -44,10 +45,9 @@ struct TTSRequest: Codable {
         // whose backend contract accepts only the canonical `voice` field.
         self.voiceCode = includeVoiceCode ? voice : nil
         self.responseFormat = "mp3"
-        // Han/Kana/Hangul readers intentionally paint the natural request
-        // unit as one sentence. Asking either engine for synthetic per-glyph
-        // timing wastes work and can accidentally re-enable character chasing.
-        self.returnTimestamps = TTSHighlightPolicy.usesWordTimestamps(language: language)
+        // Display grain and source navigation are independent. Live pages need
+        // actual timing even when the UI paints a whole CJK sentence.
+        self.returnTimestamps = requiresSourceTiming || TTSHighlightPolicy.usesWordTimestamps(language: language)
         self.speed = speed
         self.stream = false
         self.language = language
@@ -403,7 +403,7 @@ enum ReadingSentenceContract {
             let next = text.index(after: cursor)
             if terminals.contains(character) {
                 if character != "." ||
-                    ((next == text.endIndex || text[next].isWhitespace) && !isAbbreviationPeriod(at: cursor)) {
+                    ((next == text.endIndex || text[next].isWhitespace || closers.contains(text[next])) && !isAbbreviationPeriod(at: cursor)) {
                     terminalSeen = true
                 }
             } else if lineBreakIsBoundary, (character == "\n" || character == "\r") {
@@ -472,18 +472,21 @@ struct AudioSegment: Identifiable {
     let segmentIndex: Int
     let audioData: Data
     let timestamps: [TTSTimestamp]
+    /// Unfiltered engine cues for source/page synchronization; display policy is independent.
+    let timingTimestamps: [TTSTimestamp]
     let duration: Double
     let text: String
     let isWavFormat: Bool  // true for local TTS (WAV), false for cloud TTS (MP3)
     let unprocessedText: String  // API 返回的未处理文本（用于流式渲染）
     let speaker: String?  // 当前说话者 ID（如 "A", "B"）或 "narrator"
 
-    init(paragraphIndex: Int, segmentIndex: Int, audioData: Data, timestamps: [TTSTimestamp], duration: Double, text: String, isWavFormat: Bool = false, unprocessedText: String = "", speaker: String? = nil) {
+    init(paragraphIndex: Int, segmentIndex: Int, audioData: Data, timestamps: [TTSTimestamp], duration: Double, text: String, isWavFormat: Bool = false, unprocessedText: String = "", speaker: String? = nil, timingTimestamps: [TTSTimestamp]? = nil) {
         self.id = "\(paragraphIndex)-\(segmentIndex)"
         self.paragraphIndex = paragraphIndex
         self.segmentIndex = segmentIndex
         self.audioData = audioData
         self.timestamps = timestamps
+        self.timingTimestamps = timingTimestamps ?? timestamps
         self.duration = duration
         self.text = text
         self.isWavFormat = isWavFormat

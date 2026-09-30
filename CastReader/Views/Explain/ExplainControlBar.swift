@@ -8,6 +8,31 @@
 
 import SwiftUI
 
+/// Fixed-height overlay: changing captions never changes a book's viewport.
+struct ExplainPlaybackCaption: View {
+    @ObservedObject var vm: ExplainViewModel
+    var alignment: Alignment = .center
+    var maxWidth: CGFloat = 620
+    @ScaledMetric(relativeTo: .callout) private var fontSize: CGFloat = 16
+
+    var body: some View {
+        let font = UIFont.systemFont(ofSize: fontSize, weight: .medium)
+        GeometryReader { geometry in
+            let width = max(1, geometry.size.width - 28)
+            ExplainPlaybackCaptionBubble(text: vm.explanationText, alignment: alignment,
+                maxWidth: maxWidth, singleLineFont: font)
+                .frame(width: geometry.size.width, alignment: alignment)
+                .onAppear { vm.setSubtitleLayout(width: width, font: font) }
+                .onChange(of: width) { _, value in vm.setSubtitleLayout(width: value, font: font) }
+                .onChange(of: fontSize) { _, _ in vm.setSubtitleLayout(width: width, font: font) }
+        }
+        .frame(height: ceil(font.lineHeight) + 16)
+        .frame(maxWidth: maxWidth, alignment: alignment)
+        // Switch on the media cue, without cross-fading two lines together.
+        .transaction { $0.animation = nil }
+    }
+}
+
 enum ExplainSegmentProgressCopy {
     static func text(block: Int, total: Int, preparingNext: Bool) -> String {
         let safeTotal = max(1, total)
@@ -29,13 +54,14 @@ struct ExplainPlaybackCaptionBubble: View {
     var alignment: Alignment = .center
     var maxWidth: CGFloat = 620
     var accessibilityIdentifier = "readerExplainCaption"
+    var singleLineFont: UIFont? = nil
 
     var body: some View {
         Text(text)
-            .font(.callout.weight(.medium))
+            .font(singleLineFont.map(Font.init) ?? .callout.weight(.medium))
             .foregroundColor(foregroundColor)
-            .lineLimit(nil)
-            .fixedSize(horizontal: false, vertical: true)
+            .lineLimit(singleLineFont == nil ? nil : 1)
+            .fixedSize(horizontal: singleLineFont != nil, vertical: true)
             .multilineTextAlignment(.leading)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
@@ -104,7 +130,7 @@ struct ExplainControlBar: View {
         ) { presentationState in
             ZStack(alignment: .top) {
                 if shouldShowCaption {
-                    ExplainPlaybackCaptionBubble(text: vm.explanationText)
+                    ExplainPlaybackCaption(vm: vm)
                         .padding(.horizontal, 18)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(height: 0, alignment: .bottom)
@@ -136,7 +162,6 @@ struct ExplainControlBar: View {
             }
         }
         .frame(height: ReaderPlaybackBarLayoutContract.consoleHeight)
-        .animation(.easeInOut(duration: 0.2), value: vm.explanationText)
     }
 
     private var shouldShowCaption: Bool {

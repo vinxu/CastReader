@@ -336,7 +336,8 @@ struct HomeView: View {
                     if libraryOnboarding.shouldShowReminder {
                         libraryOnboardingReminder
                     }
-                    if !continueRecords.isEmpty { continueSection }
+                    let continuing = isSurfaceActive ? ContentCatalog(history: history).continuing : []
+                    if !continuing.isEmpty { continueSection(continuing) }
                     if AppRegion.current == .cn {
                         // 中国区维持既有布局：场景入口在前、书库在后（该区无 YouTube 模块）。
                         scenarioSection
@@ -848,10 +849,6 @@ struct HomeView: View {
         .accessibilityIdentifier("shelfSourcesButton")
     }
 
-    private var continueRecords: [HistoryRecord] {
-        ContentCatalog(history: history).continuing.map(\.record)
-    }
-
     private var libraryOnboardingReminder: some View {
         // 没有区域内可用的已选书库时按发行区域给默认值：中国区是微信读书，
         // 其余是 Kindle。不能直接用 selectedSource——它可能是在别的区域持久化的
@@ -918,7 +915,7 @@ struct HomeView: View {
                     sourceKind: .weread,
                     language: book.initialReadingLanguage,
                     paragraphs: [],
-                    sourceURL: book.effectiveReaderURL
+                    sourceURL: book.resumeReaderURL
                 )
                 let context = ProductAnalytics.shared.beginContentIntent(
                     source: .weread,
@@ -963,7 +960,7 @@ struct HomeView: View {
         }
     }
 
-    private var continueSection: some View {
+    private func continueSection(_ items: [ContentCatalogItem]) -> some View {
         VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
             let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout())
             layout {
@@ -977,8 +974,8 @@ struct HomeView: View {
                 .accessibilityIdentifier("homeContinueViewAll")
             }
             HomeHorizontalRail {
-                ForEach(continueRecords.prefix(8)) { rec in
-                    ContinueCard(record: rec, positionLabel: ContentCatalog(history: history).item(id: rec.id)?.positionLabel) { reopen(rec) }
+                ForEach(items.prefix(8)) { item in
+                    ContinueCard(record: item.record, positionLabel: item.positionLabel) { reopen(item.record) }
                 }
             }
         }

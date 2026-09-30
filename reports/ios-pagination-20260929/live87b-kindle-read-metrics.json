@@ -1,0 +1,235 @@
+{
+  "candidate": 87,
+  "platform": "kindle",
+  "mode": "read",
+  "start": "13:47:29.000",
+  "end": "13:52:12.946",
+  "duration_seconds": 283.946,
+  "automatic_presentations": 8,
+  "cross_page_sentence_batches": 4,
+  "presentations": [
+    "13:48:08.890 [active] KINDLE_SENTENCE presented p=3 w=30 key=53a21d14ea21",
+    "13:48:48.522 [active] KINDLE_SENTENCE presented p=6 w=0 key=7d66a0f1d88f",
+    "13:49:17.253 [active] KINDLE_SENTENCE presented p=8 w=15 key=659c848c178a",
+    "13:49:51.961 [active] KINDLE_SENTENCE presented p=11 w=0 key=e54a8a24fee2",
+    "13:50:21.475 [active] KINDLE_SENTENCE presented p=14 w=0 key=c6ace08cecd2",
+    "13:50:54.755 [active] KINDLE_SENTENCE presented p=16 w=0 key=044d5e9c8934",
+    "13:51:26.883 [active] KINDLE_SENTENCE presented p=18 w=0 key=1c59b1cb7089",
+    "13:52:00.925 [active] KINDLE_SENTENCE presented p=20 w=13 key=0c24af96cf4a"
+  ],
+  "source_failures": [],
+  "native_turn_confirmations": [
+    "13:51:14 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2145:cc66f after=px:1296x2145:93b7f stable=2 accepted=Y",
+    "13:51:46 [active] KINDLE_TURN_CONFIRM progress=unverifiable before=px:1296x2145:9ceac after=px:1296x2145:1c412 stable=2 accepted=Y",
+    "13:47:29.375 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=0 accepted=Y",
+    "13:48:09.269 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=1 accepted=Y",
+    "13:48:48.969 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=2 accepted=Y",
+    "13:49:17.677 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=3 accepted=Y",
+    "13:49:52.806 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=4 accepted=Y",
+    "13:50:22.671 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=5 accepted=Y",
+    "13:50:55.402 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=6 accepted=Y",
+    "13:51:27.426 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=7 accepted=Y",
+    "13:52:05.697 [active] KINDLE_TURN_CONFIRM source=native-cache epoch=2 index=8 accepted=Y"
+  ],
+  "segment_handoffs": [
+    {
+      "ended": "13:47:35.719",
+      "playing": "13:47:41.930",
+      "milliseconds": 6211,
+      "segment": "1-0"
+    },
+    {
+      "ended": "13:47:55.445",
+      "playing": "13:47:55.539",
+      "milliseconds": 94,
+      "segment": "2-0"
+    },
+    {
+      "ended": "13:48:02.551",
+      "playing": "13:48:02.641",
+      "milliseconds": 90,
+      "segment": "3-0"
+    },
+    {
+      "ended": "13:48:10.786",
+      "playing": "13:48:10.872",
+      "milliseconds": 86,
+      "segment": "3-1"
+    },
+    {
+      "ended": "13:48:18.802",
+      "playing": "13:48:18.899",
+      "milliseconds": 97,
+      "segment": "4-0"
+    },
+    {
+      "ended": "13:48:31.176",
+      "playing": "13:48:31.262",
+      "milliseconds": 86,
+      "segment": "4-1"
+    },
+    {
+      "ended": "13:48:37.895",
+      "playing": "13:48:37.997",
+      "milliseconds": 102,
+      "segment": "5-0"
+    },
+    {
+      "ended": "13:48:48.390",
+      "playing": "13:48:48.491",
+      "milliseconds": 101,
+      "segment": "6-0"
+    },
+    {
+      "ended": "13:49:04.656",
+      "playing": "13:49:04.747",
+      "milliseconds": 91,
+      "segment": "6-1"
+    },
+    {
+      "ended": "13:49:06.726",
+      "playing": "13:49:06.825",
+      "milliseconds": 99,
+      "segment": "7-0"
+    },
+    {
+      "ended": "13:49:13.980",
+      "playing": "13:49:14.085",
+      "milliseconds": 105,
+      "segment": "8-0"
+    },
+    {
+      "ended": "13:49:21.672",
+      "playing": "13:49:21.762",
+      "milliseconds": 90,
+      "segment": "8-1"
+    },
+    {
+      "ended": "13:49:32.406",
+      "playing": "13:49:32.552",
+      "milliseconds": 146,
+      "segment": "9-0"
+    },
+    {
+      "ended": "13:49:44.341",
+      "playing": "13:49:44.491",
+      "milliseconds": 150,
+      "segment": "10-0"
+    },
+    {
+      "ended": "13:49:51.816",
+      "playing": "13:49:51.926",
+      "milliseconds": 110,
+      "segment": "11-0"
+    },
+    {
+      "ended": "13:50:03.258",
+      "playing": "13:50:03.370",
+      "milliseconds": 112,
+      "segment": "12-0"
+    },
+    {
+      "ended": "13:50:04.835",
+      "playing": "13:50:04.945",
+      "milliseconds": 110,
+      "segment": "13-0"
+    },
+    {
+      "ended": "13:50:18.842",
+      "playing": "13:50:18.942",
+      "milliseconds": 100,
+      "segment": "13-1"
+    },
+    {
+      "ended": "13:50:21.352",
+      "playing": "13:50:21.469",
+      "milliseconds": 117,
+      "segment": "14-0"
+    },
+    {
+      "ended": "13:50:34.085",
+      "playing": "13:50:34.184",
+      "milliseconds": 99,
+      "segment": "14-1"
+    },
+    {
+      "ended": "13:50:38.028",
+      "playing": "13:50:38.136",
+      "milliseconds": 108,
+      "segment": "15-0"
+    },
+    {
+      "ended": "13:50:51.299",
+      "playing": "13:50:51.431",
+      "milliseconds": 132,
+      "segment": "15-1"
+    },
+    {
+      "ended": "13:50:54.635",
+      "playing": "13:50:54.756",
+      "milliseconds": 121,
+      "segment": "16-0"
+    },
+    {
+      "ended": "13:51:10.913",
+      "playing": "13:51:11.001",
+      "milliseconds": 88,
+      "segment": "16-1"
+    },
+    {
+      "ended": "13:51:13.357",
+      "playing": "13:51:13.505",
+      "milliseconds": 148,
+      "segment": "17-0"
+    },
+    {
+      "ended": "13:51:26.731",
+      "playing": "13:51:26.846",
+      "milliseconds": 115,
+      "segment": "18-0"
+    },
+    {
+      "ended": "13:51:42.775",
+      "playing": "13:51:42.876",
+      "milliseconds": 101,
+      "segment": "18-1"
+    },
+    {
+      "ended": "13:51:45.407",
+      "playing": "13:51:45.520",
+      "milliseconds": 113,
+      "segment": "19-0"
+    },
+    {
+      "ended": "13:51:58.544",
+      "playing": "13:51:58.657",
+      "milliseconds": 113,
+      "segment": "20-0"
+    }
+  ],
+  "cold_resume_first_handoff": {
+    "ended": "13:47:35.719",
+    "playing": "13:47:41.930",
+    "milliseconds": 6211,
+    "segment": "1-0"
+  },
+  "remaining_handoffs": {
+    "samples": 28,
+    "p95_ms": 148,
+    "max_ms": 150
+  },
+  "rate_observed": 1.5,
+  "pause_observation": {
+    "requested": "13:52:12.947",
+    "still_paused_observed": "13:53:39",
+    "new_mode_requested": "13:53:45",
+    "seconds_without_revival": 86
+  },
+  "measurement": "Native item-end to timeControlStatus=playing event timestamps; not recorded acoustic silence; a source-page boundary inside one audio item does not create an item handoff.",
+  "final_acceptance": false,
+  "issues": [
+    "Cold saved-position resume leaves 6.211 seconds before successor; near-end successor starts generating only after foreground response.",
+    "Warm item handoff P95 148 ms exceeds 100 ms target; no warm item handoff exceeded 200 ms in this sample.",
+    "Insufficient duration/chapters and no acoustic recording."
+  ]
+}

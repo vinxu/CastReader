@@ -1,0 +1,181 @@
+{
+  "candidate": 68,
+  "platform": "WeRead",
+  "mode": "Explain",
+  "source_language": "zh",
+  "output_language": "en",
+  "voice": "af_heart",
+  "rate": 1.5,
+  "raw_log": "/tmp/castreader-pagination-live68b-reader.log",
+  "raw_sha256": "b00bfd52b3ff101abd5d2acbfbd1d2fb8d12881f3974a45eb152290558d41416",
+  "rows": [
+    {
+      "line": 129,
+      "at": "09:31:26.072",
+      "commit_ms": 34286072,
+      "ended_ms": 34285971,
+      "request_to_commit_ms": 100,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 129,
+      "ended_to_playing_ms": 230
+    },
+    {
+      "line": 208,
+      "at": "09:32:06.914",
+      "commit_ms": 34326914,
+      "ended_ms": 34326808,
+      "request_to_commit_ms": 105,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 105,
+      "ended_to_playing_ms": 211
+    },
+    {
+      "line": 286,
+      "at": "09:32:42.521",
+      "commit_ms": 34362521,
+      "ended_ms": 34362415,
+      "request_to_commit_ms": 105,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 106,
+      "ended_to_playing_ms": 212
+    },
+    {
+      "line": 343,
+      "at": "09:33:07.802",
+      "commit_ms": 34387802,
+      "ended_ms": 34387677,
+      "request_to_commit_ms": 125,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 115,
+      "ended_to_playing_ms": 240
+    },
+    {
+      "line": 422,
+      "at": "09:33:40.228",
+      "commit_ms": 34420228,
+      "ended_ms": 34420119,
+      "request_to_commit_ms": 108,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 113,
+      "ended_to_playing_ms": 222
+    },
+    {
+      "line": 484,
+      "at": "09:34:12.473",
+      "commit_ms": 34452473,
+      "ended_ms": 34452348,
+      "request_to_commit_ms": 124,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 164,
+      "ended_to_playing_ms": 289
+    },
+    {
+      "line": 580,
+      "at": "09:35:06.574",
+      "commit_ms": 34506574,
+      "ended_ms": 34506475,
+      "request_to_commit_ms": 98,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 132,
+      "ended_to_playing_ms": 231
+    },
+    {
+      "line": 659,
+      "at": "09:35:50.352",
+      "commit_ms": 34550352,
+      "ended_ms": 34550234,
+      "request_to_commit_ms": 118,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 155,
+      "ended_to_playing_ms": 273
+    },
+    {
+      "line": 743,
+      "at": "09:36:33.830",
+      "commit_ms": 34593830,
+      "ended_ms": 34593706,
+      "request_to_commit_ms": 123,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 123,
+      "ended_to_playing_ms": 247
+    },
+    {
+      "line": 830,
+      "at": "09:37:23.657",
+      "commit_ms": 34643657,
+      "ended_ms": 34643589,
+      "request_to_commit_ms": 67,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 189,
+      "ended_to_playing_ms": 257
+    },
+    {
+      "line": 909,
+      "at": "09:38:17.308",
+      "commit_ms": 34697308,
+      "ended_ms": 34697190,
+      "request_to_commit_ms": 117,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 120,
+      "ended_to_playing_ms": 238
+    },
+    {
+      "line": 988,
+      "at": "09:38:51.468",
+      "commit_ms": 34731468,
+      "ended_ms": 34731348,
+      "request_to_commit_ms": 119,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 125,
+      "ended_to_playing_ms": 245
+    },
+    {
+      "line": 1050,
+      "at": "09:39:09.600",
+      "commit_ms": 34749600,
+      "ended_ms": 34749486,
+      "request_to_commit_ms": 113,
+      "prefetch_hit": true,
+      "decoded_adopted": true,
+      "commit_to_playing_ms": 162,
+      "ended_to_playing_ms": 276
+    }
+  ],
+  "statistics": {
+    "request_to_commit_ms": {
+      "n": 13,
+      "p95": 125,
+      "max": 125
+    },
+    "commit_to_playing_ms": {
+      "n": 13,
+      "p95": 189,
+      "max": 189
+    },
+    "ended_to_playing_ms": {
+      "n": 13,
+      "p95": 289,
+      "max": 289
+    }
+  },
+  "final_acceptance": false,
+  "limits": [
+    "Application event clock, not acoustic silence.",
+    "09:34:48 audio route removal and interruption break continuous run; subsequent playback observed but cause of resumption not established.",
+    "Initial page in chapter 3, last observed page in chapter 4; not 3 complete chapters or 30 minutes.",
+    "Warm P95 exceeds 100ms.",
+    "Manual pause around 09:39:40. At 09:41 mirror retained the same page/caption, and no later playing/end/turn event followed 09:39:38 in the device log; >60 seconds without automatic resumption observed."
+  ]
+}

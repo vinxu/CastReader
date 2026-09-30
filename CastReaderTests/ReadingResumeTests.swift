@@ -58,6 +58,29 @@ final class ReadingResumeTests: XCTestCase {
     private var directory: URL!
     private var wasPro = false
 
+    func testInactiveReadDoesNotProjectHistoryForAnotherPlaybackOwner() async throws {
+        let history = HistoryStore(directory: directory)
+        let vm = ReadAloudViewModel(document: document(), historyStore: history)
+        let audio = AudioPlayerService.shared
+        let other = audio.claimPlaybackSession(owner: .explain)
+        defer { audio.releasePlaybackSession(other); vm.stop(); vm.deactivate() }
+        var projections = 0
+        let observation = history.objectWillChange.sink { projections += 1 }
+        defer { observation.cancel() }
+        // Include the subscription's initial paused delivery and later state
+        // changes from the actual shared player with a different owner.
+        try await Task.sleep(nanoseconds: 80_000_000)
+        _ = audio.clearQueue(session: other)
+        _ = audio.setMoreSegmentsExpected(true, session: other)
+        try await Task.sleep(nanoseconds: 80_000_000)
+        _ = audio.setMoreSegmentsExpected(false, session: other)
+        vm.flushReadingProgress()
+        try await Task.sleep(nanoseconds: 80_000_000)
+        XCTAssertFalse(vm.isPlaying)
+        XCTAssertEqual(projections, 0,
+            "Inactive read must not scan history or invalidate the root during Explain handoff")
+    }
+
     func testReflowRemainderCursorSeeksFirstUnreadWordAndRejectsChangedPrefix() throws {
         let text = "Already spoken words. Continue from here."
         let range = (text as NSString).range(of: "Continue")
@@ -383,6 +406,67 @@ final class ReadingResumeTests: XCTestCase {
                 .replacingOccurrences(of: "precise", with: "precize"))]))
         XCTAssertNil(ReadingResumeContract.relocatedKoboCheckpoint(checkpoint,
             paragraphs: [document.paragraphs[0], ReadingParagraph(id: 1, text: document.paragraphs[0].text)]))
+    }
+
+    func testKoboNativeBookmarkStaysBoundToTheHeardPage() async throws {
+        var doc = document(.kobo, id: "native-kobo-bookmark")
+        doc.sourceURL = "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"
+        let store = HistoryStore(directory: directory)
+        store.record(doc)
+        let segments = [segment(0, text: "Alpha beta "), segment(1, text: "gamma delta")]
+        let vm = ReadAloudViewModel(document: doc, historyStore: store)
+        defer { vm.stop(); vm.deactivate() }
+        let heard = KoboReadingLocation(bookUUID: "f0000001-1111-4111-8111-000000000001", percentage: 0.78)
+        vm.registerKoboLocation(heard, paragraphs: doc.paragraphs)
+        // Native can already expose the next page when the old audio cursor
+        // is flushed. Never save the newest visual percentage unconditionally.
+        vm.registerKoboLocation(KoboReadingLocation(bookUUID: heard.bookUUID, percentage: 0.79),
+                                paragraphs: paragraphs(["A newly visible page."]))
+        vm.startWithCachedSegments(segments, paragraphIndex: 1, segmentID: "1-1", progress: 0.5, isReplayEligible: false)
+        try await waitUntil("Kobo cached source is audible before checkpoint capture") {
+            vm.isPlaying && !AudioPlayerService.shared.isBuffering && AudioPlayerService.shared.hasAudibleProgress
+        }
+        vm.pausePlayback()
+        vm.flushReadingProgress()
+        let saved = try XCTUnwrap(store.readingCheckpoint(for: doc.id))
+        XCTAssertEqual(saved.koboLocation, heard)
+        XCTAssertEqual(try JSONDecoder().decode(ReadingResumeCheckpoint.self,
+            from: JSONEncoder().encode(saved)).koboLocation, heard)
+        XCTAssertFalse(heard.isValid(for: "https://readnow.kobo.com/f0000002-1111-4111-8111-000000000001"))
+        XCTAssertFalse(KoboReadingLocation(bookUUID: heard.bookUUID, percentage: .nan).isValid(for: doc.sourceURL))
+    }
+
+    func testWeReadNativeBookmarkKeepsHeardChapterAfterVisiblePageAdvances() async throws {
+        var doc = document(.weread, id: "native-weread-bookmark")
+        doc.sourceURL = "https://weread.qq.com/web/reader/heard-chapter"
+        let store = HistoryStore(directory: directory)
+        store.record(doc)
+        let vm = ReadAloudViewModel(document: doc, historyStore: store)
+        defer { vm.stop(); vm.deactivate() }
+        let heard = WeReadReadingLocation(bookID: doc.id, readerURL: doc.sourceURL!, chapterUID: "6", chapterOffset: 120)
+        vm.registerWeReadLocation(heard, paragraphs: doc.paragraphs)
+        vm.registerWeReadLocation(WeReadReadingLocation(bookID: doc.id,
+            readerURL: "https://weread.qq.com/web/reader/later-chapter", chapterUID: "7", chapterOffset: 420),
+            paragraphs: paragraphs(["A newly visible page."]))
+        vm.startWithCachedSegments([segment(0, text: "Alpha beta "), segment(1, text: "gamma delta")],
+            paragraphIndex: 1, segmentID: "1-1", progress: 0.5, isReplayEligible: false)
+        try await waitUntil("WeRead speech must advance before saving its native location") {
+            vm.isPlaying && !AudioPlayerService.shared.isBuffering && AudioPlayerService.shared.hasAudibleProgress
+        }
+        vm.pausePlayback(); vm.flushReadingProgress()
+        let saved = try XCTUnwrap(store.readingCheckpoint(for: doc.id))
+        XCTAssertEqual(saved.weReadLocation, heard)
+        XCTAssertEqual(try JSONDecoder().decode(ReadingResumeCheckpoint.self,
+            from: JSONEncoder().encode(saved)).weReadLocation, heard)
+        let book = WeReadBook(id: doc.id, title: "Test", author: "", readerURL: heard.readerURL,
+            progressLabel: "", lastSyncedAt: Date(), lastReaderURL: "https://weread.qq.com/web/reader/later-chapter")
+        XCTAssertEqual(book.readerURL(resuming: saved), heard.readerURL)
+        XCTAssertEqual(book.readerURL(resuming: nil), book.lastReaderURL)
+        XCTAssertFalse(heard.isValid(for: "a-different-book"))
+        XCTAssertFalse(WeReadReadingLocation(bookID: doc.id, readerURL: "https://weread.qq.com.invalid/web/reader/a",
+            chapterUID: "6", chapterOffset: 120).isValid(for: doc.id))
+        var legacy = saved; legacy.weReadLocation = nil
+        XCTAssertEqual(book.readerURL(resuming: legacy), book.lastReaderURL)
     }
 
     func testWeReadReflowRestoresExactHashedContextWithoutOCRCorrection() throws {
@@ -940,6 +1024,81 @@ final class ReadingResumeTests: XCTestCase {
         XCTAssertEqual(vm.currentParagraphIndex, 1)
     }
 
+    func testExplicitPlayAfterUnmatchedCheckpointReadsVisiblePageOnAllFourPlatforms() async throws {
+        useRegularVoiceForTest(language: "en")
+        let audio = AudioPlayerService.shared
+        for source in [ReadingSourceKind.weread, .googleBooks, .kobo, .kindle] {
+            let store = HistoryStore(directory: directory)
+            let old = document(source, id: "explicit-visible-\(source.rawValue)")
+            store.record(old)
+            try save(store, doc: old)
+            let saved = try XCTUnwrap(store.readingCheckpoint(for: old.id))
+            var visible = old
+            visible.paragraphs = paragraphs(["Current visible page only."])
+            let media = segment(0, text: visible.paragraphs[0].text, paragraph: 0)
+            let vm = ReadAloudViewModel(document: visible, historyStore: store,
+                                       speechGenerator: ResumeTestSpeech(segments: [media]))
+            defer { vm.stop(); vm.deactivate() }
+            if source != .kindle { vm.loadWebParagraphs(visible.paragraphs, language: "en") }
+            XCTAssertNotNil(vm.resumeNotice, source.rawValue)
+            vm.ensurePlaying()
+            XCTAssertFalse(vm.isPlaying, "Automatic continuation must not authorize another page")
+            XCTAssertEqual(store.readingCheckpoint(for: old.id)?.paragraphFingerprint, saved.paragraphFingerprint)
+
+            vm.togglePlayPause()
+            try await waitUntil("Explicit Play must start the visible \(source.rawValue) source") {
+                vm.isPlaying && audio.hasAudibleProgress && audio.currentSegment?.text == media.text
+            }
+            XCTAssertNil(vm.resumeNotice)
+            XCTAssertEqual(vm.currentParagraphIndex, 0)
+            XCTAssertFalse(vm.hasPendingReadingResume)
+            vm.pausePlayback()
+            vm.flushReadingProgress()
+            let updated = try XCTUnwrap(store.readingCheckpoint(for: old.id))
+            XCTAssertEqual(ReadingResumeDocumentIndex(paragraphs: visible.paragraphs).resolve(updated), 0)
+            vm.stop(); vm.deactivate()
+        }
+    }
+
+    func testExplicitPlayCannotUseRetiredSourceAfterResumeMismatch() throws {
+        let store = HistoryStore(directory: directory)
+        let old = document(.weread)
+        store.record(old)
+        try save(store, doc: old)
+        let saved = try XCTUnwrap(store.readingCheckpoint(for: old.id))
+        let vm = ReadAloudViewModel(document: old, historyStore: store)
+        defer { vm.stop(); vm.deactivate() }
+        vm.loadWebParagraphs(paragraphs(["A visible but unrelated page."]), language: "en")
+        XCTAssertNotNil(vm.resumeNotice)
+        vm.invalidateWebContent(message: "Provider page is no longer available")
+        vm.togglePlayPause()
+        XCTAssertFalse(vm.isPlaying)
+        XCTAssertFalse(vm.isWaitingForPlayableAudio)
+        XCTAssertTrue(vm.stagedLiveWebParagraphTexts.isEmpty)
+        XCTAssertEqual(store.readingCheckpoint(for: old.id)?.paragraphFingerprint, saved.paragraphFingerprint)
+    }
+
+    func testExplicitPlayRecoversDamagedCheckpointWithoutExtraSelection() async throws {
+        useRegularVoiceForTest(language: "en")
+        let store = HistoryStore(directory: directory)
+        let doc = document()
+        store.record(doc)
+        try save(store, doc: doc)
+        let url = directory.appendingPathComponent(ReadingResumeContract.fingerprint(doc.id) + ".read.resume.json")
+        try Data("broken".utf8).write(to: url)
+        let media = segment(0, text: doc.paragraphs[0].text, paragraph: 0)
+        let vm = ReadAloudViewModel(document: doc, historyStore: store,
+                                   speechGenerator: ResumeTestSpeech(segments: [media]))
+        defer { vm.stop(); vm.deactivate() }
+        XCTAssertNotNil(vm.resumeNotice)
+        vm.togglePlayPause()
+        try await waitUntil("A damaged bookmark must not disable Play") {
+            vm.isPlaying && AudioPlayerService.shared.hasAudibleProgress
+        }
+        XCTAssertNil(vm.resumeNotice)
+        XCTAssertEqual(AudioPlayerService.shared.currentSegment?.text, media.text)
+    }
+
     func testExplicitBackwardJumpReplacesProgressRatherThanKeepingMaximum() async throws {
         let doc = document()
         let store = HistoryStore(directory: directory)
@@ -1022,6 +1181,34 @@ final class ReadingResumeTests: XCTestCase {
         vm.flushReadingProgress()
         let checkpoint = try XCTUnwrap(store.readingCheckpoint(for: old.id))
         XCTAssertEqual(ReadingResumeDocumentIndex(paragraphs: next.paragraphs).resolve(checkpoint), 0)
+    }
+
+    func testConfirmedKindlePageOwnerStartsAtNewSourceAndStillPersistsItsPlayback() async throws {
+        let store = HistoryStore(directory: directory)
+        let old = document(.kindle, id: "confirmed-page-book")
+        store.record(old)
+        try save(store, doc: old)
+        let saved = try XCTUnwrap(store.readingCheckpoint(for: old.id))
+        var next = document(.kindle, id: "confirmed-page-uuid")
+        next.paragraphs = paragraphs(["The newly confirmed page starts here"])
+        let vm = ReadAloudViewModel(document: next, historyStore: store,
+                                   restoresSavedReadingPosition: false)
+        vm.configurePlaybackMetadata(id: old.id, title: old.title, coverURL: nil)
+        XCTAssertNil(vm.resumeNotice)
+        XCTAssertFalse(vm.hasPendingReadingResume)
+        XCTAssertEqual(vm.currentParagraphIndex, -1)
+        XCTAssertEqual(store.readingCheckpoint(for: old.id)?.paragraphFingerprint, saved.paragraphFingerprint,
+                       "Choosing a new source must not erase durable history before audible progress")
+        vm.startWithPrefetchedSegments([segment(0, text: next.paragraphs[0].text, paragraph: 0)], paragraphIndex: 0)
+        defer { vm.stop(); vm.deactivate() }
+        try await waitUntil("Confirmed page audio must start") { vm.isPlaying && AudioPlayerService.shared.hasAudibleProgress }
+        vm.togglePlayPause()
+        vm.flushReadingProgress()
+        let reopened = ReadAloudViewModel(document: next, historyStore: store)
+        reopened.configurePlaybackMetadata(id: old.id, title: old.title, coverURL: nil)
+        XCTAssertNil(reopened.resumeNotice)
+        XCTAssertTrue(reopened.hasPendingReadingResume,
+                      "Cold reopen still restores the newly heard page's checkpoint")
     }
 
     func testRepeatedPhotoImportStillReceivesItsDelayedOCRUpgrade() throws {

@@ -1,0 +1,118 @@
+{
+  "rows": [
+    {
+      "begin": "18:06:44.721",
+      "begin_ms": 65204721,
+      "prior_end": "18:06:44.710",
+      "prior_end_ms": 65204710,
+      "phase": {
+        "receipt": "18:06:44.736",
+        "source_activated": "18:06:44.747",
+        "paint": "18:06:44.764",
+        "restart": "18:06:44.770",
+        "media_ready": "18:06:44.775"
+      },
+      "staged_target": true,
+      "outcome": "playing",
+      "playing": "18:06:44.812",
+      "finished_ms": 65204812,
+      "ended_to_playing_ms": 102,
+      "exclusions": []
+    },
+    {
+      "begin": "18:07:05.991",
+      "begin_ms": 65225991,
+      "prior_end": "18:07:05.980",
+      "prior_end_ms": 65225980,
+      "phase": {
+        "receipt": "18:07:06.004",
+        "source_activated": "18:07:06.015",
+        "paint": "18:07:06.035",
+        "restart": "18:07:06.042",
+        "media_ready": "18:07:06.046"
+      },
+      "staged_target": true,
+      "outcome": "playing",
+      "playing": "18:07:06.081",
+      "finished_ms": 65226081,
+      "ended_to_playing_ms": 101,
+      "exclusions": []
+    },
+    {
+      "begin": "18:07:30.547",
+      "begin_ms": 65250547,
+      "prior_end": "18:07:30.545",
+      "prior_end_ms": 65250545,
+      "phase": {
+        "receipt": "18:07:30.566",
+        "source_activated": "18:07:30.578",
+        "paint": "18:07:30.594",
+        "restart": "18:07:30.601",
+        "media_ready": "18:07:30.604"
+      },
+      "staged_target": true,
+      "outcome": "playing",
+      "playing": "18:07:30.636",
+      "finished_ms": 65250636,
+      "ended_to_playing_ms": 91,
+      "exclusions": []
+    },
+    {
+      "begin": "18:07:58.866",
+      "begin_ms": 65278866,
+      "prior_end": "18:07:58.856",
+      "prior_end_ms": 65278856,
+      "phase": {
+        "receipt": "18:07:58.882",
+        "source_activated": "18:07:58.892",
+        "paint": "18:07:58.904",
+        "restart": "18:07:58.911",
+        "media_ready": "18:07:58.914"
+      },
+      "staged_target": true,
+      "outcome": "playing",
+      "playing": "18:07:58.952",
+      "finished_ms": 65278952,
+      "ended_to_playing_ms": 96,
+      "exclusions": []
+    },
+    {
+      "begin": "18:08:28.601",
+      "begin_ms": 65308601,
+      "prior_end": "18:08:28.598",
+      "prior_end_ms": 65308598,
+      "phase": {
+        "receipt": "18:08:28.619",
+        "source_activated": "18:08:28.632",
+        "paint": "18:08:28.645",
+        "restart": "18:08:28.652",
+        "media_ready": "18:08:28.655"
+      },
+      "staged_target": true,
+      "outcome": "playing",
+      "playing": "18:08:28.688",
+      "finished_ms": 65308688,
+      "ended_to_playing_ms": 90,
+      "exclusions": []
+    }
+  ],
+  "ordinary_events": {
+    "count": 5,
+    "p95_ms": 102,
+    "max_ms": 102
+  },
+  "exclusion_intervals": [
+    [
+      "controls",
+      "18:08:35.000",
+      "23:59:59.999"
+    ]
+  ],
+  "raw_sha256": {
+    "/tmp/castreader-kindlelive103-reader.log": "3e6b4b9e90748e293e9ff84ec4ed25f981bbdeb59a399ea5c01e1e89c4d2e57f",
+    "/tmp/castreader-kindlelive103-probe-complete.log": "f0a53533d8ef12824e1a34ab18782a9144f46a983a9a0faa493b4b7f2fe5f68d"
+  },
+  "measurement": "Application event clock; no acoustic silence claim. Source coverage, chapter coverage and long-duration acceptance are separate.",
+  "final_acceptance": false,
+  "candidate": 103
+}
