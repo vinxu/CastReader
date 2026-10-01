@@ -31,7 +31,140 @@
     "explain_final_media_end_to_next_playing_ms": 275,
     "source_cue_coverage_failures": 0,
     "chinese_subtitle_measured_word_coverage": true,
-    "read_and_explain_screenshots_reviewed": true
+    "read_and_explain_screenshots_reviewed": true,
+    "clone_media_transitions": {
+      "count": 25,
+      "min_ms": 32,
+      "max_ms": 275,
+      "events": [
+        {
+          "from": "5-0",
+          "to": "5-1",
+          "ms": 47
+        },
+        {
+          "from": "5-1",
+          "to": "6-0",
+          "ms": 41
+        },
+        {
+          "from": "6-0",
+          "to": "7-0",
+          "ms": 45
+        },
+        {
+          "from": "7-0",
+          "to": "8-0",
+          "ms": 52
+        },
+        {
+          "from": "8-0",
+          "to": "9-0",
+          "ms": 56
+        },
+        {
+          "from": "9-0",
+          "to": "10-0",
+          "ms": 40
+        },
+        {
+          "from": "10-0",
+          "to": "11-0",
+          "ms": 40
+        },
+        {
+          "from": "11-0",
+          "to": "12-0",
+          "ms": 47
+        },
+        {
+          "from": "12-0",
+          "to": "13-0",
+          "ms": 43
+        },
+        {
+          "from": "13-0",
+          "to": "14-0",
+          "ms": 41
+        },
+        {
+          "from": "14-0",
+          "to": "15-0",
+          "ms": 47
+        },
+        {
+          "from": "15-0",
+          "to": "16-0",
+          "ms": 42
+        },
+        {
+          "from": "16-0",
+          "to": "17-0",
+          "ms": 47
+        },
+        {
+          "from": "17-0",
+          "to": "18-0",
+          "ms": 56
+        },
+        {
+          "from": "18-0",
+          "to": "19-0",
+          "ms": 41
+        },
+        {
+          "from": "19-0",
+          "to": "20-0",
+          "ms": 52
+        },
+        {
+          "from": "20-0",
+          "to": "21-0",
+          "ms": 61
+        },
+        {
+          "from": "21-0",
+          "to": "1-850010000",
+          "ms": 41
+        },
+        {
+          "from": "0-0",
+          "to": "0-1",
+          "ms": 41
+        },
+        {
+          "from": "0-1",
+          "to": "1-0",
+          "ms": 32
+        },
+        {
+          "from": "1-0",
+          "to": "1-1",
+          "ms": 51
+        },
+        {
+          "from": "1-1",
+          "to": "1-2",
+          "ms": 42
+        },
+        {
+          "from": "1-2",
+          "to": "2-0",
+          "ms": 40
+        },
+        {
+          "from": "2-0",
+          "to": "2-1",
+          "ms": 55
+        },
+        {
+          "from": "2-1",
+          "to": "0-0",
+          "ms": 275
+        }
+      ],
+      "exclusions": "Preset before private selection and deliberate user pause/mode switch are not automatic transitions"
+    }
   },
   "metrics": {
     "private-chinese-explain-after-natural-page": {
