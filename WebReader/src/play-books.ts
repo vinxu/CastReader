@@ -830,15 +830,55 @@ function extractPlayBooksParagraphsFromClips(
 
 /** Native sliced/reopened relationships, including verified measuring pages,
  * own source ranges. An unrelated offscreen DOM node is never a successor. */
+export function playBooksReflowSourceDirection(snapshot: PlayBooksSnapshot, source: string): 'next' | 'prev' | null {
+  if (!snapshot.ready || source.length < 24 || source.length > 16000 || !snapshot.visible.length) return null
+  const units: PlayBooksUnit[] = []
+  let previous: PlayBooksSnapshot['pages'][number] | undefined
+  for (const page of snapshot.pages) {
+    if (previous && (page.segment !== previous.segment || page.index !== previous.index + 1)) {
+      if (units.at(-1)?.sliced) units.at(-1)!.sliced = false
+    }
+    try { appendPlayBooksPage(units, page) } catch { break }
+    previous = page
+  }
+  const matches = units.flatMap(unit => {
+    const at = unit.text.indexOf(source)
+    if (at < 0 || unit.text.indexOf(source, at + 1) >= 0) return []
+    return unit.fragments.filter(fragment => fragment.end > at && fragment.start < at + source.length)
+  })
+  // Require one unique source unit. Repeated prose cannot choose a page.
+  if (units.filter(unit => unit.text.includes(source)).length !== 1 || !matches.length) return null
+  const visible = new Set(snapshot.visible.map(page => page.key))
+  if (matches.some(fragment => visible.has(fragment.page.key))) return null
+  const indices = snapshot.visible.map(page => snapshot.pages.findIndex(p => p.key === page.key))
+  const targets = matches.map(fragment => snapshot.pages.findIndex(p => p.key === fragment.page.key))
+  if (targets.every(index => index > Math.max(...indices))) return 'next'
+  if (targets.every(index => index < Math.min(...indices))) return 'prev'
+  return null
+}
+
 function nativeParagraphs(snapshot: PlayBooksSnapshot, keys: Set<string>): PlayBooksPara[] {
   const units: PlayBooksUnit[] = []
+  const acceptedKeys = new Set<string>()
   let previous: PlayBooksSnapshot['pages'][number] | undefined
   for (const page of snapshot.pages) {
     if (previous && (page.segment !== previous.segment || page.index !== previous.index + 1)) {
       // Prevent an unconfirmed continuation across a missing native page.
       if (units.at(-1)?.sliced) units.at(-1)!.sliced = false
     }
-    appendPlayBooksPage(units, page)
+    try {
+      appendPlayBooksPage(units, page)
+    } catch (error) {
+      // A recycled future page can temporarily lack Google's reopened marker.
+      // appendPlayBooksPage rejects that first block before mutating units.
+      // Preserve the already proven requested pages, without joining or
+      // guessing the unconfirmed suffix. A gap at/before a requested page
+      // still fails closed and can never authorize a turn to that page.
+      if (error instanceof Error && error.message === 'play_books_unconfirmed_paragraph_continuation' &&
+          [...keys].every(key => acceptedKeys.has(key))) break
+      throw error
+    }
+    acceptedKeys.add(page.key)
     previous = page
   }
   const out: PlayBooksPara[] = []
@@ -1091,6 +1131,7 @@ export function extractPlayBooksNextSpeechPreview(): PlayBooksSpeechPreview | nu
 export function extractPlayBooksNextPagePreview(): {
   paragraphs: PlayBooksPara[]
   contentFingerprint: string
+  following?: { paragraphs: PlayBooksPara[], contentFingerprint: string }
 } | null {
   if (document.querySelector('reader-horizontal-view')) {
     const snapshot = readPlayBooksSnapshot()
@@ -1102,7 +1143,19 @@ export function extractPlayBooksNextPagePreview(): {
     }
     if (!keys.length) return null
     const paragraphs = nativeParagraphs(snapshot, new Set(keys))
-    return paragraphs.length ? { paragraphs, contentFingerprint: candidateFingerprint(paragraphs) } : null
+    if (!paragraphs.length) return null
+    let following: { paragraphs: PlayBooksPara[], contentFingerprint: string } | undefined
+    if (paragraphs.reduce((count, p) => count + p.text.trim().length, 0) < 50 && page) {
+      const nextKeys: string[] = []
+      for (let index = 0; index < snapshot.columns && page; index++) {
+        nextKeys.push(page.key); page = nextPlayBooksPage(snapshot, page)
+      }
+      if (nextKeys.length === snapshot.columns || (!page && snapshot.last)) {
+        const next = nativeParagraphs(snapshot, new Set(nextKeys))
+        if (next.length) following = { paragraphs: next, contentFingerprint: candidateFingerprint(next) }
+      }
+    }
+    return { paragraphs, contentFingerprint: candidateFingerprint(paragraphs), following }
   }
   const currentClips = currentPlayBooksPageClips()
   const current = extractPlayBooksParagraphsFromClips(currentClips)
@@ -1193,6 +1246,21 @@ function usablePagerControl(candidate: Element | null): HTMLElement | null {
   const control = visiblePagerControl(candidate)
   if (control == null || !pagerControlEnabled(control)) return null
   return control
+}
+
+/** Native completion surface observed on Google Books, independent of locale.
+ * Empty/loading pages and a disabled pager alone are not book-end evidence. */
+function confirmedPlayBooksEnd(): Record<string, unknown> | null {
+  const terminal = document.querySelector('reader-end-of-book.shown')
+  if (!visiblePagerControl(terminal) || document.querySelector('reader-page.shown')) return null
+  for (let node = terminal as HTMLElement | null; node; node = node.parentElement) {
+    const style = getComputedStyle(node)
+    if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || '1') < 0.99) return null
+  }
+  const next = Array.from(document.querySelectorAll('button')).find(button =>
+    button.querySelector('mat-icon')?.textContent?.trim() === 'chevron_right' && visiblePagerControl(button))
+  if (!next?.disabled) return null
+  return { surface: 'reader-end-of-book', shown: true, nextDisabled: true }
 }
 
 /** 词表探测怎么找到按钮的 —— 词表命中还是结构兜底。随 turnRequested 上报，
@@ -1536,6 +1604,7 @@ export function installPlayBooksReader(
   let committedSignature = playBooksSignature()
   let observedSignature = committedSignature
   let pendingAuto = false
+  let pendingDirection: 'next' | 'prev' | null = null
   let pendingNativeTarget: string | null = null
   let nativeTurnObservation = 0
   let pendingAutoMetadata: PlayBooksAutomaticTurnMetadata | null = null
@@ -1586,7 +1655,17 @@ export function installPlayBooksReader(
       ) return
       const sourceSignature = committedSignature || playBooksSignature()
       if (!sourceSignature) return
-      const preview = extractPlayBooksNextPagePreview()
+      let preview: ReturnType<typeof extractPlayBooksNextPagePreview>
+      try {
+        preview = extractPlayBooksNextPagePreview()
+      } catch (error) {
+        if (!(error instanceof Error) || error.message !== 'play_books_unconfirmed_paragraph_continuation') throw error
+        // The provider may attach its reopened marker after the text node.
+        // That is not permission to preview yet, nor a terminal producer
+        // failure: keep this read-only observer alive for the same page.
+        scheduleNextPagePreview(attempt + 1)
+        return
+      }
       if (!preview || preview.paragraphs.length === 0) {
         if (sourceSignature !== lastGeometryPreviewMissToken) {
           lastGeometryPreviewMissToken = sourceSignature
@@ -1631,10 +1710,10 @@ export function installPlayBooksReader(
         scheduleNextPagePreview(attempt + 1)
         return
       }
-      const token = `${sourceSignature}|${preview.contentFingerprint}`
+      const token = `${sourceSignature}|${preview.contentFingerprint}|${preview.following?.contentFingerprint || ''}`
       if (token === lastPreviewToken) return
       lastPreviewToken = token
-      const paragraphs = preview.paragraphs.map((p, paragraphIndex) => {
+      const serialize = (paras: PlayBooksPara[]) => paras.map((p, paragraphIndex) => {
         const row: Record<string, unknown> = {
           paragraphIndex,
           text: p.text,
@@ -1655,10 +1734,26 @@ export function installPlayBooksReader(
       postForFrame('googleBooksPagePreview', {
         sourceSignature,
         contentFingerprint: preview.contentFingerprint,
-        paragraphs,
+        paragraphs: serialize(preview.paragraphs),
+        following: preview.following ? {
+          contentFingerprint: preview.following.contentFingerprint,
+          paragraphs: serialize(preview.following.paragraphs),
+        } : undefined,
       })
     }, attempt === 0 ? 120 : attempt <= 6 ? 320 : 1000)
   }
+
+  // A first preview can already exist before Google's native paginator has
+  // prepared the spread beyond a tiny tail. Recheck newly published evidence
+  // even after polling stopped on that first successful preview. The existing
+  // source/turn guards and fingerprint deduplication still own publication.
+  const onNativeLayoutPrepared = (): void => scheduleNextPagePreview()
+  document.addEventListener('castreader-play-books-layout', onNativeLayoutPrepared)
+  window.addEventListener('pagehide', () => {
+    document.removeEventListener('castreader-play-books-layout', onNativeLayoutPrepared)
+    if (previewTimer) clearTimeout(previewTimer)
+    previewTimer = null
+  }, { once: true })
 
   const clearManualIntent = (): void => {
     pendingManualIntent = false
@@ -1673,6 +1768,7 @@ export function installPlayBooksReader(
     nativeTurnObservation = 0
     pendingNativeTarget = null
     pendingAuto = false
+    pendingDirection = null
     pendingAutoMetadata = null
     pendingTurnMethod = null
     pendingTurnBaseline = ''
@@ -1730,6 +1826,25 @@ export function installPlayBooksReader(
   const payloadFor = (
     metadata: PlayBooksTurnMetadata | null
   ): Record<string, unknown> => metadata ? { ...metadata } : {}
+
+  const finishConfirmedBookEnd = (): boolean => {
+    if (!pendingAuto || pendingDirection !== 'next') return false
+    const proof = confirmedPlayBooksEnd()
+    if (!proof) return false
+    const metadata = pendingAutoMetadata
+    const method = pendingTurnMethod || 'none'
+    clearAutoTurn()
+    if (settleTimer) clearTimeout(settleTimer)
+    settleTimer = null
+    clearSettledChange('auto')
+    clearPageVisuals()
+    lateAutoTurn = null
+    postForFrame('googleBooksTurnFailed', {
+      method, reason: 'native-book-end', lateEligible: false,
+      nativeBookEnd: proof, ...payloadFor(metadata),
+    })
+    return true
+  }
 
   const rememberLateAutoTurn = (
     metadata: PlayBooksAutomaticTurnMetadata | null,
@@ -1867,6 +1982,11 @@ export function installPlayBooksReader(
           clearManualIntent()
         }
         committedSignature = finalSignature || committedSignature
+        // Deduplication belongs to this committed presentation, not the
+        // lifetime of the iframe. Native invalidates previews on every turn.
+        lastPreviewToken = ''
+        lastSpeechPreviewToken = ''
+        lastGeometryPreviewMissToken = ''
         observedSignature = finalSignature || observedSignature
         if (!forceExtract) {
           postForFrame('googleBooksPageChanging', {
@@ -1901,6 +2021,12 @@ export function installPlayBooksReader(
     if (pendingAuto) return false
     const visualBaseline = playBooksSignature() || committedSignature
     const metadata = automaticMetadata(arg, visualBaseline)
+    if (direction === 'next' && confirmedPlayBooksEnd()) {
+      pendingAuto = true
+      pendingDirection = direction
+      pendingAutoMetadata = metadata
+      return finishConfirmedBookEnd()
+    }
     const coarsePointer = (() => {
       try { return window.matchMedia('(pointer: coarse)').matches } catch { return false }
     })()
@@ -1923,6 +2049,7 @@ export function installPlayBooksReader(
     }
 
     pendingAuto = true
+    pendingDirection = direction
     pendingAutoMetadata = metadata
     lateAutoTurn = null
     clearManualIntent()
@@ -2028,6 +2155,20 @@ export function installPlayBooksReader(
     },
     refresh(arg?: unknown): void {
       const reflow = recordArg(arg)
+      if (typeof reflow.reflowSourceText === 'string') {
+        if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent ||
+            reflow.reflowBaseline !== playBooksSignature()) return
+        const snapshot = readPlayBooksSnapshot()
+        const direction = snapshot && playBooksReflowSourceDirection(snapshot, reflow.reflowSourceText)
+        changeReasonInFlight = 'refresh'
+        changeBaseline = committedSignature
+        changeMetadata = null
+        if (direction) turnPlayBooksPage(direction, 'button')
+        // A miss must return a fresh current-page result as well. Native bounds
+        // retries by signature, so missing source evidence cannot leave a gate.
+        commit('refresh', 0, true)
+        return
+      }
       if (reflow.reflowDirection === 'next' || reflow.reflowDirection === 'prev') {
         // Geometry-only correction requested by the owned native reader after
         // exact neighboring source text proves the speaking paragraph moved
@@ -2243,6 +2384,7 @@ export function installPlayBooksReader(
   }, true)
 
   const observePageChange = (): void => {
+    if (finishConfirmedBookEnd()) return
     const signature = playBooksSignature()
     if (!signature || signature === observedSignature) return
     observedSignature = signature

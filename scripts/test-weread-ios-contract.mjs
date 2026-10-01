@@ -1088,8 +1088,8 @@ assert.match(
 );
 assert.match(
   readAloudSource,
-  /if document\.sourceKind == \.kindle, !VoiceOption\.requiresGenerationQuota\(playbackVoiceID\) \{\s*preloadNext\(after: paragraph\)/,
-  'WeRead must finish the current natural-sentence producer before competing for the next paragraph',
+  /if !VoiceOption\.requiresGenerationQuota\(playbackVoiceID\) \{\s*preloadNext\(after: paragraph\)/,
+  'ordinary voices can prepare successors after playable media; clone generation remains serialized',
 );
 const cancelledTurnResume = readAloudSource.slice(
   readAloudSource.indexOf('func resumeAfterCancelledLiveWebTurnIntent'),
@@ -1738,6 +1738,41 @@ assert.match(
   'test-device cleanup must be explicit and absent from App Store builds',
 );
 
+
+// Real iPad ordering: native Canvas replacement arrives before resize. It is
+// geometry work, so retain the source highlight and never pause the transport.
+{
+  const start = bridge.indexOf('function nativePaintChanged()');
+  const end = bridge.indexOf("document.addEventListener('castreader-wr-native'", start);
+  const run = (resized, semantic) => {
+    const calls = [];
+    const context = vm.createContext({ innerWidth: resized ? 1366 : 1024, innerHeight: 830,
+      viewportWidth: 1024, viewportHeight: 830, geometryMode: false,
+      semanticTurnUntil: semantic ? Date.now() + 100000 : 0, scope: [{}], scopePath: '/book',
+      location: { pathname: '/book' }, lastFingerprint: 'old-page',
+      root: () => ({}), window: { __castReaderWeReadNative: { snapshot: () => ({ ready: false }) } },
+      clearHighlight: () => calls.push('clear-highlight'), clearMarks: () => calls.push('clear-marks'),
+      post: type => calls.push(type), publish: () => calls.push('publish') });
+    vm.runInContext(`function beginGeometryReflow(){if(Date.now()<semanticTurnUntil)return;geometryMode=true;viewportWidth=innerWidth;viewportHeight=innerHeight;}` + bridge.slice(start, end) + ';nativePaintChanged();', context);
+    return calls;
+  };
+  assert.deepEqual(run(true, false), ['publish'], 'rotation retains live cue state and audio owner');
+  assert.deepEqual(run(false, true), ['clear-highlight', 'clear-marks', 'wereadPageChanging', 'publish'], 'actual navigation still suspends stale speech');
+  assert.deepEqual(run(true, true), ['clear-highlight', 'clear-marks', 'wereadPageChanging', 'publish'], 'resize cannot supersede an issued semantic turn');
+}
+
+{
+  const start=bridge.indexOf('function isVisibleChapterStart(title)');
+  const end=bridge.indexOf('window.CastReaderWeRead={',start);
+  const run=(texts,title,extra={})=>vm.runInNewContext(bridge.slice(start,end)+';isVisibleChapterStart(title)',{
+    title, visible:texts.map(text=>({text})), root:()=>({}), reflowUntil:0,
+    viewportWidth:1024,innerWidth:1024,viewportHeight:1172,innerHeight:1172,...extra});
+  assert.equal(run(['A wrapped','chapter heading','body'], 'A wrapped chapter heading'), true);
+  assert.equal(run(['A wrapped'], 'A wrapped chapter heading'), false);
+  assert.equal(run(['body','A wrapped chapter heading'], 'A wrapped chapter heading'), false);
+  assert.equal(run(['Different heading'], 'A wrapped chapter heading'), false);
+  assert.equal(run(['A heading'], 'A heading',{innerWidth:1366}), false);
+}
 console.log('WeRead iOS JavaScript contracts passed');
 // Several extracted production bridges intentionally schedule observers and
 // retry timers. The contract assertions above are synchronous; do not keep the

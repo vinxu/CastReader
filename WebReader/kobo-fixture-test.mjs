@@ -306,6 +306,10 @@ async function run() {
   }
   if (speechPreview) {
     assert(
+      /^[0-9a-f]{8}$/.test(speechPreview.contentFingerprint),
+      'speech preload fingerprint must satisfy the shared native source-preview contract'
+    );
+    assert(
       !speechPreview.text.includes('OFFSCREEN PREFETCH SENTINEL'),
       'speech preload skipped the immediate source continuation'
     );
@@ -381,7 +385,7 @@ async function run() {
   };
   KoboFixture.installKoboReader(
     (type, payload) => messages.push({type, payload}),
-    (reason, metadata = {}) => {
+    (reason, metadata = {}, preparedParagraphs) => {
       messages.push({
         type: 'rendered',
         payload: {
@@ -389,7 +393,7 @@ async function run() {
           reason,
           signature: KoboFixture.koboSignature(),
           frameSessionID: 'kbf-fixture',
-          paragraphs: KoboFixture.extractKoboParagraphs(),
+          paragraphs: preparedParagraphs ?? KoboFixture.extractKoboParagraphs(),
           ...metadata,
         },
       });

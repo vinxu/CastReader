@@ -1070,6 +1070,25 @@ enum WeReadWebScripts {
         clearTimeout(stableTimer);stableCandidate='';removeHighlight();removeMarks();schedule('resize');
       }
       function scopeParagraph(index){return scope[index]||visible[index];}
+      function nativeRangeFragments(p,start,end){
+        if(!p?.nativeSourceIdentity||!Array.isArray(p.sourceAnchors))return null;
+        const fragments=[];
+        for(const anchor of p.sourceAnchors){
+          const lo=Math.max(start,anchor.start),hi=Math.min(end,anchor.end);if(hi<=lo)continue;
+          const sourceStart=anchor.offset+lo-anchor.start,sourceEnd=anchor.offset+hi-anchor.start;
+          for(const v of visible){
+            if(v.nativeSourceIdentity!==p.nativeSourceIdentity)continue;
+            for(const target of v.sourceAnchors||[]){
+              const a=Math.max(sourceStart,target.offset),b=Math.min(sourceEnd,target.offset+target.text.length);
+              const localStart=target.start+a-target.offset,localEnd=target.start+b-target.offset;
+              if(b<=a||localEnd<=0||localStart>=v.text.length)continue;
+              if(anchor.text.slice(a-anchor.offset,b-anchor.offset)!==target.text.slice(a-target.offset,b-target.offset))continue;
+              fragments.push({p:v,start:Math.max(0,localStart),end:Math.min(v.text.length,localEnd)});
+            }
+          }
+        }
+        return fragments;
+      }
       function mappedRange(p,start,end){
         if(!p)return null;
         if(visible.includes(p))return{p,start,end};
@@ -1081,6 +1100,19 @@ enum WeReadWebScripts {
       function revealScopeRange(a){
         if(!geometryMode||revealBusy||Date.now()<reflowUntil||scopePath!==location.pathname||window.__crWeReadAppearance)return;
         const p=scopeParagraph(a?.paragraphIndex);if(!p||!Number.isFinite(p.sourceParagraphIndex))return;
+        const native=nativeRangeFragments(p,a.charStart||0,a.charEnd||1);
+        if(native){
+          if(native.length)return;
+          const anchor=p.sourceAnchors.find(v=>v.end>Number(a.charStart||0));
+          const known=visible.filter(v=>v.nativeSourceIdentity===p.nativeSourceIdentity).flatMap(v=>(v.sourceAnchors||[]).filter(g=>g.end>0&&g.start<v.text.length));
+          if(!anchor||!known.length)return;
+          const pos=anchor.offset+Math.max(0,Number(a.charStart||0)-anchor.start);
+          const first=Math.min(...known.map(v=>v.offset)),last=Math.max(...known.map(v=>v.offset+v.text.length));
+          const direction=pos<first?'prev':pos>=last?'next':'';if(!direction)return;
+          const key=`${p.nativeSourceIdentity}:${direction}`;if(key!==revealKey){revealKey=key;revealCount=0;}if(revealCount>=3)return;
+          if(window.__castReaderWeReadNative?.turn(direction)){revealCount++;revealBusy=true;reflowUntil=Date.now()+800;schedule('source-reveal');}
+          return;
+        }
         const mapped=mappedRange(p,a.charStart||0,a.charEnd||1);
         if(mapped&&mapped.end>0&&mapped.start<mapped.p.text.length)return;
         // Only source-backed positions in the same chapter may reveal an
@@ -1298,7 +1330,7 @@ enum WeReadWebScripts {
       function formattingMatch(fullText,targetText,startPos){const source=normalizedUnits(fullText),target=normalizedUnits(targetText);if(!source.length||!target.length)return null;const sourceText=source.map(v=>v.ch).join(''),targetTextNormalized=target.map(v=>v.ch).join('');let sourceFrom=source.findIndex(v=>v.end>startPos);if(sourceFrom<0)return null;let at=sourceText.indexOf(targetTextNormalized,sourceFrom),matched=targetTextNormalized.length;if(at<0){for(let n=Math.min(50,targetTextNormalized.length);n>=6;n=Math.floor(n*.6)){at=sourceText.indexOf(targetTextNormalized.slice(0,n),sourceFrom);if(at>=0){matched=n;break;}}}if(at<0)return null;return{pos:source[at].start,prefixEnd:source[Math.min(source.length-1,at+matched-1)].end};}
       function computeSourceSpan(fullText,startPos,sentenceText){let fi=startPos,si=0;const look=3;while(fi<fullText.length&&si<sentenceText.length){if(fullText[fi]===sentenceText[si]){fi++;si++;continue;}const fw=/\s/.test(fullText[fi]),sw=/\s/.test(sentenceText[si]);if(fw&&sw){while(fi<fullText.length&&/\s/.test(fullText[fi]))fi++;while(si<sentenceText.length&&/\s/.test(sentenceText[si]))si++;continue;}if(fw){fi++;continue;}if(sw){si++;continue;}let skipF=-1,skipS=-1;for(let k=1;k<=look;k++){if(skipF<0&&fi+k<fullText.length&&fullText[fi+k]===sentenceText[si])skipF=k;if(skipS<0&&si+k<sentenceText.length&&fullText[fi]===sentenceText[si+k])skipS=k;}if(skipF>=0&&(skipS<0||skipF<=skipS))fi+=skipF;else if(skipS>=0)si+=skipS;else{fi++;si++;}}while(fi<fullText.length&&/\s/.test(fullText[fi]))fi++;return Math.max(1,fi-startPos);}
       function resolveSegmentRange(p,a){const texts=Array.isArray(a.segmentTexts)?a.segmentTexts:[],seq=Number(a.segSeq);if(!p||!texts.length||!Number.isInteger(seq)||seq<0||seq>=texts.length)return null;let cursor=0;for(let i=0;i<=seq;i++){const sentence=String(texts[i]||'');if(!sentence.trim())continue;let pos=p.text.indexOf(sentence,cursor);if(pos<0)pos=p.text.toLocaleLowerCase().indexOf(sentence.toLocaleLowerCase(),cursor);if(pos<0)pos=formattingMatch(p.text,sentence,cursor)?.pos??-1;if(pos<0){if(cursor>=p.text.length)return null;pos=cursor;}const end=Math.min(p.text.length,pos+computeSourceSpan(p.text,pos,sentence));if(i===seq)return{start:pos,end};cursor=Math.max(cursor,end);}return null;}
-      function rectsFor(p,start,end){const mapped=mappedRange(p,start,end);if(!mapped)return[];p=mapped.p;start=mapped.start;end=mapped.end;const exact=(p?.entries||[]).filter(e=>e.charEnd>start&&e.charStart<end);if(exact.length)return exact.map(e=>({...e.bbox}));if(p?.geometrySource==='fillText'||p?.geometrySource==='drawImage'||root().querySelector('canvas'))return[];const r=p?.el&&range(p.el,start,end);if(!r)return[];const hr=root().getBoundingClientRect();return Array.from(r.getClientRects()).map(v=>({x:v.left-hr.left,y:v.top-hr.top,width:v.width,height:v.height}));}
+      function rectsFor(p,start,end){const native=nativeRangeFragments(p,start,end);if(native){const seen=new Set();return native.flatMap(v=>(v.p.entries||[]).filter(e=>e.charEnd>v.start&&e.charStart<v.end).flatMap(e=>{const k=`${e.bbox.x}:${e.bbox.y}:${e.bbox.width}:${e.bbox.height}`;if(seen.has(k))return[];seen.add(k);return[{...e.bbox}];}));}const mapped=mappedRange(p,start,end);if(!mapped)return[];p=mapped.p;start=mapped.start;end=mapped.end;const exact=(p?.entries||[]).filter(e=>e.charEnd>start&&e.charStart<end);if(exact.length)return exact.map(e=>({...e.bbox}));if(p?.geometrySource==='fillText'||p?.geometrySource==='drawImage'||root().querySelector('canvas'))return[];const r=p?.el&&range(p.el,start,end);if(!r)return[];const hr=root().getBoundingClientRect();return Array.from(r.getClientRects()).map(v=>({x:v.left-hr.left,y:v.top-hr.top,width:v.width,height:v.height}));}
       function lines(rects){const sorted=rects.filter(r=>r.width>.3&&r.height>.3).sort((a,b)=>(a.y+a.height)-(b.y+b.height)||a.x-b.x),groups=[];for(const r of sorted){const baseline=r.y+r.height;let g=groups.find(v=>Math.abs(v.referenceBaseline-baseline)<=Math.max(3,Math.min(v.referenceHeight,r.height)*.45)&&r.x<=v.x+v.width+Math.max(8,r.height));if(!g){groups.push({x:r.x,y:r.y,width:r.width,height:r.height,referenceBaseline:baseline,referenceHeight:r.height});continue;}const right=Math.max(g.x+g.width,r.x+r.width),bottom=Math.max(g.y+g.height,r.y+r.height);g.x=Math.min(g.x,r.x);g.y=Math.min(g.y,r.y);g.width=right-g.x;g.height=bottom-g.y;}return groups.sort((a,b)=>a.referenceBaseline-b.referenceBaseline||a.x-b.x);}
       const rgba=(hex,a)=>{const h=String(hex||'#FD5F01').replace('#','');return/^[0-9a-f]{6}$/i.test(h)?`rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`:`rgba(253,95,1,${a})`;};
       function removeHighlight(){layer?.querySelectorAll('[data-cr-weread-highlight]').forEach(e=>e.remove());}
@@ -1374,7 +1406,21 @@ enum WeReadWebScripts {
       // Retiring a source is not a navigation request. Keep native paint
       // evidence: the provider may already have painted and need not repaint.
       function invalidateSource(){geometryMode=false;pendingNativePresentation=null;lastFingerprint='';lastPreviewKey='';stableCandidate='';clearHighlight();clearMarks();scope=[];visible=[];schedule('source-invalidated');}
-      window.CastReaderWeRead={openingPageState,advanceOpeningPage,invalidateSource,isVisibleChapterStart(title){const p=visible[0],host=root();return !!p&&!!host&&Date.now()>=reflowUntil&&viewportWidth===innerWidth&&viewportHeight===innerHeight&&p.text.replace(/\s/g,'')===String(title).replace(/\s/g,'');},prepareSemanticNavigation(){geometryMode=false;semanticTurnUntil=Date.now()+12000;pendingNativePresentation=null;lastFingerprint='';lastPreviewKey='';stableCandidate='';clearHighlight();clearMarks();scope=[];visible=[];window.__castReaderWeReadNative?.prepareNavigation?.();},nextPage(options){return turnPage('next',false,options);},userPage(direction){return turnPage(direction==='prev'?'prev':'next',true);},snapshot(){schedule('manual');return{fingerprint:lastFingerprint,ready:!!visible.length&&!unavailableReason()};},relayout(a){clearHighlight();clearMarks();stableCandidate='';lastPreviewKey='';const reason=String(a?.reason||'orientation');try{window.dispatchEvent(new Event('resize'));}catch(_){}schedule(reason);setTimeout(()=>schedule(reason+'-settled'),360);return true;},resumeAfterForeground(a){restoreVisualState();schedule(String(a?.reason||'foreground'));return true;}};
+      function isVisibleChapterStart(title){
+        const heading=String(title).replace(/\s/g,'');
+        if(!heading||heading.length>512||!root()||Date.now()<reflowUntil||viewportWidth!==innerWidth||viewportHeight!==innerHeight)return false;
+        // Native glyph extraction may expose each wrapped heading line as a
+        // separate paragraph. Require the complete catalog heading at the
+        // visible start; a truncated prefix or a later body match is not proof.
+        let prefix='';
+        for(const paragraph of visible.slice(0,8)){
+          prefix+=paragraph.text.replace(/\s/g,'');
+          if(prefix===heading)return true;
+          if(!heading.startsWith(prefix))return false;
+        }
+        return false;
+      }
+      window.CastReaderWeRead={openingPageState,advanceOpeningPage,invalidateSource,isVisibleChapterStart,prepareSemanticNavigation(){geometryMode=false;semanticTurnUntil=Date.now()+12000;pendingNativePresentation=null;lastFingerprint='';lastPreviewKey='';stableCandidate='';clearHighlight();clearMarks();scope=[];visible=[];window.__castReaderWeReadNative?.prepareNavigation?.();},nextPage(options){return turnPage('next',false,options);},userPage(direction){return turnPage(direction==='prev'?'prev':'next',true);},snapshot(){schedule('manual');return{fingerprint:lastFingerprint,ready:!!visible.length&&!unavailableReason()};},relayout(a){clearHighlight();clearMarks();stableCandidate='';lastPreviewKey='';const reason=String(a?.reason||'orientation');try{window.dispatchEvent(new Event('resize'));}catch(_){}schedule(reason);setTimeout(()=>schedule(reason+'-settled'),360);return true;},resumeAfterForeground(a){restoreVisualState();schedule(String(a?.reason||'foreground'));return true;}};
       // Measuring every character of every pre-render paragraph is expensive.
       // The old observer repeated that full pass for each mutation record,
       // blocking WeRead's own paint and making the native cover look like a
@@ -1424,7 +1470,18 @@ enum WeReadWebScripts {
         availabilityTimer=setTimeout(()=>{availabilityTimer=0;if(invalidateUnavailable())return;if(contentUnavailable){captureAll();schedule('content-recovery');}},72);
       });
       function begin(){availabilityObserver.observe(document.documentElement,{childList:true,characterData:true,attributes:true,attributeFilter:['class','style','hidden'],subtree:true});observer.observe(document.documentElement,{childList:true,characterData:true,subtree:true});document.addEventListener('pointerdown',manualTurnIntent,true);document.addEventListener('touchstart',manualTurnIntent,true);bootstrapProbe();}
-      document.addEventListener('castreader-wr-native',()=>{const host=root(),state=host&&window.__castReaderWeReadNative?.snapshot(host);if(state&&!state.ready&&lastFingerprint){clearHighlight();clearMarks();post('wereadPageChanging',{reason:'native-presentation',previousFingerprint:lastFingerprint});}publish('native-paint');});window.addEventListener('castreader-weread-canvas',e=>schedule(e.detail?.reason||'canvas'));window.addEventListener('resize',beginGeometryReflow);document.addEventListener('pointerdown',e=>{if(e.target instanceof Element&&e.target.closest('.font-panel-content'))beginGeometryReflow();},true);
+      function nativePaintChanged(){
+        // The provider replaces its Canvas before WebKit delivers resize.
+        // Latch geometry ownership first: clearing retained highlight state or
+        // sending a semantic page-change here would pause audio permanently,
+        // because geometry-only completion does not replace its source scope.
+        if(innerWidth!==viewportWidth||innerHeight!==viewportHeight)beginGeometryReflow();
+        const host=root(),state=host&&window.__castReaderWeReadNative?.snapshot(host);
+        const geometryOnly=geometryMode&&Date.now()>=semanticTurnUntil&&scope.length&&scopePath===location.pathname;
+        if(state&&!state.ready&&lastFingerprint&&!geometryOnly){clearHighlight();clearMarks();post('wereadPageChanging',{reason:'native-presentation',previousFingerprint:lastFingerprint});}
+        publish('native-paint');
+      }
+      document.addEventListener('castreader-wr-native',nativePaintChanged);window.addEventListener('castreader-weread-canvas',e=>schedule(e.detail?.reason||'canvas'));window.addEventListener('resize',beginGeometryReflow);document.addEventListener('pointerdown',e=>{if(e.target instanceof Element&&e.target.closest('.font-panel-content'))beginGeometryReflow();},true);
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',begin,{once:true});else begin();post('ready',{site:'weread',bridge:'canvas-geometry-v2'});
     })();
     """#

@@ -233,6 +233,18 @@ enum GoogleBooksBookValidator {
 
 // MARK: - Reader Web 安全边界
 
+enum GoogleBooksBookEndContract {
+    static func isConfirmed(_ raw: Any?) -> Bool {
+        guard let value = raw as? [String: Any],
+              value["surface"] as? String == "reader-end-of-book" else { return false }
+        return ["shown", "nextDisabled"].allSatisfy { key in
+            guard let flag = value[key] as? NSNumber,
+                  CFGetTypeID(flag) == CFBooleanGetTypeID() else { return false }
+            return flag.boolValue
+        }
+    }
+}
+
 enum KoboBookEndContract {
     /// The bridge additionally checks the active frame and exact pending turn
     /// identity before accepting this evidence. Progress percentages alone
@@ -954,6 +966,28 @@ struct GoogleBooksSpeechPageSplit: Equatable {
     let remainderLeadingWhitespaceUTF16Length: Int
 }
 
+struct GoogleBooksSpeechFollowingSource: Equatable {
+    let sourceParagraphIndex: Int
+    let sourceUTF16Start: Int
+    let sourceUTF16End: Int
+    let text: String
+
+    func canPrepare(after candidate: GoogleBooksSpeechPreviewCandidate) -> Bool {
+        sourceParagraphIndex == candidate.sourceParagraphIndex
+            && sourceUTF16Start >= candidate.sourceUTF16End
+            && sourceUTF16Start - candidate.sourceUTF16End <= 16
+            && sourceUTF16End - sourceUTF16Start == text.utf16.count
+            && !text.isEmpty && text.utf16.count <= 1200
+            && SpeechTextSanitizer.containsSpeakableContent(text)
+    }
+
+    func matches(_ split: GoogleBooksSpeechPageSplit, after candidate: GoogleBooksSpeechPreviewCandidate) -> Bool {
+        canPrepare(after: candidate) && split.preparedParagraphIndex == 0 && split.insertedRemainder
+            && split.paragraphs.count > 1 && split.domCharacterOffsets.count > 1
+            && split.paragraphs[1] == text && split.domCharacterOffsets[1] == sourceUTF16Start
+    }
+}
+
 enum GoogleBooksSpeechPreloadContract {
     static let maximumPreviewUTF16Length = 260
 
@@ -1212,6 +1246,14 @@ enum GoogleBooksAudioPageBoundaryContract {
 }
 
 enum GoogleBooksExplainPagePrefetchContract {
+    static func exactVisibleSourceMatch(predictedParagraphs: [String], visibleParagraphs: [String],
+        predictedSourceSlices: [LiveWebPageSourceSlice], visibleSourceSlices: [LiveWebPageSourceSlice]) -> Bool {
+        !predictedSourceSlices.isEmpty && predictedSourceSlices == visibleSourceSlices &&
+            predictedSourceSlices.allSatisfy {
+                $0.sourceParagraphIndex != nil && $0.sourceUTF16Start != nil && $0.sourceUTF16End != nil
+            } && predictedParagraphs == visibleParagraphs
+    }
+
     static func canConsume(
         sourceSignature: String,
         previousSignature: String,
@@ -1230,12 +1272,8 @@ enum GoogleBooksExplainPagePrefetchContract {
     ) -> Bool {
         !predictedContentFingerprint.isEmpty
             && predictedContentFingerprint == payloadTextFingerprint
-            && !predictedSourceSlices.isEmpty
-            && predictedSourceSlices == visibleSourceSlices
-            && predictedSourceSlices.allSatisfy {
-                $0.sourceParagraphIndex != nil && $0.sourceUTF16Start != nil && $0.sourceUTF16End != nil
-            }
-            && predictedParagraphs == visibleParagraphs
+            && exactVisibleSourceMatch(predictedParagraphs: predictedParagraphs, visibleParagraphs: visibleParagraphs,
+                predictedSourceSlices: predictedSourceSlices, visibleSourceSlices: visibleSourceSlices)
             && preparedDepth == selectedDepth
             && requestedLanguage == selectedLanguage
             && GoogleBooksSinglePagePreloadContract.canConsume(
@@ -1387,6 +1425,50 @@ enum GoogleBooksCrossPageContract {
 /// An explanation owns an immutable source range until its narration finishes.
 /// A viewport change remaps that range; only a real navigation starts a new one.
 enum LiveWebSourceReflowContract {
+    /// A retained narration can span several newly paginated DOM fragments.
+    /// Source coordinates identify the passage; DOM offsets locate its ink.
+    struct DOMFragment {
+        let paragraphIndex: Int
+        let charStart: Int
+        let charEnd: Int
+        let domCharOffset: Int
+
+        var payload: [String: Int] {
+            ["domParagraphIndex": paragraphIndex, "charStart": charStart,
+             "charEnd": charEnd, "domCharOffset": domCharOffset]
+        }
+    }
+
+    static func domFragments(for source: LiveWebPageSourceSlice,
+                             in visible: [LiveWebPageSourceSlice],
+                             domOffsets: [Int]) -> [DOMFragment] {
+        guard visible.count == domOffsets.count else { return [] }
+        // Unpaginated adapters may omit stable source IDs. Only their exact
+        // current DOM paragraph is eligible; never infer a reflow identity.
+        if source.sourceParagraphIndex == nil {
+            guard let index = visible.firstIndex(where: {
+                $0.sourceParagraphIndex == nil && $0.visibleParagraphIndex == source.visibleParagraphIndex && $0.text == source.text
+            }), domOffsets[index] >= 0, !source.text.isEmpty else { return [] }
+            return [DOMFragment(paragraphIndex: source.visibleParagraphIndex, charStart: 0,
+                charEnd: source.text.utf16.count, domCharOffset: domOffsets[index])]
+        }
+        guard let mapped = remap(source, in: visible),
+              let id = mapped.sourceParagraphIndex, let origin = mapped.sourceUTF16Start else { return [] }
+        let text = source.text as NSString
+        return visible.enumerated().compactMap { index, target in
+            guard target.sourceParagraphIndex == id,
+                  let start = target.sourceUTF16Start, domOffsets[index] >= 0 else { return nil }
+            let targetText = target.text as NSString
+            let lo = max(origin, start), hi = min(origin + text.length, start + targetText.length)
+            guard hi > lo,
+                  text.substring(with: NSRange(location: lo - origin, length: hi - lo)) ==
+                    targetText.substring(with: NSRange(location: lo - start, length: hi - lo)) else { return nil }
+            return DOMFragment(paragraphIndex: target.visibleParagraphIndex,
+                charStart: lo - origin, charEnd: hi - origin,
+                domCharOffset: domOffsets[index] + origin - start)
+        }
+    }
+
     static func directionToReveal(_ source: LiveWebPageSourceSlice,
                                   among previous: [LiveWebPageSourceSlice],
                                   visible: [LiveWebPageSourceSlice]) -> String? {

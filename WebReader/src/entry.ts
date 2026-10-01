@@ -26,7 +26,9 @@ import {
   isKoboReaderMainFrame,
   koboFrameSessionID,
   koboSignature,
+  koboParagraphSignature,
   koboReadingLocation,
+  type KoboPara,
 } from './kobo'
 import {
   acceptOReillyHighlightRect,
@@ -143,8 +145,9 @@ function bootKobo(): boolean {
   const frameSessionID = koboFrameSessionID()
   let pendingReason = 'initial'
   let pendingPageMetadata: Record<string, unknown> = {}
+  let pendingParagraphs: KoboPara[] | undefined
   initBridge({
-    extract: () => extractKoboParagraphs() as unknown as Para[],
+    extract: () => (pendingParagraphs ?? extractKoboParagraphs()) as unknown as Para[],
     acceptHighlightRect: acceptKoboHighlightRect,
     clipHighlightRect: clipKoboHighlightRect,
     autoExtract: false,
@@ -152,7 +155,7 @@ function bootKobo(): boolean {
       source: 'kobo',
       koboLocation: koboReadingLocation(),
       reason: pendingReason,
-      signature: koboSignature(),
+      signature: pendingParagraphs ? koboParagraphSignature(pendingParagraphs) : koboSignature(),
       frameSessionID,
       ...pendingPageMetadata,
     }),
@@ -177,11 +180,14 @@ function bootKobo(): boolean {
           })
         } catch { /* */ }
       }
-      installKoboReader(post, (reason, metadata = {}) => {
+      installKoboReader(post, (reason, metadata = {}, paragraphs) => {
         pendingReason = reason
         pendingPageMetadata = metadata
-        doExtract(reason)
-        pendingPageMetadata = {}
+        pendingParagraphs = paragraphs
+        try { doExtract(reason) } finally {
+          pendingParagraphs = undefined
+          pendingPageMetadata = {}
+        }
       }, frameSessionID)
     },
   })

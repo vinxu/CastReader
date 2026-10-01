@@ -24,6 +24,24 @@ final class PaginationContinuityTests: XCTestCase {
             boundaryUTF16Offset: 5, segments: [part]), 4.4)
     }
 
+    func testUntimedOpeningUsesOnlyACompleteSingleSourceSentence() throws {
+        let source = "“Who said I don’t?”"
+        let short = segment(source, [])
+        XCTAssertNil(WeReadCrossPageSpeechContract.sourceRange(source: source,
+            segments: [short], segmentID: short.id, time: 0))
+        let range = try XCTUnwrap(WeReadCrossPageSpeechContract.openingSourceRange(source: source, segment: short))
+        XCTAssertEqual((source as NSString).substring(with: range), source)
+        XCTAssertEqual(WeReadCrossPageSpeechContract.openingSourceRange(source: source,
+            segment: segment(source, [], index: 900_010_000)), range,
+            "A queued handoff rebases item IDs without changing the complete source")
+        for unsafe in [segment("Different source.", []), segment("“Who said", []),
+                       segment(source, [("wrong", 0, 1)])] {
+            XCTAssertNil(WeReadCrossPageSpeechContract.openingSourceRange(source: source, segment: unsafe))
+        }
+        let multiple = segment("First sentence. Second sentence.", [])
+        XCTAssertNil(WeReadCrossPageSpeechContract.openingSourceRange(source: multiple.text, segment: multiple))
+    }
+
     func testPresentationWindowNeverInventsSilenceAcrossMediaItems() {
         let first = segment("First", [("First", 0, 1)])
         let second = segment("second", [("second", 0.2, 1)], index: 1)
@@ -572,6 +590,40 @@ final class PaginationContinuityTests: XCTestCase {
         try await verifyShortOpening(pauseWhilePreparing: false)
     }
 
+    func testPausedReflowCanReachLaterPartWithoutResumingOrGeneratingPastCursor() async throws {
+        let oldPro = ProManager.shared.debugForcePro
+        ProManager.shared.debugForcePro = true
+        defer { ProManager.shared.debugForcePro = oldPro }
+        useRegularVoiceForTest(language: "en")
+        let source = "Opening words. Restored sentence. Later suffix."
+        let fixture = ReadAloudHTTPFixture { text, _ in
+            if text == source { return .response(ReadAloudHTTPFixture.body("Opening words. ", tail: "Restored sentence. Later suffix.", duration: 4)) }
+            if text == "Restored sentence. Later suffix." { return .response(ReadAloudHTTPFixture.body("Restored sentence. ", tail: "Later suffix.", duration: 4)) }
+            return .response(ReadAloudHTTPFixture.body(text, duration: 4))
+        }
+        defer { fixture.close() }
+        let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let read = ReadAloudViewModel(document: .init(id: UUID().uuidString, title: "Paused reflow",
+            sourceKind: .googleBooks, language: "en", paragraphs: []), audioService: audio, ttsService: fixture.service())
+        defer { read.stop(); read.deactivate(); audio.stop() }
+        let page = [ReadingParagraph(id: 0, text: source)]
+        read.loadWebParagraphs(page, language: "en")
+        read.activate(); read.pausePlayback()
+        read.replaceLiveWebPage(page, language: "en", autoplay: false,
+            resumeAnchor: .init(segmentText: "Restored sentence. ", sourceParagraphText: source,
+                segmentProgress: 0.5, wasPlaying: false))
+        for _ in 0..<300 where audio.currentSegment?.text != "Restored sentence. " || abs(audio.playbackPosition - 2) > 0.2 {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(audio.currentSegment?.text, "Restored sentence. ")
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertTrue(read.isPlaybackPausedByUser)
+        XCTAssertEqual(audio.playbackPosition, 2, accuracy: 0.2)
+        try await Task.sleep(nanoseconds: 250_000_000)
+        XCTAssertFalse(fixture.requests.contains("Later suffix."), "The restore exemption ends at the paused cursor")
+        XCTAssertNotNil(read.webHighlight)
+    }
+
     func testPauseWinsOverLateShortOpeningPreparation() async throws {
         try await verifyShortOpening(pauseWhilePreparing: true)
     }
@@ -1105,6 +1157,11 @@ final class PaginationContinuityTests: XCTestCase {
         try await verifyKoboCuePages(pageCount: 2, wholePage: true, expectsNativePaint: true)
     }
 
+    func testUntimedSingleSentenceSuccessorPaintsAndContinuesWithoutWordCue() async throws {
+        try await verifyKoboCuePages(pageCount: 2, wholePage: true, expectsNativePaint: true,
+                                    untimedOpening: true)
+    }
+
     func testWholePageSuccessorRejectsMismatchedFirstCue() async throws {
         try await verifyKoboCuePages(pageCount: 2, wholePage: true, expectsNativePaint: false)
     }
@@ -1123,7 +1180,7 @@ final class PaginationContinuityTests: XCTestCase {
 
     private func verifyKoboCuePages(pageCount: Int, wholePage: Bool = false, deferFirstAnchor: Bool = false,
                                   preparedCarry: Bool = false, expectsNativePaint: Bool? = nil,
-                                  bookEnd: Bool = false, multipartPreload: Bool = false) async throws {
+                                  bookEnd: Bool = false, multipartPreload: Bool = false, untimedOpening: Bool = false) async throws {
         let oldPro = ProManager.shared.debugForcePro
         ProManager.shared.debugForcePro = true
         defer { ProManager.shared.debugForcePro = oldPro }
@@ -1136,7 +1193,12 @@ final class PaginationContinuityTests: XCTestCase {
                 if text == "first." { return .response(ReadAloudHTTPFixture.body(text, duration: 4)) }
                 return .response(ReadAloudHTTPFixture.body(text, duration: 3), delay: 2)
             }
-            if wholePage { return .response(ReadAloudHTTPFixture.body(text, duration: text == "Slow." ? 1.8 : 3)) }
+            if wholePage {
+                var body = try! JSONSerialization.jsonObject(with:
+                    ReadAloudHTTPFixture.body(text, duration: text == "Slow." ? 1.8 : 3)) as! [String: Any]
+                if untimedOpening && text == "Rapidly onward." { body["timestamps"] = [] }
+                return .response(try! JSONSerialization.data(withJSONObject: body))
+            }
             if text == "The prepared successor." { return .response(ReadAloudHTTPFixture.body(text, duration: 3)) }
             var body = try! JSONSerialization.jsonObject(with: ReadAloudHTTPFixture.body(text, duration: preparedCarry ? 6 : 3)) as! [String: Any]
             body["timestamps"] = [["word":"Slow","start_time":0.0,"end_time":preparedCarry ? 3.0 : 0.4],
@@ -1324,6 +1386,42 @@ final class PaginationContinuityTests: XCTestCase {
         }
     }
 
+    func testGoogleExplainMarkSurvivesReopenedFragmentAndTwoColumnReflow() async throws {
+        try await withGoogleFixture(#"""
+        <reader-app><reader-rendered-page style="position:absolute;left:0;top:0;width:350px;height:560px;overflow:hidden"><div class="gb-segment"><p>First retained sentence.</p><p>Second retained sentence.</p></div></reader-rendered-page></reader-app>
+        """#) { web in
+            _ = try await web.evaluateJavaScript("CR.extract('fixture')")
+            let first = "First retained sentence."
+            let second = "Second retained sentence."
+            let split = first.utf16.count
+            let original = LiveWebPageSourceSlice(visibleParagraphIndex: 0, sourceParagraphIndex: 42,
+                sourceUTF16Start: 102, sourceUTF16End: 102 + split + second.utf16.count, text: first + second)
+            let visible = [LiveWebPageSourceSlice(visibleParagraphIndex: 0, sourceParagraphIndex: 42,
+                sourceUTF16Start: 102, sourceUTF16End: 102 + split, text: first),
+                LiveWebPageSourceSlice(visibleParagraphIndex: 1, sourceParagraphIndex: 42,
+                sourceUTF16Start: 102 + split, sourceUTF16End: original.sourceUTF16End, text: second)]
+            let fragments = LiveWebSourceReflowContract.domFragments(for: original, in: visible, domOffsets: [0, 0])
+            let segments: [[String: Any]] = [["paragraphIndex": 0, "text": original.text,
+                "domParagraphIndex": 0, "domFragments": fragments.map(\.payload)]]
+            let count = try await web.callAsyncJavaScript("""
+                CR.init({segments}); CR.showMark({id:'kept',paragraphIndex:0,charStart:0,charEnd:end,action:'underline',seed:11});
+                return document.querySelectorAll('svg[data-cr-marks] path').length;
+                """, arguments: ["segments": segments, "end": original.text.utf16.count], in: nil, contentWorld: .page) as? Int
+            XCTAssertGreaterThanOrEqual(count ?? 0, 2, "One immutable mark must paint both visible source fragments")
+            let suffix = LiveWebSourceReflowContract.domFragments(for: original, in: [visible[1]], domOffsets: [0])
+            let suffixSegments: [[String: Any]] = [["paragraphIndex": 0, "text": original.text,
+                "domParagraphIndex": 1, "domFragments": suffix.map(\.payload)]]
+            let painted = try await web.callAsyncJavaScript("""
+                CR.clearMarks(); CR.init({segments});
+                CR.showMark({id:'kept',paragraphIndex:0,charStart:start,charEnd:end,action:'underline',seed:11});
+                const p=document.querySelectorAll('.gb-segment p')[1].getBoundingClientRect();
+                const paths=[...document.querySelectorAll('svg[data-cr-marks] path')];
+                return paths.length>0&&paths.every(path=>{const r=path.getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom+8});
+                """, arguments: ["segments": suffixSegments, "start": split, "end": original.text.utf16.count], in: nil, contentWorld: .page) as? Bool
+            XCTAssertEqual(painted, true, "A source offset of 102 must never be applied to a short reopened DOM fragment")
+        }
+    }
+
     func testGoogleNativeFragmentsKeepSourceIdentityButUseLocalDOMOffsets() async throws {
         try await withGoogleFixture(#"""
         <reader-horizontal-view><ol><li class="onepage">
@@ -1364,6 +1462,305 @@ final class PaginationContinuityTests: XCTestCase {
             XCTAssertEqual(actual?.first?["text"] as? String, "Hello")
             XCTAssertEqual(actual?.first?["speechText"] as? String, "Hello world.")
             XCTAssertEqual(actual?.first?["sourceSpeechEnd"] as? Int, 12)
+        }
+    }
+
+    func testGoogleCurrentNativePageReanchorsAfterUnknownEarlierCut() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <reader-horizontal-view><ol><li class="onepage"><reader-page id="page-0-1" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><a id="GBS.PT1"></a><p ocean-reopened-element>old expanded.</p><p>Current exact source.</p></div></reader-rendered-page></reader-page></li></ol></reader-horizontal-view>
+        <button><mat-icon>chevron_right</mat-icon></button>
+        <script>document.documentElement.setAttribute('data-castreader-pb-layouts',JSON.stringify([{id:1,className:'layout',width:350,height:560,anchors:['GBS.PT1'],pages:[
+          {blocks:[{raw:'An unresolved old',stream:'1',boundaries:[],reopened:false,closed:false}],closed:false},
+          {blocks:[{raw:'old expanded.',stream:'1',boundaries:[],reopened:true,closed:true},{raw:'Current exact source.',stream:'2',boundaries:[],reopened:false,closed:true}],closed:true},
+          {blocks:[{raw:'The confirmed immediate successor.',stream:'3',boundaries:[],reopened:false,closed:true}],closed:true}
+        ]}]));</script>
+        """#, messages: inbox) { web in
+            for _ in 0..<250 where !inbox.values.contains(where: { $0["type"] as? String == "googleBooksPagePreview" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let preview = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "googleBooksPagePreview" }?["payload"] as? [String: Any])
+            let paragraphs = try XCTUnwrap(preview["paragraphs"] as? [[String: Any]])
+            XCTAssertEqual(paragraphs.compactMap { $0["text"] as? String }, ["The confirmed immediate successor."])
+            let current = try await web.evaluateJavaScript("CR.extract('fixture');window.__crLastRendered") as? [[String: Any]]
+            XCTAssertEqual(current?.compactMap { $0["text"] as? String }, ["old expanded.", "Current exact source."])
+        }
+    }
+
+    func testGoogleVerifiedNextPageSurvivesUnknownLaterMeasuredCut() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <reader-horizontal-view><ol><li class="onepage"><reader-page id="page-0-0" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><a id="GBS.PT1"></a><p>A.</p></div></reader-rendered-page></reader-page></li></ol></reader-horizontal-view>
+        <button><mat-icon>chevron_right</mat-icon></button>
+        <script>document.documentElement.setAttribute('data-castreader-pb-layouts',JSON.stringify([{id:1,className:'layout',width:350,height:560,anchors:['GBS.PT1'],pages:[
+          {blocks:[{raw:'A.',stream:'1',boundaries:[],reopened:false,closed:true}],closed:true},
+          {blocks:[{raw:'The confirmed next page.',stream:'2',boundaries:[],reopened:false,closed:true}],closed:true},
+          {blocks:[{raw:'C prefix',stream:'3',boundaries:[],reopened:false,closed:false}],closed:false},
+          {blocks:[{raw:'prefix expanded.',stream:'3',boundaries:[],reopened:true,closed:true}],closed:true}
+        ]}]));</script>
+        """#, messages: inbox) { web in
+            for _ in 0..<250 where !inbox.values.contains(where: { $0["type"] as? String == "googleBooksPagePreview" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let preview = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "googleBooksPagePreview" }?["payload"] as? [String: Any])
+            let paragraphs = try XCTUnwrap(preview["paragraphs"] as? [[String: Any]])
+            XCTAssertEqual(paragraphs.compactMap { $0["text"] as? String }, ["The confirmed next page."])
+            let current = try await web.evaluateJavaScript("CR.extract('fixture');window.__crLastRendered") as? [[String: Any]]
+            XCTAssertEqual(current?.compactMap { $0["text"] as? String }, ["A."], "Preparation must not move the visible page")
+        }
+    }
+
+    func testGoogleNativeEndResolvesOwnedTurnWithoutAnotherClick() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <reader-page id="page-30-0" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>The last page finishes here.</p></div></reader-rendered-page></reader-page>
+        <reader-end-of-book style="display:none;width:350px;height:560px">Book complete</reader-end-of-book>
+        <button onclick="window.clicks=(window.clicks||0)+1;document.querySelector('reader-page').remove();const e=document.querySelector('reader-end-of-book');e.classList.add('shown');e.style.display='block';this.disabled=true"><mat-icon>chevron_right</mat-icon></button>
+        """#, messages: inbox) { web in
+            for _ in 0..<200 where !inbox.values.contains(where: { $0["type"] as? String == "rendered" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            _ = try await web.evaluateJavaScript("window.CastReaderGoogleBooks.nextPage({turnID:'end-owned'})")
+            for _ in 0..<100 where !inbox.values.contains(where: { $0["type"] as? String == "googleBooksTurnFailed" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let end = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "googleBooksTurnFailed" }?["payload"] as? [String: Any])
+            XCTAssertEqual(end["turnID"] as? String, "end-owned")
+            XCTAssertEqual(end["reason"] as? String, "native-book-end")
+            XCTAssertEqual(end["lateEligible"] as? Bool, false)
+            XCTAssertTrue(GoogleBooksBookEndContract.isConfirmed(end["nativeBookEnd"]))
+            let clicks = try await web.evaluateJavaScript("window.clicks") as? Int
+            XCTAssertEqual(clicks, 1)
+        }
+    }
+
+    func testGoogleHiddenCompletionPanelCannotEndLoadingChapter() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <reader-page id="page-0-0" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>The chapter is still loading.</p></div></reader-rendered-page></reader-page>
+        <reader-end-of-book class="shown" style="display:none">Hidden cached book end</reader-end-of-book>
+        <button disabled><mat-icon>chevron_right</mat-icon></button>
+        """#, messages: inbox) { web in
+            for _ in 0..<200 where !inbox.values.contains(where: { $0["type"] as? String == "rendered" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            _ = try await web.evaluateJavaScript("window.CastReaderGoogleBooks.nextPage({turnID:'loading-owned'})")
+            try await Task.sleep(nanoseconds: 800_000_000)
+            XCTAssertFalse(inbox.values.contains { value in
+                let payload = value["payload"] as? [String: Any]
+                return payload?["reason"] as? String == "native-book-end"
+            })
+        }
+    }
+
+    func testGoogleRotationRevealsUniqueOffscreenSourceWithoutVisibleNeighbors() async throws {
+        let inbox = PageMessages()
+        let source = "The exact speaking paragraph survives rotation into the following native spread."
+        try await withGoogleFixture(#"""
+        <reader-horizontal-view><ol><li class="onepage">
+        <reader-page id="page-0-0" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>Earlier unrelated chapter text.</p></div></reader-rendered-page></reader-page>
+        <reader-page id="page-0-1" class="-gb-loaded" style="left:1000px"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>The exact speaking paragraph survives rotation into the following native spread.</p></div></reader-rendered-page></reader-page>
+        </li></ol></reader-horizontal-view>
+        <button onclick="document.querySelectorAll('reader-page').forEach(p=>{p.classList.toggle('shown',p.id==='page-0-1');p.style.left=p.id==='page-0-1'?'0px':'1000px'})"><mat-icon>chevron_right</mat-icon></button>
+        """#, messages: inbox) { web in
+            for _ in 0..<200 where !inbox.values.contains(where: { $0["type"] as? String == "rendered" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let current = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "rendered" }?["payload"] as? [String: Any])
+            let payload: [String: Any] = ["reflowSourceText": source,
+                "reflowBaseline": try XCTUnwrap(current["signature"] as? String),
+                "originFrameSessionID": try XCTUnwrap(current["frameSessionID"] as? String)]
+            let data = try JSONSerialization.data(withJSONObject: payload)
+            let script = "(() => { try { window.CastReaderGoogleBooks.refresh(" + String(decoding: data, as: UTF8.self) + "); return 'ok'; } catch (e) { return String(e) + String(e.stack || ''); } })()"
+            let refreshed: String = try await withCheckedThrowingContinuation { continuation in
+                web.evaluateJavaScript(script) { value, error in
+                    if let error { continuation.resume(throwing: error) }
+                    else { continuation.resume(returning: value as? String ?? "missing result") }
+                }
+            }
+            XCTAssertEqual(refreshed, "ok")
+            for _ in 0..<200 {
+                if try await web.evaluateJavaScript("document.querySelector('reader-page.shown').id") as? String == "page-0-1" { break }
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let shown = try await web.evaluateJavaScript("document.querySelector('reader-page.shown').id") as? String
+            XCTAssertEqual(shown, "page-0-1")
+        }
+    }
+
+    func testKoboContentsOpensLocalizedNativeFooterWithoutClickingChapterNavigation() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <div class="RXFooter_metaInfoTocButton"><div class="TextButton_touchAreaSize" aria-label="開啟目錄">
+        <div class="TextButton_button TextButton_clickable" role="button" aria-label="開啟目錄"
+          onclick="window.tocClicks=(window.tocClicks||0)+1;document.getElementById('contents').hidden=false">Chapter 9</div></div></div>
+        <div role="button" aria-label="下一章" onclick="window.wrongChapter=true">Next chapter</div>
+        <div id="contents" hidden>Contents</div>
+        """#, url: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001", messages: inbox) { web in
+            let opened = try await web.evaluateJavaScript(ReaderWebAppearanceCenter.openKoboContentsScript) as? Bool
+            XCTAssertEqual(opened, true)
+            let visible = try await web.evaluateJavaScript("!document.getElementById('contents').hidden && window.tocClicks===1 && !window.wrongChapter") as? Bool
+            XCTAssertEqual(visible, true)
+        }
+    }
+
+    func testKoboRevisitedPageRepublishesPreviewAfterChapterWithoutGeometry() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <div id="BookView" style="position:absolute;left:0;top:0;width:240px;height:280px;overflow:hidden"><div class="ReadingOrderView">
+        <div class="ReadingItem"><iframe id="returnPage" data-chapterurl="chapter-1.xhtml" style="position:absolute;left:0;top:0;width:720px;height:280px;border:0" srcdoc="<style>html,body{margin:0}p{position:absolute;width:200px;height:100px;font:20px/28px Georgia}</style><p style='left:12px'>The current opening page.</p><p style='left:252px'>The confirmed prepared successor.</p>"></iframe></div>
+        <div class="ReadingItem"><iframe id="tailPage" data-chapterurl="chapter-2.xhtml" style="position:absolute;left:5000px;top:0;width:240px;height:280px;border:0" srcdoc="<style>html,body{margin:0}p{font:20px/28px Georgia}</style><p>The other chapter ends here.</p>"></iframe></div>
+        </div></div>
+        """#, url: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001", messages: inbox) { web in
+            func previews() -> [[String: Any]] {
+                inbox.values.filter { $0["type"] as? String == "googleBooksPagePreview" }
+                    .compactMap { $0["payload"] as? [String: Any] }
+            }
+            for _ in 0..<300 where previews().isEmpty { try await Task.sleep(nanoseconds: 20_000_000) }
+            let first = try XCTUnwrap(previews().first)
+            let signature = try XCTUnwrap(first["sourceSignature"] as? String)
+            let initialCount = previews().filter { $0["sourceSignature"] as? String == signature }.count
+            _ = try await web.evaluateJavaScript("document.getElementById('returnPage').style.left='5000px';document.getElementById('tailPage').style.left='0px';window.CastReaderKobo.refresh({});true")
+            var committedOtherChapter = false
+            for _ in 0..<300 {
+                if inbox.values.contains(where: {
+                    guard $0["type"] as? String == "rendered", let p = $0["payload"] as? [String: Any],
+                          let rows = p["paragraphs"] as? [[String: Any]] else { return false }
+                    return rows.first?["text"] as? String == "The other chapter ends here."
+                }) { committedOtherChapter = true; break }
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            XCTAssertTrue(committedOtherChapter)
+            _ = try await web.evaluateJavaScript("document.getElementById('tailPage').style.left='5000px';document.getElementById('returnPage').style.left='0px';window.CastReaderKobo.refresh({});true")
+            for _ in 0..<300 where previews().filter({ $0["sourceSignature"] as? String == signature }).count <= initialCount {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let returned = previews().filter { $0["sourceSignature"] as? String == signature }
+            XCTAssertGreaterThan(returned.count, initialCount, "Native invalidated the prior preview while the other chapter was visible")
+            XCTAssertEqual(returned.last?["contentFingerprint"] as? String, first["contentFingerprint"] as? String)
+        }
+    }
+
+    func testGoogleRefreshedPresentationRepublishesItsNativePreview() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <reader-horizontal-view><ol><li class="onepage">
+        <reader-page id="page-0-0" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>Current exact source page.</p></div></reader-rendered-page></reader-page>
+        <reader-page id="page-0-1" class="-gb-loaded" style="left:1000px"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>The confirmed next source page.</p></div></reader-rendered-page></reader-page>
+        </li></ol></reader-horizontal-view>
+        """#, messages: inbox) { web in
+            func previews() -> [[String: Any]] {
+                inbox.values.filter { $0["type"] as? String == "googleBooksPagePreview" }
+                    .compactMap { $0["payload"] as? [String: Any] }
+            }
+            for _ in 0..<250 where previews().isEmpty { try await Task.sleep(nanoseconds: 20_000_000) }
+            let first = try XCTUnwrap(previews().first), count = previews().count
+            _ = try await web.evaluateJavaScript("window.CastReaderGoogleBooks.refresh({});true")
+            for _ in 0..<250 where previews().count <= count { try await Task.sleep(nanoseconds: 20_000_000) }
+            XCTAssertGreaterThan(previews().count, count)
+            XCTAssertEqual(previews().last?["contentFingerprint"] as? String, first["contentFingerprint"] as? String)
+        }
+    }
+
+    func testKoboLaidOutNextChapterPreviewsOnlyItsFirstPhysicalPage() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <div id="BookView" style="position:absolute;left:0;top:0;width:240px;height:280px;overflow:hidden"><div class="ReadingOrderView">
+        <div class="ReadingItem"><iframe data-chapterurl="chapter-1.xhtml" style="position:absolute;left:0;top:0;width:720px;height:280px;border:0" srcdoc="<style>html,body{margin:0;height:280px;column-width:240px;column-gap:0;column-fill:auto}p{margin:0;height:280px;font:24px/32px Georgia}</style><p>Current chapter ends here.</p>"></iframe></div>
+        <div class="ReadingItem"><iframe id="nextChapter" data-chapterurl="chapter-2.xhtml" style="position:absolute;left:5000px;top:0;width:720px;height:280px;border:0" srcdoc="<style>html,body{margin:0;height:280px;column-width:240px;column-gap:0;column-fill:auto}p{margin:0;height:280px;font:24px/32px Georgia}</style><p>Verified next chapter opening.</p><p>This belongs to its second page.</p>"></iframe></div>
+        </div></div>
+        """#, url: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001", messages: inbox) { web in
+            for _ in 0..<300 where !inbox.values.contains(where: { $0["type"] as? String == "googleBooksPagePreview" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let preview = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "googleBooksPagePreview" }?["payload"] as? [String: Any])
+            let rows = try XCTUnwrap(preview["paragraphs"] as? [[String: Any]])
+            XCTAssertEqual(rows.compactMap { $0["text"] as? String }, ["Verified next chapter opening."])
+            let current = try await web.evaluateJavaScript("CR.extract('fixture');window.__crLastRendered") as? [[String: Any]]
+            XCTAssertEqual(current?.compactMap { $0["text"] as? String }, ["Current chapter ends here."])
+            let location = try await web.evaluateJavaScript("document.getElementById('nextChapter').style.left") as? String
+            XCTAssertEqual(location, "5000px", "Preparation must not navigate or reveal the buffered chapter")
+            _ = try await web.evaluateJavaScript("document.querySelector('iframe').style.left='5000px';document.getElementById('nextChapter').style.left='0px';CR.extract('fixture');true")
+            let committed = try await web.evaluateJavaScript("window.__crLastRendered") as? [[String: Any]]
+            XCTAssertEqual(committed?.compactMap { $0["text"] as? String }, rows.compactMap { $0["text"] as? String }, "The real first page must confirm the predicted source")
+        }
+    }
+
+    func testKoboNextChapterSpeechPreviewPassesSharedNativePreparationContract() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <div id="BookView" style="position:absolute;left:0;top:0;width:240px;height:280px;overflow:hidden"><div class="ReadingOrderView">
+        <div class="ReadingItem"><iframe data-chapterurl="chapter-1.xhtml" style="position:absolute;left:0;top:0;width:240px;height:280px;border:0" srcdoc="<style>html,body{margin:0}p{font:20px/28px Georgia}</style><p>Current complete chapter.</p>"></iframe></div>
+        <div class="ReadingItem"><iframe data-chapterurl="chapter-2.xhtml" style="position:absolute;left:5000px;top:0;width:240px;height:280px;border:0" srcdoc="<style>html,body{margin:0}p{font:20px/28px Georgia}</style><p>Next exact source sentence. The following sentence has its own prepared producer.</p>"></iframe></div>
+        </div></div>
+        """#, url: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001", messages: inbox) { _ in
+            for _ in 0..<300 where !inbox.values.contains(where: { $0["type"] as? String == "googleBooksSpeechPreview" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let current = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "rendered" }?["payload"] as? [String: Any])
+            let payload = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "googleBooksSpeechPreview" }?["payload"] as? [String: Any])
+            let candidate = GoogleBooksSpeechPreviewCandidate(
+                sourceSignature: try XCTUnwrap(payload["sourceSignature"] as? String),
+                originFrameSessionID: try XCTUnwrap(payload["originFrameSessionID"] as? String),
+                contentFingerprint: try XCTUnwrap(payload["contentFingerprint"] as? String),
+                sourceParagraphIndex: try XCTUnwrap(payload["sourceParagraphIndex"] as? Int),
+                sourceUTF16Start: try XCTUnwrap(payload["sourceUTF16Start"] as? Int),
+                sourceUTF16End: try XCTUnwrap(payload["sourceUTF16End"] as? Int),
+                text: try XCTUnwrap(payload["text"] as? String))
+            XCTAssertEqual(candidate.text, "Next exact source sentence.")
+            let following = try XCTUnwrap(payload["following"] as? [String: Any])
+            XCTAssertEqual(following["text"] as? String, "The following sentence has its own prepared producer.")
+            XCTAssertEqual(following["sourceParagraphIndex"] as? Int, candidate.sourceParagraphIndex)
+            XCTAssertEqual(following["sourceUTF16Start"] as? Int, candidate.sourceUTF16End + 1)
+            XCTAssertTrue(GoogleBooksSpeechPreloadContract.canPrepare(candidate: candidate,
+                exactText: payload["exactText"] as? Bool == true,
+                currentSourceSignature: try XCTUnwrap(current["signature"] as? String),
+                activeFrameSessionID: try XCTUnwrap(current["frameSessionID"] as? String)),
+                "Use the actual adapter message, not an independently invented native fixture")
+        }
+    }
+
+    func testGoogleUnconfirmedFutureContinuationKeepsVerifiedCurrentAndNextPage() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <reader-horizontal-view><ol><li class="onepage">
+        <reader-page id="page-0-0" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>Current page.</p></div></reader-rendered-page></reader-page>
+        <reader-page id="page-0-1" class="-gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>Verified next page.</p></div></reader-rendered-page></reader-page>
+        <reader-page id="page-0-2" class="-gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p ocean-sliced-element>Unfinished later paragraph</p></div></reader-rendered-page></reader-page>
+        <reader-page id="page-0-3" class="-gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>Unconfirmed later continuation.</p></div></reader-rendered-page></reader-page>
+        </li></ol></reader-horizontal-view><button><mat-icon>chevron_right</mat-icon></button>
+        """#, messages: inbox) { web in
+            for _ in 0..<250 where !inbox.values.contains(where: { $0["type"] as? String == "googleBooksPagePreview" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let preview = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "googleBooksPagePreview" }?["payload"] as? [String: Any])
+            let paragraphs = try XCTUnwrap(preview["paragraphs"] as? [[String: Any]])
+            XCTAssertEqual(paragraphs.compactMap { $0["text"] as? String }, ["Verified next page."])
+            let current = try await web.evaluateJavaScript("CR.extract('fixture');window.__crLastRendered") as? [[String: Any]]
+            XCTAssertEqual(current?.compactMap { $0["text"] as? String }, ["Current page."])
+        }
+    }
+
+    func testGooglePreviewRecoversOnlyAfterNativeContinuationEvidenceArrives() async throws {
+        let inbox = PageMessages()
+        try await withGoogleFixture(#"""
+        <reader-horizontal-view><ol><li class="onepage">
+        <reader-page id="page-0-0" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p ocean-sliced-element>Hello </p></div></reader-rendered-page></reader-page>
+        <reader-page id="page-0-1" class="-gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>world.</p></div></reader-rendered-page></reader-page>
+        </li></ol></reader-horizontal-view><button><mat-icon>chevron_right</mat-icon></button>
+        """#, messages: inbox) { web in
+            try await Task.sleep(nanoseconds: 850_000_000)
+            XCTAssertFalse(inbox.values.contains { $0["type"] as? String == "googleBooksPagePreview" })
+            _ = try await web.evaluateJavaScript("document.querySelector('#page-0-1 p').setAttribute('ocean-reopened-element','')")
+            for _ in 0..<250 where !inbox.values.contains(where: { $0["type"] as? String == "googleBooksPagePreview" }) {
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            let preview = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "googleBooksPagePreview" }?["payload"] as? [String: Any])
+            let paragraphs = try XCTUnwrap(preview["paragraphs"] as? [[String: Any]])
+            XCTAssertEqual(paragraphs.compactMap { $0["text"] as? String }, ["world."])
+            XCTAssertEqual(paragraphs.first?["sourceUTF16Start"] as? Int, 6)
+            let page = try await web.evaluateJavaScript("document.querySelector('reader-page.shown').id") as? String
+            XCTAssertEqual(page, "page-0-0", "Preparing a successor must not navigate or alter the visible page")
         }
     }
 
@@ -1436,6 +1833,100 @@ final class PaginationContinuityTests: XCTestCase {
         data += Data("data".utf8) + little(size)
         for _ in 0..<16_000 { data += little(sample) }
         return data
+    }
+
+    func testKindleFinishedSuccessorDuringPageBuildAdvancesAfterOwnerTransfer() async throws {
+        try await verifyKindleTerminalAdoption(pauseBeforeAdoption: false, finishBeforeAdoption: true)
+    }
+
+    func testKindleFinishedSuccessorPreservesPauseUntilExplicitResume() async throws {
+        try await verifyKindleTerminalAdoption(pauseBeforeAdoption: true, finishBeforeAdoption: true)
+    }
+
+    func testKindlePlayingSuccessorTransfersWithoutSkippingItsRemainder() async throws {
+        try await verifyKindleTerminalAdoption(pauseBeforeAdoption: false, finishBeforeAdoption: false)
+    }
+
+    private func verifyKindleTerminalAdoption(pauseBeforeAdoption: Bool,
+                                             finishBeforeAdoption: Bool) async throws {
+        let oldPro = ProManager.shared.debugForcePro, oldSpeed = AppSettings.shared.speed
+        ProManager.shared.debugForcePro = true
+        AppSettings.shared.speed = 2
+        defer { ProManager.shared.debugForcePro = oldPro; AppSettings.shared.speed = oldSpeed }
+        useRegularVoiceForTest(language: "en")
+        let texts = ["The short page opening.", "The paragraph after the opening."]
+        let fixture = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: 0.8), delay: 0.15)
+        }
+        defer { fixture.close() }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let audio = AudioPlayerService(testTemporaryRoot: root)
+        let oldSession = audio.claimPlaybackSession(owner: .readAloud)
+        audio.setPlaybackRate(2)
+        let opening = AudioSegment(paragraphIndex: 0, segmentIndex: 700002000,
+            audioData: ReadAloudHTTPFixture.wav(duration: 1),
+            timestamps: [TTSTimestamp(word: texts[0], startTime: 0, endTime: 1)],
+            duration: 1, text: texts[0], isWavFormat: true)
+        var oldCompletions = 0
+        var completedTexts: [String] = []
+        audio.onPlaybackComplete = { oldCompletions += 1 }
+        audio.onSegmentComplete = { if let text = audio.currentSegment?.text { completedTexts.append(text) } }
+        XCTAssertTrue(audio.loadSegments([opening], autoPlay: true, session: oldSession))
+        for _ in 0..<300 where finishBeforeAdoption ? oldCompletions == 0 : !audio.hasAudibleProgress {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(oldCompletions, finishBeforeAdoption ? 1 : 0)
+        if pauseBeforeAdoption { XCTAssertTrue(audio.pause(session: oldSession)) }
+        let document = ReadingDocument(id: UUID().uuidString, title: "Delayed Kindle page owner",
+            sourceKind: .kindle, language: "en",
+            paragraphs: texts.enumerated().map { ReadingParagraph(id: $0.offset, text: $0.element) })
+        let read = ReadAloudViewModel(document: document, audioService: audio, ttsService: fixture.service())
+        defer { read.stop(); read.deactivate(); audio.stop(); try? FileManager.default.removeItem(at: root) }
+        var documentCompletions = 0
+        read.onDocumentFinished = { _ in documentCompletions += 1 }
+        XCTAssertTrue(read.adoptContinuousPlayback([opening], paragraphIndex: 0))
+        // A retired coordinator cannot publish or reset the transferred queue.
+        audio.deliverTransferredQueueCompletion(session: oldSession)
+        if pauseBeforeAdoption {
+            try await Task.sleep(nanoseconds: 350_000_000)
+            XCTAssertEqual(read.currentParagraphIndex, 0)
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertTrue(fixture.requests.isEmpty)
+            read.togglePlayPause()
+        } else if !finishBeforeAdoption {
+            XCTAssertEqual(read.currentParagraphIndex, 0, "An unfinished item must keep its remaining speech")
+        }
+        for _ in 0..<500 where documentCompletions == 0 { try await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertEqual(documentCompletions, 1)
+        XCTAssertEqual(completedTexts, texts, "The consumed opening must never replay or skip its successor")
+        XCTAssertEqual(fixture.requests, [texts[1]], "Only the unspoken next paragraph needs TTS")
+        XCTAssertEqual(oldCompletions, finishBeforeAdoption ? 1 : 0)
+    }
+
+    func testShortDialogueStartupAccumulatesSeveralOrderedParagraphs() async throws {
+        let oldPro = ProManager.shared.debugForcePro, oldSpeed = AppSettings.shared.speed
+        ProManager.shared.debugForcePro = true
+        AppSettings.shared.speed = 1.5
+        defer { ProManager.shared.debugForcePro = oldPro; AppSettings.shared.speed = oldSpeed }
+        useRegularVoiceForTest(language: "en")
+        let texts = ["Yes.", "Really?", "Of course.", "This longer paragraph supplies the next several seconds of speech."]
+        let fixture = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: text == texts.last ? 12 : 0.6), delay: 0.25)
+        }
+        defer { fixture.close() }
+        let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let read = ReadAloudViewModel(document: .init(id: UUID().uuidString, title: "Cold short dialogue",
+            sourceKind: .kobo, language: "en", paragraphs: []), audioService: audio, ttsService: fixture.service())
+        defer { read.stop(); read.deactivate(); audio.stop() }
+        read.loadWebParagraphs(texts.enumerated().map { ReadingParagraph(id: $0.offset, text: $0.element) }, language: "en")
+        read.start()
+        for _ in 0..<500 where !audio.hasAudibleProgress { try await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertTrue(audio.hasAudibleProgress)
+        XCTAssertEqual(fixture.requests, texts, "First playback waits for a bounded duration, not one short body part")
+        XCTAssertEqual(read.dbgKindleReadyIndices, [1, 2, 3])
+        for _ in 0..<500 where read.currentParagraphIndex < 3 { try await Task.sleep(nanoseconds: 10_000_000) }
+        XCTAssertEqual(read.currentParagraphIndex, 3)
+        XCTAssertEqual(fixture.requests, texts, "Promotion uses each existing producer exactly once")
     }
 
     func testReadAheadDecoderSurvivesIntermediateParagraphPromotion() async throws {

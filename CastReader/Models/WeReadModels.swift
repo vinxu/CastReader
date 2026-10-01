@@ -1010,6 +1010,24 @@ enum WeReadCrossPageSpeechContract {
         return nil
     }
 
+    /// A complete single-sentence item is itself a timed source unit. Some
+    /// short preset responses contain valid audio but no word cues. Paint that
+    /// one sentence at the page handoff instead of waiting for an impossible
+    /// word anchor. Never infer timing inside a multi-sentence or partial item.
+    static func openingSourceRange(source: String, segment: AudioSegment) -> NSRange? {
+        if let range = sourceRange(source: source, segments: [segment], segmentID: segment.id, time: 0) {
+            return range
+        }
+        guard segment.timingTimestamps.isEmpty,
+              segment.duration.isFinite, segment.duration > 0,
+              segment.unprocessedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                == source.trimmingCharacters(in: .whitespacesAndNewlines) else { return nil }
+        let sentences = ReadingSentenceContract.nsRanges(in: source, lineBreakIsBoundary: true)
+        guard sentences.count == 1 else { return nil }
+        return sentences[0]
+    }
+
     /// A media part is a transport unit, not a visual sentence. Use its real
     /// lexical cue to select ONE source sentence without splitting the audio.
     static func sentenceSourceRange(source: String, segments: [AudioSegment],

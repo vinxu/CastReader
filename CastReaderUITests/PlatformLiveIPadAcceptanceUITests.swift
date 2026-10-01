@@ -42,6 +42,16 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
             .first { $0.hasPrefix(key + "=") }.map { String($0.dropFirst(key.count + 1)) } ?? ""
     }
 
+    // Playback may advance between accessibility calls. Compare fields from
+    // one published value, never a previous segment's text with the next ID.
+    private func playbackSnapshot(_ app: XCUIApplication) -> [String: String] {
+        let value = app.otherElements["livePlatformPlaybackMetrics"].value as? String ?? ""
+        return Dictionary(value.split(separator: ";").compactMap { entry in
+            let pair = entry.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+            return pair.count == 2 ? (String(pair[0]), String(pair[1])) : nil
+        }, uniquingKeysWith: { _, last in last })
+    }
+
     private func number(_ key: String, _ app: XCUIApplication) -> Double {
         Double(field(key, app)) ?? -1
     }
@@ -70,6 +80,9 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         app.launchArguments = ["-CastReaderSkipLibraryOnboarding", "-CastReaderLivePlatformAcceptance",
                                "-CastReaderTTSClockDiagnostics",
                                "-AppleLanguages", "(en)", "-interfaceLanguage", "en"] + extra
+        if ProcessInfo.processInfo.environment["CASTREADER_GOOGLE_LAYOUT_DIAGNOSTICS"] == "1" {
+            app.launchArguments.append("-CRCaptureGoogleLayout")
+        }
         app.launch()
         XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 30),
                       "The existing signed-in account must remain usable")
@@ -77,6 +90,9 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
             app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
             wait(15) { app.windows.firstMatch.frame.width >= 700 }
         }
+        // Launch/full-screen restoration can restore a previous landscape
+        // orientation after setUp. Settle it before resolving shelf hit points.
+        rotate(app, .portrait)
         let ignore = app.buttons["Ignore"]
         if app.staticTexts["There's text in your clipboard"].exists && ignore.isHittable { ignore.tap() }
         let shelf = app.buttons["homeShelfViewAll.\(platform)"]
@@ -106,6 +122,128 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
     func testGoogleBooksNaturalContinuation() throws { try continuation("google_books") }
     func testKoboNaturalContinuation() throws { try continuation("kobo") }
     func testWeReadNaturalContinuation() throws { try continuation("weread") }
+
+    /// Dedicated book-end gate; it cannot replace the uninterrupted long test.
+    func testGoogleBooksNaturalBookEnd() throws {
+        let url = try XCTUnwrap(ProcessInfo.processInfo.environment["CASTREADER_GOOGLE_LIVE_URL"])
+        let app = try home("google_books", extra: ["-CastReaderGoogleBooksLiveTestURL", url])
+        let book = liveBook("google_books", in: app)
+        reveal(book, in: app); book.tap()
+        wait(120) { app.buttons["readPlayPauseButton"].exists && self.field("ready", app) == "true" }
+        if field("playing", app) == "true" { app.buttons["readPlayPauseButton"].tap() }
+        app.segmentedControls["readerModePicker"].buttons["Explain"].tap()
+        let start = app.buttons["explainStartButton"]
+        XCTAssertTrue(start.waitForExistence(timeout: 15)); start.tap()
+        wait(180) { self.field("playing", app) == "true" && self.number("inkVisible", app) > 0 }
+        capture(app, "google-book-end-speaking-final-source")
+        wait(180) { app.staticTexts["本书已读完"].exists || app.staticTexts["You've finished this book"].exists }
+        // The native completion panel must resolve playback, rather than wait
+        // for the existing 15-second page-confirmation timeout.
+        wait(3) { self.field("playing", app) == "false" && self.field("pendingPageTurn", app) == "false" }
+        capture(app, "google-book-end-completed")
+        Thread.sleep(forTimeInterval: 5)
+        XCTAssertEqual(field("playing", app), "false")
+    }
+
+    /// A physical, uninterrupted observation window. The driver supplies an
+    /// already authorized shelf book and, optionally, its observed Google URL.
+    /// This records live UI/source metrics; acoustic and source-coverage audit
+    /// remain separate gates and are not inferred from the elapsed duration.
+    func testAuthorizedSustainedPlayback() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let platform = try XCTUnwrap(environment["CASTREADER_SUSTAINED_PLATFORM"])
+        XCTAssertTrue(["google_books", "kobo", "weread"].contains(platform))
+        let mode = environment["CASTREADER_SUSTAINED_MODE"] ?? "read"
+        XCTAssertTrue(["read", "explain"].contains(mode))
+        let seconds = Double(environment["CASTREADER_SUSTAINED_SECONDS"] ?? "1800") ?? 1800
+        XCTAssertGreaterThanOrEqual(seconds, 60)
+        var launch: [String] = []
+        if platform == "google_books", let url = environment["CASTREADER_GOOGLE_LIVE_URL"] {
+            launch = ["-CastReaderGoogleBooksLiveTestURL", url]
+        }
+        let app = try home(platform, extra: launch)
+        if environment["CASTREADER_SUSTAINED_ORIENTATION"] == "landscape" {
+            rotate(app, .landscapeLeft)
+        }
+        let book = liveBook(platform, in: app)
+        reveal(book, in: app); book.tap()
+        wait(120) { app.buttons["readPlayPauseButton"].exists && self.field("ready", app) == "true" }
+        let read = app.buttons["readPlayPauseButton"]
+        if field("playing", app) == "true" { read.tap() }
+        if platform == "weread", environment["CASTREADER_WEREAD_LIVE_CHAPTER_LABEL"] != nil {
+            app.buttons["Table of Contents"].tap()
+            let chapter = liveWeReadBodyChapter(in: app)
+            XCTAssertTrue(chapter.waitForExistence(timeout: 30)); chapter.tap()
+            wait(90) { self.field("ready", app) == "true" && !app.buttons["weReadTOCClose"].exists }
+        }
+        app.buttons["Playback Speed"].tap(); app.buttons["1.5x"].tap()
+        if mode == "explain" {
+            app.segmentedControls["readerModePicker"].buttons["Explain"].tap()
+            let start = app.buttons["explainStartButton"]
+            XCTAssertTrue(start.waitForExistence(timeout: 15)); start.tap()
+        } else if field("readActive", app) != "true" || field("readPaused", app) == "true" {
+            read.tap()
+        }
+        wait(240) { self.field("playing", app) == "true" && self.field("surfaceCovered", app) == "false" &&
+            self.number(mode == "read" ? "wordVisible" : "inkVisible", app) > 0 }
+        capture(app, "\(platform)-\(mode)-sustained-start")
+        let started = Date(), initialTurns = number(mode == "read" ? "automaticReadTurns" : "automaticExplainTurns", app)
+        var observations: [String] = [], stoppedSince: Date?, unanchoredSince: Date?
+        var priorPage = ""
+        var capturedTurns = 0
+        while Date().timeIntervalSince(started) < seconds {
+            let metrics = app.otherElements["livePlatformPlaybackMetrics"].value as? String ?? "missing"
+            observations.append(String(format: "elapsed=%.3f;%@", Date().timeIntervalSince(started), metrics))
+            let values = Dictionary(metrics.split(separator: ";").compactMap { item -> (String, String)? in
+                let pair = item.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                return pair.count == 2 ? (String(pair[0]), String(pair[1])) : nil
+            }, uniquingKeysWith: { _, latest in latest })
+            let playing = values["playing"] == "true"
+            let page = values["page"] ?? ""
+            if playing { stoppedSince = nil }
+            else if stoppedSince == nil { stoppedSince = Date() }
+            // A progressing clock alone cannot pass the highlighter gate.
+            // Allow the first mark and brief native page paint, then require
+            // the current mode's visible anchor on a stable, uncovered page.
+            let expectsAnchor = mode == "read" || (Double(values["marks"] ?? "0") ?? 0) > 0
+            let anchorCount = Double(values[mode == "read" ? "wordVisible" : "inkVisible"] ?? "0") ?? 0
+            if playing && page == priorPage && expectsAnchor &&
+                (anchorCount == 0 || values["surfaceCovered"] != "false") {
+                if unanchoredSince == nil { unanchoredSince = Date() }
+            } else { unanchoredSince = nil }
+            priorPage = page
+            let failure: String?
+            if app.state != .runningForeground {
+                failure = "A background interval cannot count as foreground acceptance"
+            } else if values["mode"] != mode || page.isEmpty {
+                failure = "The active mode/source metrics changed or disappeared"
+            } else if let stoppedSince, Date().timeIntervalSince(stoppedSince) > 30 {
+                failure = "Playback did not recover within 30 seconds; preserve the complete stall in timing audit"
+            } else if let unanchoredSince, Date().timeIntervalSince(unanchoredSince) > 10 {
+                failure = "Audio continued without a visible source anchor on the stable page"
+            } else { failure = nil }
+            if let failure {
+                let evidence = XCTAttachment(string: observations.joined(separator: "\n"))
+                evidence.name = "sustained-observations-before-failure"; evidence.lifetime = .keepAlways; add(evidence)
+                capture(app, "\(platform)-\(mode)-sustained-failure")
+                XCTFail(failure)
+                return
+            }
+            let turns = Int(Double(values[mode == "read" ? "automaticReadTurns" : "automaticExplainTurns"] ?? "0") ?? 0) - Int(initialTurns)
+            if turns >= capturedTurns + 5 && playing && anchorCount > 0 {
+                capture(app, "\(platform)-\(mode)-sustained-turn-\(turns)")
+                capturedTurns = turns
+            }
+            Thread.sleep(forTimeInterval: 5)
+        }
+        let evidence = XCTAttachment(string: observations.joined(separator: "\n"))
+        evidence.name = "sustained-observations"; evidence.lifetime = .keepAlways; add(evidence)
+        capture(app, "\(platform)-\(mode)-sustained-end")
+        let completedTurns = number(mode == "read" ? "automaticReadTurns" : "automaticExplainTurns", app) - initialTurns
+        XCTAssertGreaterThanOrEqual(completedTurns, seconds >= 1800 ? 20 : 1)
+        app.buttons[mode == "read" ? "readPlayPauseButton" : "explainPlayPauseButton"].tap()
+        wait { self.field("playing", app) == "false" }
+    }
 
     func testWeReadCompactToWideColdResume() throws {
         var app = try home("weread")
@@ -220,7 +358,7 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         let launch = platform == "google_books" ? ["-CastReaderGoogleBooksLiveTestURL",
             "https://play.google.com/books/reader?id=b_40EQAAQBAJ&pg=GBS.PP2.w.0.2.34_114"] : []
         let app = try home(platform, extra: launch)
-        let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.\(platform).")).firstMatch
+        let book = liveBook(platform, in: app)
         reveal(book, in: app); book.tap()
         let read = app.buttons["readPlayPauseButton"]
         if platform == "weread" {
@@ -231,7 +369,7 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         if platform == "weread", number("characters", app) < 250 {
             if field("playing", app) == "true" { read.tap() }
             app.buttons["Table of Contents"].tap()
-            let chapter = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "weReadTOCEntry.", "第一章 开往蒙古的列车")).firstMatch
+            let chapter = liveWeReadBodyChapter(in: app)
             XCTAssertTrue(chapter.waitForExistence(timeout: 30)); chapter.tap()
             wait(90) { self.field("ready", app) == "true" && self.number("characters", app) > 250 && !app.buttons["weReadTOCClose"].exists }
         }
@@ -543,9 +681,21 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         rotate(app, .portrait)
     }
 
+    private func liveBook(_ platform: String, in app: XCUIApplication) -> XCUIElement {
+        if let id = ProcessInfo.processInfo.environment["CASTREADER_PLATFORM_LIVE_BOOK_ID"], !id.isEmpty {
+            return app.buttons["homeShelfBook.\(platform).\(id)"]
+        }
+        return app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.\(platform).")).firstMatch
+    }
+
+    private func liveWeReadBodyChapter(in app: XCUIApplication) -> XCUIElement {
+        let label = ProcessInfo.processInfo.environment["CASTREADER_WEREAD_LIVE_CHAPTER_LABEL"] ?? "第一章 开往蒙古的列车"
+        return app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "weReadTOCEntry.", label)).firstMatch
+    }
+
     private func verify(_ platform: String, launch: [String] = []) throws {
         let app = try home(platform, extra: launch)
-        let book = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.\(platform).")).firstMatch
+        let book = liveBook(platform, in: app)
         reveal(book, in: app)
         book.tap()
         let read = app.buttons["readPlayPauseButton"]
@@ -557,7 +707,7 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         if platform == "weread" {
             if field("playing", app) == "true" { read.tap() }
             app.buttons["Table of Contents"].tap()
-            let chapter = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "weReadTOCEntry.", "第一章 开往蒙古的列车")).firstMatch
+            let chapter = liveWeReadBodyChapter(in: app)
             XCTAssertTrue(chapter.waitForExistence(timeout: 30)); chapter.tap()
             wait(90) { self.field("ready", app) == "true" && self.number("characters", app) > 250 && !app.buttons["weReadTOCClose"].exists }
         }
@@ -595,20 +745,40 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         if field("readActive", app) != "true" || field("readPaused", app) == "true" { read.tap() }
         wait(180) { self.field("playing", app) == "true" && self.number("time", app) > 1 && self.number("wordVisible", app) > 0 && self.field("surfaceCovered", app) == "false" }
         capture(app, "\(platform)-read-highlight-portrait")
-        let session = field("readSession", app)
-        let spokenSource = field("audioText", app)
-        let time = number("time", app), segment = field("segment", app)
+        var beforeRotation: [String: String] = [:]
+        wait(30) {
+            let value = self.playbackSnapshot(app)
+            guard value["playing"] == "true", value["segment"]?.isEmpty == false,
+                  value["audioText"]?.isEmpty == false else { return false }
+            beforeRotation = value
+            return true
+        }
+        let session = beforeRotation["readSession"] ?? ""
+        let spokenSource = beforeRotation["audioText"] ?? ""
+        let time = Double(beforeRotation["time"] ?? "") ?? -1
+        let segment = beforeRotation["segment"] ?? ""
         rotate(app, .landscapeLeft)
-        wait(90) { self.field("playing", app) == "true" && self.number("wordVisible", app) > 0 && self.field("surfaceCovered", app) == "false" &&
-            (self.field("segment", app) != segment || self.number("time", app) > time + 0.3) }
-        XCTAssertEqual(field("readSession", app), session)
-        if field("segment", app) == segment {
-            XCTAssertEqual(field("audioText", app), spokenSource, "Rotation must keep the speaking source")
+        var afterRotation: [String: String] = [:]
+        wait(90) {
+            let value = self.playbackSnapshot(app)
+            guard value["playing"] == "true", value["segment"]?.isEmpty == false,
+                  value["audioText"]?.isEmpty == false,
+                  (Double(value["wordVisible"] ?? "") ?? 0) > 0,
+                  value["surfaceCovered"] == "false",
+                  value["segment"] != segment || (Double(value["time"] ?? "") ?? -1) > time + 0.3 else { return false }
+            afterRotation = value
+            return true
+        }
+        XCTAssertEqual(afterRotation["readSession"], session)
+        if afterRotation["audioText"] == spokenSource || afterRotation["segment"] == segment {
+            // Paragraph IDs are local to the newly laid-out spread. The same
+            // audio can change 1-0 to 17-0 while keeping its exact text/clock.
+            XCTAssertEqual(afterRotation["audioText"], spokenSource, "Rotation must keep the speaking source")
         } else {
             // A restored segment may naturally finish during the gesture.
             // Allow only forward queue progression, never restart/reversal.
             let before = segment.split(separator: "-").compactMap { Int($0) }
-            let after = field("segment", app).split(separator: "-").compactMap { Int($0) }
+            let after = (afterRotation["segment"] ?? "").split(separator: "-").compactMap { Int($0) }
             XCTAssertEqual(before.count, 2); XCTAssertEqual(after.count, 2)
             XCTAssertTrue(after[0] > before[0] || (after[0] == before[0] && after[1] > before[1]))
         }

@@ -13,6 +13,8 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 export interface MarkData {
   id: string
   paragraphIndex: number
+  /** A verified visible fragment of an immutable narration paragraph. */
+  domParagraphIndex?: number
   charStart: number
   charEnd: number
   action: string
@@ -53,7 +55,7 @@ export interface MarkRenderer {
 }
 
 export function createMarkRenderer(
-  getParaEl: (i: number) => HTMLElement | undefined,
+  getParaEl: (i: number, domParagraphIndex?: number) => HTMLElement | undefined,
   initialColor: string,
 ): MarkRenderer {
   // 分页商业阅读器常把正文放在同源 iframe。每个 ownerDocument 使用自己的 SVG，
@@ -144,7 +146,7 @@ export function createMarkRenderer(
 
   function show(m: MarkData): void {
     if (shown.has(m.id)) return
-    const el = getParaEl(m.paragraphIndex)
+    const el = getParaEl(m.paragraphIndex, m.domParagraphIndex)
     if (!el) return
     const range = charRange(el, m.charStart, m.charEnd)
     if (!range) return

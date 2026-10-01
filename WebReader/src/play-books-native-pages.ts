@@ -67,6 +67,68 @@ function pageKey(id: string, blocks: PlayBooksBlock[]): string {
   return `${id}:${hash(JSON.stringify(blocks.map(block => [block.text, block.reopened, block.sliced])))}`;
 }
 
+function sourceBlocks(segment: Element): PlayBooksBlock[] {
+  return [...segment.querySelectorAll<HTMLElement>('p,h1,h2,h3,h4,h5,h6,li,blockquote')]
+    .filter(block => !block.querySelector('p,h1,h2,h3,h4,h5,h6,li,blockquote'))
+    .map(element => {
+      const raw = element.textContent || '';
+      return { element, raw, text: normalizedText(raw).text,
+        reopened: element.hasAttribute('ocean-reopened-element'),
+        sliced: element.hasAttribute('ocean-sliced-element') };
+    }).filter(block => /[\p{L}\p{N}]/u.test(block.text));
+}
+
+/** A prepared native spread is usable only while every visible source page
+ * still exactly matches its request baseline. Detached HTML is inert and is
+ * never used for highlight geometry; rendering must confirm the same source. */
+function addVerifiedPreparedPages(pages: PlayBooksPage[], visible: PlayBooksPage[], rendered: HTMLElement) {
+  let witness: any;
+  const raw = document.documentElement.getAttribute('data-castreader-pb-prepared');
+  if (!raw || raw.length > 1600000) return;
+  try { witness = JSON.parse(raw); } catch { return; }
+  if (witness.version !== 1 || !Array.isArray(witness.current) || !Array.isArray(witness.next) ||
+      witness.current.length !== visible.length || !witness.next.length || witness.next.length > 4 ||
+      JSON.stringify(witness.viewport) !== JSON.stringify([innerWidth, innerHeight])) return;
+  const decode = (source: any): PlayBooksPage | null => {
+    if (!source || !Number.isInteger(source.segment) || source.segment < 0 ||
+        !Number.isInteger(source.index) || source.index < 0 || source.id !== `page-${source.segment}-${source.index}` ||
+        typeof source.volume !== 'string' || !source.volume || typeof source.engine !== 'string' ||
+        !source.engine.startsWith(source.volume + ':') || typeof source.key !== 'string' ||
+        !source.key.startsWith(source.engine + ':') || typeof source.html !== 'string' || source.html.length > 250000 ||
+        source.width !== parseFloat(rendered.style.width) || source.height !== parseFloat(rendered.style.height)) return null;
+    const template = document.createElement('template');
+    template.innerHTML = source.html;
+    const segments = template.content.querySelectorAll('.gb-segment');
+    if (segments.length !== 1) return null;
+    const blocks = sourceBlocks(segments[0]);
+    if (!blocks.length) return null;
+    return { id: source.id, segment: source.segment, index: source.index, blocks,
+      key: pageKey(source.id, blocks), element: document.createElement('div') };
+  };
+  const volume = witness.current[0]?.volume;
+  const current = witness.current.map(decode), next = witness.next.map(decode);
+  if (current.some((page: PlayBooksPage | null) => !page) || next.some((page: PlayBooksPage | null) => !page) ||
+      [...witness.current, ...witness.next].some(source => source.volume !== volume) ||
+      current.some((page: PlayBooksPage) => visible.filter(live => live.id === page.id && live.key === page.key).length !== 1)) return;
+  let previous = visible.at(-1)!;
+  for (const page of next as PlayBooksPage[]) {
+    if (page.segment === previous.segment && page.index === previous.index + 1) { /* adjacent native page */ }
+    else if (page.segment === previous.segment + 1 && page.index === 0) { /* adjacent native chapter */ }
+    else return;
+    const existing = pages.find(candidate => candidate.id === page.id);
+    if (existing && existing.key !== page.key) return;
+    previous = page;
+  }
+  previous = visible.at(-1)!;
+  for (const page of next as PlayBooksPage[]) {
+    if (page.segment !== previous.segment) previous.lastInSegment = true;
+    let existing = pages.find(candidate => candidate.id === page.id);
+    if (!existing) { pages.push(page); existing = page; }
+    previous = existing;
+  }
+  snapshotDiagnostic += `;native-prepared=${next.length}`;
+}
+
 function measuredSourceCut(previous: any, next: any, visiblePrefix?: string): number | null {
   const full = normalizedText(previous.raw), suffix = normalizedText(next.raw).text;
   if (full.text.endsWith(suffix)) {
@@ -102,9 +164,14 @@ function measuredSourceCut(previous: any, next: any, visiblePrefix?: string): nu
 function measuredPages(group: any, visible: PlayBooksPage[] = []): PlayBooksBlock[][] | null {
   if (!Array.isArray(group.pages) || group.pages.length > 128) return null;
   const result: PlayBooksBlock[][] = [];
+  // Once native navigation shows a later page, unresolved cuts in pages
+  // behind it cannot veto that page's exact source witness. Keep the native
+  // indices; never publish these placeholders or jump a future unknown cut.
+  const start = visible.length ? Math.min(...visible.map(page => page.index)) : 0;
   for (let index = 0; index < group.pages.length; index++) {
+    if (index < start) { result.push([]); continue; }
     const source = group.pages[index];
-    if (!Array.isArray(source.blocks)) return null;
+    if (!Array.isArray(source.blocks)) break;
     let blocks = source.blocks.map((block: any) => ({ ...block, sliced: false }));
     const next = group.pages[index + 1]?.blocks?.[0];
     if (next) {
@@ -113,14 +180,17 @@ function measuredPages(group: any, visible: PlayBooksPage[] = []): PlayBooksBloc
         if (next.reopened) {
           const live = visible.find(page => page.index === index)?.blocks[cut];
           const position = measuredSourceCut(blocks[cut], next, live?.sliced ? live.raw : undefined);
-          if (position === null) return null;
+          // Retain only the already proven prefix. An unresolved later
+          // measurement must neither erase the immediate successor nor grant
+          // permission to skip this cut into a more distant page.
+          if (position === null) break;
           if (position > 0) {
             blocks[cut].raw = blocks[cut].raw.slice(0, position);
             blocks[cut].sliced = true;
             blocks = blocks.slice(0, cut + 1);
           } else blocks = blocks.slice(0, cut);
         } else blocks = blocks.slice(0, cut);
-      } else if (!blocks.at(-1)?.closed) return null;
+      } else if (!blocks.at(-1)?.closed) break;
     } else if (!source.closed) break; // Still waiting for the next measured cut.
     result.push(blocks.map((block: any) => {
       const element = document.createElement('p');
@@ -162,13 +232,14 @@ function addVerifiedMeasuredPages(pages: PlayBooksPage[], visible: PlayBooksPage
     // Agreement with every live column binds this speculative measurement to
     // the current native segment and layout, independently of arrival order.
     prepared.forEach((blocks, index) => {
+      if (!blocks.length) return;
       const id = `page-${visible[0].segment}-${index}`;
       const existing = pages.find(page => page.id === id);
       if (existing) {
-        if (index === prepared.length - 1 && group.pages[index]?.closed) existing.lastInSegment = true;
+        if (index === group.pages.length - 1 && group.pages[index]?.closed) existing.lastInSegment = true;
       } else pages.push({ id, segment: visible[0].segment, index, key: pageKey(id, blocks),
         blocks, element: document.createElement('div'),
-        lastInSegment: index === prepared.length - 1 && group.pages[index]?.closed });
+        lastInSegment: index === group.pages.length - 1 && group.pages[index]?.closed });
     });
     outcomes.push(`${tag}:accepted:${prepared.length}`);
     break;
@@ -200,14 +271,7 @@ export function readPlayBooksSnapshot(): PlayBooksSnapshot | null {
     const rendered = element.querySelector<HTMLElement>('reader-rendered-page.-gb-text');
     const segment = rendered?.querySelector<HTMLElement>('.gb-segment');
     if (!match || !rendered || !segment) continue;
-    const blocks = [...segment.querySelectorAll<HTMLElement>('p,h1,h2,h3,h4,h5,h6,li,blockquote')]
-      .filter(block => !block.querySelector('p,h1,h2,h3,h4,h5,h6,li,blockquote'))
-      .map(element => {
-        const raw = element.textContent || '';
-        return { element, raw, text: normalizedText(raw).text,
-          reopened: element.hasAttribute('ocean-reopened-element'),
-          sliced: element.hasAttribute('ocean-sliced-element') };
-      }).filter(block => /[\p{L}\p{N}]/u.test(block.text));
+    const blocks = sourceBlocks(segment);
     // Google keeps multiple size candidates with duplicate native page IDs.
     // Only the typography of the actually shown page owns this session.
     if (pageLayout(rendered) !== layout) continue;
@@ -225,6 +289,7 @@ export function readPlayBooksSnapshot(): PlayBooksSnapshot | null {
   if (!visible.length) return null;
   snapshotDiagnostic = `native=true;visible=${visible.map(page => page.id).join(',')};rendered=${pages.map(page => page.id).join(',')}`;
   addVerifiedMeasuredPages(pages, visible, current);
+  addVerifiedPreparedPages(pages, visible, current);
   pages.sort((a, b) => a.segment - b.segment || a.index - b.index);
   return { layout, pages, visible,
     ready: visible.every(page => page.element.classList.contains('-gb-loaded') && page.blocks.length > 0),

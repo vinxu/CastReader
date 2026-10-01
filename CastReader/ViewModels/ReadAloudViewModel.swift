@@ -967,6 +967,14 @@ final class ReadAloudViewModel: ObservableObject {
         input.demand(input.token, paras.count)
     }
 
+    /// Reflow invalidates future page identities, but already accepted complete
+    /// sentences keep their current player and pause intent. Drain this window;
+    /// the coordinator then opens the new layout at the last spoken source word.
+    @discardableResult
+    func sealKindleSpeechForReflow(token: UUID) -> Bool {
+        appendKindleSpeech([], token: token, afterCount: paras.count, endOfContent: true)
+    }
+
     /// Source failures pause the retained window and can be retried by Play.
     /// They must not turn a missing page into a successful end of the book.
     func failKindleSource(token: UUID, message: String) {
@@ -1670,6 +1678,7 @@ final class ReadAloudViewModel: ObservableObject {
         updateNowPlayingCaption(adoptionTime)
 
         preloadNext(after: paragraphIndex)
+        audio.deliverTransferredQueueCompletion(session: token)
         return true
     }
 
@@ -3362,11 +3371,13 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// 用外部已经生成好的首段音频启动朗读。Kindle 页级预加载会使用这个入口：
     /// 页面 OCR/文档和下一页首段 TTS 都提前完成时，翻页后无需再等首字节。
-    func startWithPrefetchedSegments(_ segments: [AudioSegment], paragraphIndex: Int) {
+    func startWithPrefetchedSegments(_ segments: [AudioSegment], paragraphIndex: Int,
+                                     following: [LivePagePreparedSpeech] = []) {
         startWithPrefetchedSegments(
             segments,
             paragraphIndex: paragraphIndex,
-            allowAccessRefresh: true
+            allowAccessRefresh: true,
+            following: following
         )
     }
 
@@ -3408,7 +3419,8 @@ final class ReadAloudViewModel: ObservableObject {
         initialSegmentID: String? = nil,
         initialProgress: Double = 0,
         autoplay: Bool = true,
-        persistentYouTubeCacheHit: Bool = false
+        persistentYouTubeCacheHit: Bool = false,
+        following: [LivePagePreparedSpeech] = []
     ) {
         guard resumeNotice == nil else { return }
         if let restored = pendingResumeParagraphIndex, restored != paragraphIndex {
@@ -3428,7 +3440,8 @@ final class ReadAloudViewModel: ObservableObject {
                 initialSegmentID: initialSegmentID,
                 initialProgress: initialProgress,
                 autoplay: autoplay,
-                persistentYouTubeCacheHit: persistentYouTubeCacheHit
+                persistentYouTubeCacheHit: persistentYouTubeCacheHit,
+                following: following
             )
         }) {
             return
@@ -3443,7 +3456,8 @@ final class ReadAloudViewModel: ObservableObject {
                     initialSegmentID: initialSegmentID,
                     initialProgress: initialProgress,
                     autoplay: autoplay,
-                    persistentYouTubeCacheHit: persistentYouTubeCacheHit
+                    persistentYouTubeCacheHit: persistentYouTubeCacheHit,
+                    following: following
                 )
                 return
             }
@@ -3542,6 +3556,7 @@ final class ReadAloudViewModel: ObservableObject {
             )
         }
 
+        adoptLivePageReserves(following)
         preloadNext(after: paragraphIndex)
     }
 
@@ -3624,7 +3639,8 @@ final class ReadAloudViewModel: ObservableObject {
         initialSegmentID: String? = nil,
         initialProgress: Double = 0,
         autoplay: Bool = true,
-        persistentYouTubeCacheHit: Bool = false
+        persistentYouTubeCacheHit: Bool = false,
+        following: [LivePagePreparedSpeech] = []
     ) {
         status = .loading
         invalidateAccessRetry()
@@ -3642,7 +3658,8 @@ final class ReadAloudViewModel: ObservableObject {
                 initialSegmentID: initialSegmentID,
                 initialProgress: initialProgress,
                 autoplay: autoplay,
-                persistentYouTubeCacheHit: persistentYouTubeCacheHit
+                persistentYouTubeCacheHit: persistentYouTubeCacheHit,
+                following: following
             )
         }
     }
@@ -4094,7 +4111,12 @@ final class ReadAloudViewModel: ObservableObject {
                                   self.audio.isPlaybackSessionActive(session) else { throw CancellationError() }
                             self.paragraphContinuation = ParagraphContinuation(paragraphIndex: index,
                                 voice: voice, language: self.docLanguage, checkpoint: checkpoint)
+                            // Reflow can restore a paused cursor in part 1+
+                            // without loading earlier parts into AVPlayer.
+                            // Admit only until that exact part is found; its
+                            // paused playback intent still wins when loaded.
                             let needsResume = self.pendingReadingAudioCursor != nil
+                                || self.pendingLiveWebResume?.paragraphIndex == index
                             let canGenerate = demand.canRequest(currentSegmentID: self.audio.currentSegment?.id,
                                 position: self.audio.playbackPosition, rate: Double(self.audio.playbackRate),
                                 paused: (self.audio.isExplicitlyPaused || self.isPlaybackPausedByUser) && !needsResume)
@@ -4368,7 +4390,7 @@ final class ReadAloudViewModel: ObservableObject {
         }
         guard epoch == generationEpoch, !audio.hasTerminalPlaybackFailure else { return }
         status = .streaming
-        if document.sourceKind == .kindle, !VoiceOption.requiresGenerationQuota(playbackVoiceID) {
+        if !VoiceOption.requiresGenerationQuota(playbackVoiceID) {
             preloadNext(after: paragraph)
         }
         // The clone worker is intentionally single-flight on one GPU. Starting
@@ -4522,7 +4544,7 @@ final class ReadAloudViewModel: ObservableObject {
         let rate = max(0.25, Double(audio.playbackRate))
         let isShortOpening = [.googleBooks, .kobo].contains(document.sourceKind)
             && pendingReadingAudioCursor == nil && segmentsByParagraph[paragraph]?.isEmpty != false
-            && segment.segmentIndex == 0 && segment.duration / rate < 1.5
+            && segment.segmentIndex == 0 && segment.duration / rate < 3
             && weReadSpeechBoundary?.paragraphIndex != paragraph
         let isShortResume: Bool
         if kindleContinuousInput != nil, let cursor = pendingReadingAudioCursor {
@@ -4539,25 +4561,38 @@ final class ReadAloudViewModel: ObservableObject {
         guard isShortOpening || isShortResume else { return }
         // Live page paragraphs start inside the committed viewport. Do not
         // issue a request for a speculative next page just to pad a title.
-        let next = readableIndices[position + 1], id = UUID()
-        shortStartupPreparation = (id, next)
+        let id = UUID()
         defer {
             if shortStartupPreparation?.id == id { shortStartupPreparation = nil }
         }
         audio.prestageSegments([segment])
-        if readAheadStreams[next] == nil { startPrefetch(next) }
-        let deadline = ProcessInfo.processInfo.systemUptime + 6
-        while !Task.isCancelled, generationEpoch == epoch, audioSessionToken == session,
-              isActive, !audio.hasTerminalPlaybackFailure,
-              !isPlaybackPausedByUser, !audio.isExplicitlyPaused,
-              ProcessInfo.processInfo.systemUptime < deadline {
-            guard let stream = readAheadStreams[next], stream.failure == nil else { break }
-            if let body = stream.segments.first, audio.isPreparedForPlayback(body) {
-                ReaderRunLog.write("PAGINATION short_opening_ready paragraph=\(paragraph) next=\(next) mono=\(ProcessInfo.processInfo.systemUptime)")
-                break
+        let deadline = ProcessInfo.processInfo.systemUptime + 8
+        var bufferedSeconds = segment.duration / rate
+        // Short dialogue needs a duration reserve, not just one more title.
+        // Only prepare already committed paragraphs, at most six first parts.
+        // A partly response keeps its suffix with the existing producer.
+        for next in readableIndices.dropFirst(position + 1).prefix(6) {
+            guard bufferedSeconds < 8, !Task.isCancelled,
+                  generationEpoch == epoch, audioSessionToken == session,
+                  isActive, !audio.hasTerminalPlaybackFailure,
+                  !isPlaybackPausedByUser, !audio.isExplicitlyPaused,
+                  ProcessInfo.processInfo.systemUptime < deadline else { break }
+            shortStartupPreparation = (id, next)
+            if readAheadStreams[next] == nil { startPrefetch(next) }
+            while !Task.isCancelled, generationEpoch == epoch, audioSessionToken == session,
+                  isActive, !audio.hasTerminalPlaybackFailure,
+                  !isPlaybackPausedByUser, !audio.isExplicitlyPaused,
+                  ProcessInfo.processInfo.systemUptime < deadline {
+                guard let stream = readAheadStreams[next], stream.failure == nil else { break }
+                if let body = stream.segments.first, audio.isPreparedForPlayback(body) { break }
+                if stream.finished, stream.segments.isEmpty { break }
+                try? await Task.sleep(nanoseconds: 20_000_000)
             }
-            if stream.finished, stream.segments.isEmpty { break }
-            try? await Task.sleep(nanoseconds: 20_000_000)
+            guard let stream = readAheadStreams[next], stream.failure == nil,
+                  let body = stream.segments.first, audio.isPreparedForPlayback(body) else { break }
+            bufferedSeconds += stream.segments.reduce(0) { $0 + max(0, $1.duration) } / rate
+            ReaderRunLog.write("PAGINATION short_opening_ready paragraph=\(paragraph) next=\(next) seconds=\(String(format: "%.2f", bufferedSeconds)) mono=\(ProcessInfo.processInfo.systemUptime)")
+            guard isShortOpening, stream.finished else { break }
         }
     }
 
@@ -4597,7 +4632,9 @@ final class ReadAloudViewModel: ObservableObject {
             targetSeconds: kindleContinuousInput == nil ? 12 : 24)
         // One future producer, plus the foreground producer. Scheduler limits
         // are unchanged. Never cancel an admitted HTTP request just to replan.
-        if !readAheadStreams.values.contains(where: { !$0.finished }),
+        if !readAheadStreams.values.contains(where: {
+            !$0.finished && (!$0.promoted || VoiceOption.requiresGenerationQuota(playbackVoiceID))
+        }),
            let next = selection.indices.first(where: {
                readAheadStreams[$0] == nil && !kindlePrefetchFailures.contains($0)
            }), readAheadFitsBudget(excluding: nil) {
@@ -4729,7 +4766,8 @@ final class ReadAloudViewModel: ObservableObject {
             }
             if shortStartupPreparation?.nextIndex == stream.paragraphIndex,
                !stream.promoted, !stream.segments.isEmpty {
-                // One first body part is sufficient for the opening gate.
+                // Never leap over this paragraph's unfinished suffix while
+                // collecting the opening duration reserve.
                 try await Task.sleep(nanoseconds: 20_000_000)
                 continue
             }

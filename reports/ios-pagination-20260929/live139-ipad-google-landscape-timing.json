@@ -1,0 +1,168 @@
+{
+  "raw_log": "/private/tmp/castreader139-ipad-final.log",
+  "raw_sha256": "4a513dd82e246dc01f3f5e1557a9c8c2ec616872a4a16fd969cf782a5490f182",
+  "measurement": "Application event clock; includes native turn time separately; no acoustic claim",
+  "summary": {
+    "preset": {
+      "all_commits": 3,
+      "all_audible_paths": {
+        "count": 3,
+        "request_to_commit_ms": {
+          "samples": 3,
+          "p95": 85,
+          "max": 85
+        },
+        "commit_to_playing_ms": {
+          "samples": 3,
+          "p95": 57,
+          "max": 57
+        },
+        "ended_to_playing_ms": {
+          "samples": 3,
+          "p95": 135,
+          "max": 135
+        }
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 3,
+        "request_to_commit_ms": {
+          "samples": 3,
+          "p95": 85,
+          "max": 85
+        },
+        "commit_to_playing_ms": {
+          "samples": 3,
+          "p95": 57,
+          "max": 57
+        },
+        "ended_to_playing_ms": {
+          "samples": 3,
+          "p95": 135,
+          "max": 135
+        }
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    },
+    "clone": {
+      "all_commits": 0,
+      "all_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    },
+    "voice_not_recorded": {
+      "all_commits": 0,
+      "all_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    }
+  },
+  "rows": [
+    {
+      "commit_line": 153,
+      "commit_ms": 45011500,
+      "request_ms": 45011423,
+      "prior_audio_end_ms": 45011422,
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 77,
+      "playing_line": 175,
+      "playing_ms": 45011557,
+      "commit_to_playing_ms": 57,
+      "ended_to_playing_ms": 135,
+      "source_sha256": "ca11e2d50748dd3c0bee21205f5c2bd9f1d72b1314803be7c8fedec8aa30f117"
+    },
+    {
+      "commit_line": 282,
+      "commit_ms": 45063069,
+      "request_ms": 45063006,
+      "prior_audio_end_ms": 45063006,
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 63,
+      "playing_line": 303,
+      "playing_ms": 45063109,
+      "commit_to_playing_ms": 40,
+      "ended_to_playing_ms": 103,
+      "source_sha256": "8ed6a15c4cee19bd31ebc7a67ff07c89eea4c8206c41bb5d4351f0bd30341e9a"
+    },
+    {
+      "commit_line": 418,
+      "commit_ms": 45122589,
+      "request_ms": 45122504,
+      "prior_audio_end_ms": 45122503,
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 85,
+      "playing_line": 439,
+      "playing_ms": 45122628,
+      "commit_to_playing_ms": 39,
+      "ended_to_playing_ms": 125,
+      "source_sha256": "c70ab16a0f2540e81030e9f8b36bba4e1d592601a4e920e133f01e59b5e4c06a"
+    }
+  ],
+  "final_acceptance": true,
+  "candidate": 139,
+  "platform": "gbooks",
+  "interval_clock": [
+    "12:28:46.000",
+    "23:59:59.999"
+  ],
+  "acceptance": {
+    "status": "PASS",
+    "scope": "iPad landscape double-column Google Play Books preset Explain, 180-second targeted continuation",
+    "criterion": "User 2026-10-01 practical acceptance; hundreds of ms acceptable",
+    "ui_test": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    },
+    "screenshot_review": "Actual two-column source, on-text marks and one-line subtitle inspected; no acoustic zero-gap claim."
+  }
+}

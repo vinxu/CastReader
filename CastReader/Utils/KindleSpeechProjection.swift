@@ -4,6 +4,42 @@ import Foundation
 /// TTS still aligns against its processed text; this map only selects the
 /// original OCR geometry and persistent reading position for the aligned word.
 enum KindleSpeechProjection {
+    struct Start {
+        let paragraphID: Int
+        let wordIndex: Int
+    }
+
+    /// Resolve a confirmed source-word cursor through the footnote projection.
+    /// Never renumber/cut OCR words: later highlights still use the full page.
+    static func sentenceParagraphs(_ page: KindleSpeechPage, startingAt start: Start? = nil) throws -> [KindleSentenceBuffer.Paragraph] {
+        var result: [KindleSentenceBuffer.Paragraph] = []
+        if let start {
+            guard let source = page.paragraphs.first(where: { $0.sourceParagraphID == start.paragraphID }),
+                  source.sourceParagraph.words.indices.contains(start.wordIndex) else { throw Failure.invalidRange }
+        }
+        for projection in page.paragraphs where projection.spokenParagraph.type.isReadable &&
+            SpeechTextSanitizer.containsSpeakableContent(projection.spokenText) && !projection.spokenParagraph.words.isEmpty {
+            let paragraph = projection.spokenParagraph
+            if let start, paragraph.id < start.paragraphID { continue }
+            var offset = 0
+            if let start, paragraph.id == start.paragraphID {
+                guard let wordIndex = projection.spokenWordSourceIndices.firstIndex(where: { $0 >= start.wordIndex }) else { continue }
+                let text = paragraph.text as NSString
+                for (index, word) in paragraph.words.enumerated() {
+                    let range = text.range(of: word.text, options: [.caseInsensitive, .diacriticInsensitive],
+                                           range: NSRange(location: offset, length: text.length - offset))
+                    guard range.location != NSNotFound else { throw Failure.unmappedText }
+                    if index == wordIndex { offset = range.location; break }
+                    offset = NSMaxRange(range)
+                }
+            }
+            let heading: Bool
+            if case .heading = paragraph.type { heading = true } else { heading = false }
+            result.append(.init(id: paragraph.id, text: paragraph.text, isHeading: heading, startUTF16: offset))
+        }
+        return result
+    }
+
     struct Page {
         let key: String
         let paragraphs: [ReadingParagraph]

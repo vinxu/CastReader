@@ -254,6 +254,42 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         }
     }
 
+    func testNativeGlyphOffsetsKeepReadAndMarksWhenReflowSplitsSentenceUnits() async throws {
+        let sentence = "Alpha beta gamma delta."
+        try await js("""
+        const host=document.querySelector('.wr_readerContent');
+        host.innerHTML='<canvas width="350" height="300" style="width:350px;height:300px"></canvas>';
+        window.nativeItem=(text,offset,x,y)=>({text,sourceParagraphText:text,sourceParagraphIndex:offset,
+          sourceLayoutFingerprint:'layout-'+window.nativeEpoch,nativeSourceIdentity:'book:chapter1',
+          sourceCharStart:0,sourceCharEnd:text.length,
+          sourceAnchors:Array.from(text,(ch,i)=>({start:i,end:i+1,offset:offset+i,text:ch})),
+          entries:Array.from(text,(ch,i)=>({charStart:i,charEnd:i+1,bbox:{x:x+i*5,y,width:5,height:20}})),
+          bounds:{x,y,width:text.length*5,height:20},geometrySource:'native-glyphs'});
+        window.nativeEpoch=1;window.nativeItems=[nativeItem('\(sentence)',100,10,20)];
+        window.__castReaderWeReadNative={snapshot(){return{ready:true,items:window.nativeItems,pageIdentity:'native-'+window.nativeEpoch}},turn(){return false}};
+        document.dispatchEvent(new Event('castreader-wr-native'));
+        """)
+        try await wait { self.read.stagedLiveWebParagraphTexts == [sentence] }
+        read.dbgGenerate(0)
+        try await wait { self.audio.isPlaying && self.audio.currentTime > 0.1 }
+        read.pausePlayback()
+        let segment = audio.currentSegment?.id, time = audio.currentTime
+        try await js("CR.highlightRange({paragraphIndex:0,charStart:6,charEnd:10});CR.showMark({id:'split',paragraphIndex:0,charStart:6,charEnd:16,action:'underline'})")
+        try await js("window.dispatchEvent(new Event('resize'));window.nativeEpoch=2;window.nativeItems=[nativeItem('Alpha beta ',100,100,40),nativeItem('gamma delta.',111,10,90)];document.dispatchEvent(new Event('castreader-wr-native'))")
+        try await Task.sleep(for: .milliseconds(1600))
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [sentence])
+        XCTAssertEqual(audio.currentSegment?.id, segment)
+        XCTAssertEqual(audio.currentTime, time, accuracy: 0.1)
+        XCTAssertFalse(audio.isPlaying)
+        let x = try await web.evaluateJavaScript("parseFloat(document.querySelector('[data-cr-weread-highlight]')?.style.left||'-1')") as? Double
+        XCTAssertEqual(try XCTUnwrap(x), 129, accuracy: 1)
+        let ink = try await web.evaluateJavaScript("document.querySelectorAll('[data-cr-weread-mark-id=split] path').length") as? Int
+        XCTAssertEqual(ink, 2, "One immutable source mark must project onto both newly split source fragments")
+        try await js("window.nativeItems.forEach(p=>p.nativeSourceIdentity='book:chapter2');CR.highlightRange({paragraphIndex:0,charStart:6,charEnd:10})")
+        let wrongChapter = try await web.evaluateJavaScript("document.querySelectorAll('[data-cr-weread-highlight]').length") as? Int
+        XCTAssertEqual(wrongChapter, 0, "Equal text from a different chapter is not a valid source")
+    }
+
     func testResizeDoesNotCommitTheProvidersIntermediatePartialCanvas() async throws {
         read.dbgGenerate(0)
         try await wait { self.audio.currentSegment != nil }
