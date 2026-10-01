@@ -1,0 +1,14 @@
+{
+  "caption_pipeline.py": {
+    "sha256": "a16454798abfdedb9c73f12b2d80aa0e0d059a8b008a58be9e74c65406e0e418",
+    "source": "/Users/xuxuheng/Documents/.worktrees/CastReader-clone-alignment-20260908/reports/nari-dynamic-voice-clone-poc/alignment_validation/caption_pipeline.py"
+  },
+  "test_caption_pipeline.py": {
+    "sha256": "1aadfaab889c024a9d00f2f3b716f583733fe0bfb4e7ef690b09170acc4007d4",
+    "source": "/Users/xuxuheng/Documents/.worktrees/CastReader-clone-alignment-20260908/reports/nari-dynamic-voice-clone-poc/alignment_validation/test_caption_pipeline.py"
+  },
+  "alignment_contract.py": {
+    "sha256": "b45900489a55c46d8962e2c2b7f2348d56b584131c5dfebdac71806ee143e7b4",
+    "source": "/Users/xuxuheng/Documents/.worktrees/CastReader-clone-alignment-20260908/reports/nari-dynamic-voice-clone-poc/alignment_validation/alignment_contract.py"
+  }
+}

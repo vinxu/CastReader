@@ -1,0 +1,305 @@
+{
+  "candidate_sha256": "1a5cbdea1380b080c786c1e6140991bc54729b1dd9148dedeb63f0dc237a6e75",
+  "audio_sha256": "6c9989b1efac24b6962d3f4768918af49524d6029d231e309f27a3d16b4adb71",
+  "duration": 8.24,
+  "device": "cpu",
+  "model_revision": "c7cbfc2048c462b0d63a45797104fc9db3ad62b7",
+  "alignment_ms": 1885.9854899346828,
+  "raw_words": [
+    {
+      "text": "早",
+      "start_time": 0.4,
+      "end_time": 0.64
+    },
+    {
+      "text": "上",
+      "start_time": 0.64,
+      "end_time": 0.96
+    },
+    {
+      "text": "小",
+      "start_time": 1.28,
+      "end_time": 1.52
+    },
+    {
+      "text": "林",
+      "start_time": 1.52,
+      "end_time": 1.76
+    },
+    {
+      "text": "打",
+      "start_time": 1.76,
+      "end_time": 2.0
+    },
+    {
+      "text": "开",
+      "start_time": 2.0,
+      "end_time": 2.08
+    },
+    {
+      "text": "窗",
+      "start_time": 2.16,
+      "end_time": 2.4
+    },
+    {
+      "text": "户",
+      "start_time": 2.4,
+      "end_time": 2.64
+    },
+    {
+      "text": "花",
+      "start_time": 3.2,
+      "end_time": 3.36
+    },
+    {
+      "text": "园",
+      "start_time": 3.36,
+      "end_time": 3.6
+    },
+    {
+      "text": "里",
+      "start_time": 3.6,
+      "end_time": 3.68
+    },
+    {
+      "text": "的",
+      "start_time": 3.68,
+      "end_time": 3.76
+    },
+    {
+      "text": "小",
+      "start_time": 3.76,
+      "end_time": 4.0
+    },
+    {
+      "text": "鸟",
+      "start_time": 4.08,
+      "end_time": 4.4
+    },
+    {
+      "text": "正",
+      "start_time": 4.4,
+      "end_time": 4.56
+    },
+    {
+      "text": "在",
+      "start_time": 4.56,
+      "end_time": 4.64
+    },
+    {
+      "text": "唱",
+      "start_time": 4.64,
+      "end_time": 4.96
+    },
+    {
+      "text": "歌",
+      "start_time": 4.96,
+      "end_time": 5.28
+    },
+    {
+      "text": "阳",
+      "start_time": 5.6,
+      "end_time": 5.84
+    },
+    {
+      "text": "光",
+      "start_time": 5.84,
+      "end_time": 6.0
+    },
+    {
+      "text": "慢",
+      "start_time": 6.08,
+      "end_time": 6.24
+    },
+    {
+      "text": "慢",
+      "start_time": 6.24,
+      "end_time": 6.4
+    },
+    {
+      "text": "照",
+      "start_time": 6.4,
+      "end_time": 6.56
+    },
+    {
+      "text": "进",
+      "start_time": 6.56,
+      "end_time": 6.88
+    },
+    {
+      "text": "安",
+      "start_time": 6.96,
+      "end_time": 7.2
+    },
+    {
+      "text": "静",
+      "start_time": 7.2,
+      "end_time": 7.36
+    },
+    {
+      "text": "的",
+      "start_time": 7.36,
+      "end_time": 7.44
+    },
+    {
+      "text": "房",
+      "start_time": 7.52,
+      "end_time": 7.76
+    },
+    {
+      "text": "间",
+      "start_time": 7.76,
+      "end_time": 8.08
+    }
+  ],
+  "timestamps": [
+    {
+      "word": "早",
+      "start_time": 0.4,
+      "end_time": 0.64
+    },
+    {
+      "word": "上",
+      "start_time": 0.64,
+      "end_time": 0.96
+    },
+    {
+      "word": "小",
+      "start_time": 1.28,
+      "end_time": 1.52
+    },
+    {
+      "word": "林",
+      "start_time": 1.52,
+      "end_time": 1.76
+    },
+    {
+      "word": "打",
+      "start_time": 1.76,
+      "end_time": 2.0
+    },
+    {
+      "word": "开",
+      "start_time": 2.0,
+      "end_time": 2.08
+    },
+    {
+      "word": "窗",
+      "start_time": 2.16,
+      "end_time": 2.4
+    },
+    {
+      "word": "户",
+      "start_time": 2.4,
+      "end_time": 2.64
+    },
+    {
+      "word": "花",
+      "start_time": 3.2,
+      "end_time": 3.36
+    },
+    {
+      "word": "园",
+      "start_time": 3.36,
+      "end_time": 3.6
+    },
+    {
+      "word": "里",
+      "start_time": 3.6,
+      "end_time": 3.68
+    },
+    {
+      "word": "的",
+      "start_time": 3.68,
+      "end_time": 3.76
+    },
+    {
+      "word": "小",
+      "start_time": 3.76,
+      "end_time": 4.0
+    },
+    {
+      "word": "鸟",
+      "start_time": 4.08,
+      "end_time": 4.4
+    },
+    {
+      "word": "正",
+      "start_time": 4.4,
+      "end_time": 4.56
+    },
+    {
+      "word": "在",
+      "start_time": 4.56,
+      "end_time": 4.64
+    },
+    {
+      "word": "唱",
+      "start_time": 4.64,
+      "end_time": 4.96
+    },
+    {
+      "word": "歌",
+      "start_time": 4.96,
+      "end_time": 5.28
+    },
+    {
+      "word": "阳",
+      "start_time": 5.6,
+      "end_time": 5.84
+    },
+    {
+      "word": "光",
+      "start_time": 5.84,
+      "end_time": 6.0
+    },
+    {
+      "word": "慢",
+      "start_time": 6.08,
+      "end_time": 6.24
+    },
+    {
+      "word": "慢",
+      "start_time": 6.24,
+      "end_time": 6.4
+    },
+    {
+      "word": "照",
+      "start_time": 6.4,
+      "end_time": 6.56
+    },
+    {
+      "word": "进",
+      "start_time": 6.56,
+      "end_time": 6.88
+    },
+    {
+      "word": "安",
+      "start_time": 6.96,
+      "end_time": 7.2
+    },
+    {
+      "word": "静",
+      "start_time": 7.2,
+      "end_time": 7.36
+    },
+    {
+      "word": "的",
+      "start_time": 7.36,
+      "end_time": 7.44
+    },
+    {
+      "word": "房",
+      "start_time": 7.52,
+      "end_time": 7.76
+    },
+    {
+      "word": "间",
+      "start_time": 7.76,
+      "end_time": 8.08
+    }
+  ],
+  "coverage_qualified": true,
+  "production_latency_qualified": false,
+  "acoustic_review_complete": false
+}
