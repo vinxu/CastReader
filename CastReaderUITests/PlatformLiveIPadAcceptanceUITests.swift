@@ -159,6 +159,68 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
     func testKoboNaturalContinuation() throws { try continuation("kobo") }
     func testWeReadNaturalContinuation() throws { try continuation("weread") }
 
+    /// The real private-voice regression for Chinese source cues. Selects an
+    /// existing authorized voice through the product UI and observes both
+    /// modes across a natural page turn; no synthesized fixture or account edit.
+    func testAuthorizedPrivateChineseReadExplainContinuation() throws {
+        let environment = ProcessInfo.processInfo.environment
+        let region = environment["CASTREADER_CLONE_LIVE_REGION"] ?? "global"
+        XCTAssertTrue(["cn", "global"].contains(region))
+        let app = try home("weread", extra: ["-CastReaderRegion", region,
+            "-CastReaderServiceRoute", region, "-explain_language", "zh"])
+        let book = liveBook("weread", in: app)
+        reveal(book, in: app); book.tap()
+        wait(120) { self.field("ready", app) == "true" && self.number("characters", app) > 20 }
+        let read = app.buttons["readPlayPauseButton"]
+        if field("playing", app) != "true" { read.tap() }
+        wait(120) { self.field("playing", app) == "true" && self.number("wordVisible", app) > 0 }
+        app.buttons["playbackVoiceButton"].tap()
+        let categories = app.segmentedControls["voiceBrowserCategoryPicker"]
+        XCTAssertTrue(categories.waitForExistence(timeout: 15))
+        let personal = categories.buttons.matching(NSPredicate(format: "label IN %@", ["My Voices", "My voices", "我的声音"])).firstMatch
+        XCTAssertTrue(personal.exists); personal.tap()
+        let voice: XCUIElement
+        if let id = environment["CASTREADER_CLONE_LIVE_VOICE"] {
+            voice = app.buttons["voiceCloneApplyButton_\(id)"]
+        } else {
+            voice = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voiceCloneApplyButton_vc_")).firstMatch
+        }
+        XCTAssertTrue(voice.waitForExistence(timeout: 30), "An existing authorized private voice is required")
+        let voiceID = String(voice.identifier.dropFirst("voiceCloneApplyButton_".count))
+        let identity = XCTAttachment(string: "region=\(region);voice=\(voiceID);output=zh")
+        identity.name = "private-chinese-voice-selection"; identity.lifetime = .keepAlways; add(identity)
+        voice.tap()
+        app.buttons["playbackVoiceDoneButton"].tap()
+
+        for mode in ["read", "explain"] {
+            if mode == "explain" {
+                app.segmentedControls["readerModePicker"].buttons["Explain"].tap()
+                let start = app.buttons["explainStartButton"]
+                if start.waitForExistence(timeout: 10) { start.tap() }
+            }
+            wait(240) { self.field("playing", app) == "true" &&
+                self.number(mode == "read" ? "wordVisible" : "inkVisible", app) > 0 }
+            let initial = playbackSnapshot(app)
+            let turns = number(mode == "read" ? "automaticReadTurns" : "automaticExplainTurns", app)
+            wait(30) {
+                let next = self.playbackSnapshot(app)
+                return next["playing"] == "true" &&
+                    (next["segment"] != initial["segment"] ||
+                     (Double(next["time"] ?? "0") ?? 0) > (Double(initial["time"] ?? "0") ?? 0) + 1)
+            }
+            capture(app, "private-chinese-\(mode)-playing")
+            wait(300) { self.number(mode == "read" ? "automaticReadTurns" : "automaticExplainTurns", app) > turns &&
+                self.field("playing", app) == "true" &&
+                self.number(mode == "read" ? "wordVisible" : "inkVisible", app) > 0 }
+            capture(app, "private-chinese-\(mode)-after-natural-page")
+            let control = app.buttons[mode == "read" ? "readPlayPauseButton" : "explainPlayPauseButton"]
+            control.tap(); wait { self.field("playing", app) == "false" }
+            control.tap(); wait(30) { self.field("playing", app) == "true" }
+        }
+        app.buttons["explainPlayPauseButton"].tap()
+        wait { self.field("playing", app) == "false" }
+    }
+
     /// Dedicated book-end gate; it cannot replace the uninterrupted long test.
     func testGoogleBooksNaturalBookEnd() throws {
         let url = try XCTUnwrap(ProcessInfo.processInfo.environment["CASTREADER_GOOGLE_LIVE_URL"])
