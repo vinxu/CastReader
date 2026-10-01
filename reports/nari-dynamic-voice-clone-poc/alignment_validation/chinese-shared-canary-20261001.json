@@ -1,0 +1,43 @@
+{
+  "candidate": "/root/autodl-tmp/castreader-alignment/releases/20261001-shared-zh-word-v4",
+  "candidate_sha256": "1a5cbdea1380b080c786c1e6140991bc54729b1dd9148dedeb63f0dc237a6e75",
+  "current_changed": false,
+  "tests": [
+    {
+      "case": "zh",
+      "mode": "qwen-word",
+      "timestamps": 29,
+      "duration_ms": "10008",
+      "total_ms": 1113.5805621743202
+    },
+    {
+      "case": "mixed",
+      "mode": "qwen-word",
+      "timestamps": 14,
+      "duration_ms": "4248",
+      "total_ms": 528.5525023937225
+    },
+    {
+      "case": "en",
+      "mode": "qwen-word",
+      "timestamps": 13,
+      "duration_ms": "5856",
+      "total_ms": 656.5023921430111
+    },
+    {
+      "case": "developer-shared-english-pcm",
+      "status": "aligned",
+      "timestamps": 19,
+      "shared_model": true
+    }
+  ],
+  "health": {
+    "status": "ready",
+    "pipeline_revision": "qwen-pcm-measured-groups-v4-zh-candidate",
+    "alignment_service_revision": "shared-gpu-alignment-v1",
+    "device": "cuda:0",
+    "pid": 747663,
+    "model_instances": 1
+  },
+  "passed": true
+}

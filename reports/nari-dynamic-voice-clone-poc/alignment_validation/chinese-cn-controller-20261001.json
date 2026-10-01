@@ -1,0 +1,8 @@
+{
+  "status": 200,
+  "revision": "qwen-pcm-measured-groups-v4-zh-candidate",
+  "mode": "qwen-word",
+  "timestamp_count": 27,
+  "elapsed_ms": 1023.7857662141323,
+  "worker_origin": "127.0.0.1"
+}

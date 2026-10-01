@@ -1,0 +1,18 @@
+{
+  "region": "us",
+  "production": true,
+  "tests": [
+    {
+      "case": "consumer-english",
+      "mode": "qwen-word",
+      "timestamps": 12
+    },
+    {
+      "case": "developer-english-pcm",
+      "timestamps": 12,
+      "device": "cuda:0",
+      "shared_model": true
+    }
+  ],
+  "passed": true
+}

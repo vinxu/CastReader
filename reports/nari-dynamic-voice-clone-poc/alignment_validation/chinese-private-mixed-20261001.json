@@ -1,0 +1,45 @@
+{
+  "candidate_sha256": "1a5cbdea1380b080c786c1e6140991bc54729b1dd9148dedeb63f0dc237a6e75",
+  "source": "authorized existing private test voice",
+  "voice_id": "vc_12e286594652455dae539cabbf93c2c0",
+  "production_changed": false,
+  "results": [
+    {
+      "case": "digits",
+      "language": "zh",
+      "status": 200,
+      "synthesis_ms": 800.8719235658646,
+      "reason": "qwen-word",
+      "duration": 8.88,
+      "timings": {
+        "encoding_ms": 123.87575954198837,
+        "queue_ms": 0.376775860786438,
+        "alignment_ms": 67.40688160061836,
+        "validation_ms": 0.007092952728271484,
+        "postprocess_ms": 124.93136897683144
+      },
+      "timestamp_count": 23,
+      "coverage": true,
+      "audio_sha256": "bb35d4faf79ec4c5d5246dfe77a5eab63a0850321f0d22b5eb4552058d9ba5fa"
+    },
+    {
+      "case": "mixed",
+      "language": "zh",
+      "status": 200,
+      "synthesis_ms": 564.9709962308407,
+      "reason": "qwen-word",
+      "duration": 6.408,
+      "timings": {
+        "encoding_ms": 92.8487740457058,
+        "queue_ms": 0.456150621175766,
+        "alignment_ms": 53.492192178964615,
+        "validation_ms": 0.0071749091148376465,
+        "postprocess_ms": 93.25780719518661
+      },
+      "timestamp_count": 18,
+      "coverage": true,
+      "audio_sha256": "438b9c3a709735983bc7c833d973a1979e7ea2c8878261019d050c83e65ffc25"
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,54 @@
+{
+  "old": "/root/autodl-tmp/castreader-alignment/releases/20260909-shared-v1",
+  "new": "/root/autodl-tmp/castreader-alignment/releases/20261001-shared-zh-word-v4",
+  "pre": {
+    "status": "ready",
+    "pipeline_revision": "qwen-pcm-measured-groups-v3",
+    "alignment_service_revision": "shared-gpu-alignment-v1",
+    "device": "cuda:0",
+    "pid": 896153,
+    "model_instances": 1
+  },
+  "receipts": {
+    "pre": {
+      "verified": true,
+      "bytes": 256261,
+      "sha256": "9a942d24fe9ec16b5c0cb8b6470e7a73b2d4641c2646a0095448142baef06d1b",
+      "readback_sha256": "9a942d24fe9ec16b5c0cb8b6470e7a73b2d4641c2646a0095448142baef06d1b",
+      "public": false,
+      "bucket": "castreader-voice-1323065328",
+      "region": "ap-shanghai",
+      "key": "runtime-backups/20261001/alignment-zh-source/cn-pre-9a942d24fe9ec16b.tar.gz",
+      "receipt_key": "runtime-backups/20261001/alignment-zh-source/cn-pre-9a942d24fe9ec16b.tar.gz.receipt.json",
+      "receipt_sha256": "a65ed4bb1bb44bf7e7ddeccb4e9916fbfe73ceff193b2829eb3676d3c0f048ae",
+      "receipt_readback_verified": true
+    },
+    "candidate": {
+      "verified": true,
+      "bytes": 256407,
+      "sha256": "522f0b06ca7252d3713e4fb84c7d0d090ff0ce0152f2933c2ae0a1a778857477",
+      "readback_sha256": "522f0b06ca7252d3713e4fb84c7d0d090ff0ce0152f2933c2ae0a1a778857477",
+      "public": false,
+      "bucket": "castreader-voice-1323065328",
+      "region": "ap-shanghai",
+      "key": "runtime-backups/20261001/alignment-zh-source/cn-candidate-522f0b06ca7252d3.tar.gz",
+      "receipt_key": "runtime-backups/20261001/alignment-zh-source/cn-candidate-522f0b06ca7252d3.tar.gz.receipt.json",
+      "receipt_sha256": "8f58645f58f58b4fe2bb75a2e4afb9958a79d152270111af5ee02cf6ecec3048",
+      "receipt_readback_verified": true
+    }
+  },
+  "changed": true,
+  "post": {
+    "status": "ready",
+    "pipeline_revision": "qwen-pcm-measured-groups-v4-zh-candidate",
+    "alignment_service_revision": "shared-gpu-alignment-v1",
+    "device": "cuda:0",
+    "pid": 751400,
+    "model_instances": 1
+  },
+  "passed": true,
+  "timestamp_count": 22,
+  "alignment_mode": "qwen-word",
+  "original_worker_healthy": "healthy",
+  "completed_at": "2026-10-01T07:29:56Z"
+}

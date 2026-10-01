@@ -1,0 +1,22 @@
+{
+  "candidate": "/workspace/castreader-alignment/releases/20261001-shared-zh-word-v4",
+  "candidate_sha256": "1a5cbdea1380b080c786c1e6140991bc54729b1dd9148dedeb63f0dc237a6e75",
+  "execution_device": "cpu",
+  "GPU_canary": "same algorithm passed China physical GPU; no second US GPU allocation",
+  "current_changed": false,
+  "tests": [
+    {
+      "case": "zh",
+      "timestamp_count": 14,
+      "mode": "qwen-word",
+      "total_ms": 1413.581470027566
+    },
+    {
+      "case": "en",
+      "timestamp_count": 12,
+      "mode": "qwen-word",
+      "total_ms": 1466.418613679707
+    }
+  ],
+  "passed": true
+}
