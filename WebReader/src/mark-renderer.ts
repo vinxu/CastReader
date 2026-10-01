@@ -163,17 +163,11 @@ export function createMarkRenderer(
     const sy = ownerWindow.scrollY
 
     // 跨行词组/句子：getClientRects 每行返回一个 rect。下划线/删除线/荧光笔要逐行画，
-    // 否则只画第一行、换行处就断了。末尾符号用最后一行右端，圈用所有行并集 bbox 圈住整段。
+    // 否则只画第一行、换行处就断了。末尾符号用最后一行右端；圈也逐行画，不能合并跨栏或跨页的矩形。
     const lineRects = rects.filter((rc) => rc.width >= 2 && rc.height >= 2)
     if (!lineRects.length) return
     shown.set(m.id, m)
     const last = lineRects[lineRects.length - 1]
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-    lineRects.forEach((rc) => {
-      minX = Math.min(minX, rc.left); minY = Math.min(minY, rc.top)
-      maxX = Math.max(maxX, rc.right); maxY = Math.max(maxY, rc.bottom)
-    })
-
     const wm = weightMul(m.weight)   // P1：重要度 → 笔触粗细倍率
     switch (m.action) {
       case 'underline':
@@ -196,8 +190,10 @@ export function createMarkRenderer(
         })
         break
       case 'circle': {
-        const cx = (minX + maxX) / 2 + sx, cy = (minY + maxY) / 2 + sy
-        appendPath(s, handDrawnLoop(cx, cy, (maxX - minX) / 2 + 8, (maxY - minY) / 2 + 5, 12, rng), 2.5 * wm, 0.95)
+        lineRects.forEach((rc) => {
+          const cx = rc.left + rc.width / 2 + sx, cy = rc.top + rc.height / 2 + sy
+          appendPath(s, handDrawnLoop(cx, cy, rc.width / 2 + 8, rc.height / 2 + 5, 12, rng), 2.5 * wm, 0.95)
+        })
         break
       }
       case 'star':

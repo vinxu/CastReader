@@ -105,7 +105,14 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         capture(app, "\(platform)-full-shelf-landscape")
         rotate(app, .portrait)
         let back = app.navigationBars.buttons.firstMatch
-        XCTAssertTrue(back.waitForExistence(timeout: 10)); back.tap()
+        XCTAssertTrue(back.waitForExistence(timeout: 10))
+        // iPad's floating tab bar can make XCTest's navigation-bar hit-test
+        // return (-1,-1) after rotation although the back button is visible.
+        // Tap its fresh on-screen frame, then prove we actually returned home.
+        let backFrame = back.frame
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(backFrame))
+        back.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        wait(15) { shelf.exists && shelf.isHittable }
         return app
     }
 
@@ -118,6 +125,35 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
     }
     func testKoboReadExplainRotation() throws { try verify("kobo") }
     func testWeReadReadExplainRotation() throws { try verify("weread") }
+
+    func testWeReadCurrentShelfAuthorization() throws {
+        let app = try home("weread")
+        func openFreshShelf() {
+            let all = app.buttons["homeShelfViewAll.weread"]
+            reveal(all, in: app); all.tap()
+            let refresh = app.buttons["refreshWeReadLibraryButton"]
+            XCTAssertTrue(refresh.waitForExistence(timeout: 10)); refresh.tap()
+        }
+        openFreshShelf()
+        let sync = app.buttons["syncWeReadLibraryButton"]
+        // didCommit briefly exposes the guide even for an existing session.
+        // Only the verified fresh shelf decides success; a transient guide
+        // cannot end the test before the provider has finished loading.
+        let authorizationWait = Double(ProcessInfo.processInfo.environment[
+            "CASTREADER_WEREAD_AWAIT_LOGIN_SECONDS"] ?? "90") ?? 90
+        wait(authorizationWait) { sync.exists && sync.isEnabled }
+        capture(app, "weread-current-shelf-authorization")
+        XCTAssertTrue(sync.exists && sync.isEnabled,
+                      "A fresh provider shelf must authenticate; cached books and public sample text are insufficient")
+        app.buttons["Close"].firstMatch.tap()
+        // Reopening and relaunching must retain the same official session.
+        // No cookie fixtures, account mutations, or local shelf writes.
+        _ = try home("weread")
+        openFreshShelf()
+        wait(90) { sync.exists && sync.isEnabled }
+        capture(app, "weread-authorization-after-relaunch")
+        app.buttons["Close"].firstMatch.tap()
+    }
 
     func testGoogleBooksNaturalContinuation() throws { try continuation("google_books") }
     func testKoboNaturalContinuation() throws { try continuation("kobo") }
@@ -371,7 +407,16 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
             app.buttons["Table of Contents"].tap()
             let chapter = liveWeReadBodyChapter(in: app)
             XCTAssertTrue(chapter.waitForExistence(timeout: 30)); chapter.tap()
-            wait(90) { self.field("ready", app) == "true" && self.number("characters", app) > 250 && !app.buttons["weReadTOCClose"].exists }
+            wait(90) { self.field("ready", app) == "true" && self.number("characters", app) > 20 && !app.buttons["weReadTOCClose"].exists }
+            // A chapter title/author note is a valid short page. Move once to
+            // its real body for the longer rotation checks; do not mistake a
+            // short ready page for an authentication or extraction failure.
+            if number("characters", app) < 250 {
+                let page = field("page", app)
+                let next = app.buttons["下一页"]
+                XCTAssertTrue(next.isHittable); next.tap()
+                wait(90) { self.field("ready", app) == "true" && self.field("page", app) != page && self.number("characters", app) > 20 }
+            }
         }
         let notice = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "saved position cannot be restored")).firstMatch
         if notice.exists {
@@ -709,7 +754,13 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
             app.buttons["Table of Contents"].tap()
             let chapter = liveWeReadBodyChapter(in: app)
             XCTAssertTrue(chapter.waitForExistence(timeout: 30)); chapter.tap()
-            wait(90) { self.field("ready", app) == "true" && self.number("characters", app) > 250 && !app.buttons["weReadTOCClose"].exists }
+            wait(90) { self.field("ready", app) == "true" && self.number("characters", app) > 20 && !app.buttons["weReadTOCClose"].exists }
+            if number("characters", app) < 250 {
+                let page = field("page", app)
+                let next = app.buttons["下一页"]
+                XCTAssertTrue(next.isHittable); next.tap()
+                wait(90) { self.field("ready", app) == "true" && self.field("page", app) != page && self.number("characters", app) > 20 }
+            }
         }
         XCTAssertGreaterThan(number("characters", app), 20)
         capture(app, "\(platform)-reader-ready-portrait")

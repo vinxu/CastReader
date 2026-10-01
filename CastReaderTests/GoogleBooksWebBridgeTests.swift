@@ -2539,6 +2539,30 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         )
     }
 
+    func testCircleKeepsDisjointDOMFragmentsAndRelayout() async throws {
+        _ = try await loadReaderFrame()
+        let result = try await webView.evaluateJavaScript("""
+        (()=>{
+          const el=document.querySelector('[data-cr-para="0"]');
+          el.style.cssText='position:relative;width:1100px;height:400px;margin:0;transform:none';
+          el.innerHTML='<span style="position:absolute;left:40px;top:240px">Left column words.</span><span style="position:absolute;left:650px;top:40px">Right column words.</span>';
+          CR.init({segments:[{paragraphIndex:0,text:'',domCharOffset:0}]});
+          CR.showMark({id:'column-circle',paragraphIndex:0,charStart:0,charEnd:el.textContent.length,action:'circle',seed:42});
+          const paths=()=>Array.from(document.querySelectorAll('[data-cr-marks] path'));
+          const before=paths().map(p=>p.getAttribute('d'));
+          const boxes=paths().map(p=>{const b=p.getBBox();return{x:b.x,y:b.y,width:b.width,height:b.height}});
+          CR.relayoutMarks();
+          return {boxes,stable:JSON.stringify(before)===JSON.stringify(paths().map(p=>p.getAttribute('d')))};
+        })()
+        """) as? [String: Any]
+        let data = try XCTUnwrap(result)
+        let boxes = try XCTUnwrap(data["boxes"] as? [[String: Double]])
+        XCTAssertGreaterThanOrEqual(boxes.count, 2)
+        XCTAssertTrue(boxes.allSatisfy { ($0["width"] ?? 9999) < 400 && ($0["height"] ?? 9999) < 100 },
+                      "No circle may join the disjoint column fragments")
+        XCTAssertEqual(data["stable"] as? Bool, true)
+    }
+
     func testNonzeroOffsetMarkAndInitOverrideStayOnTheVisiblePage() async throws {
         _ = try await loadReaderFrame()
         _ = try await webView.evaluateJavaScript("window.CastReaderGoogleBooks.nextPage()")

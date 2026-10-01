@@ -508,6 +508,7 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         webView = WKWebView(frame:.zero, configuration:config); super.init()
         replyProxy.owner = self
         webView.customUserAgent = WeReadWebScripts.desktopUserAgent; webView.navigationDelegate = self
+        ReaderRunLog.write("WEREAD login profile=\(CommercialWebSession.websiteDataStoreIdentifier.uuidString)")
     }
 
     func recordConnectionPresented() {
@@ -864,6 +865,10 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                     let domain = $0.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
                     return domain == "weread.qq.com" || domain.hasSuffix(".weread.qq.com")
                 }
+                #if DEBUG
+                let names = Set(scoped.map(\.name))
+                ReaderRunLog.write("WEREAD login cookie evidence vid=\(names.contains("wr_vid") || names.contains("wr_localvid")) skey=\(names.contains("wr_skey"))")
+                #endif
                 // Cookie values stay inside this ephemeral request header.
                 // They are never persisted or included in diagnostics.
                 let header = scoped.isEmpty
@@ -1342,6 +1347,12 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                         String(describing: payload?["exactLoginTextCount"] ?? 0),
                         payload?["strategy"] as? String ?? ""
                     )
+                }
+                if payload?["state"] as? String == "authenticated" {
+                    // Verify the official shelf contract before navigating;
+                    // the QR presentation probe alone never grants access.
+                    await self.handleFinishedPage()
+                    return
                 }
                 if let uid = payload?["loginUID"] as? String, !uid.isEmpty {
                     self.pendingLoginUID = uid

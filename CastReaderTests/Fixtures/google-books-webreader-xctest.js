@@ -43221,13 +43221,6 @@ var __CRWeb = (() => {
       if (!lineRects.length) return;
       shown.set(m.id, m);
       const last2 = lineRects[lineRects.length - 1];
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      lineRects.forEach((rc) => {
-        minX = Math.min(minX, rc.left);
-        minY = Math.min(minY, rc.top);
-        maxX = Math.max(maxX, rc.right);
-        maxY = Math.max(maxY, rc.bottom);
-      });
       const wm = weightMul(m.weight);
       switch (m.action) {
         case "underline":
@@ -43249,8 +43242,10 @@ var __CRWeb = (() => {
           });
           break;
         case "circle": {
-          const cx = (minX + maxX) / 2 + sx, cy = (minY + maxY) / 2 + sy;
-          appendPath(s, handDrawnLoop(cx, cy, (maxX - minX) / 2 + 8, (maxY - minY) / 2 + 5, 12, rng), 2.5 * wm, 0.95);
+          lineRects.forEach((rc) => {
+            const cx = rc.left + rc.width / 2 + sx, cy = rc.top + rc.height / 2 + sy;
+            appendPath(s, handDrawnLoop(cx, cy, rc.width / 2 + 8, rc.height / 2 + 5, 12, rng), 2.5 * wm, 0.95);
+          });
           break;
         }
         case "star":

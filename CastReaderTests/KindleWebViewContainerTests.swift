@@ -6,6 +6,32 @@ import WebKit
 
 @MainActor
 final class KindleWebViewContainerTests: XCTestCase {
+    func testCircleKeepsSeparateSubpathsAcrossColumns() throws {
+        let rects = [CGRect(x: 40, y: 340, width: 270, height: 24),
+                     CGRect(x: 650, y: 100, width: 230, height: 24)]
+        let stroke = HandwrittenMark.stroke(action: "circle", rects: rects, seed: 42)
+        var fragments: [[CGPoint]] = []
+        stroke.path.forEach { element in
+            switch element {
+            case .move(let point): fragments.append([point])
+            case .line(let point): fragments[fragments.count - 1].append(point)
+            default: break
+            }
+        }
+        XCTAssertEqual(fragments.count, 2, "A mark crossing columns needs independent loops")
+        guard fragments.count == 2 else { return }
+        XCTAssertTrue(fragments[0].allSatisfy { $0.x < 340 && $0.y > 320 })
+        XCTAssertTrue(fragments[1].allSatisfy { $0.x > 620 && $0.y < 145 })
+        let canvas = CGSize(width: 1180, height: 800)
+        XCTAssertEqual(stroke.svgPayload(canvasSize: canvas)["path"] as? String,
+                       HandwrittenMark.stroke(action: "circle", rects: rects, seed: 42)
+                        .svgPayload(canvasSize: canvas)["path"] as? String)
+        let distant = [rects[0], rects[1].offsetBy(dx: 900, dy: 600)]
+        XCTAssertEqual(stroke.duration, HandwrittenMark.duration(action: "circle", rects: distant),
+                       "Empty space between fragments must not extend the drawing clock")
+        XCTAssertTrue(HandwrittenMark.circlePath(around: [.null, .zero, .infinite], seed: 42).isEmpty)
+    }
+
     func testExplainInkKeepsNativePathWeightAndOpacityAcrossLiveRedraw() async throws {
         let fixture = try await ContainerFixture.make()
         defer { fixture.close() }

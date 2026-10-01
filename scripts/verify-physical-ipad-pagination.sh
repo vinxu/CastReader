@@ -16,6 +16,7 @@ case "$platform:$scope" in
   google_books:body-rotation) suite=PlatformLiveIPadAcceptanceUITests; method=testGoogleBooksBodyReadExplainRotation ;;
   kobo:rotation) suite=PlatformLiveIPadAcceptanceUITests; method=testKoboReadExplainRotation ;;
   weread:rotation) suite=PlatformLiveIPadAcceptanceUITests; method=testWeReadReadExplainRotation ;;
+  weread:session) suite=PlatformLiveIPadAcceptanceUITests; method=testWeReadCurrentShelfAuthorization ;;
   google_books:continuation) suite=PlatformLiveIPadAcceptanceUITests; method=testGoogleBooksNaturalContinuation ;;
   google_books:book-end) suite=PlatformLiveIPadAcceptanceUITests; method=testGoogleBooksNaturalBookEnd ;;
   kobo:continuation) suite=PlatformLiveIPadAcceptanceUITests; method=testKoboNaturalContinuation ;;
@@ -50,6 +51,7 @@ for config in run['TestConfigurations']:
         CASTREADER_KINDLE_LIVE_ACCEPTANCE='1', CASTREADER_PLATFORM_LIVE_ACCEPTANCE='1',
         CASTREADER_KINDLE_REFLOW_CONTINUATION='1', CASTREADER_KINDLE_EXPLAIN_REFLOW_CONTINUATION='1')
     for key in ('CASTREADER_PLATFORM_LIVE_BOOK_ID', 'CASTREADER_WEREAD_LIVE_CHAPTER_LABEL',
+                'CASTREADER_WEREAD_AWAIT_LOGIN_SECONDS',
                 'CASTREADER_SUSTAINED_PLATFORM', 'CASTREADER_SUSTAINED_MODE',
                 'CASTREADER_SUSTAINED_SECONDS', 'CASTREADER_GOOGLE_LIVE_URL',
                 'CASTREADER_GOOGLE_LAYOUT_DIAGNOSTICS', 'CASTREADER_SUSTAINED_ORIENTATION'):

@@ -1,0 +1,829 @@
+{
+  "raw_sha256": "03a4ca9c2874cf95e2a0edd1e97da7597393d6101fed3f8749cc6be84ff08300",
+  "interval": [
+    47350000,
+    47665000
+  ],
+  "measurement": "Keep all live Read presentation holds and natural media handoffs for audit.\n\nMeasures application events. It does not establish acoustic silence, source\ncoverage, every-frame geometry, or chapter completion.",
+  "final_acceptance": false,
+  "holds": [
+    {
+      "hold": "421F8E8B-DBAF-43EE-AE38-893191F71886",
+      "hold_at": "13:09:47.923",
+      "hold_ms": 47387923,
+      "line": 283,
+      "segment": "7-0",
+      "cue": "1.368",
+      "outcome": "playing",
+      "commit_at": "13:09:48.048",
+      "commit_ms": 47388048,
+      "hold_to_commit_ms": 125,
+      "release_at": "13:09:48.055",
+      "release_ms": 47388055,
+      "hold_to_release_ms": 132,
+      "release_intent": "true",
+      "playing_at": "13:09:48.105",
+      "playing_ms": 47388105,
+      "hold_to_playing_ms": 182,
+      "resumed_segment": "0-800001000",
+      "release_to_playing_ms": 50,
+      "commit_to_playing_ms": 57
+    },
+    {
+      "hold": "D27D3D4C-5E8B-4405-97A2-4FC18778D30B",
+      "hold_at": "13:11:18.841",
+      "hold_ms": 47478841,
+      "line": 899,
+      "segment": "24-0",
+      "cue": "3.800541666666667",
+      "outcome": "playing",
+      "commit_at": "13:11:18.945",
+      "commit_ms": 47478945,
+      "hold_to_commit_ms": 104,
+      "release_at": "13:11:18.957",
+      "release_ms": 47478957,
+      "hold_to_release_ms": 116,
+      "release_intent": "true",
+      "playing_at": "13:11:18.991",
+      "playing_ms": 47478991,
+      "hold_to_playing_ms": 150,
+      "resumed_segment": "24-0",
+      "release_to_playing_ms": 34,
+      "commit_to_playing_ms": 46
+    },
+    {
+      "hold": "F4EBE2E2-0059-4F5E-A7E1-D6CE876D52BD",
+      "hold_at": "13:12:55.099",
+      "hold_ms": 47575099,
+      "line": 1408,
+      "segment": "20-0",
+      "cue": "0.7023333333333334",
+      "outcome": "playing",
+      "commit_at": "13:12:55.278",
+      "commit_ms": 47575278,
+      "hold_to_commit_ms": 179,
+      "release_at": "13:12:55.290",
+      "release_ms": 47575290,
+      "hold_to_release_ms": 191,
+      "release_intent": "true",
+      "playing_at": "13:12:55.311",
+      "playing_ms": 47575311,
+      "hold_to_playing_ms": 212,
+      "resumed_segment": "20-0",
+      "release_to_playing_ms": 21,
+      "commit_to_playing_ms": 33
+    }
+  ],
+  "natural_media_handoffs": [
+    {
+      "ended_at": "13:09:18.913",
+      "playing_at": "13:09:18.965",
+      "from_segment": "0-0",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 52,
+      "line": 127
+    },
+    {
+      "ended_at": "13:09:21.811",
+      "playing_at": "13:09:21.860",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 49,
+      "line": 175
+    },
+    {
+      "ended_at": "13:09:28.532",
+      "playing_at": "13:09:28.598",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 66,
+      "line": 214
+    },
+    {
+      "ended_at": "13:09:32.585",
+      "playing_at": "13:09:32.641",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 56,
+      "line": 235
+    },
+    {
+      "ended_at": "13:09:35.294",
+      "playing_at": "13:09:35.341",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 47,
+      "line": 253
+    },
+    {
+      "ended_at": "13:09:42.739",
+      "playing_at": "13:09:42.796",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 57,
+      "line": 265
+    },
+    {
+      "ended_at": "13:09:46.857",
+      "playing_at": "13:09:46.915",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 58,
+      "line": 279
+    },
+    {
+      "ended_at": "13:09:48.055",
+      "playing_at": "13:09:48.105",
+      "from_segment": "7-0",
+      "to_segment": "0-800001000",
+      "ended_to_playing_ms": 50,
+      "line": 321
+    },
+    {
+      "ended_at": "13:09:48.543",
+      "playing_at": "13:09:48.582",
+      "from_segment": "0-800001000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 39,
+      "line": 341
+    },
+    {
+      "ended_at": "13:09:49.949",
+      "playing_at": "13:09:49.990",
+      "from_segment": "1-0",
+      "to_segment": "1-1",
+      "ended_to_playing_ms": 41,
+      "line": 366
+    },
+    {
+      "ended_at": "13:09:51.657",
+      "playing_at": "13:09:51.702",
+      "from_segment": "1-1",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 45,
+      "line": 405
+    },
+    {
+      "ended_at": "13:09:53.299",
+      "playing_at": "13:09:53.356",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 57,
+      "line": 425
+    },
+    {
+      "ended_at": "13:09:54.771",
+      "playing_at": "13:09:54.815",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 44,
+      "line": 440
+    },
+    {
+      "ended_at": "13:09:58.781",
+      "playing_at": "13:09:58.842",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 61,
+      "line": 461
+    },
+    {
+      "ended_at": "13:10:02.898",
+      "playing_at": "13:10:02.939",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 41,
+      "line": 491
+    },
+    {
+      "ended_at": "13:10:04.413",
+      "playing_at": "13:10:04.453",
+      "from_segment": "6-0",
+      "to_segment": "6-1",
+      "ended_to_playing_ms": 40,
+      "line": 507
+    },
+    {
+      "ended_at": "13:10:10.514",
+      "playing_at": "13:10:10.568",
+      "from_segment": "6-1",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 54,
+      "line": 526
+    },
+    {
+      "ended_at": "13:10:13.033",
+      "playing_at": "13:10:13.103",
+      "from_segment": "7-0",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 70,
+      "line": 544
+    },
+    {
+      "ended_at": "13:10:15.080",
+      "playing_at": "13:10:15.126",
+      "from_segment": "8-0",
+      "to_segment": "9-0",
+      "ended_to_playing_ms": 46,
+      "line": 559
+    },
+    {
+      "ended_at": "13:10:16.232",
+      "playing_at": "13:10:16.287",
+      "from_segment": "9-0",
+      "to_segment": "10-0",
+      "ended_to_playing_ms": 55,
+      "line": 580
+    },
+    {
+      "ended_at": "13:10:19.240",
+      "playing_at": "13:10:19.280",
+      "from_segment": "10-0",
+      "to_segment": "10-1",
+      "ended_to_playing_ms": 40,
+      "line": 628
+    },
+    {
+      "ended_at": "13:10:23.592",
+      "playing_at": "13:10:23.632",
+      "from_segment": "10-1",
+      "to_segment": "10-2",
+      "ended_to_playing_ms": 40,
+      "line": 637
+    },
+    {
+      "ended_at": "13:10:28.306",
+      "playing_at": "13:10:28.356",
+      "from_segment": "10-2",
+      "to_segment": "11-0",
+      "ended_to_playing_ms": 50,
+      "line": 652
+    },
+    {
+      "ended_at": "13:10:31.108",
+      "playing_at": "13:10:31.166",
+      "from_segment": "11-0",
+      "to_segment": "12-0",
+      "ended_to_playing_ms": 58,
+      "line": 675
+    },
+    {
+      "ended_at": "13:10:34.066",
+      "playing_at": "13:10:34.124",
+      "from_segment": "12-0",
+      "to_segment": "13-0",
+      "ended_to_playing_ms": 58,
+      "line": 693
+    },
+    {
+      "ended_at": "13:10:36.755",
+      "playing_at": "13:10:36.813",
+      "from_segment": "13-0",
+      "to_segment": "14-0",
+      "ended_to_playing_ms": 58,
+      "line": 706
+    },
+    {
+      "ended_at": "13:10:38.100",
+      "playing_at": "13:10:38.167",
+      "from_segment": "14-0",
+      "to_segment": "15-0",
+      "ended_to_playing_ms": 67,
+      "line": 721
+    },
+    {
+      "ended_at": "13:10:40.999",
+      "playing_at": "13:10:41.060",
+      "from_segment": "15-0",
+      "to_segment": "16-0",
+      "ended_to_playing_ms": 61,
+      "line": 740
+    },
+    {
+      "ended_at": "13:10:42.856",
+      "playing_at": "13:10:42.913",
+      "from_segment": "16-0",
+      "to_segment": "17-0",
+      "ended_to_playing_ms": 57,
+      "line": 758
+    },
+    {
+      "ended_at": "13:10:44.776",
+      "playing_at": "13:10:44.832",
+      "from_segment": "17-0",
+      "to_segment": "18-0",
+      "ended_to_playing_ms": 56,
+      "line": 773
+    },
+    {
+      "ended_at": "13:10:50.855",
+      "playing_at": "13:10:50.896",
+      "from_segment": "18-0",
+      "to_segment": "19-0",
+      "ended_to_playing_ms": 41,
+      "line": 794
+    },
+    {
+      "ended_at": "13:10:53.757",
+      "playing_at": "13:10:53.797",
+      "from_segment": "19-0",
+      "to_segment": "19-1",
+      "ended_to_playing_ms": 40,
+      "line": 818
+    },
+    {
+      "ended_at": "13:10:58.812",
+      "playing_at": "13:10:58.858",
+      "from_segment": "19-1",
+      "to_segment": "20-0",
+      "ended_to_playing_ms": 46,
+      "line": 833
+    },
+    {
+      "ended_at": "13:11:06.494",
+      "playing_at": "13:11:06.566",
+      "from_segment": "20-0",
+      "to_segment": "21-0",
+      "ended_to_playing_ms": 72,
+      "line": 860
+    },
+    {
+      "ended_at": "13:11:08.434",
+      "playing_at": "13:11:08.487",
+      "from_segment": "21-0",
+      "to_segment": "22-0",
+      "ended_to_playing_ms": 53,
+      "line": 872
+    },
+    {
+      "ended_at": "13:11:12.402",
+      "playing_at": "13:11:12.442",
+      "from_segment": "22-0",
+      "to_segment": "23-0",
+      "ended_to_playing_ms": 40,
+      "line": 884
+    },
+    {
+      "ended_at": "13:11:16.179",
+      "playing_at": "13:11:16.246",
+      "from_segment": "23-0",
+      "to_segment": "24-0",
+      "ended_to_playing_ms": 67,
+      "line": 897
+    },
+    {
+      "ended_at": "13:11:20.211",
+      "playing_at": "13:11:20.291",
+      "from_segment": "24-0",
+      "to_segment": "1-850010000",
+      "ended_to_playing_ms": 80,
+      "line": 950
+    },
+    {
+      "ended_at": "13:11:22.556",
+      "playing_at": "13:11:22.596",
+      "from_segment": "1-850010000",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 40,
+      "line": 981
+    },
+    {
+      "ended_at": "13:11:23.900",
+      "playing_at": "13:11:23.960",
+      "from_segment": "2-0",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 60,
+      "line": 1020
+    },
+    {
+      "ended_at": "13:11:25.415",
+      "playing_at": "13:11:25.473",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 58,
+      "line": 1038
+    },
+    {
+      "ended_at": "13:11:27.805",
+      "playing_at": "13:11:27.872",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 67,
+      "line": 1053
+    },
+    {
+      "ended_at": "13:11:30.749",
+      "playing_at": "13:11:30.817",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 68,
+      "line": 1074
+    },
+    {
+      "ended_at": "13:11:42.353",
+      "playing_at": "13:11:42.395",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 42,
+      "line": 1104
+    },
+    {
+      "ended_at": "13:11:48.027",
+      "playing_at": "13:11:48.087",
+      "from_segment": "7-0",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 60,
+      "line": 1138
+    },
+    {
+      "ended_at": "13:11:53.532",
+      "playing_at": "13:11:53.603",
+      "from_segment": "8-0",
+      "to_segment": "9-0",
+      "ended_to_playing_ms": 71,
+      "line": 1154
+    },
+    {
+      "ended_at": "13:11:54.854",
+      "playing_at": "13:11:54.900",
+      "from_segment": "9-0",
+      "to_segment": "10-0",
+      "ended_to_playing_ms": 46,
+      "line": 1175
+    },
+    {
+      "ended_at": "13:11:58.481",
+      "playing_at": "13:11:58.544",
+      "from_segment": "10-0",
+      "to_segment": "11-0",
+      "ended_to_playing_ms": 63,
+      "line": 1193
+    },
+    {
+      "ended_at": "13:11:59.889",
+      "playing_at": "13:11:59.929",
+      "from_segment": "11-0",
+      "to_segment": "12-0",
+      "ended_to_playing_ms": 40,
+      "line": 1209
+    },
+    {
+      "ended_at": "13:12:06.350",
+      "playing_at": "13:12:06.403",
+      "from_segment": "12-0",
+      "to_segment": "13-0",
+      "ended_to_playing_ms": 53,
+      "line": 1230
+    },
+    {
+      "ended_at": "13:12:10.022",
+      "playing_at": "13:12:10.096",
+      "from_segment": "13-0",
+      "to_segment": "14-0",
+      "ended_to_playing_ms": 74,
+      "line": 1254
+    },
+    {
+      "ended_at": "13:12:12.988",
+      "playing_at": "13:12:13.039",
+      "from_segment": "14-0",
+      "to_segment": "15-0",
+      "ended_to_playing_ms": 51,
+      "line": 1270
+    },
+    {
+      "ended_at": "13:12:20.049",
+      "playing_at": "13:12:20.111",
+      "from_segment": "15-0",
+      "to_segment": "16-0",
+      "ended_to_playing_ms": 62,
+      "line": 1303
+    },
+    {
+      "ended_at": "13:12:22.076",
+      "playing_at": "13:12:22.252",
+      "from_segment": "16-0",
+      "to_segment": "16-1",
+      "ended_to_playing_ms": 176,
+      "line": 1318
+    },
+    {
+      "ended_at": "13:12:25.766",
+      "playing_at": "13:12:25.838",
+      "from_segment": "16-1",
+      "to_segment": "17-0",
+      "ended_to_playing_ms": 72,
+      "line": 1330
+    },
+    {
+      "ended_at": "13:12:30.332",
+      "playing_at": "13:12:30.392",
+      "from_segment": "17-0",
+      "to_segment": "18-0",
+      "ended_to_playing_ms": 60,
+      "line": 1347
+    },
+    {
+      "ended_at": "13:12:32.507",
+      "playing_at": "13:12:32.549",
+      "from_segment": "18-0",
+      "to_segment": "18-1",
+      "ended_to_playing_ms": 42,
+      "line": 1370
+    },
+    {
+      "ended_at": "13:12:35.921",
+      "playing_at": "13:12:35.962",
+      "from_segment": "18-1",
+      "to_segment": "18-2",
+      "ended_to_playing_ms": 41,
+      "line": 1379
+    },
+    {
+      "ended_at": "13:12:45.904",
+      "playing_at": "13:12:45.964",
+      "from_segment": "18-2",
+      "to_segment": "19-0",
+      "ended_to_playing_ms": 60,
+      "line": 1391
+    },
+    {
+      "ended_at": "13:12:54.459",
+      "playing_at": "13:12:54.511",
+      "from_segment": "19-0",
+      "to_segment": "20-0",
+      "ended_to_playing_ms": 52,
+      "line": 1405
+    },
+    {
+      "ended_at": "13:12:59.921",
+      "playing_at": "13:12:59.991",
+      "from_segment": "20-0",
+      "to_segment": "0-850020000",
+      "ended_to_playing_ms": 70,
+      "line": 1460
+    },
+    {
+      "ended_at": "13:13:02.587",
+      "playing_at": "13:13:02.647",
+      "from_segment": "0-850020000",
+      "to_segment": "1-0",
+      "ended_to_playing_ms": 60,
+      "line": 1507
+    },
+    {
+      "ended_at": "13:13:04.998",
+      "playing_at": "13:13:05.058",
+      "from_segment": "1-0",
+      "to_segment": "2-0",
+      "ended_to_playing_ms": 60,
+      "line": 1528
+    },
+    {
+      "ended_at": "13:13:08.069",
+      "playing_at": "13:13:08.131",
+      "from_segment": "2-0",
+      "to_segment": "2-1",
+      "ended_to_playing_ms": 62,
+      "line": 1543
+    },
+    {
+      "ended_at": "13:13:13.381",
+      "playing_at": "13:13:13.428",
+      "from_segment": "2-1",
+      "to_segment": "3-0",
+      "ended_to_playing_ms": 47,
+      "line": 1558
+    },
+    {
+      "ended_at": "13:13:14.853",
+      "playing_at": "13:13:14.899",
+      "from_segment": "3-0",
+      "to_segment": "4-0",
+      "ended_to_playing_ms": 46,
+      "line": 1580
+    },
+    {
+      "ended_at": "13:13:16.474",
+      "playing_at": "13:13:16.536",
+      "from_segment": "4-0",
+      "to_segment": "5-0",
+      "ended_to_playing_ms": 62,
+      "line": 1601
+    },
+    {
+      "ended_at": "13:13:19.312",
+      "playing_at": "13:13:19.373",
+      "from_segment": "5-0",
+      "to_segment": "6-0",
+      "ended_to_playing_ms": 61,
+      "line": 1622
+    },
+    {
+      "ended_at": "13:13:26.267",
+      "playing_at": "13:13:26.337",
+      "from_segment": "6-0",
+      "to_segment": "7-0",
+      "ended_to_playing_ms": 70,
+      "line": 1677
+    },
+    {
+      "ended_at": "13:13:28.378",
+      "playing_at": "13:13:28.426",
+      "from_segment": "7-0",
+      "to_segment": "8-0",
+      "ended_to_playing_ms": 48,
+      "line": 1692
+    },
+    {
+      "ended_at": "13:13:31.279",
+      "playing_at": "13:13:31.339",
+      "from_segment": "8-0",
+      "to_segment": "9-0",
+      "ended_to_playing_ms": 60,
+      "line": 1710
+    },
+    {
+      "ended_at": "13:13:32.474",
+      "playing_at": "13:13:32.519",
+      "from_segment": "9-0",
+      "to_segment": "10-0",
+      "ended_to_playing_ms": 45,
+      "line": 1723
+    },
+    {
+      "ended_at": "13:13:33.626",
+      "playing_at": "13:13:33.671",
+      "from_segment": "10-0",
+      "to_segment": "11-0",
+      "ended_to_playing_ms": 45,
+      "line": 1736
+    },
+    {
+      "ended_at": "13:13:34.457",
+      "playing_at": "13:13:34.519",
+      "from_segment": "11-0",
+      "to_segment": "12-0",
+      "ended_to_playing_ms": 62,
+      "line": 1752
+    },
+    {
+      "ended_at": "13:13:35.867",
+      "playing_at": "13:13:35.927",
+      "from_segment": "12-0",
+      "to_segment": "12-1",
+      "ended_to_playing_ms": 60,
+      "line": 1767
+    },
+    {
+      "ended_at": "13:13:38.192",
+      "playing_at": "13:13:38.254",
+      "from_segment": "12-1",
+      "to_segment": "13-0",
+      "ended_to_playing_ms": 62,
+      "line": 1779
+    },
+    {
+      "ended_at": "13:13:39.216",
+      "playing_at": "13:13:39.283",
+      "from_segment": "13-0",
+      "to_segment": "14-0",
+      "ended_to_playing_ms": 67,
+      "line": 1795
+    },
+    {
+      "ended_at": "13:13:43.866",
+      "playing_at": "13:13:43.906",
+      "from_segment": "14-0",
+      "to_segment": "14-1",
+      "ended_to_playing_ms": 40,
+      "line": 1810
+    },
+    {
+      "ended_at": "13:13:50.180",
+      "playing_at": "13:13:50.237",
+      "from_segment": "14-1",
+      "to_segment": "15-0",
+      "ended_to_playing_ms": 57,
+      "line": 1825
+    },
+    {
+      "ended_at": "13:13:52.804",
+      "playing_at": "13:13:52.857",
+      "from_segment": "15-0",
+      "to_segment": "16-0",
+      "ended_to_playing_ms": 53,
+      "line": 1846
+    },
+    {
+      "ended_at": "13:14:03.065",
+      "playing_at": "13:14:03.106",
+      "from_segment": "16-0",
+      "to_segment": "17-0",
+      "ended_to_playing_ms": 41,
+      "line": 1882
+    },
+    {
+      "ended_at": "13:14:06.095",
+      "playing_at": "13:14:06.153",
+      "from_segment": "17-0",
+      "to_segment": "18-0",
+      "ended_to_playing_ms": 58,
+      "line": 1897
+    },
+    {
+      "ended_at": "13:14:08.420",
+      "playing_at": "13:14:08.475",
+      "from_segment": "18-0",
+      "to_segment": "19-0",
+      "ended_to_playing_ms": 55,
+      "line": 1918
+    },
+    {
+      "ended_at": "13:14:13.540",
+      "playing_at": "13:14:13.591",
+      "from_segment": "19-0",
+      "to_segment": "20-0",
+      "ended_to_playing_ms": 51,
+      "line": 1935
+    },
+    {
+      "ended_at": "13:14:19.258",
+      "playing_at": "13:14:19.306",
+      "from_segment": "20-0",
+      "to_segment": "21-0",
+      "ended_to_playing_ms": 48,
+      "line": 1978
+    },
+    {
+      "ended_at": "13:14:24.654",
+      "playing_at": "13:14:24.694",
+      "from_segment": "21-0",
+      "to_segment": "22-0",
+      "ended_to_playing_ms": 40,
+      "line": 1991
+    }
+  ],
+  "page_commits": [
+    {
+      "at": "13:09:11.873",
+      "line": 85,
+      "event": "WEREAD page commit prior=245a9954 next=606211d9 confirmed=true epoch=6 cols=428:700:1:wr_default_font:2|3501 geometry=native-glyphs glyphs=209 paras=8"
+    },
+    {
+      "at": "13:09:48.048",
+      "line": 303,
+      "event": "WEREAD page commit prior=606211d9 next=7aa6b4c4 confirmed=true epoch=8 cols=428:700:1:wr_default_font:2|3501 geometry=native-glyphs glyphs=618 paras=25"
+    },
+    {
+      "at": "13:11:18.945",
+      "line": 921,
+      "event": "WEREAD page commit prior=7aa6b4c4 next=245a9954 confirmed=true epoch=10 cols=428:700:1:wr_default_font:2|3501 geometry=native-glyphs glyphs=677 paras=21"
+    },
+    {
+      "at": "13:12:55.278",
+      "line": 1429,
+      "event": "WEREAD page commit prior=245a9954 next=1ec1b36c confirmed=true epoch=12 cols=428:700:1:wr_default_font:2|3501 geometry=native-glyphs glyphs=667 paras=25"
+    }
+  ],
+  "failure_or_interruption_events": [],
+  "timing": {
+    "hold_to_commit_ms": {
+      "count": 3,
+      "p95_ms": 179,
+      "max_ms": 179
+    },
+    "hold_to_release_ms": {
+      "count": 3,
+      "p95_ms": 191,
+      "max_ms": 191
+    },
+    "hold_to_playing_ms": {
+      "count": 3,
+      "p95_ms": 212,
+      "max_ms": 212
+    },
+    "commit_to_playing_ms": {
+      "count": 3,
+      "p95_ms": 57,
+      "max_ms": 57
+    },
+    "release_to_playing_ms": {
+      "count": 3,
+      "p95_ms": 50,
+      "max_ms": 50
+    }
+  },
+  "natural_media_handoff_timing": {
+    "count": 86,
+    "p95_ms": 72,
+    "max_ms": 176
+  },
+  "candidate": 142,
+  "platform": "weread",
+  "raw_log": "/private/tmp/castreader142-ipad-read-complete.log",
+  "interval_clock": [
+    "13:09:10.000",
+    "13:14:25.000"
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "candidate": 146,
+  "scope": "Cross-column circle fix; physical WK/native tests plus live WeRead sample, not all-account qualification",
+  "regression": {
+    "report": "/tmp/castreader146-ipad-marks.xcresult",
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "live": {
+    "report": "/tmp/castreader146-ipad-weread-circle-live",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 180,
+    "natural_turns": 3,
+    "max_ended_to_playing_ms": 161
+  },
+  "screenshots": [
+    {
+      "path": "/tmp/castreader146-weread-live-2.png",
+      "sha256": "51a16e402e696522e2c68c9d823461ae409a22dd96243288c90ba7c6a9344e11",
+      "observation": "Left-column circle stays on its source phrase; right-column underlines stay separate."
+    },
+    {
+      "path": "/tmp/castreader146-weread-live-3.png",
+      "sha256": "c03aa683277702d5d1c73853259c3a2d6cc723e1c5eb4f26a941968f4b20a4a4",
+      "observation": "Following spread, separate multi-line highlight and underline; gutter remains clear."
+    },
+    {
+      "path": "/tmp/castreader146-weread-live-4.png",
+      "sha256": "56498faa630f44c3826a59e6ab7b7efdb0b4c614c996ea2ab59cc9324c49e906",
+      "observation": "Later spread has independent circles in both columns and matching source text."
+    }
+  ]
+}
