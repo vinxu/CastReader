@@ -1,5 +1,22 @@
 # iOS 1.2.47 发布记录
 
+## 2026-10-02 更新说明修正，原 Build 71 已重新进入等待审核
+
+**2026-10-02 09:44:29 CST，保留 App 1.2.47（71）重新提交原审核单；09:44:55 API 回读 App version 与 Review Submission 均为 `WAITING_FOR_REVIEW`。** 额度内购 `ai.castreader.clone.minutes120` 也回读为 `WAITING_FOR_REVIEW`，页面展示同批两个项目均等待审核。仍为审核通过后自动发布，尚未获得批准。
+
+本次拒审仅指出 Guideline 2.3.10：What's New 包含 Google Play 提及。用户明确选择修正文案并回复 Apple，继续审核原 Build 71；`520bf60` 及后续二进制改进留待当前版本通过后的新包。没有重新编译、上传、替换 Build 或合并应用代码。
+
+- 只修改全部 11 语 `whatsNew`，移除各语言的 Google Play 名称并保留其余内容；保存前后快照，逐字段确认每个本地化的其他属性完全一致。现行文案源为 [AppStore-Whats-New-1.2.47.json](AppStore-Whats-New-1.2.47.json)。本地 1.2.48 文案草稿同步删除同类提及以避免复发，未写入 ASC 新版本。
+- 09:43 在 App Review 消息中回复，说明全部 11 语已修正、仍使用 1.2.47（71），请求按其 bug-fix 流程继续审核。页面出现第 3 条消息，已确认发送成功；随后点击“更新审核”和“重新提交至 App 审核”。
+- 原 App version `138a0a05-56de-42f7-b841-31fdfb842418`、原审核单 `e0120f7a-1331-468f-adb9-0b1f045c352a`、两个原 review item ID 与关联对象均保留。Build 仍为 `7356c4a6-2426-4e2e-ac96-c55e7d78c65f` / **71 / VALID**。重新提交时间为 `2026-10-02T01:44:29.656Z`。
+- 元数据修正不改变原二进制及其既有验收记录；本轮没有新增真机测试结论。此前测试边界及用户授权例外仍详见下方 Build 71 记录。没有改动标题、副标题、截图、审核联系方式、价格、订阅、地区、隐私或法律声明。
+
+[查看审核单](https://appstoreconnect.apple.com/apps/6757636395/distribution/reviewsubmissions/details/e0120f7a-1331-468f-adb9-0b1f045c352a)；[最终 API 回执](../reports/ios-release-1.2.47/metadata-review-20261002/final-readback.json)；[内购状态](../reports/ios-release-1.2.47/metadata-review-20261002/iap-final-state.json)。API 的 review item 内部状态为 `READY_FOR_REVIEW`，与顶层审核单的 `WAITING_FOR_REVIEW` 分别记录，不混用字段。
+
+本轮依据 [iOS 发布技能](/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store/SKILL.md) 完成元数据修正和状态回读；Apple 的[回复审核消息说明](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/reply-to-app-review-messages)说明，元数据问题可继续使用相同构建版本。
+
+以下为先前提交的历史记录，状态按记录时间理解。
+
 ## 2026-10-01 Build 71 已重新提交审核
 
 **2026-10-01 00:10:52 CST，App 1.2.47（71）、同批额度内购及原 Review Submission 均已回读为 WAITING_FOR_REVIEW。** 审核通过后自动发布（AFTER_APPROVAL）；当前状态不表示已经通过或上线。
