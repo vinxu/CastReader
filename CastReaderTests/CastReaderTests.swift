@@ -3407,7 +3407,7 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertTrue(boundaryMatch.isCompatible)
         XCTAssertEqual(boundaryMatch.predictedCoverage, 1, accuracy: 0.0001)
         XCTAssertGreaterThan(boundaryMatch.visibleCoverage, 0.70)
-        XCTAssertTrue(WeReadExplainPagePrefetchContract.canConsume(
+        XCTAssertFalse(WeReadExplainPagePrefetchContract.canConsume(
             sourceFingerprint: baseline.source,
             previousFingerprint: baseline.source,
             predictedContentFingerprint: baseline.predicted,
