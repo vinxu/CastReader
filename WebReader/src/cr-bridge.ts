@@ -128,7 +128,10 @@ export function initBridge(deps: CRDeps): void {
     }, true)
   }
   let color = '#FD5F01'
-  const markRenderer = createMarkRenderer((i) => paraElements.get(i), color)
+  type MarkDOMFragment = { domParagraphIndex: number; charStart: number; charEnd: number; domCharOffset: number }
+  const markDOMFragments = new Map<number, MarkDOMFragment[]>()
+  const markRenderer = createMarkRenderer((i, dom) =>
+    dom === undefined ? paraElements.get(i) : extractedParaElements.get(dom), color)
   // Kobo 等分页阅读器会把正文放在同源 iframe 里。Range 的矩形坐标属于它自己的
   // Document/Window，overlay 也必须放回同一个 Document；同时保留节点引用，确保
   // iframe 换页或被移除后仍能清掉上一页高亮。
@@ -452,6 +455,7 @@ export function initBridge(deps: CRDeps): void {
         domParagraphIndex?: number
         /** native 裁掉跨页已读前缀后，可把新文本在原 DOM 中的绝对 UTF-16 起点传回来。 */
         domCharOffset?: number
+        domFragments?: MarkDOMFragment[]
         /** 兼容早期调用方字段名。 */
         charOffset?: number
       }>
@@ -462,8 +466,15 @@ export function initBridge(deps: CRDeps): void {
       if (segments.length > 0) {
         paraElements.clear()
         paraOffsets.clear()
+        markDOMFragments.clear()
       }
       for (const segment of segments) {
+        if (Array.isArray(segment.domFragments)) {
+          markDOMFragments.set(segment.paragraphIndex, segment.domFragments.filter(fragment =>
+            [fragment.domParagraphIndex, fragment.charStart, fragment.charEnd, fragment.domCharOffset].every(Number.isSafeInteger) &&
+            fragment.domParagraphIndex >= 0 && fragment.charStart >= 0 && fragment.charEnd > fragment.charStart &&
+            fragment.domCharOffset + fragment.charStart >= 0))
+        }
         const domParagraphIndex =
           segment.domParagraphIndex ?? segment.paragraphIndex
         const sourceElement = extractedParaElements.get(domParagraphIndex)
@@ -565,6 +576,18 @@ export function initBridge(deps: CRDeps): void {
     },
     setAutoScroll(arg: { enabled: boolean }): void { autoScroll = arg.enabled },
     showMark(arg: { id: string; paragraphIndex: number; charStart: number; charEnd: number; action: string; n?: number; seed: number; weight?: string; role?: string }): void {
+      const fragments = markDOMFragments.get(arg.paragraphIndex)
+      if (fragments) {
+        fragments.forEach((fragment, index) => {
+          const start = Math.max(arg.charStart, fragment.charStart)
+          const end = Math.min(arg.charEnd, fragment.charEnd)
+          if (end <= start) return
+          markRenderer.show({ ...arg, id: `${arg.id}:fragment:${index}`,
+            domParagraphIndex: fragment.domParagraphIndex,
+            charStart: start + fragment.domCharOffset, charEnd: end + fragment.domCharOffset })
+        })
+        return
+      }
       const base = paraOffsets.get(arg.paragraphIndex) || 0
       markRenderer.show({
         ...arg,

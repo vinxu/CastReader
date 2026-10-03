@@ -19,6 +19,161 @@
   };
   var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 
+  // src/play-books-native-preparation.ts
+  function installPlayBooksNativePreparation() {
+    const root = window;
+    if (root.__crPlayBooksNativePreparation) return;
+    const attribute = "data-castreader-pb-prepared";
+    const state = { view: null, generation: 0, baseline: "", busy: false };
+    root.__crPlayBooksNativePreparation = state;
+    let stopped = false, scheduled = false;
+    const originalSet = Map.prototype.set;
+    const restore = () => {
+      if (Map.prototype.set === observeRegistration) Map.prototype.set = originalSet;
+    };
+    function observeRegistration(key, value) {
+      var _a;
+      const result = Reflect.apply(originalSet, this, [key, value]);
+      if (Array.isArray(value) && ((_a = value[0]) == null ? void 0 : _a.localName) === "reader-horizontal-view") {
+        state.view = value;
+        restore();
+        schedule();
+      }
+      return result;
+    }
+    Map.prototype.set = observeRegistration;
+    const registrationTimeout = setTimeout(restore, 45e3);
+    const descriptor = (page) => {
+      if (!page || typeof page.volumeId !== "string" || !page.volumeId || !Number.isInteger(page.Uc) || page.Uc < 0 || !Number.isInteger(page.Sb) || page.Sb < 0 || typeof page.key !== "string" || typeof page.aA !== "string" || !page.key.startsWith(page.aA + ":") || !page.aA.startsWith(page.volumeId + ":") || !Number.isFinite(page.width) || page.width <= 0 || !Number.isFinite(page.height) || page.height <= 0 || typeof page.mF !== "string" || !page.mF || page.mF.length > 25e4) return null;
+      return {
+        id: `page-${page.Uc}-${page.Sb}`,
+        key: page.key,
+        engine: page.aA,
+        volume: page.volumeId,
+        segment: page.Uc,
+        index: page.Sb,
+        width: page.width,
+        height: page.height,
+        html: page.mF
+      };
+    };
+    const current = () => {
+      var _a, _b;
+      const component = (_a = state.view) == null ? void 0 : _a.find((value) => {
+        var _a2, _b2;
+        return ((_b2 = (_a2 = value == null ? void 0 : value.nb) == null ? void 0 : _a2.Aa) == null ? void 0 : _b2.localName) === "reader-horizontal-view";
+      });
+      const host = (_b = component == null ? void 0 : component.nb) == null ? void 0 : _b.Aa;
+      if (!(host == null ? void 0 : host.isConnected) || !(component.O instanceof Map)) return null;
+      const visible = [...host.querySelectorAll("reader-page.shown")].filter((page) => {
+        const r = page.getBoundingClientRect();
+        const width = Math.max(0, Math.min(innerWidth, r.right) - Math.max(0, r.left));
+        const height = Math.max(0, Math.min(innerHeight, r.bottom) - Math.max(0, r.top));
+        return r.width > 0 && r.height > 0 && width * height >= r.width * r.height * 0.5;
+      });
+      if (!visible.length || visible.length > 2 || visible.some((page) => !page.classList.contains("-gb-loaded"))) return null;
+      const cached = [...component.O.values()].map((value) => value.Wb);
+      const pages = visible.map((element) => cached.filter((page) => page && element.id === `page-${page.Uc}-${page.Sb}`));
+      if (pages.some((matches) => matches.length !== 1)) return null;
+      const native = pages.map((matches) => matches[0]).sort((a, b) => a.Uc - b.Uc || a.Sb - b.Sb);
+      const sources = native.map(descriptor);
+      if (sources.some((value) => !value)) return null;
+      const baseline = JSON.stringify({
+        viewport: [innerWidth, innerHeight],
+        pages: native.map((page) => [page.key, page.rd])
+      });
+      return { component, native, sources, baseline, columns: host.querySelector("li.twopage") ? 2 : 1 };
+    };
+    async function prepare() {
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+      scheduled = false;
+      if (stopped) return;
+      const selected = current();
+      const baseline = (selected == null ? void 0 : selected.baseline) || "";
+      if (baseline !== state.baseline) {
+        state.baseline = baseline;
+        state.generation++;
+        state.attempted = "";
+        document.documentElement.removeAttribute(attribute);
+      }
+      if (!selected || state.busy || state.attempted === baseline) return;
+      state.attempted = baseline;
+      state.busy = true;
+      const generation = state.generation, nextPages = [];
+      try {
+        let page = selected.native.at(-1);
+        const first = page;
+        let required = selected.columns;
+        for (let index = 0; index < required; index++) {
+          const engine = (_d = (_c = (_b = (_a = selected.component.Fa) == null ? void 0 : _a.O) == null ? void 0 : _b.U) == null ? void 0 : _c.get) == null ? void 0 : _d.call(_c, page.aA);
+          if (((_e = engine == null ? void 0 : engine.getKey) == null ? void 0 : _e.call(engine)) !== page.aA || ((_f = engine == null ? void 0 : engine.segment) == null ? void 0 : _f.hf) !== page.Uc || typeof engine.ha !== "function" || page.Dw !== true) break;
+          const body = Function.prototype.toString.call(engine.ha);
+          if (!/\.Dw/.test(body) || !/\.Sb\s*\+\s*1/.test(body) || !/\.parent\.gA\(/.test(body)) break;
+          let timer;
+          let next;
+          try {
+            next = await Promise.race([engine.ha(page), new Promise((_, reject) => {
+              timer = setTimeout(() => reject(new Error("native-preparation-timeout")), 8e3);
+            })]);
+          } finally {
+            clearTimeout(timer);
+          }
+          if (stopped || ((_g = current()) == null ? void 0 : _g.baseline) !== baseline || generation !== state.generation) return;
+          const source = descriptor(next);
+          if (!source || next.volumeId !== first.volumeId || next.width !== first.width || next.height !== first.height || JSON.stringify(next.rd) !== JSON.stringify(first.rd) || !(next.Uc === page.Uc && next.Sb === page.Sb + 1 || next.Uc === page.Uc + 1 && next.Sb === 0)) break;
+          nextPages.push(source);
+          page = next;
+          if (nextPages.length === selected.columns) {
+            const text = nextPages.map((value) => {
+              const template = document.createElement("template");
+              template.innerHTML = value.html;
+              return template.content.textContent || "";
+            }).join("").replace(/\s/g, "");
+            if (text.length < 50) required = selected.columns * 2;
+          }
+        }
+        const complete = nextPages.length >= selected.columns || nextPages.length > 0 && page.Dw === false;
+        if (complete && ((_h = current()) == null ? void 0 : _h.baseline) === baseline && generation === state.generation) {
+          document.documentElement.setAttribute(attribute, JSON.stringify({
+            version: 1,
+            viewport: [innerWidth, innerHeight],
+            current: selected.sources,
+            next: nextPages
+          }));
+          document.dispatchEvent(new Event("castreader-play-books-layout"));
+        }
+      } catch (e) {
+      } finally {
+        state.busy = false;
+        if (!stopped && ((_i = current()) == null ? void 0 : _i.baseline) !== baseline) schedule();
+      }
+    }
+    function schedule() {
+      if (stopped || scheduled) return;
+      scheduled = true;
+      setTimeout(prepare, 25);
+    }
+    const observer = new MutationObserver(schedule);
+    observer.observe(document, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "id"]
+    });
+    window.addEventListener("resize", schedule);
+    window.addEventListener("pagehide", () => {
+      var _a;
+      stopped = true;
+      state.generation++;
+      state.view = null;
+      clearTimeout(registrationTimeout);
+      restore();
+      observer.disconnect();
+      (_a = document.documentElement) == null ? void 0 : _a.removeAttribute(attribute);
+      window.removeEventListener("resize", schedule);
+    }, { once: true });
+  }
+
   // src/play-books-native-entry.ts
   function installPlayBooksNativeLayoutBridge() {
     const root = globalThis;
@@ -145,6 +300,7 @@
     }, { once: true });
   }
   if (location.hostname === "books.googleusercontent.com" && /\/books\/reader\/frame/.test(location.pathname)) {
+    installPlayBooksNativePreparation();
     installPlayBooksNativeLayoutBridge();
   }
 })();

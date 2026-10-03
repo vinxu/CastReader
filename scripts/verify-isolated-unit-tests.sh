@@ -40,6 +40,16 @@ for name in paths:
   text=text.replace('ai.castreader.auth','ai.castreader.releasechecks.auth')
   text=text.replace('com.microsoft.adalcache','com.microsoft.releasechecks.adalcache')
   text=text.replace('releasechecks',namespace)
+  if name == 'CastReader/CastReaderApp.swift':
+   # The unit host must not run live account refreshes/StoreKit observers.
+   # They can stop fixture playback or replace quota state mid-assertion.
+   # Only this temporary copy changes; production and live UI builds do not.
+   gate = 'if ProcessInfo.processInfo.arguments.contains("-CastReaderCloneCreditFixture") {'
+   assert text.count(gate) == 1
+   text = text.replace(gate, 'if ProcessInfo.processInfo.arguments.contains("-CastReaderPlatformContractAcceptance") { Color.clear } else ' + gate, 1)
+   startup = '        installLifecycleObservers()'
+   assert text.count(startup) == 1
+   text = text.replace(startup, '        if ProcessInfo.processInfo.arguments.contains("-CastReaderPlatformContractAcceptance") { isReady = true; return }\n' + startup, 1)
   copied=text.encode('utf-8')
  except UnicodeDecodeError: pass
  target=dest/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(copied)
@@ -80,6 +90,12 @@ if [[ "${CASTREADER_TEST_BUILD_ONLY:-0}" == "1" ]]; then
   exit 0
 fi
 status=0
+cleanup_test_app() {
+  if [[ -n "${CASTREADER_TEST_DEVICE:-}" ]]; then
+    xcrun devicectl device uninstall app --device "$device" "com.same.castreader.${CASTREADER_TEST_NAMESPACE:-releasechecks}" > "$report/cleanup.log" 2>&1 || true
+  fi
+}
+trap cleanup_test_app EXIT
 xcodebuild -xctestrun "$derived/Build/Products/Isolated.xctestrun" -destination "platform=$platform,id=$device" -parallel-testing-enabled NO -only-testing:CastReaderTests -skip-testing:CastReaderTests/PaymentTests -resultBundlePath "$report/tests.xcresult" test-without-building > "$report/tests.log" 2>&1 || status=$?
 xcrun xcresulttool get test-results summary --path "$report/tests.xcresult" --format json > "$report/summary.json"
 printf 'Isolated unit tests exit=%s; report=%s\n' "$status" "$report"

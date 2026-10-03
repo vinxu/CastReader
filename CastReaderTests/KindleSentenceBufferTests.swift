@@ -123,15 +123,38 @@ final class KindleSentenceBufferTests: XCTestCase {
         XCTAssertEqual(buffer.finish().map(\.text), ["Final fragment"])
         XCTAssertEqual(buffer.finish(), [])
     }
+
+    func testReflowCursorKeepsOriginalOffsetsAndJoinsOnlyUnreadTail() throws {
+        var buffer = KindleSentenceBuffer(scope: scope)
+        let text = "Already heard. Was"
+        XCTAssertEqual(try buffer.accept(.init(key: "landscape", scope: scope, paragraphs: [
+            .init(id: 4, text: text, startUTF16: 15)
+        ])), [])
+        let units = try buffer.accept(page("next", "not the raft progressing?"), after: edge("landscape", "next"))
+        XCTAssertEqual(units.map(\.text), ["Was not the raft progressing?"])
+        XCTAssertEqual(units[0].sources[0].paragraphID, 4)
+        XCTAssertEqual(units[0].sources[0].sourceRange, NSRange(location: 15, length: 3))
+        XCTAssertEqual(units[0].sources.map(\.pageKey), ["landscape", "next"])
+    }
+
+    func testInvalidReflowCursorCannotConsumeCurrentTail() throws {
+        var buffer = KindleSentenceBuffer(scope: scope)
+        _ = try buffer.accept(page("A", "The unfinished"))
+        XCTAssertThrowsError(try buffer.accept(.init(key: "B", scope: scope, paragraphs: [
+            .init(id: 0, text: "🔬 sentence.", startUTF16: 1)
+        ]), after: edge("A", "B")))
+        XCTAssertEqual(buffer.pending?.text, "The unfinished")
+        XCTAssertEqual(buffer.currentPageKey, "A")
+    }
 }
 
 final class KindleSpeechProjectionTests: XCTestCase {
-    private func paragraph(_ text: String) -> ReadingParagraph {
+    private func paragraph(_ text: String, id: Int = 0) -> ReadingParagraph {
         let words = text.split(separator: " ").enumerated().map {
             OCRWord(id: $0.offset, text: String($0.element),
                     bboxNorm: CGRect(x: Double($0.offset) * 0.1, y: 0.5, width: 0.08, height: 0.05))
         }
-        return ReadingParagraph(id: 0, text: text, words: words)
+        return ReadingParagraph(id: id, text: text, words: words)
     }
 
     func testJoinedAudioWordsRouteToOriginalPagesAndPositions() throws {
@@ -171,12 +194,40 @@ final class KindleSpeechProjectionTests: XCTestCase {
         XCTAssertEqual(projected.anchors.first?.characterRange, NSRange(location: 5, length: 4))
         XCTAssertEqual(original.text, "part.Next")
     }
+
+    func testReflowStartsAtExactRepeatedSourceWordAndRetainsColumnGeometry() throws {
+        var source = paragraph("Already heard. The left column ends. The right column continues.", id: 4)
+        source.words = source.words.enumerated().map { index, word in
+            OCRWord(id: index, text: word.text,
+                    bboxNorm: CGRect(x: index < 6 ? 0.1 : 0.6, y: 0.5, width: 0.08, height: 0.05))
+        }
+        let document = ReadingDocument(title: "Spread", sourceKind: .kindle, language: "en", paragraphs: [source])
+        let speech = KindleFootnoteSpeech.prepare(document: document)
+        let paragraphs = try KindleSpeechProjection.sentenceParagraphs(speech, startingAt: .init(paragraphID: 4, wordIndex: 6))
+        let scope = KindleSentenceBuffer.Scope(bookID: "spread", layoutRevision: 2, navigationGeneration: 8)
+        var buffer = KindleSentenceBuffer(scope: scope)
+        let units = try buffer.accept(.init(key: "new-layout", scope: scope, paragraphs: paragraphs))
+        let projected = try KindleSpeechProjection.project(XCTUnwrap(units.first), paragraphID: 0,
+            pages: ["new-layout": .init(key: "new-layout", paragraphs: [source], speechProjections: [4: speech.paragraphs[0]])])
+        XCTAssertEqual(projected.paragraph.text, "The right column continues.")
+        XCTAssertEqual(projected.anchors.map(\.paragraphID), [4, 4, 4, 4])
+        XCTAssertEqual(projected.anchors.map(\.wordIndex), [6, 7, 8, 9])
+        XCTAssertTrue(projected.paragraph.words.allSatisfy { $0.bboxNorm.minX == 0.6 })
+        XCTAssertThrowsError(try KindleSpeechProjection.sentenceParagraphs(speech, startingAt: .init(paragraphID: 4, wordIndex: 99)))
+    }
 }
 
 @MainActor
 final class KindleContinuousInputTests: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
+        let oldPro = ProManager.shared.debugForcePro, oldSpeed = AppSettings.shared.speed
+        ProManager.shared.debugForcePro = true
+        AppSettings.shared.speed = 1
+        addTeardownBlock { @MainActor in
+            ProManager.shared.debugForcePro = oldPro
+            AppSettings.shared.speed = oldSpeed
+        }
         useRegularVoiceForTest(language: "en")
     }
 
@@ -191,6 +242,55 @@ final class KindleContinuousInputTests: XCTestCase {
         let deadline = Date().addingTimeInterval(8)
         while !predicate(), Date() < deadline { try await Task.sleep(nanoseconds: 20_000_000) }
         XCTAssertTrue(predicate())
+    }
+
+    func testReflowSealsAcceptedAudioWithoutReplayingOrAcceptingOldLayout() async throws {
+        try await verifyReflowSeal(pauseFirst: false)
+    }
+
+    func testReflowSealKeepsUserPauseAndDrainsExactlyOnceAfterResume() async throws {
+        try await verifyReflowSeal(pauseFirst: true)
+    }
+
+    private func verifyReflowSeal(pauseFirst: Bool) async throws {
+        let texts = ["The left column finishes.", "The right column continues."]
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: 0.8))
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let document = ReadingDocument(title: "Reflow window", sourceKind: .kindle, language: "en",
+            paragraphs: texts.enumerated().map { .init(id: $0.offset, text: $0.element) })
+        let vm = ReadAloudViewModel(document: document, audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        var demands = 0, completions = 0
+        let token = try XCTUnwrap(vm.configureKindleContinuousInput { _, _ in demands += 1 })
+        var heard: [String] = []
+        audio.onSegmentComplete = { if let text = audio.currentSegment?.text { heard.append(text) } }
+        vm.onDocumentFinished = { _ in completions += 1 }
+        vm.dbgGenerate(0)
+        try await waitUntil { audio.hasAudibleProgress }
+        let segmentID = audio.currentSegment?.id
+        if pauseFirst { vm.pausePlayback() }
+        XCTAssertTrue(vm.sealKindleSpeechForReflow(token: token))
+        XCTAssertEqual(audio.currentSegment?.id, segmentID)
+        XCTAssertFalse(vm.appendKindleSpeech([.init(id: 2, text: "Stale old-layout response.")],
+            token: token, afterCount: 2))
+        let sealedDemandCount = demands
+        if pauseFirst {
+            try await Task.sleep(nanoseconds: 250_000_000)
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertTrue(vm.isPlaybackPausedByUser)
+            XCTAssertEqual(completions, 0)
+            vm.togglePlayPause()
+        }
+        try await waitUntil { completions == 1 }
+        XCTAssertEqual(heard, texts)
+        XCTAssertEqual(fixture.requests, texts)
+        XCTAssertEqual(vm.document.id, document.id)
+        XCTAssertEqual(demands, sealedDemandCount)
+        XCTAssertFalse(vm.sealKindleSpeechForReflow(token: token))
+        XCTAssertEqual(completions, 1)
     }
 
     func testLateConfirmedPageExtendsSamePlayerWithoutFinishingOrReplaying() async throws {

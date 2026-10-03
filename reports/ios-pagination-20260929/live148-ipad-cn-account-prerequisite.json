@@ -1,0 +1,16 @@
+{
+  "candidate": 148,
+  "scope": "CN account prerequisite for Chinese private continuation",
+  "status": "NOT_RUN",
+  "test_attempt": {
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0
+  },
+  "cause": "CN regional account not signed in; screenshot is Apple/phone sign-in gate, no playback was attempted",
+  "screenshot": {
+    "path": "/tmp/castreader148-ipad-cn-private-chinese/attachments/40B36136-3FBE-4667-BDC6-72CA603CA1E2.png"
+  },
+  "account_or_entitlement_bypass": false,
+  "next": "Existing CN test-account sign-in, then repeat same frozen test"
+}

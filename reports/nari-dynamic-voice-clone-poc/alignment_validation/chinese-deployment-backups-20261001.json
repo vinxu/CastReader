@@ -1,0 +1,84 @@
+{
+  "cn": {
+    "pre": {
+      "verified": true,
+      "bytes": 256261,
+      "sha256": "9a942d24fe9ec16b5c0cb8b6470e7a73b2d4641c2646a0095448142baef06d1b",
+      "readback_sha256": "9a942d24fe9ec16b5c0cb8b6470e7a73b2d4641c2646a0095448142baef06d1b",
+      "public": false,
+      "bucket": "castreader-voice-1323065328",
+      "region": "ap-shanghai",
+      "key": "runtime-backups/20261001/alignment-zh-source/cn-pre-9a942d24fe9ec16b.tar.gz",
+      "receipt_key": "runtime-backups/20261001/alignment-zh-source/cn-pre-9a942d24fe9ec16b.tar.gz.receipt.json",
+      "receipt_sha256": "a65ed4bb1bb44bf7e7ddeccb4e9916fbfe73ceff193b2829eb3676d3c0f048ae",
+      "receipt_readback_verified": true
+    },
+    "candidate": {
+      "verified": true,
+      "bytes": 256407,
+      "sha256": "522f0b06ca7252d3713e4fb84c7d0d090ff0ce0152f2933c2ae0a1a778857477",
+      "readback_sha256": "522f0b06ca7252d3713e4fb84c7d0d090ff0ce0152f2933c2ae0a1a778857477",
+      "public": false,
+      "bucket": "castreader-voice-1323065328",
+      "region": "ap-shanghai",
+      "key": "runtime-backups/20261001/alignment-zh-source/cn-candidate-522f0b06ca7252d3.tar.gz",
+      "receipt_key": "runtime-backups/20261001/alignment-zh-source/cn-candidate-522f0b06ca7252d3.tar.gz.receipt.json",
+      "receipt_sha256": "8f58645f58f58b4fe2bb75a2e4afb9958a79d152270111af5ee02cf6ecec3048",
+      "receipt_readback_verified": true
+    },
+    "post": {
+      "verified": true,
+      "bytes": 256402,
+      "sha256": "4560a34bb05d7c4055daddc70228866214eca32894d449e3ebc91c067705251c",
+      "readback_sha256": "4560a34bb05d7c4055daddc70228866214eca32894d449e3ebc91c067705251c",
+      "public": false,
+      "bucket": "castreader-voice-1323065328",
+      "region": "ap-shanghai",
+      "key": "runtime-backups/20261001/alignment-zh-source/cn-post-4560a34bb05d7c40.tar.gz",
+      "receipt_key": "runtime-backups/20261001/alignment-zh-source/cn-post-4560a34bb05d7c40.tar.gz.receipt.json",
+      "receipt_sha256": "4d9d245d2fd8f4af0bc2bbc37aeebf9216c8f861d647b0cb24de7bd242ebe3ef",
+      "receipt_readback_verified": true
+    }
+  },
+  "us": {
+    "pre": {
+      "verified": true,
+      "bytes": 10576045,
+      "sha256": "40be332e127a55f2445ad49b9733a85178de05b6eb79bd86cf93bc62de78ded8",
+      "readback_sha256": "40be332e127a55f2445ad49b9733a85178de05b6eb79bd86cf93bc62de78ded8",
+      "public": false,
+      "bucket": "castreader-voice-1323065328",
+      "region": "ap-shanghai",
+      "key": "runtime-backups/20261001/alignment-zh-source/us-pre-40be332e127a55f2.tar.gz",
+      "receipt_key": "runtime-backups/20261001/alignment-zh-source/us-pre-40be332e127a55f2.tar.gz.receipt.json",
+      "receipt_sha256": "8fa8835ded2e82536f80488f89cda426b4849390c47d07910e640c885b693d54",
+      "receipt_readback_verified": true
+    },
+    "candidate": {
+      "verified": true,
+      "bytes": 208309,
+      "sha256": "af070eec9ea77ed5d3cf012a6ebbaf13dd5a01cf320bd4f35bb79ace49b25f76",
+      "readback_sha256": "af070eec9ea77ed5d3cf012a6ebbaf13dd5a01cf320bd4f35bb79ace49b25f76",
+      "public": false,
+      "bucket": "castreader-voice-1323065328",
+      "region": "ap-shanghai",
+      "key": "runtime-backups/20261001/alignment-zh-source/us-candidate-af070eec9ea77ed5.tar.gz",
+      "receipt_key": "runtime-backups/20261001/alignment-zh-source/us-candidate-af070eec9ea77ed5.tar.gz.receipt.json",
+      "receipt_sha256": "53409596d667f0023de19bbd3b2cc0aa30dfdb21758822b00f9a187e98cf596d",
+      "receipt_readback_verified": true
+    },
+    "post": {
+      "verified": true,
+      "bytes": 208304,
+      "sha256": "98057944c9c688d895d3262808543d7216a3c7daaa9a84394ce86eaf02965db0",
+      "readback_sha256": "98057944c9c688d895d3262808543d7216a3c7daaa9a84394ce86eaf02965db0",
+      "public": false,
+      "bucket": "castreader-voice-1323065328",
+      "region": "ap-shanghai",
+      "key": "runtime-backups/20261001/alignment-zh-source/us-post-98057944c9c688d8.tar.gz",
+      "receipt_key": "runtime-backups/20261001/alignment-zh-source/us-post-98057944c9c688d8.tar.gz.receipt.json",
+      "receipt_sha256": "8affbb3b2965ffe81a0fcd48f553f7d4cc41d8321a81f35e4f020f786aad0bf1",
+      "receipt_readback_verified": true
+    }
+  }
+}

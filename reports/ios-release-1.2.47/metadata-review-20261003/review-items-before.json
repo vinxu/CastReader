@@ -1,0 +1,44 @@
+[
+  {
+    "type": "reviewSubmissionItems",
+    "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw",
+    "attributes": {
+      "state": "READY_FOR_REVIEW"
+    },
+    "relationships": {
+      "appStoreVersion": {
+        "data": null
+      },
+      "inAppPurchaseVersion": {
+        "data": {
+          "type": "inAppPurchaseVersions",
+          "id": "f267f0a8-d537-4fa7-9cc1-1796fc44b71c"
+        }
+      }
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw"
+    }
+  },
+  {
+    "type": "reviewSubmissionItems",
+    "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2",
+    "attributes": {
+      "state": "REJECTED"
+    },
+    "relationships": {
+      "appStoreVersion": {
+        "data": {
+          "type": "appStoreVersions",
+          "id": "138a0a05-56de-42f7-b841-31fdfb842418"
+        }
+      },
+      "inAppPurchaseVersion": {
+        "data": null
+      }
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2"
+    }
+  }
+]

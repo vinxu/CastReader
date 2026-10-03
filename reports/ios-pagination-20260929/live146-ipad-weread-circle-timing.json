@@ -1,0 +1,157 @@
+{
+  "raw_log": "/private/tmp/castreader146-ipad-circle-complete.log",
+  "raw_sha256": "3f2a47ec4ed6c986d0d961168c5d9227153cc5247e9c49951fe87efec7acf146",
+  "measurement": "Application event clock; includes native turn time separately; no acoustic claim",
+  "summary": {
+    "preset": {
+      "all_commits": 0,
+      "all_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    },
+    "clone": {
+      "all_commits": 0,
+      "all_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    },
+    "voice_not_recorded": {
+      "all_commits": 3,
+      "all_audible_paths": {
+        "count": 3,
+        "request_to_commit_ms": {
+          "samples": 3,
+          "p95": 112,
+          "max": 112
+        },
+        "commit_to_playing_ms": {
+          "samples": 3,
+          "p95": 50,
+          "max": 50
+        },
+        "ended_to_playing_ms": {
+          "samples": 3,
+          "p95": 161,
+          "max": 161
+        }
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 3,
+        "request_to_commit_ms": {
+          "samples": 3,
+          "p95": 112,
+          "max": 112
+        },
+        "commit_to_playing_ms": {
+          "samples": 3,
+          "p95": 50,
+          "max": 50
+        },
+        "ended_to_playing_ms": {
+          "samples": 3,
+          "p95": 161,
+          "max": 161
+        }
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    }
+  },
+  "rows": [
+    {
+      "commit_line": 205,
+      "commit_ms": 50213829,
+      "request_ms": 50213727,
+      "prior_audio_end_ms": 50213726,
+      "source": "7aa6b4c4",
+      "voice": null,
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 102,
+      "playing_line": 227,
+      "playing_ms": 50213879,
+      "commit_to_playing_ms": 50,
+      "ended_to_playing_ms": 153
+    },
+    {
+      "commit_line": 385,
+      "commit_ms": 50269456,
+      "request_ms": 50269344,
+      "prior_audio_end_ms": 50269344,
+      "source": "245a9954",
+      "voice": null,
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 112,
+      "playing_line": 407,
+      "playing_ms": 50269505,
+      "commit_to_playing_ms": 49,
+      "ended_to_playing_ms": 161
+    },
+    {
+      "commit_line": 597,
+      "commit_ms": 50335494,
+      "request_ms": 50335411,
+      "prior_audio_end_ms": 50335411,
+      "source": "1ec1b36c",
+      "voice": null,
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 83,
+      "playing_line": 620,
+      "playing_ms": 50335538,
+      "commit_to_playing_ms": 44,
+      "ended_to_playing_ms": 127
+    }
+  ],
+  "final_acceptance": false,
+  "candidate": 146,
+  "platform": "weread",
+  "interval_clock": [
+    "00:00:00.000",
+    "23:59:59.999"
+  ]
+}

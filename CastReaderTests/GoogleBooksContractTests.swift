@@ -12,6 +12,60 @@ import WebKit
 @testable import CastReader
 
 final class GoogleBooksContractTests: XCTestCase {
+    func testGoogleBookEndRequiresNativeSurfaceAndDisabledNext() {
+        XCTAssertTrue(GoogleBooksBookEndContract.isConfirmed([
+            "surface": "reader-end-of-book", "shown": true, "nextDisabled": true]))
+        for invalid: [String: Any] in [
+            ["surface": "reader-end-of-book", "shown": false, "nextDisabled": true],
+            ["surface": "reader-end-of-book", "shown": true, "nextDisabled": false],
+            ["surface": "reader-end-of-book", "shown": 1, "nextDisabled": true],
+            ["surface": "reader-page", "shown": true, "nextDisabled": true],
+            ["percentage": 1], [:]
+        ] { XCTAssertFalse(GoogleBooksBookEndContract.isConfirmed(invalid)) }
+    }
+
+    func testSpeechFollowingReserveRequiresExactCommittedRemainder() throws {
+        let candidate = GoogleBooksSpeechPreviewCandidate(sourceSignature: "page", originFrameSessionID: "frame",
+            contentFingerprint: "1234abcd", sourceParagraphIndex: 42, sourceUTF16Start: 0,
+            sourceUTF16End: 3, text: "Hi.")
+        let source = GoogleBooksSpeechFollowingSource(sourceParagraphIndex: 42, sourceUTF16Start: 4,
+            sourceUTF16End: 31, text: "The next sentence is ready.")
+        XCTAssertTrue(source.canPrepare(after: candidate))
+        let full = candidate.text + " " + source.text
+        let split = try XCTUnwrap(GoogleBooksSpeechPreloadContract.splitCommittedPage(candidate: candidate,
+            previousSignature: "page", activeFrameSessionID: "frame",
+            sourceSlices: [.init(visibleParagraphIndex: 0, sourceParagraphIndex: 42, sourceUTF16Start: 0,
+                sourceUTF16End: full.utf16.count, text: full)], paragraphs: [full], domCharacterOffsets: [0]))
+        XCTAssertTrue(source.matches(split, after: candidate))
+        XCTAssertFalse(GoogleBooksSpeechFollowingSource(sourceParagraphIndex: 43, sourceUTF16Start: 4,
+            sourceUTF16End: 31, text: source.text).matches(split, after: candidate))
+        XCTAssertFalse(GoogleBooksSpeechFollowingSource(sourceParagraphIndex: 42, sourceUTF16Start: 4,
+            sourceUTF16End: 30, text: "The wrong sentence exists.").matches(split, after: candidate))
+        XCTAssertFalse(GoogleBooksSpeechFollowingSource(sourceParagraphIndex: 42, sourceUTF16Start: 5,
+            sourceUTF16End: 32, text: source.text).matches(split, after: candidate))
+    }
+
+    func testExplainDOMFragmentsSeparateSourceCoordinatesFromReopenedLocalOffsets() {
+        func slice(_ dom: Int, _ start: Int, _ text: String) -> LiveWebPageSourceSlice {
+            .init(visibleParagraphIndex: dom, sourceParagraphIndex: 42,
+                  sourceUTF16Start: start, sourceUTF16End: start + text.utf16.count, text: text)
+        }
+        let original = slice(0, 102, "First 😀 sentence. Second sentence.")
+        let split = "First 😀 sentence. ".utf16.count
+        let visible = [slice(2, 102, "First 😀 sentence. "), slice(3, 102 + split, "Second sentence.")]
+        let fragments = LiveWebSourceReflowContract.domFragments(for: original, in: visible, domOffsets: [0, 0])
+        XCTAssertEqual(fragments.map(\.paragraphIndex), [2, 3])
+        XCTAssertEqual(fragments.map(\.charStart), [0, split])
+        XCTAssertEqual(fragments.map(\.domCharOffset), [0, -split])
+        XCTAssertEqual(fragments.map { $0.charStart + $0.domCharOffset }, [0, 0])
+        let clipped = LiveWebSourceReflowContract.domFragments(for: original,
+            in: [visible[1]], domOffsets: [0])
+        XCTAssertEqual(clipped.first?.charStart, split)
+        XCTAssertEqual(clipped.first?.charEnd, original.text.utf16.count)
+        XCTAssertTrue(LiveWebSourceReflowContract.domFragments(for: original,
+            in: [slice(0, 102, "Unrelated text despite reused identity")], domOffsets: [0]).isEmpty)
+        XCTAssertTrue(LiveWebSourceReflowContract.domFragments(for: original, in: visible, domOffsets: [0]).isEmpty)
+    }
 
     func testKoboBookCompletionRequiresExactNativeLastPageNotRoundedPercentage() {
         XCTAssertTrue(KoboBookEndContract.isConfirmed(["pagesOfBook": 100, "firstPage": 99, "lastPage": 99]))

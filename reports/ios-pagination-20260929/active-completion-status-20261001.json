@@ -1,0 +1,41 @@
+{
+  "status": "CONTINUING",
+  "user_acceptance": "Preserve passed four-platform/iPad tests; normal network and millisecond timing are nonblocking. Fix structural and code faults.",
+  "candidate": 148,
+  "application_source_same_as": 147,
+  "tests": {
+    "affected_physical_ipad": {
+      "passed": 51,
+      "failed": 0,
+      "skipped": 0
+    },
+    "backend_pipeline": {
+      "passed": 38,
+      "failed": 0
+    },
+    "backend_private_audio": {
+      "passed": 7,
+      "failed": 0
+    },
+    "private_chinese_global_route": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "remaining": [
+    "CN existing-account sign-in then affected private Chinese device retest",
+    "WeRead official authorization then persisted-session check",
+    "App Store core evidence audit and next-release submission blocked by current 1.2.47 review"
+  ],
+  "device_state": {
+    "iphone": "unavailable",
+    "ipad": "connected; CN CastReader sign-in page left open"
+  },
+  "updated_at": "2026-10-01T15:54:17.259394+08:00",
+  "deployment": {
+    "cn": "production v4 PASS",
+    "us": "production v4 PASS",
+    "six_private_backup_receipts": "verified"
+  }
+}

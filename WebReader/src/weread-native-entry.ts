@@ -82,6 +82,11 @@ function snapshot(host: HTMLElement, successor = false) {
         height: Math.max(...entries.map(e => e.bbox.y + e.bbox.height)) - top },
       sourceLayoutFingerprint: `${state.book}:${unit.chapter}:${state.layout}`,
       sourceParagraphIndex: unit.offset, sourceParagraphText: unit.text,
+      // Chapter offsets are stable across font/column changes; sentence units
+      // can begin earlier/later when the provider replaces its cached columns.
+      nativeSourceIdentity: `${state.book}:${unit.chapter}`,
+      sourceAnchors: unit.words.map(w => ({ start: w.start - from, end: w.end - from,
+        offset: w.glyph.offset, text: w.text })),
       sourceCharStart: from, sourceCharEnd: to,
       sourcePageEnds: unit.words.filter((w, i, a) => i === a.length - 1 || a[i + 1].column.id !== w.column.id).map(w => w.end),
       geometrySource: 'native-glyphs', nativePages: ids,

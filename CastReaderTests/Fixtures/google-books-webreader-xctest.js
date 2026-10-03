@@ -43203,7 +43203,7 @@ var __CRWeb = (() => {
     }
     function show(m) {
       if (shown.has(m.id)) return;
-      const el = getParaEl(m.paragraphIndex);
+      const el = getParaEl(m.paragraphIndex, m.domParagraphIndex);
       if (!el) return;
       const range2 = charRange(el, m.charStart, m.charEnd);
       if (!range2) return;
@@ -43221,13 +43221,6 @@ var __CRWeb = (() => {
       if (!lineRects.length) return;
       shown.set(m.id, m);
       const last2 = lineRects[lineRects.length - 1];
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      lineRects.forEach((rc) => {
-        minX = Math.min(minX, rc.left);
-        minY = Math.min(minY, rc.top);
-        maxX = Math.max(maxX, rc.right);
-        maxY = Math.max(maxY, rc.bottom);
-      });
       const wm = weightMul(m.weight);
       switch (m.action) {
         case "underline":
@@ -43249,8 +43242,10 @@ var __CRWeb = (() => {
           });
           break;
         case "circle": {
-          const cx = (minX + maxX) / 2 + sx, cy = (minY + maxY) / 2 + sy;
-          appendPath(s, handDrawnLoop(cx, cy, (maxX - minX) / 2 + 8, (maxY - minY) / 2 + 5, 12, rng), 2.5 * wm, 0.95);
+          lineRects.forEach((rc) => {
+            const cx = rc.left + rc.width / 2 + sx, cy = rc.top + rc.height / 2 + sy;
+            appendPath(s, handDrawnLoop(cx, cy, rc.width / 2 + 8, rc.height / 2 + 5, 12, rng), 2.5 * wm, 0.95);
+          });
           break;
         }
         case "star":
@@ -53702,7 +53697,8 @@ var __CRWeb = (() => {
       }, true);
     }
     let color = "#FD5F01";
-    const markRenderer = createMarkRenderer((i) => paraElements.get(i), color);
+    const markDOMFragments = /* @__PURE__ */ new Map();
+    const markRenderer = createMarkRenderer((i, dom) => dom === void 0 ? paraElements.get(i) : extractedParaElements.get(dom), color);
     const overlayNodes = /* @__PURE__ */ new Set();
     const overlayDocuments = /* @__PURE__ */ new Set();
     let autoScroll = true;
@@ -54022,8 +54018,12 @@ var __CRWeb = (() => {
         if (segments.length > 0) {
           paraElements.clear();
           paraOffsets.clear();
+          markDOMFragments.clear();
         }
         for (const segment of segments) {
+          if (Array.isArray(segment.domFragments)) {
+            markDOMFragments.set(segment.paragraphIndex, segment.domFragments.filter((fragment) => [fragment.domParagraphIndex, fragment.charStart, fragment.charEnd, fragment.domCharOffset].every(Number.isSafeInteger) && fragment.domParagraphIndex >= 0 && fragment.charStart >= 0 && fragment.charEnd > fragment.charStart && fragment.domCharOffset + fragment.charStart >= 0));
+          }
           const domParagraphIndex = (_a2 = segment.domParagraphIndex) != null ? _a2 : segment.paragraphIndex;
           const sourceElement = extractedParaElements.get(domParagraphIndex);
           if (sourceElement) {
@@ -54119,6 +54119,21 @@ var __CRWeb = (() => {
         autoScroll = arg.enabled;
       },
       showMark(arg) {
+        const fragments = markDOMFragments.get(arg.paragraphIndex);
+        if (fragments) {
+          fragments.forEach((fragment, index) => {
+            const start = Math.max(arg.charStart, fragment.charStart);
+            const end = Math.min(arg.charEnd, fragment.charEnd);
+            if (end <= start) return;
+            markRenderer.show(__spreadProps(__spreadValues({}, arg), {
+              id: `${arg.id}:fragment:${index}`,
+              domParagraphIndex: fragment.domParagraphIndex,
+              charStart: start + fragment.domCharOffset,
+              charEnd: end + fragment.domCharOffset
+            }));
+          });
+          return;
+        }
         const base = paraOffsets.get(arg.paragraphIndex) || 0;
         markRenderer.show(__spreadProps(__spreadValues({}, arg), {
           charStart: arg.charStart + base,
@@ -54179,6 +54194,70 @@ var __CRWeb = (() => {
   function pageKey(id, blocks) {
     return `${id}:${hash(JSON.stringify(blocks.map((block) => [block.text, block.reopened, block.sliced])))}`;
   }
+  function sourceBlocks(segment) {
+    return [...segment.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,blockquote")].filter((block) => !block.querySelector("p,h1,h2,h3,h4,h5,h6,li,blockquote")).map((element) => {
+      const raw = element.textContent || "";
+      return {
+        element,
+        raw,
+        text: normalizedText(raw).text,
+        reopened: element.hasAttribute("ocean-reopened-element"),
+        sliced: element.hasAttribute("ocean-sliced-element")
+      };
+    }).filter((block) => /[\p{L}\p{N}]/u.test(block.text));
+  }
+  function addVerifiedPreparedPages(pages, visible, rendered) {
+    var _a;
+    let witness;
+    const raw = document.documentElement.getAttribute("data-castreader-pb-prepared");
+    if (!raw || raw.length > 16e5) return;
+    try {
+      witness = JSON.parse(raw);
+    } catch (e) {
+      return;
+    }
+    if (witness.version !== 1 || !Array.isArray(witness.current) || !Array.isArray(witness.next) || witness.current.length !== visible.length || !witness.next.length || witness.next.length > 4 || JSON.stringify(witness.viewport) !== JSON.stringify([innerWidth, innerHeight])) return;
+    const decode = (source) => {
+      if (!source || !Number.isInteger(source.segment) || source.segment < 0 || !Number.isInteger(source.index) || source.index < 0 || source.id !== `page-${source.segment}-${source.index}` || typeof source.volume !== "string" || !source.volume || typeof source.engine !== "string" || !source.engine.startsWith(source.volume + ":") || typeof source.key !== "string" || !source.key.startsWith(source.engine + ":") || typeof source.html !== "string" || source.html.length > 25e4 || source.width !== parseFloat(rendered.style.width) || source.height !== parseFloat(rendered.style.height)) return null;
+      const template2 = document.createElement("template");
+      template2.innerHTML = source.html;
+      const segments = template2.content.querySelectorAll(".gb-segment");
+      if (segments.length !== 1) return null;
+      const blocks = sourceBlocks(segments[0]);
+      if (!blocks.length) return null;
+      return {
+        id: source.id,
+        segment: source.segment,
+        index: source.index,
+        blocks,
+        key: pageKey(source.id, blocks),
+        element: document.createElement("div")
+      };
+    };
+    const volume = (_a = witness.current[0]) == null ? void 0 : _a.volume;
+    const current = witness.current.map(decode), next = witness.next.map(decode);
+    if (current.some((page) => !page) || next.some((page) => !page) || [...witness.current, ...witness.next].some((source) => source.volume !== volume) || current.some((page) => visible.filter((live) => live.id === page.id && live.key === page.key).length !== 1)) return;
+    let previous = visible.at(-1);
+    for (const page of next) {
+      if (page.segment === previous.segment && page.index === previous.index + 1) {
+      } else if (page.segment === previous.segment + 1 && page.index === 0) {
+      } else return;
+      const existing = pages.find((candidate) => candidate.id === page.id);
+      if (existing && existing.key !== page.key) return;
+      previous = page;
+    }
+    previous = visible.at(-1);
+    for (const page of next) {
+      if (page.segment !== previous.segment) previous.lastInSegment = true;
+      let existing = pages.find((candidate) => candidate.id === page.id);
+      if (!existing) {
+        pages.push(page);
+        existing = page;
+      }
+      previous = existing;
+    }
+    snapshotDiagnostic += `;native-prepared=${next.length}`;
+  }
   function measuredSourceCut(previous, next, visiblePrefix) {
     const full = normalizedText(previous.raw), suffix = normalizedText(next.raw).text;
     if (full.text.endsWith(suffix)) {
@@ -54206,9 +54285,14 @@ var __CRWeb = (() => {
     var _a, _b, _c, _d;
     if (!Array.isArray(group2.pages) || group2.pages.length > 128) return null;
     const result2 = [];
+    const start = visible.length ? Math.min(...visible.map((page) => page.index)) : 0;
     for (let index = 0; index < group2.pages.length; index++) {
+      if (index < start) {
+        result2.push([]);
+        continue;
+      }
       const source = group2.pages[index];
-      if (!Array.isArray(source.blocks)) return null;
+      if (!Array.isArray(source.blocks)) break;
       let blocks = source.blocks.map((block) => __spreadProps(__spreadValues({}, block), { sliced: false }));
       const next = (_b = (_a = group2.pages[index + 1]) == null ? void 0 : _a.blocks) == null ? void 0 : _b[0];
       if (next) {
@@ -54217,14 +54301,14 @@ var __CRWeb = (() => {
           if (next.reopened) {
             const live = (_c = visible.find((page) => page.index === index)) == null ? void 0 : _c.blocks[cut];
             const position = measuredSourceCut(blocks[cut], next, (live == null ? void 0 : live.sliced) ? live.raw : void 0);
-            if (position === null) return null;
+            if (position === null) break;
             if (position > 0) {
               blocks[cut].raw = blocks[cut].raw.slice(0, position);
               blocks[cut].sliced = true;
               blocks = blocks.slice(0, cut + 1);
             } else blocks = blocks.slice(0, cut);
           } else blocks = blocks.slice(0, cut);
-        } else if (!((_d = blocks.at(-1)) == null ? void 0 : _d.closed)) return null;
+        } else if (!((_d = blocks.at(-1)) == null ? void 0 : _d.closed)) break;
       } else if (!source.closed) break;
       result2.push(blocks.map((block) => {
         const element = document.createElement("p");
@@ -54284,10 +54368,11 @@ var __CRWeb = (() => {
       }
       prepared.forEach((blocks, index) => {
         var _a, _b;
+        if (!blocks.length) return;
         const id = `page-${visible[0].segment}-${index}`;
         const existing = pages.find((page) => page.id === id);
         if (existing) {
-          if (index === prepared.length - 1 && ((_a = group2.pages[index]) == null ? void 0 : _a.closed)) existing.lastInSegment = true;
+          if (index === group2.pages.length - 1 && ((_a = group2.pages[index]) == null ? void 0 : _a.closed)) existing.lastInSegment = true;
         } else pages.push({
           id,
           segment: visible[0].segment,
@@ -54295,7 +54380,7 @@ var __CRWeb = (() => {
           key: pageKey(id, blocks),
           blocks,
           element: document.createElement("div"),
-          lastInSegment: index === prepared.length - 1 && ((_b = group2.pages[index]) == null ? void 0 : _b.closed)
+          lastInSegment: index === group2.pages.length - 1 && ((_b = group2.pages[index]) == null ? void 0 : _b.closed)
         });
       });
       outcomes.push(`${tag}:accepted:${prepared.length}`);
@@ -54327,16 +54412,7 @@ var __CRWeb = (() => {
       const rendered = element.querySelector("reader-rendered-page.-gb-text");
       const segment = rendered == null ? void 0 : rendered.querySelector(".gb-segment");
       if (!match || !rendered || !segment) continue;
-      const blocks = [...segment.querySelectorAll("p,h1,h2,h3,h4,h5,h6,li,blockquote")].filter((block) => !block.querySelector("p,h1,h2,h3,h4,h5,h6,li,blockquote")).map((element2) => {
-        const raw = element2.textContent || "";
-        return {
-          element: element2,
-          raw,
-          text: normalizedText(raw).text,
-          reopened: element2.hasAttribute("ocean-reopened-element"),
-          sliced: element2.hasAttribute("ocean-sliced-element")
-        };
-      }).filter((block) => /[\p{L}\p{N}]/u.test(block.text));
+      const blocks = sourceBlocks(segment);
       if (pageLayout(rendered) !== layout) continue;
       pages.push({
         id: element.id,
@@ -54358,6 +54434,7 @@ var __CRWeb = (() => {
     if (!visible.length) return null;
     snapshotDiagnostic = `native=true;visible=${visible.map((page) => page.id).join(",")};rendered=${pages.map((page) => page.id).join(",")}`;
     addVerifiedMeasuredPages(pages, visible, current);
+    addVerifiedPreparedPages(pages, visible, current);
     pages.sort((a, b) => a.segment - b.segment || a.index - b.index);
     return {
       layout,
@@ -54953,15 +55030,52 @@ var __CRWeb = (() => {
     }
     return out;
   }
-  function nativeParagraphs(snapshot, keys2) {
+  function playBooksReflowSourceDirection(snapshot, source) {
     var _a;
+    if (!snapshot.ready || source.length < 24 || source.length > 16e3 || !snapshot.visible.length) return null;
     const units = [];
     let previous;
     for (const page of snapshot.pages) {
       if (previous && (page.segment !== previous.segment || page.index !== previous.index + 1)) {
         if ((_a = units.at(-1)) == null ? void 0 : _a.sliced) units.at(-1).sliced = false;
       }
-      appendPlayBooksPage(units, page);
+      try {
+        appendPlayBooksPage(units, page);
+      } catch (e) {
+        break;
+      }
+      previous = page;
+    }
+    const matches = units.flatMap((unit) => {
+      const at = unit.text.indexOf(source);
+      if (at < 0 || unit.text.indexOf(source, at + 1) >= 0) return [];
+      return unit.fragments.filter((fragment) => fragment.end > at && fragment.start < at + source.length);
+    });
+    if (units.filter((unit) => unit.text.includes(source)).length !== 1 || !matches.length) return null;
+    const visible = new Set(snapshot.visible.map((page) => page.key));
+    if (matches.some((fragment) => visible.has(fragment.page.key))) return null;
+    const indices = snapshot.visible.map((page) => snapshot.pages.findIndex((p) => p.key === page.key));
+    const targets = matches.map((fragment) => snapshot.pages.findIndex((p) => p.key === fragment.page.key));
+    if (targets.every((index) => index > Math.max(...indices))) return "next";
+    if (targets.every((index) => index < Math.min(...indices))) return "prev";
+    return null;
+  }
+  function nativeParagraphs(snapshot, keys2) {
+    var _a;
+    const units = [];
+    const acceptedKeys = /* @__PURE__ */ new Set();
+    let previous;
+    for (const page of snapshot.pages) {
+      if (previous && (page.segment !== previous.segment || page.index !== previous.index + 1)) {
+        if ((_a = units.at(-1)) == null ? void 0 : _a.sliced) units.at(-1).sliced = false;
+      }
+      try {
+        appendPlayBooksPage(units, page);
+      } catch (error) {
+        if (error instanceof Error && error.message === "play_books_unconfirmed_paragraph_continuation" && [...keys2].every((key) => acceptedKeys.has(key))) break;
+        throw error;
+      }
+      acceptedKeys.add(page.key);
       previous = page;
     }
     const out = [];
@@ -55167,7 +55281,20 @@ var __CRWeb = (() => {
       }
       if (!keys2.length) return null;
       const paragraphs2 = nativeParagraphs(snapshot, new Set(keys2));
-      return paragraphs2.length ? { paragraphs: paragraphs2, contentFingerprint: candidateFingerprint(paragraphs2) } : null;
+      if (!paragraphs2.length) return null;
+      let following;
+      if (paragraphs2.reduce((count, p) => count + p.text.trim().length, 0) < 50 && page) {
+        const nextKeys = [];
+        for (let index = 0; index < snapshot.columns && page; index++) {
+          nextKeys.push(page.key);
+          page = nextPlayBooksPage(snapshot, page);
+        }
+        if (nextKeys.length === snapshot.columns || !page && snapshot.last) {
+          const next = nativeParagraphs(snapshot, new Set(nextKeys));
+          if (next.length) following = { paragraphs: next, contentFingerprint: candidateFingerprint(next) };
+        }
+      }
+      return { paragraphs: paragraphs2, contentFingerprint: candidateFingerprint(paragraphs2), following };
     }
     const currentClips = currentPlayBooksPageClips();
     const current = extractPlayBooksParagraphsFromClips(currentClips);
@@ -55231,6 +55358,20 @@ var __CRWeb = (() => {
     const control = visiblePagerControl(candidate);
     if (control == null || !pagerControlEnabled(control)) return null;
     return control;
+  }
+  function confirmedPlayBooksEnd() {
+    const terminal = document.querySelector("reader-end-of-book.shown");
+    if (!visiblePagerControl(terminal) || document.querySelector("reader-page.shown")) return null;
+    for (let node = terminal; node; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") < 0.99) return null;
+    }
+    const next = Array.from(document.querySelectorAll("button")).find((button) => {
+      var _a, _b;
+      return ((_b = (_a = button.querySelector("mat-icon")) == null ? void 0 : _a.textContent) == null ? void 0 : _b.trim()) === "chevron_right" && visiblePagerControl(button);
+    });
+    if (!(next == null ? void 0 : next.disabled)) return null;
+    return { surface: "reader-end-of-book", shown: true, nextDisabled: true };
   }
   var lastButtonDiscovery = null;
   function pagerButtonDiscovery() {
@@ -55490,6 +55631,7 @@ var __CRWeb = (() => {
     let committedSignature = playBooksSignature();
     let observedSignature = committedSignature;
     let pendingAuto = false;
+    let pendingDirection = null;
     let pendingNativeTarget = null;
     let nativeTurnObservation = 0;
     let pendingAutoMetadata = null;
@@ -55531,11 +55673,19 @@ var __CRWeb = (() => {
     const scheduleNextPagePreview = (attempt = 0) => {
       if (previewTimer) clearTimeout(previewTimer);
       previewTimer = setTimeout(() => {
+        var _a;
         previewTimer = null;
         if (pendingAuto || pendingManualIntent || manualSwipeActive || changeReasonInFlight !== null) return;
         const sourceSignature = committedSignature || playBooksSignature();
         if (!sourceSignature) return;
-        const preview = extractPlayBooksNextPagePreview();
+        let preview;
+        try {
+          preview = extractPlayBooksNextPagePreview();
+        } catch (error) {
+          if (!(error instanceof Error) || error.message !== "play_books_unconfirmed_paragraph_continuation") throw error;
+          scheduleNextPagePreview(attempt + 1);
+          return;
+        }
         if (!preview || preview.paragraphs.length === 0) {
           if (sourceSignature !== lastGeometryPreviewMissToken) {
             lastGeometryPreviewMissToken = sourceSignature;
@@ -55574,11 +55724,11 @@ var __CRWeb = (() => {
           scheduleNextPagePreview(attempt + 1);
           return;
         }
-        const token = `${sourceSignature}|${preview.contentFingerprint}`;
+        const token = `${sourceSignature}|${preview.contentFingerprint}|${((_a = preview.following) == null ? void 0 : _a.contentFingerprint) || ""}`;
         if (token === lastPreviewToken) return;
         lastPreviewToken = token;
-        const paragraphs = preview.paragraphs.map((p, paragraphIndex) => {
-          var _a;
+        const serialize = (paras) => paras.map((p, paragraphIndex) => {
+          var _a2;
           const row = {
             paragraphIndex,
             text: p.text,
@@ -55592,17 +55742,28 @@ var __CRWeb = (() => {
             row.boundaryUTF16Offset = p.text.length;
             row.extendedUTF16Length = p.speechText.length;
             row.speechText = p.speechText;
-            row.sourceSpeechEnd = (_a = p.sourceSpeechEnd) != null ? _a : p.sourceStart + p.speechText.length;
+            row.sourceSpeechEnd = (_a2 = p.sourceSpeechEnd) != null ? _a2 : p.sourceStart + p.speechText.length;
           }
           return row;
         });
         postForFrame("googleBooksPagePreview", {
           sourceSignature,
           contentFingerprint: preview.contentFingerprint,
-          paragraphs
+          paragraphs: serialize(preview.paragraphs),
+          following: preview.following ? {
+            contentFingerprint: preview.following.contentFingerprint,
+            paragraphs: serialize(preview.following.paragraphs)
+          } : void 0
         });
       }, attempt === 0 ? 120 : attempt <= 6 ? 320 : 1e3);
     };
+    const onNativeLayoutPrepared = () => scheduleNextPagePreview();
+    document.addEventListener("castreader-play-books-layout", onNativeLayoutPrepared);
+    window.addEventListener("pagehide", () => {
+      document.removeEventListener("castreader-play-books-layout", onNativeLayoutPrepared);
+      if (previewTimer) clearTimeout(previewTimer);
+      previewTimer = null;
+    }, { once: true });
     const clearManualIntent = () => {
       pendingManualIntent = false;
       manualIntentExpiresAt = 0;
@@ -55615,6 +55776,7 @@ var __CRWeb = (() => {
       nativeTurnObservation = 0;
       pendingNativeTarget = null;
       pendingAuto = false;
+      pendingDirection = null;
       pendingAutoMetadata = null;
       pendingTurnMethod = null;
       pendingTurnBaseline = "";
@@ -55653,6 +55815,26 @@ var __CRWeb = (() => {
       };
     };
     const payloadFor = (metadata) => metadata ? __spreadValues({}, metadata) : {};
+    const finishConfirmedBookEnd = () => {
+      if (!pendingAuto || pendingDirection !== "next") return false;
+      const proof = confirmedPlayBooksEnd();
+      if (!proof) return false;
+      const metadata = pendingAutoMetadata;
+      const method = pendingTurnMethod || "none";
+      clearAutoTurn();
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = null;
+      clearSettledChange("auto");
+      clearPageVisuals2();
+      lateAutoTurn = null;
+      postForFrame("googleBooksTurnFailed", __spreadValues({
+        method,
+        reason: "native-book-end",
+        lateEligible: false,
+        nativeBookEnd: proof
+      }, payloadFor(metadata)));
+      return true;
+    };
     const rememberLateAutoTurn = (metadata, detectionBaselineSignature) => {
       if (!metadata) return;
       lateAutoTurn = {
@@ -55752,6 +55934,9 @@ var __CRWeb = (() => {
             clearManualIntent();
           }
           committedSignature = finalSignature || committedSignature;
+          lastPreviewToken = "";
+          lastSpeechPreviewToken = "";
+          lastGeometryPreviewMissToken = "";
           observedSignature = finalSignature || observedSignature;
           if (!forceExtract) {
             postForFrame("googleBooksPageChanging", __spreadValues({
@@ -55782,6 +55967,12 @@ var __CRWeb = (() => {
       if (pendingAuto) return false;
       const visualBaseline = playBooksSignature() || committedSignature;
       const metadata = automaticMetadata2(arg, visualBaseline);
+      if (direction === "next" && confirmedPlayBooksEnd()) {
+        pendingAuto = true;
+        pendingDirection = direction;
+        pendingAutoMetadata = metadata;
+        return finishConfirmedBookEnd();
+      }
       const coarsePointer = (() => {
         try {
           return window.matchMedia("(pointer: coarse)").matches;
@@ -55805,6 +55996,7 @@ var __CRWeb = (() => {
         return false;
       }
       pendingAuto = true;
+      pendingDirection = direction;
       pendingAutoMetadata = metadata;
       lateAutoTurn = null;
       clearManualIntent();
@@ -55898,6 +56090,17 @@ var __CRWeb = (() => {
       refresh(arg) {
         var _a;
         const reflow = recordArg(arg);
+        if (typeof reflow.reflowSourceText === "string") {
+          if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent || reflow.reflowBaseline !== playBooksSignature()) return;
+          const snapshot = readPlayBooksSnapshot();
+          const direction = snapshot && playBooksReflowSourceDirection(snapshot, reflow.reflowSourceText);
+          changeReasonInFlight = "refresh";
+          changeBaseline = committedSignature;
+          changeMetadata = null;
+          if (direction) turnPlayBooksPage(direction, "button");
+          commit("refresh", 0, true);
+          return;
+        }
         if (reflow.reflowDirection === "next" || reflow.reflowDirection === "prev") {
           if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent || reflow.reflowBaseline !== playBooksSignature()) return;
           changeReasonInFlight = "refresh";
@@ -56080,6 +56283,7 @@ var __CRWeb = (() => {
       if (direction) postManualIntent("page-key", direction);
     }, true);
     const observePageChange = () => {
+      if (finishConfirmedBookEnd()) return;
       const signature = playBooksSignature();
       if (!signature || signature === observedSignature) return;
       observedSignature = signature;
@@ -57120,7 +57324,9 @@ var __CRWeb = (() => {
     return `kcf-${stableHash322(source).toString(36)}-${source.length.toString(36)}`;
   }
   function koboSignature() {
-    const paragraphs = extractKoboParagraphs();
+    return koboParagraphSignature(extractKoboParagraphs());
+  }
+  function koboParagraphSignature(paragraphs) {
     if (paragraphs.length === 0) return "";
     const source = paragraphs.map((paragraph) => [
       paragraph.sourceParagraphIndex,
@@ -57181,19 +57387,40 @@ var __CRWeb = (() => {
     ];
   }
   function extractKoboNextPagePreview() {
-    var _a;
+    var _a, _b;
     const frames = currentKoboFrameClips();
     const current = extractKoboParagraphsFromClips(frames);
     const anchor = (_a = current[0]) == null ? void 0 : _a.element;
     if (frames.length === 0 || current.length === 0 || !anchor) return null;
     for (const vector of pageAdvanceVectors(frames[0], anchor)) {
-      const candidate = extractKoboParagraphsFromClips(
-        frames.map((frame) => shiftedClip2(frame, vector.dx, vector.dy))
+      const candidate2 = extractKoboParagraphsFromClips(
+        frames.map((frame2) => shiftedClip2(frame2, vector.dx, vector.dy))
       );
-      if (!isForwardPreview2(current, candidate)) continue;
-      const fingerprint = contentFingerprint(candidate);
-      if (fingerprint) return { paragraphs: candidate, contentFingerprint: fingerprint };
+      if (!isForwardPreview2(current, candidate2)) continue;
+      const fingerprint2 = contentFingerprint(candidate2);
+      if (fingerprint2) return { paragraphs: candidate2, contentFingerprint: fingerprint2 };
     }
+    const tail = current.at(-1);
+    const frame = frames.at(-1);
+    const nodes = paragraphNodes2(frame.doc);
+    if (frames.length !== 1 || tail.element !== nodes.at(-1) || sourceText(tail.element).slice(tail.sourceEnd).trim()) return null;
+    const accessible = allAccessibleFrames();
+    const position = accessible.findIndex((value) => value.doc === frame.doc);
+    const next = accessible[position + 1];
+    if (position < 0 || !next || next.frameIndex !== frame.frameIndex + 1 || !next.iframe.getAttribute("data-chapterurl") || next.iframe.getAttribute("data-chapterurl") === frame.iframe.getAttribute("data-chapterurl")) return null;
+    const style = ownerStyle(frame.doc.body), nextStyle = ownerStyle(next.doc.body);
+    const column = Number.parseFloat((style == null ? void 0 : style.columnWidth) || "");
+    if (!(column > 0) || !Number.isFinite(column) || !nextStyle || (style == null ? void 0 : style.columnWidth) !== nextStyle.columnWidth || (style == null ? void 0 : style.columnGap) !== nextStyle.columnGap || (style == null ? void 0 : style.writingMode) !== nextStyle.writingMode || (style == null ? void 0 : style.direction) !== "ltr" || nextStyle.direction !== "ltr" || isVerticalWritingMode2(writingModeFor2(tail.element))) return null;
+    const width = frame.clip.right - frame.clip.left;
+    if (next.iframe.clientHeight !== frame.iframe.clientHeight || next.iframe.clientWidth + 0.5 < width || ((_b = next.doc.fonts) == null ? void 0 : _b.status) === "loading") return null;
+    const candidate = extractKoboParagraphsFromClips([__spreadProps(__spreadValues(__spreadValues({}, frame), next), {
+      outerRect: next.iframe.getBoundingClientRect(),
+      clip: { left: 0, right: width, top: frame.clip.top, bottom: frame.clip.bottom }
+    })]);
+    const first2 = paragraphNodes2(next.doc).find((element) => sourceText(element).trim().length >= MIN_PARA_CHARS2);
+    if (!candidate.length || candidate[0].element !== first2 || candidate[0].sourceStart !== sourceText(first2).length - sourceText(first2).trimStart().length) return null;
+    const fingerprint = contentFingerprint(candidate);
+    if (fingerprint) return { paragraphs: candidate, contentFingerprint: fingerprint };
     return null;
   }
   function firstSentenceAfter(element, sourceParagraphIndex, start) {
@@ -57213,13 +57440,26 @@ var __CRWeb = (() => {
     sourceEnd = sourceStart + text.length;
     if (text.length < MIN_PARA_CHARS2) return null;
     const fingerprintSource = `${sourceParagraphIndex}:${sourceStart}:${sourceEnd}:${text}`;
+    const suffix = full.slice(sourceEnd);
+    const followingText = suffix.trim();
+    const followingStart = sourceEnd + suffix.length - suffix.trimStart().length;
+    const following = followingText.length > 0 && followingText.length <= 1200 ? {
+      text: followingText,
+      sourceParagraphIndex,
+      sourceUTF16Start: followingStart,
+      sourceUTF16End: followingStart + followingText.length
+    } : void 0;
     return {
       text,
       exactText: true,
       sourceParagraphIndex,
       sourceStart,
       sourceEnd,
-      contentFingerprint: `ksf-${stableHash322(fingerprintSource).toString(36)}-${text.length}`
+      // The shared native speech-preview contract expects the same eight-hex
+      // cache key as Play Books. Source/frame/range/text still authorize use;
+      // a platform-specific prefix silently rejects every fallback preload.
+      contentFingerprint: stableHash322(fingerprintSource).toString(16).padStart(8, "0"),
+      following
     };
   }
   function extractKoboNextSpeechPreview() {
@@ -57840,7 +58080,8 @@ var __CRWeb = (() => {
                 sourceUTF16Start: speech.sourceStart,
                 sourceUTF16End: speech.sourceEnd,
                 text: speech.text,
-                contentFingerprint: speech.contentFingerprint
+                contentFingerprint: speech.contentFingerprint,
+                following: speech.following
               });
               postForFrame("googleBooksPreviewDiagnostic", {
                 event: "source-preview",
@@ -57866,7 +58107,8 @@ var __CRWeb = (() => {
         settleTimer = setTimeout(() => {
           var _a2;
           settleTimer = null;
-          const current = koboSignature();
+          const paragraphs = extractKoboParagraphs();
+          const current = koboParagraphSignature(paragraphs);
           const currentGeometry = koboGeometryKey();
           if (current !== settleCandidate || currentGeometry !== settleGeometryCandidate) {
             if (current) observedSignature = current;
@@ -57886,7 +58128,6 @@ var __CRWeb = (() => {
             return;
           }
           const stableAt = performance.now();
-          const paragraphs = extractKoboParagraphs();
           const validationFinishedAt = performance.now();
           if (paragraphs.length === 0 && attempt < 8) {
             beginSettlement(reason, attempt + 1, forceExtract);
@@ -57955,6 +58196,9 @@ var __CRWeb = (() => {
             committedSignature = finalSignature;
             observedSignature = finalSignature;
           }
+          lastPreviewToken = "";
+          lastSpeechPreviewToken = "";
+          lastGeometryPreviewMissToken = "";
           if (!forceExtract) {
             postForFrame("googleBooksPageChanging", __spreadValues({
               reason,
@@ -57964,7 +58208,7 @@ var __CRWeb = (() => {
             }, payloadFor(committedMetadata)));
           }
           const extractStartedAt = performance.now();
-          requestExtract(reason, payloadFor(committedMetadata));
+          requestExtract(reason, payloadFor(committedMetadata), paragraphs);
           if (reason === "auto" && automaticTiming && automaticTiming.turnID === (committedMetadata == null ? void 0 : committedMetadata.turnID)) {
             const timing = automaticTiming;
             postForFrame("log", { message: `turn timing id=${timing.turnID} firstChangeMs=${(((_a2 = timing.firstChange) != null ? _a2 : stableAt) - timing.started).toFixed(1)} stableMs=${(stableAt - timing.started).toFixed(1)} validationMs=${(validationFinishedAt - stableAt).toFixed(1)} extractMs=${(performance.now() - extractStartedAt).toFixed(1)} totalMs=${(performance.now() - timing.started).toFixed(1)}` });
@@ -58269,11 +58513,12 @@ var __CRWeb = (() => {
     }
     const api = {
       restoreLocation(arg) {
+        var _a2;
         const value = recordArg2(arg);
-        const current = koboReadingLocation();
+        const bookUUID = (_a2 = location.pathname.split("/").filter(Boolean)[0]) == null ? void 0 : _a2.toLowerCase();
         const transport = koboSemanticTransport;
         const percentage = value.percentage;
-        if (!current || value.bookUUID !== current.bookUUID || typeof percentage !== "number" || !Number.isFinite(percentage) || percentage < 0 || percentage > 1 || (transport == null ? void 0 : transport.kind) !== "ur-engine" || pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return false;
+        if (!bookUUID || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(bookUUID) || value.bookUUID !== bookUUID || typeof percentage !== "number" || !Number.isFinite(percentage) || percentage < 0 || percentage > 1 || (transport == null ? void 0 : transport.kind) !== "ur-engine" || pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return false;
         const native = currentKoboURAPI(transport);
         if (typeof (native == null ? void 0 : native.goToPageByBookPercentage) !== "function") return false;
         try {
@@ -58287,6 +58532,11 @@ var __CRWeb = (() => {
           beginSettlement("refresh", 0, true);
           return false;
         }
+      },
+      restoreReady() {
+        var _a2;
+        const transport = koboSemanticTransport;
+        return (transport == null ? void 0 : transport.kind) === "ur-engine" && typeof ((_a2 = currentKoboURAPI(transport)) == null ? void 0 : _a2.goToPageByBookPercentage) === "function" && !pendingAuto && !pendingManualIntent && !changeReasonInFlight && !layoutRefreshActive;
       },
       navigationReady() {
         if (pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return false;
@@ -60309,8 +60559,9 @@ var __CRWeb = (() => {
     const frameSessionID = koboFrameSessionID();
     let pendingReason = "initial";
     let pendingPageMetadata = {};
+    let pendingParagraphs;
     initBridge({
-      extract: () => extractKoboParagraphs(),
+      extract: () => pendingParagraphs != null ? pendingParagraphs : extractKoboParagraphs(),
       acceptHighlightRect: acceptKoboHighlightRect,
       clipHighlightRect: clipKoboHighlightRect,
       autoExtract: false,
@@ -60318,7 +60569,7 @@ var __CRWeb = (() => {
         source: "kobo",
         koboLocation: koboReadingLocation(),
         reason: pendingReason,
-        signature: koboSignature(),
+        signature: pendingParagraphs ? koboParagraphSignature(pendingParagraphs) : koboSignature(),
         frameSessionID
       }, pendingPageMetadata),
       onInstalled: ({ extract: doExtract }) => {
@@ -60335,11 +60586,16 @@ var __CRWeb = (() => {
           } catch (e) {
           }
         };
-        installKoboReader(post, (reason, metadata = {}) => {
+        installKoboReader(post, (reason, metadata = {}, paragraphs) => {
           pendingReason = reason;
           pendingPageMetadata = metadata;
-          doExtract(reason);
-          pendingPageMetadata = {};
+          pendingParagraphs = paragraphs;
+          try {
+            doExtract(reason);
+          } finally {
+            pendingParagraphs = void 0;
+            pendingPageMetadata = {};
+          }
         }, frameSessionID);
       }
     });

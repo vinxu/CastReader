@@ -809,7 +809,21 @@ class AudioPlayerService: NSObject, ObservableObject {
         if playerItem != nil {
             playerItemSession = token
         }
+        // A short queued successor can finish while its new page is still
+        // building. Its terminal state belongs to the transferred queue too;
+        // the new owner must receive it after installing its callback.
+        if currentItemDrained, currentSegmentIndex == segmentsQueue.count - 1 {
+            queueCompletionDelivered = false
+        }
         return token
+    }
+
+    func deliverTransferredQueueCompletion(session token: AudioPlaybackSessionToken) {
+        guard playbackOwnership.permitsQueueMutation(token),
+              currentSegmentIndex == segmentsQueue.count - 1 else { return }
+        // The normal delivery gate preserves Pause, interruption and the
+        // one-completion-per-queue contract. Explicit Resume can deliver later.
+        publishDrainedQueueCompletion()
     }
 
     func setOwnershipRevocationHandler(for token: AudioPlaybackSessionToken, _ handler: @escaping () -> Void) {

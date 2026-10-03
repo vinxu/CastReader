@@ -19,49 +19,42 @@ import WebKit
 @MainActor
 final class GoogleBooksWebBridgeTests: XCTestCase {
 
-    func testKoboLaggingProviderBookmarkFindsSavedPageBeforeLoadingVM() async throws {
-        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false)
+    func testKoboLegacyCheckpointKeepsCurrentPageWithoutScanning() async throws {
+        try await verifyKoboOpeningCheckpoint(nativeLocation: false)
     }
 
-    func testKoboLeadingProviderBookmarkSearchesBackWithoutLosingCheckpoint() async throws {
-        try await verifyKoboOpeningCheckpoint(bookmarkLeads: true)
-    }
-
-    func testKoboEndBookmarkCanRecoverAnEarlierListeningPage() async throws {
-        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, nextUnavailable: true)
-    }
-
-    func testKoboOpeningCheckpointWaitsForNavigationWithoutSpendingSearchAttempts() async throws {
-        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, navigationDelayed: true)
-    }
-
-    func testKoboSavedPageArrivingBeforeNavigationCancelsPendingSearch() async throws {
-        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, navigationDelayed: true,
-                                             savedPageBeforeNavigation: true)
-    }
-
-    func testKoboRefreshDuringAcceptedTurnDoesNotDispatchAnotherSearch() async throws {
-        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, refreshDuringTurn: true)
-    }
-
-    func testKoboDistantNativeLocationStillRequiresExactSavedSource() async throws {
-        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, nativeLocation: true)
-    }
-
-    func testKoboRejectedNativeLocationFallsBackToVerifiedSearch() async throws {
-        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, nativeLocation: true,
-                                             nativeLocationAccepted: false)
+    func testKoboRejectedNativeLocationKeepsCurrentPageWithoutScanning() async throws {
+        try await verifyKoboOpeningCheckpoint(nativeLocationAccepted: false)
     }
 
     func testKoboNativeLocationFromAnotherBookIsNeverUsed() async throws {
-        try await verifyKoboOpeningCheckpoint(bookmarkLeads: false, nativeLocation: true,
-                                             nativeLocationWrongBook: true)
+        try await verifyKoboOpeningCheckpoint(nativeLocationWrongBook: true)
     }
 
-    private func verifyKoboOpeningCheckpoint(bookmarkLeads: Bool, nextUnavailable: Bool = false,
-        navigationDelayed: Bool = false, savedPageBeforeNavigation: Bool = false,
-        refreshDuringTurn: Bool = false, nativeLocation: Bool = false,
-        nativeLocationAccepted: Bool = true, nativeLocationWrongBook: Bool = false) async throws {
+    func testKoboDistantNativeLocationRestoresOnlyExactSavedSource() async throws {
+        try await verifyKoboOpeningCheckpoint()
+    }
+
+    func testKoboMismatchingNativeLocationNeverStartsPageSearch() async throws {
+        try await verifyKoboOpeningCheckpoint(mismatchedDestination: true)
+    }
+
+    func testKoboOpeningCheckpointWaitsForDirectNavigation() async throws {
+        try await verifyKoboOpeningCheckpoint(navigationDelayed: true)
+    }
+
+    func testKoboSavedPageArrivingBeforeNavigationCancelsPendingRestore() async throws {
+        try await verifyKoboOpeningCheckpoint(navigationDelayed: true, savedPageBeforeNavigation: true)
+    }
+
+    func testKoboRefreshDuringDirectRestoreDoesNotDispatchAnotherJump() async throws {
+        try await verifyKoboOpeningCheckpoint(refreshDuringTurn: true)
+    }
+
+    private func verifyKoboOpeningCheckpoint(nativeLocation: Bool = true,
+        nativeLocationAccepted: Bool = true, nativeLocationWrongBook: Bool = false,
+        mismatchedDestination: Bool = false, navigationDelayed: Bool = false,
+        savedPageBeforeNavigation: Bool = false, refreshDuringTurn: Bool = false) async throws {
         let url = "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"
         let target = ReadingParagraph(id: 0, text: "This is the exact saved listening paragraph.")
         var document = ReadingDocument(id: "kobo-lagging-fixture", title: "Kobo resume fixture",
@@ -113,9 +106,9 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         window.locationJumps = [];
         window.navigationIsReady = \(navigationDelayed ? "false" : "true");
         window.CastReaderKobo = {
-          navigationReady: () => window.navigationIsReady,
+          restoreReady: () => window.navigationIsReady,
           restoreLocation: (value) => { window.locationJumps.push(value); return \(nativeLocationAccepted ? "true" : "false"); },
-          nextPage: () => { window.turns++; return \(nextUnavailable ? "false" : "true"); },
+          nextPage: () => { window.turns++; return true; },
           prevPage: () => { window.previousTurns++; return true; }
         };
         window.CR = {};
@@ -128,107 +121,63 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         window.emitPage('An earlier provider page.', 'earlier-page');
         """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         web.loadHTMLString("<html><body>Reader fixture</body></html>", baseURL: URL(string: url))
+        for _ in 0..<80 {
+            if (try? await web.evaluateJavaScript("typeof window.emitPage === 'function'")) as? Bool == true { break }
+            try await Task.sleep(nanoseconds: 25_000_000)
+        }
         if navigationDelayed {
-            for _ in 0..<80 {
-                if (try? await web.evaluateJavaScript("typeof window.emitPage === 'function'")) as? Bool == true { break }
-                try await Task.sleep(nanoseconds: 25_000_000)
-            }
-            try await Task.sleep(nanoseconds: 400_000_000)
-            let turns = try await web.evaluateJavaScript("window.turns + window.previousTurns") as? Int
-            XCTAssertEqual(turns, 0, "An unavailable provider transport must not consume checkpoint search attempts")
+            try await Task.sleep(nanoseconds: 250_000_000)
+            let jumps = try await web.evaluateJavaScript("window.locationJumps.length") as? Int
+            XCTAssertEqual(jumps, 0)
             XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
-            XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
             if savedPageBeforeNavigation {
                 _ = try await web.callAsyncJavaScript("window.emitPage(text, 'saved-page')",
                     arguments: ["text": target.text], in: nil, contentWorld: .page)
                 try await Task.sleep(nanoseconds: 150_000_000)
             }
             _ = try await web.evaluateJavaScript("window.navigationIsReady = true")
-            if savedPageBeforeNavigation {
-                try await Task.sleep(nanoseconds: 300_000_000)
-                let turns = try await web.evaluateJavaScript("window.turns + window.previousTurns") as? Int
-                XCTAssertEqual(turns, 0, "Late navigation readiness must not revive a completed checkpoint search")
-                XCTAssertEqual(read.stagedLiveWebParagraphTexts, [target.text])
-                XCTAssertNil(read.resumeNotice)
-                XCTAssertFalse(read.isPlaying)
-                XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
-                return
-            }
         }
-        let expectsLocationJump = nativeLocation && !nativeLocationWrongBook && nativeLocationAccepted
-        let booted = expectation(description: "first intermediate page held while requesting saved page")
-        Task { @MainActor in
+        let validLocation = nativeLocation && !nativeLocationWrongBook && !savedPageBeforeNavigation
+        if validLocation {
             for _ in 0..<80 {
-                let expression = expectsLocationJump ? "window.locationJumps.length" : "window.turns"
-                if (try? await web.evaluateJavaScript(expression)) as? Int == 1 { booted.fulfill(); return }
-                try? await Task.sleep(nanoseconds: 25_000_000)
-            }
-        }
-        await fulfillment(of: [booted], timeout: 3)
-        XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
-        XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
-        if nativeLocation {
-            let jumps = try await web.evaluateJavaScript("window.locationJumps.length") as? Int
-            XCTAssertEqual(jumps, nativeLocationWrongBook ? 0 : 1)
-        }
-        if expectsLocationJump {
-            let value = try await web.evaluateJavaScript("window.locationJumps[0].percentage") as? Double
-            XCTAssertEqual(value, 0.78)
-            let turns = try await web.evaluateJavaScript("window.turns + window.previousTurns") as? Int
-            XCTAssertEqual(turns, 0, "Distant native positioning must precede the bounded nearby search")
-            // A valid native jump can land on an adjacent page after reflow.
-            // It is not evidence that the saved paragraph is now visible.
-            _ = try await web.evaluateJavaScript("window.emitPage('Nearby but not the saved paragraph.', 'hint-target-mismatch')")
-            for _ in 0..<80 {
-                if (try? await web.evaluateJavaScript("window.turns")) as? Int == 1 { break }
+                if (try? await web.evaluateJavaScript("window.locationJumps.length")) as? Int == 1 { break }
                 try await Task.sleep(nanoseconds: 25_000_000)
             }
-            XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
-            XCTAssertFalse(read.isPlaying)
-            XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
-            let retryJumps = try await web.evaluateJavaScript("window.locationJumps.length") as? Int
-            XCTAssertEqual(retryJumps, 1, "A hint must not form a jump loop when the source does not match")
         }
-        if refreshDuringTurn {
-            _ = try await web.evaluateJavaScript("window.navigationIsReady = false; window.emitPage('Transient layout while native turn settles.', 'refresh-during-turn')")
-            try await Task.sleep(nanoseconds: 400_000_000)
-            let turns = try await web.evaluateJavaScript("window.turns + window.previousTurns") as? Int
-            XCTAssertEqual(turns, 1, "A refresh event is not permission to overtake an accepted native turn")
-            XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
-            XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
-        }
-        if nextUnavailable {
-            for _ in 0..<80 {
-                if (try? await web.evaluateJavaScript("window.previousTurns")) as? Int == 1 { break }
-                try await Task.sleep(nanoseconds: 25_000_000)
+        if validLocation && nativeLocationAccepted {
+            XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty,
+                          "Accepting a native jump does not verify the saved words")
+            if refreshDuringTurn {
+                _ = try await web.evaluateJavaScript("window.navigationIsReady = false; window.emitPage('Transient native layout.', 'refresh-during-turn')")
+                try await Task.sleep(nanoseconds: 250_000_000)
+                XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+                let jumps = try await web.evaluateJavaScript("window.locationJumps.length") as? Int
+                XCTAssertEqual(jumps, 1)
+                _ = try await web.evaluateJavaScript("window.navigationIsReady = true")
             }
-            let turns = try await web.evaluateJavaScript("window.previousTurns") as? Int
-            XCTAssertEqual(turns, 1)
+            let destination = mismatchedDestination ? "Nearby but not the saved paragraph." : target.text
+            _ = try await web.callAsyncJavaScript("window.emitPage(text, 'destination-page')",
+                arguments: ["text": destination], in: nil, contentWorld: .page)
         }
-        if bookmarkLeads {
-            _ = try await web.evaluateJavaScript("window.emitPage('A later provider page.', 'later-page')")
-            for _ in 0..<80 {
-                if (try? await web.evaluateJavaScript("window.previousTurns")) as? Int == 1 { break }
-                try await Task.sleep(nanoseconds: 25_000_000)
-            }
-            _ = try await web.evaluateJavaScript("window.emitPage('An earlier provider page.', 'earlier-page')")
-            for _ in 0..<80 {
-                if (try? await web.evaluateJavaScript("window.previousTurns")) as? Int == 2 { break }
-                try await Task.sleep(nanoseconds: 25_000_000)
-            }
-            let previous = try await web.evaluateJavaScript("window.previousTurns") as? Int
-            XCTAssertEqual(previous, 2, "Revisiting the initial signature must not stall the backwards search")
-            XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
-            XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
-        }
-        _ = try await web.callAsyncJavaScript("window.emitPage(text, 'saved-page')", arguments: ["text": target.text], in: nil, contentWorld: .page)
         for _ in 0..<80 where read.stagedLiveWebParagraphTexts.isEmpty {
             try await Task.sleep(nanoseconds: 25_000_000)
         }
-        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [target.text])
-        XCTAssertEqual(read.currentParagraphIndex, 0)
-        XCTAssertNil(read.resumeNotice)
-        XCTAssertFalse(read.isPlaying)
+        let matched = savedPageBeforeNavigation || (validLocation && nativeLocationAccepted && !mismatchedDestination)
+        let expected = matched ? target.text : validLocation && nativeLocationAccepted
+            ? "Nearby but not the saved paragraph." : "An earlier provider page."
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [expected])
+        if matched { XCTAssertNil(read.resumeNotice) }
+        else { XCTAssertNotNil(read.resumeNotice, "Retain the historical cursor without claiming it matched") }
+        XCTAssertFalse(read.isPlaying, "Position recovery must never start speech by itself")
+        XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
+        // Repeated settled refreshes must not restart positioning or scan pages.
+        _ = try await web.callAsyncJavaScript("window.emitPage(text, 'destination-refresh')",
+            arguments: ["text": expected], in: nil, contentWorld: .page)
+        try await Task.sleep(nanoseconds: 250_000_000)
+        let jumps = try await web.evaluateJavaScript("window.locationJumps.length") as? Int
+        let turns = try await web.evaluateJavaScript("window.turns + window.previousTurns") as? Int
+        XCTAssertEqual(jumps, validLocation ? 1 : 0)
+        XCTAssertEqual(turns, 0, "Opening recovery must never scan forward/backward through visible pages")
         XCTAssertEqual(history.readingCheckpoint(for: document.id), storedCheckpoint)
     }
 
@@ -2588,6 +2537,30 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
             true,
             "跨页句子的绝对 DOM range 必须覆盖 init offset，不能再重复叠加当前页起点"
         )
+    }
+
+    func testCircleKeepsDisjointDOMFragmentsAndRelayout() async throws {
+        _ = try await loadReaderFrame()
+        let result = try await webView.evaluateJavaScript("""
+        (()=>{
+          const el=document.querySelector('[data-cr-para="0"]');
+          el.style.cssText='position:relative;width:1100px;height:400px;margin:0;transform:none';
+          el.innerHTML='<span style="position:absolute;left:40px;top:240px">Left column words.</span><span style="position:absolute;left:650px;top:40px">Right column words.</span>';
+          CR.init({segments:[{paragraphIndex:0,text:'',domCharOffset:0}]});
+          CR.showMark({id:'column-circle',paragraphIndex:0,charStart:0,charEnd:el.textContent.length,action:'circle',seed:42});
+          const paths=()=>Array.from(document.querySelectorAll('[data-cr-marks] path'));
+          const before=paths().map(p=>p.getAttribute('d'));
+          const boxes=paths().map(p=>{const b=p.getBBox();return{x:b.x,y:b.y,width:b.width,height:b.height}});
+          CR.relayoutMarks();
+          return {boxes,stable:JSON.stringify(before)===JSON.stringify(paths().map(p=>p.getAttribute('d')))};
+        })()
+        """) as? [String: Any]
+        let data = try XCTUnwrap(result)
+        let boxes = try XCTUnwrap(data["boxes"] as? [[String: Double]])
+        XCTAssertGreaterThanOrEqual(boxes.count, 2)
+        XCTAssertTrue(boxes.allSatisfy { ($0["width"] ?? 9999) < 400 && ($0["height"] ?? 9999) < 100 },
+                      "No circle may join the disjoint column fragments")
+        XCTAssertEqual(data["stable"] as? Bool, true)
     }
 
     func testNonzeroOffsetMarkAndInitOverrideStayOnTheVisiblePage() async throws {

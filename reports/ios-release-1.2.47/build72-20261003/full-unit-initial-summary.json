@@ -1,0 +1,112 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64e",
+        "deviceId" : "00008130-001C64800C60001C",
+        "deviceName" : "iPhone (66)",
+        "modelName" : "iPhone 15 Pro Max",
+        "osBuildNumber" : "23H30",
+        "osVersion" : "26.7.1",
+        "platform" : "iOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 8,
+      "passedTests" : 2087,
+      "skippedTests" : 20,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 8,
+  "finishTime" : 1790995446.525,
+  "passedTests" : 2087,
+  "result" : "Failed",
+  "skippedTests" : 20,
+  "startTime" : 1790994706.903,
+  "statistics" : [
+    {
+      "subtitle" : "1 test run",
+      "title" : "1 test collected performance metrics"
+    }
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertEqual failed: (\"Optional(\"waiting\")\") is not equal to (\"Optional(\"unavailable\")\")",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 1820,
+      "testIdentifierString" : "WeReadOpeningPlaybackTests/testCanvasCoverWithHiddenSourceAndNoPreviousIsRecognized()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/WeReadOpeningPlaybackTests/testCanvasCoverWithHiddenSourceAndNoPreviousIsRecognized",
+      "testName" : "testCanvasCoverWithHiddenSourceAndNoPreviousIsRecognized()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed - Static AppLocalized literals missing from Localizable.xcstrings:\n正在同步当前书页，请稍后重试。 [/privateCastReader/Services/WebReaderBridge.swift]\n解读失败，请重试 [/privateCastReader/ViewModels/ExplainViewModel.swift]",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 936,
+      "testIdentifierString" : "LocalizationCatalogTests/testEveryStaticAppLocalizedLiteralExistsInCatalog()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/LocalizationCatalogTests/testEveryStaticAppLocalizedLiteralExistsInCatalog",
+      "testName" : "testEveryStaticAppLocalizedLiteralExistsInCatalog()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 1562,
+      "testIdentifierString" : "SpeechPipelineTests/testPausedExplanationVoiceSwitchRefillsSuccessorOnResume()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/SpeechPipelineTests/testPausedExplanationVoiceSwitchRefillsSuccessorOnResume",
+      "testName" : "testPausedExplanationVoiceSwitchRefillsSuccessorOnResume()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed - An old success cannot unlock a newer exhausted decision",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 1749,
+      "testIdentifierString" : "VoiceCloneTests/testQuotaResponsesIgnoreOlderReadsAndAccountInvalidation()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/VoiceCloneTests/testQuotaResponsesIgnoreOlderReadsAndAccountInvalidation",
+      "testName" : "testQuotaResponsesIgnoreOlderReadsAndAccountInvalidation()"
+    },
+    {
+      "failureText" : "XCTAssertEqual failed: (\"[\"Ordered paragraph 0.\"]\") is not equal to (\"[\"Ordered paragraph 0.\", \"Ordered paragraph 1.\"]\") - Distant paragraphs must not compete while the next sentence is pending",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 666,
+      "testIdentifierString" : "KindlePrefetchHorizonTests/testSlowNextSentenceIsRequestedBeforeAnyFartherParagraph()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/KindlePrefetchHorizonTests/testSlowNextSentenceIsRequestedBeforeAnyFartherParagraph",
+      "testName" : "testSlowNextSentenceIsRequestedBeforeAnyFartherParagraph()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed - Unknown must not erase confirmed exhaustion either",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 1777,
+      "testIdentifierString" : "VoiceCloneTests/testUnavailableQuotaStatusNeverInventsOrClearsExhaustion()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/VoiceCloneTests/testUnavailableQuotaStatusNeverInventsOrClearsExhaustion",
+      "testName" : "testUnavailableQuotaStatusNeverInventsOrClearsExhaustion()"
+    },
+    {
+      "failureText" : "XCTAssertEqual failed: (\"3\") is not equal to (\"4\")",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 1798,
+      "testIdentifierString" : "VoiceCloneTests/testVoiceSelectionReusesOnlyFreshEligibleAccountCapability()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/VoiceCloneTests/testVoiceSelectionReusesOnlyFreshEligibleAccountCapability",
+      "testName" : "testVoiceSelectionReusesOnlyFreshEligibleAccountCapability()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 968,
+      "testIdentifierString" : "LocalizationCatalogTests/testWeReadExplainPrefetchRequiresExactVisiblePageAndCurrentSettings()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/LocalizationCatalogTests/testWeReadExplainPrefetchRequiresExactVisiblePageAndCurrentSettings",
+      "testName" : "testWeReadExplainPrefetchRequiresExactVisiblePageAndCurrentSettings()"
+    }
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "36% of duration",
+      "text" : "38 longest test runs with outlier durations exceeding 3.83s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 2115
+}

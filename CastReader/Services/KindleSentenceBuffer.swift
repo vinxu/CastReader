@@ -13,6 +13,9 @@ struct KindleSentenceBuffer {
         let id: Int
         let text: String
         var isHeading = false
+        /// A confirmed unread cursor after reflow, relative to the full source.
+        /// Keeping the prefix in `text` preserves the original OCR coordinates.
+        var startUTF16 = 0
     }
     struct Page {
         let key: String
@@ -35,7 +38,7 @@ struct KindleSentenceBuffer {
         let sources: [SourceSpan]
     }
     enum Failure: Error, Equatable {
-        case staleScope, unconfirmedAdjacency, alreadyFinished
+        case staleScope, unconfirmedAdjacency, alreadyFinished, invalidSourceCursor
     }
 
     let scope: Scope
@@ -60,10 +63,23 @@ struct KindleSentenceBuffer {
                   edge.nextPageKey != edge.previousPageKey else { throw Failure.unconfirmedAdjacency }
         } else if edge != nil { throw Failure.unconfirmedAdjacency }
 
-        let paragraphs = page.paragraphs.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard page.paragraphs.allSatisfy({ paragraph in
+            let units = Array(paragraph.text.utf16)
+            guard paragraph.startUTF16 >= 0, paragraph.startUTF16 <= units.count else { return false }
+            // Foundation can construct a zero-length Range inside a surrogate
+            // pair; that is not a source cursor from which text can be sliced.
+            return paragraph.startUTF16 == units.count || !(0xDC00...0xDFFF).contains(units[paragraph.startUTF16])
+        }) else { throw Failure.invalidSourceCursor }
+        let paragraphs = page.paragraphs.filter {
+            !(($0.text as NSString).substring(from: $0.startUTF16))
+                .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
         var result: [Unit] = []
         for (paragraphOffset, paragraph) in paragraphs.enumerated() {
-            let ranges = KindleSpeechTextPlan.sentenceRanges(in: paragraph.text)
+            let suffix = (paragraph.text as NSString).substring(from: paragraph.startUTF16)
+            let ranges = KindleSpeechTextPlan.sentenceRanges(in: suffix).map {
+                NSRange(location: $0.location + paragraph.startUTF16, length: $0.length)
+            }
             if paragraph.isHeading, let tail = pending {
                 result.append(tail)
                 pending = nil

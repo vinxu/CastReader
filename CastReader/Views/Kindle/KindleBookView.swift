@@ -2985,6 +2985,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                    let document = mode == .read ? readVM?.document : explainVM?.document {
                     iPadViewportVisualHold = KindleIPadViewportHoldState(image: image, document: document, wordBoxes: viewportHoldBoxes())
                 }
+                // Retain accepted audio while revoking the old layout's page
+                // producer. Its eventual reply must not append stale geometry.
+                isRecoveringIPadViewport = true
+                if let stream = sentenceStream {
+                    let token = stream.inputToken
+                    cancelKindleSentenceStream(reason: "ipad-viewport")
+                    if let token { _ = readVM?.sealKindleSpeechForReflow(token: token) }
+                }
                 // Captures and prepared continuations refer to the old pagination.
                 invalidatePagePreloads(clearPrepared: true, reason: "ipad-viewport")
             }
@@ -10192,9 +10200,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// Kindle Read owns a continuous sentence window. Keep the old path only
     /// as a development comparison switch, never for other readers or Explain.
     private var usesKindleSentenceStream: Bool {
-        // iPad's live multiwindow reflow keeps its existing playback owner;
-        // this iteration is verified against the current iPhone reader.
-        guard !AdaptiveLayout.isPad else { return false }
         #if DEBUG
         return !ProcessInfo.processInfo.arguments.contains("-CastReaderLegacyKindlePaging")
         #else
@@ -10206,15 +10211,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         sentenceStream != nil && continuousReadVisualHoldImage != nil
     }
 
-    private func buildKindleSentenceStream(page: CapturedKindlePage, base: ReadingDocument) async throws -> ReadingDocument {
+    private func buildKindleSentenceStream(page: CapturedKindlePage, base: ReadingDocument,
+                                          startingAt sourceCursor: KindleSpeechProjection.Start? = nil,
+                                          restoresReadingPosition: Bool = true) async throws -> ReadingDocument {
         try await validateNativePageKey(page.key, displayed: true)
         cancelKindleSentenceStream(reason: "new-reading-window")
-        let sourceStart = liveStartIndexKind == .sourceParagraph ? liveStartParagraphIndex : nil
+        let sourceStart = sourceCursor == nil && liveStartIndexKind == .sourceParagraph ? liveStartParagraphIndex : nil
         let session = KindleSentenceStreamSession(scope: .init(bookID: book.id,
             layoutRevision: readingSettingsRevision, navigationGeneration: preloadEpoch), presentedKey: page.key)
         sentenceStream = session
         let initial = KindleCachedPage(afterKey: "", page: page, document: base, startParagraphIndex: sourceStart)
-        try acceptKindleSentencePage(initial, session: session)
+        try acceptKindleSentencePage(initial, session: session, startingAt: sourceCursor)
         // A short page can consist entirely of one unfinished sentence. Resolve
         // its confirmed neighbour before starting instead of speaking the tail.
         while session.units.isEmpty, session.pages.count < 3, !session.ended {
@@ -10229,7 +10236,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             session.units.first { $0.anchors.contains { $0.pageKey == page.key && $0.paragraphID >= source } }?.paragraph.id
         } ?? 0
         liveStartIndexKind = .playbackChunk
-        resetViewModels(document: document)
+        resetViewModels(document: document, restoresReadingPosition: restoresReadingPosition)
         rebuildKindleSentenceRoutes(session)
         session.inputToken = readVM?.configureKindleContinuousInput { [weak self, weak session] token, count in
             guard let self, let session, self.sentenceStream === session else { return }
@@ -10248,17 +10255,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return document
     }
 
-    private func acceptKindleSentencePage(_ prepared: KindleCachedPage, session: KindleSentenceStreamSession) throws {
+    private func acceptKindleSentencePage(_ prepared: KindleCachedPage, session: KindleSentenceStreamSession,
+                                         startingAt sourceCursor: KindleSpeechProjection.Start? = nil) throws {
         let speech = KindleFootnoteSpeech.prepare(document: prepared.document, skipReferences: skipsFootnoteReferences)
         let paragraphs = speech.paragraphs.map(\.spokenParagraph).filter(Self.isReadableKindleParagraph)
         let key = prepared.page.key
         var buffer = session.buffer
         let previous = buffer.currentPageKey
-        let units = try buffer.accept(.init(key: key, scope: buffer.scope, paragraphs: paragraphs.map {
-            let heading: Bool
-            if case .heading = $0.type { heading = true } else { heading = false }
-            return .init(id: $0.id, text: $0.text, isHeading: heading)
-        }), after: previous.map { .init(previousPageKey: $0, nextPageKey: key, scope: buffer.scope) })
+        let units = try buffer.accept(.init(key: key, scope: buffer.scope,
+            paragraphs: KindleSpeechProjection.sentenceParagraphs(speech, startingAt: sourceCursor)),
+            after: previous.map { .init(previousPageKey: $0, nextPageKey: key, scope: buffer.scope) })
         var projections = session.projections
         projections[key] = .init(key: key, paragraphs: paragraphs,
             speechProjections: Dictionary(uniqueKeysWithValues: speech.paragraphs.map { ($0.sourceParagraphID, $0) }))
@@ -10518,7 +10524,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         session.projections = session.projections.filter { keys.contains($0.key) }
     }
 
-    private func buildTextQueueForCurrentPage(baseDocument: ReadingDocument, includeNextPageFully: Bool = false) async throws -> ReadingDocument {
+    private func buildTextQueueForCurrentPage(baseDocument: ReadingDocument, includeNextPageFully: Bool = false,
+                                             restoresReadingPosition: Bool = true) async throws -> ReadingDocument {
         try requireReaderOperation(.ttsPreparation, reason: "build-read-window")
         let settingsRevision = readingSettingsRevision
         let epoch = preloadEpoch
@@ -10529,7 +10536,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
 
         if usesKindleSentenceStream {
-            return try await buildKindleSentenceStream(page: currentPage, base: baseDocument)
+            return try await buildKindleSentenceStream(page: currentPage, base: baseDocument,
+                                                      restoresReadingPosition: restoresReadingPosition)
         }
 
         let currentKey = (livePageKey ?? currentPage.key).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -10547,7 +10555,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         liveDocument = window.document
         liveStartParagraphIndex = window.startParagraphIndex
         liveStartIndexKind = .playbackChunk
-        resetViewModels(document: window.document)
+        resetViewModels(document: window.document, restoresReadingPosition: restoresReadingPosition)
         let previousKey = livePageKey
         let actualKey = try await installLiveOverlay(page: currentPage, document: window.currentOverlayDocument)
         guard !Task.isCancelled, settingsRevision == readingSettingsRevision, epoch == preloadEpoch,
@@ -11873,7 +11881,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
               handoff.serial == serial,
               let staged = continuousReadStagedPage else { return }
         let actualKey = continuousReadStagedLiveKey?.nilIfEmpty ?? staged.page.key
-        let completedBeforeCommit = continuousReadAudioCompletedBeforeCommit
         let inheritedAppReviewSession = continuousReadAppReviewSession
         let retainedAnalyticsOwner = continuousReadAnalyticsOwner
         let prefetchedFingerprint = readSpeechFingerprint(handoff.target.document)
@@ -11933,7 +11940,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         do {
             let previousOwner = readVM
             let previousOwnerDocumentID = previousOwner?.document.id
-            let queuedDocument = try await buildTextQueueForCurrentPage(baseDocument: staged.document)
+            let queuedDocument = try await buildTextQueueForCurrentPage(baseDocument: staged.document,
+                                                                       restoresReadingPosition: false)
             let start = liveStartParagraphIndex
                 ?? queuedDocument.paragraphs.first(where: { $0.type.isReadable })?.id
                 ?? handoff.paragraphIndex
@@ -11943,7 +11951,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             // future queue refactor cannot silently let page-local paragraph IDs
             // make the previous page owner look compatible.
             if readVM == nil || readVM === previousOwner || readVM?.document.id != queuedDocument.id {
-                resetViewModels(document: queuedDocument)
+                resetViewModels(document: queuedDocument, restoresReadingPosition: false)
             }
             guard let vm = readVM else {
                 throw KindleBookError.captureFailed("continuous-target-owner-unavailable")
@@ -12022,9 +12030,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 "KINDLE read continuous committed serial=\(serial) old=\(Self.keyLog(handoff.oldKey)) " +
                 "new=\(Self.keyLog(actualKey)) p=\(start) segs=\(handoff.segments.count)"
             )
-            if completedBeforeCommit {
-                vm.continueAfterAdoptedPlaybackCompleted()
-            }
+            // adoptContinuousPlayback checks the player's terminal state at
+            // ownership transfer, including an end delivered during the await
+            // in buildTextQueueForCurrentPage. An earlier Bool snapshot races
+            // with that work and can strand the new page at its first item.
         } catch {
             statusText = AppLocalized("下一页播放衔接失败，请点击播放继续。")
             clearOwnedReadQueue()
@@ -12250,14 +12259,27 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             refocusWordRoutes.removeAll()
             refocusMarkBoxes = nil
             if let next {
-                let queued = try await buildTextQueueForCurrentPage(baseDocument: document)
-                guard readerControlsNavigationGeneration == navigation, mode == .read else { return }
-                let components = next.key.split(separator: "#")
-                guard components.count == 2, let start = Int(components[0]), let word = Int(components[1]),
-                      textQueue?.wordRoutes[next.key]?.sourceParagraphID == next.value.sourceParagraphID,
-                      textQueue?.wordRoutes[next.key]?.sourceWordIndex == next.value.sourceWordIndex else {
-                    throw KindleBookError.captureFailed("viewport-continuation-route-unavailable")
+                let queued: ReadingDocument
+                let start: Int
+                let word: Int
+                if usesKindleSentenceStream {
+                    queued = try await buildKindleSentenceStream(page: page, base: document,
+                        startingAt: .init(paragraphID: next.value.sourceParagraphID, wordIndex: next.value.sourceWordIndex),
+                        restoresReadingPosition: false)
+                    start = liveStartParagraphIndex ?? 0
+                    word = 0
+                } else {
+                    queued = try await buildTextQueueForCurrentPage(baseDocument: document, restoresReadingPosition: false)
+                    let components = next.key.split(separator: "#")
+                    guard components.count == 2, let paragraph = Int(components[0]), let sourceWord = Int(components[1]),
+                          textQueue?.wordRoutes[next.key]?.sourceParagraphID == next.value.sourceParagraphID,
+                          textQueue?.wordRoutes[next.key]?.sourceWordIndex == next.value.sourceWordIndex else {
+                        throw KindleBookError.captureFailed("viewport-continuation-route-unavailable")
+                    }
+                    start = paragraph
+                    word = sourceWord
                 }
+                guard readerControlsNavigationGeneration == navigation, mode == .read else { return }
                 if let review { _ = readVM?.inheritAppReviewReadSession(review) }
                 _ = readVM?.claimLogicalAnalyticsSessionForPageHandoff()
                 guard startReadPlayback(document: queued, startHint: start, resumeWordIndex: word,

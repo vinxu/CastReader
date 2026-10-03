@@ -138,8 +138,11 @@ final class WeReadOpeningPlaybackTests: XCTestCase {
         let cover = try await state(view)
         XCTAssertEqual(cover["kind"] as? String, "cover")
         _ = try await view.evaluateJavaScript("document.querySelector('.renderTarget_pager_button_right').disabled=true")
-        let unavailable = try await state(view)
-        XCTAssertEqual(unavailable["kind"] as? String, "unavailable")
+        let pending = try await state(view)
+        XCTAssertEqual(pending["kind"] as? String, "waiting")
+        XCTAssertEqual(pending["reason"] as? String, "controls-pending")
+        let advanced = try await view.evaluateJavaScript("CastReaderWeRead.advanceOpeningPage('stale')")
+        XCTAssertEqual(advanced as? Bool, false, "Disabled native controls cannot be clicked")
     }
 
     func testHiddenDuplicateNextIsNotClickedAndHiddenPanelDoesNotBlock() async throws {

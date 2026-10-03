@@ -1,0 +1,16 @@
+{
+  "candidate": 147,
+  "physical_device": "iPad Pro 12.9-inch (5th generation)",
+  "simulator": false,
+  "suites": [
+    "KindleWebViewContainerTests",
+    "WeReadLibraryTests",
+    "WeReadPageAvailabilityTests"
+  ],
+  "passed": 51,
+  "failed": 0,
+  "skipped": 0,
+  "xcresult": "/tmp/castreader147-affected-ipad.xcresult",
+  "summary_sha256": "f8be12199c438b2f58f9779dfc3c470e42080559e63f02ee84a0b1fbc207df80",
+  "phone_attempt": "Interrupted after passcode lock stopped the first WK case; not counted as passed."
+}

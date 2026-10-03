@@ -188,7 +188,12 @@ final class KindlePrefetchHorizonTests: XCTestCase {
         let vm = ReadAloudViewModel(document: document(texts), audioService: audio, ttsService: fixture.service())
         defer { vm.deactivate(); audio.stop() }
         vm.dbgGenerate(0)
-        try await waitUntil { vm.isWaitingForPlayableAudio && audio.currentSegment?.paragraphIndex == 0 }
+        // Startup buffering is also a waiting state. Observe the completed first
+        // sentence, not the earlier AVPlayer preparation interval.
+        try await waitUntil {
+            vm.isWaitingForPlayableAudio && audio.currentSegment?.paragraphIndex == 0
+                && audio.currentTime >= 0.19 && fixture.requests.contains(texts[1])
+        }
         XCTAssertEqual(fixture.requests, Array(texts.prefix(2)), "Distant paragraphs must not compete while the next sentence is pending")
         XCTAssertNotNil(audio.currentSegment, "A retained, completed segment must not hide loading")
         XCTAssertFalse(audio.hasPlayableAudio)

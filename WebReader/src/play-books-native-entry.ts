@@ -1,4 +1,6 @@
-// Observe only native measuring DOM in the Google reader frame.
+import { installPlayBooksNativePreparation } from './play-books-native-preparation';
+
+// Observe native measuring DOM in the Google reader frame.
 // No provider requests or speculative navigation; bounded and detached on pagehide.
 export function installPlayBooksNativeLayoutBridge() {
     const root = globalThis as any;
@@ -108,5 +110,6 @@ export function installPlayBooksNativeLayoutBridge() {
 }
 
 if (location.hostname === 'books.googleusercontent.com' && /\/books\/reader\/frame/.test(location.pathname)) {
+  installPlayBooksNativePreparation();
   installPlayBooksNativeLayoutBridge();
 }

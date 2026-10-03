@@ -1,0 +1,199 @@
+{
+  "raw_log": "/private/tmp/castreader139-phone-final.log",
+  "raw_sha256": "3ccd0d88333e4cdcf7064ed51776c5dcbb73635efe8d5854f1d7918b8a911741",
+  "measurement": "Application event clock; includes native turn time separately; no acoustic claim",
+  "summary": {
+    "preset": {
+      "all_commits": 5,
+      "all_audible_paths": {
+        "count": 4,
+        "request_to_commit_ms": {
+          "samples": 4,
+          "p95": 55,
+          "max": 55
+        },
+        "commit_to_playing_ms": {
+          "samples": 4,
+          "p95": 35,
+          "max": 35
+        },
+        "ended_to_playing_ms": {
+          "samples": 4,
+          "p95": 134,
+          "max": 134
+        }
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 4,
+        "request_to_commit_ms": {
+          "samples": 4,
+          "p95": 55,
+          "max": 55
+        },
+        "commit_to_playing_ms": {
+          "samples": 4,
+          "p95": 35,
+          "max": 35
+        },
+        "ended_to_playing_ms": {
+          "samples": 4,
+          "p95": 134,
+          "max": 134
+        }
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": [
+        {
+          "line": 130,
+          "outcome": "short_page_without_audio"
+        }
+      ]
+    },
+    "clone": {
+      "all_commits": 0,
+      "all_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    },
+    "voice_not_recorded": {
+      "all_commits": 0,
+      "all_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    }
+  },
+  "rows": [
+    {
+      "commit_line": 130,
+      "commit_ms": 45012263,
+      "request_ms": 45012208,
+      "prior_audio_end_ms": 45012205,
+      "voice": "af_heart",
+      "prefetch_hit": false,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": false,
+      "outcome": "short_page_without_audio",
+      "request_to_commit_ms": 55,
+      "short_page_line": 137,
+      "source_sha256": "12e023977e05e0385ffdb71e0db3bb9ab9e6069ad0d764e45dbb217a7b4c815e"
+    },
+    {
+      "commit_line": 145,
+      "commit_ms": 45012313,
+      "request_ms": 45012265,
+      "prior_audio_end_ms": 45012205,
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 48,
+      "playing_line": 167,
+      "playing_ms": 45012339,
+      "commit_to_playing_ms": 26,
+      "ended_to_playing_ms": 134,
+      "source_sha256": "1898c770143288d3270bf0dc5aae940d0de407e7ae0898a779f63b237811b1d7"
+    },
+    {
+      "commit_line": 227,
+      "commit_ms": 45039910,
+      "request_ms": 45039855,
+      "prior_audio_end_ms": 45039854,
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 55,
+      "playing_line": 249,
+      "playing_ms": 45039940,
+      "commit_to_playing_ms": 30,
+      "ended_to_playing_ms": 86,
+      "source_sha256": "aaaf79d2c1c5502e2b77a9ea5fbdd650143b3428e5b1ec285378aecb0047f75d"
+    },
+    {
+      "commit_line": 299,
+      "commit_ms": 45062619,
+      "request_ms": 45062566,
+      "prior_audio_end_ms": 45062565,
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 53,
+      "playing_line": 319,
+      "playing_ms": 45062650,
+      "commit_to_playing_ms": 31,
+      "ended_to_playing_ms": 85,
+      "source_sha256": "9045f5dfc41bd6ed7e8c9bda7435299663cfa92eaf93f2bd864ab6e4f58b3042"
+    },
+    {
+      "commit_line": 358,
+      "commit_ms": 45076985,
+      "request_ms": 45076936,
+      "prior_audio_end_ms": 45076935,
+      "voice": "af_heart",
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 49,
+      "playing_line": 380,
+      "playing_ms": 45077020,
+      "commit_to_playing_ms": 35,
+      "ended_to_playing_ms": 85,
+      "source_sha256": "2f530063a795551d4e14011923ca490388c770ae43285c8c1f56e71ddda18429"
+    }
+  ],
+  "final_acceptance": true,
+  "candidate": 139,
+  "platform": "gbooks",
+  "interval_clock": [
+    "12:29:39.044",
+    "23:59:59.999"
+  ],
+  "acceptance": {
+    "status": "PASS",
+    "scope": "iPhone Google Play Books preset Explain, same tiny-tail defect point and subsequent pages",
+    "criterion": "User 2026-10-01 practical acceptance; hundreds of ms acceptable",
+    "notes": "Five automatic commits: one intentional tiny tail without its own explanation, four decoded successor handoffs, max 134 ms from previous audio end. Not a full clone/regional release gate."
+  }
+}

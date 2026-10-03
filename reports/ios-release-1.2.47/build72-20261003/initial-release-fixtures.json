@@ -1,0 +1,10 @@
+{
+  "app": "/Users/xuxuheng/Documents/CastReader-Releases/1.2.47-72-20261003/CastReader-1.2.47-72.xcarchive/Products/Applications/CastReader.app",
+  "version": "1.2.47",
+  "build": "72",
+  "filesScanned": 205,
+  "markersChecked": 54,
+  "debugPositiveControlsPassed": true,
+  "releaseMatches": [],
+  "passed": true
+}

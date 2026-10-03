@@ -239,6 +239,29 @@ const modalOnlyResult = vm.runInNewContext(loginQR, modalOnlyContext);
 assert.equal(modalOnlyResult.strategy, 'vue-exposed-show');
 assert.equal(modalOnlyShowCount, 1);
 
+// Reopening an authenticated homepage must not invoke the still-mounted
+// LoginModal fallback. Doing so makes libraryScan see a QR and falsely report
+// that the session expired, even though the official cookies are present.
+const authenticatedLoginContext = {
+  ...modalOnlyContext,
+  __castreaderWeReadLoginSession: { uid: '' },
+  document: { ...modalOnlyContext.document, cookie: 'wr_vid=fixture; wr_skey=fixture' },
+};
+authenticatedLoginContext.window = authenticatedLoginContext;
+const authenticatedLoginResult = vm.runInNewContext(loginQR, authenticatedLoginContext);
+assert.equal(authenticatedLoginResult.state, 'authenticated');
+assert.equal(modalOnlyShowCount, 1, 'a signed-in session must not open another login modal');
+
+// Profile cookies survive a signed-out session. Without the actual session
+// key they must not suppress the QR while the header is still hydrating.
+const profileOnlyLoginContext = {
+  ...modalOnlyContext,
+  __castreaderWeReadLoginSession: { uid: '' },
+  document: { ...modalOnlyContext.document, cookie: 'wr_localvid=old; wr_name=old; wr_avatar=old' },
+};
+profileOnlyLoginContext.window = profileOnlyLoginContext;
+assert.notEqual(vm.runInNewContext(loginQR, profileOnlyLoginContext).state, 'authenticated');
+
 // Generated homepage classes are not a stable WeRead contract. If Vue's
 // exposed LoginModal cannot be discovered, the exact visible "登录" action is
 // the semantic equivalent of the user's successful manual tap.
@@ -268,7 +291,7 @@ const fallbackContext = {
     getElementById() { return null; },
     querySelector() { return null; },
     querySelectorAll(selector) {
-      return selector === 'body *' ? [fallbackLoginControl] : [];
+      return selector === 'body *' || selector === 'a,button,[role="button"],body *' ? [fallbackLoginControl] : [];
     },
     readyState: 'complete',
   },
@@ -286,6 +309,16 @@ assert.equal(
   1,
   'the visible exact login action must be tapped even when WeRead hides its private Nuxt root',
 );
+// A provider-rendered sign-in control still wins over stale identity cookies.
+const staleLoginContext = {
+  ...fallbackContext,
+  __castreaderWeReadLoginSession: { uid: '' },
+  document: { ...fallbackContext.document, cookie: 'wr_vid=stale; wr_skey=stale' },
+};
+staleLoginContext.window = staleLoginContext;
+assert.equal(vm.runInNewContext(loginQR, staleLoginContext).state, 'requesting-uid');
+assert.equal(fallbackClickCount, 2);
+
 
 // A delegated click that did not start getLoginUid must be eligible for a
 // subsecond retry. The previous six-second lockout was the visible QR delay.
@@ -357,7 +390,7 @@ assert.match(loginQR, /clientX,\s*clientY/);
 assert.match(loginQR, /uidRequestStartedAt/);
 assert.match(loginQR, /uidPresent/);
 assert.doesNotMatch(loginQR, /6_000/);
-assert.doesNotMatch(loginQR, /location\.(?:assign|replace)|document\.cookie/);
+assert.doesNotMatch(loginQR, /location\.(?:assign|replace)|document\.cookie\s*=/);
 assert.match(loginSessionBridge, /getLoginUid/);
 assert.match(loginSessionBridge, /getLoginInfo/);
 assert.match(loginSessionBridge, /#login_container/);
@@ -1088,8 +1121,8 @@ assert.match(
 );
 assert.match(
   readAloudSource,
-  /if document\.sourceKind == \.kindle, !VoiceOption\.requiresGenerationQuota\(playbackVoiceID\) \{\s*preloadNext\(after: paragraph\)/,
-  'WeRead must finish the current natural-sentence producer before competing for the next paragraph',
+  /if !VoiceOption\.requiresGenerationQuota\(playbackVoiceID\) \{\s*preloadNext\(after: paragraph\)/,
+  'ordinary voices can prepare successors after playable media; clone generation remains serialized',
 );
 const cancelledTurnResume = readAloudSource.slice(
   readAloudSource.indexOf('func resumeAfterCancelledLiveWebTurnIntent'),
@@ -1737,6 +1770,131 @@ assert.match(
   /#if DEBUG[\s\S]*-CastReaderResetWeReadLibrarySnapshot[\s\S]*#endif/,
   'test-device cleanup must be explicit and absent from App Store builds',
 );
+
+
+// Real iPad ordering: native Canvas replacement arrives before resize. It is
+// geometry work, so retain the source highlight and never pause the transport.
+{
+  const start = bridge.indexOf('function nativePaintChanged()');
+  const end = bridge.indexOf("document.addEventListener('castreader-wr-native'", start);
+  const run = (resized, semantic) => {
+    const calls = [];
+    const context = vm.createContext({ innerWidth: resized ? 1366 : 1024, innerHeight: 830,
+      viewportWidth: 1024, viewportHeight: 830, geometryMode: false,
+      semanticTurnUntil: semantic ? Date.now() + 100000 : 0, scope: [{}], scopePath: '/book',
+      location: { pathname: '/book' }, lastFingerprint: 'old-page',
+      root: () => ({}), window: { __castReaderWeReadNative: { snapshot: () => ({ ready: false }) } },
+      clearHighlight: () => calls.push('clear-highlight'), clearMarks: () => calls.push('clear-marks'),
+      post: type => calls.push(type), publish: () => calls.push('publish') });
+    vm.runInContext(`function beginGeometryReflow(){if(Date.now()<semanticTurnUntil)return;geometryMode=true;viewportWidth=innerWidth;viewportHeight=innerHeight;}` + bridge.slice(start, end) + ';nativePaintChanged();', context);
+    return calls;
+  };
+  assert.deepEqual(run(true, false), ['publish'], 'rotation retains live cue state and audio owner');
+  assert.deepEqual(run(false, true), ['clear-highlight', 'clear-marks', 'wereadPageChanging', 'publish'], 'actual navigation still suspends stale speech');
+  assert.deepEqual(run(true, true), ['clear-highlight', 'clear-marks', 'wereadPageChanging', 'publish'], 'resize cannot supersede an issued semantic turn');
+}
+
+{
+  const start=bridge.indexOf('function isVisibleChapterStart(title)');
+  const end=bridge.indexOf('window.CastReaderWeRead={',start);
+  const run=(texts,title,extra={})=>vm.runInNewContext(bridge.slice(start,end)+';isVisibleChapterStart(title)',{
+    title, visible:texts.map(text=>({text})), root:()=>({}), reflowUntil:0,
+    viewportWidth:1024,innerWidth:1024,viewportHeight:1172,innerHeight:1172,...extra});
+  assert.equal(run(['A wrapped','chapter heading','body'], 'A wrapped chapter heading'), true);
+  assert.equal(run(['A wrapped'], 'A wrapped chapter heading'), false);
+  assert.equal(run(['body','A wrapped chapter heading'], 'A wrapped chapter heading'), false);
+  assert.equal(run(['Different heading'], 'A wrapped chapter heading'), false);
+  assert.equal(run(['A heading'], 'A heading',{innerWidth:1366}), false);
+}
+// Rotation keeps the immutable spoken scope, but the next visible spread now
+// has a different identity. Its preview must be republished after the native
+// geometry receipt, including when adjacent layout becomes ready later.
+{
+  const events = [];
+  const originalScope = [{ text: 'immutable narration scope' }];
+  const item = { text: 'visible reflowed body', bounds: { x: 0, y: 0, width: 600, height: 200 }, entries: [] };
+  const host = { getBoundingClientRect: () => ({ left: 0 }) };
+  let adjacentReady = true;
+  const context = vm.createContext({
+    Date, Math, Number, Array, String, console,
+    innerWidth: 1366, innerHeight: 830, viewportWidth: 1366, viewportHeight: 830,
+    reflowUntil: 0, semanticTurnUntil: 0, geometryMode: true, scopePath: '/book',
+    scope: originalScope, visible: [], lastFingerprint: 'portrait', lastPreviewKey: '',
+    stableCandidate: '', stableTimer: 0, contentUnavailable: false, lastExtractionState: '',
+    lastNonTextIdentity: '', revealBusy: false, pendingNativePresentation: null,
+    location: { pathname: '/book', href: 'https://weread.qq.com/book' },
+    document: { querySelectorAll: () => [], title: 'Book' },
+    window: { __castReaderWeReadNative: { snapshot: () => ({ ready: true, pageIdentity: 'landscape' }) } },
+    root: () => host, choose: () => [item], rebuild: () => {},
+    invalidateUnavailable: () => false, restoreVisualState: () => {},
+    clean: value => String(value), hash: value => String(value),
+    speechPayloads: items => items.map(p => ({ text: p.text })),
+    predictNext: () => adjacentReady ? { pageIdentity: 'next', confidence: 'native-pages', paragraphs: [{ text: 'next page body' }] } : null,
+    preparePreviewPayloads: (_current, next) => next,
+    post: (type, payload) => events.push({ type, payload }),
+    layouts: [], compact: text => Array.from(text), clearTimeout: () => {},
+  });
+  const previewStart = bridge.indexOf('function publishPreview(');
+  const previewEnd = bridge.indexOf('function ensureLayer(', previewStart);
+  const publishStart = bridge.indexOf('function publish(reason)');
+  const publishEnd = bridge.indexOf('function range(', publishStart);
+  vm.runInContext(bridge.slice(previewStart, previewEnd) + bridge.slice(publishStart, publishEnd), context);
+  vm.runInContext("publish('resize')", context);
+  const first = events.find(e => e.type === 'wereadPagePreview');
+  assert.ok(first, 'rotation must rebuild adjacent-page preparation before speech ends');
+  assert.equal(first.payload.sourceFingerprint, context.lastFingerprint);
+  assert.ok(events.findIndex(e => e.type === 'wereadGeometryReflow') < events.indexOf(first));
+  assert.equal(context.scope, originalScope, 'preparation must not replace the speaking scope');
+  assert.equal(events.some(e => e.type === 'wereadPage'), false, 'reflow must not restart speech');
+  events.length = 0;
+  vm.runInContext("publish('repeat')", context);
+  assert.equal(events.some(e => e.type === 'wereadPagePreview'), false, 'same prediction remains deduplicated');
+  context.geometryMode = false; context.lastPreviewKey = ''; adjacentReady = false;
+  vm.runInContext("publish('waiting-layout')", context);
+  events.length = 0; adjacentReady = true;
+  vm.runInContext("publish('layout-ready')", context);
+  assert.equal(events.filter(e => e.type === 'wereadPagePreview').length, 1, 'same visible page can gain a late next-page preview');
+  assert.equal(context.scope, originalScope);
+}
+
+// Same-baseline fragments in different columns must never become one line.
+// In real WeRead glyph geometry the right baseline can be a fraction higher.
+{
+  const start = bridge.indexOf('function lines(rects)');
+  const end = bridge.indexOf('\n', start);
+  const context = vm.createContext({});
+  vm.runInContext(bridge.slice(start, end), context);
+  const fragments = [
+    { x: 40, y: 101, width: 220, height: 24 },
+    { x: 650, y: 100, width: 230, height: 24 },
+    { x: 263, y: 101, width: 50, height: 24 },
+  ];
+  const grouped = context.lines(fragments);
+  assert.equal(grouped.length, 2, 'different columns cannot share a line box');
+  assert.equal(grouped.find(r => r.x === 40).width, 273, 'adjacent text still forms one line');
+  assert.ok(grouped.every(r => r.width < 300));
+}
+{
+  const loops = [], paths = [];
+  const start = bridge.indexOf('function drawHandMark(');
+  const end = bridge.indexOf('function removeMarks(', start);
+  const context = vm.createContext({
+    color:'#ff7700', rgba:()=>'', markRng:seed=>()=>seed,
+    rectUnion:rs=>({x:40,y:100,width:840,height:300}),
+    markStroke:(_,base)=>base, markDuration:()=>700,
+    handLoop:(cx,cy,rx,ry)=>{const box={cx,cy,rx,ry};loops.push(box);return JSON.stringify(box)},
+    animatedPath:(...args)=>paths.push(args),
+  });
+  vm.runInContext(bridge.slice(start,end),context);
+  const rs=[{x:40,y:340,width:273,height:24},{x:650,y:100,width:230,height:24}];
+  context.drawHandMark({},rs,{action:'circle',seed:42},true);
+  assert.equal(loops.length,2,'a cross-column mark must draw separate loops');
+  assert.ok(loops[0].cx+loops[0].rx<340 && loops[1].cx-loops[1].rx>620,'no loop spans the gutter');
+  assert.equal(paths.length,2);
+  const original=JSON.stringify(loops); loops.length=0;
+  context.drawHandMark({},rs,{action:'circle',seed:42},false);
+  assert.equal(JSON.stringify(loops),original,'settled redraw preserves each fragment');
+}
 
 console.log('WeRead iOS JavaScript contracts passed');
 // Several extracted production bridges intentionally schedule observers and

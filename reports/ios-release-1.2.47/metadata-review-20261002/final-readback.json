@@ -1,0 +1,81 @@
+{
+  "checkedAt": "2026-10-02T01:44:55Z",
+  "version": {
+    "id": "138a0a05-56de-42f7-b841-31fdfb842418",
+    "attributes": {
+      "platform": "IOS",
+      "versionString": "1.2.47",
+      "appStoreState": "WAITING_FOR_REVIEW",
+      "appVersionState": "WAITING_FOR_REVIEW",
+      "copyright": "© 2026 CastReader Inc.",
+      "reviewType": "APP_STORE",
+      "releaseType": "AFTER_APPROVAL",
+      "earliestReleaseDate": null,
+      "usesIdfa": null,
+      "downloadable": true,
+      "createdDate": "2026-09-28T12:16:30-07:00"
+    }
+  },
+  "review": {
+    "id": "e0120f7a-1331-468f-adb9-0b1f045c352a",
+    "attributes": {
+      "platform": "IOS",
+      "submittedDate": "2026-10-02T01:44:29.656Z",
+      "state": "WAITING_FOR_REVIEW"
+    }
+  },
+  "items": [
+    {
+      "type": "reviewSubmissionItems",
+      "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw",
+      "attributes": {
+        "state": "READY_FOR_REVIEW"
+      },
+      "relationships": {
+        "appStoreVersion": {
+          "data": null
+        },
+        "inAppPurchaseVersion": {
+          "data": {
+            "type": "inAppPurchaseVersions",
+            "id": "f267f0a8-d537-4fa7-9cc1-1796fc44b71c"
+          }
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw"
+      }
+    },
+    {
+      "type": "reviewSubmissionItems",
+      "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2",
+      "attributes": {
+        "state": "READY_FOR_REVIEW"
+      },
+      "relationships": {
+        "appStoreVersion": {
+          "data": {
+            "type": "appStoreVersions",
+            "id": "138a0a05-56de-42f7-b841-31fdfb842418"
+          }
+        },
+        "inAppPurchaseVersion": {
+          "data": null
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2"
+      }
+    }
+  ],
+  "build": {
+    "id": "7356c4a6-2426-4e2e-ac96-c55e7d78c65f",
+    "number": "71",
+    "processingState": "VALID"
+  },
+  "checks": {
+    "all11LocalizationsMatch": true,
+    "originalReviewItemsPreserved": true,
+    "originalBuild71Preserved": true
+  }
+}

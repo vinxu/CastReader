@@ -37,6 +37,7 @@ export type KoboSpeechPreview = {
   sourceStart: number
   sourceEnd: number
   contentFingerprint: string
+  following?: { text: string; sourceParagraphIndex: number; sourceUTF16Start: number; sourceUTF16End: number }
 }
 
 export type KoboPagePreview = {
@@ -1256,7 +1257,10 @@ function contentFingerprint(paragraphs: KoboPara[]): string {
  * stable page the user can read.
  */
 export function koboSignature(): string {
-  const paragraphs = extractKoboParagraphs()
+  return koboParagraphSignature(extractKoboParagraphs())
+}
+
+export function koboParagraphSignature(paragraphs: KoboPara[]): string {
   if (paragraphs.length === 0) return ''
   const source = paragraphs.map((paragraph) => [
     paragraph.sourceParagraphIndex,
@@ -1350,6 +1354,36 @@ export function extractKoboNextPagePreview(): KoboPagePreview | null {
     const fingerprint = contentFingerprint(candidate)
     if (fingerprint) return { paragraphs: candidate, contentFingerprint: fingerprint }
   }
+  // A fully laid-out next chapter can already supply its first physical
+  // column. Do not move either iframe: this is a prediction, consumed only
+  // when the native page commit matches its exact source ranges and text.
+  const tail = current.at(-1)!
+  const frame = frames.at(-1)!
+  const nodes = paragraphNodes(frame.doc)
+  if (frames.length !== 1 || tail.element !== nodes.at(-1) ||
+      sourceText(tail.element).slice(tail.sourceEnd).trim()) return null
+  const accessible = allAccessibleFrames()
+  const position = accessible.findIndex(value => value.doc === frame.doc)
+  const next = accessible[position + 1]
+  if (position < 0 || !next || next.frameIndex !== frame.frameIndex + 1 ||
+      !next.iframe.getAttribute('data-chapterurl') ||
+      next.iframe.getAttribute('data-chapterurl') === frame.iframe.getAttribute('data-chapterurl')) return null
+  const style = ownerStyle(frame.doc.body), nextStyle = ownerStyle(next.doc.body)
+  const column = Number.parseFloat(style?.columnWidth || '')
+  if (!(column > 0) || !Number.isFinite(column) || !nextStyle ||
+      style?.columnWidth !== nextStyle.columnWidth || style?.columnGap !== nextStyle.columnGap ||
+      style?.writingMode !== nextStyle.writingMode || style?.direction !== 'ltr' ||
+      nextStyle.direction !== 'ltr' || isVerticalWritingMode(writingModeFor(tail.element))) return null
+  const width = frame.clip.right - frame.clip.left
+  if (next.iframe.clientHeight !== frame.iframe.clientHeight ||
+      next.iframe.clientWidth + 0.5 < width || next.doc.fonts?.status === 'loading') return null
+  const candidate = extractKoboParagraphsFromClips([{ ...frame, ...next,
+    outerRect: next.iframe.getBoundingClientRect(),
+    clip: { left: 0, right: width, top: frame.clip.top, bottom: frame.clip.bottom } }])
+  const first = paragraphNodes(next.doc).find(element => sourceText(element).trim().length >= MIN_PARA_CHARS)
+  if (!candidate.length || candidate[0].element !== first || candidate[0].sourceStart !== sourceText(first!).length - sourceText(first!).trimStart().length) return null
+  const fingerprint = contentFingerprint(candidate)
+  if (fingerprint) return { paragraphs: candidate, contentFingerprint: fingerprint }
   return null
 }
 
@@ -1375,14 +1409,26 @@ function firstSentenceAfter(
   if (text.length < MIN_PARA_CHARS) return null
   const fingerprintSource =
     `${sourceParagraphIndex}:${sourceStart}:${sourceEnd}:${text}`
+  // Retain the rest of this exact source paragraph as a separate speculative
+  // producer. A two-second opening sentence cannot cover a cold TTS request
+  // for its following sentence after the physical chapter turn.
+  const suffix = full.slice(sourceEnd)
+  const followingText = suffix.trim()
+  const followingStart = sourceEnd + suffix.length - suffix.trimStart().length
+  const following = followingText.length > 0 && followingText.length <= 1200
+    ? { text: followingText, sourceParagraphIndex, sourceUTF16Start: followingStart,
+        sourceUTF16End: followingStart + followingText.length } : undefined
   return {
     text,
     exactText: true,
     sourceParagraphIndex,
     sourceStart,
     sourceEnd,
-    contentFingerprint:
-      `ksf-${stableHash32(fingerprintSource).toString(36)}-${text.length}`,
+    // The shared native speech-preview contract expects the same eight-hex
+    // cache key as Play Books. Source/frame/range/text still authorize use;
+    // a platform-specific prefix silently rejects every fallback preload.
+    contentFingerprint: stableHash32(fingerprintSource).toString(16).padStart(8, '0'),
+    following,
   }
 }
 
@@ -1948,7 +1994,8 @@ export function installKoboReader(
   post: Poster,
   requestExtract: (
     reason: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
+    paragraphs?: KoboPara[]
   ) => void,
   frameSessionID: string = koboFrameSessionID()
 ): void {
@@ -2193,6 +2240,7 @@ export function installKoboReader(
               sourceUTF16End: speech.sourceEnd,
               text: speech.text,
               contentFingerprint: speech.contentFingerprint,
+              following: speech.following,
             })
             postForFrame('googleBooksPreviewDiagnostic', {
               event: 'source-preview',
@@ -2225,7 +2273,8 @@ export function installKoboReader(
     const verify = (): void => {
       settleTimer = setTimeout(() => {
         settleTimer = null
-        const current = koboSignature()
+        const paragraphs = extractKoboParagraphs()
+        const current = koboParagraphSignature(paragraphs)
         const currentGeometry = koboGeometryKey()
         if (
           current !== settleCandidate ||
@@ -2258,7 +2307,6 @@ export function installKoboReader(
         }
 
         const stableAt = performance.now()
-        const paragraphs = extractKoboParagraphs()
         const validationFinishedAt = performance.now()
         if (paragraphs.length === 0 && attempt < 8) {
           beginSettlement(reason, attempt + 1, forceExtract)
@@ -2345,6 +2393,12 @@ export function installKoboReader(
           committedSignature = finalSignature
           observedSignature = finalSignature
         }
+        // Native drops speculative work when a page is replaced. Returning
+        // A -> chapter tail B (speech-only preview) -> A must therefore emit
+        // A's geometry preview again, even if its source text is unchanged.
+        lastPreviewToken = ''
+        lastSpeechPreviewToken = ''
+        lastGeometryPreviewMissToken = ''
         if (!forceExtract) {
           postForFrame('googleBooksPageChanging', {
             reason,
@@ -2355,7 +2409,10 @@ export function installKoboReader(
           })
         }
         const extractStartedAt = performance.now()
-        requestExtract(reason, payloadFor(committedMetadata))
+        // All three consumers use this same synchronous DOM observation.
+        // The host must discard it before the next task/frame so a subsequent
+        // layout change is still checked against freshly extracted source.
+        requestExtract(reason, payloadFor(committedMetadata), paragraphs)
         if (reason === 'auto' && automaticTiming &&
             automaticTiming.turnID === (committedMetadata as AutomaticTurnMetadata | null)?.turnID) {
           const timing = automaticTiming
@@ -2766,10 +2823,13 @@ export function installKoboReader(
   const api = {
     restoreLocation(arg?: unknown): boolean {
       const value = recordArg(arg)
-      const current = koboReadingLocation()
+      const bookUUID = location.pathname.split('/').filter(Boolean)[0]?.toLowerCase()
       const transport = koboSemanticTransport
       const percentage = value.percentage
-      if (!current || value.bookUUID !== current.bookUUID ||
+      // Identity comes from the reader URL. A two-page spread can legitimately
+      // lack a single-page reading range; it must not disable direct recovery.
+      if (!bookUUID || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(bookUUID) ||
+          value.bookUUID !== bookUUID ||
           typeof percentage !== 'number' || !Number.isFinite(percentage) || percentage < 0 || percentage > 1 ||
           transport?.kind !== 'ur-engine' || pendingAuto || pendingManualIntent ||
           changeReasonInFlight || layoutRefreshActive) return false
@@ -2785,6 +2845,12 @@ export function installKoboReader(
         beginSettlement('refresh', 0, true)
         return false
       }
+    },
+    restoreReady(): boolean {
+      const transport = koboSemanticTransport
+      return transport?.kind === 'ur-engine' &&
+        typeof currentKoboURAPI(transport)?.goToPageByBookPercentage === 'function' &&
+        !pendingAuto && !pendingManualIntent && !changeReasonInFlight && !layoutRefreshActive
     },
     navigationReady(): boolean {
       // A page can render before UR/engine finishes initialization. Do not

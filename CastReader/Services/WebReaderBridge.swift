@@ -99,6 +99,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             "automaticReadTurns=\(liveAcceptanceAutomaticReadTurns)",
             "automaticExplainTurns=\(liveAcceptanceAutomaticExplainTurns)",
             "physicalExplainPages=\(liveAcceptancePhysicalExplainPages)",
+            "pendingPageTurn=\(pendingGoogleBooksTurn)",
             "explainScope=\(SHA256.hash(data: Data(explainVM.stagedLiveWebParagraphTexts.joined(separator: "\n").utf8)).map { String(format: "%02x", $0) }.joined())",
             "marks=\(explainVM.activeMarks.count)",
             "markIDs=\(explainVM.activeMarks.map { $0.id.uuidString }.sorted().joined(separator: ","))",
@@ -249,6 +250,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
     private var activeGoogleBooksCarry: GoogleBooksActiveCarry?
     private var pendingGoogleBooksPagePreview: GoogleBooksPagePreview?
+    private var googleBooksExplainTransit: (source: String, committed: String)?
     private var preparedGoogleBooksReadPage: GoogleBooksPreparedReadPage?
     private var googleBooksReadPreloadTask: Task<Void, Never>?
     private var googleBooksPreloadGeneration: UInt64 = 0
@@ -256,6 +258,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         GoogleBooksSpeechPreviewCandidate?
     private var preparedGoogleBooksSpeechPreview:
         GoogleBooksPreparedSpeechPreview?
+    private var pendingGoogleBooksSpeechFollowingSource: GoogleBooksSpeechFollowingSource?
     private var googleBooksSpeechPreloadTask: Task<Void, Never>?
     private var googleBooksSpeechPreloadGeneration: UInt64 = 0
     private var continuousGoogleBooksSpeechHandoff:
@@ -279,8 +282,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var didRequestKoboSessionRefresh = false
     private var koboOfficialRecoveryInProgress = false
     private var koboOpeningCheckpoint: ReadingResumeCheckpoint?
-    private var koboResumeVisited: Set<String> = []
-    private var koboResumeSteps = 0
     private var koboResumeLocationAttempted = false
     private var koboResumeLastSignature: String?
     private var koboResumeTimeout: Task<Void, Never>?
@@ -505,12 +506,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let language: String
         let preparedParagraphIndex: Int
         let preparedText: String
+        var following: [GoogleBooksPagePreview] = []
+        var transit: [GoogleBooksPagePreview] = []
     }
 
     private struct GoogleBooksPreparedReadPage {
         let preview: GoogleBooksPagePreview
         let voiceID: String
         let segments: [AudioSegment]
+        let following: [LivePagePreparedSpeech]
     }
 
     private struct GoogleBooksPreparedSpeechPreview {
@@ -518,6 +522,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let language: String
         let voiceID: String
         let segments: [AudioSegment]
+        let followingSource: GoogleBooksSpeechFollowingSource?
+        let following: LivePagePreparedSpeech?
     }
 
     private struct GoogleBooksPreparedExplanation {
@@ -562,6 +568,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let prepared: GoogleBooksPreparedSpeechPreview
         let split: GoogleBooksSpeechPageSplit
         let rebasedSegments: [AudioSegment]
+        let following: [LivePagePreparedSpeech]
     }
 
     private struct WeReadPageCandidate {
@@ -623,8 +630,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         self.koboSessionRecoveryAttempts = 0
         self.koboOpeningCheckpoint = livePlatform == .kobo
             ? openingCheckpoint ?? HistoryStore.shared.readingCheckpoint(for: bookID) : nil
-        self.koboResumeVisited = []
-        self.koboResumeSteps = 0
         self.koboResumeLocationAttempted = false
         self.koboResumeLastSignature = nil
         self.koboResumeTimeout?.cancel()
@@ -1186,10 +1191,110 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             if messageType == "wereadContentUnavailable",
                (!frame.isMainFrame || frame.securityHost.lowercased() != "weread.qq.com") { return }
             self.handle(body)
+            #if DEBUG
+            self.captureGoogleLayoutIfRequested(message)
+            #endif
         }
     }
 
     #if DEBUG
+    private var capturedGoogleLayoutSignatures = Set<String>()
+
+    /// Opt-in device investigation only. Source stays in the app's local
+    /// Documents directory, separate from normal telemetry/run logs.
+    private func captureGoogleLayoutIfRequested(_ message: WKScriptMessage) {
+        guard ProcessInfo.processInfo.arguments.contains("-CRCaptureGoogleLayout"),
+              livePlatform == .googleBooks,
+              let body = message.body as? [String: Any],
+              let type = body["type"] as? String,
+              let payload = body["payload"] as? [String: Any],
+              type == "rendered" || type == "googleBooksTurnRequested" || (type == "googleBooksPreviewDiagnostic" && payload["event"] as? String == "geometry-miss"),
+              let signature = (payload["sourceSignature"] ?? payload["signature"] ?? lastGoogleBooksSignature) as? String,
+              signature == lastGoogleBooksSignature,
+              capturedGoogleLayoutSignatures.count < 32,
+              capturedGoogleLayoutSignatures.insert(type + ":" + signature).inserted,
+              let webView = message.webView else { return }
+        let script = """
+        (() => JSON.stringify({
+          prepared: document.documentElement.getAttribute('data-castreader-pb-prepared'),
+          measured: document.documentElement.getAttribute('data-castreader-pb-layouts'),
+          pages: [...document.querySelectorAll('reader-page.shown')].map(page => ({
+            id: page.id, html: page.innerHTML.slice(0, 250000)
+          })),
+          controls: [...document.querySelectorAll('button')].map(button => ({
+            icon:button.querySelector('mat-icon')?.textContent,disabled:button.disabled,
+            label:button.getAttribute('aria-label')
+          })),
+          components: [...document.querySelectorAll('*')].filter(e=>e.localName.startsWith('reader-')).map(e=>({
+            tag:e.localName,classes:e.className,visible:e.getClientRects().length>0
+          })),
+          visibleText: document.body.innerText.slice(-10000),
+          nativeComponent: (() => {
+            const witness=window.__crPlayBooksNativePreparation,view=witness?.view;
+            const component=Array.isArray(view)?view.find(value=>value?.nb?.Aa?.localName==='reader-horizontal-view'):null;
+            const pages=component?.O instanceof Map?[...component.O.values()].map(value=>value.Wb).filter(Boolean):[];
+            return {captured:!!witness?.view,component:!!component,keys:component?Object.keys(component):[],
+              pages:pages.map(page=>({keys:Object.keys(page),key:page.key,segment:page.Uc,index:page.Sb,
+                engine:page.aA,volume:page.volumeId,prototype:Object.getOwnPropertyNames(Object.getPrototypeOf(page))})),
+              engineCache:component?.Fa?.O?.U?{keys:Object.keys(component.Fa.O.U),prototype:Object.getOwnPropertyNames(Object.getPrototypeOf(component.Fa.O.U))}:null};
+          })(),
+          resources: performance.getEntriesByType('resource').slice(-80).map(entry => {
+            try { const u = new URL(entry.name); return {host:u.hostname,path:u.pathname,
+              keys:[...u.searchParams.keys()],type:entry.initiatorType}; } catch { return {}; }
+          })
+        }))()
+        """
+        Task { @MainActor [weak webView] in
+            guard let webView else { return }
+            let value = try? await webView.callAsyncJavaScript("if(delay) await new Promise(r=>setTimeout(r,delay)); return " + script,
+                arguments: ["delay": type == "googleBooksTurnRequested" ? 1000 : 0],
+                in: message.frameInfo, contentWorld: .page)
+            guard let json = value as? String,
+                  let data = json.data(using: .utf8), data.count <= 3_000_000,
+                  let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            let name = "google-layout-\(UUID().uuidString).json"
+            do {
+                try data.write(to: directory.appendingPathComponent(name), options: .atomic)
+                ReaderRunLog.write("GBOOKS private layout capture file=\(name) bytes=\(data.count)")
+            } catch {
+                ReaderRunLog.write("GBOOKS private layout capture failed")
+            }
+        }
+        // The authenticated shell performs chapter requests, while source
+        // layout lives in its cross-origin frame. Observe only future normal
+        // chapter GET responses, never issuing a speculative provider request.
+        // No cookies, request headers or query values are serialized.
+        webView.evaluateJavaScript("""
+        (()=>{
+        if(!window.__crGoogleSegmentWitness){
+          const state={responses:[]};window.__crGoogleSegmentWitness=state;
+          const original=window.fetch;
+          window.fetch=function(input,options){
+            const pending=Reflect.apply(original,this,arguments);
+            try {const u=new URL(typeof input==='string'?input:input.url,location.href);
+              const method=options?.method||(typeof input==='object'&&input.method)||'GET';
+              if(method==='GET' && u.origin===location.origin && /^\\/books\\/volumes\\/[^/]+\\/content\\/segment$/.test(u.pathname)){
+                pending.then(response=>{if(!response.ok)return;return response.clone().text().then(text=>{
+                  if(text.length<=500000){state.responses.push({path:u.pathname,body:text});
+                    if(state.responses.length>4)state.responses.shift();}
+                });}).catch(()=>{});
+              }
+            }catch{}
+            return pending;
+          };
+        }
+        return JSON.stringify({segments:window.__crGoogleSegmentWitness.responses,routes:performance.getEntriesByType('resource').slice(-120).map(entry=>{
+          try {const u=new URL(entry.name);return {host:u.hostname,path:u.pathname,
+            keys:[...u.searchParams.keys()],type:entry.initiatorType};}catch{return {};}
+        })});})()
+        """) { value, _ in
+            guard let json = value as? String, let data = json.data(using: .utf8),
+                  data.count <= 2_500_000,
+                  let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+            try? data.write(to: directory.appendingPathComponent("google-routes-\(UUID().uuidString).json"), options: .atomic)
+        }
+    }
+
     /// Verification-only hook, never compiled into release. Launching with
     /// `-CRBlindPagerLabels YES` neutralizes every pager aria-label inside the
     /// Google Books reader frame so the structural discovery fallback can be
@@ -1314,8 +1419,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 ReaderRunLog.write("GBOOKS ignored failure with stale turn identity")
                 return
             }
-            let reachedBookEnd = livePlatform == .kobo &&
-                KoboBookEndContract.isConfirmed(msg.payload["nativeBookEnd"])
+            let reachedBookEnd = (livePlatform == .kobo &&
+                KoboBookEndContract.isConfirmed(msg.payload["nativeBookEnd"])) ||
+                (livePlatform == .googleBooks &&
+                 GoogleBooksBookEndContract.isConfirmed(msg.payload["nativeBookEnd"]))
             finishGoogleBooksTurn(reason: reachedBookEnd ? "native-book-end" : "javascript-no-change",
                 preserveLateResult: !reachedBookEnd && (msg.payload["lateEligible"] as? Bool) != false)
         case "googleBooksPageChanging":
@@ -2741,8 +2848,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     private func paintPreparedOpening(_ segment: AudioSegment?, source: String, paragraph: Int) {
         guard let segment,
-              let range = WeReadCrossPageSpeechContract.sourceRange(source: source,
-                segments: [segment], segmentID: segment.id, time: 0), range.length > 0 else { return }
+              let range = WeReadCrossPageSpeechContract.openingSourceRange(source: source, segment: segment), range.length > 0 else { return }
         call("highlightRange", ["paragraphIndex": paragraph,
             "charStart": range.location, "charEnd": NSMaxRange(range),
             "segSeq": 0, "segmentTexts": []])
@@ -3862,7 +3968,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             GoogleBooksSpeechCommit(
                 prepared: prepared,
                 split: split,
-                rebasedSegments: rebased
+                rebasedSegments: rebased,
+                following: prepared.followingSource?.matches(split, after: prepared.candidate) == true
+                    ? prepared.following.map { [$0] } ?? [] : []
             )
         )
     }
@@ -3871,6 +3979,34 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// JavaScript observes that column without moving the viewport and sends
     /// it here as speculation. Parsing uses the cursor that *would* be promoted
     /// after natural completion, while the live cursor and page stay untouched.
+    private func makeGoogleBooksPreview(_ parsed: GoogleBooksParsedPage, sourceSignature: String,
+                                        contentFingerprint: String) -> GoogleBooksPagePreview? {
+        guard let preparedInput = parsed.paragraphs.first(where: {
+            SpeechTextSanitizer.containsSpeakableContent($0.text)
+        }) ?? parsed.explainParagraphs.first(where: {
+            SpeechTextSanitizer.containsSpeakableContent($0.text)
+        }) else { return nil }
+        return GoogleBooksPagePreview(
+            sourceSignature: sourceSignature,
+            contentFingerprint: contentFingerprint,
+            readPage: parsed.paragraphs,
+            readSourceSlices: parsed.sourceSlices.enumerated().map { index, slice in
+                let start = slice.sourceUTF16Start.map {
+                    $0 + parsed.readDOMCharacterOffsets[index] - parsed.explainDOMCharacterOffsets[index]
+                }
+                let text = parsed.paragraphs[index].text
+                return LiveWebPageSourceSlice(visibleParagraphIndex: index,
+                    sourceParagraphIndex: slice.sourceParagraphIndex,
+                    sourceUTF16Start: start, sourceUTF16End: start.map { $0 + text.utf16.count }, text: text)
+            },
+            explainPage: parsed.explainParagraphs,
+            explainSourceSlices: parsed.explainSourceSlices,
+            language: parsed.language,
+            preparedParagraphIndex: preparedInput.id,
+            preparedText: preparedInput.text
+        )
+    }
+
     private func receiveGoogleBooksPagePreview(_ payload: [String: Any]) {
         let sourceSignature = (payload["sourceSignature"] as? String) ?? ""
         let contentFingerprint = (payload["contentFingerprint"] as? String) ?? ""
@@ -3896,28 +4032,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             preserveCandidate: false
         )
 
-        guard let preparedInput = parsed.paragraphs.first(where: {
-            SpeechTextSanitizer.containsSpeakableContent($0.text)
-        }) else { return }
-        let preview = GoogleBooksPagePreview(
-            sourceSignature: sourceSignature,
-            contentFingerprint: contentFingerprint,
-            readPage: parsed.paragraphs,
-            readSourceSlices: parsed.sourceSlices.enumerated().map { index, slice in
-                let start = slice.sourceUTF16Start.map {
-                    $0 + parsed.readDOMCharacterOffsets[index] - parsed.explainDOMCharacterOffsets[index]
-                }
-                let text = parsed.paragraphs[index].text
-                return LiveWebPageSourceSlice(visibleParagraphIndex: index,
-                    sourceParagraphIndex: slice.sourceParagraphIndex,
-                    sourceUTF16Start: start, sourceUTF16End: start.map { $0 + text.utf16.count }, text: text)
-            },
-            explainPage: parsed.explainParagraphs,
-            explainSourceSlices: parsed.explainSourceSlices,
-            language: parsed.language,
-            preparedParagraphIndex: preparedInput.id,
-            preparedText: preparedInput.text
-        )
+        guard var preview = makeGoogleBooksPreview(parsed, sourceSignature: sourceSignature,
+                                                  contentFingerprint: contentFingerprint) else { return }
+        if let raw = payload["following"] as? [String: Any],
+           let fingerprint = raw["contentFingerprint"] as? String, !fingerprint.isEmpty,
+           let page = parseGoogleBooksPage(raw, consumedCursor: nil),
+           let following = makeGoogleBooksPreview(page, sourceSignature: sourceSignature,
+                                                 contentFingerprint: fingerprint) {
+            preview.following = [following]
+        }
         if pendingGoogleBooksPagePreview?.sourceSignature != sourceSignature ||
             pendingGoogleBooksPagePreview?.contentFingerprint != contentFingerprint {
             cancelGoogleBooksContinuousHandoff(reason: "prediction-changed")
@@ -3925,9 +4048,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 reason: "prediction-changed",
                 preservePrediction: false
             )
-            invalidateGoogleBooksExplainPrefetch(
-                reason: "prediction-changed"
-            )
+            let retained = preparedGoogleBooksExplanation?.preview ?? pendingGoogleBooksExplanation?.preview
+            let expected = preview.following.first ?? preview
+            if retained?.contentFingerprint != expected.contentFingerprint ||
+                !googleBooksExplainSourceMatches(retained?.sourceSignature ?? "", sourceSignature) {
+                invalidateGoogleBooksExplainPrefetch(reason: "prediction-changed")
+            }
         }
         pendingGoogleBooksPagePreview = preview
         ReaderRunLog.write(
@@ -4007,7 +4133,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             )
             return
         }
-        if pendingGoogleBooksSpeechPreview == candidate ||
+        let followingSource: GoogleBooksSpeechFollowingSource? = {
+            guard let raw = payload["following"] as? [String: Any],
+                  let index = Self.exactNonnegativeInteger(raw["sourceParagraphIndex"]),
+                  let start = Self.exactNonnegativeInteger(raw["sourceUTF16Start"]),
+                  let end = Self.exactNonnegativeInteger(raw["sourceUTF16End"]),
+                  let text = raw["text"] as? String else { return nil }
+            let source = GoogleBooksSpeechFollowingSource(sourceParagraphIndex: index,
+                sourceUTF16Start: start, sourceUTF16End: end, text: text)
+            return source.canPrepare(after: candidate) ? source : nil
+        }()
+        if (pendingGoogleBooksSpeechPreview == candidate && pendingGoogleBooksSpeechFollowingSource == followingSource) ||
             preparedGoogleBooksSpeechPreview?.candidate == candidate {
             return
         }
@@ -4019,6 +4155,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             preserveCandidate: false
         )
         pendingGoogleBooksSpeechPreview = candidate
+        pendingGoogleBooksSpeechFollowingSource = followingSource
         ReaderRunLog.write(
             "GBOOKS speech preview accepted " +
             "source=\(String(sourceSignature.prefix(12))) " +
@@ -4181,12 +4318,29 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     self.maybeStartGoogleBooksSpeechPreload()
                     return
                 }
+                let followingSource = self.pendingGoogleBooksSpeechFollowingSource
+                let following: LivePagePreparedSpeech? = {
+                    guard let source = followingSource, !VoiceOption.requiresGenerationQuota(voiceID) else { return nil }
+                    let reserve = LivePagePreparedSpeech(paragraphIndex: 1, sourceText: source.text,
+                        voice: voiceID, language: language)
+                    reserve.start(generator: generator, audio: AudioPlayerService.shared,
+                        speechInput: SpeechTextSanitizer.livePageRequest(source.text),
+                        isCurrent: { [weak self] in
+                            guard let self else { return false }
+                            return self.googleBooksSpeechPreloadGeneration == generation && self.isReadMode &&
+                                self.readVM?.isActive == true && self.pendingGoogleBooksSpeechPreview == candidate &&
+                                AppSettings.shared.voice(for: language) == voiceID
+                        }, fitsBudget: { true })
+                    return reserve
+                }()
                 self.preparedGoogleBooksSpeechPreview =
                     GoogleBooksPreparedSpeechPreview(
                         candidate: candidate,
                         language: language,
                         voiceID: voiceID,
-                        segments: segments
+                        segments: segments,
+                        followingSource: followingSource,
+                        following: following
                     )
                 ReaderRunLog.write(
                     "GBOOKS speech preload ready " +
@@ -4229,6 +4383,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               !pendingGoogleBooksTurn,
               !pendingGoogleBooksManualTurn,
               let preview = pendingGoogleBooksPagePreview,
+              preview.readPage.indices.contains(preview.preparedParagraphIndex),
+              SpeechTextSanitizer.containsSpeakableContent(preview.readPage[preview.preparedParagraphIndex].text),
               preview.sourceSignature == lastGoogleBooksSignature else { return }
 
         // A short current-item buffering transition is not source invalidation.
@@ -4244,6 +4400,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 )
                 return
             }
+            preparedGoogleBooksReadPage?.following.forEach { $0.discardIfSpeculative() }
             preparedGoogleBooksReadPage = nil
         }
         guard googleBooksReadPreloadTask == nil else { return }
@@ -4280,10 +4437,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 guard self.isCurrentGoogleBooksPredictionSource(
                     preview.sourceSignature
                 ) else { return }
+                let following = self.prepareGoogleBooksFollowingReserves(preview, voiceID: voiceID,
+                    generation: generation, generator: generator)
                 self.preparedGoogleBooksReadPage = GoogleBooksPreparedReadPage(
                     preview: preview,
                     voiceID: voiceID,
-                    segments: segments
+                    segments: segments,
+                    following: following
                 )
                 ReaderRunLog.write(
                     "GBOOKS preload audio ready source=\(String(preview.sourceSignature.prefix(12))) " +
@@ -4312,6 +4472,45 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
     }
 
+    /// Retain a bounded duration of this exact successor page, not only its
+    /// first (possibly one-word) paragraph. Producers remain sequential until
+    /// adoption; the ordinary VM takes over the same tasks and media leases.
+    private func prepareGoogleBooksFollowingReserves(_ preview: GoogleBooksPagePreview,
+        voiceID: String, generation: UInt64,
+        generator: any ParagraphSpeechGenerating) -> [LivePagePreparedSpeech] {
+        guard !VoiceOption.requiresGenerationQuota(voiceID) else { return [] }
+        let audio = AudioPlayerService.shared
+        let indices = preview.readPage.indices.filter {
+            $0 > preview.preparedParagraphIndex && preview.readPage[$0].type.isReadable &&
+                SpeechTextSanitizer.containsSpeakableContent(preview.readPage[$0].resolvedSpeechText)
+        }.prefix(6)
+        return indices.map { index in
+            let source = preview.readPage[index].resolvedSpeechText
+            let reserve = LivePagePreparedSpeech(paragraphIndex: index, sourceText: source,
+                voice: voiceID, language: preview.language)
+            reserve.start(generator: generator, audio: audio,
+                speechInput: SpeechTextSanitizer.livePageRequest(source),
+                isCurrent: { [weak self] in
+                    guard let self else { return false }
+                    return self.googleBooksPreloadGeneration == generation && self.isReadMode &&
+                        self.readVM?.isActive == true &&
+                        self.pendingGoogleBooksPagePreview?.sourceSignature == preview.sourceSignature &&
+                        self.pendingGoogleBooksPagePreview?.contentFingerprint == preview.contentFingerprint &&
+                        AppSettings.shared.voice(for: preview.language) == voiceID
+                }, fitsBudget: { [weak self] in
+                    guard let prepared = self?.preparedGoogleBooksReadPage else { return false }
+                    // Await the earlier paragraph's complete source, including
+                    // any partly suffix. Do not flood the HTTP admission queue.
+                    guard prepared.following.filter({ $0.stream.paragraphIndex < index })
+                        .allSatisfy({ $0.stream.finished && $0.stream.failure == nil }) else { return false }
+                    let buffered = prepared.segments + prepared.following.flatMap { $0.stream.segments }
+                    return buffered.count < 64 && buffered.reduce(0, { $0 + $1.audioData.count }) < 4 * 1024 * 1024 &&
+                        buffered.reduce(0, { $0 + max(0, $1.duration) }) / max(0.25, Double(audio.playbackRate)) < 24
+                })
+            return reserve
+        }
+    }
+
     /// Prepare the next page's QuickRead plan, first narration block, audio,
     /// and marks while the current explanation is still playing. Unlike Read,
     /// this payload is adopted only after the visible Google page commits.
@@ -4325,11 +4524,20 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               vm.isActive,
               vm.status.isActive,
               vm.canPlanAdjacentLivePage,
-              let preview = pendingGoogleBooksPagePreview,
-              preview.sourceSignature == lastGoogleBooksSignature else {
+              let immediatePreview = pendingGoogleBooksPagePreview,
+              immediatePreview.sourceSignature == lastGoogleBooksSignature else {
             return
         }
 
+        var preview = immediatePreview
+        let immediate = ReadingDocument(id: vm.document.id, title: vm.document.title,
+            sourceKind: vm.document.sourceKind, language: preview.language,
+            paragraphs: preview.explainPage, sourceURL: vm.document.sourceURL)
+        if !ExplainViewModel.canPrefetchExplanation(immediate), let following = preview.following.first {
+            let transit = preview
+            preview = following
+            preview.transit = [transit]
+        }
         let settings = AppSettings.shared
         let depth = settings.explainDepth
         let requestedLanguage = settings.explainLanguage
@@ -4353,12 +4561,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         guard ProManager.shared.isPro,
               googleBooksExplainPrefetchTask == nil else { return }
 
-        let token = [
-            preview.sourceSignature,
-            preview.contentFingerprint,
-            requestedLanguage,
-            depth,
-        ].joined(separator: "|")
         let target = ReadingDocument(
             id: vm.document.id,
             title: vm.document.title,
@@ -4390,22 +4592,16 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 let payload = try await work.value
                 try Task.checkCancellation()
                 guard generation == self.googleBooksExplainPrefetchGeneration else { return }
-                self.pendingGoogleBooksExplanation = nil
                 let currentSettings = AppSettings.shared
-                let currentToken = [
-                    self.pendingGoogleBooksPagePreview?.sourceSignature ?? "",
-                    self.pendingGoogleBooksPagePreview?.contentFingerprint
-                        ?? "",
-                    currentSettings.explainLanguage,
-                    currentSettings.explainDepth,
-                ].joined(separator: "|")
-                guard token == currentToken,
-                      self.isCurrentGoogleBooksPredictionSource(
-                        preview.sourceSignature
-                      ) else {
+                guard self.pendingGoogleBooksExplanation?.preview.contentFingerprint == preview.contentFingerprint,
+                      currentSettings.explainLanguage == requestedLanguage,
+                      currentSettings.explainDepth == depth,
+                      self.googleBooksExplainSourceMatches(preview.sourceSignature, self.lastGoogleBooksSignature) else {
+                    self.pendingGoogleBooksExplanation = nil
                     self.googleBooksExplainPrefetchTask = nil
                     return
                 }
+                self.pendingGoogleBooksExplanation = nil
                 let voiceID = currentSettings.voice(
                     for: payload.outputLanguage
                 )
@@ -4440,6 +4636,28 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
     }
 
+    private func googleBooksExplainSourceMatches(_ baseline: String, _ committed: String) -> Bool {
+        baseline == committed || (googleBooksExplainTransit?.source == baseline &&
+                                  googleBooksExplainTransit?.committed == committed)
+    }
+
+    private func retainExplanationAcrossShortPage(previous: String, committed: String,
+        paragraphs: [ReadingParagraph], slices: [LiveWebPageSourceSlice]) -> Bool {
+        guard googleBooksExplainTransit == nil,
+              let target = preparedGoogleBooksExplanation?.preview ?? pendingGoogleBooksExplanation?.preview,
+              let transit = target.transit.first,
+              transit.sourceSignature == previous,
+              GoogleBooksExplainPagePrefetchContract.exactVisibleSourceMatch(
+                predictedParagraphs: transit.explainPage.map(\.text), visibleParagraphs: paragraphs.map(\.text),
+                predictedSourceSlices: transit.explainSourceSlices, visibleSourceSlices: slices) else { return false }
+        let document = ReadingDocument(id: "short-transit", title: "", sourceKind: .googleBooks,
+            language: transit.language, paragraphs: paragraphs)
+        guard !ExplainViewModel.canPrefetchExplanation(document) else { return false }
+        googleBooksExplainTransit = (previous, committed)
+        ReaderRunLog.write("GBOOKS explain short-page retained successor=\(target.contentFingerprint)")
+        return true
+    }
+
     private func takePendingGoogleBooksExplanation(
         sourceSignature: String, visibleParagraphs: [ReadingParagraph],
         visibleSourceSlices: [LiveWebPageSourceSlice]
@@ -4448,7 +4666,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               let pending = pendingGoogleBooksExplanation else { return nil }
         let settings = AppSettings.shared
         guard GoogleBooksExplainPagePrefetchContract.canConsume(
-            sourceSignature: pending.preview.sourceSignature, previousSignature: sourceSignature,
+            sourceSignature: pending.preview.sourceSignature, previousSignature:
+                googleBooksExplainSourceMatches(pending.preview.sourceSignature, sourceSignature)
+                    ? pending.preview.sourceSignature : sourceSignature,
             predictedContentFingerprint: pending.preview.contentFingerprint,
             payloadTextFingerprint: pending.preview.contentFingerprint,
             predictedParagraphs: pending.preview.explainPage.map(\.text),
@@ -4491,7 +4711,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let canConsume =
             GoogleBooksExplainPagePrefetchContract.canConsume(
                 sourceSignature: prepared.preview.sourceSignature,
-                previousSignature: sourceSignature,
+                previousSignature: googleBooksExplainSourceMatches(prepared.preview.sourceSignature, sourceSignature)
+                    ? prepared.preview.sourceSignature : sourceSignature,
                 predictedContentFingerprint:
                     prepared.preview.contentFingerprint,
                 payloadTextFingerprint:
@@ -4517,6 +4738,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func invalidateGoogleBooksExplainPrefetch(reason: String) {
+        googleBooksExplainTransit = nil
         googleBooksExplainPrefetchGeneration &+= 1
         pendingGoogleBooksExplanation?.task.cancel()
         pendingGoogleBooksExplanation = nil
@@ -4552,6 +4774,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             for: prepared.preview.language
         )
         guard prepared.voiceID == selectedVoice else {
+            preparedGoogleBooksReadPage?.following.forEach { $0.discardIfSpeculative() }
             preparedGoogleBooksReadPage = nil
             maybeStartGoogleBooksReadPreload()
             return
@@ -4856,10 +5079,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 preservePrediction: false
             )
         }
-        return matchingPreparedGoogleBooksReadPage(
+        let prepared = matchingPreparedGoogleBooksReadPage(
             previousSignature: previousSignature,
             visibleParagraphs: visibleParagraphs
         )
+        // Detach the exact reserves before invalidating the old prediction;
+        // synchronous VM adoption below transfers their cancellation owner.
+        if prepared != nil { preparedGoogleBooksReadPage = nil }
+        return prepared
     }
 
     /// Inspect without retiring the producer or its cache. A carried source
@@ -4923,6 +5150,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         googleBooksPreloadGeneration &+= 1
         googleBooksReadPreloadTask?.cancel()
         googleBooksReadPreloadTask = nil
+        preparedGoogleBooksReadPage?.following.forEach { $0.discardIfSpeculative() }
         preparedGoogleBooksReadPage = nil
         if !preservePrediction {
             pendingGoogleBooksPagePreview = nil
@@ -4937,9 +5165,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         googleBooksSpeechPreloadGeneration &+= 1
         googleBooksSpeechPreloadTask?.cancel()
         googleBooksSpeechPreloadTask = nil
+        preparedGoogleBooksSpeechPreview?.following?.discardIfSpeculative()
         preparedGoogleBooksSpeechPreview = nil
         if !preserveCandidate {
             pendingGoogleBooksSpeechPreview = nil
+            pendingGoogleBooksSpeechFollowingSource = nil
         }
         ReaderRunLog.write(
             "GBOOKS speech preload invalidated reason=\(reason) " +
@@ -5387,6 +5617,19 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                                    "originFrameSessionID": frame])
                 ReaderRunLog.write("GBOOKS reflow reveals speaking source direction=\(direction)")
                 return
+            } else if livePlatform == .googleBooks, !pendingGoogleBooksTurn, !pendingGoogleBooksManualTurn,
+                      googleBooksReflowRevealSignatures.count < 3,
+                      !googleBooksReflowRevealSignatures.contains(signature),
+                      let frame = activeGoogleBooksFrameSessionID {
+                // Google sometimes resets to the chapter's first spread on
+                // rotation, leaving no visible neighbor from the old spread.
+                // Only its verified native page sequence may locate the exact
+                // speaking source; do not clear the active queue to page zero.
+                googleBooksReflowRevealSignatures.insert(signature)
+                call("gbRefresh", ["reflowSourceText": anchor.sourceParagraphText,
+                    "reflowBaseline": signature, "originFrameSessionID": frame])
+                ReaderRunLog.write("GBOOKS reflow requests verified native source reveal")
+                return
             }
         }
 
@@ -5440,7 +5683,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             explainSegments = googleBooksExplainSourceSlices.enumerated().map { index, slice in
                 ["paragraphIndex": index, "text": slice.text,
                  "domParagraphIndex": remapped[index]?.visibleParagraphIndex ?? -1,
-                 "domCharOffset": remapped[index]?.sourceUTF16Start ?? slice.sourceUTF16Start ?? 0] as [String: Any]
+                 "domFragments": LiveWebSourceReflowContract.domFragments(for: slice,
+                    in: parsed.sourceSlices, domOffsets: parsed.explainDOMCharacterOffsets).map(\.payload)] as [String: Any]
             }
             googleBooksExplainSourceSlices = zip(googleBooksExplainSourceSlices, remapped).map { $0.1 ?? $0.0 }
             googleBooksExplainReflowPage = parsed
@@ -5452,7 +5696,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             #endif
             readVM.stageInactiveLiveWebPage(parsed.paragraphs, language: parsed.language, weReadBoundary: parsed.boundary)
         } else {
-            explainSegments = makeExplainDOMSegments(pageForDOMMapping.explainSourceSlices)
+            explainSegments = makeExplainDOMSegments(pageForDOMMapping)
         }
 
         if isEquivalentRefresh {
@@ -5896,7 +6140,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 parsed.paragraphs,
                 language: parsed.language,
                 preparedSegments: handoff.segments,
-                weReadBoundary: parsed.boundary
+                weReadBoundary: parsed.boundary,
+                following: matchingPreparedGoogleBooksReadPage(previousSignature: previousCommittedSignature,
+                    visibleParagraphs: parsed.paragraphs)?.following ?? []
             )
             if committed {
                 if let boundaryTurn {
@@ -5956,7 +6202,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 parsed.paragraphs,
                 language: parsed.language,
                 preparedSegments: handoff.segments,
-                weReadBoundary: parsed.boundary
+                weReadBoundary: parsed.boundary,
+                following: speechCommit?.following ?? []
             )
             if committed {
                 if let boundaryTurn {
@@ -6012,7 +6259,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 weReadBoundary: parsed.boundary,
                 prepared: preparedGoogleBooksCarryParagraph(
                     previousSignature: previousCommittedSignature, page: parsed
-                )
+                ),
+                following: matchingPreparedGoogleBooksReadPage(previousSignature: previousCommittedSignature,
+                    visibleParagraphs: parsed.paragraphs)?.following ?? []
            ) {
             explainVM?.stageInactiveLiveWebPage(
                 parsed.explainParagraphs,
@@ -6085,6 +6334,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             )
         } else {
             preparedReadPage = nil
+            if let speechCommit, !speechCommit.following.isEmpty {
+                // Transfer the verified producer before invalidating the old
+                // prediction. VM adoption below takes its cancellation owner.
+                preparedGoogleBooksSpeechPreview = nil
+            }
             invalidateGoogleBooksSpeechPreload(
                 reason: "speech-visible-page-committed",
                 preserveCandidate: false
@@ -6111,7 +6365,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     speechCommit.rebasedSegments,
                     paragraphIndex:
                         speechCommit.split
-                            .preparedParagraphIndex
+                            .preparedParagraphIndex,
+                    following: speechCommit.following
                 )
                 ReaderRunLog.write(
                     "GBOOKS speech preload consumed " +
@@ -6130,7 +6385,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 readVM.startWithPrefetchedSegments(
                     preparedReadPage.segments,
                     paragraphIndex:
-                        preparedReadPage.preview.preparedParagraphIndex
+                        preparedReadPage.preview.preparedParagraphIndex,
+                    following: preparedReadPage.following
                 )
                 ReaderRunLog.write(
                     "GBOOKS preload consumed next=\(String(preparedReadPage.preview.contentFingerprint.prefix(12))) " +
@@ -6162,6 +6418,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                                 ?? previousCommittedSignature
                         )
                         : previousCommittedSignature
+                if wasAutomaticTurn, retainExplanationAcrossShortPage(previous: preloadSourceSignature,
+                    committed: signature, paragraphs: parsed.explainParagraphs, slices: parsed.explainSourceSlices) {
+                    explainPrefetched = nil
+                } else {
                 pendingExplanation = takePendingGoogleBooksExplanation(
                     sourceSignature: preloadSourceSignature,
                     visibleParagraphs: parsed.explainParagraphs,
@@ -6172,6 +6432,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                         visibleParagraphs: parsed.explainParagraphs,
                         visibleSourceSlices: parsed.explainSourceSlices
                     )
+                }
             } else {
                 invalidateGoogleBooksExplainPrefetch(
                     reason: "page-commit-without-resume"
@@ -6504,7 +6765,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 applyExplainedSourceRanges(to: &reflow)
                 if reflow.explainParagraphs.contains(where: { SpeechTextSanitizer.containsSpeakableContent($0.text) }) {
                     googleBooksExplainSourceSlices = reflow.explainSourceSlices
-                    googleBooksExplainDOMSegments = makeExplainDOMSegments(reflow.explainSourceSlices)
+                    googleBooksExplainDOMSegments = makeExplainDOMSegments(reflow)
                     shownMarkIds.removeAll()
                     call("clearMarks")
                     installGoogleBooksDOMMapping()
@@ -6613,8 +6874,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             origin = handoff.prepared.candidate.sourceUTF16Start
             segment = first
         } else { return nil }
-        guard origin >= 0, let range = WeReadCrossPageSpeechContract.sourceRange(source: source,
-            segments: [segment], segmentID: segment.id, time: 0), range.length > 0,
+        guard origin >= 0, let range = WeReadCrossPageSpeechContract.openingSourceRange(source: source, segment: segment), range.length > 0,
             NSMaxRange(range) <= source.utf16.count else { return nil }
         return ["id": holdID.uuidString, "sourceParagraphIndex": paragraph,
             "sourceStart": origin + range.location, "sourceEnd": origin + NSMaxRange(range),
@@ -6734,7 +6994,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             googleBooksPresentationDeadline?.cancel()
             googleBooksPresentationRetry?.cancel()
             googleBooksPresentationRetry = nil
-            ReaderRunLog.write("PAGINATION native_book_end_drained platform=kobo")
+            ReaderRunLog.write("PAGINATION native_book_end_drained platform=\(livePlatform?.rawValue ?? "web")")
         }
         if GoogleBooksPageVisualStateContract.shouldRestoreAfterFailedTurn(
             preserveLateResult: preserveLateResult
@@ -6930,9 +7190,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
     }
 
-    /// Kobo's bookmark can lag behind audio, or lead it after a paused manual
-    /// turn. Check nearby earlier pages before the bounded forward search.
-    /// Verify the saved paragraph before exposing an initial page to the VM.
+    /// Restore by one native book location, then verify the saved source.
+    /// Never search by visibly paging through the book: a stale checkpoint
+    /// previously caused up to 64 rapid turns and changed the provider bookmark.
+    /// If positioning is unavailable or does not match, expose the current
+    /// stable page without autoplay and retain the durable listening checkpoint.
     private func restoreOpeningKoboPageIfNeeded(
         _ page: [ReadingParagraph], payload: [String: Any], signature: String
     ) -> Bool {
@@ -6944,69 +7206,52 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         googleBooksReadinessTask = nil
         if ReadingResumeDocumentIndex(paragraphs: page).resolve(checkpoint) != nil ||
             ReadingResumeContract.relocatedKoboCheckpoint(checkpoint, paragraphs: page) != nil {
-            ReaderRunLog.write("KOBO resume page matched turns=\(koboResumeVisited.count)")
-            koboOpeningCheckpoint = nil
-            koboResumeTimeout?.cancel()
-            resetKoboResumeNavigation()
+            ReaderRunLog.write("KOBO resume source matched direct=\(koboResumeLocationAttempted)")
+            finishKoboOpeningResume()
+            return false
+        }
+        guard let location = checkpoint.koboLocation,
+              location.isValid(for: readVM?.document.sourceURL), let webView else {
+            ReaderRunLog.write("KOBO resume retained current page reason=no-valid-location")
+            finishKoboOpeningResume()
             return false
         }
         if koboResumeLastSignature == signature { return true }
-        guard koboResumeSteps < 64, let webView else {
-            koboOpeningCheckpoint = nil
-            resetKoboResumeNavigation()
-            return false
-        }
         guard koboResumeReadySignature == signature else {
             awaitKoboResumeNavigation(payload: payload, signature: signature)
             return true
         }
         koboResumeReadySignature = nil
-        koboResumeVisited.insert(signature)
+        if koboResumeLocationAttempted {
+            ReaderRunLog.write("KOBO resume retained current page reason=source-mismatch")
+            finishKoboOpeningResume()
+            return false
+        }
+        koboResumeLocationAttempted = true
         koboResumeLastSignature = signature
-        let location = checkpoint.koboLocation
-        let useLocation = !koboResumeLocationAttempted
-            && location?.isValid(for: readVM?.document.sourceURL) == true
-        if useLocation { koboResumeLocationAttempted = true }
-        let backwards = (1...3).contains(koboResumeSteps)
-        if !useLocation { koboResumeSteps += 1 }
         koboResumeTimeout?.cancel()
-        ReaderRunLog.write("KOBO resume finding page attempt=\(koboResumeSteps) direction=\(useLocation ? "saved-location" : backwards ? "prev" : "next")")
-        let action = backwards ? "prevPage" : "nextPage"
+        onLiveWebNeedsLoadingCover?()
+        ReaderRunLog.write("KOBO resume direct location request")
         let resumeGeneration = koboResumeNavigationGeneration
         let accountBoundary = AccountContentIsolation.captureBoundaryToken()
-        let arguments: [String: Any] = useLocation ? [
-            "bookUUID": location!.bookUUID.lowercased(), "percentage": location!.percentage
-        ] : [:]
-        let script = useLocation
-            ? "return window.CastReaderKobo?.restoreLocation?.({bookUUID,percentage}) === true"
-            : "return window.CastReaderKobo?.\(action)?.() === true"
         Task { @MainActor [weak self, weak webView] in
             guard let self, let webView, self.webView === webView,
                   self.koboOpeningCheckpoint != nil, !self.didInit,
                   self.koboResumeNavigationGeneration == resumeGeneration,
                   accountBoundary == AccountContentIsolation.captureBoundaryToken() else { return }
-            let outcome: Result<Any, Error>
-            do {
-                outcome = .success(try await webView.callAsyncJavaScript(
-                    script, arguments: arguments, in: nil, contentWorld: .page))
-            } catch { outcome = .failure(error) }
+            let accepted = (try? await webView.callAsyncJavaScript(
+                "return window.CastReaderKobo?.restoreLocation?.({bookUUID,percentage}) === true",
+                arguments: ["bookUUID": location.bookUUID.lowercased(), "percentage": location.percentage],
+                in: nil, contentWorld: .page)) as? Bool == true
             guard self.koboOpeningCheckpoint != nil,
                   self.koboResumeNavigationGeneration == resumeGeneration,
                   accountBoundary == AccountContentIsolation.captureBoundaryToken(),
                   self.webView === webView else { return }
-            let result = try? outcome.get()
-            if result as? Bool != true {
-                if useLocation {
-                    // Old readers and unsupported layouts retain the bounded
-                    // source-verified search. A rejected hint is not a match.
-                    self.koboResumeLastSignature = nil
-                } else if case .success = outcome, backwards || self.koboResumeSteps == 1 {
-                    // The last book page cannot move forward, but its saved
-                    // listening word can still be on an adjacent prior page.
-                    if backwards { self.koboResumeSteps = 4 }
-                    self.koboResumeLastSignature = nil
-                } else { self.koboOpeningCheckpoint = nil }
-                self.receiveGoogleBooksPage(self.koboResumeLatestPayload ?? payload)
+            if !accepted {
+                let latest = self.koboResumeLatestPayload ?? payload
+                ReaderRunLog.write("KOBO resume retained current page reason=location-rejected")
+                self.finishKoboOpeningResume()
+                self.receiveGoogleBooksPage(latest)
                 return
             }
             self.koboResumeTimeout = Task { @MainActor [weak self] in
@@ -7014,12 +7259,20 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 guard let self, !Task.isCancelled, self.koboOpeningCheckpoint != nil,
                       self.koboResumeNavigationGeneration == resumeGeneration,
                       accountBoundary == AccountContentIsolation.captureBoundaryToken() else { return }
-                if useLocation { self.koboResumeLastSignature = nil }
-                else { self.koboOpeningCheckpoint = nil }
-                self.receiveGoogleBooksPage(self.koboResumeLatestPayload ?? payload)
+                let latest = self.koboResumeLatestPayload ?? payload
+                ReaderRunLog.write("KOBO resume retained current page reason=location-timeout")
+                self.finishKoboOpeningResume()
+                self.receiveGoogleBooksPage(latest)
             }
         }
         return true
+    }
+
+    private func finishKoboOpeningResume() {
+        koboOpeningCheckpoint = nil
+        koboResumeTimeout?.cancel()
+        koboResumeTimeout = nil
+        resetKoboResumeNavigation()
     }
 
     private func resetKoboResumeNavigation() {
@@ -7048,7 +7301,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                       !self.koboOfficialRecoveryInProgress,
                       boundary == AccountContentIsolation.captureBoundaryToken() else { return }
                 let ready = (try? await webView.evaluateJavaScript(
-                    "window.CastReaderKobo?.navigationReady?.() === true"
+                    "window.CastReaderKobo?.restoreReady?.() === true"
                 )) as? Bool == true
                 guard !Task.isCancelled,
                       self.koboResumeNavigationGeneration == generation,
@@ -7061,7 +7314,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     if ready {
                         self.koboResumeReadySignature = latest.signature
                     } else {
-                        self.koboOpeningCheckpoint = nil
+                        self.finishKoboOpeningResume()
                         ReaderRunLog.write("KOBO resume navigation unavailable after readiness deadline; checkpoint retained")
                     }
                     self.receiveGoogleBooksPage(latest.payload)
@@ -7170,6 +7423,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               !googleBooksReflowRevealSignatures.contains(signature),
               let frame = activeGoogleBooksFrameSessionID else { return false }
         let source = googleBooksExplainSourceSlices[mark.paragraphIndex]
+        if let range = explainVM?.webUTF16Range(for: mark),
+           LiveWebSourceReflowContract.domFragments(for: source, in: page.sourceSlices,
+                domOffsets: page.explainDOMCharacterOffsets).contains(where: {
+                    max($0.charStart, range.lowerBound) < min($0.charEnd, range.upperBound)
+                }) {
+            // The same source paragraph may occupy both visible columns.
+            // Its first fragment alone cannot authorize another page turn.
+            return false
+        }
         let direction: String?
         if let mapped = LiveWebSourceReflowContract.remap(source, in: page.sourceSlices),
            let target = page.sourceSlices.first(where: { $0.visibleParagraphIndex == mapped.visibleParagraphIndex }),
@@ -7206,14 +7468,16 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let slices = LiveWebSourceReflowContract.remaining(page.sourceSlices, after: consumed)
         page.explainSourceSlices = slices
         page.explainParagraphs = slices.enumerated().map { ReadingParagraph(id: $0.offset, text: $0.element.text, type: .paragraph) }
-        page.explainDOMCharacterOffsets = slices.map { $0.sourceUTF16Start ?? 0 }
+        // Keep the original visible-fragment DOM origins. Consumed source
+        // prefixes change narration scope, not the underlying DOM coordinates.
     }
 
-    private func makeExplainDOMSegments(_ slices: [LiveWebPageSourceSlice]) -> [[String: Any]] {
-        slices.enumerated().map { index, slice in
+    private func makeExplainDOMSegments(_ page: GoogleBooksParsedPage) -> [[String: Any]] {
+        page.explainSourceSlices.enumerated().map { index, slice in
             ["paragraphIndex": index, "text": slice.text,
              "domParagraphIndex": slice.visibleParagraphIndex,
-             "domCharOffset": slice.sourceUTF16Start ?? 0] as [String: Any]
+             "domFragments": LiveWebSourceReflowContract.domFragments(for: slice,
+                in: page.sourceSlices, domOffsets: page.explainDOMCharacterOffsets).map(\.payload)] as [String: Any]
         }
     }
 

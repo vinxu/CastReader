@@ -1,0 +1,384 @@
+{
+  "candidate": 148,
+  "application_source_same_as": 147,
+  "version": "1.2.48",
+  "build": 72,
+  "scope": "Global route, private Chinese Read and Explain natural page continuation",
+  "status": "PASS",
+  "tests": {
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0
+  },
+  "device": {
+    "architecture": "arm64e",
+    "deviceId": "00008103-000D38E921D0C01E",
+    "deviceName": "moon ipad",
+    "modelName": "iPad Pro (12.9-inch) (5th generation)",
+    "osBuildNumber": "23G83",
+    "osVersion": "26.6.1",
+    "platform": "iOS"
+  },
+  "voice_selection": "region=global;voice=vc_62934fe77f764051aa341b4b076bbb85;output=zh",
+  "duration_seconds": 239.25099992752075,
+  "observed": {
+    "read_natural_turns": 1,
+    "explain_natural_turns": 1,
+    "pause_resume_both_modes": true,
+    "rate": 1.5,
+    "read_visual_request_to_release_ms": 230,
+    "read_visual_hold_ms": 87,
+    "explain_final_media_end_to_next_playing_ms": 275,
+    "source_cue_coverage_failures": 0,
+    "chinese_subtitle_measured_word_coverage": true,
+    "read_and_explain_screenshots_reviewed": true,
+    "clone_media_transitions": {
+      "count": 25,
+      "min_ms": 32,
+      "max_ms": 275,
+      "events": [
+        {
+          "from": "5-0",
+          "to": "5-1",
+          "ms": 47
+        },
+        {
+          "from": "5-1",
+          "to": "6-0",
+          "ms": 41
+        },
+        {
+          "from": "6-0",
+          "to": "7-0",
+          "ms": 45
+        },
+        {
+          "from": "7-0",
+          "to": "8-0",
+          "ms": 52
+        },
+        {
+          "from": "8-0",
+          "to": "9-0",
+          "ms": 56
+        },
+        {
+          "from": "9-0",
+          "to": "10-0",
+          "ms": 40
+        },
+        {
+          "from": "10-0",
+          "to": "11-0",
+          "ms": 40
+        },
+        {
+          "from": "11-0",
+          "to": "12-0",
+          "ms": 47
+        },
+        {
+          "from": "12-0",
+          "to": "13-0",
+          "ms": 43
+        },
+        {
+          "from": "13-0",
+          "to": "14-0",
+          "ms": 41
+        },
+        {
+          "from": "14-0",
+          "to": "15-0",
+          "ms": 47
+        },
+        {
+          "from": "15-0",
+          "to": "16-0",
+          "ms": 42
+        },
+        {
+          "from": "16-0",
+          "to": "17-0",
+          "ms": 47
+        },
+        {
+          "from": "17-0",
+          "to": "18-0",
+          "ms": 56
+        },
+        {
+          "from": "18-0",
+          "to": "19-0",
+          "ms": 41
+        },
+        {
+          "from": "19-0",
+          "to": "20-0",
+          "ms": 52
+        },
+        {
+          "from": "20-0",
+          "to": "21-0",
+          "ms": 61
+        },
+        {
+          "from": "21-0",
+          "to": "1-850010000",
+          "ms": 41
+        },
+        {
+          "from": "0-0",
+          "to": "0-1",
+          "ms": 41
+        },
+        {
+          "from": "0-1",
+          "to": "1-0",
+          "ms": 32
+        },
+        {
+          "from": "1-0",
+          "to": "1-1",
+          "ms": 51
+        },
+        {
+          "from": "1-1",
+          "to": "1-2",
+          "ms": 42
+        },
+        {
+          "from": "1-2",
+          "to": "2-0",
+          "ms": 40
+        },
+        {
+          "from": "2-0",
+          "to": "2-1",
+          "ms": 55
+        },
+        {
+          "from": "2-1",
+          "to": "0-0",
+          "ms": 275
+        }
+      ],
+      "exclusions": "Preset before private selection and deliberate user pause/mode switch are not automatic transitions"
+    }
+  },
+  "metrics": {
+    "private-chinese-explain-after-natural-page": {
+      "ready": "true",
+      "paragraphs": "9",
+      "characters": "416",
+      "time": "4.714761185",
+      "duration": "8.856",
+      "playing": "true",
+      "readActive": "false",
+      "readPaused": "false",
+      "audioText": "add8658f8a36763b89debc0c19ebb876851019d45b262abacec5124215069644",
+      "segment": "0-0",
+      "paragraph": "-1",
+      "page": "f848e2944b9cfb573fea28dbc907c94031c00eb227c36ced49a73583d6358fa1",
+      "mode": "explain",
+      "readSession": "ObjectIdentifier(0x000000013e9ad000)",
+      "explainSession": "ObjectIdentifier(0x000000011319b800)",
+      "automaticReadTurns": "1",
+      "automaticExplainTurns": "1",
+      "physicalExplainPages": "1",
+      "pendingPageTurn": "false",
+      "explainScope": "49eee865bdd8dbd20ac0adcfab43b38406ec7f96dc68a1eedcb3484cc1a50c8f",
+      "marks": "1",
+      "markIDs": "9A7F02E9-4D57-4C08-8212-9FC1EC19A018",
+      "wordVisible": "0",
+      "inkVisible": "2",
+      "inkTotal": "2",
+      "providerFont": "18",
+      "panelCount": "0",
+      "panelClipped": "0",
+      "surfaceCovered": "false",
+      "frames": "4",
+      "width": "1024.0",
+      "height": "1172.0"
+    },
+    "private-chinese-explain-playing": {
+      "ready": "true",
+      "paragraphs": "17",
+      "characters": "812",
+      "time": "0.0",
+      "duration": "6.384",
+      "playing": "false",
+      "readActive": "false",
+      "readPaused": "false",
+      "audioText": "bb8e7522f821110c6476e8126e9acd500fcd81006cd53e2c559047d80a65a559",
+      "segment": "0-1",
+      "paragraph": "1",
+      "page": "cf622ee0243e3573102a4134031ff4ef0fc5bd1f66a57a42917fd9c7f900f180",
+      "mode": "explain",
+      "readSession": "ObjectIdentifier(0x000000013e9ad000)",
+      "explainSession": "ObjectIdentifier(0x000000011319b800)",
+      "automaticReadTurns": "1",
+      "automaticExplainTurns": "0",
+      "physicalExplainPages": "0",
+      "pendingPageTurn": "false",
+      "explainScope": "ac15149ba56edb310ffe8aff8a72003a920b14c38b3fbc1de228a8f545225e5e",
+      "marks": "2",
+      "markIDs": "4170C5A4-4CBE-481F-A9A2-496692764460,BA0611C5-A878-4ED1-BD15-0923B3798187",
+      "wordVisible": "0",
+      "inkVisible": "3",
+      "inkTotal": "3",
+      "providerFont": "18",
+      "panelCount": "0",
+      "panelClipped": "0",
+      "surfaceCovered": "false",
+      "frames": "4",
+      "width": "1024.0",
+      "height": "1172.0"
+    },
+    "private-chinese-read-after-natural-page": {
+      "ready": "true",
+      "paragraphs": "17",
+      "characters": "812",
+      "time": "7.10011539",
+      "duration": "7.896",
+      "playing": "true",
+      "readActive": "true",
+      "readPaused": "false",
+      "audioText": "4b4cb6f97fe2105fe0163e3b8a8d167dc118020f1cebe16c3cffc09ed32763ee",
+      "segment": "21-0",
+      "paragraph": "-1",
+      "page": "cf622ee0243e3573102a4134031ff4ef0fc5bd1f66a57a42917fd9c7f900f180",
+      "mode": "read",
+      "readSession": "ObjectIdentifier(0x000000013e9ad000)",
+      "explainSession": "ObjectIdentifier(0x000000011319b800)",
+      "automaticReadTurns": "1",
+      "automaticExplainTurns": "0",
+      "physicalExplainPages": "0",
+      "pendingPageTurn": "false",
+      "explainScope": "ac15149ba56edb310ffe8aff8a72003a920b14c38b3fbc1de228a8f545225e5e",
+      "marks": "0",
+      "markIDs": "",
+      "wordVisible": "1",
+      "inkVisible": "0",
+      "inkTotal": "0",
+      "providerFont": "18",
+      "panelCount": "0",
+      "panelClipped": "0",
+      "surfaceCovered": "false",
+      "frames": "4",
+      "width": "1024.0",
+      "height": "1172.0"
+    },
+    "private-chinese-read-playing": {
+      "ready": "true",
+      "paragraphs": "22",
+      "characters": "837",
+      "time": "7.100127956",
+      "duration": "9.576",
+      "playing": "true",
+      "readActive": "true",
+      "readPaused": "false",
+      "audioText": "87ce3fee50e671a64329b21f3b132f403fc4ab56b3be23832bb3f6fcf2a06d4a",
+      "segment": "5-0",
+      "paragraph": "5",
+      "page": "ac68dc134d02e1423c895fe6bdd01f1a8cc4c266dae5edd85df9ca0a4df21741",
+      "mode": "read",
+      "readSession": "ObjectIdentifier(0x000000013e9ad000)",
+      "explainSession": "ObjectIdentifier(0x000000011319b800)",
+      "automaticReadTurns": "0",
+      "automaticExplainTurns": "0",
+      "physicalExplainPages": "0",
+      "pendingPageTurn": "false",
+      "explainScope": "36466f7d94bbbe5d4034c2445f39eef56fd3fac74aabb7d5b4ac83e8575a7a7a",
+      "marks": "0",
+      "markIDs": "",
+      "wordVisible": "4",
+      "inkVisible": "0",
+      "inkTotal": "0",
+      "providerFont": "18",
+      "panelCount": "0",
+      "panelClipped": "0",
+      "surfaceCovered": "false",
+      "frames": "4",
+      "width": "1024.0",
+      "height": "1172.0"
+    }
+  },
+  "evidence": [
+    {
+      "name": "private-chinese-explain-after-natural-page-metrics_0_C6433424-1F0B-47D0-B83C-E496BE75AA92.txt",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/F8DB7377-4C6B-4149-8162-52B5BD53F062.txt",
+      "sha256": "85cdbe05f5dd39f3682816450b1b5c56d0a231447d00b59a660230c723705695"
+    },
+    {
+      "name": "private-chinese-explain-after-natural-page-accessibility_0_5C17D96D-0807-460A-9B70-2AAEF3990F4E.txt",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/C68D29FD-DB43-4EF6-B476-FFB2A1B0B4E4.txt",
+      "sha256": "95f16b95c2c3b9e44e1a37d8c2e8ee019ab7cb0d05c79e9457a540d0144c6a6b"
+    },
+    {
+      "name": "private-chinese-explain-after-natural-page_0_CB0B3949-E0EE-4AD8-B190-072837E8D39B.png",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/6C1B7F06-D97E-4D1C-BC6D-0CBD3EAC8DA1.png",
+      "sha256": "960fba6a40c911bcfb3a27e2eda5f705431eb74eb2010cfe6438728b6d311dbc"
+    },
+    {
+      "name": "private-chinese-explain-playing-metrics_0_6726B57C-ED47-4DF0-A6CF-47005DE1E3C7.txt",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/44A3CD9F-AB70-4C2C-8B99-0B09DEC31830.txt",
+      "sha256": "ad4dd5ee54687d233e1dd6ccce2123617f47521195c7927601276ff85960fad2"
+    },
+    {
+      "name": "private-chinese-explain-playing-accessibility_0_1AF00332-3A5B-4EC9-80A0-49AAF3B58DDF.txt",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/F3BDB6FE-6C7F-4DA7-A398-70411D17E101.txt",
+      "sha256": "d2120e66bf9030fa53117e16d33d0fd0288a920c020e3ce8ce171261458178c6"
+    },
+    {
+      "name": "private-chinese-explain-playing_0_E53E4430-3E47-468C-8A7C-172A733AFF75.png",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/1453143A-E3C0-4012-AED2-CAA2E1F0FB4E.png",
+      "sha256": "150c2f903ebc82094c141892e4d126185069026a8d19144c065845abea6fac77"
+    },
+    {
+      "name": "private-chinese-read-after-natural-page-metrics_0_F008CD3F-1BFB-4117-8935-AF24861387B1.txt",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/7AF720E1-ABCB-486F-BB82-55DDDB7FC181.txt",
+      "sha256": "23ee6e8c1397896e9a5470a08ef909725e8f62ebc3e8e654d266dd45a5ce820e"
+    },
+    {
+      "name": "private-chinese-read-after-natural-page-accessibility_0_21F859A8-4F9F-4FD2-AAAF-045D28E81C44.txt",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/3B2BD74F-A3CB-4A2C-BEE3-83E1B2DD34F3.txt",
+      "sha256": "9ccfcda82b3254417b82c176685b49f26443d2fb8e205a475dbbbe8b96520d20"
+    },
+    {
+      "name": "private-chinese-read-after-natural-page_0_2A9A93DC-DFE0-48B4-B279-44024305F44E.png",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/9B8199A6-024D-459C-A92E-EC7565D57321.png",
+      "sha256": "94d735b015c9cda7158b02514844adfe9a5034087e9e36abbb921353509d62fb"
+    },
+    {
+      "name": "private-chinese-read-playing-metrics_0_B77C95F1-0306-4F70-B1B4-D7BE0DBAF3E9.txt",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/E7919489-4885-447E-A361-C5B281047BCB.txt",
+      "sha256": "f6181e5904dfcfdc247596e216706fc465ffe42dcf45911ecb39d9d08e6dd637"
+    },
+    {
+      "name": "private-chinese-read-playing-accessibility_0_EA184FBE-8CB2-4A7C-96A9-B953F799D06A.txt",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/B651DD3E-4D42-4877-A17E-8B8260F9C017.txt",
+      "sha256": "4b783a6a1aaed8d7fb4ad34445d8e693b5d5f439ea8e1aedc3354f79d1c71076"
+    },
+    {
+      "name": "private-chinese-read-playing_0_51B55343-9207-4373-9A0F-E0951BC55424.png",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/B0950034-A23F-4DDB-ADCC-D9295D74944C.png",
+      "sha256": "08b9da5b1ac1fe4881ded8b8f347b00a2e07a89837f467503095aa4092af6bc0"
+    },
+    {
+      "name": "private-chinese-voice-selection_0_4054C226-0C88-49F8-A6F4-403359D30DB9.txt",
+      "path": "/tmp/castreader148-ipad-private-chinese/attachments/7C039336-389B-4DE4-B7B0-C2883420938F.txt",
+      "sha256": "56f7bf33e2882e32026e38bf36f62214bf08d49370a5694a57714eb3d59ed453"
+    }
+  ],
+  "pagination_log": {
+    "path": "/tmp/castreader148-global-pagination.log",
+    "sha256": "8b45ce35456a7093088eebd9c8b25d83f7895fdc762da4bfac35a444b0d413aa"
+  },
+  "limitations": [
+    "Application-event timing, not acoustic zero-silence proof",
+    "One targeted natural transition per mode; preserves earlier four-platform acceptance",
+    "This Chinese run on Global route does not replace CN account/API or Global English core cells",
+    "The first Explain screenshot metrics can sample an item transition; subsequent real clock and source marks and natural continuation are separately confirmed"
+  ]
+}

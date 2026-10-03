@@ -1,0 +1,123 @@
+{
+  "raw_log": "/private/tmp/castreader144-weread-continuation.log",
+  "raw_sha256": "a85a5959c64bf80b32f9f27d8c06fff35cfac9dcaa94569317a792fc9d5f0bdf",
+  "measurement": "Application event clock; includes native turn time separately; no acoustic claim",
+  "summary": {
+    "preset": {
+      "all_commits": 0,
+      "all_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    },
+    "clone": {
+      "all_commits": 0,
+      "all_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    },
+    "voice_not_recorded": {
+      "all_commits": 1,
+      "all_audible_paths": {
+        "count": 1,
+        "request_to_commit_ms": {
+          "samples": 1,
+          "p95": 184,
+          "max": 184
+        },
+        "commit_to_playing_ms": {
+          "samples": 1,
+          "p95": 47,
+          "max": 47
+        },
+        "ended_to_playing_ms": {
+          "samples": 1,
+          "p95": 232,
+          "max": 232
+        }
+      },
+      "ready_and_decoded_hits_only": {
+        "count": 1,
+        "request_to_commit_ms": {
+          "samples": 1,
+          "p95": 184,
+          "max": 184
+        },
+        "commit_to_playing_ms": {
+          "samples": 1,
+          "p95": 47,
+          "max": 47
+        },
+        "ended_to_playing_ms": {
+          "samples": 1,
+          "p95": 232,
+          "max": 232
+        }
+      },
+      "other_or_cold_audible_paths": {
+        "count": 0,
+        "request_to_commit_ms": null,
+        "commit_to_playing_ms": null,
+        "ended_to_playing_ms": null
+      },
+      "without_audio": []
+    }
+  },
+  "rows": [
+    {
+      "commit_line": 785,
+      "commit_ms": 48952783,
+      "request_ms": 48952599,
+      "prior_audio_end_ms": 48952598,
+      "source": "575f87a3",
+      "voice": null,
+      "prefetch_hit": true,
+      "pending_producer_adopted": false,
+      "decoded_media_adopted": true,
+      "outcome": "playing",
+      "request_to_commit_ms": 184,
+      "playing_line": 808,
+      "playing_ms": 48952830,
+      "commit_to_playing_ms": 47,
+      "ended_to_playing_ms": 232
+    }
+  ],
+  "final_acceptance": false,
+  "candidate": 144,
+  "platform": "weread",
+  "interval_clock": [
+    "13:34:55",
+    "13:36:10"
+  ]
+}

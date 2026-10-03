@@ -83,7 +83,12 @@ final class ReaderWebAppearanceCenter {
 
     static let openKoboContentsScript = #"""
     (() => {
-      const control = document.querySelector('[aria-label="Open table of contents"]');
+      if (location.hostname !== 'readnow.kobo.com') return false;
+      // Kobo localizes the label (for example 開啟目錄 on a Chinese device).
+      // Its native footer owns this dedicated button in every locale, even
+      // when the toolbar is visually hidden during continuous reading.
+      const control = document.querySelector('.RXFooter_metaInfoTocButton .TextButton_clickable') ||
+        document.querySelector('[aria-label="Open table of contents"],[aria-label="開啟目錄"],[aria-label="打开目录"]');
       if (!control) return false;
       control.click();
       return true;

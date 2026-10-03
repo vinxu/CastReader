@@ -384,6 +384,20 @@ enum WeReadWebScripts {
         };
       }
 
+      // didCommit runs before the native shelf scan. An authenticated home
+      // still mounts LoginModal, so its exposed.show fallback must not create
+      // a QR that would itself make the following scan look signed out.
+      // Read only cookie names; the official site remains the session owner.
+      const cookieNames = new Set(String(document.cookie || '').split(';').map(item => item.split('=')[0].trim()));
+      const hasSessionIdentity = (cookieNames.has('wr_vid') || cookieNames.has('wr_localvid')) &&
+        cookieNames.has('wr_skey');
+      const explicitSignIn = Array.from(document.querySelectorAll('a,button,[role="button"],body *')).some(element =>
+        visible(element) && /^(登录|扫码登录|Log\s*in|Sign\s*in)$/i.test(clean(element.textContent))
+      );
+      if (hasSessionIdentity && !explicitSignIn) {
+        return { state: 'authenticated', uidPresent: false, vueReady: true };
+      }
+
       const now = Date.now();
       const requestedAt = Number(session.presentationRequestedAt || 0);
       if (requestedAt > 0) {
@@ -435,7 +449,7 @@ enum WeReadWebScripts {
       // delegated Vue handler receives a real bubbling pointer action.
       const knownLoginControl = document.querySelector('.wr_index_page_top_section_header_action_link');
       let exactLoginTextNodes = [];
-      let explicit = visible(knownLoginControl) ? knownLoginControl : null;
+      let explicit = visible(knownLoginControl) && clean(knownLoginControl.textContent) === '登录' ? knownLoginControl : null;
       if (!explicit) {
         exactLoginTextNodes = Array.from(document.querySelectorAll('body *')).filter(element =>
           visible(element) && clean(element.textContent) === '登录'
@@ -1070,6 +1084,25 @@ enum WeReadWebScripts {
         clearTimeout(stableTimer);stableCandidate='';removeHighlight();removeMarks();schedule('resize');
       }
       function scopeParagraph(index){return scope[index]||visible[index];}
+      function nativeRangeFragments(p,start,end){
+        if(!p?.nativeSourceIdentity||!Array.isArray(p.sourceAnchors))return null;
+        const fragments=[];
+        for(const anchor of p.sourceAnchors){
+          const lo=Math.max(start,anchor.start),hi=Math.min(end,anchor.end);if(hi<=lo)continue;
+          const sourceStart=anchor.offset+lo-anchor.start,sourceEnd=anchor.offset+hi-anchor.start;
+          for(const v of visible){
+            if(v.nativeSourceIdentity!==p.nativeSourceIdentity)continue;
+            for(const target of v.sourceAnchors||[]){
+              const a=Math.max(sourceStart,target.offset),b=Math.min(sourceEnd,target.offset+target.text.length);
+              const localStart=target.start+a-target.offset,localEnd=target.start+b-target.offset;
+              if(b<=a||localEnd<=0||localStart>=v.text.length)continue;
+              if(anchor.text.slice(a-anchor.offset,b-anchor.offset)!==target.text.slice(a-target.offset,b-target.offset))continue;
+              fragments.push({p:v,start:Math.max(0,localStart),end:Math.min(v.text.length,localEnd)});
+            }
+          }
+        }
+        return fragments;
+      }
       function mappedRange(p,start,end){
         if(!p)return null;
         if(visible.includes(p))return{p,start,end};
@@ -1081,6 +1114,19 @@ enum WeReadWebScripts {
       function revealScopeRange(a){
         if(!geometryMode||revealBusy||Date.now()<reflowUntil||scopePath!==location.pathname||window.__crWeReadAppearance)return;
         const p=scopeParagraph(a?.paragraphIndex);if(!p||!Number.isFinite(p.sourceParagraphIndex))return;
+        const native=nativeRangeFragments(p,a.charStart||0,a.charEnd||1);
+        if(native){
+          if(native.length)return;
+          const anchor=p.sourceAnchors.find(v=>v.end>Number(a.charStart||0));
+          const known=visible.filter(v=>v.nativeSourceIdentity===p.nativeSourceIdentity).flatMap(v=>(v.sourceAnchors||[]).filter(g=>g.end>0&&g.start<v.text.length));
+          if(!anchor||!known.length)return;
+          const pos=anchor.offset+Math.max(0,Number(a.charStart||0)-anchor.start);
+          const first=Math.min(...known.map(v=>v.offset)),last=Math.max(...known.map(v=>v.offset+v.text.length));
+          const direction=pos<first?'prev':pos>=last?'next':'';if(!direction)return;
+          const key=`${p.nativeSourceIdentity}:${direction}`;if(key!==revealKey){revealKey=key;revealCount=0;}if(revealCount>=3)return;
+          if(window.__castReaderWeReadNative?.turn(direction)){revealCount++;revealBusy=true;reflowUntil=Date.now()+800;schedule('source-reveal');}
+          return;
+        }
         const mapped=mappedRange(p,a.charStart||0,a.charEnd||1);
         if(mapped&&mapped.end>0&&mapped.start<mapped.p.text.length)return;
         // Only source-backed positions in the same chapter may reveal an
@@ -1280,10 +1326,13 @@ enum WeReadWebScripts {
         if(geometryOnly){
           const prior=lastFingerprint;lastFingerprint=fingerprint;revealBusy=false;
           post('wereadGeometryReflow',{previousFingerprint:prior,fingerprint,contentFingerprint,layoutFingerprint,columnFingerprint:columns,canvasEpoch:snapshot.epoch});
+          // Native retires predictions tied to the old layout. Rebuild the
+          // adjacent visible spread without replacing the immutable spoken scope.
+          publishPreview(snapshot,host,fingerprint,speechPayloads(visible));
           restoreVisualState();post('wereadLayoutStable',{reason:'geometry-reflow',fingerprint,canvasEpoch:snapshot.epoch});return;
         }
         if(lastFingerprint&&fingerprint!==lastFingerprint){clearHighlight();clearMarks();post('wereadPageChanging',{reason,previousFingerprint:lastFingerprint,nextFingerprint:fingerprint,canvasEpoch:snapshot.epoch});}
-        viewportWidth=innerWidth;viewportHeight=innerHeight;if(fingerprint===lastFingerprint){restoreVisualState();post('wereadLayoutStable',{reason,fingerprint,canvasEpoch:snapshot.epoch});return;}geometryMode=false;semanticTurnUntil=0;scopePath=location.pathname;const scopedPayloads=speechPayloads(visible);scope=visible.map((p,i)=>({...p,text:scopedPayloads[i].text}));const previousFingerprint=lastFingerprint;lastFingerprint=fingerprint;wordState={para:-1,seg:-1,cursor:0,last:-1};
+        viewportWidth=innerWidth;viewportHeight=innerHeight;if(fingerprint===lastFingerprint){publishPreview(snapshot,host,fingerprint,speechPayloads(visible));restoreVisualState();post('wereadLayoutStable',{reason,fingerprint,canvasEpoch:snapshot.epoch});return;}geometryMode=false;semanticTurnUntil=0;scopePath=location.pathname;const scopedPayloads=speechPayloads(visible);scope=visible.map((p,i)=>({...p,text:scopedPayloads[i].text}));const previousFingerprint=lastFingerprint;lastFingerprint=fingerprint;wordState={para:-1,seg:-1,cursor:0,last:-1};
         const speechParagraphs=speechPayloads(visible),page={reason,previousFingerprint,fingerprint,contentFingerprint,layoutFingerprint,columnFingerprint:columns,canvasEpoch:snapshot.epoch,geometrySource:visible[0]?.geometrySource||'unknown',mappedGlyphs:visible.reduce((n,p)=>n+(p.entries?.length||0),0),progressLabel:progress,readerURL:location.href,readerPosition:window.CastReaderWeReadTOC?.readerPosition?.(visible[0]?.sourceLayoutFingerprint)||null,title:clean(document.title),paragraphs:speechParagraphs};
         const presentation=pendingNativePresentation;pendingNativePresentation=null;
         const sendPage=()=>{if(lastFingerprint!==fingerprint)return;post('wereadPage',page);publishPreview(snapshot,host,fingerprint,speechParagraphs);post('wereadLayoutStable',{reason,fingerprint,canvasEpoch:snapshot.epoch});};
@@ -1298,8 +1347,9 @@ enum WeReadWebScripts {
       function formattingMatch(fullText,targetText,startPos){const source=normalizedUnits(fullText),target=normalizedUnits(targetText);if(!source.length||!target.length)return null;const sourceText=source.map(v=>v.ch).join(''),targetTextNormalized=target.map(v=>v.ch).join('');let sourceFrom=source.findIndex(v=>v.end>startPos);if(sourceFrom<0)return null;let at=sourceText.indexOf(targetTextNormalized,sourceFrom),matched=targetTextNormalized.length;if(at<0){for(let n=Math.min(50,targetTextNormalized.length);n>=6;n=Math.floor(n*.6)){at=sourceText.indexOf(targetTextNormalized.slice(0,n),sourceFrom);if(at>=0){matched=n;break;}}}if(at<0)return null;return{pos:source[at].start,prefixEnd:source[Math.min(source.length-1,at+matched-1)].end};}
       function computeSourceSpan(fullText,startPos,sentenceText){let fi=startPos,si=0;const look=3;while(fi<fullText.length&&si<sentenceText.length){if(fullText[fi]===sentenceText[si]){fi++;si++;continue;}const fw=/\s/.test(fullText[fi]),sw=/\s/.test(sentenceText[si]);if(fw&&sw){while(fi<fullText.length&&/\s/.test(fullText[fi]))fi++;while(si<sentenceText.length&&/\s/.test(sentenceText[si]))si++;continue;}if(fw){fi++;continue;}if(sw){si++;continue;}let skipF=-1,skipS=-1;for(let k=1;k<=look;k++){if(skipF<0&&fi+k<fullText.length&&fullText[fi+k]===sentenceText[si])skipF=k;if(skipS<0&&si+k<sentenceText.length&&fullText[fi]===sentenceText[si+k])skipS=k;}if(skipF>=0&&(skipS<0||skipF<=skipS))fi+=skipF;else if(skipS>=0)si+=skipS;else{fi++;si++;}}while(fi<fullText.length&&/\s/.test(fullText[fi]))fi++;return Math.max(1,fi-startPos);}
       function resolveSegmentRange(p,a){const texts=Array.isArray(a.segmentTexts)?a.segmentTexts:[],seq=Number(a.segSeq);if(!p||!texts.length||!Number.isInteger(seq)||seq<0||seq>=texts.length)return null;let cursor=0;for(let i=0;i<=seq;i++){const sentence=String(texts[i]||'');if(!sentence.trim())continue;let pos=p.text.indexOf(sentence,cursor);if(pos<0)pos=p.text.toLocaleLowerCase().indexOf(sentence.toLocaleLowerCase(),cursor);if(pos<0)pos=formattingMatch(p.text,sentence,cursor)?.pos??-1;if(pos<0){if(cursor>=p.text.length)return null;pos=cursor;}const end=Math.min(p.text.length,pos+computeSourceSpan(p.text,pos,sentence));if(i===seq)return{start:pos,end};cursor=Math.max(cursor,end);}return null;}
-      function rectsFor(p,start,end){const mapped=mappedRange(p,start,end);if(!mapped)return[];p=mapped.p;start=mapped.start;end=mapped.end;const exact=(p?.entries||[]).filter(e=>e.charEnd>start&&e.charStart<end);if(exact.length)return exact.map(e=>({...e.bbox}));if(p?.geometrySource==='fillText'||p?.geometrySource==='drawImage'||root().querySelector('canvas'))return[];const r=p?.el&&range(p.el,start,end);if(!r)return[];const hr=root().getBoundingClientRect();return Array.from(r.getClientRects()).map(v=>({x:v.left-hr.left,y:v.top-hr.top,width:v.width,height:v.height}));}
-      function lines(rects){const sorted=rects.filter(r=>r.width>.3&&r.height>.3).sort((a,b)=>(a.y+a.height)-(b.y+b.height)||a.x-b.x),groups=[];for(const r of sorted){const baseline=r.y+r.height;let g=groups.find(v=>Math.abs(v.referenceBaseline-baseline)<=Math.max(3,Math.min(v.referenceHeight,r.height)*.45)&&r.x<=v.x+v.width+Math.max(8,r.height));if(!g){groups.push({x:r.x,y:r.y,width:r.width,height:r.height,referenceBaseline:baseline,referenceHeight:r.height});continue;}const right=Math.max(g.x+g.width,r.x+r.width),bottom=Math.max(g.y+g.height,r.y+r.height);g.x=Math.min(g.x,r.x);g.y=Math.min(g.y,r.y);g.width=right-g.x;g.height=bottom-g.y;}return groups.sort((a,b)=>a.referenceBaseline-b.referenceBaseline||a.x-b.x);}
+      function rectsFor(p,start,end){const native=nativeRangeFragments(p,start,end);if(native){const seen=new Set();return native.flatMap(v=>(v.p.entries||[]).filter(e=>e.charEnd>v.start&&e.charStart<v.end).flatMap(e=>{const k=`${e.bbox.x}:${e.bbox.y}:${e.bbox.width}:${e.bbox.height}`;if(seen.has(k))return[];seen.add(k);return[{...e.bbox}];}));}const mapped=mappedRange(p,start,end);if(!mapped)return[];p=mapped.p;start=mapped.start;end=mapped.end;const exact=(p?.entries||[]).filter(e=>e.charEnd>start&&e.charStart<end);if(exact.length)return exact.map(e=>({...e.bbox}));if(p?.geometrySource==='fillText'||p?.geometrySource==='drawImage'||root().querySelector('canvas'))return[];const r=p?.el&&range(p.el,start,end);if(!r)return[];const hr=root().getBoundingClientRect();return Array.from(r.getClientRects()).map(v=>({x:v.left-hr.left,y:v.top-hr.top,width:v.width,height:v.height}));}
+      // Check adjacency in both directions: a higher right-column baseline may sort first.
+      function lines(rects){const sorted=rects.filter(r=>r.width>.3&&r.height>.3).sort((a,b)=>(a.y+a.height)-(b.y+b.height)||a.x-b.x),groups=[];for(const r of sorted){const baseline=r.y+r.height;let g=groups.find(v=>Math.abs(v.referenceBaseline-baseline)<=Math.max(3,Math.min(v.referenceHeight,r.height)*.45)&&r.x<=v.x+v.width+Math.max(8,r.height)&&r.x+r.width>=v.x-Math.max(8,r.height));if(!g){groups.push({x:r.x,y:r.y,width:r.width,height:r.height,referenceBaseline:baseline,referenceHeight:r.height});continue;}const right=Math.max(g.x+g.width,r.x+r.width),bottom=Math.max(g.y+g.height,r.y+r.height);g.x=Math.min(g.x,r.x);g.y=Math.min(g.y,r.y);g.width=right-g.x;g.height=bottom-g.y;}return groups.sort((a,b)=>a.referenceBaseline-b.referenceBaseline||a.x-b.x);}
       const rgba=(hex,a)=>{const h=String(hex||'#FD5F01').replace('#','');return/^[0-9a-f]{6}$/i.test(h)?`rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`:`rgba(253,95,1,${a})`;};
       function removeHighlight(){layer?.querySelectorAll('[data-cr-weread-highlight]').forEach(e=>e.remove());}
       function clearHighlight(){currentHighlight=null;removeHighlight();}
@@ -1315,7 +1365,8 @@ enum WeReadWebScripts {
       function markStroke(weight,base){return weight==='primary'?base*1.12:weight==='tertiary'?base*.76:base;}
       function animatedPath(parent,d,stroke,width,opacity,duration,delay,style,animate){const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke',stroke);p.setAttribute('stroke-width',String(width));p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round');p.setAttribute('opacity',String(opacity));p.setAttribute('vector-effect','non-scaling-stroke');p.style.cssText=style||'';parent.appendChild(p);let len=180;try{len=Math.max(1,p.getTotalLength());}catch(_){}if(animate!==false){p.style.strokeDasharray=String(len);p.style.strokeDashoffset=String(len);p.style.transition='none';try{p.getBoundingClientRect();}catch(_){}requestAnimationFrame(()=>requestAnimationFrame(()=>{p.style.transition=`stroke-dashoffset ${Math.round(duration||700)}ms cubic-bezier(0.62,0,0.22,1) ${Math.round(delay||0)}ms, opacity 180ms ease`;p.style.strokeDashoffset='0';}));}else{p.style.strokeDasharray='none';p.style.strokeDashoffset='0';p.style.transition='none';}return p;}
       function rectUnion(rs){if(!rs.length)return null;const left=Math.min(...rs.map(r=>r.x)),top=Math.min(...rs.map(r=>r.y)),right=Math.max(...rs.map(r=>r.x+r.width)),bottom=Math.max(...rs.map(r=>r.y+r.height));return{x:left,y:top,width:right-left,height:bottom-top};}
-      function drawHandMark(group,rs,a,animate){const action=String(a.action||'highlight'),weight=String(a.weight||''),seed=Number(a.seed||1)>>>0,union=rectUnion(rs),stroke=rgba(color,.92),fill=rgba(color,.55);if(!union)return;if(action==='circle'){const rng=markRng(seed+17),d=handLoop(union.x+union.width/2,union.y+union.height/2,Math.max(10,union.width/2+7),Math.max(9,union.height/2+5),14,rng);animatedPath(group,d,stroke,markStroke(weight,6.5),.92,markDuration(action,union),0,'',animate);return;}if(action==='number'){const rng=markRng(seed+29),first=rs[0],lineH=Math.max(14,first.height),radius=Math.min(lineH*.6,16),cx=Math.max(4+radius,first.x-radius*1.5),cy=first.y+lineH/2,duration=markDuration(action,union);animatedPath(group,handLoop(cx,cy,radius,radius,14,rng),stroke,2.5,.9,duration*.5,0,'',animate);animatedPath(group,handDigit(Math.max(1,Number(a.n||1)),cx,cy,radius*1.12,rng),stroke,2.5,.95,duration*.5,duration*.5,'',animate);const under=rs.map(r=>handLine(r.x-2,r.y+r.height+3,r.x+r.width+4,r.y+r.height+3,1.5,rng)).join(' ');animatedPath(group,under,stroke,2.5,.9,duration*.7,0,'',animate);return;}rs.forEach((r,i)=>{const rng=markRng(seed+i*9973+101),duration=markDuration(action,r),delay=i*110;if(action==='underline'||action==='wave'){const y=r.y+r.height-Math.max(1.5,r.height*.08),d=handLine(r.x-1,y,r.x+r.width+1,y,action==='wave'?Math.max(5,r.height*.2):Math.max(3,r.height*.12),rng);animatedPath(group,d,stroke,markStroke(weight,5.2),.94,duration,delay,'',animate);}else if(action==='strike'){const y=r.y+r.height*.55,d=handLine(r.x-1,y,r.x+r.width+1,y,Math.max(3,r.height*.1),rng);animatedPath(group,d,stroke,markStroke(weight,4.8),.9,duration,delay,'',animate);}else{const y=r.y+r.height*.58,d=handLine(r.x-2,y,r.x+r.width+2,y,Math.max(4,r.height*.12),rng),width=markStroke(weight,Math.max(8,Math.min(18,r.height*.78)));animatedPath(group,d,fill,width,.42,duration,delay,'mix-blend-mode:multiply;',animate);}});}
+      // Circle each visible line fragment independently; a union can cross the column gutter.
+      function drawHandMark(group,rs,a,animate){const action=String(a.action||'highlight'),weight=String(a.weight||''),seed=Number(a.seed||1)>>>0,union=rectUnion(rs),stroke=rgba(color,.92),fill=rgba(color,.55);if(!union)return;if(action==='circle'){rs.forEach((r,i)=>{const rng=markRng(seed+i*9973+17),d=handLoop(r.x+r.width/2,r.y+r.height/2,Math.max(10,r.width/2+7),Math.max(9,r.height/2+5),14,rng);animatedPath(group,d,stroke,markStroke(weight,6.5),.92,markDuration(action,r),0,'',animate);});return;}if(action==='number'){const rng=markRng(seed+29),first=rs[0],lineH=Math.max(14,first.height),radius=Math.min(lineH*.6,16),cx=Math.max(4+radius,first.x-radius*1.5),cy=first.y+lineH/2,duration=markDuration(action,union);animatedPath(group,handLoop(cx,cy,radius,radius,14,rng),stroke,2.5,.9,duration*.5,0,'',animate);animatedPath(group,handDigit(Math.max(1,Number(a.n||1)),cx,cy,radius*1.12,rng),stroke,2.5,.95,duration*.5,duration*.5,'',animate);const under=rs.map(r=>handLine(r.x-2,r.y+r.height+3,r.x+r.width+4,r.y+r.height+3,1.5,rng)).join(' ');animatedPath(group,under,stroke,2.5,.9,duration*.7,0,'',animate);return;}rs.forEach((r,i)=>{const rng=markRng(seed+i*9973+101),duration=markDuration(action,r),delay=i*110;if(action==='underline'||action==='wave'){const y=r.y+r.height-Math.max(1.5,r.height*.08),d=handLine(r.x-1,y,r.x+r.width+1,y,action==='wave'?Math.max(5,r.height*.2):Math.max(3,r.height*.12),rng);animatedPath(group,d,stroke,markStroke(weight,5.2),.94,duration,delay,'',animate);}else if(action==='strike'){const y=r.y+r.height*.55,d=handLine(r.x-1,y,r.x+r.width+1,y,Math.max(3,r.height*.1),rng);animatedPath(group,d,stroke,markStroke(weight,4.8),.9,duration,delay,'',animate);}else{const y=r.y+r.height*.58,d=handLine(r.x-2,y,r.x+r.width+2,y,Math.max(4,r.height*.12),rng),width=markStroke(weight,Math.max(8,Math.min(18,r.height*.78)));animatedPath(group,d,fill,width,.42,duration,delay,'mix-blend-mode:multiply;',animate);}});}
       function removeMarks(){layer?.querySelector('#castreader-weread-marks-svg')?.remove();}
       function clearMarks(){currentMarks.clear();removeMarks();}
       function drawMark(a,animate=true){const rs=lines(rectsFor(scopeParagraph(a.paragraphIndex),a.charStart,a.charEnd));if(!rs.length)return;const svg=markSvg(),id=String(a.id||'1');if(svg.querySelector(`[data-cr-weread-mark-id="${CSS.escape(id)}"]`))return;const group=document.createElementNS('http://www.w3.org/2000/svg','g');group.dataset.crWereadMarkId=id;svg.appendChild(group);drawHandMark(group,rs,a,animate);}
@@ -1374,7 +1425,21 @@ enum WeReadWebScripts {
       // Retiring a source is not a navigation request. Keep native paint
       // evidence: the provider may already have painted and need not repaint.
       function invalidateSource(){geometryMode=false;pendingNativePresentation=null;lastFingerprint='';lastPreviewKey='';stableCandidate='';clearHighlight();clearMarks();scope=[];visible=[];schedule('source-invalidated');}
-      window.CastReaderWeRead={openingPageState,advanceOpeningPage,invalidateSource,isVisibleChapterStart(title){const p=visible[0],host=root();return !!p&&!!host&&Date.now()>=reflowUntil&&viewportWidth===innerWidth&&viewportHeight===innerHeight&&p.text.replace(/\s/g,'')===String(title).replace(/\s/g,'');},prepareSemanticNavigation(){geometryMode=false;semanticTurnUntil=Date.now()+12000;pendingNativePresentation=null;lastFingerprint='';lastPreviewKey='';stableCandidate='';clearHighlight();clearMarks();scope=[];visible=[];window.__castReaderWeReadNative?.prepareNavigation?.();},nextPage(options){return turnPage('next',false,options);},userPage(direction){return turnPage(direction==='prev'?'prev':'next',true);},snapshot(){schedule('manual');return{fingerprint:lastFingerprint,ready:!!visible.length&&!unavailableReason()};},relayout(a){clearHighlight();clearMarks();stableCandidate='';lastPreviewKey='';const reason=String(a?.reason||'orientation');try{window.dispatchEvent(new Event('resize'));}catch(_){}schedule(reason);setTimeout(()=>schedule(reason+'-settled'),360);return true;},resumeAfterForeground(a){restoreVisualState();schedule(String(a?.reason||'foreground'));return true;}};
+      function isVisibleChapterStart(title){
+        const heading=String(title).replace(/\s/g,'');
+        if(!heading||heading.length>512||!root()||Date.now()<reflowUntil||viewportWidth!==innerWidth||viewportHeight!==innerHeight)return false;
+        // Native glyph extraction may expose each wrapped heading line as a
+        // separate paragraph. Require the complete catalog heading at the
+        // visible start; a truncated prefix or a later body match is not proof.
+        let prefix='';
+        for(const paragraph of visible.slice(0,8)){
+          prefix+=paragraph.text.replace(/\s/g,'');
+          if(prefix===heading)return true;
+          if(!heading.startsWith(prefix))return false;
+        }
+        return false;
+      }
+      window.CastReaderWeRead={openingPageState,advanceOpeningPage,invalidateSource,isVisibleChapterStart,prepareSemanticNavigation(){geometryMode=false;semanticTurnUntil=Date.now()+12000;pendingNativePresentation=null;lastFingerprint='';lastPreviewKey='';stableCandidate='';clearHighlight();clearMarks();scope=[];visible=[];window.__castReaderWeReadNative?.prepareNavigation?.();},nextPage(options){return turnPage('next',false,options);},userPage(direction){return turnPage(direction==='prev'?'prev':'next',true);},snapshot(){schedule('manual');return{fingerprint:lastFingerprint,ready:!!visible.length&&!unavailableReason()};},relayout(a){clearHighlight();clearMarks();stableCandidate='';lastPreviewKey='';const reason=String(a?.reason||'orientation');try{window.dispatchEvent(new Event('resize'));}catch(_){}schedule(reason);setTimeout(()=>schedule(reason+'-settled'),360);return true;},resumeAfterForeground(a){restoreVisualState();schedule(String(a?.reason||'foreground'));return true;}};
       // Measuring every character of every pre-render paragraph is expensive.
       // The old observer repeated that full pass for each mutation record,
       // blocking WeRead's own paint and making the native cover look like a
@@ -1424,7 +1489,18 @@ enum WeReadWebScripts {
         availabilityTimer=setTimeout(()=>{availabilityTimer=0;if(invalidateUnavailable())return;if(contentUnavailable){captureAll();schedule('content-recovery');}},72);
       });
       function begin(){availabilityObserver.observe(document.documentElement,{childList:true,characterData:true,attributes:true,attributeFilter:['class','style','hidden'],subtree:true});observer.observe(document.documentElement,{childList:true,characterData:true,subtree:true});document.addEventListener('pointerdown',manualTurnIntent,true);document.addEventListener('touchstart',manualTurnIntent,true);bootstrapProbe();}
-      document.addEventListener('castreader-wr-native',()=>{const host=root(),state=host&&window.__castReaderWeReadNative?.snapshot(host);if(state&&!state.ready&&lastFingerprint){clearHighlight();clearMarks();post('wereadPageChanging',{reason:'native-presentation',previousFingerprint:lastFingerprint});}publish('native-paint');});window.addEventListener('castreader-weread-canvas',e=>schedule(e.detail?.reason||'canvas'));window.addEventListener('resize',beginGeometryReflow);document.addEventListener('pointerdown',e=>{if(e.target instanceof Element&&e.target.closest('.font-panel-content'))beginGeometryReflow();},true);
+      function nativePaintChanged(){
+        // The provider replaces its Canvas before WebKit delivers resize.
+        // Latch geometry ownership first: clearing retained highlight state or
+        // sending a semantic page-change here would pause audio permanently,
+        // because geometry-only completion does not replace its source scope.
+        if(innerWidth!==viewportWidth||innerHeight!==viewportHeight)beginGeometryReflow();
+        const host=root(),state=host&&window.__castReaderWeReadNative?.snapshot(host);
+        const geometryOnly=geometryMode&&Date.now()>=semanticTurnUntil&&scope.length&&scopePath===location.pathname;
+        if(state&&!state.ready&&lastFingerprint&&!geometryOnly){clearHighlight();clearMarks();post('wereadPageChanging',{reason:'native-presentation',previousFingerprint:lastFingerprint});}
+        publish('native-paint');
+      }
+      document.addEventListener('castreader-wr-native',nativePaintChanged);window.addEventListener('castreader-weread-canvas',e=>schedule(e.detail?.reason||'canvas'));window.addEventListener('resize',beginGeometryReflow);document.addEventListener('pointerdown',e=>{if(e.target instanceof Element&&e.target.closest('.font-panel-content'))beginGeometryReflow();},true);
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',begin,{once:true});else begin();post('ready',{site:'weread',bridge:'canvas-geometry-v2'});
     })();
     """#
