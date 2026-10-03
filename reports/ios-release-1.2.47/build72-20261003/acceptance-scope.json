@@ -1,0 +1,16 @@
+{
+  "recordedAt": "2026-10-03T02:52:06.791682+00:00",
+  "userInstruction": "iPad 国际区测试完了应该就可以了，不是非要把国内区测试完，因为它跟 iPhone 是一个后端和链路",
+  "decision": "Reuse completed iPhone/four-platform and Global iPad live acceptance; additional CN iPad playback is not a submission gate for this release.",
+  "cnIPadAdditionalPlayback": "NOT_RUN",
+  "cnIPadReason": "The attempted regional test did not reach authenticated app home; no synthesis or playback occurred. User explicitly removed this additional case from this release scope.",
+  "globalIPadPrivateChineseEvidence": "reports/ios-pagination-20260929/live148-ipad-private-chinese-validation.json",
+  "fourPlatformEvidence": "reports/ios-pagination-20260929/release-readiness-20261001.md",
+  "sourceChangeSinceLiveCandidate": "Only build number and two error-message translations.",
+  "knownEvidenceLimit": "WeRead reauthorization persistence has no new signed-in-session acceptance; existing public-book playback/marks/rotation tests and candidate147 session-guard tests are retained.",
+  "notClaimed": [
+    "New complete two-region core service live matrix for build72",
+    "New CN iPad playback PASS",
+    "Acoustic zero silence"
+  ]
+}

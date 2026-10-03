@@ -1,9 +1,9 @@
 {
-  "baseCommit": "5f11138ae9d30958b930e134cc0954968c4479f6",
+  "baseCommit": "5776bf1ab2526b24bc65bd46ed8155f389e8329f",
   "requiredCommit": "520bf605658d4756c9994ff8791d58c982cc4eb6",
   "version": "1.2.47",
   "build": 72,
-  "candidate148ApplicationChanges": "Project build number 71 → 72; two existing error messages localized in all nine UI languages. Playback, platform, quota and auth implementation unchanged.",
+  "candidate148ApplicationChanges": "Only build number 71 \u2192 72 in project; remaining candidate manifest files exactly match.",
   "sourceFiles": {
     "CastReader Safari Extension/CastReaderSafariExtension.entitlements": "6c5994d62c38bd9cc9643c6df4d3d6f4d436dd6272e83aeeb828f27311e7c90b",
     "CastReader Safari Extension/Info.plist": "65e0e198015369a0af605a2ec2784ba620c000169b28ff0d3356c18bf81f089e",
@@ -146,7 +146,7 @@
     "CastReader/CloudStorage.xcstrings": "2e4e19fbfd1d555880cb39cb06931f3b670f901025d4999e3ed7b41e5082e0f9",
     "CastReader/Info.plist": "c9316fd5fb0db9ef7016f2b2092f4684aa92d0c5b9de11bb62757a5bdfc37d0d",
     "CastReader/InfoPlist.xcstrings": "6e5774181bb2127bf8695eb5e442176879fb2fe6b2a5bd3299f19103006ab0d6",
-    "CastReader/Localizable.xcstrings": "dda0f0958eda1ec6b9e1b1f7126ac38106e25c2d70ca2e1339c2f284fc2cf46a",
+    "CastReader/Localizable.xcstrings": "d449d3ffcf9370b152b1e3509870a5f3b07922f9247e45f37b6aedd517146c76",
     "CastReader/MSAL-LICENSE.txt": "f3fddd32a4ab729d559026c4bb18c06461063e233a8d25f16b2c5d53cf888605",
     "CastReader/Models/AppSettings.swift": "11ec4cf937a91b99ddebbf55d680d1b32ed6dc0e1ace9fa48862febd99f19b96",
     "CastReader/Models/CloudStorageModels.swift": "fe0a64d22db1ce1b433dce0adc13fb8dd33c870a69c0da3f1bdda7b9542e6ce4",
@@ -421,6 +421,5 @@
     "WebReader/src/weread-native.ts": "ff347e4c33c801cc4390a58abf8c932a3dd1fd4447882200318e845576d5d7e5",
     "scripts/AppStoreExportOptions.plist": "33330f7301848b5d6d164a894e1400782be910fd4c4c8dbf6709f56baaf31078"
   },
-  "sourceSHA256": "54f6192a7bf0dd8025de0bc0652fe7815c06bebcb4c3d2167fd629b7d61086b5",
-  "hashSerialization": "SHA256 of sourceFiles JSON sorted by key with compact separators"
+  "sourceSHA256": "548b0cb9d30450b6fe00fdc69e141c0c1f688a05b37f13c3aaea2b1421fedc3d"
 }
