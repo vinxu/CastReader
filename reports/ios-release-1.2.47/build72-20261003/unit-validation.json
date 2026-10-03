@@ -1,0 +1,40 @@
+{
+  "fullRun": {
+    "result": "FAIL",
+    "passed": 2087,
+    "failed": 8,
+    "skipped": 20,
+    "total": 2115,
+    "path": "/tmp/castreader-review72-isolated/tests.xcresult"
+  },
+  "affectedRerun": {
+    "result": "PASS",
+    "passed": 257,
+    "failed": 0,
+    "skipped": 0,
+    "path": "/tmp/castreader-review72-affected-final.xcresult",
+    "suites": [
+      "KindlePrefetchHorizonTests",
+      "LocalizationCatalogTests",
+      "SpeechPipelineTests",
+      "VoiceCloneTests",
+      "WeReadOpeningPlaybackTests"
+    ]
+  },
+  "combinedUniqueCases": {
+    "passed": 2095,
+    "failed": 0,
+    "skipped": 20,
+    "total": 2115
+  },
+  "causes": [
+    "Two existing runtime error strings were missing from the nine-language catalog.",
+    "Kindle test sampled startup buffering before the next request, instead of completed-first-sentence waiting.",
+    "Two stale WeRead expectations conflicted with exact visible-page matching and disabled-control waiting.",
+    "Temporary unit host started production lifecycle observers, allowing background account refresh to stop fixture playback and replace legacy quota state. Failed playback/quota cases also passed unchanged when run alone on physical iPad."
+  ],
+  "testHostChange": "Only isolated temporary source copy suppresses live app bootstrap and normal auth UI. Production app source/playback/quota/auth logic is unchanged.",
+  "skips": "10 explicit PostgreSQL/loopback IAP fixture cases and 10 local-file/live-network/platform-conditional cases; physical sandbox purchases and platform live acceptance are separately recorded.",
+  "additionalCNIPad": "NOT_RUN; user explicitly removed this additional coverage from this release gate.",
+  "checkedAt": "2026-10-03T02:55:37.474322+00:00"
+}
