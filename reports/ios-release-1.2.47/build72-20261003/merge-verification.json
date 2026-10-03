@@ -1,0 +1,8 @@
+{
+  "mergeCommit": "b7772094a180a4e2990f90e66ee0877eff4575c2",
+  "sourceSHA256": "54f6192a7bf0dd8025de0bc0652fe7815c06bebcb4c3d2167fd629b7d61086b5",
+  "filesMatched": 415,
+  "requiredCommit": "520bf605658d4756c9994ff8791d58c982cc4eb6",
+  "pr": "https://github.com/vinxu/CastReader/pull/4",
+  "checkedAt": "2026-10-03T02:56:36.754622+00:00"
+}

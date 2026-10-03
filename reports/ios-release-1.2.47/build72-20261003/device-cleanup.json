@@ -1,0 +1,25 @@
+{
+  "recordedAt": "2026-10-03T03:09:43.575583+00:00",
+  "normalBundlePreserved": "com.same.castreader",
+  "iPhone": {
+    "removed": [
+      "com.same.castreader.releasechecks1244",
+      "com.same.castreader.releasechecks1247"
+    ],
+    "pendingRemoval": [
+      "com.same.castreader.releasechecks72",
+      "com.same.CastReaderUITests.xctrunner"
+    ],
+    "reason": "Device disconnected after the first two removals. Reconnection requested; does not block App Store submission."
+  },
+  "iPad": {
+    "removed": [
+      "com.same.castreader.releasechecks72",
+      "com.same.CastReaderUITests.xctrunner"
+    ],
+    "installedNormalVersion": "1.2.47 (72)",
+    "installSource": "Final development-signed Release archive",
+    "launch": "Normal app, no test or regional override arguments"
+  },
+  "futureTestRunner": "Physical unit runner removes its exact isolated application at exit; production bundle never removed."
+}

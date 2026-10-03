@@ -1,5 +1,48 @@
 # iOS 1.2.47 发布记录
 
+## 2026-10-03 最终四平台合包 Build 72 已提交等待审核
+
+**2026-10-03 11:15:25 CST 已正式提交 1.2.47（72）；11:16:11 API 回读 App、额度内购、Review Submission 全部为 `WAITING_FOR_REVIEW`。** 审核通过后自动发布，尚未获得批准。 用户已明确要求替换旧 Build 71，合入 `520bf60`，全面检查文案后重新提交。原 App 已被拒绝、审核单为 UNRESOLVED_ISSUES，无需重复取消；保留原 App/IAP 两个项目并替换绑定构建。
+
+本次再次拒审的原因确认为 **description 仍有 Google Play**。上轮只修正了 What's New，是范围遗漏。本轮从实际 pending ASC 快照增量修正 11 语描述、11 语更新说明及共享审核备注；标题、副标题、关键词、推广文字、联系/审核账号、截图、定价/订阅、地区、隐私与法律声明保持原值。现行本地文案也同步。`audit-app-store-copy.py` 对旧快照检出 12 处遗漏（11 个描述 + 1 个审核备注），对修正后 144 个当前字段检查通过。
+
+### 合并与源码
+
+[PR #4](https://github.com/vinxu/CastReader/pull/4) 已正式合入 main，提交 `b7772094a180a4e2990f90e66ee0877eff4575c2`，包含用户指定 `520bf605658d4756c9994ff8791d58c982cc4eb6` 及已发布额度购买、Apple 登录按钮、Safari/Share/Widget。最终四组件均为 1.2.47（72）。415 个应用/扩展/工程/WebReader 文件冻结摘要为 `54f6192a7bf0dd8025de0bc0652fe7815c06bebcb4c3d2167fd629b7d61086b5`；与已验收候选 148 相比，仅工程 Build 和两条已有错误提示的九语翻译改变，播放、平台适配、额度和登录实现未变。合并后逐文件一致、祖先门禁通过。
+
+### 有效验收与边界
+
+保留同源码候选的四平台 iPhone/iPad 真实验证，详见 [四平台收尾证据](../reports/ios-pagination-20260929/release-readiness-20261001.md)：Kindle iPad 32 分 48 秒/23 次自动翻页及 Read/Explain 横竖屏；Kobo iPhone 30 分钟朗读、iPad 30 分钟解读，跨章长等待修复；Google 短尾页/跨章/书末长等待修复和 iPad 双栏；WeRead Read/Explain 旋转续播、双栏独立圈线。应用事件间隔为数十至数百毫秒，含原站动画的例外最大 698 ms，按用户接受标准通过，不宣称声学零静音。
+
+iPad 国际线路私人中文 `vc_62934fe77f764051aa341b4b076bbb85` 的真实朗读/解读、自然翻页、1.5× 时钟、高亮/原文标注和暂停/继续通过；完整记录为 `live148-ipad-private-chinese-validation.json`，后端为两地已部署的中文源时间戳 v4。原 Build 70 的 CN/Global 常规/社区/私人完整矩阵是历史证据，不冒充最终新包逐格复跑。
+
+**用户 10 月 3 日明确以已有 iPhone 和 iPad 国际区验收为准，不把额外国内 iPad 播放设为本轮提交门槛。** 国内 iPad 尝试只到登录前置，未生成或播放，保留 `NOT_RUN`；本轮按该明确范围继续发布，不把缺失项改成 PASS。WeRead 重新扫码后的账号持久化没有新增真实会话结论，保留已通过的公开实书播放和候选 147 会话保护回归，不扩张结论。
+
+完整实体 iPhone 单测初次为 2,087 PASS / 8 FAIL / 20 SKIP（2,115 项）；定位并修复两条缺失翻译、三个旧断言/时序，以及隔离单测宿主误启动真实账号/StoreKit 刷新。宿主修正只作用于临时测试副本，不改变发布 App。实体 iPad 完整受影响五套件复测 **257 PASS / 0 FAIL / 0 SKIP**；合并独立用例结果为 **2,095 PASS / 0 未解决失败 / 20 条件 SKIP**，不宣称单次全绿。跳过项为 10 条需独立 PostgreSQL/loopback 购买设施及 10 条本地文件/实网/平台条件测试；既有真实沙盒购买与实书证据分别记录。
+
+证据目录：[Build 72](../reports/ios-release-1.2.47/build72-20261003/)、[元数据修正](../reports/ios-release-1.2.47/metadata-review-20261003/)。初始归档和失败结果保留；包含翻译补全、主线合并后的最终归档单独生成，不复用旧归档冒充新内容。
+
+
+
+### 最终归档与审核回执
+
+主线归档 `/Users/xuxuheng/Documents/CastReader-Releases/1.2.47-72-20261003/CastReader-1.2.47-72-final.xcarchive`。四组件严格签名、团队、设备族 1/2、版本和加密声明通过；九语各 1,522 个编译 key；205 文件/54 个夹具标志 0 命中，Debug 阳性对照有效。App/扩展文件摘要 `0308d1429c94d5ec7ca7d66046167efdcd1e1f9143a3e69b0ceeb94c1a7dd013`，官方 export 前后所有 App/扩展文件逐一相同；归档使用开发签名，Xcode export 完成商店分发签名，不混称二者。11:06:46 官方上传成功。
+
+- 新 Build：`ec350723-1a77-4ff2-8fab-3212c98ef20e` / **72** / **VALID / APP_STORE_ELIGIBLE**，准确替换原 Build 71。
+- App version：`138a0a05-56de-42f7-b841-31fdfb842418` / **1.2.47 / WAITING_FOR_REVIEW**。
+- 原 Review Submission：`e0120f7a-1331-468f-adb9-0b1f045c352a` / **WAITING_FOR_REVIEW**，提交时间 `2026-10-03T03:15:25.212Z`。
+- 原额度 IAP：`6816697780` / `ai.castreader.clone.minutes120` / **WAITING_FOR_REVIEW**。原两个 review item ID 完全保留，无重复版本/审核单/内购。
+
+11:13 已在 App Store Connect 发送第 5 条审核消息，明确承认上一轮仅更新 What's New 的遗漏，并说明 11 语描述/更新说明与其他字段均已检查、本轮更换 Build 72。随后通过原审核单“更新审核”→“重新提交至 App 审核”完成。网页显示两项均等待审核，App 链接明确为 1.2.47（72）；API 再确认相同状态。通用单 App 提交 helper 不支持此原始 App+IAP 拒审单，故保留精确两项目校验并使用官方网页恢复原单。
+
+最终 ASC audit 为 0 errors；11 语、原标题/副标题保留、55 张截图 COMPLETE（9 语 iPhone 各 5 张，中英文 iPad 各 5 张；zh-Hant/es-MX 继承主语言），144 字段文案扫描 0 命中。再次提交后回读文案与审核备注保持一致。定价、地区、隐私、年龄和 AFTER_APPROVAL 未变。
+
+iPad 已安装并正常启动最终开发签名 Release 包，不带测试/地区覆盖参数；测试副本和 UI 测试启动器已删除，仅保留正常 CastReader。iPhone 已删除 `releasechecks1244`、`releasechecks1247` 两个旧副本；随后有线连接断开，当前 `releasechecks72` 和测试启动器待恢复连接后清理。正常 `com.same.castreader` 及其用户数据未删除。隔离单测脚本已增加精确测试包退出清理，防止以后继续累积。
+
+[审核单](https://appstoreconnect.apple.com/apps/6757636395/distribution/reviewsubmissions/details/e0120f7a-1331-468f-adb9-0b1f045c352a)；[最终 API 回执](../reports/ios-release-1.2.47/build72-20261003/final-readback.json)；[完整资料审核](../reports/ios-release-1.2.47/build72-20261003/final-asc-audit.json)。
+
+以下为历史 Build 71/70 记录；其审核状态仅在对应记录时间有效。
+
 ## 2026-10-02 更新说明修正，原 Build 71 已重新进入等待审核
 
 **2026-10-02 09:44:29 CST，保留 App 1.2.47（71）重新提交原审核单；09:44:55 API 回读 App version 与 Review Submission 均为 `WAITING_FOR_REVIEW`。** 额度内购 `ai.castreader.clone.minutes120` 也回读为 `WAITING_FOR_REVIEW`，页面展示同批两个项目均等待审核。仍为审核通过后自动发布，尚未获得批准。

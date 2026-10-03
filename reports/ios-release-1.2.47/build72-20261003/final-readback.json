@@ -1,0 +1,48 @@
+{
+  "checkedAt": "2026-10-03T03:16:11Z",
+  "version": {
+    "id": "138a0a05-56de-42f7-b841-31fdfb842418",
+    "version": "1.2.47",
+    "state": "WAITING_FOR_REVIEW",
+    "releaseType": "AFTER_APPROVAL"
+  },
+  "build": {
+    "id": "ec350723-1a77-4ff2-8fab-3212c98ef20e",
+    "number": "72",
+    "processingState": "VALID",
+    "audience": "APP_STORE_ELIGIBLE"
+  },
+  "reviewSubmission": {
+    "id": "e0120f7a-1331-468f-adb9-0b1f045c352a",
+    "state": "WAITING_FOR_REVIEW",
+    "submittedDate": "2026-10-03T03:15:25.212Z"
+  },
+  "inAppPurchase": {
+    "id": "6816697780",
+    "productID": "ai.castreader.clone.minutes120",
+    "state": "WAITING_FOR_REVIEW"
+  },
+  "originalReviewItemIDsPreserved": true,
+  "items": [
+    {
+      "type": "reviewSubmissionItems",
+      "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw",
+      "attributes": {
+        "state": "READY_FOR_REVIEW"
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDE3fGYyNjdmMGE4LWQ1MzctNGZhNy05Y2MxLTE3OTZmYzQ0YjcxYw"
+      }
+    },
+    {
+      "type": "reviewSubmissionItems",
+      "id": "ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2",
+      "attributes": {
+        "state": "READY_FOR_REVIEW"
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/reviewSubmissionItems/ZTAxMjBmN2EtMTMzMS00NjhmLWFkYjktMGIxZjA0NWMzNTJhfDZ8ODkyMTYzMjE2"
+      }
+    }
+  ]
+}

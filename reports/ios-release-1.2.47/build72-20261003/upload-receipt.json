@@ -1,0 +1,13 @@
+{
+  "version": "1.2.47",
+  "build": "72",
+  "uploadMethod": "Xcode -exportArchive; checked-in AppStoreExportOptions.plist",
+  "uploadSucceededAt": "2026-10-03T11:06:46.576+08:00",
+  "archive": "/Users/xuxuheng/Documents/CastReader-Releases/1.2.47-72-20261003/CastReader-1.2.47-72-final.xcarchive",
+  "appFilesUnchangedByExport": true,
+  "appFilesSHA256": "0308d1429c94d5ec7ca7d66046167efdcd1e1f9143a3e69b0ceeb94c1a7dd013",
+  "logPath": "/Users/xuxuheng/Documents/CastReader-Releases/1.2.47-72-20261003/upload-final.log",
+  "logSHA256": "aff918817d343e915e74f3cec5f5bcbd32824932c71579fe834f7e6f97de16fc",
+  "sourceMergeCommit": "b7772094a180a4e2990f90e66ee0877eff4575c2",
+  "processingState": "Pending exact ASC readback"
+}

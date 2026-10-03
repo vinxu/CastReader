@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-03T03:18:30Z",
+  "passed": true,
+  "localizationChecks": [
+    {
+      "file": "final-version-localizations.json",
+      "locales": 11,
+      "unchanged": true
+    },
+    {
+      "file": "final-app-info-localizations.json",
+      "locales": 11,
+      "unchanged": true
+    }
+  ],
+  "reviewNotesUnchanged": true
+}

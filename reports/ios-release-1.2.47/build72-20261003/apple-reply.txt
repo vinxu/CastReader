@@ -1,0 +1,11 @@
+Hello App Review Team,
+
+Thank you for clarifying that the remaining references were in the app description. Our previous correction covered only What's New, and we apologize for the incomplete update.
+
+We have now removed the Google Play references from the app descriptions and release notes in all 11 localizations, and checked the remaining localized metadata and review notes for the same issue.
+
+We are resubmitting version 1.2.47 with new Build 72, replacing Build 71. This build includes our latest iPhone and iPad reader continuity, page transitions, subtitles, and per-column annotation fixes, along with the existing cloned-voice credit purchase feature.
+
+Please review the updated Build 72 and metadata. The associated Clone Voice 120 Minutes in-app purchase remains part of this submission.
+
+Thank you.
