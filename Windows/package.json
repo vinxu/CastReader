@@ -1,0 +1,75 @@
+{
+  "name": "castreader-windows",
+  "productName": "CastReader",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "build/main.cjs",
+  "description": "CastReader Windows desktop reader",
+  "author": "CastReader",
+  "packageManager": "pnpm@10.25.0",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run tests",
+    "test:ui": "playwright test",
+    "build:host": "esbuild src/main/main.ts --bundle --platform=node --format=cjs --external:electron --outfile=build/main.cjs && esbuild src/main/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=build/preload.cjs",
+    "build": "pnpm typecheck && vite build && pnpm build:host",
+    "start": "electron .",
+    "package:windows": "pnpm build && electron-builder --win --x64 --publish never",
+    "acceptance": "node scripts/acceptance.mjs"
+  },
+  "dependencies": {
+    "fflate": "0.8.3",
+    "lucide-react": "1.52.0",
+    "mammoth": "1.13.0",
+    "pdfjs-dist": "6.4.299",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3",
+    "esbuild": "^0.27.0",
+    "prettier": "3.9.9",
+    "typescript": "7.0.2",
+    "vite": "8.3.2",
+    "vitest": "5.0.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
+  },
+  "build": {
+    "appId": "ai.castreader.windows",
+    "productName": "CastReader",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "build/**",
+      "dist/**",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "artifactName": "CastReader-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "capturedAt": "2026-10-05",
+  "iosCommit": "09456f1979cc14ca19977ede4b1edde043c5f840",
+  "macReference": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader",
+  "macCommittedBase": "09456f1979cc14ca19977ede4b1edde043c5f840",
+  "macContainsUncommittedWork": true,
+  "files": [
+    {
+      "path": "docs/mac-parity/feature-parity.md",
+      "sha256": "6e7117ee3c5240c9ce7ce566340d6d04dec97d5dbaa4f6a7cdfa727e275e9a0c"
+    },
+    {
+      "path": "docs/mac-parity/progress.md",
+      "sha256": "0b92c9dadc49e7b7d1b55ac53dd336917b4b1a7b8d5c49ef9d8b6a0bfdf178ef"
+    },
+    {
+      "path": "docs/CastReader-Mac-Acceptance-Matrix-2026-10-04.md",
+      "sha256": "3848bee13101a5f05141d3cea6a575ffed55e693c2cbea17ecb4c5ccf539a40b"
+    },
+    {
+      "path": "CastReader/Utils/AppTheme.swift",
+      "sha256": "001331c5be8ade28e29ac334944f4ffab9627205a8203a84ed4fb1bf23afd9ef"
+    },
+    {
+      "path": "CastReader/Services/PresetTTSTransport.swift",
+      "sha256": "737e390104666ad6730f059a9af42f24769769365eba08bfa9ade018eb978258"
+    },
+    {
+      "path": "CastReader/Models/ReadingResumeCheckpoint.swift",
+      "sha256": "8671d23e7b16407eb158644960888c80766388ae2f4205a0363c72290a4e2094"
+    },
+    {
+      "path": "CastReader/Services/ProBackendService.swift",
+      "sha256": "9ab9dddc8413a8b9911bbdd4a3f7a5c4d37b604d3b4b48a628b9d9dfa3ed034d"
+    },
+    {
+      "path": "CastReader/Services/MobileSessionService.swift",
+      "sha256": "c68bf1a1dae32ae2b40a08c88d5481948c21bdbec84450876fb7a4dafc76f039"
+    }
+  ],
+  "note": "Mac reference is actively evolving. Hashes identify inspected files, not a final accepted release. Re-audit at each Windows acceptance gate."
+}

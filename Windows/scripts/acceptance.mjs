@@ -1,0 +1,12 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { resolve, dirname } from 'node:path';
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const parity = JSON.parse(readFileSync(resolve(root,'docs/parity.json'),'utf8'));
+const acceptance = JSON.parse(readFileSync(resolve(root,'docs/acceptance.json'),'utf8'));
+const cases = acceptance.cases;
+if (!Array.isArray(cases)) throw new Error('Acceptance cases are missing');
+const counts = Object.fromEntries([...new Set(cases.map(c=>c.status))].map(status=>[status,cases.filter(c=>c.status===status).length]));
+const passed = cases.filter(c=>c.status==='pass'&&c.evidence?.length&&c.windowsSteps).length;
+console.log(JSON.stringify({hostPlatform:process.platform, featureGroups:parity.features.length,cases:cases.length,counts,windowsEvidencePasses:passed,accepted:process.platform==='win32'&&passed===cases.length&&cases.length>0},null,2));
+if (process.argv.includes('--require-complete') && (process.platform!=='win32'||passed!==cases.length||cases.length===0)) process.exitCode=1;
