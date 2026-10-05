@@ -1,0 +1,104 @@
+{
+  "checkedAt": "2026-10-05T19:41:55.5742248+08:00",
+  "host": "DESKTOP-6ILA6MB",
+  "os": "Microsoft Windows 11 专业版",
+  "osBuild": "26200",
+  "architecture": "x64",
+  "sourceCommit": "075929d06d2f027e5964c420d9df32163610ca6a",
+  "verificationScriptsCommit": "92b34a123e73689c3e9eb1f09aa59e9adde103a1",
+  "lockfileSha256": "C467BBF12292C02CD68902E96AF426574575D87EF52E13CDADC79C8AC402064A",
+  "tools": {
+    "git": "git version 2.53.0.windows.1",
+    "node": "v24.13.1",
+    "npm": "11.8.0",
+    "globalPnpm": "10.30.2",
+    "projectPnpm": "10.25.0",
+    "python": "Python 3.12.10",
+    "codex": "codex-cli 0.160.0",
+    "codexAuthentication": "Logged in using ChatGPT",
+    "vscode": "1.140.0",
+    "chrome": "146.0.7680.178",
+    "visualStudio": "17.14.37710.0",
+    "windowsSDKs": [
+      "10.0.26100.0"
+    ]
+  },
+  "checks": {
+    "lockedDependencies": "passed",
+    "unitTests": {
+      "kind": "contract fixtures",
+      "failed": 0,
+      "passed": 18
+    },
+    "browserTests": {
+      "expected": 3,
+      "unexpected": 0,
+      "skipped": 0,
+      "kind": "simulated bridge and silent audio fixtures"
+    },
+    "typecheckAndBuild": "passed",
+    "nativeCompiler": {
+      "complete": true,
+      "compiler": "MSVC",
+      "visualStudioVersion": "17.14.37710.0",
+      "windowsSDKs": [
+        "10.0.26100.0"
+      ],
+      "checkedAt": "2026-10-05T19:36:36.4866530+08:00"
+    },
+    "nativeDevelopment": {
+      "platform": "win32",
+      "complete": true,
+      "checks": [
+        "native window and production local protocol",
+        "Windows encryption round trip",
+        "renderer sandbox and context isolation",
+        "real preload IPC",
+        "signed-out library access rejected",
+        "preferences persisted across native restart",
+        "renderer has no page errors"
+      ]
+    },
+    "nativePackaged": {
+      "platform": "win32",
+      "packaged": true,
+      "complete": true,
+      "checks": [
+        "native window and production local protocol",
+        "Windows encryption round trip",
+        "renderer sandbox and context isolation",
+        "real preload IPC",
+        "signed-out library access rejected",
+        "preferences persisted across native restart",
+        "renderer has no page errors"
+      ]
+    }
+  },
+  "artifacts": [
+    {
+      "sha256": "0C945AD050D60F1C1DAB259960A6CB0F5235158090D19B4563D45D2C6513004A",
+      "name": "CastReader-0.1.0-x64.exe",
+      "bytes": 130763265
+    },
+    {
+      "sha256": "BB89A0465FB3FE767EA51073D51C2AC4CEBD2462DE1BA1DB0222380040DC4332",
+      "name": "CastReader-0.1.0-x64.zip",
+      "bytes": 180446934
+    }
+  ],
+  "signed": false,
+  "publiclyPublished": false,
+  "environmentReady": true,
+  "fullProductAcceptance": false,
+  "acceptanceCases": {
+    "total": 145,
+    "notRun": 145
+  },
+  "freeDiskGB": 210.6,
+  "limitations": [
+    "No live application login, real TTS, provider or long-run acceptance has passed.",
+    "NSIS/ZIP generation and the unpacked packaged application were verified; installer execution, upgrade and uninstall remain pending.",
+    "Candidate uses a default icon and is unsigned.",
+    "Interactive desktop is required for visual Electron checks; SSH session 0 cannot capture the window."
+  ]
+}

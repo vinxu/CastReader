@@ -51,9 +51,9 @@ Each run records host/OS/architecture, source/lock/candidate SHA, scenario, fixt
 
 For each book source: two authorized books, 30-minute reading, 15-minute Explain where supported, crossing chapters, at least 20 automatic page turns where applicable, short tail/end, pause/manual browsing, font/theme/window reflow, cold resume and account boundary. Long PDF/EPUB runs, loss of network, 401/429/5xx, disk limits, cancellation and crash recovery are required.
 
-## Current environment limitation
+## Current environment
 
-The user reports Mac-to-PC control is configured. This chat's project/task tools currently expose only host local (Mac); Windows SSH at the previously reported LAN address 192.168.71.70:22 did not connect. Computer Use rejects interacting with the ChatGPT application itself. Connection method and visible PC host name were requested while independent work continues. This is not evidence that the user's connection is absent, and does not authorize claiming Windows tests have run.
+Mac-to-PC control is connected. This chat executes PC commands through verified Windows OpenSSH. The Windows checkout, pinned dependencies, editor, browser, Codex CLI, MSVC and SDK are installed. Builds, unit/browser fixtures, native desktop checks and unsigned package generation passed on the actual PC. See progress.md and environment-2026-10-05.json for evidence and exact limits. Native screenshot checks run through a temporary task in the signed-in Windows desktop, because SSH session 0 cannot capture a window. Do not translate environment checks into live account, synthesis or full product acceptance passes.
 
 ## Primary technical references
 

@@ -11,9 +11,10 @@
       "unitTests": "not_run",
       "windowsLiveTests": "not_run",
       "evidence": [
-        "docs/progress.md"
+        "docs/progress.md",
+        "docs/environment-2026-10-05.json"
       ],
-      "implementationNote": "Local shell and sign-in gate implemented; native Windows start/restart not run."
+      "implementationNote": "Local shell and sign-in gate implemented; real Windows development and packaged startup/restart passed. Live account flows and remaining root-gate behaviors are pending."
     },
     {
       "id": "W02",
@@ -36,10 +37,11 @@
       "referenceBehavior": "Google、Apple、邮箱验证码、条款同意和会话恢复",
       "referenceStatus": "当前 Google 账号登录/重开 PASS；Apple、邮箱及切换供应商实际流程待验",
       "implementation": "partial",
-      "unitTests": "partial_passed_on_mac",
+      "unitTests": "partial_passed_on_mac_and_windows",
       "windowsLiveTests": "not_run",
       "evidence": [
-        "docs/progress.md"
+        "docs/progress.md",
+        "docs/environment-2026-10-05.json"
       ],
       "implementationNote": "Email OTP exchange implemented; Google/Apple/consent and live email verification pending."
     },
@@ -50,12 +52,13 @@
       "referenceBehavior": "凭据持久、退出/切账号、删除账号与晚回调隔离",
       "referenceStatus": "G02 待验证",
       "implementation": "partial",
-      "unitTests": "partial_passed_on_mac",
+      "unitTests": "partial_passed_on_mac_and_windows",
       "windowsLiveTests": "not_run",
       "evidence": [
-        "docs/progress.md"
+        "docs/progress.md",
+        "docs/environment-2026-10-05.json"
       ],
-      "implementationNote": "OS encrypted vault and generation boundaries implemented; account race unit fixtures pass; Windows vault and deletion flow pending."
+      "implementationNote": "OS encrypted vault and generation boundaries implemented; account race fixtures and Windows DPAPI round trip pass. Real authenticated vault persistence, account deletion and live account-switch flows remain pending."
     },
     {
       "id": "W05",
@@ -159,10 +162,11 @@
       "referenceBehavior": "真实流式朗读、队列等待、失败恢复、段落起读",
       "referenceStatus": "真实文档/Web/Kindle/Kobo 流式播放已验；Kobo 重排续播发现的共享竞态已修复并有双端回归，仍按场景收口",
       "implementation": "partial",
-      "unitTests": "partial_passed_on_mac",
+      "unitTests": "partial_passed_on_mac_and_windows",
       "windowsLiveTests": "not_run",
       "evidence": [
-        "docs/progress.md"
+        "docs/progress.md",
+        "docs/environment-2026-10-05.json"
       ],
       "implementationNote": "Queue and preset synthesis transport implemented; browser silent audio fixture only; real synthesis/Windows playback pending."
     },
@@ -173,10 +177,11 @@
       "referenceBehavior": "完整正文不跳动；segment 高亮严格投影到原文，保留 Unicode 修复",
       "referenceStatus": "G04 待验证",
       "implementation": "partial",
-      "unitTests": "partial_passed_on_mac",
+      "unitTests": "partial_passed_on_mac_and_windows",
       "windowsLiveTests": "not_run",
       "evidence": [
-        "docs/progress.md"
+        "docs/progress.md",
+        "docs/environment-2026-10-05.json"
       ],
       "implementationNote": "Stable full-source renderer and sequential Unicode projection implemented; unit/browser fixtures pass; live Windows source evidence pending."
     },
@@ -380,10 +385,11 @@
       "referenceBehavior": "文库、搜索、继续、删除/归档、云引用及账号隔离",
       "referenceStatus": "G03/G11 待验证",
       "implementation": "partial",
-      "unitTests": "partial_passed_on_mac",
+      "unitTests": "partial_passed_on_mac_and_windows",
       "windowsLiveTests": "not_run",
       "evidence": [
-        "docs/progress.md"
+        "docs/progress.md",
+        "docs/environment-2026-10-05.json"
       ],
       "implementationNote": "Account-scoped local library/search/delete/resume implemented; cloud references/archive/sync pending."
     },
@@ -394,10 +400,11 @@
       "referenceBehavior": "当前账号最近成功服务端 pro 为权威，不能退回历史 OR 逻辑",
       "referenceStatus": "当前账号真实服务端 Pro 月订阅与冷重开已验；购买/恢复和切账号边界待验",
       "implementation": "partial",
-      "unitTests": "partial_passed_on_mac",
+      "unitTests": "partial_passed_on_mac_and_windows",
       "windowsLiveTests": "not_run",
       "evidence": [
-        "docs/progress.md"
+        "docs/progress.md",
+        "docs/environment-2026-10-05.json"
       ],
       "implementationNote": "Authenticated v2 status and latest server Boolean implemented; contract fixtures pass, real account pending."
     },
