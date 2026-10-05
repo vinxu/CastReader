@@ -46,24 +46,46 @@ try {
         $env:npm_config_https_proxy = $Proxy
         $env:ELECTRON_GET_USE_PROXY = '1'
         $env:GLOBAL_AGENT_HTTP_PROXY = $Proxy
+        & winget.exe settings --enable ProxyCommandLineOptions | Out-Host
+        if ($LASTEXITCODE -ne 0) { throw 'WinGet proxy support could not be enabled.' }
     }
-    Install-Package 'Git.Git'
-    Install-Package 'OpenJS.NodeJS.LTS'
+    if (-not (Get-Command git.exe -ErrorAction SilentlyContinue)) { Install-Package 'Git.Git' }
+    if (-not (Get-Command node.exe -ErrorAction SilentlyContinue)) { Install-Package 'OpenJS.NodeJS.LTS' }
+    elseif ([int]((& node.exe --version).TrimStart('v').Split('.')[0]) -lt 24) { Install-Package 'OpenJS.NodeJS.LTS' }
     Install-Package 'Microsoft.VisualStudioCode'
+    Install-Package 'Google.Chrome'
     if ($IncludeNativeTools) {
-        Install-Package 'Python.Python.3.13'
+        if (-not (Get-Command python.exe -ErrorAction SilentlyContinue)) { Install-Package 'Python.Python.3.13' }
         Install-Package 'Microsoft.VisualStudio.2022.BuildTools' '--wait --quiet --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended'
     }
     $NodeMajor = [int]((& node.exe --version).TrimStart('v').Split('.')[0])
     if ($NodeMajor -lt 24) { throw 'Node.js 24 or later is required.' }
-    & npm.cmd install --global pnpm@10.25.0
-    if ($LASTEXITCODE -ne 0) { throw 'pnpm installation failed.' }
+    if (-not (Get-Command pnpm.cmd -ErrorAction SilentlyContinue)) {
+        & npm.cmd install --global pnpm@10.25.0
+        if ($LASTEXITCODE -ne 0) { throw 'pnpm installation failed.' }
+    }
+    if (-not (Get-Command codex.cmd -ErrorAction SilentlyContinue)) {
+        & npm.cmd install --global @openai/codex
+        if ($LASTEXITCODE -ne 0) { throw 'Codex CLI installation failed.' }
+    }
     Refresh-Path
     $Report.gitVersion = (& git.exe --version)
     $Report.nodeVersion = (& node.exe --version)
     $Report.npmVersion = (& npm.cmd --version)
     $Report.pnpmVersion = (& pnpm.cmd --version)
-    if ($Report.pnpmVersion.Trim() -ne '10.25.0') { throw 'pnpm version validation failed.' }
+    if ([int]($Report.pnpmVersion.Trim().Split('.')[0]) -lt 10) { throw 'pnpm 10 or later is required.' }
+    $Report.projectPnpmVersion = '10.25.0'
+    $Report.codexVersion = (& codex.cmd --version)
+    if ($IncludeNativeTools) {
+        $VsWhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+        if (-not (Test-Path $VsWhere)) { throw 'Visual Studio Installer validation failed.' }
+        $VsRoot = (& $VsWhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
+        if (-not $VsRoot -or -not (Test-Path (Join-Path $VsRoot 'VC\Auxiliary\Build\vcvars64.bat'))) { throw 'MSVC validation failed.' }
+        $Report.visualStudioPath = $VsRoot
+        $SdkRoot = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots').KitsRoot10
+        if (-not $SdkRoot -or -not (Test-Path (Join-Path $SdkRoot 'Include'))) { throw 'Windows SDK validation failed.' }
+        $Report.windowsSdkPath = $SdkRoot
+    }
     $Report.complete = $true
     Write-Host 'Development tools installed. Repository dependencies and Windows application tests are the next stage.' -ForegroundColor Green
 } catch {
