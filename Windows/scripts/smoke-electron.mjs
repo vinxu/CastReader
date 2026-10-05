@@ -13,7 +13,12 @@ assert.equal(
   "Run this environment check on Windows.",
 );
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const output = join(root, "test-results", "native-environment");
+const packaged = process.argv.includes("--packaged");
+const output = join(
+  root,
+  "test-results",
+  packaged ? "native-package" : "native-environment",
+);
 await mkdir(output, { recursive: true });
 const scratch = await mkdtemp(join(tmpdir(), "castreader-environment-"));
 const profile = join(scratch, "profile");
@@ -26,15 +31,24 @@ await writeFile(
 const environment = { ...process.env };
 delete environment.ELECTRON_RUN_AS_NODE;
 delete environment.CASTREADER_DEV;
+const launchOptions = packaged
+  ? {
+      executablePath: join(root, "release", "win-unpacked", "CastReader.exe"),
+      args: [`--user-data-dir=${profile}`],
+      env: environment,
+      timeout: 45000,
+    }
+  : { args: [launcher], env: environment, timeout: 45000 };
 let instance;
 const failures = [];
-const report = { platform: process.platform, complete: false, checks: [] };
+const report = {
+  platform: process.platform,
+  packaged,
+  complete: false,
+  checks: [],
+};
 try {
-  instance = await electron.launch({
-    args: [launcher],
-    env: environment,
-    timeout: 45000,
-  });
+  instance = await electron.launch(launchOptions);
   const window = await instance.firstWindow();
   window.on("pageerror", (error) => failures.push(error.message));
   await window.waitForURL("castreader://app/");
@@ -53,6 +67,7 @@ try {
           fixture;
       return {
         profile: app.getPath("userData"),
+        packaged: app.isPackaged,
         encryptionAvailable: available,
         encryptionRoundTrip: roundTrip,
         sandbox: prefs.sandbox,
@@ -63,6 +78,7 @@ try {
     },
   );
   assert.equal(native.profile, profile);
+  assert.equal(native.packaged, packaged);
   assert.equal(native.encryptionAvailable, true);
   assert.equal(native.encryptionRoundTrip, true);
   assert.equal(native.sandbox, true);
@@ -99,11 +115,7 @@ try {
   assert.equal(state.nodeExposed, false);
   report.checks.push("real preload IPC", "signed-out library access rejected");
   await instance.close();
-  instance = await electron.launch({
-    args: [launcher],
-    env: environment,
-    timeout: 45000,
-  });
+  instance = await electron.launch(launchOptions);
   const reopened = await instance.firstWindow();
   reopened.on("pageerror", (error) => failures.push(error.message));
   await reopened
