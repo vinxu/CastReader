@@ -122,11 +122,11 @@ struct KindleSentenceBuffer {
         pending = nil
     }
 
-    /// Small adjacent complete sentences share a TTS request; paragraph breaks
-    /// remain double newlines and headings stay separate.
+    /// Keep each complete sentence independent, including short paragraphs.
+    /// The common TTS planner may bound a long sentence, never merge neighbours.
     /// The pending page tail is deliberately excluded until it is complete.
     /// Splitting an unusually long sentence retains exact UTF-16 provenance.
-    static func playbackUnits(from sentences: [Unit], isHeading: (SourceSpan) -> Bool = { _ in false }) -> [Unit] {
+    static func playbackUnits(from sentences: [Unit], isHeading _: (SourceSpan) -> Bool = { _ in false }) -> [Unit] {
         var result: [Unit] = []
         for sentence in sentences {
             for bounds in KindleSpeechTextPlan.chunkRanges(in: sentence.text) {
@@ -142,14 +142,7 @@ struct KindleSentenceBuffer {
                         speechRange: NSRange(location: overlap.location - range.location, length: overlap.length))
                 }
                 let unit = Unit(text: String(sentence.text[lower..<upper]), sources: sources)
-                if let previous = result.last, let lastSource = previous.sources.last, let firstSource = sources.first,
-                   !previous.sources.contains(where: isHeading), !sources.contains(where: isHeading),
-                   hasCompleteBoundary(previous.text), previous.text.count + 2 + unit.text.count <= 480 {
-                    let sameParagraph = lastSource.pageKey == firstSource.pageKey && lastSource.paragraphID == firstSource.paragraphID
-                    result[result.count - 1] = join(previous, unit, separator: sameParagraph ? " " : "\n\n")
-                } else {
-                    result.append(unit)
-                }
+                result.append(unit)
             }
         }
         return result

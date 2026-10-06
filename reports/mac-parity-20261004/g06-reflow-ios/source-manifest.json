@@ -1,0 +1,14 @@
+[
+  {
+    "path": "CastReader/Views/Kindle/KindleBookView.swift",
+    "sourceSHA256": "639ea8ef488f28ff894e38403c74f3e5f018d2f5ebbfaa2e5abe4fbca669394e"
+  },
+  {
+    "path": "CastReader/Utils/KindleViewportTextAlignment.swift",
+    "sourceSHA256": "e17f0ada310b50b241857715fad637075e71732079b0e8c95386b9e7b7c38258"
+  },
+  {
+    "path": "CastReaderTests/OCRTokenGeometryCoverageTests.swift",
+    "sourceSHA256": "295586c08778f6efa75cdcdd6c95da0b462470a1ca9d3a96c9998b80714da3b7"
+  }
+]

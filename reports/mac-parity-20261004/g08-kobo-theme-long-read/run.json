@@ -1,0 +1,9 @@
+{
+  "startedAt": "2026-10-05T08:32:00+08:00",
+  "logByteOffset": 3135227,
+  "platform": "kobo",
+  "bookUUID": "b849f0ce-d6b3-42f6-bcb6-e6774d00d132",
+  "candidate": "../g08-kobo-contracts/theme-candidate-identity.json",
+  "status": "RUNNING",
+  "notes": "Continuous read includes gray/black/sepia/white themes and playing resize; duration counted from actual playback logs, not this timestamp."
+}

@@ -77,25 +77,25 @@ final class KindleSentenceBufferTests: XCTestCase {
         XCTAssertEqual(buffer.finish(), [])
     }
 
-    func testSpeechBatchesGroupCompleteSentencesWithoutConsumingUnfinishedTail() throws {
+    func testSpeechRequestsKeepCompleteSentencesSeparateWithoutConsumingUnfinishedTail() throws {
         var buffer = KindleSentenceBuffer(scope: scope)
         let ready = try buffer.accept(page("A", "One sentence. Another sentence. Was"))
         let batches = KindleSentenceBuffer.playbackUnits(from: ready)
-        XCTAssertEqual(batches.map(\.text), ["One sentence. Another sentence."])
+        XCTAssertEqual(batches.map(\.text), ["One sentence.", "Another sentence."])
         XCTAssertEqual(buffer.pending?.text, "Was")
-        XCTAssertEqual(batches[0].sources.map(\.sourceRange), [NSRange(location: 0, length: 13), NSRange(location: 14, length: 17)])
-        XCTAssertEqual(batches[0].sources.map(\.speechRange), batches[0].sources.map(\.sourceRange))
+        XCTAssertEqual(batches.flatMap(\.sources).map(\.sourceRange), [NSRange(location: 0, length: 13), NSRange(location: 14, length: 17)])
+        XCTAssertEqual(batches[1].sources[0].speechRange, NSRange(location: 0, length: 17))
     }
 
-    func testShortParagraphsShareRequestButRetainParagraphBreakAndHeadingBoundary() throws {
+    func testShortParagraphsAndHeadingsRemainSeparateRequests() throws {
         var buffer = KindleSentenceBuffer(scope: scope)
         let ready = try buffer.accept(.init(key: "A", scope: scope, paragraphs: [
             .init(id: 0, text: "First short paragraph."), .init(id: 1, text: "Second short paragraph."),
             .init(id: 2, text: "CHAPTER TWO", isHeading: true), .init(id: 3, text: "New section.")]))
         let batches = KindleSentenceBuffer.playbackUnits(from: ready, isHeading: { $0.paragraphID == 2 })
-        XCTAssertEqual(batches.map(\.text), ["First short paragraph.\n\nSecond short paragraph.", "CHAPTER TWO", "New section."])
-        XCTAssertEqual(batches[0].sources.map(\.paragraphID), [0, 1])
-        XCTAssertEqual(batches[0].sources[1].speechRange.location, "First short paragraph.\n\n".utf16.count)
+        XCTAssertEqual(batches.map(\.text), ["First short paragraph.", "Second short paragraph.", "CHAPTER TWO", "New section."])
+        XCTAssertEqual(batches.prefix(2).flatMap(\.sources).map(\.paragraphID), [0, 1])
+        XCTAssertEqual(batches[1].sources[0].speechRange.location, 0)
     }
 
     func testLongSpeechBatchPreservesEverySourceCharacterAtClauseBoundaries() throws {

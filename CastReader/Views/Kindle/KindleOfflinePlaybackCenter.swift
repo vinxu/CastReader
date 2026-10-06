@@ -18,11 +18,22 @@ final class KindleOfflinePlaybackCenter: ObservableObject {
     private var pendingDownload: (() -> Void)?
     var showsMiniPlayer: Bool { model != nil && !isPresented }
 
+    /// Entering the downloaded library is an explicit switch away from cloud
+    /// reading, including a request that has not produced its first audio yet.
+    /// Keep this boundary independent of whether MainTabView has appeared.
+    func prepareForOfflineBrowsing() {
+        scene?.player.close(preservingSleepTimer: true)
+        scene?.kindle.close(preservingSleepTimer: true)
+        scene?.voicePanel.dismiss()
+        beforeOpen?()
+    }
+
     func open(book: KindleOfflineBook, scope: String, store: KindleOfflineBookStore = .shared,
               scopeValidator: @escaping @MainActor () -> Bool,
               continueDownload: (() -> Void)? = nil,
               makeModel: (() -> KindleOfflineBookReaderModel)? = nil) {
         guard scopeValidator() else { return }
+        prepareForOfflineBrowsing()
         if let model, self.store === store, self.scope == scope,
            model.book.id == book.id, model.book.generation == book.generation {
             self.continueDownload = continueDownload
@@ -30,7 +41,6 @@ final class KindleOfflinePlaybackCenter: ObservableObject {
             return
         }
         stop(preservingSleepTimer: true)
-        beforeOpen?()
         let next = makeModel?() ?? KindleOfflineBookReaderModel(book: book, scope: scope,
             store: store, scopeValidator: scopeValidator)
         self.store = store; self.scope = scope; self.continueDownload = continueDownload
@@ -113,6 +123,16 @@ final class KindleOfflinePlaybackCenter: ObservableObject {
 struct KindleOfflinePlaybackSurface: View {
     @ObservedObject var center: KindleOfflinePlaybackCenter
     var body: some View {
+        #if targetEnvironment(macCatalyst)
+        // An offscreen NavigationStack still contributes items to NSToolbar.
+        // The model owns playback; the Mac surface can safely leave the tree.
+        if center.isPresented, let model = center.model {
+            KindleOfflineBookReaderView(model: model, continueDownload: center.resumeDownload,
+                                        minimize: center.minimize)
+                .id(ObjectIdentifier(model))
+                .background(AppTheme.background.ignoresSafeArea())
+        }
+        #else
         GeometryReader { geometry in
         if let model = center.model {
             NavigationStack {
@@ -135,6 +155,9 @@ struct KindleOfflinePlaybackSurface: View {
             .accessibilityHidden(!center.isPresented)
         }
         }
+        .allowsHitTesting(center.isPresented)
+        .accessibilityHidden(!center.isPresented)
+        #endif
     }
 }
 

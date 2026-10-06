@@ -284,7 +284,11 @@ private struct CastReaderMark: View {
 private struct ContinueWidgetBackground: View {
     var body: some View {
         ZStack {
+            #if os(macOS)
+            Color(nsColor: .windowBackgroundColor)
+            #else
             Color(.systemBackground)
+            #endif
             LinearGradient(
                 colors: [Color.castReaderOrange.opacity(0.14), .clear],
                 startPoint: .topLeading,

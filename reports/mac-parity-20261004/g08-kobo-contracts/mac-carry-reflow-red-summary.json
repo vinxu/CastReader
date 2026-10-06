@@ -1,0 +1,49 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00006000-001A08DE11C3801E",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "25C56",
+        "osVersion" : "26.2",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 0,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReaderMac · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1791155709.24,
+  "passedTests" : 0,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1791155697.195,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTUnwrap failed: expected non-nil value of type \"WeReadPlaybackResumeAnchor\" - The carried source remains resumable after its old page-local paragraph index is retired",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "PaginationContinuityTests/testKoboReflowDuringCarriedAudioKeepsItsSourceAndPausedClock()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/PaginationContinuityTests/testKoboReflowDuringCarriedAudioKeepsItsSourceAndPausedClock",
+      "testName" : "testKoboReflowDuringCarriedAudioKeepsItsSourceAndPausedClock()"
+    }
+  ],
+  "title" : "Test - CastReaderMac",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 1
+}

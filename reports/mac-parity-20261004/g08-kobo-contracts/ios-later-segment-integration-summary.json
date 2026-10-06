@@ -1,0 +1,46 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "BA9ADC22-E48F-49F1-B771-F9C42C57BA13",
+        "deviceName" : "CastReader Login Review iPad",
+        "modelName" : "iPad Air 11-inch (M3)",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 230,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1791166012.818,
+  "passedTests" : 230,
+  "result" : "Passed",
+  "skippedTests" : 0,
+  "startTime" : 1791165772.538,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "16% of duration",
+      "text" : "4 longest test runs with outlier durations exceeding 6.19s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 230
+}

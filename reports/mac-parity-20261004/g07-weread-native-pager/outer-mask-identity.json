@@ -1,0 +1,16 @@
+{
+  "builtAt": "2026-10-05T05:05:32.851617",
+  "priorPID": 19658,
+  "priorPIDConfirmedExited": true,
+  "appBinarySHA256": {
+    "__preview.dylib": "af6834f080275279ab078018817e7e5f1aa68090883ddbd139470d173a511634",
+    "CastReaderMac.debug.dylib": "fd3779d86ab4c2b38bfa86e5543175bfd12d6f52608bdc092e11019d901b4f3c",
+    "CastReaderMac": "34d138c1aefe5d1c65fd1a61ad26ad34ddefe207fdf4190dcd76ca4a36f9288e"
+  },
+  "sourceSHA256": {
+    "CastReader/Services/ReaderWebAppearanceCenter.swift": "f1fa095edeb72d02e103332a7ff6a47452c2811939d69390d103f66b10b72fc6",
+    "CastReader/Views/WeRead/WeReadLibraryViews.swift": "ed974772db2f3ba15afef8d312dd5733207f1c779eaf262b95c925ddecad6be3",
+    "CastReader/Views/Reader/ReaderHostView.swift": "b33879cd52f75c84d16e1c6d0b357e426b3aee52797b80d95bd358b98a5900cd"
+  },
+  "runningProcess": "20494 Mon Oct  5 05:05:42 2026     /private/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac"
+}

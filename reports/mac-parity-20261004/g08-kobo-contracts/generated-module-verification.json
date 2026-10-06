@@ -1,0 +1,12 @@
+[
+  {
+    "path": "CastReader/WebAssets/bundle.js",
+    "scope": "Recompiled src/kobo.ts only; all other release bundle modules preserved byte-for-byte",
+    "sha256": "0b07b4415be629b34f6f939872e184f6e4a4d3d05825808467283eb7b4b38f41"
+  },
+  {
+    "path": "CastReaderTests/Fixtures/google-books-webreader-xctest.js",
+    "scope": "Recompiled src/kobo.ts only; all other release bundle modules preserved byte-for-byte",
+    "sha256": "716d17a007f4db48832a2af791cc3e3e20af43c165d0dc7eb0237fd7c7dfb24f"
+  }
+]

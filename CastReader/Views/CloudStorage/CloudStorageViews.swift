@@ -497,6 +497,14 @@ private struct CloudPrivacyDisclosureView: View {
     let onContinue: () -> Void
     let onCancel: () -> Void
 
+    private var deviceSymbol: String {
+        #if targetEnvironment(macCatalyst)
+        return "laptopcomputer"
+        #else
+        return "iphone.gen3"
+        #endif
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -523,7 +531,7 @@ private struct CloudPrivacyDisclosureView: View {
                         detail: CloudLocalized("CastReader 不会在你的云盘中创建、修改、移动或删除文件。")
                     )
                     disclosureRow(
-                        icon: "iphone.gen3",
+                        icon: deviceSymbol,
                         title: CloudLocalized("文件只下载到这台设备"),
                         detail: CloudLocalized("支持的文档会进入临时目录并在本机校验、解析；不会上传到 CastReader 的文件存储。")
                     )

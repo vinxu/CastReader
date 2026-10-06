@@ -19,6 +19,276 @@ import WebKit
 @MainActor
 final class GoogleBooksWebBridgeTests: XCTestCase {
 
+    func testExplainCompletionWaitsForMarkRevealBeforeRequestingAnotherTurn() async throws {
+        try await assertExplainRevealCompletion(switchToRead: false)
+    }
+
+    func testSwitchingModeCancelsExplanationDeferredByMarkReveal() async throws {
+        try await assertExplainRevealCompletion(switchToRead: true)
+    }
+
+    func testExplainRevealConsumesVisibleRemainderBeforeAnyFurtherTurn() async throws {
+        try await assertExplainRevealCompletion(switchToRead: false, hasRemainder: true)
+    }
+
+    private func assertExplainRevealCompletion(switchToRead: Bool, hasRemainder: Bool = false) async throws {
+        let oldPro = ProManager.shared.debugForcePro
+        ProManager.shared.debugForcePro = true
+        defer { ProManager.shared.debugForcePro = oldPro }
+        let planFixture = ReadAloudHTTPFixture.forRequests { _, _ in
+            .response(Data("{\"error\":\"controlled_test_response\"}".utf8), status: 400)
+        }
+        defer { planFixture.close() }
+        let document = ReadingDocument(id: UUID().uuidString, title: "Explain reveal race",
+            sourceKind: .kobo, language: "en", paragraphs: [],
+            sourceURL: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001")
+        let read = ReadAloudViewModel(document: document)
+        let explain = ExplainViewModel(document: document,
+            quickReadService: QuickReadService(session: planFixture.session,
+                mobileSessionProvider: ExplainRevealFixtureSessionProvider()))
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .kobo,
+            bookID: document.id, readerURL: document.sourceURL)
+        bridge.attach(readVM: read, explainVM: explain)
+        bridge.webView = webView
+        let controller = webView.configuration.userContentController
+        controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+        controller.add(bridge, name: WebReaderBridge.handlerName)
+        controller.removeAllUserScripts()
+        controller.addUserScript(WKUserScript(source: """
+        window.turns = []; window.reveals = [];
+        window.CR = { gbRefresh: a => reveals.push(a), gbNextPage: a => turns.push(a) };
+        window.first = 'The first paragraph remains visible after the user narrows the reading window.';
+        window.last = 'The final annotated paragraph is now outside the newly visible reading spread.';
+        window.emitPage = (reason, signature, sources) => {
+          window.webkit.messageHandlers.castreader.postMessage({type:'rendered',payload:{
+            source:'kobo',reason,signature,frameSessionID:'explain-reveal-owner',language:'en',
+            paragraphs:sources.map((source,index)=>({paragraphIndex:index,text:source.text,
+              sourceParagraphIndex:source.id,sourceUTF16Start:0,sourceUTF16End:source.text.length}))
+          }});
+        };
+        emitPage('initial','wide-source',[{id:1,text:first},{id:2,text:last}]);
+        """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        defer {
+            bridge.setActive(readMode: true)
+            read.stop(); read.deactivate(); explain.stop(); explain.deactivate()
+            controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+        }
+        webView.loadHTMLString("<html><body>Source fixture</body></html>", baseURL: URL(string: document.sourceURL!))
+        for _ in 0..<200 where read.stagedLiveWebParagraphTexts.count != 2 {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts.count, 2)
+        bridge.setActive(readMode: false)
+        explain.status = .completed
+        _ = try await webView.evaluateJavaScript("emitPage('refresh','narrow-source',[{id:1,text:first}])")
+        for _ in 0..<100 where read.stagedLiveWebParagraphTexts.count != 1 {
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        explain.activeMarks = [ResolvedMark(id: UUID(), paragraphIndex: 1,
+            charRange: 0..<9, action: "underline", n: nil, seed: 1)]
+        for _ in 0..<100 {
+            if (try await webView.evaluateJavaScript("reveals.length") as? Int) == 1 { break }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        let revealCount = try await webView.evaluateJavaScript("reveals.length") as? Int
+        XCTAssertEqual(revealCount, 1, "The final mark starts a physical source reveal")
+        explain.onDocumentFinished?()
+        try await Task.sleep(for: .milliseconds(100))
+        let prematureTurns = try await webView.evaluateJavaScript("turns.length") as? Int
+        XCTAssertEqual(prematureTurns, 0, "Completion cannot dispatch a second turn while mark reveal is moving the provider")
+        // A repeated old viewport must not release the physical reveal gate.
+        _ = try await webView.evaluateJavaScript("emitPage('refresh','narrow-source',[{id:1,text:first}])")
+        try await Task.sleep(for: .milliseconds(100))
+        let staleTurns = try await webView.evaluateJavaScript("turns.length") as? Int
+        XCTAssertEqual(staleTurns, 0)
+        if switchToRead { bridge.setActive(readMode: true) }
+        let remainder = "This newly exposed paragraph has never been explained and must be consumed before another physical page turn."
+        _ = try await webView.callAsyncJavaScript(
+            "emitPage('refresh','revealed-source',[{id:2,text:last},...(remainder ? [{id:3,text:remainder}] : [])]);return true",
+            arguments: ["remainder": hasRemainder ? remainder : ""], in: nil, contentWorld: .page)
+        try await Task.sleep(for: .milliseconds(250))
+        let turns = try await webView.evaluateJavaScript("turns") as? [[String: Any]] ?? []
+        XCTAssertEqual(turns.count, switchToRead || hasRemainder ? 0 : 1)
+        if hasRemainder {
+            XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [remainder],
+                "Already explained source must be removed while the newly visible suffix remains")
+        }
+        if !switchToRead && !hasRemainder {
+            XCTAssertEqual(turns.first?["baselineSignature"] as? String, "revealed-source",
+                "Only the committed reveal can become the baseline for the next automatic turn")
+        }
+    }
+
+    func testKoboReflowRetainsSpeechBoundaryCoordinatesWithTheOriginalAudioSource() async throws {
+        let wasPro = ProManager.shared.debugForcePro
+        ProManager.shared.debugForcePro = true
+        defer { ProManager.shared.debugForcePro = wasPro }
+        useRegularVoiceForTest(language: "en")
+        let source = "First sentence. Second sentence remains in the original audio source."
+        let fixture = ReadAloudHTTPFixture { text, _ in
+            var body = try! JSONSerialization.jsonObject(with: ReadAloudHTTPFixture.body(text, duration: 8)) as! [String: Any]
+            body["timestamps"] = text.split(separator: " ").enumerated().map { index, word in
+                ["word": String(word), "start_time": Double(index) * 0.7,
+                 "end_time": Double(index + 1) * 0.7] as [String: Any]
+            }
+            return .response(try! JSONSerialization.data(withJSONObject: body))
+        }
+        defer { fixture.close() }
+        let document = ReadingDocument(id: UUID().uuidString, title: "Kobo reflow boundary",
+            sourceKind: .kobo, language: "en", paragraphs: [],
+            sourceURL: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001")
+        let read = ReadAloudViewModel(document: document, ttsService: fixture.service())
+        let explain = ExplainViewModel(document: document)
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .kobo,
+            bookID: document.id, readerURL: document.sourceURL)
+        bridge.attach(readVM: read, explainVM: explain)
+        bridge.webView = webView
+        let controller = webView.configuration.userContentController
+        controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+        controller.add(bridge, name: WebReaderBridge.handlerName)
+        controller.removeAllUserScripts()
+        controller.addUserScript(WKUserScript(source: """
+        window.CR = {};
+        window.emitPage = (reason, text, speech, signature, sourceID = 7) => {
+          document.body.textContent = text;
+          window.webkit.messageHandlers.castreader.postMessage({type:'rendered',payload:{
+            source:'kobo',reason,signature,frameSessionID:'reflow-boundary-owner',language:'en',
+            paragraphs:[{paragraphIndex:0,text,speechText:speech,sourceParagraphIndex:sourceID,
+              sourceUTF16Start:0,sourceUTF16End:text.length,sourceSpeechEnd:speech.length}]
+          }});
+        };
+        emitPage('initial','First sentence. Second sentence remains in the ',
+          'First sentence. Second sentence remains in the original audio source.','before-reflow');
+        """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        let audio = AudioPlayerService.shared
+        defer { read.stop(); read.deactivate(); explain.stop(); explain.deactivate() }
+        webView.loadHTMLString("<html><body>Loading</body></html>", baseURL: URL(string: document.sourceURL!))
+        for _ in 0..<200 where !read.hasReadableWebContent { try await Task.sleep(for: .milliseconds(25)) }
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [source])
+        read.start()
+        for _ in 0..<200 where !audio.isPlaying { try await Task.sleep(for: .milliseconds(25)) }
+        XCTAssertTrue(audio.isPlaying)
+        read.pausePlayback()
+        _ = try XCTUnwrap(read.makeWeReadPlaybackResumeAnchor())
+        _ = try await webView.evaluateJavaScript("emitPage('refresh','First ','First sentence.','after-reflow')")
+        for _ in 0..<200 {
+            if fixture.requests.count >= 2 && read.currentWeReadBoundaryCue != nil { break }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        let cue = try XCTUnwrap(read.currentWeReadBoundaryCue)
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [source])
+        XCTAssertEqual(cue.consumedCursor?.sourceUTF16End, source.utf16.count,
+            "Keeping the full old audio source must also retain its absolute source end")
+        let firstWord = try XCTUnwrap(read.liveWebSourceRange(segmentID: cue.segmentID, time: 0))
+        XCTAssertEqual(firstWord, NSRange(location: 0, length: 5),
+            "A shortened extracted sentence must not shift retained audio into negative source coordinates")
+        XCTAssertFalse(audio.isPlaying, "Font reflow cannot override Pause")
+        let remainder = "Unread material becomes visible in the wider window."
+        _ = try await webView.callAsyncJavaScript(
+            "emitPage('refresh', text, text, 'wider-reflow');return true",
+            arguments: ["text": source + " " + remainder], in: nil, contentWorld: .page)
+        for _ in 0..<100 where read.stagedLiveWebParagraphTexts.count != 2 {
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [source, remainder],
+            "Retaining the old audio must queue newly exposed unread text instead of dropping it")
+        XCTAssertFalse(audio.isPlaying)
+        let position = audio.playbackPosition
+        let reopened = String(source.dropFirst("First sentence. ".count)) + " " + remainder
+        _ = try await webView.callAsyncJavaScript(
+            "emitPage('refresh', text, text, 'reopened-tail', 8);return true",
+            arguments: ["text": reopened], in: nil, contentWorld: .page)
+        for _ in 0..<100 where fixture.requests.count < 4 || audio.currentSegment == nil {
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [source, remainder],
+            "Reopened source coordinates must retain the exact old audio and newly visible unread suffix")
+        XCTAssertEqual(audio.currentSegment?.text, source)
+        XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.15)
+        XCTAssertNil(read.resumeNotice)
+        XCTAssertFalse(audio.isPlaying)
+    }
+
+    func testKoboSamePageRefreshRecoversBlockedContentWithoutAutoplay() async throws {
+        try await verifyKoboBlockedPageRecovery(replacingPage: false)
+    }
+
+    func testKoboNewVerifiedPageRecoversBothBlockedModesWithoutAutoplay() async throws {
+        try await verifyKoboBlockedPageRecovery(replacingPage: true)
+    }
+
+    private func verifyKoboBlockedPageRecovery(replacingPage: Bool) async throws {
+        let previousAutoPlay = AppSettings.shared.autoPlay
+        AppSettings.shared.autoPlay = false
+        defer { AppSettings.shared.autoPlay = previousAutoPlay }
+        let document = ReadingDocument(id: UUID().uuidString, title: "Kobo recovery fixture",
+            sourceKind: .kobo, language: "en", paragraphs: [],
+            sourceURL: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001")
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let read = ReadAloudViewModel(document: document, historyStore: HistoryStore(directory: directory))
+        let explain = ExplainViewModel(document: document)
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .kobo,
+            bookID: document.id, readerURL: document.sourceURL)
+        bridge.attach(readVM: read, explainVM: explain)
+        bridge.webView = webView
+        let controller = webView.configuration.userContentController
+        controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+        controller.add(bridge, name: WebReaderBridge.handlerName)
+        controller.removeAllUserScripts()
+        controller.addUserScript(WKUserScript(source: """
+        window.CR = {};
+        window.recoveryText = 'Verified source on the current Kobo page.';
+        window.emitRecoveryPage = (reason, signature, text) => {
+          document.body.textContent = text;
+          window.webkit.messageHandlers.castreader.postMessage({type:'rendered', payload:{
+            source:'kobo', reason, signature, frameSessionID:'recovery-owner', language:'en',
+            paragraphs:text ? [{text, paragraphIndex:0}] : []
+          }});
+        };
+        emitRecoveryPage('initial', 'recovery-page-one', recoveryText);
+        """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        defer {
+            read.stop(); read.deactivate(); explain.stop(); explain.deactivate()
+            controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+            try? FileManager.default.removeItem(at: directory)
+        }
+        webView.loadHTMLString("<html><body>Loading fixture</body></html>", baseURL: URL(string: document.sourceURL!))
+        for _ in 0..<100 {
+            if !read.stagedLiveWebParagraphTexts.isEmpty { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, ["Verified source on the current Kobo page."])
+        read.invalidateWebContent(message: "Synthetic presentation timeout")
+        explain.invalidateWebContent(message: "Synthetic presentation timeout")
+        _ = try await webView.evaluateJavaScript("emitRecoveryPage('refresh', 'empty-page', '')")
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertNotNil(read.webContentBlockMessage, "An empty page cannot restore source access")
+        XCTAssertNotNil(explain.webContentBlockMessage)
+        XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+        read.togglePlayPause()
+        XCTAssertFalse(read.isPlaying, "Retry cannot speak the retired source before a page is verified")
+
+        let expected = replacingPage ? "A different verified page has arrived after recovery." : "Verified source on the current Kobo page."
+        _ = try await webView.callAsyncJavaScript(
+            "emitRecoveryPage('refresh', signature, text)",
+            arguments: ["signature": replacingPage ? "recovery-page-two" : "recovery-page-one", "text": expected],
+            in: nil, contentWorld: .page)
+        for _ in 0..<60 {
+            if read.webContentBlockMessage == nil { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertNil(read.webContentBlockMessage)
+        XCTAssertNil(explain.webContentBlockMessage)
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [expected])
+        XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [expected])
+        XCTAssertFalse(read.isPlaying)
+        XCTAssertFalse(explain.isPlaying)
+        XCTAssertEqual(read.currentParagraphIndex, -1, "Recovery waits for explicit playback")
+    }
+
     func testKoboLegacyCheckpointKeepsCurrentPageWithoutScanning() async throws {
         try await verifyKoboOpeningCheckpoint(nativeLocation: false)
     }
@@ -221,7 +491,11 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         }});
         """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         web.loadHTMLString("<html><body>Location fixture</body></html>", baseURL: URL(string: url))
-        await fulfillment(of: [accepted], timeout: 3)
+        // Catalyst creates a second real WebContent process here. Under the
+        // complete suite it can take longer than three seconds to attach;
+        // keep the event-based assertion without mistaking process startup
+        // latency for a lost location message.
+        await fulfillment(of: [accepted], timeout: 10)
         XCTAssertEqual(locations, [url])
         let rejected = expectation(description: "another volume cannot replace this book's anchor")
         rejected.isInverted = true
@@ -509,6 +783,7 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
     private var inbox: Inbox!
     private var auxiliaryWebViews: [WKWebView] = []
     private var hostingWindows: [UIWindow] = []
+    private var savedAutoPlay = false
 
     private func makeReaderWebView(inbox: Inbox) throws -> WKWebView {
         let bundleJS = try Self.loadXCTestBundleJS()
@@ -550,11 +825,15 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
+        _ = AuthService.shared
+        savedAutoPlay = AppSettings.shared.autoPlay
+        AppSettings.shared.autoPlay = false
         inbox = Inbox()
         webView = try makeReaderWebView(inbox: inbox)
     }
 
     override func tearDown() async throws {
+        AppSettings.shared.autoPlay = savedAutoPlay
         for auxiliaryWebView in auxiliaryWebViews {
             auxiliaryWebView.configuration.userContentController
                 .removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
@@ -1952,6 +2231,138 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         }
         XCTAssertEqual(inbox.messages.filter { $0.type == "paragraphTapped" }.count, tapsBefore + 2,
                        "The provider gesture surface must forward taps on visible chapter text")
+        _ = try await webView.evaluateJavaScript("""
+        (() => {
+          const f=document.querySelector('iframe'),p=f.contentDocument.querySelector('p');
+          const range=f.contentDocument.createRange();range.selectNodeContents(p);
+          const r=range.getClientRects()[0],box=f.getBoundingClientRect();
+          const host=document.createElement('reader-settings');document.body.append(host);
+          const shadow=host.attachShadow({mode:'open'});
+          shadow.innerHTML='<div role="dialog"><button aria-label="Decrease font size"><span>A</span></button></div>';
+          shadow.querySelector('span').dispatchEvent(new MouseEvent('click',{
+            bubbles:true,composed:true,clientX:box.left+r.left+5,clientY:box.top+r.top+5}));
+          host.remove();return true;
+        })()
+        """)
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertEqual(inbox.messages.filter { $0.type == "paragraphTapped" }.count, tapsBefore + 2,
+                       "A shadow-DOM setting above visible text must not restart the paragraph underneath")
+        _ = try await webView.evaluateJavaScript("""
+        (() => {
+          const f=document.querySelector('iframe'),p=f.contentDocument.querySelector('p');
+          const range=f.contentDocument.createRange();range.selectNodeContents(p);
+          const r=range.getClientRects()[0],box=f.getBoundingClientRect();
+          const panel=document.createElement('div');panel.setAttribute('role','dialog');
+          panel.style.cssText='position:fixed;inset:10px;width:180px;height:200px;background:white';
+          document.body.append(panel);
+          document.documentElement.dispatchEvent(new MouseEvent('click',{
+            bubbles:true,clientX:box.left+r.left+5,clientY:box.top+r.top+5}));
+          panel.remove();return true;
+        })()
+        """)
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertEqual(inbox.messages.filter { $0.type == "paragraphTapped" }.count, tapsBefore + 2,
+                       "A provider-retargeted HTML click while a dialog is open must not select underlying text")
+    }
+
+    func testKoboDialogVisibilityOnlyPublishesTransitions() async throws {
+        webView.loadHTMLString("""
+        <html><body><iframe style="width:700px;height:450px;border:0" srcdoc="<p>A visible source paragraph for the dialog visibility contract.</p>"></iframe></body></html>
+        """, baseURL: URL(string: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"))
+        for _ in 0..<100 where !inbox.messages.contains(where: { $0.type == "koboPanelVisibility" }) {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertEqual(inbox.messages.last { $0.type == "koboPanelVisibility" }?.payload["visible"] as? Bool, false)
+        _ = try await webView.evaluateJavaScript("""
+        (()=>{const panel=document.createElement('div');panel.id='provider-dialog';panel.setAttribute('role','dialog');
+          panel.style.cssText='position:fixed;top:20px;left:20px;width:200px;height:300px';document.body.append(panel);return true})()
+        """)
+        for _ in 0..<30 where inbox.messages.last(where: { $0.type == "koboPanelVisibility" })?.payload["visible"] as? Bool != true {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let visibleMessage = try XCTUnwrap(inbox.messages.last { $0.type == "koboPanelVisibility" })
+        XCTAssertEqual(visibleMessage.payload["visible"] as? Bool, true)
+        XCTAssertEqual(visibleMessage.payload["source"] as? String, "kobo")
+        XCTAssertFalse((visibleMessage.payload["frameSessionID"] as? String ?? "").isEmpty)
+        let count = inbox.messages.filter { $0.type == "koboPanelVisibility" }.count
+        try await Task.sleep(for: .milliseconds(600))
+        XCTAssertEqual(inbox.messages.filter { $0.type == "koboPanelVisibility" }.count, count)
+        _ = try await webView.evaluateJavaScript("document.getElementById('provider-dialog').style.display='none';true")
+        for _ in 0..<30 where inbox.messages.last(where: { $0.type == "koboPanelVisibility" })?.payload["visible"] as? Bool != false {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertEqual(inbox.messages.last { $0.type == "koboPanelVisibility" }?.payload["visible"] as? Bool, false)
+    }
+
+    func testKoboOwnedDialogHidesCaptionWithoutChangingPlaybackOrCue() async throws {
+        let document = ReadingDocument(id: UUID().uuidString, title: "Kobo dialog fixture", sourceKind: .kobo,
+            language: "en", paragraphs: [], sourceURL: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001")
+        let read = ReadAloudViewModel(document: document)
+        let explain = ExplainViewModel(document: document)
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .kobo, bookID: document.id, readerURL: document.sourceURL)
+        bridge.attach(readVM: read, explainVM: explain)
+        bridge.webView = webView
+        let controller = webView.configuration.userContentController
+        controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+        controller.add(bridge, name: WebReaderBridge.handlerName)
+        controller.removeAllUserScripts()
+        controller.addUserScript(WKUserScript(source: """
+          window.CR={};window.emitPanel=(visible,owner='panel-owner')=>window.webkit.messageHandlers.castreader.postMessage({
+            type:'koboPanelVisibility',payload:{source:'kobo',frameSessionID:owner,visible}});
+          window.webkit.messageHandlers.castreader.postMessage({type:'rendered',payload:{source:'kobo',
+            reason:'initial',signature:'panel-page',frameSessionID:'panel-owner',language:'en',paragraphs:[{paragraphIndex:0,
+            text:'A verified source paragraph with enough content to remain on the current page.'}]}});
+        """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        defer { read.stop(); read.deactivate(); explain.stop(); explain.deactivate(); controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName) }
+        webView.loadHTMLString("<html><body>Source</body></html>", baseURL: URL(string: document.sourceURL!))
+        for _ in 0..<200 where !read.hasReadableWebContent { try await Task.sleep(for: .milliseconds(50)) }
+        XCTAssertTrue(read.hasReadableWebContent)
+        explain.explanationText = "Keep this current subtitle cue."
+        explain.status = .streaming(block: 0, total: 1)
+        XCTAssertTrue(explain.shouldDisplayPlaybackCaption)
+        let playing = explain.isPlaying
+        _ = try await webView.evaluateJavaScript("emitPanel(true,'retired-owner');true")
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertFalse(explain.isSourcePanelPresented, "A retired frame cannot hide this reader's caption")
+        _ = try await webView.evaluateJavaScript("emitPanel(true);true")
+        for _ in 0..<30 where !explain.isSourcePanelPresented { try await Task.sleep(for: .milliseconds(25)) }
+        XCTAssertFalse(explain.shouldDisplayPlaybackCaption)
+        XCTAssertEqual(explain.explanationText, "Keep this current subtitle cue.")
+        XCTAssertEqual(explain.isPlaying, playing)
+        _ = try await webView.evaluateJavaScript("emitPanel(false);true")
+        for _ in 0..<30 where explain.isSourcePanelPresented { try await Task.sleep(for: .milliseconds(25)) }
+        XCTAssertTrue(explain.shouldDisplayPlaybackCaption)
+        XCTAssertEqual(explain.status, .streaming(block: 0, total: 1))
+    }
+
+    func testKoboHighlightSurvivesProviderThemes() async throws {
+        webView.loadHTMLString("""
+        <html><body><iframe style="width:700px;height:450px;border:0" srcdoc="<style>html{background:#333}body{margin:24px}body *{background:transparent!important}p{font:24px/36px Georgia;color:#eee}</style><p>The visible word keeps its highlight when the provider changes the reading theme.</p>"></iframe></body></html>
+        """, baseURL: URL(string: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"))
+        for _ in 0..<100 {
+            if inbox.messages.contains(where: { $0.type == "rendered" && ($0.payload["source"] as? String) == "kobo" }) { break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        XCTAssertFalse(paragraphs(try XCTUnwrap(inbox.messages.last { $0.type == "rendered" }).payload).isEmpty)
+        for theme in ["#333333", "#000000", "#f6edd9", "#ffffff"] {
+            let state = try await webView.callAsyncJavaScript("""
+              const doc=document.querySelector('iframe').contentDocument;
+              doc.documentElement.style.backgroundColor=theme;
+              CR.highlightRange({paragraphIndex:0,charStart:4,charEnd:11});
+              CR.clearMarks();
+              CR.showMark({id:'theme-'+theme,paragraphIndex:0,charStart:4,charEnd:11,action:'underline',seed:42});
+              const overlay=doc.querySelector('.cr-hl-ov'),mark=doc.querySelector('[data-cr-marks] path');
+              const style=doc.defaultView.getComputedStyle(overlay);
+              return {background:style.backgroundColor,blend:style.mixBlendMode,
+                width:overlay.getBoundingClientRect().width,
+                stroke:mark ? doc.defaultView.getComputedStyle(mark).stroke : null};
+            """, arguments: ["theme": theme], in: nil, contentWorld: .page) as? [String: Any]
+            XCTAssertEqual(state?["background"] as? String, "rgba(253, 95, 1, 0.34)", "Provider themes cannot erase the reading highlight: \(theme)")
+            XCTAssertEqual(state?["blend"] as? String, "normal", "The overlay must remain visible even on a black page")
+            XCTAssertGreaterThan(state?["width"] as? Double ?? 0, 0)
+            XCTAssertEqual(state?["stroke"] as? String, "rgb(253, 95, 1)", "Explain marks retain their own ink color")
+        }
     }
 
     func testIPadKoboIframeAcrossWindowWidths() async throws {
@@ -1984,6 +2395,28 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         XCTAssertFalse(paragraphs(initial.payload).isEmpty)
         let session = initial.payload["frameSessionID"] as? String
         if platform == "kobo" {
+            // Provider typography changes happen inside the chapter iframe
+            // without a top-level resize or a CastReader relayout request.
+            // They must preserve refresh ownership instead of restarting a
+            // page as though the user had intentionally turned it.
+            for values in [(30, 46), (22, 34)] {
+                let before = inbox.messages.count
+                let previous = inbox.messages.last { $0.type == "rendered" }
+                _ = try await webView.callAsyncJavaScript("""
+                document.querySelector('iframe').contentDocument.querySelectorAll('p').forEach(p => {
+                  p.style.fontSize = font + 'px'; p.style.lineHeight = line + 'px';
+                }); return true;
+                """, arguments: ["font": values.0, "line": values.1], in: nil, contentWorld: .page)
+                for _ in 0..<90 {
+                    if inbox.messages.dropFirst(before).contains(where: { $0.type == "rendered" }) { break }
+                    try await Task.sleep(for: .milliseconds(100))
+                }
+                let changed = try XCTUnwrap(inbox.messages.dropFirst(before).last { $0.type == "rendered" })
+                XCTAssertNotEqual(changed.payload["signature"] as? String, previous?.payload["signature"] as? String)
+                XCTAssertEqual(changed.payload["reason"] as? String, "refresh")
+                XCTAssertFalse(inbox.messages.dropFirst(before).contains { ($0.payload["reason"] as? String) == "manual" },
+                               "A font change cannot impersonate a manual page turn")
+            }
             // A native reflow can temporarily change the visible slice and
             // return to the exact same source. Polling must not discard the
             // refresh just because its final logical signature is unchanged.
@@ -2119,6 +2552,58 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         XCTAssertEqual(page as? Int, 1)
         XCTAssertNotEqual(refreshed["signature"] as? String, baseline)
         XCTAssertFalse(inbox.messages.contains { ($0.payload["reason"] as? String) == "manual" || ($0.payload["reason"] as? String) == "auto" })
+    }
+
+    func testColdResumePaintsSavedSourceWordBeforePlayback() async throws {
+        // Kobo exercises the shared native paged-reader pipe through its trusted
+        // main frame. Google uses the same commit path from its trusted iframe.
+        let text = "A morning word survives a cold reader restart."
+        let document = ReadingDocument(id: UUID().uuidString, title: "Cold word", sourceKind: .kobo,
+            language: "en", paragraphs: [], sourceURL: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001")
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let history = HistoryStore(directory: directory)
+        history.record(document)
+        var checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: [ReadingParagraph(id: 0, text: text)])
+            .checkpoint(sourceKind: .kobo, paragraphIndex: 0, audio: nil))
+        checkpoint.visual = ReadingResumeVisualCursor(sourceFingerprint: ReadingResumeContract.fingerprint(text),
+            utf16Offset: 2, utf16Length: 7)
+        XCTAssertTrue(history.saveReadingCheckpoint(checkpoint, for: document.id, boundary: history.progressBoundaryToken))
+        let read = ReadAloudViewModel(document: document, historyStore: history)
+        let explain = ExplainViewModel(document: document)
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .kobo,
+            bookID: document.id, readerURL: document.sourceURL)
+        var readyCount = 0
+        bridge.onInitialLiveWebSurfaceReady = { readyCount += 1 }
+        bridge.attach(readVM: read, explainVM: explain); bridge.webView = webView
+        let controller = webView.configuration.userContentController
+        controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+        controller.add(bridge, name: WebReaderBridge.handlerName)
+        controller.removeAllUserScripts()
+        controller.addUserScript(WKUserScript(source: """
+        window.savedPaint=null;
+        window.CR={highlightRange:(a)=>{window.savedPaint=a}};
+        window.webkit.messageHandlers.castreader.postMessage({type:'rendered',payload:{
+          source:'kobo',reason:'initial',signature:'cold-word-page',frameSessionID:'cold-word-owner',language:'en',
+          paragraphs:[{text:'A morning word survives a cold reader restart.',paragraphIndex:0}]
+        }});
+        """, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        defer {
+            read.stop(); read.deactivate(); explain.stop(); explain.deactivate()
+            controller.removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+            try? FileManager.default.removeItem(at: directory)
+        }
+        webView.loadHTMLString("<html><body>" + text + "</body></html>", baseURL: URL(string: document.sourceURL!))
+        for _ in 0..<400 where read.initialResumeViewportRange == nil { try await Task.sleep(for: .milliseconds(25)) }
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(read.initialResumeViewportRange, NSRange(location: 2, length: 7))
+        XCTAssertEqual(readyCount, 1, "Only a verified source page releases the opening indicator")
+        let paint = try await webView.evaluateJavaScript("window.savedPaint") as? [String: Any]
+        XCTAssertEqual(paint?["paragraphIndex"] as? Int, 0)
+        XCTAssertEqual(paint?["charStart"] as? Int, 2)
+        XCTAssertEqual(paint?["charEnd"] as? Int, 9)
+        XCTAssertFalse(read.isPlaying)
+        XCTAssertNil(read.webHighlight, "The paused source cursor is not generated speech")
     }
 
     func testIdenticalPausedWordIsRepaintedAfterDOMInvalidation() async throws {
@@ -2656,4 +3141,11 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         let after = rerendered.compactMap { int($0["sourceParagraphIndex"]) }
         XCTAssertEqual(after, before, "同一 segment 的 DOM clone 不得获得新的来源段落 id")
     }
+}
+
+private actor ExplainRevealFixtureSessionProvider: MobileSessionProviding {
+    func sessionToken() -> String? { "cms_fixture" }
+    func refreshSession() -> String? { "cms_fixture" }
+    func invalidateSession() {}
+    func rejectSession(_ token: String?) {}
 }

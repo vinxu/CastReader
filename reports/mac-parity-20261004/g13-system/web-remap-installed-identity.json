@@ -1,0 +1,7 @@
+{
+  "configuration": "Release",
+  "version": "1.2.47",
+  "build": "72",
+  "executableSHA256": "02d27a96609d2f39979e4ef8d4e190670da4605ce7c97b61b3e58c98db327b57",
+  "architectures": "x86_64 arm64"
+}

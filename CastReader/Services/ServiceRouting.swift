@@ -19,6 +19,15 @@ import Foundation
 /// an overwrite install, so production authorization must come from the signed
 /// distribution environment rather than an account, email or stored value.
 enum DistributionTestingPolicy {
+    /// Mac ships only the international product, regardless of storefront,
+    /// time zone, old preferences or development launch arguments.
+    static var isGlobalOnly: Bool {
+        #if targetEnvironment(macCatalyst)
+        return true
+        #else
+        return false
+        #endif
+    }
     /// Development installs should show the same navigation as the public app.
     /// Diagnostic UI is opt-in for an individual Xcode launch, never persisted.
     static var showsDebugPanels: Bool {
@@ -35,6 +44,7 @@ enum DistributionTestingPolicy {
         "-CastReaderAllowPersistedDistributionOverrides"
 
     static var allowsPersistedOverrides: Bool {
+        guard !isGlobalOnly else { return false }
         #if DEBUG
         return true
         #else
@@ -63,6 +73,7 @@ enum DistributionTestingPolicy {
         appStoreReceiptURL: URL?,
         arguments _: [String]
     ) -> Bool {
+        guard !isGlobalOnly else { return false }
         if isDebugBuild { return true }
         guard isInternalDistributionBuild else { return false }
         return appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
@@ -381,6 +392,9 @@ enum ServiceRouting {
         buildNumber: Int = currentBuildNumber,
         allowLocalOverride: Bool = allowsLocalOverride
     ) -> Snapshot {
+        if DistributionTestingPolicy.isGlobalOnly {
+            return Snapshot(route: .globalGateway, provenance: .safeDefault)
+        }
         #if DEBUG
         if let route = launchArgumentRoute(arguments) {
             return Snapshot(route: route, provenance: .launchArgument)

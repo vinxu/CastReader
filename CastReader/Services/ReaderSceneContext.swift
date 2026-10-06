@@ -10,6 +10,8 @@ final class ReaderSceneContext: ObservableObject, Identifiable {
     let keyboard = ReaderWindowKeyboard()
     weak var window: UIWindow?
     @Published var sceneSessionID: String?
+    @Published var pendingFileURLs: [URL] = []
+    @Published private(set) var pendingShareInboxRequest = false
     let player: PlayerCoordinator
     let kindle: KindlePlaybackCenter
     let offline: KindleOfflinePlaybackCenter
@@ -59,7 +61,13 @@ final class ReaderSceneContext: ObservableObject, Identifiable {
     }
 
     var ownsPlayback: Bool { player.ownsPlaybackSession || kindle.ownsPlaybackSession || offline.ownsPlaybackSession }
-    var isKeyWindow: Bool { window?.isKeyWindow == true }
+    var isKeyWindow: Bool {
+        #if targetEnvironment(macCatalyst)
+        return ReaderSceneRegistry.shared.isFocused(window)
+        #else
+        return window?.isKeyWindow == true
+        #endif
+    }
 
     var notificationUserInfo: [AnyHashable: Any] { ["readerSceneID": id.uuidString] }
     func accepts(_ notification: Notification) -> Bool {
@@ -68,6 +76,8 @@ final class ReaderSceneContext: ObservableObject, Identifiable {
     }
 
     func resetForAccountBoundary() {
+        pendingFileURLs = []
+        pendingShareInboxRequest = false
         player.close()
         kindle.close()
         offline.stop()
@@ -91,6 +101,13 @@ final class ReaderSceneContext: ObservableObject, Identifiable {
     }
 
     func handleOpenURL(_ url: URL) {
+        #if targetEnvironment(macCatalyst)
+        if url.isFileURL {
+            ReaderRunLog.write("MAC scene file route")
+            pendingFileURLs.append(url)
+            return
+        }
+        #endif
         if CloudStorageCenter.isOAuthRedirectURL(url) {
             _ = CloudStorageCenter.handleOAuthRedirect(url)
         } else if StudyBoostDeepLink.matches(url) {
@@ -108,8 +125,16 @@ final class ReaderSceneContext: ObservableObject, Identifiable {
         } else if let action = SystemAction.from(url: url) {
             SystemActionStore.shared.enqueue(action, origin: .deepLink)
         } else if url.scheme == "castreader", url.host == "share-inbox" {
-            NotificationCenter.default.post(name: .castReaderShareInboxChanged, object: nil)
+            // Cold-launch URLs can arrive before MainTab or its window probe.
+            // Keep the request with its destination scene until it can present.
+            pendingShareInboxRequest = true
         }
+    }
+
+    func takePendingShareInboxRequest(isActive: Bool) -> Bool {
+        guard isActive, isKeyWindow, pendingShareInboxRequest else { return false }
+        pendingShareInboxRequest = false
+        return true
     }
 }
 
@@ -165,6 +190,11 @@ final class ReaderWindowBookmarkStore {
 
 @MainActor
 final class ReaderSceneRegistry {
+    private var launchFiles: [URL] = []
+    func openFile(_ url: URL) {
+        if let context = presentationContext { context.handleOpenURL(url) }
+        else { launchFiles.append(url) }
+    }
     static let shared = ReaderSceneRegistry()
     private final class Entry {
         weak var context: ReaderSceneContext?
@@ -175,7 +205,26 @@ final class ReaderSceneRegistry {
     private var playbackOwner: ReaderSceneContext?
     private var audioObserver: AnyCancellable?
     private var disconnectObserver: NSObjectProtocol?
+    #if targetEnvironment(macCatalyst)
+    private weak var focusedWindow: UIWindow?
+    private var focusObserver: NSObjectProtocol?
+    func isFocused(_ window: UIWindow?) -> Bool {
+        guard let window else { return false }
+        return focusedWindow.map { $0 === window } ?? window.isKeyWindow
+    }
+    #endif
     private init() {
+        #if targetEnvironment(macCatalyst)
+        // UIKit's key window is scene-local; multiple Mac windows can each
+        // report true. Track the last focus event for app-wide presentations.
+        focusObserver = NotificationCenter.default.addObserver(forName: UIWindow.didBecomeKeyNotification, object: nil, queue: .main) { [weak self] note in
+            MainActor.assumeIsolated {
+                guard let self, let window = note.object as? UIWindow,
+                      self.contexts.contains(where: { $0.window === window }) else { return }
+                self.focusedWindow = window
+            }
+        }
+        #endif
         disconnectObserver = NotificationCenter.default.addObserver(forName: UIScene.didDisconnectNotification, object: nil, queue: .main) { [weak self] note in
             MainActor.assumeIsolated {
                 guard let scene = note.object as? UIScene else { return }
@@ -213,6 +262,13 @@ final class ReaderSceneRegistry {
         ReaderWindowBookmarkStore.shared.retain(sessionIDs: Set(UIApplication.shared.openSessions.map(\.persistentIdentifier)))
         context.window = window
         context.sceneSessionID = window.windowScene?.session.persistentIdentifier
+        #if targetEnvironment(macCatalyst)
+        if focusedWindow == nil, window.isKeyWindow { focusedWindow = window }
+        UIMenuSystem.main.setNeedsRebuild()
+        let files = launchFiles
+        launchFiles.removeAll()
+        files.forEach { context.handleOpenURL($0) }
+        #endif
         context.youtubeService.presentationWindow = window
         context.kindle.model?.setReadingSurfaceAttached(true)
         if let retained = retainedPlayback, retained !== context {
@@ -223,6 +279,9 @@ final class ReaderSceneRegistry {
 
     func disconnected(_ context: ReaderSceneContext) {
         guard context.sceneSessionID != nil || context.window != nil else { return }
+        #if targetEnvironment(macCatalyst)
+        if focusedWindow === context.window { focusedWindow = nil }
+        #endif
         context.sceneSessionID = nil
         context.window = nil
         context.kindle.model?.setReadingSurfaceAttached(false)

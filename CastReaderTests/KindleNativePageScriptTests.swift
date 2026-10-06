@@ -11,7 +11,7 @@ final class KindleNativePageScriptTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
+        window = TestRepository.makeWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
         let controller = UIViewController()
         window.rootViewController = controller
         window.makeKeyAndVisible()
@@ -57,10 +57,7 @@ final class KindleNativePageScriptTests: XCTestCase {
         window.mount=function(page){document.getElementById('kr-renderer').replaceChildren(page.renderResult.pageElement);nav.currentView.renderedPage=page;};
         </script>
         """, baseURL: URL(string: "https://fixture.invalid"))
-        for _ in 0..<100 {
-            if !web.isLoading, (try? await web.evaluateJavaScript("window.fixtureToken==='\(token)'")) as? Bool == true { break }
-            try await Task.sleep(for: .milliseconds(30))
-        }
+        try await TestRepository.waitForWebFixture(web, token: token)
         _ = try await web.evaluateJavaScript(KindleWebScripts.pageCaptureBootstrap)
         _ = try await web.evaluateJavaScript("window.__crKindleNativePages.refresh(true);true")
         for _ in 0..<50 {

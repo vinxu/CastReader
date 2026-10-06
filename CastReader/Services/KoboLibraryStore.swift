@@ -154,8 +154,19 @@ final class KoboLibraryStore: ObservableObject {
         switch sort {
         case .recent:
             return filtered.sorted {
-                ($0.lastOpenedAt ?? $0.lastSyncedAt)
-                    > ($1.lastOpenedAt ?? $1.lastSyncedAt)
+                // Sync time is discovery time, not a reading event. Keep
+                // opened books ahead of unread books when a fresh shelf
+                // snapshot updates every lastSyncedAt value together.
+                switch ($0.lastOpenedAt, $1.lastOpenedAt) {
+                case let (left?, right?) where left != right: return left > right
+                case (_?, nil): return true
+                case (nil, _?): return false
+                default:
+                    if $0.lastSyncedAt != $1.lastSyncedAt {
+                        return $0.lastSyncedAt > $1.lastSyncedAt
+                    }
+                    return $0.id < $1.id
+                }
             }
         case .title:
             return filtered.sorted {

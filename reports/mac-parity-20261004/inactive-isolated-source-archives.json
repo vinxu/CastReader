@@ -1,0 +1,408 @@
+{
+  "at": "2026-10-05T07:33:54.202750+08:00",
+  "records": [
+    {
+      "host": "/tmp/CastReaderIsolatedTests.DFPDK7",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderIsolatedTests.DFPDK7.tar.gz",
+      "verifiedFiles": 922,
+      "originalBytes": 119336516,
+      "archiveBytes": 73504419,
+      "sha256": "832edd1a1bb646434e6ab5acbf0bcf6dbf442f479e9bdbc8737170a7f5fbbd1a"
+    },
+    {
+      "host": "/tmp/CastReaderIsolatedTests.FOPzxS",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderIsolatedTests.FOPzxS.tar.gz",
+      "verifiedFiles": 922,
+      "originalBytes": 119329520,
+      "archiveBytes": 73500523,
+      "sha256": "c11da1494f52b01767129b749ef69dd6ed287c48baa55e6b147c63881423b7be"
+    },
+    {
+      "host": "/tmp/CastReaderIsolatedTests.aH1g9u",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderIsolatedTests.aH1g9u.tar.gz",
+      "verifiedFiles": 939,
+      "originalBytes": 119640205,
+      "archiveBytes": 73695210,
+      "sha256": "d6d48ca641c53716efb03cc75b2c1e4ac7518adc6f6849cee308c54fb48e6d04"
+    },
+    {
+      "host": "/tmp/CastReaderIsolatedTests.fnBa6M",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderIsolatedTests.fnBa6M.tar.gz",
+      "verifiedFiles": 936,
+      "originalBytes": 119458932,
+      "archiveBytes": 73564174,
+      "sha256": "0edb00d4e5dce5006336314791696ca90cc421824e462b1c849ee15b4fdb9893"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.5xrEjQ",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.5xrEjQ.tar.gz",
+      "verifiedFiles": 938,
+      "originalBytes": 119551881,
+      "archiveBytes": 73628268,
+      "sha256": "197704ac4b5a8f0c948ab226bd81779e2d99437da9e4993a0d3745b9d15559ae"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.DOxiiR",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.DOxiiR.tar.gz",
+      "verifiedFiles": 928,
+      "originalBytes": 119436401,
+      "archiveBytes": 73552517,
+      "sha256": "8b217715c81d447916225a29b7dfd61c660c642440195057261a7ba604010eb9"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.J4I4om",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Mac Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.J4I4om.tar.gz",
+      "verifiedFiles": 943,
+      "originalBytes": 119655062,
+      "archiveBytes": 73698616,
+      "sha256": "47f331be6c59ef72950a98145942907ffa892af50b5913491db8a9ecb146f01c"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.K8inky",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Mac Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.K8inky.tar.gz",
+      "verifiedFiles": 943,
+      "originalBytes": 119655062,
+      "archiveBytes": 73698732,
+      "sha256": "d2b9d04105e45abd3ebbcc6eb515347b3491d4c4ee3965384aea249f97d36cf2"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.Q6CUAP",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.Q6CUAP.tar.gz",
+      "verifiedFiles": 928,
+      "originalBytes": 119437097,
+      "archiveBytes": 73552969,
+      "sha256": "25664035149ecabe5d60f98b9052be555996e80891052c4c6a18a66e10b68fe8"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.Ual20i",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.Ual20i.tar.gz",
+      "verifiedFiles": 928,
+      "originalBytes": 119436036,
+      "archiveBytes": 73552197,
+      "sha256": "f583c8b8457b27b63c00097e0018b12c21be2011741773549503b4e62cb827ad"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.V69uMo",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.V69uMo.tar.gz",
+      "verifiedFiles": 940,
+      "originalBytes": 119642684,
+      "archiveBytes": 73695374,
+      "sha256": "5d73b0f34d1876cb91336355bcc3858bb74a0988c71be199c3f5006d2784a4fb"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.W4wVqw",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.W4wVqw.tar.gz",
+      "verifiedFiles": 935,
+      "originalBytes": 119451041,
+      "archiveBytes": 73561147,
+      "sha256": "f15f40cf8c75a0a59b2d349afc756676b929f098d0b62a19e48b380a66abc634"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.Xovreu",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.Xovreu.tar.gz",
+      "verifiedFiles": 929,
+      "originalBytes": 119441338,
+      "archiveBytes": 73555471,
+      "sha256": "e3f9764810999838053d77676e285da8e0142f377b8571753f91c7b1368fbd81"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.YeBZtl",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Mac Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.YeBZtl.tar.gz",
+      "verifiedFiles": 945,
+      "originalBytes": 120039150,
+      "archiveBytes": 73706112,
+      "sha256": "7e69306d01578e579f1fdfe70416dd8049cb0e96b73e1837cef168d85e036164"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.bvcyLX",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.bvcyLX.tar.gz",
+      "verifiedFiles": 937,
+      "originalBytes": 119478261,
+      "archiveBytes": 73569273,
+      "sha256": "3112d3dc9849b700213bb498db46020491549d8e1c0deb479c5e585766c72763"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.eafInK",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.eafInK.tar.gz",
+      "verifiedFiles": 930,
+      "originalBytes": 119446525,
+      "archiveBytes": 73558315,
+      "sha256": "2ec8cd2d9716d7b09e5a1b5dbce4dd899d87ce040cd3e63ea0cd563f982a136b"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.hVNdPZ",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.hVNdPZ.tar.gz",
+      "verifiedFiles": 928,
+      "originalBytes": 119436036,
+      "archiveBytes": 73551856,
+      "sha256": "cd025072625fd2091b4d835e52df45ecc52d576bba34fd0856296b0aeb8b69c8"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.kGYt0f",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.kGYt0f.tar.gz",
+      "verifiedFiles": 929,
+      "originalBytes": 119440902,
+      "archiveBytes": 73554748,
+      "sha256": "77826f6c0ba80c2f9ca44186469461ef09a35ec006bf43bbdcdab3bb4eb0c65f"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.n86Ylx",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.n86Ylx.tar.gz",
+      "verifiedFiles": 937,
+      "originalBytes": 119477687,
+      "archiveBytes": 73569337,
+      "sha256": "2040b1c91fe2387192eff5ee66f69a2b6ed205d1d314543cf19a4f91525b710d"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.oqx3UN",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.oqx3UN.tar.gz",
+      "verifiedFiles": 940,
+      "originalBytes": 119642684,
+      "archiveBytes": 73695156,
+      "sha256": "a7ac5ec79063934b70c3239f30eeb80cfd9aa10eaffbe1347cb457bff727ab5b"
+    },
+    {
+      "host": "/tmp/CastReaderMacTests.xSSDs4",
+      "archivedDirectories": [
+        "CastReader",
+        "CastReaderTests",
+        "CastReaderMacTests",
+        "CastReaderUITests",
+        "CastReader Safari Extension",
+        "CastReader Share Extension",
+        "CastReader Mac Share Extension",
+        "CastReader Widget",
+        "WebReader",
+        "docs"
+      ],
+      "archive": "/tmp/CastReaderMacInactiveSources-20261005/CastReaderMacTests.xSSDs4.tar.gz",
+      "verifiedFiles": 945,
+      "originalBytes": 120041962,
+      "archiveBytes": 73704685,
+      "sha256": "4a5a25f0f49b9efb7e083ff4a3a1d5ef495cacdf8fee7aaeb16f1fcd57263242"
+    }
+  ],
+  "scope": "Only source copies in inactive test hosts already referenced by this task. Project metadata, credentials, products and all xcresult evidence remain.",
+  "restore": "tar -xzf <archive> -C <host>"
+}

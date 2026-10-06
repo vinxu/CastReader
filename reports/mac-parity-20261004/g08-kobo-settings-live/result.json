@@ -1,0 +1,5 @@
+{
+  "status": "FAILED",
+  "reason": "Paragraph-tap guard passed, but the right-side font control still emitted a manual edge-turn intent; Kobo manual navigation needs the same composed-path control guard.",
+  "recordedAt": "2026-10-05T07:58:39.790590+08:00"
+}

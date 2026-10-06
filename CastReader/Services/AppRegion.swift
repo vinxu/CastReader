@@ -132,6 +132,9 @@ extension AppRegion {
         timeZoneIdentifier: String = TimeZone.current.identifier,
         allowLocalOverride: Bool = DistributionTestingPolicy.allowsPersistedOverrides
     ) -> Resolution {
+        if DistributionTestingPolicy.isGlobalOnly {
+            return Resolution(region: .global, isAuthoritative: true, provenance: .safeDefault)
+        }
         if let forced = launchArgumentRegion(arguments) {
             return Resolution(
                 region: forced,
@@ -188,6 +191,7 @@ extension AppRegion {
     /// 失败时**保留**上次缓存（而不是清空退回时区兜底）—— 已知的发行区域比
     /// 一次网络抖动更可信。
     static func refreshStorefront() async {
+        guard !DistributionTestingPolicy.isGlobalOnly else { return }
         guard let storefront = await Storefront.current else { return }
         let code = storefront.countryCode
         guard !code.isEmpty else { return }
@@ -208,6 +212,7 @@ extension AppRegion {
             return storefront.countryCode
         }
     ) async -> Resolution {
+        if DistributionTestingPolicy.isGlobalOnly { return resolve(arguments: arguments) }
         let initial = resolve(arguments: arguments)
         if initial.provenance == .launchArgument || initial.provenance == .userOverride {
             launchRuntime.safeFallback = nil

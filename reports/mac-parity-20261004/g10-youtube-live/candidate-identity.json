@@ -1,0 +1,11 @@
+{
+  "recordedAt": "2026-10-05T16:32:38.207013+08:00",
+  "binarySHA256": "e45b7267ad225952fb72d63a2d1a521ed2cb747fbd057651894483ca86943f37",
+  "sourceSHA256": {
+    "CastReader/Services/YouTubeWebScripts.swift": "1fa732a58891225547c416556ae7bd2c8cea727d0c110fbe8d7a410b6700e8ad",
+    "CastReader/Services/WebReaderBridge.swift": "037f8cf84a68b08506d2bf99858d7c87afbf4aacd568a5eba76924cadefa93e3",
+    "CastReader/Models/YouTubeTranscript.swift": "481c07edbf2003044f562e7c0c8fab763317cebcf1f25636bb41bd7ec4b3c21d",
+    "CastReader/WebAssets/bundle.js": "7337afbc9e6fb0562c609a0c5afa0d6f811509dc6f0b12a785db0ef58c4b6758"
+  },
+  "strictDeepSignature": "PASS"
+}

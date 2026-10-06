@@ -1,0 +1,51 @@
+{
+  "literalKeyCount": 100,
+  "missingKeys": [],
+  "newCompiledStrings": {
+    "de": {
+      "搜索 Google Drive": "Google Drive durchsuchen",
+      "从历史记录移除": "Aus dem Verlauf entfernen",
+      "连接账号": "Konto verbinden"
+    },
+    "en": {
+      "搜索 Google Drive": "Search Google Drive",
+      "从历史记录移除": "Remove from history",
+      "连接账号": "Connect account"
+    },
+    "es": {
+      "搜索 Google Drive": "Buscar en Google Drive",
+      "从历史记录移除": "Eliminar del historial",
+      "连接账号": "Conectar cuenta"
+    },
+    "fr": {
+      "搜索 Google Drive": "Rechercher dans Google Drive",
+      "从历史记录移除": "Retirer de l’historique",
+      "连接账号": "Connecter un compte"
+    },
+    "hi": {
+      "搜索 Google Drive": "Google Drive में खोजें",
+      "从历史记录移除": "इतिहास से हटाएँ",
+      "连接账号": "खाता कनेक्ट करें"
+    },
+    "it": {
+      "搜索 Google Drive": "Cerca in Google Drive",
+      "从历史记录移除": "Rimuovi dalla cronologia",
+      "连接账号": "Collega account"
+    },
+    "ja": {
+      "搜索 Google Drive": "Google Drive を検索",
+      "从历史记录移除": "履歴から削除",
+      "连接账号": "アカウントを接続"
+    },
+    "pt-BR": {
+      "搜索 Google Drive": "Pesquisar no Google Drive",
+      "从历史记录移除": "Remover do histórico",
+      "连接账号": "Conectar conta"
+    },
+    "zh-Hans": {
+      "搜索 Google Drive": "搜索 Google Drive",
+      "从历史记录移除": "从历史记录移除",
+      "连接账号": "连接账号"
+    }
+  }
+}

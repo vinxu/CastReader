@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-06",
+  "candidateBeforeResumeFix": "3c8a73ef11859ab752ac900763f1596d21806af12f28f4413a1a9527a61fbd75",
+  "provider": "WeRead",
+  "book": "围城",
+  "region": "international",
+  "pageZoom": 0.8,
+  "fontPreference": "user selected minimum; preserved",
+  "observed": [
+    "Authenticated provider header and personal shelf",
+    "Read Aloud continued through multiple pages with text-aligned highlight",
+    "Explain Part 1 to Part 2 with original-text underline aligned",
+    "Bookshelf navigation bar restored on minimizing; hidden when reopening reader"
+  ],
+  "resumeRegression": "Reopening paused Explain showed older Read page while explanation progress stayed at Part 2/3; not accepted",
+  "fix": "Retained in-memory page takes priority over older durable Read checkpoint; identical WeRead page repaints retained marks without replacing prepared audio",
+  "targetedNewTest": "PASS; 1 test, zero failures",
+  "normalReleaseRetest": "FAIL: explained page was not restored after minimize/expand; player stayed Paused Part 3/3 while provider displayed an earlier page without marks",
+  "voiceCreation": "PR #67 retained as draft, no deployment per user; online creation pending",
+  "latestCandidate": "94b6cd44547586dea26b84151e6cc77705daa87cece6e1b88d17d9d714be0526",
+  "focusedRegression": {
+    "passed": 33,
+    "failed": 0,
+    "skipped": 0
+  },
+  "acceptance": "PARTIAL: density and live Read/Explain observed; retained-page recovery still fails in real provider",
+  "followUp": "Investigate provider native page recovery versus simplified WK fixture; do not treat the fixture result as acceptance"
+}

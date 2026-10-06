@@ -1,0 +1,15 @@
+{
+  "start": "2026-10-05T02:00:09.573288+08:00",
+  "logStartOffset": 348904,
+  "book": "B002RKRMSY",
+  "voice": "Bella",
+  "speed": 1,
+  "windowPoints": [
+    523,
+    463
+  ],
+  "initialPage": "b889c89469b9ae6346fcf86d9344ef296e2490cded0f3295d70a29e9b70840bc",
+  "runningPID": 1692,
+  "candidateSourceRecord": "g06-offline-ui/identity.json",
+  "candidateNote": "Started before the viewport candidate rebuild; resident process was not relaunched. Initial identity includes source hashes and app executable hash; Debug code also resides in .debug.dylib, whose prior file was replaced by the later build."
+}

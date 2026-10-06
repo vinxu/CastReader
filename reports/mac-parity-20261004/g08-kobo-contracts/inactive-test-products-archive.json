@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-05T07:21:41.159687+08:00",
+  "archives": [
+    {
+      "source": "/tmp/CastReaderMacTests.J4I4om/DerivedData/Build/Products",
+      "recoverableArchive": "/tmp/CastReaderMacTestProductsArchive-20261005/CastReaderMacTests.J4I4om.tar.gz",
+      "verifiedFiles": 158,
+      "archiveSHA256": "a0a5e86fb8a59236ca2aecb0d6446773ae1c6ac54b03e622019faa446ac637e7"
+    },
+    {
+      "source": "/tmp/CastReaderMacTests.K8inky/DerivedData/Build/Products",
+      "recoverableArchive": "/tmp/CastReaderMacTestProductsArchive-20261005/CastReaderMacTests.K8inky.tar.gz",
+      "verifiedFiles": 158,
+      "archiveSHA256": "af357b7f9feb8f44782b30e11166200c84d61fb701a9d57ef4214d8f8f8448b6"
+    },
+    {
+      "source": "/tmp/CastReaderMacTests.YeBZtl/DerivedData/Build/Products",
+      "recoverableArchive": "/tmp/CastReaderMacTestProductsArchive-20261005/CastReaderMacTests.YeBZtl.tar.gz",
+      "verifiedFiles": 158,
+      "archiveSHA256": "d33f12ef7760e2a0f2d036a42c274c9dcf8ee9f53dbed158e7865bc2dde363ca"
+    }
+  ],
+  "preserved": "Each file verified against archive before removing only the inactive Products directory; source copies and all test evidence untouched."
+}

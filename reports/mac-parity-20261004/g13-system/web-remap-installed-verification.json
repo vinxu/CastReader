@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "app": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+  "strictDeepSignature": "PASS",
+  "bundles": [
+    {
+      "bundle": "com.same.castreader",
+      "sandbox": true,
+      "provisionedAppGroups": [
+        "group.com.same.castreader"
+      ]
+    },
+    {
+      "bundle": "com.same.castreader.CastReaderMacShare",
+      "sandbox": true,
+      "provisionedAppGroups": [
+        "group.com.same.castreader"
+      ]
+    },
+    {
+      "bundle": "com.same.castreader.CastReaderMacWidget",
+      "sandbox": true,
+      "provisionedAppGroups": [
+        "group.com.same.castreader"
+      ]
+    }
+  ]
+}

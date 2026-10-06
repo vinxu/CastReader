@@ -1,0 +1,13 @@
+{
+  "startedAt": "2026-10-05T03:09:05.656911+08:00",
+  "logOffset": 1279447,
+  "candidate": "g06-reflow-candidate/identity.json",
+  "pid": 8715,
+  "book": "B002RKRMSY",
+  "initialWindowPoints": [
+    1024,
+    768
+  ],
+  "mode": "explain",
+  "rate": 1.0
+}

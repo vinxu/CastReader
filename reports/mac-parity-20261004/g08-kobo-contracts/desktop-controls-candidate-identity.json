@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-05T09:08:25.226137",
+  "files": [
+    {
+      "path": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/Views/Reader/ReaderHostView.swift",
+      "sha256": "2f6a8e202c67cc69f8728122ac16342189f7ab40a3cfc2b14514e535235ff9a3"
+    },
+    {
+      "path": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/Services/WebReaderBridge.swift",
+      "sha256": "bc7f48bb644a0cd4452c9558142ba33b3ac9205937009a8545ed34cfc312f7ca"
+    },
+    {
+      "path": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/WebReader/src/cr-bridge.ts",
+      "sha256": "26ff48e610e89ac82a9ab22e107294545ded58f90284c54a821120b8dcfd85a6"
+    },
+    {
+      "path": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/WebReader/src/kobo.ts",
+      "sha256": "3b03b65cc6df715baf4a22bfa9e2c7a169f5460188500ee888d6e93509c077b5"
+    },
+    {
+      "path": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/WebAssets/bundle.js",
+      "sha256": "dd06b8197874c912ba2168a66bce996969bf928fa47881a379a444a4f2192412"
+    },
+    {
+      "path": "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/Resources/WebAssets/bundle.js",
+      "sha256": "dd06b8197874c912ba2168a66bce996969bf928fa47881a379a444a4f2192412"
+    },
+    {
+      "path": "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac.debug.dylib",
+      "sha256": "be4f18b8f5ba4902a35c853bf85b965ce219ba83ab7d0d570746b004411fd63d"
+    }
+  ]
+}

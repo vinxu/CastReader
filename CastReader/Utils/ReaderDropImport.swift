@@ -290,7 +290,7 @@ final class ReaderDropImportModel: ObservableObject {
 }
 
 struct ReaderDropImport: ViewModifier {
-    let scene: ReaderSceneContext
+    @ObservedObject var scene: ReaderSceneContext
     @StateObject private var model = ReaderDropImportModel()
     @ObservedObject private var auth = AuthService.shared
     @State private var targeted = false
@@ -354,6 +354,32 @@ struct ReaderDropImport: ViewModifier {
                 }.tint(AppTheme.primary).controlSize(.large).accessibilityIdentifier("dropImportReview")
             }
             .onChange(of: auth.accountBoundaryID) { _ in model.cancel() }
+            .task(id: scene.pendingFileURLs) {
+                #if targetEnvironment(macCatalyst)
+                let urls = scene.pendingFileURLs
+                guard !urls.isEmpty else { return }
+                // Finder's explicit open takes precedence over first-launch
+                // shelf onboarding, just like the existing YouTube/share route.
+                let onboarding = BoundLibraryOnboardingStore.shared
+                if onboarding.isChooserPresented,
+                   ReaderSceneRegistry.shared.presents(onboarding.presentationSceneID, in: scene) {
+                    onboarding.postpone()
+                }
+                // Let the previous cover finish before presenting the review.
+                // A second Finder event waits for the current review instead
+                // of dropping it or replacing another window's reader.
+                do {
+                    try await Task.sleep(for: .milliseconds(250))
+                    while model.review != nil || scene.window == nil ||
+                          scene.window?.rootViewController?.presentedViewController != nil {
+                        try await Task.sleep(for: .milliseconds(100))
+                    }
+                    try Task.checkCancellation()
+                } catch { return }
+                let providers = urls.map { NSItemProvider(item: $0 as NSURL, typeIdentifier: UTType.fileURL.identifier) }
+                if model.receive(providers) { scene.pendingFileURLs = [] }
+                #endif
+            }
             .onDisappear { model.cancel() }
             .overlay(alignment: .topLeading) {
                 #if DEBUG

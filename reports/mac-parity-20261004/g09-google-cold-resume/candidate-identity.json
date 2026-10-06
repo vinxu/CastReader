@@ -1,0 +1,7 @@
+{
+  "CastReader/Models/ReadingResumeCheckpoint.swift": "8671d23e7b16407eb158644960888c80766388ae2f4205a0363c72290a4e2094",
+  "CastReader/ViewModels/ReadAloudViewModel.swift": "05271b82ce682acc098182b3617c7faa3c4807f75c580e8fca2cbaeba81a1a19",
+  "CastReaderTests/ReadingResumeTests.swift": "7040ed2a2d65c822373a6e9e10171129ce7eb8431cb6c578750bbff61f2232c7",
+  "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "eea36adf01ebb541c1c5a1203ea00105ba6e208d66a6407709268d4e7e2b6c48",
+  "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/Resources/WebAssets/bundle.js": "7337afbc9e6fb0562c609a0c5afa0d6f811509dc6f0b12a785db0ef58c4b6758"
+}

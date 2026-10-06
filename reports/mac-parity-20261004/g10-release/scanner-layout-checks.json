@@ -1,0 +1,14 @@
+[
+  {
+    "case": "ios info layout",
+    "pass": true
+  },
+  {
+    "case": "mac info layout",
+    "pass": true
+  },
+  {
+    "case": "embedded xctest without fixture strings",
+    "pass": true
+  }
+]

@@ -31,6 +31,9 @@ actor KindleOfflinePageStore {
         var pages: [SavedPage] = []
     }
 
+    // v3 restores column reading order; image records and book manifests stay intact.
+    private static let recognitionVersion = 3
+
     private struct Recognition: Codable {
         let version: Int
         let imageHash: String
@@ -128,9 +131,9 @@ actor KindleOfflinePageStore {
         let url = directory.appendingPathComponent(page.id + ".ocr")
         guard let data = try? readLimited(url, limit: 4096),
               let cached = try? JSONDecoder().decode(Recognition.self, from: data),
-              // v1 forced unknown books through English OCR. Rebuild just this
-              // sidecar; each v2 page owns its detected language and original image.
-              cached.version == 2, cached.imageHash == page.imageHash,
+              // v1 had language bias; v2 treated full spreads as a single flow.
+              // Rebuild only OCR from the retained local image.
+              cached.version == Self.recognitionVersion, cached.imageHash == page.imageHash,
               Self.validDigest(cached.snapshotHash),
               let bytes = try? readLimited(directory.appendingPathComponent(cached.snapshotHash + ".page"), limit: 2 * 1_024 * 1_024),
               Self.digest(bytes) == cached.snapshotHash,
@@ -150,7 +153,7 @@ actor KindleOfflinePageStore {
         guard bytes.count <= 2 * 1_024 * 1_024 else { throw Failure.oversizedPage }
         let digest = Self.digest(bytes)
         try write(bytes, to: directory.appendingPathComponent(digest + ".page"))
-        try write(encoder.encode(Recognition(version: 2, imageHash: page.imageHash, language: language,
+        try write(encoder.encode(Recognition(version: Self.recognitionVersion, imageHash: page.imageHash, language: language,
             snapshotHash: digest)), to: directory.appendingPathComponent(page.id + ".ocr"))
     }
 

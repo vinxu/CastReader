@@ -1,0 +1,6 @@
+[
+  "GoogleBooksWebBridgeTests/testColdResumePaintsSavedSourceWordBeforePlayback",
+  "GoogleBooksWebBridgeTests/testIdenticalPausedWordIsRepaintedAfterDOMInvalidation",
+  "ReadingResumeTests/testGoogleColdResumeRelocatesOnlyUniqueUnchangedWordContext",
+  "ReadingResumeTests/testGooglePlaybackSavesContextForColdResumeIntoExpandedParagraph"
+]

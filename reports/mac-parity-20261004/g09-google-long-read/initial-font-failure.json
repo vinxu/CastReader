@@ -1,0 +1,7 @@
+{
+  "status": "STOPPED_FOR_REFLOW_REPLAY_FAILURE",
+  "at": "2026-10-05T12:09:43.285859+08:00",
+  "candidate": "../g09-google-shelf/candidate-identity.json",
+  "observed": "Font 100 to 113 percent during carried paragraph. Refresh at 12:04:43.696 replaced current speech with 1199-character earlier source; anchor fallback restarted at 12:05:02.588 instead of preserving audio word/time. Dark highlight visible.",
+  "longRunPassed": false
+}

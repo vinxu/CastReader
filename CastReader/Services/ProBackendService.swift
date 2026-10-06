@@ -391,7 +391,7 @@ actor ProBackendService {
             "analytics_anonymous_id": context.analyticsAnonymousId,
             "stable_device_id": context.stableDeviceId,
             "app_version": context.appVersion,
-            "client_platform": "ios",
+            "client_platform": Constants.clientPlatform,
         ]
         if let appBuild = context.appBuild, !appBuild.isEmpty {
             body["app_build"] = appBuild

@@ -9,7 +9,7 @@ final class KindlePageFlipProbeScriptTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
+        window = TestRepository.makeWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
         let controller = UIViewController()
         window.rootViewController = controller
         window.makeKeyAndVisible()
@@ -45,11 +45,7 @@ final class KindlePageFlipProbeScriptTests: XCTestCase {
         window.originalBlob=URL.createObjectURL;
         </script>
         """, baseURL: URL(string: "https://\(host)"))
-        for _ in 0..<100 {
-            if !web.isLoading, (try? await web.evaluateJavaScript("window.fixtureToken==='\(token)'")) as? Bool == true { return }
-            try await Task.sleep(for: .milliseconds(30))
-        }
-        throw NSError(domain: "PageFlipFixture", code: 1)
+        try await TestRepository.waitForWebFixture(web, token: token)
     }
 
     private func installOfflineImageFixture() async throws {

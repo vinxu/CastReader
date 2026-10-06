@@ -1,0 +1,14 @@
+{
+  "createdAt": "2026-10-05T03:27:51.011562+08:00",
+  "sources": {
+    "CastReader/Views/Kindle/KindleBookView.swift": "ad50c3df88422c401c23832df2073402762be6d0d1743352a7022e44f9dbe69b",
+    "CastReader/ViewModels/ExplainViewModel.swift": "63b505f57508067996266cf1ec3b24a67e9f064005d24f1e68de5d26aa221e83",
+    "CastReader/Utils/KindleViewportTextAlignment.swift": "e17f0ada310b50b241857715fad637075e71732079b0e8c95386b9e7b7c38258"
+  },
+  "binaries": {
+    "__preview.dylib": "4d59b3ededc2673c40152c4ae41e7c6dd5723d6839bed964ef903bf429e5c909",
+    "CastReaderMac.debug.dylib": "81b8dc958b1a03a85815d39b097299c382861ae772c48a85b54c655ac98a5a93",
+    "CastReaderMac": "566998fc5498d91cc8b728dc4f234ae0f9cc3fcfbfd4f057053140c1c1895246"
+  },
+  "quitVerification": "PID 8715 terminated after Cmd-Q with independent ps check before any activating UI observation. Immediate getAXState during termination had reopened the window; no production termination patch applied."
+}

@@ -1,0 +1,17 @@
+{
+  "status": "BUILD_AND_STATIC_PASS",
+  "recordedAt": "2026-10-05T15:47:31.057834+08:00",
+  "application": "/tmp/CastReaderMacReleaseParity/Build/Products/Release-maccatalyst/CastReaderMac.app",
+  "version": "1.2.47",
+  "build": "72",
+  "bundleID": "com.same.castreader",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "minimumMacOS": "14.6",
+  "binarySHA256": "9ea6b18f2d6a9daa857e5d6e11d4cc2dd03d09fa9412815e3c29ed37d1108a33",
+  "webBundleSHA256": "7337afbc9e6fb0562c609a0c5afa0d6f811509dc6f0b12a785db0ef58c4b6758",
+  "strictDeepSignatureValid": true,
+  "scope": "Local development-signed universal candidate; no distribution, notarization, Intel or minimum-system runtime pass."
+}

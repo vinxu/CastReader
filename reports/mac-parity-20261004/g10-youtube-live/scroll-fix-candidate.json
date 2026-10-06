@@ -1,0 +1,8 @@
+{
+  "createdAt": "2026-10-05T16:51:03.010914+08:00",
+  "sha256": {
+    "CastReader/Views/YouTube/YouTubeListenView.swift": "44d919ae1e8a393e0070faa2f1aa59dd5dc75222eb876a9a7b9fc73efc1c31c1",
+    "CastReader/Services/YouTubeWebScripts.swift": "1fa732a58891225547c416556ae7bd2c8cea727d0c110fbe8d7a410b6700e8ad",
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "ba8161920b40dae652e88bfb7dbebb4a815d55068ab01c5013789575886874f9"
+  }
+}

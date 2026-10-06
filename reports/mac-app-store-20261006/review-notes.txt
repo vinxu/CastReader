@@ -1,0 +1,13 @@
+First Mac release of the existing CastReader app (universal purchase), version 1.2.47, build 73. This Mac build uses the international product configuration and supports Apple silicon and Intel Macs with macOS 14.6 or later.
+
+CastReader is a text-to-speech and AI explanation tool. It does not sell books or provide a book catalog.
+
+Review steps:
+1. Launch the app and sign in with Sign in with Apple or Google. There is no separate username/password demo login. The initial library connection chooser can be skipped; connecting a reading service is optional.
+2. Click + / Import and paste a short text, import a PDF/EPUB/TXT/DOCX/image, or open a public web URL. File > Import (Command-O) is also available.
+3. In Read Aloud, press Play. The original text is read with synchronized highlighting and automatic scrolling. Pause/resume, voice selection and speed controls are available. Returning to the library keeps an active reading session accessible in the mini player.
+4. Switch to Explain and start. CastReader generates a spoken explanation; annotations appear on the original text. Internet access is needed for cloud speech and explanations. Camera/OCR and authorized voice creation are optional features.
+5. Settings includes the Pro screen, Restore Purchases, subscription management and account deletion. The existing monthly/yearly subscription identifiers are ai.castreader.pro.monthly and ai.castreader.pro.yearly. The optional cloned-voice credit product is ai.castreader.clone.minutes120. Purchases use StoreKit; existing account entitlements also synchronize. Regular voices do not consume cloned-voice generation minutes.
+6. Optional connected libraries use the reviewer's own eligible Kindle, WeRead, Kobo or Google Play Books account/content access. Provider availability varies. Optional YouTube import reads public caption text only when the provider makes it available; it never downloads or converts the original audio/video.
+
+The bundled macOS share extension imports shared URLs, text or supported files into CastReader. The widget provides a shortcut to continue reading. There is no bundled Safari browser extension in this Mac app.

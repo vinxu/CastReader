@@ -1,0 +1,14 @@
+{
+  "startedAt": "2026-10-05T15:48:19.385094+08:00",
+  "logByteOffset": 5879980,
+  "candidateIdentity": "candidate-identity.json",
+  "scope": "Same source and Auto-to-Double layout continues revealed remainder; exact near-simultaneous race is covered by WK regression, not observed in this replay.",
+  "endLogByteOffset": 5913311,
+  "finishedAt": "2026-10-05T15:54:39.370304+08:00",
+  "status": "PASS_REFLOW_REMAINDER_REPLAY",
+  "notes": [
+    "Read checkpoint was from earlier source while provider locator had advanced during Explain; cold Read opened paused with mismatch notice, cleared by explicit manual page selection.",
+    "Cold Explain request to first playback approximately 43.8 seconds.",
+    "Unattributed pause at about 4.58 seconds before layout change; explicit Play resumed same part. This replay is not uninterrupted long-run evidence."
+  ]
+}

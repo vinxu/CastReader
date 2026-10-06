@@ -363,6 +363,14 @@ final class ExplainViewModel: ObservableObject {
     @Published var activeMarks: [ResolvedMark] = []
     @Published var currentBlockIndex: Int = -1
     @Published var explanationText: String = ""   // 当前媒体时间对应的一行字幕
+    /// Provider dialogs own the source surface above the native console.
+    /// Hide only the floating caption, preserving its cue and playback state.
+    @Published var isSourcePanelPresented = false
+    var shouldDisplayPlaybackCaption: Bool {
+        guard !isSourcePanelPresented, !isPreparingNext, !explanationText.isEmpty else { return false }
+        if case .streaming = status { return true }
+        return false
+    }
     private var subtitleWidth: CGFloat = 280
     private var subtitleFont = UIFont.systemFont(ofSize: 16, weight: .medium)
     private var subtitleCache: (segment: AudioSegment, timeline: ExplainSubtitleTimeline)?
@@ -1163,9 +1171,11 @@ final class ExplainViewModel: ObservableObject {
             } else {
                 recoverPlaybackAfterOwnershipChange()
             }
-        } else if case .planning = status {
+        } else if !isActive, case .planning = status {
             // `deactivate()` cancels planning work. Never leave a spinner whose
             // task no longer exists when the user later returns while paused.
+            // An explicit share/shortcut can already have activated a new plan
+            // before the host observes the mode change; preserve that plan.
             status = .idle
             stageText = ""
         }
@@ -1248,8 +1258,7 @@ final class ExplainViewModel: ObservableObject {
         )
         guard status == .idle || isErrorState else { return }
         // 提交 LLM 前预校验：内容太短，LLM 没东西可讲 → 直接引导朗读，不发请求白等重试、也不消耗额度（而非无脑提交）。
-        let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
-        if contentChars < minExplainChars {
+        if !Self.hasMinimumExplainContent(paragraphs: doc.readableParagraphs, language: doc.language) {
             if continuePastShortLivePage() { return }
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
@@ -1357,8 +1366,7 @@ final class ExplainViewModel: ObservableObject {
             start()
             return
         }
-        let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
-        if contentChars < minExplainChars {
+        if !Self.hasMinimumExplainContent(paragraphs: doc.readableParagraphs, language: doc.language) {
             if continuePastShortLivePage() { return }
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
@@ -1541,7 +1549,12 @@ final class ExplainViewModel: ObservableObject {
     }
 
     /// 解读最低内容量（提交 LLM 前预校验）：中文字符密度高、阈值低；其他语言按字符计。低于此 LLM 没东西可讲。
-    private var minExplainChars: Int { doc.language.hasPrefix("zh") ? 20 : 50 }
+    nonisolated static func hasMinimumExplainContent(paragraphs: [ReadingParagraph], language: String) -> Bool {
+        let count = paragraphs.filter { $0.type.isReadable }.reduce(0) {
+            $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count
+        }
+        return count >= (language.hasPrefix("zh") ? 20 : 50)
+    }
 
     /// 快道内容上限：rest 整段一次 extract-plan（不分批，§4.7）能被后端单次处理的体量上界（对齐「一篇长文」≈
     /// 网页文章，实测 ~6800 字 plan 正常）。超过（整本 EPUB/超长）退回分批路径，避免单次 plan 过大 → 后端 400。

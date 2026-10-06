@@ -1,0 +1,21 @@
+{
+  "status": "PASS_SCOPED",
+  "savedParagraph": 10,
+  "savedSeconds": 1.169800084,
+  "savedWordFingerprint": "a626aad412b7",
+  "savedWordFraction": 0.5151446187951807,
+  "pauseEventTime": "17:51:21.475",
+  "scope": "cloud Google Doc exported DOCX; same revision/account",
+  "restoredParagraph": 10,
+  "resolvedSeekSeconds": 1.1701334173333333,
+  "firstPlayingSeconds": 1.201865042,
+  "firstPlayingWordFingerprint": "a626aad412b7",
+  "firstPlayingDeltaMilliseconds": 32.06495800000009,
+  "remainingParagraphsCompleted": [
+    10,
+    11,
+    12,
+    13
+  ],
+  "reopenedPaused": true
+}

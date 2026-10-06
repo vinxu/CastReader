@@ -1,0 +1,24 @@
+{
+  "localization": "cee1867f-5097-4600-8f13-3bd87ac9f0d3",
+  "display": "APP_DESKTOP",
+  "images": {
+    "01-read-ac47958da1d0.png": {
+      "id": "41400019-2c95-892b-8005-fea5e158e9c3",
+      "sha256": "ac47958da1d039011afb7f4c30dbbb007b868ddcb1b3b72a725a9c8af48801b7",
+      "state": "COMPLETE"
+    },
+    "02-explain-74049b932578.png": {
+      "id": "49c00019-2c95-892b-801b-4f3b32937840",
+      "sha256": "74049b93257856087dcc7fc639436997a302819045ae83a667923b5efe21d4d5",
+      "state": "COMPLETE"
+    },
+    "03-voices-431b37c1c49d.png": {
+      "id": "bb000019-2c95-892b-803e-f9486b80a9f2",
+      "sha256": "431b37c1c49d849448dfce2ca2eed75b521a7ef95d832668bc5b2802fb905928",
+      "state": "COMPLETE"
+    }
+  },
+  "setReservation": true,
+  "setID": "9984d69f-3b2c-4d8c-8bdd-6e9c987ef054",
+  "complete": true
+}

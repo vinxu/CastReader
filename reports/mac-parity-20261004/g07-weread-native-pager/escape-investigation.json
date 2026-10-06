@@ -1,0 +1,13 @@
+{
+  "reviewedAt": "2026-10-05T04:50:19.147970",
+  "publicSource": "https://cdn.weread.qq.com/web/wrwebnjlogic/js/9.cab69770.js",
+  "sha256": "b6a3715ea8ab66f7e242b03526ba05ecd6abf59d9f0d87be41e0e147b6b9c963",
+  "finding": "Desktop ReaderFloatFontPanel sets controlled=true, omits inner mask and owns .reader_float_font_panel > .wr_mask. Esc dispatches one click to that official outer mask.",
+  "failedLiveCandidates": [
+    "ui-candidate-build (body click)",
+    "escape-pair-build (body mousedown/mouseup/click)",
+    "mask-candidate-build: controlled desktop inner component omits its mask"
+  ],
+  "nextCandidate": "visible provider mask click",
+  "liveResult": "PASS 2026-10-05 05:06 PID20494: font panel hidden, reader remains visible and paused"
+}

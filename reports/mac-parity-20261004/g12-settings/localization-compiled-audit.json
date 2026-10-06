@@ -1,0 +1,321 @@
+{
+  "status": "PASS",
+  "compiledTranslations": 63,
+  "translations": [
+    {
+      "locale": "de",
+      "key": "橙色",
+      "value": "Orange"
+    },
+    {
+      "locale": "de",
+      "key": "黄色",
+      "value": "Gelb"
+    },
+    {
+      "locale": "de",
+      "key": "绿色",
+      "value": "Grün"
+    },
+    {
+      "locale": "de",
+      "key": "蓝色",
+      "value": "Blau"
+    },
+    {
+      "locale": "de",
+      "key": "粉色",
+      "value": "Rosa"
+    },
+    {
+      "locale": "de",
+      "key": "紫色",
+      "value": "Violett"
+    },
+    {
+      "locale": "de",
+      "key": "正在同步会员状态…",
+      "value": "Pro-Status wird synchronisiert …"
+    },
+    {
+      "locale": "en",
+      "key": "橙色",
+      "value": "Orange"
+    },
+    {
+      "locale": "en",
+      "key": "黄色",
+      "value": "Yellow"
+    },
+    {
+      "locale": "en",
+      "key": "绿色",
+      "value": "Green"
+    },
+    {
+      "locale": "en",
+      "key": "蓝色",
+      "value": "Blue"
+    },
+    {
+      "locale": "en",
+      "key": "粉色",
+      "value": "Pink"
+    },
+    {
+      "locale": "en",
+      "key": "紫色",
+      "value": "Purple"
+    },
+    {
+      "locale": "en",
+      "key": "正在同步会员状态…",
+      "value": "Syncing Pro status..."
+    },
+    {
+      "locale": "es",
+      "key": "橙色",
+      "value": "Naranja"
+    },
+    {
+      "locale": "es",
+      "key": "黄色",
+      "value": "Amarillo"
+    },
+    {
+      "locale": "es",
+      "key": "绿色",
+      "value": "Verde"
+    },
+    {
+      "locale": "es",
+      "key": "蓝色",
+      "value": "Azul"
+    },
+    {
+      "locale": "es",
+      "key": "粉色",
+      "value": "Rosa"
+    },
+    {
+      "locale": "es",
+      "key": "紫色",
+      "value": "Morado"
+    },
+    {
+      "locale": "es",
+      "key": "正在同步会员状态…",
+      "value": "Sincronizando estado Pro..."
+    },
+    {
+      "locale": "fr",
+      "key": "橙色",
+      "value": "Orange"
+    },
+    {
+      "locale": "fr",
+      "key": "黄色",
+      "value": "Jaune"
+    },
+    {
+      "locale": "fr",
+      "key": "绿色",
+      "value": "Vert"
+    },
+    {
+      "locale": "fr",
+      "key": "蓝色",
+      "value": "Bleu"
+    },
+    {
+      "locale": "fr",
+      "key": "粉色",
+      "value": "Rose"
+    },
+    {
+      "locale": "fr",
+      "key": "紫色",
+      "value": "Violet"
+    },
+    {
+      "locale": "fr",
+      "key": "正在同步会员状态…",
+      "value": "Synchronisation du statut Pro..."
+    },
+    {
+      "locale": "hi",
+      "key": "橙色",
+      "value": "नारंगी"
+    },
+    {
+      "locale": "hi",
+      "key": "黄色",
+      "value": "पीला"
+    },
+    {
+      "locale": "hi",
+      "key": "绿色",
+      "value": "हरा"
+    },
+    {
+      "locale": "hi",
+      "key": "蓝色",
+      "value": "नीला"
+    },
+    {
+      "locale": "hi",
+      "key": "粉色",
+      "value": "गुलाबी"
+    },
+    {
+      "locale": "hi",
+      "key": "紫色",
+      "value": "बैंगनी"
+    },
+    {
+      "locale": "hi",
+      "key": "正在同步会员状态…",
+      "value": "प्रो स्थिति समन्वयित हो रही है..."
+    },
+    {
+      "locale": "it",
+      "key": "橙色",
+      "value": "Arancione"
+    },
+    {
+      "locale": "it",
+      "key": "黄色",
+      "value": "Giallo"
+    },
+    {
+      "locale": "it",
+      "key": "绿色",
+      "value": "Verde"
+    },
+    {
+      "locale": "it",
+      "key": "蓝色",
+      "value": "Blu"
+    },
+    {
+      "locale": "it",
+      "key": "粉色",
+      "value": "Rosa"
+    },
+    {
+      "locale": "it",
+      "key": "紫色",
+      "value": "Viola"
+    },
+    {
+      "locale": "it",
+      "key": "正在同步会员状态…",
+      "value": "Sincronizzazione dello stato Pro..."
+    },
+    {
+      "locale": "ja",
+      "key": "橙色",
+      "value": "オレンジ"
+    },
+    {
+      "locale": "ja",
+      "key": "黄色",
+      "value": "黄色"
+    },
+    {
+      "locale": "ja",
+      "key": "绿色",
+      "value": "緑"
+    },
+    {
+      "locale": "ja",
+      "key": "蓝色",
+      "value": "青"
+    },
+    {
+      "locale": "ja",
+      "key": "粉色",
+      "value": "ピンク"
+    },
+    {
+      "locale": "ja",
+      "key": "紫色",
+      "value": "紫"
+    },
+    {
+      "locale": "ja",
+      "key": "正在同步会员状态…",
+      "value": "Pro ステータスを同期しています..."
+    },
+    {
+      "locale": "pt-BR",
+      "key": "橙色",
+      "value": "Laranja"
+    },
+    {
+      "locale": "pt-BR",
+      "key": "黄色",
+      "value": "Amarelo"
+    },
+    {
+      "locale": "pt-BR",
+      "key": "绿色",
+      "value": "Verde"
+    },
+    {
+      "locale": "pt-BR",
+      "key": "蓝色",
+      "value": "Azul"
+    },
+    {
+      "locale": "pt-BR",
+      "key": "粉色",
+      "value": "Rosa"
+    },
+    {
+      "locale": "pt-BR",
+      "key": "紫色",
+      "value": "Roxo"
+    },
+    {
+      "locale": "pt-BR",
+      "key": "正在同步会员状态…",
+      "value": "Sincronizando status Pro..."
+    },
+    {
+      "locale": "zh-Hans",
+      "key": "橙色",
+      "value": "橙色"
+    },
+    {
+      "locale": "zh-Hans",
+      "key": "黄色",
+      "value": "黄色"
+    },
+    {
+      "locale": "zh-Hans",
+      "key": "绿色",
+      "value": "绿色"
+    },
+    {
+      "locale": "zh-Hans",
+      "key": "蓝色",
+      "value": "蓝色"
+    },
+    {
+      "locale": "zh-Hans",
+      "key": "粉色",
+      "value": "粉色"
+    },
+    {
+      "locale": "zh-Hans",
+      "key": "紫色",
+      "value": "紫色"
+    },
+    {
+      "locale": "zh-Hans",
+      "key": "正在同步会员状态…",
+      "value": "正在同步会员状态…"
+    }
+  ]
+}

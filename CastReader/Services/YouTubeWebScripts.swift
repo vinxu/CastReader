@@ -1652,6 +1652,15 @@ enum YouTubeWebScripts {
               }
             }
 
+            // The mobile Embed can expose its player API before mounting the
+            // official play overlay. Calling that API during this interval is
+            // a silent no-op, and would consume our single bootstrap attempt.
+            // Give the preferred control a bounded mount window after cueing.
+            if (Date.now() - embedCueAttemptedAt < 1500) {
+              embedBootstrapMethod = 'waiting_for_official_overlay';
+              return false;
+            }
+
             var officialPlayer = null;
             try {
               officialPlayer = document.querySelector('#movie_player');

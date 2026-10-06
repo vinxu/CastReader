@@ -1,0 +1,6 @@
+{
+  "startedAt": "2026-10-05T07:20:20.546037+08:00",
+  "logByteOffset": 2915406,
+  "candidate": "g08-kobo-contracts/carry-candidate-identity.json",
+  "scenario": "Exact font shrink and carried-source reflow, then long Read with resize/theme/mini-player"
+}

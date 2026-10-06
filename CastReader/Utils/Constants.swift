@@ -6,6 +6,16 @@
 import SwiftUI
 
 enum Constants {
+    /// Product identity on first-party APIs, analytics and consent receipts.
+    /// Web reader user agents remain source-specific compatibility settings.
+    static let clientPlatform: String = {
+        #if targetEnvironment(macCatalyst)
+        return "macos"
+        #else
+        return "ios"
+        #endif
+    }()
+
     enum Features {
         /// Account-owned Qwen3-TTS Base voices are created and synthesized
         /// through the authenticated CastReader gateway.

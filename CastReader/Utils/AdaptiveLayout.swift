@@ -14,7 +14,22 @@ extension EnvironmentValues {
 }
 
 enum AdaptiveLayout {
-    static var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+    /// Legacy name for the resizable-window layout shared by iPad and Mac.
+    /// Catalyst's `.mac` idiom must not fall into fixed portrait phone forms.
+    static var isPad: Bool {
+        #if targetEnvironment(macCatalyst)
+        return true
+        #else
+        return UIDevice.current.userInterfaceIdiom == .pad
+        #endif
+    }
+    static var readerTitleFont: Font {
+        #if targetEnvironment(macCatalyst)
+        return .system(size: 20, weight: .semibold)
+        #else
+        return .subheadline.weight(.semibold)
+        #endif
+    }
     static let pageWidth: CGFloat = 1100
     static let readingWidth: CGFloat = 800
     static func stacksPlaybackControls(in size: CGSize) -> Bool { isPad && size.width > 0 && size.width < 500 }
@@ -23,6 +38,26 @@ enum AdaptiveLayout {
 
     static func usesCompactControls(size: CGSize, accessibility: Bool = false) -> Bool {
         !accessibility && size.width >= 600 && size.width > size.height && size.height < 600
+    }
+}
+
+/// Catalyst's compact navigation buttons can truncate localized text to a
+/// couple of letters. Keep an accessible, keyboard-operable dismissal control.
+struct AdaptiveSheetDismissButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        #if targetEnvironment(macCatalyst)
+        Button(action: action) {
+            Label(title, systemImage: "xmark")
+                .labelStyle(.iconOnly)
+        }
+        .accessibilityLabel(title)
+        .keyboardShortcut(.cancelAction)
+        #else
+        Button(title, action: action)
+        #endif
     }
 }
 
@@ -127,11 +162,17 @@ private struct ReaderWindowControlInsets: ViewModifier {
     @State private var leading: CGFloat = 0
     @State private var trailing: CGFloat = 0
     func body(content: Content) -> some View {
+        #if targetEnvironment(macCatalyst)
+        // Keep reader controls inside the content safe area. Drawing underneath
+        // the native titlebar makes them visible but intercepts mouse clicks.
+        content
+        #else
         content.padding(.leading, leading).padding(.trailing, trailing)
             .background(WindowControlProbe { start, end in
                 if abs(leading - start) > 0.5 { leading = start }
                 if abs(trailing - end) > 0.5 { trailing = end }
             })
+        #endif
     }
     private struct WindowControlProbe: UIViewRepresentable {
         let changed: (CGFloat, CGFloat) -> Void
@@ -161,3 +202,113 @@ private struct ReaderWindowControlInsets: ViewModifier {
 extension View {
     func readerWindowControlInsets() -> some View { modifier(ReaderWindowControlInsets()) }
 }
+
+#if targetEnvironment(macCatalyst)
+/// Mac has a sidebar, so it does not need UITabBarController's transitions or
+/// adaptive toolbar layout. Retain each page's navigation/scroll state, while
+/// only the selected page participates in the window's layout and lifecycle.
+struct MacSidebarPages<Content: View>: UIViewControllerRepresentable {
+    let selection: Int
+    @ViewBuilder let content: (Int) -> Content
+
+    func makeUIViewController(context: Context) -> MacSidebarPageController {
+        MacSidebarPageController()
+    }
+
+    func updateUIViewController(_ controller: MacSidebarPageController, context: Context) {
+        controller.select(selection) { tab in
+            AnyView(content(tab).environment(\.self, context.environment))
+        }
+    }
+}
+
+final class MacSidebarPageController: UIViewController {
+    private(set) var selectedTab: Int?
+    private(set) var pages: [Int: UIHostingController<AnyView>] = [:]
+    private var pendingLayoutLog: Int?
+
+    override func loadView() {
+        view = UIView()
+        view.backgroundColor = .clear
+    }
+
+    func select(_ tab: Int, content: (Int) -> AnyView) {
+        loadViewIfNeeded()
+        if selectedTab == tab, let current = pages[tab] {
+            current.rootView = content(tab)
+            return
+        }
+        let previous = selectedTab.flatMap { pages[$0] }
+        let previousTab = selectedTab
+        let next = pages[tab] ?? UIHostingController(rootView: content(tab))
+        if pages[tab] != nil { next.rootView = content(tab) }
+        next.sizingOptions = []
+        next.view.backgroundColor = .clear
+        UIView.performWithoutAnimation {
+            previous?.willMove(toParent: nil)
+            previous?.view.removeFromSuperview()
+            previous?.removeFromParent()
+            // Deliver isSurfaceActive=false without laying out the old page.
+            if let previous, let previousTab { previous.rootView = content(previousTab) }
+            pages[tab] = next
+            selectedTab = tab
+            addChild(next)
+            next.view.frame = view.bounds
+            next.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            view.addSubview(next.view)
+            next.didMove(toParent: self)
+        }
+        pendingLayoutLog = tab
+        view.setNeedsLayout()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let tab = pendingLayoutLog {
+            pendingLayoutLog = nil
+            ReaderRunLog.write("SIDEBAR content laid out=\(tab)")
+        }
+    }
+}
+
+/// A retained reader owns its header. The underlying tab's promoted toolbar
+/// must not leave a second, sidebar-aligned title row above it on Mac.
+struct MacReaderTitlebar: UIViewRepresentable {
+    let hidden: Bool
+    func makeUIView(context: Context) -> Probe {
+        let view = Probe()
+        view.isUserInteractionEnabled = false
+        return view
+    }
+    func updateUIView(_ view: Probe, context: Context) {
+        view.chromeHidden = hidden
+        view.apply()
+    }
+    static func dismantleUIView(_ view: Probe, coordinator: ()) { view.restore() }
+    final class Probe: UIView {
+        var chromeHidden = false
+        private var restoreTitlebar: (() -> Void)?
+        override func didMoveToWindow() { super.didMoveToWindow(); apply() }
+        override func layoutSubviews() { super.layoutSubviews(); apply() }
+        func apply() {
+            guard let titlebar = window?.windowScene?.titlebar else { return }
+            guard chromeHidden else { restore(); return }
+            if restoreTitlebar == nil {
+                let toolbar = titlebar.toolbar
+                let visibility = titlebar.titleVisibility
+                restoreTitlebar = { [weak titlebar] in
+                    guard let titlebar else { return }
+                    titlebar.titleVisibility = visibility
+                    if titlebar.toolbar == nil { titlebar.toolbar = toolbar }
+                }
+            }
+            if titlebar.titleVisibility != .hidden { titlebar.titleVisibility = .hidden }
+            if titlebar.toolbar != nil { titlebar.toolbar = nil }
+        }
+        func restore() {
+            restoreTitlebar?()
+            restoreTitlebar = nil
+        }
+    }
+}
+#endif

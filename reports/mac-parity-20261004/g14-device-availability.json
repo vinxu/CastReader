@@ -1,0 +1,21 @@
+{
+  "checkedAt": "2026-10-05T18:01:11.486737+08:00",
+  "devices": [
+    {
+      "model": "iPhone 15 Pro Max",
+      "connection": "available (paired)",
+      "installedVersion": "1.2.47",
+      "installedBuild": "72",
+      "ui": "iPhone Mirroring: iPhone in Use; waiting for user to lock device"
+    },
+    {
+      "model": "iPad Pro 12.9-inch (5th generation)",
+      "connection": "available (paired)",
+      "installedVersion": "1.2.47",
+      "installedBuild": "72",
+      "ui": "not yet accessed"
+    }
+  ],
+  "installedOrReplacedApp": false,
+  "limitation": "Installed version metadata is not proof of source baseline; no cross-device behavior accepted yet."
+}

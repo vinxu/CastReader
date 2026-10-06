@@ -1,0 +1,48 @@
+{
+  "status": "PASS_LONG_EXPLAIN",
+  "candidate": "g06-short-remainder-candidate/identity.json",
+  "pid": 10492,
+  "firstConfirmedAnimatedMark": "03:29:33.088",
+  "finishedAt": "2026-10-05T03:47:00.063930+08:00",
+  "conservativeElapsedSeconds": 982.376,
+  "automaticTransitions": 40,
+  "distinctAutomaticPageKeys": 40,
+  "drawnMarks": 50,
+  "heldMarks": 101,
+  "reflowOffsets": [
+    0,
+    5,
+    0,
+    -1,
+    1
+  ],
+  "confirmedChapterHeading": "CHAPTER 16",
+  "chapterFixture": "en-1791142494600-A8171ACD.json",
+  "windowPoints": [
+    [
+      1024,
+      768
+    ],
+    [
+      523,
+      463
+    ],
+    [
+      1024,
+      768
+    ],
+    [
+      523,
+      463
+    ]
+  ],
+  "finalVisual": "Original shell/fossil passage; separate underlines/circles/highlight on correct original words; caption synchronized. Pause explicitly changed AX from Playing to Paused.",
+  "automaticFailureEvents": [],
+  "limitations": [
+    "Extreme under-50-character remainder branch is regression-tested but was not reached in this long run.",
+    "Native accessibility-cover repair was tested separately in isolated signed-out UI and is newer than this normal candidate.",
+    "Elapsed includes real loading/reflow waits; not an acoustic dropout measurement."
+  ],
+  "lastConfirmedAnimatedMark": "03:45:55.464",
+  "elapsedBasis": "First through last confirmed playback-triggered mark; excludes report writing after explicit pause."
+}

@@ -77,7 +77,11 @@ struct SettingsView: View {
             ($0.rawValue, $0.nativeName)
         }
     }
-    private let palette = ["#FD5F01", "#FFD400", "#34C759", "#0A84FF", "#FF2D55", "#AF52DE"]
+    private let palette: [(hex: String, name: String.LocalizationValue)] = [
+        (hex: "#FD5F01", name: "橙色"), (hex: "#FFD400", name: "黄色"),
+        (hex: "#34C759", name: "绿色"), (hex: "#0A84FF", name: "蓝色"),
+        (hex: "#FF2D55", name: "粉色"), (hex: "#AF52DE", name: "紫色")
+    ]
 
     var body: some View {
         NavigationView {
@@ -127,13 +131,16 @@ struct SettingsView: View {
                 #endif
             }
             .reservesMiniPlayerSpace()
-            .navigationTitle("设置")
+            .navigationTitle(Text(AppLocalized("设置")))
+            #if targetEnvironment(macCatalyst)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             // 设置是 sheet，但没有关闭按钮时只能下拉退出。与书架来源等 sheet 对齐，
             // 在左上角补一颗「关闭」。
             .toolbar {
                 if showsDismissButton {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button(AppLocalized("关闭")) { dismiss() }
+                        AdaptiveSheetDismissButton(title: AppLocalized("关闭")) { dismiss() }
                             .accessibilityIdentifier("settingsCloseButton")
                     }
                 }
@@ -378,8 +385,11 @@ struct SettingsView: View {
                         if pro.isPro {
                             Text(proSubtitle)
                                 .font(.caption).foregroundColor(AppTheme.mutedForeground)
-                        } else {
+                        } else if pro.hasResolvedServerEntitlement {
                             Text(String(format: AppLocalized("今日朗读剩余 %d 分钟 · 解读 %d 次"), Int(quota.listenRemaining / 60), quota.explainRemaining))
+                                .font(.caption).foregroundColor(AppTheme.mutedForeground)
+                        } else {
+                            Text(AppLocalized("正在同步会员状态…"))
                                 .font(.caption).foregroundColor(AppTheme.mutedForeground)
                         }
                     }
@@ -434,7 +444,7 @@ struct SettingsView: View {
     }
 
     private var proTitle: LocalizedStringKey {
-        pro.isPro ? "CastReader Pro" : "升级到 Pro"
+        pro.isPro || !pro.hasResolvedServerEntitlement ? "CastReader Pro" : "升级到 Pro"
     }
 
     private var proSubtitle: LocalizedStringKey {
@@ -509,14 +519,17 @@ struct SettingsView: View {
                 HStack {
                     Text("语速")
                     Spacer()
-                    Text(String(format: "%.2gx", settings.speed)).foregroundColor(AppTheme.mutedForeground)
+                    Text(String(format: "%gx", settings.speed)).foregroundColor(AppTheme.mutedForeground)
                 }
                 Slider(value: Binding(
                     get: { settings.speed },
                     set: { newValue in handleSpeedChange(newValue) }),
                     in: AppSettings.minSpeed...AppSettings.maxSpeed,
                     step: 0.25)
-                if !pro.isPro {
+                .accessibilityLabel(Text("语速"))
+                .accessibilityValue(Text(String(format: "%gx", settings.speed)))
+                .accessibilityIdentifier("settingsPlaybackSpeed")
+                if !pro.isPro && pro.hasResolvedServerEntitlement {
                     Text("免费版语速上限 2.0x").font(.caption2).foregroundColor(AppTheme.mutedForeground)
                 }
             }
@@ -578,13 +591,28 @@ struct SettingsView: View {
 
     private var appearanceSection: some View {
         Section("高亮颜色") {
-            HStack(spacing: 14) {
-                ForEach(palette, id: \.self) { hex in
-                    Circle()
-                        .fill(Color(hexString: hex))
-                        .frame(width: 30, height: 30)
-                        .overlay(Circle().stroke(AppTheme.foreground, lineWidth: settings.highlightColorHex == hex ? 2 : 0))
-                        .onTapGesture { settings.highlightColorHex = hex }
+            HStack(spacing: 0) {
+                ForEach(palette, id: \.hex) { color in
+                    Button { settings.highlightColorHex = color.hex } label: {
+                        Circle()
+                            .fill(Color(hexString: color.hex))
+                            .frame(width: 30, height: 30)
+                            .overlay(Circle().stroke(AppTheme.foreground,
+                                lineWidth: settings.highlightColorHex == color.hex ? 2 : 0))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    #if targetEnvironment(macCatalyst)
+                    .focusable()
+                    .onKeyPress(keys: [.space, .return]) { _ in
+                        settings.highlightColorHex = color.hex
+                        return .handled
+                    }
+                    #endif
+                    .accessibilityLabel(AppLocalized(color.name))
+                    .accessibilityAddTraits(settings.highlightColorHex == color.hex ? .isSelected : [])
+                    .accessibilityIdentifier("settingsHighlightColor.\(color.hex)")
                 }
             }
             .padding(.vertical, 4)
@@ -608,8 +636,13 @@ struct SettingsView: View {
             .accessibilityIdentifier("settingsRateCastReader")
 
             Button {
+                #if targetEnvironment(macCatalyst)
+                let subject = "CastReader%20Mac%20Feedback"
+                #else
+                let subject = "CastReader%20iOS%20Feedback"
+                #endif
                 guard let url = URL(
-                    string: "mailto:support@castreader.ai?subject=CastReader%20iOS%20Feedback"
+                    string: "mailto:support@castreader.ai?subject=\(subject)"
                 ) else { return }
                 openURL(url)
             } label: {

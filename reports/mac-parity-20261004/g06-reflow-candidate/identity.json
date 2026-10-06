@@ -1,0 +1,73 @@
+{
+  "time": "2026-10-05T03:03:13.942774+08:00",
+  "bundleID": "com.same.castreader",
+  "version": "1.2.47",
+  "build": "72",
+  "binaries": {
+    "Contents/MacOS/__preview.dylib": "d93d9714c88aaf446cdeb102c9580eedf725686427756b860d697cb1c12522e1",
+    "Contents/MacOS/CastReaderMac.debug.dylib": "a4c871257d498ef2c651c430dfff439b671d315b9dbd3839df92882e219c0b9c",
+    "Contents/MacOS/CastReaderMac": "2134d57c8dd3dda90aa85633bf48c9d577a4540a2ac5afae110c3e9ad076b1bc"
+  },
+  "sources": [
+    {
+      "path": "CastReader/Views/Kindle/KindleBookView.swift",
+      "sourceSHA256": "639ea8ef488f28ff894e38403c74f3e5f018d2f5ebbfaa2e5abe4fbca669394e"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleLibraryConnectView.swift",
+      "sourceSHA256": "b7ac96fe77ba5db0f514bec75d9e2d2b16d0ff5efd9d6ff0ff55af25c9633834"
+    },
+    {
+      "path": "CastReader/Services/KindleOfflineBookStore.swift",
+      "sourceSHA256": "b142a34cfbd143c2d3768071af216055cefb0fa838554e629017b9d757885d57"
+    },
+    {
+      "path": "CastReader/Services/KindleOfflineDownloadCoordinator.swift",
+      "sourceSHA256": "ab57cb101f61504b92edcbb274d1a2469b623fe9e815fe99fd767f86fc83a7d6"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineFlowFixture.swift",
+      "sourceSHA256": "0abab342cc568813891fb154065cb4fb60e3683633a7864efb892433043697da"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineDiagnosticsView.swift",
+      "sourceSHA256": "43690187e2e023b1aa22f5420fb95d92bf781192bbac3190585298aa300150c5"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineDownloadView.swift",
+      "sourceSHA256": "547fa0afd603e184f207252015ae131135d650d319f3bfb68c319051414b3aea"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineReaderView.swift",
+      "sourceSHA256": "c2fb21048eb433fe8e1b31060c6af9f897cf166022b233ff16d6d812b436ec5d"
+    },
+    {
+      "path": "CastReader/Views/Kindle/KindleOfflineLibraryScreen.swift",
+      "sourceSHA256": "8d4b43cfdafb8b221911e5f4211c28da3078e3f21827f72b5dc0e409950b48bd"
+    },
+    {
+      "path": "CastReader/Views/Home/HomeView.swift",
+      "sourceSHA256": "1eaef699cf02a40bcb48d8afb228f218d55d46dbc19bd6449c2d988d1584c6c0"
+    },
+    {
+      "path": "CastReader/Localizable.xcstrings",
+      "sourceSHA256": "cb0d4d649f4a11bc13d37e643da9c1b46e59f9a092360c28220fded2adc26806"
+    },
+    {
+      "path": "CastReaderTests/KindleOfflineBookStoreTests.swift",
+      "sourceSHA256": "0f5a423ce0367e9f1a1c4c71fa3ce67151c590df2ecaff99897e94d7f7368fe3"
+    },
+    {
+      "path": "CastReaderTests/KindleWebViewContainerTests.swift",
+      "sourceSHA256": "6d380e58d19a922ae91b06fa0af8cd230794a931ec2709b2615f64b53262105b"
+    },
+    {
+      "path": "CastReader/Utils/KindleViewportTextAlignment.swift",
+      "sourceSHA256": "e17f0ada310b50b241857715fad637075e71732079b0e8c95386b9e7b7c38258"
+    },
+    {
+      "path": "CastReaderTests/OCRTokenGeometryCoverageTests.swift",
+      "sourceSHA256": "295586c08778f6efa75cdcdd6c95da0b462470a1ca9d3a96c9998b80714da3b7"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-05T09:07:05.695868",
+  "removedRegenerableCaches": [
+    {
+      "path": "/tmp/CastReaderMacParity/ModuleCache.noindex",
+      "bytes": 125837624
+    },
+    {
+      "path": "/tmp/CastReaderMacParity/Index.noindex",
+      "bytes": 24591236
+    }
+  ]
+}

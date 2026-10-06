@@ -165,9 +165,7 @@ struct ExplainControlBar: View {
     }
 
     private var shouldShowCaption: Bool {
-        guard !vm.isPreparingNext, !vm.explanationText.isEmpty else { return false }
-        if case .streaming = vm.status { return true }
-        return false
+        vm.shouldDisplayPlaybackCaption
     }
 
     private var errorText: String? {

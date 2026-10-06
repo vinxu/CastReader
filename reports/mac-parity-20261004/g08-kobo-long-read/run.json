@@ -1,0 +1,11 @@
+{
+  "startedAt": "2026-10-05T05:35:30.486029",
+  "logByteOffset": 1806027,
+  "pid": 22167,
+  "book": "Two Tickets",
+  "source": "Kobo",
+  "initialState": "Chapter One paused at native pages 13-14 / 348; user Play follows",
+  "voice": "Bella",
+  "speed": "1x",
+  "candidateIdentity": "../g07-weread-native-pager/prefetch-candidate-identity.json"
+}

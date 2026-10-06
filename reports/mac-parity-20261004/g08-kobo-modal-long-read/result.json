@@ -1,0 +1,5 @@
+{
+  "status": "STOPPED_FOR_UI_FAILURE",
+  "observedAt": "2026-10-05T08:15:54+08:00",
+  "reason": "Dark theme visually hides word highlight despite successful overlay count and advancing native audio. Paused to inspect computed styles; not a qualified 30-minute run."
+}

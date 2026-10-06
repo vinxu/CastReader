@@ -323,6 +323,12 @@ enum ReadingResumeContract {
         return relocatedCheckpoint(checkpoint, paragraphs: paragraphs, permitsOCRCorrection: false)
     }
 
+    static func relocatedGoogleBooksCheckpoint(_ checkpoint: ReadingResumeCheckpoint,
+                                               paragraphs: [ReadingParagraph]) -> ReadingResumeCheckpoint? {
+        guard checkpoint.sourceKind == .googleBooks else { return nil }
+        return relocatedCheckpoint(checkpoint, paragraphs: paragraphs, permitsOCRCorrection: false)
+    }
+
     private static func relocatedCheckpoint(_ checkpoint: ReadingResumeCheckpoint,
                                             paragraphs: [ReadingParagraph],
                                             permitsOCRCorrection: Bool) -> ReadingResumeCheckpoint? {

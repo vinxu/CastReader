@@ -1,0 +1,30 @@
+[
+  {
+    "path": "../CastReader/WebAssets/bundle.js",
+    "section": "function installParagraphTaps(doc) {",
+    "generatedHash": "73a72a4fa0127180c05a3475ec8330523ca22173c6737f8a36565ccd34cdb37b",
+    "prefixPreserved": true,
+    "suffixPreserved": true
+  },
+  {
+    "path": "../CastReader/WebAssets/bundle.js",
+    "section": "// src/kobo.ts",
+    "generatedHash": "98353c1834e39ad83adaa423e11c0db47030747d721572c1d5d34a3dd5e5dc36",
+    "prefixPreserved": true,
+    "suffixPreserved": true
+  },
+  {
+    "path": "../CastReaderTests/Fixtures/google-books-webreader-xctest.js",
+    "section": "function installParagraphTaps(doc) {",
+    "generatedHash": "73a72a4fa0127180c05a3475ec8330523ca22173c6737f8a36565ccd34cdb37b",
+    "prefixPreserved": true,
+    "suffixPreserved": true
+  },
+  {
+    "path": "../CastReaderTests/Fixtures/google-books-webreader-xctest.js",
+    "section": "// src/kobo.ts",
+    "generatedHash": "7e20f2fbdea88bf65dad5802a983ef7cb7b40f0c2194640570fcfc3029abdfeb",
+    "prefixPreserved": true,
+    "suffixPreserved": true
+  }
+]

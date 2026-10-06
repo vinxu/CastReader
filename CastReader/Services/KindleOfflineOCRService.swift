@@ -14,6 +14,8 @@ final class KindleOfflineOCRService: KindleOfflineRecognizing {
     func recognize(_ page: ReadingDocument, sourceWordCount: Int?) async throws -> ReadingDocument {
         guard let data = page.paragraphs.first(where: { $0.type == .image })?.imageData,
               let image = UIImage(data: data) else { throw OCRError.noCGImage }
+        // Saved captures contain the whole spread. Unlike an online column crop,
+        // they need layout analysis before paragraphs and speech ranges are built.
         let recognized: ReadingDocument
         var language = page.language
         do {
@@ -27,10 +29,10 @@ final class KindleOfflineOCRService: KindleOfflineRecognizing {
                 // The bundled Tesseract fallback is simplified Chinese only.
                 // Traditional pages use the on-device Vision Traditional model.
                 recognized = try await OCRService.shared.recognize(image: image, languages: ["zh-Hant"],
-                    title: page.title, paragraphStrategy: KindleLivePageOCRContract.isolatedPageStrategy, languageHint: "zh")
+                    title: page.title, paragraphStrategy: .kindleLayout, languageHint: "zh")
             } else {
                 recognized = try await OCRService.shared.recognizeKindle(image: image, profile: profile,
-                    title: page.title, paragraphStrategy: KindleLivePageOCRContract.isolatedPageStrategy)
+                    title: page.title, paragraphStrategy: .kindleLayout)
             }
         } catch OCRError.noText where sourceWordCount == 0 {
             return page

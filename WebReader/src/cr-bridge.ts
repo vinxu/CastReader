@@ -89,11 +89,24 @@ export function initBridge(deps: CRDeps): void {
   // Play Books 的段落只取可见片段，DOM 里的 element.textContent 还包含前后不可见
   // 的部分；所有字符偏移都要加上这个基准。其余源恒为 0。
   const paraOffsets = new Map<number, number>()
+  // A reopened page can omit the beginning of retained audio. Keep that
+  // immutable source for word alignment; its signed offset maps only the
+  // surviving tail into the new DOM rather than matching old words there.
+  const retainedSourceTexts = new Map<number, string>()
   const paragraphTapDocuments = new WeakSet<Document>()
   function installParagraphTaps(doc: Document): void {
     if (paragraphTapDocuments.has(doc)) return
     paragraphTapDocuments.add(doc)
     doc.addEventListener('click', (e) => {
+      // Some provider controls retarget their click to <html>; their button
+      // path is lost. A visible dialog owns the interaction, so underlying
+      // chapter hit testing must remain disabled until it closes.
+      if (Array.from(document.querySelectorAll('[role="dialog"],[aria-modal="true"],dialog[open]')).some(panel => {
+        const box = panel.getBoundingClientRect(), style = getComputedStyle(panel)
+        return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 &&
+          box.top < innerHeight && box.left < innerWidth && style.display !== 'none' &&
+          style.visibility !== 'hidden' && style.opacity !== '0'
+      })) return
       const target = e.target as HTMLElement | null
       const el = target?.closest?.('[data-cr-para]') as HTMLElement | null
       // Only the current page's registered elements may select a native
@@ -103,7 +116,13 @@ export function initBridge(deps: CRDeps): void {
         post('paragraphTapped', { paragraphIndex: index })
         return
       }
-      if (doc !== document || target?.closest?.('a,button,input,select,textarea,[role="button"],[role="dialog"]')) return
+      if (doc !== document) return
+      // Provider settings use shadow DOM. event.target is retargeted to a
+      // custom-element host, so closest() alone can mistake its controls for
+      // a tap on chapter text underneath the panel.
+      const controlSelector = 'a,button,input,select,textarea,[role="button"],[role="dialog"],[role="slider"],[role="tab"],[role="radio"],[role="switch"],[aria-modal="true"]'
+      if (e.composedPath().some(node =>
+        node instanceof Element && node.closest(controlSelector))) return
       // Kobo can put its gesture surface above the chapter iframe. Resolve
       // a shell tap only against actual visible text fragments of registered
       // paragraphs, never a paragraph's multi-column bounding rectangle.
@@ -209,9 +228,12 @@ export function initBridge(deps: CRDeps): void {
       if (!painted) return
       const d = ownerDocument.createElement('div')
       d.className = 'cr-hl-ov'
+      // Provider themes may force every book element's background transparent.
+      // Own the overlay's paint, and use alpha compositing so black pages also
+      // show the accent (multiply would disappear into a black background).
       d.style.cssText =
         `position:absolute;left:${painted.left + sx}px;top:${painted.top + sy}px;width:${painted.width}px;height:${painted.height}px;` +
-        `background:${hexToRgba(color, 0.34)};pointer-events:none;z-index:2147483000;border-radius:3px;mix-blend-mode:multiply`
+        `background:${hexToRgba(color, 0.34)}!important;pointer-events:none;z-index:2147483000;border-radius:3px;mix-blend-mode:normal!important`
       host.appendChild(d)
       overlayNodes.add(d)
       n++
@@ -241,8 +263,9 @@ export function initBridge(deps: CRDeps): void {
   }
 
   // segment 的词序列 → 在 el 虚拟全文里从 startCursor 前向逐词匹配成 Range[]（失配推 null，连续失配向前找长词重锚）。
-  function buildWordRanges(el: HTMLElement, words: string[], startCursor: number): { ranges: Array<Range | null>; cursor: number } {
-    const fullText = sourceText(el)
+  function buildWordRanges(el: HTMLElement, words: string[], startCursor: number,
+    retainedSource?: string, domOffset = 0): { ranges: Array<Range | null>; cursor: number } {
+    const fullText = retainedSource ?? sourceText(el)
     const lower = fullText.toLowerCase()
     const ranges: Array<Range | null> = []
     let searchPos = Math.max(0, Math.min(startCursor, fullText.length))
@@ -269,7 +292,8 @@ export function initBridge(deps: CRDeps): void {
         continue
       }
       misses = 0
-      ranges.push(charRangeInElement(el, m.pos, m.pos + m.len))
+      const start = m.pos + domOffset, end = start + m.len
+      ranges.push(end > 0 ? charRangeInElement(el, Math.max(0, start), end) : null)
       searchPos = m.pos + m.len
     }
     return { ranges, cursor: searchPos }
@@ -293,6 +317,7 @@ export function initBridge(deps: CRDeps): void {
     paraElements.clear()
     extractedParaElements.clear()
     paraOffsets.clear()
+    retainedSourceTexts.clear()
     const out: Array<Record<string, unknown>> = []
     paras.forEach((p, i) => {
       const el = p.element
@@ -466,6 +491,7 @@ export function initBridge(deps: CRDeps): void {
       if (segments.length > 0) {
         paraElements.clear()
         paraOffsets.clear()
+        retainedSourceTexts.clear()
         markDOMFragments.clear()
       }
       for (const segment of segments) {
@@ -485,10 +511,13 @@ export function initBridge(deps: CRDeps): void {
         if (
           Number.isFinite(override) &&
           typeof override === 'number' &&
-          override >= 0 &&
+          (override >= 0 || (typeof segment.text === 'string' && override + segment.text.length > 0)) &&
           paraElements.has(segment.paragraphIndex)
         ) {
           paraOffsets.set(segment.paragraphIndex, override)
+          if (override < 0 && typeof segment.text === 'string') {
+            retainedSourceTexts.set(segment.paragraphIndex, segment.text)
+          }
         }
       }
       // offset 变化后旧的前向词游标/Range 缓存失效。
@@ -525,10 +554,14 @@ export function initBridge(deps: CRDeps): void {
     highlightWord(arg: { paragraphIndex: number; segSeq: number; words: string[]; wordIndex: number; segmentTexts?: string[] }): void {
       const el = paraElements.get(arg.paragraphIndex)
       if (!el) { clearOverlay(); showDbg('w NOEL'); return }
+      const retained = retainedSourceTexts.get(arg.paragraphIndex)
+      const base = paraOffsets.get(arg.paragraphIndex) || 0
+      const start = retained !== undefined ? 0 : base
+      const domOffset = retained !== undefined ? base : 0
       if (arg.paragraphIndex !== wcPara) {
         wcPara = arg.paragraphIndex
         // 可见区裁剪的段落要从可见起点开始前向匹配，否则会命中上一页的同名词。
-        paraCursor = paraOffsets.get(arg.paragraphIndex) || 0
+        paraCursor = start
         wcSeg = -1
       }
       if (arg.segSeq !== wcSeg) {
@@ -536,10 +569,10 @@ export function initBridge(deps: CRDeps): void {
           // Cold resume / backwards seek: replay preceding words to rebuild the
           // source cursor, including repeated words, before aligning this chunk.
           const priorWords = arg.segmentTexts.flatMap((text) => text.match(/\S+/g) || [])
-          paraCursor = buildWordRanges(el, priorWords, paraOffsets.get(arg.paragraphIndex) || 0).cursor
+          paraCursor = buildWordRanges(el, priorWords, start, retained, domOffset).cursor
         }
         wcSeg = arg.segSeq
-        const built = buildWordRanges(el, arg.words || [], paraCursor)
+        const built = buildWordRanges(el, arg.words || [], paraCursor, retained, domOffset)
         wcRanges = built.ranges
         paraCursor = built.cursor
       }

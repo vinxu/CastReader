@@ -1,0 +1,27 @@
+{
+  "observedAt": "2026-10-05T09:03:12.440656+08:00",
+  "firstWordAt": "08:32:07.960",
+  "latestWordAt": "09:02:42.913",
+  "automaticCommits": 40,
+  "uniqueAutoTargets": 40,
+  "wordPaints": 4803,
+  "missingWordOverlays": 10,
+  "carryCommits": 19,
+  "refreshCommits": 6,
+  "manualCommits": 0,
+  "issues": [],
+  "visualHoldsCompleted": 40,
+  "visualHoldMedianMs": 330.77,
+  "visualHoldMaxMs": 599.79,
+  "pendingVisualHolds": 0,
+  "status": "PASS_LONG_READ_WITH_UI_FOLLOWUPS",
+  "wordEventSpanSeconds": 1834.953,
+  "logEndByteOffset": 3778803,
+  "logSHA256": "1f7dc77bf0485753864f9e43242df36ce01c3db8830299aa07d49caa2037e96e",
+  "scope": "M066 duration, natural page sequence and cross-chapter continuity; does not close M068 recovery/layout or all highlighting cases",
+  "limitations": [
+    "10 zero-overlay events: 8 during window transitions, 1 during a font transition and 1 isolated at 08:36:24.785; each recovered, with no sustained missing highlight. Isolated event remains a follow-up.",
+    "800x600 floating controls overlapped the bottom text line; reserved desktop row fix is pending live verification.",
+    "Direct mismatched-page cold restore and 15-minute Explain still open."
+  ]
+}

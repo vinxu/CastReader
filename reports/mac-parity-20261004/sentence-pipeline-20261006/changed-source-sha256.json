@@ -1,0 +1,11 @@
+{
+  "CastReader/Models/TTSTimestamp.swift": "774f25418bfb491a03073f19b60c112ac5aa41cd80e6027674dafb06536d1742",
+  "CastReader/Services/TTSService.swift": "7ceb79f206d9ff488daacdeb8b508d4cad5cded66f380396192fc0f8068cb657",
+  "CastReader/Services/KindleSentenceBuffer.swift": "feee7238ee9d48153bf7f3afc792907580b41fd6fa7e243f88394f5596abadc4",
+  "CastReader/ViewModels/ReadAloudViewModel.swift": "81e70b57c849d850dfc68e2df5036b9c72bb48a6d576b4b7284b6f986927640c",
+  "CastReader/Views/Kindle/KindleBookView.swift": "76b793c5125cf6421402974f09a7be0f98791aedd7abcdf8b700496fe206b57f",
+  "CastReader/Services/APIService.swift": "eb4edfe99dd581204eb55939a3aeeb56b6a86ad15dd66ee81ee7d7e7e00f811d",
+  "CastReaderTests/KindleSentenceBufferTests.swift": "0279d25aeb2b7a95e0aff6c3b93c3300e02a394c9369a0ebe527d54f8c0b393e",
+  "CastReaderTests/VoiceCloneTests.swift": "09a87d9c2d0ec8baa137cc42ffb47e1499e601724aedf29394fdb4ec6fab2239",
+  "CastReaderTests/SpeechPipelineTests.swift": "29bee1cab0772fbcfc0871e0ccc9e3809c9d78f3f6606d1d0e4790fe93106c93"
+}

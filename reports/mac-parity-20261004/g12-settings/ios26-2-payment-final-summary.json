@@ -1,0 +1,42 @@
+{
+  "devicesAndConfigurations": [
+    {
+      "device": {
+        "architecture": "arm64",
+        "deviceId": "F4B84DFB-D1B8-4689-A133-F948A8EBB6C5",
+        "deviceName": "CastReader Mac Parity StoreKit 26.2",
+        "modelName": "iPad Pro 11-inch (M4)",
+        "osBuildNumber": "23C52",
+        "osVersion": "26.2",
+        "platform": "iOS Simulator"
+      },
+      "expectedFailures": 0,
+      "failedTests": 0,
+      "passedTests": 35,
+      "skippedTests": 0,
+      "testPlanConfiguration": {
+        "configurationId": "1",
+        "configurationName": "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription": "CastReader \u00b7 Built with macOS 26.2",
+  "expectedFailures": 0,
+  "failedTests": 0,
+  "finishTime": 1791196792.904,
+  "passedTests": 35,
+  "result": "Passed",
+  "skippedTests": 0,
+  "startTime": 1791196777.291,
+  "statistics": [],
+  "testFailures": [],
+  "title": "Test - CastReader",
+  "topInsights": [
+    {
+      "category": "Longest Test Runs",
+      "impact": "16% of duration",
+      "text": "1 longest test run with outlier durations exceeding 0.71s (three standard deviations)"
+    }
+  ],
+  "totalTestCount": 35
+}

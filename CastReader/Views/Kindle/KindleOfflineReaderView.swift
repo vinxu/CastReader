@@ -120,13 +120,16 @@ private struct KindleOfflinePageZoom: UIViewRepresentable {
 struct KindleOfflineBookReaderView: View {
     @ObservedObject var model: KindleOfflineBookReaderModel
     var continueDownload: (() -> Void)? = nil
+    var minimize: (() -> Void)? = nil
 
     var body: some View {
-        KindleOfflineBookReaderContent(model: model, speech: model.speech, continueDownload: continueDownload)
+        KindleOfflineBookReaderContent(model: model, speech: model.speech, continueDownload: continueDownload, minimize: minimize)
             .tint(AppTheme.primary)
             .environment(\.readerOfflineAction, nil)
             .environment(\.readerAppearanceSource, .text)
+            #if !targetEnvironment(macCatalyst)
             .navigationTitle(model.book.title).navigationBarTitleDisplayMode(.inline)
+            #endif
             .onDisappear { model.persistCurrentPosition() }
     }
 }
@@ -137,6 +140,7 @@ private struct KindleOfflineBookReaderContent: View {
     @ObservedObject var model: KindleOfflineBookReaderModel
     @ObservedObject var speech: SystemSpeechPlaybackService
     let continueDownload: (() -> Void)?
+    let minimize: (() -> Void)?
     @ObservedObject private var appearance = ReaderAppearanceSettings.shared
     @ObservedObject private var network = NetworkReachability.shared
     @Environment(\.scenePhase) private var scenePhase
@@ -158,6 +162,30 @@ private struct KindleOfflineBookReaderContent: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            #if targetEnvironment(macCatalyst)
+            if let minimize {
+                HStack(spacing: 12) {
+                    Button(action: minimize) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .frame(width: 34, height: 34)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("收起阅读器")
+                    .accessibilityHint("继续播放，在迷你播放器中控制朗读")
+                    .accessibilityIdentifier("offlineBookClose")
+                    Text(model.book.title)
+                        .font(AdaptiveLayout.readerTitleFont).lineLimit(1)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer(minLength: 8)
+                    ReaderMoreButton()
+                }
+                .foregroundStyle(AppTheme.foreground)
+                .padding(.horizontal, 16).padding(.vertical, 8)
+                Divider()
+            }
+            #endif
             pageHeader
             if hasText {
                 Picker("阅读显示", selection: $originalPage) {
@@ -175,7 +203,9 @@ private struct KindleOfflineBookReaderContent: View {
         .background(ReaderKeyboardRegistration(scene: readerScene, priority: 12, actions: keyboardActions))
         .safeAreaInset(edge: .bottom, spacing: 0) { playbackBar }
         .background(AppTheme.background)
+        #if !targetEnvironment(macCatalyst)
         .toolbar { ToolbarItem(placement: .primaryAction) { ReaderMoreButton() } }
+        #endif
         .environment(\.readerAppearanceSource, originalPage || !hasText ? .fixedLayout : .text)
         .sheet(isPresented: $showImageZoom) {
             NavigationStack {
@@ -237,6 +267,9 @@ private struct KindleOfflineBookReaderContent: View {
             }.disabled(model.pageImage == nil)
                 .accessibilityLabel("放大原页面").accessibilityIdentifier("offlineBookZoom")
         }.padding(.leading, 16).padding(.trailing, 4)
+            #if targetEnvironment(macCatalyst)
+            .buttonStyle(.plain)
+            #endif
             .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 
@@ -362,6 +395,9 @@ private struct KindleOfflineBookReaderContent: View {
                 }.font(.subheadline).padding(.horizontal, 24)
             }
         }.padding(.bottom, 4).background(AppTheme.card).dynamicTypeSize(...DynamicTypeSize.accessibility1)
+            #if targetEnvironment(macCatalyst)
+            .buttonStyle(.plain)
+            #endif
     }
 
     private var transportControls: some View {

@@ -1,0 +1,69 @@
+{
+  "devicesAndConfigurations": [
+    {
+      "device": {
+        "architecture": "arm64",
+        "deviceId": "BA9ADC22-E48F-49F1-B771-F9C42C57BA13",
+        "deviceName": "CastReader Login Review iPad",
+        "modelName": "iPad Air 11-inch (M3)",
+        "osBuildNumber": "23F77",
+        "osVersion": "26.5",
+        "platform": "iOS Simulator"
+      },
+      "expectedFailures": 0,
+      "failedTests": 2,
+      "passedTests": 0,
+      "skippedTests": 0,
+      "testPlanConfiguration": {
+        "configurationId": "1",
+        "configurationName": "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription": "CastReader \u00b7 Built with macOS 26.2",
+  "expectedFailures": 0,
+  "failedTests": 2,
+  "finishTime": 1791193329.424,
+  "passedTests": 0,
+  "result": "Failed",
+  "skippedTests": 0,
+  "startTime": 1791193283.033,
+  "statistics": [],
+  "testFailures": [
+    {
+      "failureText": "XCTAssertTrue failed - Explicit replay starts the first paragraph with audible progress",
+      "targetName": "CastReaderTests",
+      "testIdentifier": 1,
+      "testIdentifierString": "ReadingResumeTests/testFinishedDOCXPlayButtonRestartsAtFirstParagraph()",
+      "testIdentifierURL": "test://com.apple.xcode/CastReader/CastReaderTests/ReadingResumeTests/testFinishedDOCXPlayButtonRestartsAtFirstParagraph",
+      "testName": "testFinishedDOCXPlayButtonRestartsAtFirstParagraph()"
+    },
+    {
+      "failureText": "XCTAssertTrue failed - Explicit replay starts the first paragraph with audible progress",
+      "targetName": "CastReaderTests",
+      "testIdentifier": 2,
+      "testIdentifierString": "ReadingResumeTests/testFinishedTextMiniPlayerStartRestartsAtFirstParagraph()",
+      "testIdentifierURL": "test://com.apple.xcode/CastReader/CastReaderTests/ReadingResumeTests/testFinishedTextMiniPlayerStartRestartsAtFirstParagraph",
+      "testName": "testFinishedTextMiniPlayerStartRestartsAtFirstParagraph()"
+    }
+  ],
+  "title": "Test - CastReader",
+  "topInsights": [
+    {
+      "category": "Common Failures",
+      "impact": "100% of failures",
+      "text": "2 runs of 2 tests failed with XCTAssertTrue failed - Replay completes the document a second time"
+    },
+    {
+      "category": "Common Failures",
+      "impact": "100% of failures",
+      "text": "2 runs of 2 tests failed with XCTAssertTrue failed - Explicit replay starts the first paragraph with audible progress"
+    },
+    {
+      "category": "Common Failures",
+      "impact": "100% of failures",
+      "text": "2 runs of 2 tests failed with XCTAssertEqual failed: (\"[0, 1]\") is not equal to (\"[0, 1, 0, 1]\") - Neither skip the opening nor repeat only the ended item"
+    }
+  ],
+  "totalTestCount": 2
+}

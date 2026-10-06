@@ -340,13 +340,16 @@ final class KindleOfflineBookReaderModel: ObservableObject {
             guard generation == run, !closed, scopeIsCurrent else { return }
             guard await prepareVoice(for: doc), generation == run, !closed, scopeIsCurrent else { return }
             pageIndex = index
-            pendingResume = resume
-            installDocument(doc, resume: resume)
+            // Old OCR cursors refer to the old paragraph/column ordering. Keep
+            // the page, voice and rate, but restart this page after rebuilding OCR.
+            let compatibleResume = cached == nil && book.pages[index].requiresOCR == true ? nil : resume
+            pendingResume = compatibleResume
+            installDocument(doc, resume: compatibleResume)
             let units = speech.units
             error = nil
             loading = false
             if let unit = units.first { checkpoint(units.indices.contains(speech.currentUnitIndex) ? units[speech.currentUnitIndex] : unit) }
-            else { saveCursor(paragraphID: resume?.paragraphID ?? (book.pages[index].requiresOCR == true ? 1 : 0), sentenceStart: resume?.sentenceStart ?? 0) }
+            else { saveCursor(paragraphID: compatibleResume?.paragraphID ?? (book.pages[index].requiresOCR == true ? 1 : 0), sentenceStart: compatibleResume?.sentenceStart ?? 0) }
             if automatically, wantsPlayback, speech.canContinueAutomatically {
                 beginPlayback(automatically: true)
             }

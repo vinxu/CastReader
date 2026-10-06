@@ -117,7 +117,7 @@ enum LiveWebPlatformID: String, Equatable {
             )
         case .kobo:
             guard let type,
-                  Self.pagedReaderMessageTypes.contains(type),
+                  (Self.pagedReaderMessageTypes.contains(type) || type == "koboPanelVisibility"),
                   frame.isMainFrame,
                   frame.securityScheme
                     .trimmingCharacters(in: CharacterSet(charactersIn: ":"))

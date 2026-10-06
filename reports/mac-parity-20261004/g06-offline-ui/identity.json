@@ -1,0 +1,13 @@
+{
+  "time": "2026-10-05T01:55:55.049219",
+  "bundleID": "com.same.castreader",
+  "version": "1.2.47",
+  "build": "72",
+  "binarySHA256": "a266d73a7e911e701577aeeb4c87e0e5dad4b902ef96e8d515aec2fe874a3a94",
+  "sources": {
+    "CastReader/Views/Kindle/KindleBookView.swift": "3d880a9e917f77f355805df76ed04ff8b845bfdce6f0649ca76bd0d140e3c989",
+    "CastReader/Views/Kindle/KindleOfflineReaderView.swift": "c2fb21048eb433fe8e1b31060c6af9f897cf166022b233ff16d6d812b436ec5d",
+    "CastReader/Views/Kindle/KindleOfflineDownloadView.swift": "547fa0afd603e184f207252015ae131135d650d319f3bfb68c319051414b3aea",
+    "CastReader/Services/KindleOfflineDownloadCoordinator.swift": "7784b751637d613a5a5046ef87fd0bf368704738b41ca451916398ff627e75c2"
+  }
+}

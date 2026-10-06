@@ -1,0 +1,15 @@
+{
+  "baseline": "09456f1979cc14ca19977ede4b1edde043c5f840",
+  "product": "com.same.castreader",
+  "version": "1.2.47",
+  "build": "72",
+  "minimumMacOS": "14.6",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "executableSHA256": "45e107c46c07dc6445e60579a77ddef4457ba34bc525315101c789c48b114352",
+  "validation": "codesign --verify --deep --strict passed",
+  "runtimeValidation": "Apple silicon macOS 26.2 only; Intel and macOS 14.6 not run",
+  "distribution": "Apple Development; local candidate, not App Store or notarized distribution"
+}

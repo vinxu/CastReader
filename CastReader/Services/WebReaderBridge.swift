@@ -29,6 +29,26 @@ enum WebExtractionReadiness {
     }
 }
 
+/// Window recreation can change responsive navigation/footer paragraphs. Keep
+/// prepared speech IDs and only alias complete, unchanged text into the new DOM.
+/// Repeated prose is ambiguous unless the entire extraction is unchanged.
+enum RetainedWebParagraphMapping {
+    static func matches(_ retained: [String], in rendered: [WebRenderedParagraph]) -> [Int: Int] {
+        guard !retained.isEmpty else { return [:] }
+        if retained == rendered.map(\.text) {
+            return Dictionary(uniqueKeysWithValues: rendered.enumerated().map { ($0.offset, $0.element.paragraphIndex) })
+        }
+        let oldGroups = Dictionary(grouping: retained.indices, by: { retained[$0] })
+        let newGroups = Dictionary(grouping: rendered, by: \.text)
+        var result: [Int: Int] = [:]
+        for (text, indices) in oldGroups where !text.isEmpty && indices.count == 1 {
+            guard let candidates = newGroups[text], candidates.count == 1 else { continue }
+            result[indices[0]] = candidates[0].paragraphIndex
+        }
+        return result
+    }
+}
+
 @MainActor
 final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     static let handlerName = "castreader"
@@ -117,6 +137,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     var onWeReadSurfaceStable: (() -> Void)?
     var onWeReadNeedsLoadingCover: (() -> Void)?
     var onLiveWebSurfaceStable: (() -> Void)?
+    var onInitialLiveWebSurfaceReady: (() -> Void)?
     var onLiveWebNeedsLoadingCover: (() -> Void)?
     var onLiveWebNeedsReflowCover: (() -> Void)?
     var onKoboSessionRequired: (() -> Void)?
@@ -127,6 +148,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private weak var weReadTOCController: WeReadTOCController?
     private var cancellables = Set<AnyCancellable>()
     private var didInit = false
+    private var restoredWebSourceByDOMIndex: [Int: Int]?
     private var didAutoStart = false
     private var isAO3 = false
     private var ao3DocumentID: String?
@@ -189,11 +211,16 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var googleBooksExplainConsumedRanges: [Int: Int] = [:]
     private var googleBooksExplainedSourceSlices: [LiveWebPageSourceSlice] = []
     private var googleBooksExplainReflowPage: GoogleBooksParsedPage?
+    private var googleBooksExplainRevealFrame: String?
+    private var googleBooksExplainRevealBaseline = ""
+    private var googleBooksExplainRevealTimeout: Task<Void, Never>?
+    private var googleBooksExplainContinuationDeferred = false
     private var googleBooksReflowRevealSignatures = Set<String>()
     private var googleBooksVisibleSourceSlices: [LiveWebPageSourceSlice] = []
 
     private var activeGoogleBooksFrameSessionID: String?
     private var googleBooksFailedTurnSignature: String?
+    private var googleBooksFailedTurnWasBookEnd = false
     private var googleBooksLateTurn: GoogleBooksLateTurn?
     private var googleBooksLateTurnVisualsSuppressed = false
     private var googleBooksLateTurnVisualSuppressionTask:
@@ -233,7 +260,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             guard !Task.isCancelled, let self,
                   AudioPlayerService.shared.pagePresentationHoldID == holdID else { return }
             ReaderRunLog.write("PAGINATION anchor_ack_timeout platform=\(self.livePlatform?.rawValue ?? "web")")
-            self.readVM?.invalidateWebContent(message: AppLocalized("网络连接失败，请重试。"))
+            let message = AppLocalized("内容暂时无法打开，请重试")
+            self.readVM?.invalidateWebContent(message: message)
+            // The blocked Play button cannot validate a web page itself.
+            // Surface the existing provider Retry/Open flow instead of leaving
+            // a silent retry button above an unconfirmed page.
+            self.livePlatform?.reportReaderError(message)
         }
     }
     private func confirmGoogleBooksPresentation(presentedHoldID: UUID? = nil) {
@@ -330,6 +362,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var pendingWeReadExplanation: WeReadPendingExplanation?
     private var weReadExplainPrefetchTask: Task<Void, Never>?
     private var weReadExplainPrefetchGeneration: UInt64 = 0
+    private var rejectedWeReadExplanationToken: String?
     private var continuousWeReadHandoff: WeReadContinuousHandoff?
     private var activeWeReadCarry: WeReadActiveCarry?
     private var pendingWeReadBoundaryTurn: WeReadBoundaryTurn?
@@ -770,15 +803,19 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// let the existing stable-page transaction decide whether to restart the
     /// active Read/Explain mode after the new page commits.
     func requestUserPageTurn(_ direction: LiveWebPageTurnDirection) {
+        // WeRead's visible pager also navigates covers and recommendation
+        // pages, before a readable source exists. An explicit user turn must
+        // reach that pager; JavaScript still validates visibility and enabled
+        // state, and no audio starts until a real page is committed.
+        if isWeRead, isApplicationActive {
+            requestWeReadUserPage(direction)
+            return
+        }
         guard (didInit || googleBooksImageOnlySurface), isApplicationActive else {
             ReaderRunLog.write(
                 "LIVEWEB page button ignored direction=\(direction.rawValue) " +
                 "ready=\(didInit ? "Y" : "N") active=\(isApplicationActive ? "Y" : "N")"
             )
-            return
-        }
-        if isWeRead {
-            requestWeReadUserPage(direction)
             return
         }
         guard isGoogleBooks,
@@ -847,7 +884,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         // Lock before evaluateJavaScript returns. The JS intent message is
         // asynchronous; without this native-side claim, two fast taps can
         // both click the site's pager before the first message arrives.
-        pendingWeReadManualTurn = true
+        // Non-text opening pages emit no readable-page commit. Give this
+        // lock the same bounded deadline as ordinary manual navigation, so a
+        // cover -> recommendation turn cannot disable the pager forever.
+        armWeReadManualIntent()
 
         let script =
             "window.CastReaderWeRead && " +
@@ -879,6 +919,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         guard self.readVM == nil else { return }   // 只关联一次
         self.readVM = readVM
         self.explainVM = explainVM
+        explainVM.isSourcePanelPresented = false
 
         if isAO3 {
             // Reopening a minimized reader must preserve the user's paused
@@ -1118,8 +1159,22 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     func prepareWeReadOpeningResume(checkpoint: ReadingResumeCheckpoint?, anchor: WeReadReadingAnchor?) {
         cancelWeReadOpeningResume()
-        weReadOpeningCheckpoint = checkpoint
-        if let checkpoint, let location = checkpoint.weReadLocation,
+        // Reopening the mini player retains both VMs. Their current page may
+        // be newer than the durable Read checkpoint, especially in Explain.
+        // Find that page before attaching its existing audio and annotations.
+        let retainedTexts = readVM?.stagedLiveWebParagraphTexts ?? []
+        let retainedIndex = ReadingResumeDocumentIndex(paragraphs: retainedTexts.enumerated().map {
+            ReadingParagraph(id: $0.offset, text: $0.element)
+        })
+        let currentParagraph = readVM?.currentParagraphIndex ?? -1
+        let retainedParagraph = retainedIndex.readable.contains(currentParagraph)
+            ? currentParagraph : retainedIndex.readable.sorted().first
+        let retainedCheckpoint = retainedTexts == explainVM?.stagedLiveWebParagraphTexts
+            ? retainedParagraph.flatMap { retainedIndex.checkpoint(sourceKind: .weread, paragraphIndex: $0, audio: nil) }
+            : nil
+        weReadOpeningCheckpoint = retainedCheckpoint ?? checkpoint
+        ReaderRunLog.write("WEREAD resume prepare retained=\(retainedCheckpoint != nil) read=\(retainedTexts.count) explain=\(explainVM?.stagedLiveWebParagraphTexts.count ?? -1) checkpoint=\(weReadOpeningCheckpoint?.paragraphFingerprint ?? "none") anchor=\(anchor?.chapterOffset ?? -1)")
+        if retainedCheckpoint == nil, let checkpoint, let location = checkpoint.weReadLocation,
            location.isValid(for: readVM?.document.id ?? "") {
             weReadOpeningAnchor = WeReadReadingAnchor(bookID: location.bookID, readerURL: location.readerURL,
                 pageFingerprint: "", progressLabel: nil, updatedAt: checkpoint.updatedAt,
@@ -1187,6 +1242,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
             if self.livePlatform == .googleBooks, let webView = message.webView {
                 ReaderWebAppearanceCenter.shared.registerReaderFrame(frameInfo, in: webView, installPanelBounds: messageType == "rendered")
+            }
+            if self.livePlatform == .kobo, messageType == "rendered", let webView = message.webView {
+                // Book-end recommendations can open without using native Aa
+                // or Contents first. Install dialog-only bounds on page load.
+                webView.evaluateJavaScript(ReaderWebAppearanceCenter.constrainKoboPanelsScript, completionHandler: nil)
             }
             if messageType == "wereadContentUnavailable",
                (!frame.isMainFrame || frame.securityHost.lowercased() != "weread.qq.com") { return }
@@ -1341,6 +1401,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private func handle(_ body: Any) {
         guard let msg = WebInboundMessage(body) else { return }
         switch msg.type {
+        case "koboPanelVisibility":
+            guard livePlatform == .kobo,
+                  acceptsActiveGoogleBooksFrameEvent(msg.payload),
+                  let visible = msg.payload["visible"] as? Bool else { return }
+            explainVM?.isSourcePanelPresented = visible
         case "ready":
             print("[WebReader] ✅ JS ready: \(msg.payload)")
             sendLiveWebViewport(reason: "bridge-ready")
@@ -1585,9 +1650,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             NSLog("CRDBG WeRead semantic turn rejected %@", "\(msg.payload)")
         case "paragraphTapped":
             if isAO3 && ao3Blocked { return }
-            if let i = msg.payload["paragraphIndex"] as? Int {
+            if let domIndex = msg.payload["paragraphIndex"] as? Int {
+                let sourceIndex: Int
+                if let restoredWebSourceByDOMIndex {
+                    // Ignore new/ambiguous page chrome, never jump to an old
+                    // speech paragraph just because its numeric ID is reused.
+                    guard let retained = restoredWebSourceByDOMIndex[domIndex] else { return }
+                    sourceIndex = retained
+                } else { sourceIndex = domIndex }
+                ReaderRunLog.write("WEB paragraph tapped index=\(sourceIndex)")
                 googleBooksReflowRevealSignatures.removeAll()
-                readVM?.jump(to: i)
+                readVM?.jump(to: sourceIndex)
             }
         case "log":
             let message = "\(msg.payload["message"] ?? "")"
@@ -2591,6 +2664,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             requestedLanguage,
             depth,
         ].joined(separator: "|")
+        // A deterministic short-page rejection cannot improve on each audio
+        // tick. A different page or settings change gets a new attempt.
+        guard token != rejectedWeReadExplanationToken else { return }
         let target = ReadingDocument(
             id: vm.document.id,
             title: vm.document.title,
@@ -2657,6 +2733,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 guard generation == self.weReadExplainPrefetchGeneration else { return }
                 self.pendingWeReadExplanation = nil
                 self.weReadExplainPrefetchTask = nil
+                if case QuickReadError.textTooShort = error {
+                    self.rejectedWeReadExplanationToken = token
+                }
                 ReaderRunLog.write("WEREAD explain preload miss error=\(error.localizedDescription)")
             }
         }
@@ -3534,6 +3613,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func invalidateWeReadExplainPrefetch(reason: String) {
+        rejectedWeReadExplanationToken = nil
         weReadExplainPrefetchGeneration &+= 1
         pendingWeReadExplanation?.task.cancel()
         pendingWeReadExplanation = nil
@@ -3561,19 +3641,59 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     ) {
         guard let readVM, !paras.isEmpty else { return }
         let rps = paras.map { ReadingParagraph(id: $0.paragraphIndex, text: $0.text, type: .paragraph) }
-        // 从提取的正文判定语言（中文网页→zh 音色），统一系统化判定，避免中文用英文音色。
-        let detected = resolveReadingLanguage(rps.prefix(30).map { $0.text }.joined(separator: " "))
-        print("[WebReader] 🌐 detected language=\(detected)")
-        HistoryStore.shared.updateDetectedLanguage(documentID: readVM.document.id, language: detected)
-        readVM.loadWebParagraphs(rps, language: detected, weReadBoundary: weReadBoundary)
-        explainVM?.loadWebParagraphs(rps, language: detected)
-
-        let segs = rps.map { ["paragraphIndex": $0.id, "text": $0.text] as [String: Any] }
-        call("init", ["segments": segs, "color": AppSettings.shared.highlightColorHex])
+        // A replacement window subscribes before its DOM exists. Preserve
+        // prepared speech/mark IDs; responsive page chrome may shift DOM IDs.
+        // Commercial readers keep their independent page/recovery transaction.
+        let previousTexts = isReadMode ? readVM.stagedLiveWebParagraphTexts
+            : (explainVM?.stagedLiveWebParagraphTexts ?? [])
+        // WeRead's canvas indices may only be reused when the complete page
+        // is identical; the ordinary web reader can also remap DOM indices.
+        let retainsWeReadPage = isWeRead && previousTexts == rps.map(\.text)
+        let canRestore = !didInit && (!isWeRead || retainsWeReadPage) && !isGoogleBooks && !isAO3
+            && readVM.stagedLiveWebParagraphTexts == explainVM?.stagedLiveWebParagraphTexts
+        let retainedMapping = canRestore ? RetainedWebParagraphMapping.matches(previousTexts, in: paras) : [:]
+        let restoresRetainedVisuals = !retainedMapping.isEmpty
+        #if DEBUG
+        ReaderRunLog.write("WEB visual reattach mode=\(isReadMode ? "read" : "explain") old=\(previousTexts.count) new=\(rps.count) mapped=\(retainedMapping.count) restore=\(restoresRetainedVisuals) marks=\(explainVM?.activeMarks.count ?? 0)")
+        #endif
+        let segments: [[String: Any]]
+        if restoresRetainedVisuals {
+            // Do not replace VM text under already-generated audio or mark
+            // character ranges. Only exact matches get a DOM alias.
+            segments = retainedMapping.keys.sorted().map { sourceIndex in
+                ["paragraphIndex": sourceIndex, "text": previousTexts[sourceIndex],
+                 "domParagraphIndex": retainedMapping[sourceIndex]!] as [String: Any]
+            }
+            restoredWebSourceByDOMIndex = Dictionary(uniqueKeysWithValues:
+                retainedMapping.map { ($0.value, $0.key) })
+            didAutoStart = true
+        } else {
+            restoredWebSourceByDOMIndex = nil
+            // 从提取的正文判定语言（中文网页→zh 音色）。
+            let detected = resolveReadingLanguage(rps.prefix(30).map { $0.text }.joined(separator: " "))
+            print("[WebReader] 🌐 detected language=\(detected)")
+            HistoryStore.shared.updateDetectedLanguage(documentID: readVM.document.id, language: detected)
+            readVM.loadWebParagraphs(rps, language: detected, weReadBoundary: weReadBoundary)
+            explainVM?.loadWebParagraphs(rps, language: detected)
+            segments = rps.map { ["paragraphIndex": $0.id, "text": $0.text] as [String: Any] }
+        }
+        call("init", ["segments": segments, "color": AppSettings.shared.highlightColorHex])
         didInit = true
 
         call("setAutoScroll", ["enabled": readVM.autoScrollEnabled])
-        revealCurrentReadPosition()
+        if restoresRetainedVisuals {
+            call("setActive", ["active": isReadMode])
+            if isReadMode {
+                if let highlight = readVM.webHighlight { pushHighlight(highlight) }
+                revealCurrentReadPosition()
+            } else if let explainVM {
+                shownMarkIds.removeAll()
+                pushMarks(explainVM.activeMarks)
+                revealCurrentExplainPosition()
+            }
+        } else {
+            revealCurrentReadPosition()
+        }
 
         // 段落就绪后才自动开播，且按「当前模式」启动对应 VM（剪贴板/网址 autoplay 进解读时启动解读，
         // 避免用空段落请求后端 → 解读 HTTP 400 / 朗读无内容）。从 Mini Player 展开会重建 bridge（didAutoStart 重置），
@@ -3623,7 +3743,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         /// off-screen text that will be clipped from the following page.
         var explainParagraphs: [ReadingParagraph]
         var boundary: LiveWebPageSpeechBoundary?
-        let nextCursor: LiveWebPageConsumedCursor?
+        var nextCursor: LiveWebPageConsumedCursor?
         let evidence: GoogleBooksPageEvidence
         let language: String
         /// Final UTF-16 origin in the complete source `<p>` for every native
@@ -3631,7 +3751,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         var readDOMCharacterOffsets: [Int]
         /// Native paragraph ids normally equal DOM paragraph ids. An exact
         /// source-speech split can alias two native paragraphs to one DOM `<p>`.
-        let readDOMParagraphIndices: [Int]
+        var readDOMParagraphIndices: [Int]
         /// Exact source coordinates retained only for commit-time verification
         /// of a speculative source-speech sentence.
         let sourceSlices: [LiveWebPageSourceSlice]
@@ -3641,7 +3761,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         var explainSourceSlices: [LiveWebPageSourceSlice]
         /// Absolute source coordinate of the visual edge that caused Read to
         /// extend the last visible slice to a natural sentence ending.
-        let boundarySourceVisibleEnd: Int?
+        var boundarySourceVisibleEnd: Int?
         let carryParagraphIndex: Int?
         let carryUTF16Length: Int
         let carryDOMUTF16Start: Int?
@@ -5419,6 +5539,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             googleBooksReadinessRetries = 0
             googleBooksAwaitingReaderRecovery = false
             livePlatform?.clearReaderError()
+            onInitialLiveWebSurfaceReady?()
             ReaderRunLog.write("GBOOKS visible image-only page ready for navigation")
             return
         }
@@ -5589,22 +5710,97 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
         if reason == .refresh, didInit, isReadMode,
            let anchor = readVM.makeWeReadPlaybackResumeAnchor(),
-           let oldMapping = googleBooksReadDOMSegments.first(where: { $0["paragraphIndex"] as? Int == readVM.currentParagraphIndex }),
+           let oldMapping = googleBooksReadDOMSegments.first(where: {
+               $0["paragraphIndex"] as? Int == (readVM.currentSegmentBelongsToLiveWebCarry
+                   ? activeGoogleBooksCarry?.paragraphIndex : readVM.currentParagraphIndex)
+           }),
            let oldDOM = oldMapping["domParagraphIndex"] as? Int,
            let oldSource = googleBooksVisibleSourceSlices.first(where: { $0.visibleParagraphIndex == oldDOM }) {
             // A reflow can expose only the tail of the speaking paragraph.
             // Retain its exact TTS source so the existing audio cursor matches;
             // map it to the new DOM using independently verified source text.
             let offset = oldMapping["domCharOffset"] as? Int ?? 0
+            let carriedSource = readVM.liveWebCarryResumeSource
+            let sourceOrigin = carriedSource?.sourceUTF16Start ?? offset
             let spoken = LiveWebPageSourceSlice(visibleParagraphIndex: oldDOM,
-                sourceParagraphIndex: oldSource.sourceParagraphIndex,
-                sourceUTF16Start: offset, sourceUTF16End: offset + anchor.sourceParagraphText.utf16.count,
+                sourceParagraphIndex: carriedSource?.sourceParagraphIndex ?? oldSource.sourceParagraphIndex,
+                sourceUTF16Start: sourceOrigin, sourceUTF16End: sourceOrigin + anchor.sourceParagraphText.utf16.count,
                 text: anchor.sourceParagraphText)
             if let mapped = LiveWebSourceReflowContract.remap(spoken, in: parsed.sourceSlices),
                let index = parsed.readDOMParagraphIndices.firstIndex(of: mapped.visibleParagraphIndex) {
+                // A larger viewport can expose unread text beyond the old
+                // immutable audio source. Keep that exact source as one item,
+                // then queue the verified remainder with its own DOM offset.
+                if let retainedOrigin = mapped.sourceUTF16Start,
+                   let visibleIndex = parsed.sourceSlices.firstIndex(where: { $0.visibleParagraphIndex == mapped.visibleParagraphIndex }),
+                   let visibleOrigin = parsed.sourceSlices[visibleIndex].sourceUTF16Start {
+                    let incoming = parsed.paragraphs[index].text as NSString
+                    let incomingOrigin = visibleOrigin + parsed.readDOMCharacterOffsets[index]
+                        - parsed.explainDOMCharacterOffsets[visibleIndex]
+                    let retained = anchor.sourceParagraphText as NSString
+                    let retainedEnd = retainedOrigin + retained.length
+                    let overlapStart = max(incomingOrigin, retainedOrigin)
+                    if retainedEnd > overlapStart,
+                       retainedEnd < incomingOrigin + incoming.length,
+                       incoming.substring(with: NSRange(location: overlapStart - incomingOrigin, length: retainedEnd - overlapStart))
+                        == retained.substring(with: NSRange(location: overlapStart - retainedOrigin, length: retainedEnd - overlapStart)) {
+                        let rawTail = incoming.substring(from: retainedEnd - incomingOrigin) as NSString
+                        let first = rawTail.rangeOfCharacter(from: CharacterSet.whitespacesAndNewlines.inverted)
+                        if first.location != NSNotFound {
+                            let removed = retainedEnd - incomingOrigin + first.location
+                            parsed.paragraphs.insert(ReadingParagraph(id: index + 1,
+                                text: rawTail.substring(from: first.location), type: .paragraph), at: index + 1)
+                            parsed.readDOMParagraphIndices.insert(parsed.readDOMParagraphIndices[index], at: index + 1)
+                            parsed.readDOMCharacterOffsets.insert(parsed.readDOMCharacterOffsets[index] + removed, at: index + 1)
+                            parsed.paragraphs = parsed.paragraphs.enumerated().map {
+                                ReadingParagraph(id: $0.offset, text: $0.element.text, type: $0.element.type)
+                            }
+                            if let boundary = parsed.boundary, boundary.paragraphIndex >= index {
+                                let shifted = boundary.removingPrefix(removed, from: index)
+                                parsed.boundary = shifted.isCrossPage ? LiveWebPageSpeechBoundary(
+                                    paragraphIndex: boundary.paragraphIndex + 1,
+                                    visibleUTF16Offset: shifted.visibleUTF16Offset,
+                                    speechUTF16Length: shifted.speechUTF16Length,
+                                    sourceLayoutFingerprint: shifted.sourceLayoutFingerprint,
+                                    sourceParagraphIndex: shifted.sourceParagraphIndex,
+                                    sourceSpeechEnd: shifted.sourceSpeechEnd,
+                                    followingPageUTF16Offsets: shifted.followingPageUTF16Offsets) : nil
+                                if parsed.boundary == nil { parsed.boundarySourceVisibleEnd = nil }
+                            }
+                            ReaderRunLog.write("GBOOKS reflow retained unread suffix para=\(index + 1) chars=\(rawTail.length - first.location)")
+                        }
+                    }
+                }
                 parsed.paragraphs[index] = ReadingParagraph(id: parsed.paragraphs[index].id,
                     text: anchor.sourceParagraphText, type: .paragraph)
                 parsed.readDOMCharacterOffsets[index] = mapped.sourceUTF16Start ?? offset
+                if index == parsed.paragraphs.lastIndex(where: { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }),
+                   let sourceID = mapped.sourceParagraphIndex,
+                   let origin = mapped.sourceUTF16Start,
+                   let visible = parsed.sourceSlices.first(where: { $0.visibleParagraphIndex == mapped.visibleParagraphIndex }),
+                   let visibleEnd = visible.sourceUTF16End {
+                    // Reflow retained the immutable old speech paragraph above.
+                    // Its audio may include several sentences, while the newly
+                    // extracted page extends only to an earlier sentence end.
+                    // Boundary timing, carry origin and consumed cursor must all
+                    // describe the retained source, never that shorter extract.
+                    let length = anchor.sourceParagraphText.utf16.count
+                    let edge = visibleEnd - origin
+                    if edge > 0, edge < length {
+                        parsed.boundary = LiveWebPageSpeechBoundary(paragraphIndex: index,
+                            visibleUTF16Offset: edge, speechUTF16Length: length,
+                            sourceParagraphIndex: sourceID, sourceSpeechEnd: origin + length)
+                        parsed.boundarySourceVisibleEnd = visibleEnd
+                        parsed.nextCursor = LiveWebPageConsumedCursor(
+                            sourceParagraphIndex: sourceID, sourceUTF16End: origin + length)
+                    } else if parsed.boundary?.paragraphIndex == index {
+                        parsed.boundary = nil
+                        parsed.boundarySourceVisibleEnd = nil
+                        parsed.nextCursor = GoogleBooksCrossPageContract.retainedCursor(
+                            previous: googleBooksConsumedCursor,
+                            carryParagraphIndex: parsed.carryParagraphIndex)
+                    }
+                }
                 googleBooksReflowRevealSignatures.removeAll()
             } else if (livePlatform == .googleBooks || livePlatform == .kobo), !pendingGoogleBooksTurn, !pendingGoogleBooksManualTurn,
                       googleBooksReflowRevealSignatures.count < 3,
@@ -5626,14 +5822,25 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 // Only its verified native page sequence may locate the exact
                 // speaking source; do not clear the active queue to page zero.
                 googleBooksReflowRevealSignatures.insert(signature)
+                let context = googleBooksVisibleSourceSlices.compactMap { slice -> [String: String]? in
+                    guard slice.visibleParagraphIndex != oldSource.visibleParagraphIndex else { return nil }
+                    return ["text": slice.text,
+                        "side": slice.visibleParagraphIndex < oldSource.visibleParagraphIndex ? "before" : "after"]
+                }
                 call("gbRefresh", ["reflowSourceText": anchor.sourceParagraphText,
-                    "reflowBaseline": signature, "originFrameSessionID": frame])
+                    "reflowContext": context, "reflowBaseline": signature, "originFrameSessionID": frame])
                 ReaderRunLog.write("GBOOKS reflow requests verified native source reveal")
                 return
             }
         }
 
         let incomingParagraphTexts = parsed.sourceSlices.map(\.text)
+        if reason == .refresh, googleBooksExplainRevealFrame == incomingSessionID,
+           signature != googleBooksExplainRevealBaseline {
+            googleBooksExplainRevealFrame = nil
+            googleBooksExplainRevealTimeout?.cancel()
+            googleBooksExplainRevealTimeout = nil
+        }
         let preservesExplanation = reason == .refresh && didInit && !isReadMode
             && explainVM?.hasStartedPlayback == true
             && !googleBooksExplainSourceSlices.isEmpty
@@ -5646,9 +5853,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         if !isReadMode, reason != .refresh, !googleBooksExplainConsumedRanges.isEmpty {
             applyExplainedSourceRanges(to: &parsed)
         }
+        let restoresBlockedWebContent = readVM.webContentBlockMessage != nil
+            || explainVM?.webContentBlockMessage != nil
         let isEquivalentRefresh =
             (reason == .refresh || authorizedAutomatic)
                 && didInit
+                && !restoresBlockedWebContent
                 && (incomingParagraphTexts == lastGoogleBooksParagraphTexts || preservesExplanation)
         var pageForDOMMapping = parsed
         if isEquivalentRefresh, authorizedAutomatic {
@@ -5795,6 +6005,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 )
             }
             ReaderRunLog.write("GBOOKS equivalent refresh remapped without playback restart")
+            if googleBooksExplainContinuationDeferred,
+               googleBooksExplainRevealFrame == nil, !isReadMode {
+                googleBooksExplainContinuationDeferred = false
+                // The reveal may expose an unexplained suffix. Consume that
+                // committed source before deciding whether another turn is needed.
+                if explainVM?.status == .completed {
+                    requestGoogleBooksNextPage()
+                }
+            }
             return
         }
 
@@ -6070,6 +6289,16 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             onLiveWebSurfaceStable?()
         }
         livePlatform?.clearReaderError()
+        if restoresBlockedWebContent {
+            // Only an origin-checked, nonempty committed page can release the
+            // failure gate. A same-page refresh must also repopulate both VMs,
+            // because invalidation retired their old source and audio queue.
+            readVM.webContentBlockMessage = nil
+            explainVM?.webContentBlockMessage = nil
+            readVM.status = .pending
+            explainVM?.status = .idle
+            ReaderRunLog.write("GBOOKS content restored; awaiting user playback")
+        }
         updateHomeValidationReadiness(
             paragraphs: parsed.explainParagraphs
         )
@@ -6086,6 +6315,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             language: parsed.language
         )
 
+        onInitialLiveWebSurfaceReady?()
+
         // Google rebuilds/clones paragraph nodes while paging. Reinitialize the
         // page-local DOM mapping on every committed signature, not just page 1.
         installGoogleBooksDOMMapping()
@@ -6101,6 +6332,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 language: parsed.language
             )
             didInit = true
+            paintInitialLiveReadPosition()
             startAutoPlaybackIfNeeded()
             return
         }
@@ -6112,7 +6344,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             reason: reason,
             wasAutomaticTurn: wasAutomaticTurn,
             wasPlaying: wasPlaying
-        ) || shouldResumeRecovery) && (!isReadMode || !readVM.isPlaybackPausedByUser)
+        ) || shouldResumeRecovery) && !restoresBlockedWebContent
+            && (!isReadMode || !readVM.isPlaybackPausedByUser)
         googleBooksRecoveryOwner = nil
         googleBooksRecoveryShouldResume = false
         googleBooksResumeReadAfterTurn = false
@@ -6553,6 +6786,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 ReaderRunLog.write("GBOOKS ignored stale manual intent")
                 return
             }
+            cancelGoogleBooksExplanationReveal()
             googleBooksImageOnlySurface = false
             updateHomeValidationReadiness()
             let audioWasGated =
@@ -6749,6 +6983,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private func requestGoogleBooksNextPage() -> Bool {
         guard isGoogleBooks, didInit else { return false }
         if pendingGoogleBooksTurn { return true }
+        if !isReadMode, googleBooksExplainRevealFrame != nil {
+            googleBooksExplainContinuationDeferred = true
+            ReaderRunLog.write("GBOOKS explain continuation waits for source reveal")
+            return true
+        }
         if !isReadMode {
             // A small rolling source window is sufficient for adjacent-page
             // overlap and does not retain an entire book's text indefinitely.
@@ -6782,7 +7021,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
         expireGoogleBooksLateTurnIfNeeded()
         guard googleBooksFailedTurnSignature != lastGoogleBooksSignature else {
-            ReaderRunLog.write("GBOOKS suppressed duplicate action after confirmed turn failure")
+            if googleBooksFailedTurnWasBookEnd {
+                // A terminal page remains terminal after switching modes or
+                // replaying it, but each new audio queue owns a fresh hold.
+                // Finish that queue without requesting another physical turn.
+                finishConfirmedGoogleBooksBookEnd(owner: isReadMode ? .read : .explain)
+                ReaderRunLog.write("GBOOKS reused confirmed book end for current playback")
+            } else {
+                ReaderRunLog.write("GBOOKS suppressed duplicate action after confirmed turn failure")
+            }
             return false
         }
         googleBooksTurnPriorCursor = googleBooksConsumedCursor
@@ -6935,6 +7182,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
         if reason != "mode-switched", reason != "manual-override" {
             googleBooksFailedTurnSignature = lastGoogleBooksSignature
+            googleBooksFailedTurnWasBookEnd = reason == "native-book-end"
         }
         let shouldCompleteGatedRead =
             owner == .read
@@ -6989,12 +7237,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         googleBooksConsumedCursor = nil
         automaticAppReviewContinuation.cancel()
         if owner == .explain { explainVM?.finishLivePageContinuation() }
-        if reason == "native-book-end", owner == .read,
-           AudioPlayerService.shared.finishDrainedPageAtBookEnd() {
-            googleBooksPresentationDeadline?.cancel()
-            googleBooksPresentationRetry?.cancel()
-            googleBooksPresentationRetry = nil
-            ReaderRunLog.write("PAGINATION native_book_end_drained platform=\(livePlatform?.rawValue ?? "web")")
+        if reason == "native-book-end", let owner {
+            finishConfirmedGoogleBooksBookEnd(owner: owner)
         }
         if GoogleBooksPageVisualStateContract.shouldRestoreAfterFailedTurn(
             preserveLateResult: preserveLateResult
@@ -7002,6 +7246,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             restoreGoogleBooksPageVisualsIfPossible(
                 reason: "turn-\(reason)"
             )
+        }
+    }
+
+    private func finishConfirmedGoogleBooksBookEnd(owner: GoogleBooksTurnOwner) {
+        if owner == .explain {
+            explainVM?.finishLivePageContinuation()
+        } else if AudioPlayerService.shared.finishDrainedPageAtBookEnd() {
+            googleBooksPresentationDeadline?.cancel()
+            googleBooksPresentationRetry?.cancel()
+            googleBooksPresentationRetry = nil
+            ReaderRunLog.write("PAGINATION native_book_end_drained platform=\(livePlatform?.rawValue ?? "web")")
         }
     }
 
@@ -7098,6 +7353,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         reason: String,
         clearConsumedCursor: Bool
     ) {
+        cancelGoogleBooksExplanationReveal()
         googleBooksImageOnlySurface = false
         updateHomeValidationReadiness()
         rememberGoogleBooksRecoveryPlaybackIntent()
@@ -7417,6 +7673,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private func revealGoogleExplanationMark(_ mark: ResolvedMark, on page: GoogleBooksParsedPage,
                                             signature: String) -> Bool {
         guard (livePlatform == .googleBooks || livePlatform == .kobo), !isReadMode,
+              googleBooksExplainRevealFrame == nil,
               !pendingGoogleBooksTurn, !pendingGoogleBooksManualTurn,
               googleBooksExplainSourceSlices.indices.contains(mark.paragraphIndex),
               googleBooksReflowRevealSignatures.count < 3,
@@ -7452,9 +7709,31 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
         guard let direction else { return false }
         googleBooksReflowRevealSignatures.insert(signature)
+        googleBooksExplainRevealFrame = frame
+        googleBooksExplainRevealBaseline = signature
+        googleBooksExplainRevealTimeout?.cancel()
+        googleBooksExplainRevealTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: GoogleBooksPageTurnContract.turnConfirmationTimeoutNanoseconds)
+            guard let self, !Task.isCancelled,
+                  self.googleBooksExplainRevealFrame == frame else { return }
+            let wasDeferred = self.googleBooksExplainContinuationDeferred
+            self.cancelGoogleBooksExplanationReveal()
+            guard wasDeferred, !self.isReadMode else { return }
+            self.explainVM?.finishLivePageContinuation()
+            self.explainVM?.status = .error(AppLocalized("内容暂时无法打开，请重试"))
+            ReaderRunLog.write("GBOOKS explain source reveal confirmation timed out")
+        }
         call("gbRefresh", ["reflowDirection": direction, "reflowBaseline": signature, "originFrameSessionID": frame])
         ReaderRunLog.write("GBOOKS reflow reveals explanation source direction=\(direction)")
         return true
+    }
+
+    private func cancelGoogleBooksExplanationReveal() {
+        googleBooksExplainRevealTimeout?.cancel()
+        googleBooksExplainRevealTimeout = nil
+        googleBooksExplainRevealFrame = nil
+        googleBooksExplainRevealBaseline = ""
+        googleBooksExplainContinuationDeferred = false
     }
 
     private func applyExplainedSourceRanges(to page: inout GoogleBooksParsedPage) {
@@ -7521,11 +7800,24 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         call("clearMarks")
         if isReadMode, let highlight = readVM?.webHighlight {
             pushHighlight(highlight)
-        } else if !isReadMode, let explainVM {
+        } else if isReadMode {
+            paintInitialLiveReadPosition()
+        } else if let explainVM {
             shownMarkIds.removeAll()
             pushMarks(explainVM.activeMarks)
         }
         ReaderRunLog.write("GBOOKS page visuals restored reason=\(reason)")
+    }
+
+    /// A cold-open source bookmark exists before generated speech. Paint its
+    /// verified range without scrolling the provider's paginated viewport or
+    /// inventing a TTS word cursor. Playback owns subsequent highlights.
+    private func paintInitialLiveReadPosition() {
+        guard isGoogleBooks, didInit, isReadMode, !googleBooksPageVisualsAreSuspended,
+              let readVM, !readVM.isPlaying, readVM.webHighlight == nil,
+              let range = readVM.initialResumeViewportRange else { return }
+        pushHighlight(WebHighlightCmd(paragraphIndex: readVM.currentParagraphIndex,
+            charStart: range.location, charEnd: NSMaxRange(range)))
     }
 
     private func pushHighlight(_ cmd: WebHighlightCmd) {
@@ -7581,6 +7873,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// 切朗读/解读模式：启停 DOM 高亮层。
     func setActive(readMode: Bool) {
         let modeChanged = readMode != isReadMode
+        if modeChanged { cancelGoogleBooksExplanationReveal() }
         if isGoogleBooks, readMode != isReadMode, !readMode {
             // Remove the read-owned speculative suffix before Explain claims
             // AudioPlayer ownership; afterwards removal is intentionally
@@ -7660,6 +7953,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             installGoogleBooksDOMMapping()
         }
         call("setActive", ["active": readMode])
+        if modeChanged, readMode { paintInitialLiveReadPosition() }
         if isWeRead, readMode {
             maybeStartWeReadPreviewPrefetch()
         } else if isWeRead {
@@ -8159,6 +8453,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         lastActiveDOMCommand = nil
+        explainVM?.isSourcePanelPresented = false
         if isWeRead {
             weReadNetworkRetryTask?.cancel()
             weReadNetworkRetryTask = nil

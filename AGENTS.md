@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## Mac 1.2.47 首版已送审（2026-10-06）
+
+- Mac 桌面版工作树：`/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader`，分支 `codex/mac-parity`；基于 iOS 1.2.47 Build 72 的 `09456f1` 增量适配。
+- Mac App / Share / Widget 为 **1.2.47（73）**，国际产品配置，支持 macOS 14.6+、arm64 / x86_64。iOS 保持 Build 72。Mac 版本号由 `scripts/mac-release-version.json` 经 `scripts/sync-mac-project.rb` 维护。
+- 原生 Mac 与 CastReader for Safari（`com.castreader.CastReader`）是独立应用；原生 Mac 在现有 `com.same.castreader` App Store 记录上新增 MAC_OS 平台，复用内购，不覆盖 Safari 产品。
+- Build `898d3508-7a23-40b0-9718-78f1f6ae8d44` 为 VALID / APP_STORE_ELIGIBLE；审核单 `8288c105-fcc3-48c9-a573-33ae8ba760fc` 于 **2026-10-06 22:12:18 +08:00** 提交，版本与审核单均 WAITING_FOR_REVIEW，审核通过自动发布。此为提交时状态，不冒称已上线。
+- 用户要求收敛测试并优先完成首版提交。不得把历史未闭环的 YouTube 提供方限流、WeRead 付费登录态重测及真实 Mac 购买记为通过。精确范围、327 文件冻结摘要、签名、11 语商店文案、三张 Mac 截图与提交回读见 `reports/mac-app-store-20261006/README.md`。
+
+
 ## iOS 1.2.47 额度购买与 Kindle 修复已送审（2026-09-29）
 
 - 最新已验收并送审的应用基线为 main 合并 `fadb18a727c96c6ada3353e08882fe1ed34ccf74`（PR #2）；验收应用源码 `60ec382` 的 416 文件与该归档逐一一致，冻结摘要 `9f2ee75b8b30cddc7aef445517d6c49cdca3a535d175ab6c6dc3148514f76b5c`。工作树 `/Users/xuxuheng/.codex/worktrees/ios-release-1.2.47/CastReader`，不得从主目录旧分支覆盖真机。

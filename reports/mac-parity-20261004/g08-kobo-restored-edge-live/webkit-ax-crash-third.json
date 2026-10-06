@@ -1,0 +1,40 @@
+{
+  "file": "com.apple.WebKit.WebContent-2026-10-05-094954.ips",
+  "exception": {
+    "codes": "0x0000000000000001, 0x00000001a12e9d20",
+    "rawCodes": [
+      1,
+      6999153952
+    ],
+    "type": "EXC_BREAKPOINT",
+    "signal": "SIGTRAP"
+  },
+  "triggeredFrames": [
+    "_assertionFailure(_:_:file:line:flags:)",
+    "closure #1 in __SwiftNativeNSArrayWithContiguousStorage._objectAt(_:)",
+    "partial apply for closure #1 in __SwiftNativeNSArrayWithContiguousStorage._objectAt(_:)",
+    "partial apply for closure #1 in __SwiftNativeNSArrayWithContiguousStorage._objectAt(_:)",
+    "__EmptyArrayStorage._withVerbatimBridgedUnsafeBuffer<A>(_:)",
+    "__ContiguousArrayStorageBase.withUnsafeBufferOfObjects<A>(_:)",
+    "@objc __SwiftNativeNSArrayWithContiguousStorage.objectAtSubscript(_:)",
+    "-[AXPMacPlatformElement _synthesizeMouseClick:]",
+    "-[AXPMacPlatformElement accessibilityPerformPress]",
+    "___NSAccessibilityEntryPointPerformAction_block_invoke.808",
+    "NSAccessibilityPerformEntryPointBOOL",
+    "NSAccessibilityEntryPointPerformAction",
+    "PerformAction",
+    "_AXXMIGPerformAction",
+    "_XPerformAction",
+    "mshMIGPerform",
+    "__CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE1_PERFORM_FUNCTION__",
+    "__CFRunLoopDoSource1",
+    "__CFRunLoopRun",
+    "_CFRunLoopRunSpecificWithOptions",
+    "-[NSRunLoop(NSRunLoop) runMode:beforeDate:]",
+    "-[NSRunLoop(NSRunLoop) run]",
+    "_xpc_objc_main",
+    "_xpc_main",
+    "xpc_main"
+  ],
+  "context": "AX press on provider text during test; app reloaded, recovered current page and remained paused. Use pixel clicks for provider web controls."
+}

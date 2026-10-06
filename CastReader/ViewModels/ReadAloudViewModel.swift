@@ -697,6 +697,9 @@ final class ReadAloudViewModel: ObservableObject {
         guard document.sourceKind == .kobo, let location,
               location.isValid(for: document.sourceURL) else { return }
         let fingerprint = ReadingResumeDocumentIndex(paragraphs: paragraphs).fingerprint
+        if koboPageLocations.last?.fingerprint != fingerprint || koboPageLocations.last?.location != location {
+            ReaderRunLog.write("KOBO location registered percentage=\(location.percentage) source=\(fingerprint.prefix(12))")
+        }
         koboPageLocations.removeAll { $0.fingerprint == fingerprint && $0.location == location }
         koboPageLocations.append((fingerprint, location))
         if koboPageLocations.count > 2 { koboPageLocations.removeFirst() }
@@ -835,6 +838,14 @@ final class ReadAloudViewModel: ObservableObject {
               NSMaxRange(range) <= timing.sourceOrigin + timing.source.utf16.count else { return nil }
         return (timing.source as NSString).substring(with:
             NSRange(location: range.location - timing.sourceOrigin, length: range.length))
+    }
+    var liveWebCarryResumeSource: LiveWebPageSourceSlice? {
+        guard currentSegmentBelongsToLiveWebCarry, let timing = currentCarryTiming,
+              let sourceID = timing.boundary.sourceParagraphIndex else { return nil }
+        return LiveWebPageSourceSlice(visibleParagraphIndex: 0,
+            sourceLayoutFingerprint: timing.boundary.sourceLayoutFingerprint,
+            sourceParagraphIndex: sourceID, sourceUTF16Start: timing.sourceOrigin,
+            sourceUTF16End: timing.sourceOrigin + timing.source.utf16.count, text: timing.source)
     }
     @discardableResult
     func armLiveWebCarryBoundary(sourceUTF16End: Int, reached: @escaping (WeReadBoundaryAudioCue) -> Void) -> Bool {
@@ -1377,17 +1388,37 @@ final class ReadAloudViewModel: ObservableObject {
                 boundaryUTF16Offset: boundary.visibleUTF16Offset,
                 segments: segments
               ), segments.indices.contains(sequence) else { return nil }
-        let segment = segments[sequence]
+        // A narrower layout can move the visible edge into an earlier audio
+        // part than the saved word. That part is deliberately skipped during
+        // restore, so it cannot trigger the next-page presentation hold.
+        // Bind to the verified restore/current item before it starts playing.
+        let resumeSequence: Int?
+        if let pending = pendingLiveWebResume,
+           pending.paragraphIndex == boundary.paragraphIndex {
+            resumeSequence = segments.firstIndex {
+                WeReadPlaybackResumeContract.segmentMatches($0.text, anchor: pending.anchor)
+            }
+        } else if let cursor = pendingReadingAudioCursor,
+                  case let .seek(index, _) = ReadingResumeContract.resolveAudio(
+                    cursor, segments: segments, isComplete: false) {
+            resumeSequence = index
+        } else {
+            resumeSequence = segments.firstIndex { $0.id == audio.currentSegment?.id }
+        }
+        let targetSequence = max(sequence, resumeSequence ?? sequence)
+        guard segments.indices.contains(targetSequence) else { return nil }
+        let skippedBoundary = targetSequence > sequence
+        let segment = segments[targetSequence]
         let duration = audio.currentSegment?.id == segment.id && audio.duration > 0.01
             ? audio.duration
             : segment.duration
         guard duration > 0.01 else { return nil }
         return WeReadBoundaryAudioCue(
             segmentID: segment.id,
-            segmentSequence: sequence,
-            boundaryTime: time,
+            segmentSequence: targetSequence,
+            boundaryTime: skippedBoundary ? 0 : time,
             segmentDuration: duration,
-            continuationTime: WeReadCrossPageSpeechContract.continuationTime(
+            continuationTime: skippedBoundary ? 0 : WeReadCrossPageSpeechContract.continuationTime(
                 source: paras[boundary.paragraphIndex].resolvedSpeechText,
                 boundaryUTF16Offset: boundary.visibleUTF16Offset, segments: segments),
             consumedCursor: boundary.sourceParagraphIndex.flatMap { sourceParagraphIndex in
@@ -1891,15 +1922,41 @@ final class ReadAloudViewModel: ObservableObject {
 
     func makeWeReadPlaybackResumeAnchor() -> WeReadPlaybackResumeAnchor? {
         guard ownsAudioQueue,
-              document.sourceKind.isLiveWebLibrary,
-              let segment = audio.currentSegment,
-              currentParagraphIndex >= 0,
-              currentParagraphIndex < paras.count else { return nil }
+              document.sourceKind.isLiveWebLibrary else { return nil }
+        if let pending = pendingLiveWebResume,
+           pending.paragraphIndex == currentParagraphIndex {
+            // Rapid font/width changes can arrive before the replacement TTS
+            // item. Carry the original seek through every layout transaction;
+            // a missing decoder does not move the heard cursor back to zero.
+            return WeReadPlaybackResumeAnchor(segmentText: pending.anchor.segmentText,
+                sourceParagraphText: pending.anchor.sourceParagraphText,
+                segmentProgress: pending.anchor.segmentProgress,
+                wasPlaying: pending.anchor.wasPlaying && !isPlaybackPausedByUser)
+        }
+        let isCarried = currentSegmentBelongsToLiveWebCarry
+        let source: String
+        if isCarried, let timing = currentCarryTiming {
+            // The old paragraph id is deliberately retired after its page
+            // turns. Its immutable source/audio still owns the heard word.
+            source = timing.source
+        } else {
+            guard paras.indices.contains(currentParagraphIndex) else { return nil }
+            source = paras[currentParagraphIndex].text
+        }
+        guard let segment = audio.currentSegment,
+              isCarried || segment.paragraphIndex == currentParagraphIndex else {
+            // A page reflow can land between the completed carry and the
+            // first TTS item for the next paragraph. Preserve the paragraph
+            // being generated even though there is no audio clock yet.
+            guard status.isLoading || status.isStreaming || isBuffering else { return nil }
+            return WeReadPlaybackResumeAnchor(segmentText: source, sourceParagraphText: source,
+                segmentProgress: 0, wasPlaying: shouldResumeAfterManualLivePageTurn)
+        }
         let duration = audio.duration > 0.01 ? audio.duration : segment.duration
         let progress = duration > 0.01 ? min(0.98, max(0, audio.currentTime / duration)) : 0
         return WeReadPlaybackResumeAnchor(
             segmentText: segment.text,
-            sourceParagraphText: paras[currentParagraphIndex].text,
+            sourceParagraphText: source,
             segmentProgress: progress,
             wasPlaying: audio.isPlaying
         )
@@ -2659,6 +2716,7 @@ final class ReadAloudViewModel: ObservableObject {
                 : ReadingResumeContract.relocatedKindleCheckpoint(checkpoint, paragraphs: paras)
                     ?? ReadingResumeContract.relocatedKoboCheckpoint(checkpoint, paragraphs: paras)
                     ?? ReadingResumeContract.relocatedWeReadCheckpoint(checkpoint, paragraphs: paras)
+                    ?? ReadingResumeContract.relocatedGoogleBooksCheckpoint(checkpoint, paragraphs: paras)
 #if DEBUG
             if let restored, restored.paragraphFingerprint != checkpoint.paragraphFingerprint {
                 ReaderRunLog.write("READ resume reflow source=\(document.sourceKind.rawValue) oldPara=\(checkpoint.paragraphIndex) newPara=\(restored.paragraphIndex) word=\(restored.audio?.semanticWordFingerprint?.prefix(12) ?? "-") fraction=\(restored.audio?.wordFraction ?? -1)")
@@ -2802,7 +2860,7 @@ final class ReadAloudViewModel: ObservableObject {
                 output: segments.map(\.text).joined(), offset: cursor.outputUTF16Offset,
                 length: cursor.outputUTF16Length,
                 source: paras[currentParagraphIndex].text)
-            if document.sourceKind == .kindle || document.sourceKind == .kobo || document.sourceKind == .weread {
+            if [.kindle, .kobo, .weread, .googleBooks].contains(document.sourceKind) {
                 checkpoint.reflow = ReadingResumeContract.captureReflow(
                     source: paras[currentParagraphIndex].text, visual: checkpoint.visual, audio: cursor,
                     precedingSource: paras.prefix(currentParagraphIndex).filter { $0.type.isReadable }.map(\.text).joined(),
@@ -2984,8 +3042,9 @@ final class ReadAloudViewModel: ObservableObject {
     private func start(allowAccessRefresh: Bool) {
         guard requireWebContentReady() else { return }
         guard resumeNotice == nil, readablePageTask == nil else { return }
+        let restartingFinishedContent = isFinished
         isPlaybackPausedByUser = false
-        if let input = kindleContinuousInput, input.waiting {
+        if !restartingFinishedContent, let input = kindleContinuousInput, input.waiting {
             if readableIndices.contains(where: { $0 > currentParagraphIndex }) || input.ended {
                 input.waiting = false
                 advance()
@@ -2995,11 +3054,11 @@ final class ReadAloudViewModel: ObservableObject {
             }
             return
         }
-        if ownsAudioQueue, currentSegmentBelongsToLiveWebCarry {
+        if !restartingFinishedContent, ownsAudioQueue, currentSegmentBelongsToLiveWebCarry {
             ensurePlaying()
             return
         }
-        if currentParagraphIndex >= 0, ownsAudioQueue,
+        if !restartingFinishedContent, currentParagraphIndex >= 0, ownsAudioQueue,
            audio.currentSegment != nil || status.isLoading || status.isStreaming {
             ensurePlaying()
             return
@@ -3037,8 +3096,16 @@ final class ReadAloudViewModel: ObservableObject {
         preferredLiveWebStartIndex = nil
         let resume = pendingResumeParagraphIndex.flatMap { readableIndices.contains($0) ? $0 : nil }
         pendingResumeParagraphIndex = nil
+        if restartingFinishedContent {
+            // AVPlayer retains its ended item. Explicit replay needs a new
+            // paragraph queue, not a resume at the terminal checkpoint.
+            pendingReadingAudioCursor = nil
+            resumeSourceRange = nil
+            resumeSourceParagraphIndex = -1
+        }
         generate(
-            preferred ?? resume ?? (readableIndices.contains(currentParagraphIndex) ? currentParagraphIndex : readableIndices[0]),
+            restartingFinishedContent ? readableIndices[0]
+                : preferred ?? resume ?? (readableIndices.contains(currentParagraphIndex) ? currentParagraphIndex : readableIndices[0]),
             allowAccessRefresh: allowAccessRefresh
         )
     }
@@ -3132,6 +3199,7 @@ final class ReadAloudViewModel: ObservableObject {
         guard requireWebContentReady() else { return }
         if isPreparingReadablePage { pausePlayback(); return }
         audio.sleepTimer.resumeByUser()
+        if isFinished { start(); return }
         if resumeNotice != nil {
             // Play is an explicit choice to hear the verified visible source.
             // A failed historical cursor must not turn this button into a no-op.
@@ -4057,11 +4125,9 @@ final class ReadAloudViewModel: ObservableObject {
         let effectiveContinuation: TTSContinuation? = continuation ?? {
             guard suffixPlan != nil || kindleContinuousInput != nil || document.sourceKind.isLiveWebLibrary else { return nil }
             let text = SpeechTextSanitizer.sanitizedForTTS(requestedText)
-            // Kindle has already planned complete, bounded speech units. A
-            // second "fast opening" split makes 3x playback outrun its suffix
-            // and can cut the same cross-page sentence we just assembled.
-            let units = (kindleContinuousInput != nil || weReadSpeechBoundary?.paragraphIndex == index) ? [text]
-                : ClonedTTSStartup.requestUnits(text, language: docLanguage, voice: voice)
+            // Source/page assembly and audio request partitioning are separate.
+            // The shared TTS planner handles both foreground and read-ahead.
+            let units = [text]
             return TTSContinuation(requestUnits: units,
                 nextSegmentIndex: suffixPlan?.nextSegmentIndex ?? 0,
                             requiresSourceTiming: document.sourceKind.isLiveWebLibrary)
@@ -4166,10 +4232,12 @@ final class ReadAloudViewModel: ObservableObject {
                         ) else { return }
                     }
                     demand.finished = true
+                    // Finishing a retained cross-page producer transfers the
+                    // page and clears its old paragraph cache. Count before
+                    // that transfer, otherwise a valid carry looks empty.
+                    let generatedCount = self.segmentsByParagraph[index]?.count ?? 0
                     guard self.finishGeneratedAudio(paragraph: index, epoch: epoch, session: session) else { return }
                     self.completeCloneRequestID(matching: cloneRequestID)
-                    let generatedCount =
-                        self.segmentsByParagraph[index]?.count ?? 0
                     ReaderRunLog.write(
                         "READ generate done para=\(index) epoch=\(epoch) " +
                         "segs=\(generatedCount)"
@@ -4252,7 +4320,7 @@ final class ReadAloudViewModel: ObservableObject {
               audioSessionToken == session, audio.isPlaybackSessionActive(session),
               !audio.hasTerminalPlaybackFailure else { return false }
         finishPendingLiveWebResumeIfNeeded(paragraph: paragraph, session: session)
-        guard generationEpoch == epoch, !audio.hasTerminalPlaybackFailure,
+        guard resumeNotice == nil, generationEpoch == epoch, !audio.hasTerminalPlaybackFailure,
               audio.finishStreamingProducer(session: session) else { return false }
         paragraphContinuation = nil
         status = .ready
@@ -4322,7 +4390,10 @@ final class ReadAloudViewModel: ObservableObject {
         processedDisplayText = segs.map { $0.text }.joined()
         if document.sourceKind.isWebRendered { webAudioSegments.append(segment) }
         signalPageBoundaryIfNeeded(audio.currentTime)
-        let shouldAutoPlay = autoPlay && !liveWebTurnIntentSuspended
+        // A paused reflow may still be producing audio after an explicit Play.
+        // Follow that newer transport intent for late parts as well as the
+        // first restored item; a later Pause remains authoritative below.
+        let shouldAutoPlay = (autoPlay || audio.hasPlaybackRequest) && !liveWebTurnIntentSuspended
             && !audio.isExplicitlyPaused
         if let cursor = pendingReadingAudioCursor {
             if loadResumedReadingAudio(segs, cursor: cursor, isComplete: false,
@@ -4342,6 +4413,7 @@ final class ReadAloudViewModel: ObservableObject {
                 return
             }
             pendingLiveWebResume = nil
+            let resumeAutoPlay = shouldAutoPlay && (pending.anchor.wasPlaying || audio.hasPlaybackRequest)
             let loaded = audio.loadSegment(
                 segment,
                 autoPlay: false,
@@ -4350,7 +4422,7 @@ final class ReadAloudViewModel: ObservableObject {
             let started = loaded && audio.startQueuedSegment(
                 id: segment.id,
                 progress: pending.anchor.segmentProgress,
-                autoPlay: shouldAutoPlay && pending.anchor.wasPlaying,
+                autoPlay: resumeAutoPlay,
                 session: session
             )
             guard loaded, started else {
@@ -4364,12 +4436,12 @@ final class ReadAloudViewModel: ObservableObject {
                 return
             }
             ReaderRunLog.write(
-                "WEREAD playback restored para=\(paragraph) seg=\(segment.segmentIndex) progress=\(String(format: "%.3f", pending.anchor.segmentProgress)) playing=\(shouldAutoPlay && pending.anchor.wasPlaying ? "Y" : "N")"
+                "WEREAD playback restored para=\(paragraph) seg=\(segment.segmentIndex) progress=\(String(format: "%.3f", pending.anchor.segmentProgress)) playing=\(resumeAutoPlay ? "Y" : "N")"
             )
             // AVPlayer may not publish a periodic tick while paused. Paint
             // directly from the accepted seek target instead of waiting for
             // an event that only reliably arrives during active playback.
-            if !pending.anchor.wasPlaying {
+            if !resumeAutoPlay {
                 updateHighlight(segment.duration * pending.anchor.segmentProgress)
             }
         } else {
@@ -4409,18 +4481,15 @@ final class ReadAloudViewModel: ObservableObject {
         guard let pending = pendingLiveWebResume,
               pending.paragraphIndex == paragraph else { return }
         pendingLiveWebResume = nil
-        let segments = segmentsByParagraph[paragraph] ?? []
-        guard !segments.isEmpty else { return }
-        for segment in segments {
-            audio.loadSegment(
-                segment,
-                autoPlay: pending.anchor.wasPlaying && !liveWebTurnIntentSuspended,
-                session: session
-            )
-        }
-        ReaderRunLog.write(
-            "WEREAD playback anchor fallback para=\(paragraph) segs=\(segments.count)"
-        )
+        // A surviving paragraph prefix is not proof that its heard sentence
+        // survived reflow. Unmatched generated audio cannot restart at zero.
+        _ = audio.pause(session: session)
+        _ = audio.setMoreSegmentsExpected(false, session: session)
+        isPlaying = false
+        isBuffering = false
+        resumeNotice = AppLocalized("语音内容已变化，无法准确恢复。请选择从哪里继续朗读。")
+        status = .error(resumeNotice!)
+        ReaderRunLog.write("WEREAD playback anchor unavailable para=\(paragraph)")
     }
 
     private func finishVoiceSwitch(_ id: UUID?) {
@@ -4542,10 +4611,6 @@ final class ReadAloudViewModel: ObservableObject {
               !isPlaybackPausedByUser, !audio.isExplicitlyPaused,
               let position = readableIndices.firstIndex(of: paragraph), position + 1 < readableIndices.count else { return }
         let rate = max(0.25, Double(audio.playbackRate))
-        let isShortOpening = [.googleBooks, .kobo].contains(document.sourceKind)
-            && pendingReadingAudioCursor == nil && segmentsByParagraph[paragraph]?.isEmpty != false
-            && segment.segmentIndex == 0 && segment.duration / rate < 3
-            && weReadSpeechBoundary?.paragraphIndex != paragraph
         let isShortResume: Bool
         if kindleContinuousInput != nil, let cursor = pendingReadingAudioCursor {
             let available = (segmentsByParagraph[paragraph] ?? []) + [segment]
@@ -4558,7 +4623,7 @@ final class ReadAloudViewModel: ObservableObject {
         } else {
             isShortResume = false
         }
-        guard isShortOpening || isShortResume else { return }
+        guard isShortResume else { return }
         // Live page paragraphs start inside the committed viewport. Do not
         // issue a request for a speculative next page just to pad a title.
         let id = UUID()
@@ -4592,7 +4657,7 @@ final class ReadAloudViewModel: ObservableObject {
                   let body = stream.segments.first, audio.isPreparedForPlayback(body) else { break }
             bufferedSeconds += stream.segments.reduce(0) { $0 + max(0, $1.duration) } / rate
             ReaderRunLog.write("PAGINATION short_opening_ready paragraph=\(paragraph) next=\(next) seconds=\(String(format: "%.2f", bufferedSeconds)) mono=\(ProcessInfo.processInfo.systemUptime)")
-            guard isShortOpening, stream.finished else { break }
+            break // Only the confirmed successor protects a short resumed cursor.
         }
     }
 

@@ -6,6 +6,44 @@ import WebKit
 
 @MainActor
 final class KindleWebViewContainerTests: XCTestCase {
+    func testPlaybackChromeTransientSizeDoesNotReflowReaderButRealResizeDoes() async throws {
+        let viewport = KindleReaderViewportStabilizer()
+        let original = CGSize(width: 1024, height: 610)
+        viewport.update(original)
+        XCTAssertEqual(viewport.size, original)
+        for _ in 0..<3 {
+            viewport.update(CGSize(width: 1024, height: 590))
+            try await Task.sleep(nanoseconds: 30_000_000)
+            viewport.update(original)
+        }
+        try await Task.sleep(nanoseconds: 220_000_000)
+        XCTAssertEqual(viewport.size, original, "Loading/play transitions must not invalidate page ownership")
+        let resized = CGSize(width: 900, height: 550)
+        viewport.update(resized)
+        XCTAssertEqual(viewport.size, original)
+        try await Task.sleep(nanoseconds: 220_000_000)
+        XCTAssertEqual(viewport.size, resized, "A settled user resize must still reflow the page")
+        viewport.update(.zero)
+        XCTAssertEqual(viewport.size, resized)
+    }
+
+    func testRecoveryCoverHidesNativeWebAccessibilityAndRestoresInteraction() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        let container = fixture.container
+        let before = fixture.webView.bounds
+        container.contentAccessibilityHidden = true
+        XCTAssertTrue(container.accessibilityElementsHidden)
+        XCTAssertTrue(fixture.webView.accessibilityElementsHidden)
+        XCTAssertFalse(fixture.webView.isUserInteractionEnabled)
+        XCTAssertEqual(fixture.webView.bounds, before, "Covering accessibility must not reflow the source page")
+        XCTAssertNotNil(fixture.webView.superview, "Session warm-up still needs its mounted WebView")
+        container.contentAccessibilityHidden = false
+        XCTAssertFalse(container.accessibilityElementsHidden)
+        XCTAssertFalse(fixture.webView.accessibilityElementsHidden)
+        XCTAssertTrue(fixture.webView.isUserInteractionEnabled)
+    }
+
     func testCircleKeepsSeparateSubpathsAcrossColumns() throws {
         let rects = [CGRect(x: 40, y: 340, width: 270, height: 24),
                      CGRect(x: 650, y: 100, width: 230, height: 24)]
@@ -401,6 +439,32 @@ final class KindleWebViewContainerTests: XCTestCase {
         XCTAssertTrue(fixture.webView.superview === replacement)
         XCTAssertNotNil(fixture.webView.window)
     }
+
+    #if targetEnvironment(macCatalyst)
+    func testOfflineDownloadRetainsCSSViewportDuringWindowResizeAndRestoresAfterRelease() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        let original = try await fixture.metrics()
+        let savedSize = fixture.webView.bounds.size
+        fixture.container.offlineCaptureViewport = savedSize
+        fixture.container.frame.size = CGSize(width: 900, height: 500)
+        fixture.container.layoutIfNeeded()
+        try await Task.sleep(for: .milliseconds(150))
+        assertSameViewport(original, try await fixture.metrics())
+        XCTAssertEqual(fixture.webView.bounds.size, savedSize)
+        fixture.container.offlineCaptureViewport = nil
+        fixture.container.layoutIfNeeded()
+        try await Task.sleep(for: .milliseconds(150))
+        let released = try await fixture.metrics()
+        XCTAssertNotEqual(try number(released, "width"), try number(original, "width"))
+        XCTAssertEqual(fixture.webView.bounds.width, 900 * ContainerFixture.crop.scale, accuracy: 0.01)
+        // A later download can restore that persisted viewport in a new size.
+        fixture.container.offlineCaptureViewport = savedSize
+        fixture.container.layoutIfNeeded()
+        try await Task.sleep(for: .milliseconds(150))
+        assertSameViewport(original, try await fixture.metrics())
+    }
+    #endif
 
     func testRealSurfaceResizeStillUpdatesNativeFrameAndCSSViewport() async throws {
         let fixture = try await ContainerFixture.make()

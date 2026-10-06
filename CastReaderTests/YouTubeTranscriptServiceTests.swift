@@ -28,8 +28,53 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
         ] ?? "https://m.youtube.com/watch?v=wpb-DrbhEiY&pp=iggCQAE%3D&ra=m"
         let reference = try XCTUnwrap(YouTubeURLParser.parse(rawURL))
         let document: YouTubeTranscriptDocument
+        // The app host may finish restoring a scene during the first live
+        // request. Its global cancellation must not cancel this test's probe.
+        var diagnosticTask: Task<Void, Never>?
+        defer { diagnosticTask?.cancel() }
+        let service: YouTubeTranscriptService
+        if ProcessInfo.processInfo.environment["CASTREADER_YOUTUBE_LIVE_DIAGNOSTICS"] == "1" {
+            service = YouTubeTranscriptService(
+                vendoredBridgeLoader: { YouTubeWebScripts.loadVendoredBridge() },
+                pageLoader: { webView, request in
+                    if ProcessInfo.processInfo.environment["CASTREADER_YOUTUBE_VISIBLE_HOST"] == "1" {
+                        webView.window?.alpha = 1
+                    }
+                    diagnosticTask = Task { @MainActor [weak webView] in
+                        for sample in 1...42 {
+                            try? await Task.sleep(nanoseconds: 1_000_000_000)
+                            guard !Task.isCancelled, let webView else { return }
+                            let script = #"""
+                            (() => {
+                              const p = document.querySelector('#movie_player');
+                              const v = document.querySelector('video');
+                              function probe(name) { try { return p && typeof p[name] === 'function' ? p[name]() : null; } catch (_) { return null; } }
+                              const response = probe('getPlayerResponse');
+                              return JSON.stringify({
+                                ready: document.readyState, visibility: document.visibilityState,
+                                path: location.pathname, title: document.title, ids: Array.from(document.querySelectorAll('[id]')).slice(0,20).map(n => n.id),
+                                ua: navigator.userAgent, width: innerWidth, height: innerHeight,
+                                player: !!p, state: probe('getPlayerState'), muted: probe('isMuted'),
+                                responseStatus: response && response.playabilityStatus && response.playabilityStatus.status,
+                                video: v ? { paused: v.paused, ready: v.readyState, network: v.networkState, hasSource: !!v.currentSrc, error: v.error && v.error.code } : null,
+                                playButtons: Array.from(document.querySelectorAll('.ytp-large-play-button,.ytmCuedOverlayPlayButton')).map(n => ({tag:n.tagName, cls:n.className, role:n.getAttribute('role'), disabled:!!n.disabled})),
+                                iframes: document.querySelectorAll('iframe').length
+                              });
+                            })()
+                            """#
+                            if let result = try? await webView.evaluateJavaScript(script) as? String {
+                                print("CRYT live probe sample=\(sample) windowAlpha=\(webView.window?.alpha ?? -1) scene=\(String(describing: webView.window?.windowScene?.activationState)) \(result)")
+                            }
+                        }
+                    }
+                    webView.load(request)
+                }
+            )
+        } else {
+            service = YouTubeTranscriptService()
+        }
         do {
-            document = try await YouTubeTranscriptService.shared.extract(
+            document = try await service.extract(
                 reference,
                 preferredLanguage: "zh-CN"
             )

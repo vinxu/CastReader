@@ -1,0 +1,46 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00006000-001A08DE11C3801E",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "25C56",
+        "osVersion" : "26.2",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 127,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReaderMac · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1791172864.284,
+  "passedTests" : 127,
+  "result" : "Passed",
+  "skippedTests" : 0,
+  "startTime" : 1791172734.984,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - CastReaderMac",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "23% of duration",
+      "text" : "2 longest test runs with outlier durations exceeding 8.16s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 127
+}

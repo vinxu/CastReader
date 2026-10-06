@@ -1,0 +1,64 @@
+{
+  "scope": "Mac Kindle cloned-voice startup latency investigation; no app or backend implementation changes",
+  "date": "2026-10-06",
+  "installedMac": "1.2.47 (72), Release Catalyst",
+  "productionDeployment": "dpl_FtyS5eadGNfDDgVsMwXCKRMZsgH9",
+  "productionCommit": "a77bbd61b57f38369d7a440d91bde35b6a469c54",
+  "evidenceLimit": "Precise phase timings below are from today's retained Debug logs, not a trace of the user's latest Release click. Release omits those log writers. Do not treat the minimized preparation sample as a normal foreground benchmark.",
+  "sample1537": {
+    "language": "en",
+    "inputCharacters": 397,
+    "ocrMs": 983,
+    "generateStartToDispatchMs": 472,
+    "clientSchedulerQueueMs": 0,
+    "dispatchToCloneResponseLogMs": 9927,
+    "responseLogToSegmentReadyMs": 368,
+    "segmentReadyToActualPlaybackMs": 187,
+    "dispatchToActualPlaybackMs": 10482,
+    "generatedAudioSeconds": 21.41,
+    "attempt": 1,
+    "httpStatus": 200,
+    "quotaMode": "credits-v1",
+    "subsequentRequestMs": [5291, 7022, 6146]
+  },
+  "sample1540": {
+    "condition": "Restart with stale VM, minimized while preparing, then explicitly paused before response",
+    "restartToTTSDispatchMs": 14334,
+    "ocrMs": 1761,
+    "blobTransitionToFirstReadVMInstalledMs": 5565,
+    "sentenceUnitsAcceptedToSecondReadVMInstalledMs": 5480,
+    "inputCharacters": 419,
+    "dispatchToCloneResponseLogMs": 5802,
+    "responseLogToSegmentReadyMs": 351,
+    "generatedAudioSeconds": 24.53,
+    "actualPlaybackExpected": false,
+    "interpretation": "Two VM constructions are confirmed by source and logs. Exact attribution of the roughly 5.5-second intervals to resume matching, other initialization, or scheduling still needs scoped timing."
+  },
+  "sourceFindings": [
+    "Kindle continuous input bypasses ClonedTTSStartup short-opening splitting and passes a complete bounded unit; English short-opening target elsewhere is 120 UTF-16 units.",
+    "Clone API waits for a complete JSON response containing base64 audio; the first segment cannot play while that same response is still being synthesized.",
+    "ensureLiveDocument(force:true) rebuilds Read/Explain VMs, then buildKindleSentenceStream rebuilds them again for speech units.",
+    "Read VM initialization and metadata configuration can both restore position; Kindle relocation includes bounded OCR context correction. This is a candidate hotspot, not yet a measured cause of the 5.5-second intervals.",
+    "Safari source commit 40aada8 uses /api/captioned_speech_partly; Mac uses /api/voice-clone/captioned-speech. Verified production routes both clone requests into handleCaptionedCloneRequest and the same captioned worker.",
+    "The unified partly endpoint additionally partitions input (English at most 74 words / 900 upstream characters; other languages first natural sentence). Endpoint spelling alone does not establish a different or faster engine.",
+    "Production credits-v1 clone flow includes auth, voice lookup, credit reservation, optional voice preparation, worker synthesis/timestamps, validation, and awaited credit settlement before JSON response.",
+    "Worker queue/run response headers are forwarded by the backend but omitted from current Mac timing logs. Successful Vercel requests have no detailed stage timings in the queried logs."
+  ],
+  "releaseSpotCheck": {
+    "cachedResume": "Play click at 16:12:07 local time returned a Playing AX state in the same approximately 1.3-second tool call; this is UI observation, not an audio first-byte benchmark.",
+    "freshPage": "Preparing state observed after Play at 16:15:08; later Playing observed; sparse observations cannot produce an exact startup duration.",
+    "finalState": "Paused",
+    "profilingLimit": "Release sample began about 14.7 seconds after the fresh-page Play; it does not cover the full preparation interval."
+  },
+  "nextPriorities": [
+    "Instrument and remove redundant pre-TTS document/VM preparation while preserving verified reading-position recovery.",
+    "Use a shorter first complete speech unit with source mapping preserved, then retain enough read-ahead for fast playback and page transitions.",
+    "Record worker queue/run and backend phase timings with request correlation and no source text or credentials; compare same text, voice, cache state and route against extension."
+  ],
+  "rawEvidence": [
+    "/Users/xuxuheng/Library/Containers/com.same.castreader/Data/Documents/reader-refocus.log",
+    "/Users/xuxuheng/Library/Containers/com.same.castreader/Data/Documents/kindle-background-probe.log",
+    "/tmp/mac-clone-latency-vercel.jsonl",
+    "/tmp/mac-clone-playing-startup-release.sample.txt"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-10-05T05:22:19.481373",
+  "status": "PASS_SAME_PAGE_DETERMINISTIC_PREFETCH_SUPPRESSION",
+  "prefetchStarts": [
+    "05:20:34.930 WEREAD explain preload start source=7bea48c2 next=5703b1cb paras=2"
+  ],
+  "prefetchRejections": [
+    "05:20:35.635 WEREAD explain preload miss error=Content too short to explain. Try Read Aloud."
+  ],
+  "limits": "Only retry fix replay; authenticated long explanation still blocked"
+}

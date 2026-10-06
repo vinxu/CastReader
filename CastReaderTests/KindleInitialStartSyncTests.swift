@@ -52,6 +52,10 @@ final class KindleInitialStartSyncTests: XCTestCase {
         try await runScenario(cancellation: nil)
     }
 
+    func testPauseDuringInitialPreparationClearsLoadingAndRejectsLateResult() async throws {
+        try await runScenario(cancellation: "pause")
+    }
+
     func testSettingsRevokesDeferredInitialPlay() async throws {
         try await runScenario(cancellation: "settings")
     }
@@ -482,6 +486,20 @@ final class KindleInitialStartSyncTests: XCTestCase {
         NSLog("CRDBG SYNC_FIXTURE first preparation held scenario=%@", cancellation ?? "resume")
         XCTAssertNil(model.readVM, "The pending intent exists before OCR has created a Read VM")
         XCTAssertFalse(model.isPreparing, "Generic isPreparing is not used as evidence of a Play request")
+        XCTAssertTrue(model.isStartingPlayback, "Play must show loading before a Read VM exists")
+        XCTAssertTrue(model.isPlaybackPreparing)
+        if cancellation == "pause" {
+            model.pauseReadPlayback()
+            XCTAssertFalse(model.isStartingPlayback)
+            XCTAssertFalse(model.isPlaybackPreparing, "Pause must immediately clear the pending indicator")
+            preparation.finish()
+            let outcome = try await initialStart.value
+            XCTAssertEqual(outcome, .deferred, "A late document cannot restart a cancelled Play request")
+            XCTAssertNil(model.readVM)
+            XCTAssertFalse(AudioPlayerService.shared.isPlaying)
+            XCTAssertEqual(preparation.calls, 1)
+            return
+        }
         // A repeated Play coalesces without creating a second producer or Pause.
         let repeated = try await model.startCurrentMode()
         guard case .deferred = repeated else { return XCTFail("Repeated pending Play must coalesce") }

@@ -1,0 +1,9 @@
+{
+  "WebReader/src/kobo.ts": "dd6ec9cade378b715e9d66de54e27c09fded5e8c4dfa5308d4cb080f9dc542a8",
+  "CastReader/WebAssets/bundle.js": "9abada4aac6be6184c793e5f94c35f2cdba80e79e9762f0a3a7d793341a6fefe",
+  "CastReaderTests/Fixtures/google-books-webreader-xctest.js": "5761521d7b011eea40ebc928ae4b48f40fcc04a05215a2d19b1c312e63840f76",
+  "CastReader/Services/WebReaderBridge.swift": "bc7f48bb644a0cd4452c9558142ba33b3ac9205937009a8545ed34cfc312f7ca",
+  "CastReader/Views/Reader/ReaderHostView.swift": "2f6a8e202c67cc69f8728122ac16342189f7ab40a3cfc2b14514e535235ff9a3",
+  "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/Resources/WebAssets/bundle.js": "9abada4aac6be6184c793e5f94c35f2cdba80e79e9762f0a3a7d793341a6fefe",
+  "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac.debug.dylib": "584078b91cb0e3684cd9603b2f79f306fa4bbb3662f7a92d992d0c2069380d57"
+}

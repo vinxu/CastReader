@@ -1,0 +1,12 @@
+[
+  {
+    "file": "CastReader/WebAssets/bundle.js",
+    "sha256": "92deba5e2cdb7d1d73eae9d0b246e8c34659935e6a7f4790d307839d92487e0d",
+    "nonKoboBytesPreserved": true
+  },
+  {
+    "file": "CastReaderTests/Fixtures/google-books-webreader-xctest.js",
+    "sha256": "5399d7f2bff47a304306218096a32b104bdb6db87d3ab4e0cc2066828396f99f",
+    "nonKoboBytesPreserved": true
+  }
+]

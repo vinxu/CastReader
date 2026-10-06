@@ -1,0 +1,9 @@
+{
+  "result": "FAIL_DOUBLE_PAGE_CONFIRMATION_TIMEOUT",
+  "conservativeSpanSeconds": 669.707,
+  "automaticCommits": 16,
+  "uniqueAutoLocators": 16,
+  "subtitleCues": 128,
+  "failure": "Physical next page reached but rendered refresh did not confirm owned automatic turn; native timed out, UI incorrectly reported Explanation complete.",
+  "longExplainPassed": false
+}

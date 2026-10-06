@@ -1,0 +1,21 @@
+[
+  "GoogleBooksWebBridgeTests/testKoboReflowRetainsSpeechBoundaryCoordinatesWithTheOriginalAudioSource",
+  "WeReadPageAvailabilityTests",
+  "ReadingResumeTests/testKoboAndGoogleShortExplanationRemaindersContinueWithinBoundedBudget",
+  "ReadingResumeTests/testKoboReflowRestoresExactHashedContextWithoutOCRCorrection",
+  "ReadingResumeTests/testKoboNativeBookmarkStaysBoundToTheHeardPage",
+  "ReadingResumeTests/testWeReadNativeBookmarkKeepsHeardChapterAfterVisiblePageAdvances",
+  "ReadingResumeTests/testWeReadReflowRestoresExactHashedContextWithoutOCRCorrection",
+  "ReadingResumeTests/testWeReadCompactPageUsesVerifiedContextOnBothSides",
+  "ReadingResumeTests/testUntimedWeReadReflowVerifiesSentenceAndRetainsOnlyIdenticalChunkTime",
+  "ReadingResumeTests/testWeReadColdPageRestoresTheVerifiedSuffixAfterContinuousHandoff",
+  "ReadingResumeTests/testWeReadColdConsumedPrefixPreservesNextPageBoundaryCoordinates",
+  "ReadingResumeTests/testPauseWhileWaitingKeepsLateAudioPausedUntilExplicitResume",
+  "ReadingResumeTests/testKoboReflowWhileGeneratingKeepsPendingParagraphInsteadOfPageOpening",
+  "ReadingResumeTests/testKoboPausedPendingReflowCannotStartLateAudio",
+  "ReadingResumeTests/testPausedLiveReflowRestoresWordAndClockWithoutStartingAudio",
+  "ReadingResumeTests/testUnmatchedReflowCannotRestartUnrelatedPageOpening",
+  "ReadingResumeTests/testModeSwitchAndRepeatedContinueKeepSegmentAndTime",
+  "ReadingResumeTests/testWindowBrowseCloseAndLiveSessionMigrationKeepAudioIdentity",
+  "PaginationContinuityTests"
+]

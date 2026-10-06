@@ -1,0 +1,7 @@
+[
+  "ReadingResumeTests/testPausedLiveReflowRestoresWordAndClockWithoutStartingAudio",
+  "ReadingResumeTests/testKoboReflowWhileGeneratingKeepsPendingParagraphInsteadOfPageOpening",
+  "ReadingResumeTests/testKoboPausedPendingReflowCannotStartLateAudio",
+  "PaginationContinuityTests/testKoboReflowDuringCarriedAudioKeepsItsSourceAndPausedClock",
+  "GoogleBooksWebBridgeTests/testKoboReflowRetainsSpeechBoundaryCoordinatesWithTheOriginalAudioSource"
+]

@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-06",
+  "scope": "Kindle opening and read playback loading feedback; mini-player and pause/cancel",
+  "installedApp": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+  "version": "1.2.47 (72)",
+  "releaseSHA256": "f176672a55beb1f3cb79da2d8fb2f9d98f1d49305a74d7d35464bb592e154392",
+  "tests": {
+    "result": "PASS",
+    "passed": 15,
+    "failed": 0,
+    "skipped": 0,
+    "xcresult": "/tmp/mac-kindle-loading-tests-v7.xcresult",
+    "isolatedWorkspace": "/tmp/CastReaderMacTests.AF9nAZ"
+  },
+  "changes": [
+    "Bind actual preparation and TTS wait state to loading spinner instead of pause icon",
+    "Visible localized Preparing message without resizing the reader viewport",
+    "Publish pending pre-VM playback intent, cancel stale starts on explicit pause",
+    "Observe read VM and model in mini-player; show preparing and allow pause",
+    "Nonblocking opening banner spans WK navigation and reader surface setup"
+  ],
+  "limits": [
+    "Cloud time to first audio not optimized in this patch",
+    "No new full-platform acceptance run"
+  ],
+  "sourceSHA256": {
+    "CastReader/Views/Kindle/KindleBookView.swift": "e819cb6db1b5a6b01b9b64d02bac527475a81da81e9dc417d52784af83c44827",
+    "CastReaderTests/KindleInitialStartSyncTests.swift": "e1d010191d02f453cfb563603716d5221ce2714d5a0f2b268c190864a2d3e962"
+  },
+  "testHarnessNote": "Automatic test provisioning failed because the isolated team-prefixed app group was submitted as a portal group. Rebuilt the same isolated source with CODE_SIGNING_ALLOWED=NO; signed locally with Apple Development, embedded the existing matching test-host profile, and restored the explicit isolated private Keychain group in the unsigned-built Info.plist. Earlier launch/signing/configuration failures are not product test failures; the final run executed 15 tests successfully. Production entitlements and account data unchanged.",
+  "releaseUI": {
+    "opening": "Opening visible",
+    "readPlay": "Preparing message and loading control visible",
+    "minimizeDuringPreparation": "Mini Player Preparing and loading control visible",
+    "processPathVerified": true,
+    "pauseDuringPreparation": "PASS: Preparing -> Paused, Play button restored; left paused for user"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "startedAt": "2026-10-05T06:44:22.802305",
+  "logByteOffset": 2524630,
+  "candidate": "g08-kobo-contracts/pending-candidate-identity.json",
+  "scenario": "Cold reopen source matched at 93-94/348; explicit Play; Bella 1x; font and window reflow; long Read acceptance"
+}

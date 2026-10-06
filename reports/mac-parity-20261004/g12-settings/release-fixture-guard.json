@@ -1,0 +1,10 @@
+{
+  "app": "/private/tmp/CastReaderMacReleaseParity/Build/Products/Release-maccatalyst/CastReaderMac.app",
+  "version": "1.2.47",
+  "build": "72",
+  "filesScanned": 107,
+  "markersChecked": 54,
+  "debugPositiveControlsPassed": true,
+  "releaseMatches": [],
+  "passed": true
+}

@@ -1,0 +1,6 @@
+{
+  "logByteOffset": 3827952,
+  "status": "PREPARING",
+  "candidateIdentity": "../g08-kobo-contracts/restored-edge-candidate-identity.json",
+  "scenario": "Resume paused audio in wide window, then shrink while paused so the saved word moves past the old page end; explicit Play must paint new page and continue unheard tail"
+}

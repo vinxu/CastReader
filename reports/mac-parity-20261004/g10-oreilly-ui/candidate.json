@@ -1,0 +1,9 @@
+{
+  "time": "2026-10-05T17:04:08.430882+08:00",
+  "sha256": {
+    "CastReader/Views/OReilly/OReillyLibraryViews.swift": "df0588b767bee25f4e689cb52f251f3c1a15feb330c9b723f47edbbcf5578d3d",
+    "CastReader/Views/Library/BoundLibrarySourcesView.swift": "230c4d9d9ed4ce3ee78d066977b3db57c74779e1903e6fbdde5da9dac0f8f613",
+    "CastReader/Utils/AdaptiveLayout.swift": "22827aad76d73dd0bb76d0415469e154306f96ad210d8bd322697abf69a720f7",
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "dbb60ccc60f5a7a01b01050d3d90984feadfda54271fa717b5b78ff9460fb515"
+  }
+}

@@ -434,18 +434,41 @@ function exactPageTargetFromAPI(
   }
 }
 
-export function koboReadingLocationFromRange(
-  bookUUID: string, raw: unknown
-): { bookUUID: string; percentage: number } | null {
-    if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(bookUUID)) return null
+type CompleteKoboReadingRange = KoboReadingRange & {
+  pagesOfBook: number
+  begin: { pageIndexInBook: number }
+  end: { pageIndexInBook: number }
+}
+
+function hasCompleteKoboReadingRange(raw: unknown): raw is CompleteKoboReadingRange {
     const range = raw as KoboReadingRange | null
     const pages = range?.pagesOfBook
     const first = range?.begin?.pageIndexInBook
     const last = range?.end?.pageIndexInBook
-    if (typeof pages !== 'number' || !Number.isInteger(pages) || pages < 1 ||
-        typeof first !== 'number' || !Number.isInteger(first) || first < 0 || first >= pages ||
-        first !== last) return null
-    return { bookUUID: bookUUID.toLowerCase(), percentage: (first + 1) / pages }
+    return typeof pages === 'number' && Number.isInteger(pages) && pages >= 1 &&
+        typeof first === 'number' && Number.isInteger(first) && first >= 0 && first < pages &&
+        typeof last === 'number' && Number.isInteger(last) && last >= first && last < pages
+}
+
+function hasKoboNativeRestoreLocation(api: KoboURReaderAPI | null): boolean {
+  if (typeof api?.getCurrentReadingRange !== 'function' ||
+      typeof api.goToPageByBookPercentage !== 'function') return false
+  // UR exposes its navigation methods before whole-book pagination finishes.
+  // A live cold open can have valid-looking page indices but NaN total pages;
+  // percentage navigation at that point addresses the wrong content.
+  try { return hasCompleteKoboReadingRange(api.getCurrentReadingRange.call(api)) }
+  catch { return false }
+}
+
+export function koboReadingLocationFromRange(
+  bookUUID: string, raw: unknown
+): { bookUUID: string; percentage: number } | null {
+    if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(bookUUID) ||
+        !hasCompleteKoboReadingRange(raw)) return null
+    // Saving a spread is different from advancing it: its first native page
+    // is an exact bookmark. Restore still verifies the saved source before
+    // resuming, including when the window width changes the page layout.
+    return { bookUUID: bookUUID.toLowerCase(), percentage: (raw.begin.pageIndexInBook + 1) / raw.pagesOfBook }
 }
 
 export function koboReadingLocation(): { bookUUID: string; percentage: number } | null {
@@ -975,6 +998,21 @@ function rounded(value: number): number {
   return Math.round(Number.isFinite(value) ? value : 0)
 }
 
+// A provider font/margin change reflows the same chapter without resizing the
+// top-level window. Track typography by document identity, so entering a new
+// chapter with different publisher styling is not mistaken for a reflow.
+function koboChapterAppearanceKey(doc: Document): string {
+  const paragraph = paragraphNodes(doc)[0]
+  const nodes = [doc.documentElement, doc.body, paragraph?.parentElement, paragraph]
+  return nodes.map(node => {
+    const style = node ? ownerStyle(node) : null
+    return style ? [style.fontSize, style.fontFamily, style.lineHeight,
+      style.letterSpacing, style.wordSpacing, style.textAlign, style.textIndent,
+      style.columnWidth, style.columnGap, style.marginLeft, style.marginRight,
+      style.paddingLeft, style.paddingRight, style.writingMode].join(',') : ''
+  }).join('|')
+}
+
 /**
  * Settlement identity for a rendered Kobo page. Source ranges alone are not
  * enough during rotation: WebKit updates its viewport first and Kobo updates
@@ -1005,6 +1043,7 @@ function koboGeometryKey(): string {
       bodyStyle?.columnWidth || '-',
       bodyStyle?.columnGap || '-',
       rootStyle?.writingMode || '-',
+      koboChapterAppearanceKey(frame.doc),
     ].join(',')
   })
   return `${viewportSizeKey()}|${frameKeys.join(';')}`
@@ -1664,6 +1703,37 @@ function findKoboPageControl(
   } : null
 }
 
+/** Resolve genuine page gestures without treating shadow settings as page edges. */
+function koboHasVisibleDialog(): boolean {
+  return Array.from(document.querySelectorAll('[role="dialog"],[aria-modal="true"],dialog[open]')).some(panel => {
+    const box = panel.getBoundingClientRect(), style = getComputedStyle(panel)
+    return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 &&
+      box.top < innerHeight && box.left < innerWidth && style.display !== 'none' &&
+      style.visibility !== 'hidden' && style.opacity !== '0'
+  })
+}
+
+export function koboPageDirectionForClick(event: MouseEvent, doc: Document): 'next' | 'prev' | null {
+  // Some provider controls retarget their click to <html>; their button
+  // path is lost. A visible dialog owns the interaction.
+  if (koboHasVisibleDialog()) return null
+  const width = doc.defaultView?.innerWidth || window.innerWidth
+  const edge = Math.min(72, Math.max(42, width * 0.16))
+  const controls = 'a,button,input,textarea,select,[role="button"],[role="dialog"],[role="slider"],[role="tab"],[role="radio"],[role="switch"],[aria-modal="true"],[contenteditable="true"]'
+  // composedPath keeps the actual control inside an open shadow root;
+  // event.target alone is the host and loses its button/dialog semantics.
+  const interactive = event.composedPath().map(node =>
+    (node as Element).closest?.(controls)).find(Boolean) as HTMLElement | undefined
+  const label = interactive ? controlLabel(interactive) : ''
+  const nextControl = NEXT_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label)
+  const previousControl = PREVIOUS_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label)
+  if (!nextControl && !previousControl && event.clientX > edge && event.clientX < width - edge) return null
+  if (interactive && !nextControl && !previousControl) return null
+  const rtl = documentDirection(doc) === 'rtl'
+  const physicalLeft = event.clientX < edge
+  return previousControl ? 'prev' : nextControl ? 'next' : physicalLeft === rtl ? 'next' : 'prev'
+}
+
 /** Find a page control only; chapter controls are intentionally excluded. */
 export function clickableKoboPageButton(
   direction: 'next' | 'prev'
@@ -2044,12 +2114,31 @@ export function installKoboReader(
   let layoutRefreshQuietUntil = 0
   let lastViewportSizeKey = viewportSizeKey()
   let hasPublishedInitialPage = false
+  let lastPanelVisibility: boolean | undefined
   let bootCandidate = ''
   let bootGeometryCandidate = ''
   let bootCandidateSince = 0
   const installedListenerDocuments = new WeakSet<Document>()
+  const chapterAppearanceKeys = new WeakMap<Document, string>()
   let semanticTransportLoggedStatus = ''
   let reportedReaderFailureCode = ''
+  let requestedInitialPaginationLayout = false
+
+  const requestInitialPaginationLayoutIfNeeded = (): void => {
+    const transport = koboSemanticTransport
+    if (requestedInitialPaginationLayout || transport?.kind !== 'ur-engine' ||
+        pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return
+    const native = currentKoboURAPI(transport)
+    if (hasKoboNativeRestoreLocation(native) ||
+        typeof native?.getCurrentReadingRange !== 'function' ||
+        typeof native.goToPageByBookPercentage !== 'function') return
+    // The controller may arrive after WK's final initial viewport update.
+    // This also matters without a saved audio cursor: book-end detection and
+    // the provider's page count still require its completed pagination.
+    requestedInitialPaginationLayout = true
+    postForFrame('log', { message: 'native pagination incomplete; request initial layout' })
+    window.dispatchEvent(new Event('resize'))
+  }
 
   const reportReaderFailureIfPresent = (): boolean => {
     const code = koboReaderFailureCode()
@@ -2077,6 +2166,14 @@ export function installKoboReader(
       postForFrame('log', {
         message: `semantic page transport ${status}`,
       })
+      // Kobo may publish its first stable text before the native location
+      // service becomes ready. Attach the now-available bookmark to that same
+      // committed page; otherwise a quick pause/quit loses its native anchor.
+      if (koboSemanticTransport?.kind === 'ur-engine' && hasPublishedInitialPage &&
+          !pendingAuto && !pendingManualIntent && !changeReasonInFlight &&
+          !layoutRefreshActive && koboSignature() === committedSignature) {
+        requestExtract('refresh')
+      }
     })
   }
   warmSemanticTransport()
@@ -2531,10 +2628,14 @@ export function installKoboReader(
     automaticTiming = { turnID: metadata.turnID, started: startedAt }
     const remembered = preferredMethod ? [preferredMethod] : []
     const candidates: KoboTurnMethod[] = [
+      // The desktop chapter tail can report a single occupied leaf while
+      // still using spread pagination. A percentage targeting its blank
+      // neighbour stays on the same spread. Let the official page control
+      // handle that boundary whenever Kobo provides it (chrome may auto-hide).
+      'button',
       'semantic',
       'slider',
       ...remembered,
-      'button',
     ]
     const method = candidates.find(
       (candidate, index) =>
@@ -2709,10 +2810,10 @@ export function installKoboReader(
     if (pendingAuto || pendingManualIntent) return false
     const remembered = preferredMethod ? [preferredMethod] : []
     const candidates: KoboTurnMethod[] = [
+      'button',
       'semantic',
       'slider',
       ...remembered,
-      'button',
     ]
     const method = candidates.find(
       (candidate, index) =>
@@ -2834,11 +2935,24 @@ export function installKoboReader(
           transport?.kind !== 'ur-engine' || pendingAuto || pendingManualIntent ||
           changeReasonInFlight || layoutRefreshActive) return false
       const native = currentKoboURAPI(transport)
-      if (typeof native?.goToPageByBookPercentage !== 'function') return false
+      if (typeof native?.goToPageByBookPercentage !== 'function' ||
+          !hasKoboNativeRestoreLocation(native)) return false
+      const reportLocation = (phase: string): void => {
+        try {
+          const range = native.getCurrentReadingRange?.call(native) as KoboReadingRange | undefined
+          post('log', { message: 'saved-location ' + JSON.stringify({
+            phase, requested: percentage, percentage: range?.percentageOfBook,
+            pages: range?.pagesOfBook, first: range?.begin?.pageIndexInBook,
+            last: range?.end?.pageIndexInBook,
+          }) })
+        } catch { /* navigation diagnostics cannot interrupt recovery */ }
+      }
       try {
+        reportLocation('before')
         beginLayoutRefresh('saved-source-location')
         const completion = native.goToPageByBookPercentage.call(native, percentage)
-        void Promise.resolve(completion).catch(() => {})
+        void Promise.resolve(completion).then(
+          () => reportLocation('completed'), () => reportLocation('rejected'))
         beginSettlement('refresh', 0, true)
         return true
       } catch {
@@ -2848,9 +2962,12 @@ export function installKoboReader(
     },
     restoreReady(): boolean {
       const transport = koboSemanticTransport
-      return transport?.kind === 'ur-engine' &&
-        typeof currentKoboURAPI(transport)?.goToPageByBookPercentage === 'function' &&
-        !pendingAuto && !pendingManualIntent && !changeReasonInFlight && !layoutRefreshActive
+      if (transport?.kind !== 'ur-engine' || pendingAuto || pendingManualIntent ||
+          changeReasonInFlight || layoutRefreshActive) return false
+      const native = currentKoboURAPI(transport)
+      if (hasKoboNativeRestoreLocation(native)) return true
+      requestInitialPaginationLayoutIfNeeded()
+      return false
     },
     navigationReady(): boolean {
       // A page can render before UR/engine finishes initialization. Do not
@@ -3080,32 +3197,8 @@ export function installKoboReader(
     doc.addEventListener('click', (rawEvent: Event) => {
       const event = rawEvent as MouseEvent
       if (!event.isTrusted) return
-      const width = view.innerWidth || window.innerWidth
-      const edge = Math.min(72, Math.max(42, width * 0.16))
-      const target = event.target as Element | null
-      const interactive = target?.closest(
-        'a,button,input,textarea,select,[role="button"],[contenteditable="true"]'
-      ) as HTMLElement | null
-      const label = interactive ? controlLabel(interactive) : ''
-      const nextControl = NEXT_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label)
-      const previousControl =
-        PREVIOUS_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label)
-      if (
-        !nextControl &&
-        !previousControl &&
-        event.clientX > edge &&
-        event.clientX < width - edge
-      ) return
-      if (interactive && !nextControl && !previousControl) return
-      const rtl = documentDirection(doc) === 'rtl'
-      const physicalLeft = event.clientX < edge
-      const direction = previousControl
-        ? 'prev'
-        : nextControl
-          ? 'next'
-          : physicalLeft === rtl
-            ? 'next'
-            : 'prev'
+      const direction = koboPageDirectionForClick(event, doc)
+      if (!direction) return
       postManualIntent('edge-click', direction)
     }, true)
 
@@ -3161,10 +3254,26 @@ export function installKoboReader(
   )
 
   const observePageChange = (): void => {
+    if (hasPublishedInitialPage) {
+      requestInitialPaginationLayoutIfNeeded()
+      const visible = koboHasVisibleDialog()
+      if (visible !== lastPanelVisibility) {
+        lastPanelVisibility = visible
+        postForFrame('koboPanelVisibility', { visible })
+      }
+    }
     observeViewportChange('poll')
     if (reportReaderFailureIfPresent()) return
     if (ensureKoboChapterTypography()) return
     refreshFrameListeners()
+    for (const frame of currentKoboFrameClips()) {
+      const appearance = koboChapterAppearanceKey(frame.doc)
+      const previous = chapterAppearanceKeys.get(frame.doc)
+      chapterAppearanceKeys.set(frame.doc, appearance)
+      if (previous !== undefined && previous !== appearance) {
+        beginLayoutRefresh('chapter-appearance')
+      }
+    }
     const signature = koboSignature()
     if (!signature || signature === observedSignature) return
     if (pendingAuto && automaticTiming && automaticTiming.firstChange === undefined) {

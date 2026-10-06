@@ -1,0 +1,8 @@
+{
+  "app": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+  "sha256": "94b6cd44547586dea26b84151e6cc77705daa87cece6e1b88d17d9d714be0526",
+  "density": 0.8,
+  "scope": "Mac WeRead only",
+  "previousCandidate": "3c8a73ef11859ab752ac900763f1596d21806af12f28f4413a1a9527a61fbd75",
+  "includes": "desktop density, navigation bar, retained Explain page and marks"
+}

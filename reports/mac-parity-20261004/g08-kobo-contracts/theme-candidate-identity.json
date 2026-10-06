@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-05T08:31:15.179722",
+  "files": [
+    {
+      "path": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/WebReader/src/cr-bridge.ts",
+      "sha256": "26ff48e610e89ac82a9ab22e107294545ded58f90284c54a821120b8dcfd85a6"
+    },
+    {
+      "path": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/WebAssets/bundle.js",
+      "sha256": "39a8ee9d8dd7c38aba8b4bcb0909eee06524af1ea47a15c5dc7dfc6cd076adee"
+    },
+    {
+      "path": "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/Resources/WebAssets/bundle.js",
+      "sha256": "39a8ee9d8dd7c38aba8b4bcb0909eee06524af1ea47a15c5dc7dfc6cd076adee"
+    },
+    {
+      "path": "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac.debug.dylib",
+      "sha256": "f10e2b586b77b8a0cb0bf5f7d08fcc986d71d4d281d469a79ef4b0655c03ab9a"
+    }
+  ]
+}

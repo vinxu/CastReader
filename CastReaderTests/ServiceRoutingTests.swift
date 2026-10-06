@@ -901,7 +901,7 @@ final class ServiceRoutingTests: XCTestCase {
         for request in requests {
             XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
             XCTAssertNil(request.value(forHTTPHeaderField: "Cookie"))
-            XCTAssertEqual(request.value(forHTTPHeaderField: "X-CastReader-Platform"), "ios")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-CastReader-Platform"), Constants.clientPlatform)
             XCTAssertEqual(request.value(forHTTPHeaderField: "X-Request-ID"), "ios-contract-request")
         }
         XCTAssertEqual(requests[0].httpBody, requests[1].httpBody)

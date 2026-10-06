@@ -1,0 +1,33 @@
+{
+  "scope": "Mac native app common online TTS sentence pipeline; international service; no OReilly acceptance or mobile/extension release",
+  "references": [
+    {
+      "project": "iOS",
+      "commit": "fadb18a727c96c6ada3353e08882fe1ed34ccf74",
+      "finding": "Shared KindleSentenceBuffer merged complete sentences up to 480 characters. TTS startup special-cased cloned voices and live readers could override it. Existing SpeechStreamBuffer owns a bounded producer across prefetch promotion."
+    },
+    {
+      "project": "shipped Safari resource source",
+      "commit": "31f8c7b",
+      "finding": "tts-service uses partly endpoint and unprocessed suffix; orchestrator queues segments as they arrive. Word-capable languages do not invariably use one sentence per request."
+    },
+    {
+      "project": "Safari/extension current comparison checkout",
+      "commit": "40aada8",
+      "finding": "First audio response enters playback before remaining paragraph parts; cloned requests use authenticated transport; KindleContinuousReading retains source page/word anchors independently of playback."
+    }
+  ],
+  "design": [
+    "Keep document paragraphs and provider source/page anchors as the display/navigation identity.",
+    "Plan bounded sentence requests centrally in TTSService for both buffered and legacy cloud generation, including raw live-source continuations.",
+    "Never merge adjacent complete sentences to fill a batch. First request bounded to 120 UTF-16 units (48 CJK), subsequent units to 240 (96 CJK). Split long sentences at clause/word boundaries; preserve extended graphemes and all normalized text.",
+    "Mark saved request continuations as already planned; retries preserve exact unfinished tail, segment index and idempotency identity.",
+    "Immediately deliver each completed audio segment to the existing player; subsequent work obeys duration/byte limits and pause/cancellation ownership.",
+    "Kindle retains only the unfinished sentence across a confirmed page edge and its source spans; no adjacent complete-sentence batching.",
+    "Create Kindle startup playback models after the final sentence document is ready, skipping temporary OCR-document playback models.",
+    "Do not withhold a new Google Books/Kobo opening segment while building an eight-second reserve; retain the existing exact short-resume protection.",
+    "Record transport elapsed time and forwarded worker queue/run headers without source text or credentials."
+  ],
+  "validationStatus": "in progress",
+  "remainingBoundary": "No promise of a fixed production startup latency or uninterrupted 3x under insufficient synthesis throughput; verify the actual candidate after unit tests."
+}

@@ -1,0 +1,16 @@
+{
+  "app": "/tmp/CastReaderMacReleaseParity/Build/Products/Release-maccatalyst/CastReaderMac.app",
+  "bundleIdentifier": "com.same.castreader",
+  "version": "1.2.47",
+  "build": "72",
+  "minimumSystem": "14.6",
+  "architectures": "x86_64 arm64",
+  "binarySHA256": "0848a026cb96ce1571cb54b5ad6ed2486e0a5ea6cce71aae0cbc0137c5143a52",
+  "strictDeepSignature": "PASS",
+  "actualLaunch": "PASS",
+  "settingsPaidAccount": "PASS",
+  "keyboardColorActivation": "PASS",
+  "originalPreferencesRestored": true,
+  "firstForegroundSettingsScrollReset": "Observed after first cold activation; subsequent settings interaction stable; investigate in final UI gate",
+  "installedPath": "/Users/xuxuheng/Applications/CastReader for Mac.app"
+}

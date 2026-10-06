@@ -1,0 +1,472 @@
+[
+  {
+    "file": "CastReader-2026-10-05-051841.000.ips",
+    "exception": {
+      "codes": "0x0000000000000001, 0x00000001801bbad8",
+      "rawCodes": [
+        1,
+        6444268248
+      ],
+      "type": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP"
+    },
+    "frames": [
+      {
+        "symbol": "_dispatch_once_wait.cold.1"
+      },
+      {
+        "symbol": "_dispatch_once_wait"
+      },
+      {
+        "symbol": "AuthService.shared.unsafeMutableAddressor",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "ProductAnalytics.track(_:context:properties:eventId:occurredAt:)",
+        "sourceFile": "ProductAnalytics.swift",
+        "sourceLine": 3289
+      },
+      {
+        "symbol": "ExplainViewModel.endAnalyticsExplainSession(result:reason:errorStage:errorCode:)",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 1977
+      },
+      {
+        "symbol": "ExplainViewModel.deactivate()",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 1194
+      },
+      {
+        "symbol": "ExplainViewModel.playbackOwnershipWasRevoked()",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 602
+      },
+      {
+        "symbol": "closure #1 in ExplainViewModel.ensureAudioSessionClaim()",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 619
+      },
+      {
+        "symbol": "AudioPlayerService.clearForAccountBoundary()",
+        "sourceFile": "AudioPlayerService.swift",
+        "sourceLine": 2070
+      },
+      {
+        "symbol": "static AccountContentIsolation.deactivate()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 176
+      },
+      {
+        "symbol": "AuthService.discardInvalidRestoredIdentity()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 446
+      },
+      {
+        "symbol": "AuthService.restore()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 440
+      },
+      {
+        "symbol": "AuthService.().init()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 384
+      },
+      {
+        "symbol": "@objc AuthService.().init()",
+        "sourceFile": "/<compiler-generated>"
+      },
+      {
+        "symbol": "AuthService.__allocating_init()",
+        "sourceFile": "AuthService.swift"
+      },
+      {
+        "symbol": "one-time initialization function for shared",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "_dispatch_client_callout"
+      },
+      {
+        "symbol": "_dispatch_once_callout"
+      }
+    ]
+  },
+  {
+    "file": "CastReader-2026-10-05-051800.ips",
+    "exception": {
+      "codes": "0x0000000000000001, 0x00000001801bbad8",
+      "rawCodes": [
+        1,
+        6444268248
+      ],
+      "type": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP"
+    },
+    "frames": [
+      {
+        "symbol": "_dispatch_once_wait.cold.1"
+      },
+      {
+        "symbol": "_dispatch_once_wait"
+      },
+      {
+        "symbol": "AuthService.shared.unsafeMutableAddressor",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "ProductAnalytics.track(_:context:properties:eventId:occurredAt:)",
+        "sourceFile": "ProductAnalytics.swift",
+        "sourceLine": 3289
+      },
+      {
+        "symbol": "ExplainViewModel.endAnalyticsExplainSession(result:reason:errorStage:errorCode:)",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 1977
+      },
+      {
+        "symbol": "ExplainViewModel.deactivate()",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 1194
+      },
+      {
+        "symbol": "ExplainViewModel.playbackOwnershipWasRevoked()",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 602
+      },
+      {
+        "symbol": "closure #1 in ExplainViewModel.ensureAudioSessionClaim()",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 619
+      },
+      {
+        "symbol": "AudioPlayerService.clearForAccountBoundary()",
+        "sourceFile": "AudioPlayerService.swift",
+        "sourceLine": 2070
+      },
+      {
+        "symbol": "static AccountContentIsolation.deactivate()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 176
+      },
+      {
+        "symbol": "AuthService.discardInvalidRestoredIdentity()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 446
+      },
+      {
+        "symbol": "AuthService.restore()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 440
+      },
+      {
+        "symbol": "AuthService.().init()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 384
+      },
+      {
+        "symbol": "@objc AuthService.().init()",
+        "sourceFile": "/<compiler-generated>"
+      },
+      {
+        "symbol": "AuthService.__allocating_init()",
+        "sourceFile": "AuthService.swift"
+      },
+      {
+        "symbol": "one-time initialization function for shared",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "_dispatch_client_callout"
+      },
+      {
+        "symbol": "_dispatch_once_callout"
+      }
+    ]
+  },
+  {
+    "file": "CastReaderMac-2026-10-05-051917.ips",
+    "exception": {
+      "codes": "0x0000000000000001, 0x000000018dd95f04",
+      "rawCodes": [
+        1,
+        6674800388
+      ],
+      "type": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP"
+    },
+    "frames": [
+      {
+        "symbol": "_dispatch_once_wait.cold.1"
+      },
+      {
+        "symbol": "_dispatch_once_wait"
+      },
+      {
+        "symbol": "AuthService.shared.unsafeMutableAddressor",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "ProductAnalytics.track(_:context:properties:eventId:occurredAt:)",
+        "sourceFile": "ProductAnalytics.swift",
+        "sourceLine": 3289
+      },
+      {
+        "symbol": "ReadAloudViewModel.endAnalyticsReadSession(result:reason:errorStage:errorCode:preserveAppReviewReadSession:)",
+        "sourceFile": "ReadAloudViewModel.swift",
+        "sourceLine": 6142
+      },
+      {
+        "symbol": "ReadAloudViewModel.deactivate(clearingHighlights:)",
+        "sourceFile": "ReadAloudViewModel.swift",
+        "sourceLine": 2949
+      },
+      {
+        "symbol": "ReadAloudViewModel.playbackOwnershipWasRevoked()",
+        "sourceFile": "ReadAloudViewModel.swift",
+        "sourceLine": 1079
+      },
+      {
+        "symbol": "closure #1 in ReadAloudViewModel.ensureAudioSessionClaim()",
+        "sourceFile": "ReadAloudViewModel.swift",
+        "sourceLine": 1098
+      },
+      {
+        "symbol": "AudioPlayerService.clearForAccountBoundary()",
+        "sourceFile": "AudioPlayerService.swift",
+        "sourceLine": 2070
+      },
+      {
+        "symbol": "static AccountContentIsolation.deactivate()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 176
+      },
+      {
+        "symbol": "AuthService.discardInvalidRestoredIdentity()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 446
+      },
+      {
+        "symbol": "AuthService.restore()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 440
+      },
+      {
+        "symbol": "AuthService.().init()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 384
+      },
+      {
+        "symbol": "@objc AuthService.().init()",
+        "sourceFile": "/<compiler-generated>"
+      },
+      {
+        "symbol": "AuthService.__allocating_init()",
+        "sourceFile": "AuthService.swift"
+      },
+      {
+        "symbol": "one-time initialization function for shared",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "_dispatch_client_callout"
+      },
+      {
+        "symbol": "_dispatch_once_callout"
+      }
+    ]
+  },
+  {
+    "file": "CastReaderMac-2026-10-05-051840.ips",
+    "exception": {
+      "codes": "0x0000000000000001, 0x000000018dd95f04",
+      "rawCodes": [
+        1,
+        6674800388
+      ],
+      "type": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP"
+    },
+    "frames": [
+      {
+        "symbol": "_dispatch_once_wait.cold.1"
+      },
+      {
+        "symbol": "_dispatch_once_wait"
+      },
+      {
+        "symbol": "AuthService.shared.unsafeMutableAddressor",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "ProductAnalytics.track(_:context:properties:eventId:occurredAt:)",
+        "sourceFile": "ProductAnalytics.swift",
+        "sourceLine": 3289
+      },
+      {
+        "symbol": "ExplainViewModel.endAnalyticsExplainSession(result:reason:errorStage:errorCode:)",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 1977
+      },
+      {
+        "symbol": "ExplainViewModel.deactivate()",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 1194
+      },
+      {
+        "symbol": "ExplainViewModel.playbackOwnershipWasRevoked()",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 602
+      },
+      {
+        "symbol": "closure #1 in ExplainViewModel.ensureAudioSessionClaim()",
+        "sourceFile": "ExplainViewModel.swift",
+        "sourceLine": 619
+      },
+      {
+        "symbol": "AudioPlayerService.clearForAccountBoundary()",
+        "sourceFile": "AudioPlayerService.swift",
+        "sourceLine": 2070
+      },
+      {
+        "symbol": "static AccountContentIsolation.deactivate()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 176
+      },
+      {
+        "symbol": "AuthService.discardInvalidRestoredIdentity()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 446
+      },
+      {
+        "symbol": "AuthService.restore()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 440
+      },
+      {
+        "symbol": "AuthService.().init()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 384
+      },
+      {
+        "symbol": "@objc AuthService.().init()",
+        "sourceFile": "/<compiler-generated>"
+      },
+      {
+        "symbol": "AuthService.__allocating_init()",
+        "sourceFile": "AuthService.swift"
+      },
+      {
+        "symbol": "one-time initialization function for shared",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "_dispatch_client_callout"
+      },
+      {
+        "symbol": "_dispatch_once_callout"
+      }
+    ]
+  },
+  {
+    "file": "CastReader-2026-10-05-051841.ips",
+    "exception": {
+      "codes": "0x0000000000000001, 0x00000001801bbad8",
+      "rawCodes": [
+        1,
+        6444268248
+      ],
+      "type": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP"
+    },
+    "frames": [
+      {
+        "symbol": "_dispatch_once_wait.cold.1"
+      },
+      {
+        "symbol": "_dispatch_once_wait"
+      },
+      {
+        "symbol": "AuthService.shared.unsafeMutableAddressor",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "ProductAnalytics.track(_:context:properties:eventId:occurredAt:)",
+        "sourceFile": "ProductAnalytics.swift",
+        "sourceLine": 3289
+      },
+      {
+        "symbol": "ReadAloudViewModel.endAnalyticsReadSession(result:reason:errorStage:errorCode:preserveAppReviewReadSession:)",
+        "sourceFile": "ReadAloudViewModel.swift",
+        "sourceLine": 6142
+      },
+      {
+        "symbol": "ReadAloudViewModel.deactivate(clearingHighlights:)",
+        "sourceFile": "ReadAloudViewModel.swift",
+        "sourceLine": 2949
+      },
+      {
+        "symbol": "ReadAloudViewModel.playbackOwnershipWasRevoked()",
+        "sourceFile": "ReadAloudViewModel.swift",
+        "sourceLine": 1079
+      },
+      {
+        "symbol": "closure #1 in ReadAloudViewModel.ensureAudioSessionClaim()",
+        "sourceFile": "ReadAloudViewModel.swift",
+        "sourceLine": 1098
+      },
+      {
+        "symbol": "AudioPlayerService.clearForAccountBoundary()",
+        "sourceFile": "AudioPlayerService.swift",
+        "sourceLine": 2070
+      },
+      {
+        "symbol": "static AccountContentIsolation.deactivate()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 176
+      },
+      {
+        "symbol": "AuthService.discardInvalidRestoredIdentity()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 446
+      },
+      {
+        "symbol": "AuthService.restore()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 440
+      },
+      {
+        "symbol": "AuthService.().init()",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 384
+      },
+      {
+        "symbol": "@objc AuthService.().init()",
+        "sourceFile": "/<compiler-generated>"
+      },
+      {
+        "symbol": "AuthService.__allocating_init()",
+        "sourceFile": "AuthService.swift"
+      },
+      {
+        "symbol": "one-time initialization function for shared",
+        "sourceFile": "AuthService.swift",
+        "sourceLine": 264
+      },
+      {
+        "symbol": "_dispatch_client_callout"
+      },
+      {
+        "symbol": "_dispatch_once_callout"
+      }
+    ]
+  }
+]

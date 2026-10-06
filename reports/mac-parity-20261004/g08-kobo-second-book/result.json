@@ -1,0 +1,10 @@
+{
+  "status": "PASS_FOR_OBSERVED_SECOND_TITLE_CASES",
+  "at": "2026-10-05T11:50:14.355009+08:00",
+  "candidate": "../g08-kobo-contracts/cold-pagination-candidate-identity.json",
+  "book": "Falling for the Movie Star",
+  "read": "Live Bella, automatic pages, 800×600 to 1024×768, visible word highlight after settled reflow",
+  "explain": "779–780 to 781–782/969 automatically; visible highlights/underline in both columns",
+  "coldResume": "From provider later page, exact source matched direct=true, para=2 at 11:48:38; paused until explicit Play; visible subsequent word highlight",
+  "detectedIssues": []
+}

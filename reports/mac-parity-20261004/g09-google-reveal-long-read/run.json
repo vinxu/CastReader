@@ -1,0 +1,18 @@
+{
+  "status": "COMPLETED",
+  "startedAt": "2026-10-05T14:02:51.576478+08:00",
+  "logByteOffset": 5066363,
+  "book": "WaOcDwAAQBAJ",
+  "initialFontPercent": 113,
+  "initialDarkTheme": false,
+  "initialWindow": [
+    1024,
+    768
+  ],
+  "initialLayout": "DoublePage",
+  "speed": 1,
+  "binarySHA256": "f2e6337c59e6972e7c2ba87380c6bc3d7daeeeb58d7610aa92980d72f367faaa",
+  "bundleSHA256": "7337afbc9e6fb0562c609a0c5afa0d6f811509dc6f0b12a785db0ef58c4b6758",
+  "note": "Normal candidate, no temporary diagnostics. Partial-source reveal and signed-origin repair; manual UI reflow allowed, no manual page jump.",
+  "endLogByteOffset": 5652480
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "original": "/tmp/CastReaderMacParityRelease/Build/Products/Release-maccatalyst/CastReaderMac.app.dSYM",
+    "archive": "/tmp/CastReaderMacParityRelease/Build/Products/Release-maccatalyst/CastReaderMac.app.dSYM.tar.gz",
+    "verifiedFiles": 4,
+    "originalBytes": 224550607,
+    "archiveBytes": 50068000,
+    "sha256": "844c615e074b39ad687fa5a1285a011ba7146c4b87f1cd0dc4b7e7d3f8e70fe5",
+    "restore": "tar -xzf /tmp/CastReaderMacParityRelease/Build/Products/Release-maccatalyst/CastReaderMac.app.dSYM.tar.gz -C /tmp/CastReaderMacParityRelease/Build/Products/Release-maccatalyst",
+    "at": "2026-10-05T08:19:22.528898+08:00"
+  },
+  {
+    "original": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g06-kindle-regression/tests.xcresult",
+    "archive": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g06-kindle-regression/tests.xcresult.tar.gz",
+    "verifiedFiles": 3166,
+    "originalBytes": 196101106,
+    "archiveBytes": 194929208,
+    "sha256": "e778a4f4526acde7383c0e2ebdc464a55dd91bf4cf42adc5ea56e78b655b0b0f",
+    "restore": "tar -xzf /Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g06-kindle-regression/tests.xcresult.tar.gz -C /Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g06-kindle-regression",
+    "at": "2026-10-05T08:19:29.352076+08:00"
+  },
+  {
+    "original": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g07-weread-native-pager/mac-prefetch-tests.xcresult",
+    "archive": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g07-weread-native-pager/mac-prefetch-tests.xcresult.tar.gz",
+    "verifiedFiles": 2025,
+    "originalBytes": 191579341,
+    "archiveBytes": 190432804,
+    "sha256": "166da8144a37c2985611d51f7e23845a6227bb12c6b047562164df26b433ab08",
+    "restore": "tar -xzf /Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g07-weread-native-pager/mac-prefetch-tests.xcresult.tar.gz -C /Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g07-weread-native-pager",
+    "at": "2026-10-05T08:19:36.149774+08:00"
+  },
+  {
+    "original": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g10-g13-shared-contracts-fixed/tests.xcresult",
+    "archive": "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g10-g13-shared-contracts-fixed/tests.xcresult.tar.gz",
+    "verifiedFiles": 3410,
+    "originalBytes": 175161851,
+    "archiveBytes": 174382388,
+    "sha256": "d9007be3e296be21d690a9214942733f55dc4227996afc3171dd3457fc89e55d",
+    "restore": "tar -xzf /Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g10-g13-shared-contracts-fixed/tests.xcresult.tar.gz -C /Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/reports/mac-parity-20261004/g10-g13-shared-contracts-fixed",
+    "at": "2026-10-05T08:19:42.899175+08:00"
+  }
+]

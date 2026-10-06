@@ -178,6 +178,7 @@ struct KindleBookView: View {
     @StateObject private var model: KindleBookViewModel
     @State private var refocusTask: Task<Void, Never>?
     @State private var readerSurfaceSize: CGSize = .zero
+    @StateObject private var viewportStabilizer = KindleReaderViewportStabilizer()
     @State private var hostSize = CGSize.zero
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     #if DEBUG
@@ -384,7 +385,7 @@ struct KindleBookView: View {
         ZStack(alignment: .bottomLeading) {
             GeometryReader { proxy in
                 let webSize = KindleReaderSurfaceContract.renderSize(
-                    measured: proxy.size,
+                    measured: viewportStabilizer.size == .zero ? proxy.size : viewportStabilizer.size,
                     stable: model.readerViewportSnapshot?.surfaceSize ?? proxy.size,
                     isPlayerOverlayPresented: model.readerViewportSnapshot != nil
                 )
@@ -393,12 +394,14 @@ struct KindleBookView: View {
                     webView: model.libraryRecoveryWebView ?? model.webView,
                     crop: model.libraryRecoveryWebView == nil ? crop : .identity,
                     presentationFit: model.libraryRecoveryWebView == nil
-                        ? model.effectiveViewportPresentationFit(forSurfaceSize: webSize) : .identity
+                        ? model.effectiveViewportPresentationFit(forSurfaceSize: webSize) : .identity,
+                    contentAccessibilityHidden: model.isWarmingBookSession || model.contentCover != nil || model.needsKindleRebind
                 )
                     .id(ObjectIdentifier(model.libraryRecoveryWebView ?? model.webView))
-                    .accessibilityHidden(model.isWarmingBookSession || model.contentCover != nil)
+                    .accessibilityHidden(model.isWarmingBookSession || model.contentCover != nil || model.needsKindleRebind)
                     .frame(width: webSize.width, height: webSize.height)
-                    .onAppear { updateReaderGeometry(webSize) }
+                    .onAppear { viewportStabilizer.update(proxy.size); updateReaderGeometry(webSize) }
+                    .onChange(of: proxy.size) { viewportStabilizer.update($0) }
                     .onChange(of: webSize) { updateReaderGeometry($0) }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
@@ -505,6 +508,9 @@ struct KindleBookView: View {
     }
 
     private func updateReaderGeometry(_ size: CGSize) {
+        #if targetEnvironment(macCatalyst)
+        guard !model.offlineDownload.isRunning else { return }
+        #endif
         guard !model.isNativeTOCPresented, !model.isKindleTOCVisible,
               model.playerOverlayViewport == nil, size.width > 4, size.height > 4 else { return }
         let previous = readerSurfaceSize
@@ -631,11 +637,14 @@ struct KindleBookView: View {
                     .contentShape(Rectangle())
             }
 
+            .buttonStyle(.plain)
             .accessibilityIdentifier("kindleMinimizeButton")
 
             Text(model.book.title)
                 .layoutPriority(-1)
-                .font(.subheadline.weight(.semibold))
+                .font(AdaptiveLayout.readerTitleFont)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("kindleDocumentTitle")
                 .lineLimit(1)
                 .foregroundColor(AppTheme.foreground)
 
@@ -750,11 +759,16 @@ struct KindleBookView: View {
 
     @ViewBuilder
     private var preparingStatusOverlay: some View {
-        if model.isKindleSyncDialogVisible {
+        if model.isKindleSyncDialogVisible || (model.isOpeningReaderContent && !model.isAmazonCookieConsentVisible) {
             VStack {
                 HStack(spacing: 8) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                    Text(AppLocalized("请先确认 Kindle 阅读位置。"))
+                    if model.isKindleSyncDialogVisible {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                    } else {
+                        ProgressView().controlSize(.small)
+                    }
+                    Text(model.isKindleSyncDialogVisible
+                         ? AppLocalized("请先确认 Kindle 阅读位置。") : AppLocalized("正在打开…"))
                         .font(.caption.weight(.semibold))
                 }
                 .foregroundColor(AppTheme.foreground)
@@ -767,6 +781,7 @@ struct KindleBookView: View {
             }
             .frame(maxWidth: .infinity)
             .allowsHitTesting(false)
+            .accessibilityIdentifier("kindleOpeningStatus")
         }
     }
 
@@ -797,8 +812,10 @@ struct KindleBookView: View {
             } else {
                 KindleEmptyPlaybackBar(
                     isPreparing: model.isPlaybackPreparing,
+                    canCancel: model.isStartingPlayback,
                     compact: usesCompactPlaybackBar,
                     play: { startCurrentMode() },
+                    pause: { model.pauseReadPlayback() },
                     previousPage: { previousPage() },
                     nextPage: { nextPage() },
                     showTOC: { showTOC() }
@@ -849,7 +866,9 @@ struct KindleBookView: View {
         } else {
             KindleLandscapeEmptyOverlay(
                 isPreparing: model.isPlaybackPreparing,
+                canCancel: model.isStartingPlayback,
                 start: { startCurrentMode() },
+                pause: { model.pauseReadPlayback() },
                 previousPage: { previousPage() },
                 nextPage: { nextPage() },
                 showTOC: { showTOC() }
@@ -970,6 +989,33 @@ struct KindleReaderPlaybackDock<Reader: View, Playback: View>: View {
     }
 }
 
+/// SwiftUI/Catalyst can propose a transient viewport while playback chrome
+/// changes (observed 610 -> 590 -> 610 points within 100 ms). Committing that
+/// proposal reflows Amazon and cancels the sentence stream. Only a settled
+/// resize changes the web renderer; ordinary window resizing still applies.
+@MainActor
+final class KindleReaderViewportStabilizer: ObservableObject {
+    @Published private(set) var size = CGSize.zero
+    private var pending: Task<Void, Never>?
+
+    func update(_ measured: CGSize) {
+        guard measured.width.isFinite, measured.height.isFinite,
+              measured.width > 4, measured.height > 4 else { return }
+        pending?.cancel()
+        pending = nil
+        guard measured != size else { return }
+        guard size != .zero else { size = measured; return }
+        pending = Task { [weak self] in
+            do { try await Task.sleep(nanoseconds: 180_000_000) } catch { return }
+            guard !Task.isCancelled else { return }
+            self?.size = measured
+            self?.pending = nil
+        }
+    }
+
+    deinit { pending?.cancel() }
+}
+
 enum KindleReaderSurfaceContract {
     static func renderSize(
         measured: CGSize,
@@ -985,8 +1031,10 @@ enum KindleReaderSurfaceContract {
 
 private struct KindleEmptyPlaybackBar: View {
     let isPreparing: Bool
+    let canCancel: Bool
     let compact: Bool
     let play: () -> Void
+    let pause: () -> Void
     let previousPage: () -> Void
     let nextPage: () -> Void
     let showTOC: () -> Void
@@ -1000,14 +1048,16 @@ private struct KindleEmptyPlaybackBar: View {
             nextPage: nextPage,
             showTOC: showTOC
         ) {
-            Button(action: play) {
+            Button(action: { if canCancel { pause() } else { play() } }) {
                 KindlePlayButtonContent(
                     isLoading: isPreparing,
                     isPlaying: false,
-                    size: compact ? 44 : 52
+                    size: compact ? 44 : 52,
+                    loadingMessage: AppLocalized("正在准备…")
                 )
             }
-            .disabled(isPreparing)
+            .disabled(isPreparing && !canCancel)
+            .accessibilityLabel(canCancel ? AppLocalized("暂停") : AppLocalized("播放"))
             .accessibilityIdentifier("kindleReadPlayPauseButton")
             .accessibilityValue(isPreparing ? "loading" : "paused")
         }
@@ -1028,9 +1078,8 @@ private struct KindleReadPlaybackBar: View {
 
     private var isLoading: Bool {
         if sleepTimer.requiresExplicitResume { return false }
-        return !vm.isPlaybackPausedByUser && (voiceSwitch.progress != nil ||
-            isPreparing ||
-            vm.isWaitingForPlayableAudio)
+        return isPreparing || (!vm.isPlaybackPausedByUser &&
+            (voiceSwitch.progress != nil || vm.isWaitingForPlayableAudio))
     }
 
     var body: some View {
@@ -1046,11 +1095,13 @@ private struct KindleReadPlaybackBar: View {
         ) {
             Button(action: { if vm.isPlaying || isLoading { pause() } else { start() } }) {
                 KindlePlayButtonContent(
-                    isLoading: false,
-                    isPlaying: vm.isPlaying || isLoading,
-                    size: compact ? 44 : 52
+                    isLoading: isLoading,
+                    isPlaying: vm.isPlaying,
+                    size: compact ? 44 : 52,
+                    loadingMessage: AppLocalized("正在准备…")
                 )
             }
+            .accessibilityLabel(vm.isPlaying || isLoading ? AppLocalized("暂停") : AppLocalized("播放"))
             .accessibilityIdentifier("kindleReadPlayPauseButton")
             .accessibilityValue(isLoading ? "loading" : (vm.isPlaying ? "playing" : "paused"))
         }
@@ -1066,18 +1117,17 @@ private struct KindlePlayButtonContent: View {
     let isLoading: Bool
     let isPlaying: Bool
     let size: CGFloat
-    @State private var isRotating = false
+    var loadingMessage: String? = nil
 
     var body: some View {
         ZStack {
             if isLoading {
                 Circle()
                     .fill(AppTheme.primary)
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: size * 0.42, weight: .bold))
-                    .foregroundColor(.white)
-                    .rotationEffect(.degrees(isRotating ? 360 : 0))
-                    .animation(.linear(duration: 0.85).repeatForever(autoreverses: false), value: isRotating)
+                ProgressView()
+                    .tint(.white)
+                    .scaleEffect(size / 36)
+                    .accessibilityIdentifier("kindlePlaybackLoadingIndicator")
             } else {
                 Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                     .font(.system(size: size))
@@ -1085,11 +1135,20 @@ private struct KindlePlayButtonContent: View {
             }
         }
         .frame(width: size, height: size)
-        .onAppear {
-            isRotating = isLoading
-        }
-        .onChange(of: isLoading) { loading in
-            isRotating = loading
+        // An overlay cannot reflow Kindle's viewport or trigger a page recapture.
+        .overlay(alignment: .top) {
+            if isLoading, let loadingMessage {
+                Text(loadingMessage)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(AppTheme.foreground)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.regularMaterial, in: Capsule())
+                    .fixedSize()
+                    .offset(y: -32)
+                    .allowsHitTesting(false)
+                    .accessibilityIdentifier("kindlePlaybackLoadingMessage")
+            }
         }
     }
 }
@@ -1225,6 +1284,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
             )
             .accessibilityIdentifier("kindlePreviousPageButton")
             playControl
+                .buttonStyle(.plain)
             KindlePageTurnButton(
                 systemName: "chevron.right",
                 accessibilityLabel: AppLocalized("下一页"),
@@ -1412,7 +1472,18 @@ private struct KindleExplainCaption: View {
 
     @ViewBuilder
     var body: some View {
-        if shouldShowCaption {
+        if case .error(let message) = vm.status, !isContinuingPage {
+            Text(message)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.red)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                .frame(maxWidth: maxWidth, alignment: alignment)
+                .accessibilityIdentifier("kindleExplainError")
+        } else if shouldShowCaption {
             ExplainPlaybackCaption(
                 vm: vm,
                 alignment: alignment,
@@ -1430,7 +1501,9 @@ private struct KindleExplainCaption: View {
 
 private struct KindleLandscapeEmptyOverlay: View {
     let isPreparing: Bool
+    let canCancel: Bool
     let start: () -> Void
+    let pause: () -> Void
     let previousPage: () -> Void
     let nextPage: () -> Void
     let showTOC: () -> Void
@@ -1446,14 +1519,16 @@ private struct KindleLandscapeEmptyOverlay: View {
                 nextPage: nextPage,
                 showTOC: showTOC
             ) {
-                Button(action: start) {
+                Button(action: canCancel ? pause : start) {
                     KindlePlayButtonContent(
                         isLoading: isPreparing,
                         isPlaying: false,
-                        size: 44
+                        size: 44,
+                        loadingMessage: AppLocalized("正在准备…")
                     )
                 }
-                .disabled(isPreparing)
+                .disabled(isPreparing && !canCancel)
+                .accessibilityLabel(canCancel ? AppLocalized("暂停") : AppLocalized("播放"))
             }
         }
     }
@@ -1472,9 +1547,8 @@ private struct KindleLandscapeReadOverlay: View {
 
     private var isLoading: Bool {
         if sleepTimer.requiresExplicitResume { return false }
-        return !vm.isPlaybackPausedByUser && (voiceSwitch.progress != nil ||
-            isPreparing ||
-            vm.isWaitingForPlayableAudio)
+        return isPreparing || (!vm.isPlaybackPausedByUser &&
+            (voiceSwitch.progress != nil || vm.isWaitingForPlayableAudio))
     }
 
     var body: some View {
@@ -1492,9 +1566,10 @@ private struct KindleLandscapeReadOverlay: View {
             ) {
                 Button(action: { if vm.isPlaying || isLoading { pause() } else { start() } }) {
                     KindlePlayButtonContent(
-                        isLoading: false,
-                        isPlaying: vm.isPlaying || isLoading,
-                        size: 44
+                        isLoading: isLoading,
+                        isPlaying: vm.isPlaying,
+                        size: 44,
+                        loadingMessage: AppLocalized("正在准备…")
                     )
                 }
                 }
@@ -1912,20 +1987,63 @@ private extension UIApplication.State {
 
 struct KindleMiniPlayerView: View {
     @ObservedObject var center: KindlePlaybackCenter
-    @ObservedObject private var audio = AudioPlayerService.shared
-    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
 
-    private var model: KindleBookViewModel? { center.model }
+    var body: some View {
+        if let model = center.model {
+            KindleMiniPlayerSession(center: center, model: model)
+        }
+    }
+}
+
+private struct KindleMiniPlayerSession: View {
+    @ObservedObject var center: KindlePlaybackCenter
+    @ObservedObject var model: KindleBookViewModel
+
+    var body: some View {
+        if model.mode == .read, let vm = model.readVM {
+            KindleReadMiniPlayer(center: center, model: model, vm: vm)
+        } else {
+            KindleMiniPlayerContent(center: center, model: model, isWaitingForAudio: false)
+        }
+    }
+}
+
+/// The mini player must observe the read VM as well as the shared audio player:
+/// before the first segment arrives, only the VM knows that speech is pending.
+private struct KindleReadMiniPlayer: View {
+    @ObservedObject var center: KindlePlaybackCenter
+    @ObservedObject var model: KindleBookViewModel
+    @ObservedObject var vm: ReadAloudViewModel
+
+    var body: some View {
+        KindleMiniPlayerContent(center: center, model: model,
+                                isWaitingForAudio: vm.isWaitingForPlayableAudio)
+    }
+}
+
+private struct KindleMiniPlayerContent: View {
+    @ObservedObject var center: KindlePlaybackCenter
+    @ObservedObject var model: KindleBookViewModel
+    @ObservedObject private var audio = AudioPlayerService.shared
+    @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
+    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
+    let isWaitingForAudio: Bool
+
+    private var isLoading: Bool {
+        guard !sleepTimer.requiresExplicitResume else { return false }
+        if model.isPlaybackPreparing { return true }
+        if model.mode == .read, model.readVM?.isPlaybackPausedByUser == true { return false }
+        return isWaitingForAudio || voiceSwitch.progress != nil
+    }
 
     private var statusText: String {
-        if let progress = voiceSwitch.progress { return progress.localizedMessage }
-        guard model != nil else { return AppLocalized("已暂停") }
-        if audio.isPlaying { return AppLocalized("朗读中") }
-        return AppLocalized("已暂停")
+        if isLoading {
+            return voiceSwitch.progress?.localizedMessage ?? AppLocalized("正在准备…")
+        }
+        return audio.isPlaying ? AppLocalized("朗读中") : AppLocalized("已暂停")
     }
 
     var body: some View {
-        if let model {
             HStack(spacing: 12) {
                 KindleCoverView(urlString: model.book.coverURL)
                     .frame(width: 40, height: 40)
@@ -1964,11 +2082,15 @@ struct KindleMiniPlayerView: View {
                 }
 
                 Button {
-                    audio.sleepTimer.resumeByUser()
-                    Task { try? await model.startCurrentMode() }
+                    if model.mode == .read && (isLoading || audio.isPlaying) {
+                        model.pauseReadPlayback()
+                    } else {
+                        audio.sleepTimer.resumeByUser()
+                        Task { try? await model.startCurrentMode() }
+                    }
                 } label: {
                     Group {
-                        if voiceSwitch.progress != nil {
+                        if isLoading {
                             ProgressView().controlSize(.small)
                         } else {
                             Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
@@ -1978,7 +2100,10 @@ struct KindleMiniPlayerView: View {
                     }
                     .frame(width: 34, height: 34)
                 }
-                .disabled(voiceSwitch.progress != nil)
+                .disabled(model.mode == .explain && voiceSwitch.progress != nil)
+                .accessibilityIdentifier("kindleMiniPlayPauseButton")
+                .accessibilityLabel(isLoading || audio.isPlaying ? AppLocalized("暂停") : AppLocalized("播放"))
+                .accessibilityValue(isLoading ? "loading" : (audio.isPlaying ? "playing" : "paused"))
 
                 Button { center.close() } label: {
                     Image(systemName: "xmark")
@@ -2001,7 +2126,6 @@ struct KindleMiniPlayerView: View {
                 KindleMiniAcceptanceState(model: model)
             }
             #endif
-        }
     }
 }
 
@@ -2336,6 +2460,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var readingSettingsRevision: UInt64 = 0
     let offlineDownload = KindleOfflineDownloadCoordinator()
     private var offlineCaptureOriginal: KindleOfflineSourcePosition?
+    #if targetEnvironment(macCatalyst)
+    private var offlineCaptureReturnPosition: KindleOfflineSourcePosition?
+    #endif
     private var offlineCaptureNavigationGeneration: UInt64?
     private var offlineCaptureScope: String?
     private var suppressReadingSettingsCloseAfterSync = false
@@ -2407,6 +2534,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published private(set) var contentCover: String?
     /// Straight mirrors of the WebView's own loading state — no interpretation.
     @Published private(set) var isNavigating = false
+    @Published private(set) var isPreparingReaderSurface = false
+    private var readerSetupRevision: UInt64 = 0
     @Published private(set) var readerControlsReady = false
     private var readerControlsNavigationGeneration: UInt64 = 0
     @Published private(set) var loadProgress: Double = 0
@@ -2456,8 +2585,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var iPadViewportAudioHold: UUID?
     private var viewportProjectionRevision = 0
 
+    var isOpeningReaderContent: Bool { isNavigating || isPreparingReaderSurface }
+
+    var isStartingPlayback: Bool {
+        pendingPlaybackStart.map(playbackStartIsCurrent) == true && !isKindleSyncDialogVisible
+    }
+
     var isPlaybackPreparing: Bool {
-        (isRecoveringIPadViewport && !AudioPlayerService.shared.isPlaying) || isPreparing || isPageTurnResuming || isApplyingReadingSettings || isNavigating
+        (isRecoveringIPadViewport && !AudioPlayerService.shared.isPlaying) || isPreparing || isPageTurnResuming || isApplyingReadingSettings || isOpeningReaderContent || isStartingPlayback
     }
 
     var isExplainTransitionLoading: Bool {
@@ -2635,7 +2770,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let cancellation = KindlePlaybackStartCancellation()
     }
     private var playbackStartCancellationEpoch: UInt64 = 0
-    private var pendingPlaybackStart: PendingPlaybackStart?
+    @Published private var pendingPlaybackStart: PendingPlaybackStart?
     private var syncDialogPlaybackStart: PendingPlaybackStart?
     private var syncDialogInterruptedStart: PendingPlaybackStart?
     #if DEBUG
@@ -4711,9 +4846,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func scheduleReaderSetup(reason: String) {
         guard readerOperationAllowed(.readerSetup, reason: reason) else { return }
         readerSetupTask?.cancel()
+        readerSetupRevision &+= 1
+        let revision = readerSetupRevision
+        isPreparingReaderSurface = true
         configurePageModeGestures()
         readerSetupTask = Task { @MainActor [weak self] in
-            guard let self, !Task.isCancelled else { return }
+            guard let self else { return }
+            defer {
+                if self.readerSetupRevision == revision { self.isPreparingReaderSurface = false }
+            }
+            guard !Task.isCancelled else { return }
             // Preserve Amazon's current font, margins and columns. The native
             // settings controls are only used for explicit user changes.
             guard await self.prepareReaderControls(reason: reason) else { return }
@@ -4745,6 +4887,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func resetReaderControlsForNavigation() {
+        readerSetupRevision &+= 1
+        isPreparingReaderSurface = false
         readingSettingsSessionActive = false
         readingSettingsCloseInProgress = false
         readerControlsReady = false
@@ -6796,7 +6940,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if mode == .read {
             try await restoreColdListeningPageIfNeeded()
         }
-        return try await ensureLiveDocument(force: true)
+        return try await ensureLiveDocument(force: true, preparesPlaybackModels: mode != .read)
     }
 
     /// Amazon may reopen its prefetched page after process death. Resolve the
@@ -7958,7 +8102,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return doc
     }
 
-    private func ensureLiveDocument(force: Bool = false) async throws -> ReadingDocument {
+    private func ensureLiveDocument(force: Bool = false, preparesPlaybackModels: Bool = true) async throws -> ReadingDocument {
         try requireReaderOperation(.capture, reason: "ensure-live-document")
         if !force, let liveDocument { return liveDocument }
         guard !isPreparing else { throw KindleBookError.busy }
@@ -8076,7 +8220,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                       liveStartParagraphIndex ?? -1,
                       attempt)
                 #endif
-                resetViewModels(document: doc)
+                // Read startup immediately builds its final sentence document.
+                // Restoring against this temporary OCR document would do the
+                // same expensive resume work twice before the first request.
+                if preparesPlaybackModels { resetViewModels(document: doc) }
                 store.updateProgress(bookID: book.id, pageKey: page.key, url: page.url, progressLabel: page.progress)
                 if mode == .read || mode == .explain {
                     startCachingNextPage(afterKey: actualLiveKey)
@@ -8463,7 +8610,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     var offlineSourceBook: KindleBook { book }
 
-    private struct OfflineSourceEvidence {
+    struct OfflineSourceEvidence {
         let position: KindleOfflineSourcePosition
         let words: Int
         let imageIdentity: String
@@ -8477,6 +8624,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func parseOfflineSourceEvidence(_ value: [String: Any]) throws -> OfflineSourceEvidence {
+        #if targetEnvironment(macCatalyst)
+        let viewport: CGSize? = webView.bounds.size
+        #else
+        let viewport: CGSize? = nil
+        #endif
+        return try Self.parseOfflineSourceEvidence(value, expectedReaderASIN: expectedReaderASIN, captureViewport: viewport)
+    }
+
+    static func parseOfflineSourceEvidence(_ value: [String: Any], expectedReaderASIN: String?, captureViewport: CGSize? = nil) throws -> OfflineSourceEvidence {
         guard value["loading"] as? Bool == false,
               let asin = value["asin"] as? String, asin == expectedReaderASIN,
               let revision = value["revision"] as? String, !revision.isEmpty,
@@ -8484,7 +8640,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
               let minimum = Self.int(from: metadata["minimum"]), let maximum = Self.int(from: metadata["maximum"]),
               minimum >= 0, maximum > minimum, maximum < Int.max,
               let start = Self.int(from: value["start"]), let end = Self.int(from: value["end"]),
-              Self.int(from: value["current"]) == start,
+              // A restored Kindle location may be a word inside the rendered
+              // page. It must belong to that exact page, not equal its start.
+              let current = Self.int(from: value["current"]), current >= start, current <= end,
               let page = value["page"] as? [String: Any], Self.int(from: page["start"]) == start,
               let rawEnd = Self.int(from: page["end"]), rawEnd < Int.max,
               end == rawEnd,
@@ -8499,16 +8657,18 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let normalizedStart = isCover ? minimum : start
         let layoutData = try JSONSerialization.data(withJSONObject: ["asin": asin, "revision": revision, "layout": layout], options: [.sortedKeys])
         let position = KindleOfflineSourcePosition(start: normalizedStart, end: min(maximum, end + 1), minimum: minimum, maximum: maximum,
-            layoutID: KindleOfflinePageStore.digest(layoutData), fingerprint: "source-\(start)-\(end)")
+            layoutID: KindleOfflinePageStore.digest(layoutData), fingerprint: "source-\(start)-\(end)", captureViewport: captureViewport)
         guard position.isValid else { throw KindleBookError.invalidPayload }
         return OfflineSourceEvidence(position: position, words: words, imageIdentity: value["imageIdentity"] as? String ?? "")
     }
 
-    private func waitForOfflineSource(target: Int? = nil) async throws -> OfflineSourceEvidence {
+    private func waitForOfflineSource(target: Int? = nil, layoutID: String? = nil, excludingLayoutID: String? = nil) async throws -> OfflineSourceEvidence {
         var previous: KindleOfflineSourcePosition?, stable = 0
         for _ in 0..<100 {
             try Task.checkCancellation()
             if let evidence = try? await readOfflineSourceEvidence(),
+               layoutID.map({ evidence.position.layoutID == $0 }) ?? true,
+               excludingLayoutID.map({ evidence.position.layoutID != $0 }) ?? true,
                target.map({ evidence.position.start <= $0 && evidence.position.end >= $0 }) ?? true {
                 stable = previous == evidence.position ? stable + 1 : 0
                 previous = evidence.position
@@ -8565,7 +8725,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return source
     }
 
-    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
+    var offlineOnlineReturnPosition: KindleOfflineSourcePosition? {
+        #if targetEnvironment(macCatalyst)
+        return offlineCaptureReturnPosition
+        #else
+        return nil
+        #endif
+    }
+
+    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?, resuming firstSavedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
         guard offlineCaptureOriginal == nil, let scope = KindleOfflineContext.currentScope else { throw KindleBookError.busy }
         cancelInFlightProcessingForManualPageTurn(reason: "offline-book-download")
         stopPlaybackForPageTurn(reason: "offline-book-download")
@@ -8573,24 +8741,55 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         stopPageKeyWatcher()
         _ = try await ensureCaptureScriptInstalled(reason: "offline-book-download")
         try await waitForPageReady()
-        let observed = try await waitForOfflineSource()
+        var observed = try await waitForOfflineSource()
+        #if !targetEnvironment(macCatalyst)
         if let interruptedPosition {
             guard interruptedPosition.layoutID == observed.position.layoutID,
                   interruptedPosition.minimum == observed.position.minimum,
                   interruptedPosition.maximum == observed.position.maximum else { throw KindleOfflineBookStore.Failure.staleGeneration }
         }
-        let original = interruptedPosition ?? observed.position
+        #endif
         let asinJSON = try jsonString([expectedReaderASIN ?? ""])
         guard (try await evaluate("window.__crOfflineProgressGuard(true, (\(asinJSON))[0])") as? Bool) == true else {
             throw KindleBookError.captureFailed("offline-progress-guard-unavailable")
         }
-        offlineCaptureOriginal = original
+        // Establish cleanup ownership before an asynchronous viewport change.
+        offlineCaptureOriginal = interruptedPosition ?? observed.position
         offlineCaptureScope = scope
         offlineCaptureNavigationGeneration = readerControlsNavigationGeneration
+        #if targetEnvironment(macCatalyst)
+        offlineCaptureReturnPosition = interruptedPosition ?? observed.position
+        let savedLayout = firstSavedPosition ?? interruptedPosition
+        guard let host = webView.superview as? KindleWebViewContainer else { throw KindleBookError.invalidPayload }
+        host.offlineCaptureViewport = savedLayout?.captureViewport ?? webView.bounds.size
+        host.layoutIfNeeded()
+        do {
+            observed = try await waitForOfflineSource(layoutID: savedLayout?.layoutID)
+        } catch {
+            try Task.checkCancellation()
+            if savedLayout != nil { throw KindleOfflineBookStore.Failure.staleGeneration }
+            throw error
+        }
+        try requireOfflineCapture()
+        if let savedLayout {
+            guard savedLayout.minimum == observed.position.minimum,
+                  savedLayout.maximum == observed.position.maximum else { throw KindleOfflineBookStore.Failure.staleGeneration }
+        }
+        // An interrupted Mac run restores the online source location while
+        // retaining the committed capture layout for all downloaded pages.
+        if let interruptedPosition {
+            guard (try await evaluate("window.__crOfflineSourceMove(\(interruptedPosition.start))") as? Bool) == true else { throw KindleBookError.invalidPayload }
+            observed = try await waitForOfflineSource(target: interruptedPosition.start, layoutID: savedLayout?.layoutID)
+        }
+        let original = observed.position
+        #else
+        let original = interruptedPosition ?? observed.position
         if interruptedPosition != nil {
             guard (try await evaluate("window.__crOfflineSourceMove(\(original.start))") as? Bool) == true else { throw KindleBookError.invalidPayload }
             _ = try await waitForOfflineSource(target: original.start)
         }
+        #endif
+        offlineCaptureOriginal = original
         return original
     }
 
@@ -8631,25 +8830,74 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         let position = KindleOfflineSourcePosition(start: before.position.start, end: before.position.end,
             minimum: before.position.minimum, maximum: before.position.maximum, layoutID: before.position.layoutID,
-            fingerprint: KindleOfflinePageStore.digest(imageData))
+            fingerprint: KindleOfflinePageStore.digest(imageData), captureViewport: before.position.captureViewport)
         KindleRunLog.write("KINDLE_OFFLINE_IMAGE start=\(position.start) end=\(position.end) bytes=\(imageData.count) readyMs=\(Int(readyAt.timeIntervalSince(started)*1000)) transferMs=\(Int(Date().timeIntervalSince(readyAt)*1000)) ocr=0")
         return KindleOfflineCapturedPage(position: position, document: document, requiresOCR: true, sourceWordCount: before.words)
     }
 
     func endOfflineBookCapture() async -> Bool {
-        guard let original = offlineCaptureOriginal else { return true }
+        guard let capturedOriginal = offlineCaptureOriginal else { return true }
+        #if targetEnvironment(macCatalyst)
+        let original = offlineCaptureReturnPosition ?? capturedOriginal
+        #else
+        let original = capturedOriginal
+        #endif
         defer {
+            #if targetEnvironment(macCatalyst)
+            releaseOfflineCaptureViewport()
+            offlineCaptureReturnPosition = nil
+            #endif
             offlineCaptureOriginal = nil; offlineCaptureScope = nil; offlineCaptureNavigationGeneration = nil
             webView.evaluateJavaScript("window.__crOfflineProgressGuard && window.__crOfflineProgressGuard(false); window.__crKindleOfflineResetCandidates && window.__crKindleOfflineResetCandidates();", completionHandler: nil)
         }
         guard offlineCaptureScope == KindleOfflineContext.currentScope,
               offlineCaptureNavigationGeneration == readerControlsNavigationGeneration else { return false }
         do {
+            // Cancelling native work does not cancel Kindle's in-flight turn.
+            let settled = try await waitForOfflineSource()
+            #if targetEnvironment(macCatalyst)
+            let lockedSize = webView.bounds.size
+            releaseOfflineCaptureViewport()
+            if abs(lockedSize.width - webView.bounds.width) > 1 || abs(lockedSize.height - webView.bounds.height) > 1 {
+                _ = try await waitForOfflineSource(excludingLayoutID: settled.position.layoutID)
+            }
+            #endif
+            guard offlineCaptureScope == KindleOfflineContext.currentScope,
+                  offlineCaptureNavigationGeneration == readerControlsNavigationGeneration else { return false }
             guard (try await evaluate("window.__crOfflineSourceMove(\(original.start))") as? Bool) == true else { return false }
             let restored = try await waitForOfflineSource(target: original.start)
-            return restored.position.start == original.start && restored.position.end == original.end
-        } catch { return false }
+            let matches: Bool
+            #if targetEnvironment(macCatalyst)
+            if restored.position.layoutID != original.layoutID {
+                // A resized window has different page boundaries. Confirm that
+                // the same source location is on its newly rendered page.
+                matches = restored.position.start <= original.start && restored.position.end >= original.start
+            } else {
+                matches = restored.position.start == original.start && restored.position.end == original.end
+            }
+            #else
+            matches = restored.position.start == original.start && restored.position.end == original.end
+                && restored.position.layoutID == original.layoutID
+            #endif
+            KindleRunLog.write("KINDLE_OFFLINE_RESTORE confirmed=\(matches) expected=\(original.start)-\(original.end) actual=\(restored.position.start)-\(restored.position.end)")
+            return matches
+        } catch {
+            KindleRunLog.write("KINDLE_OFFLINE_RESTORE failed type=\(type(of: error))")
+            return false
+        }
     }
+
+    #if targetEnvironment(macCatalyst)
+    private func releaseOfflineCaptureViewport() {
+        guard let host = webView.superview as? KindleWebViewContainer,
+              host.offlineCaptureViewport != nil else { return }
+        host.offlineCaptureViewport = nil
+        updateReaderSurfaceSize(host.bounds.size)
+        host.crop = effectiveViewportCrop(forSurfaceSize: host.bounds.size)
+        host.presentationFit = effectiveViewportPresentationFit(forSurfaceSize: host.bounds.size)
+        host.layoutIfNeeded()
+    }
+    #endif
 
     #if DEBUG
     func prepareOfflineDiagnostics() {
@@ -8753,6 +9001,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func pauseReadPlayback() {
         guard mode == .read else { return }
         if sentenceStream != nil {
+            cancelPendingPlaybackStart(reason: "user-pause")
             // Pause retains the confirmed text window and its visible-page
             // hold. Cancelling navigation here would reveal the prefetched
             // page and leave the retained VM with an orphaned source callback.
@@ -9639,7 +9888,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     ) async throws -> KindleRefocusCandidateMatch? {
         guard shouldRunPlaybackRefocus else { return nil }
         if reason == "ipad-viewport" {
+            #if targetEnvironment(macCatalyst)
+            return try await findMacReflowedViewportMatch(for: target, followsPlayback: followsPlayback)
+            #else
             return try await findReflowedViewportMatch(for: target, followsPlayback: followsPlayback)
+            #endif
         }
         var seenKeys = Set<String>()
         if let direct = try await scanRefocusCandidates(
@@ -9656,6 +9909,67 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         KindleRunLog.write("KINDLE refocus search-skip reason=\(reason) attempt=\(attempt) targetKey=\(Self.keyLog(target.pageKey ?? ""))")
         return nil
     }
+
+    #if targetEnvironment(macCatalyst)
+    private func findMacReflowedViewportMatch(for originalTarget: KindleRefocusTarget, followsPlayback: Bool) async throws -> KindleRefocusCandidateMatch? {
+        let navigation = readerControlsNavigationGeneration
+        func requireOwner() throws {
+            try Task.checkCancellation()
+            guard readerControlsNavigationGeneration == navigation, shouldRunPlaybackRefocus else { throw CancellationError() }
+        }
+        let initial = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
+        var key = initial["key"] as? String ?? ""
+        var offset = 0, index = 0
+        var destinations = [0]
+        var seenKeys = Set<String>()
+        var minimumOffset: Int?, maximumOffset: Int?
+        while index < destinations.count {
+            try requireOwner()
+            let destination = destinations[index]
+            index += 1
+            if let minimumOffset, destination < minimumOffset { continue }
+            if let maximumOffset, destination > maximumOffset { continue }
+            while offset != destination {
+                try requireOwner()
+                let direction: KindlePageTurnDirection = destination > offset ? .next : .previous
+                do {
+                    key = try await requestKindlePageTurnTarget(direction, oldKey: key).targetKey
+                    offset += direction == .next ? 1 : -1
+                } catch KindleBookError.nativeSourceUnchanged {
+                    if direction == .next { maximumOffset = offset } else { minimumOffset = offset }
+                    break
+                }
+            }
+            guard offset == destination, seenKeys.insert(key).inserted else { continue }
+            try await waitForKindleImageStable()
+            let page = try await captureVisiblePage(pageIndex: 0)
+            try requireOwner()
+            let document = makeLiveDocument(from: page)
+            let target = followsPlayback ? (currentRefocusTarget() ?? originalTarget) : originalTarget
+            if let projection = projectCapturedDocumentForRefocus(document, playbackDocument: target.document,
+                centerParagraphIndex: target.paragraphIndex, centerWordIndex: target.wordIndex, centerCharRange: target.charRange) {
+                KindleRunLog.write("KINDLE Mac viewport semantic hit offset=\(offset) key=\(Self.keyLog(page.key)) p=\(target.paragraphIndex)")
+                return KindleRefocusCandidateMatch(offset: 0, page: page, projection: projection)
+            }
+            if destination == 0 {
+                destinations = KindleViewportTextAlignment.reflowSearchOffsets(
+                    originalWordCount: target.document.paragraphs.reduce(0) { $0 + $1.words.count },
+                    capturedWordCount: document.paragraphs.reduce(0) { $0 + $1.words.count })
+                KindleRunLog.write("KINDLE Mac viewport semantic search radius=\(destinations.last.map { -$0 } ?? 0)")
+            }
+            KindleRunLog.write("KINDLE Mac viewport semantic miss offset=\(offset) key=\(Self.keyLog(page.key)) p=\(target.paragraphIndex)")
+        }
+        // Restore by confirmed native turns, since a wide-to-narrow reflow can
+        // exceed the ordinary three-page pixel-key recovery budget.
+        while offset != 0 {
+            try requireOwner()
+            let direction: KindlePageTurnDirection = offset < 0 ? .next : .previous
+            key = try await requestKindlePageTurnTarget(direction, oldKey: key).targetKey
+            offset += direction == .next ? 1 : -1
+        }
+        return nil
+    }
+    #endif
 
     /// Amazon may repaginate the spoken words onto an adjacent page. Nearby
     /// image snapshots are not navigation: some renderers return the current
@@ -12530,7 +12844,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     afterWord: route.sourceEndWordIndex ?? route.sourceWordIndex) else {
                 throw KindleBookError.captureFailed("viewport-explain-continuation-anchor-unavailable")
             }
-            if remaining.isEmpty {
+            #if targetEnvironment(macCatalyst)
+            // A window reflow can leave only a few words after the already
+            // explained passage. Such a fragment cannot start a new plan.
+            // Continue once through the same confirmed native turn used for
+            // an empty remainder; never retry the fragment or replay its prefix.
+            let advancePastRemainder = !ExplainViewModel.hasMinimumExplainContent(
+                paragraphs: remaining, language: owner.document.language)
+            if advancePastRemainder && !remaining.isEmpty {
+                KindleRunLog.write("KINDLE viewport short explain remainder continue chars=\(remaining.reduce(0) { $0 + $1.text.count })")
+            }
+            #else
+            let advancePastRemainder = remaining.isEmpty
+            #endif
+            if advancePastRemainder {
                 refocusWordRoutes.removeAll(); refocusMarkBoxes = nil
                 await advanceByNativePageTurnAndContinue(oldKey: page.key, continuationMode: .explain,
                     status: AppLocalized("正在翻到下一页 Kindle 解读…"), reason: "viewport-explain-page-complete")

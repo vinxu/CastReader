@@ -1,0 +1,10 @@
+{
+  "CastReader/Services/KindleOfflineOCRService.swift": "5616f2211ee0624f4400d77ba55bf9c4ca76d5e5aad80495dbaa03da2c9bffb4",
+  "CastReader/Services/KindleOfflinePageStore.swift": "163a05f26f71bb803e087b163fcb05b73868045146471baa6a7413fd48226083",
+  "CastReader/Views/Kindle/KindleOfflineLibraryView.swift": "60b7ac70ecd0d7a0b8801ab2b66ba23ef7c3e35902f70343e371e4a3f095d709",
+  "CastReader/Utils/AdaptiveLayout.swift": "6f725f822ad70758f0a9442144bb53e4520e0eb6c14a4f8105c014fe97efa28d",
+  "CastReader/Views/MainTabView.swift": "2f7bb37991f9a5059bde8a142353306085c86f979cb9bc4133d0f313df046e5a",
+  "CastReaderTests/KindleOfflineBookStoreTests.swift": "bff2de28aa47a2eb7e892a6ae158166b38e58af967606e27ee45e26dfe811272",
+  "CastReaderMacTests/MacWindowRoutingTests.swift": "3ee9b14b0cd388e73f7a34b478caa9404bb0940d78c9e33d7beae097b612c11d",
+  "CastReaderTests/Fixtures/kindle-offline-dual-page.png": "af97128d49b95d46355547a76cc5b106a3b35d50dade70c0bd4c3e470df15899"
+}

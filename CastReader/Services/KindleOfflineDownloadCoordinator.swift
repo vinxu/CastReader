@@ -13,9 +13,14 @@ enum KindleOfflineCaptureFailure: Error { case pageNotReady }
 @MainActor
 protocol KindleOfflineBookSource: AnyObject {
     var offlineSourceBook: KindleBook { get }
-    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition
+    var offlineOnlineReturnPosition: KindleOfflineSourcePosition? { get }
+    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?, resuming firstSavedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition
     func captureOfflineBookPage(after: KindleOfflineSourcePosition?) async throws -> KindleOfflineCapturedPage
     func endOfflineBookCapture() async -> Bool
+}
+
+extension KindleOfflineBookSource {
+    var offlineOnlineReturnPosition: KindleOfflineSourcePosition? { nil }
 }
 
 /// Estimates only the remaining source range in this run, including a resumed
@@ -82,6 +87,13 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
         phase = AppLocalized("正在确认整本书的页范围…")
         task = Task { [weak self, source] in
             guard let self else { return }
+            #if targetEnvironment(macCatalyst)
+            let activity = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiated, .idleDisplaySleepDisabled],
+                reason: "Saving an offline Kindle book"
+            )
+            defer { ProcessInfo.processInfo.endActivity(activity) }
+            #endif
             let priorIdleTimer = UIApplication.shared.isIdleTimerDisabled
             UIApplication.shared.isIdleTimerDisabled = true
             let orientationOwner = "kindle-offline-download-" + run.uuidString
@@ -95,12 +107,13 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
             do {
                 guard stillAuthorized() else { throw CancellationError() }
                 let prior = try await self.store.load(id: KindleOfflineBookStore.bookID(source.offlineSourceBook.id), scope: scope)
-                let interruptedPosition = prior?.originalPositionRestored == false ? prior?.originalPosition : nil
+                let interruptedPosition = prior?.originalPositionRestored == false ? prior?.onlineReturnPosition : nil
                 capturedSession = true
-                let original = try await source.beginOfflineBookCapture(restoring: interruptedPosition)
+                let original = try await source.beginOfflineBookCapture(restoring: interruptedPosition, resuming: prior?.pages.first?.position)
                 try Task.checkCancellation()
                 guard stillAuthorized(), self.runID == run else { throw CancellationError() }
-                var book = try await self.store.prepare(source: source.offlineSourceBook, scope: scope, originalPosition: original)
+                var book = try await self.store.prepare(source: source.offlineSourceBook, scope: scope, originalPosition: original,
+                    onlineReturnPosition: source.offlineOnlineReturnPosition)
                 self.book = book
                 let coverBook = book
                 let coverURL = source.offlineSourceBook.coverURL
@@ -223,7 +236,11 @@ final class KindleOfflineDownloadCoordinator: ObservableObject {
             }
         }
         if (error as NSError).domain == NSCocoaErrorDomain && (error as NSError).code == NSFileWriteOutOfSpaceError {
+            #if targetEnvironment(macCatalyst)
+            return AppLocalized("设备空间不足，已保存页面保留，释放空间后可以继续。")
+            #else
             return AppLocalized("手机空间不足，已保存页面保留，释放空间后可以继续。")
+            #endif
         }
         return AppLocalized("本页暂时无法保存。请确认网络和 Kindle 页面正常后继续下载，已有页面会保留。")
     }

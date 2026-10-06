@@ -275,6 +275,7 @@ struct OReillyLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: OReillyLibrarySyncViewModel
     @State private var showsInstitutionOptions = false
+    @State private var showsLoginMethodChoices = false
     @State private var institutionAccessLink = ""
     @State private var institutionAccessLinkError: String?
 
@@ -296,67 +297,15 @@ struct OReillyLibraryConnectView: View {
 
     var body: some View {
         NavigationView {
-            ZStack(alignment: .bottom) {
-                if model.hasOpenedWebPage {
-                    OReillyWebViewContainer(webView: model.webView)
-                        .ignoresSafeArea(edges: .bottom)
-                        .accessibilityIdentifier("oreillyBindingWebView")
-                } else {
-                    initialBackdrop
-                }
-
-                if let popup = model.popupWebView {
-                    OReillyWebViewContainer(webView: popup)
-                        .background(AppTheme.background)
-                        .ignoresSafeArea(edges: .bottom)
-                        .accessibilityIdentifier(
-                            "oreillyLoginPopupWebView"
-                        )
-                }
-
-                if model.popupWebView == nil, model.showsBottomCard {
-                    bottomCard
-                }
-            }
+            connectionContent
             .navigationTitle(AppLocalized("绑定 O’Reilly"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(AppLocalized("关闭")) { dismiss() }
+                    AdaptiveSheetDismissButton(title: AppLocalized("关闭")) { dismiss() }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        if model.isBrowsingCatalog {
-                            Button {
-                                model.returnToHistoryAndSync()
-                            } label: {
-                                Label(
-                                    AppLocalized("同步 O’Reilly 阅读历史"),
-                                    systemImage: "arrow.clockwise"
-                                )
-                            }
-                            Divider()
-                        }
-                        Button {
-                            model.openDirectAccount()
-                        } label: {
-                            Label(
-                                AppLocalized("O’Reilly 个人账户"),
-                                systemImage: "person.crop.circle"
-                            )
-                        }
-                        Button {
-                            showsInstitutionOptions = true
-                        } label: {
-                            Label(
-                                AppLocalized("学校或图书馆"),
-                                systemImage: "building.columns"
-                            )
-                        }
-                    } label: {
-                        Image(systemName: "person.badge.key")
-                    }
-                    .accessibilityIdentifier("oreillyLoginMethodMenu")
+                    loginMethodMenu
                 }
             }
             .onAppear {
@@ -369,6 +318,102 @@ struct OReillyLibraryConnectView: View {
             }
         }
         .navigationViewStyle(.stack)
+    }
+
+    @ViewBuilder private var connectionContent: some View {
+        #if targetEnvironment(macCatalyst)
+        if !model.hasOpenedWebPage {
+            ScrollView {
+                VStack(spacing: 24) {
+                    initialBackdrop.padding(.top, 28)
+                    if model.showsBottomCard { bottomCard }
+                }
+            }
+            .background(AppTheme.background)
+        } else {
+            bindingSurface
+        }
+        #else
+        bindingSurface
+        #endif
+    }
+
+    private var bindingSurface: some View {
+        ZStack(alignment: .bottom) {
+            if model.hasOpenedWebPage {
+                OReillyWebViewContainer(webView: model.webView)
+                    .ignoresSafeArea(edges: .bottom)
+                    .accessibilityIdentifier("oreillyBindingWebView")
+            } else {
+                initialBackdrop
+            }
+
+            if let popup = model.popupWebView {
+                OReillyWebViewContainer(webView: popup)
+                    .background(AppTheme.background)
+                    .ignoresSafeArea(edges: .bottom)
+                    .accessibilityIdentifier(
+                        "oreillyLoginPopupWebView"
+                    )
+            }
+
+            if model.popupWebView == nil, model.showsBottomCard {
+                bottomCard
+            }
+        }
+    }
+
+    @ViewBuilder private var loginMethodMenu: some View {
+        #if targetEnvironment(macCatalyst)
+        Button {
+            showsLoginMethodChoices = true
+        } label: {
+            Image(systemName: "person.badge.key")
+        }
+        .accessibilityLabel(AppLocalized("绑定 O’Reilly"))
+        .accessibilityIdentifier("oreillyLoginMethodMenu")
+        .confirmationDialog(AppLocalized("绑定 O’Reilly"), isPresented: $showsLoginMethodChoices) {
+            loginMethodActions
+        }
+        #else
+        Menu {
+            loginMethodActions
+        } label: {
+            Image(systemName: "person.badge.key")
+        }
+        .accessibilityLabel(AppLocalized("绑定 O’Reilly"))
+        .accessibilityIdentifier("oreillyLoginMethodMenu")
+        #endif
+    }
+
+    @ViewBuilder private var loginMethodActions: some View {
+        if model.isBrowsingCatalog {
+            Button {
+                model.returnToHistoryAndSync()
+            } label: {
+                Label(
+                    AppLocalized("同步 O’Reilly 阅读历史"),
+                    systemImage: "arrow.clockwise"
+                )
+            }
+            Divider()
+        }
+        Button {
+            model.openDirectAccount()
+        } label: {
+            Label(
+                AppLocalized("O’Reilly 个人账户"),
+                systemImage: "person.crop.circle"
+            )
+        }
+        Button {
+            showsInstitutionOptions = true
+        } label: {
+            Label(
+                AppLocalized("学校或图书馆"),
+                systemImage: "building.columns"
+            )
+        }
     }
 
     private var initialBackdrop: some View {
@@ -611,7 +656,7 @@ struct OReillyLibraryConnectView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(AppLocalized("取消")) {
+                    AdaptiveSheetDismissButton(title: AppLocalized("取消")) {
                         showsInstitutionOptions = false
                     }
                 }

@@ -73,6 +73,9 @@ struct YouTubeListenView: View {
                 .padding(.vertical, 14)
                 .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.readingWidth : .infinity)
                 .frame(maxWidth: .infinity)
+                .background(YouTubeManualScrollObserver {
+                    followsPlayback = false
+                })
             }
             .simultaneousGesture(
                 DragGesture(minimumDistance: 5)
@@ -262,6 +265,72 @@ struct YouTubeListenView: View {
         let folded = value.precomposedStringWithCompatibilityMapping.lowercased()
         let name = speaker.precomposedStringWithCompatibilityMapping.lowercased()
         return folded.hasPrefix(name + ":") || folded.hasPrefix(name + "：")
+    }
+}
+
+/// SwiftUI's DragGesture does not receive mouse-wheel scrolling. Observe the
+/// enclosing scroll view's own pan recognizer, which also handles indirect
+/// scrolling, without replacing its delegate or competing with its gestures.
+private struct YouTubeManualScrollObserver: UIViewRepresentable {
+    let onScroll: () -> Void
+
+    func makeUIView(context: Context) -> ObserverView {
+        let view = ObserverView()
+        view.isUserInteractionEnabled = false
+        view.onScroll = onScroll
+        return view
+    }
+
+    func updateUIView(_ uiView: ObserverView, context: Context) {
+        uiView.onScroll = onScroll
+        uiView.attach()
+    }
+
+    static func dismantleUIView(_ uiView: ObserverView, coordinator: ()) {
+        uiView.detach()
+    }
+
+    final class ObserverView: UIView {
+        var onScroll: (() -> Void)?
+        private weak var observedScrollView: UIScrollView?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if window == nil { detach() } else { attach() }
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            attach()
+        }
+
+        func attach() {
+            guard window != nil else { return }
+            var ancestor = superview
+            while let view = ancestor {
+                if let scroll = view as? UIScrollView, scroll.isScrollEnabled {
+                    guard observedScrollView !== scroll else { return }
+                    detach()
+                    observedScrollView = scroll
+                    scroll.panGestureRecognizer.addTarget(self, action: #selector(didScroll(_:)))
+                    return
+                }
+                ancestor = view.superview
+            }
+            detach()
+        }
+
+        func detach() {
+            observedScrollView?.panGestureRecognizer.removeTarget(self, action: #selector(didScroll(_:)))
+            observedScrollView = nil
+        }
+
+        @objc private func didScroll(_ gesture: UIPanGestureRecognizer) {
+            // Programmatic word-follow and restored offsets never activate the
+            // recognizer, so they must not disable narration follow mode.
+            guard gesture.state == .began || gesture.state == .changed else { return }
+            onScroll?()
+        }
     }
 }
 

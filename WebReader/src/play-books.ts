@@ -830,7 +830,8 @@ function extractPlayBooksParagraphsFromClips(
 
 /** Native sliced/reopened relationships, including verified measuring pages,
  * own source ranges. An unrelated offscreen DOM node is never a successor. */
-export function playBooksReflowSourceDirection(snapshot: PlayBooksSnapshot, source: string): 'next' | 'prev' | null {
+export function playBooksReflowSourceDirection(snapshot: PlayBooksSnapshot, source: string,
+  context: Array<{ text: string; side: 'before' | 'after' }> = []): 'next' | 'prev' | null {
   if (!snapshot.ready || source.length < 24 || source.length > 16000 || !snapshot.visible.length) return null
   const units: PlayBooksUnit[] = []
   let previous: PlayBooksSnapshot['pages'][number] | undefined
@@ -841,20 +842,60 @@ export function playBooksReflowSourceDirection(snapshot: PlayBooksSnapshot, sour
     try { appendPlayBooksPage(units, page) } catch { break }
     previous = page
   }
-  const matches = units.flatMap(unit => {
-    const at = unit.text.indexOf(source)
-    if (at < 0 || unit.text.indexOf(source, at + 1) >= 0) return []
-    return unit.fragments.filter(fragment => fragment.end > at && fragment.start < at + source.length)
-  })
-  // Require one unique source unit. Repeated prose cannot choose a page.
-  if (units.filter(unit => unit.text.includes(source)).length !== 1 || !matches.length) return null
-  const visible = new Set(snapshot.visible.map(page => page.key))
-  if (matches.some(fragment => visible.has(fragment.page.key))) return null
+  // A smaller spread may have measured only a prefix or suffix of the old
+  // audio. Require substantial exact overlap and one unique source origin.
+  const locate = (text: string) => {
+    const matches: Array<{ unit: PlayBooksUnit; lo: number; hi: number }> = []
+    const minimum = Math.min(48, text.length)
+    if (minimum < 24 || text.length > 16000) return matches
+    for (const unit of units) {
+      if (unit.text.length < minimum) continue
+      const shifts = new Set<number>()
+      const occurrences = (haystack: string, needle: string, add: (at: number) => void) => {
+        for (let at = haystack.indexOf(needle); at >= 0; at = haystack.indexOf(needle, at + 1)) add(at)
+      }
+      for (const offset of new Set([0, text.length - minimum])) {
+        occurrences(unit.text, text.slice(offset, offset + minimum), at => shifts.add(at - offset))
+      }
+      for (const offset of new Set([0, unit.text.length - minimum])) {
+        occurrences(text, unit.text.slice(offset, offset + minimum), at => shifts.add(offset - at))
+      }
+      for (const shift of shifts) {
+        const lo = Math.max(0, shift), hi = Math.min(unit.text.length, shift + text.length)
+        if (hi - lo >= minimum && unit.text.slice(lo, hi) === text.slice(lo - shift, hi - shift)) {
+          matches.push({ unit, lo, hi })
+        }
+      }
+    }
+    return matches
+  }
   const indices = snapshot.visible.map(page => snapshot.pages.findIndex(p => p.key === page.key))
-  const targets = matches.map(fragment => snapshot.pages.findIndex(p => p.key === fragment.page.key))
-  if (targets.every(index => index > Math.max(...indices))) return 'next'
-  if (targets.every(index => index < Math.min(...indices))) return 'prev'
-  return null
+  const firstVisible = Math.min(...indices), lastVisible = Math.max(...indices)
+  const positions = (match: ReturnType<typeof locate>[number]) => match.unit.fragments
+    .filter(fragment => fragment.end > match.lo && fragment.start < match.hi)
+    .map(fragment => snapshot.pages.findIndex(p => p.key === fragment.page.key))
+  const matched = locate(source)
+  if (matched.length > 1) return null
+  if (matched.length === 1) {
+    const targets = positions(matched[0])
+    if (targets.length && targets.every(index => index > lastVisible)) return 'next'
+    if (targets.length && targets.every(index => index >= 0 && index < firstVisible)) return 'prev'
+    return null
+  }
+  // A unique old neighbor beyond the visible spread can prove the direction
+  // of a target outside the finite cache. Never guess page counts or gaps.
+  const directions = new Set<'next' | 'prev'>()
+  for (const neighbor of context.slice(0, 32)) {
+    if (!neighbor || typeof neighbor.text !== 'string' ||
+        (neighbor.side !== 'before' && neighbor.side !== 'after')) continue
+    const found = locate(neighbor.text)
+    if (found.length > 1) return null
+    if (found.length !== 1) continue
+    const targets = positions(found[0])
+    if (targets.length && neighbor.side === 'before' && targets.every(index => index > lastVisible)) directions.add('next')
+    if (targets.length && neighbor.side === 'after' && targets.every(index => index >= 0 && index < firstVisible)) directions.add('prev')
+  }
+  return directions.size === 1 ? [...directions][0] : null
 }
 
 function nativeParagraphs(snapshot: PlayBooksSnapshot, keys: Set<string>): PlayBooksPara[] {
@@ -2159,7 +2200,8 @@ export function installPlayBooksReader(
         if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent ||
             reflow.reflowBaseline !== playBooksSignature()) return
         const snapshot = readPlayBooksSnapshot()
-        const direction = snapshot && playBooksReflowSourceDirection(snapshot, reflow.reflowSourceText)
+        const direction = snapshot && playBooksReflowSourceDirection(snapshot, reflow.reflowSourceText,
+          Array.isArray(reflow.reflowContext) ? reflow.reflowContext : [])
         changeReasonInFlight = 'refresh'
         changeBaseline = committedSignature
         changeMetadata = null

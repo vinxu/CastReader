@@ -243,6 +243,48 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         XCTAssertEqual(reopened.book?.originalPositionRestored, true)
     }
 
+    func testInterruptedResizedDownloadRestoresOnlinePositionWithoutChangingCaptureLayout() async throws {
+        let capture = KindleOfflineSourcePosition(start: 50, end: 59, minimum: 0, maximum: 369,
+            layoutID: "fixture", fingerprint: "capture")
+        let online = KindleOfflineSourcePosition(start: 54, end: 57, minimum: 0, maximum: 369,
+            layoutID: "narrow-online-window", fingerprint: "online", captureViewport: CGSize(width: 600, height: 400))
+        let store = KindleOfflineBookStore(root: root)
+        var book = try await store.prepare(source: source, scope: scope, originalPosition: capture,
+            onlineReturnPosition: online)
+        book = try await store.append(document: document(), position: .init(start: 0, end: 9, minimum: 0,
+            maximum: 369, layoutID: "fixture", fingerprint: "first"), to: book, scope: scope)
+        let loaded = try await store.load(id: book.id, scope: scope)
+        let reloaded = try XCTUnwrap(loaded)
+        XCTAssertEqual(reloaded.onlineReturnPosition, online)
+        XCTAssertEqual(reloaded.originalPosition, capture)
+        XCTAssertFalse(reloaded.originalPositionRestored)
+
+        let reopened = KindleOfflineDownloadCoordinator(store: KindleOfflineBookStore(root: root))
+        let fixture = OfflineSourceFixture(book: source, document: document())
+        fixture.captureOriginalOverride = capture
+        fixture.offlineOnlineReturnPosition = online
+        fixture.failAtPage = 1
+        reopened.start(source: fixture, scope: scope, stillAuthorized: { true })
+        try await waitUntilStopped(reopened)
+        XCTAssertEqual(fixture.interruptedPositions, [online])
+        XCTAssertEqual(fixture.requestedPages, [1])
+        XCTAssertEqual(reopened.book?.originalPosition, capture)
+        XCTAssertEqual(reopened.book?.onlineReturnPosition, online)
+        XCTAssertEqual(reopened.book?.pages.count, 1)
+        XCTAssertEqual(reopened.book?.originalPositionRestored, true)
+    }
+
+    func testOnlineRestorationPositionRejectsDifferentBookRange() async throws {
+        let store = KindleOfflineBookStore(root: root)
+        do {
+            _ = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 5),
+                onlineReturnPosition: position(0, total: 6, layout: "online"))
+            XCTFail("A location in a different source range cannot be used for restoration")
+        } catch KindleOfflineBookStore.Failure.staleGeneration {}
+        let persisted = try await store.load(id: KindleOfflineBookStore.bookID(source.id), scope: scope)
+        XCTAssertNil(persisted)
+    }
+
     func testCoordinatorContinuesPastThirteenPagesAndResumesAfterSourceFailure() async throws {
         let store = KindleOfflineBookStore(root: root)
         let source = OfflineSourceFixture(book: self.source, document: document())
@@ -261,6 +303,24 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         XCTAssertEqual(source.cleanupCount, 2)
         XCTAssertEqual(source.requestedPages.filter { $0 == 0 }.count, 1)
         XCTAssertEqual(download.book?.originalPositionRestored, true)
+        XCTAssertEqual(source.resumePositions.count, 2)
+        XCTAssertNil(source.resumePositions[0])
+        XCTAssertEqual(source.resumePositions[1], download.book?.pages.first?.position,
+            "Resume needs the committed layout even when the previous run restored the online position")
+    }
+
+    func testCaptureViewportSurvivesManifestCodingAndOldPositionsRemainReadable() throws {
+        var value = position(0, total: 5)
+        let oldData = try JSONEncoder().encode(value)
+        XCTAssertNil(try JSONDecoder().decode(KindleOfflineSourcePosition.self, from: oldData).captureViewport)
+        value.captureViewport = CGSize(width: 1024, height: 768)
+        let restored = try JSONDecoder().decode(KindleOfflineSourcePosition.self, from: JSONEncoder().encode(value))
+        XCTAssertEqual(restored.captureViewport, value.captureViewport)
+        XCTAssertTrue(restored.isValid)
+        value.captureViewport = CGSize(width: 0, height: 768)
+        XCTAssertFalse(value.isValid)
+        value.captureViewport = CGSize(width: 1024, height: CGFloat.infinity)
+        XCTAssertFalse(value.isValid)
     }
 
     private func waitUntilStopped(_ download: KindleOfflineDownloadCoordinator) async throws {
@@ -309,7 +369,7 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         _ = try await reopened.openPage(book: book, ordinal: 0, scope: scope)
     }
 
-    func testOldWrongLanguageOCRIsDiscardedWithoutChangingImagesOrPageOrder() async throws {
+    func testOldLanguageAndSingleFlowOCRIsDiscardedWithoutChangingImagesOrPageOrder() async throws {
         let store = KindleOfflineBookStore(root: root)
         var raw = document(); raw.paragraphs.removeAll { $0.type != .image }
         var book = try await store.prepare(source: source, scope: scope, originalPosition: position(0, total: 1))
@@ -320,16 +380,18 @@ final class KindleOfflineBookStoreTests: XCTestCase {
         let sidecar = try XCTUnwrap(try FileManager.default.subpathsOfDirectory(atPath: root.path).first { $0.hasSuffix(".ocr") })
         let url = root.appendingPathComponent(sidecar)
         var old = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
-        old["version"] = 1
-        try JSONSerialization.data(withJSONObject: old).write(to: url)
-        let reopened = KindleOfflineBookStore(root: root)
-        let cached = try await reopened.cachedSpeechPage(book: book, ordinal: 0, scope: scope)
-        XCTAssertNil(cached)
-        let imageOnly = try await reopened.openPage(book: book, ordinal: 0, scope: scope)
-        XCTAssertEqual(imageOnly.paragraphs.first?.imageData, raw.paragraphs.first?.imageData)
-        let fresh = try await reopened.load(id: book.id, scope: scope)
-        XCTAssertEqual(fresh?.pages, book.pages)
-        XCTAssertEqual(fresh?.status, .complete)
+        for version in [1, 2] {
+            old["version"] = version
+            try JSONSerialization.data(withJSONObject: old).write(to: url)
+            let reopened = KindleOfflineBookStore(root: root)
+            let cached = try await reopened.cachedSpeechPage(book: book, ordinal: 0, scope: scope)
+            XCTAssertNil(cached)
+            let imageOnly = try await reopened.openPage(book: book, ordinal: 0, scope: scope)
+            XCTAssertEqual(imageOnly.paragraphs.first?.imageData, raw.paragraphs.first?.imageData)
+            let fresh = try await reopened.load(id: book.id, scope: scope)
+            XCTAssertEqual(fresh?.pages, book.pages)
+            XCTAssertEqual(fresh?.status, .complete)
+        }
     }
 
     func testEnglishFrontMatterDoesNotForceChinesePagesOrInvalidateTheirCache() async throws {
@@ -541,6 +603,10 @@ private final class OfflineSourceFixture: KindleOfflineBookSource {
     var readinessFailuresRemaining = 0
     var cleanupCount = 0
     var requestedPages: [Int] = []
+    var resumePositions: [KindleOfflineSourcePosition?] = []
+    var interruptedPositions: [KindleOfflineSourcePosition?] = []
+    var captureOriginalOverride: KindleOfflineSourcePosition?
+    var offlineOnlineReturnPosition: KindleOfflineSourcePosition?
     var beginDelay: Duration = .zero
     var captureDelay: Duration = .zero
     var firstCaptureDelay: Duration = .zero
@@ -550,9 +616,11 @@ private final class OfflineSourceFixture: KindleOfflineBookSource {
     private func position(_ page: Int) -> KindleOfflineSourcePosition {
         .init(start: page * 10, end: page * 10 + 9, minimum: 0, maximum: 369, layoutID: "fixture", fingerprint: "page-\(page)")
     }
-    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
+    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?, resuming firstSavedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
+        resumePositions.append(firstSavedPosition)
+        interruptedPositions.append(interruptedPosition)
         if beginDelay != .zero { try await Task.sleep(for: beginDelay) }
-        return interruptedPosition ?? position(20)
+        return captureOriginalOverride ?? interruptedPosition ?? position(20)
     }
     func captureOfflineBookPage(after: KindleOfflineSourcePosition?) async throws -> KindleOfflineCapturedPage {
         let page = after.map { ($0.end + 1) / 10 } ?? 0
@@ -681,6 +749,40 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         XCTAssertNil(center.model)
         driver.onEvent?(.finished(request.id))
         XCTAssertNil(center.model, "Late speech must not resurrect a stopped mini player")
+    }
+
+    func testSavedBookEntryClosesOnlineReaderWithoutAutoplayOrDownload() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, book, scope) = try await imageBook(root: root)
+        let player = PlayerCoordinator(historyStore: HistoryStore(directory: root.appendingPathComponent("history")))
+        let scene = ReaderSceneContext(player: player)
+        let document = ReadingDocument(title: "Online", sourceKind: .text, language: "en",
+                                       paragraphs: [ReadingParagraph(id: 0, text: "Online source.")])
+        player.open(document, mode: .read, autoplay: false)
+        XCTAssertNotNil(player.session)
+        let driver = Driver()
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true })
+        var downloads = 0
+        scene.offline.open(book: book, scope: scope, store: store, scopeValidator: { true },
+            continueDownload: { downloads += 1 }, makeModel: { model })
+        defer { scene.offline.stop(); player.close() }
+        try await waitForSession(scene.offline)
+        XCTAssertNil(player.session)
+        XCTAssertNil(scene.kindle.model)
+        XCTAssertTrue(driver.requests.isEmpty)
+        XCTAssertFalse(model.canPausePlayback)
+        scene.offline.minimize()
+        scene.offline.prepareForOfflineBrowsing()
+        scene.offline.open(book: book, scope: scope, store: store, scopeValidator: { true },
+                           continueDownload: { downloads += 1 })
+        XCTAssertTrue(scene.offline.model === model)
+        XCTAssertEqual(downloads, 0)
+        XCTAssertTrue(driver.requests.isEmpty)
+        scene.offline.resumeDownload()
+        XCTAssertEqual(downloads, 1)
+        XCTAssertNil(scene.offline.model)
     }
 
     func testMinimizedSessionContinuesPagesInOrderAndRejectsDuplicates() async throws {
@@ -984,6 +1086,72 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         XCTAssertNotNil(model.error); XCTAssertFalse(model.loading)
     }
 
+    func testRebuildingOCRDiscardsOldSentenceOffsetButKeepsPageVoiceAndRate() async throws {
+        let voices = await SystemSpeechPlaybackService.availableVoices(language: "en-US")
+        let voice = try XCTUnwrap(voices.first)
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let (store, original, scope) = try await orderedBook(root: root, texts: ["First page.", nil])
+        var cursor = KindleOfflineBook.ReadingPosition()
+        cursor.page = 1; cursor.paragraphID = 1; cursor.sentenceStart = 24
+        cursor.voiceID = voice.id; cursor.speechRate = 0.52
+        try await store.saveReadingPosition(cursor, book: original, scope: scope)
+        let loaded = try await store.load(id: original.id, scope: scope)
+        let book = try XCTUnwrap(loaded)
+        let recognizer = Recognizer(), driver = Driver()
+        recognizer.text = "The left column begins. The right column follows."
+        let model = KindleOfflineBookReaderModel(book: book, scope: scope, store: store,
+            speech: SystemSpeechPlaybackService(driver: driver), scopeValidator: { true }, recognizer: recognizer)
+        defer { model.close() }
+        await model.open(); model.play()
+        let deadline = Date().addingTimeInterval(3)
+        while driver.requests.isEmpty, Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(driver.requests.first?.text, "The left column begins.")
+        XCTAssertEqual(model.pageIndex, 1)
+        XCTAssertEqual(model.voiceID, voice.id)
+        XCTAssertEqual(model.speechRate, 0.52)
+    }
+
+    func testSavedDoublePageReadsAndHighlightsEntireLeftColumnBeforeRight() async throws {
+        let bundle = Bundle(for: Self.self)
+        let url = try XCTUnwrap(bundle.url(forResource: "kindle-offline-dual-page", withExtension: "png")
+            ?? bundle.url(forResource: "kindle-offline-dual-page", withExtension: "png", subdirectory: "Fixtures"))
+        let bytes = try Data(contentsOf: url)
+        let raw = ReadingDocument(title: "Saved double page", sourceKind: .kindle, language: "en-US",
+            paragraphs: [ReadingParagraph(id: 0, text: "", type: .image, imageData: bytes)])
+        let doc = try await KindleOfflineOCRService().recognize(raw, sourceWordCount: nil)
+        let words = doc.paragraphs.filter(\.type.isReadable).flatMap(\.words)
+        let sides = words.map { $0.bboxNorm.midX < 0.5 ? 0 : 1 }
+        XCTAssertGreaterThan(sides.filter { $0 == 0 }.count, 80)
+        XCTAssertGreaterThan(sides.filter { $0 == 1 }.count, 80)
+        XCTAssertEqual(sides, sides.sorted(), "Finish the left column before reading any word from the right")
+        let text = doc.fullText.lowercased()
+        let leftEnd = try XCTUnwrap(text.range(of: "all the fowls"))
+        let rightStart = try XCTUnwrap(text.range(of: "and the king asked"))
+        XCTAssertLessThan(leftEnd.lowerBound, rightStart.lowerBound)
+        // Resolve the same character callbacks used by the original-page
+        // overlay. Sentence segmentation must preserve the column order too.
+        let resolver = PhotoAnchorResolver(document: doc, fitted: CGRect(x: 0, y: 0, width: 1000, height: 600))
+        var highlightSides: [Int] = []
+        for (index, paragraph) in doc.paragraphs.enumerated() where paragraph.type.isReadable {
+            for unit in SystemSpeechTextPlan.units(paragraphID: paragraph.id, text: paragraph.text) {
+                unit.text.enumerateSubstrings(in: unit.text.startIndex..<unit.text.endIndex, options: .byWords) { _, range, _, _ in
+                    let callback = NSRange(range, in: unit.text)
+                    guard let source = SystemSpeechTextPlan.sourceRange(callback, in: unit),
+                          let chars = Range(source, in: paragraph.text) else { return XCTFail("Invalid speech range") }
+                    let start = paragraph.text.distance(from: paragraph.text.startIndex, to: chars.lowerBound)
+                    let end = paragraph.text.distance(from: paragraph.text.startIndex, to: chars.upperBound)
+                    let rects = resolver.rectsForCharRange(paragraphIndex: index, range: start..<end)
+                    highlightSides += rects.map { $0.midX < 500 ? 0 : 1 }
+                }
+            }
+        }
+        XCTAssertGreaterThan(highlightSides.filter { $0 == 0 }.count, 80)
+        XCTAssertGreaterThan(highlightSides.filter { $0 == 1 }.count, 80)
+        XCTAssertEqual(highlightSides, highlightSides.sorted(), "Original-page highlights must not jump across the gutter")
+        XCTAssertEqual(doc.paragraphs.first?.imageData, bytes)
+    }
+
     func testRealLocalOCRRecognizesSavedImageWithoutOnlineReader() async throws {
         let bytes = UIGraphicsImageRenderer(size: CGSize(width: 1100, height: 500)).pngData { context in
             UIColor.white.setFill(); context.fill(CGRect(x: 0, y: 0, width: 1100, height: 500))
@@ -1154,5 +1322,47 @@ final class KindleOfflineBookReaderTests: XCTestCase {
         XCTAssertEqual(restored.pageIndex, 3)
         XCTAssertEqual(restored.speech.state, .paused)
         restored.close()
+    }
+}
+
+@MainActor
+final class KindleOfflineSourceEvidenceTests: XCTestCase {
+    private func evidence(current: Int = 140) -> [String: Any] {
+        ["loading": false, "asin": "OFFLINE-FIXTURE", "revision": "revision-1",
+         "metadata": ["minimum": 0, "maximum": 1000, "cover": 0],
+         "start": 100, "end": 199, "current": current,
+         "page": ["start": 100, "end": 199, "words": 20],
+         "layout": ["width": "614", "height": "393"]]
+    }
+
+    func testRestoredWordLocationWithinTheExactRenderedPageCanBeSaved() throws {
+        for current in [100, 140, 199] {
+            let result = try KindleBookViewModel.parseOfflineSourceEvidence(
+                evidence(current: current), expectedReaderASIN: "OFFLINE-FIXTURE")
+            XCTAssertEqual(result.position.start, 100)
+            XCTAssertEqual(result.position.end, 200)
+            XCTAssertEqual(result.words, 20)
+        }
+    }
+
+    func testLocationFromAnotherPageNeverAuthorizesCapture() {
+        for current in [99, 200, 1000] {
+            XCTAssertThrowsError(try KindleBookViewModel.parseOfflineSourceEvidence(
+                evidence(current: current), expectedReaderASIN: "OFFLINE-FIXTURE"))
+        }
+    }
+
+    func testLoadingOrMismatchedRenderedPageStillFailsClosed() {
+        let mutations: [[String: Any]] = [
+            ["loading": true], ["asin": "OTHER-BOOK"],
+            ["page": ["start": 101, "end": 199, "words": 20]],
+            ["page": ["start": 100, "end": 198, "words": 20]],
+            ["current": NSNull()]
+        ]
+        for mutation in mutations {
+            let value = evidence().merging(mutation) { _, new in new }
+            XCTAssertThrowsError(try KindleBookViewModel.parseOfflineSourceEvidence(
+                value, expectedReaderASIN: "OFFLINE-FIXTURE"))
+        }
     }
 }

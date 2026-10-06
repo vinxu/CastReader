@@ -1,6 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "share_cancel" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Cancel"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "取消"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "取消"}}, "ja": {"stringUnit": {"state": "translated", "value": "キャンセル"}}, "ko": {"stringUnit": {"state": "translated", "value": "취소"}}, "es": {"stringUnit": {"state": "translated", "value": "Cancelar"}}, "fr": {"stringUnit": {"state": "translated", "value": "Annuler"}}, "de": {"stringUnit": {"state": "translated", "value": "Abbrechen"}}, "pt": {"stringUnit": {"state": "translated", "value": "Cancelar"}}}},
     "share_detail" : {
       "extractionState" : "stale",
       "localizations" : {

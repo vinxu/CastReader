@@ -1,0 +1,62 @@
+[
+  {
+    "path": "/tmp/CastReaderMacTests.J4I4om/DerivedData/SourcePackages",
+    "bytes": 44072218,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacTests.J4I4om/DerivedData/SDKStatCaches.noindex",
+    "bytes": 14416176,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacTests.J4I4om/DerivedData/CompilationCache.noindex",
+    "bytes": 16688,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacTests.K8inky/DerivedData/SourcePackages",
+    "bytes": 44072218,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacTests.K8inky/DerivedData/SDKStatCaches.noindex",
+    "bytes": 14416176,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacTests.K8inky/DerivedData/CompilationCache.noindex",
+    "bytes": 16688,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacTests.YeBZtl/DerivedData/SourcePackages",
+    "bytes": 44072218,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacTests.YeBZtl/DerivedData/SDKStatCaches.noindex",
+    "bytes": 14416176,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacTests.YeBZtl/DerivedData/CompilationCache.noindex",
+    "bytes": 16688,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacParityRelease/SourcePackages",
+    "bytes": 44072108,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacParityRelease/SDKStatCaches.noindex",
+    "bytes": 14416176,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  },
+  {
+    "path": "/tmp/CastReaderMacParityRelease/CompilationCache.noindex",
+    "bytes": 16688,
+    "reason": "Inactive task-owned build, resolved public SPM dependencies and SDK cache regenerable; Products and evidence retained"
+  }
+]

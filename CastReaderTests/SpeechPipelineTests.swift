@@ -38,6 +38,10 @@ final class SpeechPipelineTests: XCTestCase {
         audio.currentTime = 0
     }
     override func setUp() async throws {
+        // The isolated test host skips the normal auth gate. Resolve restored
+        // account state before a VM owns audio, as the real app does, so an
+        // individual test does not recursively initialize auth via analytics.
+        _ = AuthService.shared
         root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         oldSpeed = Double(AppSettings.shared.speed)
@@ -682,11 +686,17 @@ final class SpeechPipelineTests: XCTestCase {
         try await verifyExplainStartAfterReadPause(explicitStart: true, pauseDuringPlan: true)
     }
 
+    func testLateModePresentationPreservesExplicitShareExplanationPlan() async throws {
+        try await verifyExplainStartAfterReadPause(explicitStart: true, pauseDuringPlan: false,
+                                                   lateModePresentation: true)
+    }
+
     func testAutomaticExplainStartPreservesInheritedPause() async throws {
         try await verifyExplainStartAfterReadPause(explicitStart: false, pauseDuringPlan: false)
     }
 
-    private func verifyExplainStartAfterReadPause(explicitStart: Bool, pauseDuringPlan: Bool) async throws {
+    private func verifyExplainStartAfterReadPause(explicitStart: Bool, pauseDuringPlan: Bool,
+                                                lateModePresentation: Bool = false) async throws {
         let audio = AudioPlayerService.shared
         audio.clearForAccountBoundary()
         let priorAutoPlay = AppSettings.shared.autoPlay
@@ -727,6 +737,14 @@ final class SpeechPipelineTests: XCTestCase {
         XCTAssertTrue(audio.isExplicitlyPaused)
         if explicitStart { vm.startByUser() } else { vm.start() }
         try await wait { !plan.requests.isEmpty }
+        if lateModePresentation {
+            XCTAssertEqual(vm.status, .planning)
+            // A share can start the incoming VM before SwiftUI observes the
+            // mode change. The outgoing reader was paused, but this new plan
+            // already belongs to an explicit user request.
+            vm.activateAfterModeSwitch(autoplay: false)
+            XCTAssertEqual(vm.status, .planning, "Presentation must not retire an active incoming plan")
+        }
         if pauseDuringPlan {
             let session = try XCTUnwrap(audio.activePlaybackSession)
             XCTAssertTrue(audio.pause(session: session))
@@ -789,23 +807,46 @@ final class SpeechPipelineTests: XCTestCase {
         XCTAssertEqual(player.currentSegment?.text, "Current reading.")
     }
 
-    func testReadAheadFirstAudioPlaysBeforeTailAcrossReaderSources() async throws {
-        for source: ReadingSourceKind in [.text, .epub, .pdf, .weread, .kindle, .kobo, .googleBooks, .oreilly] {
+    func testEveryReaderStartsFirstSentenceWhileLaterSentenceIsStillGenerating() async throws {
+        for source: ReadingSourceKind in [.text, .epub, .pdf, .photo, .web, .docx, .weread, .kindle, .kobo, .googleBooks, .youtube] {
             let fixture = ReadAloudHTTPFixture { input, _ in
-                if input == "Second prefix. Tail." {
-                    return .response(ReadAloudHTTPFixture.body("Second prefix. ", tail: "Tail.", duration: 1))
+                .response(ReadAloudHTTPFixture.body(input, duration: 3), delay: input.hasPrefix("Second") ? 1.5 : 0)
+            }
+            let (vm, player) = makeVM(source, fixture: fixture,
+                texts: ["First sentence. Second sentence is intentionally delayed. Third sentence."])
+            vm.dbgGenerate(0)
+            try await wait { player.hasAudibleProgress && fixture.requests.count >= 2 }
+            XCTAssertEqual(player.currentSegment?.text, "First sentence.", "First audio must not wait for later sentences: \(source)")
+            XCTAssertEqual(vm.dbgSegments(for: 0).count, 1)
+            XCTAssertTrue(player.moreSegmentsExpected)
+            XCTAssertEqual(fixture.requests.prefix(2), ["First sentence.", "Second sentence is intentionally delayed."])
+            vm.pausePlayback()
+            let requestsAtPause = fixture.requests.count
+            try await Task.sleep(for: .milliseconds(1700))
+            XCTAssertFalse(player.isPlaying)
+            XCTAssertEqual(fixture.requests.count, requestsAtPause, "Pause must stop future requests: \(source)")
+            XCTAssertFalse(fixture.requests.contains("Third sentence."))
+            vm.stop(); vm.deactivate(); player.stop(); fixture.close()
+        }
+    }
+
+    func testReadAheadFirstAudioPlaysBeforeTailAcrossReaderSources() async throws {
+        for source: ReadingSourceKind in [.text, .epub, .pdf, .web, .docx, .weread, .kindle, .kobo, .googleBooks] {
+            let fixture = ReadAloudHTTPFixture { input, _ in
+                if input == "Second prefix Tail." {
+                    return .response(ReadAloudHTTPFixture.body("Second prefix ", tail: "Tail.", duration: 1))
                 }
                 if input == "Tail." { return .response(ReadAloudHTTPFixture.body(input, duration: 0.2), delay: 1.7) }
                 return .response(ReadAloudHTTPFixture.body(input, duration: 0.25))
             }
-            let (vm, player) = makeVM(source, fixture: fixture, texts: ["First.", "Second prefix. Tail."])
+            let (vm, player) = makeVM(source, fixture: fixture, texts: ["First.", "Second prefix Tail."])
             defer { vm.stop(); vm.deactivate(); player.stop(); fixture.close() }
             vm.dbgGenerate(0)
-            try await wait { player.currentSegment?.text == "Second prefix. " && player.hasAudibleProgress }
+            try await wait { player.currentSegment?.text == "Second prefix " && player.hasAudibleProgress }
             XCTAssertEqual(vm.dbgSegments(for: 1).count, 1, "Must start while Tail HTTP is pending: \(source)")
             XCTAssertTrue(player.moreSegmentsExpected)
             try await wait { vm.isFinished }
-            XCTAssertEqual(fixture.requests.filter { $0 == "Second prefix. Tail." }.count, 1)
+            XCTAssertEqual(fixture.requests.filter { $0 == "Second prefix Tail." }.count, 1)
             XCTAssertEqual(fixture.requests.filter { $0 == "Tail." }.count, 1)
             vm.stop(); vm.deactivate(); fixture.close()
         }
@@ -813,13 +854,13 @@ final class SpeechPipelineTests: XCTestCase {
 
     func testPromotedReadAheadFailureRetriesOnlyMissingTail() async throws {
         let fixture = ReadAloudHTTPFixture { input, attempt in
-            if input == "Second prefix. Tail." {
-                return .response(ReadAloudHTTPFixture.body("Second prefix. ", tail: "Tail.", duration: 0.25))
+            if input == "Second prefix Tail." {
+                return .response(ReadAloudHTTPFixture.body("Second prefix ", tail: "Tail.", duration: 0.25))
             }
             if input == "Tail.", attempt == 1 { return .response(Data("{}".utf8), status: 500, delay: 0.8) }
             return .response(ReadAloudHTTPFixture.body(input, duration: 0.2))
         }
-        let (vm, player) = makeVM(.text, fixture: fixture, texts: ["First.", "Second prefix. Tail.", "Last."])
+        let (vm, player) = makeVM(.text, fixture: fixture, texts: ["First.", "Second prefix Tail.", "Last."])
         defer { vm.stop(); vm.deactivate(); player.stop(); fixture.close() }
         var completed: [String] = []
         player.onSegmentComplete = { if let text = player.currentSegment?.text { completed.append(text) } }
@@ -830,23 +871,23 @@ final class SpeechPipelineTests: XCTestCase {
         // prefix. Verify that it drains without a retry, regardless of device
         // handoff latency, before asking for the missing tail.
         try await wait { completed.count == 2 }
-        XCTAssertEqual(completed, ["First.", "Second prefix. "])
+        XCTAssertEqual(completed, ["First.", "Second prefix "])
         XCTAssertTrue(player.moreSegmentsExpected)
         vm.ensurePlaying()
         try await wait { vm.isFinished }
-        XCTAssertEqual(completed, ["First.", "Second prefix. ", "Tail.", "Last."])
-        XCTAssertEqual(fixture.requests.filter { $0 == "Second prefix. Tail." }.count, 1)
+        XCTAssertEqual(completed, ["First.", "Second prefix ", "Tail.", "Last."])
+        XCTAssertEqual(fixture.requests.filter { $0 == "Second prefix Tail." }.count, 1)
         XCTAssertEqual(fixture.requests.filter { $0 == "Tail." }.count, 2)
     }
 
     func testPausedReadAheadCannotAutoPromoteOrDispatchMoreWork() async throws {
         let fixture = ReadAloudHTTPFixture { input, _ in
-            if input == "Second prefix. Tail." {
-                return .response(ReadAloudHTTPFixture.body("Second prefix. ", tail: "Tail.", duration: 16))
+            if input == "Second prefix Tail." {
+                return .response(ReadAloudHTTPFixture.body("Second prefix ", tail: "Tail.", duration: 16))
             }
             return .response(ReadAloudHTTPFixture.body(input, duration: 1.5))
         }
-        let (vm, player) = makeVM(.text, fixture: fixture, texts: ["First.", "Second prefix. Tail."])
+        let (vm, player) = makeVM(.text, fixture: fixture, texts: ["First.", "Second prefix Tail."])
         defer { vm.stop(); vm.deactivate(); player.stop(); fixture.close() }
         vm.dbgGenerate(0)
         try await wait { vm.dbgPrefetchedIndex == 1 }
@@ -856,7 +897,7 @@ final class SpeechPipelineTests: XCTestCase {
         XCTAssertFalse(player.isPlaying)
         XCTAssertFalse(fixture.requests.contains("Tail."), "Full read-ahead buffer must stop new synthesis")
         vm.ensurePlaying()
-        try await wait { player.currentSegment?.text == "Second prefix. " && player.hasAudibleProgress }
+        try await wait { player.currentSegment?.text == "Second prefix " && player.hasAudibleProgress }
     }
 
     func testVoiceSwitchSendsOnlyVerifiedSuffixAndReusesCompletedVoice() async throws {

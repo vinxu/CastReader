@@ -1,0 +1,25 @@
+[
+  {
+    "bundle": "CastReaderMac.app",
+    "applicationIdentifier": "KQW6UNZE8J.com.same.castreader",
+    "profileAppGroups": [
+      "group.com.same.castreader"
+    ]
+  },
+  {
+    "bundle": "CastReaderMacShare.appex",
+    "applicationIdentifier": "KQW6UNZE8J.com.same.castreader.CastReaderMacShare",
+    "profileAppGroups": [
+      "group.com.same.castreader",
+      "KQW6UNZE8J.*"
+    ]
+  },
+  {
+    "bundle": "CastReaderMacWidget.appex",
+    "applicationIdentifier": "KQW6UNZE8J.com.same.castreader.CastReaderMacWidget",
+    "profileAppGroups": [
+      "group.com.same.castreader",
+      "KQW6UNZE8J.*"
+    ]
+  }
+]

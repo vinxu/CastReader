@@ -5,6 +5,7 @@ import Combine
 private struct ResumeTestSpeech: ParagraphSpeechGenerating {
     let segments: [AudioSegment]
     var initialDelayNanoseconds: UInt64 = 0
+    var segmentDelayNanoseconds: UInt64 = 80_000_000
     func generateTTSForParagraph(
         paragraphIndex: Int, text: String, voice: String?, speed: Double,
         language: String, includeVoiceCode: Bool, speaker: String?, cloneRequestID: String?,
@@ -17,7 +18,7 @@ private struct ResumeTestSpeech: ParagraphSpeechGenerating {
         for segment in segments {
             try Task.checkCancellation()
             await onSegmentReady(segment)
-            try await Task.sleep(nanoseconds: 80_000_000)
+            try await Task.sleep(nanoseconds: segmentDelayNanoseconds)
         }
     }
 }
@@ -140,6 +141,10 @@ final class ReadingResumeTests: XCTestCase {
     }
 
     override func setUp() async throws {
+        // Match app startup before a fixture acquires audio ownership. Lazy
+        // account restoration can otherwise revoke that owner while analytics
+        // re-enters the same AuthService singleton initializer.
+        _ = AuthService.shared
         directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         wasPro = ProManager.shared.debugForcePro
         ProManager.shared.debugForcePro = true
@@ -208,6 +213,47 @@ final class ReadingResumeTests: XCTestCase {
         let replayRequests = await speech.requests
         XCTAssertEqual(replayRequests, originalRequests,
                        "Replaying cached clone paragraphs must not call the billable producer again")
+    }
+
+    func testFinishedDOCXPlayButtonRestartsAtFirstParagraph() async throws {
+        try await verifyFinishedReaderReplay(source: .docx, useStart: false)
+    }
+
+    func testFinishedTextMiniPlayerStartRestartsAtFirstParagraph() async throws {
+        try await verifyFinishedReaderReplay(source: .text, useStart: true)
+    }
+
+    private func verifyFinishedReaderReplay(source: ReadingSourceKind, useStart: Bool) async throws {
+        useRegularVoiceForTest(language: "en")
+        let audio = AudioPlayerService.shared
+        let first = segment(0, text: "First sentence.", paragraph: 0, duration: 0.8)
+        let second = segment(0, text: "Final sentence.", paragraph: 1, duration: 0.8)
+        let doc = ReadingDocument(id: UUID().uuidString, title: "Completed reader replay",
+                                  sourceKind: source, language: "en",
+                                  paragraphs: paragraphs([first.text, second.text]))
+        let vm = ReadAloudViewModel(document: doc, historyStore: HistoryStore(directory: directory),
+                                   speechGenerator: CloneReplayCountingSpeech([first, second]))
+        defer { vm.stop(); vm.deactivate(); audio.onSegmentComplete = nil }
+        if source.isWebRendered { vm.loadWebParagraphs(doc.paragraphs, language: "en") }
+        var completed: [Int] = []
+        audio.onSegmentComplete = {
+            if let paragraph = audio.currentSegment?.paragraphIndex { completed.append(paragraph) }
+        }
+        vm.start()
+        try await waitUntil("Both paragraphs complete naturally before replay") { vm.isFinished }
+        XCTAssertEqual(completed, [0, 1])
+        XCTAssertEqual(audio.currentSegment?.id, second.id, "Retain the actual ended AVPlayer item")
+
+        // These are the real reader and mini-player entry points, not dbgGenerate/jump.
+        if useStart { vm.start() } else { vm.togglePlayPause() }
+        try await waitUntil("Explicit replay starts the first paragraph with audible progress") {
+            !vm.isFinished && vm.currentParagraphIndex == 0
+                && audio.currentSegment?.id == first.id && audio.hasAudibleProgress
+        }
+        try await waitUntil("Replay completes the document a second time") {
+            vm.isFinished && completed.count >= 4
+        }
+        XCTAssertEqual(completed, [0, 1, 0, 1], "Neither skip the opening nor repeat only the ended item")
     }
 
     func testUntimedChineseResumeAcceptsVerifiedSplitAndMergedAudio() throws {
@@ -406,6 +452,62 @@ final class ReadingResumeTests: XCTestCase {
                 .replacingOccurrences(of: "precise", with: "precize"))]))
         XCTAssertNil(ReadingResumeContract.relocatedKoboCheckpoint(checkpoint,
             paragraphs: [document.paragraphs[0], ReadingParagraph(id: 1, text: document.paragraphs[0].text)]))
+    }
+
+    func testGoogleColdResumeRelocatesOnlyUniqueUnchangedWordContext() throws {
+        let (fixture, old, suffix) = try reflowFixture()
+        var checkpoint = ReadingResumeCheckpoint(sourceKind: .googleBooks,
+            paragraphIndex: old.paragraphIndex, paragraphFingerprint: old.paragraphFingerprint,
+            previousFingerprint: old.previousFingerprint, nextFingerprint: old.nextFingerprint,
+            structureFingerprint: old.structureFingerprint, audio: old.audio, updatedAt: old.updatedAt)
+        checkpoint.visual = old.visual; checkpoint.reflow = old.reflow
+        let store = HistoryStore(directory: directory)
+        var doc = fixture; doc.sourceKind = .googleBooks; doc.id = "google-cold-context"
+        store.record(doc)
+        for (text, expected) in [(suffix, true),
+            (suffix.replacingOccurrences(of: "precise", with: "precize"), false),
+            (fixture.paragraphs[0].text + " " + fixture.paragraphs[0].text, false)] {
+            XCTAssertTrue(store.saveReadingCheckpoint(checkpoint, for: doc.id, boundary: store.progressBoundaryToken))
+            var incoming = doc; incoming.paragraphs = []
+            let vm = ReadAloudViewModel(document: incoming, historyStore: HistoryStore(directory: directory))
+            vm.loadWebParagraphs(paragraphs([text]), language: "en")
+            XCTAssertEqual(vm.resumeNotice == nil, expected)
+            XCTAssertEqual(vm.resumeSourceRange?.location, expected ? 0 : nil)
+            XCTAssertFalse(vm.isPlaying, "Cold opening must preserve the paused state")
+            vm.stop(); vm.deactivate()
+        }
+    }
+
+    func testGooglePlaybackSavesContextForColdResumeIntoExpandedParagraph() async throws {
+        let prefix = "The preceding sentences describe a long expedition through the mountains. "
+        let target = "remembered"
+        let suffix = " the precise location while the distant travelers continued their remarkable journey together."
+        let text = prefix + target + suffix
+        let doc = ReadingDocument(id: "google-cold-capture", title: "Reflow", sourceKind: .googleBooks,
+            language: "en", paragraphs: paragraphs([text]))
+        let store = HistoryStore(directory: directory); store.record(doc)
+        let speech = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: wav(duration: 10, sample: 1),
+            timestamps: [TTSTimestamp(word: target, startTime: 4, endTime: 6)], duration: 10,
+            text: text, isWavFormat: true)
+        let vm = ReadAloudViewModel(document: doc, historyStore: store)
+        vm.startWithCachedSegments([speech], paragraphIndex: 0, segmentID: speech.id,
+            progress: 0.45, isReplayEligible: false)
+        try await waitUntil("Google speech must advance before capturing its word context") {
+            vm.isPlaying && !AudioPlayerService.shared.isBuffering && AudioPlayerService.shared.hasAudibleProgress
+        }
+        vm.pausePlayback(); vm.flushReadingProgress()
+        let saved = try XCTUnwrap(store.readingCheckpoint(for: doc.id))
+        XCTAssertNotNil(saved.reflow)
+        vm.stop(); vm.deactivate()
+        let extra = "An earlier line reappears after the reader rebuilds its native page. "
+        var incoming = doc; incoming.paragraphs = []
+        let fresh = ReadAloudViewModel(document: incoming, historyStore: HistoryStore(directory: directory))
+        defer { fresh.stop(); fresh.deactivate() }
+        fresh.loadWebParagraphs(paragraphs([extra + text]), language: "en")
+        XCTAssertNil(fresh.resumeNotice)
+        XCTAssertEqual(fresh.resumeSourceRange?.location, (extra + prefix).utf16.count)
+        XCTAssertEqual(fresh.resumeSourceRange?.length, target.utf16.count)
+        XCTAssertFalse(fresh.isPlaying)
     }
 
     func testKoboNativeBookmarkStaysBoundToTheHeardPage() async throws {
@@ -822,6 +924,85 @@ final class ReadingResumeTests: XCTestCase {
         XCTAssertFalse(vm.isPlaybackPausedByUser)
     }
 
+    func testEnteringOfflineLibraryCancelsPendingOnlineSpeechBeforeLateResponse() async throws {
+        useRegularVoiceForTest(language: "en")
+        let voice = AppSettings.shared.voice(for: "en")
+        let speech = ControlledVoiceSwitchSpeech()
+        let player = PlayerCoordinator(historyStore: HistoryStore(directory: directory), speechGenerator: speech)
+        let scene = ReaderSceneContext(player: player)
+        defer { player.close(); scene.offline.stop() }
+        player.open(document(), mode: .read, autoplay: true)
+        let oldVM = try XCTUnwrap(player.session?.readVM)
+        let end = Date().addingTimeInterval(4)
+        while !(await speech.isWaiting(voice)), Date() < end {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let waiting = await speech.isWaiting(voice)
+        XCTAssertTrue(waiting)
+        let token = try XCTUnwrap(AudioPlayerService.shared.activePlaybackSession)
+        // No MainTabView or view-installed beforeOpen callback exists here.
+        scene.offline.prepareForOfflineBrowsing()
+        XCTAssertNil(player.session)
+        XCTAssertFalse(AudioPlayerService.shared.isPlaybackSessionActive(token))
+        await speech.release(voice, segments: [segment(0, text: "First paragraph.", paragraph: 0)])
+        let completionDeadline = Date().addingTimeInterval(2)
+        while !(await speech.completed.contains(voice)), Date() < completionDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let completed = await speech.completed.contains(voice)
+        XCTAssertTrue(completed, "Exercise the response even after its producer was cancelled")
+        XCTAssertFalse(oldVM.isPlaying)
+        XCTAssertFalse(AudioPlayerService.shared.isPlaying)
+        XCTAssertNil(AudioPlayerService.shared.activePlaybackSession)
+        await speech.cancelAll()
+    }
+
+    func testKoboReflowWhileGeneratingKeepsPendingParagraphInsteadOfPageOpening() async throws {
+        try await verifyKoboPendingReflow(paused: false)
+    }
+
+    func testKoboPausedPendingReflowCannotStartLateAudio() async throws {
+        try await verifyKoboPendingReflow(paused: true)
+    }
+
+    private func verifyKoboPendingReflow(paused: Bool) async throws {
+        let first = "Pending paragraph keeps its original reading position. "
+        let text = first + "The remaining source is generated as another audio segment while the reader changes its font size."
+        let speech = ResumeTestSpeech(segments: [
+            segment(0, text: first, paragraph: 1, duration: 12),
+            segment(1, text: String(text.dropFirst(first.count)), paragraph: 1, duration: 12)
+        ], initialDelayNanoseconds: 400_000_000)
+        let vm = ReadAloudViewModel(document: document(.kobo, id: UUID().uuidString),
+            historyStore: HistoryStore(directory: directory), speechGenerator: speech)
+        defer { vm.stop(); vm.deactivate() }
+        vm.loadWebParagraphs(paragraphs(["Already spoken page opening.", text]), language: "en")
+        vm.dbgGenerate(1)
+        try await waitUntil("Next paragraph must be producing before any player item exists") {
+            vm.currentParagraphIndex == 1 && vm.status.isLoading && AudioPlayerService.shared.currentSegment == nil
+        }
+        if paused { vm.pausePlayback() }
+        let anchor = try XCTUnwrap(vm.makeWeReadPlaybackResumeAnchor())
+        XCTAssertEqual(anchor.sourceParagraphText, text)
+        XCTAssertEqual(anchor.segmentProgress, 0)
+        XCTAssertEqual(anchor.wasPlaying, !paused)
+        vm.replaceLiveWebPage(paragraphs(["Newly revealed earlier text must never be replayed.", text]),
+            language: "en", autoplay: !paused, resumeAnchor: anchor)
+        try await waitUntil("Reflow must stage the pending paragraph, not the page opening") {
+            AudioPlayerService.shared.currentSegment?.paragraphIndex == 1
+        }
+        XCTAssertEqual(vm.currentParagraphIndex, 1)
+        XCTAssertEqual(AudioPlayerService.shared.currentSegment?.text, first)
+        if paused {
+            try await Task.sleep(nanoseconds: 200_000_000)
+            XCTAssertTrue(vm.isPlaybackPausedByUser)
+            XCTAssertFalse(AudioPlayerService.shared.isPlaying)
+        } else {
+            try await waitUntil("The waiting reading session should continue") {
+                AudioPlayerService.shared.isPlaying && AudioPlayerService.shared.hasAudibleProgress
+            }
+        }
+    }
+
     func testPausedLiveReflowRestoresWordAndClockWithoutStartingAudio() async throws {
         let text = "Alpha beta gamma delta remains anchored after rotation."
         let doc = document(.googleBooks, id: UUID().uuidString)
@@ -845,6 +1026,13 @@ final class ReadingResumeTests: XCTestCase {
         defer { observer.cancel() }
         vm.replaceLiveWebPage(paragraphs([text, "Later content."]), language: "en",
                               autoplay: false, resumeAnchor: anchor)
+        let pendingAnchor = try XCTUnwrap(vm.makeWeReadPlaybackResumeAnchor())
+        XCTAssertEqual(pendingAnchor.segmentProgress, anchor.segmentProgress,
+            "A second font change before the replacement audio arrives must retain the pending seek")
+        XCTAssertEqual(pendingAnchor.segmentText, anchor.segmentText)
+        XCTAssertFalse(pendingAnchor.wasPlaying)
+        vm.replaceLiveWebPage(paragraphs([text, "Later content after another layout change."]),
+                              language: "en", autoplay: false, resumeAnchor: pendingAnchor)
         try await waitUntil("Paused reflow must restore a drawable word and the same audio cursor") {
             audio.currentSegment?.paragraphIndex == 0 && vm.webHighlight != nil &&
                 abs(audio.playbackPosition - position) < 0.35
@@ -857,6 +1045,105 @@ final class ReadingResumeTests: XCTestCase {
         try await waitUntil("Explicit resume should continue from the restored cursor") {
             audio.isPlaying && audio.playbackPosition >= position
         }
+    }
+
+    func testExplicitResumeDuringPausedReflowContinuesLateAudioTail() async throws {
+        try await assertPausedReflowFollowsNewPlayIntent(beforeFirstSegment: false)
+    }
+
+    func testExplicitResumeBeforePausedReflowAudioArrivesStartsSavedWordAndLateTail() async throws {
+        try await assertPausedReflowFollowsNewPlayIntent(beforeFirstSegment: true)
+    }
+
+    private func assertPausedReflowFollowsNewPlayIntent(beforeFirstSegment: Bool) async throws {
+        let first = "Alpha beta. "
+        let second = "Gamma delta."
+        let text = first + second
+        let old = segment(0, text: first, paragraph: 1, duration: 6)
+        let fresh = [segment(0, text: first, paragraph: 0, duration: 6),
+                     segment(1, text: second, paragraph: 0, duration: 6)]
+        let vm = ReadAloudViewModel(document: document(.kobo, id: UUID().uuidString),
+            historyStore: HistoryStore(directory: directory),
+            speechGenerator: ResumeTestSpeech(segments: fresh, initialDelayNanoseconds: 500_000_000,
+                segmentDelayNanoseconds: 2_500_000_000))
+        defer { vm.stop(); vm.deactivate() }
+        vm.loadWebParagraphs(paragraphs(["Earlier content.", text]), language: "en")
+        vm.startWithCachedSegments([old], paragraphIndex: 1, segmentID: old.id,
+                                  progress: 0.8, isReplayEligible: false)
+        let audio = AudioPlayerService.shared
+        try await waitUntil("Original audio should reach its saved word") {
+            audio.isPlaying && audio.hasAudibleProgress && !audio.isBuffering
+        }
+        vm.pausePlayback()
+        let anchor = try XCTUnwrap(vm.makeWeReadPlaybackResumeAnchor())
+        vm.replaceLiveWebPage(paragraphs([text, "Later paragraph."]), language: "en",
+                              autoplay: false, resumeAnchor: anchor)
+        if beforeFirstSegment { vm.ensurePlaying() }
+        try await waitUntil("Reflow should prepare the first restored item while paused") {
+            audio.currentSegment?.id == fresh[0].id && audio.playbackPosition > 4.5
+        }
+        if !beforeFirstSegment {
+            XCTAssertFalse(audio.isPlaying)
+            vm.ensurePlaying()
+        }
+        try await waitUntil("Explicit Play must continue a late successor without requiring another tap") {
+            audio.currentSegment?.id == fresh[1].id && audio.isPlaying && audio.playbackPosition > 0.1
+        }
+        XCTAssertFalse(vm.isPlaybackPausedByUser)
+    }
+
+    func testPausedReflowIntoLaterAudioSegmentTurnsBeforeRestoredSpeech() async throws {
+        let first = "Alpha beta gamma delta. "
+        let second = "Epsilon zeta eta theta."
+        let text = first + second
+        let old = [segment(0, text: first, duration: 12), segment(1, text: second, duration: 12)]
+        let fresh = [segment(0, text: first, paragraph: 0, duration: 12),
+                     segment(1, text: second, paragraph: 0, duration: 12)]
+        let vm = ReadAloudViewModel(document: document(.kobo, id: UUID().uuidString),
+            historyStore: HistoryStore(directory: directory),
+            speechGenerator: ResumeTestSpeech(segments: fresh))
+        defer { vm.stop(); vm.deactivate() }
+        vm.loadWebParagraphs(paragraphs(["Earlier content.", text]), language: "en")
+        vm.startWithCachedSegments(old, paragraphIndex: 1, segmentID: old[1].id,
+                                  progress: 0.4, isReplayEligible: false)
+        let audio = AudioPlayerService.shared
+        try await waitUntil("Second original audio segment should become audible") {
+            audio.currentSegment?.id == old[1].id && audio.isPlaying &&
+                audio.hasAudibleProgress && !audio.isBuffering
+        }
+        vm.pausePlayback()
+        let anchor = try XCTUnwrap(vm.makeWeReadPlaybackResumeAnchor())
+        let position = audio.playbackPosition
+        var page = paragraphs(["Alpha beta"])
+        page[0].speechText = text
+        let boundary = WeReadPageSpeechBoundary(paragraphIndex: 0,
+            visibleUTF16Offset: page[0].text.utf16.count, speechUTF16Length: text.utf16.count,
+            sourceLayoutFingerprint: "narrow-layout", sourceParagraphIndex: 5,
+            sourceSpeechEnd: page[0].text.utf16.count)
+        var turns = 0
+        vm.onPageBoundaryApproaching = { turns += 1 }
+        vm.replaceLiveWebPage(page, language: "en", autoplay: false,
+                              weReadBoundary: boundary, resumeAnchor: anchor)
+        try await waitUntil("Paused reflow must restore the second audio segment") {
+            audio.currentSegment?.id == fresh[1].id && abs(audio.playbackPosition - position) < 0.2
+        }
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertTrue(vm.isPlaybackPausedByUser)
+        XCTAssertEqual(turns, 0, "A paused reflow must not turn pages by itself")
+        let cue = try XCTUnwrap(vm.currentWeReadBoundaryCue)
+        XCTAssertEqual(cue.segmentID, fresh[1].id, "The discarded earlier audio segment cannot own the page boundary")
+        XCTAssertEqual(cue.boundaryTime, 0)
+        XCTAssertEqual(cue.consumedCursor?.sourceParagraphIndex, 5)
+        vm.ensurePlaying()
+        try await waitUntil("Play must hold the restored word until the next page is presented") {
+            turns == 1 && audio.pagePresentationHoldID != nil
+        }
+        XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.15)
+        XCTAssertTrue(audio.finishPagePresentation(try XCTUnwrap(audio.pagePresentationHoldID)))
+        try await waitUntil("Acknowledged page continues the unheard tail of the same segment") {
+            audio.currentSegment?.id == fresh[1].id && audio.playbackPosition > position + 0.2
+        }
+        XCTAssertEqual(turns, 1)
     }
 
     func testLateAutomaticPageCommitCannotOverrideUserPause() throws {

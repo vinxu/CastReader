@@ -1,0 +1,26 @@
+{
+  "time": "2026-10-05T21:36:24.434974+08:00",
+  "configuration": "Debug",
+  "source_sha256": {
+    "CastReader/Views/MainTabView.swift": "4a27d877ed58f650c69a46914bd9bc3535aa8c7c2ae47ac8af82525da2e47621",
+    "CastReader/Views/Home/HomeView.swift": "d5b0bf5594fe9bdd0411c4ef81451b285c567b9f90038c769cb4ed3f6d18f707",
+    "CastReader/Views/Settings/VoiceBrowserView.swift": "07b7ed10c15e8703290d437532faaad4906675483af2995fe1dd7210160c068f",
+    "CastReader/Views/GoogleBooks/GoogleBooksLibraryViews.swift": "d7a725ad9e6858a7e5e2b49da1de617c2531acfdae2ff5ed204a92fd35afa051",
+    "CastReader/Views/Kobo/KoboLibraryViews.swift": "7c5de3b775fbbbb63e7f064b9683e574833db92909b1d9e687886af1ad1d97b5",
+    "CastReader/Views/WeRead/WeReadLibraryViews.swift": "8edde74769431f1e4c409abf98cc9520d8e143a814b7be20134f045db52cee22"
+  },
+  "installed_binary_sha256": {
+    "__preview.dylib": "32c249e66a5fc7f141c35ead2883577d4f5e8df0071e364855f3778104993c10",
+    "CastReaderMac.debug.dylib": "1508fbc95fcca5494cce5e4a078c73caa72b2187661618f6c13cbcc261e41fc0",
+    "CastReaderMac": "2ca85c1726234a1bc62b9f0107f8b6fbb2fee777df30edc835908178ad2f3a45"
+  },
+  "verification": {
+    "mac_build": "PASS",
+    "ipad_build_for_testing": "PASS",
+    "normal_home_toolbar_and_three_sheets": "PASS",
+    "half_and_short_window_layout": "PASS",
+    "voice_shelf_sheet_open_scroll_close": "PASS",
+    "voice_account_sheet_open_close": "PASS"
+  },
+  "scope": "UI checks only; no new automated test count claimed; web visual restoration remains FAIL"
+}

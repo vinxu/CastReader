@@ -1,0 +1,49 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "BA9ADC22-E48F-49F1-B771-F9C42C57BA13",
+        "deviceName" : "CastReader Login Review iPad",
+        "modelName" : "iPad Air 11-inch (M3)",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 0,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1791154798.553,
+  "passedTests" : 0,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1791154791.132,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertEqual failed: (\"Optional(15)\") is not equal to (\"Optional(69)\") - Keeping the full old audio source must also retain its absolute source end",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "GoogleBooksWebBridgeTests/testKoboReflowRetainsSpeechBoundaryCoordinatesWithTheOriginalAudioSource()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/GoogleBooksWebBridgeTests/testKoboReflowRetainsSpeechBoundaryCoordinatesWithTheOriginalAudioSource",
+      "testName" : "testKoboReflowRetainsSpeechBoundaryCoordinatesWithTheOriginalAudioSource()"
+    }
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 1
+}

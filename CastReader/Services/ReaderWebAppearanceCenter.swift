@@ -44,6 +44,42 @@ final class ReaderWebAppearanceCenter {
         return await open(webView: webView)
     }
 
+    /// Escape dismisses the current window's provider panel before the reader.
+    /// Never act on another scene's copy of the same book.
+    func dismissWeReadAppearance(documentID: String, in window: UIWindow?) async -> Bool {
+        guard let window else { return false }
+        let candidates = views.keyEnumerator().allObjects.compactMap { $0 as? WKWebView }.filter {
+            views.object(forKey: $0) as String? == documentID && $0.window === window &&
+                $0.url?.host == "weread.qq.com"
+        }
+        guard candidates.count == 1, let webView = candidates.first else { return false }
+        return (try? await webView.evaluateJavaScript(Self.dismissWeReadAppearanceScript)) as? Bool ?? false
+    }
+
+    static let dismissWeReadAppearanceScript = #"""
+    (() => {
+      if (location.hostname !== 'weread.qq.com' || !location.pathname.startsWith('/web/reader/')) return false;
+      const panel = document.querySelector('.reader-font-control-panel-wrapper .font-panel-content');
+      if (panel) {
+        const r = panel.getBoundingClientRect(), s = getComputedStyle(panel);
+        if (r.width > 20 && r.height > 20 && s.display !== 'none' && s.visibility !== 'hidden') {
+          // The desktop reader controls the inner font panel and omits its
+          // mask. Its outer floating panel owns a separate BackgroundMask.
+          const floatingPanel = panel.closest('.reader_float_font_panel');
+          const mask = floatingPanel?.querySelector(':scope > .wr_mask') ||
+            panel.parentElement?.querySelector('.reader-font-control-panel-mask');
+          mask?.click();
+          return true;
+        }
+      }
+      if (typeof window.__crWeReadAppearance?.close === 'function') {
+        window.__crWeReadAppearance.close();
+        return true;
+      }
+      return false;
+    })()
+    """#
+
     func openKoboContents(documentID: String, in window: UIWindow?) async -> Bool {
         guard let window else { return false }
         let candidates = views.keyEnumerator().allObjects.compactMap { $0 as? WKWebView }.filter {
@@ -65,6 +101,18 @@ final class ReaderWebAppearanceCenter {
         .PopUp_container[role="dialog"] {
           max-width:calc(100vw - 24px) !important;
           max-height:calc(100dvh - 24px) !important;
+          overflow:auto !important;
+          overscroll-behavior:contain;
+          box-sizing:border-box;
+        }
+        .RXNextReadRecommendationDialog_container[role="dialog"] {
+          max-width:calc(100vw - 24px) !important;
+          max-height:calc(100dvh - 24px) !important;
+          top:12px !important;
+          left:12px !important;
+          right:auto !important;
+          bottom:auto !important;
+          transform:none !important;
           overflow:auto !important;
           overscroll-behavior:contain;
           box-sizing:border-box;

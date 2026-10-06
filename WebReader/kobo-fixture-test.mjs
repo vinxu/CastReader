@@ -327,7 +327,12 @@ async function run() {
   assert(KoboFixture.koboReadingLocationFromRange(bookmarkBook, bookmarkRange)?.percentage === .78,
     'saved native percentage must address the visible page');
   assert(KoboFixture.koboReadingLocationFromRange(bookmarkBook,
-    {...bookmarkRange,end:{pageIndexInBook:78}}) === null, 'do not guess a spread bookmark');
+    {...bookmarkRange,end:{pageIndexInBook:78}})?.percentage === .78,
+    'a desktop spread must save its first visible native page');
+  assert(KoboFixture.koboReadingLocationFromRange(bookmarkBook,
+    {...bookmarkRange,end:{pageIndexInBook:76}}) === null, 'reject reversed reading ranges');
+  assert(KoboFixture.koboReadingLocationFromRange(bookmarkBook,
+    {...bookmarkRange,end:{pageIndexInBook:100}}) === null, 'reject out-of-book spread ends');
   assert(KoboFixture.koboReadingLocationFromRange(bookmarkBook,
     {...bookmarkRange,pagesOfBook:Infinity}) === null, 'non-finite page counts cannot be persisted');
   assert(KoboFixture.koboReadingLocationFromRange('wrong-book',bookmarkRange) === null,
@@ -368,6 +373,26 @@ async function run() {
     KoboFixture.clickableKoboPageButton('next')?.id === 'shadowNext',
     'open shadow-root Kobo chrome was not discovered'
   );
+  const directions = [];
+  const observeControlClick = event => directions.push(KoboFixture.koboPageDirectionForClick(event, document));
+  document.addEventListener('click', observeControlClick, true);
+  const fontButton = document.createElement('button');
+  fontButton.setAttribute('aria-label','Increase font size');
+  shadowRoot.append(fontButton);
+  fontButton.dispatchEvent(new MouseEvent('click',{bubbles:true,composed:true,clientX:innerWidth-30,clientY:100}));
+  shadowNext.dispatchEvent(new MouseEvent('click',{bubbles:true,composed:true,clientX:innerWidth/2,clientY:100}));
+  const settingsPanel=document.createElement('div');
+  settingsPanel.setAttribute('role','dialog');
+  settingsPanel.style.cssText='position:fixed;right:0;top:0;width:300px;height:300px;background:white';
+  document.body.append(settingsPanel);
+  document.documentElement.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:innerWidth-30,clientY:100}));
+  settingsPanel.remove();
+  document.removeEventListener('click', observeControlClick, true);
+  assert(directions[2] === null, 'retargeted HTML click while settings are open must not turn the underlying page');
+  assert(directions[0] === null, 'shadow font control at the page edge must not emit manual navigation');
+  assert(directions[1] === 'next', 'a shadow native next-page control must still emit manual navigation');
+  // The following cases model mobile Kobo, which omits desktop page controls.
+  shadowHost.remove();
   let arrowRightCount = 0;
   document.addEventListener('keydown', event => {
     if (event.key === 'ArrowRight') arrowRightCount += 1;
@@ -420,6 +445,32 @@ async function run() {
     ),
     'Kobo reader did not publish its initial stable page'
   );
+  assert(window.CastReaderKobo.restoreReady() === true,
+    'a stable, fully paginated native range must allow bookmark restoration');
+  let initialLayoutRequests = 0;
+  const countInitialLayout = () => initialLayoutRequests++;
+  window.addEventListener('resize', countInitialLayout);
+  window.__koboReadingRange = {pagesOfBook:NaN, percentageOfBook:2/7,
+    begin:{pageIndexInBook:28}, end:{pageIndexInBook:29}};
+  await new Promise(resolve => setTimeout(resolve, 600));
+  assert(initialLayoutRequests === 1,
+    'an ordinary reader without a restoreReady call must initialize incomplete native pagination');
+  for (const pagesOfBook of [NaN, Infinity, undefined, 0, 25]) {
+    window.__koboReadingRange = {pagesOfBook, percentageOfBook:2/7,
+      begin:{pageIndexInBook:28}, end:{pageIndexInBook:29}};
+    assert(window.CastReaderKobo.restoreReady() === false,
+      'native methods existing before whole-book pagination is ready must not permit a saved-location jump');
+  }
+  window.__koboReadingRange = {pagesOfBook:348, percentageOfBook:30/348,
+    begin:{pageIndexInBook:28}, end:{pageIndexInBook:29}};
+  for (let attempt = 0; attempt < 30 && !window.CastReaderKobo.restoreReady(); attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  assert(window.CastReaderKobo.restoreReady() === true,
+    'restoration must become ready after the native total and visible spread are valid');
+  assert(initialLayoutRequests === 1, 'incomplete pagination must request one layout notification without a retry loop');
+  window.removeEventListener('resize', countInitialLayout);
+  delete window.__koboReadingRange;
   const orientationMessageStart = messages.length;
   window.CR.gbRelayout({
     reason: 'fixture-orientation',
@@ -542,6 +593,42 @@ async function run() {
     manualPreviousIntent && manualPreviousRendered,
     'native previous-page control did not complete its manual transaction'
   );
+
+  // A desktop odd chapter tail reports one occupied page, but the next
+  // percentage can still address the blank half of the current spread.
+  // Its official page button must win before any progress call is attempted.
+  window.__koboApplyProgressTurn = undefined;
+  window.__koboURProgressTurns = [];
+  messages.length = 0;
+  document.body.appendChild(shadowHost);
+  shadowNext.addEventListener('click', () => {
+    currentFrame.contentDocument.getElementById('visibleP').style.transform = 'translateY(-220px)';
+  });
+  const clicksBeforeDesktop = clicks;
+  const desktopStarted = window.CastReaderKobo.nextPage({
+    turnID:'desktop-odd-chapter-tail', baselineSignature:KoboFixture.koboSignature(),
+    originFrameSessionID:'kbf-fixture'
+  });
+  assert(desktopStarted, 'desktop chapter-tail turn was rejected');
+  await new Promise(resolve => setTimeout(resolve, 1350));
+  assert(clicks === clicksBeforeDesktop + 1, 'desktop turn must click its page control exactly once');
+  assert(window.__koboURProgressTurns.length === 0, 'desktop tail must not target the blank leaf by percentage');
+  assert(messages.some(m => m.type === 'rendered' && m.payload.turnID === 'desktop-odd-chapter-tail'),
+    'desktop turn must commit only the confirmed new visible page');
+  const desktopPrevious = document.createElement('button');
+  desktopPrevious.setAttribute('aria-label','Previous page');
+  let previousClicks = 0;
+  desktopPrevious.onclick = () => {
+    previousClicks++;
+    currentFrame.contentDocument.getElementById('visibleP').style.transform = '';
+  };
+  shadowRoot.appendChild(desktopPrevious);
+  assert(window.CastReaderKobo.userPage({direction:'prev'}), 'desktop manual previous rejected');
+  await new Promise(resolve => setTimeout(resolve, 1350));
+  assert(previousClicks === 1 && window.__koboURProgressTurns.length === 0,
+    'manual desktop page must use one official control too');
+  shadowHost.remove();
+  const clicksBeforeMobile = clicks;
   window.__koboURProgressTurns = [];
   messages.length = 0;
   highlightClears = 0;
@@ -585,7 +672,7 @@ async function run() {
   assert(window.CastReaderKobo.navigationReady() === false,
     'checkpoint recovery must wait while an existing native turn is settling');
   await new Promise(resolve => setTimeout(resolve, 30));
-  assert(clicks === 1, 'semantic Kobo turn must not click the desktop page control');
+  assert(clicks === clicksBeforeMobile, 'mobile semantic turn must not click a detached desktop page control');
   assert(arrowRightCount === 0, 'automatic Kobo turn must not dispatch an untrusted key');
   assert(
     Array.isArray(window.__koboURProgressTurns) &&
@@ -656,7 +743,7 @@ run().then(value => {
     '--disable-web-security',
     `--user-data-dir=${join(scratch, 'chrome-profile')}`,
     '--window-size=390,700',
-    '--virtual-time-budget=10000',
+    '--virtual-time-budget=20000',
     '--dump-dom',
     `file://${fixturePath}`,
   ], {
@@ -665,7 +752,7 @@ run().then(value => {
     // Some macOS Chrome builds keep a background helper alive after
     // --dump-dom has already printed the completed DOM. Stop that helper; the
     // fixture result below remains authoritative.
-    timeout: 14_000,
+    timeout: 19_000,
   })
   const match = result.stdout.match(/<pre id="result">([\s\S]*?)<\/pre>/)
   if (!match) {

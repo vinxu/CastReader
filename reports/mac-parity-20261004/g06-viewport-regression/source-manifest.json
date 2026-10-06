@@ -1,0 +1,54 @@
+[
+  {
+    "path": "CastReader/Views/Kindle/KindleBookView.swift",
+    "sourceSHA256": "7885f6306ff9f330325fd7e61a9d974720e8a1b5b8a2b75ff9cafccecd802aeb"
+  },
+  {
+    "path": "CastReader/Views/Kindle/KindleLibraryConnectView.swift",
+    "sourceSHA256": "b7ac96fe77ba5db0f514bec75d9e2d2b16d0ff5efd9d6ff0ff55af25c9633834"
+  },
+  {
+    "path": "CastReader/Services/KindleOfflineBookStore.swift",
+    "sourceSHA256": "e814b61ad437c26d6376f0ca722dd6aeb24499e65a74f42d0afaf150f5cefc68"
+  },
+  {
+    "path": "CastReader/Services/KindleOfflineDownloadCoordinator.swift",
+    "sourceSHA256": "3b38f653137056df8cecaea9c129fa90ace893c4d83d8d30ef6c9f7faf375273"
+  },
+  {
+    "path": "CastReader/Views/Kindle/KindleOfflineFlowFixture.swift",
+    "sourceSHA256": "0abab342cc568813891fb154065cb4fb60e3683633a7864efb892433043697da"
+  },
+  {
+    "path": "CastReader/Views/Kindle/KindleOfflineDiagnosticsView.swift",
+    "sourceSHA256": "43690187e2e023b1aa22f5420fb95d92bf781192bbac3190585298aa300150c5"
+  },
+  {
+    "path": "CastReader/Views/Kindle/KindleOfflineDownloadView.swift",
+    "sourceSHA256": "547fa0afd603e184f207252015ae131135d650d319f3bfb68c319051414b3aea"
+  },
+  {
+    "path": "CastReader/Views/Kindle/KindleOfflineReaderView.swift",
+    "sourceSHA256": "c2fb21048eb433fe8e1b31060c6af9f897cf166022b233ff16d6d812b436ec5d"
+  },
+  {
+    "path": "CastReader/Views/Kindle/KindleOfflineLibraryScreen.swift",
+    "sourceSHA256": "8d4b43cfdafb8b221911e5f4211c28da3078e3f21827f72b5dc0e409950b48bd"
+  },
+  {
+    "path": "CastReader/Views/Home/HomeView.swift",
+    "sourceSHA256": "1eaef699cf02a40bcb48d8afb228f218d55d46dbc19bd6449c2d988d1584c6c0"
+  },
+  {
+    "path": "CastReader/Localizable.xcstrings",
+    "sourceSHA256": "cb0d4d649f4a11bc13d37e643da9c1b46e59f9a092360c28220fded2adc26806"
+  },
+  {
+    "path": "CastReaderTests/KindleOfflineBookStoreTests.swift",
+    "sourceSHA256": "619e897da65614a6b9b76fd32b0f97f6486230a84d8ceabeb341aec0e215d037"
+  },
+  {
+    "path": "CastReaderTests/KindleWebViewContainerTests.swift",
+    "sourceSHA256": "6d380e58d19a922ae91b06fa0af8cd230794a931ec2709b2615f64b53262105b"
+  }
+]

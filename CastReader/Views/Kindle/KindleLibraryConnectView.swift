@@ -491,6 +491,18 @@ struct KindlePlayerOverlayViewport: Equatable {
 
 final class KindleWebViewContainer: UIView {
     let webView: WKWebView
+    var contentAccessibilityHidden = false {
+        didSet {
+            accessibilityElementsHidden = contentAccessibilityHidden
+            webView.accessibilityElementsHidden = contentAccessibilityHidden
+            webView.isUserInteractionEnabled = !contentAccessibilityHidden
+        }
+    }
+    #if targetEnvironment(macCatalyst)
+    var offlineCaptureViewport: CGSize? {
+        didSet { setNeedsLayout() }
+    }
+    #endif
     var crop: KindleViewportCrop = .identity {
         didSet {
             if crop != oldValue {
@@ -532,6 +544,16 @@ final class KindleWebViewContainer: UIView {
         // Assign bounds/center while keeping presentation independent. Setting
         // frame with a nonidentity transform can resize WebKit's CSS viewport.
         UIView.performWithoutAnimation {
+            #if targetEnvironment(macCatalyst)
+            if let offlineCaptureViewport {
+                // The download sheet owns the UI. Keep the renderer's exact
+                // page coordinate space even if the underlying window resizes.
+                webView.bounds = CGRect(origin: .zero, size: offlineCaptureViewport)
+                webView.center = CGPoint(x: bounds.midX, y: bounds.midY)
+                webView.transform = .identity
+                return
+            }
+            #endif
             webView.bounds = CGRect(origin: .zero, size: canonical.size)
             webView.center = CGPoint(
                 x: canonical.midX * fit.scale + fit.translationX,
@@ -546,6 +568,7 @@ struct KindleWebView: UIViewRepresentable {
     let webView: WKWebView
     var crop: KindleViewportCrop = .identity
     var presentationFit: KindleViewportPresentationFit = .identity
+    var contentAccessibilityHidden = false
 
     func makeUIView(context: Context) -> KindleWebViewContainer {
         webView.isOpaque = false
@@ -558,7 +581,9 @@ struct KindleWebView: UIViewRepresentable {
         if #available(iOS 13.0, *) {
             webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
         }
-        return KindleWebViewContainer(webView: webView, crop: crop, presentationFit: presentationFit)
+        let container = KindleWebViewContainer(webView: webView, crop: crop, presentationFit: presentationFit)
+        container.contentAccessibilityHidden = contentAccessibilityHidden
+        return container
     }
 
     func updateUIView(_ uiView: KindleWebViewContainer, context: Context) {
@@ -566,6 +591,7 @@ struct KindleWebView: UIViewRepresentable {
         uiView.webView.scrollView.backgroundColor = .systemBackground
         uiView.crop = crop
         uiView.presentationFit = presentationFit
+        uiView.contentAccessibilityHidden = contentAccessibilityHidden
     }
 }
 

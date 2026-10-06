@@ -1,0 +1,9 @@
+{
+  "startedAt": "2026-10-05T16:11:51.898595+08:00",
+  "logByteOffset": 6082317,
+  "video": "NHHPNMIK-fY",
+  "candidate": "../g09-google-explain-reveal/candidate-identity.json",
+  "status": "FAIL_OFFICIAL_PLAYER_INITIALIZATION",
+  "endLogByteOffset": 6088253,
+  "finishedAt": "2026-10-05T16:13:15.742956+08:00"
+}

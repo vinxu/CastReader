@@ -202,12 +202,15 @@ actor CloudConnectionStore {
     private func persist() {
         let state = PersistedState(
             schemaVersion: 1,
-            activeAccounts: CloudProviderID.allCases.compactMap {
-                activeAccounts[$0].map(PersistedAccount.init)
-            },
-            candidateAccounts: CloudProviderID.allCases.compactMap {
-                candidateAccounts[$0].map(PersistedAccount.init)
-            }
+            // allCases lists providers enabled in this release's UI. Legacy
+            // associations must survive an unrelated save while their provider
+            // is hidden, until the user explicitly removes that association.
+            activeAccounts: activeAccounts.values
+                .sorted { $0.provider.rawValue < $1.provider.rawValue }
+                .map(PersistedAccount.init),
+            candidateAccounts: candidateAccounts.values
+                .sorted { $0.provider.rawValue < $1.provider.rawValue }
+                .map(PersistedAccount.init)
         )
         guard let data = try? JSONEncoder().encode(state) else { return }
         defaults.set(data, forKey: storageKey)

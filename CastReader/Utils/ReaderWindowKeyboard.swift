@@ -155,3 +155,48 @@ struct ReaderAppKeyboardCommands: Commands {
         }
     }
 }
+
+#if targetEnvironment(macCatalyst)
+extension ReaderWindowCommand {
+    var macSelector: Selector {
+        switch self {
+        case .home: return #selector(UIWindow.castReaderHome(_:))
+        case .library: return #selector(UIWindow.castReaderLibrary(_:))
+        case .voices: return #selector(UIWindow.castReaderVoices(_:))
+        case .settings: return #selector(UIWindow.castReaderSettings(_:))
+        case .importContent: return #selector(UIWindow.castReaderImport(_:))
+        case .newWindow: return #selector(UIWindow.castReaderNewWindow(_:))
+        case .playPause: return #selector(UIWindow.castReaderPlayPause(_:))
+        case .dismiss: return #selector(UIWindow.castReaderDismiss(_:))
+        case .previous: return #selector(UIWindow.castReaderPrevious(_:))
+        case .next: return #selector(UIWindow.castReaderNext(_:))
+        }
+    }
+}
+
+/// Window commands stay in the active window's responder chain, independent
+/// of SwiftUI's wrapped application delegate and the current text responder.
+extension UIWindow {
+    @objc func castReaderHome(_ sender: UICommand) { castReaderPerform(.home) }
+    @objc func castReaderLibrary(_ sender: UICommand) { castReaderPerform(.library) }
+    @objc func castReaderVoices(_ sender: UICommand) { castReaderPerform(.voices) }
+    @objc func castReaderSettings(_ sender: UICommand) { castReaderPerform(.settings) }
+    @objc func castReaderImport(_ sender: UICommand) { castReaderPerform(.importContent) }
+    @objc func castReaderNewWindow(_ sender: UICommand) { castReaderPerform(.newWindow) }
+    @objc func castReaderPlayPause(_ sender: UICommand) { castReaderPerform(.playPause) }
+    @objc func castReaderDismiss(_ sender: UICommand) { castReaderPerform(.dismiss) }
+    @objc func castReaderPrevious(_ sender: UICommand) { castReaderPerform(.previous) }
+    @objc func castReaderNext(_ sender: UICommand) { castReaderPerform(.next) }
+
+    private func castReaderPerform(_ command: ReaderWindowCommand) {
+        guard let scene = ReaderSceneRegistry.shared.contexts.first(where: { $0.window === self }),
+              let window = scene.window, window.isKeyWindow,
+              window.rootViewController?.presentedViewController == nil,
+              !ReaderWindowKeyboard.hasTextEditor(in: window),
+              let action = scene.keyboard.action(command) else { return }
+        if command == .newWindow {
+            UIApplication.shared.requestSceneSessionActivation(nil, userActivity: nil, options: nil)
+        } else { action() }
+    }
+}
+#endif

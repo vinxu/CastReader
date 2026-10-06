@@ -106,7 +106,7 @@ enum VoiceGiftContract {
 /// how clients distinguish natural speech from a user-confirmed transcript.
 struct VoiceCloneCreateMetadata {
     static let consentVersion = "voice-owner-consent-2026-07-12-v1"
-    static let consentSource = "ios"
+    static let consentSource = Constants.clientPlatform
 
     let referenceLanguage: String
     let referenceText: String?

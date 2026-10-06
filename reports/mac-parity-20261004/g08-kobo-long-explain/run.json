@@ -1,0 +1,13 @@
+{
+  "status": "PREPARING",
+  "logByteOffset": 4004025,
+  "startedUTC": "2026-10-05T02:30:18.294367Z",
+  "candidateIdentity": "../g08-kobo-contracts/paused-producer-candidate-identity.json",
+  "book": "Two Tickets",
+  "startChapter": "Chapter Five",
+  "initialWindow": [
+    800,
+    600
+  ],
+  "targetSeconds": 900
+}

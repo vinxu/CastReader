@@ -1193,6 +1193,11 @@ enum WeReadPlaybackResumeContract {
         let rhs = normalized(anchor.segmentText)
         guard lhs.count >= 2, rhs.count >= 2 else { return false }
         if lhs == rhs { return true }
+        // A pending paragraph has not produced an audio item yet. Its anchor
+        // is the complete source at offset zero; accept only a matching first
+        // segment so long paragraphs need not finish generating to resume.
+        if anchor.segmentProgress == 0,
+           rhs == normalized(anchor.sourceParagraphText), rhs.hasPrefix(lhs) { return true }
         let shorter = min(lhs.count, rhs.count)
         let longer = max(lhs.count, rhs.count)
         return Double(shorter) / Double(longer) >= 0.78 && (lhs.contains(rhs) || rhs.contains(lhs))
@@ -1239,6 +1244,17 @@ struct WeReadViewportCrop: Equatable {
     var widthScale: CGFloat
     var offsetX: CGFloat
 
+    /// The desktop window needs desktop density for the whole provider page,
+    /// including its margins and controls. Set before navigation so WeRead
+    /// paginates once at the final CSS viewport; retain the user's font setting.
+    static var pageZoom: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        return 0.8
+        #else
+        return 1
+        #endif
+    }
+
     static let compactReaderBreakpoint: CGFloat = 700
     static let compactPageHorizontalPadding: CGFloat = 50
     /// WeRead keeps roughly 70pt of combined reader chrome/gutter on each side
@@ -1260,6 +1276,11 @@ struct WeReadViewportCrop: Equatable {
     }
 
     static func predicted(for surface: CGSize) -> WeReadViewportCrop {
+        #if targetEnvironment(macCatalyst)
+        // A phone's enlarged, cropped viewport would undo desktop density and
+        // switch responsive branches unexpectedly in a narrow Mac window.
+        return WeReadViewportCrop(widthScale: 1, offsetX: 0)
+        #else
         guard surface.width > 80, surface.height > 80 else {
             return WeReadViewportCrop(widthScale: 1, offsetX: 0)
         }
@@ -1271,6 +1292,7 @@ struct WeReadViewportCrop: Equatable {
             widthScale: scale,
             offsetX: -surface.width * (scale - 1) / 2
         )
+        #endif
     }
 
     /// Centre the visible reader content without changing the WebView's layout

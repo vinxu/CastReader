@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-05T05:18:18.429710",
+  "removedRebuildableCaches": [
+    "/tmp/CastReaderMacTests.J4I4om/DerivedData/Build/Intermediates.noindex",
+    "/tmp/CastReaderMacTests.J4I4om/DerivedData/Index.noindex",
+    "/tmp/CastReaderMacTests.J4I4om/DerivedData/ModuleCache.noindex",
+    "/tmp/CastReaderMacTests.K8inky/DerivedData/Build/Intermediates.noindex",
+    "/tmp/CastReaderMacTests.K8inky/DerivedData/Index.noindex",
+    "/tmp/CastReaderMacTests.K8inky/DerivedData/ModuleCache.noindex",
+    "/tmp/CastReaderMacTests.YeBZtl/DerivedData/Build/Intermediates.noindex",
+    "/tmp/CastReaderMacTests.YeBZtl/DerivedData/Index.noindex",
+    "/tmp/CastReaderMacTests.YeBZtl/DerivedData/ModuleCache.noindex"
+  ],
+  "preserved": "isolated source copies, built apps and test products, xcresult, logs and manifests"
+}

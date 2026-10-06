@@ -1,0 +1,39 @@
+{
+  "data": {
+    "type": "buildUploads",
+    "id": "898d3508-7a23-40b0-9718-78f1f6ae8d44",
+    "attributes": {
+      "cfBundleShortVersionString": "1.2.47",
+      "cfBundleVersion": "73",
+      "createdDate": "2026-10-06T06:54:26-07:00",
+      "state": {
+        "errors": [
+
+        ],
+        "warnings": [
+
+        ],
+        "infos": [
+
+        ],
+        "state": "COMPLETE"
+      },
+      "platform": "MAC_OS",
+      "uploadedDate": "2026-10-06T07:04:30-07:00"
+    },
+    "relationships": {
+      "buildUploadFiles": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/buildUploads/898d3508-7a23-40b0-9718-78f1f6ae8d44/relationships/buildUploadFiles",
+          "related": "https://api.appstoreconnect.apple.com/v1/buildUploads/898d3508-7a23-40b0-9718-78f1f6ae8d44/buildUploadFiles"
+        }
+      }
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/buildUploads/898d3508-7a23-40b0-9718-78f1f6ae8d44"
+    }
+  },
+  "links": {
+    "self": "https://api.appstoreconnect.apple.com/v1/buildUploads/898d3508-7a23-40b0-9718-78f1f6ae8d44"
+  }
+}

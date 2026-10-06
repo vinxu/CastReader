@@ -1,0 +1,21 @@
+{
+  "environmentDescription": "CastReaderMac \u00b7 Built with macOS 26.2",
+  "expectedFailures": 0,
+  "failedTests": 0,
+  "finishTime": 1791201270.055,
+  "passedTests": 25,
+  "result": "Passed",
+  "skippedTests": 0,
+  "startTime": 1791201258.032,
+  "statistics": [],
+  "testFailures": [],
+  "title": "Test - CastReaderMac",
+  "topInsights": [
+    {
+      "category": "Longest Test Runs",
+      "impact": "60% of duration",
+      "text": "1 longest test run with outlier durations exceeding 0.12s (three standard deviations)"
+    }
+  ],
+  "totalTestCount": 25
+}

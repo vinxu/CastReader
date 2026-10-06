@@ -35,6 +35,61 @@ final class SystemIntegrationTests: XCTestCase {
 
     // MARK: - castreader:// URL contract
 
+    @MainActor
+    func testColdShareSurvivesUntilItsWindowCanPresent() {
+        let scene = ReaderSceneContext()
+        scene.handleOpenURL(URL(string: "castreader://share-inbox")!)
+        XCTAssertTrue(scene.pendingShareInboxRequest)
+        XCTAssertFalse(scene.takePendingShareInboxRequest(isActive: false))
+        XCTAssertFalse(scene.takePendingShareInboxRequest(isActive: true), "The window probe has not attached yet")
+        XCTAssertTrue(scene.pendingShareInboxRequest, "A missed startup notification must not discard the share")
+    }
+
+    @MainActor
+    func testShareLaunchRequestIsSceneScopedAndClearedAtAccountBoundary() {
+        let destination = ReaderSceneContext()
+        let other = ReaderSceneContext()
+        destination.handleOpenURL(URL(string: "castreader://share-inbox")!)
+        XCTAssertFalse(other.pendingShareInboxRequest)
+        destination.resetForAccountBoundary()
+        XCTAssertFalse(destination.pendingShareInboxRequest)
+        XCTAssertFalse(destination.takePendingShareInboxRequest(isActive: true))
+    }
+
+    func testSafariShareDataURLPreservesPageAddress() throws {
+        let expected = try XCTUnwrap(URL(string: "https://castreader.com/blog/auto-captions-vs-human-captions?source=mac%20share#captions"))
+        let actual = ShareInboxLinkExtractor.providerURL(
+            from: expected.dataRepresentation as NSData, typeIdentifier: "public.url")
+        XCTAssertEqual(actual, expected)
+        XCTAssertTrue(ShareInboxLinkExtractor.isReadableWebURL(try XCTUnwrap(actual)))
+    }
+
+    func testFinderShareKeepsObjectAndEncodedFileURLs() {
+        let expected = URL(fileURLWithPath: "/tmp/Mac sample.pdf")
+        XCTAssertEqual(ShareInboxLinkExtractor.providerURL(
+            from: expected as NSURL, typeIdentifier: "com.adobe.pdf"), expected)
+        XCTAssertEqual(ShareInboxLinkExtractor.providerURL(
+            from: expected.dataRepresentation as NSData, typeIdentifier: "public.file-url"), expected)
+    }
+
+    func testShareDoesNotInterpretDocumentBytesAsURL() {
+        let bytes = Data("https://castreader.com/".utf8) as NSData
+        for type in ["public.plain-text", "com.adobe.pdf", "public.image"] {
+            XCTAssertNil(ShareInboxLinkExtractor.providerURL(from: bytes, typeIdentifier: type))
+        }
+        XCTAssertNil(ShareInboxLinkExtractor.providerURL(from: NSData(), typeIdentifier: "public.url"))
+        XCTAssertNil(ShareInboxLinkExtractor.providerURL(
+            from: Data(repeating: 65, count: 16_385) as NSData, typeIdentifier: "public.url"))
+    }
+
+    func testEncodedShareURLStillRequiresAllowedWebScheme() throws {
+        for value in ["javascript:alert(1)", "file:///tmp/Mac%20sample.txt", "mailto:reader@example.com"] {
+            let url = try XCTUnwrap(ShareInboxLinkExtractor.providerURL(
+                from: Data(value.utf8) as NSData, typeIdentifier: "public.url"))
+            XCTAssertFalse(ShareInboxLinkExtractor.isReadableWebURL(url))
+        }
+    }
+
     func testURLContractAcceptsTheThreeSupportedHosts() {
         XCTAssertEqual(SystemAction.from(url: URL(string: "castreader://import")!), .openImport)
         XCTAssertEqual(

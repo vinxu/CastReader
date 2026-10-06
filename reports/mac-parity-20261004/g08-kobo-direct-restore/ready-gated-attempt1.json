@@ -1,0 +1,6 @@
+{
+  "status": "INCOMPLETE",
+  "observed": "Whole-book pagination did not become ready before native 15-second deadline. No incorrect jump and no autoplay. Original checkpoint retained. Retrying cold open after disk recovery.",
+  "rangeFooter": "Page without total",
+  "observedAt": "09:20:42.668 readiness timeout; UI still had blank page total at 09:22 restart"
+}

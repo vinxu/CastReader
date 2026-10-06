@@ -1,0 +1,13 @@
+{
+  "status": "OBSERVING",
+  "startedAt": "2026-10-05T13:23:54.865026+08:00",
+  "logByteOffset": 4812440,
+  "book": "WaOcDwAAQBAJ",
+  "initialFontPercent": 113,
+  "initialDarkTheme": true,
+  "initialWindow": [
+    1024,
+    768
+  ],
+  "note": "Normal candidate; diagnostics removed. UI reflow and resizing included, no manual page jump until continuous run completes."
+}

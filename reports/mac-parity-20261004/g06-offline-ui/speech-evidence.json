@@ -1,0 +1,22 @@
+{
+  "activeSpeechRate": 0.6000000238418579,
+  "complete": true,
+  "documentLanguage": "en",
+  "errorCode": "",
+  "firstSpeechMilliseconds": 407,
+  "highlightLength": 9,
+  "highlightStart": 517,
+  "networkHint": true,
+  "page": 71,
+  "preparingSpeech": false,
+  "rangeCallbacks": 50,
+  "recognitionCount": 2,
+  "recognizedLanguage": "en",
+  "savedPages": 72,
+  "scene": "active",
+  "selectedSpeechRate": 0.6,
+  "state": "finished",
+  "unit": 4,
+  "version": 1,
+  "voiceID": "com.apple.voice.compact.en-US.Samantha"
+}

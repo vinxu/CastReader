@@ -1,0 +1,9 @@
+{
+  "baseline": "09456f1979cc14ca19977ede4b1edde043c5f840",
+  "executables": {
+    "__preview.dylib": "3842da0a7e62fe9f0df90d4b76975dec2fb779fe25ac3a9b497e98b86ad583be",
+    "CastReaderMac.debug.dylib": "859a5015c8f36e605b2f4448a8fb2ad5ae6011b06e3516840c2c980f19a0fd61",
+    "CastReaderMac": "571f959e1985e258166861c0d286a1e6ad26a61626ae818f260f4a27ff9ddb37"
+  },
+  "macPlatformBackendRollout": "pending; live voice creation not tested"
+}

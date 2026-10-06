@@ -1,0 +1,19 @@
+{
+  "build": "PASS",
+  "strictDeepSignature": "PASS",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "version": "1.2.47",
+  "buildNumber": "72",
+  "minimumOS": "14.6",
+  "binarySHA256": "27fdd887af560db241140f3d2adbf3558e5393740a651d4065015d9299329050",
+  "bundleJSSHA256": "7337afbc9e6fb0562c609a0c5afa0d6f811509dc6f0b12a785db0ef58c4b6758",
+  "actualLaunch": "PASS",
+  "distribution": "development signed; no release submission or notarization",
+  "cloudDisclosureDeviceIcon": "PASS: actual laptopcomputer icon",
+  "cloudSearchLocalization": "PASS: Search Google Drive",
+  "cloudDisclosureDone": "PASS: returned to Home",
+  "menuAutomationNote": "Native popup AX click returned invalid element; keyboard Down/Down/Return opened the expected data disclosure. Screenshot did not include the popup."
+}

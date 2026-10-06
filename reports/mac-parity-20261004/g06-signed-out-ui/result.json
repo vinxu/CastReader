@@ -1,0 +1,22 @@
+{
+  "status": "PASS_SCOPED",
+  "checkedAt": "2026-10-05T03:33:30.170244+08:00",
+  "windowsPoints": [
+    [
+      1024,
+      768
+    ],
+    [
+      523,
+      463
+    ]
+  ],
+  "realAmazonSignedOutRedirect": true,
+  "boundedShelfWarmupSeconds": 15,
+  "axWebAreaAfterCover": false,
+  "axCredentialFieldsAfterCover": false,
+  "notRun": [
+    "Real account sign-out/rebind (preserved user credentials)",
+    "Unpurchased title error"
+  ]
+}

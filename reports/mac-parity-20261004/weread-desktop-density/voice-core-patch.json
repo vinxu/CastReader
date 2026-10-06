@@ -1,0 +1,16 @@
+{
+  "source": "b99f5b18026cf0f7bddf2c9be396934e728566c5",
+  "base": "0b051752acbca543b8166c2a11e0b6fdf677505d",
+  "pullRequest": "https://github.com/scmyyan/readout-web/pull/67",
+  "status": "merged; protected production release succeeded",
+  "contractTests": 39,
+  "failures": 0,
+  "typecheck": "PASS",
+  "sample": "Calm Narrator, 11.990125 s, private acceptance only",
+  "userDecision": "2026-10-06: user authorized backend iteration and Mac support, superseding prior deployment deferral",
+  "onlineCreationAcceptance": "PASS: normal Mac Release created and renamed private voice vc_9d60f868d880442aac1f74e8053d5ef8",
+  "mergedCommit": "481dcce5d4b3a2fc333ca95d84c381d8e1eb61ff",
+  "releaseGateTests": 3,
+  "workflow": "https://github.com/scmyyan/readout-web/actions/runs/37341216056",
+  "deployment": "dpl_AyPcjKCDJ9yvVqRvCFshWiwy96B1"
+}

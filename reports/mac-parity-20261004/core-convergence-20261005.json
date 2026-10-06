@@ -1,0 +1,30 @@
+{
+  "time": "2026-10-05T22:25:30.216802+08:00",
+  "scope": "User-requested core convergence; no full-matrix or long-run rerun; OReilly excluded by user",
+  "candidate": {
+    "configuration": "Release",
+    "version": "1.2.47",
+    "build": "72",
+    "executableSHA256": "02d27a96609d2f39979e4ef8d4e190670da4605ce7c97b61b3e58c98db327b57"
+  },
+  "fixture": {
+    "path": "CastReaderTests/Fixtures/document-images/illustrations.epub",
+    "sha256": "601a8270489a9338156b25d405fc048e002eee6c9aa5069d9dd24568533310be",
+    "title": "Illustration preservation"
+  },
+  "observed_ui": [
+    "Existing EPUB history opens with text, table rows and illustrations",
+    "Read advances from first section to final Repeated illustration; orange word highlight RETURN and illustration observed",
+    "Explain actual Part 1/3 and Part 3/3 Playing; captions, original-title circle, figure circle and sentence highlight observed",
+    "Pause Part 2/3; close last window; recreated window retains Paused, same caption and original-text marks",
+    "Explicit resume shows Part 2/3 Playing; later Explanation complete with replay control",
+    "Returned Home, mini player Finished"
+  ],
+  "status": "PASS_SCOPED_CORE_SAMPLE",
+  "limitations": [
+    "No long-book or exhaustive-format claim",
+    "No new automated tests counted",
+    "Historical source/provider/payment blockers unchanged"
+  ],
+  "product_source_changed_this_turn": false
+}

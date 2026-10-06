@@ -1,0 +1,21 @@
+{
+  "status": "PASS_FOR_OBSERVED_TERMINAL_AND_CAPTION_CASES",
+  "at": "2026-10-05T11:44:19.145082+08:00",
+  "candidate": "../g08-kobo-contracts/cold-pagination-candidate-identity.json",
+  "coldOpen": {
+    "manualResizeBeforePagination": false,
+    "pageRange": "347–348 of 348",
+    "layoutNotifications": 1
+  },
+  "explainCompletedNativeBookEnd": "11:41:38.775",
+  "explainToReadCompleted": "11:42:40.853",
+  "presentationDrained": true,
+  "timeout": false,
+  "captionDialog": {
+    "window": "800x600",
+    "open": "Caption hidden; Author fully visible; paused",
+    "close": "Same subtitle restored; paused"
+  },
+  "manualNextAtEnd": "No navigation or retry overlay; remains paused",
+  "recommendationActualAfterFix": "Not opened: verified native book end now avoids it. Bounds regression passed in actual WK fixtures."
+}

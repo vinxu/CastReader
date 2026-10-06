@@ -1,0 +1,17 @@
+{
+  "observedAt": "2026-10-05T09:03:12.440656+08:00",
+  "firstWordAt": "08:32:07.960",
+  "latestWordAt": "09:02:42.913",
+  "automaticCommits": 40,
+  "uniqueAutoTargets": 40,
+  "wordPaints": 4803,
+  "missingWordOverlays": 10,
+  "carryCommits": 19,
+  "refreshCommits": 6,
+  "manualCommits": 0,
+  "issues": [],
+  "visualHoldsCompleted": 40,
+  "visualHoldMedianMs": 330.77,
+  "visualHoldMaxMs": 599.79,
+  "pendingVisualHolds": 0
+}

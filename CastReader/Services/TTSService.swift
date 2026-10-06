@@ -118,11 +118,25 @@ struct TTSContinuation: Equatable, Sendable {
     let requestUnits: [String]
     let nextSegmentIndex: Int
     let requiresSourceTiming: Bool
+    let requestUnitsArePlanned: Bool
 
-    init(requestUnits: [String], nextSegmentIndex: Int, requiresSourceTiming: Bool = false) {
+    init(requestUnits: [String], nextSegmentIndex: Int, requiresSourceTiming: Bool = false,
+         requestUnitsArePlanned: Bool = false) {
         self.requestUnits = requestUnits
         self.nextSegmentIndex = nextSegmentIndex
         self.requiresSourceTiming = requiresSourceTiming
+        self.requestUnitsArePlanned = requestUnitsArePlanned
+    }
+
+    /// A saved checkpoint is already partitioned. Preserve it byte for byte,
+    /// including the backend partial tail, so retries keep their request IDs.
+    static func plannedUnits(text: String, language: String, continuation: TTSContinuation?) -> [String] {
+        if let continuation, continuation.requestUnitsArePlanned { return continuation.requestUnits }
+        return (continuation?.requestUnits ?? [text]).flatMap { unit in
+            let source = continuation?.requiresSourceTiming == true
+                ? SpeechTextSanitizer.livePageRequest(unit) : SpeechTextSanitizer.sanitizedForTTS(unit)
+            return SpeechRequestPlan.requestUnits(source, language: language)
+        }
     }
 }
 
@@ -351,25 +365,21 @@ actor TTSService: ParagraphSpeechGenerating {
             for: language
         )
 
-        let originalUnits = continuation?.requestUnits ?? ClonedTTSStartup.requestUnits(
-            SpeechTextSanitizer.sanitizedForTTS(text),
-            language: language, voice: resolvedVoice
-        )
-        let requestUnits = continuation?.requiresSourceTiming == true
-            ? originalUnits.map(SpeechTextSanitizer.livePageRequest) : originalUnits
+        let requestUnits = TTSContinuation.plannedUnits(text: text, language: language, continuation: continuation)
         for (unitIndex, requestUnit) in requestUnits.enumerated() {
             var remainingText = requestUnit
             while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
                 try Task.checkCancellation()
                 let checkpoint = TTSContinuation(
                     requestUnits: [remainingText] + Array(requestUnits.dropFirst(unitIndex + 1)),
-                    nextSegmentIndex: segmentIndex, requiresSourceTiming: continuation?.requiresSourceTiming == true)
+                    nextSegmentIndex: segmentIndex, requiresSourceTiming: continuation?.requiresSourceTiming == true,
+                    requestUnitsArePlanned: true)
                 let presetPriority = try await beforeRequest(checkpoint)
                 try Task.checkCancellation()
                 let networkRequestID = Self.cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex,
                     text: remainingText, voice: resolvedVoice, language: language, speed: speed, includeVoiceCode: includeVoiceCode)
                     ?? UUID().uuidString
-                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=\(presetPriority)")
+                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=\(presetPriority) chars=\(remainingText.utf16.count) planned=\(requestUnits.count)")
                 let response = try await api.generateTTS(
                     text: remainingText,
                     voice: resolvedVoice,
@@ -441,13 +451,10 @@ actor TTSService: ParagraphSpeechGenerating {
         }
 
         var segmentIndex = continuation?.nextSegmentIndex ?? 0
-        let originalUnits = continuation?.requestUnits
-            ?? ClonedTTSStartup.requestUnits(text, language: language, voice: voice)
-        let requestUnits = continuation?.requiresSourceTiming == true
-            ? originalUnits.map(SpeechTextSanitizer.livePageRequest) : originalUnits
+        let requestUnits = TTSContinuation.plannedUnits(text: text, language: language, continuation: continuation)
 
-        // Segment-timed languages first split into natural sentences. The inner
-        // loop still consumes a backend partial response without dropping text.
+        // Every language/voice uses bounded sentences. The inner loop consumes
+        // a backend partial response before advancing to the next local unit.
         for (unitIndex, requestUnit) in requestUnits.enumerated() {
           var remainingText = requestUnit
           while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
@@ -458,7 +465,8 @@ actor TTSService: ParagraphSpeechGenerating {
             if let onCheckpoint {
                 await onCheckpoint(TTSContinuation(
                     requestUnits: [remainingText] + Array(requestUnits.dropFirst(unitIndex + 1)),
-                    nextSegmentIndex: segmentIndex, requiresSourceTiming: continuation?.requiresSourceTiming == true
+                    nextSegmentIndex: segmentIndex, requiresSourceTiming: continuation?.requiresSourceTiming == true,
+                    requestUnitsArePlanned: true
                 ))
             }
             try Task.checkCancellation()
@@ -468,7 +476,7 @@ actor TTSService: ParagraphSpeechGenerating {
                 let networkRequestID = Self.cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex,
                     text: remainingText, voice: voice, language: language, speed: speed, includeVoiceCode: includeVoiceCode)
                     ?? UUID().uuidString
-                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=interactive")
+                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=interactive chars=\(remainingText.utf16.count) planned=\(requestUnits.count)")
                 let response = try await api.generateTTS(
                     text: remainingText,
                     voice: voice,

@@ -1,0 +1,61 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00006000-001A08DE11C3801E",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "25C56",
+        "osVersion" : "26.2",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 2,
+      "passedTests" : 0,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReaderMac · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 2,
+  "finishTime" : 1791185534.813,
+  "passedTests" : 0,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1791185518.783,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertEqual failed: (\"Optional(1)\") is not equal to (\"Optional(0)\") - Completion cannot dispatch a second turn while mark reveal is moving the provider",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "GoogleBooksWebBridgeTests/testExplainCompletionWaitsForMarkRevealBeforeRequestingAnotherTurn()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/GoogleBooksWebBridgeTests/testExplainCompletionWaitsForMarkRevealBeforeRequestingAnotherTurn",
+      "testName" : "testExplainCompletionWaitsForMarkRevealBeforeRequestingAnotherTurn()"
+    },
+    {
+      "failureText" : "XCTAssertEqual failed: (\"Optional(1)\") is not equal to (\"Optional(0)\") - Completion cannot dispatch a second turn while mark reveal is moving the provider",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 2,
+      "testIdentifierString" : "GoogleBooksWebBridgeTests/testSwitchingModeCancelsExplanationDeferredByMarkReveal()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/GoogleBooksWebBridgeTests/testSwitchingModeCancelsExplanationDeferredByMarkReveal",
+      "testName" : "testSwitchingModeCancelsExplanationDeferredByMarkReveal()"
+    }
+  ],
+  "title" : "Test - CastReaderMac",
+  "topInsights" : [
+    {
+      "category" : "Common Failures",
+      "impact" : "100% of failures",
+      "text" : "2 runs of 2 tests failed with XCTAssertEqual failed: (\"Optional(1)\") is not equal to (\"Optional(0)\") - Completion cannot dispatch a second turn while mark reveal is moving the provider"
+    }
+  ],
+  "totalTestCount" : 2
+}

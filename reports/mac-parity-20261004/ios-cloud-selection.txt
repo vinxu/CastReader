@@ -1,0 +1,6 @@
+CloudStorageCoreTests
+GoogleDriveProviderTests
+CloudHistoryTests
+CloudHistoryReopenServiceTests
+SystemIntegrationTests
+QuotaTwoTierTests

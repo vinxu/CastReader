@@ -237,6 +237,11 @@ struct MainTabView: View {
                 .readerSceneEnvironment(readerScene)
                 .environment(\.appViewport, geometry.size)
                 .background(ReaderKeyboardRegistration(scene: readerScene, actions: windowKeyboardActions))
+                #if targetEnvironment(macCatalyst)
+                // The Mac sidebar and each page own navigation chrome. Prevent
+                // Catalyst from promoting a second tab selector into NSToolbar.
+                .background(MacReaderTitlebar(hidden: true))
+                #endif
                 .onAppear { viewport = geometry.size }
                 .onChange(of: geometry.size) { viewport = $0 }
         }
@@ -275,6 +280,15 @@ struct MainTabView: View {
 
     @ViewBuilder
     private var adaptiveTabs: some View {
+        #if targetEnvironment(macCatalyst)
+        HStack(spacing: 0) {
+            macSidebar
+            MacSidebarPages(selection: selectedTab) { tab in
+                tabPage(tab)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        #else
         if AdaptiveLayout.isPad && usesLegacySidebar {
             NavigationSplitView {
                 List(selection: Binding<Int?>(get: { selectedTab }, set: { if let value = $0 { selectedTab = value } })) {
@@ -296,10 +310,76 @@ struct MainTabView: View {
         } else {
             tabs
         }
+        #endif
+    }
+
+    #if targetEnvironment(macCatalyst)
+    // Each row owns a stationary selected background; the page container
+    // retains navigation state without a second native tab transition.
+    private var macSidebar: some View {
+        VStack(spacing: 4) {
+            macSidebarItem("首页", symbol: "house.fill", tab: 0)
+            macSidebarItem("文库", symbol: "books.vertical", tab: 3)
+            macSidebarItem("音色", symbol: "waveform", tab: 2)
+            macSidebarItem("设置", symbol: "gearshape", tab: 4)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 16)
+        .frame(width: 220)
+        .frame(maxHeight: .infinity)
+        .background(AppTheme.surfaceVariant.opacity(0.45))
+        .accessibilityElement(children: .contain)
+        .transaction { transaction in
+            transaction.animation = nil
+            transaction.disablesAnimations = true
+        }
+    }
+
+    private func macSidebarItem(_ title: String.LocalizationValue, symbol: String, tab: Int) -> some View {
+        Button {
+            tabSelection.wrappedValue = tab
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: symbol)
+                    .font(.system(size: 18))
+                    .frame(width: 24)
+                Text(AppLocalized(title))
+                    .font(.system(size: 14, weight: .medium))
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(selectedTab == tab ? AppTheme.primaryForeground : AppTheme.foreground)
+            .padding(.horizontal, 12)
+            .frame(height: 36)
+            .background {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(selectedTab == tab ? AppTheme.primary : Color.clear)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("macTab-\(tab)")
+        .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
+    }
+    #endif
+
+    /// Commit one selection without inheriting the player's spring transaction.
+    private var tabSelection: Binding<Int> {
+        #if targetEnvironment(macCatalyst)
+        Binding(get: { selectedTab }, set: { value in
+            ReaderRunLog.write("SIDEBAR selection request current=\(selectedTab) requested=\(value)")
+            guard selectedTab != value else { return }
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { selectedTab = value }
+        })
+        #else
+        $selectedTab
+        #endif
     }
 
     private var tabs: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: tabSelection) {
             tabPage(0).tabItem { Label("首页", systemImage: "house.fill") }.tag(0)
             if AdaptiveLayout.isPad {
                 tabPage(3).tabItem { Label("文库", systemImage: "books.vertical") }.tag(3)
@@ -365,12 +445,17 @@ struct MainTabView: View {
         switch tab {
         case 3:
             NavigationStack {
-                LibraryView().toolbar {
+                LibraryView(
+                    isSurfaceActive: selectedTab == 3 && !hasPresentedReader,
+                    onImport: { selectedTab = 0; importRouter.openQuickImport() }
+                ).toolbar {
+                    #if !targetEnvironment(macCatalyst)
                     ToolbarItem(placement: .primaryAction) {
                         Button { selectedTab = 0; importRouter.openQuickImport() } label: {
                             Label("导入内容", systemImage: "plus")
                         }.accessibilityIdentifier("libraryImportButton")
                     }
+                    #endif
                 }
             }
         case 2:
@@ -412,6 +497,12 @@ struct MainTabView: View {
     private var mainContent: some View {
         ZStack(alignment: .bottom) {
             AnyView(adaptiveTabs)
+                #if targetEnvironment(macCatalyst)
+                .transaction { transaction in
+                    transaction.animation = nil
+                    transaction.disablesAnimations = true
+                }
+                #endif
                 .allowsHitTesting(!hasPresentedReader && !playbackVoicePanel.isPresented)
                 .accessibilityHidden(hasPresentedReader || playbackVoicePanel.isPresented)
             // Zero-height probe: reserves nothing, only reports where a tab's
@@ -430,6 +521,7 @@ struct MainTabView: View {
             }
             .tint(AppTheme.primary)
             .onChange(of: selectedTab) { newTab in
+                ReaderRunLog.write("SIDEBAR selection committed=\(newTab)")
                 if newTab == 1 {
                     selectedTab = 0
                     importRouter.openQuickImport()
@@ -561,9 +653,7 @@ struct MainTabView: View {
             publishOverlap()
         }
         .onAppear {
-            offlineCenter.beforeOpen = { [weak coordinator] in
-                coordinator?.close(preservingSleepTimer: true)
-                kindleCenter.close(preservingSleepTimer: true)
+            offlineCenter.beforeOpen = {
                 importRouter.hideMainChrome = false
             }
         }
@@ -572,7 +662,11 @@ struct MainTabView: View {
         .onReceive(importRouter.$cloudReconnectRequest.compactMap { $0 }) { _ in
             selectedTab = 0
         }
+        #if targetEnvironment(macCatalyst)
+        .toolbar(.hidden, for: .tabBar)
+        #else
         .toolbar(importRouter.hideMainChrome ? .hidden : .visible, for: .tabBar)
+        #endif
         .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
         .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
         .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
@@ -601,6 +695,7 @@ struct MainTabView: View {
         AnyView(mainContent)
         .onReceive(NotificationCenter.default.publisher(for: UIWindow.didBecomeKeyNotification)) { notification in
             guard let window = notification.object as? UIWindow, window === readerScene.window else { return }
+            routePendingShareInboxIfAvailable()
             if !routePendingYouTubeIfAvailable() { routePendingSystemActionIfAvailable() }
         }
         .task { await restoreWindowIfNeeded() }
@@ -609,7 +704,7 @@ struct MainTabView: View {
                 // The window probe can attach after the key-window notification
                 // and initial task. Drain an already queued cold-launch route
                 // now, before restoring an unrelated previous reading session.
-                if !routePendingYouTubeIfAvailable(), !routePendingSystemActionIfAvailable() {
+                if !routePendingShareInboxIfAvailable(), !routePendingYouTubeIfAvailable(), !routePendingSystemActionIfAvailable() {
                     await restoreWindowIfNeeded()
                 }
             }
@@ -620,6 +715,9 @@ struct MainTabView: View {
         .onChange(of: kindleCenter.model?.book.id) { _ in saveWindowBookmark() }
         .onChange(of: kindleCenter.model?.mode) { _ in saveWindowBookmark() }
         .onChange(of: offlineCenter.model?.book.id) { _ in saveWindowBookmark() }
+        .onChange(of: readerScene.pendingShareInboxRequest) { _ in
+            routePendingShareInboxIfAvailable()
+        }
     }
 
     private var lifecycleContent: some View {
@@ -627,13 +725,15 @@ struct MainTabView: View {
         .onChange(of: scenePhase) { phase in
             if phase != .active { saveWindowBookmark() }
             if phase == .active {
+                let routedShareInbox = routePendingShareInboxIfAvailable()
                 reviewPrompt.recordActiveDay()
                 ResumeReminderManager.shared.appBecameActive()   // 取消待发召回 + 时机成熟则请求通知权限
                 let routedYouTube = routePendingYouTubeIfAvailable()
                 let routedSystemAction = routedYouTube
                     ? false
                     : routePendingSystemActionIfAvailable()
-                if !routedYouTube,
+                if !routedShareInbox,
+                   !routedYouTube,
                    !routedSystemAction,
                    !libraryOnboarding.isChooserPresented {
                     clipboard.check()   // 进 App / 回前台 → 探测剪贴板
@@ -647,6 +747,7 @@ struct MainTabView: View {
         .task {
             reviewPrompt.recordActiveDay()
             reloadShareInbox(showWhenPending: false)
+            routePendingShareInboxIfAvailable()
             if auth.isSignedIn, VoiceGiftFeature.isRegionEligible() {
                 await voiceCloneStore.refresh()
             }
@@ -2302,6 +2403,14 @@ struct MainTabView: View {
         if isKindle { kindleCenter.model?.selectMode(mode) }
     }
 
+    @discardableResult
+    private func routePendingShareInboxIfAvailable() -> Bool {
+        guard readerScene.takePendingShareInboxRequest(isActive: scenePhase == .active) else { return false }
+        clipboard.consume()
+        reloadShareInbox(showWhenPending: true)
+        return true
+    }
+
     private func reloadShareInbox(showWhenPending: Bool) {
         let pending = ShareInboxStore.pending()
         shareInboxItems = pending.map {
@@ -2602,8 +2711,54 @@ private struct ShareInboxView: View {
     }
 }
 
+/// Keep Catalyst toolbar labels in one hosted row. Native toolbar promotion
+/// otherwise gives each mobile label a different bezel and image scale.
+struct HomeToolbarItems<Content: View>: ToolbarContent {
+    @ViewBuilder var content: Content
+
+    var body: some ToolbarContent {
+        #if targetEnvironment(macCatalyst)
+        if #available(iOS 26.0, *) {
+            desktopItem.sharedBackgroundVisibility(.hidden)
+        } else {
+            desktopItem
+        }
+        #else
+        ToolbarItemGroup(placement: .topBarTrailing) { content }
+        #endif
+    }
+
+    #if targetEnvironment(macCatalyst)
+    private var desktopItem: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            HStack(spacing: 8) { content }
+                .buttonStyle(.plain)
+                .fixedSize()
+        }
+    }
+    #endif
+}
+
+enum HomeToolbarLayout {
+    static var buttonSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        return 32
+        #else
+        return 30
+        #endif
+    }
+    static var avatarSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        return 24
+        #else
+        return 28
+        #endif
+    }
+}
+
 /// 书架来源入口。首页与音色 Tab 共用同一颗按钮，切 Tab 时右上角不再变化。
 struct ShelfSourcesToolbarButton: View {
+    let scene: ReaderSceneContext
     /// 传入时由调用方负责呈现（首页统一走自己的 `activeSheet`，避免同屏多 sheet 互吞，
     /// 见 CLAUDE.md 避坑 #9）；不传则这颗按钮自己挂 sheet。
     var accessibilityID: String = "homeShelfSourcesButton"
@@ -2615,19 +2770,36 @@ struct ShelfSourcesToolbarButton: View {
         Button {
             if let onTap { onTap() } else { showsShelfSources = true }
         } label: {
+            #if targetEnvironment(macCatalyst)
+            Image(systemName: "books.vertical")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 18, height: 18)
+                .foregroundStyle(AppTheme.foreground)
+                .frame(width: HomeToolbarLayout.buttonSize, height: HomeToolbarLayout.buttonSize)
+                .contentShape(Rectangle())
+            #else
             Image(systemName: "books.vertical.fill")
                 .font(.system(size: 18, weight: .regular))
                 .foregroundStyle(AppTheme.foreground)
                 .frame(width: 30, height: 30)
+            #endif
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(accessibilityID)
         .accessibilityLabel(Text(AppLocalized("管理书架来源")))
-        .sheet(isPresented: $showsShelfSources) { LibrarySourcesSheet() }
+        .sheet(isPresented: $showsShelfSources) {
+            // A toolbar-owned presentation does not inherit the main scene's
+            // environment reliably on Catalyst. Inject it at the sheet root.
+            LibrarySourcesSheet()
+                .readerSceneEnvironment(scene)
+                .environmentObject(scene.player)
+        }
     }
 }
 
 struct SettingsToolbarButton: View {
+    let scene: ReaderSceneContext
     /// 收件箱从首页 toolbar 下沉进设置后，未读数改由这颗按钮代为提示。
     var shareInboxUnreadCount: Int = 0
     var onOpenShareInbox: (() -> Void)?
@@ -2642,7 +2814,7 @@ struct SettingsToolbarButton: View {
             ZStack(alignment: .topTrailing) {
                 // 露头像而不是齿轮：用户来这里多半是找账号和订阅，不是找"设置"。
                 avatar
-                    .frame(width: 28, height: 28)
+                    .frame(width: HomeToolbarLayout.avatarSize, height: HomeToolbarLayout.avatarSize)
                     .clipShape(Circle())
                 if shareInboxUnreadCount > 0 {
                     Circle()
@@ -2652,6 +2824,8 @@ struct SettingsToolbarButton: View {
                         .offset(x: 2, y: -2)
                 }
             }
+            .frame(width: HomeToolbarLayout.buttonSize, height: HomeToolbarLayout.buttonSize)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(AppLocalized("账号与设置")))
@@ -2663,6 +2837,8 @@ struct SettingsToolbarButton: View {
             ) { reset in
                 pendingLibraryOnboardingReset = reset
             }
+            .readerSceneEnvironment(scene)
+            .environmentObject(scene.player)
         }
     }
 

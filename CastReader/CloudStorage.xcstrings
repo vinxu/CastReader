@@ -1,6 +1,39 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
+    "搜索 Google Drive": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Google Drive durchsuchen"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Search Google Drive"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Buscar en Google Drive"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Rechercher dans Google Drive"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "Google Drive में खोजें"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Cerca in Google Drive"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "Google Drive を検索"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Pesquisar no Google Drive"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "搜索 Google Drive"}}
+    }},
+    "从历史记录移除": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Aus dem Verlauf entfernen"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Remove from history"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Eliminar del historial"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Retirer de l’historique"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "इतिहास से हटाएँ"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Rimuovi dalla cronologia"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "履歴から削除"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Remover do histórico"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "从历史记录移除"}}
+    }},
+    "连接账号": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Konto verbinden"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Connect account"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Conectar cuenta"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Connecter un compte"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "खाता कनेक्ट करें"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Collega account"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "アカウントを接続"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Conectar conta"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "连接账号"}}
+    }},
     "搜索云盘文件": {"localizations": {
       "de": {"stringUnit": {"state": "translated", "value": "Cloud-Dateien durchsuchen"}},
       "en": {"stringUnit": {"state": "translated", "value": "Search cloud files"}},

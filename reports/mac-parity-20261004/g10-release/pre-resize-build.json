@@ -1,0 +1,11 @@
+{
+  "builtAt": "2026-10-05T13:34:33.075105+08:00",
+  "stage": "build-only before resize repair",
+  "architectures": "x86_64 arm64",
+  "bundleID": "com.same.castreader",
+  "minimumOS": "14.6",
+  "binarySHA256": "35e18164098f58b935256aa459e12fbe01dc8490234b1831bf9a978eae20ac92",
+  "bundleSHA256": "13d29d02d440ecfd95cd7948ab16934b30e826a81a5bcdaf8f53e149e0dd50b1",
+  "temporaryDiagnosticFound": false,
+  "codesignVerifyExitCode": 0
+}

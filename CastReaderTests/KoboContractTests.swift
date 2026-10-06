@@ -536,7 +536,7 @@ final class KoboContractTests: XCTestCase {
             refreshed.coverURL = "https://cdn.kobo.example/new.jpg"
             refreshed.progressLabel = "55%"
             store.mergeScrapedBooks(
-                [refreshed],
+                [refreshed, makeBook(secondUUID, title: "Never opened")],
                 account: makeAccount("reader@example.com", complete: true)
             )
 
@@ -545,6 +545,9 @@ final class KoboContractTests: XCTestCase {
             XCTAssertEqual(stored?.author, "New Author")
             XCTAssertEqual(stored?.progressLabel, "55%")
             XCTAssertEqual(stored?.lastOpenedAt, openedAt)
+            XCTAssertEqual(store.sortedBooks(sort: .recent, query: "").first?.id, original.id,
+                           "A new sync must not rank an unread book above an actual reading session")
+            XCTAssertEqual(store.homeBooks.first?.id, original.id)
             XCTAssertEqual(
                 stored?.lastReaderURL,
                 "https://readnow.kobo.com/\(primaryUUID)"

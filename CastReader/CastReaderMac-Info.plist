@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Readable documents</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+				<string>org.idpf.epub-container</string>
+				<string>org.openxmlformats.wordprocessingml.document</string>
+				<string>public.text</string>
+				<string>public.image</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon60x60</string>
+			</array>
+			<key>CFBundleIconName</key>
+			<string>AppIcon</string>
+		</dict>
+	</dict>
+	<key>CFBundleIcons~ipad</key>
+	<dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon60x60</string>
+				<string>AppIcon76x76</string>
+			</array>
+			<key>CFBundleIconName</key>
+			<string>AppIcon</string>
+		</dict>
+	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.same.castreader.deep-link</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>castreader</string>
+			</array>
+		</dict>
+	</array>
+	<key>CastReaderInternalDistributionControlsEnabled</key>
+	<string>$(CASTREADER_INTERNAL_DISTRIBUTION_CONTROLS)</string>
+	<key>CastReaderPrivateKeychainAccessGroup</key>
+	<string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CastReaderSafariKeychainAccessGroup</key>
+	<string>$(AppIdentifierPrefix)com.same.castreader.safari</string>
+	<key>DropboxAppKey</key>
+	<string>$(DROPBOX_APP_KEY)</string>
+	<key>GoogleDriveClientID</key>
+	<string>$(GOOGLE_DRIVE_CLIENT_ID)</string>
+	<key>GoogleDriveRedirectScheme</key>
+	<string>$(GOOGLE_DRIVE_REDIRECT_SCHEME)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>youtube</string>
+	</array>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>MicrosoftClientID</key>
+	<string>$(MICROSOFT_CLIENT_ID)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>拍下书本、文档或屏幕上的文字，CastReader 在本机识别后即可为你朗读（边读边高亮跟随），或生成 AI 讲解并在原文上做手写标注。照片仅在设备上识别，不会上传。</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record a short sample to create your personal voice.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>从相册选取含文字的图片，CastReader 在本机识别后即可为你朗读，或生成 AI 讲解并在原文上做手写标注。图片仅在设备上识别，不会上传。</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+</dict>
+</plist>

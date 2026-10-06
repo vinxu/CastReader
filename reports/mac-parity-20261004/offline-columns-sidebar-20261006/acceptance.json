@@ -1,0 +1,57 @@
+{
+  "status": "PASS",
+  "scope": "Offline double-column speech/highlights and Mac sidebar latency",
+  "regressions": {
+    "passed": 99,
+    "failed": 0,
+    "skipped": 0,
+    "xcresult": "/tmp/mac-offline-columns-green2.xcresult",
+    "oldCodeReproduction": "Actual page fixture failed text order and per-word highlight order; v2 invalidation test also failed before fix"
+  },
+  "liveOffline": {
+    "book": "English Fairy Tales",
+    "page": 76,
+    "cacheVersion": 3,
+    "leftWords": 169,
+    "rightWords": 163,
+    "orderedColumns": true,
+    "voice": "Eddy",
+    "imagePreserved": true,
+    "observations": [
+      "Opened existing saved book paused",
+      "Play displayed local recognition status then read left column before right",
+      "Original-page overlay followed word position",
+      "Minimize kept offline mini player, paused at end of test"
+    ]
+  },
+  "navigation": {
+    "implementation": "Retain page controllers; only active page attached; no hidden UITabBarController transition",
+    "beforeSelectionCommitMs": [
+      57,
+      320
+    ],
+    "afterFirstBatchSelectionCommitMs": [
+      6,
+      16
+    ],
+    "afterWithMiniPlayerSelectionCommitMs": [
+      10,
+      19
+    ],
+    "afterWithMiniPlayerContentLayoutMs": [
+      57,
+      101
+    ],
+    "firstLibraryLayoutMs": 181,
+    "notes": "Application timestamps, not tool round-trip time. Intermediate profiling batch overlapped unit-host startup and is included separately in navigation-timing.json; no CPU benchmark claim.",
+    "verified": [
+      "All four sidebar tabs",
+      "Settings downloaded subpage retained across switches",
+      "Offline mini player retained",
+      "Only active page appears in accessibility tree"
+    ]
+  },
+  "installed": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+  "signedBundleValidation": "PASS",
+  "iosBuildSettingsAndExtensions": "Unchanged; explicit shared test-fixture addition permitted by project check"
+}

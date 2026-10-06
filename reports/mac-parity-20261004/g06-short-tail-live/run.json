@@ -1,0 +1,15 @@
+{
+  "startedAt": "2026-10-05T03:48:55.500810+08:00",
+  "logOffset": 1807965,
+  "candidate": "g06-short-remainder-candidate/identity.json",
+  "pid": 10492,
+  "navigation": "TOC Chapter 15, then one next page; confirmed exact pressure/barometer page ending descent?",
+  "windowPointsBefore": [
+    1024,
+    768
+  ],
+  "resizeTargetPoints": [
+    523,
+    463
+  ]
+}

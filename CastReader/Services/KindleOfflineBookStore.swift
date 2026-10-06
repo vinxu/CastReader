@@ -11,10 +11,15 @@ struct KindleOfflineSourcePosition: Codable, Equatable {
     let maximum: Int
     let layoutID: String
     let fingerprint: String
+    // Mac downloads retain their CSS viewport across window resize/relaunch.
+    // Missing in older manifests and all iOS downloads.
+    var captureViewport: CGSize? = nil
 
     var isValid: Bool {
         minimum >= 0 && maximum > minimum && maximum < Int.max && start >= minimum && end >= start &&
-            end <= maximum && !layoutID.isEmpty && !fingerprint.isEmpty
+            end <= maximum && !layoutID.isEmpty && !fingerprint.isEmpty &&
+            (captureViewport.map { $0.width.isFinite && $0.height.isFinite &&
+                (100...10_000).contains($0.width) && (100...10_000).contains($0.height) } ?? true)
     }
     var isFirst: Bool { start == minimum }
     var isLast: Bool { end == maximum }
@@ -67,6 +72,9 @@ struct KindleOfflineBook: Codable, Identifiable, Equatable {
     var status: Status
     var pages: [Page]
     var originalPosition: KindleOfflineSourcePosition?
+    // Online and capture windows can use different page boundaries on Mac.
+    var originalOnlinePosition: KindleOfflineSourcePosition?
+    var onlineReturnPosition: KindleOfflineSourcePosition? { originalOnlinePosition ?? originalPosition }
     var originalPositionRestored = false
     var lastError: String?
     var readingPosition = ReadingPosition()
@@ -147,8 +155,13 @@ actor KindleOfflineBookStore {
         return try read(url)
     }
 
-    func prepare(source: KindleBook, scope: String, originalPosition: KindleOfflineSourcePosition) throws -> KindleOfflineBook {
+    func prepare(source: KindleBook, scope: String, originalPosition: KindleOfflineSourcePosition,
+                 onlineReturnPosition: KindleOfflineSourcePosition? = nil) throws -> KindleOfflineBook {
         guard originalPosition.isValid else { throw Failure.discontinuousPage }
+        if let onlineReturnPosition {
+            guard onlineReturnPosition.isValid, onlineReturnPosition.minimum == originalPosition.minimum,
+                  onlineReturnPosition.maximum == originalPosition.maximum else { throw Failure.staleGeneration }
+        }
         let id = Self.bookID(source.id)
         if var prior = try load(id: id, scope: scope) {
             // Resume only within the same confirmed layout/content coordinate space.
@@ -159,6 +172,7 @@ actor KindleOfflineBookStore {
             prior.sourceBook = source
             if prior.status != .complete {
                 prior.originalPosition = originalPosition
+                prior.originalOnlinePosition = onlineReturnPosition
                 prior.originalPositionRestored = false
                 prior.status = .preparing
                 prior.lastError = nil
@@ -170,6 +184,7 @@ actor KindleOfflineBookStore {
         var book = KindleOfflineBook(id: id, sourceBookID: source.id, title: source.title, author: source.author,
             generation: UUID(), createdAt: now, updatedAt: now, language: source.language ?? "und",
             status: .preparing, pages: [], originalPosition: originalPosition)
+        book.originalOnlinePosition = onlineReturnPosition
         book.sourceBook = source
         try persist(book, scope: scope)
         return book
@@ -195,7 +210,7 @@ actor KindleOfflineBookStore {
         book = fresh
         book.pages.append(.init(ordinal: ordinal, position: position, resource: resource,
             requiresOCR: requiresOCR, sourceWordCount: sourceWordCount))
-        if book.hasLocalReadingPosition != true, let original = book.originalPosition,
+        if book.hasLocalReadingPosition != true, let original = book.onlineReturnPosition,
            position.start <= original.start, position.end >= original.start {
             book.readingPosition.page = ordinal
         }

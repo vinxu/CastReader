@@ -1,0 +1,10 @@
+{
+  "recordedAt": "2026-10-05T04:20:29.058760",
+  "pid": 15586,
+  "binarySHA256": "d77471df02772025ad3580444ce6ec4adbb10c7a845a0c7b03c323dd2878fc08",
+  "sourceSHA256": {
+    "CastReader/Services/WebReaderBridge.swift": "689991b3e6e31894ed581b0d46a7c567c99492c8a5da5274b941689ff639fba3",
+    "CastReader/Services/WeReadWebScripts.swift": "06f033655e45593921e84b9385c28bc933ecfd34c7be115da668676529fccb7b",
+    "CastReader/Views/Reader/ReaderHostView.swift": "d6b278897778aa3af36a4808155d310135aba5bf8bf75d91c907c28355964ecd"
+  }
+}

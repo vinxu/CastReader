@@ -1,0 +1,68 @@
+[
+  {
+    "report": "/Users/xuxuheng/Library/Logs/DiagnosticReports/com.apple.WebKit.WebContent-2026-10-05-074300.ips",
+    "captureTime": "2026-10-05 07:42:42.9152 +0800",
+    "responsiblePid": 39722,
+    "exception": {
+      "codes": "0x0000000000000001, 0x00000001a12e9d20",
+      "rawCodes": [
+        1,
+        6999153952
+      ],
+      "type": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP"
+    },
+    "triggeredFrames": [
+      [
+        "_assertionFailure(_:_:file:line:flags:)",
+        "closure #1 in __SwiftNativeNSArrayWithContiguousStorage._objectAt(_:)",
+        "partial apply for closure #1 in __SwiftNativeNSArrayWithContiguousStorage._objectAt(_:)",
+        "partial apply for closure #1 in __SwiftNativeNSArrayWithContiguousStorage._objectAt(_:)",
+        "__EmptyArrayStorage._withVerbatimBridgedUnsafeBuffer<A>(_:)",
+        "__ContiguousArrayStorageBase.withUnsafeBufferOfObjects<A>(_:)",
+        "@objc __SwiftNativeNSArrayWithContiguousStorage.objectAtSubscript(_:)",
+        "-[AXPMacPlatformElement _synthesizeMouseClick:]",
+        "-[AXPMacPlatformElement accessibilityPerformPress]",
+        "___NSAccessibilityEntryPointPerformAction_block_invoke.808",
+        "NSAccessibilityPerformEntryPointBOOL",
+        "NSAccessibilityEntryPointPerformAction",
+        "PerformAction",
+        "_AXXMIGPerformAction",
+        "_XPerformAction"
+      ]
+    ]
+  },
+  {
+    "report": "/Users/xuxuheng/Library/Logs/DiagnosticReports/com.apple.WebKit.WebContent-2026-10-05-074327.ips",
+    "captureTime": "2026-10-05 07:43:13.9711 +0800",
+    "responsiblePid": 39722,
+    "exception": {
+      "codes": "0x0000000000000001, 0x00000001a12e9d20",
+      "rawCodes": [
+        1,
+        6999153952
+      ],
+      "type": "EXC_BREAKPOINT",
+      "signal": "SIGTRAP"
+    },
+    "triggeredFrames": [
+      [
+        "_assertionFailure(_:_:file:line:flags:)",
+        "closure #1 in __SwiftNativeNSArrayWithContiguousStorage._objectAt(_:)",
+        "partial apply for closure #1 in __SwiftNativeNSArrayWithContiguousStorage._objectAt(_:)",
+        "partial apply for closure #1 in __SwiftNativeNSArrayWithContiguousStorage._objectAt(_:)",
+        "__EmptyArrayStorage._withVerbatimBridgedUnsafeBuffer<A>(_:)",
+        "__ContiguousArrayStorageBase.withUnsafeBufferOfObjects<A>(_:)",
+        "@objc __SwiftNativeNSArrayWithContiguousStorage.objectAtSubscript(_:)",
+        "-[AXPMacPlatformElement _synthesizeMouseClick:]",
+        "-[AXPMacPlatformElement accessibilityPerformPress]",
+        "___NSAccessibilityEntryPointPerformAction_block_invoke.808",
+        "NSAccessibilityPerformEntryPointBOOL",
+        "NSAccessibilityEntryPointPerformAction",
+        "PerformAction",
+        "_AXXMIGPerformAction",
+        "_XPerformAction"
+      ]
+    ]
+  }
+]

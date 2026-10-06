@@ -24,9 +24,14 @@ enum LiveWebPageTurnDirection: String {
 final class LiveWebPageTurnController: ObservableObject {
     private weak var bridge: WebReaderBridge?
     @Published var needsKoboSessionRecovery = false
+    @Published private(set) var hasPresentedInitialSurface = false
 
     fileprivate func attach(_ bridge: WebReaderBridge) {
         self.bridge = bridge
+        bridge.onInitialLiveWebSurfaceReady = { [weak self] in
+            guard self?.hasPresentedInitialSurface == false else { return }
+            self?.hasPresentedInitialSurface = true
+        }
         bridge.onKoboSessionRequired = { [weak self] in self?.needsKoboSessionRecovery = true }
 #if DEBUG
         bridge.injectKoboMissingSessionForAcceptanceIfRequested()
@@ -121,6 +126,28 @@ final class WebReaderContainerView: UIView {
     private var lastSurfaceSize: CGSize = .zero
     private var lastReportedViewport: (left: Double, right: Double)?
     private var lastAppliedWeReadStyle: UIUserInterfaceStyle
+    private var readerPresented = true
+    private var presentationLayoutWork: DispatchWorkItem?
+
+    /// Hiding the Mac navigation bar changes the host's content height during
+    /// mini-player transitions. Do not repaginate a retained, offscreen reader.
+    func setReaderPresented(_ presented: Bool) {
+        #if targetEnvironment(macCatalyst)
+        guard isWeRead, readerPresented != presented else { return }
+        readerPresented = presented
+        presentationLayoutWork?.cancel()
+        presentationLayoutWork = nil
+        guard presented else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.presentationLayoutWork = nil
+            self.setNeedsLayout()
+            self.layoutIfNeeded()
+        }
+        presentationLayoutWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6, execute: work)
+        #endif
+    }
 
     init(
         webView: WKWebView,
@@ -173,6 +200,7 @@ final class WebReaderContainerView: UIView {
         super.layoutSubviews()
         guard bounds.width > 1, bounds.height > 1 else { return }
         if isWeRead {
+            guard readerPresented, presentationLayoutWork == nil else { return }
             let surfaceChanged = abs(lastSurfaceSize.width - bounds.width) > 2 ||
                 abs(lastSurfaceSize.height - bounds.height) > 2
             if surfaceChanged {
@@ -308,6 +336,7 @@ struct WebReaderView: UIViewRepresentable {
     let refocusToken: Int
     let initialSurfaceSize: CGSize
     let bottomContentOcclusion: CGFloat
+    var isReaderPresented = true
     @ObservedObject var weReadTOC: WeReadTOCController
     @ObservedObject var pageTurnController: LiveWebPageTurnController
 
@@ -418,6 +447,7 @@ struct WebReaderView: UIViewRepresentable {
             webView.isInspectable = true
 #endif
             webView.customUserAgent = WeReadWebScripts.desktopUserAgent
+            webView.pageZoom = WeReadViewportCrop.pageZoom
             webView.overrideUserInterfaceStyle = colorScheme == .dark ? .dark : .light
             let compact = initialSurfaceSize.width <= WeReadViewportCrop.compactReaderBreakpoint ? "Y" : "N"
             let openingCrop = WeReadViewportCrop.predicted(for: initialSurfaceSize)
@@ -526,6 +556,7 @@ struct WebReaderView: UIViewRepresentable {
     }
 
     func updateUIView(_ container: WebReaderContainerView, context: Context) {
+        container.setReaderPresented(isReaderPresented)
         if document.sourceKind != .weread,
            LiveWebPlatformID(sourceKind: document.sourceKind) == nil {
             let zoom = appearance.textSize / 18

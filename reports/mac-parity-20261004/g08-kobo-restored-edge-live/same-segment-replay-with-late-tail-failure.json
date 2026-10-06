@@ -1,0 +1,14 @@
+{
+  "status": "PARTIAL_PASS_WITH_LATE_PRODUCER_FAILURE",
+  "restoredProgress": 0.755,
+  "restoredItemDuration": 17.304,
+  "oldPageBoundary": 2.7635833333,
+  "pageRevealed": "122/393",
+  "firstItemCompletion": "10:17:35.853",
+  "firstItemCompletionTime": 17.304,
+  "lateTailArrival": "10:17:41.096",
+  "lateTailAutoPlay": false,
+  "secondExplicitPlay": "10:17:52.839",
+  "actual": "Old endpoint did not truncate audio; visible saved word and unheard tail continued to real item end. Late next segment wrongly retained original autoplay=false and needed another Play.",
+  "candidateIdentity": "../g08-kobo-contracts/later-segment-candidate-identity.json"
+}

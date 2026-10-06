@@ -1,0 +1,31 @@
+{
+  "scope": "Mac offline entry, playback ownership, minimized reader chrome",
+  "tests": {
+    "passed": 41,
+    "failed": 0,
+    "skipped": 0,
+    "xcresult": "/tmp/mac-offline-boundary-20261006-v2.xcresult"
+  },
+  "ui_verified": [
+    "Partial and complete local copies open paused in offline reader",
+    "Explicit Play starts Samantha system speech",
+    "Minimize removes offline header and native tab toolbar; offline Mini Player continues",
+    "Offline playback advanced from page 36 to 37 while minimized",
+    "Expand preserves progress; selecting another downloaded book stops previous session and opens paused",
+    "Switching from Kindle preparing state to already-open Downloaded tab removes Kindle player",
+    "Kindle cloud playback Morgan Freeman reached Playing; entering Downloaded stopped and removed it before opening local copy",
+    "Offline Play then acquired systemSpeech after readAloud released; no new cloud TTS generation after entering local copy",
+    "All three existing saved books opened through offline reader; stopped at paused offline Mini Player"
+  ],
+  "limitations": [
+    "Reported simultaneous voices not reproduced before patch; reproduced online preparation remaining active on entering downloaded list",
+    "Saved OCR text contains interleaved columns in existing copies; not changed by this entry/session fix",
+    "Physical network disconnect not performed; local playback path and absence of cloud TTS checked",
+    "Debug local candidate only; no store/backend release"
+  ],
+  "test_host_recovery": [
+    "Default isolated build blocked by Apple App Group profile registration",
+    "Reused isolated AF9nAZ source snapshot, unsigned build then existing development certificate/profile signing with private test App Group and Keychain",
+    "First test host failed missing AppIdentifierPrefix after unsigned build; corrected isolated host Info.plist to match signed private Keychain group, then 41 tests passed; production bundle unchanged"
+  ]
+}

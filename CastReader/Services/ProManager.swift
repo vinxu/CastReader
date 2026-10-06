@@ -31,6 +31,9 @@ final class ProManager: ObservableObject {
     @Published private(set) var storeKitLocalPro = false
     @Published private(set) var storeKitPro = false
     @Published private(set) var serverPro = false
+    /// UI must distinguish an unresolved account from an authoritative free
+    /// result. This flag never grants access or changes quota enforcement.
+    @Published private(set) var hasResolvedServerEntitlement = false
     @Published private(set) var serverPlan: String?
     @Published private(set) var serverAccount: ProAccountDTO?
     @Published private(set) var products: [Product] = []
@@ -245,6 +248,7 @@ final class ProManager: ObservableObject {
         serverPlan = status.plan
         serverAccount = status.account
         serverIdentity = Self.serverIdentityKey(userId: userId, email: email)
+        hasResolvedServerEntitlement = true
         return true
     }
 
@@ -269,6 +273,7 @@ final class ProManager: ObservableObject {
         serverPlan = nil
         serverAccount = nil
         serverIdentity = nil
+        hasResolvedServerEntitlement = false
         VoiceCloneStore.shared.clearEntitlementStatus()
         refreshSyncState(reason: "clear-server")
     }

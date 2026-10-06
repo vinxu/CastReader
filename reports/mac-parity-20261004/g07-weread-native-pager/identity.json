@@ -1,0 +1,9 @@
+{
+  "recordedAt": "2026-10-05T04:08:58.209739",
+  "signatureVerified": true,
+  "sha256": {
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "e91b7e5b3345123410b6aa6ea75e162f45f0195a1b7adcb7077a8949718ef3e9",
+    "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/Services/WebReaderBridge.swift": "28a997ac8a3f8ef0dd07ac06c51df8da19e5750bff7172ffe97ca737df155b89",
+    "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/Views/Reader/ReaderHostView.swift": "d6b278897778aa3af36a4808155d310135aba5bf8bf75d91c907c28355964ecd"
+  }
+}

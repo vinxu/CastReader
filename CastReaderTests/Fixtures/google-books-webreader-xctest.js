@@ -53662,12 +53662,17 @@ var __CRWeb = (() => {
     const paraElements = /* @__PURE__ */ new Map();
     const extractedParaElements = /* @__PURE__ */ new Map();
     const paraOffsets = /* @__PURE__ */ new Map();
+    const retainedSourceTexts = /* @__PURE__ */ new Map();
     const paragraphTapDocuments = /* @__PURE__ */ new WeakSet();
     function installParagraphTaps(doc) {
       if (paragraphTapDocuments.has(doc)) return;
       paragraphTapDocuments.add(doc);
       doc.addEventListener("click", (e) => {
-        var _a2, _b, _c, _d;
+        var _a2, _b, _c;
+        if (Array.from(document.querySelectorAll('[role="dialog"],[aria-modal="true"],dialog[open]')).some((panel) => {
+          const box = panel.getBoundingClientRect(), style = getComputedStyle(panel);
+          return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth && style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+        })) return;
         const target = e.target;
         const el = (_a2 = target == null ? void 0 : target.closest) == null ? void 0 : _a2.call(target, "[data-cr-para]");
         const index = el ? (_b = [...paraElements].find(([, candidate]) => candidate === el)) == null ? void 0 : _b[0] : void 0;
@@ -53675,10 +53680,12 @@ var __CRWeb = (() => {
           post("paragraphTapped", { paragraphIndex: index });
           return;
         }
-        if (doc !== document || ((_c = target == null ? void 0 : target.closest) == null ? void 0 : _c.call(target, 'a,button,input,select,textarea,[role="button"],[role="dialog"]'))) return;
+        if (doc !== document) return;
+        const controlSelector = 'a,button,input,select,textarea,[role="button"],[role="dialog"],[role="slider"],[role="tab"],[role="radio"],[role="switch"],[aria-modal="true"]';
+        if (e.composedPath().some((node) => node instanceof Element && node.closest(controlSelector))) return;
         for (const [paragraphIndex, candidate] of paraElements) {
           const owner = candidate.ownerDocument;
-          const frame = (_d = owner.defaultView) == null ? void 0 : _d.frameElement;
+          const frame = (_c = owner.defaultView) == null ? void 0 : _c.frameElement;
           if (!frame || frame.ownerDocument !== doc) continue;
           const box = frame.getBoundingClientRect();
           const sx = box.width / Math.max(1, frame.offsetWidth);
@@ -53769,7 +53776,7 @@ var __CRWeb = (() => {
         if (!painted) return;
         const d = ownerDocument.createElement("div");
         d.className = "cr-hl-ov";
-        d.style.cssText = `position:absolute;left:${painted.left + sx}px;top:${painted.top + sy}px;width:${painted.width}px;height:${painted.height}px;background:${hexToRgba(color, 0.34)};pointer-events:none;z-index:2147483000;border-radius:3px;mix-blend-mode:multiply`;
+        d.style.cssText = `position:absolute;left:${painted.left + sx}px;top:${painted.top + sy}px;width:${painted.width}px;height:${painted.height}px;background:${hexToRgba(color, 0.34)}!important;pointer-events:none;z-index:2147483000;border-radius:3px;mix-blend-mode:normal!important`;
         host.appendChild(d);
         overlayNodes.add(d);
         n++;
@@ -53798,8 +53805,8 @@ var __CRWeb = (() => {
       }
       return null;
     }
-    function buildWordRanges(el, words, startCursor) {
-      const fullText = sourceText(el);
+    function buildWordRanges(el, words, startCursor, retainedSource, domOffset = 0) {
+      const fullText = retainedSource != null ? retainedSource : sourceText(el);
       const lower = fullText.toLowerCase();
       const ranges = [];
       let searchPos = Math.max(0, Math.min(startCursor, fullText.length));
@@ -53833,7 +53840,8 @@ var __CRWeb = (() => {
           continue;
         }
         misses = 0;
-        ranges.push(charRangeInElement(el, m.pos, m.pos + m.len));
+        const start = m.pos + domOffset, end = start + m.len;
+        ranges.push(end > 0 ? charRangeInElement(el, Math.max(0, start), end) : null);
         searchPos = m.pos + m.len;
       }
       return { ranges, cursor: searchPos };
@@ -53857,6 +53865,7 @@ var __CRWeb = (() => {
       paraElements.clear();
       extractedParaElements.clear();
       paraOffsets.clear();
+      retainedSourceTexts.clear();
       const out = [];
       paras.forEach((p, i) => {
         var _a3;
@@ -54018,6 +54027,7 @@ var __CRWeb = (() => {
         if (segments.length > 0) {
           paraElements.clear();
           paraOffsets.clear();
+          retainedSourceTexts.clear();
           markDOMFragments.clear();
         }
         for (const segment of segments) {
@@ -54030,8 +54040,11 @@ var __CRWeb = (() => {
             paraElements.set(segment.paragraphIndex, sourceElement);
           }
           const override = (_b = segment.domCharOffset) != null ? _b : segment.charOffset;
-          if (Number.isFinite(override) && typeof override === "number" && override >= 0 && paraElements.has(segment.paragraphIndex)) {
+          if (Number.isFinite(override) && typeof override === "number" && (override >= 0 || typeof segment.text === "string" && override + segment.text.length > 0) && paraElements.has(segment.paragraphIndex)) {
             paraOffsets.set(segment.paragraphIndex, override);
+            if (override < 0 && typeof segment.text === "string") {
+              retainedSourceTexts.set(segment.paragraphIndex, segment.text);
+            }
           }
         }
         wcPara = -1;
@@ -54063,18 +54076,22 @@ var __CRWeb = (() => {
           showDbg("w NOEL");
           return;
         }
+        const retained = retainedSourceTexts.get(arg.paragraphIndex);
+        const base = paraOffsets.get(arg.paragraphIndex) || 0;
+        const start = retained !== void 0 ? 0 : base;
+        const domOffset = retained !== void 0 ? base : 0;
         if (arg.paragraphIndex !== wcPara) {
           wcPara = arg.paragraphIndex;
-          paraCursor = paraOffsets.get(arg.paragraphIndex) || 0;
+          paraCursor = start;
           wcSeg = -1;
         }
         if (arg.segSeq !== wcSeg) {
           if (arg.segSeq !== wcSeg + 1 && arg.segmentTexts) {
             const priorWords = arg.segmentTexts.flatMap((text) => text.match(/\S+/g) || []);
-            paraCursor = buildWordRanges(el, priorWords, paraOffsets.get(arg.paragraphIndex) || 0).cursor;
+            paraCursor = buildWordRanges(el, priorWords, start, retained, domOffset).cursor;
           }
           wcSeg = arg.segSeq;
-          const built = buildWordRanges(el, arg.words || [], paraCursor);
+          const built = buildWordRanges(el, arg.words || [], paraCursor, retained, domOffset);
           wcRanges = built.ranges;
           paraCursor = built.cursor;
         }
@@ -55030,7 +55047,7 @@ var __CRWeb = (() => {
     }
     return out;
   }
-  function playBooksReflowSourceDirection(snapshot, source) {
+  function playBooksReflowSourceDirection(snapshot, source, context = []) {
     var _a;
     if (!snapshot.ready || source.length < 24 || source.length > 16e3 || !snapshot.visible.length) return null;
     const units = [];
@@ -55046,19 +55063,53 @@ var __CRWeb = (() => {
       }
       previous = page;
     }
-    const matches = units.flatMap((unit) => {
-      const at = unit.text.indexOf(source);
-      if (at < 0 || unit.text.indexOf(source, at + 1) >= 0) return [];
-      return unit.fragments.filter((fragment) => fragment.end > at && fragment.start < at + source.length);
-    });
-    if (units.filter((unit) => unit.text.includes(source)).length !== 1 || !matches.length) return null;
-    const visible = new Set(snapshot.visible.map((page) => page.key));
-    if (matches.some((fragment) => visible.has(fragment.page.key))) return null;
+    const locate = (text) => {
+      const matches = [];
+      const minimum = Math.min(48, text.length);
+      if (minimum < 24 || text.length > 16e3) return matches;
+      for (const unit of units) {
+        if (unit.text.length < minimum) continue;
+        const shifts = /* @__PURE__ */ new Set();
+        const occurrences = (haystack, needle, add) => {
+          for (let at = haystack.indexOf(needle); at >= 0; at = haystack.indexOf(needle, at + 1)) add(at);
+        };
+        for (const offset of /* @__PURE__ */ new Set([0, text.length - minimum])) {
+          occurrences(unit.text, text.slice(offset, offset + minimum), (at) => shifts.add(at - offset));
+        }
+        for (const offset of /* @__PURE__ */ new Set([0, unit.text.length - minimum])) {
+          occurrences(text, unit.text.slice(offset, offset + minimum), (at) => shifts.add(offset - at));
+        }
+        for (const shift of shifts) {
+          const lo = Math.max(0, shift), hi = Math.min(unit.text.length, shift + text.length);
+          if (hi - lo >= minimum && unit.text.slice(lo, hi) === text.slice(lo - shift, hi - shift)) {
+            matches.push({ unit, lo, hi });
+          }
+        }
+      }
+      return matches;
+    };
     const indices = snapshot.visible.map((page) => snapshot.pages.findIndex((p) => p.key === page.key));
-    const targets = matches.map((fragment) => snapshot.pages.findIndex((p) => p.key === fragment.page.key));
-    if (targets.every((index) => index > Math.max(...indices))) return "next";
-    if (targets.every((index) => index < Math.min(...indices))) return "prev";
-    return null;
+    const firstVisible = Math.min(...indices), lastVisible = Math.max(...indices);
+    const positions = (match) => match.unit.fragments.filter((fragment) => fragment.end > match.lo && fragment.start < match.hi).map((fragment) => snapshot.pages.findIndex((p) => p.key === fragment.page.key));
+    const matched = locate(source);
+    if (matched.length > 1) return null;
+    if (matched.length === 1) {
+      const targets = positions(matched[0]);
+      if (targets.length && targets.every((index) => index > lastVisible)) return "next";
+      if (targets.length && targets.every((index) => index >= 0 && index < firstVisible)) return "prev";
+      return null;
+    }
+    const directions = /* @__PURE__ */ new Set();
+    for (const neighbor of context.slice(0, 32)) {
+      if (!neighbor || typeof neighbor.text !== "string" || neighbor.side !== "before" && neighbor.side !== "after") continue;
+      const found = locate(neighbor.text);
+      if (found.length > 1) return null;
+      if (found.length !== 1) continue;
+      const targets = positions(found[0]);
+      if (targets.length && neighbor.side === "before" && targets.every((index) => index > lastVisible)) directions.add("next");
+      if (targets.length && neighbor.side === "after" && targets.every((index) => index >= 0 && index < firstVisible)) directions.add("prev");
+    }
+    return directions.size === 1 ? [...directions][0] : null;
   }
   function nativeParagraphs(snapshot, keys2) {
     var _a;
@@ -56093,7 +56144,11 @@ var __CRWeb = (() => {
         if (typeof reflow.reflowSourceText === "string") {
           if (reflow.originFrameSessionID !== frameSessionID || pendingAuto || pendingManualIntent || reflow.reflowBaseline !== playBooksSignature()) return;
           const snapshot = readPlayBooksSnapshot();
-          const direction = snapshot && playBooksReflowSourceDirection(snapshot, reflow.reflowSourceText);
+          const direction = snapshot && playBooksReflowSourceDirection(
+            snapshot,
+            reflow.reflowSourceText,
+            Array.isArray(reflow.reflowContext) ? reflow.reflowContext : []
+          );
           changeReasonInFlight = "refresh";
           changeBaseline = committedSignature;
           changeMetadata = null;
@@ -56735,15 +56790,25 @@ var __CRWeb = (() => {
       return null;
     }
   }
-  function koboReadingLocationFromRange(bookUUID, raw) {
+  function hasCompleteKoboReadingRange(raw) {
     var _a, _b;
-    if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(bookUUID)) return null;
     const range2 = raw;
     const pages = range2 == null ? void 0 : range2.pagesOfBook;
     const first2 = (_a = range2 == null ? void 0 : range2.begin) == null ? void 0 : _a.pageIndexInBook;
     const last2 = (_b = range2 == null ? void 0 : range2.end) == null ? void 0 : _b.pageIndexInBook;
-    if (typeof pages !== "number" || !Number.isInteger(pages) || pages < 1 || typeof first2 !== "number" || !Number.isInteger(first2) || first2 < 0 || first2 >= pages || first2 !== last2) return null;
-    return { bookUUID: bookUUID.toLowerCase(), percentage: (first2 + 1) / pages };
+    return typeof pages === "number" && Number.isInteger(pages) && pages >= 1 && typeof first2 === "number" && Number.isInteger(first2) && first2 >= 0 && first2 < pages && typeof last2 === "number" && Number.isInteger(last2) && last2 >= first2 && last2 < pages;
+  }
+  function hasKoboNativeRestoreLocation(api) {
+    if (typeof (api == null ? void 0 : api.getCurrentReadingRange) !== "function" || typeof api.goToPageByBookPercentage !== "function") return false;
+    try {
+      return hasCompleteKoboReadingRange(api.getCurrentReadingRange.call(api));
+    } catch (e) {
+      return false;
+    }
+  }
+  function koboReadingLocationFromRange(bookUUID, raw) {
+    if (!/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(bookUUID) || !hasCompleteKoboReadingRange(raw)) return null;
+    return { bookUUID: bookUUID.toLowerCase(), percentage: (raw.begin.pageIndexInBook + 1) / raw.pagesOfBook };
   }
   function koboReadingLocation() {
     const transport = koboSemanticTransport;
@@ -57118,6 +57183,29 @@ var __CRWeb = (() => {
   function rounded(value) {
     return Math.round(Number.isFinite(value) ? value : 0);
   }
+  function koboChapterAppearanceKey(doc) {
+    const paragraph = paragraphNodes2(doc)[0];
+    const nodes = [doc.documentElement, doc.body, paragraph == null ? void 0 : paragraph.parentElement, paragraph];
+    return nodes.map((node) => {
+      const style = node ? ownerStyle(node) : null;
+      return style ? [
+        style.fontSize,
+        style.fontFamily,
+        style.lineHeight,
+        style.letterSpacing,
+        style.wordSpacing,
+        style.textAlign,
+        style.textIndent,
+        style.columnWidth,
+        style.columnGap,
+        style.marginLeft,
+        style.marginRight,
+        style.paddingLeft,
+        style.paddingRight,
+        style.writingMode
+      ].join(",") : "";
+    }).join("|");
+  }
   function koboGeometryKey() {
     const frames = currentKoboFrameClips();
     const frameKeys = frames.map((frame) => {
@@ -57140,7 +57228,8 @@ var __CRWeb = (() => {
         rounded(innerHeight2),
         (bodyStyle == null ? void 0 : bodyStyle.columnWidth) || "-",
         (bodyStyle == null ? void 0 : bodyStyle.columnGap) || "-",
-        (rootStyle == null ? void 0 : rootStyle.writingMode) || "-"
+        (rootStyle == null ? void 0 : rootStyle.writingMode) || "-",
+        koboChapterAppearanceKey(frame.doc)
       ].join(",");
     });
     return `${viewportSizeKey()}|${frameKeys.join(";")}`;
@@ -57638,6 +57727,31 @@ var __CRWeb = (() => {
       candidateCount
     }) : null;
   }
+  function koboHasVisibleDialog() {
+    return Array.from(document.querySelectorAll('[role="dialog"],[aria-modal="true"],dialog[open]')).some((panel) => {
+      const box = panel.getBoundingClientRect(), style = getComputedStyle(panel);
+      return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < innerHeight && box.left < innerWidth && style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0";
+    });
+  }
+  function koboPageDirectionForClick(event, doc) {
+    var _a;
+    if (koboHasVisibleDialog()) return null;
+    const width = ((_a = doc.defaultView) == null ? void 0 : _a.innerWidth) || window.innerWidth;
+    const edge = Math.min(72, Math.max(42, width * 0.16));
+    const controls = 'a,button,input,textarea,select,[role="button"],[role="dialog"],[role="slider"],[role="tab"],[role="radio"],[role="switch"],[aria-modal="true"],[contenteditable="true"]';
+    const interactive = event.composedPath().map((node) => {
+      var _a2;
+      return (_a2 = node.closest) == null ? void 0 : _a2.call(node, controls);
+    }).find(Boolean);
+    const label = interactive ? controlLabel(interactive) : "";
+    const nextControl = NEXT_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label);
+    const previousControl = PREVIOUS_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label);
+    if (!nextControl && !previousControl && event.clientX > edge && event.clientX < width - edge) return null;
+    if (interactive && !nextControl && !previousControl) return null;
+    const rtl = documentDirection(doc) === "rtl";
+    const physicalLeft = event.clientX < edge;
+    return previousControl ? "prev" : nextControl ? "next" : physicalLeft === rtl ? "next" : "prev";
+  }
   function clickableKoboPageButton(direction) {
     var _a;
     return ((_a = findKoboPageControl(direction)) == null ? void 0 : _a.element) || null;
@@ -57916,12 +58030,24 @@ var __CRWeb = (() => {
     let layoutRefreshQuietUntil = 0;
     let lastViewportSizeKey = viewportSizeKey();
     let hasPublishedInitialPage = false;
+    let lastPanelVisibility;
     let bootCandidate = "";
     let bootGeometryCandidate = "";
     let bootCandidateSince = 0;
     const installedListenerDocuments = /* @__PURE__ */ new WeakSet();
+    const chapterAppearanceKeys = /* @__PURE__ */ new WeakMap();
     let semanticTransportLoggedStatus = "";
     let reportedReaderFailureCode = "";
+    let requestedInitialPaginationLayout = false;
+    const requestInitialPaginationLayoutIfNeeded = () => {
+      const transport = koboSemanticTransport;
+      if (requestedInitialPaginationLayout || (transport == null ? void 0 : transport.kind) !== "ur-engine" || pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return;
+      const native = currentKoboURAPI(transport);
+      if (hasKoboNativeRestoreLocation(native) || typeof (native == null ? void 0 : native.getCurrentReadingRange) !== "function" || typeof native.goToPageByBookPercentage !== "function") return;
+      requestedInitialPaginationLayout = true;
+      postForFrame("log", { message: "native pagination incomplete; request initial layout" });
+      window.dispatchEvent(new Event("resize"));
+    };
     const reportReaderFailureIfPresent = () => {
       const code = koboReaderFailureCode();
       if (!code) return false;
@@ -57947,6 +58073,9 @@ var __CRWeb = (() => {
         postForFrame("log", {
           message: `semantic page transport ${status}`
         });
+        if ((koboSemanticTransport == null ? void 0 : koboSemanticTransport.kind) === "ur-engine" && hasPublishedInitialPage && !pendingAuto && !pendingManualIntent && !changeReasonInFlight && !layoutRefreshActive && koboSignature() === committedSignature) {
+          requestExtract("refresh");
+        }
       });
     };
     warmSemanticTransport();
@@ -58288,10 +58417,14 @@ var __CRWeb = (() => {
       automaticTiming = { turnID: metadata.turnID, started: startedAt };
       const remembered = preferredMethod ? [preferredMethod] : [];
       const candidates = [
+        // The desktop chapter tail can report a single occupied leaf while
+        // still using spread pagination. A percentage targeting its blank
+        // neighbour stays on the same spread. Let the official page control
+        // handle that boundary whenever Kobo provides it (chrome may auto-hide).
+        "button",
         "semantic",
         "slider",
-        ...remembered,
-        "button"
+        ...remembered
       ];
       const method = candidates.find(
         (candidate, index) => candidates.indexOf(candidate) === index && methodAvailable(candidate, direction)
@@ -58422,10 +58555,10 @@ var __CRWeb = (() => {
       if (pendingAuto || pendingManualIntent) return false;
       const remembered = preferredMethod ? [preferredMethod] : [];
       const candidates = [
+        "button",
         "semantic",
         "slider",
-        ...remembered,
-        "button"
+        ...remembered
       ];
       const method = candidates.find(
         (candidate, index) => candidates.indexOf(candidate) === index && methodAvailable(candidate, direction)
@@ -58520,12 +58653,30 @@ var __CRWeb = (() => {
         const percentage = value.percentage;
         if (!bookUUID || !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(bookUUID) || value.bookUUID !== bookUUID || typeof percentage !== "number" || !Number.isFinite(percentage) || percentage < 0 || percentage > 1 || (transport == null ? void 0 : transport.kind) !== "ur-engine" || pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return false;
         const native = currentKoboURAPI(transport);
-        if (typeof (native == null ? void 0 : native.goToPageByBookPercentage) !== "function") return false;
+        if (typeof (native == null ? void 0 : native.goToPageByBookPercentage) !== "function" || !hasKoboNativeRestoreLocation(native)) return false;
+        const reportLocation = (phase) => {
+          var _a3, _b, _c;
+          try {
+            const range2 = (_a3 = native.getCurrentReadingRange) == null ? void 0 : _a3.call(native);
+            post("log", { message: "saved-location " + JSON.stringify({
+              phase,
+              requested: percentage,
+              percentage: range2 == null ? void 0 : range2.percentageOfBook,
+              pages: range2 == null ? void 0 : range2.pagesOfBook,
+              first: (_b = range2 == null ? void 0 : range2.begin) == null ? void 0 : _b.pageIndexInBook,
+              last: (_c = range2 == null ? void 0 : range2.end) == null ? void 0 : _c.pageIndexInBook
+            }) });
+          } catch (e) {
+          }
+        };
         try {
+          reportLocation("before");
           beginLayoutRefresh("saved-source-location");
           const completion = native.goToPageByBookPercentage.call(native, percentage);
-          void Promise.resolve(completion).catch(() => {
-          });
+          void Promise.resolve(completion).then(
+            () => reportLocation("completed"),
+            () => reportLocation("rejected")
+          );
           beginSettlement("refresh", 0, true);
           return true;
         } catch (e) {
@@ -58534,9 +58685,12 @@ var __CRWeb = (() => {
         }
       },
       restoreReady() {
-        var _a2;
         const transport = koboSemanticTransport;
-        return (transport == null ? void 0 : transport.kind) === "ur-engine" && typeof ((_a2 = currentKoboURAPI(transport)) == null ? void 0 : _a2.goToPageByBookPercentage) === "function" && !pendingAuto && !pendingManualIntent && !changeReasonInFlight && !layoutRefreshActive;
+        if ((transport == null ? void 0 : transport.kind) !== "ur-engine" || pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return false;
+        const native = currentKoboURAPI(transport);
+        if (hasKoboNativeRestoreLocation(native)) return true;
+        requestInitialPaginationLayoutIfNeeded();
+        return false;
       },
       navigationReady() {
         if (pendingAuto || pendingManualIntent || changeReasonInFlight || layoutRefreshActive) return false;
@@ -58715,20 +58869,8 @@ var __CRWeb = (() => {
       doc.addEventListener("click", (rawEvent) => {
         const event = rawEvent;
         if (!event.isTrusted) return;
-        const width = view.innerWidth || window.innerWidth;
-        const edge = Math.min(72, Math.max(42, width * 0.16));
-        const target = event.target;
-        const interactive = target == null ? void 0 : target.closest(
-          'a,button,input,textarea,select,[role="button"],[contenteditable="true"]'
-        );
-        const label = interactive ? controlLabel(interactive) : "";
-        const nextControl = NEXT_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label);
-        const previousControl = PREVIOUS_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label);
-        if (!nextControl && !previousControl && event.clientX > edge && event.clientX < width - edge) return;
-        if (interactive && !nextControl && !previousControl) return;
-        const rtl = documentDirection(doc) === "rtl";
-        const physicalLeft = event.clientX < edge;
-        const direction = previousControl ? "prev" : nextControl ? "next" : physicalLeft === rtl ? "next" : "prev";
+        const direction = koboPageDirectionForClick(event, doc);
+        if (!direction) return;
         postManualIntent("edge-click", direction);
       }, true);
       doc.addEventListener("keydown", (rawEvent) => {
@@ -58776,10 +58918,26 @@ var __CRWeb = (() => {
       { passive: true }
     );
     const observePageChange = () => {
+      if (hasPublishedInitialPage) {
+        requestInitialPaginationLayoutIfNeeded();
+        const visible = koboHasVisibleDialog();
+        if (visible !== lastPanelVisibility) {
+          lastPanelVisibility = visible;
+          postForFrame("koboPanelVisibility", { visible });
+        }
+      }
       observeViewportChange("poll");
       if (reportReaderFailureIfPresent()) return;
       if (ensureKoboChapterTypography()) return;
       refreshFrameListeners();
+      for (const frame of currentKoboFrameClips()) {
+        const appearance = koboChapterAppearanceKey(frame.doc);
+        const previous = chapterAppearanceKeys.get(frame.doc);
+        chapterAppearanceKeys.set(frame.doc, appearance);
+        if (previous !== void 0 && previous !== appearance) {
+          beginLayoutRefresh("chapter-appearance");
+        }
+      }
       const signature = koboSignature();
       if (!signature || signature === observedSignature) return;
       if (pendingAuto && automaticTiming && automaticTiming.firstChange === void 0) {

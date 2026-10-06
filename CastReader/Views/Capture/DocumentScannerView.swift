@@ -20,7 +20,10 @@ struct DocumentScannerView: UIViewControllerRepresentable {
     var onFailure: ((Error) -> Void)?
 
     static var isAvailable: Bool {
-        #if targetEnvironment(simulator)
+        #if targetEnvironment(macCatalyst)
+        // The Mac surface also presents useful denied/unavailable states.
+        return true
+        #elseif targetEnvironment(simulator)
         // Recent simulator runtimes report support but display a black camera.
         return false
         #else
@@ -28,14 +31,27 @@ struct DocumentScannerView: UIViewControllerRepresentable {
         #endif
     }
 
-    func makeUIViewController(context: Context) -> VNDocumentCameraViewController {
+    func makeUIViewController(context: Context) -> UIViewController {
+        #if targetEnvironment(macCatalyst)
+        let controller = MacDocumentCameraViewController()
+        controller.onScan = { context.coordinator.parent.onScan($0) }
+        controller.onCancel = { context.coordinator.parent.onCancel() }
+        return controller
+        #else
         let controller = VNDocumentCameraViewController()
         controller.delegate = context.coordinator
         return controller
+        #endif
     }
 
-    func updateUIViewController(_ controller: VNDocumentCameraViewController, context: Context) {
+    func updateUIViewController(_ controller: UIViewController, context: Context) {
         context.coordinator.parent = self
+    }
+
+    static func dismantleUIViewController(_ controller: UIViewController, coordinator: Coordinator) {
+        #if targetEnvironment(macCatalyst)
+        (controller as? MacDocumentCameraViewController)?.stop()
+        #endif
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }

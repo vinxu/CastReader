@@ -1,0 +1,11 @@
+{
+  "CastReader/Services/ProManager.swift": "8166cbace09d105279900d907f8bf6aa526a9b763c5eecb5d186374a794f88e9",
+  "CastReader/Views/Settings/SettingsView.swift": "6cfeeaf37afd095cb6437d2240a8c9ab54bfd44bf1a0bbdf400e83f8946452b1",
+  "CastReader/Views/Home/HomeView.swift": "74ba66a9773d4f666269c44884eef5bfaa4dd25372c3660c8c03e9205d9dcf6c",
+  "CastReader/Localizable.xcstrings": "8dead4306c3b10b39369605e56915d0da55a641204475bd97a59acb7ea5a5a3e",
+  "CastReaderTests/ProStatusSynchronizationTests.swift": "125c81f3c40f9437635bb55d24418c15e1780e7fad52534f48b7b9a223f2280e",
+  "CastReaderTests/CloneCreditPurchaseTests.swift": "9c1b1d278febcc8ada7fcea354e1046cb36ab386a6626193eab036c57c54d7b1",
+  "CastReader/Views/Reader/ReaderHostView.swift": "629186898a90186368c412106c043db6aeed4ee418b4ecfb4b20d627e90f53fe",
+  "CastReaderTests/PaymentTests.swift": "ca499b3e127209c4bb066405242449f7d9a1e06241959568830e01b1c9ea7d0e",
+  "scripts/mac-unit-test-selection.txt": "92e53dbcf2f4ae99c67367f04d5fb168b9c00d7cb2e906c34731b70122b43664"
+}

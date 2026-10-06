@@ -428,7 +428,7 @@ actor QuickReadService {
     private func applyBaseHeaders(_ req: inout URLRequest) {
         // 上游 key 只存在网关服务器环境，绝不由新客户端携带。
         req.setValue(Self.localDateString(), forHTTPHeaderField: "x-local-date")
-        req.setValue("ios", forHTTPHeaderField: "x-client-platform")
+        req.setValue(Constants.clientPlatform, forHTTPHeaderField: "x-client-platform")
     }
 
     /// A QuickRead session should spend quota at session start only. Follow-up

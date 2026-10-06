@@ -1,0 +1,8 @@
+{
+  "startedAt": "2026-10-05T07:07:24.114310+08:00",
+  "logByteOffset": 2812374,
+  "candidate": "g08-kobo-contracts/boundary-candidate-identity.json",
+  "scenario": "New candidate: verified immutable speech boundary after font reflow. Exact Chapter Five replay, font 7 to 9 to 7, long Read, resize/mini-player/theme.",
+  "exactReplayStartedAt": "2026-10-05T07:10:45.449996+08:00",
+  "exactReplayInitialPage": "175-176/617; font9; original failing source"
+}

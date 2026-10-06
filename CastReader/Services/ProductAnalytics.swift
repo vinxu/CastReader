@@ -2750,7 +2750,7 @@ final class ProductAnalytics {
         self.pipeline = pipeline
         self.client = AnalyticsClientInfo(
             environment: Self.environment,
-            platform: "ios",
+            platform: Constants.clientPlatform,
             variant: Self.clientVariant,
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
             build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,

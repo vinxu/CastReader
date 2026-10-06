@@ -107,6 +107,7 @@ final class PlaybackVoicePanelCenter: ObservableObject {
 
 @MainActor
 struct VoiceBrowserView: View {
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var settings: AppSettings
     private let pro: ProManager
@@ -279,7 +280,11 @@ struct VoiceBrowserView: View {
                     }
                 }
             }
+            #if targetEnvironment(macCatalyst)
+            .navigationBarTitleDisplayMode(.inline)
+            #else
             .navigationBarTitleDisplayMode(presentation == .tab ? .large : .inline)
+            #endif
             .toolbar {
                 if presentation != .tab {
                     ToolbarItem(placement: .confirmationAction) {
@@ -290,12 +295,13 @@ struct VoiceBrowserView: View {
                     }
                 } else {
                     // 与首页右上角保持同一组入口：切 Tab 时书架按钮不再消失。
-                    ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    HomeToolbarItems {
                         ShelfSourcesToolbarButton(
+                            scene: readerScene,
                             accessibilityID: "voiceShelfSourcesButton"
                         )
-                        SettingsToolbarButton()
-                            .frame(width: 30, height: 30)
+                        SettingsToolbarButton(scene: readerScene)
+                            .frame(width: HomeToolbarLayout.buttonSize, height: HomeToolbarLayout.buttonSize)
                     }
                 }
             }

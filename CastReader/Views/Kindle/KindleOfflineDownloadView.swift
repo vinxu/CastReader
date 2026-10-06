@@ -70,6 +70,11 @@ struct KindleOfflineDownloadView: View {
                 }
             }
         }
+        #if targetEnvironment(macCatalyst)
+        // Catalyst otherwise chooses a 400-point sheet, hiding download progress
+        // underneath the pinned actions even at the default text size.
+        .frame(minWidth: 480, minHeight: 620)
+        #endif
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
@@ -169,10 +174,17 @@ struct KindleOfflineDownloadView: View {
 
     private var foregroundNotice: some View {
         VStack(alignment: .leading, spacing: 8) {
+            #if targetEnvironment(macCatalyst)
+            Label("请保持此页面打开", systemImage: "desktopcomputer")
+                .font(.subheadline.weight(.medium))
+            Text("保存期间 Mac 会保持唤醒，阅读操作暂时锁定。请保持此窗口在前台；离开后会暂停，已保存页面不会丢失。")
+                .font(.footnote).foregroundStyle(.secondary)
+            #else
             Label("请保持此页面打开", systemImage: "iphone")
                 .font(.subheadline.weight(.medium))
             Text("保存期间屏幕会保持唤醒，阅读操作暂时锁定。请不要锁屏或切到其他 App；离开后会暂停，已保存页面不会丢失。")
                 .font(.footnote).foregroundStyle(.secondary)
+            #endif
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 

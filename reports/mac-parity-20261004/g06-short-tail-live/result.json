@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "candidate": "g06-short-remainder-candidate/identity.json",
+  "sameRealPageAsFailure": true,
+  "shortRemainderEvent": "03:50:06.493 [active] KINDLE viewport short explain remainder continue chars=32",
+  "confirmedNativeContinuation": "03:50:07.124 [active] KINDLE explain playback start reason=viewport-explain-page-complete key=c4329e96da7e paras=3",
+  "subsequentAutomaticContinuation": "03:50:33.211 [active] KINDLE explain playback start reason=explain-auto-next-page key=d8193e319d6b paras=2",
+  "remainderCharacters": 32,
+  "networkErrorIgnored": false,
+  "note": "Real Kindle page and cloud Explain; no synthetic source or injected completion."
+}

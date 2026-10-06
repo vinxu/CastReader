@@ -140,7 +140,7 @@ private final class KindleOfflineFlowSource: KindleOfflineBookSource {
         .init(start: index * 10, end: index * 10 + 9, minimum: 0, maximum: pageCount * 10 - 1,
               layoutID: "local-flow-layout", fingerprint: "local-flow-page-\(index)")
     }
-    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
+    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?, resuming firstSavedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
         captureSession += 1
         try await Task.sleep(for: .milliseconds(300))
         return interruptedPosition ?? position(0)

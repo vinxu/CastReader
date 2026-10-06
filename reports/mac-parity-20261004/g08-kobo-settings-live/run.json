@@ -1,0 +1,6 @@
+{
+  "startedAt": "2026-10-05T07:54:14.722812+08:00",
+  "logByteOffset": 3018371,
+  "candidate": "g08-kobo-contracts/settings-candidate-identity.json",
+  "scenario": "Native More settings, consecutive font changes paused and playing; shadow controls must not emit paragraphTapped"
+}
