@@ -49,7 +49,7 @@ for name in paths:
    text = text.replace(gate, 'if ProcessInfo.processInfo.arguments.contains("-CastReaderPlatformContractAcceptance") { Color.clear } else ' + gate, 1)
    startup = '        installLifecycleObservers()'
    assert text.count(startup) == 1
-   text = text.replace(startup, '        if ProcessInfo.processInfo.arguments.contains("-CastReaderPlatformContractAcceptance") { isReady = true; return }\n' + startup, 1)
+   text = text.replace(startup, '        if ProcessInfo.processInfo.arguments.contains("-CastReaderPlatformContractAcceptance") { return }\n' + startup, 1)
   copied=text.encode('utf-8')
  except UnicodeDecodeError: pass
  target=dest/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(copied)
@@ -59,7 +59,7 @@ for name in paths:
 (report/'workspace.txt').write_text(str(dest)+'\n')
 PY
 cd "$isolated"
-xcodebuild -workspace CastReader.xcworkspace -scheme CastReader -destination "$build_destination" -derivedDataPath "$derived" "${signing_args[@]}" build-for-testing > "$report/build.log" 2>&1
+xcodebuild -workspace CastReader.xcworkspace -scheme CastReader -destination "$build_destination" -derivedDataPath "$derived" ${signing_args[@]+"${signing_args[@]}"} build-for-testing > "$report/build.log" 2>&1
 /usr/bin/python3 - "$derived" "$product_platform" "${CASTREADER_TEST_NAMESPACE:-releasechecks}" <<'PY'
 import pathlib,plistlib,subprocess,sys
 products=pathlib.Path(sys.argv[1])/'Build/Products'
@@ -96,7 +96,7 @@ cleanup_test_app() {
   fi
 }
 trap cleanup_test_app EXIT
-xcodebuild -xctestrun "$derived/Build/Products/Isolated.xctestrun" -destination "platform=$platform,id=$device" -parallel-testing-enabled NO -only-testing:CastReaderTests -skip-testing:CastReaderTests/PaymentTests -resultBundlePath "$report/tests.xcresult" test-without-building > "$report/tests.log" 2>&1 || status=$?
+xcodebuild -xctestrun "$derived/Build/Products/Isolated.xctestrun" -destination "platform=$platform,id=$device" -collect-test-diagnostics never -parallel-testing-enabled NO -only-testing:CastReaderTests -skip-testing:CastReaderTests/PaymentTests -resultBundlePath "$report/tests.xcresult" test-without-building > "$report/tests.log" 2>&1 || status=$?
 xcrun xcresulttool get test-results summary --path "$report/tests.xcresult" --format json > "$report/summary.json"
 printf 'Isolated unit tests exit=%s; report=%s\n' "$status" "$report"
 exit "$status"

@@ -621,7 +621,10 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
             throw APIError.serverError("No speakable text for TTS")
         }
-        let canonicalLanguage = SupportedTTSLanguage.canonicalCode(language)
+        guard let supported = SupportedTTSLanguage(identifier: language) else {
+            throw language.isEmpty ? SpeechCapabilityError.uncertainLanguage : SpeechCapabilityError.unsupportedLanguage
+        }
+        let canonicalLanguage = supported.rawValue
         let requestedVoice = voice ?? ""
         let featureSafeVoice = !Constants.Features.voiceCloningEnabled && requestedVoice.hasPrefix("vc_")
             ? ""
@@ -630,6 +633,26 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             preferred: featureSafeVoice,
             for: canonicalLanguage
         )
+        if supported.isGoogle && VoiceOption.requiresGenerationQuota(resolvedVoice) {
+            // Google is the standard voice provider for this language, not a
+            // verdict on a particular public, private or gifted clone.
+            let compatible = await MainActor.run {
+                if let option = VoiceCatalog.option(for: resolvedVoice), option.usesMonthlyGeneration {
+                    return option.enabled && option.selectable && option.supports(canonicalLanguage)
+                }
+                guard let clone = VoiceCloneStore.shared.voice(withID: resolvedVoice),
+                      clone.access.authorizationActive else { return false }
+                return VoiceCloneLanguageSupport.selectableLanguages(for: clone).contains(canonicalLanguage)
+            }
+            guard compatible else { throw SpeechCapabilityError.cloneUnsupported }
+        }
+        guard !resolvedVoice.isEmpty else { throw SpeechCapabilityError.serviceUnavailable }
+        if supported.isGoogle && !VoiceOption.requiresGenerationQuota(resolvedVoice) {
+            guard let option = VoiceCatalog.option(for: resolvedVoice), option.enabled,
+                  option.selectable, option.supports(canonicalLanguage), resolvedVoice.hasPrefix("api_") else {
+                throw SpeechCapabilityError.serviceUnavailable
+            }
+        }
         // Clone compatibility endpoint accepts at most 600 JavaScript UTF-16
         // units. Preserve the local tail and append it to the server's own
         // continuation so a long paragraph is never silently truncated.
@@ -679,8 +702,17 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             )
         }
 
-        let route = ComputeRouting.current
+        let route = supported.isGoogle ? ServiceRouting.current : ComputeRouting.current
         let networkRequestID = requestID ?? UUID().uuidString
+        let boundary = await MainActor.run { AccountContentIsolation.captureBoundaryToken() }
+        if supported.isGoogle {
+            return try await presetScheduler.run(
+                priority: presetPriority ?? (priority == .interactive ? .interactive : .readAhead), requestID: networkRequestID
+            ) {
+                try await self.requestGoogleStandardTTS(input: inputText, voice: resolvedVoice, body: bodyData,
+                    route: route, requestID: networkRequestID, boundary: boundary)
+            }
+        }
         let transportSession = ttsSessions[route] ?? session
         return try await presetScheduler.run(
             priority: presetPriority ?? (priority == .interactive ? .interactive : .readAhead),
@@ -690,6 +722,51 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                 input: inputText, voice: resolvedVoice, body: bodyData,
                 route: route, requestID: networkRequestID, session: transportSession
             )
+        }
+    }
+
+    private func requestGoogleStandardTTS(input: String, voice: String, body: Data,
+        route: ServiceRoute, requestID: String, boundary: AccountContentBoundaryToken?,
+        canRefresh: Bool = true) async throws -> TTSResponse {
+        let token = await mobileSessionProvider.sessionToken()
+        let current = await MainActor.run { AccountContentIsolation.captureBoundaryToken() == boundary }
+        guard current else { throw CancellationError() }
+        if VoiceCatalog.option(for: voice)?.isPro == true, token == nil {
+            await MainActor.run {
+                guard AccountContentIsolation.captureBoundaryToken() == boundary else { return }
+                VoiceCloneAccessCoordinator.shared.prompt = .signIn
+            }
+            throw VoiceCloneError.sessionUnavailable
+        }
+        do {
+            let response = try await PresetTTSTransport.generate(input: input, voice: voice, body: body,
+                route: route, requestID: requestID, session: ttsSessions[route] ?? session, sessionToken: token, google: true)
+            let current = await MainActor.run { AccountContentIsolation.captureBoundaryToken() == boundary }
+            guard current else { throw CancellationError() }
+            return response
+        } catch let rejection as GoogleStandardTTSError {
+            let status = rejection.status
+            // A definitive authentication rejection did not synthesize audio.
+            // Retry it once with the same logical request ID, never anonymously.
+            if status == 401, canRefresh, let token,
+               await mobileSessionProvider.refreshSession(replacing: token) != nil {
+                return try await requestGoogleStandardTTS(input: input, voice: voice, body: body,
+                    route: route, requestID: requestID, boundary: boundary, canRefresh: false)
+            }
+            if status == 403, rejection.code == "PRO_REQUIRED", VoiceCatalog.option(for: voice)?.isPro == true {
+                await MainActor.run {
+                    guard AccountContentIsolation.captureBoundaryToken() == boundary else { return }
+                    VoiceCloneAccessCoordinator.shared.prompt = .paywall
+                }
+            }
+            if status == 401 {
+                await MainActor.run {
+                    guard AccountContentIsolation.captureBoundaryToken() == boundary else { return }
+                    VoiceCloneAccessCoordinator.shared.prompt = .signIn
+                }
+            }
+            if rejection.requiresCatalogRefresh { await VoiceCatalogService.shared.refresh(force: true) }
+            throw rejection
         }
     }
 
@@ -1052,4 +1129,17 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         )
     }
 
+}
+
+enum SpeechCapabilityError: Error, LocalizedError {
+    case uncertainLanguage, unsupportedLanguage, serviceUnavailable, cloneUnsupported, invalidSynchronization
+    var errorDescription: String? {
+        switch self {
+        case .uncertainLanguage: return AppLocalized("无法确定正文语言，请选择朗读语言")
+        case .unsupportedLanguage: return AppLocalized("暂不支持朗读此语言")
+        case .serviceUnavailable: return AppLocalized("当前服务区域暂未提供此语言的声音，请稍后重试")
+        case .cloneUnsupported: return AppLocalized("此语言暂不支持克隆声音，请选择标准声音")
+        case .invalidSynchronization: return AppLocalized("语音同步数据不完整，请重试")
+        }
+    }
 }

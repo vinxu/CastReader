@@ -28,6 +28,26 @@ final class ReadAloudHTTPFixture {
         case response(Data, status: Int = 200, delay: Double = 0)
         case failure(URLError.Code, delay: Double = 0)
         case stream([Data], interval: Double)
+        case gatedResponse(Data, ResponseGate)
+    }
+    /// Hold a response until the tested state transition, independent of the
+    /// simulator's AVPlayer cold-start time. Never block a URLSession thread.
+    final class ResponseGate {
+        private let lock = NSLock()
+        private var released = false
+        private var waiting: [() -> Void] = []
+        func whenReleased(_ action: @escaping () -> Void) {
+            lock.lock()
+            if released { lock.unlock(); action() }
+            else { waiting.append(action); lock.unlock() }
+        }
+        func release() {
+            lock.lock()
+            released = true
+            let actions = waiting; waiting.removeAll()
+            lock.unlock()
+            actions.forEach { $0() }
+        }
     }
     private let lock = NSLock()
     struct CapturedRequest { let path: String; let body: [String: Any] }
@@ -137,7 +157,7 @@ private final class ReadAloudFixtureURLProtocol: URLProtocol {
         let delay: Double
         switch reply {
         case .response(_, _, let value), .failure(_, let value): delay = value
-        case .stream: delay = 0
+        case .stream, .gatedResponse: delay = 0
         }
         DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self else { return }
@@ -153,6 +173,17 @@ private final class ReadAloudFixtureURLProtocol: URLProtocol {
                 self.client?.urlProtocolDidFinishLoading(self)
             case .failure(let code, _):
                 self.client?.urlProtocol(self, didFailWithError: URLError(code))
+            case .gatedResponse(let data, let gate):
+                gate.whenReleased { [weak self] in
+                    guard let self else { return }
+                    self.deliveryLock.lock(); defer { self.deliveryLock.unlock() }
+                    guard !self.stopped else { return }
+                    let response = HTTPURLResponse(url: self.request.url!, statusCode: 200,
+                        httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+                    self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+                    self.client?.urlProtocol(self, didLoad: data)
+                    self.client?.urlProtocolDidFinishLoading(self)
+                }
             case .stream(let chunks, let interval):
                 let response = HTTPURLResponse(url: self.request.url!, statusCode: 200,
                     httpVersion: nil, headerFields: ["Content-Type": "text/event-stream"])!

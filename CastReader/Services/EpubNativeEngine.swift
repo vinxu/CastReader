@@ -27,6 +27,7 @@ enum EpubNativeEngine {
         let title: String?
         let paragraphs: [ReadingParagraph]
         let navigation: EpubNavigation
+        var declaredLanguage: String? = nil
     }
 
     /// 解析 EPUB 字节为顺序段落（图片段已回填字节）。失败返回 nil（调用方回退原上传流程）。
@@ -246,7 +247,10 @@ enum EpubNativeEngine {
         let navigation = EpubNavigationSelection.select(candidates, paragraphs: paragraphs) ?? fallback
         let title = try extractTitleCancellable(opfDoc) ?? fallbackTitle
         try Task.checkCancellation()
-        return ParsedEpub(title: title, paragraphs: paragraphs, navigation: navigation)
+        let declaredLanguage = EpubXML.descendants(opfDoc, "metadata").first.flatMap { metadata in
+            EpubXML.descendants(metadata, "language").first.flatMap { try? $0.text() }
+        }
+        return ParsedEpub(title: title, paragraphs: paragraphs, navigation: navigation, declaredLanguage: declaredLanguage)
     }
 
     // MARK: - Helpers

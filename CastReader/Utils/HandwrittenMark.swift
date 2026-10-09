@@ -37,7 +37,23 @@ enum HandwrittenMark {
     }
 
     static func stroke(action: String, rects: [CGRect], seed: UInt64,
-                       n: Int? = nil, weight: String? = nil) -> Stroke {
+                       n: Int? = nil, weight: String? = nil, rightToLeft: Bool = false) -> Stroke {
+        if rightToLeft, action != "number", action != "star" {
+            var path = Path()
+            let ordered = rects.sorted { a, b in
+                abs(a.midY - b.midY) < min(a.height, b.height) * 0.5 ? a.maxX > b.maxX : a.minY < b.minY
+            }
+            var style: Stroke?
+            for rect in ordered {
+                let line = stroke(action: action, rects: [rect], seed: seed, n: n, weight: weight)
+                style = line
+                path.addPath(line.path, transform: CGAffineTransform(a: -1, b: 0, c: 0, d: 1, tx: rect.minX + rect.maxX, ty: 0))
+            }
+            if let style {
+                return Stroke(path: path, lineWidth: style.lineWidth, opacity: style.opacity,
+                              duration: duration(action: action, rects: rects))
+            }
+        }
         let path: Path
         let width: CGFloat
         let opacity: Double
@@ -48,13 +64,13 @@ enum HandwrittenMark {
         case "circle":
             path = circlePath(around: rects, seed: seed); width = 2.4; opacity = 0.85
         case "number":
-            path = numberPath(near: rects, n: n ?? 1, seed: seed); width = 2.5; opacity = 0.9
+            path = numberPath(near: rects, n: n ?? 1, seed: seed, rightToLeft: rightToLeft); width = 2.5; opacity = 0.9
         case "wave":
             path = wavePath(over: rects, seed: seed); width = 2.2; opacity = 0.9
         case "strike":
             path = strikePath(over: rects, seed: seed); width = 2.2; opacity = 0.85
         case "star":
-            path = starPath(near: rects, seed: seed); width = 2.2; opacity = 0.9
+            path = starPath(near: rects, seed: seed, rightToLeft: rightToLeft); width = 2.2; opacity = 0.9
         default:
             path = underlinePath(over: rects, seed: seed)
             width = action == "underline" ? 2.4 : 2.2; opacity = 0.85
@@ -165,11 +181,11 @@ enum HandwrittenMark {
     }
 
     /// 星标（P1）：画在该范围右侧外的一颗手绘五角星。
-    static func starPath(near rects: [CGRect], seed: UInt64) -> Path {
+    static func starPath(near rects: [CGRect], seed: UInt64, rightToLeft: Bool = false) -> Path {
         var rng = SeededGenerator(seed: seed)
         let b = rects.reduce(CGRect.null) { $0.union($1) }
         let radius = max(7.0, min(12.0, b.height * 0.5))
-        let cx = b.maxX + radius + 6
+        let cx = rightToLeft ? b.minX - radius - 6 : b.maxX + radius + 6
         let cy = b.midY
         var path = Path()
         for i in 0...10 {
@@ -222,24 +238,24 @@ enum HandwrittenMark {
     }
 
     /// 序号 1/2/3：手绘小圈 + 纯路径数字 + 内容下划线。对齐扩展 quickread 的 number tool。
-    static func numberPath(near rects: [CGRect], n: Int, seed: UInt64) -> Path {
+    static func numberPath(near rects: [CGRect], n: Int, seed: UInt64, rightToLeft: Bool = false) -> Path {
         let sorted = rects.sorted { $0.minY == $1.minY ? $0.minX < $1.minX : $0.minY < $1.minY }
         guard let first = sorted.first else { return Path() }
         var rng = SeededGenerator(seed: seed &+ 29)
         let lineH = max(14, first.height)
         let r = min(lineH * 0.6, 16)
         let ccy = first.minY + lineH / 2
-        var ccx = first.minX - r * 1.5
-        if ccx - r < 4 {
-            ccx = first.minX + r * 0.35
-        }
+        // Move the annotation to the leading edge; preserve the numeral glyph.
+        var ccx = rightToLeft ? first.maxX + r * 1.5 : first.minX - r * 1.5
+        if !rightToLeft && ccx - r < 4 { ccx = first.minX + r * 0.35 }
 
         var path = Path()
         path.addPath(numberRingPath(cx: ccx, cy: ccy, r: r, rng: &rng))
         path.addPath(digitPath(n, cx: ccx, cy: ccy, size: r * 1.12, rng: &rng))
         for rect in sorted {
             let y = rect.maxY + 3
-            path.addPath(handDrawnLinePath(x0: rect.minX - 2, y0: y, x1: rect.maxX + 4, y1: y, waviness: 1.5, rng: &rng))
+            path.addPath(handDrawnLinePath(x0: rightToLeft ? rect.maxX + 4 : rect.minX - 2, y0: y,
+                x1: rightToLeft ? rect.minX - 2 : rect.maxX + 4, y1: y, waviness: 1.5, rng: &rng))
         }
         return path
     }

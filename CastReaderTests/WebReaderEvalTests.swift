@@ -28,6 +28,117 @@ final class WebReaderEvalTests: XCTestCase {
     </body></html>
     """
 
+    func testHiddenInlineCodeIsExcludedWithoutLosingVisibleTextAnchors() async throws {
+        let controller = WKUserContentController()
+        controller.addUserScript(WKUserScript(source: "window.__capture=[];window.webkit={messageHandlers:{castreader:{postMessage:m=>window.__capture.push(m)}}};",
+                                             injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        controller.addUserScript(WKUserScript(source: try XCTUnwrap(WebReaderView.loadBundleJS()),
+                                             injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        let config = WKWebViewConfiguration()
+        config.userContentController = controller
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: config)
+        let window = UIWindow(frame: webView.frame)
+        window.isHidden = false
+        window.addSubview(webView)
+        defer { webView.removeFromSuperview(); window.isHidden = true }
+        webView.loadHTMLString("""
+        <!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>body{margin:20px;font:18px/1.5 Arial}.invisible{display:none}</style>
+        </head><body><article><h1>Bumi</h1>
+        <p id="target">Bumi <style id="template">.template  { font-family: Arial; }</style><span hidden>hidden words</span><span class="invisible">invisible words</span><span style="visibility:hidden">secret words</span><span style="opacity:0">transparent words</span><script type="application/json">{"hidden":"script"}</script>merupakan <a id="word" href="#">planet</a> ketiga. 中文   正文 العربية עברית.</p>
+        <p>This additional paragraph supplies enough visible article text for the normal extraction flow to select the body.</p>
+        <p>The next paragraph also remains readable and must never receive the first paragraph's word highlight.</p>
+        </article></body></html>
+        """, baseURL: URL(string: "https://castreader.local/visible-source"))
+        var ready = false
+        for _ in 0..<50 {
+            if await webView.jsBool("window.__capture.some(m=>m.type==='rendered')") { ready = true; break }
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        }
+        XCTAssertTrue(ready)
+        let audit = await webView.jsString("""
+        (()=>{const rows=window.__capture.find(m=>m.type==='rendered').payload.paragraphs;
+          const el=document.getElementById('target'),p=rows.find(p=>p.paragraphIndex===Number(el.dataset.crPara));
+          window.CR.init({segments:rows});window.CR.disableScroll=true;
+          const start=p.text.indexOf('planet');
+          window.CR.highlightRange({paragraphIndex:p.paragraphIndex,charStart:start,charEnd:start+6});
+          window.CR.showMark({id:'visible-word',paragraphIndex:p.paragraphIndex,charStart:start,charEnd:start+6,action:'underline',seed:2});
+          const word=document.getElementById('word').getBoundingClientRect();
+          const overlays=Array.from(document.querySelectorAll('.cr-hl-ov')).map(e=>e.getBoundingClientRect());
+          const paths=Array.from(document.querySelectorAll('svg[data-cr-marks] path')).map(e=>e.getBoundingClientRect());
+          return JSON.stringify({text:p.text,style:document.getElementById('template').textContent,
+            overlays:overlays.length,paths:paths.length,
+            badOverlay:overlays.some(r=>Math.abs(r.left-word.left)>2||Math.abs(r.right-word.right)>2||Math.abs(r.top-word.top)>2),
+            badMark:paths.some(r=>r.left<word.left-5||r.right>word.right+5||r.top<word.top||r.bottom>word.bottom+8)});})()
+        """)
+        let values = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(audit.utf8)) as? [String: Any])
+        XCTAssertEqual(values["text"] as? String, "Bumi merupakan planet ketiga. 中文 正文 العربية עברית.")
+        XCTAssertEqual(values["style"] as? String, ".template  { font-family: Arial; }")
+        XCTAssertEqual(values["overlays"] as? Int, 1, audit)
+        XCTAssertGreaterThan(values["paths"] as? Int ?? 0, 0, audit)
+        XCTAssertEqual(values["badOverlay"] as? Bool, false, audit)
+        XCTAssertEqual(values["badMark"] as? Bool, false, audit)
+    }
+
+    func testMarksStayOnTextWithPositionedBodyAndNestedLinks() async throws {
+        let controller = WKUserContentController()
+        controller.addUserScript(WKUserScript(source: try XCTUnwrap(WebReaderView.loadBundleJS()),
+                                             injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        let config = WKWebViewConfiguration()
+        config.userContentController = controller
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: config)
+        let window = UIWindow(frame: webView.frame)
+        window.isHidden = false
+        window.addSubview(webView)
+        defer { webView.removeFromSuperview(); window.isHidden = true }
+        webView.loadHTMLString("""
+        <!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>body{position:relative;margin:32px 20px;font:18px/1.6 Arial}p{margin:16px 0}article{width:330px}</style>
+        </head><body><article>
+        <p id="target">Istilah <i>biologi</i> dalam pengertian modern tampaknya diperkenalkan secara
+        terpisah oleh <a href="#"><b>Thomas Beddoes</b></a> (pada tahun 1799),
+        <a href="#">Karl Friedrich Burdach</a> (pada tahun 1800),
+        Gottfried Reinhold Treviranus melalui karyanya <i>Biologie oder Philosophie der lebenden Natur</i> (1802).</p>
+        <p>Additional body paragraph keeps generic extraction stable inside a realistic article fixture.</p>
+        <p>Another body paragraph follows the highlighted passage and must never receive stray ink.</p>
+        </article></body></html>
+        """, baseURL: URL(string: "https://castreader.local/marks"))
+        var ready = false
+        for _ in 0..<50 {
+            if await webView.jsBool("!!window.CR && document.getElementById('target').hasAttribute('data-cr-para')") {
+                ready = true; break
+            }
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        }
+        XCTAssertTrue(ready)
+        for width in [330, 290] {
+            await webView.jsRun("""
+            document.querySelector('article').style.width='\(width)px';
+            window.CR.clearMarks();
+            var p=document.getElementById('target');
+            window.CR.showMark({id:'nested',paragraphIndex:Number(p.dataset.crPara),charStart:0,
+              charEnd:p.textContent.length,action:'highlight',seed:7});
+            """)
+            // Compare actual SVG screen geometry with visible text, not SVG's local coordinates.
+            let audit = await webView.jsString("""
+            (()=>{var p=document.getElementById('target'),r=document.createRange();r.selectNodeContents(p);
+              var text=Array.from(r.getClientRects()).filter(x=>x.width>2&&x.height>2);
+              var paths=Array.from(document.querySelectorAll('svg[data-cr-marks] path'));
+              var misplaced=paths.filter(path=>{var b=path.getBoundingClientRect();var y=b.top+b.height/2;
+                var line=text.filter(t=>y>=t.top-3&&y<=t.bottom+3);
+                return !line.length||b.left<Math.min(...line.map(t=>t.left))-5||b.right>Math.max(...line.map(t=>t.right))+5;});
+              var bottoms=paths.map(path=>path.getBoundingClientRect().bottom);
+              return JSON.stringify({paths:paths.length,misplaced:misplaced.length,
+                excessBottom:Math.max(...bottoms)-Math.max(...text.map(t=>t.bottom))});})()
+            """)
+            print("[MARK-GEOMETRY] width=\(width) \(audit)")
+            let values = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(audit.utf8)) as? [String: Any])
+            XCTAssertGreaterThan(values["paths"] as? Int ?? 0, 2)
+            XCTAssertEqual(values["misplaced"] as? Int, 0, audit)
+            XCTAssertLessThanOrEqual(values["excessBottom"] as? Double ?? 100, 4, audit)
+        }
+    }
+
     func testWebReaderPipeline() async throws {
         let js = try XCTUnwrap(WebReaderView.loadBundleJS(), "WebAssets/bundle.js 未打进 app bundle")
 

@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct KindleHomeSection: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject var store: KindleLibraryStore
@@ -52,6 +53,7 @@ struct KindleHomeSection: View {
     }
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         Group {
             if !store.needsConnection && !orderedHomeBooks.isEmpty {
                 VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
@@ -104,12 +106,14 @@ struct KindleHomeSection: View {
 }
 
 private struct KindleBookRailCard: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     private var cardWidth: CGFloat { typeSize.isAccessibilitySize ? 240 : 108 }
     let book: KindleBook
     let isRecent: Bool
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             ZStack(alignment: .topLeading) {
                 KindleCoverView(urlString: book.coverURL)

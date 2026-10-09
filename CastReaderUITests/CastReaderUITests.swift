@@ -7,6 +7,7 @@
 
 import XCTest
 import UIKit
+import Vision
 
 /// Opt-in UI evidence for the installed extension. Pixel attachments still need
 /// review; a passing button-state test alone does not prove highlight visibility.
@@ -700,6 +701,42 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["voiceCloneHoldButton"].exists)
     }
 
+    func testUnknownReadingLanguageShowsFailureAndUsableLanguagePicker() {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        let text = "Di sebuah lingkungan permukiman, warga membuka ruang baca bersama di bangunan yang sudah lama tidak digunakan."
+        app.launchArguments = [
+            "-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+            "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate",
+            "-CastReaderUnknownLanguageFixture",
+            "-CastReaderCaptureTextB64", Data(text.utf8).base64EncodedString()
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+        let play = app.buttons["readPlayPauseButton"].firstMatch
+        XCTAssertTrue(play.waitForExistence(timeout: 30))
+        let notice = app.staticTexts["readerPlaybackFailureNotice"]
+        if !notice.waitForExistence(timeout: 2) { play.tap() }
+        XCTAssertTrue(notice.waitForExistence(timeout: 15))
+        XCTAssertTrue(notice.label.contains("language"))
+        let voice = app.buttons["playbackVoiceButton"].firstMatch
+        XCTAssertTrue(voice.waitForExistence(timeout: 5))
+        XCTAssertTrue(voice.isHittable)
+        XCTAssertEqual(voice.label, "Reading Language")
+        voice.tap()
+        let search = app.searchFields["Search Languages"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        search.tap()
+        search.typeText("Indonesian")
+        let indonesian = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Indonesian")).firstMatch
+        XCTAssertTrue(indonesian.waitForExistence(timeout: 5))
+        XCTAssertTrue(indonesian.isHittable)
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "unknown-language-recovery-picker"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
     /// The Italian reader's exact path, end to end: a page narrated in English,
     /// the voice panel opened, the reading language corrected to Italian, and the
     /// same panel then asked for "Nicola".
@@ -1219,8 +1256,8 @@ class CastReaderUITests: XCTestCase {
         sample.tap()
     }
 
-    /// 九个正式语言包都必须能独立启动，并显示各自的首页标签。
-    func testLaunchesInAllNineSupportedLanguages() {
+    /// 28 个目标语言包都必须能独立启动，并显示各自的首页标签。
+    func testLaunchesInAllTwentyEightSupportedLanguages() {
         let configurations: [(language: String, locale: String, home: String)] = [
             ("en", "en_US", "Home"),
             ("zh-Hans", "zh_CN", "首页"),
@@ -1230,7 +1267,17 @@ class CastReaderUITests: XCTestCase {
             ("de", "de_DE", "Start"),
             ("pt-BR", "pt_BR", "Início"),
             ("it", "it_IT", "Home"),
-            ("hi", "hi_IN", "होम")
+            ("hi", "hi_IN", "होम"),
+            ("nl", "nl_NL", "Start"), ("ko", "ko_KR", "홈"),
+            ("ar", "ar_SA", "الرئيسية"), ("ru", "ru_RU", "Главная"),
+            ("pl", "pl_PL", "Strona główna"), ("sv", "sv_SE", "Hem"),
+            ("da", "da_DK", "Hjem"), ("nb", "nb_NO", "Hjem"),
+            ("fi", "fi_FI", "Koti"), ("cs", "cs_CZ", "Domů"),
+            ("el", "el_GR", "Αρχική"), ("hu", "hu_HU", "Kezdőlap"),
+            ("fil", "fil_PH", "Home"), ("he", "he_IL", "בית"),
+            ("id", "id_ID", "Beranda"), ("ms", "ms_MY", "Laman Utama"),
+            ("ro", "ro_RO", "Acasă"), ("tr", "tr_TR", "Ana Sayfa"),
+            ("vi", "vi_VN", "Trang chủ")
         ]
 
         for configuration in configurations {
@@ -1245,9 +1292,13 @@ class CastReaderUITests: XCTestCase {
             app.launch()
             dismissSelfOpenSystemAlertIfPresent()
             XCTAssertTrue(
-                app.tabBars.buttons[configuration.home].waitForExistence(timeout: 5),
+                mainNavigationItem(in: app, title: configuration.home, symbol: "house.fill").waitForExistence(timeout: 5),
                 "Missing localized Home tab for \(configuration.language)"
             )
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "28-language-home-\(configuration.language)"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
             app.terminate()
         }
     }
@@ -2421,6 +2472,159 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["语言"].waitForExistence(timeout: 5))
     }
 
+    func testInterfaceLanguageCanSwitchBetweenLTRAndRTLWithoutRelaunch() throws {
+        let app = launchZh()
+        mainNavigationItem(in: app, title: "音色", symbol: "waveform").tap()
+        XCTAssertTrue(app.buttons["settingsGearButton"].waitForExistence(timeout: 5))
+        app.buttons["settingsGearButton"].tap()
+        openInterfaceLanguagePicker(in: app)
+        let languages = [("en", "Language"), ("ar", "اللغة"), ("he", "שפה"),
+                         ("de", "Sprache"), ("fil", "Wika"), ("vi", "Ngôn ngữ"), ("zh-Hans", "语言")]
+        let expectedChrome: [String: [String]] = [
+            "en": ["Settings", "Home", "Voice"],
+            "ar": ["الإعدادات", "الرئيسية", "الصوت"],
+            "he": ["הגדרות", "בית", "קול"],
+            "de": ["Einstellungen", "Start", "Stimme"],
+            "fil": ["Mga Setting", "Home", "Boses"],
+            "vi": ["Cài đặt", "Trang chủ", "Giọng đọc"],
+            "zh-Hans": ["设置", "首页", "音色"],
+        ]
+        for (code, title) in languages {
+            let row = app.buttons["appLanguage.\(code)"]
+            // List only materializes rows near its viewport. Return to the
+            // beginning before each search, regardless of the current language.
+            for _ in 0..<5 {
+                let firstRow = app.buttons["appLanguage.system"]
+                if firstRow.exists && firstRow.isHittable { break }
+                app.collectionViews.firstMatch.swipeDown()
+            }
+            for _ in 0..<8 {
+                if row.exists && row.isHittable { break }
+                app.collectionViews.firstMatch.swipeUp()
+            }
+            XCTAssertTrue(row.exists && row.isHittable, code)
+            guard row.exists && row.isHittable else { continue }
+            row.tap()
+            XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5), code)
+            // Accessibility labels stay correct even when UIKit mirrors the
+            // cell pixels. Read a stable Latin row from the rendered image too.
+            let englishRow = app.buttons["appLanguage.en"]
+            for _ in 0..<8 {
+                if englishRow.exists && englishRow.isHittable {
+                    let frame = englishRow.frame
+                    if frame.minY > app.navigationBars[title].frame.maxY,
+                       frame.maxY < app.collectionViews.firstMatch.frame.maxY - 20 { break }
+                }
+                app.collectionViews.firstMatch.swipeDown()
+            }
+            keepScreenshot(of: app, named: "runtime-language-pixels-\(code)")
+            XCTAssertTrue(englishRow.exists && englishRow.isHittable, code)
+            guard englishRow.exists && englishRow.isHittable else { continue }
+            XCTAssertGreaterThan(englishRow.frame.minY, app.navigationBars[title].frame.maxY, code)
+            let pixels = try XCTUnwrap(englishRow.screenshot().image.cgImage)
+            let recognition = VNRecognizeTextRequest()
+            recognition.recognitionLevel = .accurate
+            recognition.recognitionLanguages = ["en-US"]
+            recognition.usesLanguageCorrection = false
+            try VNImageRequestHandler(cgImage: pixels).perform([recognition])
+            let visibleWords = (recognition.results ?? []).compactMap { $0.topCandidates(1).first?.string }
+            XCTAssertTrue(visibleWords.contains { $0.contains("English") }, "Mirrored language row in \(code): \(visibleWords)")
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "runtime-language-\(code)"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            // The picker alone is insufficient: retained UIKit tabs and parent
+            // navigation titles previously kept their creation-time language.
+            let back = app.navigationBars[title].buttons.firstMatch
+            XCTAssertTrue(back.exists)
+            let isRTL = code == "ar" || code == "he"
+            XCTAssertEqual(back.frame.midX > app.frame.midX, isRTL, code)
+            back.tap()
+            let expected = expectedChrome[code]!
+            XCTAssertTrue(app.navigationBars[expected[0]].waitForExistence(timeout: 5), code)
+            if code == "en" || code == "de" {
+                revealSettingsLanguageRow(in: app)
+                let pixels = try XCTUnwrap(app.buttons["settingsLanguageLink"].screenshot().image.cgImage)
+                let request = VNRecognizeTextRequest()
+                request.recognitionLanguages = ["en-US", "de-DE"]
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = false
+                try VNImageRequestHandler(cgImage: pixels).perform([request])
+                let words = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }
+                XCTAssertTrue(words.contains { $0.contains(code == "en" ? "English" : "Deutsch") }, "Mirrored settings form: \(words)")
+            }
+            keepScreenshot(of: app, named: "runtime-settings-\(code)")
+            app.buttons["settingsCloseButton"].tap()
+            XCTAssertTrue(mainNavigationItem(in: app, title: expected[1], symbol: "house.fill").waitForExistence(timeout: 5), code)
+            XCTAssertTrue(mainNavigationItem(in: app, title: expected[2], symbol: "waveform").exists, code)
+            XCTAssertTrue(app.navigationBars[expected[2]].waitForExistence(timeout: 5), "Voice page title: \(code)")
+            if code == "en" || code == "de" {
+                let voiceTab = mainNavigationItem(in: app, title: expected[2], symbol: "waveform")
+                let pixels = try XCTUnwrap(voiceTab.screenshot().image.cgImage)
+                let request = VNRecognizeTextRequest()
+                request.recognitionLanguages = ["en-US", "de-DE"]
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = false
+                try VNImageRequestHandler(cgImage: pixels).perform([request])
+                let words = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }
+                XCTAssertTrue(words.contains { $0.contains(expected[2]) }, "Mirrored navigation item: \(words)")
+                XCTAssertEqual(app.textFields["voiceSearchField"].placeholderValue,
+                    code == "en" ? "Search voices or styles" : "Stimmen oder Stile suchen")
+            }
+            keepScreenshot(of: app, named: "runtime-voice-\(code)")
+            // On iPad, importing is a Home toolbar action, not a global tab.
+            mainNavigationItem(in: app, title: expected[1], symbol: "house.fill").tap()
+            app.buttons["plusImportButton"].tap()
+            let importCancel = app.buttons["importOptionsCancel"]
+            XCTAssertTrue(importCancel.waitForExistence(timeout: 5), code)
+            XCTAssertEqual(importCancel.frame.midX > app.frame.midX, isRTL, "Import sheet: \(code)")
+            keepScreenshot(of: app, named: "runtime-import-\(code)")
+            importCancel.tap()
+            if code != "zh-Hans" {
+                mainNavigationItem(in: app, title: expected[2], symbol: "waveform").tap()
+                app.buttons["settingsGearButton"].tap()
+                openInterfaceLanguagePicker(in: app)
+            }
+        }
+    }
+
+    private func openInterfaceLanguagePicker(in app: XCUIApplication) {
+        revealSettingsLanguageRow(in: app)
+        let language = app.buttons["settingsLanguageLink"]
+        guard language.exists && language.isHittable else { return }
+        language.tap()
+        XCTAssertTrue(app.buttons["appLanguage.system"].waitForExistence(timeout: 5))
+    }
+
+    private func revealSettingsLanguageRow(in app: XCUIApplication) {
+        let form = app.collectionViews.firstMatch
+        XCTAssertTrue(form.waitForExistence(timeout: 5))
+        let language = app.buttons["settingsLanguageLink"]
+        // iPad presents Settings in a shorter sheet and adds a New Window row.
+        // Scroll the form itself; a gesture outside the sheet hits its backdrop.
+        // A partially visible row under the translucent navigation bar can
+        // report isHittable. Bring its entire frame below the bar before tapping.
+        for _ in 0..<8 {
+            let barBottom = app.navigationBars.allElementsBoundByIndex.last?.frame.maxY ?? form.frame.minY
+            let aboveBar = language.exists && language.frame.minY <= barBottom
+            if language.exists && language.isHittable,
+               language.frame.minY > barBottom,
+               language.frame.maxY < form.frame.maxY - 20 { break }
+            let start = form.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: aboveBar ? 0.45 : 0.7))
+            let end = form.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: aboveBar ? 0.7 : 0.45))
+            start.press(forDuration: 0.1, thenDragTo: end)
+        }
+        XCTAssertTrue(language.exists && language.isHittable)
+    }
+
+    private func mainNavigationItem(in app: XCUIApplication, title: String, symbol: String) -> XCUIElement {
+        if app.tabBars.firstMatch.exists { return app.tabBars.buttons[title] }
+        // iPadOS exposes its top floating tabs as nested buttons instead of a
+        // TabBar. Match both their symbol and localized title, not body copy.
+        return app.buttons.matching(identifier: symbol)
+            .matching(NSPredicate(format: "label == %@", title)).firstMatch
+    }
+
     /// 首页只展示内容与一个统一书架入口，不再平铺未连接的平台卡片。
     func testHomeShowsScenarioChipsAndUnifiedShelfSources() {
         let app = launchZh()
@@ -3038,4 +3242,825 @@ final class AppStoreCaptureUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 5)
         snapshot(app, "06-paywall-free-trial")
     }
+}
+
+/// Bounded, opt-in acceptance of the shipping reader against the real service.
+/// The simulator must already be signed in for Explain. No entitlement/session
+/// is injected, no account state is reset, and the source is a public fixture.
+final class MultilingualReaderLiveUITests: XCTestCase {
+    /// Body extraction can be verified while the shared speech budget is unavailable.
+    /// Disable the normal Auto Play preference for this import-only launch.
+    func testNewLanguageWebImportsWithoutStartingSpeech() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let path = env["CASTREADER_LONG_MANIFEST"] else { throw XCTSkip("Opt-in manifest required") }
+        let rows = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: path))) as! [[String: Any]]
+        var results: [[String: Any]] = []
+        XCUIDevice.shared.orientation = .portrait
+        try configureManualPlayback()
+        for row in rows where row["format"] as? String == "web" {
+            let language = row["language"] as! String
+            let app = XCUIApplication()
+            app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+                "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderMultilingualAcceptance",
+                "-CastReaderAcceptanceWebURL", row["url"] as! String]
+            app.launch()
+            var result: [String: Any] = ["language": language, "url": row["url"]!]
+            do {
+                let probe = app.descendants(matching: .any)["readerLanguagePlaybackMetrics"].firstMatch
+                try require(probe.waitForExistence(timeout: 40), "web reader missing")
+                try require(wait(90) { (self.metrics(probe)["readableParagraphs"] as? Int ?? 0) > 5 }, "web body not extracted")
+                let value = metrics(probe)
+                let detected = value["language"] as? String ?? ""
+                try require(value["sourceKind"] as? String == "web", "wrong source")
+                try require(detected.isEmpty || detected == language, "wrong language: \(detected)")
+                try require(value["playing"] as? Bool == false, "import unexpectedly started speech")
+                RunLoop.current.run(until: Date().addingTimeInterval(2))
+                let settled = metrics(probe)
+                try require(settled["playing"] as? Bool == false && (settled["segment"] as? String ?? "").isEmpty,
+                            "import started audio after extraction")
+                try require((settled["readError"] as? String ?? "").isEmpty, "import attempted playback or failed")
+                result["metrics"] = value
+                result["status"] = detected.isEmpty ? "imported_language_uncertain" : "imported_language_resolved"
+                snapshot(app, "\(language)-web-imported")
+            } catch {
+                result["status"] = "failed"; result["error"] = String(describing: error)
+                snapshot(app, "\(language)-web-import-failure")
+                XCTFail("\(language): \(error)")
+            }
+            results.append(result)
+            if let report = env["CASTREADER_LONG_REPORT"] {
+                try JSONSerialization.data(withJSONObject: results, options: [.sortedKeys, .prettyPrinted])
+                    .write(to: URL(fileURLWithPath: report), options: .atomic)
+            }
+            app.terminate()
+        }
+        XCTAssertEqual(results.count, 19)
+    }
+
+    /// Each requested format gets its own real three-minute Read and Explain run.
+    func testNewLanguagesWebPDFAndEPUBThreeMinutePlayback() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let path = env["CASTREADER_LONG_MANIFEST"] else { throw XCTSkip("Opt-in long-session manifest required") }
+        let rows = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: path))) as! [[String: Any]]
+        let selected = env["CASTREADER_LONG_LANGUAGES"]?.split(separator: ",").map(String.init)
+        let formats = env["CASTREADER_LONG_FORMATS"]?.split(separator: ",").map(String.init)
+        let seconds = Double(env["CASTREADER_LONG_SECONDS"] ?? "180") ?? 180
+        let modes = Set((env["CASTREADER_LONG_MODES"] ?? "read,explain").split(separator: ",").map(String.init))
+        let reportPath = env["CASTREADER_LONG_REPORT"]
+        var results: [[String: Any]] = []
+        XCUIDevice.shared.orientation = .portrait
+        try configureManualPlayback()
+        for row in rows {
+            let language = row["language"] as! String, format = row["format"] as! String
+            if let selected, !selected.contains(language) { continue }
+            if let formats, !formats.contains(format) { continue }
+            let app = XCUIApplication(), started = Date()
+            var result: [String: Any] = ["language": language, "format": format,
+                "requiredPlayingSeconds": seconds, "explanationDepth": "deep", "fixture": row]
+            app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+                "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-explain_language", "", "-explain_depth", "deep",
+                "-CastReaderMultilingualAcceptance"]
+            if format == "web" { app.launchArguments += ["-CastReaderAcceptanceWebURL", row["url"] as! String] }
+            else { app.launchArguments += ["-CastReaderAcceptanceDocumentPath", row["file"] as! String] }
+            app.launch()
+            do {
+                let probe = app.descendants(matching: .any)["readerLanguagePlaybackMetrics"].firstMatch
+                try require(probe.waitForExistence(timeout: 90), "import did not open reader")
+                let play = app.buttons["readPlayPauseButton"].firstMatch
+                try require(play.waitForExistence(timeout: 30), "Read control missing")
+                let notice = app.staticTexts["readerPlaybackFailureNotice"]
+                try require(wait(60) { (self.metrics(probe)["readableParagraphs"] as? Int ?? 0) > 0 || notice.exists }, "content not ready")
+                try require(wait(45) {
+                    let state = self.metrics(probe)["readStartState"] as? [String: Any] ?? [:]
+                    return state["isPro"] as? Bool == true
+                }, "existing signed-in Pro account has not finished restoring")
+                if modes.contains("read") {
+                if format == "epub", (self.metrics(probe)["paragraph"] as? Int ?? 0) > 0 {
+                    // A retry must exercise the full sample, while preserving
+                    // the real account and saved library. Return through UI.
+                    let first = app.descendants(matching: .any)["readerParagraph.0"].firstMatch
+                    for _ in 0..<40 where !first.exists || !first.isHittable {
+                        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+                            .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)))
+                    }
+                    try require(first.exists && first.isHittable, "EPUB beginning unavailable")
+                    first.tap()
+                    try require(wait(100) { self.metrics(probe)["playing"] as? Bool == true || notice.exists }, "EPUB restart did not begin")
+                    result["readRestartedFromBeginning"] = true
+                }
+                if self.metrics(probe)["playing"] as? Bool != true { play.tap() }
+                try require(wait(100) { self.metrics(probe)["playing"] as? Bool == true || notice.exists }, "Read did not start")
+                var detected = self.metrics(probe)["language"] as? String ?? ""
+                result["initialDetectedLanguage"] = detected
+                if detected.isEmpty && notice.exists {
+                    app.buttons["playbackVoiceButton"].firstMatch.tap()
+                    let search = app.searchFields["Search Languages"]
+                    try require(search.waitForExistence(timeout: 10), "language correction unavailable")
+                    let locale = row["locale"] as! String
+                    search.tap(); search.typeText(locale)
+                    let target = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", locale)).firstMatch
+                    try require(target.waitForExistence(timeout: 10), "language correction row missing")
+                    target.tap()
+                    // Selection regenerates audio, preserving playback intent.
+                    // With auto-play disabled, wait for preparation before Play;
+                    // tapping the loading spinner is explicitly a pause action.
+                    result["manualLanguageCorrection"] = true
+                    try require(wait(100) {
+                        let value = self.metrics(probe)
+                        let state = value["readStartState"] as? [String: Any] ?? [:]
+                        return value["playing"] as? Bool == true ||
+                            (state["hasQueuedSegments"] as? Bool == true &&
+                             state["loading"] as? Bool == false && state["streaming"] as? Bool == false)
+                    }, "corrected audio was not prepared")
+                    if self.metrics(probe)["playing"] as? Bool != true { play.tap() }
+                    try require(wait(100) { self.metrics(probe)["playing"] as? Bool == true }, "corrected Read did not start")
+                    detected = self.metrics(probe)["language"] as? String ?? ""
+                }
+                try require(detected == language, "wrong Read language \(detected), expected \(language)")
+                try require(self.metrics(probe)["sourceKind"] as? String == format, "wrong renderer/source format")
+                if modes.contains("read") {
+                    snapshot(app, "\(language)-\(format)-read-start")
+                    result["read"] = try observeContinuousPlayback(app, probe: probe, seconds: seconds,
+                        name: "\(language)-\(format)-read", playID: "readPlayPauseButton", errorID: "readerPlaybackFailureNotice")
+                    // Preserve the completed mode even if the runner is stopped
+                    // during Explain and Xcode never finalizes its result bundle.
+                    result["status"] = "read_passed_explain_pending"
+                    if let reportPath {
+                        try JSONSerialization.data(withJSONObject: results + [result], options: [.sortedKeys, .prettyPrinted])
+                            .write(to: URL(fileURLWithPath: reportPath), options: .atomic)
+                    }
+                }
+                // A segment boundary can report playing=false while the
+                // explicit playback request is still active. Pause that intent
+                // before switching modes, or Explain correctly auto-starts and
+                // the test waits for an idle Start button that should not exist.
+                let readState = self.metrics(probe)
+                let readIntent = readState["readStartState"] as? [String: Any] ?? [:]
+                if readState["playing"] as? Bool == true || readIntent["hasPlaybackRequest"] as? Bool == true {
+                    play.tap()
+                }
+                try require(wait(8) {
+                    let value = self.metrics(probe)
+                    let intent = value["readStartState"] as? [String: Any] ?? [:]
+                    return value["playing"] as? Bool == false && intent["hasPlaybackRequest"] as? Bool == false
+                }, "Read playback intent did not pause before mode switch")
+                }
+                if modes.contains("explain") {
+                let picker = app.segmentedControls["readerModePicker"]
+                if picker.exists { picker.buttons["Explain"].tap() }
+                else { app.buttons["readerModeMenu"].tap(); app.buttons["Explain"].firstMatch.tap() }
+                let startButton = app.buttons["explainStartButton"].firstMatch
+                try require(startButton.waitForExistence(timeout: 15), "Explain start missing")
+                if format == "pdf" {
+                    // PDF Explain starts at the visible page, including after
+                    // a reimport restores the content's saved reading cursor.
+                    // Navigate through the real view instead of clearing it.
+                    for _ in 0..<25 where self.metrics(probe)["explainScopeStart"] as? Int != 0 {
+                        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+                            .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)))
+                    }
+                    try require(self.metrics(probe)["explainScopeStart"] as? Int == 0, "PDF Explain did not start at the beginning")
+                    result["explainStartedFromFirstPage"] = true
+                }
+                startButton.tap()
+                let error = app.staticTexts["readerExplainError"]
+                try require(wait(150) { self.metrics(probe)["playing"] as? Bool == true || error.exists }, "Explain did not start")
+                try require(!error.exists, "Explain error: \(error.exists ? error.label : "")")
+                try require(self.metrics(probe)["explainLanguage"] as? String == language, "wrong Explain language")
+                snapshot(app, "\(language)-\(format)-explain-start")
+                result["explain"] = try observeContinuousPlayback(app, probe: probe, seconds: seconds,
+                    name: "\(language)-\(format)-explain", playID: "explainPlayPauseButton", errorID: "readerExplainError")
+                }
+                result["status"] = "passed"
+            } catch {
+                result["status"] = "failed"; result["error"] = String(describing: error)
+                result["lastMetrics"] = metrics(app.descendants(matching: .any)["readerLanguagePlaybackMetrics"].firstMatch)
+                snapshot(app, "\(language)-\(format)-failure")
+                XCTFail("\(language)/\(format): \(error)")
+            }
+            result["elapsedSeconds"] = Date().timeIntervalSince(started)
+            results.append(result)
+            let data = try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys, .prettyPrinted])
+            let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+            attachment.name = "long-\(language)-\(format).json"; attachment.lifetime = .keepAlways; add(attachment)
+            if let reportPath { try JSONSerialization.data(withJSONObject: results, options: [.sortedKeys, .prettyPrinted]).write(to: URL(fileURLWithPath: reportPath), options: .atomic) }
+            app.terminate()
+        }
+        XCTAssertFalse(results.isEmpty)
+    }
+
+    private func metrics(_ element: XCUIElement) -> [String: Any] {
+        guard element.exists, let text = element.value as? String,
+              let data = text.data(using: .utf8),
+              let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
+        return result
+    }
+
+    /// Use the real preference control. Launch-argument strings do not satisfy
+    /// AppSettings' stored Bool type check, so `-auto_play NO` is ineffective.
+    private func configureManualPlayback() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+            "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate"]
+        app.launch()
+        let minimize = app.buttons["readerMinimizeButton"]
+        if minimize.waitForExistence(timeout: 2) { minimize.tap() }
+        let settings = app.buttons["settingsGearButton"]
+        try require(settings.waitForExistence(timeout: 15), "settings unavailable for manual playback")
+        let settingsClose = app.buttons["settingsCloseButton"]
+        for _ in 0..<3 {
+            settings.tap()
+            if settingsClose.waitForExistence(timeout: 5) { break }
+        }
+        try require(settingsClose.exists, "Settings did not open after the home button tap")
+        let autoplay = app.switches["Auto-play"].firstMatch
+        for _ in 0..<8 where !autoplay.isHittable { app.swipeUp() }
+        try require(autoplay.isHittable, "Auto-play preference unavailable")
+        if autoplay.value as? String == "1" {
+            // SwiftUI exposes both the whole Form row and its trailing switch.
+            // Touch the control at the trailing edge rather than the label.
+            autoplay.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        }
+        try require(wait(5) { autoplay.value as? String == "0" },
+                    "Auto-play preference did not turn off: \(autoplay.value ?? "nil")")
+        settingsClose.tap()
+        app.terminate()
+    }
+
+    private func observeContinuousPlayback(_ app: XCUIApplication, probe: XCUIElement,
+        seconds: Double, name: String, playID: String, errorID: String) throws -> [String: Any] {
+        let deadline = Date().addingTimeInterval(seconds + 240)
+        var prior = metrics(probe), priorDate = Date(), played = 0.0, lastProgress = Date()
+        var samples: [[String: Any]] = [], segments = Set<String>(), paragraphs = Set<Int>()
+        var captions = Set<String>(), highlights = Set<String>(), maximumMarks = 0
+        var paused = false, halfwayShot = false
+        defer {
+            if let data = try? JSONSerialization.data(withJSONObject: samples, options: [.sortedKeys]) {
+                let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+                attachment.name = "\(name)-playback-observations.json"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+            }
+        }
+        while played < seconds && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(2))
+            let current = metrics(probe), date = Date()
+            let time = current["time"] as? Double ?? 0, priorTime = prior["time"] as? Double ?? 0
+            let segment = current["segment"] as? String ?? ""
+            let advanced = !segment.isEmpty && (segment != prior["segment"] as? String || time > priorTime + 0.03)
+            if current["playing"] as? Bool == true && advanced {
+                let audioDelta = segment == prior["segment"] as? String
+                    ? max(0, time - priorTime)
+                    : max(0, (prior["duration"] as? Double ?? 0) - priorTime) + time
+                let rate = max(0.25, current["rate"] as? Double ?? 1)
+                // Count actual media-clock progress, capped by wall time. At a
+                // boundary this conservatively omits any unobserved segment.
+                played += min(date.timeIntervalSince(priorDate), audioDelta / rate)
+                lastProgress = date
+                segments.insert(segment)
+                paragraphs.insert(current["paragraph"] as? Int ?? -1)
+                if let value = current["caption"] as? String, !value.isEmpty { captions.insert(value) }
+                if let value = current["highlight"] as? String, !value.isEmpty { highlights.insert(value) }
+                maximumMarks = max(maximumMarks, current["marks"] as? Int ?? 0)
+            }
+            var observation = current; observation["effectivePlayingSeconds"] = played; samples.append(observation)
+            let error = app.staticTexts[errorID]
+            let message = current[name.hasSuffix("explain") ? "explainError" : "readError"] as? String ?? ""
+            try require(message.isEmpty, "playback error: \(message)")
+            try require(!error.exists, "playback error: \(error.exists ? error.label : "")")
+            if name.hasSuffix("explain"), current["explainFinished"] as? Bool == true, played < seconds {
+                throw NSError(domain: "ReaderAcceptance", code: 2, userInfo: [NSLocalizedDescriptionKey:
+                    "Explanation completed normally after \(played) seconds; fixture is too short from the selected starting page"])
+            }
+            try require(date.timeIntervalSince(lastProgress) < 75, "player stopped or stalled before three minutes")
+            prior = current; priorDate = date
+            if !paused && played >= 12 {
+                let button = app.buttons[playID].firstMatch
+                // Between Explain blocks the control temporarily represents
+                // preparation rather than a pause action. Keep observing until
+                // audible playback returns, then perform the real pause check.
+                if button.exists && button.isEnabled && self.metrics(probe)["playing"] as? Bool == true {
+                    button.tap()
+                    try require(wait(8) { self.metrics(probe)["playing"] as? Bool == false }, "pause failed")
+                    let pausedState = metrics(probe)
+                    RunLoop.current.run(until: Date().addingTimeInterval(1))
+                    let still = metrics(probe)
+                    try require(abs((still["time"] as? Double ?? 0) - (pausedState["time"] as? Double ?? 0)) < 0.15, "audio clock moved while paused")
+                    snapshot(app, "\(name)-paused")
+                    button.tap()
+                    try require(wait(30) { self.metrics(probe)["playing"] as? Bool == true }, "resume failed")
+                    paused = true
+                    prior = metrics(probe); priorDate = Date()
+                }
+            }
+            if !halfwayShot && played >= seconds / 2 { snapshot(app, "\(name)-halfway"); halfwayShot = true }
+        }
+        try require(played >= seconds, "insufficient actual playing time: \(played)")
+        try require(paused, "pause and resume were not exercised during audible playback")
+        try require(segments.count > 1, "no segment transition")
+        if name.hasSuffix("explain") {
+            try require(captions.count > 1, "Explain captions did not advance")
+            try require(maximumMarks > 0, "Explain did not resolve any original-text marks")
+        } else {
+            try require(highlights.count > 1, "Read highlight cursor did not advance")
+        }
+        snapshot(app, "\(name)-three-minutes")
+        return ["effectivePlayingSeconds": played, "pauseResume": paused, "segmentsVisited": segments.count,
+            "paragraphsVisited": paragraphs.sorted(), "captionChanges": captions.count,
+            "highlightChanges": highlights.count, "maximumMarks": maximumMarks, "samples": samples]
+    }
+
+
+    func testEveryLanguageReadAndExplainMainFlow() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let path = env["CASTREADER_READER_ACCEPTANCE_MANIFEST"] else {
+            throw XCTSkip("Opt-in fixture manifest required")
+        }
+        let all = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: path))) as! [[String: String]]
+        let selected = env["CASTREADER_READER_ACCEPTANCE_LANGUAGES"]?.split(separator: ",").map(String.init)
+        let explainEnabled = env["CASTREADER_READER_ACCEPTANCE_EXPLAIN"] == "1"
+        XCUIDevice.shared.orientation = .portrait
+        var results: [[String: Any]] = []
+        for row in all where selected == nil || selected!.contains(row["language"]!) {
+            let language = row["language"]!, text = row["text"]!, locale = row["locale"]!
+            let expectedName = Locale(identifier: "en").localizedString(forIdentifier: locale)!
+            let app = XCUIApplication()
+            let start = Date()
+            var result: [String: Any] = ["language": language, "source": row["source"]!, "characters": text.count]
+            app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+                "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderMultilingualAcceptance",
+                "-explain_language", "", "-CastReaderCaptureTextB64", Data(text.utf8).base64EncodedString()]
+            app.launch()
+            do {
+                let play = app.buttons["readPlayPauseButton"].firstMatch
+                try require(play.waitForExistence(timeout: 35), "reader missing")
+                let probe = app.descendants(matching: .any)["readerLanguagePlaybackMetrics"].firstMatch
+                try require(probe.waitForExistence(timeout: 10), "playback metrics missing")
+                // Repeat runs must start at the first paragraph, using the same
+                // tap-to-read action as a reader instead of restoring an old tail.
+                let firstParagraph = app.descendants(matching: .any)["readerParagraph.0"].firstMatch
+                try require(firstParagraph.waitForExistence(timeout: 10), "first paragraph missing")
+                firstParagraph.tap()
+                let notice = app.staticTexts["readerPlaybackFailureNotice"]
+                try require(wait(60) { (play.value as? String)?.lowercased() == "playing" || notice.exists }, "read did not start")
+                let correctionNeeded = notice.exists
+                result["automaticLanguage"] = correctionNeeded ? "uncertain; explicitly selected" : "resolved"
+                if (play.value as? String)?.lowercased() == "playing" {
+                    snapshot(app, "\(language)-read-playing")
+                    play.tap()
+                    try require(wait(5) { (play.value as? String)?.lowercased() == "paused" }, "read pause failed")
+                    snapshot(app, "\(language)-read-paused")
+                }
+                let voice = app.buttons["playbackVoiceButton"].firstMatch
+                try require(voice.waitForExistence(timeout: 8), "voice control missing")
+                voice.tap()
+                if correctionNeeded {
+                    let search = app.searchFields["Search Languages"]
+                    try require(search.waitForExistence(timeout: 8), "language correction picker missing")
+                    search.tap(); search.typeText(locale)
+                    let languageRow = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", locale)).firstMatch
+                    try require(languageRow.waitForExistence(timeout: 8), "correction language missing")
+                    languageRow.tap()
+                    // Unknown-language correction returns directly to the reader.
+                } else {
+                    let languageControl = app.buttons["Reading Language"].firstMatch
+                    try require(languageControl.waitForExistence(timeout: 8), "voice language missing")
+                    result["detectedLanguageName"] = languageControl.value as? String ?? ""
+                    try require(expectedName.hasPrefix(languageControl.value as? String ?? "UNRESOLVED"),
+                                "wrong route: \(languageControl.value as? String ?? "none") != \(expectedName)")
+                    let done = app.buttons["playbackVoiceDoneButton"].firstMatch
+                    try require(done.waitForExistence(timeout: 5), "voice Done missing")
+                    done.tap()
+                }
+                try require(play.waitForExistence(timeout: 8), "reader did not return")
+                if (play.value as? String)?.lowercased() != "playing" { play.tap() }
+                try require(wait(60) { (play.value as? String)?.lowercased() == "playing" }, "read resume failed")
+                RunLoop.current.run(until: Date().addingTimeInterval(2))
+                snapshot(app, "\(language)-read-resumed")
+                try require(wait(150) { self.metrics(probe)["readFinished"] as? Bool == true || notice.exists }, "read completion missing")
+                try require(!notice.exists, "reader failed before completion")
+                snapshot(app, "\(language)-read-completed")
+                result["read"] = "passed: played, paused/resumed, returned to stopped controls without error"
+                if explainEnabled {
+                    let picker = app.segmentedControls["readerModePicker"]
+                    if picker.exists { picker.buttons["Explain"].tap() }
+                    else { app.buttons["readerModeMenu"].tap(); app.buttons["Explain"].firstMatch.tap() }
+                    let startButton = app.buttons["explainStartButton"].firstMatch
+                    try require(startButton.waitForExistence(timeout: 10), "Explain start missing")
+                    startButton.tap()
+                    let explainPlay = app.buttons["explainPlayPauseButton"].firstMatch
+                    let error = app.staticTexts["readerExplainError"]
+                    try require(wait(120) { (explainPlay.exists && (explainPlay.value as? String)?.lowercased() == "playing") || error.exists }, "Explain did not start")
+                    try require(!error.exists, "Explain error: \(error.exists ? error.label : "")")
+                    // The floating caption has a zero-height layout anchor and
+                    // is visible in screenshots but omitted by XCTest's tree.
+                    try require(wait(10) { !(self.metrics(probe)["caption"] as? String ?? "").isEmpty }, "Explain caption missing")
+                    result["firstCaption"] = self.metrics(probe)["caption"]
+                    snapshot(app, "\(language)-explain-playing")
+                    explainPlay.tap()
+                    try require(wait(5) { (explainPlay.value as? String)?.lowercased() == "paused" }, "Explain pause failed")
+                    explainPlay.tap()
+                    try require(wait(20) { (explainPlay.value as? String)?.lowercased() == "playing" }, "Explain resume failed")
+                    RunLoop.current.run(until: Date().addingTimeInterval(4))
+                    snapshot(app, "\(language)-explain-marks")
+                    let replay = app.buttons["explainReplayButton"].firstMatch
+                    try require(wait(180) { replay.exists || error.exists }, "Explain completion missing")
+                    try require(replay.exists && !error.exists, "Explain failed before completion")
+                    snapshot(app, "\(language)-explain-completed")
+                    result["explain"] = "passed: real narration, caption, pause/resume and replay available"
+                }
+                result["status"] = "passed"
+            } catch {
+                result["status"] = "failed"; result["error"] = String(describing: error)
+                snapshot(app, "\(language)-failure")
+                XCTFail("\(language): \(error)")
+            }
+            result["elapsedSeconds"] = Date().timeIntervalSince(start)
+            results.append(result)
+            let attachment = XCTAttachment(data: try JSONSerialization.data(withJSONObject: result, options: [.sortedKeys]), uniformTypeIdentifier: "public.json")
+            attachment.name = "reader-main-flow-\(language).json"; attachment.lifetime = .keepAlways; add(attachment)
+            app.terminate()
+        }
+        XCTAssertFalse(results.isEmpty)
+    }
+
+    private func require(_ condition: Bool, _ message: String) throws {
+        if !condition { throw NSError(domain: "ReaderAcceptance", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
+    }
+    private func wait(_ seconds: TimeInterval, until condition: () -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(seconds)
+        repeat {
+            if condition() { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        } while Date() < end
+        return condition()
+    }
+    private func snapshot(_ app: XCUIApplication, _ name: String) {
+        let screenshot = app.screenshot()
+        if let report = ProcessInfo.processInfo.environment["CASTREADER_LONG_REPORT"] {
+            let directory = URL(fileURLWithPath: report).deletingLastPathComponent().appendingPathComponent("screenshots")
+            do {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                try screenshot.pngRepresentation.write(to: directory.appendingPathComponent(name + ".png"), options: .atomic)
+            } catch { XCTFail("Could not preserve acceptance screenshot: \(error)") }
+        }
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+}
+
+/// Real catalog/UI checks. Never replaces account state or entitlement data.
+final class VoiceAlignmentLiveUITests: XCTestCase {
+    private var directory: URL!
+    override func setUpWithError() throws {
+        guard let path = ProcessInfo.processInfo.environment["CASTREADER_VOICE_ALIGNMENT_REPORT"] else {
+            throw XCTSkip("Opt-in report directory required")
+        }
+        directory = URL(fileURLWithPath: path)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+    }
+    override func tearDownWithError() throws {
+        if let directory, (testRun?.totalFailureCount ?? 0) > 0 {
+            let app = XCUIApplication()
+            guard app.state != .notRunning else { return }
+            try? save(app, "failure-" + name.components(separatedBy: " ").last!.replacingOccurrences(of: "]", with: ""))
+            try? JSONSerialization.data(withJSONObject: metrics(app), options: [.prettyPrinted, .sortedKeys])
+                .write(to: directory.appendingPathComponent("failure-last-metrics.json"))
+        }
+    }
+    private func save(_ app: XCUIApplication, _ name: String) throws {
+        try app.screenshot().pngRepresentation.write(to: directory.appendingPathComponent(name + ".png"))
+        try app.debugDescription.write(to: directory.appendingPathComponent(name + ".txt"), atomically: true, encoding: .utf8)
+    }
+    private func launch(_ language: String, title: String) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", language,
+            "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderRegion", "global", "-CastReaderServiceRoute", "global"]
+        app.launch()
+        let tab = app.tabBars.buttons[title].exists ? app.tabBars.buttons[title] : app.buttons[title].firstMatch
+        XCTAssertTrue(tab.waitForExistence(timeout: 20))
+        tab.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["voiceBrowseLanguage"].firstMatch.waitForExistence(timeout: 15))
+        return app
+    }
+    func testVoiceLayoutAcrossLanguagesAndSearch() throws {
+        let allCases = [("en", "Voice"), ("zh-Hans", "音色"), ("ko", "음성"), ("ru", "Голос"),
+                     ("fi", "Ääni"), ("tr", "Ses"), ("it", "Voce"), ("ar", "الصوت"),
+                     ("he", "קול"), ("de", "Stimme"), ("ja", "音声"), ("vi", "Giọng đọc"),
+                     ("fr", "Voix"), ("es", "Voz"), ("pt-BR", "Voz")]
+        let filter = ProcessInfo.processInfo.environment["CASTREADER_VOICE_UI_LANGUAGES"]?.split(separator: ",").map(String.init)
+        let cases = allCases.filter { filter == nil || filter!.contains($0.0) }
+        for (language, title) in cases {
+            let app = launch(language, title: title)
+            XCTAssertTrue(app.descendants(matching: .any)["voiceCurrentCard"].firstMatch.waitForExistence(timeout: 35))
+            let picker = app.segmentedControls["voiceBrowserCategoryPicker"]
+            XCTAssertEqual(picker.buttons.count, 2)
+            XCTAssertFalse(app.textFields["voiceSearchField"].exists)
+            if ["en", "zh-Hans", "ko", "ru", "de", "ja", "fr", "es", "pt-BR"].contains(language) {
+                XCTAssertTrue(app.buttons["voiceFeaturedClones"].waitForExistence(timeout: 20), language)
+            }
+            if ["fi", "tr"].contains(language) {
+                XCTAssertFalse(app.buttons["voiceSearchToggle"].exists, "Sparse voices must not have empty filters")
+                let selects = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "presetVoiceSelect_"))
+                let ids = selects.allElementsBoundByIndex.map(\.identifier)
+                XCTAssertEqual(ids.count, Set(ids).count, "Current voice must not be duplicated")
+            }
+            if language == "fi" {
+                XCTAssertFalse(app.buttons["voiceBrowseAll"].exists)
+            }
+            try save(app, "voice-" + language)
+            if language == "en" {
+                let toggle = app.buttons["voiceSearchToggle"]
+                toggle.tap()
+                let search = app.textFields["voiceSearchField"]
+                XCTAssertTrue(search.waitForExistence(timeout: 5))
+                search.tap(); search.typeText("Heart")
+                XCTAssertTrue(app.buttons["voiceDiscoveryFilters"].exists)
+                try save(app, "voice-en-search")
+                toggle.tap()
+                XCTAssertFalse(search.exists)
+                XCTAssertTrue(app.descendants(matching: .any)["voiceCurrentCard"].firstMatch.waitForExistence(timeout: 10))
+                let created = picker.buttons.element(boundBy: 1)
+                created.tap()
+                try save(app, "voice-en-my-voices")
+                picker.buttons.element(boundBy: 0).tap()
+                XCTAssertTrue(app.descendants(matching: .any)["voiceCurrentCard"].firstMatch.waitForExistence(timeout: 10))
+            }
+            app.terminate()
+        }
+    }
+    func testBrowseLanguageContextAndChinaBoundary() throws {
+        var app = launch("en", title: "Voice")
+        XCTAssertTrue(app.descendants(matching: .any)["voiceCurrentCard"].firstMatch.waitForExistence(timeout: 35))
+        app.buttons["voiceBrowseLanguage"].tap()
+        let languageSearch = app.searchFields["Search Languages"]
+        XCTAssertTrue(languageSearch.waitForExistence(timeout: 10))
+        languageSearch.tap(); languageSearch.typeText("Finnish")
+        let finnish = app.buttons["voiceBrowseLanguage.fi"]
+        XCTAssertTrue(finnish.waitForExistence(timeout: 10)); finnish.tap()
+        XCTAssertTrue(wait(10) { (app.buttons["voiceBrowseLanguage"].value as? String ?? "").contains("Finnish") })
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@ AND label CONTAINS %@", "Default voice for", "Finnish")).firstMatch.exists)
+        try save(app, "context-en-ui-fi-voices")
+        app.terminate()
+        app = launch("en", title: "Voice")
+        XCTAssertTrue(wait(10) { (app.buttons["voiceBrowseLanguage"].value as? String ?? "").contains("Finnish") })
+        try save(app, "context-en-relaunch-keeps-fi")
+        app.terminate()
+        for (language, title, expected) in [("de", "Stimme", "Deutsch"), ("vi", "Giọng đọc", "Tiếng Việt")] {
+            app = launch(language, title: title)
+            XCTAssertTrue(wait(20) { (app.buttons["voiceBrowseLanguage"].value as? String ?? "").localizedCaseInsensitiveContains(expected) })
+            try save(app, "context-app-reset-" + language)
+            app.terminate()
+        }
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+            "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderRegion", "cn", "-CastReaderServiceRoute", "cn"]
+        app.launch()
+        let voiceTab = app.tabBars.buttons["Voice"].exists ? app.tabBars.buttons["Voice"] : app.buttons["Voice"].firstMatch
+        XCTAssertTrue(voiceTab.waitForExistence(timeout: 20)); voiceTab.tap()
+        XCTAssertTrue(app.buttons["voiceBrowseLanguage"].waitForExistence(timeout: 20))
+        XCTAssertFalse(app.descendants(matching: .any)["voiceCurrentCard"].firstMatch.exists)
+        try save(app, "cn-original-voice-page")
+        app.buttons["voiceBrowseLanguage"].tap()
+        let cnSearch = app.searchFields["Search Languages"]
+        XCTAssertTrue(cnSearch.waitForExistence(timeout: 10)); cnSearch.tap(); cnSearch.typeText("Finnish")
+        XCTAssertFalse(app.buttons["voiceBrowseLanguage.fi"].exists)
+        try save(app, "cn-no-added-language")
+        app.terminate()
+    }
+
+    func testFullPrivateLibraryRemainsVisibleForUnsupportedBrowseLanguage() throws {
+        let app = launch("en", title: "Voice")
+        let picker = app.segmentedControls["voiceBrowserCategoryPicker"]
+        picker.buttons.element(boundBy: 1).tap()
+        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voiceCloneApplyButton_"))
+        XCTAssertTrue(wait(35) { rows.count > 3 })
+        var identifiers = Set<String>()
+        for _ in 0..<5 {
+            identifiers.formUnion(rows.allElementsBoundByIndex.map(\.identifier))
+            app.swipeUp()
+        }
+        XCTAssertGreaterThan(identifiers.count, 6)
+        try save(app, "private-full-library-beyond-six")
+        for _ in 0..<8 where !app.buttons["voiceBrowseLanguage"].isHittable { app.swipeDown() }
+        app.buttons["voiceBrowseLanguage"].tap()
+        let search = app.searchFields["Search Languages"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("Finnish")
+        app.buttons["voiceBrowseLanguage.fi"].tap()
+        XCTAssertTrue(wait(15) { rows.count > 3 })
+        XCTAssertTrue(rows.allElementsBoundByIndex.allSatisfy { !$0.isEnabled })
+        XCTAssertFalse(app.buttons["voiceCloneCreateButton"].exists)
+        XCTAssertFalse(app.buttons["voiceCloneQuotaCard"].exists)
+        let preview = app.buttons["Preview"].firstMatch
+        XCTAssertTrue(preview.exists && preview.isEnabled)
+        try save(app, "private-finnish-retains-library-disabled-apply")
+        preview.tap()
+        let stop = app.buttons["Stop Preview"].firstMatch
+        XCTAssertTrue(stop.waitForExistence(timeout: 30))
+        try save(app, "private-incompatible-fixed-preview")
+        stop.tap()
+        app.terminate()
+    }
+
+    func testLargeTypeVoiceControlsRemainReachable() throws {
+        for (language, title) in [("de", "Stimme"), ("ar", "الصوت"), ("he", "קול")] {
+            let app = launch(language, title: title)
+            let languageButton = app.buttons["voiceBrowseLanguage"]
+            XCTAssertTrue(languageButton.isHittable)
+            XCTAssertEqual(app.segmentedControls["voiceBrowserCategoryPicker"].buttons.count, 2)
+            let card = app.descendants(matching: .any)["voiceCurrentCard"].firstMatch
+            XCTAssertTrue(card.waitForExistence(timeout: 35))
+            try save(app, "large-type-" + language)
+            let searchToggle = app.buttons["voiceSearchToggle"]
+            if searchToggle.exists {
+                XCTAssertTrue(searchToggle.isHittable); searchToggle.tap()
+                let search = app.textFields["voiceSearchField"]
+                XCTAssertTrue(search.waitForExistence(timeout: 10))
+                XCTAssertTrue(search.isHittable)
+                try save(app, "large-type-search-" + language)
+                searchToggle.tap()
+            }
+            app.swipeUp()
+            try save(app, "large-type-scroll-" + language)
+            app.terminate()
+        }
+    }
+
+    private func wait(_ seconds: TimeInterval, _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(seconds)
+        repeat {
+            if condition() { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        } while Date() < deadline
+        return condition()
+    }
+    private func metrics(_ app: XCUIApplication) -> [String: Any] {
+        let probe = app.descendants(matching: .any)["readerLanguagePlaybackMetrics"].firstMatch
+        guard let raw = probe.value as? String, let data = raw.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
+        return object
+    }
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication, limit: Int = 18) {
+        for _ in 0..<limit {
+            if element.exists && element.isHittable { return }
+            app.swipeUp()
+        }
+    }
+    func testCompleteCloneCollectionSearchAndPreviewCancellation() throws {
+        let app = launch("ko", title: "음성")
+        let featured = app.buttons["voiceFeaturedClones"]
+        XCTAssertTrue(featured.waitForExistence(timeout: 25)); featured.tap()
+        let search = app.textFields["voiceSearchField"]
+        XCTAssertTrue(search.waitForExistence(timeout: 15))
+        var ids = Set<String>()
+        for _ in 0..<5 {
+            ids.formUnion(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "presetVoiceSelect_")).allElementsBoundByIndex.map(\.identifier))
+            app.swipeUp()
+        }
+        XCTAssertGreaterThan(ids.count, 6)
+        try save(app, "ko-clones-beyond-six")
+        for _ in 0..<6 { app.swipeDown() }
+        search.tap(); search.typeText("vl_d1efb23a380bdaa2f6b0")
+        XCTAssertTrue(wait(10) { app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "presetVoiceSelect_")).count == 0 })
+        try save(app, "ko-clones-no-english-source")
+        app.buttons["지우기"].firstMatch.tap()
+        XCTAssertTrue(wait(10) { app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voicePreview_")).count > 0 })
+        let preview = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voicePreview_")).firstMatch
+        preview.tap()
+        XCTAssertTrue(wait(30) { ["loading", "playing"].contains(preview.value as? String ?? "") })
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(featured.waitForExistence(timeout: 8))
+        try save(app, "ko-clone-preview-returned")
+        app.terminate()
+    }
+    func testLiveReaderRegularPublicPrivateSwitchAndPreviewRestoration() throws {
+        let app = XCUIApplication()
+        let paragraph = "A reading routine works best when attention has a clear place to return to. Listening while following the words can make an unfamiliar passage easier to understand. The reader can pause, consider the argument, and then continue at the same place. A change of voice should preserve that place and keep the spoken words connected to the text."
+        let text = Array(repeating: paragraph, count: 9).joined(separator: "\n\n") + "\n\nAcceptance run " + UUID().uuidString
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+            "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderMultilingualAcceptance",
+            "-CastReaderRegion", "global", "-CastReaderServiceRoute", "global", "-explain_language", "en",
+            "-CastReaderCaptureTextB64", Data(text.utf8).base64EncodedString()]
+        app.launch()
+        let play = app.buttons["readPlayPauseButton"].firstMatch
+        XCTAssertTrue(play.waitForExistence(timeout: 40))
+        XCTAssertTrue(wait(40) {
+            (self.metrics(app)["readStartState"] as? [String: Any])?["isPro"] as? Bool == true
+        }, "Wait for the existing signed-in account to finish restoring before playback")
+        if metrics(app)["playing"] as? Bool != true { play.tap() }
+        XCTAssertTrue(wait(80) { self.metrics(app)["playing"] as? Bool == true })
+        let originalVoice = metrics(app)["readVoiceID"] as? String ?? "af_heart"
+        var evidence: [[String: Any]] = []
+        let voicePanel = app.otherElements.matching(identifier: "playbackVoicePanel")
+            .containing(.button, identifier: "playbackVoiceDoneButton").firstMatch
+        func panel() {
+            app.buttons["playbackVoiceButton"].firstMatch.tap()
+            XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].waitForExistence(timeout: 10))
+            XCTAssertFalse(voicePanel.buttons["voiceFeaturedClones"].exists)
+            XCTAssertFalse(voicePanel.buttons["voiceFamiliarSelf"].exists)
+        }
+        func close() { app.buttons["playbackVoiceDoneButton"].tap() }
+        func verify(_ label: String, voice: String, mode: String = "read") throws {
+            XCTAssertTrue(wait(90) { self.metrics(app)["playing"] as? Bool == true && self.metrics(app)[mode + "VoiceID"] as? String == voice }, label)
+            let before = metrics(app)
+            XCTAssertTrue(wait(45) {
+                let current = self.metrics(app)
+                return current["playing"] as? Bool == true &&
+                    ((before["segment"] as? String != current["segment"] as? String) ||
+                     (current["time"] as? Double ?? 0) > (before["time"] as? Double ?? 0) + 1)
+            }, label)
+            let visualKey = mode == "read" ? "highlight" : "caption"
+            XCTAssertTrue(wait(15) { !(self.metrics(app)[visualKey] as? String ?? "").isEmpty }, label)
+            let after = metrics(app)
+            XCTAssertTrue((after[mode + "Error"] as? String ?? "").isEmpty)
+            evidence.append(["step": label, "metrics": after])
+            try JSONSerialization.data(withJSONObject: evidence, options: [.prettyPrinted, .sortedKeys])
+                .write(to: directory.appendingPathComponent("reader-voice-live-results.json"))
+            try save(app, "reader-" + label)
+        }
+        try verify("regular-start", voice: originalVoice)
+        panel()
+        try save(app, "reader-voice-panel")
+        let privateRows = voicePanel.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voiceFamiliarSelect_"))
+        XCTAssertTrue(privateRows.firstMatch.waitForExistence(timeout: 30))
+        let privateVoice = String(privateRows.firstMatch.identifier.dropFirst("voiceFamiliarSelect_".count))
+        let privatePreview = voicePanel.buttons["voiceFamiliarPreview_" + privateVoice]
+        reveal(privatePreview, in: app)
+        privatePreview.tap()
+        try save(app, "reader-preview-requested")
+        var previewStates = Set<String>()
+        let previewStarted = wait(45) {
+            let value = (privatePreview.value as? String ?? "missing").lowercased()
+            previewStates.insert(value)
+            return value.contains("playing")
+        }
+        try JSONSerialization.data(withJSONObject: Array(previewStates).sorted(), options: [.prettyPrinted])
+            .write(to: directory.appendingPathComponent("private-preview-observed-states.json"))
+        try save(app, "reader-preview-outcome")
+        XCTAssertTrue(previewStarted)
+        XCTAssertTrue(wait(60) { (privatePreview.value as? String)?.lowercased() == "stopped" })
+        close()
+        try verify("preview-restored", voice: originalVoice)
+        play.tap()
+        XCTAssertTrue(wait(5) { self.metrics(app)["playing"] as? Bool == false })
+        panel(); reveal(privatePreview, in: app); privatePreview.tap()
+        XCTAssertTrue(wait(45) { (privatePreview.value as? String)?.lowercased() == "playing" })
+        close()
+        RunLoop.current.run(until: Date().addingTimeInterval(2))
+        XCTAssertFalse(metrics(app)["playing"] as? Bool ?? true)
+        panel()
+        let privateSelect = voicePanel.buttons["voiceFamiliarSelect_" + privateVoice]
+        reveal(privateSelect, in: app); privateSelect.tap()
+        XCTAssertTrue(wait(45) { self.metrics(app)["readVoiceID"] as? String == privateVoice }); close()
+        play.tap()
+        try verify("private-read", voice: privateVoice)
+        panel()
+        let toggle = voicePanel.buttons["voiceSearchToggle"]
+        toggle.tap()
+        let search = voicePanel.textFields["voiceSearchField"]
+        search.tap(); search.typeText("vl_d1efb23a380bdaa2f6b0")
+        let publicSelect = voicePanel.buttons["presetVoiceSelect_vl_d1efb23a380bdaa2f6b0"]
+        reveal(publicSelect, in: app); publicSelect.tap()
+        XCTAssertTrue(wait(45) { self.metrics(app)["readVoiceID"] as? String == "vl_d1efb23a380bdaa2f6b0" }); close()
+        try verify("public-read", voice: "vl_d1efb23a380bdaa2f6b0")
+        // Explicit pause survives a change back to the regular voice.
+        play.tap(); panel(); toggle.tap(); search.tap(); search.typeText(originalVoice)
+        let regular = voicePanel.buttons["presetVoiceSelect_" + originalVoice]
+        reveal(regular, in: app); regular.tap(); close()
+        XCTAssertFalse(metrics(app)["playing"] as? Bool ?? true)
+        play.tap(); try verify("regular-return", voice: originalVoice)
+        play.tap()
+        app.segmentedControls["readerModePicker"].buttons["Explain"].tap()
+        app.buttons["explainStartButton"].tap()
+        try verify("regular-explain", voice: originalVoice, mode: "explain")
+        app.buttons["explainPlayPauseButton"].firstMatch.tap()
+        panel(); reveal(privateSelect, in: app); privateSelect.tap()
+        XCTAssertTrue(wait(45) { self.metrics(app)["explainVoiceID"] as? String == privateVoice }); close()
+        let explainPlay = app.buttons["explainPlayPauseButton"].firstMatch
+        XCTAssertTrue(wait(45) { explainPlay.isEnabled })
+        explainPlay.tap()
+        try verify("private-explain", voice: privateVoice, mode: "explain")
+        panel()
+        let gifted = voicePanel.buttons.matching(NSPredicate(format:
+            "identifier BEGINSWITH %@ AND label CONTAINS %@", "voiceFamiliarSelect_", "Friends’ voices")).firstMatch
+        XCTAssertTrue(gifted.exists)
+        let giftedVoice = String(gifted.identifier.dropFirst("voiceFamiliarSelect_".count))
+        // Filter the long live library before tapping. SwiftUI can retain an
+        // offscreen row's old accessibility frame during animated scrolling.
+        toggle.tap(); search.tap(); search.typeText(giftedVoice)
+        let filteredGifted = voicePanel.buttons["voiceFamiliarSelect_" + giftedVoice]
+        XCTAssertTrue(filteredGifted.waitForExistence(timeout: 10))
+        filteredGifted.tap()
+        XCTAssertTrue(wait(45) { self.metrics(app)["explainVoiceID"] as? String == giftedVoice }); close()
+        try verify("gifted-explain", voice: giftedVoice, mode: "explain")
+        panel(); toggle.tap(); search.tap(); search.typeText(originalVoice)
+        reveal(regular, in: app); regular.tap(); close()
+        try verify("regular-explain-return", voice: originalVoice, mode: "explain")
+        app.buttons["explainPlayPauseButton"].firstMatch.tap()
+        try JSONSerialization.data(withJSONObject: evidence, options: [.prettyPrinted, .sortedKeys])
+            .write(to: directory.appendingPathComponent("reader-voice-live-results.json"))
+        app.terminate()
+    }
+
 }

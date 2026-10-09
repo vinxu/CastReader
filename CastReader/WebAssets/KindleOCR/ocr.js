@@ -4,14 +4,15 @@ import {
   recognizeVerticalJapanesePage,
 } from './vertical-japanese-ocr.js';
 
-const supportedModels = new Set(['eng', 'chi_sim', 'jpn', 'jpn_vert', 'spa', 'fra', 'deu', 'por', 'ita', 'hin']);
+const supportedModels = new Set(['eng', 'chi_sim', 'jpn', 'jpn_vert', 'spa', 'fra', 'deu', 'por', 'ita', 'hin', 'fin', 'ell', 'hun', 'fil', 'heb']);
 let engine = null;
 let loadedModel = '';
 let engineLoading = Promise.resolve();
 let executionTail = Promise.resolve();
 
 async function getEngine(requestedModel) {
-  const model = supportedModels.has(requestedModel) ? requestedModel : 'eng';
+  if (!supportedModels.has(requestedModel)) throw new Error('Unsupported OCR language');
+  const model = requestedModel;
   if (engine && loadedModel === model) return engine;
 
   engineLoading = engineLoading.catch(() => undefined).then(async () => {

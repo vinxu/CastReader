@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Sesli okuma ve AI açıklama"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Sesli Okuma + AI Açıklama"
+  },
+  "extDescription": {
+    "message": "Senkronize vurgular ve otomatik kaydırma ile okuyun. Yapay zeka, sayfadaki zor pasajları açıklar. 28 dilde doğal sesler."
+  },
+  "quickreadBtn": {
+    "message": "Hızlı Genel Bakış"
+  },
+  "quickreadBtnExit": {
+    "message": "Genel Bakıştan Çık"
+  },
+  "quickreadPreparing": {
+    "message": "Özet Oluşturuluyor"
+  },
+  "quickreadError": {
+    "message": "Özet Hatası"
+  },
+  "quickreadStageExtract": {
+    "message": "Ana noktalar çıkarılıyor"
+  },
+  "quickreadStageTts": {
+    "message": "Seslendirme oluşturuluyor"
+  },
+  "quickreadStageRefine": {
+    "message": "Ritim düzenleniyor"
+  },
+  "quickreadStageReady": {
+    "message": "Oynatmaya hazır…"
+  },
+  "quickreadFailed": {
+    "message": "Başarısız: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Kapat"
+  },
+  "quickreadCancel": {
+    "message": "İptal"
+  },
+  "quickreadDone": {
+    "message": "Tamamlandı"
+  },
+  "quickreadHint": {
+    "message": "Yaklaşık 25-45 saniye, lütfen bekleyin"
+  },
+  "quickreadQueued": {
+    "message": "Sıraya alındı ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Günlük ücretsiz Açıklamalar tükendi. Yarın sıfırlanır."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Günlük ücretsiz Açıklamalar tükendi"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Günlük ücretsiz limite ulaşıldı — sınırsız Açıklama için Pro'ya yükseltin. Ücretsiz kotanız yarın sıfırlanır."
+  },
+  "quickreadUpgrade": {
+    "message": "Pro'ya Yükselt"
+  },
+  "accountNotSignedIn": {
+    "message": "Oturum açılmadı"
+  },
+  "enableProMode": {
+    "message": "Pro'yu etkinleştir"
+  },
+  "listenRateLimitTitle": {
+    "message": "Günlük 20 dakikalık ücretsiz okuma süresi tükendi"
+  },
+  "listenRateLimitBody": {
+    "message": "Bugünkü 20 dakikalık ücretsiz okuma sürenizi kullandınız — sınırsız okuma için Pro'ya yükseltin. Ücretsiz kotanız yarın sıfırlanır."
+  },
+  "quickreadQuotaTip": {
+    "message": "Açıkla · Bugün kalan $n$/$max$",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Açıkla · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Bir belgeyi oku"
+  },
+  "readerDrop": {
+    "message": "Buraya bir görsel / PDF / EPUB / Word / TXT bırakın"
+  },
+  "readerDropOver": {
+    "message": "Yüklemek için bırakın"
+  },
+  "readerSub": {
+    "message": "Orijinal dosyada sesli okuma + AI özeti — düzen bozulmadan"
+  },
+  "readerOr": {
+    "message": "veya"
+  },
+  "readerPick": {
+    "message": "Dosya seç"
+  },
+  "readerRendering": {
+    "message": "Belge işleniyor…"
+  },
+  "readerListen": {
+    "message": "▶ Dinle"
+  },
+  "readerPause": {
+    "message": "⏸ Duraklat"
+  },
+  "readerResume": {
+    "message": "▶ Devam Et"
+  },
+  "readerStop": {
+    "message": "■ Durdur"
+  },
+  "readerExplain": {
+    "message": "✦ Açıkla"
+  },
+  "readerExplainHint": {
+    "message": "Önce okumayı durdurun"
+  },
+  "readerNewFile": {
+    "message": "Yeni dosya"
+  },
+  "readerSpeed": {
+    "message": "Hız"
+  },
+  "readerUnsupported": {
+    "message": "Desteklenmeyen dosya türü"
+  },
+  "readerFailed": {
+    "message": "İşleme başarısız oldu"
+  },
+  "readerEmpty": {
+    "message": "Bu belgede okunabilir metin bulunamadı"
+  },
+  "readerQuotaLeft": {
+    "message": "bugün kalan"
+  },
+  "readerQuotaBlocked": {
+    "message": "Günlük 10 ücretsiz özet kullanıldı — yarın sıfırlanır"
+  },
+  "readerPartial": {
+    "message": "Mevcut konumunuzdaki bölüm açıklandı — sonraki için aşağı kaydırın ve tekrar Açıkla'ya dokunun"
+  },
+  "readerTooLarge": {
+    "message": "Dosya çok büyük (100 MB üzeri). Lütfen daha küçük bir dosya kullanın."
+  },
+  "readerLargeFilePro": {
+    "message": "7 MB üzeri dosyalar Pro gerektirir — Pro, 100 MB'a kadar belgeleri açar."
+  },
+  "readerTooLargeForPage": {
+    "message": "Bu sayfadan açmak için çok büyük (7 MB üzeri). Belge okuyucuyu açın ve oradan seçin — 100 MB'a kadar."
+  },
+  "readerOpenReader": {
+    "message": "Belge okuyucuyu aç"
+  },
+  "readerContinue": {
+    "message": "Devam Et ✦"
+  },
+  "readerSettings": {
+    "message": "Ayarlar"
+  },
+  "readerExplainLang": {
+    "message": "Şu dilde açıkla:"
+  },
+  "readerDocumentLang": {
+    "message": "Belge dili"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Otomatik (metinden)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Okunabilir metni olmayan görseller veya taranmış PDF'ler için belge dilini seçin, ardından dosyayı açın."
+  },
+  "readerVoiceEn": {
+    "message": "İngilizce ses"
+  },
+  "readerVoiceZh": {
+    "message": "Çince ses"
+  },
+  "readerVoices": {
+    "message": "Sesler"
+  },
+  "readerBrowseVoices": {
+    "message": "Seslere göz at"
+  },
+  "readerLangAuto": {
+    "message": "Otomatik (Arayüz dili)"
+  },
+  "readerLangFollow": {
+    "message": "Belgeyle eşleştir"
+  },
+  "readerPreparing": {
+    "message": "Anlatım hazırlanıyor…"
+  },
+  "readerEncrypted": {
+    "message": "Bu PDF parola korumalı"
+  },
+  "readerCorrupt": {
+    "message": "Bu dosya bozuk veya okunamaz görünüyor"
+  },
+  "readerTimeout": {
+    "message": "Açılması çok uzun sürdü — dosya çok karmaşık olabilir"
+  },
+  "readerEpubDrm": {
+    "message": "Bu EPUB DRM ile korunuyor. DRM içermeyen bir EPUB deneyin."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Bu sabit düzenli EPUB'da anlatımla senkronize kalabilecek metin yok."
+  },
+  "readerEpubTooComplex": {
+    "message": "Bu EPUB, güvenli yerel işleme sınırlarını aşıyor. Daha küçük veya daha basit bir EPUB deneyin."
+  },
+  "readerEpubTooLarge": {
+    "message": "Güvenli yerel işleme için EPUB dosyaları en fazla 30 MB olabilir."
+  },
+  "inboxTitle": {
+    "message": "İçerik Gelen Kutusu"
+  },
+  "inboxSubtitle": {
+    "message": "Web sayfalarını veya seçili metni kaydedin, hazır olduğunuzda okuyun veya açıklayın."
+  },
+  "inboxEmpty": {
+    "message": "Gelen kutunuz boş"
+  },
+  "inboxEmptyDescription": {
+    "message": "Bir sayfaya veya seçili metne sağ tıklayıp CastReader'a kaydedin."
+  },
+  "inboxSaveSelection": {
+    "message": "Seçili metni CastReader Gelen Kutusuna kaydet"
+  },
+  "inboxSavePage": {
+    "message": "Sayfayı CastReader Gelen Kutusuna kaydet"
+  },
+  "inboxOpen": {
+    "message": "İçerik Gelen Kutusunu Aç"
+  },
+  "inboxSharedText": {
+    "message": "Seçili metin"
+  },
+  "inboxOpenFailed": {
+    "message": "Bu içerik açılamadı. Lütfen tekrar deneyin."
+  },
+  "inboxRetry": {
+    "message": "Yeniden dene"
+  },
+  "inboxRead": {
+    "message": "Sesli oku"
+  },
+  "inboxExplain": {
+    "message": "Açıkla"
+  },
+  "inboxDelete": {
+    "message": "Sil"
+  },
+  "inboxLink": {
+    "message": "Bağlantı"
+  },
+  "inboxText": {
+    "message": "Metin"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Sesli Okuma + AI Açıklama"
+  },
+  "edgeExtDescription": {
+    "message": "Senkronize vurgular ve otomatik kaydırma ile okuyun. Yapay zeka, sayfadaki zor pasajları açıklar. 28 dilde doğal sesler."
+  },
+  "toggleSiteVisibility": {
+    "message": "CastReader'ı bu sitede göster/gizle"
+  },
+  "voiceCloneBenefit": {
+    "message": "Sesli Okuma ve Açıkla için kendi sesinizi kullanın · Ayda 120 dakika"
+  },
+  "voiceClonePaywall": {
+    "message": "Birden fazla kişisel sesin sabit önizlemelerini ücretsiz olarak oluşturun, yönetin ve oynatın. Pro, Sesli Okuma ve Açıkla'da kişisel sesleri ayda 120 oluşturulan dakika boyunca kullanır."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Bu ayki kişisel ses dakikalarınız tükendi. Seçtiğiniz ses saklanır."
+  },
+  "ocrModelUnavailable": {
+    "message": "Tanıma dili dosyası indirilemedi. İnternete bağlanın ve tekrar deneyin."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Bu dilde görüntü ve taranmış sayfa tanıma henüz kullanılamıyor. Web sayfalarını, EPUB, TXT ve seçilebilir metin içeren PDF dosyalarını okumaya devam edebilirsiniz."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Bu sayfada sesli okuma kullanılamıyor"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Bu sayfayı sesli oku"
+  }
+}

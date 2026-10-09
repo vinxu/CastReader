@@ -1,0 +1,5 @@
+Additional OCR language models: Finnish (fin), Greek (ell), Hungarian (hun), Filipino (fil), Hebrew (heb).
+Source: Tesseract OCR tessdata_fast, revision 87416418657359cb625c412a48b6e1d6d41c29bd
+https://github.com/tesseract-ocr/tessdata_fast/tree/87416418657359cb625c412a48b6e1d6d41c29bd
+Model files are unmodified and distributed under Apache License 2.0; see tessdata-fast-LICENSE.
+Checksums and exact source paths: config/ios-supplemental-ocr-models.json in the CastReader source distribution.

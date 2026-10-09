@@ -5,12 +5,21 @@ import Combine
 /// controller out of a pushed voice page avoids navigation-bar/safe-area
 /// relayout during interactive transitions on iOS 26.
 struct VoiceBrowseSearchField: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Binding var text: String
+    var trailing: AnyView? = nil
     @FocusState private var isFocused: Bool
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(AppTheme.mutedForeground)
             TextField(AppLocalized("搜索音色或听感"), text: $text)
+                .id(appLanguage.selectedLanguage.isRightToLeft)
+                // UIKit keeps a field's original paragraph alignment when the
+                // app changes direction. Use a stable coordinate direction and
+                // choose the actual text alignment from the current language.
+                .multilineTextAlignment(appLanguage.selectedLanguage.isRightToLeft ? .trailing : .leading)
+                .environment(\.layoutDirection, .leftToRight)
                 .focused($isFocused)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
                 .submitLabel(.search).accessibilityIdentifier("voiceSearchField")
@@ -20,7 +29,8 @@ struct VoiceBrowseSearchField: View {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(AppTheme.mutedForeground)
                 }.buttonStyle(.plain).accessibilityLabel(Text(AppLocalized("清除")))
             }
-        }.padding(.horizontal, 12).frame(height: 44)
+            if let trailing { trailing }
+        }.padding(.horizontal, 12).frame(minHeight: 44)
             .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 12))
             .padding(.horizontal).padding(.vertical, 8)
     }
@@ -49,11 +59,17 @@ struct VoiceDiscoveryFeed: View {
     let onCreate: (VoiceCreationEntry) -> Void
     @StateObject private var model = VoiceDiscoveryFeedModel()
     @ObservedObject private var appLanguage = AppLanguageManager.shared
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var accessibleLayout: Bool {
+        VoiceBrowsePresentation.isAdaptive() && dynamicTypeSize.isAccessibilitySize
+    }
 
     private var request: VoiceBrowseRequest {
         VoiceBrowseRequest(catalogID: snapshot.id, language: language,
             locale: appLanguage.selectedLanguage.resolvedLanguageCode,
-            favorites: favoriteIDs, recents: recentIDs, includingMonthly: Constants.Features.voiceCloningEnabled)
+            favorites: favoriteIDs, recents: recentIDs, includingMonthly: Constants.Features.voiceCloningEnabled,
+            adaptiveDiscovery: VoiceBrowsePresentation.isAdaptive())
     }
 
     var body: some View {
@@ -68,8 +84,20 @@ struct VoiceDiscoveryFeed: View {
             if model.request?.catalogID == request.catalogID,
                model.request?.language == request.language,
                model.request?.locale == request.locale, let data = model.data {
+                if request.adaptiveDiscovery && !data.featuredClones.isEmpty {
+                    featuredClonesSection(data.featuredClones)
+                }
+                if request.adaptiveDiscovery && data.regularVoices.count <= 6 {
+                    let alternatives = data.regularVoices.filter { $0.id != selectedID }
+                    if !alternatives.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            heading(AppLocalized("voice_available_title"))
+                            ForEach(alternatives) { row($0).padding(.horizontal) }
+                        }
+                    }
+                } else {
                 ForEach(data.sections) { editorialSection($0) }
-                if !data.recommendations.isEmpty {
+                if data.recommendations.count >= (request.adaptiveDiscovery ? 2 : 1) {
                     recommendationSection(data.recommendations)
                 }
                 if !data.collections.isEmpty {
@@ -99,17 +127,24 @@ struct VoiceDiscoveryFeed: View {
                     }
                 }
                 ForEach(data.fallbackSections) { editorialSection($0, fallback: true) }
-                if !data.featuredClones.isEmpty { featuredClonesSection(data.featuredClones) }
-                if Constants.Features.voiceCloningEnabled {
+                }
+                if !request.adaptiveDiscovery && !data.featuredClones.isEmpty { featuredClonesSection(data.featuredClones) }
+                if Constants.Features.voiceCloningEnabled && (!request.adaptiveDiscovery || VoiceCloneLanguageSupport.all.contains(language)) {
                     VoiceFamiliarSection(language: language, onOpen: onOpenPersonal, onCreate: onCreate).padding(.horizontal)
                 }
+                if !request.adaptiveDiscovery || data.regularVoices.count > 6 ||
+                    (VoiceCloneLanguageSupport.all.contains(language) && snapshot.voices(for: language, includingMonthly: true).contains(where: \.usesMonthlyGeneration)) {
                 NavigationLink(value: VoiceDiscoveryDestination.all) {
                     HStack {
-                        Label(AppLocalized("浏览全部音色"), systemImage: "square.grid.2x2")
-                        Spacer(); Image(systemName: "arrow.right")
+                        Image(systemName: "square.grid.2x2").font(.system(size: 20))
+                        Text(AppLocalized("浏览全部音色"))
+                            .fixedSize(horizontal: false, vertical: true).layoutPriority(1)
+                        Spacer(minLength: 0)
+                        Image(systemName: "arrow.forward").font(.system(size: 20))
                     }.font(.subheadline.weight(.semibold)).padding(18).foregroundStyle(AppTheme.foreground)
                         .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 18))
                 }.buttonStyle(.plain).padding(.horizontal).accessibilityIdentifier("voiceBrowseAll")
+                }
             } else {
                 ProgressView().frame(maxWidth: .infinity, minHeight: 180)
             }
@@ -138,9 +173,11 @@ struct VoiceDiscoveryFeed: View {
         VStack(alignment: .leading, spacing: 10) {
             NavigationLink(value: VoiceDiscoveryDestination.featuredClones(voices.map(\.id))) {
                 HStack {
-                    Text(AppLocalized("精选音色")).font(.title3.weight(.bold)).foregroundStyle(AppTheme.foreground)
-                    Spacer()
-                    Image(systemName: "arrow.right").frame(width: 44, height: 32)
+                    Text(AppLocalized(request.adaptiveDiscovery ? "voice_public_clones_title" : "精选音色"))
+                        .font(.title3.weight(.bold)).foregroundStyle(AppTheme.foreground)
+                        .fixedSize(horizontal: false, vertical: true).layoutPriority(1)
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.forward").font(.system(size: 20)).frame(width: 44, height: 32)
                 }
                 .frame(minHeight: 44).contentShape(Rectangle())
             }.buttonStyle(.plain).padding(.horizontal).accessibilityIdentifier("voiceFeaturedClones")
@@ -153,18 +190,19 @@ struct VoiceDiscoveryFeed: View {
         let selected = section.voices
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(module.layout == "feature" ? AppLocalized("本周发现") : module.localizedTitle)
+                Text(module.layout == "feature" && !accessibleLayout ? AppLocalized("本周发现") : module.localizedTitle)
                     .font(.title3.weight(.bold))
-                Spacer()
+                    .fixedSize(horizontal: false, vertical: true).layoutPriority(1)
+                Spacer(minLength: 0)
                 if fallback {
-                    NavigationLink(value: module.theme) { Image(systemName: "arrow.right").frame(width: 44, height: 32) }
+                    NavigationLink(value: module.theme) { Image(systemName: "arrow.forward").font(.system(size: 20)).frame(width: 44, height: 32) }
                 } else {
                     NavigationLink(value: VoiceDiscoveryDestination.edition(module.id)) {
-                        Image(systemName: "arrow.right").frame(width: 44, height: 32)
+                        Image(systemName: "arrow.forward").font(.system(size: 20)).frame(width: 44, height: 32)
                     }.accessibilityLabel(Text(AppLocalized("查看全部") + " · " + module.localizedTitle))
                 }
             }.padding(.horizontal)
-            if module.layout == "feature" {
+            if module.layout == "feature" && !accessibleLayout {
                 NavigationLink(value: VoiceDiscoveryDestination.edition(module.id)) {
                     VoiceEditorialCover(module: module, count: selected.count)
                 }.buttonStyle(.plain).accessibilityElement(children: .ignore)
@@ -244,7 +282,7 @@ private struct VoiceEditorialCover: View {
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 5) {
                     Text(VoiceBrowserLanguage.voiceCountText(count))
-                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold))
+                    Image(systemName: "chevron.forward").font(.system(size: 10, weight: .bold))
                 }.font(.caption.weight(.medium)).foregroundStyle(.white.opacity(0.8))
             }.foregroundStyle(.white).padding(22)
         }
@@ -323,7 +361,7 @@ private struct VoiceTopicTile: View {
             HStack {
                 Image(systemName: topic.symbol).font(.system(size: 23, weight: .medium))
                 Spacer()
-                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).opacity(0.5)
+                Image(systemName: "chevron.forward").font(.caption2.weight(.semibold)).opacity(0.5)
             }
             HStack(alignment: .firstTextBaseline) {
                 Text(title ?? topic.shortTitle).font(.headline).lineLimit(2).minimumScaleFactor(0.85)
@@ -346,39 +384,70 @@ struct VoiceDiscoveryRow: View {
     let onPreview: () -> Void
     let onFavorite: () -> Void
     @ObservedObject private var appLanguage = AppLanguageManager.shared
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    private var accessibleLayout: Bool {
+        VoiceBrowsePresentation.isAdaptive() && dynamicTypeSize.isAccessibilitySize
+    }
     var body: some View {
-        HStack(spacing: 11) {
-            VoicePreviewAvatar(voice: voice, size: 48, onPreview: onPreview)
-            VStack(alignment: .leading, spacing: 4) {
-                Button(action: onSelect) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 5) {
-                            Text(voice.name).font(.subheadline.weight(.semibold)).lineLimit(1)
-                            if selecting { ProgressView().controlSize(.mini) }
-                            else if selected { Image(systemName: "checkmark.circle.fill").foregroundStyle(AppTheme.primary) }
-                        }
-                        Text(VoiceDiscovery.subtitle(voice, chinese: appLanguage.selectedLanguage.resolvedLanguageCode == "zh"))
-                            .font(.caption).foregroundStyle(AppTheme.mutedForeground).lineLimit(1)
-                    }.frame(maxWidth: .infinity, minHeight: 40, alignment: .leading).contentShape(Rectangle())
-                }.buttonStyle(.plain)
-                    .accessibilityIdentifier("presetVoiceSelect_\(voice.id)")
-                    .accessibilityValue(Text(selected ? AppLocalized("已选择") : ""))
-                HStack(spacing: 6) {
-                    VoiceUsageBadge(voice: voice)
-                    if let language = voice.originalPreviewLanguageName {
-                        Text(language + " · " + AppLocalized("试听"))
-                            .font(.system(size: 10)).foregroundStyle(AppTheme.mutedForeground).lineLimit(1)
+        Group {
+            if accessibleLayout {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        VoicePreviewAvatar(voice: voice, size: 48, onPreview: onPreview)
+                        Spacer()
+                        favoriteButton
                     }
+                    details
+                }
+            } else {
+                HStack(spacing: 11) {
+                    VoicePreviewAvatar(voice: voice, size: 48, onPreview: onPreview)
+                    details
+                    favoriteButton
                 }
             }
-            Button(action: onFavorite) {
-                Image(systemName: favorite ? "heart.fill" : "heart")
-                    .foregroundStyle(favorite ? AppTheme.primary : AppTheme.mutedForeground)
-                    .frame(width: 36, height: 44)
-            }.buttonStyle(.plain)
-                .accessibilityLabel(Text(favorite ? AppLocalized("取消收藏") : AppLocalized("收藏")))
-                .accessibilityIdentifier("voiceFavorite_\(voice.id)")
         }.padding(.vertical, 6)
+    }
+    private var details: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Button(action: onSelect) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text(voice.name).font(.subheadline.weight(.semibold))
+                            .lineLimit(accessibleLayout ? nil : 1)
+                            .fixedSize(horizontal: false, vertical: accessibleLayout)
+                        if selecting { ProgressView().controlSize(.mini) }
+                        else if selected {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(AppTheme.primary)
+                                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                        }
+                    }
+                    Text(VoiceDiscovery.subtitle(voice, chinese: appLanguage.selectedLanguage.resolvedLanguageCode == "zh"))
+                        .font(.caption).foregroundStyle(AppTheme.mutedForeground)
+                        .lineLimit(accessibleLayout ? nil : 1)
+                        .fixedSize(horizontal: false, vertical: accessibleLayout)
+                }.frame(maxWidth: .infinity, minHeight: 40, alignment: .leading).contentShape(Rectangle())
+            }.buttonStyle(.plain)
+                .accessibilityIdentifier("presetVoiceSelect_\(voice.id)")
+                .accessibilityValue(Text(selected ? AppLocalized("已选择") : ""))
+            HStack(spacing: 6) {
+                VoiceUsageBadge(voice: voice)
+                if let language = voice.originalPreviewLanguageName {
+                    Text(language + " · " + AppLocalized("试听"))
+                        .font(.system(size: 10)).foregroundStyle(AppTheme.mutedForeground).lineLimit(1)
+                }
+            }
+        }
+    }
+    private var favoriteButton: some View {
+        Button(action: onFavorite) {
+            Image(systemName: favorite ? "heart.fill" : "heart")
+                .foregroundStyle(favorite ? AppTheme.primary : AppTheme.mutedForeground)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                .frame(width: 36, height: 44)
+        }.buttonStyle(.plain)
+            .accessibilityLabel(Text(favorite ? AppLocalized("取消收藏") : AppLocalized("收藏")))
+            .accessibilityIdentifier("voiceFavorite_\(voice.id)")
     }
 }
 
@@ -497,7 +566,7 @@ struct VoiceDiscoveryCollectionView: View {
     private var request: VoiceBrowseRequest {
         VoiceBrowseRequest(catalogID: VoiceCatalog.snapshot.id, language: language,
             locale: appLanguage.selectedLanguage.resolvedLanguageCode, search: query, usage: effectiveUsage,
-            includingMonthly: Constants.Features.voiceCloningEnabled, allLanguages: showsCatalogTabs,
+            includingMonthly: Constants.Features.voiceCloningEnabled, allLanguages: showsCatalogTabs && !VoiceBrowsePresentation.isAdaptive(),
             voiceIDs: subgroupIDs, topic: topic, style: listeningStyle)
     }
     private var subgroupIDs: [String]? {
@@ -509,10 +578,43 @@ struct VoiceDiscoveryCollectionView: View {
     private var effectiveUsage: VoiceUsageFilter {
         showsCatalogTabs ? catalogTab : usageScope == .all ? usage : usageScope
     }
+    private var adaptive: Bool { VoiceBrowsePresentation.isAdaptive() }
+    private var candidates: [VoiceOption] {
+        let snapshot = VoiceCatalog.snapshot
+        let source = subgroupIDs.map { $0.compactMap { snapshot.byID[$0] } }
+            ?? snapshot.voices(for: language, includingMonthly: Constants.Features.voiceCloningEnabled)
+        return source.filter { $0.enabled && $0.selectable && $0.supports(language) &&
+            (showsCatalogTabs ? catalogTab : usageScope).includes($0) &&
+            (topic == nil || VoiceDiscovery.topics(for: $0).contains(topic!)) }
+    }
+    private var styles: [VoiceListeningStyle] {
+        VoiceListeningStyle.allCases.filter { style in style == .all || candidates.contains(where: style.includes) }
+    }
+    private var usages: [VoiceUsageFilter] {
+        VoiceUsageFilter.allCases.filter { usage in usage == .all || candidates.contains(where: usage.includes) }
+    }
+    private var needsFilters: Bool { styles.count > 2 || (usageScope == .all && !showsCatalogTabs && usages.count > 2) }
+    private var filters: some View {
+        Menu {
+            if !adaptive || styles.count > 2 {
+                Picker(AppLocalized("声音特点"), selection: $listeningStyle) {
+                    ForEach(adaptive ? styles : VoiceListeningStyle.allCases) { Text($0.title).tag($0) }
+                }
+            }
+            if usageScope == .all && !showsCatalogTabs && (!adaptive || usages.count > 2) {
+                Picker(AppLocalized("使用权益"), selection: $usage) {
+                    ForEach(adaptive ? usages : VoiceUsageFilter.allCases) { Text($0.title).tag($0) }
+                }
+            }
+        } label: { Image(systemName: "line.3.horizontal.decrease").frame(width: 36, height: 36) }
+            .accessibilityLabel(Text(AppLocalized("筛选"))).accessibilityIdentifier("voiceCollectionFilters")
+    }
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                VoiceBrowseSearchField(text: $query)
+                if !adaptive || candidates.count > 6 || !query.isEmpty {
+                    VoiceBrowseSearchField(text: $query, trailing: adaptive && needsFilters ? AnyView(filters) : nil)
+                }
                 if showsCatalogTabs {
                     Picker(AppLocalized("全部音色"), selection: $catalogTab) {
                         Text(AppLocalized("常规音色")).tag(VoiceUsageFilter.regular)
@@ -557,19 +659,7 @@ struct VoiceDiscoveryCollectionView: View {
             .task(id: request) { await resultModel.update(request, snapshot: VoiceCatalog.snapshot) }
             .onDisappear { VoiceSamplePlayer.shared.stop() }
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Picker(AppLocalized("声音特点"), selection: $listeningStyle) {
-                            ForEach(VoiceListeningStyle.allCases) { Text($0.title).tag($0) }
-                        }
-                        if usageScope == .all && !showsCatalogTabs {
-                            Picker(AppLocalized("使用权益"), selection: $usage) {
-                                ForEach(VoiceUsageFilter.allCases) { Text($0.title).tag($0) }
-                            }
-                        }
-                    } label: { Image(systemName: "line.3.horizontal.decrease") }
-                    .accessibilityLabel(Text(AppLocalized("筛选")))
-                }
+                if !adaptive { ToolbarItem(placement: .topBarTrailing) { filters } }
             }
     }
     private func subgroupButton(_ title: String, id: String?) -> some View {
@@ -584,8 +674,11 @@ struct VoiceDiscoveryCollectionView: View {
 
 /// Only this compact section observes personal voice state, keeping account and
 /// invitation updates out of the catalog/recommendation computation path.
-private struct VoiceFamiliarSection: View {
+struct VoiceFamiliarSection: View {
     let language: String
+    var reader = false
+    var query = ""
+    @Environment(\.scenePhase) private var scenePhase
     let onOpen: () -> Void
     let onCreate: (VoiceCreationEntry) -> Void
     @ObservedObject private var store = VoiceCloneStore.shared
@@ -596,11 +689,24 @@ private struct VoiceFamiliarSection: View {
     @State private var selectionTask: Task<Void, Never>?
     @State private var selectionOperation: UUID?
 
+    private var visibleVoices: [ClonedVoice] {
+        guard auth.isSignedIn else { return [] }
+        if !VoiceBrowsePresentation.isAdaptive() { return store.familiarVoices }
+        let compatible = VoiceFamiliarSelection.latest(from: store.voices, language: language,
+            excluding: settings.activeClonedVoiceID(for: language), limit: nil)
+        let search = VoiceDiscovery.normalized(query)
+        let filtered = search.isEmpty ? compatible : compatible.filter {
+            VoiceDiscovery.normalized(store.displayName(for: $0) + " " + $0.id).contains(search)
+        }
+        return reader || !search.isEmpty ? filtered : Array(filtered.prefix(3))
+    }
+
     var body: some View {
-        VoiceFamiliarContent(voices: auth.isSignedIn ? store.familiarVoices : [],
+        if !reader || !visibleVoices.isEmpty {
+        VoiceFamiliarContent(voices: visibleVoices, showsCreation: !reader, showsAll: !reader,
             name: store.displayName, selectedID: settings.activeClonedVoiceID(for: language),
             selectingID: selectingID, playingID: preview.playingVoiceId, loadingID: preview.loadingVoiceId,
-            onOpen: onOpen, onCreate: onCreate, onPreview: preview.toggle, onSelect: { voice in
+            onOpen: onOpen, onCreate: onCreate, onPreview: { if $0.access.capabilities.canPreview { preview.toggle($0) } }, onSelect: { voice in
                 guard selectingID == nil else { return }
                 let operation = UUID()
                 selectionOperation = operation
@@ -617,15 +723,17 @@ private struct VoiceFamiliarSection: View {
             .onDisappear { stopInteractions() }
             .onChange(of: language) { _ in stopInteractions() }
             .onChange(of: auth.accountBoundaryID) { _ in stopInteractions() }
+            .onChange(of: scenePhase) { if $0 != .active { stopInteractions() } }
             .alert(AppLocalized("声音克隆"), isPresented: Binding(
                 get: { store.errorMessage != nil }, set: { if !$0 { store.errorMessage = nil } }
             )) { Button("完成") { store.errorMessage = nil } }
             message: { Text(store.errorMessage ?? "") }
+        }
     }
 
     private func stopInteractions() {
         selectionTask?.cancel(); selectionTask = nil; selectingID = nil; selectionOperation = nil
-        let ids = Set(store.familiarVoices.map(\.id))
+        let ids = Set(store.voices.map(\.id))
         if preview.playingVoiceId.map(ids.contains) == true || preview.loadingVoiceId.map(ids.contains) == true {
             preview.stop()
         }
@@ -635,6 +743,8 @@ private struct VoiceFamiliarSection: View {
 /// Presentation stays independent of catalog ranking and account fetching.
 struct VoiceFamiliarContent: View {
     let voices: [ClonedVoice]
+    var showsCreation = true
+    var showsAll = true
     let name: (ClonedVoice) -> String
     let selectedID: String?
     let selectingID: String?
@@ -650,14 +760,14 @@ struct VoiceFamiliarContent: View {
             HStack {
                 Text(AppLocalized("听见熟悉的声音")).font(.title3.weight(.bold))
                 Spacer()
-                if !voices.isEmpty {
-                    Button(action: onOpen) { Image(systemName: "arrow.right").frame(width: 44, height: 44) }
+                if showsAll && !voices.isEmpty {
+                    Button(action: onOpen) { Image(systemName: "arrow.forward").frame(width: 44, height: 44) }
                         .buttonStyle(.plain).foregroundStyle(AppTheme.primary)
                         .accessibilityLabel(AppLocalized("查看全部"))
                         .accessibilityIdentifier("voiceFamiliarAll")
                 }
             }
-            if voices.isEmpty {
+            if voices.isEmpty && showsCreation {
                 entry(title: AppLocalized("我的声音"), action: AppLocalized("录制自己的声音"),
                       symbol: "mic", id: "voiceFamiliarSelf") { onCreate(.recordMyVoice) }
                 entry(title: AppLocalized("朋友的声音"), action: AppLocalized("邀请朋友录制声音"),
@@ -665,7 +775,7 @@ struct VoiceFamiliarContent: View {
                     onCreate(VoiceGiftFeature.isRegionEligible() ? .inviteFriend : .chooser)
                 }
             } else {
-                ForEach(voices.prefix(3)) { voice in
+                ForEach(voices) { voice in
                     HStack(spacing: 14) {
                         Button { onPreview(voice) } label: {
                             ClonedVoiceAvatarView(voice: voice, size: 50, isAnimating: playingID == voice.id)
@@ -713,7 +823,7 @@ struct VoiceFamiliarContent: View {
                     Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(AppTheme.foreground)
                     Text(action).font(.caption).foregroundStyle(AppTheme.mutedForeground)
                 }
-                Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(AppTheme.mutedForeground)
+                Spacer(); Image(systemName: "chevron.forward").font(.caption).foregroundStyle(AppTheme.mutedForeground)
             }.padding(12).background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 16))
                 .contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityIdentifier(id)

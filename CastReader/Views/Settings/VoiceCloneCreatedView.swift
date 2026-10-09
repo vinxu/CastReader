@@ -40,6 +40,18 @@ struct VoiceCloneCreatedView: View {
     @State private var preparingRenameVoiceID: String?
     @State private var sessionReady: Bool
     @State private var sessionCheckCompleted: Bool
+    @State private var selectionTask: Task<Void, Never>?
+
+    private var allowsCreation: Bool {
+        !VoiceBrowsePresentation.isAdaptive() || VoiceCloneLanguageSupport.all.contains(VoiceCatalog.normalizedLanguage(language))
+    }
+    private func supportsLanguage(_ voice: ClonedVoice) -> Bool {
+        VoiceCloneLanguageSupport.selectableLanguages(for: voice).contains(VoiceCatalog.normalizedLanguage(language))
+    }
+    private func stopVoiceInteractions() {
+        selectionTask?.cancel(); selectionTask = nil
+        previewPlayer.stop()
+    }
 
     init(
         language: String,
@@ -82,7 +94,10 @@ struct VoiceCloneCreatedView: View {
                 await store.refresh()
             }
         }
+        .onDisappear { stopVoiceInteractions() }
+        .onChange(of: language) { _ in stopVoiceInteractions() }
         .onChange(of: auth.accountBoundaryID) { _ in
+            stopVoiceInteractions()
             pendingRename = nil
             pendingGiftAlias = nil
             pendingGiftRemoval = nil
@@ -92,6 +107,7 @@ struct VoiceCloneCreatedView: View {
             activeCreationSheet = nil
         }
         .onChange(of: scenePhase) { phase in
+            if phase != .active { stopVoiceInteractions() }
             guard phase == .active, sessionReady else { return }
             Task { await store.refresh() }
         }
@@ -179,7 +195,7 @@ struct VoiceCloneCreatedView: View {
     /// visible while the server refresh runs in the background.
     private var createdContent: some View {
         LazyVStack(spacing: 0) {
-            clonePolicySummary
+            if allowsCreation { clonePolicySummary }
 
             if sessionCheckCompleted, !sessionReady {
                 Button { showLogin = true } label: {
@@ -240,7 +256,7 @@ struct VoiceCloneCreatedView: View {
                 .padding(.bottom, 12)
             }
 
-            createVoiceAction
+            if allowsCreation { createVoiceAction }
 
             voiceSectionHeader(
                 title: AppLocalized("我的声音"),
@@ -557,6 +573,14 @@ struct VoiceCloneCreatedView: View {
                             )
                     }
                     Text(cloneMetadata(voice)).font(.caption).foregroundStyle(.secondary)
+                    if !supportsLanguage(voice) {
+                        Text(String(format: AppLocalized("voice_supported_languages"),
+                            VoiceCloneLanguageSupport.selectableLanguages(for: voice).map {
+                                appLanguage.locale.localizedString(forLanguageCode: $0) ?? $0
+                            }.joined(separator: ", ")))
+                            .font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 Spacer()
                 if settings.activeClonedVoiceID(for: language) == voice.voiceId {
@@ -570,6 +594,7 @@ struct VoiceCloneCreatedView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .disabled(!supportsLanguage(voice) || !voice.access.authorizationActive)
             .accessibilityIdentifier("voiceCloneApplyButton_\(voice.voiceId)")
             .accessibilityHint(
                 pro.isPro
@@ -655,11 +680,13 @@ struct VoiceCloneCreatedView: View {
     }
 
     private func applyVoice(_ voice: ClonedVoice) {
+        guard supportsLanguage(voice), voice.access.authorizationActive else { return }
         guard pro.isPro else {
             showPaywall = true
             return
         }
-        Task { await store.select(voice, for: language) }
+        selectionTask?.cancel()
+        selectionTask = Task { await store.select(voice, for: language) }
     }
 
     private func cloneMetadata(_ voice: ClonedVoice) -> String {
@@ -680,9 +707,9 @@ struct VoiceCloneCreatedView: View {
         let reference = store.referenceLanguage(for: voice)
         let recording = reference == "zh" ? AppLocalized("中文样本") :
             (reference == "en" ? AppLocalized("英语样本") : AppLocalized("录音样本"))
-        let count = VoiceCloneLanguageSupport.languages(for: voice).count
+        let count = VoiceCloneLanguageSupport.selectableLanguages(for: voice).count
         let languageSupport = String(
-            format: AppLocalized("可用于全部 %lld 种支持语言"),
+            format: AppLocalized("voiceCloneSupportedLanguageCount"),
             Int64(count)
         )
         return "\(recording) · \(languageSupport)"
@@ -2072,6 +2099,12 @@ private struct VoiceCloneCreationView: View {
                     .foregroundStyle(AppTheme.primary)
             }
             Text("声音已创建").font(.largeTitle.bold())
+            if let voice = lastCreatedVoice {
+                Text(String(format: AppLocalized("voiceCloneSupportedLanguageCount"),
+                            Int64(VoiceCloneLanguageSupport.selectableLanguages(for: voice).count)))
+                    .font(.subheadline.weight(.medium))
+                    .multilineTextAlignment(.center)
+            }
             Text(completeDetail)
                 .font(.subheadline)
                 .foregroundStyle(AppTheme.mutedForeground)
@@ -2106,7 +2139,7 @@ private struct VoiceCloneCreationView: View {
 
     private var completeDetail: String {
         if pro.isPro {
-            return AppLocalized("这个声音可用于全部支持的朗读语言。返回已创建列表后，可试听、编辑或选择它用于朗读和解读。")
+            return AppLocalized("创建完成后会回到已创建列表，可在这里试听、编辑和选择音色。")
         }
         return AppLocalized("这个声音可跨语言试听。返回已创建列表后可试听和编辑；升级 Pro 后可用于朗读和解读。")
     }

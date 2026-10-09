@@ -16,12 +16,17 @@
 
 import CoreGraphics
 import Foundation
+import CryptoKit
 
 /// 一张照片的 OCR 产物快照。`version` 用于让识别管线升级后旧快照自然失效。
 struct PhotoOCRSnapshot: Codable, Equatable {
     /// 识别管线的产物契约版本。改动 OCR 的分段/几何/语言判定后必须 +1，
     /// 否则旧快照会把过期的版面结果一直带下去。
-    static let currentVersion = 2
+    static let currentVersion = 4
+
+    static var pipelineIdentity: String {
+        "photo-ocr-v4:glotlid-v3-q300k-3b654fe9:" + SupportedTTSLanguage.policyVersion + ":" + ProcessInfo.processInfo.operatingSystemVersionString
+    }
 
     struct Word: Codable, Equatable {
         let id: Int
@@ -46,6 +51,8 @@ struct PhotoOCRSnapshot: Codable, Equatable {
     let language: String
     /// 原图字节数：payload 换了图（同 id 重新导入）时让快照失效。
     let payloadByteCount: Int
+    let payloadSHA256: String?
+    let pipelineIdentity: String?
     let pixelWidth: Double?
     let pixelHeight: Double?
     let layoutColumnCount: Int?
@@ -60,7 +67,7 @@ struct PhotoOCRSnapshot: Codable, Equatable {
 extension PhotoOCRSnapshot {
     /// 从识别完成的文档抽快照。没有词级 bbox 的结果不值得缓存——
     /// 它无法支撑照片上的词级高亮，留着只会把一次坏识别固化下来。
-    init?(document: ReadingDocument, payloadByteCount: Int) {
+    init?(document: ReadingDocument, payload: Data) {
         guard document.sourceKind == .photo else { return nil }
         let readable = document.paragraphs.filter { !$0.text.isEmpty }
         guard !readable.isEmpty,
@@ -68,7 +75,9 @@ extension PhotoOCRSnapshot {
 
         self.version = Self.currentVersion
         self.language = document.language
-        self.payloadByteCount = payloadByteCount
+        self.payloadByteCount = payload.count
+        self.payloadSHA256 = Self.digest(payload)
+        self.pipelineIdentity = Self.pipelineIdentity
         self.pixelWidth = document.imagePixelSize.map { Double($0.width) }
         self.pixelHeight = document.imagePixelSize.map { Double($0.height) }
         self.layoutColumnCount = document.layoutColumnCount
@@ -95,8 +104,14 @@ extension PhotoOCRSnapshot {
     }
 
     /// 快照是否还能代表这份 payload。
-    func matches(payloadByteCount: Int) -> Bool {
-        version == Self.currentVersion && self.payloadByteCount == payloadByteCount
+    func matches(payload: Data, language requestedLanguage: String? = nil) -> Bool {
+        version == Self.currentVersion && payloadByteCount == payload.count
+            && pipelineIdentity == Self.pipelineIdentity && payloadSHA256 == Self.digest(payload)
+            && (requestedLanguage == nil || SupportedTTSLanguage.canonicalCode(requestedLanguage!) == language)
+    }
+
+    private static func digest(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     /// 还原成可播放的段落（几何按 Vision 归一化原样带回，原点左下）。

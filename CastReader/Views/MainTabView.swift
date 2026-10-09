@@ -86,6 +86,8 @@ private struct FloatingTabBarTopKey: PreferenceKey {
 }
 
 private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
+    let language: AppLanguage
+    @Environment(\.layoutDirection) private var layoutDirection
     @Binding var selection: Int
     let plusImage: UIImage
 
@@ -105,6 +107,19 @@ private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
 
     func updateUIView(_ bar: UITabBar, context: Context) {
         context.coordinator.parent = self
+        // UITabBarItem titles are UIKit strings, not SwiftUI localized keys.
+        // Updating the environment alone leaves the creation-time titles.
+        if context.coordinator.language != language {
+            // iOS 26 retains its item presentation after a title-only mutation.
+            // Replace just the bar items; keep the tab pages and reader state.
+            bar.setItems([
+                UITabBarItem(title: AppLocalized("首页"), image: UIImage(systemName: "house.fill"), tag: 0),
+                UITabBarItem(title: nil, image: plusImage, tag: 1),
+                UITabBarItem(title: AppLocalized("音色"), image: UIImage(systemName: "waveform"), tag: 2)
+            ], animated: false)
+            context.coordinator.language = language
+        }
+        bar.semanticContentAttribute = layoutDirection == .rightToLeft ? .forceRightToLeft : .forceLeftToRight
         if bar.selectedItem?.tag != selection {
             bar.selectedItem = bar.items?.first(where: { $0.tag == selection })
         }
@@ -112,8 +127,12 @@ private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
 
     final class Coordinator: NSObject, UITabBarDelegate {
         var parent: ReaderNativeIPhoneTabBar
+        var language: AppLanguage
 
-        init(_ parent: ReaderNativeIPhoneTabBar) { self.parent = parent }
+        init(_ parent: ReaderNativeIPhoneTabBar) {
+            self.parent = parent
+            language = parent.language
+        }
 
         func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
             guard item.tag != 1 else { return }
@@ -123,6 +142,7 @@ private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
 }
 
 struct MainTabView: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Where the floating player sits. Purely visual — the space tab content
     /// gives up for it is measured, not derived from this number, so the two can
@@ -298,22 +318,40 @@ struct MainTabView: View {
         }
     }
 
+    private var tabOrder: [Int] {
+        let order = AdaptiveLayout.isPad ? [0, 3, 2, 4] : [0, 1, 2]
+        return appLanguage.selectedLanguage.isRightToLeft ? order.reversed() : order
+    }
+
     private var tabs: some View {
         TabView(selection: $selectedTab) {
-            tabPage(0).tabItem { Label("首页", systemImage: "house.fill") }.tag(0)
-            if AdaptiveLayout.isPad {
-                tabPage(3).tabItem { Label("文库", systemImage: "books.vertical") }.tag(3)
-            } else {
-                Color.clear.tabItem {
-                    Image(uiImage: Self.plusTabImage).renderingMode(.original)
-                    Text("")
-                }.tag(1)
-            }
-            tabPage(2).tabItem { Label("音色", systemImage: "waveform") }.tag(2)
-            if AdaptiveLayout.isPad {
-                tabPage(4).tabItem { Label("设置", systemImage: "gearshape") }.tag(4)
+            ForEach(tabOrder, id: \.self) { tab in
+                if tab == 1 {
+                    Color.clear.tabItem {
+                        Image(uiImage: Self.plusTabImage).renderingMode(.original)
+                        Text("")
+                    }.tag(tab)
+                } else {
+                    tabPage(tab)
+                        .environment(\.locale, appLanguage.locale)
+                        .environment(\.layoutDirection, appLanguage.selectedLanguage.isRightToLeft ? .rightToLeft : .leftToRight)
+                        .tabItem {
+                            switch tab {
+                            case 3: Label(AppLocalized("文库"), systemImage: "books.vertical")
+                            case 2: Label(AppLocalized("音色"), systemImage: "waveform")
+                            case 4: Label(AppLocalized("设置"), systemImage: "gearshape")
+                            default: Label(AppLocalized("首页"), systemImage: "house.fill")
+                            }
+                        }
+                        .tag(tab)
+                }
             }
         }
+        // SwiftUI's retained native tab bar can mirror the *glyphs* after a
+        // runtime RTL → LTR change on iPadOS. Keep its coordinate direction
+        // stable and reorder identified tabs explicitly. Each page still gets
+        // the selected direction, and its navigation/presentation state survives.
+        .environment(\.layoutDirection, .leftToRight)
     }
 
     private var iPhoneTabs: some View {
@@ -353,7 +391,7 @@ struct MainTabView: View {
 
     private var iPhoneTabBar: some View {
         ZStack {
-            ReaderNativeIPhoneTabBar(selection: $selectedTab, plusImage: Self.plusTabImage)
+            ReaderNativeIPhoneTabBar(language: appLanguage.selectedLanguage, selection: $selectedTab, plusImage: Self.plusTabImage)
                 .frame(height: 50)
             plusTapTarget
         }

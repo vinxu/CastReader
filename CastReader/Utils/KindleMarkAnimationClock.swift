@@ -167,6 +167,8 @@ struct KindleTimedMarkInkView: View {
                 .stroke(Color(red: 253 / 255, green: 95 / 255, blue: 1 / 255).opacity(ink.opacity),
                         style: StrokeStyle(lineWidth: ink.lineWidth, lineCap: .round, lineJoin: .round))
         }
+        // The held page uses the live renderer's physical word coordinates.
+        .environment(\.layoutDirection, .leftToRight)
         .allowsHitTesting(false)
         .task(id: animation?.startedAt) {
             guard let animation else { return }

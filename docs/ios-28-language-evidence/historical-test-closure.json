@@ -1,0 +1,138 @@
+{
+  "checkedAt": "2026-10-09T16:03:54.975711+00:00",
+  "earlierFullRun": {
+    "evidence": "full-isolated-34/summary.json",
+    "passed": 2116,
+    "failed": 14,
+    "skipped": 19,
+    "claim": "Not an all-green full run."
+  },
+  "closure": [
+    {
+      "previousTest": "ServiceRoutingTests/testAppLaunchBootstrapsRouteBeforeCreatingVisitorIdentityOrMainUI()",
+      "currentTestName": "testAppLaunchBootstrapsRouteBeforeCreatingVisitorIdentityOrMainUI",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log"
+      ]
+    },
+    {
+      "previousTest": "LocalizationCatalogTests/testAuxiliaryCatalogsCoverAllNineLanguagesAndPreserveTemplates()",
+      "currentTestName": "testAuxiliaryCatalogsCoverAllTwentyEightLanguagesAndPreserveTemplates",
+      "resolution": "superseded_nine_locale_expectation; release_catalog_audit_passed",
+      "evidence": [
+        "localization-final-delivery.json"
+      ],
+      "note": "Updated test source expects 28 languages; six-catalog release audit checks actual coverage and format signatures. Does not relabel the old XCTest result."
+    },
+    {
+      "previousTest": "VoiceDiscoveryTests/testBrowseAllTabsSearchEveryVoiceRegardlessOfDiscoveryLanguage()",
+      "currentTestName": "testBrowseAllTabsSearchEveryVoiceRegardlessOfDiscoveryLanguage",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log",
+        "acceptance-40.log"
+      ]
+    },
+    {
+      "previousTest": "VoiceDiscoveryTests/testClonePopularityCannotDisplaceRegularRecommendationsAndStyleFiltersWork()",
+      "currentTestName": "testClonePopularityCannotDisplaceRegularRecommendationsAndStyleFiltersWork",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log",
+        "acceptance-40.log"
+      ]
+    },
+    {
+      "previousTest": "VoiceDiscoveryTests/testEveryCommunitySourceLanguageGetsItsOwnCuratedPool()",
+      "currentTestName": "testEveryCommunitySourceLanguageGetsItsOwnCuratedPool",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log",
+        "acceptance-40.log"
+      ]
+    },
+    {
+      "previousTest": "VoiceDiscoveryTests/testFeedCacheHonorsRegionLanguageAndEditionExpiry()",
+      "currentTestName": "testFeedCacheHonorsRegionLanguageAndEditionExpiry",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log",
+        "acceptance-40.log"
+      ]
+    },
+    {
+      "previousTest": "LocalizationCatalogTests/testFreeTrialCopyIsCompleteInAllNineLanguages()",
+      "currentTestName": "testFreeTrialCopyIsCompleteInAllTwentyEightLanguages",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log",
+        "acceptance-40.log"
+      ]
+    },
+    {
+      "previousTest": "VoiceDiscoveryTests/testFullCatalogSnapshotIndexesLanguagesAndPreservesIdentity()",
+      "currentTestName": "testFullCatalogSnapshotIndexesLanguagesAndPreservesIdentity",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log",
+        "acceptance-40.log"
+      ]
+    },
+    {
+      "previousTest": "VoiceDiscoveryTests/testIndexedSearchMatchesFiltersAndKeepsCollectionOrder()",
+      "currentTestName": "testIndexedSearchMatchesFiltersAndKeepsCollectionOrder",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log",
+        "acceptance-40.log"
+      ]
+    },
+    {
+      "previousTest": "EvalTests/testLanguageDetection()",
+      "currentTestName": "testLanguageDetection",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log",
+        "acceptance-40.log"
+      ]
+    },
+    {
+      "previousTest": "NativeLanguageAuditTests/testNativeRegressionCorpus()",
+      "currentTestName": "testNativeRegressionCorpus",
+      "resolution": "documented_conservative_language_detection_limit",
+      "evidence": [
+        "acceptance-40-summary.json",
+        "import92-all38/results.json",
+        "long126-id-ms-pdf/results.json"
+      ],
+      "note": "Indonesian native corpus confidence coverage 0.5855 < requested 0.9; no incorrect confident language is asserted fixed. Unknown-language correction and persistence verified; no claim of 90% automatic identification coverage."
+    },
+    {
+      "previousTest": "LocalizationCatalogTests/testNineLanguageCatalogIsCompleteAndFormatSafe()",
+      "currentTestName": "testTwentyEightLanguageCatalogIsCompleteAndFormatSafe",
+      "resolution": "superseded_nine_locale_expectation; release_catalog_audit_passed",
+      "evidence": [
+        "localization-final-delivery.json"
+      ],
+      "note": "Updated test source expects 28 languages; six-catalog release audit checks actual coverage and format signatures. Does not relabel the old XCTest result."
+    },
+    {
+      "previousTest": "LocalizationCatalogTests/testReadingSentenceContractCoversAllNineLanguages()",
+      "currentTestName": "testReadingSentenceContractCoversAllTwentyEightLanguages",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log"
+      ]
+    },
+    {
+      "previousTest": "VoiceDiscoveryTests/testSearchInvalidatesWhenCatalogChangesAndLatestQueryWins()",
+      "currentTestName": "testSearchInvalidatesWhenCatalogChangesAndLatestQueryWins",
+      "resolution": "passed_later_focused_run",
+      "evidence": [
+        "originals-39.log",
+        "acceptance-40.log"
+      ]
+    }
+  ]
+}

@@ -262,6 +262,41 @@ final class ReaderViewportTests: XCTestCase {
         XCTAssertEqual(scroll.contentOffset.y, stable, accuracy: 2, "Next word on the same line must not reset the paragraph position")
     }
 
+    func testRestoredEPUBParagraphWithUnequalRowHeightsSettlesAndKeepsFollowingWords() async throws {
+        let lengths = [1, 7, 9, 4, 19, 10, 21, 10, 23, 23, 1, 5, 2]
+        let paragraphs = lengths.enumerated().map { index, count in
+            ReadingParagraph(id: index, text: "Avsnitt \(index). " +
+                String(repeating: "Nye ord fører leseren videre. ", count: count))
+        }
+        let document = ReadingDocument(id: UUID().uuidString, title: "Restored EPUB layout",
+            sourceKind: .epub, language: "nb", paragraphs: paragraphs)
+        let vm = ReadAloudViewModel(document: document, historyStore: HistoryStore(directory: directory))
+        defer { vm.stop() }
+        vm.currentParagraphIndex = 7
+        let host = UIHostingController(rootView: TextReaderView(document: document, readVM: vm,
+            explainVM: ExplainViewModel(document: document), mode: .read, refocusToken: 0))
+        try await show(host)
+        try await settle()
+        let scroll = try XCTUnwrap(descendants(host.view, as: UIScrollView.self).first { $0.isScrollEnabled })
+        for index in [7, 8, 9] {
+            vm.currentParagraphIndex = index
+            vm.processedDisplayText = paragraphs[index].text
+            vm.highlightRange = NSRange(location: 0, length: 7)
+            try await settle()
+            let view = try XCTUnwrap(descendants(host.view, as: ReaderUITextView.self).first {
+                $0.text.hasPrefix("Avsnitt \(index).")
+            })
+            let rect = view.convert(try XCTUnwrap(view.rects(forCharRange: NSRange(location: 0, length: 7)).first), to: scroll)
+            XCTAssertTrue(scroll.bounds.insetBy(dx: 0, dy: scroll.bounds.height * 0.18).contains(rect))
+            let height = view.bounds.height
+            let offset = scroll.contentOffset.y
+            for _ in 0..<3 { view.setNeedsLayout(); view.layoutIfNeeded() }
+            try await settle()
+            XCTAssertEqual(view.bounds.height, height, accuracy: 0.5)
+            XCTAssertEqual(scroll.contentOffset.y, offset, accuracy: 2)
+        }
+    }
+
     private func verifyNativeTransition(source: ReadingSourceKind) async throws {
         let paragraphs = (0..<45).map { ReadingParagraph(id: $0, text: "Paragraph \($0) contains enough words to wrap across two lines in the native reader.") }
         let doc = ReadingDocument(id: UUID().uuidString, title: "Viewport regression", sourceKind: source,
@@ -366,5 +401,186 @@ final class ReaderViewportTests: XCTestCase {
                                  "PDFKit must preserve smooth intermediate frames: \(offsets)")
         }
         _ = coordinator
+    }
+
+    func testFinnishPDFWordHighlightRendersOverSentence() async throws {
+        guard let path = ProcessInfo.processInfo.environment["CASTREADER_PDF_WORD_FIXTURE"] else {
+            throw XCTSkip("Opt-in public Finnish PDF fixture required")
+        }
+        let document = try XCTUnwrap(DocumentBuilder.fromPDFNative(url: URL(fileURLWithPath: path)))
+        let paragraph = try XCTUnwrap(document.paragraphs.first { $0.text.contains("Konrad Gesner") })
+        let vm = ReadAloudViewModel(document: document, historyStore: HistoryStore(directory: directory))
+        defer { vm.stop() }
+        let controller = UIViewController()
+        let pdfView = PDFView(frame: CGRect(x: 0, y: 90, width: 390, height: 600))
+        pdfView.document = try XCTUnwrap(PDFDocument(data: XCTUnwrap(document.fileData)))
+        pdfView.displayMode = .singlePageContinuous
+        pdfView.displayDirection = .vertical
+        pdfView.autoScales = true
+        controller.view.addSubview(pdfView)
+        let coordinator = PDFReaderView.Coordinator()
+        coordinator.pdfView = pdfView
+        coordinator.setMode(.read)
+        coordinator.attach(readVM: vm, explainVM: ExplainViewModel(document: document), doc: document)
+        try await show(controller)
+        vm.currentParagraphIndex = paragraph.id
+        try await settle()
+        let words = ["Konrad", "Gesner", "John", "Ray", "ja", "Joseph", "Pitton", "de", "Tournefort",
+                     "olivat", "ensimmäisiä", "jotka", "pääosin", "kehittivät", "kasvien", "mutta", "myös", "eläinten", "luokittelua."]
+        vm.pdfHighlight = PDFWordHighlight(paragraphIndex: paragraph.id, words: words, wordIndex: 16)
+        try await settle()
+        try await settle()
+        let page = try XCTUnwrap(pdfView.document?.page(at: XCTUnwrap(paragraph.pdfPageIndex)))
+        let word = try XCTUnwrap(page.annotations.first { abs($0.color.cgColor.alpha - 0.5) < 0.01 },
+                                "A distinct word annotation must survive beside the sentence highlight")
+        XCTAssertGreaterThan(word.bounds.width, 1)
+        XCTAssertLessThan(word.bounds.width, page.bounds(for: .mediaBox).width / 3)
+        XCTAssertTrue(page.annotations.contains { abs($0.color.cgColor.alpha - 0.33) < 0.01 })
+        let image = UIGraphicsImageRenderer(bounds: controller.view.bounds).image { _ in
+            controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
+        }
+        let attachment = XCTAttachment(image: image)
+        attachment.name = "fi-pdf-word-overlay"; attachment.lifetime = .keepAlways; add(attachment)
+        _ = coordinator
+    }
+
+    func testCzechPDFUsesFontLineHeightForOversizedSelections() throws {
+        guard let path = ProcessInfo.processInfo.environment["CASTREADER_PDF_WORD_FIXTURE"] else {
+            throw XCTSkip("Opt-in public PDF fixtures required")
+        }
+        let url = URL(fileURLWithPath: path).deletingLastPathComponent().appendingPathComponent("cs.pdf")
+        let document = try XCTUnwrap(PDFDocument(url: url))
+        let page = try XCTUnwrap(document.page(at: 8))
+        let text = try XCTUnwrap(page.string) as NSString
+        let range = text.range(of: "Dávno")
+        XCTAssertNotEqual(range.location, NSNotFound)
+        let selection = try XCTUnwrap(page.selection(for: range))
+        let original = selection.bounds(for: page)
+        XCTAssertGreaterThan(original.height, 40, "Retain the publisher fixture that exposed the oversized box")
+        let corrected = PDFSelectionGeometry.bounds(of: selection, on: page)
+        XCTAssertLessThan(corrected.height, 20)
+        XCTAssertGreaterThan(corrected.width, 10)
+        XCTAssertTrue(original.contains(corrected))
+        XCTAssertTrue(corrected.contains(page.characterBounds(at: range.location)))
+
+        // The original report also crosses synthetic line breaks. Individual
+        // character indexes drift there, so a single-word fixture is insufficient.
+        let nextPage = try XCTUnwrap(document.page(at: 9))
+        let nextText = try XCTUnwrap(nextPage.string) as NSString
+        let start = nextText.range(of: "Babička měla").location
+        XCTAssertNotEqual(start, NSNotFound)
+        let multiLine = try XCTUnwrap(nextPage.selection(for: NSRange(location: start, length: 240)))
+        let lines = multiLine.selectionsByLine()
+        XCTAssertGreaterThan(lines.count, 2)
+        let rectangles = lines.map { PDFSelectionGeometry.bounds(of: $0, on: nextPage) }
+        for (line, rect) in zip(lines, rectangles) {
+            XCTAssertLessThan(rect.height, 16, "A sentence line must not paint neighboring rows")
+            XCTAssertEqual(rect.midY, line.bounds(for: nextPage).midY, accuracy: 0.1)
+        }
+        for (first, second) in zip(rectangles, rectangles.dropFirst()) {
+            XCTAssertFalse(first.intersects(second), "Separate text rows must not overlap")
+        }
+
+        let finnish = try XCTUnwrap(PDFDocument(url: URL(fileURLWithPath: path)))
+        let normalPage = try XCTUnwrap(finnish.page(at: 0))
+        let normalText = try XCTUnwrap(normalPage.string) as NSString
+        let normal = try XCTUnwrap(normalPage.selection(for: normalText.range(of: "Biologia")))
+        XCTAssertEqual(PDFSelectionGeometry.bounds(of: normal, on: normalPage), normal.bounds(for: normalPage),
+                       "Normal font selection geometry must stay unchanged")
+    }
+
+    func testPDFNumeralsFollowSourceDirectionForNativeAndOCRText() async throws {
+        let text = "Source words for a numbered explanation"
+        let data = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 420, height: 300)).pdfData { context in
+            context.beginPage()
+            (text as NSString).draw(at: CGPoint(x: 80, y: 100), withAttributes: [.font: UIFont.systemFont(ofSize: 13)])
+        }
+        for language in ["en", "ar", "he"] {
+            for ocr in [false, true] {
+                let pdf = try XCTUnwrap(PDFDocument(data: data))
+                let page = try XCTUnwrap(pdf.page(at: 0))
+                var paragraph = ReadingParagraph(id: 0, text: text)
+                paragraph.pdfPageIndex = 0
+                if ocr {
+                    paragraph.words = [OCRWord(id: 0, text: text, bboxNorm: CGRect(x: 0.2, y: 0.5, width: 0.5, height: 0.05))]
+                } else {
+                    paragraph.pdfRange = (try XCTUnwrap(page.string) as NSString).range(of: text)
+                }
+                let document = ReadingDocument(title: "Direction", sourceKind: .pdf, language: language,
+                                               paragraphs: [paragraph], fileData: data)
+                let read = ReadAloudViewModel(document: document, historyStore: HistoryStore(directory: directory))
+                read.autoScrollEnabled = false
+                let explain = ExplainViewModel(document: document)
+                let view = PDFView(); view.document = pdf
+                let coordinator = PDFReaderView.Coordinator(); coordinator.pdfView = view
+                coordinator.setMode(.explain)
+                coordinator.attach(readVM: read, explainVM: explain, doc: document)
+                explain.activeMarks = [.init(id: UUID(), paragraphIndex: 0, charRange: 0..<6,
+                                             action: "number", n: 2, seed: 42)]
+                try await settle()
+                let annotation = try XCTUnwrap(page.annotations.compactMap { $0 as? HandwrittenPDFAnnotation }.first)
+                XCTAssertEqual(annotation.markRightToLeft, language != "en", "\(language), OCR=\(ocr)")
+                read.stop()
+                _ = coordinator
+            }
+        }
+    }
+
+    func testPDFNumeralsAndStarsRenderOutsideWordsWithoutClipping() throws {
+        let rect = CGRect(x: 110, y: 60, width: 100, height: 16)
+        let size = CGSize(width: 320, height: 140)
+        for action in ["number", "star"] {
+            for rtl in [false, true] {
+                let bounds = HandwrittenPDFAnnotation.annotationBounds(for: [rect], action: action)
+                let annotation = HandwrittenPDFAnnotation(bounds: bounds, forType: .stamp, withProperties: nil)
+                annotation.markRects = [rect]; annotation.markAction = action
+                annotation.markN = 2; annotation.markSeed = 42; annotation.markRightToLeft = rtl
+                annotation.inkColor = .blue
+                let format = UIGraphicsImageRendererFormat(); format.scale = 1
+                let image = UIGraphicsImageRenderer(size: size, format: format).image { renderer in
+                    UIColor.white.setFill(); renderer.fill(CGRect(origin: .zero, size: size))
+                    let context = renderer.cgContext
+                    context.translateBy(x: 0, y: size.height); context.scaleBy(x: 1, y: -1)
+                    context.clip(to: bounds)
+                    annotation.draw(with: .mediaBox, in: context)
+                }
+                let cg = try XCTUnwrap(image.cgImage)
+                var pixels = [UInt8](repeating: 0, count: cg.width * cg.height * 4)
+                var left = 0, right = 0, minX = cg.width, maxX = 0
+                pixels.withUnsafeMutableBytes { bytes in
+                    let context = CGContext(data: bytes.baseAddress, width: cg.width, height: cg.height,
+                        bitsPerComponent: 8, bytesPerRow: cg.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+                    context.draw(cg, in: CGRect(origin: .zero, size: size))
+                    let p = bytes.bindMemory(to: UInt8.self)
+                    for y in 0..<cg.height { for x in 0..<cg.width {
+                        let i = (y * cg.width + x) * 4
+                        if Int(p[i + 2]) - Int(p[i]) > 100 {
+                            minX = min(minX, x); maxX = max(maxX, x)
+                            // Exclude the hand-drawn underline's small endpoint overshoot.
+                            if CGFloat(x) < rect.minX - 6 { left += 1 }
+                            if CGFloat(x) > rect.maxX + 6 { right += 1 }
+                        }
+                    } }
+                }
+                let expectedRight = action == "number" ? rtl : !rtl
+                XCTAssertGreaterThan(expectedRight ? right : left, 30, "\(action) RTL=\(rtl): marker outside word")
+                XCTAssertEqual(expectedRight ? left : right, 0, "No marker on the opposite edge")
+                XCTAssertGreaterThan(CGFloat(minX), bounds.minX + 2, "Ink must not be clipped at the left edge")
+                XCTAssertLessThan(CGFloat(maxX), bounds.maxX - 2, "Ink must not be clipped at the right edge")
+                let attachment = XCTAttachment(image: image)
+                attachment.name = "pdf-\(action)-rtl-\(rtl)"; attachment.lifetime = .keepAlways; add(attachment)
+            }
+        }
+    }
+
+    func testPDFReadingFollowMovesBeforeWordReachesBottomControls() async throws {
+        let scroll = UIScrollView(frame: CGRect(x: 0, y: 0, width: 390, height: 600))
+        scroll.contentSize = CGSize(width: 390, height: 2400)
+        let word = CGRect(x: 30, y: 450, width: 45, height: 14)
+        ReaderViewportFollow.reveal(word, in: scroll, source: "pdf", lowerBoundary: 0.70)
+        try await settle()
+        XCTAssertEqual(word.minY - scroll.contentOffset.y, 150, accuracy: 2,
+                       "A word at 75% of the viewport should move to the upper quarter")
     }
 }

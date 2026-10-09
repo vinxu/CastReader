@@ -27,7 +27,7 @@ enum VoiceTierFilter: String, CaseIterable, Identifiable {
 }
 
 enum VoiceBrowserLanguage {
-    static let primary = SupportedTTSLanguage.allCases.map(\.rawValue)
+    static var primary: [String] { SupportedTTSLanguage.currentServiceLanguages.map(\.rawValue) }
 
     static func defaultLanguage(
         preferredLanguages: [String],
@@ -392,9 +392,11 @@ final class VoiceLibraryStore: ObservableObject {
     private(set) var hasExplicitBrowserLanguageSelection: Bool
 
     private let defaults: UserDefaults
+    private var appLanguageContext: String?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        appLanguageContext = defaults.string(forKey: Keys.appLanguageContext)
         favoriteIDs = Set(defaults.stringArray(forKey: Keys.favorites) ?? [])
         recentIDs = Self.normalizedRecents(defaults.stringArray(forKey: Keys.recents) ?? [])
         let stored = VoiceCatalog.normalizedLanguage(defaults.string(forKey: Keys.browserLanguage) ?? "")
@@ -432,6 +434,24 @@ final class VoiceLibraryStore: ObservableObject {
         if normalized != browserLanguage { browserLanguage = normalized }
         hasExplicitBrowserLanguageSelection = true
         defaults.set(normalized, forKey: Keys.browserLanguage)
+        if let appLanguageContext { defaults.set(appLanguageContext, forKey: Keys.appLanguageContext) }
+    }
+
+    /// Browse history is valid only within the same app-language context.
+    /// Called on entry as well as language/foreground changes, so an off-screen
+    /// Voices tab and legacy contextless preferences follow the new UI language.
+    func synchronizeAppLanguage(context: String, language: String, availableLanguages: [String]) {
+        let fallback = VoiceBrowserLanguage.defaultLanguage(
+            preferredLanguages: [language], availableLanguages: availableLanguages)
+        if appLanguageContext != context || defaults.string(forKey: Keys.appLanguageContext) != context {
+            appLanguageContext = context
+            defaults.set(context, forKey: Keys.appLanguageContext)
+            replaceUnavailableBrowserLanguage(with: fallback)
+        } else if !availableLanguages.contains(browserLanguage) {
+            replaceUnavailableBrowserLanguage(with: fallback)
+        } else {
+            applyDefaultBrowserLanguage(fallback)
+        }
     }
 
     /// 首次使用时按设备首选语言确定单一作用域，但不把系统推导结果当成用户选择。
@@ -463,6 +483,7 @@ final class VoiceLibraryStore: ObservableObject {
         static let favorites = "voice_browser_favorites_v1"
         static let recents = "voice_browser_recent_v1"
         static let browserLanguage = "voice_browser_language_v1"
+        static let appLanguageContext = "voice_browser_app_language_v2"
     }
 }
 
@@ -483,7 +504,7 @@ enum VoiceSelectionPolicy {
         settings: AppSettings,
         language: String? = nil
     ) -> Bool {
-        guard voice.selectable, !voice.isPro || isPro else { return false }
+        guard voice.selectable, (!voice.code.hasPrefix("api_") || voice.enabled), !voice.isPro || isPro else { return false }
         if voice.usesMonthlyGeneration {
             guard voice.supports(language ?? voice.lang) else { return false }
             return settings.setMultilingualClonedVoice(voice.code, supportedLanguages: voice.supportedLanguages)

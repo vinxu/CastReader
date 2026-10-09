@@ -432,7 +432,7 @@ struct YouTubeHomeSection: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(AppTheme.mutedForeground)
             }
@@ -697,7 +697,7 @@ struct YouTubeHomeView: View {
     }
 
     private var guideArrow: some View {
-        Image(systemName: "chevron.right")
+        Image(systemName: "chevron.forward")
             .font(.caption.weight(.bold))
             .foregroundStyle(AppTheme.mutedForeground.opacity(0.55))
             .padding(.top, 15)

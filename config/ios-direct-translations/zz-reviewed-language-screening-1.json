@@ -1,0 +1,56 @@
+{
+  "id": {
+    "3105d34b40c40746f0da": "Tautan telah disimpan dengan aman. Ketuk di bawah untuk membuka CastReader, atau buka aplikasi secara manual nanti.",
+    "9e9f798a26f36e0430ab": "Akun telah berubah. Masuk ke akun yang digunakan untuk pembelian ini untuk menyinkronkan kredit.",
+    "e29663b4a3225d650c3b": "Sesi Google Anda telah kedaluwarsa. Hubungkan kembali Google Play Books.",
+    "a98ac1ba007676779875": "Akun Anda belum terhubung sepenuhnya, sehingga langganan Pro yang dibeli di perangkat lain atau di web mungkin tidak dikenali.",
+    "39e31d3a0200a087b05f": "Buka teks atau tautan web di CastReader untuk dibacakan atau dijelaskan.",
+    "952b4f1ad1835dc79270": "Tautan buku Kindle ini tidak lagi valid. Sinkronkan kembali pustaka Anda."
+  },
+  "ms": {
+    "8f998c9600d5170f4ee3": "Anda telah sampai ke penghujung halaman yang disimpan. Sambungkan peranti ke internet untuk meneruskan muat turun.",
+    "7566a454fe9c17fd2913": "Cipta suara peribadi anda dengan pertuturan yang jelas selama kira-kira 10 saat",
+    "0d8c5ae25b67b2eba328": "Log masuk Google tidak dikonfigurasi (tetapkan Constants.GoogleOAuth.clientID)",
+    "738f84d8402d57ec0f9c": "Di mana anda biasanya membaca? Sambungkan pustaka anda, buka sebuah buku, dan biarkan CastReader membacanya selama 30 saat.",
+    "7707ad17d98d0268f80d": "Padam semua sejarah setempat dalam Pustaka anda. Sejarah hanya disimpan pada peranti ini dan tidak pernah dimuat naik atau disegerakkan ke awan.",
+    "7ebfbc333907ce00bd2c": "Sejarah hanya disimpan pada peranti ini — tidak pernah dimuat naik atau disegerakkan ke awan",
+    "8232df6e4ce30fbfab8c": "Gunakan Kamera, Muat Naik Fail, Masukkan URL atau Masukkan Teks di Utama — kandungan yang diproses akan muncul di sini",
+    "ed58a6ec68f8d8205e81": "Muat naik selesai. Anda akan menemuinya dalam Pustaka setelah pemprosesan selesai.",
+    "7a57370b5aaaab56969a": "Halaman buku Kindle sedang dibuka. Kembali ke Pustaka Kindle, kemudian ketik Segerakkan.",
+    "f015e8d429ded4078c1f": "Sambungkan Kindle, Kobo atau Google Play Books untuk mendengar semua buku di rak anda",
+    "6418576d3bf1ea79190c": "Dibuka kunci pada peranti ini. Penyegerakan merentas platform masih belum selesai.",
+    "87d18d215d12833ecbcd": "Log masuk untuk menyegerakkan pustaka dan kemajuan bacaan anda",
+    "397ea7bed8abc7a937a4": "Tampal pautan daftar masuk O'Reilly atau EZproxy yang disediakan oleh perpustakaan anda.",
+    "373b300543eda28892b3": "Buka buku di O’Reilly dahulu, kemudian kembali untuk menyegerakkan sejarah bacaan.",
+    "bcf8b02ac6dcf1bdd1a2": "Log masuk menggunakan e-mel anda sebelum membeli supaya Pro dapat disegerakkan pada semua peranti anda.",
+    "565f85825f336de9aaa4": "Mengapa anda habis membaca satu halaman tetapi tidak mengingati apa-apa?",
+    "500875189e448c14e00e": "Pembatalan kebenaran Apple juga mesti dilakukan secara manual: buka Akaun Apple anda dalam Tetapan, pergi ke “Log Masuk dengan Apple”, dan hentikan penggunaan CastReader.",
+    "5144b5564f78c592f852": "Tekan dan tahan untuk merakam, lepaskan untuk menghantar, luncur ke atas untuk membatalkan",
+    "4ec3f9cd09b812fc0767": "Suara terlalu kuat dan herot. Pilih rakaman pertuturan yang tidak pecah.",
+    "7eed577338585e2c3179": "Secara automatik mencari segmen ~10 saat yang paling jelas; fail asal tidak dimuat naik",
+    "5f305f505fe95b86d83e": "Fail asal hanya dimuat turun ke folder sementara pada peranti ini dan tidak dimuat naik ke awan CastReader."
+  },
+  "nb": {
+    "37d78e2cd7c4e347a942": "Sidekontinuitet kunne ikke bekreftes. Nedlasting er stoppet, og lagrede sider beholdes.",
+    "e4408b25899a4762e66d": "Hvis du sletter kontoen, fjernes profilen din og personopplysningene dine. Eksisterende abonnementer refunderes ikke automatisk. Dette kan ikke angres.",
+    "0cc66321701b55eb5c54": "Kun for feilsøking: test om WebView kan fortsette å rulle etter at telefonen er låst",
+    "4b763b3ffe7fdde446d3": "GitHub-dokumentasjon, API-dokumentasjon, produktmanualer og hjelpesentre",
+    "0d8c5ae25b67b2eba328": "Google-innlogging er ikke konfigurert (sett Constants.GoogleOAuth.clientID)",
+    "49d511415941d2491df2": "Din Kindle-sesjon har utløpt. Logg inn på nytt og synkroniser biblioteket ditt.",
+    "50b7bca7932f4534cacd": "Dette tømmer den lokale hurtigbufferen for Kindle-bokhyllen og påloggingen på read.amazon.com. Kindle-delen på Hjem går tilbake til «Koble til Kindle», og du må logge inn og synkronisere på nytt.",
+    "236c0626bec90323223e": "Fant ingen bøker. Logg inn på «Mine bøker»-siden i Google Play Books og prøv igjen.",
+    "515b8b78ddf864f9a334": "Rull gjennom Kindle-biblioteket, og trykk deretter på Synkroniser igjen.",
+    "799885c8ea9fd63a8485": "Dette Google-dokumentet overstiger eksportstørrelsesgrensen for Google Drive og kan ikke importeres."
+  },
+  "fil": {
+    "29e8002528d1fafd8519": "Subscription na awtomatikong nagre-renew. Nagre-renew ito 24 na oras bago matapos ang kasalukuyang panahon maliban kung kakanselahin sa mga setting ng App Store.",
+    "4699eecee3b36a1d0970": "Kapag inalis ang pagkakaugnay, mabubura lang ang pag-sign in sa Kindle at cache ng aklatan ng CastReader sa device na ito. Hindi maaapektuhan ang iyong Amazon account o mga aklat sa Kindle.",
+    "ff88fb4f6bcf11553f70": "Nawala ang estado ng koneksyon para sa pagpapaliwanag. Pakisimulan muli ang pagpapaliwanag.",
+    "b88b0c53872f2b92d789": "Hindi pa nakikilala ng serbisyo ng pagpapaliwanag ang iyong Pro status. Pakisubukan muli.",
+    "c8529c604d96c5744ffa": "Kapag diniskonekta, mabubura lang ang lokal na data ng platform na iyon sa CastReader. Hindi maaapektuhan ang orihinal na account o mga aklat.",
+    "5144b5564f78c592f852": "Pindutin nang matagal para mag-record, bitawan para ipadala, i-slide pataas para kanselahin"
+  },
+  "nl": {
+    "301cd9ccef0e9c2f9276": "Het originele bestand wordt niet geüpload; alleen de korte clip die u bevestigt, wordt geüpload."
+  }
+}

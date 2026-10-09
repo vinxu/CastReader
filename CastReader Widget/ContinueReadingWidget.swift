@@ -2,6 +2,22 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
+private enum WidgetL10n {
+    private static var selected: String? {
+        let value = UserDefaults(suiteName: "group.com.same.castreader")?.string(forKey: "interfaceLanguage")
+        return value == "system" ? nil : value
+    }
+    static var bundle: Bundle {
+        guard let selected, let path = Bundle.main.path(forResource: selected, ofType: "lproj"),
+              let bundle = Bundle(path: path) else { return .main }
+        return bundle
+    }
+    static var locale: Locale { selected.map(Locale.init(identifier:)) ?? .autoupdatingCurrent }
+    static var direction: LayoutDirection {
+        locale.language.characterDirection == .rightToLeft ? .rightToLeft : .leftToRight
+    }
+}
+
 private enum ContinueWidgetConstants {
     static let kind = "CastReaderContinueWidget"
     static let importURL = URL(string: "castreader://import")!
@@ -47,7 +63,7 @@ struct ContinueWidgetProvider: TimelineProvider {
             items: [
                 ContinueSnapshot(
                     id: "widget-placeholder",
-                    title: String(localized: "widget_placeholder_title"),
+                    title: String(localized: "widget_placeholder_title", bundle: WidgetL10n.bundle),
                     sourceKind: "pdf",
                     updatedAt: date.addingTimeInterval(-12 * 60)
                 )
@@ -64,8 +80,8 @@ struct ContinueReadingWidget: Widget {
         ) { entry in
             ContinueReadingWidgetView(entry: entry)
         }
-        .configurationDisplayName("widget_name")
-        .description("widget_description")
+        .configurationDisplayName(Text("widget_name", bundle: WidgetL10n.bundle))
+        .description(Text("widget_description", bundle: WidgetL10n.bundle))
         .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabled()
     }
@@ -89,6 +105,8 @@ private struct ContinueReadingWidgetView: View {
                 EmptyContinueView(family: family)
             }
         }
+        .environment(\.locale, WidgetL10n.locale)
+        .environment(\.layoutDirection, WidgetL10n.direction)
         .containerBackground(for: .widget) {
             ContinueWidgetBackground()
         }
@@ -122,7 +140,7 @@ private struct SmallContinueView: View {
 
                 HStack(spacing: 5) {
                     Image(systemName: "play.fill")
-                    Text("widget_continue")
+                    Text("widget_continue", bundle: WidgetL10n.bundle)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
                         .font(.caption.weight(.bold))
@@ -135,7 +153,7 @@ private struct SmallContinueView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("widget_continue"))
+        .accessibilityLabel(Text("widget_continue", bundle: WidgetL10n.bundle))
         .accessibilityValue(Text(item.title))
     }
 }
@@ -147,7 +165,7 @@ private struct MediumContinueView: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 8) {
                 CastReaderMark(size: 26)
-                Text("widget_recent")
+                Text("widget_recent", bundle: WidgetL10n.bundle)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
@@ -215,7 +233,7 @@ private struct WidgetIntentButton<Intent: AppIntent>: View {
 
     var body: some View {
         Button(intent: intent) {
-            Label(titleKey, systemImage: systemImage)
+            Label { Text(titleKey, bundle: WidgetL10n.bundle) } icon: { Image(systemName: systemImage) }
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(tint)
                 .frame(maxWidth: .infinity, minHeight: 40)
@@ -242,16 +260,16 @@ private struct EmptyContinueView: View {
 
                 Spacer(minLength: 0)
 
-                Text("widget_empty_title")
+                Text("widget_empty_title", bundle: WidgetL10n.bundle)
                     .font(.system(size: 17, weight: .bold, design: .rounded))
                     .foregroundStyle(.primary)
 
-                Text("widget_empty_message")
+                Text("widget_empty_message", bundle: WidgetL10n.bundle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(family == .systemSmall ? 2 : 1)
 
-                Label("widget_import", systemImage: "doc.badge.plus")
+                Label { Text("widget_import", bundle: WidgetL10n.bundle) } icon: { Image(systemName: "doc.badge.plus") }
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.castReaderOrange)
             }
@@ -260,7 +278,7 @@ private struct EmptyContinueView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("widget_import"))
+        .accessibilityLabel(Text("widget_import", bundle: WidgetL10n.bundle))
     }
 }
 

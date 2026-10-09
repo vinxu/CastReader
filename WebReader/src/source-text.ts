@@ -1,4 +1,4 @@
-// One UTF-16 coordinate space for Kobo extraction, word highlights and marks.
+// One visible UTF-16 coordinate space for extraction, word highlights and marks.
 // The chapter body can be off screen because Kobo preloads it; only descendants
 // of a source paragraph determine whether an inline text node is hidden.
 type Position = { node: Text; offset: number }
@@ -6,7 +6,7 @@ type Source = { text: string; starts: Position[]; ends: Position[] }
 const cache = new WeakMap<HTMLElement, { signature: string; nodes: Text[]; source: Source }>()
 
 export function usesMappedSource(el: HTMLElement): boolean {
-  if (el.dataset.crNativeNormalized === 'true') return true
+  if (el.dataset.crNativeNormalized === 'true' || el.dataset.crVisibleSource === 'true') return true
   try { return el.ownerDocument.defaultView?.top?.location.hostname === 'readnow.kobo.com' }
   catch { return false }
 }

@@ -64,6 +64,19 @@ enum VoiceDiscoveryTopic: String, CaseIterable, Identifiable, Hashable, Codable 
 /// Metadata is a recall signal, not an acoustic quality verdict. Unknown voices
 /// stay searchable; technical/experimental grades never become editorial claims.
 enum VoiceDiscovery {
+    /// Remote editions may predate an app locale. Keep their authored title
+    /// when translated; otherwise show the local topic instead of English copy
+    /// in the middle of a translated page.
+    static func localizedEditorialTitle(_ titles: [String: String], theme: VoiceDiscoveryTopic) -> String {
+        let language = AppLanguageManager.shared.selectedLanguage
+        for code in [language.rawValue, language.resolvedLanguageCode] {
+            if let title = titles[code]?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
+                return title
+            }
+        }
+        return theme.title
+    }
+
     static func normalized(_ text: String) -> String {
         text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US_POSIX"))
             .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -197,7 +210,7 @@ struct VoiceDiscoveryModule: Codable, Equatable, Identifiable {
     var artworkURL: String? = nil
 
     var localizedTitle: String {
-        title[AppLanguageManager.shared.selectedLanguage.resolvedLanguageCode] ?? title["en"] ?? theme.title
+        VoiceDiscovery.localizedEditorialTitle(title, theme: theme)
     }
 
     func voices(from catalog: [VoiceOption], language: String) -> [VoiceOption] {
@@ -252,7 +265,7 @@ struct VoiceDiscoveryCollection: Codable, Equatable, Identifiable {
     let theme: VoiceDiscoveryTopic
     let voiceIds: [String]
     var localizedTitle: String {
-        title[AppLanguageManager.shared.selectedLanguage.resolvedLanguageCode] ?? title["en"] ?? theme.title
+        VoiceDiscovery.localizedEditorialTitle(title, theme: theme)
     }
     func voices(from catalog: [VoiceOption], language: String) -> [VoiceOption] {
         let indexed = Dictionary(catalog.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })

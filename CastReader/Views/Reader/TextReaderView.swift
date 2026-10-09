@@ -230,7 +230,7 @@ struct TextReaderView: View {
                         MarkInkView(rects: rects, action: mark.action, seed: mark.seed, n: mark.n,
                                     inkColor: Color(readVM.markBaseColor),
                                     highlightColor: Color(readVM.markBaseColor),
-                                    weight: mark.weight)
+                                    weight: mark.weight, sourceLanguage: readVM.document.language)
                     }
                 }
             }

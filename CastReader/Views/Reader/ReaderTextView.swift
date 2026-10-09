@@ -21,12 +21,12 @@ enum ReaderViewportFollow {
     }
     private static let motions = NSMapTable<UIScrollView, Motion>(keyOptions: .weakMemory, valueOptions: .strongMemory)
 
-    private static func readingBand(_ visible: CGRect) -> CGRect {
+    private static func readingBand(_ visible: CGRect, lowerBoundary: CGFloat) -> CGRect {
         CGRect(x: visible.minX, y: visible.minY + visible.height * 0.18,
-               width: visible.width, height: visible.height * 0.70)
+               width: visible.width, height: visible.height * (lowerBoundary - 0.18))
     }
 
-    static func reveal(_ target: CGRect, in scroll: UIScrollView, source: String) {
+    static func reveal(_ target: CGRect, in scroll: UIScrollView, source: String, lowerBoundary: CGFloat = 0.88) {
         let motion = motions.object(forKey: scroll) ?? Motion()
         motions.setObject(motion, forKey: scroll)
         guard !scroll.isDragging, !scroll.isDecelerating, !scroll.isTracking else {
@@ -44,11 +44,11 @@ enum ReaderViewportFollow {
                 // does not restart the same movement from an intermediate frame.
                 var projected = visible
                 projected.origin.y += destination - scroll.contentOffset.y
-                let band = readingBand(projected)
+                let band = readingBand(projected, lowerBoundary: lowerBoundary)
                 if target.minY >= band.minY, target.maxY <= band.maxY { return }
             }
         }
-        let comfortable = readingBand(visible)
+        let comfortable = readingBand(visible, lowerBoundary: lowerBoundary)
         guard target.minY < comfortable.minY || target.maxY > comfortable.maxY else { return }
         let minY = -scroll.adjustedContentInset.top
         let maxY = max(minY, scroll.contentSize.height - scroll.bounds.height + scroll.adjustedContentInset.bottom)
@@ -133,7 +133,12 @@ final class ReaderUITextView: UITextView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        invalidateIntrinsicContentSize()
+        // Invalidating on every layout makes a lazy SwiftUI paragraph keep
+        // measuring itself, even when its text and width have not changed.
+        // Width changes need a new wrapped height; height changes do not.
+        if bounds.width != lastReaderSize.width {
+            invalidateIntrinsicContentSize()
+        }
         if bounds.size != lastReaderSize {
             lastReaderSize = bounds.size
             DispatchQueue.main.async { [weak self] in self?.onReaderLayout?() }
@@ -221,10 +226,13 @@ struct ReaderTextView: UIViewRepresentable {
         tv.isScrollEnabled = autoScrollsHighlight
         tv.viewportFocusRange = readerViewportRange
         tv.onReaderLayout = onLayout
-        tv.attributedText = buildAttributedString()
-        tv.invalidateIntrinsicContentSize()
-        tv.setNeedsLayout()
-        tv.layoutIfNeeded()
+        let attributedText = buildAttributedString()
+        if tv.attributedText?.isEqual(to: attributedText) != true {
+            tv.attributedText = attributedText
+            tv.invalidateIntrinsicContentSize()
+            tv.setNeedsLayout()
+            tv.layoutIfNeeded()
+        }
         if autoScrollsHighlight,
            let highlightRange,
            highlightRange.location != NSNotFound,
@@ -241,6 +249,9 @@ struct ReaderTextView: UIViewRepresentable {
         let color = isCurrent ? base : base.withAlphaComponent(0.55)
         let para = NSMutableParagraphStyle()
         para.lineSpacing = lineSpacing
+        // Natural bidi follows each paragraph's content, independently of UI locale.
+        para.alignment = .natural
+        para.baseWritingDirection = .natural
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font(),
             .foregroundColor: color,

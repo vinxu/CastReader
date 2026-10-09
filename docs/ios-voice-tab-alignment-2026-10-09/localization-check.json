@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "counts": {
+    "voice_current_title": 28,
+    "voice_available_title": 28,
+    "voice_default_scope": 28,
+    "voice_browse_languages": 28,
+    "voice_supported_languages": 28,
+    "voice_public_clones_title": 28
+  },
+  "translations": "168 direct translations, no translation API",
+  "placeholders": "one positional language argument in each of the 56 formatted strings"
+}

@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Pagbasa at paliwanag ng AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Basahin nang Malakas + AI Explain"
+  },
+  "extDescription": {
+    "message": "Magbasa sa 28 wika na may kasabay na highlight, awtomatikong pag-scroll at paliwanag ng AI sa pahina."
+  },
+  "quickreadBtn": {
+    "message": "Mabilis na Buod"
+  },
+  "quickreadBtnExit": {
+    "message": "Lumabas sa Buod"
+  },
+  "quickreadPreparing": {
+    "message": "Binubuo ang Pangkalahatang-ideya"
+  },
+  "quickreadError": {
+    "message": "Error sa Pangkalahatang-ideya"
+  },
+  "quickreadStageExtract": {
+    "message": "Kinukuha ang mga pangunahing punto"
+  },
+  "quickreadStageTts": {
+    "message": "Ginagawa ang voiceover"
+  },
+  "quickreadStageRefine": {
+    "message": "Inaayos ang ritmo"
+  },
+  "quickreadStageReady": {
+    "message": "Handa nang i-play…"
+  },
+  "quickreadFailed": {
+    "message": "Nabigo: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Isara"
+  },
+  "quickreadCancel": {
+    "message": "Kanselahin"
+  },
+  "quickreadDone": {
+    "message": "Tapos na"
+  },
+  "quickreadHint": {
+    "message": "Mga 25-45 segundo, maghintay po"
+  },
+  "quickreadQueued": {
+    "message": "Naka-queue ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Naubos na ang libreng Explains para ngayon. Magre-reset bukas."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Naubos na ang libreng Explains para ngayon"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Naabot na ang araw-araw na limitasyon — mag-upgrade sa Pro para sa walang limitasyong Explains. Magre-reset ang iyong libreng quota bukas."
+  },
+  "quickreadUpgrade": {
+    "message": "Mag-upgrade sa Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Hindi naka-sign in"
+  },
+  "enableProMode": {
+    "message": "I-enable ang Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Naubos na ang 20 minutong libreng pagbabasa para ngayon"
+  },
+  "listenRateLimitBody": {
+    "message": "Naubos mo na ang 20 minutong libreng pagbabasa para ngayon — mag-upgrade sa Pro para sa walang limitasyong pagbabasa. Magre-reset ang iyong libreng quota bukas."
+  },
+  "quickreadQuotaTip": {
+    "message": "Explain · $n$/$max$ natitira ngayon",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Ipaliwanag · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Basahin ang dokumento"
+  },
+  "readerDrop": {
+    "message": "I-drop ang imahe / PDF / EPUB / Word / TXT dito"
+  },
+  "readerDropOver": {
+    "message": "I-drop para i-upload"
+  },
+  "readerSub": {
+    "message": "Basahin nang malakas + AI overview sa orihinal na file — hindi nababago ang layout"
+  },
+  "readerOr": {
+    "message": "o"
+  },
+  "readerPick": {
+    "message": "Pumili ng file"
+  },
+  "readerRendering": {
+    "message": "Rinerender ang dokumento…"
+  },
+  "readerListen": {
+    "message": "▶ Pakinggan"
+  },
+  "readerPause": {
+    "message": "⏸ Ihinto"
+  },
+  "readerResume": {
+    "message": "▶ Ituloy"
+  },
+  "readerStop": {
+    "message": "■ Ihinto"
+  },
+  "readerExplain": {
+    "message": "✦ Ipaliwanag"
+  },
+  "readerExplainHint": {
+    "message": "Ihinto muna ang pagbabasa"
+  },
+  "readerNewFile": {
+    "message": "Bagong file"
+  },
+  "readerSpeed": {
+    "message": "Bilis"
+  },
+  "readerUnsupported": {
+    "message": "Hindi suportadong uri ng file"
+  },
+  "readerFailed": {
+    "message": "Nabigo ang pagproseso"
+  },
+  "readerEmpty": {
+    "message": "Walang nabasang teksto sa dokumentong ito"
+  },
+  "readerQuotaLeft": {
+    "message": "natitira ngayon"
+  },
+  "readerQuotaBlocked": {
+    "message": "Naubos na ang 10 libreng pangkalahatang paliwanag ngayong araw — magre-reset bukas"
+  },
+  "readerPartial": {
+    "message": "Napaliwanag ang seksyon sa iyong kasalukuyang posisyon — mag-scroll pababa at pindutin muli ang Ipaliwanag para sa susunod"
+  },
+  "readerTooLarge": {
+    "message": "Masyadong malaki ang file (higit sa 100 MB). Gumamit ng mas maliit na file."
+  },
+  "readerLargeFilePro": {
+    "message": "Ang mga file na higit sa 7 MB ay nangangailangan ng Pro — binubuksan ng Pro ang mga dokumento hanggang 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "Masyadong malaki upang buksan mula sa pahinang ito (higit sa 7 MB). Buksan ang document reader at piliin ito doon — hanggang 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Buksan ang document reader"
+  },
+  "readerContinue": {
+    "message": "Ituloy ✦"
+  },
+  "readerSettings": {
+    "message": "Mga Setting"
+  },
+  "readerExplainLang": {
+    "message": "Ipaliwanag sa"
+  },
+  "readerDocumentLang": {
+    "message": "Wika ng dokumento"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Awtomatiko (mula sa teksto)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Para sa mga imahe o naka-scan na PDF na walang nabasang teksto, piliin ang wika ng dokumento, pagkatapos ay buksan ang file."
+  },
+  "readerVoiceEn": {
+    "message": "Boses sa Ingles"
+  },
+  "readerVoiceZh": {
+    "message": "Boses sa Tsino"
+  },
+  "readerVoices": {
+    "message": "Mga Boses"
+  },
+  "readerBrowseVoices": {
+    "message": "Mag-browse ng mga boses"
+  },
+  "readerLangAuto": {
+    "message": "Auto (wika ng UI)"
+  },
+  "readerLangFollow": {
+    "message": "Itugma ang dokumento"
+  },
+  "readerPreparing": {
+    "message": "Inihahanda ang pagbasa…"
+  },
+  "readerEncrypted": {
+    "message": "Ang PDF na ito ay may proteksyon ng password"
+  },
+  "readerCorrupt": {
+    "message": "Mukhang sira o hindi mabasa ang file na ito"
+  },
+  "readerTimeout": {
+    "message": "Napakatagal ng pagbukas — maaaring masyadong kumplikado ang file"
+  },
+  "readerEpubDrm": {
+    "message": "Ang EPUB na ito ay protektado ng DRM. Subukan ang EPUB na walang DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Ang EPUB na ito ay may fixed-layout at walang tekstong maaring i-synchronize sa pagbasa."
+  },
+  "readerEpubTooComplex": {
+    "message": "Lampas sa ligtas na limitasyon ng lokal na pagproseso ang EPUB na ito. Subukan ang mas maliit o mas simpleng EPUB."
+  },
+  "readerEpubTooLarge": {
+    "message": "Ang mga file ng EPUB ay maaaring umabot hanggang 30 MB para sa ligtas na lokal na pagproseso."
+  },
+  "inboxTitle": {
+    "message": "Inbox ng Nilalaman"
+  },
+  "inboxSubtitle": {
+    "message": "I-save ang mga webpage o napiling teksto, then basahin o ipaliwanag ang mga ito kapag handa ka na."
+  },
+  "inboxEmpty": {
+    "message": "Walang laman ang iyong inbox"
+  },
+  "inboxEmptyDescription": {
+    "message": "Mag-right-click sa isang page o napiling teksto at i-save ito sa CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "I-save ang napiling teksto sa Inbox ng CastReader"
+  },
+  "inboxSavePage": {
+    "message": "I-save ang page sa Inbox ng CastReader"
+  },
+  "inboxOpen": {
+    "message": "Buksan ang Inbox ng Nilalaman"
+  },
+  "inboxSharedText": {
+    "message": "Napiling teksto"
+  },
+  "inboxOpenFailed": {
+    "message": "Hindi mabuksan ang nilalamang ito. Pakisubukan muli."
+  },
+  "inboxRetry": {
+    "message": "Subukan muli"
+  },
+  "inboxRead": {
+    "message": "Basahin nang malakas"
+  },
+  "inboxExplain": {
+    "message": "Ipaliwanag"
+  },
+  "inboxDelete": {
+    "message": "Tanggalin"
+  },
+  "inboxLink": {
+    "message": "Link"
+  },
+  "inboxText": {
+    "message": "Teksto"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Basa at Paliwanag ng AI"
+  },
+  "edgeExtDescription": {
+    "message": "Magbasa sa 28 wika na may kasabay na highlight, awtomatikong pag-scroll at paliwanag ng AI sa pahina."
+  },
+  "toggleSiteVisibility": {
+    "message": "Ipakita / itago ang CastReader sa site na ito"
+  },
+  "voiceCloneBenefit": {
+    "message": "Gamitin ang sarili mong boses para sa Basahin nang Malakas at Ipaliwanag · 120 minuto bawat buwan"
+  },
+  "voiceClonePaywall": {
+    "message": "Gumawa, pamahalaan, at i-play ang mga nakapirming preview ng maraming personal na boses nang libre. Ginagamit ng Pro ang mga personal na boses sa Basahin nang Malakas at Ipaliwanag para sa 120 minutong binuo bawat buwan."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Naubos na ang iyong mga minuto para sa personal na boses para sa buwang ito. Nanatili ang iyong napiling boses."
+  },
+  "ocrModelUnavailable": {
+    "message": "Hindi ma-download ang file ng wikang pang-rekognisyon. Kumonekta sa internet at subukan muli."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Hindi pa available ang pagkilala ng teksto sa mga larawan at na-scan na pahina para sa wikang ito. Maaari ka pa ring magbasa ng mga webpage, EPUB, TXT at PDF na may napipiling teksto."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Hindi maaaring basahin nang malakas ang pahinang ito"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Basahin nang malakas ang pahinang ito"
+  }
+}

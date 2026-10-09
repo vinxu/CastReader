@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Voorlezen + AI-uitleg"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Voorlezen + AI-uitleg"
+  },
+  "extDescription": {
+    "message": "Lees met gesynchroniseerde markeringen en automatisch scrollen. AI legt moeilijke passages uit. Stemmen in 28 talen."
+  },
+  "quickreadBtn": {
+    "message": "Snelle weergave"
+  },
+  "quickreadBtnExit": {
+    "message": "Overzicht sluiten"
+  },
+  "quickreadPreparing": {
+    "message": "Overzicht genereren"
+  },
+  "quickreadError": {
+    "message": "Fout bij overzicht"
+  },
+  "quickreadStageExtract": {
+    "message": "Belangrijkste punten extraheren"
+  },
+  "quickreadStageTts": {
+    "message": "Voice-over genereren"
+  },
+  "quickreadStageRefine": {
+    "message": "Ritme aanpassen"
+  },
+  "quickreadStageReady": {
+    "message": "Klaar om af te spelen…"
+  },
+  "quickreadFailed": {
+    "message": "Mislukt: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Sluiten"
+  },
+  "quickreadCancel": {
+    "message": "Annuleren"
+  },
+  "quickreadDone": {
+    "message": "Gereed"
+  },
+  "quickreadHint": {
+    "message": "Ongeveer 25-45 seconden, even geduld"
+  },
+  "quickreadQueued": {
+    "message": "In wachtrij ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Dagelijkse gratis AI-uitleg verbruikt. Wordt morgen gereset."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Dagelijkse gratis AI-uitleg verbruikt"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Dagelijkse gratis limiet bereikt — upgrade naar Pro voor onbeperkte AI-uitleg. Je gratis tegoed wordt morgen gereset."
+  },
+  "quickreadUpgrade": {
+    "message": "Upgraden naar Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Niet aangemeld"
+  },
+  "enableProMode": {
+    "message": "Pro activeren"
+  },
+  "listenRateLimitTitle": {
+    "message": "Dagelijkse 20 minuten gratis lezen verbruikt"
+  },
+  "listenRateLimitBody": {
+    "message": "Je hebt de 20 gratis leesminuten van vandaag verbruikt — upgrade naar Pro voor onbeperkt lezen. Je gratis tegoed wordt morgen gereset."
+  },
+  "quickreadQuotaTip": {
+    "message": "Uitleg · nog $n$/$max$ vandaag",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Uitleggen · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Document lezen"
+  },
+  "readerDrop": {
+    "message": "Sleep een afbeelding / PDF / EPUB / Word / TXT hierheen"
+  },
+  "readerDropOver": {
+    "message": "Sleep om te uploaden"
+  },
+  "readerSub": {
+    "message": "Hardop voorlezen + AI-overzicht op het originele bestand — lay-out ongewijzigd"
+  },
+  "readerOr": {
+    "message": "or"
+  },
+  "readerPick": {
+    "message": "Bestand kiezen"
+  },
+  "readerRendering": {
+    "message": "Document voorbereiden…"
+  },
+  "readerListen": {
+    "message": "▶ Luisteren"
+  },
+  "readerPause": {
+    "message": "⏸ Pauze"
+  },
+  "readerResume": {
+    "message": "▶ Hervatten"
+  },
+  "readerStop": {
+    "message": "■ Stoppen"
+  },
+  "readerExplain": {
+    "message": "✦ Uitleg"
+  },
+  "readerExplainHint": {
+    "message": "Stop eerst met lezen"
+  },
+  "readerNewFile": {
+    "message": "Nieuw bestand"
+  },
+  "readerSpeed": {
+    "message": "Snelheid"
+  },
+  "readerUnsupported": {
+    "message": "Niet-ondersteund bestandstype"
+  },
+  "readerFailed": {
+    "message": "Verwerking mislukt"
+  },
+  "readerEmpty": {
+    "message": "Geen leesbare tekst gevonden in dit document"
+  },
+  "readerQuotaLeft": {
+    "message": "vandaag over"
+  },
+  "readerQuotaBlocked": {
+    "message": "Dagelijkse 10 gratis overzichten verbruikt — reset morgen"
+  },
+  "readerPartial": {
+    "message": "Sectie op je huidige positie uitgelegd — scrol omlaag en tik opnieuw op Leg uit voor de volgende"
+  },
+  "readerTooLarge": {
+    "message": "Bestand te groot (groter dan 100 MB). Gebruik een kleiner bestand."
+  },
+  "readerLargeFilePro": {
+    "message": "Bestanden groter dan 7 MB vereisen Pro — Pro opent documenten tot 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "Te groot om vanaf deze pagina te openen (groter dan 7 MB). Open de documentlezer en kies het daar — tot 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Documentlezer openen"
+  },
+  "readerContinue": {
+    "message": "Doorgaan ✦"
+  },
+  "readerSettings": {
+    "message": "Instellingen"
+  },
+  "readerExplainLang": {
+    "message": "Uitleggen in"
+  },
+  "readerDocumentLang": {
+    "message": "Documenttaal"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automatisch (op basis van tekst)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Kies voor afbeeldingen of gescande PDF’s zonder uitleesbare tekst eerst de documenttaal en open daarna het bestand."
+  },
+  "readerVoiceEn": {
+    "message": "Engelse stem"
+  },
+  "readerVoiceZh": {
+    "message": "Chinese stem"
+  },
+  "readerVoices": {
+    "message": "Stemmen"
+  },
+  "readerBrowseVoices": {
+    "message": "Stemmen bekijken"
+  },
+  "readerLangAuto": {
+    "message": "Auto (interfacetaal)"
+  },
+  "readerLangFollow": {
+    "message": "Overeenkomen met document"
+  },
+  "readerPreparing": {
+    "message": "Voorlezen voorbereiden…"
+  },
+  "readerEncrypted": {
+    "message": "Deze pdf is beveiligd met een wachtwoord"
+  },
+  "readerCorrupt": {
+    "message": "Dit bestand lijkt beschadigd of onleesbaar"
+  },
+  "readerTimeout": {
+    "message": "Het openen duurde te lang — het bestand is mogelijk te complex"
+  },
+  "readerEpubDrm": {
+    "message": "Deze EPUB is beveiligd met DRM. Probeer een DRM-vrije EPUB."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Deze EPUB met vaste lay-out bevat geen tekst die gesynchroniseerd kan blijven met het voorlezen."
+  },
+  "readerEpubTooComplex": {
+    "message": "Deze EPUB overschrijdt de limieten voor veilige lokale verwerking. Probeer een kleinere of eenvoudigere EPUB."
+  },
+  "readerEpubTooLarge": {
+    "message": "EPUB-bestanden mogen maximaal 30 MB groot zijn voor veilige lokale verwerking."
+  },
+  "inboxTitle": {
+    "message": "Content-inbox"
+  },
+  "inboxSubtitle": {
+    "message": "Sla webpagina's of geselecteerde tekst op, en lees ze of laat ze uitleggen wanneer je er klaar voor bent."
+  },
+  "inboxEmpty": {
+    "message": "Je inbox is leeg"
+  },
+  "inboxEmptyDescription": {
+    "message": "Klik met de rechtermuisknop op een pagina of geselecteerde tekst en sla deze op in CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Geselecteerde tekst opslaan in CastReader-inbox"
+  },
+  "inboxSavePage": {
+    "message": "Pagina opslaan in CastReader-inbox"
+  },
+  "inboxOpen": {
+    "message": "Content-inbox openen"
+  },
+  "inboxSharedText": {
+    "message": "Geselecteerde tekst"
+  },
+  "inboxOpenFailed": {
+    "message": "Kan deze inhoud niet openen. Probeer het opnieuw."
+  },
+  "inboxRetry": {
+    "message": "Opnieuw proberen"
+  },
+  "inboxRead": {
+    "message": "Hardop lezen"
+  },
+  "inboxExplain": {
+    "message": "Uitleg"
+  },
+  "inboxDelete": {
+    "message": "Verwijderen"
+  },
+  "inboxLink": {
+    "message": "Link"
+  },
+  "inboxText": {
+    "message": "Tekst"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Voorlezen + AI-uitleg"
+  },
+  "edgeExtDescription": {
+    "message": "Lees met gesynchroniseerde markeringen en automatisch scrollen. AI legt moeilijke passages uit. Stemmen in 28 talen."
+  },
+  "toggleSiteVisibility": {
+    "message": "CastReader tonen / verbergen op deze site"
+  },
+  "voiceCloneBenefit": {
+    "message": "Gebruik je eigen stem voor Hardop voorlezen en Leg uit · 120 minuten per maand"
+  },
+  "voiceClonePaywall": {
+    "message": "Maak, beheer en speel gratis vaste voorbeelden van meerdere persoonlijke stemmen af. Pro gebruikt persoonlijke stemmen in Hardop voorlezen en Leg uit voor 120 gegenereerde minuten per maand."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Je minuten voor persoonlijke stemmen zijn op voor deze maand. Je geselecteerde stem blijft behouden."
+  },
+  "ocrModelUnavailable": {
+    "message": "Het taalbestand voor tekstherkenning kon niet worden gedownload. Maak verbinding met internet en probeer het opnieuw."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Herkenning van afbeeldingen en gescande pagina’s is voor deze taal nog niet beschikbaar. Webpagina’s, EPUB, TXT en PDF’s met selecteerbare tekst kunnen wel worden voorgelezen."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Voorlezen is niet beschikbaar op deze pagina"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Deze pagina voorlezen"
+  }
+}

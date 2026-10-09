@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — הקראה והסבר AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — קריאה בקול רם + הסבר בינה מלאכותית"
+  },
+  "extDescription": {
+    "message": "קרא עם הדגשות מסונכרנות וגלילה אוטומטית. בינה מלאכותית מסבירה קטעים קשים בדף. קולות טבעיים ב-28 שפות."
+  },
+  "quickreadBtn": {
+    "message": "סקירה מהירה"
+  },
+  "quickreadBtnExit": {
+    "message": "יציאה מסקירה"
+  },
+  "quickreadPreparing": {
+    "message": "יוצר סקירה כללית"
+  },
+  "quickreadError": {
+    "message": "שגיאה בסקירה הכללית"
+  },
+  "quickreadStageExtract": {
+    "message": "מחלץ נקודות מפתח"
+  },
+  "quickreadStageTts": {
+    "message": "יוצר הקראה"
+  },
+  "quickreadStageRefine": {
+    "message": "מסדר קצב"
+  },
+  "quickreadStageReady": {
+    "message": "מוכן להשמעה…"
+  },
+  "quickreadFailed": {
+    "message": "נכשל: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "סגור"
+  },
+  "quickreadCancel": {
+    "message": "ביטול"
+  },
+  "quickreadDone": {
+    "message": "בוצע"
+  },
+  "quickreadHint": {
+    "message": "כ-25–45 שניות, נא להמתין"
+  },
+  "quickreadQueued": {
+    "message": "בתור ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "הסברים חינמיים יומיים אזלו. מתאפסים מחר."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "הסברים חינמיים יומיים אזלו"
+  },
+  "quickreadRateLimitBody": {
+    "message": "הגעת למגבלה היומית החינמית — שדרג ל-Pro לקבלת הסברים ללא הגבלה. המכסה החינמית שלך מתאפסת מחר."
+  },
+  "quickreadUpgrade": {
+    "message": "שדרג ל-Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "לא מחובר"
+  },
+  "enableProMode": {
+    "message": "הפעל Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "20 הדקות החינמיות היומיות לקריאה אזלו"
+  },
+  "listenRateLimitBody": {
+    "message": "ניצלת את 20 הדקות החינמיות היומיות לקריאה — שדרג ל-Pro לקריאה ללא הגבלה. המכסה החינמית שלך מתאפסת מחר."
+  },
+  "quickreadQuotaTip": {
+    "message": "הסבר · נותרו $n$/$max$ היום",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "הסבר · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "קרא מסמך"
+  },
+  "readerDrop": {
+    "message": "גרור לכאן תמונה / PDF / EPUB / Word / TXT"
+  },
+  "readerDropOver": {
+    "message": "גרור כדי להעלות"
+  },
+  "readerSub": {
+    "message": "הקראה + סקירת AI על הקובץ המקורי — הפריסה ללא שינוי"
+  },
+  "readerOr": {
+    "message": "או"
+  },
+  "readerPick": {
+    "message": "בחר קובץ"
+  },
+  "readerRendering": {
+    "message": "מעבד מסמך…"
+  },
+  "readerListen": {
+    "message": "▶ האזן"
+  },
+  "readerPause": {
+    "message": "⏸ השהה"
+  },
+  "readerResume": {
+    "message": "▶ המשך"
+  },
+  "readerStop": {
+    "message": "■ עצור"
+  },
+  "readerExplain": {
+    "message": "✦ הסבר"
+  },
+  "readerExplainHint": {
+    "message": "עצור קריאה תחילה"
+  },
+  "readerNewFile": {
+    "message": "קובץ חדש"
+  },
+  "readerSpeed": {
+    "message": "מהירות"
+  },
+  "readerUnsupported": {
+    "message": "סוג קובץ לא נתמך"
+  },
+  "readerFailed": {
+    "message": "העיבוד נכשל"
+  },
+  "readerEmpty": {
+    "message": "לא נמצא טקסט קריא במסמך זה"
+  },
+  "readerQuotaLeft": {
+    "message": "נותרו היום"
+  },
+  "readerQuotaBlocked": {
+    "message": "10 סקירות יומיות בחינם אזלו — מתאפס מחר"
+  },
+  "readerPartial": {
+    "message": "הוסבר הקטע במיקום הנוכחי שלך — גלול למטה והקש שוב על הסבר עבור הבא"
+  },
+  "readerTooLarge": {
+    "message": "הקובץ גדול מדי (מעל 100 MB). אנא השתמש בקובץ קטן יותר."
+  },
+  "readerLargeFilePro": {
+    "message": "קבצים מעל 7 MB דורשים Pro — Pro פותח מסמכים עד 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "גדול מדי לפתיחה מדף זה (מעל 7 MB). פתח את קורא המסמכים ובחר אותו שם — עד 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "פתח קורא מסמכים"
+  },
+  "readerContinue": {
+    "message": "המשך ✦"
+  },
+  "readerSettings": {
+    "message": "הגדרות"
+  },
+  "readerExplainLang": {
+    "message": "הסבר ב"
+  },
+  "readerDocumentLang": {
+    "message": "שפת המסמך"
+  },
+  "readerDocumentLangAuto": {
+    "message": "אוטומטי (מהטקסט)"
+  },
+  "readerDocumentLangHint": {
+    "message": "לתמונות או PDF סרוקים ללא טקסט קריא, בחר את שפת המסמך ואז פתח את הקובץ."
+  },
+  "readerVoiceEn": {
+    "message": "קול אנגלי"
+  },
+  "readerVoiceZh": {
+    "message": "קול סיני"
+  },
+  "readerVoices": {
+    "message": "קולות"
+  },
+  "readerBrowseVoices": {
+    "message": "עיון בקולות"
+  },
+  "readerLangAuto": {
+    "message": "אוטומטי (שפת ממשק)"
+  },
+  "readerLangFollow": {
+    "message": "התאמה למסמך"
+  },
+  "readerPreparing": {
+    "message": "מכין הקראה…"
+  },
+  "readerEncrypted": {
+    "message": "קובץ PDF זה מוגן בסיסמה"
+  },
+  "readerCorrupt": {
+    "message": "נראה שהקובץ פגום או לא קריא"
+  },
+  "readerTimeout": {
+    "message": "הפתיחה ארכה זמן רב מדי — ייתכן שהקובץ מורכב מדי"
+  },
+  "readerEpubDrm": {
+    "message": "קובץ EPUB זה מוגן ב-DRM. נסה קובץ EPUB ללא DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "בקובץ EPUB בעיצוב קבוע אין טקסט שניתן לסנכרן עם ההקראה."
+  },
+  "readerEpubTooComplex": {
+    "message": "קובץ EPUB זה חורג ממגבלות העיבוד המקומי הבטוח. נסה קובץ EPUB קטן או פשוט יותר."
+  },
+  "readerEpubTooLarge": {
+    "message": "גודל קבצי EPUB יכול להגיע עד 30 MB לעיבוד מקומי בטוח."
+  },
+  "inboxTitle": {
+    "message": "תיבת תוכן נכנס"
+  },
+  "inboxSubtitle": {
+    "message": "שמור דפי אינטרנט או טקסט נבחר, ואז קרא או הסבר אותם כשתהיה מוכן."
+  },
+  "inboxEmpty": {
+    "message": "תיבת הדואר הנכנס שלך ריקה"
+  },
+  "inboxEmptyDescription": {
+    "message": "לחץ לחיצה ימנית על דף או על טקסט נבחר ושמור אותו ב-CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "שמור טקסט נבחר לתיבת התוכן הנכנס של CastReader"
+  },
+  "inboxSavePage": {
+    "message": "שמור דף לתיבת התוכן הנכנס של CastReader"
+  },
+  "inboxOpen": {
+    "message": "פתח את תיבת התוכן הנכנס"
+  },
+  "inboxSharedText": {
+    "message": "טקסט נבחר"
+  },
+  "inboxOpenFailed": {
+    "message": "לא ניתן לפתוח תוכן זה. נסה שוב."
+  },
+  "inboxRetry": {
+    "message": "נסה שוב"
+  },
+  "inboxRead": {
+    "message": "הקראה בקול רם"
+  },
+  "inboxExplain": {
+    "message": "הסבר"
+  },
+  "inboxDelete": {
+    "message": "מחק"
+  },
+  "inboxLink": {
+    "message": "קישור"
+  },
+  "inboxText": {
+    "message": "טקסט"
+  },
+  "edgeExtName": {
+    "message": "CastReader — הקראה והסברים עם AI"
+  },
+  "edgeExtDescription": {
+    "message": "קרא עם הדגשות מסונכרנות וגלילה אוטומטית. בינה מלאכותית מסבירה קטעים קשים בדף. קולות טבעיים ב-28 שפות."
+  },
+  "toggleSiteVisibility": {
+    "message": "הצג/הסתר את CastReader באתר זה"
+  },
+  "voiceCloneBenefit": {
+    "message": "השתמש בקול שלך להקראה והסבר · 120 דקות בחודש"
+  },
+  "voiceClonePaywall": {
+    "message": "צור,נהל והשמע תצוגות מקדימות קבועות של קולות אישיים מרובים בחינם. Pro משתמש בקולות אישיים בהקראה והסבר ל-120 דקות שנוצרו כל חודש."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "דקות הקול האישי שלך אזלו לחודש זה. הקול שבחרת נשמר."
+  },
+  "ocrModelUnavailable": {
+    "message": "לא ניתן היה להוריד את קובץ שפת הזיהוי. התחבר לאינטרנט ונסה שוב."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "זיהוי תמונות ועמודים סרוקים עדיין אינו זמין בשפה זו. אפשר להמשיך לקרוא דפי אינטרנט, EPUB, TXT וקובצי PDF עם טקסט שניתן לבחירה."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - ההקראה אינה זמינה בעמוד הזה"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - הקראת העמוד הזה"
+  }
+}

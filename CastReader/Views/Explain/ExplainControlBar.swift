@@ -308,8 +308,9 @@ struct ExplainControlBar: View {
         Text(statusLabel(for: presentationState))
             .font(.caption.weight(.semibold))
             .foregroundStyle(AppTheme.mutedForeground)
-            .lineLimit(1)
-            .truncationMode(.tail)
+            .lineLimit(2)
+            .minimumScaleFactor(0.85)
+            .multilineTextAlignment(.leading)
             .frame(maxWidth: 100, alignment: .leading)
     }
 }

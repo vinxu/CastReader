@@ -469,6 +469,20 @@ struct ReaderHostView: View {
                     .accessibilityHidden(weReadTOC.isPresented || weReadTOC.isJumping)
             }
 
+            if let message = playbackFailureMessage, !weReadTOC.isPresented {
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.foreground)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(12)
+                    .frame(maxWidth: AdaptiveLayout.isPad ? 600 : .infinity, alignment: .leading)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, AdaptiveLayout.playbackHeight(in: hostSize) + 12)
+                    .accessibilityIdentifier("readerPlaybackFailureNotice")
+            }
+
             if document.sourceKind == .weread, weReadTOC.isPresented {
                 weReadTOCOverlay
                     .zIndex(10)
@@ -510,9 +524,17 @@ struct ReaderHostView: View {
             if ProcessInfo.processInfo.arguments.contains("-CastReaderLivePlatformAcceptance") {
                 LivePlatformAcceptanceMetricsView(controller: liveWebPageTurn)
             }
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderMultilingualAcceptance") {
+                ReaderLanguageAcceptanceMetricsView(read: readVM, explain: explainVM,
+                    sourceKind: document.sourceKind.rawValue, mode: mode.rawValue)
+            }
         }
         #endif
         .background(AppTheme.background.ignoresSafeArea())
+        .allowsHitTesting(!coordinator.isCorrectingPhotoLanguage)
+        .overlay(alignment: .top) {
+            if coordinator.isCorrectingPhotoLanguage { PhotoRecognitionBadge() }
+        }
         .environment(\.readerAppearanceSource, appearanceSource)
         .sheet(isPresented: $showsEpubTOC) {
             if let navigation = document.epubNavigation {
@@ -666,7 +688,7 @@ struct ReaderHostView: View {
                     .background(AppTheme.primary.opacity(0.12), in: Capsule())
                     .accessibilityIdentifier("youtubeTranscriptBadge")
             } else {
-                if AdaptiveLayout.isPad && (hostSize.width < 500 || dynamicTypeSize.isAccessibilitySize) {
+                if usesModeMenu {
                     Menu {
                         ForEach(ReaderMode.allCases) { value in
                             Button(LocalizedStringKey(value.rawValue)) { modeSelection.wrappedValue = value }
@@ -675,13 +697,14 @@ struct ReaderHostView: View {
                         Label(LocalizedStringKey(mode.rawValue), systemImage: "chevron.up.chevron.down")
                             .font(.subheadline).lineLimit(1).dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                             .frame(minWidth: 44, minHeight: 44)
+                            .fixedSize(horizontal: true, vertical: false)
                     }.accessibilityIdentifier("readerModeMenu")
                 } else {
                     Picker("", selection: modeSelection) {
                         ForEach(ReaderMode.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: AdaptiveLayout.isPad ? min(240, max(180, hostSize.width * 0.35)) : 140)
+                    .frame(width: modeControlWidth)
                     .layoutPriority(1)
                     .accessibilityIdentifier("readerModePicker")
                 }
@@ -692,6 +715,22 @@ struct ReaderHostView: View {
         .frame(height: usesCompactPlaybackBar ? 44 : nil)
         .readerWindowControlInsets()
         .background(.regularMaterial)
+    }
+
+    private var modeControlWidth: CGFloat {
+        // Segment titles are localized independently of the document title.
+        // A fixed 140-point control truncates even the English "Read Aloud".
+        let font = UIFont.systemFont(ofSize: 13, weight: .medium)
+        let widest = ReaderMode.allCases.map {
+            (AppLocalized(String.LocalizationValue(stringLiteral: $0.rawValue)) as NSString).size(withAttributes: [.font: font]).width
+        }.max() ?? 0
+        return max(140, ceil(widest + 32) * CGFloat(ReaderMode.allCases.count))
+    }
+
+    private var usesModeMenu: Bool {
+        dynamicTypeSize.isAccessibilitySize
+            || (AdaptiveLayout.isPad && hostSize.width < 500)
+            || modeControlWidth > min(260, max(140, hostSize.width * 0.58))
     }
 
     /// Capture playback intent in the Picker setter, before either SwiftUI's
@@ -736,6 +775,12 @@ struct ReaderHostView: View {
                 isPreparingNext: explainVM.isPreparingNext
             )
         }
+    }
+
+    private var playbackFailureMessage: String? {
+        if mode == .read, case .error(let message) = readVM.status { return message }
+        if mode == .explain, case .error(let message) = explainVM.status { return message }
+        return nil
     }
 
     // MARK: 内容
@@ -1283,7 +1328,7 @@ struct ReaderPlaybackConsole<PlaybackControls: View>: View {
 
     @ViewBuilder
     private var voiceControl: some View {
-        if let voiceLanguage, !voiceLanguage.isEmpty {
+        if let voiceLanguage, !voiceLanguage.isEmpty || onCorrectReadingLanguage != nil {
             PlaybackVoiceButton(
                 language: voiceLanguage,
                 size: 32,
@@ -1388,6 +1433,9 @@ private struct ReadControlBar: View {
         .hoverEffect(.highlight)
                     }
                     Button {
+                        #if DEBUG
+                        ReaderRunLog.write("READ control tap state=\(presentationState) active=\(vm.isActive) paragraph=\(vm.currentParagraphIndex)")
+                        #endif
                         if presentationState == .waiting {
                             vm.pausePlayback()
                         } else {
@@ -1765,7 +1813,11 @@ private struct ReaderLandscapeExplainOverlay: View {
         case .planning:
             return AppLocalized("开始解读")
         case .streaming(let block, let total):
-            return "Explaining · block \(block + 1)/\(total)"
+            return ExplainSegmentProgressCopy.text(
+                block: block,
+                total: total,
+                preparingNext: vm.isPreparingNext
+            )
         case .completed:
             return AppLocalized("解读完成")
         }
@@ -2045,3 +2097,59 @@ private struct PhotoRecognitionBadge: View {
         .transition(.opacity)
     }
 }
+
+#if DEBUG
+/// Read-only actual VM/player state for bounded live simulator acceptance.
+/// Never replaces content, detection, audio, marks, account or entitlements.
+private struct ReaderLanguageAcceptanceMetricsView: View {
+    @ObservedObject var read: ReadAloudViewModel
+    @ObservedObject var explain: ExplainViewModel
+    @ObservedObject private var audio = AudioPlayerService.shared
+    @ObservedObject private var pro = ProManager.shared
+    let sourceKind: String
+    let mode: String
+    private var highlight: String {
+        if let cue = read.webHighlight {
+            return "web:\(cue.paragraphIndex):\(cue.segSeq):\(cue.wordIndex):\(cue.charStart):\(cue.charEnd)"
+        }
+        if let cue = read.pdfHighlight {
+            return "pdf:\(cue.paragraphIndex):\(cue.wordIndex)"
+        }
+        return read.highlightRange.map(NSStringFromRange) ?? ""
+    }
+    private var metrics: String {
+        var readError = "", explainError = ""
+        if case .error(let message) = read.status { readError = message }
+        if case .error(let message) = explain.status { explainError = message }
+        let data: [String: Any] = [
+            "sourceKind": sourceKind, "mode": mode, "language": read.acceptanceReadingLanguage,
+            "readStartGates": read.acceptanceStartGates,
+            "readStartState": ["active": read.isActive, "loading": read.status.isLoading,
+                "streaming": read.status.isStreaming, "buffering": read.isBuffering,
+                "preparingPage": read.isPreparingReadablePage, "pausedByUser": read.isPlaybackPausedByUser,
+                "hasResumeNotice": read.resumeNotice != nil, "hasQueuedSegments": audio.hasQueuedSegments,
+                "hasPlaybackRequest": audio.hasPlaybackRequest, "isPro": pro.isPro],
+            "readableParagraphs": read.acceptanceReadableParagraphCount,
+            "paragraph": read.currentParagraphIndex, "readFinished": read.isFinished,
+            "highlight": highlight, "readVoiceID": read.acceptanceVoiceID, "explainVoiceID": explain.acceptanceVoiceID,
+            "playing": audio.isPlaying, "time": audio.currentTime, "rate": Double(audio.playbackRate),
+            "readError": readError, "explainError": explainError,
+            "segment": audio.currentSegment?.id ?? "", "duration": audio.currentSegment?.duration ?? 0,
+            "block": explain.currentBlockIndex, "marks": explain.activeMarks.count,
+            "explainFinished": explain.status == .completed,
+            "explainScopeStart": explain.acceptanceScopeStartParagraph,
+            "caption": explain.explanationText, "explainLanguage": explain.playbackLanguage
+        ]
+        guard let bytes = try? JSONSerialization.data(withJSONObject: data, options: [.sortedKeys]) else { return "{}" }
+        return String(data: bytes, encoding: .utf8) ?? "{}"
+    }
+    var body: some View {
+        Color.clear.frame(width: 1, height: 1)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Reader language playback metrics")
+            .accessibilityValue(metrics)
+            .accessibilityIdentifier("readerLanguagePlaybackMetrics")
+            .allowsHitTesting(false)
+    }
+}
+#endif

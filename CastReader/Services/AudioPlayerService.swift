@@ -2048,7 +2048,11 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard playbackOwnership.permitsPlayback(requestedBy: token) else {
             return false
         }
-        if isPlaying || (presentationHold != nil && hasPlaybackRequest) {
+        // A pending Play remains active while AVPlayer buffers the next item.
+        // Toggling in that gap must cancel the intent, not issue another Play.
+        let pendingPlayback = hasPlaybackRequest
+            && (isBuffering || isWaitingForNextSegment || presentationHold != nil)
+        if isPlaying || pendingPlayback {
             return pause(session: token)
         } else {
             sleepTimer.resumeByUser()

@@ -37,7 +37,9 @@ struct TTSRequest: Codable {
         includeVoiceCode: Bool = true,
         requiresSourceTiming: Bool = false
     ) {
-        self.model = "kokoro"
+        let isGoogleStandard = SupportedTTSLanguage(identifier: language)?.isGoogle == true
+            && !VoiceOption.requiresGenerationQuota(voice)
+        self.model = isGoogleStandard ? "google-wavenet" : "kokoro"
         self.input = input
         self.voice = voice
         // Preserve the existing request body for every caller by default.
@@ -47,8 +49,8 @@ struct TTSRequest: Codable {
         self.responseFormat = "mp3"
         // Display grain and source navigation are independent. Live pages need
         // actual timing even when the UI paints a whole CJK sentence.
-        self.returnTimestamps = requiresSourceTiming || TTSHighlightPolicy.usesWordTimestamps(language: language)
-        self.speed = speed
+        self.returnTimestamps = requiresSourceTiming || TTSHighlightPolicy.usesWordTimestamps(language: language, voice: voice)
+        self.speed = isGoogleStandard ? 1 : speed
         self.stream = false
         self.language = language
     }
@@ -58,9 +60,9 @@ struct TTSRequest: Codable {
 /// `TTSTimestampQuality`: a response can be internally well-formed while the
 /// selected reading language still calls for natural sentence highlighting.
 enum TTSHighlightPolicy {
-    private static let segmentTimedLanguageCodes: Set<String> = ["zh", "ja", "ko"]
+    private static let segmentTimedLanguageCodes: Set<String> = ["zh", "ja"]
 
-    static func usesWordTimestamps(language: String) -> Bool {
+    static func usesWordTimestamps(language: String, voice: String? = nil) -> Bool {
         let primary = language.trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
             .replacingOccurrences(of: "_", with: "-")
@@ -68,14 +70,21 @@ enum TTSHighlightPolicy {
             .first
             .map(String.init) ?? ""
         if segmentTimedLanguageCodes.contains(primary) { return false }
+        // Korean word timing is verified for Google standard voices only.
+        // Preserve the clone sentence-display contract even when source timing
+        // is separately requested for live-page continuation.
+        if primary == "ko" {
+            guard let voice, !voice.isEmpty, !VoiceOption.requiresGenerationQuota(voice) else { return false }
+        }
         return SupportedTTSLanguage(identifier: language)?.timestampMode != "segment"
     }
 
     static func displayTimestamps(
         _ timestamps: [TTSTimestamp],
-        language: String
+        language: String,
+        voice: String? = nil
     ) -> [TTSTimestamp] {
-        usesWordTimestamps(language: language) ? timestamps : []
+        usesWordTimestamps(language: language, voice: voice) ? timestamps : []
     }
 }
 
@@ -274,7 +283,7 @@ enum TTSTimestampQuality {
 /// splitting common German abbreviations into fake sentences.
 enum ReadingSentenceContract {
     private static let terminals: Set<Character> = [
-        ".", "!", "?", ";", "。", "！", "？", "；", "…", "।", "॥"
+        ".", "!", "?", ";", "。", "！", "？", "；", "…", "।", "॥", "؟", "؛"
     ]
     private static let closers: Set<Character> = [
         "\"", "'", "»", "’", "”", ")", "]", "）", "】", "」", "』", "〉", "》"
@@ -440,7 +449,7 @@ enum ClonedTTSStartup {
     static func requestUnits(_ text: String, language: String, voice: String) -> [String] {
         var units = TTSSentenceSegmenter.requestUnits(text, language: language)
         guard VoiceOption.requiresGenerationQuota(voice), let first = units.first else { return units }
-        let cjk = ["zh", "ja", "ko"].contains(VoiceCatalog.normalizedLanguage(language))
+        let cjk = ["zh", "ja"].contains(VoiceCatalog.normalizedLanguage(language))
         let limit = cjk ? 48 : 120
         guard first.utf16.count > limit else { return units }
         let bounded = ClonedTTSRequestChunker.split(first, maxUTF16Length: limit).input

@@ -28,6 +28,11 @@ final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
+        let selected = UserDefaults(suiteName: "group.com.same.castreader")?.string(forKey: "interfaceLanguage")
+        if let selected, selected != "system" {
+            view.semanticContentAttribute = Locale(identifier: selected).language.characterDirection == .rightToLeft
+                ? .forceRightToLeft : .forceLeftToRight
+        }
         configureUI()
         isAutoRouteProbeActive = true
         Task { @MainActor in

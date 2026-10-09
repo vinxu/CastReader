@@ -2199,8 +2199,8 @@ class CastReaderTests: XCTestCase {
 }
 
 final class LocalizationCatalogTests: XCTestCase {
-    private let appLocales = ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"]
-    private let translatedLocales = ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"]
+    private let appLocales = ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi", "nl", "ko", "ar", "ru", "pl", "sv", "da", "nb", "fi", "cs", "el", "hu", "fil", "he", "id", "ms", "ro", "tr", "vi"]
+    private let translatedLocales = ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi", "nl", "ko", "ar", "ru", "pl", "sv", "da", "nb", "fi", "cs", "el", "hu", "fil", "he", "id", "ms", "ro", "tr", "vi"]
 
     private var repositoryRoot: URL {
         TestRepository.root
@@ -2245,11 +2245,34 @@ final class LocalizationCatalogTests: XCTestCase {
         }.sorted()
     }
 
-    func testAppLanguagePickerContainsSystemAndAllNineLanguages() {
+    func testAppLanguagePickerContainsSystemAndAll28Languages() {
         XCTAssertEqual(
             AppLanguage.allCases.map(\.rawValue),
-            ["system", "en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"]
+            ["system", "en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi",
+             "nl", "ko", "ar", "ru", "pl", "sv", "da", "nb", "fi", "cs", "el", "hu",
+             "fil", "he", "id", "ms", "ro", "tr", "vi"]
         )
+    }
+
+    func testNetworkErrorsFollowAppLanguageInsteadOfSystemErrorDescription() {
+        let manager = AppLanguageManager.shared
+        let previous = manager.selectedLanguage
+        defer { manager.select(previous) }
+        let timeout = NSError(domain: NSURLErrorDomain, code: URLError.timedOut.rawValue,
+                              userInfo: [NSLocalizedDescriptionKey: "请求超时。"])
+        let offline = NSError(domain: NSURLErrorDomain, code: URLError.notConnectedToInternet.rawValue,
+                              userInfo: [NSLocalizedDescriptionKey: "The Internet connection appears to be offline."])
+        manager.select(.english)
+        XCTAssertEqual(AppUserFacingError(timeout), "The request timed out. Check your connection and try again")
+        manager.select(.hebrew)
+        XCTAssertEqual(AppUserFacingError(timeout), "תם הזמן הקצוב לבקשה. בדקו את החיבור ונסו שוב")
+        XCTAssertEqual(AppUserFacingError(offline), "החיבור לרשת נכשל. נסו שוב.")
+        let quota = NSError(domain: "CastReaderQuota", code: 403,
+                            userInfo: [NSLocalizedDescriptionKey: "quota-specific-recovery"])
+        XCTAssertEqual(AppUserFacingError(quota), "quota-specific-recovery")
+        let cancelled = NSError(domain: NSURLErrorDomain, code: URLError.cancelled.rawValue,
+                                userInfo: [NSLocalizedDescriptionKey: "cancelled-sentinel"])
+        XCTAssertEqual(AppUserFacingError(cancelled), "cancelled-sentinel")
     }
 
     func testAppLanguageOverrideChangesRuntimeLocalizedStrings() {
@@ -2517,7 +2540,7 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertEqual(message, "temporarily unavailable")
     }
 
-    func testNineLanguageCatalogIsCompleteAndFormatSafe() throws {
+    func testTwentyEightLanguageCatalogIsCompleteAndFormatSafe() throws {
         let root = try catalog(named: "Localizable")
         XCTAssertEqual(root["sourceLanguage"] as? String, "zh-Hans")
         let strings = try XCTUnwrap(root["strings"] as? [String: Any])
@@ -2526,7 +2549,12 @@ final class LocalizationCatalogTests: XCTestCase {
         for (key, rawEntry) in strings where !key.isEmpty {
             let entry = try XCTUnwrap(rawEntry as? [String: Any], "Invalid entry: \(key)")
             let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any], "No localizations: \(key)")
-            let expectedSignature = try formatSignature(key)
+            let sourceLocalization = try XCTUnwrap(localizations["zh-Hans"] as? [String: Any])
+            let sourceUnit = try XCTUnwrap(sourceLocalization["stringUnit"] as? [String: Any])
+            let sourceValue = try XCTUnwrap(sourceUnit["value"] as? String)
+            // Semantic keys such as voiceCloneSupportedLanguageCount carry
+            // placeholders in their source value, not in the key itself.
+            let expectedSignature = try formatSignature(sourceValue)
 
             for locale in translatedLocales {
                 let rawLocalization = try XCTUnwrap(localizations[locale], "Missing \(locale): \(key)")
@@ -2667,7 +2695,7 @@ final class LocalizationCatalogTests: XCTestCase {
         }
     }
 
-    func testAuxiliaryCatalogsCoverAllNineLanguagesAndPreserveTemplates() throws {
+    func testAuxiliaryCatalogsCoverAllTwentyEightLanguagesAndPreserveTemplates() throws {
         let paths = [
             "CastReader/AppShortcuts.xcstrings",
             "CastReader Share Extension/Localizable.xcstrings",
@@ -2765,7 +2793,7 @@ final class LocalizationCatalogTests: XCTestCase {
     }
 
     /// 试用文案是审核红线：任何一种语言缺翻译，该语言用户就会看到中文源串或空承诺。
-    func testFreeTrialCopyIsCompleteInAllNineLanguages() throws {
+    func testFreeTrialCopyIsCompleteInAllTwentyEightLanguages() throws {
         let root = try catalog(named: "Localizable")
         let strings = try XCTUnwrap(root["strings"] as? [String: Any])
         let trialKeys = [
@@ -2782,7 +2810,7 @@ final class LocalizationCatalogTests: XCTestCase {
             let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
             XCTAssertEqual(
                 Set(localizations.keys), Set(translatedLocales),
-                "试用文案 \(key) 未覆盖九种语言"
+                "试用文案 \(key) 未覆盖二十八种语言"
             )
             let sourceSignature = try formatSignature(key)
             for locale in translatedLocales {
@@ -2801,7 +2829,7 @@ final class LocalizationCatalogTests: XCTestCase {
         }
     }
 
-    func testProjectDeclaresAllNineKnownRegions() throws {
+    func testProjectDeclaresAllTwentyEightKnownRegions() throws {
         let projectURL = repositoryRoot.appendingPathComponent("CastReader.xcodeproj/project.pbxproj")
         guard FileManager.default.fileExists(atPath: projectURL.path) else {
             throw XCTSkip("Project source checks run on the host build machine")
@@ -2922,9 +2950,9 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertEqual(vm.playbackLanguage, "es")
     }
 
-    // MARK: - Unified nine-language import contract
+    // MARK: - Unified 28-language import contract
 
-    func testReadingSentenceContractCoversAllNineLanguages() {
+    func testReadingSentenceContractCoversAllTwentyEightLanguages() {
         let samples: [String: String] = [
             "en": "First sentence. Second sentence!",
             "zh": "第一句话。第二句话！",
@@ -2934,7 +2962,26 @@ final class LocalizationCatalogTests: XCTestCase {
             "de": "Erster Satz. Zweiter Satz!",
             "pt": "Primeira frase. Segunda frase!",
             "it": "Prima frase. Seconda frase!",
-            "hi": "यह पहला वाक्य है। यह दूसरा वाक्य है॥"
+            "hi": "यह पहला वाक्य है। यह दूसरा वाक्य है॥",
+            "nl": "Dit is de eerste zin. Dit is de tweede zin!",
+            "ko": "첫 번째 문장입니다. 두 번째 문장입니다!",
+            "ar": "هذه هي الجملة الأولى. وهذه هي الجملة الثانية!",
+            "ru": "Это первое предложение. Это второе предложение!",
+            "pl": "To pierwsze zdanie. To drugie zdanie!",
+            "sv": "Det här är första meningen. Det här är andra meningen!",
+            "da": "Dette er den første sætning. Dette er den anden sætning!",
+            "nb": "Dette er den første setningen. Dette er den andre setningen!",
+            "fi": "Tämä on ensimmäinen lause. Tämä on toinen lause!",
+            "cs": "Toto je první věta. Toto je druhá věta!",
+            "el": "Αυτή είναι η πρώτη πρόταση. Αυτή είναι η δεύτερη πρόταση!",
+            "hu": "Ez az első mondat. Ez a második mondat!",
+            "fil": "Ito ang unang pangungusap. Ito ang ikalawang pangungusap!",
+            "he": "זה המשפט הראשון. זה המשפט השני!",
+            "id": "Ini kalimat pertama. Ini kalimat kedua!",
+            "ms": "Ini ayat pertama. Ini ayat kedua!",
+            "ro": "Aceasta este prima propoziție. Aceasta este a doua propoziție!",
+            "tr": "Bu ilk cümle. Bu ikinci cümle!",
+            "vi": "Đây là câu đầu tiên. Đây là câu thứ hai!"
         ]
         XCTAssertEqual(Set(samples.keys), Set(SupportedTTSLanguage.allCases.map(\.rawValue)))
         for (language, text) in samples {
@@ -4600,10 +4647,10 @@ final class StudyBoostTests: XCTestCase {
         XCTAssertEqual(store.phase, .completed)
     }
 
-    func testStudyBoostCopyCoversExactlyNineProductLanguages() {
+    func testStudyBoostCopyCoversAll28ProductLanguages() {
         let productLanguages = AppLanguage.allCases.filter { $0 != .system }.map(\.rawValue).sorted()
         XCTAssertEqual(StudyBoostCopy.supportedLanguages.map(\.rawValue).sorted(), productLanguages)
-        XCTAssertEqual(productLanguages.count, 9)
+        XCTAssertEqual(productLanguages.count, 28)
 
         for language in StudyBoostCopy.supportedLanguages {
             let copy = StudyBoostCopy.localized(for: language, locale: language.locale)
@@ -4613,6 +4660,10 @@ final class StudyBoostTests: XCTestCase {
                 strings.allSatisfy { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
                 "\(language.rawValue) 存在空白活动文案"
             )
+            if language != .english {
+                XCTAssertNotEqual(copy.title, StudyBoostCopy.localized(for: .english).title,
+                                  "\(language.rawValue) must not fall back to English campaign copy")
+            }
         }
     }
 

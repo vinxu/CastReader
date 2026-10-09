@@ -205,15 +205,17 @@ enum DocumentBuilder {
         }
         try Task.checkCancellation()
         guard !paragraphs.isEmpty else { return nil }
-        let lang = detectLanguage(paragraphs.prefix(30).map(\.text).joined(separator: " "))
+        let context = DocumentLanguageContext.detect(paragraphs: paragraphs)
         try Task.checkCancellation()
         // 标题：优先 PDF 元数据标题（有意义时）→ 首句/首行 → 文件名（避免 arxiv-id 文件名等 demo 感）。
         let metaTitle = (pdf.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String)
         let resolved = title ?? derivePDFTitle(meta: metaTitle, firstText: paragraphs.first?.text,
                                                fallback: fallbackTitle)
         try Task.checkCancellation()
-        return ReadingDocument(title: resolved,
-                               sourceKind: .pdf, language: lang, paragraphs: paragraphs, fileData: data)
+        var document = ReadingDocument(title: resolved,
+                                       sourceKind: .pdf, language: context.language, paragraphs: paragraphs, fileData: data)
+        document.languageContext = context
+        return document
     }
 
     /// Keep the original PDF for every page. Searchable pages retain exact
@@ -320,7 +322,7 @@ enum DocumentBuilder {
         }
         try Task.checkCancellation()
         guard !paragraphs.isEmpty else { return nil }
-        let language = detectLanguage(paragraphs.prefix(40).map(\.text).joined(separator: " "))
+        let context = DocumentLanguageContext.detect(paragraphs: paragraphs)
         try Task.checkCancellation()
         let metaTitle = pdf.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String
         let resolvedTitle = title ?? derivePDFTitle(
@@ -329,13 +331,12 @@ enum DocumentBuilder {
             fallback: fallbackTitle
         )
         try Task.checkCancellation()
-        return ReadingDocument(
-            title: resolvedTitle,
-            sourceKind: .pdf,
-            language: language,
-            paragraphs: paragraphs,
-            fileData: data
+        var document = ReadingDocument(
+            title: resolvedTitle, sourceKind: .pdf, language: context.language,
+            paragraphs: paragraphs, fileData: data
         )
+        document.languageContext = context
+        return document
     }
 
     /// PDF 标题推导：元数据标题（剔除 "Microsoft Word - …"/untitled 等垃圾）→ 首段文本（截断）→ 文件名兜底。
@@ -443,11 +444,13 @@ enum DocumentBuilder {
             return nil
         }
         try Task.checkCancellation()
-        let sample = parsed.paragraphs.prefix(40).filter { $0.type.isReadable }.map(\.text).joined(separator: " ")
-        let lang = detectLanguage(sample)
+        let context = DocumentLanguageContext.detect(paragraphs: parsed.paragraphs,
+                                                     declaredLanguage: parsed.declaredLanguage)
         try Task.checkCancellation()
-        var document = ReadingDocument(title: parsed.title ?? title, sourceKind: .epub, language: lang,
+        var document = ReadingDocument(title: parsed.title ?? title, sourceKind: .epub, language: context.language,
                                        paragraphs: parsed.paragraphs, fileData: data)
+        document.languageContext = context
+        document.declaredLanguage = parsed.declaredLanguage
         document.epubNavigation = parsed.navigation
         return document
     }
@@ -551,7 +554,7 @@ enum DocumentBuilder {
             s = "https://" + s
         }
         guard let url = URL(string: s), let host = url.host, !host.isEmpty else { return nil }
-        return ReadingDocument(title: host, sourceKind: .web, paragraphs: [], sourceURL: s)
+        return ReadingDocument(title: host, sourceKind: .web, language: "", paragraphs: [], sourceURL: s)
     }
 
     /// Markdown（上传文件解析后的内容）→ ReadingDocument(.text)
@@ -571,20 +574,24 @@ enum DocumentBuilder {
                 idx += 1
             }
         }
-        let lang = language ?? detectLanguage(parsed.plainText)
-        return ReadingDocument(title: title.isEmpty ? defaultTitle(paragraphs) : title,
-                               sourceKind: .text, language: lang,
-                               paragraphs: paragraphs, sourceURL: sourceURL)
+        let context = language == nil ? DocumentLanguageContext.detect(paragraphs: paragraphs) : nil
+        var document = ReadingDocument(title: title.isEmpty ? defaultTitle(paragraphs) : title,
+                                       sourceKind: .text, language: language ?? context?.language ?? "",
+                                       paragraphs: paragraphs, sourceURL: sourceURL)
+        document.languageContext = context
+        return document
     }
 
     /// 纯文本输入 → ReadingDocument(.text)
     static func fromPlainText(_ text: String, title: String, language: String? = nil) -> ReadingDocument {
         let chunks = splitForReading(text)
         let paragraphs = chunks.enumerated().map { ReadingParagraph(id: $0.offset, text: $0.element) }
-        let lang = language ?? detectLanguage(text)
-        return ReadingDocument(title: title.isEmpty ? defaultTitle(paragraphs) : title,
-                               sourceKind: .text, language: lang,
-                               paragraphs: paragraphs, sourceURL: nil)
+        let context = language == nil ? DocumentLanguageContext.detect(paragraphs: paragraphs) : nil
+        var document = ReadingDocument(title: title.isEmpty ? defaultTitle(paragraphs) : title,
+                                       sourceKind: .text, language: language ?? context?.language ?? "",
+                                       paragraphs: paragraphs, sourceURL: nil)
+        document.languageContext = context
+        return document
     }
 
     // MARK: - Helpers

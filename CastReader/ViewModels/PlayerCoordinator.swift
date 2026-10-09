@@ -47,11 +47,21 @@ final class PlayerCoordinator: ObservableObject {
     var ownsPlaybackSession: Bool { session?.readVM.ownsPlaybackSession == true || session?.explainVM.ownsPlaybackSession == true }
 
     private let speechGenerator: any ParagraphSpeechGenerating
+    typealias PhotoRecognizer = @MainActor (Data, String) async throws -> ReadingDocument
+    private let photoRecognizer: PhotoRecognizer
+    private var photoCorrectionTask: Task<Void, Never>?
+    private var photoCorrectionGeneration = UUID()
+    @Published private(set) var isCorrectingPhotoLanguage = false
 
     init(historyStore: HistoryStore = .shared,
-         speechGenerator: any ParagraphSpeechGenerating = TTSService.shared) {
+         speechGenerator: any ParagraphSpeechGenerating = TTSService.shared,
+         photoRecognizer: @escaping PhotoRecognizer = { data, language in
+             guard let image = UIImage(data: data) else { throw OCRError.noText }
+             return try await OCRService.shared.recognizeImportedImage(image: image, languageHint: language)
+         }) {
         self.historyStore = historyStore
         self.speechGenerator = speechGenerator
+        self.photoRecognizer = photoRecognizer
     }
 
     /// 一次播放会话：一个文档配一对 VM。会话存活期间播放不断，跨阅读器开合、跨 Tab。
@@ -87,6 +97,7 @@ final class PlayerCoordinator: ObservableObject {
         analyticsContext suppliedAnalyticsContext: AnalyticsContentContext? = nil,
         reusingLocalPayload: Bool = false
     ) {
+        cancelPhotoLanguageCorrection()
         offlineCenter.stop(preservingSleepTimer: true)
         let openStarted = Date()
         presentationGeneration = UUID()
@@ -141,6 +152,7 @@ final class PlayerCoordinator: ObservableObject {
         } else if let scenario {
             session?.explainVM.scenario = scenario   // 同文档以场景重新进入：更新场景信号
         }
+        bindPhotoLanguageCorrection()
         session?.readVM.configurePlaybackMetadata(
             id: document.id,
             title: document.title,
@@ -185,6 +197,10 @@ final class PlayerCoordinator: ObservableObject {
               current.document.id == document.id,
               current.document.paragraphs.isEmpty,
               !document.paragraphs.isEmpty else { return }
+        replaceSessionContent(document, current: current)
+    }
+
+    private func replaceSessionContent(_ document: ReadingDocument, current: Session) {
         current.readVM.stop()
         current.explainVM.stop()
         let readVM = ReadAloudViewModel(
@@ -215,8 +231,76 @@ final class PlayerCoordinator: ObservableObject {
             readVM: readVM,
             explainVM: explainVM
         )
+        bindPhotoLanguageCorrection()
         ProductAnalytics.shared.contentReady(current.analyticsContext, document: document)
         historyStore.record(document)
+    }
+
+    private func bindPhotoLanguageCorrection() {
+        guard let current = session, current.document.sourceKind == .photo else { return }
+        let instanceID = current.instanceID
+        current.readVM.onPhotoLanguageCorrection = { [weak self] language in
+            guard self?.session?.instanceID == instanceID else { return }
+            self?.correctPhotoLanguage(language)
+        }
+    }
+
+    private func cancelPhotoLanguageCorrection() {
+        photoCorrectionGeneration = UUID()
+        photoCorrectionTask?.cancel()
+        photoCorrectionTask = nil
+        isCorrectingPhotoLanguage = false
+        session?.readVM.isCorrectingPhotoLanguage = false
+    }
+
+    /// A user correction is transactional: retain the prior text, geometry and
+    /// language if recognition fails; publish all three together on success.
+    private func correctPhotoLanguage(_ language: String) {
+        guard let current = session, current.document.sourceKind == .photo,
+              let data = current.document.imageData,
+              SupportedTTSLanguage(identifier: language) != nil else { return }
+        let shouldResume = mode == .read && current.readVM.isPlaying
+        cancelPhotoLanguageCorrection()
+        let generation = photoCorrectionGeneration
+        let boundary = historyStore.progressBoundaryToken
+        current.readVM.stop()
+        current.explainVM.stop()
+        current.readVM.isCorrectingPhotoLanguage = true
+        isCorrectingPhotoLanguage = true
+        photoCorrectionTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                if self.photoCorrectionGeneration == generation {
+                    self.isCorrectingPhotoLanguage = false
+                    self.photoCorrectionTask = nil
+                    current.readVM.isCorrectingPhotoLanguage = false
+                }
+            }
+            do {
+                var recognized = try await self.photoRecognizer(data, language)
+                try Task.checkCancellation()
+                guard self.photoCorrectionGeneration == generation,
+                      self.session?.instanceID == current.instanceID,
+                      self.historyStore.progressBoundaryToken == boundary else { return }
+                guard !recognized.paragraphs.isEmpty else { throw OCRError.noText }
+                recognized.id = current.document.id
+                recognized.contentSessionKey = current.document.contentSessionKey
+                recognized.title = current.document.title
+                recognized.sourceKind = .photo
+                recognized.language = language
+                let key = ReadingLanguageStore.contentKey(namespace: "photo", bookID: recognized.id)
+                ReadingLanguageStore.shared.setOverride(language, for: key)
+                self.replaceSessionContent(recognized, current: current)
+                if shouldResume, self.mode == .read { self.session?.readVM.ensurePlaying() }
+            } catch is CancellationError {
+                // Leaving this document or making a newer correction invalidates this result.
+            } catch {
+                guard self.photoCorrectionGeneration == generation,
+                      self.session?.instanceID == current.instanceID,
+                      self.historyStore.progressBoundaryToken == boundary else { return }
+                current.readVM.status = .error(AppUserFacingError(error))
+            }
+        }
     }
 
     /// 收起阅读器（不停播放）→ Mini Player 接管。
@@ -249,6 +333,7 @@ final class PlayerCoordinator: ObservableObject {
     ///   caption-language switch. The kept-alive document is exactly what makes
     ///   the next switch fast, so it must outlive that internal churn.
     func close(releasingYouTubeWarmSession: Bool = true, preservingSleepTimer: Bool = false) {
+        cancelPhotoLanguageCorrection()
         if ownsPlaybackSession, !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
         presentationGeneration = UUID()
         // The YouTube extractor may be holding a hidden document alive so
@@ -266,9 +351,12 @@ final class PlayerCoordinator: ObservableObject {
 
     func adoptPlayback(from source: PlayerCoordinator) {
         guard source.ownsPlaybackSession else { return }
+        cancelPhotoLanguageCorrection()
+        source.cancelPhotoLanguageCorrection()
         session = source.session
         mode = source.mode
         source.session = nil
+        bindPhotoLanguageCorrection()
         source.isReaderPresented = false
         isReaderPresented = true
     }

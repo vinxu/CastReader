@@ -126,7 +126,8 @@ private struct KindleExplainHeldInkLayer: View, Equatable {
                 KindleTimedMarkInkView(
                     ink: HandwrittenMark.stroke(action: mark.action,
                         rects: resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange),
-                        seed: mark.seed, n: mark.n, weight: mark.weight),
+                        seed: mark.seed, n: mark.n, weight: mark.weight,
+                        rightToLeft: SupportedTTSLanguage(identifier: state.document.language)?.isRightToLeft == true),
                     animation: animations[mark.id]
                 )
                 .offset(x: state.imageRect.minX, y: state.imageRect.minY)
@@ -1249,7 +1250,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
 
     @ViewBuilder
     private func voiceControl(showsLabel: Bool) -> some View {
-        if let voiceLanguage, !voiceLanguage.isEmpty {
+        if let voiceLanguage, !voiceLanguage.isEmpty || onCorrectReadingLanguage != nil {
             PlaybackVoiceButton(
                 language: voiceLanguage,
                 size: 32,
@@ -15118,7 +15119,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let rects = resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange)
         guard !rects.isEmpty else { return nil }
         let ink = HandwrittenMark.stroke(action: mark.action, rects: rects, seed: mark.seed,
-                                         n: mark.n, weight: mark.weight)
+                                         n: mark.n, weight: mark.weight,
+                                         rightToLeft: SupportedTTSLanguage(identifier: owner.document.language)?.isRightToLeft == true)
         var drawingPayload = payload
         drawingPayload["canvasKey"] = key
         drawingPayload["canvasWidth"] = width

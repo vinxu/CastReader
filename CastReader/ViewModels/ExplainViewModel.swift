@@ -220,6 +220,19 @@ final class ExplainViewModel: ObservableObject {
     private var webDoc: ReadingDocument? = nil
     private var deferredWebAutoplay = DeferredAutoplayGate()
     private var doc: ReadingDocument { webDoc ?? kindleSpeechDocument ?? document }
+
+    /// A correction made in Read applies to the source in both modes. Keep the
+    /// original source namespace and stable book identity when web extraction
+    /// produces a temporary document. An explicit explanation language still wins.
+    private func resolvedSourceLanguage(for input: ReadingDocument) -> String {
+        ReadingLanguageStore.shared.override(
+            for: ReadingLanguageStore.contentKey(for: document, bookID: playbackBookID)
+        ) ?? input.language
+    }
+
+    private var requestedOutputLanguage: String {
+        VoiceCatalog.normalizedLanguage(settings.explainLangOrNil ?? resolvedSourceLanguage(for: doc))
+    }
     func loadWebParagraphs(_ p: [ReadingParagraph], language: String? = nil) {
         webDoc = ReadingDocument(id: document.id, title: document.title, sourceKind: .web,
                                  language: language ?? document.language, paragraphs: p, sourceURL: document.sourceURL)
@@ -674,7 +687,9 @@ final class ExplainViewModel: ObservableObject {
         self.speechGenerator = speechGenerator ?? TTSService.shared
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         let initialLanguage = VoiceCatalog.normalizedLanguage(
-            AppSettings.shared.explainLangOrNil ?? document.language
+            AppSettings.shared.explainLangOrNil
+                ?? ReadingLanguageStore.shared.override(for: ReadingLanguageStore.contentKey(for: document))
+                ?? document.language
         )
         self.outputLanguage = initialLanguage
         self.playbackLanguage = initialLanguage
@@ -774,6 +789,7 @@ final class ExplainViewModel: ObservableObject {
         playbackTitle = title
         playbackCoverURL = coverURL
         playbackChapterTitle = chapterTitle
+        refreshIdlePlaybackLanguage()
     }
 
     private func applyPlaybackMetadata() {
@@ -854,7 +870,7 @@ final class ExplainViewModel: ObservableObject {
 
     private func refreshIdlePlaybackLanguage() {
         guard currentBlockIndex < 0, !isActive else { return }
-        setOutputLanguage(settings.explainLangOrNil ?? doc.language)
+        setOutputLanguage(requestedOutputLanguage)
     }
 
     private func handleVoicePreferenceChanged(forceRestart: Bool = false, autoPlayOverride: Bool? = nil) {
@@ -1152,6 +1168,7 @@ final class ExplainViewModel: ObservableObject {
     /// or restores it. A non-autoplay switch remains idle/actionable.
     func activateAfterModeSwitch(autoplay: Bool) {
         liveWebTurnIntentSuspended = false
+        refreshIdlePlaybackLanguage()
         if autoplay { activate() }
         ReaderRunLog.write(
             "EXPLAIN mode activation autoplay=\(autoplay ? "Y" : "N") " +
@@ -1247,6 +1264,22 @@ final class ExplainViewModel: ObservableObject {
             "paras=\(doc.readableParagraphs.count)"
         )
         guard status == .idle || isErrorState else { return }
+        // Output is locked before quota or LLM work. UI locale never supplies it.
+        let requestedOutput = requestedOutputLanguage
+        guard let capability = SupportedTTSLanguage(identifier: requestedOutput) else {
+            status = .error((requestedOutput.isEmpty ? SpeechCapabilityError.uncertainLanguage
+                : SpeechCapabilityError.unsupportedLanguage).localizedDescription)
+            return
+        }
+        guard capability.isSupported(in: ServiceRouting.current) else {
+            status = .error(SpeechCapabilityError.serviceUnavailable.localizedDescription)
+            return
+        }
+        guard !settings.voice(for: requestedOutput).isEmpty else {
+            status = .error(SpeechCapabilityError.serviceUnavailable.localizedDescription)
+            return
+        }
+
         // 提交 LLM 前预校验：内容太短，LLM 没东西可讲 → 直接引导朗读，不发请求白等重试、也不消耗额度（而非无脑提交）。
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
@@ -1267,7 +1300,7 @@ final class ExplainViewModel: ObservableObject {
         beginFreshContentGeneration()
         let generation = contentGeneration
         beginAnalyticsExplainSession()
-        setOutputLanguage(settings.explainLangOrNil ?? doc.language)
+        setOutputLanguage(requestedOutput)
         if !reusingStartedSession {
             didProjectServerExplainConsumption = false
             quota.noteExplainStarted(isPro: pro.isPro)
@@ -1541,7 +1574,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     /// 解读最低内容量（提交 LLM 前预校验）：中文字符密度高、阈值低；其他语言按字符计。低于此 LLM 没东西可讲。
-    private var minExplainChars: Int { doc.language.hasPrefix("zh") ? 20 : 50 }
+    private var minExplainChars: Int { resolvedSourceLanguage(for: doc).hasPrefix("zh") ? 20 : 50 }
 
     /// 快道内容上限：rest 整段一次 extract-plan（不分批，§4.7）能被后端单次处理的体量上界（对齐「一篇长文」≈
     /// 网页文章，实测 ~6800 字 plan 正常）。超过（整本 EPUB/超长）退回分批路径，避免单次 plan 过大 → 后端 400。
@@ -1575,6 +1608,7 @@ final class ExplainViewModel: ObservableObject {
 
     /// 快道 block_0 → 可播放块：TTS narration + ensureTiming 均匀铺 at（跳过 compose，§5.5）。
     private func prepareFastBlock(_ section: QuickreadSection, language: String) async throws -> PreparedBlock {
+        try QuickReadOutputLanguage.validateNarration(section.text, requested: language)
         var segs: [AudioSegment] = []
         let voiceID = settings.voice(for: language)
         try await speechGenerator.generateTTSForParagraph(
@@ -1598,7 +1632,7 @@ final class ExplainViewModel: ObservableObject {
         generation: UInt64
     ) async {
         guard generation == contentGeneration, !Task.isCancelled else { return }
-        let lang = settings.explainLangOrNil ?? doc.language   // 锁定确定语言（快道+质道同语言，不让 server 对快道默认 en）
+        let lang = outputLanguage // Locked by start; shared by both plan lanes.
         await MainActor.run {
             guard self.contentGeneration == generation else { return }
             self.forcedExplainLang = lang
@@ -2137,7 +2171,7 @@ final class ExplainViewModel: ObservableObject {
                 } else if error is CancellationError || Self.isCancelledTTS(error) {
                     // 取消不是错误：新一代内容已接管或用户主动切换，静默退出。
                 } else {
-                    self.status = .error(error.localizedDescription)
+                    self.status = .error(AppUserFacingError(error))
                     self.stageText = AppLocalized("解读失败")
                     self.endAnalyticsExplainSession(
                         result: .failed,
@@ -2160,9 +2194,9 @@ final class ExplainViewModel: ObservableObject {
         }
         jobId = plan.job_id
         totalBlocks = idxBase + max(1, plan.total_blocks)   // 快道占 idxBase 块 + 质道块
-        // 快道激活（forcedExplainLang != nil）时它优先：block_0 已用此语言朗读，质道必须跟随，不能被
-        // plan.output_language 盖过（否则质道与快道开头语言/音色不一致）。非快道时才用 plan 返回的语言。
-        setOutputLanguage(forcedExplainLang ?? plan.output_language ?? settings.explainLangOrNil ?? doc.language)
+        // The request owns narration language. Server metadata is validated by
+        // QuickReadService before this callback and never changes the user's choice.
+        setOutputLanguage(forcedExplainLang ?? activePlanRequest?.lang ?? outputLanguage)
         section0 = plan.block_0                              // 质道首块 = iOS block_idxBase
         extractedSections[0] = plan.block_0
         let scoped = pdfScopedParagraphs ?? doc.paragraphs   // 实际传后端的范围（PDF 逐批时是当前批，非整本）
@@ -2223,7 +2257,7 @@ final class ExplainViewModel: ObservableObject {
             kindlePerfLog("prepare-enqueue error idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) error=\(error.localizedDescription)")
             await MainActor.run {
                 guard self.contentGeneration == generation else { return }
-                self.status = .error(error.localizedDescription)
+                self.status = .error(AppUserFacingError(error))
                 self.isPreparingNext = false
                 self.endAnalyticsExplainSession(
                     result: .failed,
@@ -2487,6 +2521,7 @@ final class ExplainViewModel: ObservableObject {
     /// 讲解 section → 可播放块（TTS + 拼时间线 + composeBlock 回填 mark.at）。参数化 jobId/语言 → 当前页与页间预取共用。
     /// idx = iOS 块序（TTS 段标识、匹配 currentBlockIndex）；composeIdx = 质道块号（快道激活后两者差 idxBase）。
     private func prepareSection(_ section: QuickreadSection, idx: Int, composeIdx: Int, jobId: String, language: String, detachedTTS: Bool = false, voiceOverride: String? = nil, publishIncrementally: Bool = false, speculativePageSourceKey: String? = nil) async throws -> PreparedBlock {
+        try QuickReadOutputLanguage.validateNarration(section.text, requested: language)
         let startedAt = Date()
         let voiceID = voiceOverride ?? settings.voice(for: language)
         if publishIncrementally, let units = ExplanationSpeechPlan.units(text: section.text, marks: section.events) {
@@ -2783,6 +2818,9 @@ final class ExplainViewModel: ObservableObject {
     /// Every cache/replay/prefetch entrance shares this identity gate. Keep the
     /// explanation and regenerate only its audio when the narrator changes.
 #if DEBUG
+    @Published private(set) var acceptanceScopeStartParagraph = 0
+    var acceptanceVoiceID: String { playbackVoiceID }
+
     /// Seed a completed narration in integration tests; playback still goes
     /// through the production ownership, voice validation and retry paths.
     func debugPlayShortNarration(_ section: QuickreadSection) async throws {
@@ -2801,6 +2839,19 @@ final class ExplainViewModel: ObservableObject {
     func debugSeekSubtitle(to time: Double) -> Bool { audio.seek(to: time, session: audioSessionToken) }
     var debugPreparedVoiceIDs: [Int: String] { prepared.mapValues(\.voiceID) }
     func debugPreparedSegments(block: Int) -> [AudioSegment] { prepared[block]?.segments ?? [] }
+    /// Controlled continuation regression: seed only this VM's completed batch,
+    /// with isolated HTTP fixtures. Never changes account or quota state.
+    func debugAdvanceUnprefetchedBatch(from start: Int, previousIndexBase: Int) {
+        activate()
+        guard let session = ensureAudioSessionClaim() else { return }
+        _ = audio.clearQueue(session: session)
+        didProjectServerExplainConsumption = true
+        block0Claimed = true
+        idxBase = previousIndexBase
+        planSettled = true
+        pdfAllParagraphs = doc.paragraphs
+        advanceBatch(fromGlobalIndex: start)
+    }
     func debugSeedCachedNarration(_ segments: [AudioSegment], voiceID: String, enqueueImmediately: Bool = false) {
         let text = segments.map(\.text).joined(separator: " ")
         let block = PreparedBlock(segments: segments, marks: [], text: text,
@@ -2845,6 +2896,16 @@ final class ExplainViewModel: ObservableObject {
         // batch's delayed block tasks may write into its page-local block keys.
         beginFreshContentGeneration()
         let generation = contentGeneration
+        // A batch owns a new plan and block-zero claim. Otherwise a cache miss
+        // treats its first block as a background successor of the old batch:
+        // audio is generated but nothing requests foreground playback.
+        idxBase = 0
+        block0Claimed = false
+        fastSection = nil
+        planFailed = false
+        planSettled = false
+        completionNotified = false
+        extractedSections.removeAll()
         batchPrevSummary = prevSummary
         debugLog("advanceBatch start=%d paras=%d chars=%d prevSummary=%d prefetched=%@",
                  start, batch.paras.count, batch.paras.reduce(0) { $0 + $1.text.count },
@@ -2901,6 +2962,8 @@ final class ExplainViewModel: ObservableObject {
     private func applyPrefetchedBatch(_ pf: BatchPlan, generation: UInt64) {
         jobId = pf.jobId
         totalBlocks = pf.totalBlocks
+        block0Claimed = true
+        planSettled = true
         setOutputLanguage(pf.outputLanguage)
         section0 = pf.section0       // prepareBlock(0) 直接用、跳过 extract-block
         batchPrevSummary = pf.prevSummary ?? batchPrevSummary
@@ -3034,7 +3097,7 @@ final class ExplainViewModel: ObservableObject {
         let box = PlanBlock0Box()
         let done = try await quickReadService.extractPlan(req, onStage: { _ in }, onBlock0: { box.set($0) })
         guard let b = box.value else { throw QuickReadError.noBlock0 }
-        let lang = b.output_language ?? settings.explainLangOrNil ?? doc.language
+        let lang = req.lang ?? outputLanguage
         var total = max(1, b.total_blocks)
         if let tb = done.total_blocks, tb > total { total = tb }
         return BatchPlan(startIndex: startIndex, jobId: b.job_id, totalBlocks: total,
@@ -3106,7 +3169,7 @@ final class ExplainViewModel: ObservableObject {
             }
             return box.value!
         } onCancel: { planTask.cancel() }
-        let lang = b.output_language ?? settings.explainLangOrNil ?? targetDocument.language
+        let lang = req.lang ?? targetDocument.language
         let voiceID = settings.voice(for: lang)
         let total = max(1, b.total_blocks)
         let pb0 = try await prepareSection(
@@ -3327,7 +3390,13 @@ final class ExplainViewModel: ObservableObject {
         }.sorted { ($0.at ?? 0) < ($1.at ?? 0) }
     }
 
-    private var pdfScopedParagraphs: [ReadingParagraph]?
+    private var pdfScopedParagraphs: [ReadingParagraph]? {
+        didSet {
+            #if DEBUG
+            acceptanceScopeStartParagraph = pdfScopedParagraphs?.first?.id ?? 0
+            #endif
+        }
+    }
     private var pdfAllParagraphs: [ReadingParagraph]?   // PDF 全部段落（有序，连续解读用）
     private var pdfBatchCursor: Int?                     // 下一批起始全局段索引（nil = 已到末尾）
     private var batchPrevSummary: String?                // 长文分批承接：上一批讲解摘要，传给下一批 prev_summary
@@ -3412,7 +3481,8 @@ final class ExplainViewModel: ObservableObject {
         return ExtractPlanRequest(
             source_url: src,
             title: Self.quickReadTitle(for: targetDoc),
-            lang: forcedExplainLang ?? settings.explainLangOrNil,   // 快道激活 → 用锁定语言，与快道 block_0 一致
+            lang: QuickReadOutputLanguage.resolve(preference: settings.explainLangOrNil,
+                                                  source: resolvedSourceLanguage(for: targetDoc), locked: forcedExplainLang),
             depth: requestDepth,                                    // 永远=用户设置的 3 档；场景不改深度（与 content_type 正交）
             text: fullText,
             fullText: fullText,

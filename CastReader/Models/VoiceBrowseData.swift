@@ -31,6 +31,7 @@ struct VoiceBrowseRequest: Equatable {
     var voiceIDs: [String]? = nil
     var topic: VoiceDiscoveryTopic? = nil
     var style: VoiceListeningStyle = .all
+    var adaptiveDiscovery = false
 }
 
 struct VoiceFeedSection: Identifiable {
@@ -56,6 +57,7 @@ struct VoiceFeedData {
     let topics: [VoiceFeedTopic]
     let fallbackSections: [VoiceFeedSection]
     let validUntil: Date
+    let regularVoices: [VoiceOption]
 }
 
 /// One serial background worker owns bounded derived caches. SwiftUI receives
@@ -147,19 +149,26 @@ actor VoiceBrowseWorker {
         let regular = voices.filter { !$0.usesMonthlyGeneration }
         let sections = modules.compactMap { module -> VoiceFeedSection? in
             let selected = module.voiceIds.compactMap { indexed[$0] }.filter { !$0.usesMonthlyGeneration }
-            guard !selected.isEmpty else { return nil }
+            guard Set(selected.map(\.id)).count >= (request.adaptiveDiscovery ? 2 : 1) else { return nil }
             return VoiceFeedSection(module: module, voices: selected)
         }
-        // Only operator-selected clones enter the single secondary module.
-        // Generic recommendations and stale mixed collections remain regular-only.
-        let featuredClones = Array(modules.flatMap(\.voiceIds).compactMap { indexed[$0] }
-            .filter(\.usesMonthlyGeneration).prefix(6))
+        let featuredClones: [VoiceOption]
+        if request.adaptiveDiscovery {
+            featuredClones = VoiceBrowsePresentation.featuredClones(voices,
+                language: request.language, editorialIDs: modules.flatMap(\.voiceIds))
+        } else {
+            featuredClones = Array(modules.flatMap(\.voiceIds).compactMap { indexed[$0] }
+                .filter(\.usesMonthlyGeneration).prefix(6))
+        }
         let editorialIDs = Set(modules.flatMap(\.voiceIds))
+        var seenCollections = Set<Set<String>>()
         let collections = (snapshot.document?.collections ?? []).compactMap { collection -> VoiceFeedCollection? in
-            let count = Set(collection.voiceIds).reduce(0) { count, id in
-                count + (indexed[id].map { $0.enabled && $0.selectable && !$0.usesMonthlyGeneration } == true ? 1 : 0)
-            }
-            return count == 0 ? nil : VoiceFeedCollection(collection: collection, count: count)
+            let members = Set(collection.voiceIds.filter { indexed[$0].map {
+                $0.enabled && $0.selectable && !$0.usesMonthlyGeneration
+            } == true })
+            guard members.count >= (request.adaptiveDiscovery ? 2 : 1),
+                  !request.adaptiveDiscovery || seenCollections.insert(members).inserted else { return nil }
+            return VoiceFeedCollection(collection: collection, count: members.count)
         }
         let curated = Set(collections.flatMap { $0.collection.voiceIds })
         let curatedRegular = regular.filter { curated.contains($0.id) && !editorialIDs.contains($0.id) }
@@ -174,13 +183,13 @@ actor VoiceBrowseWorker {
                 for topic in VoiceDiscovery.topics(for: voice) { byTopic[topic, default: []].append(voice) }
             }
             topics = VoiceDiscoveryTopic.browseCases.compactMap { topic in
-                guard let values = byTopic[topic], !values.isEmpty else { return nil }
+                guard let values = byTopic[topic], values.count >= (request.adaptiveDiscovery ? 2 : 1) else { return nil }
                 return VoiceFeedTopic(topic: topic, count: values.count)
             }
             var excluded = editorialIDs.union(recommendations.map(\.id))
             for topic in [VoiceDiscoveryTopic.gentle, .stories, .focus] {
                 let picks = VoiceDiscovery.recommended(byTopic[topic] ?? [], language: request.language, excluding: excluded, limit: 5)
-                guard !picks.isEmpty else { continue }
+                guard picks.count >= (request.adaptiveDiscovery ? 2 : 1) else { continue }
                 excluded.formUnion(picks.prefix(topic == .stories ? 3 : 5).map(\.id))
                 let module = VoiceDiscoveryModule(id: "fallback-" + topic.id, layout: topic == .stories ? "rows" : "portraits",
                     title: [:], theme: topic, voiceIds: picks.map(\.id))
@@ -196,7 +205,7 @@ actor VoiceBrowseWorker {
         }
         let boundaries = snapshot.document?.discovery.map { [date($0.startsAt), date($0.endsAt)].compactMap { $0 }.filter { $0 > now } } ?? []
         let data = VoiceFeedData(sections: sections, recommendations: recommendations, featuredClones: featuredClones, collections: collections,
-            topics: topics, fallbackSections: fallback, validUntil: boundaries.min() ?? .distantFuture)
+            topics: topics, fallbackSections: fallback, validUntil: boundaries.min() ?? .distantFuture, regularVoices: regular)
         feeds.insert((request, data), at: 0)
         if feeds.count > 4 { feeds.removeLast() }
         return data
@@ -239,5 +248,26 @@ final class VoiceDiscoveryFeedModel: ObservableObject {
                 try await Task.sleep(nanoseconds: UInt64(min(delay, 86_400 * 30) * 1_000_000_000))
             }
         } catch { /* A new language, catalog, or disappearance cancels this task. */ }
+    }
+}
+
+/// Public discovery uses recording culture; output compatibility remains separate.
+enum VoiceBrowsePresentation {
+    static func isAdaptive(region: AppRegion = AppRegion.current, route: ServiceRoute = ServiceRouting.current) -> Bool {
+        region == .global && route == .globalGateway
+    }
+
+    static func featuredClones(_ voices: [VoiceOption], language: String, editorialIDs: [String]) -> [VoiceOption] {
+        let normalized = VoiceCatalog.normalizedLanguage(language)
+        guard VoiceCloneLanguageSupport.all.contains(normalized) else { return [] }
+        let pool = voices.filter { voice in
+            voice.enabled && voice.selectable && voice.usesMonthlyGeneration &&
+            voice.matchesDiscoveryLanguage(normalized) &&
+            !["lab", "legacy"].contains(voice.status.lowercased()) &&
+            !(voice.previewURL(for: normalized)?.trimmed.isEmpty ?? true)
+        }
+        let indexed = Dictionary(pool.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var seen = Set<String>()
+        return (editorialIDs.compactMap { indexed[$0] } + pool).filter { seen.insert($0.id).inserted }
     }
 }

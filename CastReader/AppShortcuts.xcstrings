@@ -1,58 +1,694 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "Continue in ${applicationName}" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "In ${applicationName} fortsetzen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue in ${applicationName}" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar en ${applicationName}" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer dans ${applicationName}" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} में जारी रखें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua in ${applicationName}" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName}で続きを開く" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar no ${applicationName}" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在${applicationName}中继续" } }
+  "sourceLanguage": "en",
+  "strings": {
+    "Continue in ${applicationName}": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In ${applicationName} fortsetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue in ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar en ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer dans ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} में जारी रखें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua in ${applicationName}"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName}で続きを開く"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar no ${applicationName}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在${applicationName}中继续"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doorgaan in ${applicationName}"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المواصلة في ${applicationName}"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить в ${applicationName}"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontynuuj w ${applicationName}"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsätt i ${applicationName}"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsæt i ${applicationName}"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett i ${applicationName}"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jatka sovelluksessa ${applicationName}"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovat v ${applicationName}"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συνέχεια στο ${applicationName}"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folytatás a(z) ${applicationName} alkalmazásban"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magpatuloy sa ${applicationName}"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teruskan dalam ${applicationName}"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} içinde devam et"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName}에서 계속하기"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanjutkan di ${applicationName}"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuă în ${applicationName}"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המשך ב־${applicationName}"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp tục trong ${applicationName}"
+          }
+        }
       }
     },
-    "Explain with ${applicationName}" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit ${applicationName} erklären" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Explain with ${applicationName}" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Explicar con ${applicationName}" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Expliquer avec ${applicationName}" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} से समझाएँ" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Spiega con ${applicationName}" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName}で解説" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Explicar com o ${applicationName}" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用${applicationName}解读" } }
+    "Explain with ${applicationName}": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit ${applicationName} erklären"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explain with ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explicar con ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expliquer avec ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} से समझाएँ"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiega con ${applicationName}"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName}で解説"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explicar com o ${applicationName}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用${applicationName}解读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uitleggen met ${applicationName}"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الشرح باستخدام ${applicationName}"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Объяснить с помощью ${applicationName}"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyjaśnij za pomocą ${applicationName}"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förklara med ${applicationName}"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forklar med ${applicationName}"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forklar med ${applicationName}"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selitä sovelluksella ${applicationName}"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vysvětlit pomocí ${applicationName}"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εξήγηση με ${applicationName}"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magyarázat a(z) ${applicationName} segítségével"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ipaliwanag gamit ang ${applicationName}"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terangkan dengan ${applicationName}"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} ile açıkla"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName}로 해설하기"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jelaskan dengan ${applicationName}"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explică folosind ${applicationName}"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הסבר באמצעות ${applicationName}"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giải thích bằng ${applicationName}"
+          }
+        }
       }
     },
-    "Keep reading with ${applicationName}" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit ${applicationName} weiterlesen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep reading with ${applicationName}" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Seguir leyendo con ${applicationName}" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer à lire avec ${applicationName}" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} से पढ़ना जारी रखें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua a leggere con ${applicationName}" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName}で読書を続ける" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar lendo com o ${applicationName}" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用${applicationName}继续阅读" } }
+    "Keep reading with ${applicationName}": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit ${applicationName} weiterlesen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep reading with ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir leyendo con ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer à lire avec ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} से पढ़ना जारी रखें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua a leggere con ${applicationName}"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName}で読書を続ける"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar lendo com o ${applicationName}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用${applicationName}继续阅读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verder lezen met ${applicationName}"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متابعة القراءة باستخدام ${applicationName}"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Читать дальше с помощью ${applicationName}"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Czytaj dalej z ${applicationName}"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsätt läsa med ${applicationName}"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Læs videre med ${applicationName}"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett å lese med ${applicationName}"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jatka lukemista sovelluksessa ${applicationName}"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovat v čtení s ${applicationName}"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συνέχιση ανάγνωσης με ${applicationName}"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Olvasás folytatása a(z) ${applicationName} alkalmazással"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magpatuloy na bumasa gamit ang ${applicationName}"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teruskan membaca dengan ${applicationName}"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} ile okumaya devam et"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName}로 계속 읽기"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terus membaca dengan ${applicationName}"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuă lectura cu ${applicationName}"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המשך קריאה עם ${applicationName}"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp tục đọc bằng ${applicationName}"
+          }
+        }
       }
     },
-    "Read with ${applicationName}" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit ${applicationName} vorlesen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Read with ${applicationName}" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Leer con ${applicationName}" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lire avec ${applicationName}" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} से पढ़ें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Leggi con ${applicationName}" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName}で読み上げ" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ler com o ${applicationName}" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用${applicationName}朗读" } }
+    "Read with ${applicationName}": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit ${applicationName} vorlesen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read with ${applicationName}"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leer con ${applicationName}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lire avec ${applicationName}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} से पढ़ें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leggi con ${applicationName}"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName}で読み上げ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ler com o ${applicationName}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用${applicationName}朗读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lezen met ${applicationName}"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القراءة باستخدام ${applicationName}"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Читать с помощью ${applicationName}"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Czytaj z ${applicationName}"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs med ${applicationName}"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Læs med ${applicationName}"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les med ${applicationName}"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lue sovelluksessa ${applicationName}"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Číst s ${applicationName}"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ανάγνωση με ${applicationName}"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Olvasás a(z) ${applicationName} alkalmazással"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bumasa gamit ang ${applicationName}"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baca dengan ${applicationName}"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName} ile oku"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${applicationName}로 읽기"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baca dengan ${applicationName}"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Citește cu ${applicationName}"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "קריאה עם ${applicationName}"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đọc bằng ${applicationName}"
+          }
+        }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

@@ -31,7 +31,7 @@ enum KoboReaderLauncher {
             id: latest.id,
             title: latest.title,
             sourceKind: .kobo,
-            language: Constants.TTS.defaultLanguage,
+            language: HistoryStore.shared.records.first { $0.id == latest.id && $0.sourceKind == .kobo }?.language ?? "",
             paragraphs: [],
             sourceURL: latest.effectiveReaderURL,
             coverURL: latest.coverURL
@@ -56,12 +56,14 @@ enum KoboReaderLauncher {
 // MARK: - Home
 
 struct KoboHomeSection: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = KoboLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
                 VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
@@ -122,11 +124,13 @@ struct KoboHomeSection: View {
 }
 
 private struct KoboRailCard: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     private var cardWidth: CGFloat { typeSize.isAccessibilitySize ? 240 : 92 }
     let book: KoboBook
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             KoboCoverView(book: book)
                 .frame(width: 92, height: 132)

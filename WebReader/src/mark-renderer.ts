@@ -1,4 +1,4 @@
-import { sourceText, sourceRange } from './source-text'
+import { sourceRange } from './source-text'
 // 解读手写标注渲染：复用扩展 handwritten-marks 的画笔，把 native 下发的
 // {paragraphIndex, charStart, charEnd, action, seed} 在 DOM 段落上定位 Range → SVG 叠层手写动画。
 // SVG 用 document 绝对坐标（随页面滚动），覆盖全文。
@@ -52,6 +52,38 @@ export interface MarkRenderer {
   clear: () => void
   setColor: (hex: string) => void
   relayout: () => void
+}
+
+// Element ranges include both nested inline boxes and their text boxes. Use
+// only selected, non-whitespace text, then join adjacent pieces on one baseline.
+// This avoids darker duplicate strokes without joining columns or wrapped lines.
+function textLineRects(el: HTMLElement, selected: Range): DOMRect[] {
+  const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+  const lines: DOMRect[] = []
+  let node: Node | null
+  while ((node = walker.nextNode())) {
+    if (!selected.intersectsNode(node)) continue
+    const text = node as Text
+    let start = node === selected.startContainer ? selected.startOffset : 0
+    let end = node === selected.endContainer ? selected.endOffset : text.length
+    while (start < end && /\s/.test(text.data[start])) start++
+    while (end > start && /\s/.test(text.data[end - 1])) end--
+    if (end <= start) continue
+    const part = el.ownerDocument.createRange()
+    part.setStart(text, start); part.setEnd(text, end)
+    for (const rect of Array.from(part.getClientRects())) {
+      if (rect.width < 2 || rect.height < 2) continue
+      const prior = lines.find(line => Math.abs(line.top - rect.top) < 1.5 &&
+        Math.abs(line.height - rect.height) < 1.5 &&
+        rect.left <= line.right + rect.height * 0.4 && rect.right >= line.left - rect.height * 0.4)
+      if (prior) {
+        const right = Math.max(prior.right, rect.right)
+        prior.x = Math.min(prior.left, rect.left)
+        prior.width = right - prior.left
+      } else lines.push(new DOMRect(rect.x, rect.y, rect.width, rect.height))
+    }
+  }
+  return lines
 }
 
 export function createMarkRenderer(
@@ -150,7 +182,7 @@ export function createMarkRenderer(
     if (!el) return
     const range = charRange(el, m.charStart, m.charEnd)
     if (!range) return
-    const rects = Array.from(range.getClientRects())
+    const rects = textLineRects(el, range)
     if (!rects.length) return
 
     const ownerDocument = el.ownerDocument
@@ -159,12 +191,19 @@ export function createMarkRenderer(
     const s = ensureSvg(ownerDocument)
     if (!s) return
     const rng = mulberry32(m.seed >>> 0)
-    const sx = ownerWindow.scrollX
-    const sy = ownerWindow.scrollY
+    // The SVG may be positioned relative to a positioned/transformed body,
+    // not the document origin. Convert viewport rects into its actual space.
+    const matrix = s.getScreenCTM()?.inverse()
+    if (!matrix) return
+    const sx = 0, sy = 0
 
     // 跨行词组/句子：getClientRects 每行返回一个 rect。下划线/删除线/荧光笔要逐行画，
     // 否则只画第一行、换行处就断了。末尾符号用最后一行右端；圈也逐行画，不能合并跨栏或跨页的矩形。
-    const lineRects = rects.filter((rc) => rc.width >= 2 && rc.height >= 2)
+    const lineRects = rects.map(rect => {
+      const a = new DOMPoint(rect.left, rect.top).matrixTransform(matrix)
+      const b = new DOMPoint(rect.right, rect.bottom).matrixTransform(matrix)
+      return new DOMRect(a.x, a.y, b.x - a.x, b.y - a.y)
+    })
     if (!lineRects.length) return
     shown.set(m.id, m)
     const last = lineRects[lineRects.length - 1]

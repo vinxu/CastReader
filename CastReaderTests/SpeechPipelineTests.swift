@@ -1266,3 +1266,75 @@ private actor SpeechPipelineSessionProvider: MobileSessionProviding {
     func invalidateSession() {}
     func rejectSession(_ token: String?) {}
 }
+
+/// Isolated HTTP and audio regression; unlike SpeechPipelineTests this class
+/// never changes Pro, login, server session or quota state.
+@MainActor
+final class ExplainBatchContinuationTests: XCTestCase {
+    override func setUp() async throws {
+        // The app host restores navigation and publishes its account boundary
+        // on launch. Let that initial teardown finish before claiming playback.
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+    }
+    func testUnprefetchedBatchStartsItsOwnFirstBlock() async throws {
+        try await exercise(previousIndexBase: 0, pauseDuringPlan: false)
+    }
+    func testUnprefetchedBatchDropsPriorFastLaneOffsetAndHonorsPause() async throws {
+        try await exercise(previousIndexBase: 1, pauseDuringPlan: true)
+    }
+    private func exercise(previousIndexBase: Int, pauseDuringPlan: Bool) async throws {
+        let audio = AudioPlayerService.shared, settings = AppSettings.shared
+        let previousLanguage = settings.explainLanguage
+        settings.explainLanguage = "en"
+        useRegularVoiceForTest(language: "en")
+        let narration = "This new batch must start its own first explanation."
+        let section: [String: Any] = ["id": "batch-first", "text": narration,
+                                     "style": "explain", "cinematic": ["events": []]]
+        let gate = ReadAloudHTTPFixture.ResponseGate()
+        let plan = ReadAloudHTTPFixture.forRequests { request, _ in
+            if request.url?.path == "/api/quickread/extract-plan" {
+                let first: [String: Any] = ["job_id": "new-batch", "output_language": "en",
+                    "total_blocks": 1, "block_0": section]
+                let encoded = String(data: try! JSONSerialization.data(withJSONObject: first), encoding: .utf8)!
+                return .gatedResponse(Data("event: block0\ndata: \(encoded)\n\nevent: done\ndata: {\"job_id\":\"new-batch\",\"total_blocks\":1}\n\n".utf8), gate)
+            }
+            return .response(try! JSONSerialization.data(withJSONObject: ["section": section]))
+        }
+        let speech = ReadAloudHTTPFixture { text, _ in .response(ReadAloudHTTPFixture.body(text, duration: 4)) }
+        let document = ReadingDocument(id: UUID().uuidString, title: "Unprefetched batch continuation",
+            sourceKind: .text, language: "en", paragraphs: [
+                ReadingParagraph(id: 0, text: "The previous batch has finished."),
+                ReadingParagraph(id: 1, text: "The next batch contains fresh source material. It must start even when no next-batch plan was prefetched.")])
+        let vm = ExplainViewModel(document: document, speechGenerator: speech.service(),
+            quickReadService: QuickReadService(session: plan.session,
+                mobileSessionProvider: SpeechPipelineSessionProvider()))
+        defer {
+            gate.release(); vm.stop(); vm.deactivate(); speech.close(); plan.close()
+            settings.explainLanguage = previousLanguage
+        }
+        vm.debugAdvanceUnprefetchedBatch(from: 1, previousIndexBase: previousIndexBase)
+        try await until { plan.capturedRequests.contains { $0.path == "/api/quickread/extract-plan" } }
+        if pauseDuringPlan { vm.pauseOwnedPlayback() }
+        gate.release()
+        try await until { audio.hasQueuedSegments && vm.currentBlockIndex == 0 }
+        XCTAssertEqual(vm.status, .streaming(block: 0, total: 1), "The previous fast lane must not add a phantom block")
+        if pauseDuringPlan {
+            try await Task.sleep(nanoseconds: 200_000_000)
+            XCTAssertTrue(audio.isExplicitlyPaused)
+            XCTAssertFalse(audio.isPlaying)
+            vm.togglePlayPause()
+        }
+        try await until { audio.isPlaying && audio.hasAudibleProgress }
+        XCTAssertEqual(audio.currentSegment?.text, narration)
+        XCTAssertEqual(speech.requests.filter { $0 == narration }.count, 1)
+        XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, 1)
+    }
+    private func until(_ condition: () -> Bool) async throws {
+        for _ in 0..<300 {
+            if condition() { return }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTFail("New batch did not enter foreground playback")
+        throw NSError(domain: "ExplainBatchContinuationTests", code: 1)
+    }
+}

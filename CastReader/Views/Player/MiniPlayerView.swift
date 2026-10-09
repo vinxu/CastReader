@@ -21,6 +21,7 @@ struct MiniPlayerView: View {
 }
 
 private struct MiniPlayerBar: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     let session: PlayerCoordinator.Session
     @ObservedObject var coordinator: PlayerCoordinator
     @ObservedObject private var audio = AudioPlayerService.shared
@@ -74,6 +75,7 @@ private struct MiniPlayerBar: View {
     }
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         HStack(spacing: 12) {
             icon
             Button { coordinator.expand() } label: {

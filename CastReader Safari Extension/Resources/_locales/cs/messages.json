@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Předčítání a výklad AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Předčítání + AI vysvětlení"
+  },
+  "extDescription": {
+    "message": "Předčítání se zvýrazněním a automatickým posouváním. AI vysvětlí obtížné pasáže. Přirozené hlasy ve 28 jazycích."
+  },
+  "quickreadBtn": {
+    "message": "Rychlý přehled"
+  },
+  "quickreadBtnExit": {
+    "message": "Opustit přehled"
+  },
+  "quickreadPreparing": {
+    "message": "Generování přehledu"
+  },
+  "quickreadError": {
+    "message": "Chyba přehledu"
+  },
+  "quickreadStageExtract": {
+    "message": "Extrahování klíčových bodů"
+  },
+  "quickreadStageTts": {
+    "message": "Generování dabingu"
+  },
+  "quickreadStageRefine": {
+    "message": "Uspořádávání rytmu"
+  },
+  "quickreadStageReady": {
+    "message": "Připraveno k přehrání…"
+  },
+  "quickreadFailed": {
+    "message": "Selhalo: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Zavřít"
+  },
+  "quickreadCancel": {
+    "message": "Zrušit"
+  },
+  "quickreadDone": {
+    "message": "Hotovo"
+  },
+  "quickreadHint": {
+    "message": "Přibližně 25–45 sekund, prosím počkejte"
+  },
+  "quickreadQueued": {
+    "message": "Ve frontě ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Denní bezplatná vysvětlení vyčerpána. Obnoví se zítra."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Denní bezplatná vysvětlení vyčerpána"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Denní bezplatný limit dosažen — upgrade na Pro pro neomezená vysvětlení. Vaše bezplatná kvóta se obnoví zítra."
+  },
+  "quickreadUpgrade": {
+    "message": "Upgrade na Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Nepřihlášeno"
+  },
+  "enableProMode": {
+    "message": "Aktivovat Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Denních 20 minut bezplatného čtení vyčerpáno"
+  },
+  "listenRateLimitBody": {
+    "message": "Vyčerpali jste dnešní 20 minut bezplatného čtení — upgrade na Pro pro neomezené čtení. Vaše bezplatná kvóta se obnoví zítra."
+  },
+  "quickreadQuotaTip": {
+    "message": "Vysvětlit · $n$/$max$ zbývá dnes",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Vysvětlit · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Načíst dokument"
+  },
+  "readerDrop": {
+    "message": "Přetáhněte obrázek / PDF / EPUB / Word / TXT sem"
+  },
+  "readerDropOver": {
+    "message": "Přetáhněte pro nahrání"
+  },
+  "readerSub": {
+    "message": "Předčítání + AI přehled v původním souboru — rozložení beze změny"
+  },
+  "readerOr": {
+    "message": "nebo"
+  },
+  "readerPick": {
+    "message": "Vybrat soubor"
+  },
+  "readerRendering": {
+    "message": "Vykreslování dokumentu…"
+  },
+  "readerListen": {
+    "message": "▶ Poslouchat"
+  },
+  "readerPause": {
+    "message": "⏸ Pauza"
+  },
+  "readerResume": {
+    "message": "▶ Pokračovat"
+  },
+  "readerStop": {
+    "message": "■ Zastavit"
+  },
+  "readerExplain": {
+    "message": "✦ Vysvětlit"
+  },
+  "readerExplainHint": {
+    "message": "Nejprve zastavte čtení"
+  },
+  "readerNewFile": {
+    "message": "Nový soubor"
+  },
+  "readerSpeed": {
+    "message": "Rychlost"
+  },
+  "readerUnsupported": {
+    "message": "Nepodporovaný typ souboru"
+  },
+  "readerFailed": {
+    "message": "Zpracování selhalo"
+  },
+  "readerEmpty": {
+    "message": "V tomto dokumentu nebyl nalezen žádný čitelný text"
+  },
+  "readerQuotaLeft": {
+    "message": "zbývá dnes"
+  },
+  "readerQuotaBlocked": {
+    "message": "Denních 10 bezplatných přehledů vyčerpáno — obnoví se zítra"
+  },
+  "readerPartial": {
+    "message": "Sekce na vaší aktuální pozici byla vysvětlena — posuňte se dolů a znovu klepněte na Vysvětlit pro další"
+  },
+  "readerTooLarge": {
+    "message": "Soubor je příliš velký (více než 100 MB). Použijte menší soubor."
+  },
+  "readerLargeFilePro": {
+    "message": "Soubory nad 7 MB vyžadují Pro — Pro otevírá dokumenty až do 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "Příliš velký pro otevření z této stránky (nad 7 MB). Otevřete čtečku dokumentů a vyberte ji tam — až do 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Otevřít čtečku dokumentů"
+  },
+  "readerContinue": {
+    "message": "Pokračovat ✦"
+  },
+  "readerSettings": {
+    "message": "Nastavení"
+  },
+  "readerExplainLang": {
+    "message": "Vysvětlit v"
+  },
+  "readerDocumentLang": {
+    "message": "Jazyk dokumentu"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automaticky (z textu)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Pro obrázky nebo skenované PDF bez čitelného textu vyberte jazyk dokumentu a poté otevřete soubor."
+  },
+  "readerVoiceEn": {
+    "message": "Anglický hlas"
+  },
+  "readerVoiceZh": {
+    "message": "Čínský hlas"
+  },
+  "readerVoices": {
+    "message": "Hlasy"
+  },
+  "readerBrowseVoices": {
+    "message": "Procházet hlasy"
+  },
+  "readerLangAuto": {
+    "message": "Automaticky (jazyk rozhraní)"
+  },
+  "readerLangFollow": {
+    "message": "Synchronizovat s dokumentem"
+  },
+  "readerPreparing": {
+    "message": "Příprava vyprávění…"
+  },
+  "readerEncrypted": {
+    "message": "Tento PDF je chráněn heslem"
+  },
+  "readerCorrupt": {
+    "message": "Tento soubor vypadá poškozeně nebo není čitelný"
+  },
+  "readerTimeout": {
+    "message": "Otevírání trvalo příliš dlouho – soubor může být příliš složitý"
+  },
+  "readerEpubDrm": {
+    "message": "Tento EPUB je chráněn DRM. Zkuste EPUB bez DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Tento pevně uspořádaný EPUB nemá text, který by se dal synchronizovat s vyprávěním."
+  },
+  "readerEpubTooComplex": {
+    "message": "Tento EPUB překračuje bezpečné limity lokálního zpracování. Zkuste menší nebo jednodušší EPUB."
+  },
+  "readerEpubTooLarge": {
+    "message": "Soubory EPUB mohou mít až 30 MB pro bezpečné lokální zpracování."
+  },
+  "inboxTitle": {
+    "message": "Doručená pošta obsahu"
+  },
+  "inboxSubtitle": {
+    "message": "Uložte webové stránky nebo vybraný text a později si je nechte přečíst nebo vysvětlit."
+  },
+  "inboxEmpty": {
+    "message": "Vaše doručená pošta je prázdná"
+  },
+  "inboxEmptyDescription": {
+    "message": "Klikněte pravým tlačítkem na stránku nebo vybraný text a uložte jej do CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Uložit vybraný text do doručené pošty CastReader"
+  },
+  "inboxSavePage": {
+    "message": "Uložit stránku do doručené pošty CastReader"
+  },
+  "inboxOpen": {
+    "message": "Otevřít doručenou poštu obsahu"
+  },
+  "inboxSharedText": {
+    "message": "Vybraný text"
+  },
+  "inboxOpenFailed": {
+    "message": "Tento obsah se nepodařilo otevřít. Zkuste to znovu."
+  },
+  "inboxRetry": {
+    "message": "Zkusit znovu"
+  },
+  "inboxRead": {
+    "message": "Přečíst nahlas"
+  },
+  "inboxExplain": {
+    "message": "Vysvětlit"
+  },
+  "inboxDelete": {
+    "message": "Smazat"
+  },
+  "inboxLink": {
+    "message": "Odkaz"
+  },
+  "inboxText": {
+    "message": "Text"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Předčítání + AI vysvětlení"
+  },
+  "edgeExtDescription": {
+    "message": "Předčítání se zvýrazněním a automatickým posouváním. AI vysvětlí obtížné pasáže. Přirozené hlasy ve 28 jazycích."
+  },
+  "toggleSiteVisibility": {
+    "message": "Zobrazit / skrýt CastReader na této stránce"
+  },
+  "voiceCloneBenefit": {
+    "message": "Použijte svůj vlastní hlas pro Přečíst nahlas a Vysvětlit · 120 minut měsíčně"
+  },
+  "voiceClonePaywall": {
+    "message": "Vytvářejte, spravujte a přehrávejte pevné ukázky více osobních hlasů zdarma. Pro používá osobní hlasy v Přečíst nahlas a Vysvětlit pro 120 generovaných minut každý měsíc."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Vaše minuty pro osobní hlasy jsou tento měsíc vyčerpány. Vybraný hlas je zachován."
+  },
+  "ocrModelUnavailable": {
+    "message": "Soubor jazyka rozpoznávání se nepodařilo stáhnout. Připojte se k internetu a zkuste to znovu."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Rozpoznávání obrázků a naskenovaných stránek pro tento jazyk zatím není dostupné. Nadále můžete číst webové stránky, EPUB, TXT a PDF s označitelným textem."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Na této stránce není předčítání dostupné"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Přečíst tuto stránku"
+  }
+}

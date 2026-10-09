@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Lectură și explicații AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Citește cu voce tare + Explicare AI"
+  },
+  "extDescription": {
+    "message": "Citește în 28 de limbi, cu evidențiere sincronizată, derulare automată și explicații AI direct pe pagină."
+  },
+  "quickreadBtn": {
+    "message": "Prezentare generală rapidă"
+  },
+  "quickreadBtnExit": {
+    "message": "Ieși din prezentarea generală"
+  },
+  "quickreadPreparing": {
+    "message": "Se generează prezentarea generală"
+  },
+  "quickreadError": {
+    "message": "Eroare la prezentarea generală"
+  },
+  "quickreadStageExtract": {
+    "message": "Se extrag punctele cheie"
+  },
+  "quickreadStageTts": {
+    "message": "Se generează vocea"
+  },
+  "quickreadStageRefine": {
+    "message": "Se ajustează ritmul"
+  },
+  "quickreadStageReady": {
+    "message": "Gata de redare…"
+  },
+  "quickreadFailed": {
+    "message": "Eșec: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Închide"
+  },
+  "quickreadCancel": {
+    "message": "Anulează"
+  },
+  "quickreadDone": {
+    "message": "Gata"
+  },
+  "quickreadHint": {
+    "message": "Aproximativ 25-45 de secunde, vă rugăm să așteptați"
+  },
+  "quickreadQueued": {
+    "message": "În coadă ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Explicațiile gratuite zilnice au fost epuizate. Se resetează mâine."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Explicațiile gratuite zilnice au fost epuizate"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Limita zilnică gratuită atinsă — treci la Pro pentru Explicații nelimitate. Cota ta gratuită se resetează mâine."
+  },
+  "quickreadUpgrade": {
+    "message": "Treci la Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Neconectat"
+  },
+  "enableProMode": {
+    "message": "Activați Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Cele 20 de minute gratuite de citire zilnice au fost epuizate"
+  },
+  "listenRateLimitBody": {
+    "message": "Ai folosit cele 20 de minute gratuite de citire de astăzi — treci la Pro pentru citire nelimitată. Cota ta gratuită se resetează mâine."
+  },
+  "quickreadQuotaTip": {
+    "message": "Explică · $n$/$max$ rămase astăzi",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Explică · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Citește un document"
+  },
+  "readerDrop": {
+    "message": "Plasează aici o imagine / PDF / EPUB / Word / TXT"
+  },
+  "readerDropOver": {
+    "message": "Plasează pentru încărcare"
+  },
+  "readerSub": {
+    "message": "Citire cu voce tare + rezumat AI pe fișierul original — layout-ul rămâne neschimbat"
+  },
+  "readerOr": {
+    "message": "sau"
+  },
+  "readerPick": {
+    "message": "Alege fișierul"
+  },
+  "readerRendering": {
+    "message": "Se randează documentul…"
+  },
+  "readerListen": {
+    "message": "▶ Ascultă"
+  },
+  "readerPause": {
+    "message": "⏸ Pauză"
+  },
+  "readerResume": {
+    "message": "▶ Reia"
+  },
+  "readerStop": {
+    "message": "■ Oprește"
+  },
+  "readerExplain": {
+    "message": "✦ Explică"
+  },
+  "readerExplainHint": {
+    "message": "Oprește mai întâi lectura"
+  },
+  "readerNewFile": {
+    "message": "Fișier nou"
+  },
+  "readerSpeed": {
+    "message": "Viteză"
+  },
+  "readerUnsupported": {
+    "message": "Tip de fișier neacceptat"
+  },
+  "readerFailed": {
+    "message": "Procesarea a eșuat"
+  },
+  "readerEmpty": {
+    "message": "Nu s-a găsit text lizibil în acest document"
+  },
+  "readerQuotaLeft": {
+    "message": "rămase astăzi"
+  },
+  "readerQuotaBlocked": {
+    "message": "Cele 10 rezumate gratuite zilnice au fost epuizate — se resetează mâine"
+  },
+  "readerPartial": {
+    "message": "Secțiunea de la poziția curentă a fost explicată — derulează în jos și atinge din nou Explică pentru următoarea"
+  },
+  "readerTooLarge": {
+    "message": "Fișier prea mare (peste 100 MB). Te rugăm să folosești un fișier mai mic."
+  },
+  "readerLargeFilePro": {
+    "message": "Fișierele peste 7 MB necesită Pro — Pro deschide documente de până la 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "Prea mare pentru a fi deschis din această pagină (peste 7 MB). Deschide cititorul de documente și selectează-l acolo — până la 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Deschide cititorul de documente"
+  },
+  "readerContinue": {
+    "message": "Continuă ✦"
+  },
+  "readerSettings": {
+    "message": "Setări"
+  },
+  "readerExplainLang": {
+    "message": "Explică în"
+  },
+  "readerDocumentLang": {
+    "message": "Limba documentului"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automat (din text)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Pentru imagini sau PDF-uri scanate fără text lizibil, selectează limba documentului, apoi deschide fișierul."
+  },
+  "readerVoiceEn": {
+    "message": "Voce în engleză"
+  },
+  "readerVoiceZh": {
+    "message": "Voce în chineză"
+  },
+  "readerVoices": {
+    "message": "Voci"
+  },
+  "readerBrowseVoices": {
+    "message": "Răsfoiește vocile"
+  },
+  "readerLangAuto": {
+    "message": "Automat (limba interfeței)"
+  },
+  "readerLangFollow": {
+    "message": "Potrivește documentul"
+  },
+  "readerPreparing": {
+    "message": "Se pregătește nararea…"
+  },
+  "readerEncrypted": {
+    "message": "Acest PDF este protejat cu parolă"
+  },
+  "readerCorrupt": {
+    "message": "Fișierul pare corupt sau ilizibil"
+  },
+  "readerTimeout": {
+    "message": "Deschiderea a durat prea mult — fișierul poate fi prea complex"
+  },
+  "readerEpubDrm": {
+    "message": "Acest EPUB este protejat prin DRM. Încearcă un EPUB fără DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Acest EPUB cu layout fix nu are text care să poată rămâne sincronizat cu nararea."
+  },
+  "readerEpubTooComplex": {
+    "message": "Acest EPUB depășește limitele sigure de procesare locală. Încearcă un EPUB mai mic sau mai simplu."
+  },
+  "readerEpubTooLarge": {
+    "message": "Fișierele EPUB pot avea până la 30 MB pentru o procesare locală sigură."
+  },
+  "inboxTitle": {
+    "message": "Cutia de primire a conținutului"
+  },
+  "inboxSubtitle": {
+    "message": "Salvează pagini web sau text selectat, apoi citește-le sau explică-le când ești pregătit."
+  },
+  "inboxEmpty": {
+    "message": "Cutia ta de primire este goală"
+  },
+  "inboxEmptyDescription": {
+    "message": "Fă clic dreapta pe o pagină sau pe textul selectat și salvează-l în CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Salvează textul selectat în Cutia de primire CastReader"
+  },
+  "inboxSavePage": {
+    "message": "Salvează pagina în Cutia de primire CastReader"
+  },
+  "inboxOpen": {
+    "message": "Deschide Cutia de primire a conținutului"
+  },
+  "inboxSharedText": {
+    "message": "Text selectat"
+  },
+  "inboxOpenFailed": {
+    "message": "Nu s-a putut deschide acest conținut. Vă rugăm să încercați din nou."
+  },
+  "inboxRetry": {
+    "message": "Reîncearcă"
+  },
+  "inboxRead": {
+    "message": "Citește cu voce tare"
+  },
+  "inboxExplain": {
+    "message": "Explică"
+  },
+  "inboxDelete": {
+    "message": "Șterge"
+  },
+  "inboxLink": {
+    "message": "Link"
+  },
+  "inboxText": {
+    "message": "Text"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Lectură și explicații AI"
+  },
+  "edgeExtDescription": {
+    "message": "Citește în 28 de limbi, cu evidențiere sincronizată, derulare automată și explicații AI direct pe pagină."
+  },
+  "toggleSiteVisibility": {
+    "message": "Afișează / ascunde CastReader pe acest site"
+  },
+  "voiceCloneBenefit": {
+    "message": "Folosește-ți propria voce pentru Redare vocală și Explicare · 120 de minute pe lună"
+  },
+  "voiceClonePaywall": {
+    "message": "Creează, gestionează și redă previzualizări fixe ale mai multor voci personale gratuit. Pro folosește voci personale în Redare vocală și Explicare pentru 120 de minute generate lunar."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Minutele alocate vocii tale personale s-au epuizat pentru această lună. Vocea selectată este păstrată."
+  },
+  "ocrModelUnavailable": {
+    "message": "Fișierul de limbă pentru recunoaștere nu a putut fi descărcat. Conectează-te la internet și încearcă din nou."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Recunoașterea imaginilor și a paginilor scanate nu este încă disponibilă pentru această limbă. Puteți citi în continuare pagini web, EPUB, TXT și PDF-uri cu text selectabil."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Citirea cu voce tare nu este disponibilă pe această pagină"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Citește această pagină cu voce tare"
+  }
+}
