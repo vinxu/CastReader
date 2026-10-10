@@ -2,6 +2,8 @@ import SwiftUI
 
 @MainActor
 struct KindleOfflineLibraryView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var library = KindleLibraryStore.shared
     @ObservedObject private var auth = AuthService.shared
     @State private var books: [KindleOfflineBook] = []
@@ -51,7 +53,7 @@ struct KindleOfflineLibraryView: View {
                 Section {
                     Label("保存在这台设备，无需联网即可打开", systemImage: "iphone")
                         .font(.footnote).foregroundStyle(.blue)
-                    Text("\(books.count) 本 · \(ByteCountFormatter.string(fromByteCount: Int64(books.reduce(0) { $0 + $1.byteCount }), countStyle: .file))")
+                    Text("\(books.count) 本 · \(Int64(books.reduce(0) { $0 + $1.byteCount }).formatted(.byteCount(style: .file).locale(AppLanguageManager.shared.locale)))")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 ForEach(filtered) { book in

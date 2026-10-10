@@ -1,0 +1,114 @@
+{
+  "en": {
+    "8071c68795f6de769865": "Read aloud in %lld languages",
+    "4575830b9cd61f53f105": "Available for %lld reading languages"
+  },
+  "zh-Hans": {
+    "8071c68795f6de769865": "支持 %lld 种语言朗读",
+    "4575830b9cd61f53f105": "可用于 %lld 种朗读语言"
+  },
+  "ja": {
+    "8071c68795f6de769865": "%lld言語で読み上げ",
+    "4575830b9cd61f53f105": "%lld言語の読み上げに対応"
+  },
+  "es": {
+    "8071c68795f6de769865": "Lee en voz alta en %lld idiomas",
+    "4575830b9cd61f53f105": "Disponible para leer en %lld idiomas"
+  },
+  "fr": {
+    "8071c68795f6de769865": "Lecture à voix haute en %lld langues",
+    "4575830b9cd61f53f105": "Disponible pour la lecture en %lld langues"
+  },
+  "de": {
+    "8071c68795f6de769865": "Vorlesen in %lld Sprachen",
+    "4575830b9cd61f53f105": "Zum Vorlesen in %lld Sprachen verfügbar"
+  },
+  "pt-BR": {
+    "8071c68795f6de769865": "Leitura em voz alta em %lld idiomas",
+    "4575830b9cd61f53f105": "Disponível para leitura em %lld idiomas"
+  },
+  "it": {
+    "8071c68795f6de769865": "Lettura ad alta voce in %lld lingue",
+    "4575830b9cd61f53f105": "Disponibile per la lettura in %lld lingue"
+  },
+  "hi": {
+    "8071c68795f6de769865": "%lld भाषाओं में पढ़कर सुनाएँ",
+    "4575830b9cd61f53f105": "%lld भाषाओं में पढ़कर सुनाने के लिए उपलब्ध"
+  },
+  "nl": {
+    "8071c68795f6de769865": "Voorlezen in %lld talen",
+    "4575830b9cd61f53f105": "Beschikbaar voor voorlezen in %lld talen"
+  },
+  "ko": {
+    "8071c68795f6de769865": "%lld개 언어로 소리 내어 읽기",
+    "4575830b9cd61f53f105": "%lld개 언어의 낭독에 사용 가능"
+  },
+  "ar": {
+    "8071c68795f6de769865": "قراءة بصوت عالٍ بـ %lld لغة",
+    "4575830b9cd61f53f105": "متاح للقراءة بـ %lld لغة"
+  },
+  "ru": {
+    "8071c68795f6de769865": "Чтение вслух на %lld языках",
+    "4575830b9cd61f53f105": "Доступно для чтения на %lld языках"
+  },
+  "pl": {
+    "8071c68795f6de769865": "Czytanie na głos w %lld językach",
+    "4575830b9cd61f53f105": "Dostępny do czytania w %lld językach"
+  },
+  "sv": {
+    "8071c68795f6de769865": "Högläsning på %lld språk",
+    "4575830b9cd61f53f105": "Tillgänglig för uppläsning på %lld språk"
+  },
+  "da": {
+    "8071c68795f6de769865": "Oplæsning på %lld sprog",
+    "4575830b9cd61f53f105": "Tilgængelig til oplæsning på %lld sprog"
+  },
+  "nb": {
+    "8071c68795f6de769865": "Høytlesing på %lld språk",
+    "4575830b9cd61f53f105": "Tilgjengelig for opplesing på %lld språk"
+  },
+  "fi": {
+    "8071c68795f6de769865": "Ääneenluku %lld kielellä",
+    "4575830b9cd61f53f105": "Käytettävissä ääneenlukuun %lld kielellä"
+  },
+  "cs": {
+    "8071c68795f6de769865": "Čtení nahlas v %lld jazycích",
+    "4575830b9cd61f53f105": "K dispozici pro čtení v %lld jazycích"
+  },
+  "el": {
+    "8071c68795f6de769865": "Ανάγνωση φωναχτά σε %lld γλώσσες",
+    "4575830b9cd61f53f105": "Διαθέσιμη για ανάγνωση σε %lld γλώσσες"
+  },
+  "hu": {
+    "8071c68795f6de769865": "Felolvasás %lld nyelven",
+    "4575830b9cd61f53f105": "%lld nyelven használható felolvasásra"
+  },
+  "fil": {
+    "8071c68795f6de769865": "Pagbasa nang malakas sa %lld wika",
+    "4575830b9cd61f53f105": "Magagamit para sa pagbasa sa %lld wika"
+  },
+  "he": {
+    "8071c68795f6de769865": "הקראה ב-%lld שפות",
+    "4575830b9cd61f53f105": "זמין להקראה ב-%lld שפות"
+  },
+  "id": {
+    "8071c68795f6de769865": "Baca nyaring dalam %lld bahasa",
+    "4575830b9cd61f53f105": "Tersedia untuk pembacaan dalam %lld bahasa"
+  },
+  "ms": {
+    "8071c68795f6de769865": "Baca kuat dalam %lld bahasa",
+    "4575830b9cd61f53f105": "Tersedia untuk bacaan dalam %lld bahasa"
+  },
+  "ro": {
+    "8071c68795f6de769865": "Citire cu voce tare în %lld limbi",
+    "4575830b9cd61f53f105": "Disponibilă pentru citire în %lld limbi"
+  },
+  "tr": {
+    "8071c68795f6de769865": "%lld dilde sesli okuma",
+    "4575830b9cd61f53f105": "%lld dilde okuma için kullanılabilir"
+  },
+  "vi": {
+    "8071c68795f6de769865": "Đọc thành tiếng bằng %lld ngôn ngữ",
+    "4575830b9cd61f53f105": "Có thể dùng để đọc bằng %lld ngôn ngữ"
+  }
+}

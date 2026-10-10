@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Ανάγνωση και εξήγηση AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Ανάγνωση με φωνή + AI Επεξήγηση"
+  },
+  "extDescription": {
+    "message": "Ανάγνωση με συγχρονισμένη επισήμανση και κύλιση. Η AI εξηγεί δύσκολα σημεία. Φυσικές φωνές σε 28 γλώσσες."
+  },
+  "quickreadBtn": {
+    "message": "Γρήγορη επισκόπηση"
+  },
+  "quickreadBtnExit": {
+    "message": "Έξοδος από την επισκόπηση"
+  },
+  "quickreadPreparing": {
+    "message": "Δημιουργία περίληψης"
+  },
+  "quickreadError": {
+    "message": "Σφάλμα περίληψης"
+  },
+  "quickreadStageExtract": {
+    "message": "Εξαγωγή βασικών σημείων"
+  },
+  "quickreadStageTts": {
+    "message": "Δημιουργία voiceover"
+  },
+  "quickreadStageRefine": {
+    "message": "Ρύθμιση ρυθμού"
+  },
+  "quickreadStageReady": {
+    "message": "Έτοιμο για αναπαραγωγή…"
+  },
+  "quickreadFailed": {
+    "message": "Αποτυχία: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Κλείσιμο"
+  },
+  "quickreadCancel": {
+    "message": "Ακύρωση"
+  },
+  "quickreadDone": {
+    "message": "Ολοκληρώθηκε"
+  },
+  "quickreadHint": {
+    "message": "Περίπου 25-45 δευτερόλεπτα, παρακαλώ περιμένετε"
+  },
+  "quickreadQueued": {
+    "message": "Σε ουρά ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Το καθημερινό δωρεάν όριο Explains έχει εξαντληθεί. Θα επαναφερθεί αύριο."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Το καθημερινό δωρεάν όριο Explains έχει εξαντληθεί"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Έχετε φτάσει στο καθημερινό δωρεάν όριο — αναβαθμίστε σε Pro για απεριόριστα Explains. Το δωρεάν όριό σας θα επαναφερθεί αύριο."
+  },
+  "quickreadUpgrade": {
+    "message": "Αναβάθμιση σε Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Δεν είστε συνδεδεμένοι"
+  },
+  "enableProMode": {
+    "message": "Ενεργοποίηση Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Το καθημερινό δωρεάν όριο 20 λεπτών ανάγνωσης έχει εξαντληθεί"
+  },
+  "listenRateLimitBody": {
+    "message": "Έχετε χρησιμοποιήσει τα σημερινά 20 δωρεάν λεπτά ανάγνωσης — αναβαθμίστε σε Pro για απεριόριστη ανάγνωση. Το δωρεάν όριό σας θα επαναφερθεί αύριο."
+  },
+  "quickreadQuotaTip": {
+    "message": "Επεξήγηση · $n$/$max$ απομένουν σήμερα",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Επεξήγηση · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Ανάγνωση εγγράφου"
+  },
+  "readerDrop": {
+    "message": "Σύρτε εδώ μια εικόνα / PDF / EPUB / Word / TXT"
+  },
+  "readerDropOver": {
+    "message": "Σύρτε για μεταφόρτωση"
+  },
+  "readerSub": {
+    "message": "Ανάγνωση με φωνή + AI περίληψη στο αρχικό αρχείο — η διάταξη παραμένει αμετάβλητη"
+  },
+  "readerOr": {
+    "message": "ή"
+  },
+  "readerPick": {
+    "message": "Επιλογή αρχείου"
+  },
+  "readerRendering": {
+    "message": "Αποτύπωση εγγράφου…"
+  },
+  "readerListen": {
+    "message": "▶ Ακούστε"
+  },
+  "readerPause": {
+    "message": "⏸ Παύση"
+  },
+  "readerResume": {
+    "message": "▶ Συνέχεια"
+  },
+  "readerStop": {
+    "message": "■ Διακοπή"
+  },
+  "readerExplain": {
+    "message": "✦ Επεξήγηση"
+  },
+  "readerExplainHint": {
+    "message": "Διακόψτε πρώτα την ανάγνωση"
+  },
+  "readerNewFile": {
+    "message": "Νέο αρχείο"
+  },
+  "readerSpeed": {
+    "message": "Ταχύτητα"
+  },
+  "readerUnsupported": {
+    "message": "Μη υποστηριζόμενος τύπος αρχείου"
+  },
+  "readerFailed": {
+    "message": "Αποτυχία επεξεργασίας"
+  },
+  "readerEmpty": {
+    "message": "Δεν βρέθηκε αναγνώσιμο κείμενο σε αυτό το έγγραφο"
+  },
+  "readerQuotaLeft": {
+    "message": "απομένουν σήμερα"
+  },
+  "readerQuotaBlocked": {
+    "message": "Το καθημερινό δωρεάν όριο 10 περήσιμων (overviews) έχει εξαντληθεί — επαναφορά αύριο"
+  },
+  "readerPartial": {
+    "message": "Επεξηγήθηκε η ενότητα στην τρέχουσα θέση σας — κυλήστε προς τα κάτω και πατήστε ξανά Επεξήγηση για την επόμενη"
+  },
+  "readerTooLarge": {
+    "message": "Το αρχείο είναι πολύ μεγάλο (πάνω από 100 MB). Παρακαλώ χρησιμοποιήστε ένα μικρότερο αρχείο."
+  },
+  "readerLargeFilePro": {
+    "message": "Αρχεία άνω των 7 MB απαιτούν Pro — το Pro ανοίγει έγγραφα έως 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "Πολύ μεγάλο για άνοιγμα από αυτή τη σελίδα (πάνω από 7 MB). Ανοίξτε τον αναγνώστη εγγράφων και επιλέξτε το εκεί — έως 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Άνοιγμα αναγνώστη εγγράφων"
+  },
+  "readerContinue": {
+    "message": "Συνέχεια ✦"
+  },
+  "readerSettings": {
+    "message": "Ρυθμίσεις"
+  },
+  "readerExplainLang": {
+    "message": "Επεξήγηση στα"
+  },
+  "readerDocumentLang": {
+    "message": "Γλώσσα εγγράφου"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Αυτόματα (από το κείμενο)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Για εικόνες ή σαρωμένα PDF χωρίς αναγνώσιμο κείμενο, επιλέξτε τη γλώσσα του εγγράφου και μετά ανοίξτε το αρχείο."
+  },
+  "readerVoiceEn": {
+    "message": "Αγγλική φωνή"
+  },
+  "readerVoiceZh": {
+    "message": "Κινεζική φωνή"
+  },
+  "readerVoices": {
+    "message": "Φωνές"
+  },
+  "readerBrowseVoices": {
+    "message": "Περιήγηση στις φωνές"
+  },
+  "readerLangAuto": {
+    "message": "Αυτόματα (Γλώσσα διεπαφής)"
+  },
+  "readerLangFollow": {
+    "message": "Σύμφωνο με το έγγραφο"
+  },
+  "readerPreparing": {
+    "message": "Προετοιμασία αφήγησης…"
+  },
+  "readerEncrypted": {
+    "message": "Το PDF είναι προστατευμένο με κωδικό πρόσβασης"
+  },
+  "readerCorrupt": {
+    "message": "Το αρχείο φαίνεται κατεστραμμένο ή μη αναγνώσιμο"
+  },
+  "readerTimeout": {
+    "message": "Η ανοιχτή διαδικασία καθυστέρησε πολύ — το αρχείο μπορεί να είναι πολύ σύνθετο"
+  },
+  "readerEpubDrm": {
+    "message": "Το EPUB προστατεύεται από DRM. Δοκιμάστε ένα EPUB χωρίς DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Αυτό το EPUB σταθερής διάταξης δεν έχει κείμενο που να συγχρονίζεται με την αφήγηση."
+  },
+  "readerEpubTooComplex": {
+    "message": "Το EPUB υπερβαίνει τα όρια ασφαλούς τοπικής επεξεργασίας. Δοκιμάστε μικρότερο ή απλούστερο EPUB."
+  },
+  "readerEpubTooLarge": {
+    "message": "Τα αρχεία EPUB μπορούν να είναι έως 30 MB για ασφαλή τοπική επεξεργασία."
+  },
+  "inboxTitle": {
+    "message": "Εισερχόμενα περιεχομένων"
+  },
+  "inboxSubtitle": {
+    "message": "Αποθηκεύστε ιστοσελίδες ή επιλεγμένο κείμενο και διαβάστε ή εξηγήστε τα όταν είστε έτοιμοι."
+  },
+  "inboxEmpty": {
+    "message": "Το εισερχόμενο είναι άδειο"
+  },
+  "inboxEmptyDescription": {
+    "message": "Κάντε δεξί κλικ σε μια σελίδα ή επιλεγμένο κείμενο και αποθηκεύστε το στο CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Αποθήκευση επιλεγμένου κειμένου στο Εισερχόμενο του CastReader"
+  },
+  "inboxSavePage": {
+    "message": "Αποθήκευση σελίδας στο Εισερχόμενο του CastReader"
+  },
+  "inboxOpen": {
+    "message": "Άνοιγμα Εισερχομένου Περιεχομένων"
+  },
+  "inboxSharedText": {
+    "message": "Επιλεγμένο κείμενο"
+  },
+  "inboxOpenFailed": {
+    "message": "Δεν ήταν δυνατή η ανοιχτή αυτού του περιεχομένου. Παρακαλώ δοκιμάστε ξανά."
+  },
+  "inboxRetry": {
+    "message": "Δοκιμή ξανά"
+  },
+  "inboxRead": {
+    "message": "Ανάγνωση με φωνή"
+  },
+  "inboxExplain": {
+    "message": "Εξήγηση"
+  },
+  "inboxDelete": {
+    "message": "Διαγραφή"
+  },
+  "inboxLink": {
+    "message": "Σύνδεσμος"
+  },
+  "inboxText": {
+    "message": "Κείμενο"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Ανάγνωση με φωνή + AI Επεξήγηση"
+  },
+  "edgeExtDescription": {
+    "message": "Ανάγνωση με συγχρονισμένη επισήμανση και κύλιση. Η AI εξηγεί δύσκολα σημεία. Φυσικές φωνές σε 28 γλώσσες."
+  },
+  "toggleSiteVisibility": {
+    "message": "Εμφάνιση / Απόκρυψη του CastReader σε αυτήν την ιστοσελίδα"
+  },
+  "voiceCloneBenefit": {
+    "message": "Χρησιμοποιήστε τη δική σας φωνή για Ανάγνωση με Φωνή και Εξήγηση · 120 λεπτά τον μήνα"
+  },
+  "voiceClonePaywall": {
+    "message": "Δημιουργία, διαχείριση και αναπαραγωγή στατικών προεπισκοπήσεων πολλαπλών προσωπικών φωνών δωρεάν. Το Pro χρησιμοποιεί προσωπικές φωνές στην Ανάγνωση με Φωνή και Εξήγηση για 120 παραγόμενα λεπτά κάθε μήνα."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Τα λεπτά της προσωπικής σας φωνής έχουν εξαντληθεί για αυτόν τον μήνα. Η επιλεγμένη φωνή διατηρείται."
+  },
+  "ocrModelUnavailable": {
+    "message": "Το αρχείο γλώσσας αναγνώρισης δεν μπόρεσε να ληφθεί. Συνδεθείτε στο διαδίκτυο και δοκιμάστε ξανά."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Η αναγνώριση εικόνων και σαρωμένων σελίδων δεν είναι ακόμη διαθέσιμη για αυτή τη γλώσσα. Μπορείτε να διαβάζετε ιστοσελίδες, EPUB, TXT και PDF με επιλέξιμο κείμενο."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Η ανάγνωση δεν είναι διαθέσιμη σε αυτή τη σελίδα"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Ανάγνωση αυτής της σελίδας"
+  }
+}

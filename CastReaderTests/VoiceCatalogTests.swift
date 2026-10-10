@@ -102,7 +102,9 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertFalse(VoiceSelectionPolicy.select(voice, isPro: false, settings: settings, language: "zh"))
         XCTAssertTrue(VoiceSelectionPolicy.select(voice, isPro: true, settings: settings, language: "en"))
         XCTAssertEqual(settings.voice(for: "zh"), "vl_rowan", "Selection must reach Chinese without changing the browser language")
-        XCTAssertEqual(settings.voice(for: "ko"), "vl_rowan")
+        XCTAssertEqual(settings.voice(for: "ko"), "vl_rowan", "A clone explicitly supporting Korean keeps its own engine")
+        XCTAssertFalse(VoiceSelectionPolicy.select(voice, isPro: true, settings: settings, language: "fil"))
+        XCTAssertEqual(settings.voice(for: "fil"), "", "A new Google preset cannot expand clone capability")
         XCTAssertFalse(settings.setVoice("vl_rowan", for: "hi"))
         var limitedVoice = publicVoice
         limitedVoice.supportedLanguages = ["en"]
@@ -208,7 +210,7 @@ final class VoiceCatalogTests: XCTestCase {
             description: nil, descriptionZh: nil, bestFor: nil
         )
         try VoiceCatalog.install(TTSVoiceCatalogDocument(
-            contract: TTSVoiceCatalogDocument.expectedContract,
+            contract: TTSVoiceCatalogDocument.legacyContract,
             version: "visibility-contract", languages: [language], voices: [voice]
         ))
 
@@ -243,9 +245,9 @@ final class VoiceCatalogTests: XCTestCase {
             .allSatisfy { $0.locale == "en-US" })
     }
 
-    func testNineLanguageAuthorityAndOfflineDefaults() {
+    func testNineLanguageOfflineDefaultsWithin28LanguageScope() {
         VoiceCatalog.resetForTesting()
-        XCTAssertEqual(SupportedTTSLanguage.allCases.map(\.rawValue), [
+        XCTAssertEqual(SupportedTTSLanguage.allCases.filter { !$0.isGoogle }.map(\.rawValue), [
             "en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi",
         ])
         XCTAssertEqual(SupportedTTSLanguage(identifier: "pt-BR"), .brazilianPortuguese)
@@ -259,9 +261,9 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertEqual(SupportedTTSLanguage.hindi.timestampMode, "word")
         XCTAssertEqual(SupportedTTSLanguage.chinese.timestampMode, "segment")
         XCTAssertEqual(SupportedTTSLanguage.japanese.timestampMode, "segment")
-        XCTAssertNil(SupportedTTSLanguage(identifier: "ko-KR"))
+        XCTAssertEqual(SupportedTTSLanguage(identifier: "ko-KR"), .korean)
 
-        for language in SupportedTTSLanguage.allCases {
+        for language in SupportedTTSLanguage.allCases where !language.isGoogle {
             XCTAssertEqual(
                 VoiceCatalog.resolvedVoice(preferred: "", for: language.localeIdentifier),
                 language.defaultVoiceID
@@ -716,6 +718,24 @@ final class VoiceCatalogTests: XCTestCase {
     }
 
     @MainActor
+    func testNineLanguageCacheMigratesOnlyWithinItsOriginalRoute() throws {
+        let defaults = isolatedDefaults()
+        let catalog = try TTSVoiceCatalogDocument.decodeServerResponse(from: fixture("tts-voice-catalog-direct"))
+        struct Record: Encodable { let savedAt: Date; let catalog: TTSVoiceCatalogDocument }
+        let region = VoiceEditorialRegion.current
+        let oldKey = "tts_voice_catalog_v2_nine_language_cache.editorial-" + region.rawValue
+        defaults.set(try JSONEncoder().encode(Record(savedAt: Date(), catalog: catalog)), forKey: oldKey)
+        let china = VoiceCatalogService(defaults: defaults, route: .chinaGateway, editorialRegion: region)
+        XCTAssertFalse(china.loadCachedCatalog())
+        let global = VoiceCatalogService(defaults: defaults, route: .globalGateway, editorialRegion: region)
+        XCTAssertTrue(global.loadCachedCatalog())
+        XCTAssertNotNil(defaults.data(forKey: oldKey), "Keep rollback evidence")
+        XCTAssertEqual(VoiceCatalog.snapshot.document?.contract, "tts-voice-catalog-v1")
+        XCTAssertEqual(VoiceCatalog.resolvedVoice(preferred: "", for: "nl"), "")
+        VoiceCatalog.resetForTesting()
+    }
+
+    @MainActor
     func testVoiceCatalogCacheIsIsolatedByServiceRouteAndEditorialRegion() async throws {
         let defaults = isolatedDefaults()
         let session = URLSession(configuration: .voiceCatalogTest)
@@ -733,11 +753,11 @@ final class VoiceCatalogTests: XCTestCase {
 
         XCTAssertEqual(
             VoiceCatalogService.cacheKey(for: .globalGateway),
-            "tts_voice_catalog_v2_nine_language_cache.editorial-" + VoiceEditorialRegion.current.rawValue
+            "tts_voice_catalog_v3_28_language_cache.editorial-" + VoiceEditorialRegion.current.rawValue
         )
         XCTAssertEqual(
             VoiceCatalogService.cacheKey(for: .chinaGateway),
-            "tts_voice_catalog_v2_nine_language_cache.cn.editorial-" + VoiceEditorialRegion.current.rawValue
+            "tts_voice_catalog_v3_28_language_cache.cn.editorial-" + VoiceEditorialRegion.current.rawValue
         )
 
         let endpoint = URL(string: "https://example.com/api/tts/catalog")!
@@ -887,7 +907,9 @@ extension VoiceCatalogTests {
         XCTAssertTrue(settings.clonedVoicesByLanguage.isEmpty, "A previous personal voice must not override the community selection")
         XCTAssertEqual(changes.count, 3)
         let fresh = AppSettings(defaults: defaults)
-        for language in languages { XCTAssertEqual(fresh.voice(for: language), "vl_other") }
+        for language in languages {
+            XCTAssertEqual(fresh.voice(for: language), "vl_other")
+        }
         XCTAssertEqual(fresh.voice(for: "hi"), hindi)
         XCTAssertTrue(settings.setVoice("af_heart", for: "en"))
         XCTAssertEqual(changes.last, ["af_heart", "vl_other"])

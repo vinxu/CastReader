@@ -1,0 +1,211 @@
+{
+  "nl": {
+    "6ea5516585bcd6cfb6c5": "%d dagen gratis proberen",
+    "842c9e9c06b5e13c2c86": "Start %d dagen gratis proberen",
+    "0d820c35684bd7cfc8c4": "Kosten na afloop van de proefperiode",
+    "94ee46f781997e17c64d": "%1$d dagen gratis, daarna automatische verlenging voor %2$@%3$@. Je kunt op elk moment opzeggen in de App Store-instellingen.",
+    "34bcd3d73957400295a7": "%1$d dagen gratis, daarna automatische verlenging voor %2$@ per jaar. Je kunt op elk moment opzeggen.",
+    "eec5d08bc9b2911d54d5": "/maand",
+    "a2d5f1bcdaab9ddc839c": "/jaar",
+    "e742291785422c188d8c": "/week",
+    "ea30d1c554b8881dbdb1": "/dag"
+  },
+  "ko": {
+    "6ea5516585bcd6cfb6c5": "%d일 무료 체험",
+    "842c9e9c06b5e13c2c86": "%d일 무료 체험 시작",
+    "0d820c35684bd7cfc8c4": "체험 종료 후 요금 청구",
+    "94ee46f781997e17c64d": "%1$d일 무료 체험 후 %2$@%3$@에 자동 갱신됩니다. App Store 설정에서 언제든지 취소할 수 있습니다.",
+    "34bcd3d73957400295a7": "%1$d일 무료 체험 후 연간 %2$@에 자동 갱신됩니다. 언제든지 취소할 수 있습니다.",
+    "eec5d08bc9b2911d54d5": "/월",
+    "a2d5f1bcdaab9ddc839c": "/년",
+    "e742291785422c188d8c": "/주",
+    "ea30d1c554b8881dbdb1": "/일"
+  },
+  "ar": {
+    "6ea5516585bcd6cfb6c5": "تجربة مجانية لمدة %d يوم",
+    "842c9e9c06b5e13c2c86": "ابدأ تجربة مجانية لمدة %d يوم",
+    "0d820c35684bd7cfc8c4": "يتم تحصيل الرسوم بعد انتهاء التجربة",
+    "94ee46f781997e17c64d": "تجربة مجانية لمدة %1$d يوم، ثم تجديد تلقائي بسعر %2$@%3$@. يمكنك الإلغاء في أي وقت من إعدادات App Store.",
+    "34bcd3d73957400295a7": "تجربة مجانية لمدة %1$d يوم، ثم تجديد تلقائي بسعر %2$@ سنويًا. يمكنك الإلغاء في أي وقت.",
+    "eec5d08bc9b2911d54d5": "/شهر",
+    "a2d5f1bcdaab9ddc839c": "/سنة",
+    "e742291785422c188d8c": "/أسبوع",
+    "ea30d1c554b8881dbdb1": "/يوم"
+  },
+  "ru": {
+    "6ea5516585bcd6cfb6c5": "Бесплатный пробный период: %d дн.",
+    "842c9e9c06b5e13c2c86": "Начать бесплатный пробный период на %d дн.",
+    "0d820c35684bd7cfc8c4": "Оплата после окончания пробного периода",
+    "94ee46f781997e17c64d": "Бесплатный пробный период: %1$d дн., затем автоматическое продление за %2$@%3$@. Можно отменить в любой момент в настройках App Store.",
+    "34bcd3d73957400295a7": "Бесплатный пробный период: %1$d дн., затем автоматическое продление за %2$@ в год. Можно отменить в любой момент.",
+    "eec5d08bc9b2911d54d5": "/мес",
+    "a2d5f1bcdaab9ddc839c": "/год",
+    "e742291785422c188d8c": "/нед",
+    "ea30d1c554b8881dbdb1": "/день"
+  },
+  "pl": {
+    "6ea5516585bcd6cfb6c5": "%d-dniowy bezpłatny okres próbny",
+    "842c9e9c06b5e13c2c86": "Rozpocznij %d-dniowy bezpłatny okres próbny",
+    "0d820c35684bd7cfc8c4": "Opłata po zakończeniu okresu próbnego",
+    "94ee46f781997e17c64d": "%1$d dni za darmo, potem automatyczne odnawianie za %2$@%3$@. Możesz anulować w dowolnym momencie w ustawieniach App Store.",
+    "34bcd3d73957400295a7": "%1$d dni za darmo, potem automatyczne odnawianie za %2$@ rocznie. Możesz anulować w dowolnym momencie.",
+    "eec5d08bc9b2911d54d5": "/miesiąc",
+    "a2d5f1bcdaab9ddc839c": "/rok",
+    "e742291785422c188d8c": "/tydzień",
+    "ea30d1c554b8881dbdb1": "/dzień"
+  },
+  "sv": {
+    "6ea5516585bcd6cfb6c5": "Gratis provperiod i %d dagar",
+    "842c9e9c06b5e13c2c86": "Starta en gratis provperiod på %d dagar",
+    "0d820c35684bd7cfc8c4": "Debitering efter provperioden",
+    "94ee46f781997e17c64d": "%1$d dagar gratis, därefter automatisk förnyelse för %2$@%3$@. Du kan säga upp när som helst i inställningarna för App Store.",
+    "34bcd3d73957400295a7": "%1$d dagar gratis, därefter automatisk förnyelse för %2$@ per år. Du kan säga upp när som helst.",
+    "eec5d08bc9b2911d54d5": "/månad",
+    "a2d5f1bcdaab9ddc839c": "/år",
+    "e742291785422c188d8c": "/vecka",
+    "ea30d1c554b8881dbdb1": "/dag"
+  },
+  "da": {
+    "6ea5516585bcd6cfb6c5": "Gratis prøveperiode i %d dage",
+    "842c9e9c06b5e13c2c86": "Start en gratis prøveperiode på %d dage",
+    "0d820c35684bd7cfc8c4": "Betaling efter prøveperioden",
+    "94ee46f781997e17c64d": "%1$d dage gratis, derefter automatisk fornyelse til %2$@%3$@. Du kan opsige når som helst i indstillingerne for App Store.",
+    "34bcd3d73957400295a7": "%1$d dage gratis, derefter automatisk fornyelse til %2$@ om året. Du kan opsige når som helst.",
+    "eec5d08bc9b2911d54d5": "/måned",
+    "a2d5f1bcdaab9ddc839c": "/år",
+    "e742291785422c188d8c": "/uge",
+    "ea30d1c554b8881dbdb1": "/dag"
+  },
+  "nb": {
+    "6ea5516585bcd6cfb6c5": "Gratis prøveperiode i %d dager",
+    "842c9e9c06b5e13c2c86": "Start en gratis prøveperiode på %d dager",
+    "0d820c35684bd7cfc8c4": "Belastes etter prøveperioden",
+    "94ee46f781997e17c64d": "%1$d dager gratis, deretter automatisk fornyelse til %2$@%3$@. Du kan si opp når som helst i innstillingene for App Store.",
+    "34bcd3d73957400295a7": "%1$d dager gratis, deretter automatisk fornyelse til %2$@ per år. Du kan si opp når som helst.",
+    "eec5d08bc9b2911d54d5": "/måned",
+    "a2d5f1bcdaab9ddc839c": "/år",
+    "e742291785422c188d8c": "/uke",
+    "ea30d1c554b8881dbdb1": "/dag"
+  },
+  "fi": {
+    "6ea5516585bcd6cfb6c5": "%d päivän ilmainen kokeilu",
+    "842c9e9c06b5e13c2c86": "Aloita %d päivän ilmainen kokeilu",
+    "0d820c35684bd7cfc8c4": "Veloitus kokeilujakson päätyttyä",
+    "94ee46f781997e17c64d": "%1$d päivän ilmainen kokeilu, jonka jälkeen tilaus uusiutuu automaattisesti hintaan %2$@%3$@. Voit perua milloin tahansa App Store -asetuksissa.",
+    "34bcd3d73957400295a7": "%1$d päivän ilmainen kokeilu, jonka jälkeen tilaus uusiutuu automaattisesti hintaan %2$@ vuodessa. Voit perua milloin tahansa.",
+    "eec5d08bc9b2911d54d5": "/kuukausi",
+    "a2d5f1bcdaab9ddc839c": "/vuosi",
+    "e742291785422c188d8c": "/viikko",
+    "ea30d1c554b8881dbdb1": "/päivä"
+  },
+  "cs": {
+    "6ea5516585bcd6cfb6c5": "%ddenní bezplatné zkušební období",
+    "842c9e9c06b5e13c2c86": "Zahájit %ddenní bezplatné zkušební období",
+    "0d820c35684bd7cfc8c4": "Platba po skončení zkušebního období",
+    "94ee46f781997e17c64d": "%1$d dní zdarma, poté automatické obnovení za %2$@%3$@. Zrušit můžete kdykoli v nastavení App Store.",
+    "34bcd3d73957400295a7": "%1$d dní zdarma, poté automatické obnovení za %2$@ ročně. Zrušit můžete kdykoli.",
+    "eec5d08bc9b2911d54d5": "/měsíc",
+    "a2d5f1bcdaab9ddc839c": "/rok",
+    "e742291785422c188d8c": "/týden",
+    "ea30d1c554b8881dbdb1": "/den"
+  },
+  "el": {
+    "6ea5516585bcd6cfb6c5": "Δωρεάν δοκιμή %d ημερών",
+    "842c9e9c06b5e13c2c86": "Έναρξη δωρεάν δοκιμής %d ημερών",
+    "0d820c35684bd7cfc8c4": "Χρέωση μετά τη λήξη της δοκιμής",
+    "94ee46f781997e17c64d": "Δωρεάν δοκιμή %1$d ημερών και έπειτα αυτόματη ανανέωση με %2$@%3$@. Μπορείτε να ακυρώσετε οποιαδήποτε στιγμή στις ρυθμίσεις του App Store.",
+    "34bcd3d73957400295a7": "Δωρεάν δοκιμή %1$d ημερών και έπειτα αυτόματη ανανέωση με %2$@ ετησίως. Μπορείτε να ακυρώσετε οποιαδήποτε στιγμή.",
+    "eec5d08bc9b2911d54d5": "/μήνα",
+    "a2d5f1bcdaab9ddc839c": "/έτος",
+    "e742291785422c188d8c": "/εβδομάδα",
+    "ea30d1c554b8881dbdb1": "/ημέρα"
+  },
+  "hu": {
+    "6ea5516585bcd6cfb6c5": "%d napos ingyenes próbaidőszak",
+    "842c9e9c06b5e13c2c86": "%d napos ingyenes próbaidőszak indítása",
+    "0d820c35684bd7cfc8c4": "Terhelés a próbaidőszak lejárta után",
+    "94ee46f781997e17c64d": "%1$d nap ingyenes próbaidőszak, majd automatikus megújítás %2$@%3$@ díjért. Bármikor lemondható az App Store beállításaiban.",
+    "34bcd3d73957400295a7": "%1$d nap ingyenes próbaidőszak, majd automatikus megújítás évi %2$@ díjért. Bármikor lemondható.",
+    "eec5d08bc9b2911d54d5": "/hónap",
+    "a2d5f1bcdaab9ddc839c": "/év",
+    "e742291785422c188d8c": "/hét",
+    "ea30d1c554b8881dbdb1": "/nap"
+  },
+  "fil": {
+    "6ea5516585bcd6cfb6c5": "%d araw na libreng pagsubok",
+    "842c9e9c06b5e13c2c86": "Simulan ang %d araw na libreng pagsubok",
+    "0d820c35684bd7cfc8c4": "Sisingilin pagkatapos ng libreng pagsubok",
+    "94ee46f781997e17c64d": "Libreng pagsubok sa loob ng %1$d araw, pagkatapos ay awtomatikong mare-renew sa halagang %2$@%3$@. Maaaring kanselahin anumang oras sa mga setting ng App Store.",
+    "34bcd3d73957400295a7": "Libreng pagsubok sa loob ng %1$d araw, pagkatapos ay awtomatikong mare-renew sa halagang %2$@ bawat taon. Maaaring kanselahin anumang oras.",
+    "eec5d08bc9b2911d54d5": "/buwan",
+    "a2d5f1bcdaab9ddc839c": "/taon",
+    "e742291785422c188d8c": "/linggo",
+    "ea30d1c554b8881dbdb1": "/araw"
+  },
+  "he": {
+    "6ea5516585bcd6cfb6c5": "ניסיון חינם של %d ימים",
+    "842c9e9c06b5e13c2c86": "התחלת ניסיון חינם ל־%d ימים",
+    "0d820c35684bd7cfc8c4": "חיוב לאחר סיום תקופת הניסיון",
+    "94ee46f781997e17c64d": "%1$d ימי ניסיון בחינם, ולאחר מכן חידוש אוטומטי בעלות של %2$@%3$@. אפשר לבטל בכל עת בהגדרות App Store.",
+    "34bcd3d73957400295a7": "%1$d ימי ניסיון בחינם, ולאחר מכן חידוש אוטומטי בעלות של %2$@ לשנה. אפשר לבטל בכל עת.",
+    "eec5d08bc9b2911d54d5": "/חודש",
+    "a2d5f1bcdaab9ddc839c": "/שנה",
+    "e742291785422c188d8c": "/שבוע",
+    "ea30d1c554b8881dbdb1": "/יום"
+  },
+  "id": {
+    "6ea5516585bcd6cfb6c5": "Uji coba gratis %d hari",
+    "842c9e9c06b5e13c2c86": "Mulai uji coba gratis %d hari",
+    "0d820c35684bd7cfc8c4": "Dikenakan biaya setelah masa uji coba",
+    "94ee46f781997e17c64d": "Uji coba gratis %1$d hari, lalu diperpanjang otomatis dengan biaya %2$@%3$@. Dapat dibatalkan kapan saja di pengaturan App Store.",
+    "34bcd3d73957400295a7": "Uji coba gratis %1$d hari, lalu diperpanjang otomatis dengan biaya %2$@ per tahun. Dapat dibatalkan kapan saja.",
+    "eec5d08bc9b2911d54d5": "/bulan",
+    "a2d5f1bcdaab9ddc839c": "/tahun",
+    "e742291785422c188d8c": "/minggu",
+    "ea30d1c554b8881dbdb1": "/hari"
+  },
+  "ms": {
+    "6ea5516585bcd6cfb6c5": "Percubaan percuma %d hari",
+    "842c9e9c06b5e13c2c86": "Mulakan percubaan percuma %d hari",
+    "0d820c35684bd7cfc8c4": "Caj dikenakan selepas tempoh percubaan",
+    "94ee46f781997e17c64d": "Percubaan percuma selama %1$d hari, kemudian diperbaharui secara automatik pada harga %2$@%3$@. Boleh dibatalkan pada bila-bila masa dalam tetapan App Store.",
+    "34bcd3d73957400295a7": "Percubaan percuma selama %1$d hari, kemudian diperbaharui secara automatik pada harga %2$@ setahun. Boleh dibatalkan pada bila-bila masa.",
+    "eec5d08bc9b2911d54d5": "/bulan",
+    "a2d5f1bcdaab9ddc839c": "/tahun",
+    "e742291785422c188d8c": "/minggu",
+    "ea30d1c554b8881dbdb1": "/hari"
+  },
+  "ro": {
+    "6ea5516585bcd6cfb6c5": "Perioadă de probă gratuită de %d zile",
+    "842c9e9c06b5e13c2c86": "Începe perioada de probă gratuită de %d zile",
+    "0d820c35684bd7cfc8c4": "Taxare după încheierea perioadei de probă",
+    "94ee46f781997e17c64d": "%1$d zile de probă gratuită, apoi reînnoire automată la %2$@%3$@. Poți anula oricând din setările App Store.",
+    "34bcd3d73957400295a7": "%1$d zile de probă gratuită, apoi reînnoire automată la %2$@ pe an. Poți anula oricând.",
+    "eec5d08bc9b2911d54d5": "/lună",
+    "a2d5f1bcdaab9ddc839c": "/an",
+    "e742291785422c188d8c": "/săptămână",
+    "ea30d1c554b8881dbdb1": "/zi"
+  },
+  "tr": {
+    "6ea5516585bcd6cfb6c5": "%d günlük ücretsiz deneme",
+    "842c9e9c06b5e13c2c86": "%d günlük ücretsiz denemeyi başlat",
+    "0d820c35684bd7cfc8c4": "Deneme sona erdikten sonra ücretlendirilir",
+    "94ee46f781997e17c64d": "%1$d günlük ücretsiz denemenin ardından %2$@%3$@ karşılığında otomatik yenilenir. App Store ayarlarından istediğiniz zaman iptal edebilirsiniz.",
+    "34bcd3d73957400295a7": "%1$d günlük ücretsiz denemenin ardından yıllık %2$@ karşılığında otomatik yenilenir. İstediğiniz zaman iptal edebilirsiniz.",
+    "eec5d08bc9b2911d54d5": "/ay",
+    "a2d5f1bcdaab9ddc839c": "/yıl",
+    "e742291785422c188d8c": "/hafta",
+    "ea30d1c554b8881dbdb1": "/gün"
+  },
+  "vi": {
+    "6ea5516585bcd6cfb6c5": "Dùng thử miễn phí %d ngày",
+    "842c9e9c06b5e13c2c86": "Bắt đầu dùng thử miễn phí %d ngày",
+    "0d820c35684bd7cfc8c4": "Tính phí sau khi hết thời gian dùng thử",
+    "94ee46f781997e17c64d": "Dùng thử miễn phí %1$d ngày, sau đó tự động gia hạn với giá %2$@%3$@. Bạn có thể hủy bất cứ lúc nào trong phần cài đặt App Store.",
+    "34bcd3d73957400295a7": "Dùng thử miễn phí %1$d ngày, sau đó tự động gia hạn với giá %2$@/năm. Bạn có thể hủy bất cứ lúc nào.",
+    "eec5d08bc9b2911d54d5": "/tháng",
+    "a2d5f1bcdaab9ddc839c": "/năm",
+    "e742291785422c188d8c": "/tuần",
+    "ea30d1c554b8881dbdb1": "/ngày"
+  }
+}

@@ -114,7 +114,7 @@ struct VoiceBrowserView: View {
     @ObservedObject private var library: VoiceLibraryStore
     private let samplePlayer: VoiceSamplePlayer
     @ObservedObject private var voiceSwitch: VoiceSwitchStatusCenter
-    private let voiceCloneStore: VoiceCloneStore
+    @ObservedObject private var voiceCloneStore: VoiceCloneStore
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     private let presentation: VoiceBrowserPresentation
     /// The reader seeds the panel with the language it is currently narrating in.
@@ -143,6 +143,21 @@ struct VoiceBrowserView: View {
     @State private var showLanguagePicker = false
     @State private var showPaywall = false
     @State private var languageChosenByUser = false
+    @State private var readerLanguage: String?
+    @State private var searchExpanded = false
+    @State private var interactionID = UUID()
+    @State private var navigationPath = NavigationPath()
+    @State private var selectionTask: Task<Void, Never>?
+    @Environment(\.scenePhase) private var scenePhase
+    @ObservedObject private var auth = AuthService.shared
+
+    private var adaptive: Bool { VoiceBrowsePresentation.isAdaptive() }
+    private var browseLanguage: String { readerLanguage ?? initialLanguage ?? library.browserLanguage }
+    private var selectedVoiceID: String { settings.voice(for: browseLanguage) }
+    private var isUnfiltered: Bool {
+        searchText.trimmed.isEmpty && genderFilter.isEmpty && tierFilter == .all && accentFilter.isEmpty &&
+        !recommendedOnly && usageFilter == .all && styleFilter == .all
+    }
 
     init(
         presentation: VoiceBrowserPresentation = .sheet,
@@ -212,18 +227,40 @@ struct VoiceBrowserView: View {
     private var isReadingLanguageControl: Bool { initialLanguage != nil }
 
     private var languageControlTitle: String {
-        isReadingLanguageControl ? AppLocalized("朗读语言") : AppLocalized("语言")
+        isReadingLanguageControl ? AppLocalized("朗读语言") : AppLocalized(adaptive ? "voice_browse_languages" : "语言")
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ScrollView {
                 LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                    VoiceBrowseSearchField(text: $searchText)
-                    HStack(spacing: 10) {
-                        languageSelector
-                        if tab == .explore { discoveryFiltersMenu }
-                    }.padding(.horizontal).padding(.top, 8).padding(.bottom, 2)
+                    if adaptive {
+                        if !isReadingLanguageControl { categoryTabs }
+                        HStack(spacing: 8) {
+                            languageSelector
+                            if tab != .created && VoiceCatalog.voices(for: browseLanguage).count + allCompatiblePrivateVoices.count > 6 {
+                                Button {
+                                    searchExpanded.toggle()
+                                    if !searchExpanded { resetFilters() }
+                                } label: {
+                                    Image(systemName: searchExpanded ? "xmark" : "magnifyingglass")
+                                        .font(.system(size: 20))
+                                        .frame(width: 44, height: 44)
+                                }.buttonStyle(.plain).accessibilityLabel(AppLocalized("搜索音色或听感"))
+                                    .accessibilityIdentifier("voiceSearchToggle")
+                            }
+                            if !isReadingLanguageControl { secondaryTabs }
+                        }.padding(.horizontal).padding(.vertical, 8)
+                        if searchExpanded && tab != .created {
+                            VoiceBrowseSearchField(text: $searchText, trailing: AnyView(discoveryFiltersMenu))
+                        }
+                    } else {
+                        VoiceBrowseSearchField(text: $searchText)
+                        HStack(spacing: 10) {
+                            languageSelector
+                            if tab == .explore { discoveryFiltersMenu }
+                        }.padding(.horizontal).padding(.top, 8).padding(.bottom, 2)
+                    }
 
                     if let progress = voiceSwitch.progress {
                         VoiceSwitchBanner(progress: progress)
@@ -234,7 +271,7 @@ struct VoiceBrowserView: View {
                     Section {
                         voiceResults
                     } header: {
-                        categoryTabs
+                        if !adaptive { categoryTabs }
                     }
                 }
                 .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity)
@@ -250,7 +287,7 @@ struct VoiceBrowserView: View {
                 await catalog.refresh()
                 if Constants.Features.voiceCloningEnabled { await voiceCloneStore.refresh() }
             }
-            .navigationTitle("音色")
+            .navigationTitle(AppLocalized("音色"))
             .navigationDestination(for: VoiceDiscoveryTopic.self) { topic in
                 discoveryCollection(title: topic.title, topic: topic)
             }
@@ -258,28 +295,28 @@ struct VoiceBrowserView: View {
                 switch destination {
                 case .all: discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
                 case .featuredClones(let ids):
-                    VoiceDiscoveryCollectionView(title: AppLocalized("精选音色"), voiceIDs: ids, usageScope: .monthly,
+                    VoiceDiscoveryCollectionView(title: AppLocalized(adaptive ? "voice_public_clones_title" : "精选音色"), voiceIDs: ids, usageScope: .monthly,
                         subgroupCollections: VoiceCatalog.collections.filter { !Set($0.voiceIds).isDisjoint(with: ids) },
-                        language: library.browserLanguage, onSelect: select, onPreview: preview)
+                        language: browseLanguage, onSelect: select, onPreview: preview)
                 case .collection(let id):
                     if let collection = VoiceCatalog.collections.first(where: { $0.id == id }) {
                         VoiceDiscoveryCollectionView(title: collection.localizedTitle,
                             voiceIDs: collection.voiceIds, usageScope: .regular,
-                            language: library.browserLanguage, onSelect: select, onPreview: preview)
+                            language: browseLanguage, onSelect: select, onPreview: preview)
                     } else {
                         discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
                     }
                 case .edition(let id):
-                    if let module = VoiceCatalog.discovery?.activeModules(from: sourceVoices, language: library.browserLanguage).first(where: { $0.id == id }) {
+                    if let module = VoiceCatalog.discovery?.activeModules(from: sourceVoices, language: browseLanguage).first(where: { $0.id == id }) {
                         VoiceDiscoveryCollectionView(title: module.localizedTitle,
                             voiceIDs: module.voiceIds, usageScope: .regular,
-                            language: library.browserLanguage, onSelect: select, onPreview: preview)
+                            language: browseLanguage, onSelect: select, onPreview: preview)
                     } else {
                         discoveryCollection(title: AppLocalized("全部音色"), topic: nil)
                     }
                 }
             }
-            .navigationBarTitleDisplayMode(presentation == .tab ? .large : .inline)
+            .navigationBarTitleDisplayMode(!adaptive && presentation == .tab ? .large : .inline)
             .toolbar {
                 if presentation != .tab {
                     ToolbarItem(placement: .confirmationAction) {
@@ -300,6 +337,8 @@ struct VoiceBrowserView: View {
                 }
             }
         }
+        .environment(\.locale, appLanguage.locale)
+        .environment(\.layoutDirection, appLanguage.selectedLanguage.isRightToLeft ? .rightToLeft : .leftToRight)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .modifier(VoicePreviewErrorPresentation())
@@ -308,7 +347,7 @@ struct VoiceBrowserView: View {
                 title: languageControlTitle,
                 languages: availableLanguages,
                 selection: Binding(
-                    get: { library.browserLanguage },
+                    get: { browseLanguage },
                     set: { chooseLanguage($0) }
                 )
             )
@@ -327,7 +366,7 @@ struct VoiceBrowserView: View {
             await catalog.refreshIfStale()
             if Constants.Features.voiceCloningEnabled { await voiceCloneStore.refresh() }
         }
-        .onDisappear { samplePlayer.stop() }
+        .onDisappear { stopInteractions() }
         .onAppear {
             applyLaunchRequest(launchRequest)
             synchronizeBrowserLanguage()
@@ -336,13 +375,18 @@ struct VoiceBrowserView: View {
             applyLaunchRequest(request)
         }
         .onChange(of: catalog.revision) { _ in synchronizeBrowserLanguage() }
-        .onChange(of: library.browserLanguage) { _ in
-            searchText = ""
-            genderFilter = ""
-            accentFilter = ""
-            recommendedOnly = false
-            samplePlayer.stop()
+        .onChange(of: browseLanguage) { _ in
+            resetFilters()
+            navigationPath = NavigationPath()
+            stopInteractions()
         }
+        .onChange(of: navigationPath) { _ in stopInteractions() }
+        .onChange(of: appLanguage.selectedLanguage) { _ in synchronizeBrowserLanguage() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active { synchronizeBrowserLanguage() } else { stopInteractions() }
+        }
+        .onChange(of: tab) { _ in resetFilters(); searchExpanded = false; stopInteractions() }
+        .onChange(of: auth.accountBoundaryID) { _ in stopInteractions() }
     }
 
     private func applyLaunchRequest(_ request: VoiceBrowserLaunchRequest?) {
@@ -363,9 +407,13 @@ struct VoiceBrowserView: View {
     }
 
     private var categoryTabs: some View {
-        Picker("音色分类", selection: $tab) {
-            Text("最近").tag(VoiceBrowserTab.recent)
-            Text("收藏").tag(VoiceBrowserTab.favorites)
+        Picker("音色分类", selection: Binding(get: {
+            adaptive && (tab == .recent || tab == .favorites) ? .explore : tab
+        }, set: { tab = $0 })) {
+            if !adaptive {
+                Text("最近").tag(VoiceBrowserTab.recent)
+                Text("收藏").tag(VoiceBrowserTab.favorites)
+            }
             Text("探索").tag(VoiceBrowserTab.explore)
             if Constants.Features.voiceCloningEnabled {
                 Text("我的声音").tag(VoiceBrowserTab.created)
@@ -381,11 +429,64 @@ struct VoiceBrowserView: View {
         }
     }
 
+    private var secondaryTabs: some View {
+        Menu {
+            Button(AppLocalized("最近"), systemImage: "clock") { tab = .recent }
+            Button(AppLocalized("收藏"), systemImage: "heart") { tab = .favorites }
+        } label: {
+            Image(systemName: tab == .recent ? "clock" : tab == .favorites ? "heart.fill" : "ellipsis")
+                .font(.system(size: 20))
+                .frame(width: 44, height: 44)
+        }.accessibilityLabel(AppLocalized("最近") + " / " + AppLocalized("收藏"))
+    }
+
+    private func resetFilters() {
+        searchText = ""; genderFilter = ""; accentFilter = ""; recommendedOnly = false
+        tierFilter = .all; usageFilter = .all; styleFilter = .all
+    }
+
+    private func stopInteractions() {
+        interactionID = UUID()
+        selectionTask?.cancel(); selectionTask = nil; selectingVoiceID = nil
+        samplePlayer.stop()
+        VoiceClonePreviewPlayer.shared.stop()
+    }
+
+    @ViewBuilder private var currentVoiceCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(AppLocalized("voice_current_title")).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            if !isReadingLanguageControl {
+                Text(String(format: AppLocalized("voice_default_scope"), selectedLanguageName))
+                    .font(.subheadline).fixedSize(horizontal: false, vertical: true)
+            }
+            if let voice = VoiceCatalog.option(for: selectedVoiceID), voice.supports(browseLanguage) {
+                VoiceDiscoveryRow(voice: voice, selected: true, favorite: library.isFavorite(voice.id),
+                    selecting: false, onSelect: {}, onPreview: { preview(voice) },
+                    onFavorite: { library.toggleFavorite(voice.id) })
+            } else if let voice = voiceCloneStore.voice(withID: selectedVoiceID) {
+                HStack(spacing: 12) {
+                    Button { VoiceClonePreviewPlayer.shared.toggle(voice) } label: {
+                        ClonedVoiceAvatarView(voice: voice, size: 48)
+                    }.disabled(!voice.access.capabilities.canPreview)
+                    Text(voiceCloneStore.displayName(for: voice)).font(.headline)
+                    Spacer(); Image(systemName: "checkmark.circle.fill").foregroundStyle(AppTheme.primary)
+                }
+            } else {
+                // Keep a saved clone selection intact while the private library loads.
+                Label(AppLocalized("voice_current_title"), systemImage: "waveform").font(.headline)
+            }
+        }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppTheme.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppTheme.primary.opacity(0.2), lineWidth: 1))
+            .padding(.horizontal).padding(.top, 12)
+            .accessibilityElement(children: .contain).accessibilityIdentifier("voiceCurrentCard")
+    }
+
     @ViewBuilder
     private var voiceResults: some View {
         if Constants.Features.voiceCloningEnabled, tab == .created {
             VoiceCloneCreatedView(
-                language: library.browserLanguage,
+                language: browseLanguage,
                 launchRequest: localCreationRequest ?? launchRequest,
                 onConsumeLaunchRequest: { id in
                     if localCreationRequest?.id == id { localCreationRequest = nil }
@@ -393,24 +494,40 @@ struct VoiceBrowserView: View {
                 }
             )
                 .frame(minHeight: 360)
+        } else if adaptive && isReadingLanguageControl {
+            currentVoiceCard
+            if VoiceCloneLanguageSupport.all.contains(browseLanguage), Constants.Features.voiceCloningEnabled {
+                VoiceFamiliarSection(language: browseLanguage, reader: true, query: searchText, onOpen: {}, onCreate: { _ in })
+                    .padding(.horizontal).padding(.vertical, 12)
+            }
+            if results.request != browseRequest { ProgressView().padding() }
+            else if displayedVoices.contains(where: { $0.id != selectedVoiceID }) {
+                Text(AppLocalized("voice_available_title")).font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding()
+                voiceRows(displayedVoices.filter { $0.id != selectedVoiceID })
+            }
         } else if results.request != browseRequest {
             ProgressView().frame(maxWidth: .infinity, minHeight: 180)
-        } else if displayedVoices.isEmpty {
+        } else if displayedVoices.isEmpty && (!adaptive || (!isUnfiltered && (searchText.trimmed.isEmpty || compatiblePrivateVoices.isEmpty))) {
             emptyState
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 320)
         } else {
-            if tab == .explore && searchText.trimmed.isEmpty && genderFilter.isEmpty
-                && tierFilter == .all && accentFilter.isEmpty && !recommendedOnly && usageFilter == .all && styleFilter == .all {
-                VoiceDiscoveryFeed(snapshot: VoiceCatalog.snapshot, language: library.browserLanguage,
+            if tab == .explore && isUnfiltered {
+                if adaptive { currentVoiceCard }
+                VoiceDiscoveryFeed(snapshot: VoiceCatalog.snapshot, language: browseLanguage,
                     favoriteIDs: library.favoriteIDs, recentIDs: library.recentIDs,
-                    selectedID: settings.voice(for: library.browserLanguage), selectingID: selectingVoiceID,
+                    selectedID: settings.voice(for: browseLanguage), selectingID: selectingVoiceID,
                     onSelect: select, onPreview: preview, onFavorite: { library.toggleFavorite($0.id) },
                     onOpenPersonal: { tab = .created }, onCreate: { entry in
                         localCreationRequest = VoiceBrowserLaunchRequest(creationEntry: entry)
                         tab = .created
                     })
             } else {
+                if adaptive && tab == .explore && !searchText.trimmed.isEmpty {
+                    VoiceFamiliarSection(language: browseLanguage, reader: true, query: searchText,
+                                         onOpen: {}, onCreate: { _ in }).padding(.horizontal)
+                }
                 if displayedVoices.contains(where: \.usesMonthlyGeneration) {
                     VoiceGenerationQuotaSummary(title: "生成额度")
                         .padding(.horizontal)
@@ -422,13 +539,13 @@ struct VoiceBrowserView: View {
     }
 
     private func preview(_ voice: VoiceOption) {
-        samplePlayer.toggle(voiceID: voice.code, sampleURL: voice.previewURL(for: library.browserLanguage))
+        samplePlayer.toggle(voiceID: voice.code, sampleURL: voice.previewURL(for: browseLanguage))
     }
 
     private func voiceRows(_ voices: [VoiceOption]) -> some View {
         ForEach(voices) { voice in
             VoiceDiscoveryRow(voice: voice,
-                selected: settings.voice(for: library.browserLanguage) == voice.code,
+                selected: settings.voice(for: browseLanguage) == voice.code,
                 favorite: library.isFavorite(voice.code),
                 selecting: selectingVoiceID == voice.code || voiceSwitch.progress?.toVoiceID == voice.code,
                 onSelect: { select(voice) }, onPreview: { preview(voice) },
@@ -442,7 +559,7 @@ struct VoiceBrowserView: View {
         VoiceDiscoveryCollectionView(title: title,
             topic: topic, usageScope: topic == nil ? .all : .regular,
             showsCatalogTabs: topic == nil,
-            language: library.browserLanguage,
+            language: browseLanguage,
             onSelect: select, onPreview: preview)
     }
 
@@ -459,6 +576,7 @@ struct VoiceBrowserView: View {
                 .buttonStyle(.plain)
             }
         }
+        .accessibilityIdentifier("voiceBrowseLanguage")
         .accessibilityLabel(Text(languageControlTitle))
         .accessibilityValue(Text(selectedLanguageName))
     }
@@ -467,17 +585,21 @@ struct VoiceBrowserView: View {
         HStack(spacing: 12) {
             Image(systemName: "globe")
                 .font(.title3)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .foregroundStyle(AppTheme.primary)
 
             Text(selectedLanguageName)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(AppTheme.foreground)
-                .lineLimit(1)
-            Spacer()
+                .lineLimit(adaptive ? nil : 1)
+                .fixedSize(horizontal: false, vertical: adaptive)
+                .layoutPriority(1)
+            Spacer(minLength: 0)
 
             if showsDisclosure {
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.caption.weight(.semibold))
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundStyle(AppTheme.mutedForeground)
             }
         }
@@ -490,15 +612,20 @@ struct VoiceBrowserView: View {
     }
 
     private var availableLanguages: [VoiceCatalogLanguageOption] {
-        VoiceCatalog.availableLanguages
+        SupportedTTSLanguage.currentServiceLanguages.map { language in
+            VoiceCatalog.languageOption(for: language.rawValue) ?? VoiceCatalogLanguageOption(
+                code: language.rawValue, locale: language.localeIdentifier, name: language.nativeName,
+                status: "unavailable", voiceCount: 0)
+        }
     }
 
     private var selectedLanguage: VoiceCatalogLanguageOption? {
-        VoiceCatalog.languageOption(for: library.browserLanguage)
+        VoiceCatalog.languageOption(for: browseLanguage)
     }
 
     private var selectedLanguageName: String {
-        guard let selectedLanguage else { return library.browserLanguage.uppercased() }
+        if browseLanguage == "und" { return AppLocalized("朗读语言") }
+        guard let selectedLanguage else { return appLanguage.locale.localizedString(forLanguageCode: browseLanguage) ?? browseLanguage.uppercased() }
         return appLanguage.locale.localizedString(forLanguageCode: selectedLanguage.code)
             ?? VoiceBrowserLanguage.displayName(for: selectedLanguage, locale: appLanguage.locale)
     }
@@ -507,21 +634,33 @@ struct VoiceBrowserView: View {
         switch tab {
         case .recent:
             return library.recentIDs.compactMap { VoiceCatalog.option(for: $0) }
-                .filter { $0.supports(library.browserLanguage) }
+                .filter { $0.supports(browseLanguage) }
         case .favorites:
-            return VoiceCatalog.voices(for: library.browserLanguage)
+            return VoiceCatalog.voices(for: browseLanguage)
                 .filter { library.favoriteIDs.contains($0.code) }
         case .explore:
-            return VoiceCatalog.voices(for: library.browserLanguage)
+            return VoiceCatalog.voices(for: browseLanguage)
         case .created:
             return []
         }
     }
 
+    private var allCompatiblePrivateVoices: [ClonedVoice] {
+        guard adaptive, auth.isSignedIn, Constants.Features.voiceCloningEnabled,
+              VoiceCloneLanguageSupport.all.contains(browseLanguage) else { return [] }
+        return VoiceFamiliarSelection.latest(from: voiceCloneStore.voices, language: browseLanguage, limit: nil)
+    }
+    private var compatiblePrivateVoices: [ClonedVoice] {
+        let voices = allCompatiblePrivateVoices
+        let query = VoiceDiscovery.normalized(searchText)
+        return query.isEmpty ? voices : voices.filter {
+            VoiceDiscovery.normalized(voiceCloneStore.displayName(for: $0) + " " + $0.id).contains(query)
+        }
+    }
     private var displayedVoices: [VoiceOption] { results.voices }
 
     private var browseRequest: VoiceBrowseRequest {
-        VoiceBrowseRequest(catalogID: VoiceCatalog.snapshot.id, language: library.browserLanguage,
+        VoiceBrowseRequest(catalogID: VoiceCatalog.snapshot.id, language: browseLanguage,
             locale: appLanguage.selectedLanguage.resolvedLanguageCode, tab: tab, search: searchText,
             gender: tab == .explore ? genderFilter : "", tier: tab == .explore ? tierFilter : .all,
             accent: tab == .explore ? accentFilter : "", recommendedOnly: tab == .explore && recommendedOnly,
@@ -531,34 +670,48 @@ struct VoiceBrowserView: View {
     }
 
     private var availableGenders: [String] {
-        Array(Set(VoiceCatalog.voices(for: library.browserLanguage).map { $0.gender.trimmed.lowercased() }))
+        Array(Set(VoiceCatalog.voices(for: browseLanguage).map { $0.gender.trimmed.lowercased() }))
             .filter { !$0.isEmpty }
             .sorted()
     }
 
+    private var availableStyles: [VoiceListeningStyle] {
+        VoiceListeningStyle.allCases.filter { style in style == .all || sourceVoices.contains { style.includes($0) } }
+    }
+
     private var discoveryFiltersMenu: some View {
         Menu {
-            Picker(AppLocalized("声音特点"), selection: $styleFilter) {
-                ForEach(VoiceListeningStyle.allCases) { Text($0.title).tag($0) }
+            if !adaptive || availableStyles.count > 2 {
+                Picker(AppLocalized("声音特点"), selection: $styleFilter) {
+                    ForEach(adaptive ? availableStyles : VoiceListeningStyle.allCases) { Text($0.title).tag($0) }
+                }
             }
+            if !adaptive || Set(sourceVoices.map(\.usesMonthlyGeneration)).count > 1 {
             Picker(AppLocalized("使用权益"), selection: $usageFilter) {
                 ForEach(VoiceUsageFilter.allCases) { Text($0.title).tag($0) }
             }
+            }
+            if !adaptive || availableGenders.count > 1 {
             Picker(AppLocalized("性别"), selection: $genderFilter) {
                 Text(AppLocalized("全部")).tag("")
                 ForEach(availableGenders, id: \.self) { Text(genderName($0)).tag($0) }
             }
+            }
+            if !adaptive || Set(sourceVoices.map(\.isPro)).count > 1 {
             Picker("Pro", selection: $tierFilter) {
                 ForEach(VoiceTierFilter.allCases) { Text(tierName($0)).tag($0) }
             }
-            if library.browserLanguage == "en" {
+            }
+            if browseLanguage == "en" && (!adaptive || Set(sourceVoices.map { VoiceBrowserFilter.normalizedAccentValue(for: $0) }).count > 1) {
                 Picker(AppLocalized("口音"), selection: $accentFilter) {
                     Text(AppLocalized("全部")).tag("")
                     Text(AppLocalized("美国")).tag("us")
                     Text(AppLocalized("英国")).tag("uk")
                 }
             }
-            Toggle(AppLocalized("推荐"), isOn: $recommendedOnly)
+            if !adaptive || Set(sourceVoices.map(\.recommended)).count > 1 {
+                Toggle(AppLocalized("推荐"), isOn: $recommendedOnly)
+            }
             Button(AppLocalized("重置")) {
                 styleFilter = .all; usageFilter = .all; genderFilter = ""; tierFilter = .all
                 accentFilter = ""; recommendedOnly = false
@@ -606,21 +759,25 @@ struct VoiceBrowserView: View {
             selectMonthlyVoice(voice)
             return
         }
-        let language = voice.lang
+        let language = adaptive ? browseLanguage : voice.lang
+        guard voice.supports(language) else { return }
         if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: language) {
-            library.setBrowserLanguage(language)
             library.recordRecent(voice.code)
+            if !adaptive { library.setBrowserLanguage(voice.lang) }
             applyReadingLanguage(of: voice)
             return
         }
         guard voice.isPro else { return }
 
         selectingVoiceID = voice.code
-        Task { @MainActor in
+        let operation = interactionID, account = auth.accountBoundaryID
+        selectionTask = Task { @MainActor in
             await pro.refresh()
+            guard operation == interactionID, account == auth.accountBoundaryID, (!adaptive || language == browseLanguage),
+                  !Task.isCancelled else { return }
             if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: language) {
-                library.setBrowserLanguage(language)
                 library.recordRecent(voice.code)
+                if !adaptive { library.setBrowserLanguage(voice.lang) }
                 applyReadingLanguage(of: voice)
             } else {
                 showPaywall = true
@@ -630,21 +787,24 @@ struct VoiceBrowserView: View {
     }
 
     private func selectMonthlyVoice(_ voice: VoiceOption) {
-        let language = library.browserLanguage
-        guard voice.supports(language) else {
+        let language = browseLanguage
+        guard voice.supports(language), VoiceCloneLanguageSupport.all.contains(language) else {
             VoiceCloneAccessCoordinator.shared.prompt = .message(VoiceCloneError.languageUnsupported.localizedDescription)
             return
         }
         selectingVoiceID = voice.code
-        Task { @MainActor in
-            defer { selectingVoiceID = nil }
+        let operation = interactionID, account = auth.accountBoundaryID
+        selectionTask = Task { @MainActor in
+            defer { if interactionID == operation { selectingVoiceID = nil } }
             if !pro.isPro { await pro.refresh() }
+            guard !Task.isCancelled, operation == interactionID, account == auth.accountBoundaryID else { return }
             guard pro.isPro else { showPaywall = true; return }
             guard AuthService.shared.isSignedIn else {
                 VoiceCloneAccessCoordinator.shared.prompt = .signIn
                 return
             }
             await voiceCloneStore.refreshForSelectionIfNeeded()
+            guard !Task.isCancelled, operation == interactionID, account == auth.accountBoundaryID else { return }
             guard !voiceCloneStore.isQuotaBlocked else {
                 VoiceCloneAccessCoordinator.shared.prompt = CloneCreditStore.shared.currentBalance?.enabled == true ? .credits : .message(
                     AppLocalized("本期生成额度已用完。可选择常规音色继续，当前阅读位置会保留。")
@@ -655,7 +815,7 @@ struct VoiceBrowserView: View {
                 VoiceCloneAccessCoordinator.shared.prompt = .message(AppLocalized("Pro 权益正在同步，请稍后重试"))
                 return
             }
-            guard library.browserLanguage == language,
+            guard !Task.isCancelled, operation == interactionID, account == auth.accountBoundaryID, browseLanguage == language,
                   VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings, language: language) else { return }
             library.recordRecent(voice.code)
             applyReadingLanguage(of: voice)
@@ -665,8 +825,8 @@ struct VoiceBrowserView: View {
     /// The selected output language owns the preference; source sample language
     /// is metadata and never changes the content's reading language.
     private func applyReadingLanguage(of voice: VoiceOption) {
-        guard voice.supports(library.browserLanguage) else { return }
-        onCorrectReadingLanguage?(library.browserLanguage)
+        guard voice.supports(browseLanguage) else { return }
+        onCorrectReadingLanguage?(browseLanguage)
     }
 
     /// The user picked a language in this panel. In the reader that is a statement
@@ -677,7 +837,9 @@ struct VoiceBrowserView: View {
         let normalized = VoiceCatalog.normalizedLanguage(language)
         guard !normalized.isEmpty else { return }
         languageChosenByUser = true
-        library.setBrowserLanguage(normalized)
+        stopInteractions()
+        if isReadingLanguageControl { readerLanguage = normalized }
+        else { library.setBrowserLanguage(normalized) }
         onCorrectReadingLanguage?(normalized)
     }
 
@@ -688,9 +850,15 @@ struct VoiceBrowserView: View {
             // its way into playback — which is exactly what "and I cannot change it"
             // felt like. Only a pinned language keeps following unconditionally.
             guard languagePinned || !languageChosenByUser else { return }
-            if library.browserLanguage != initialLanguage {
-                library.setBrowserLanguage(initialLanguage)
+            if browseLanguage != initialLanguage {
+                readerLanguage = initialLanguage
             }
+            return
+        }
+        if adaptive {
+            let language = appLanguage.selectedLanguage.resolvedLanguageCode
+            library.synchronizeAppLanguage(context: appLanguage.selectedLanguage.rawValue + "|" + language,
+                language: language, availableLanguages: availableLanguages.map(\.code))
             return
         }
         // fallback 阶段可能尚未拿到上次选择的远端语言，先保留；只有完整目录
@@ -704,7 +872,7 @@ struct VoiceBrowserView: View {
         )
         if !library.hasExplicitBrowserLanguageSelection {
             library.applyDefaultBrowserLanguage(fallback)
-        } else if !codes.contains(library.browserLanguage) {
+        } else if !codes.contains(browseLanguage) {
             library.replaceUnavailableBrowserLanguage(with: fallback)
         }
     }
@@ -808,7 +976,9 @@ private struct VoiceLanguagePickerView: View {
                             ))
                                 .font(.body.weight(.medium))
                                 .foregroundStyle(AppTheme.foreground)
-                            Text(languageMetadata(language))
+                            Text(language.voiceCount == 0
+                                 ? AppLocalized("当前服务区域暂未提供此语言的声音，请稍后重试")
+                                 : languageMetadata(language))
                                 .font(.caption)
                                 .foregroundStyle(AppTheme.mutedForeground)
                         }
@@ -822,6 +992,7 @@ private struct VoiceLanguagePickerView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("voiceBrowseLanguage." + language.code)
                 .accessibilityValue(Text(VoiceBrowserLanguage.voiceCountText(language.voiceCount)))
             }
             .navigationTitle(title)
@@ -916,12 +1087,15 @@ struct VoiceAvatarView: View {
 /// the same avatar, language lock and switching behavior.
 @MainActor
 struct PlaybackVoiceButton: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var catalog = VoiceCatalogService.shared
     @ObservedObject private var cloneStore = VoiceCloneStore.shared
 
     let language: String
+    @State private var showsUnknownLanguagePicker = false
     var size: CGFloat = 36
     var showsLabel = false
     /// Read-aloud passes this so the panel's language control becomes the way to
@@ -952,10 +1126,14 @@ struct PlaybackVoiceButton: View {
 
     var body: some View {
         Button {
-            readerScene.voicePanel.present(
-                language: normalizedLanguage,
-                onCorrectReadingLanguage: onCorrectReadingLanguage
-            )
+            if normalizedLanguage.isEmpty, onCorrectReadingLanguage != nil {
+                showsUnknownLanguagePicker = true
+            } else {
+                readerScene.voicePanel.present(
+                    language: normalizedLanguage,
+                    onCorrectReadingLanguage: onCorrectReadingLanguage
+                )
+            }
         } label: {
             VStack(spacing: showsLabel ? 4 : 0) {
                 avatar
@@ -984,8 +1162,22 @@ struct PlaybackVoiceButton: View {
         }
         .buttonStyle(.plain)
         .hoverEffect(.highlight)
+        .sheet(isPresented: $showsUnknownLanguagePicker) {
+            VoiceLanguagePickerView(
+                title: AppLocalized("朗读语言"),
+                languages: SupportedTTSLanguage.currentServiceLanguages.map { language in
+                    VoiceCatalog.languageOption(for: language.rawValue) ?? VoiceCatalogLanguageOption(
+                        code: language.rawValue, locale: language.localeIdentifier, name: language.nativeName,
+                        status: "unavailable", voiceCount: 0)
+                },
+                selection: Binding(
+                    get: { normalizedLanguage },
+                    set: { onCorrectReadingLanguage?($0) }
+                )
+            )
+        }
         .accessibilityIdentifier("playbackVoiceButton")
-        .accessibilityLabel(Text(AppLocalized("音色")))
+        .accessibilityLabel(Text(AppLocalized(normalizedLanguage.isEmpty ? "朗读语言" : "音色")))
         .accessibilityValue(Text(displayName + " · " + AppLocalized(VoiceOption.requiresGenerationQuota(voiceID) ? "使用每月共享生成额度" : "常规音色 · Pro 不限时")))
     }
 

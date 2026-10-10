@@ -79,6 +79,8 @@ struct ExplainPlaybackCaptionBubble: View {
 }
 
 struct ExplainControlBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var vm: ExplainViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let showTOC: (() -> Void)?
@@ -308,8 +310,9 @@ struct ExplainControlBar: View {
         Text(statusLabel(for: presentationState))
             .font(.caption.weight(.semibold))
             .foregroundStyle(AppTheme.mutedForeground)
-            .lineLimit(1)
-            .truncationMode(.tail)
+            .lineLimit(2)
+            .minimumScaleFactor(0.85)
+            .multilineTextAlignment(.leading)
             .frame(maxWidth: 100, alignment: .leading)
     }
 }

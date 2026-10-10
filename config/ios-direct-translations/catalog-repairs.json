@@ -1,0 +1,51 @@
+{
+  "nl": {
+    "bbb8af9a0d1bb7ff5690": "Hiermee verwijder je de opgeslagen pagina’s en offline leespositie van ‘%@’ van dit apparaat. Je Kindle-boek blijft in je account staan. Download het opnieuw om offline te lezen.",
+    "a5a5eb8d80e355c268b2": "Hele boek opslaan",
+    "9fd46ad2d40217c750b3": "Deze inhoud is te kort of kan niet worden uitgelegd. Probeer het later opnieuw.",
+    "7ebfbc333907ce00bd2c": "Je geschiedenis wordt alleen op dit apparaat bewaard en nooit naar de cloud geüpload of gesynchroniseerd",
+    "75177f6139c643b284b5": "Terug naar de huidige positie",
+    "21a2b939593935955df0": "Transcript beluisteren",
+    "ecccc96788215bc744ed": "Stem aangemaakt",
+    "8f5a286fc5d62de25085": "Alleen wanneer je zelf Voorlezen of Uitleg start, verstuurt CastReader de benodigde tekst die op dit apparaat is verwerkt. Dit kan de volledige tekst van het geselecteerde bestand zijn. Het oorspronkelijke bestand wordt niet naar diensten voor bestandsupload of opslag verstuurd."
+  },
+  "ru": {
+    "42ceccb323afaebaf897": "Синхронизировать книги (%d)",
+    "50f48bac08efe71b4689": "Открыть ${input} в режиме ${mode}"
+  },
+  "pl": {
+    "1916838c8a24da5e52fb": "Zaloguj się, aby utworzyć głos",
+    "50f48bac08efe71b4689": "Otwórz ${input} w trybie ${mode}"
+  },
+  "sv": {
+    "0a74b33e8a825f2504ba": "%lld röster",
+    "1916838c8a24da5e52fb": "Logga in för att skapa en röst",
+    "50f48bac08efe71b4689": "Öppna ${input} i läget ${mode}",
+    "a9917d92e5b99df94693": "Fungerar med alla %lld språk som stöds"
+  },
+  "da": {
+    "1916838c8a24da5e52fb": "Log ind for at oprette en stemme",
+    "d15b2a33ce0b2ae01d44": "Fortsæt ${item} i tilstanden ${mode}",
+    "50f48bac08efe71b4689": "Åbn ${input} i tilstanden ${mode}",
+    "d90fc89c77eb66c28161": "Du skifter fra %@ til %@. Når du bekræfter, opdateres den aktuelle filliste."
+  },
+  "nb": {
+    "42ceccb323afaebaf897": "Synkroniser %d bøker",
+    "a9917d92e5b99df94693": "Fungerer med alle de %lld støttede språkene",
+    "e3bc27b4e61532835499": "Stemmenavnet kan ikke være lengre enn %lld tegn",
+    "d90fc89c77eb66c28161": "Du bytter fra %@ til %@. Når du bekrefter, oppdateres den gjeldende fillisten."
+  },
+  "fi": {
+    "1916838c8a24da5e52fb": "Kirjaudu sisään luodaksesi äänen",
+    "91e708b1df114454b173": "Sivu latautuu taustalla. Odota hetki: nollan kirjan määrää ei näytetä ennen kuin lataus on valmis.",
+    "d90fc89c77eb66c28161": "Vaihdat palvelusta %@ palveluun %@. Nykyinen tiedostoluettelo päivitetään vahvistuksen jälkeen."
+  },
+  "el": {
+    "91e708b1df114454b173": "Η σελίδα φορτώνεται στο παρασκήνιο. Περιμένετε· δεν θα εμφανιστεί ένδειξη 0 βιβλίων πριν ολοκληρωθεί η φόρτωση.",
+    "50f48bac08efe71b4689": "Άνοιγμα του ${input} στη λειτουργία ${mode}"
+  },
+  "fil": {
+    "bbb8af9a0d1bb7ff5690": "Aalisin nito sa device na ito ang mga naka-save na pahina at posisyon sa offline na pagbabasa ng “%@”. Mananatili ang Kindle book sa iyong account. I-download itong muli para makabasa nang offline.",
+    "1916838c8a24da5e52fb": "Mag-sign in para gumawa ng boses"
+  }
+}

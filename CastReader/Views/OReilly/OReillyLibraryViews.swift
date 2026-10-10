@@ -33,7 +33,7 @@ enum OReillyReaderLauncher {
             id: latest.id,
             title: latest.title,
             sourceKind: .oreilly,
-            language: Constants.TTS.defaultLanguage,
+            language: HistoryStore.shared.records.first { $0.id == latest.id && $0.sourceKind == .oreilly }?.language ?? "",
             paragraphs: [],
             sourceURL: latest.effectiveReaderURL,
             coverURL: latest.coverURL
@@ -58,12 +58,14 @@ enum OReillyReaderLauncher {
 // MARK: - Home
 
 struct OReillyHomeSection: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = OReillyLibraryStore.shared
     @ObservedObject private var onboarding =
         BoundLibraryOnboardingStore.shared
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
                 VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
@@ -112,9 +114,11 @@ struct OReillyHomeSection: View {
 }
 
 private struct OReillyRailCard: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     let book: OReillyBook
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             OReillyCoverView(book: book)
                 .frame(width: 92, height: 132)
@@ -130,6 +134,8 @@ private struct OReillyRailCard: View {
 // MARK: - Library
 
 struct OReillyLibraryView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = OReillyLibraryStore.shared
     @ObservedObject private var onboarding =
@@ -272,6 +278,8 @@ struct OReillyCoverView: View {
 // MARK: - Binding
 
 struct OReillyLibraryConnectView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: OReillyLibrarySyncViewModel
     @State private var showsInstitutionOptions = false

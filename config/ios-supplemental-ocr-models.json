@@ -1,0 +1,62 @@
+[
+  {
+    "language": "fi",
+    "model": "fin",
+    "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/fin.traineddata",
+    "fallbackUrls": [
+      "https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@87416418657359cb625c412a48b6e1d6d41c29bd/fin.traineddata"
+    ],
+    "bytes": 7865732,
+    "sha256": "61a04cd62b507c3d9ae0e1cda399e6715ebf49dea9df47897c8acdcd3bd3e13c",
+    "delivery": "bundled",
+    "quality": "requires iOS acceptance"
+  },
+  {
+    "language": "el",
+    "model": "ell",
+    "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/ell.traineddata",
+    "fallbackUrls": [
+      "https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@87416418657359cb625c412a48b6e1d6d41c29bd/ell.traineddata"
+    ],
+    "bytes": 1419514,
+    "sha256": "4fba8a0b461038d51f1c20d043d4f2ac38c4e778f1b90830847f7bd8fa3ba726",
+    "delivery": "bundled",
+    "quality": "requires iOS acceptance"
+  },
+  {
+    "language": "hu",
+    "model": "hun",
+    "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/hun.traineddata",
+    "fallbackUrls": [
+      "https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@87416418657359cb625c412a48b6e1d6d41c29bd/hun.traineddata"
+    ],
+    "bytes": 5296273,
+    "sha256": "35067e7cfe102dcdc953f9a758fdfaa6296b17a1ee6d874ee780fa306430b9fb",
+    "delivery": "bundled",
+    "quality": "requires iOS acceptance"
+  },
+  {
+    "language": "fil",
+    "model": "fil",
+    "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/fil.traineddata",
+    "fallbackUrls": [
+      "https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@87416418657359cb625c412a48b6e1d6d41c29bd/fil.traineddata"
+    ],
+    "bytes": 1841715,
+    "sha256": "2b17f68014ab44b88b5e2334ebcd0ce0090d9af7c6fbef6fab22e0bbd9a934dd",
+    "delivery": "bundled",
+    "quality": "requires iOS acceptance"
+  },
+  {
+    "language": "he",
+    "model": "heb",
+    "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/heb.traineddata",
+    "fallbackUrls": [
+      "https://cdn.jsdelivr.net/gh/tesseract-ocr/tessdata_fast@87416418657359cb625c412a48b6e1d6d41c29bd/heb.traineddata"
+    ],
+    "bytes": 961404,
+    "sha256": "11f9e43ab227f786352a50f75c94c2e9906f1baba86d93276da19da7ce0904db",
+    "delivery": "bundled",
+    "quality": "requires iOS acceptance"
+  }
+]

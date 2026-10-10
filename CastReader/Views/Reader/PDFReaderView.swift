@@ -11,6 +11,27 @@ import SwiftUI
 import PDFKit
 import Combine
 
+/// Some embedded fonts give PDFKit selection boxes much taller than a line.
+/// Character indexes can also drift at synthesized PDF line breaks, so retain
+/// PDFKit's horizontal/line position and cap only abnormal single-line heights.
+enum PDFSelectionGeometry {
+    static func bounds(of selection: PDFSelection, on page: PDFPage) -> CGRect {
+        let selected = selection.bounds(for: page)
+        guard !selected.isNull, !selected.isInfinite,
+              let text = selection.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty, text.rangeOfCharacter(from: .newlines) == nil,
+              let attributed = selection.attributedString, attributed.length > 0 else { return selected }
+        var lineHeight: CGFloat = 0
+        attributed.enumerateAttribute(.font, in: NSRange(location: 0, length: attributed.length)) { value, _, _ in
+            if let font = value as? UIFont { lineHeight = max(lineHeight, font.lineHeight) }
+        }
+        guard lineHeight > 0, lineHeight.isFinite,
+              selected.height > lineHeight * 2 else { return selected }
+        return CGRect(x: selected.minX, y: selected.midY - lineHeight / 2,
+                      width: selected.width, height: lineHeight)
+    }
+}
+
 /// Keep a PDF page-space destination and the user's zoom relative to fit size.
 /// Resizing does not replace the document, annotations or playback session.
 final class PDFReaderContainerView: UIView {
@@ -315,8 +336,9 @@ struct PDFReaderView: UIViewRepresentable {
                     let rects = PDFOCRGeometry.rects(para, page: page, characterRange: m.charRange)
                     guard !rects.isEmpty else { continue }
                     let bounds = rects.reduce(CGRect.null) { $0.union($1) }
-                    let ann = HandwrittenPDFAnnotation(bounds: bounds.insetBy(dx: -12, dy: -10), forType: .stamp, withProperties: nil)
+                    let ann = HandwrittenPDFAnnotation(bounds: HandwrittenPDFAnnotation.annotationBounds(for: rects, action: m.action), forType: .stamp, withProperties: nil)
                     ann.markRects = rects
+                    ann.markRightToLeft = SupportedTTSLanguage(identifier: doc.language)?.isRightToLeft == true
                     ann.markAction = m.action; ann.markSeed = m.seed; ann.markN = m.n
                     ann.markWeight = m.weight; ann.inkColor = ink; ann.primaryColor = primary
                     page.addAnnotation(ann)
@@ -340,15 +362,16 @@ struct PDFReaderView: UIViewRepresentable {
                 var lineBounds: [CGRect] = []
                 for lineSel in sel.selectionsByLine() {
                     for p in lineSel.pages where p == page {
-                        let b = lineSel.bounds(for: p)
+                        let b = PDFSelectionGeometry.bounds(of: lineSel, on: p)
                         if !b.isNull && b.width > 1 && b.height > 1 { lineBounds.append(b) }
                     }
                 }
                 guard !lineBounds.isEmpty else { continue }
                 // 自定义手写 annotation：draw 里画 HandwrittenMark 同款手绘 path（与拍摄/纯文本/网页视觉一致）。
-                let union = lineBounds.reduce(CGRect.null) { $0.union($1) }.insetBy(dx: -12, dy: -10)
+                let union = HandwrittenPDFAnnotation.annotationBounds(for: lineBounds, action: m.action)
                 let ann = HandwrittenPDFAnnotation(bounds: union, forType: .stamp, withProperties: nil)
                 ann.markRects = lineBounds
+                ann.markRightToLeft = SupportedTTSLanguage(identifier: doc.language)?.isRightToLeft == true
                 ann.markAction = m.action
                 ann.markSeed = m.seed
                 ann.markN = m.n
@@ -442,7 +465,7 @@ struct PDFReaderView: UIViewRepresentable {
             let endItem = mapped[upper - 1]
             let end = endItem.utf16Offset + endItem.utf16Length
             guard end > start else { return nil }
-            return pdfDoc.selection(from: page, atCharacterIndex: start, to: page, atCharacterIndex: end)
+            return page.selection(for: NSRange(location: start, length: end - start))
         }
 
         private func cleanedPDFCharacterMap(pageText: String, rawRange: NSRange) -> [(char: Character, utf16Offset: Int, utf16Length: Int)] {
@@ -553,14 +576,13 @@ struct PDFReaderView: UIViewRepresentable {
             guard range.location >= 0, range.location + range.length <= ns.length else { lastHlIdx = idx; return }
             // Exact parser coordinates also distinguish repeated sentences on
             // the same page, without scanning the entire long document.
-            let selection = pdfDoc.selection(from: page, atCharacterIndex: range.location,
-                to: page, atCharacterIndex: NSMaxRange(range))
+            let selection = page.selection(for: range)
             lastHlIdx = idx
             guard let selection = selection else { return }
             lastSel = selection
             for lineSel in selection.selectionsByLine() {
                 for p in lineSel.pages {
-                    let b = lineSel.bounds(for: p)
+                    let b = PDFSelectionGeometry.bounds(of: lineSel, on: p)
                     if b.isNull || b.width < 1 || b.height < 1 { continue }
                     let ann = PDFAnnotation(bounds: b, forType: .highlight, withProperties: nil)
                     ann.color = color
@@ -571,7 +593,7 @@ struct PDFReaderView: UIViewRepresentable {
             // The full sentence may span a screen. Focus its resume word or
             // first glyph using the same rule as subsequent word ticks.
             if !revealResumeWord(), let first = page.selection(for: NSRange(location: range.location, length: 1)) {
-                revealWord(first.bounds(for: page), page: page)
+                revealWord(PDFSelectionGeometry.bounds(of: first, on: page), page: page)
             }
         }
 
@@ -590,7 +612,7 @@ struct PDFReaderView: UIViewRepresentable {
                 return true
             }
             if let selection = pdfSelectionForMark(pdfDoc: pdfDoc, page: page, paragraph: para, charRange: lower..<upper) {
-                revealWord(selection.bounds(for: page), page: page)
+                revealWord(PDFSelectionGeometry.bounds(of: selection, on: page), page: page)
                 return true
             }
             return false
@@ -611,7 +633,7 @@ struct PDFReaderView: UIViewRepresentable {
                         let x = min(maxX, max(minX, target.midX - visible.width / 2))
                         scroll.setContentOffset(CGPoint(x: x, y: scroll.contentOffset.y), animated: false)
                     }
-                    ReaderViewportFollow.reveal(target, in: scroll, source: "pdf")
+                    ReaderViewportFollow.reveal(target, in: scroll, source: "pdf", lowerBoundary: 0.70)
                     return
                 }
                 ancestor = view.superview
@@ -668,9 +690,8 @@ struct PDFReaderView: UIViewRepresentable {
                 if found.location == NSNotFound {
                     wordRects.append(.null)   // 词在句里找不到（标点/规范化差异）→ 该词不画，保留上一个
                 } else {
-                    let sel = pdfDoc.selection(from: page, atCharacterIndex: found.location,
-                                               to: page, atCharacterIndex: found.location + found.length)
-                    wordRects.append(sel?.bounds(for: page) ?? .null)
+                    let sel = page.selection(for: found)
+                    wordRects.append(sel.map { PDFSelectionGeometry.bounds(of: $0, on: page) } ?? .null)
                     wordSearchLoc = found.location + found.length
                 }
             }
@@ -696,9 +717,24 @@ final class HandwrittenPDFAnnotation: PDFAnnotation {
     var markAction = ""
     var markSeed: UInt64 = 0
     var markN: Int?
+    var markRightToLeft = false
     var markWeight: String?               // P1：重要度分层 → 笔触粗细
     var inkColor = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.85)   // #FD5F01 统一橙（深浅都清晰）
     var primaryColor: UIColor = .systemOrange
+
+    static func annotationBounds(for rects: [CGRect], action: String) -> CGRect {
+        let union = rects.reduce(CGRect.null) { $0.union($1) }
+        // A leading numeral/star needs room beyond the text edge. The old
+        // 12pt inset pushed LTR numbers into words and clipped RTL numbers.
+        let radius = min(max(14, rects.map(\.height).max() ?? 14) * 0.6, 16)
+        let horizontal: CGFloat
+        switch action {
+        case "number": horizontal = radius * 2.5 + 8
+        case "star": horizontal = max(7, min(12, union.height * 0.5)) * 2 + 10
+        default: horizontal = 12
+        }
+        return union.insetBy(dx: -horizontal, dy: -10)
+    }
 
     override func draw(with box: PDFDisplayBox, in context: CGContext) {
         guard !markRects.isEmpty else { return }
@@ -730,7 +766,7 @@ final class HandwrittenPDFAnnotation: PDFAnnotation {
             stroke = primaryColor
             lineWidth = 2.4 * wMul
         case "number":
-            path = HandwrittenMark.numberPath(near: local, n: markN ?? 1, seed: markSeed)
+            path = HandwrittenMark.numberPath(near: local, n: markN ?? 1, seed: markSeed, rightToLeft: markRightToLeft)
             stroke = inkColor
             lineWidth = 2.5 * wMul
             alpha = 0.9
@@ -748,7 +784,7 @@ final class HandwrittenPDFAnnotation: PDFAnnotation {
             stroke = inkColor
             lineWidth = 2.2 * wMul
         case "star":
-            path = HandwrittenMark.starPath(near: local, seed: markSeed)
+            path = HandwrittenMark.starPath(near: local, seed: markSeed, rightToLeft: markRightToLeft)
             stroke = inkColor
             lineWidth = 2.2 * wMul
             alpha = 0.9

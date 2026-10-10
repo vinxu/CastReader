@@ -1,0 +1,34 @@
+{
+  "architectureId": "voice-clone-system-v1",
+  "scope": "iOS UI localization, language-change invalidation, and clone credit presentation/refresh ordering. Canonical account, region, environment, monotonic revision guards, wire API, reservation/settlement and purchase behavior remain unchanged.",
+  "localLockPresent": false,
+  "canonicalLockReference": "Android .github/voice-clone-architecture-lock.json; pinned canonical blob SHA verified in control-plane Git",
+  "reviewedSources": [
+    {
+      "sourceCommit": "e42b21ef2899f549f75d7a3bafda051dfed39a8c",
+      "path": "docs/voice-clone-system-architecture.md",
+      "sha256": "a348685e9d6c64ee44fe6577087690513155fcc11721b30290a1793dc31360ef"
+    },
+    {
+      "sourceCommit": "6748cb5ff2253cd5645a64391b3be7ab8afba1f7",
+      "path": "docs/contracts/voice-gift-v1.md",
+      "sha256": "775f2d5681b69b4a9d5ee390f1efb387d92611c9a0ef257286849b64b1a303bc"
+    },
+    {
+      "sourceCommit": "6748cb5ff2253cd5645a64391b3be7ab8afba1f7",
+      "path": "docs/contracts/fixtures/voice-gift-v1.json",
+      "sha256": "bd14be765dc466e4e63ea0aec7e8700cd1b0d0482f70a2b53e87ebb86854c9a3"
+    },
+    {
+      "sourceCommit": "9c9fba91911c8e4f635d2a2e39d8067c1530d18a",
+      "path": "docs/contracts/voice-gift-cross-platform-delivery-v1.md",
+      "sha256": "3086930852d776bde00b543b432d52d989b779cc668185945e4a7f12e4bee72b"
+    }
+  ],
+  "requiredCommitTrailer": "Voice-Clone-Architecture-Reviewed: voice-clone-system-v1",
+  "validation": [
+    "CloneCreditBalanceRegressionTests: 4 passed",
+    "CloneCreditEnvironmentTests: 3 passed",
+    "Legacy quota and reading-language regression checks: 42 passed, 0 skipped, 0 failed"
+  ]
+}

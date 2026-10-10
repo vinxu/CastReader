@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import WidgetKit
 
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system
@@ -19,6 +20,25 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     case brazilianPortuguese = "pt-BR"
     case italian = "it"
     case hindi = "hi"
+    case dutch = "nl"
+    case korean = "ko"
+    case arabic = "ar"
+    case russian = "ru"
+    case polish = "pl"
+    case swedish = "sv"
+    case danish = "da"
+    case norwegianBokmal = "nb"
+    case finnish = "fi"
+    case czech = "cs"
+    case greek = "el"
+    case hungarian = "hu"
+    case filipino = "fil"
+    case hebrew = "he"
+    case indonesian = "id"
+    case malay = "ms"
+    case romanian = "ro"
+    case turkish = "tr"
+    case vietnamese = "vi"
 
     var id: String { rawValue }
 
@@ -71,18 +91,17 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
 
     var locale: Locale {
-        switch self {
-        case .system: return .autoupdatingCurrent
-        case .english: return Locale(identifier: "en_US")
-        case .simplifiedChinese: return Locale(identifier: "zh_CN")
-        case .japanese: return Locale(identifier: "ja_JP")
-        case .spanish: return Locale(identifier: "es_ES")
-        case .french: return Locale(identifier: "fr_FR")
-        case .german: return Locale(identifier: "de_DE")
-        case .brazilianPortuguese: return Locale(identifier: "pt_BR")
-        case .italian: return Locale(identifier: "it_IT")
-        case .hindi: return Locale(identifier: "hi_IN")
-        }
+        Locale(identifier: self == .system ? Self.systemLocalization : rawValue)
+    }
+
+    /// iOS can give this app a language different from the device's regional
+    /// locale. Use the same bundle language that renders its interface.
+    static var systemLocalization: String {
+        Bundle.main.preferredLocalizations.first ?? "en"
+    }
+
+    var isRightToLeft: Bool {
+        SupportedTTSLanguage(identifier: resolvedLanguageCode)?.isRightToLeft == true
     }
 
     /// 归一化后的 BCP-47 主语言码（`.system` 落到系统语言）。供需要按语言分支
@@ -90,7 +109,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     var resolvedLanguageCode: String {
         switch self {
         case .system:
-            return Locale.autoupdatingCurrent.language.languageCode?.identifier ?? "en"
+            return Self.systemLocalization.split(separator: "-").first.map(String.init) ?? "en"
         default:
             return rawValue.split(separator: "-").first.map(String.init) ?? rawValue
         }
@@ -99,19 +118,11 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     /// Keep language names self-identifying so users can always recover after
     /// selecting a language they do not read.
     var displayName: String {
-        switch self {
-        case .system: return AppLocalized("跟随系统")
-        case .english: return "English"
-        case .simplifiedChinese: return "简体中文"
-        case .japanese: return "日本語"
-        case .spanish: return "Español"
-        case .french: return "Français"
-        case .german: return "Deutsch"
-        case .brazilianPortuguese: return "Português (Brasil)"
-        case .italian: return "Italiano"
-        case .hindi: return "हिन्दी"
-        }
+        if self == .system { return AppLocalized("跟随系统") }
+        if self == .simplifiedChinese { return "简体中文" }
+        return SupportedTTSLanguage(identifier: rawValue)?.nativeName ?? rawValue
     }
+
 }
 
 final class AppLanguageManager: ObservableObject {
@@ -140,10 +151,16 @@ final class AppLanguageManager: ObservableObject {
 
     func select(_ language: AppLanguage) {
         guard selectedLanguage != language else { return }
+        if VoiceBrowsePresentation.isAdaptive() {
+            // Invalidate even while Voices is unmounted, including switching
+            // away and back before the next visit. Playback preferences are separate.
+            defaults.removeObject(forKey: "voice_browser_app_language_v2")
+        }
         localizationBundle = Self.bundle(for: language)
         defaults.set(language.rawValue, forKey: Self.defaultsKey)
         Self.sharedDefaults?.set(language.rawValue, forKey: Self.defaultsKey)
         selectedLanguage = language
+        WidgetCenter.shared.reloadTimelines(ofKind: "CastReaderContinueWidget")
     }
 
     private static func bundle(for language: AppLanguage) -> Bundle {
@@ -156,6 +173,8 @@ final class AppLanguageManager: ObservableObject {
     }
 }
 
+/// Views that render these runtime Strings observe AppLanguageManager so cached
+/// child bodies refresh when the user changes language (without resetting views).
 /// Runtime strings must use the selected language bundle explicitly. Foundation
 /// caches localized lookups by bundle identity, so swapping Bundle.main cannot
 /// reliably support multiple consecutive in-app language changes.
@@ -166,6 +185,23 @@ func AppLocalized(_ key: String.LocalizationValue) -> String {
         bundle: language.localizationBundle,
         locale: language.locale
     )
+}
+
+/// Foundation describes URL errors in the device's language, which can differ
+/// from the selected app language. Localize actionable network failures here;
+/// retain domain-specific errors (account, quota, source) without flattening them.
+func AppUserFacingError(_ error: Error) -> String {
+    let failure = error as NSError
+    guard failure.domain == NSURLErrorDomain else { return error.localizedDescription }
+    switch URLError.Code(rawValue: failure.code) {
+    case .timedOut:
+        return AppLocalized("请求超时，请检查网络后重试")
+    case .notConnectedToInternet, .networkConnectionLost, .cannotFindHost,
+         .cannotConnectToHost, .dnsLookupFailed, .dataNotAllowed:
+        return AppLocalized("网络连接失败，请重试。")
+    default:
+        return error.localizedDescription
+    }
 }
 
 /// Cloud-storage copy lives in its own string catalog so the OAuth/privacy
@@ -997,6 +1033,7 @@ final class AppSettings: ObservableObject {
     @Published private(set) var voiceSelectionRevision: UInt64 = 0
     @Published var speed: Double { didSet { d.set(speed, forKey: K.speed) } }
     @Published var explainLanguage: String { didSet { d.set(explainLanguage, forKey: K.explainLang) } } // "" = 跟随原文
+    @Published var imageTextLanguage: String { didSet { d.set(imageTextLanguage, forKey: K.imageTextLanguage) } } // "" = 自动检测
     @Published var explainDepth: String { didSet { d.set(explainDepth, forKey: K.explainDepth) } }
     @Published var highlightColorHex: String { didSet { d.set(highlightColorHex, forKey: K.highlightColor) } }
     @Published var autoScroll: Bool { didSet { d.set(autoScroll, forKey: K.autoScroll) } }
@@ -1037,6 +1074,7 @@ final class AppSettings: ObservableObject {
             ? ""
             : (SupportedTTSLanguage(identifier: storedExplainLanguage)?.rawValue ?? "")
         explainDepth = d.string(forKey: K.explainDepth) ?? QuickreadDepth.standard.rawValue
+        imageTextLanguage = SupportedTTSLanguage(identifier: d.string(forKey: K.imageTextLanguage) ?? "")?.rawValue ?? ""
         highlightColorHex = d.string(forKey: K.highlightColor) ?? "#FD5F01"
         autoScroll = d.object(forKey: K.autoScroll) as? Bool ?? true
         autoPlay = d.object(forKey: K.autoPlay) as? Bool ?? true
@@ -1107,7 +1145,8 @@ final class AppSettings: ObservableObject {
     @discardableResult
     func setMultilingualClonedVoice(_ voiceID: String, supportedLanguages: [String]) -> Bool {
         let value = voiceID.trimmed
-        let languages = Set(supportedLanguages.map(VoiceCatalog.normalizedLanguage).filter { !$0.isEmpty })
+        let languages = Set(supportedLanguages.compactMap { SupportedTTSLanguage(identifier: $0) }
+            .filter { VoiceCloneLanguageSupport.all.contains($0.rawValue) }.map(\.rawValue))
         guard voiceCloningEnabled, VoiceOption.requiresGenerationQuota(value), !languages.isEmpty else { return false }
         var voices = voicesByLanguage, clones = clonedVoicesByLanguage
         for language in languages {
@@ -1134,7 +1173,9 @@ final class AppSettings: ObservableObject {
         guard voiceCloningEnabled else { return false }
         let value = voiceID.trimmed
         let normalized = VoiceCatalog.normalizedLanguage(language)
-        guard value.hasPrefix("vc_"), value.count > 3, !normalized.isEmpty else { return false }
+        guard value.hasPrefix("vc_"), value.count > 3,
+              let supported = SupportedTTSLanguage(identifier: normalized),
+              VoiceCloneLanguageSupport.all.contains(supported.rawValue) else { return false }
         var next = clonedVoicesByLanguage
         next[normalized] = value
         commitVoiceSelection(voices: voicesByLanguage, clones: next)
@@ -1193,6 +1234,7 @@ final class AppSettings: ObservableObject {
         static let clonedVoicesByLanguage = "active_cloned_voice_by_language_v2"
         static let speed = "tts_speed"
         static let explainLang = "explain_language"
+        static let imageTextLanguage = "image_text_language_v1"
         static let explainDepth = "explain_depth"
         static let highlightColor = "highlight_color_hex"
         static let autoScroll = "auto_scroll"

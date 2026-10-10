@@ -1,0 +1,399 @@
+{
+  "version": "ios-28-2026-10-08.2",
+  "serviceRegions": {
+    "global": ["en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi", "nl", "ko", "ar", "ru", "pl", "sv", "da", "nb", "fi", "cs", "el", "hu", "fil", "he", "id", "ms", "ro", "tr", "vi"],
+    "cn": ["en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi"]
+  },
+  "excluded": [
+    "am",
+    "bn",
+    "gu",
+    "kn",
+    "ml",
+    "mr",
+    "pa",
+    "sk",
+    "ta",
+    "uk",
+    "ur"
+  ],
+  "languages": [
+    {
+      "code": "en",
+      "swiftCase": "english",
+      "nativeName": "English",
+      "locale": "en-US",
+      "engine": "kokoro",
+      "direction": "ltr",
+      "aliases": [
+        "eng"
+      ],
+      "offlineVoice": "af_heart",
+      "offlineName": "Heart"
+    },
+    {
+      "code": "zh",
+      "swiftCase": "chinese",
+      "nativeName": "中文",
+      "locale": "zh-CN",
+      "engine": "kokoro",
+      "direction": "ltr",
+      "aliases": [
+        "zho",
+        "chi"
+      ],
+      "offlineVoice": "zf_001",
+      "offlineName": "晓萱"
+    },
+    {
+      "code": "ja",
+      "swiftCase": "japanese",
+      "nativeName": "日本語",
+      "locale": "ja-JP",
+      "engine": "kokoro",
+      "direction": "ltr",
+      "aliases": [
+        "jpn"
+      ],
+      "offlineVoice": "jf_alpha",
+      "offlineName": "Alpha"
+    },
+    {
+      "code": "es",
+      "swiftCase": "spanish",
+      "nativeName": "Español",
+      "locale": "es-ES",
+      "engine": "kokoro",
+      "direction": "ltr",
+      "aliases": [
+        "spa"
+      ],
+      "offlineVoice": "ef_dora",
+      "offlineName": "Dora"
+    },
+    {
+      "code": "fr",
+      "swiftCase": "french",
+      "nativeName": "Français",
+      "locale": "fr-FR",
+      "engine": "kokoro",
+      "direction": "ltr",
+      "aliases": [
+        "fra",
+        "fre"
+      ],
+      "offlineVoice": "ff_siwis",
+      "offlineName": "Siwis"
+    },
+    {
+      "code": "de",
+      "swiftCase": "german",
+      "nativeName": "Deutsch",
+      "locale": "de-DE",
+      "engine": "kokoro",
+      "direction": "ltr",
+      "aliases": [
+        "deu",
+        "ger"
+      ],
+      "offlineVoice": "df_mls_19",
+      "offlineName": "Emilia"
+    },
+    {
+      "code": "pt",
+      "swiftCase": "brazilianPortuguese",
+      "nativeName": "Português",
+      "locale": "pt-BR",
+      "engine": "kokoro",
+      "direction": "ltr",
+      "aliases": [
+        "por"
+      ],
+      "offlineVoice": "pf_dora",
+      "offlineName": "Dora"
+    },
+    {
+      "code": "it",
+      "swiftCase": "italian",
+      "nativeName": "Italiano",
+      "locale": "it-IT",
+      "engine": "kokoro",
+      "direction": "ltr",
+      "aliases": [
+        "ita"
+      ],
+      "offlineVoice": "if_sara",
+      "offlineName": "Sara"
+    },
+    {
+      "code": "hi",
+      "swiftCase": "hindi",
+      "nativeName": "हिन्दी",
+      "locale": "hi-IN",
+      "engine": "kokoro",
+      "direction": "ltr",
+      "aliases": [
+        "hin"
+      ],
+      "offlineVoice": "hf_alpha",
+      "offlineName": "Alpha"
+    },
+    {
+      "code": "nl",
+      "swiftCase": "dutch",
+      "nativeName": "Nederlands",
+      "locale": "nl-NL",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "nld",
+        "dut"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "ko",
+      "swiftCase": "korean",
+      "nativeName": "한국어",
+      "locale": "ko-KR",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "kor"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "ar",
+      "swiftCase": "arabic",
+      "nativeName": "العربية",
+      "locale": "ar-XA",
+      "engine": "google",
+      "direction": "rtl",
+      "aliases": [
+        "ara"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "ru",
+      "swiftCase": "russian",
+      "nativeName": "Русский",
+      "locale": "ru-RU",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "rus"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "pl",
+      "swiftCase": "polish",
+      "nativeName": "polski",
+      "locale": "pl-PL",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "pol"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "sv",
+      "swiftCase": "swedish",
+      "nativeName": "svenska",
+      "locale": "sv-SE",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "swe"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "da",
+      "swiftCase": "danish",
+      "nativeName": "dansk",
+      "locale": "da-DK",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "dan"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "nb",
+      "swiftCase": "norwegianBokmal",
+      "nativeName": "norsk bokmål",
+      "locale": "nb-NO",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "nob"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "fi",
+      "swiftCase": "finnish",
+      "nativeName": "suomi",
+      "locale": "fi-FI",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "fin"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "cs",
+      "swiftCase": "czech",
+      "nativeName": "čeština",
+      "locale": "cs-CZ",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "ces",
+        "cze"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "el",
+      "swiftCase": "greek",
+      "nativeName": "Ελληνικά",
+      "locale": "el-GR",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "ell",
+        "gre"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "hu",
+      "swiftCase": "hungarian",
+      "nativeName": "magyar",
+      "locale": "hu-HU",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "hun"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "fil",
+      "swiftCase": "filipino",
+      "nativeName": "Filipino",
+      "locale": "fil-PH",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "tl",
+        "fil",
+        "tgl"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "he",
+      "swiftCase": "hebrew",
+      "nativeName": "עברית",
+      "locale": "he-IL",
+      "engine": "google",
+      "direction": "rtl",
+      "aliases": [
+        "iw",
+        "heb"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "id",
+      "swiftCase": "indonesian",
+      "nativeName": "Bahasa Indonesia",
+      "locale": "id-ID",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "in",
+        "ind"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "ms",
+      "swiftCase": "malay",
+      "nativeName": "Bahasa Melayu",
+      "locale": "ms-MY",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "msa",
+        "may",
+        "zsm"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "ro",
+      "swiftCase": "romanian",
+      "nativeName": "Română",
+      "locale": "ro-RO",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "ron",
+        "rum"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "tr",
+      "swiftCase": "turkish",
+      "nativeName": "Türkçe",
+      "locale": "tr-TR",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "tur"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    },
+    {
+      "code": "vi",
+      "swiftCase": "vietnamese",
+      "nativeName": "Tiếng Việt",
+      "locale": "vi-VN",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "vie"
+      ],
+      "offlineVoice": "",
+      "offlineName": ""
+    }
+  ]
+}

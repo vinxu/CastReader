@@ -780,26 +780,32 @@ final class HistoryStore: ObservableObject {
     /// 免得把一次坏识别固化成「已缓存」。
     private func writeOCRSnapshot(
         for doc: ReadingDocument,
-        payloadByteCount: Int,
+        payload: Data,
         in scope: ActiveStorageScope
     ) {
         // 只写、不删：先开页面时保存的是「还没识别」的占位文档，它不该
         // 抹掉磁盘上已有的好快照。过期快照由 payload 字节数与版本号判定。
-        guard let snapshot = PhotoOCRSnapshot(document: doc, payloadByteCount: payloadByteCount),
+        guard let snapshot = PhotoOCRSnapshot(document: doc, payload: payload),
               let data = try? JSONEncoder().encode(snapshot) else { return }
         try? data.write(to: ocrSnapshotURL(doc.id, in: scope), options: .atomic)
     }
 
     /// 读取仍然匹配当前 payload 的照片 OCR 快照。
+    private func requestedPhotoLanguage(_ id: String) -> String? {
+        let key = ReadingLanguageStore.contentKey(namespace: ReadingSourceKind.photo.rawValue, bookID: id)
+        let requested = ReadingLanguageStore.shared.override(for: key) ?? AppSettings.shared.imageTextLanguage
+        return requested.isEmpty ? nil : requested
+    }
+
     private func ocrSnapshot(
         _ id: String,
-        payloadByteCount: Int,
+        payload: Data,
         in scope: ActiveStorageScope
     ) -> PhotoOCRSnapshot? {
         guard isCurrent(scope),
               let data = try? Data(contentsOf: ocrSnapshotURL(id, in: scope)),
               let snapshot = try? JSONDecoder().decode(PhotoOCRSnapshot.self, from: data),
-              snapshot.matches(payloadByteCount: payloadByteCount) else { return nil }
+              snapshot.matches(payload: payload, language: requestedPhotoLanguage(id)) else { return nil }
         return snapshot
     }
 
@@ -939,7 +945,7 @@ final class HistoryStore: ObservableObject {
             try? payload.write(to: payloadURL(doc.id, in: scope))
             // 照片的识别产物随 payload 一起落盘，重开时不必再跑一遍 OCR。
             if doc.sourceKind == .photo {
-                writeOCRSnapshot(for: doc, payloadByteCount: payload.count, in: scope)
+                writeOCRSnapshot(for: doc, payload: payload, in: scope)
             }
         } else if resolvedPersistencePolicy == .remoteReference
                     || doc.sourceKind == .youtube {
@@ -1061,7 +1067,7 @@ final class HistoryStore: ObservableObject {
     }
 
     /// Web/DOCX language is only known after DOM extraction. Persist the final
-    /// nine-language result so history reopen, voice defaults and analytics do
+    /// supported-language result so history reopen, voice defaults and analytics do
     /// not fall back to the placeholder English value.
     func updateDetectedLanguage(documentID: String, language: String) {
         guard let language = SupportedTTSLanguage(identifier: language)?.rawValue,
@@ -1341,7 +1347,7 @@ final class HistoryStore: ObservableObject {
         guard rec.sourceKind == .photo,
               let scope = activeScope, records.contains(rec),
               let data = localPayloadData(rec.id) else { return nil }
-        if let snapshot = ocrSnapshot(rec.id, payloadByteCount: data.count, in: scope) {
+        if let snapshot = ocrSnapshot(rec.id, payload: data, in: scope) {
             return snapshot.document(id: rec.id, title: rec.title, imageData: data)
         }
         return ReadingDocument(
@@ -1364,7 +1370,7 @@ final class HistoryStore: ObservableObject {
               let data = localPayloadData(rec.id),
               let image = UIImage(data: data) else { return nil }
         let capture = CaptureFlowViewModel()
-        await capture.process(image: image)
+        await capture.process(image: image, languageHint: requestedPhotoLanguage(rec.id))
         guard isCurrent(scope), records.contains(rec), let built = capture.document else { return nil }
         let document = ReadingDocument(
             id: rec.id,
@@ -1376,7 +1382,7 @@ final class HistoryStore: ObservableObject {
             imagePixelSize: built.imagePixelSize,
             layoutColumnCount: built.layoutColumnCount
         )
-        writeOCRSnapshot(for: document, payloadByteCount: data.count, in: scope)
+        writeOCRSnapshot(for: document, payload: data, in: scope)
         return document
     }
 
@@ -1519,12 +1525,12 @@ final class HistoryStore: ObservableObject {
             guard let data = localPayloadData(rec.id) else { return nil }
             // 识别过的照片直接用快照重开。真机上重跑一次采集管线要 6.7 秒
             // （方向探测 + 多语言 probe + 单语言全图复跑），而产物是不变的。
-            if let snapshot = ocrSnapshot(rec.id, payloadByteCount: data.count, in: scope) {
+            if let snapshot = ocrSnapshot(rec.id, payload: data, in: scope) {
                 return snapshot.document(id: rec.id, title: rec.title, imageData: data)
             }
             guard let img = UIImage(data: data) else { return nil }
             let cap = CaptureFlowViewModel()
-            await cap.process(image: img)
+            await cap.process(image: img, languageHint: requestedPhotoLanguage(rec.id))
             guard isCurrent(scope), records.contains(rec), let built = cap.document else {
                 return nil
             }
@@ -1534,7 +1540,7 @@ final class HistoryStore: ObservableObject {
                                            imagePixelSize: built.imagePixelSize,
                                            layoutColumnCount: built.layoutColumnCount)
             // 首次补上快照：老记录（升级前存的）也只需要再识别这一次。
-            writeOCRSnapshot(for: document, payloadByteCount: data.count, in: scope)
+            writeOCRSnapshot(for: document, payload: data, in: scope)
             return document
         }
     }

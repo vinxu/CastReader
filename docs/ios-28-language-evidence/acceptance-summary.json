@@ -1,0 +1,54 @@
+{
+  "completedAt": "2026-10-09T17:08:39.807761+00:00",
+  "status": "client_acceptance_complete",
+  "version": "1.2.47",
+  "build": "72",
+  "region": {
+    "global": 28,
+    "china": 9
+  },
+  "newLanguages": [
+    "ar",
+    "cs",
+    "da",
+    "el",
+    "fi",
+    "fil",
+    "he",
+    "hu",
+    "id",
+    "ko",
+    "ms",
+    "nb",
+    "nl",
+    "pl",
+    "ro",
+    "ru",
+    "sv",
+    "tr",
+    "vi"
+  ],
+  "requiredSessions": 114,
+  "passedSessions": 114,
+  "minimumActualSeconds": 180.00085017634626,
+  "totalActualSeconds": 20708.096635645616,
+  "productionSourceFiles": 462,
+  "sourceDigest": "2d7bc9c8fbcb72221acd626d8a5b922e49b8a2c9f8b614131f16e12739db24c2",
+  "sourceUnchangedAfterRelease": true,
+  "release": "unsigned_build_passed",
+  "appStore": "not_uploaded_or_submitted",
+  "limitations": [
+    {
+      "fixture": "long-fixtures/pl.pdf",
+      "issue": "Defective publisher font mapping loses letters in PDFKit extraction; ranges alone do not prove text fidelity.",
+      "evidence": "pl-original-pdf-text-defect.json",
+      "resolutionForLanguageAcceptance": "Use reviewed native-text pl-library-clean.pdf; original preserved as an input limitation."
+    },
+    {
+      "fixture": "Malay Bumi standalone Jawi word",
+      "issue": "Malay provider rejects the isolated Jawi word with HTTP 502.",
+      "resolutionForLanguageAcceptance": "Public Biologi prose passed both 180-second modes; provider limitation not claimed fixed."
+    }
+  ],
+  "testScope": "Real signed-in Pro simulator; no physical-device claim; no native-speaker certification."
+}

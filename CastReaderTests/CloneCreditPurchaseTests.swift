@@ -298,3 +298,98 @@ final class CloneCreditEnvironmentTests: XCTestCase {
         XCTAssertTrue(CloneCreditStore.acceptsBalanceEnvironment("Sandbox", current: nil))
     }
 }
+
+/// No StoreKit transactions, real credentials or shared entitlement mutation.
+@MainActor
+final class CloneCreditBalanceRegressionTests: XCTestCase {
+    private func response(_ fields: [String: Any]) throws -> HTTPURLResponse {
+        let raw = String(data: try JSONSerialization.data(withJSONObject: fields), encoding: .utf8)!
+        return HTTPURLResponse(url: URL(string: "https://example.invalid/tts")!, statusCode: 200,
+            httpVersion: nil, headerFields: ["X-Clone-Credits": raw])!
+    }
+    private func snapshot(_ available: Int, revision: Int) -> [String: Any] {
+        ["enabled": true, "environment": "Production", "revision": revision,
+         "availableMs": available, "baseRemainingMs": available, "purchasedRemainingMs": 0,
+         "canApply": available > 0, "canPurchase": true]
+    }
+    func testOlderZeroAndMalformedHeadersCannotReplaceConfirmedBalance() throws {
+        let store = CloneCreditStore(account: { "isolated-credit-test" }, hasPro: { true })
+        store.applyGenerationResponse(try response(snapshot(3_600_000, revision: 4)))
+        store.applyGenerationResponse(try response(snapshot(0, revision: 3)))
+        XCTAssertEqual(store.availableMs, 3_600_000)
+        store.applyGenerationResponse(try response(["enabled": true]))
+        XCTAssertEqual(store.availableMs, 3_600_000)
+        store.applyGenerationResponse(try response(snapshot(0, revision: 5)))
+        XCTAssertEqual(store.availableMs, 0, "A confirmed newer zero remains authoritative")
+    }
+    func testUnknownAndSubMinuteBalancesNeverClaimZeroInAnyInterfaceLanguage() {
+        let manager = AppLanguageManager.shared
+        let original = manager.selectedLanguage
+        defer { manager.select(original) }
+        for language in AppLanguage.allCases where language != .system {
+            manager.select(language)
+            XCTAssertEqual(CloneCreditPurchaseView.balanceText(nil), AppLocalized("生成额度正在同步"))
+            XCTAssertEqual(CloneCreditPurchaseView.balanceText(1), AppLocalized("不足 1 分钟"))
+            XCTAssertEqual(CloneCreditPurchaseView.balanceText(59_999), AppLocalized("不足 1 分钟"))
+            XCTAssertNotEqual(CloneCreditPurchaseView.balanceText(1), CloneCreditPurchaseView.balanceText(0))
+        }
+    }
+    func testAccountChangeHidesPreviousBalance() throws {
+        var owner: String? = "account-a"
+        let store = CloneCreditStore(account: { owner }, hasPro: { true })
+        store.applyGenerationResponse(try response(snapshot(3_600_000, revision: 4)))
+        owner = "account-b"
+        XCTAssertNil(store.currentBalance)
+        owner = nil
+        XCTAssertNil(store.currentBalance)
+    }
+    func testFreshBalanceAppearsBeforeStoreKitPriceAndSurvivesNetworkFailure() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [CreditBalanceRegressionURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel(); CreditBalanceRegressionURLProtocol.body = nil }
+        CreditBalanceRegressionURLProtocol.body = try JSONSerialization.data(withJSONObject:
+            ["code": 0, "data": snapshot(3_600_000, revision: 7)])
+        let priceGate = CreditPriceGate()
+        let store = CloneCreditStore(client: CloneCreditClient(baseURL: URL(string: "https://example.invalid")!,
+            session: session, token: { "isolated-test-token" }, refreshToken: { nil }),
+            account: { "isolated-credit-test" }, hasPro: { true }, storeEnvironment: { "Production" },
+            loadProducts: { await priceGate.wait(); return [] })
+        store.applyGenerationResponse(try response(snapshot(0, revision: 6)))
+        let refresh = Task { await store.refresh() }
+        for _ in 0..<60 where store.availableMs != 3_600_000 { try await Task.sleep(for: .milliseconds(50)) }
+        let balanceBeforePrice = store.availableMs
+        await priceGate.open()
+        await refresh.value
+        XCTAssertEqual(balanceBeforePrice, 3_600_000, "Price loading must not hold the balance at zero")
+        CreditBalanceRegressionURLProtocol.body = nil
+        await store.refresh()
+        XCTAssertEqual(store.availableMs, 3_600_000, "An unavailable status is not a zero balance")
+    }
+}
+
+private actor CreditPriceGate {
+    private var released = false
+    private var continuation: CheckedContinuation<Void, Never>?
+    func wait() async {
+        guard !released else { return }
+        await withCheckedContinuation { continuation = $0 }
+    }
+    func open() { released = true; continuation?.resume(); continuation = nil }
+}
+
+private final class CreditBalanceRegressionURLProtocol: URLProtocol {
+    static var body: Data?
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        guard let body = Self.body else {
+            client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet)); return
+        }
+        client?.urlProtocol(self, didReceive: HTTPURLResponse(url: request.url!, statusCode: 200,
+            httpVersion: nil, headerFields: nil)!, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: body)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+    override func stopLoading() {}
+}

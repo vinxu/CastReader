@@ -1,0 +1,57 @@
+id,area,scenario,expected,verification,ios_status,evidence,notes
+NAV-01,Global 导航,打开独立 Voice tab,紧凑标题、Explore/My Voices、独立语言工具栏层次清楚,截图,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+NAV-02,Global 导航,从首页进入 My Voices 后返回,完整库与浏览导航状态正确；最近/收藏次级入口仍可达,UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+NAV-03,当前音色,已有常规/公开克隆/私人选中偏好,当前卡显示真实选择与语言作用域，浅色描边，加载不替换选择,UI+模型,PASS_UI_AND_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前卡的常规、私人/受赠选中与作用域已实际查看；加载保留选择由目录缺失回归覆盖。
+SEARCH-01,搜索,候选总数 >6 的首页初次打开,搜索收起，语言栏有展开按钮,UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+SEARCH-02,搜索,展开搜索并使用筛选,查询、清除、筛选入口同一表面，只有多值筛选维度,截图+UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+SEARCH-03,搜索,填入查询和筛选再收起,查询/筛选清空，键盘收起，恢复正常首页,UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+SEARCH-04,搜索,少量音色与多音色列表详情,少量无无效搜索；多音色详情搜索可用；空结果有可恢复提示,UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/ui3.xcresult,芬兰语少量无搜索；韩语完整池可搜索，外语源ID空结果后清除恢复。
+SPARSE-01,少量音色,芬兰语单音色 fixture/目录,当前音色可试听；无重复音色/假分类/无效筛选；可浏览其他语言,截图+UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+SPARSE-02,少量音色,土耳其语五音色 fixture,当前卡与直接列表合计全部可选，选中项不重复,截图+UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+SPARSE-03,阈值,常规数 0、1、6、7；另含大量公开克隆,0/1/6 直接列表，7 可发现；阈值不包含公开克隆,模型,PASS_SOURCE_AND_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,分支使用有效regularVoices.count <= 6；排除monthly clone；真实fi/tr及完整克隆池模型通过。0/6/7阈值源码复核，非额外UIfixture。
+SPARSE-04,发现内容,单条分组与相同成员合集 fixture,不足两个不同音色的分组隐藏，相同成员合集去重,模型+UI,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+CLONE-01,首页克隆,逐一 en zh de ja fr es ko pt ru,存在源语言数据时首页当前卡后可达精选克隆，最多3个,数据+UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+CLONE-02,源语言,英文源样本声明支持多种合成语言,韩语首页不会被英文源样本填充；合成可用与推荐归属分开,模型,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+CLONE-03,源语言,referenceLanguage/唯一previewLanguages/缺省lang组合,按规定优先级规范化，语言别名不串池,模型,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+CLONE-04,目录筛选,disabled/non-selectable/lab/legacy/无试听/不支持目标,不进入精选公开克隆；ID 去重,模型,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+CLONE-05,推荐顺序,编辑精选与普通服务端条目混合,已有编辑顺序优先，其余稳定服务端顺序，无虚构热度,模型,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+CLONE-06,查看全部,源语言克隆池 >6,详情可达第7项及末项；不被首页3/编辑6截断,UI,PASS_MODEL_AND_UI,../../reports/ios-28-languages-20261008/voice134-alignment/ui3.xcresult,UI已遍历超过6项；完整池及尾项由模型夹具断言，未人工滚动至实时韩语目录末尾。
+CLONE-07,详情搜索,同源语言克隆详情搜外语源ID,不会串入其他源语言；清空条件恢复同语言完整列表,UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+CLONE-08,目录缺口,意大利语无源语言公开克隆,隐藏空精选区，不用英语补齐；兼容私人和全可用列表保留,UI+模型,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+CLONE-09,全部可用,跨源语言但声明支持目标的克隆,全部可用列表仍可选，明确试听语言与月额度,UI,PASS_MODEL_AND_LIVE,../../reports/ios-28-languages-20261008/voice134-alignment/unit-resume.xcresult,跨源语言且supportedLanguages包含目标的公开音色由模型确认保留ID、对应试听和月额度；真实阅读公开克隆选用已通过。未声称跨语言真人试听逐个覆盖。
+PRIVATE-01,首页最新3,至少6兼容owned/gifted，创建时间乱序,两个来源合并按createdAt降序只显示3个,模型+UI,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+PRIVATE-02,先过滤后截断,最新条目不兼容且后方有足够兼容条目,首页仍显示最新3个兼容条目，不因提前截断缺失,模型+UI,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+PRIVATE-03,当前音色去重,最新兼容私人音色为当前选择,当前卡保留，首页另取3个可用项，不重复当前项,模型+UI,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+PRIVATE-04,日期边界,同日期、缺日期、带/不带毫秒、重复ID,同日期稳定服务端序，未知日期置后，解析一致且ID去重,模型,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+PRIVATE-05,状态边界,未ready/无访问条目比可用条目更新,不可用条目不挤掉首页3项；遵从权威状态,模型+UI,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+PRIVATE-06,完整库,从首页箭头和 My Voices tab 进入,所有owned/gifted保留；数量不被首页上限截断,UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/ui16.xcresult,完整 My Voices 实际遍历超过6个条目；不受首页3项限制。
+PRIVATE-07,不兼容项,完整库含不兼容当前浏览语言的音色,保留条目/支持语言/授权管理与固定试听，禁用选用,UI+合同,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/ui16.xcresult,切换芬兰语后保留完整库、支持语言及管理；选用禁用，固定试听真实播放并停止。
+PRIVATE-08,阅读器完整列表,阅读器打开6个兼容私人音色,当前卡和列表合计全部可达，未使用首页3条上限,UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/screenshots-final/reader-voice-panel.txt,实际AX快照包含23个owned与6个friends唯一ID；阅读器完整库未使用首页3项上限。
+LANG-01,独立页语言,同一 App 语言内的明确选择/历史/UI/en组合,只恢复与当前 App 语言上下文一致的浏览历史，再按明确选择>有效历史>UI>en解析,模型,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+LANG-02,偏好隔离,独立页只切换浏览语言后打开文档,不改音色偏好，不改正文/解读语言,集成,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,浏览语言上下文测试明确比较正文/解读/音色偏好未变；真实模式语言另由长测验证。
+LANG-03,阅读器语言,阅读器指定语言与浏览历史不同,正文/解读语言优先，直接选择列表无发现/创建推广,UI+模型,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,当前候选实际界面；具体截图及对应运行见证据索引。
+LANG-04,未知语言,正文und且浏览历史en/zh,保持und或提示明确纠正；不猜成浏览/UI语言,模型+集成,PASS_MODEL_AND_UI,../../reports/ios-28-languages-20261008/unknown-language-recovery-77.json,未确定语言仍保留不确定并给出纠正入口；真实印尼语/马来语长测通过显式纠正，不从英文浏览历史猜正文。
+LANG-05,明确纠错,操作明确标识的朗读语言纠错控件,仅明确纠错改变正文语言；解读仍遵从其设置,集成,PASS_LIVE,../../reports/ios-28-languages-20261008/long-matrix-20261009-190305/id-web/results.json,印尼语网页通过正常语言纠错入口后实播三分钟；解读遵从独立设置。
+LANG-06,加载偏好,保存vc_/vl_选择后冷启动或刷新,未加载时不回退常规默认；仅无偏好使用目录默认,模型+UI,PASS_CONTRACT_AND_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-resume.xcresult,已保存vl选择在目录缺失及能力撤回时保持，不静默回退；vc路径源码与现有选择合同复核。
+CAP-01,克隆能力,逐一现有10输出语言且metadata兼容,沿用en zh de ja fr es ko pt ru it能力；ko/ru不因Google被拒绝,合同+集成,PASS_CONTRACT_AND_MODEL,../../reports/ios-28-languages-20261008/acceptance-40.log,现有10个克隆输出语言与单条metadata取交集；ko/ru可选，fil/hi不扩展。真实韩语完整池及英语三类换声另有UI证据；未逐语言生成克隆长音频。
+CAP-02,非克隆语言,hi和其余不支持克隆的新增语言,不提供克隆创建/邀请/营销，不扩大合成能力；已有库保留,UI+合同,PASS_UI_AND_CONTRACT,../../reports/ios-28-languages-20261008/voice134-alignment/ui16.xcresult,芬兰语没有创建/额度推广，已有库保留；其他非克隆语言由现有10语能力集合限制。
+CAP-03,Free账户,试听公开/已授权私人音色后尝试选用,固定试听按现有规则可用；Pro选用及生成保持服务端门禁,合同+集成,PASS_CONTRACT_AND_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-resume.xcresult,已有Pro选择门禁与服务端固定试听合同回归通过；未退出当前账号或伪造Free权益。
+CAP-04,额度与身份,有/无月额度以及账户A切B,共享额度和账号隔离保持；不改变授权wire或用旧账号响应覆盖,合同,PASS_CONTRACT_REVIEW,architecture-review.json,未修改路由/授权/额度wire；不以此宣称跨账号真实操作通过。
+RACE-01,切页取消,试听加载期间切语言/目的页/后台,试听停止，迟到结果不在新页面响起,UI+异步,PASS_UI_AND_REVIEW,../../reports/ios-28-languages-20261008/voice134-alignment/ui3.xcresult,韩语详情试听后返回停止；语言/导航/后台/消失取消点源码复核。未声称每个系统中断均实操。
+RACE-02,选用取消,私人选用请求期间切账户/页面/语言,旧回调不写入新的账号或页面选择,异步+合同,PASS_CONTRACT_REVIEW,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,异步选用两次await后检查取消、operationID、账号边界及语言；旧页面onDisappear取消。未做真实账号A/B切换。
+RACE-03,试听恢复,真实阅读中试听，结束；用户明确暂停后试听,恢复沿用现有意图，不误恢复用户暂停的播放,真实播放,PASS_LIVE,../../reports/ios-28-languages-20261008/voice134-alignment/ui12-live-body-results.json,真实试听结束后恢复；明确暂停后试听保持暂停。ui12测试主体完成，随后仅teardown取截图失败，最终重测另记。
+PLAY-01,公开克隆切换,真实阅读常规↔公开克隆反复切换,持续出声、位置前进、高亮/字幕正常，无静默回退,真实播放,PASS_LIVE,../../reports/ios-28-languages-20261008/voice134-alignment/ui12-live-body-results.json,朗读常规→私人→公开→常规均媒体推进且高亮存在；不将此短测计作三分钟矩阵。
+PLAY-02,私人选择,已授权兼容私人/受赠音色与常规切换,读/解读选择沿用现有权限与语言，全部可达,真实播放,PASS_LIVE,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,ui16完成暂停后的私人解读恢复；manual-gifted通过受赠解读两段与朗读多段推进，截图和原生日志保留。
+PLAY-03,阅读器布局,Kindle/Web阅读中开关音色overlay,保留现有WKWebView几何、OCR投影和播放位置保护,设备回归,PASS_SCOPED,voice134-alignment/layout-final-ipad/viewport-unit-summary.json,3项实际WKWebView受控页面回归通过：朗读/解读面板关闭及稳定页面观测。不是在线Kindle账号验收。
+VIS-01,视觉,iPhone窄屏和长德语标签,顶部/搜索/按钮无重叠，主要操作可达,截图,PASS,voice134-alignment/layout-final-narrow-fixed3/visual-review.json; ui2/ui3/ui4.xcresult,375pt / 最大辅助字号 de/ar/he 截图复核；常规字号搜索与 RTL 输入另见 ui2/ui3/ui4。修复推荐卡横向最小宽度撑出屏幕的问题。
+VIS-02,视觉,阿拉伯语/希伯来语RTL + 大字号,顺序、箭头、输入对齐、选中/试听操作清楚,截图,PASS,voice134-alignment/layout-final-narrow-fixed3/visual-review.json; ui2/ui3/ui4.xcresult,375pt / 最大辅助字号 de/ar/he 截图复核；常规字号搜索与 RTL 输入另见 ui2/ui3/ui4。修复推荐卡横向最小宽度撑出屏幕的问题。
+VIS-03,视觉,iPad分屏/Dynamic Type/mini player,宽度、安全区、底部避让与滚动无回归,截图,PASS_SCOPED,voice134-alignment/layout-final-ipad/visual-review.json; layout-final-narrow-fixed3,iPad最大辅助字号、德语搜索与滚动、RTL截图通过；375pt另测。未重复iPad分屏拖拽/活动mini player截图；既有宽度和底部避让代码保留。
+L10N-01,本地化,导入6键×28语言,168条齐全，单参数占位正确；直接翻译未调用翻译服务,资源检查,PASS_RESOURCE,localization-check.json,168条直接翻译，56条格式串各含一个%1$@。
+L10N-02,本地化,UI语言不同于音色浏览语言,控件按UI语言，音色归属按浏览语言，状态不互相覆盖,UI,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/ui16.xcresult,英文UI浏览芬兰语；重启保留手选。App改德语/越南语后跟随新UI语言。
+CN-01,中国区,CN打开Voice及阅读器,保持原9语言与原发现逻辑，无Global新页泄漏,UI+区域合同,PASS_UI_AND_CONTRACT,../../reports/ios-28-languages-20261008/voice134-alignment/ui16.xcresult,CN独立页保持原发现布局且无芬兰语；阅读器9语边界由路由能力合同覆盖。
+CN-02,中国区,CN克隆/库/入口与网络路由,不请求Gift API，不跨区回退；本区既有权限继续有效,合同,PASS_CONTRACT_REVIEW,architecture-review.json,未修改路由/授权/额度wire；不以此宣称跨账号真实操作通过。
+DELIVERY-01,交付,编译及仓库要求测试,提供实际commit/工作树、构建和合同结果，遵守最新基线门禁,构建报告,PASS_BUILD,../../reports/ios-28-languages-20261008/voice134-alignment/release-verification.json,Debug与Release编译通过；最新基线门禁通过。未上传。
+DELIVERY-02,交付,最终验收报告,每项有iOS实际状态/证据；Android/UI fixture不冒充真实服务通过；不发布,报告,PASS_REPORT,../iOS-28-language-acceptance.md,114/114 三分钟矩阵完成；逐项实际证据、失败历史与未覆盖边界保留。仅本地交付，未发布。
+LANG-07,App语言联动,越南语App首次进入/首次注册、旧版本中文浏览缓存,默认越南语音色；旧无上下文缓存不覆盖App语言,UI+持久化,PASS_UI,../../reports/ios-28-languages-20261008/voice134-alignment/verification-progress.json,越南语App显示越南语音色；旧缓存重置由模型回归覆盖，未创建新账号。
+LANG-08,App语言联动,手选芬兰语后App切德语/越南语；期间Voices可未打开,音色浏览随新的App语言重置；切回越南语不复活芬兰语覆盖,UI+持久化,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。
+LANG-09,App语言联动,同一App语言重开页/进程与App语言重建Activity,前者保留手动浏览，后者使用新App语言；正文/解读偏好不改,UI+持久化,PASS_MODEL,../../reports/ios-28-languages-20261008/voice134-alignment/unit-final.xcresult,确定性模型/持久化回归，非真实账号切换或服务端验收。

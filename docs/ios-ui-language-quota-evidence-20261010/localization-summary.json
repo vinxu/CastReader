@@ -1,0 +1,57 @@
+{
+  "policy": "ios-28-2026-10-08.2",
+  "releaseQualified": true,
+  "catalogs": {
+    "CastReader/AppShortcuts.xcstrings": {
+      "sha256": "fcdfd3e0061d38e2b88ba6616f5331b9ae4df806eb2f73c8f1de2b9d574cb02e",
+      "keys": 4,
+      "localeCount": 28,
+      "missing": 0,
+      "needsReview": 0,
+      "placeholderMismatches": 0
+    },
+    "CastReader/CloudStorage.xcstrings": {
+      "sha256": "7e9dab5a75af1b99d4c484e7deee10c5e6d128e0b6979eeb611b00e995331d56",
+      "keys": 111,
+      "localeCount": 28,
+      "missing": 0,
+      "needsReview": 0,
+      "placeholderMismatches": 0
+    },
+    "CastReader/InfoPlist.xcstrings": {
+      "sha256": "6c54518e68f708e8536303cbad04a5a24c825a0862a22e7abc306b5b82de44f4",
+      "keys": 4,
+      "localeCount": 28,
+      "missing": 0,
+      "needsReview": 0,
+      "placeholderMismatches": 0
+    },
+    "CastReader/Localizable.xcstrings": {
+      "sha256": "b22e317b7d858313630cd4de3f96003e110513ce60b2c7852b3aac004f7893b7",
+      "keys": 1565,
+      "localeCount": 28,
+      "missing": 0,
+      "needsReview": 0,
+      "placeholderMismatches": 0
+    },
+    "CastReader Share Extension/Localizable.xcstrings": {
+      "sha256": "a8f1b3d2152b898bc9b7e3a7b31dc12317a114fde503511a59800406cd5c6b33",
+      "keys": 18,
+      "localeCount": 28,
+      "missing": 0,
+      "needsReview": 0,
+      "placeholderMismatches": 0
+    },
+    "CastReader Widget/Localizable.xcstrings": {
+      "sha256": "4082c269b545964ec405b0448b8c3ae90be2d2e4b08cde32fe364db1d4f6d0a5",
+      "keys": 19,
+      "localeCount": 28,
+      "missing": 0,
+      "needsReview": 0,
+      "placeholderMismatches": 0
+    }
+  },
+  "totalKeys": 1721,
+  "staticLiteralReferences": 2196,
+  "runtimeViewsObserved": 79
+}

@@ -1,6 +1,70 @@
 import XCTest
 @testable import CastReader
 
+/// Uses a private player and local audio only; never changes login or Pro state.
+@MainActor
+final class AudioPlaybackPendingPauseTests: XCTestCase {
+    func testPauseWhileProducerWaitsPreventsLateSegmentFromAutoPlaying() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let audio = AudioPlayerService(testTemporaryRoot: root)
+        defer { audio.stop(); try? FileManager.default.removeItem(at: root) }
+        let token = audio.claimPlaybackSession(owner: .explain)
+        XCTAssertTrue(audio.setMoreSegmentsExpected(true, session: token))
+        XCTAssertTrue(audio.loadSegment(segment(0, duration: 0.15), session: token))
+        try await wait { audio.isWaitingForNextSegment }
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertTrue(audio.hasPlaybackRequest)
+
+        XCTAssertTrue(audio.togglePlayPause(session: token))
+        XCTAssertTrue(audio.isExplicitlyPaused)
+        XCTAssertFalse(audio.hasPlaybackRequest)
+        XCTAssertTrue(audio.loadSegment(segment(1, duration: 2), session: token))
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertEqual(audio.currentSegment?.id, "0-0")
+
+        XCTAssertTrue(audio.togglePlayPause(session: token))
+        try await wait { audio.currentSegment?.id == "0-1" && audio.currentTime > 0.1 }
+        XCTAssertTrue(audio.isPlaying)
+        XCTAssertFalse(audio.isExplicitlyPaused)
+    }
+
+    func testPauseDuringNextItemBufferingPreservesPauseUntilExplicitResume() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let audio = AudioPlayerService(testTemporaryRoot: root)
+        defer { audio.stop(); try? FileManager.default.removeItem(at: root) }
+        let token = audio.claimPlaybackSession(owner: .explain)
+        XCTAssertTrue(audio.loadSegment(segment(0, duration: 3), session: token))
+        try await wait { audio.currentTime > 0.1 }
+        // Reproduce the native KVO state observed between two real TTS items.
+        audio.isPlaying = false
+        audio.isBuffering = true
+        XCTAssertTrue(audio.hasPlaybackRequest)
+        XCTAssertTrue(audio.togglePlayPause(session: token))
+        XCTAssertTrue(audio.isExplicitlyPaused)
+        let position = audio.playbackPosition
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.03)
+
+        XCTAssertTrue(audio.togglePlayPause(session: token))
+        try await wait { audio.playbackPosition > position + 0.1 }
+        XCTAssertTrue(audio.isPlaying)
+    }
+
+    private func segment(_ index: Int, duration: Double) -> AudioSegment {
+        AudioSegment(paragraphIndex: 0, segmentIndex: index,
+                     audioData: ReadAloudHTTPFixture.wav(duration: duration), timestamps: [],
+                     duration: duration, text: "Local pause regression", isWavFormat: true)
+    }
+
+    private func wait(_ condition: () -> Bool) async throws {
+        let deadline = Date().addingTimeInterval(5)
+        while !condition(), Date() < deadline { try await Task.sleep(for: .milliseconds(20)) }
+        XCTAssertTrue(condition())
+    }
+}
+
 @MainActor
 final class PlaybackSleepTimerTests: XCTestCase {
     func testAutomaticReaderResumeCannotClearExpiredTimer() async throws {

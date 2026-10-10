@@ -4,6 +4,8 @@ import SwiftUI
 /// Counts describe saved manifests, never the online bookshelf or reachability.
 @MainActor
 struct OfflineDownloadsEntryCard: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var library = KindleLibraryStore.shared
     @ObservedObject private var network = NetworkReachability.shared

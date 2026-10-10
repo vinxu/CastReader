@@ -14,6 +14,8 @@
 import SwiftUI
 
 struct WeReadFirstLaunchFlowView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var onboarding: BoundLibraryOnboardingStore
     let onSkip: () -> Void
     let onStartBook: (WeReadBook) -> Void

@@ -1,0 +1,13 @@
+{
+  "en-US": "The interface and reading now support 28 languages. Voice lists follow your app language, and playback voice selection follows the language being read. Improved language switching, localized labels and cloned-voice balance display on iPhone and iPad.",
+  "zh-Hans": "界面与朗读扩展至 28 种语言。音色列表随 App 语言切换，播放中换声则对应当前朗读语言。改善 iPhone、iPad 上的语言切换、本地化文案与克隆音色余额显示。",
+  "ja": "画面と読み上げが28言語に対応。音声一覧はアプリの言語に、再生中の音声選択は読み上げる言語に合わせて表示されます。iPhoneとiPadで言語切り替え、翻訳、クローン音声の残り時間表示を改善しました。",
+  "es-ES": "La interfaz y la lectura ahora admiten 28 idiomas. La lista de voces sigue el idioma de la app, y al cambiar de voz durante la lectura se muestra el idioma del texto. Mejoras en el cambio de idioma, las traducciones y el saldo de voces clonadas en iPhone y iPad.",
+  "fr-FR": "L’interface et la lecture prennent désormais en charge 28 langues. La liste des voix suit la langue de l’app et le choix des voix pendant la lecture correspond au texte lu. Améliorations du changement de langue, des traductions et de l’affichage du solde des voix clonées sur iPhone et iPad.",
+  "pt-BR": "A interface e a leitura agora oferecem 28 idiomas. A lista de vozes acompanha o idioma do app, e a escolha durante a leitura corresponde ao idioma do texto. Melhorias na troca de idioma, nas traduções e na exibição do saldo de vozes clonadas no iPhone e iPad.",
+  "it": "Interfaccia e lettura ora supportano 28 lingue. L’elenco delle voci segue la lingua dell’app; durante la lettura vengono proposte le voci della lingua del testo. Migliorati il cambio lingua, le traduzioni e la visualizzazione del saldo delle voci clonate su iPhone e iPad.",
+  "hi": "इंटरफ़ेस और पढ़कर सुनाना अब 28 भाषाओं में उपलब्ध हैं। आवाज़ों की सूची ऐप की भाषा के अनुसार और प्लेबैक में आवाज़ का चयन पढ़े जा रहे पाठ की भाषा के अनुसार होता है। iPhone और iPad पर भाषा बदलने, अनुवाद और क्लोन आवाज़ के शेष समय के प्रदर्शन में सुधार किया गया है।",
+  "de-DE": "Oberfläche und Vorlesen unterstützen jetzt 28 Sprachen. Die Stimmenliste folgt der App-Sprache; beim Vorlesen werden Stimmen für die gelesene Sprache angezeigt. Sprachwechsel, Übersetzungen und die Guthabenanzeige für geklonte Stimmen auf iPhone und iPad wurden verbessert.",
+  "zh-Hant": "介面與朗讀新增至 28 種語言。音色列表會跟隨 App 語言，播放時的音色選擇則對應正在朗讀的語言。改善 iPhone 和 iPad 的語言切換、介面翻譯及複製音色剩餘時間顯示。",
+  "es-MX": "La interfaz y la lectura ahora admiten 28 idiomas. La lista de voces sigue el idioma de la app, y al cambiar de voz durante la lectura se muestra el idioma del texto. Mejoras en el cambio de idioma, las traducciones y el saldo de voces clonadas en iPhone y iPad."
+}

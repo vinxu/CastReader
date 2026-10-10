@@ -1,0 +1,26 @@
+{
+  "czech-pdf-read.png": {
+    "originalReportPath": "long119-cs-pdf/read-mid-live.png",
+    "sha256": "a6d947faf18e510a71abc2cf8e338a53af6495b5994d515ee22388f980c8747e"
+  },
+  "czech-pdf-explain.png": {
+    "originalReportPath": "long119-cs-pdf/explain-mid-live.png",
+    "sha256": "0cb92cb996f63ce37a11108be628802c77d97c550088c12f3dabcfdf0161a68a"
+  },
+  "voice-small-german.png": {
+    "originalReportPath": "voice134-alignment/layout-final-narrow-fixed3/screenshots/large-type-scroll-de.png",
+    "sha256": "c3fafa8aea05fa9a711835216ad3e9b02b320eeeb2d4a28af50d6baad0e97814"
+  },
+  "voice-small-hebrew.png": {
+    "originalReportPath": "voice134-alignment/layout-final-narrow-fixed3/screenshots/large-type-scroll-he.png",
+    "sha256": "d24c5f0ff1f33209584e7a9937b7ed81afb139d0c9c7dec725e211f3e9f6ceb6"
+  },
+  "voice-ipad-german-search.png": {
+    "originalReportPath": "voice134-alignment/layout-final-ipad/screenshots/large-type-search-de.png",
+    "sha256": "8457689b017c4ec54b48528cdf263d780b14c20f50036c4d1598bb72d40f3b17"
+  },
+  "malay-web-explain.png": {
+    "originalReportPath": "long-matrix-20261009-235801/ms-web/screenshots/ms-web-explain-three-minutes.png",
+    "sha256": "3e423238afa13a2bad7048076c7e6b09c04ca7c8a75366f4ef71c70c267c3472"
+  }
+}

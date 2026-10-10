@@ -2298,3 +2298,78 @@ final class ReaderWindowBookmarkTests: XCTestCase {
         XCTAssertNil(ReaderWindowBookmarkStore(directory: directory).load(sessionID: "scene-b", scope: "account-a"))
     }
 }
+
+
+/// Uses only a controlled producer and the existing account. It never writes
+/// auth, entitlement or quota state on the signed-in acceptance simulator.
+@MainActor
+final class VoiceSwitchResumeIntentTests: XCTestCase {
+    func testResumeBeforePausedVoiceResponseStartsTheReplacement() async throws {
+        try await exercise(pauseAgain: false)
+    }
+    func testPauseAfterPendingResumeStillWinsWhenReplacementArrives() async throws {
+        try await exercise(pauseAgain: true)
+    }
+    private func exercise(pauseAgain: Bool) async throws {
+        let audio = AudioPlayerService.shared, settings = AppSettings.shared
+        let previous = settings.voice(for: "en")
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let speech = ControlledVoiceSwitchSpeech()
+        settings.setVoice("af_heart", for: "en")
+        let text = "One careful reader follows each word."
+        let doc = ReadingDocument(id: UUID().uuidString, title: "Resume during voice preparation", sourceKind: .text,
+            language: "en", paragraphs: [ReadingParagraph(id: 0, text: text)])
+        let history = HistoryStore(directory: directory)
+        history.record(doc)
+        let vm = ReadAloudViewModel(document: doc, historyStore: history, speechGenerator: speech)
+        defer {
+            vm.stop(); vm.deactivate()
+            Task { await speech.cancelAll() }
+            if previous.hasPrefix("vc_") { settings.setActiveClonedVoice(previous, for: "en") }
+            else { settings.setVoice(previous, for: "en") }
+            try? FileManager.default.removeItem(at: directory)
+        }
+        let segment = AudioSegment(paragraphIndex: 0, segmentIndex: 0,
+            audioData: ReadAloudHTTPFixture.wav(duration: 30),
+            timestamps: text.split(separator: " ").enumerated().map {
+                TTSTimestamp(word: String($0.element), startTime: Double($0.offset) * 4,
+                    endTime: Double($0.offset + 1) * 4)
+            }, duration: 30, text: text, isWavFormat: true)
+        vm.startWithCachedSegments([segment], paragraphIndex: 0, segmentID: segment.id, progress: 0.15,
+                                  isReplayEligible: false)
+        try await until { audio.hasAudibleProgress && audio.isPlaying }
+        vm.pausePlayback()
+        vm.flushReadingProgress()
+        settings.setVoice("af_bella", for: "en")
+        var waiting = false
+        for _ in 0..<200 {
+            waiting = await speech.isWaiting("af_bella")
+            if waiting { break }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTAssertTrue(waiting)
+        XCTAssertTrue(audio.isExplicitlyPaused)
+        vm.togglePlayPause()
+        XCTAssertTrue(audio.hasPlaybackRequest, "Resume must be retained before audio exists")
+        if pauseAgain { vm.pausePlayback(); XCTAssertFalse(audio.hasPlaybackRequest) }
+        await speech.release("af_bella", segments: [segment])
+        try await until { audio.currentSegment != nil && VoiceSwitchStatusCenter.shared.progress == nil }
+        if pauseAgain {
+            try await Task.sleep(nanoseconds: 250_000_000)
+            XCTAssertFalse(audio.isPlaying)
+            XCTAssertTrue(audio.isExplicitlyPaused)
+        } else {
+            try await until { audio.isPlaying && audio.hasAudibleProgress }
+            XCTAssertGreaterThan(audio.playbackPosition, 3)
+        }
+        XCTAssertNil(vm.resumeNotice)
+    }
+    private func until(_ condition: () -> Bool) async throws {
+        for _ in 0..<300 {
+            if condition() { return }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTFail("Timed out waiting for controlled playback state")
+        throw NSError(domain: "VoiceSwitchResumeIntentTests", code: 1)
+    }
+}
