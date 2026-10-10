@@ -4477,7 +4477,8 @@ final class CoreReleaseLiveUITests: XCTestCase {
         region = ProcessInfo.processInfo.environment["CASTREADER_CORE_REGION"] ?? "global"
     }
     private func metrics(_ app: XCUIApplication) -> [String: Any] {
-        guard let value = app.descendants(matching: .any)["readerLanguagePlaybackMetrics"].firstMatch.value as? String,
+        let probe = app.descendants(matching: .any)["readerLanguagePlaybackMetrics"].firstMatch
+        guard probe.exists, let value = probe.value as? String,
               let object = try? JSONSerialization.jsonObject(with: Data(value.utf8)) as? [String: Any] else { return [:] }
         return object
     }
@@ -4500,6 +4501,35 @@ final class CoreReleaseLiveUITests: XCTestCase {
     override func tearDownWithError() throws {
         if (testRun?.totalFailureCount ?? 0) > 0 { try? save(XCUIApplication(), "failure") }
     }
+    func testPrepareRegionalRegularVoice() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+            "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderDisableDebugPro",
+            "-CastReaderRegion", region, "-CastReaderServiceRoute", region]
+        app.launch()
+        let tab = app.tabBars.buttons["Voice"].exists ? app.tabBars.buttons["Voice"] : app.buttons["Voice"].firstMatch
+        XCTAssertTrue(tab.waitForExistence(timeout: 30)); tab.tap()
+        let language = app.buttons["voiceBrowseLanguage"]
+        XCTAssertTrue(language.waitForExistence(timeout: 20)); language.tap()
+        let searchLanguage = app.searchFields["Search Languages"]
+        XCTAssertTrue(searchLanguage.waitForExistence(timeout: 10)); searchLanguage.tap()
+        searchLanguage.typeText(region == "cn" ? "Chinese" : "English")
+        let option = app.buttons["voiceBrowseLanguage." + (region == "cn" ? "zh" : "en")]
+        XCTAssertTrue(option.waitForExistence(timeout: 10)); option.tap()
+        let search = app.textFields["voiceSearchField"]
+        if !search.exists { app.buttons["voiceSearchToggle"].tap() }
+        XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap()
+        if let current = search.value as? String, !current.isEmpty && current != search.placeholderValue {
+            search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count))
+        }
+        let voice = region == "cn" ? "zf_001" : "af_heart"
+        search.typeText(voice + "\n")
+        let row = app.buttons["presetVoiceSelect_" + voice]
+        XCTAssertTrue(row.waitForExistence(timeout: 30)); row.tap()
+        try save(app, "prepared-regular-voice")
+        app.terminate()
+    }
+
     func testRegionalReadAndExplainVoiceMatrix() throws {
         let cn = region == "cn"
         let language = cn ? "zh" : "en"
@@ -4530,6 +4560,7 @@ final class CoreReleaseLiveUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
             "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderMultilingualAcceptance",
+            "-CastReaderDisableDebugPro",
             "-CastReaderRegion", region, "-CastReaderServiceRoute", region, "-explain_language", language,
             "-CastReaderCaptureTextB64", Data(text.utf8).base64EncodedString()]
         // An externally launched normal app keeps stdout attached to devicectl
@@ -4554,6 +4585,11 @@ final class CoreReleaseLiveUITests: XCTestCase {
         func select(_ voice: String, mode: String) throws {
             app.buttons["playbackVoiceButton"].firstMatch.tap()
             XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].waitForExistence(timeout: 15))
+            if cn {
+                let category = panel.segmentedControls["voiceBrowserCategoryPicker"]
+                let tab = category.buttons[voice.hasPrefix("vc_") ? "My Voices" : "Explore"]
+                XCTAssertTrue(tab.waitForExistence(timeout: 10)); tab.tap()
+            }
             let search = panel.textFields["voiceSearchField"]
             if !search.exists { panel.buttons["voiceSearchToggle"].tap() }
             XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap()
@@ -4561,7 +4597,9 @@ final class CoreReleaseLiveUITests: XCTestCase {
                 search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count))
             }
             search.typeText(voice + "\n")
-            let rowID = voice.hasPrefix("vc_") ? "voiceFamiliarSelect_" + voice : "presetVoiceSelect_" + voice
+            let rowID = voice.hasPrefix("vc_")
+                ? (cn ? "voiceCloneApplyButton_" : "voiceFamiliarSelect_") + voice
+                : "presetVoiceSelect_" + voice
             let row = panel.buttons[rowID]
             XCTAssertTrue(row.waitForExistence(timeout: 35), "Voice must be available in the existing account: " + voice)
             for _ in 0..<5 where !row.isHittable { panel.swipeUp() }
@@ -4601,7 +4639,8 @@ final class CoreReleaseLiveUITests: XCTestCase {
         }
         try select(normal, mode: "read")
         if env["CASTREADER_CORE_MODE"] != "explain" {
-            for (index, voice) in [normal, community, owned, normal].enumerated() {
+            let startIndex = Int(env["CASTREADER_CORE_READ_START_INDEX"] ?? "0") ?? 0
+            for (index, voice) in [normal, community, owned, normal].enumerated() where index >= startIndex {
                 if index > 0 { try select(voice, mode: "read") }
                 try verify(voice, mode: "read", label: "read-\(index)", requireContinuation: index < 3)
                 read.tap(); XCTAssertTrue(wait(5) { self.metrics(app)["playing"] as? Bool == false })
