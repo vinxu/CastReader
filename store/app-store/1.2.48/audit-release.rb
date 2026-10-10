@@ -51,11 +51,11 @@ baseline = JSON.parse(File.read(File.join(report,'asc-app-info-baseline.json')))
 app_info_checks = baseline.map do |info|
   original = info.fetch('localizations')
   actual = client.get_all("/v1/appInfos/#{info.fetch('id')}/appInfoLocalizations?limit=200")
-  changed = original.filter_map do |before|
+  changed = original.map do |before|
     locale = before.dig('attributes','locale')
     after = actual.find { |x| x.dig('attributes','locale') == locale }
     locale if !after || %w[name subtitle privacyPolicyUrl privacyChoicesUrl privacyPolicyText].any? { |k| before.dig('attributes',k) != after.dig('attributes',k) }
-  end
+  end.compact
   errors << "Shared App Info changed: #{changed.join(',')}" unless changed.empty?
   {id:info['id'],unchanged:changed.empty?,localeCount:actual.size}
 end

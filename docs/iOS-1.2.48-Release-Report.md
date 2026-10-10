@@ -1,12 +1,14 @@
 # iOS 1.2.48 (75) release record
 
-Status: **IN PROGRESS — not submitted**. This record is updated as the release gates finish; uploaded marketing assets are not a submitted binary.
+Status: **SUBMITTED — WAITING_FOR_REVIEW**, verified 2026-10-10. Version and Review Submission both reached WAITING_FOR_REVIEW at **20:42:21 Beijing time** (12:42:21 UTC). Release is automatic after approval; approval/live availability is not claimed.
 
 ## Scope and source
 
 The requested release expands the international app to 28 interface/reading languages and refreshes five product screenshots for both iPhone and iPad in every language, following the current Android campaign's composition. China retains its existing nine-language service scope.
 
-Verified checkout: `/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader`, branch `codex/ios-28-languages`. Application changes are `ac1acd1`, `d42e9b3` and the direction repair `9e44067`, based on the released `09456f1` main line. The current release version bump sets App, Share, Widget and Safari to 1.2.48 (74). The revised 466-file application/configuration manifest is `b791a94673d917181cb402bd3661f9a94ac52a8a1a0124239ac11248f6a6d576`. The ancestry/integration gate and release preflight passed. Main-line merge, immutable archive and official upload are still pending.
+Verified checkout: `/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader`. The release is archived from the merged main commit **`60b0973c5dd7e3a922349fb157c5ec0af96cc53b`** (PRs #5 and #6). Application changes are `ac1acd1`, `d42e9b3` and direction repair `9e44067`, based on the released `09456f1` main line. The final Safari-description validation repair is `3acdf10`. App, Share, Widget and Safari all use **1.2.48 (75)** and device families 1/2.
+
+The final 466-file application/configuration manifest is **`5991aa3ba1bd6f8fbd86ac476319376e24a83af9b4d6c3f37cc40330b085feba`**. Live core evidence was collected with Build 74, manifest `b791a94673d917181cb402bd3661f9a94ac52a8a1a0124239ac11248f6a6d576`. A semantic compatibility audit proves the only later embedded changes are 17 Safari manifest descriptions and the build-number increment; all functional source remains identical. The ancestry gate, preflight and source/archive checks passed. No isolated feature branch or stale primary checkout was used for the release.
 
 ## Store content
 
@@ -31,7 +33,7 @@ the user's sessions. English shelf/library captures with an exposed search
 keyboard were rejected and replaced with genuine unobscured captures from the
 same device and candidate; reader images retain actual playback effects.
 
-App: `6757636395`. iOS version: `968ba86c-0722-43fa-b55c-ff0425533966`, PREPARE_FOR_SUBMISSION, release after approval. Shared Mac App Info is IN_REVIEW and was not altered or withdrawn. No changes to price, subscriptions, territories, App Privacy, age rating or legal declarations.
+App: `6757636395`. iOS version: `968ba86c-0722-43fa-b55c-ff0425533966`, WAITING_FOR_REVIEW, release after approval. Shared Mac App Info is IN_REVIEW and was not altered or withdrawn. No changes to App Store prices, subscription products, territories, App Privacy, age rating or legal declarations.
 
 ## Validation
 
@@ -51,7 +53,7 @@ CN/Chinese also passed on the physical iPhone: normal `zf_001` → community `vl
 
 Quota reconciliation passed. China read-only server-ledger evidence shows 28 successful generations totaling **166,728 ms**, equal to their charged duration and bucket usage, with zero reserved balance left. This includes read-ahead and preparation, not just audible listening. The physical development device uses Sandbox billing. Separately, a live Global iPad generation in **Production** reduced the server-refreshed balance from **2,256,862 ms to 2,250,094 ms**, exactly the **6,768 ms** decoded audio duration. Two complete playbacks used one generation; cached rewind/replay incurred no extra deduction. Numeric response fields were inspected read-only in the running app; no credentials or balances were injected. Global direct SQL reconciliation was unavailable to the existing read-only role, so it is not claimed. Evidence: `cn-quota-evidence.json`, `global-quota-evidence.json`, scoped logs and balance observations.
 
-Both regional core matrices are **PASS**. They use the frozen candidate's real services and a signed development build; they are not claimed as execution of the future App Store-distributed binary. Release archive signature, resource, endpoint and fixture checks remain mandatory. Existing quota unknown/confirmed-zero, scheduler, cancellation and ownership regressions apply; community voices were warm, not claimed as a cold-start observation.
+Both regional core matrices are **PASS**. They use the frozen candidate's real services and a signed development build; they are not claimed as execution of the future App Store-distributed binary. The final Release archive subsequently passed signature, resource, endpoint and fixture checks. Existing quota unknown/confirmed-zero, scheduler, cancellation and ownership regressions apply; community voices were warm, not claimed as a cold-start observation.
 
 ### Mixed-language reading direction regression
 
@@ -79,10 +81,26 @@ The updated source manifest replaces the pre-fix identity. The same-source regio
 
 Private raw logs, xcresults, live-account screenshots, metadata snapshots, receipts and resumable upload journals are local under `reports/ios-release-1.2.48/` and are deliberately excluded from Git. Capture automation is opt-in. The release-scoped audit checks the actual 29-locale scope, both device families, exact five-image order, title preservation, review details and exact eligible build; it requires genuine core evidence before passing.
 
-Complete: all intended captures, composition, visual review, metadata and screenshot uploads. Pending: final source merge, signed Release archive/upload, exact build VALID / APP_STORE_ELIGIBLE, review audit, submission and version/submission WAITING_FOR_REVIEW readback.
+Complete: requested captures, composition, visual review, metadata/screenshots, both regional core matrices, quota reconciliation, source merge, Release archive, official upload, exact eligible build binding, final audit, formal submission and version/submission readback. Apple's review decision is the only external step remaining.
 
 ## Upload validation repair
 
 The immutable Build 74 archive passed local signature/resources/fixture checks, but Apple upload validation rejected 17 Safari extension locale descriptions exceeding its 112-character limit (error 90862). Those resolved `extDescription` strings were shortened without changing behavior or other locale messages. The packaging validator now enforces the 112 UTF-16-unit maximum across all 28 locales. All four product build numbers advance to **75**; Build 74 is retained as rejected evidence and will not be submitted.
 
-The regional playback and quota evidence remains applicable: the only embedded-resource changes are Safari manifest descriptions plus the build-number increment. No TTS, QuickRead, account, quota, route, rendering or screenshot-source logic changed. A fresh source manifest and immutable Build 75 archive are required; no archive is edited in place.
+The regional playback and quota evidence remains applicable: the only embedded-resource changes are Safari manifest descriptions plus the build-number increment. No TTS, QuickRead, account, quota, route, rendering or screenshot-source logic changed. A fresh source manifest and Build 75 archive were produced; no signed product was edited in place.
+
+## Final archive, audit and submission
+
+- Build **`b5fe510d-5916-44aa-99b7-bd573abd98fb`** is **VALID / APP_STORE_ELIGIBLE**, with `usesNonExemptEncryption=false`. Official Xcode export/upload succeeded at 20:27:40 Beijing time with zero errors and zero warnings.
+- Archive: `/Users/xuxuheng/Library/Developer/Xcode/Archives/2026-10-10/CastReader-1.2.48-75.xcarchive`. All four arm64 products have the correct identities, versions, device families and Team `KQW6UNZE8J`; all 28 requested compiled main-string tables are present, production regional endpoints match, and the 391-file fixture scan found no test payloads.
+- Stable archive product/dSYM payload manifest: **`17d1cb7ac8b1c3669a69e104dfdcfb140c86a56daf3f8231768d581e520c0c88`**. Official Xcode export updated only archive-level `Info.plist` distribution metadata; every archived signed-product and dSYM byte remained unchanged. The original pre-upload manifest and the post-upload integrity proof are preserved.
+- Final campaign audit: exact **29** version localizations, **290** ordered COMPLETE screenshots, exact Build 75, source-matched core results, review details and original fields in both App Info objects passed. The historical App Info has 11 locales and the pending shared App Info has 29. The generic legacy helper's only findings were its hard-coded 11-locale expectations; the release-scoped audit verifies the user's expanded scope explicitly. A Ruby 2.6 `filter_map` compatibility issue in the audit tool was repaired without changing any app resource or uploaded binary.
+- Review Submission **`0e9aa3ea-588c-47fa-a38f-56fe017bbc34`**, submitted **2026-10-10 20:42:21 +08:00**. It contains exactly this iOS version and no unrelated item. Both version and submission are **WAITING_FOR_REVIEW**. The exact Build and all 29 intended metadata entries were read back again after submission. The concurrent Mac review was not modified or withdrawn.
+
+## Device delivery
+
+The same Build 75 Release-configuration archived app, signed for development, was installed over the existing `com.same.castreader` on the user's iPhone 15 Pro Max. Device inventory confirms **1.2.48 / 75**, and launch succeeded. This is the development-signed Release product, not an already-approved App Store installation. Existing app storage and accounts were retained, and the binary contains no simulated Pro code.
+
+The screenshot campaign had persisted Vietnamese despite later temporary launch-language overrides. Only the non-sensitive `interfaceLanguage` preference was restored to `zh-Hans` with the exact app process stopped; all other preference values were preserved. After an ordinary launch without overrides, both app preferences and AppLanguageManager's runtime-mirrored Share Extension language read back `zh-Hans`. Final mirror screenshot verification was unavailable because the phone was in use; it is not claimed. The iPad's Chinese normal voice `zf_001` was restored through native UI and playback was stopped.
+
+Evidence: `submission-final-readback.json`, `submission-execute.json`, `official-upload75-receipt.json`, `final-release-audit.json`, `release-audit-resolution.json`, `archive-verification.json`, `post-upload-archive-integrity.json`, `core-evidence-compatibility-75.json` and `device-language-restoration.json` in the private release evidence directory.
