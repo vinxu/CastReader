@@ -6,7 +6,7 @@
     "message": "CastReader — Lue ääneen + AI-tulkinta"
   },
   "extDescription": {
-    "message": "Lue tekstin korostuksen ja automaattisen vierityksen avulla. Tekoäly selittää vaikeat kohdat. Luonnolliset äänet 28 kielellä."
+    "message": "Kuuntele 28 kielellä: tekstin korostus, automaattinen vieritys ja tekoälyn selitykset."
   },
   "quickreadBtn": {
     "message": "Nopea katsaus"

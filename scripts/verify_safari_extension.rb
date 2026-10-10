@@ -48,6 +48,9 @@ locales.each do |locale|
   messages = JSON.parse(File.read(File.join(resources, '_locales', locale, 'messages.json')))
   abort "Incomplete Safari locale #{locale}" unless (source_keys - messages.keys).empty?
   abort "Blank Safari translation #{locale}" unless messages.values.all? { |entry| entry['message'].is_a?(String) && !entry['message'].strip.empty? }
+  description = messages.dig('extDescription', 'message')
+  abort "Safari description exceeds 112 UTF-16 units: #{locale}" unless
+    description.is_a?(String) && !description.strip.empty? && description.encode('UTF-16LE').bytesize / 2 <= 112
   name = messages.dig('extName', 'message')
   abort "Safari name exceeds 40 UTF-16 units: #{locale}" unless name.encode('UTF-16LE').bytesize / 2 <= 40
 end

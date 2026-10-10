@@ -288,7 +288,7 @@
     "message": "Übersicht wird erstellt"
   },
   "extDescription": {
-    "message": "Lesen mit synchroner Hervorhebung und Auto-Scroll. KI erklärt schwierige Stellen direkt auf der Seite. Stimmen in 28 Sprachen."
+    "message": "Vorlesen in 28 Sprachen mit synchroner Hervorhebung, automatischem Scrollen und KI-Erklärungen."
   },
   "readerFailed": {
     "message": "Verarbeitung fehlgeschlagen"

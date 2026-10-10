@@ -288,7 +288,7 @@
     "message": "Generating Overview"
   },
   "extDescription": {
-    "message": "Read with synced highlights and auto-scroll. AI explains difficult passages on the page. Natural voices in 28 languages."
+    "message": "Read aloud in 28 languages with synced highlights, auto-scroll and AI explanations."
   },
   "readerFailed": {
     "message": "Processing failed"

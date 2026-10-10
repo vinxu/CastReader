@@ -18,7 +18,7 @@ errors = []
 version = client.request('GET', "/v1/appStoreVersions/#{version_id}").fetch('data')
 build = client.request('GET', "/v1/appStoreVersions/#{version_id}/build")['data']
 errors << 'Wrong version/platform/release behavior' unless version.dig('attributes','versionString') == '1.2.48' && version.dig('attributes','platform') == 'IOS' && version.dig('attributes','releaseType') == 'AFTER_APPROVAL'
-errors << 'Exact build 74 must be VALID and APP_STORE_ELIGIBLE' unless build && build['id'] == options[:build] && build.dig('attributes','version') == '74' && build.dig('attributes','processingState') == 'VALID' && build.dig('attributes','buildAudienceType') == 'APP_STORE_ELIGIBLE'
+errors << 'Exact build 75 must be VALID and APP_STORE_ELIGIBLE' unless build && build['id'] == options[:build] && build.dig('attributes','version') == '75' && build.dig('attributes','processingState') == 'VALID' && build.dig('attributes','buildAudienceType') == 'APP_STORE_ELIGIBLE'
 localizations = client.get_all("/v1/appStoreVersions/#{version_id}/appStoreVersionLocalizations?limit=200")
 errors << 'Expected exact 29-locale set' unless localizations.map { |l| l.dig('attributes','locale') }.sort == expected.keys.sort && expected.size == 29
 screenshots = {}
