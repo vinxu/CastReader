@@ -288,7 +288,7 @@
     "message": "Generando el resumen"
   },
   "extDescription": {
-    "message": "Lee con resaltado y desplazamiento sincronizados. La IA explica pasajes difíciles en la página. Voces en 28 idiomas."
+    "message": "Escucha en 28 idiomas con resaltado sincronizado, desplazamiento automático y explicaciones de IA."
   },
   "readerFailed": {
     "message": "No se pudo procesar"

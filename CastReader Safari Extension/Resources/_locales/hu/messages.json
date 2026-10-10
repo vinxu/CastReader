@@ -6,7 +6,7 @@
     "message": "CastReader — Felolvasás + AI magyarázat"
   },
   "extDescription": {
-    "message": "Felolvasás szinkron kiemeléssel és görgetéssel. Az AI elmagyarázza a nehéz részeket. Természetes hangok 28 nyelven."
+    "message": "Felolvasás 28 nyelven, szinkron kiemeléssel, automatikus görgetéssel és AI-magyarázatokkal."
   },
   "quickreadBtn": {
     "message": "Gyors áttekintés"

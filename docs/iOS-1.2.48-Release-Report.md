@@ -1,4 +1,4 @@
-# iOS 1.2.48 (74) release record
+# iOS 1.2.48 (75) release record
 
 Status: **IN PROGRESS — not submitted**. This record is updated as the release gates finish; uploaded marketing assets are not a submitted binary.
 
@@ -80,3 +80,9 @@ The updated source manifest replaces the pre-fix identity. The same-source regio
 Private raw logs, xcresults, live-account screenshots, metadata snapshots, receipts and resumable upload journals are local under `reports/ios-release-1.2.48/` and are deliberately excluded from Git. Capture automation is opt-in. The release-scoped audit checks the actual 29-locale scope, both device families, exact five-image order, title preservation, review details and exact eligible build; it requires genuine core evidence before passing.
 
 Complete: all intended captures, composition, visual review, metadata and screenshot uploads. Pending: final source merge, signed Release archive/upload, exact build VALID / APP_STORE_ELIGIBLE, review audit, submission and version/submission WAITING_FOR_REVIEW readback.
+
+## Upload validation repair
+
+The immutable Build 74 archive passed local signature/resources/fixture checks, but Apple upload validation rejected 17 Safari extension locale descriptions exceeding its 112-character limit (error 90862). Those resolved `extDescription` strings were shortened without changing behavior or other locale messages. The packaging validator now enforces the 112 UTF-16-unit maximum across all 28 locales. All four product build numbers advance to **75**; Build 74 is retained as rejected evidence and will not be submitted.
+
+The regional playback and quota evidence remains applicable: the only embedded-resource changes are Safari manifest descriptions plus the build-number increment. No TTS, QuickRead, account, quota, route, rendering or screenshot-source logic changed. A fresh source manifest and immutable Build 75 archive are required; no archive is edited in place.

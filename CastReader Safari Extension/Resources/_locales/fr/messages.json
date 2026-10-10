@@ -288,7 +288,7 @@
     "message": "Création de l'aperçu"
   },
   "extDescription": {
-    "message": "Lisez avec surlignage et défilement synchronisés. L’IA explique les passages difficiles sur la page. Voix en 28 langues."
+    "message": "Lecture en 28 langues avec surlignage synchronisé, défilement automatique et explications IA."
   },
   "readerFailed": {
     "message": "Échec du traitement"
