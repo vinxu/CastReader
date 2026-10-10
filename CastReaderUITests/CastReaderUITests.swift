@@ -4345,6 +4345,14 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             try snapshot(app, name: language + "-4")
             let back = app.navigationBars.buttons.firstMatch
             XCTAssertTrue(back.exists); back.tap()
+            // A system notification can intercept the navigation tap. Require
+            // the real home shelf before opening the next capture scene.
+            for _ in 0..<2 where !shelf.waitForExistence(timeout: 5) {
+                app.activate()
+                let retryBack = app.navigationBars.buttons["BackButton"].firstMatch
+                if retryBack.exists && retryBack.isHittable { retryBack.tap() }
+            }
+            XCTAssertTrue(shelf.waitForExistence(timeout: 10))
             let plus = app.buttons["plusImportButton"].firstMatch
             XCTAssertTrue(plus.waitForExistence(timeout: 10)); plus.tap()
             if !app.buttons["importOptionsCancel"].waitForExistence(timeout: 5) && plus.isHittable { plus.tap() }
@@ -4369,18 +4377,6 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             if readMode.exists { readMode.tap() }
             // Store screenshots use the regular English voice for this English
             // public-domain book, preserving the user's purchased clone balance.
-            if isPad && language == languages.first {
-                app.buttons["playbackVoiceButton"].firstMatch.tap()
-                XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].waitForExistence(timeout: 15))
-                let panel = app.otherElements.matching(identifier: "playbackVoicePanel")
-                    .containing(.button, identifier: "playbackVoiceDoneButton").firstMatch
-                let search = panel.textFields["voiceSearchField"]
-                if !search.exists { panel.buttons["voiceSearchToggle"].tap() }
-                XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("af_heart")
-                let normal = panel.buttons["presetVoiceSelect_af_heart"]
-                XCTAssertTrue(normal.waitForExistence(timeout: 20)); normal.tap()
-                app.buttons["playbackVoiceDoneButton"].tap()
-            }
             let read = app.buttons["kindleReadPlayPauseButton"].firstMatch
             XCTAssertTrue(wait(65) {
                 // Amazon's own position question may appear after web navigation.
@@ -4399,6 +4395,23 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
                 }
                 return m["playing"] == "true" && (Double(m["time"] ?? "0") ?? 0) > 3 && (Int(m["word"] ?? "-1") ?? -1) >= 0
             }, "Actual read playback and word highlight required")
+            if isPad && language == languages.first {
+                read.tap()
+                XCTAssertTrue(wait(5) { self.metrics(app)["playing"] == "false" })
+                XCTAssertTrue(app.buttons["playbackVoiceButton"].firstMatch.waitForExistence(timeout: 10))
+                app.buttons["playbackVoiceButton"].firstMatch.tap()
+                XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].waitForExistence(timeout: 15))
+                let panel = app.otherElements.matching(identifier: "playbackVoicePanel")
+                    .containing(.button, identifier: "playbackVoiceDoneButton").firstMatch
+                let search = panel.textFields["voiceSearchField"]
+                if !search.exists { panel.buttons["voiceSearchToggle"].tap() }
+                XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("af_heart\n")
+                let normal = panel.buttons["presetVoiceSelect_af_heart"]
+                XCTAssertTrue(normal.waitForExistence(timeout: 20)); normal.tap()
+                app.buttons["playbackVoiceDoneButton"].tap()
+                read.tap()
+                XCTAssertTrue(wait(45) { self.metrics(app)["playing"] == "true" && self.metrics(app)["voice"] == "af_heart" })
+            }
             if env["CASTREADER_STORE_DIRECTION_AUDIT"] == "1" && ["ar", "he"].contains(language) {
                 // Pause at actual spoken words so pixels and word identity can
                 // be inspected together, without a timing race during capture.
@@ -4525,6 +4538,18 @@ final class CoreReleaseLiveUITests: XCTestCase {
         let read = app.buttons["readPlayPauseButton"].firstMatch
         XCTAssertTrue(read.waitForExistence(timeout: 45))
         XCTAssertTrue(wait(40) { (self.metrics(app)["readStartState"] as? [String: Any])?["isPro"] as? Bool == true }, "Existing real Pro account is required; never grant or inject entitlement")
+        // The reader exposes its language-specific voice control only after
+        // the first real reading session establishes the content language.
+        if !app.buttons["playbackVoiceButton"].firstMatch.exists {
+            read.tap()
+            XCTAssertTrue(wait(120) {
+                self.metrics(app)["playing"] as? Bool == true &&
+                    (self.metrics(app)["time"] as? Double ?? 0) > 1 &&
+                    app.buttons["playbackVoiceButton"].firstMatch.exists
+            })
+            read.tap()
+            XCTAssertTrue(wait(5) { self.metrics(app)["playing"] as? Bool == false })
+        }
         let panel = app.otherElements.matching(identifier: "playbackVoicePanel").containing(.button, identifier: "playbackVoiceDoneButton").firstMatch
         func select(_ voice: String, mode: String) throws {
             app.buttons["playbackVoiceButton"].firstMatch.tap()
@@ -4545,10 +4570,14 @@ final class CoreReleaseLiveUITests: XCTestCase {
             app.buttons["playbackVoiceDoneButton"].tap()
             XCTAssertTrue(wait(45) { self.metrics(app)[mode + "VoiceID"] as? String == voice })
         }
-        func verify(_ voice: String, mode: String, label: String, requireContinuation: Bool = true) throws {
+        func verify(_ voice: String, mode: String, label: String, requireContinuation: Bool = true,
+                    requestResume: Bool = true) throws {
             let play = app.buttons[mode == "read" ? "readPlayPauseButton" : "explainPlayPauseButton"].firstMatch
-            if self.metrics(app)["playing"] as? Bool != true {
-                XCTAssertTrue(wait(90) { play.exists && play.isEnabled }); play.tap()
+            if requestResume && self.metrics(app)["playing"] as? Bool != true {
+                XCTAssertTrue(wait(90) { play.exists && play.isEnabled })
+                // Preparation can finish and start audio while awaiting the
+                // button. Never turn that successful autoplay into a pause.
+                if self.metrics(app)["playing"] as? Bool != true { play.tap() }
             }
             XCTAssertTrue(wait(150) {
                 let m = self.metrics(app)
@@ -4571,17 +4600,20 @@ final class CoreReleaseLiveUITests: XCTestCase {
             XCTAssertTrue((self.metrics(app)[mode + "Error"] as? String ?? "").isEmpty)
         }
         try select(normal, mode: "read")
-        for (index, voice) in [normal, community, owned, normal].enumerated() {
-            if index > 0 { try select(voice, mode: "read") }
-            try verify(voice, mode: "read", label: "read-\(index)", requireContinuation: index < 3)
-            read.tap(); XCTAssertTrue(wait(5) { self.metrics(app)["playing"] as? Bool == false })
+        if env["CASTREADER_CORE_MODE"] != "explain" {
+            for (index, voice) in [normal, community, owned, normal].enumerated() {
+                if index > 0 { try select(voice, mode: "read") }
+                try verify(voice, mode: "read", label: "read-\(index)", requireContinuation: index < 3)
+                read.tap(); XCTAssertTrue(wait(5) { self.metrics(app)["playing"] as? Bool == false })
+            }
         }
         app.segmentedControls["readerModePicker"].buttons["Explain"].tap()
         let start = app.buttons["explainStartButton"]
         XCTAssertTrue(start.waitForExistence(timeout: 15)); start.tap()
         for (index, voice) in [normal, community, owned, normal].enumerated() {
             if index > 0 { try select(voice, mode: "explain") }
-            try verify(voice, mode: "explain", label: "explain-\(index)", requireContinuation: index < 3)
+            try verify(voice, mode: "explain", label: "explain-\(index)", requireContinuation: index < 3,
+                       requestResume: index > 0)
             app.buttons["explainPlayPauseButton"].firstMatch.tap()
             XCTAssertTrue(wait(5) { self.metrics(app)["playing"] as? Bool == false })
         }
