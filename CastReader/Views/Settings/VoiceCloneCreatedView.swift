@@ -1217,6 +1217,8 @@ struct ClonedVoiceAvatarView: View {
 
 @MainActor
 private struct VoiceCloneRenameView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = VoiceCloneStore.shared
     let voiceID: String

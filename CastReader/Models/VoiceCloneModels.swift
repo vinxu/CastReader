@@ -101,9 +101,7 @@ enum VoiceCloneRecordingPrompt {
     ) -> String {
         let raw: String
         if selection == .system {
-            raw = systemLanguageCode
-                ?? Locale.autoupdatingCurrent.language.languageCode?.identifier
-                ?? "en"
+            raw = systemLanguageCode ?? AppLanguage.system.resolvedLanguageCode
         } else {
             raw = selection.rawValue
         }

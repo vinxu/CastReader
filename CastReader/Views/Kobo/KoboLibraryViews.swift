@@ -154,6 +154,8 @@ private struct KoboRailCard: View {
 // MARK: - Library
 
 struct KoboLibraryView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = KoboLibraryStore.shared
@@ -287,6 +289,8 @@ struct KoboCoverView: View {
 // MARK: - Binding
 
 struct KoboLibraryConnectView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: KoboLibrarySyncViewModel
     private let onReaderSessionReady: (() -> Void)?

@@ -137,7 +137,10 @@ enum VoiceDiscovery {
             return ([styles.first, purpose.shortTitle].compactMap { $0 }).joined(separator: " · ")
         }
         if !styles.isEmpty { return styles.prefix(2).joined(separator: " · ") }
-        let text = (chinese ? voice.descriptionZh : voice.description)?.trimmed ?? ""
+        // The catalog has Chinese/English descriptions only. Other interfaces
+        // use translated style/purpose/gender labels instead of leaking English.
+        let code = AppLanguageManager.shared.selectedLanguage.resolvedLanguageCode
+        let text = (code == "zh" ? voice.descriptionZh : code == "en" ? voice.description : nil)?.trimmed ?? ""
         let technical = ["解码器", "基模", "修复版", "timestamp", "decoder", "voicepack", "r109"]
         if !text.isEmpty, !technical.contains(where: { normalized(text).contains($0) }) { return text }
         if let topic = topics(for: voice).first { return topic.title }

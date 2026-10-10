@@ -59,6 +59,8 @@ struct LoginConsentGate: Equatable {
 }
 
 struct LoginView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     /// 作为根登录墙时为 true：展示价值主张（可听的内容源）。
     /// sheet 场景（付费墙「登录账号同步 Pro」等入口）保持原有的紧凑形态。

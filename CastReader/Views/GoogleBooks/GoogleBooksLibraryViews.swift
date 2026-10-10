@@ -151,6 +151,8 @@ enum GoogleBooksReaderLauncher {
 // MARK: - 绑定（登录 + 同步）
 
 struct GoogleBooksLibraryConnectView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: GoogleBooksLibrarySyncViewModel
     @State private var keyboardIsVisible = false
@@ -364,6 +366,8 @@ struct GoogleBooksLibraryConnectView: View {
 // MARK: - 完整书架
 
 struct GoogleBooksLibraryView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = GoogleBooksLibraryStore.shared

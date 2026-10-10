@@ -23,6 +23,22 @@ final class VoiceDiscoveryTests: XCTestCase {
         XCTAssertEqual(VoiceDiscovery.localizedEditorialTitle(["ar": "عنوان جديد"], theme: .everyday), "عنوان جديد")
     }
 
+    @MainActor
+    func testCatalogDescriptionNeverLeaksEnglishIntoAnotherInterfaceLanguage() {
+        let manager = AppLanguageManager.shared
+        let original = manager.selectedLanguage
+        defer { manager.select(original) }
+        let voice = VoiceOption(code: "test", name: "Name", isPro: false, lang: "en",
+            gender: "female", description: "English-only description", descriptionZh: "中文简介")
+        for language in AppLanguage.allCases where language != .system {
+            manager.select(language)
+            let subtitle = VoiceDiscovery.subtitle(voice, chinese: language == .simplifiedChinese)
+            if language == .english { XCTAssertEqual(subtitle, "English-only description") }
+            else if language == .simplifiedChinese { XCTAssertEqual(subtitle, "中文简介") }
+            else { XCTAssertEqual(subtitle, AppLocalized("女声"), language.rawValue) }
+        }
+    }
+
     private func voice(_ id: String, tags: [String] = [], language: String = "en", monthly: Bool = false) -> VoiceOption {
         VoiceOption(code: id, name: id, isPro: monthly, lang: language, gender: "female",
                     tags: tags, sampleURL: "https://api.castreader.ai/preview.mp3",

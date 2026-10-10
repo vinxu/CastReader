@@ -1087,6 +1087,8 @@ struct VoiceAvatarView: View {
 /// the same avatar, language lock and switching behavior.
 @MainActor
 struct PlaybackVoiceButton: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var catalog = VoiceCatalogService.shared

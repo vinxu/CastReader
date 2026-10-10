@@ -6,6 +6,8 @@
 import SwiftUI
 
 struct CloudStorageFlowView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @StateObject private var model: CloudStorageFlowViewModel
@@ -315,6 +317,8 @@ struct CloudStorageFlowView: View {
 }
 
 struct CloudStorageProviderRow: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let provider: CloudProviderID
     let state: CloudConnectionState
     let isConfigured: Bool
@@ -492,6 +496,8 @@ private struct GoogleDriveMark: View {
 }
 
 private struct CloudPrivacyDisclosureView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let provider: CloudProviderID
     let isReviewOnly: Bool
     let onContinue: () -> Void
@@ -591,6 +597,8 @@ private struct CloudPrivacyDisclosureView: View {
 }
 
 private struct CloudFileBrowserView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var model: CloudStorageFlowViewModel
 
     var body: some View {
@@ -693,6 +701,8 @@ private struct CloudFileBrowserView: View {
 }
 
 private struct CloudFileRow: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let item: CloudItem
     let action: () -> Void
 
@@ -743,16 +753,19 @@ private struct CloudFileRow: View {
         var parts: [String] = []
         if item.kind == .exportableDocument { parts.append(CloudLocalized("可导出")) }
         if let size = item.size {
-            parts.append(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
+            parts.append(size.formatted(.byteCount(style: .file).locale(AppLanguageManager.shared.locale)))
         }
         if let modifiedAt = item.modifiedAt {
-            parts.append(modifiedAt.formatted(date: .abbreviated, time: .omitted))
+            parts.append(modifiedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted)
+                .locale(AppLanguageManager.shared.locale)))
         }
         return parts.isEmpty ? CloudLocalized("可朗读与解读") : parts.joined(separator: " · ")
     }
 }
 
 private struct CloudImportProgressView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let provider: CloudProviderID
     let stage: CloudStorageFlowViewModel.Stage
     let progress: CloudDownloadProgress?
@@ -816,6 +829,8 @@ private struct CloudImportProgressView: View {
 }
 
 private struct CloudFlowErrorView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let provider: CloudProviderID
     let failure: CloudFlowFailurePresentation
     let onRetry: () -> Void

@@ -14876,118 +14876,119 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wissen"
+            "value": "Helder"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "지우기"
+            "value": "또렷한"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Очистить"
+            "value": "Чёткий"
           }
         },
         "pl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wyczyść"
+            "value": "Wyraźny"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rensa"
+            "value": "Tydlig"
           }
         },
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ryd"
+            "value": "Tydelig"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tøm"
+            "value": "Tydelig"
           }
         },
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tyhjennä"
+            "value": "Selkeä"
           }
         },
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vyčistit"
+            "value": "Zřetelný"
           }
         },
         "el": {
           "stringUnit": {
             "state": "translated",
-            "value": "Καθαρισμός"
+            "value": "Καθαρή άρθρωση"
           }
         },
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Törlés"
+            "value": "Tiszta"
           }
         },
         "fil": {
           "stringUnit": {
             "state": "translated",
-            "value": "Linisin"
+            "value": "Malinaw"
           }
         },
         "he": {
           "stringUnit": {
             "state": "translated",
-            "value": "נקה"
+            "value": "ברור"
           }
         },
         "id": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hapus"
+            "value": "Jernih"
           }
         },
         "ms": {
           "stringUnit": {
             "state": "translated",
-            "value": "Padam"
+            "value": "Jelas"
           }
         },
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "مسح"
+            "value": "واضح"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Temizle"
+            "value": "Net"
           }
         },
         "ro": {
           "stringUnit": {
             "state": "translated",
-            "value": "Șterge"
+            "value": "Clar"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xóa"
+            "value": "Rõ ràng"
           }
         }
-      }
+      },
+      "comment": "Voice timbre / articulation adjective: clear speech. Never the action to clear or delete content."
     },
     "沉稳": {
       "localizations": {
@@ -268897,6 +268898,352 @@
           "stringUnit": {
             "state": "translated",
             "value": "精选克隆音色"
+          }
+        }
+      }
+    },
+    "stopped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopped"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已停止"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "停止中"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detenido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêté"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestoppt"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parado"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interrotto"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "रुका हुआ"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestopt"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "중지됨"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متوقف"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остановлено"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zatrzymano"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppad"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppet"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppet"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pysäytetty"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zastaveno"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Διακόπηκε"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leállítva"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nakahinto"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "נעצר"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dihentikan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dihentikan"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oprit"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durduruldu"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã dừng"
+          }
+        }
+      }
+    },
+    "loading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加载中"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み込み中"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargando"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chargement"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird geladen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carregando"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caricamento"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लोड हो रहा है"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laden"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "불러오는 중"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جارٍ التحميل"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Загрузка"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ładowanie"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läser in"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indlæser"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laster inn"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladataan"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Načítání"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Φόρτωση"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betöltés"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naglo-load"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "בטעינה"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memuat"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memuatkan"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se încarcă"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yükleniyor"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang tải"
           }
         }
       }

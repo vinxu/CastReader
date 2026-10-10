@@ -295,6 +295,8 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
 }
 
 struct YouTubeHomeSection: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     let activeDocumentID: String?
     var isSurfaceEnabled = true
@@ -484,6 +486,8 @@ struct YouTubeHomeSection: View {
 }
 
 private struct YouTubeHomeShelfRow: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let record: HistoryRecord
     let status: YouTubeHistoryStatus?
     let isActive: Bool
@@ -544,6 +548,8 @@ private struct YouTubeHomeShelfRow: View {
 }
 
 struct YouTubeHomeView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var coordinator: PlayerCoordinator

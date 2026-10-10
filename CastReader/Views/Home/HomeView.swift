@@ -1593,6 +1593,8 @@ struct HomeView: View {
 }
 
 private struct BoundLibraryActivationCard: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let source: BoundLibraryOnboardingSource?
     let playbackProgress: Double
     let actionTitle: String
@@ -1704,6 +1706,8 @@ private enum ImportPanel: Identifiable, Equatable {
 }
 
 private struct ImportOptionsSheet: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let panel: ImportPanel
     var onPick: (ExplainContentType?, ReaderMode, ImportSource) -> Void
     var onPickCloud: (ExplainContentType?, ReaderMode, CloudProviderID, CloudProviderAction) -> Void
@@ -2164,6 +2168,8 @@ private extension ExplainContentType {
 // MARK: - 场景卡片
 
 private struct ScenarioPill: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let ct: ExplainContentType
 
     var body: some View {
@@ -2187,6 +2193,8 @@ private struct ScenarioPill: View {
 }
 
 private struct ScenarioCard: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let ct: ExplainContentType
 
     var body: some View {

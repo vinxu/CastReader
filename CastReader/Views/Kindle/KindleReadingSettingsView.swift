@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct KindleReadingSettingsView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     let fontValue: Double?
     let canDecrease: Bool

@@ -2,6 +2,8 @@ import SwiftUI
 
 @MainActor
 struct KindleOfflineDownloadView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject var model: KindleBookViewModel
     @ObservedObject var download: KindleOfflineDownloadCoordinator
@@ -119,7 +121,7 @@ struct KindleOfflineDownloadView: View {
                         Spacer()
                         Text(fraction, format: .percent.precision(.fractionLength(0))).monospacedDigit()
                     }.font(.subheadline)
-                    Text(ByteCountFormatter.string(fromByteCount: Int64(book.byteCount), countStyle: .file))
+                    Text(Int64(book.byteCount).formatted(.byteCount(style: .file).locale(AppLanguageManager.shared.locale)))
                         .font(.caption).foregroundStyle(.secondary)
                 }.accessibilityIdentifier("offlineDownloadProgress")
             }

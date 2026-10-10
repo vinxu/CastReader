@@ -91,7 +91,13 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
 
     var locale: Locale {
-        self == .system ? .autoupdatingCurrent : Locale(identifier: rawValue)
+        Locale(identifier: self == .system ? Self.systemLocalization : rawValue)
+    }
+
+    /// iOS can give this app a language different from the device's regional
+    /// locale. Use the same bundle language that renders its interface.
+    static var systemLocalization: String {
+        Bundle.main.preferredLocalizations.first ?? "en"
     }
 
     var isRightToLeft: Bool {
@@ -103,7 +109,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     var resolvedLanguageCode: String {
         switch self {
         case .system:
-            return Locale.autoupdatingCurrent.language.languageCode?.identifier ?? "en"
+            return Self.systemLocalization.split(separator: "-").first.map(String.init) ?? "en"
         default:
             return rawValue.split(separator: "-").first.map(String.init) ?? rawValue
         }
@@ -167,6 +173,8 @@ final class AppLanguageManager: ObservableObject {
     }
 }
 
+/// Views that render these runtime Strings observe AppLanguageManager so cached
+/// child bodies refresh when the user changes language (without resetting views).
 /// Runtime strings must use the selected language bundle explicitly. Foundation
 /// caches localized lookups by bundle identity, so swapping Bundle.main cannot
 /// reliably support multiple consecutive in-app language changes.

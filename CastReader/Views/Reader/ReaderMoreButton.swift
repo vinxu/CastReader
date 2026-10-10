@@ -23,6 +23,8 @@ enum ReaderMoreFormatting {
 }
 
 struct ReaderMoreButton: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.readerAppearanceSource) private var appearanceSource
     @Environment(\.readerOfflineAction) private var offlineAction
     @ObservedObject private var timer = AudioPlayerService.shared.sleepTimer
@@ -92,6 +94,8 @@ struct ReaderMoreButton: View {
 }
 
 struct SleepTimerSheet: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var timer: PlaybackSleepTimer
     @Environment(\.dismiss) private var dismiss
     @Environment(\.locale) private var locale
@@ -176,6 +180,8 @@ struct SleepTimerSheet: View {
 }
 
 private struct ReaderAppearanceSheet: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let source: ReaderAppearanceSource
     @ObservedObject private var settings = ReaderAppearanceSettings.shared
     @Environment(\.dismiss) private var dismiss

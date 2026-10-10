@@ -170,6 +170,8 @@ private struct KindleIPadReadHoldView: View {
 }
 
 struct KindleBookView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var importRouter: ImportRouter
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -985,6 +987,8 @@ enum KindleReaderSurfaceContract {
 }
 
 private struct KindleEmptyPlaybackBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let isPreparing: Bool
     let compact: Bool
     let play: () -> Void
@@ -1016,6 +1020,8 @@ private struct KindleEmptyPlaybackBar: View {
 }
 
 private struct KindleReadPlaybackBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ReadAloudViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
@@ -1117,6 +1123,8 @@ private struct KindlePageTurnButton: View {
 /// orientation. Previous/next stay immediately beside play; TOC, voice and
 /// speed form one compact tool group. Button order and height never change.
 private struct KindlePlaybackConsole<PlayControl: View>: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.appViewport) private var viewport
     private var stacked: Bool { AdaptiveLayout.stacksPlaybackControls(in: viewport) }
     let isLandscape: Bool
@@ -1280,6 +1288,8 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
 }
 
 private struct KindleExplainPlaybackBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ExplainViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
@@ -1430,6 +1440,8 @@ private struct KindleExplainCaption: View {
 }
 
 private struct KindleLandscapeEmptyOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let isPreparing: Bool
     let start: () -> Void
     let previousPage: () -> Void
@@ -1461,6 +1473,8 @@ private struct KindleLandscapeEmptyOverlay: View {
 }
 
 private struct KindleLandscapeReadOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ReadAloudViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
@@ -1504,6 +1518,8 @@ private struct KindleLandscapeReadOverlay: View {
 }
 
 private struct KindleLandscapeExplainOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var vm: ExplainViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isContinuingPage: Bool
@@ -1912,6 +1928,8 @@ private extension UIApplication.State {
 }
 
 struct KindleMiniPlayerView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var center: KindlePlaybackCenter
     @ObservedObject private var audio = AudioPlayerService.shared
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
@@ -2191,6 +2209,8 @@ struct KindleTOCEntry: Identifiable, Equatable {
 }
 
 private struct KindleNativeTOCPanel: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let entries: [KindleTOCEntry]
     let isLoading: Bool
     let errorText: String?

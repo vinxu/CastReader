@@ -187,7 +187,7 @@ struct TextInputData: Identifiable {
 
     init(title: String, content: String, language: String = "en") {
         self.id = UUID().uuidString
-        self.title = title.isEmpty ? "Text Input" : title
+        self.title = title.isEmpty ? AppLocalized("输入文本") : title
         self.content = content
         self.createdAt = Date()
         self.mdUrl = nil

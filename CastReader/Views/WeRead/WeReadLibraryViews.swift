@@ -91,6 +91,8 @@ struct WeReadHomeSection: View {
 }
 
 struct WeReadLibraryConnectView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
@@ -220,6 +222,8 @@ struct WeReadLibraryConnectView: View {
 }
 
 struct WeReadLibraryView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = WeReadLibraryStore.shared

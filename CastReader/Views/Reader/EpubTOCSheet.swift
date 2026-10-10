@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct EpubTOCSheet: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let navigation: EpubNavigation
     let currentParagraph: Int
     let select: (EpubNavigation.Entry) -> Void

@@ -250,6 +250,8 @@ enum VoiceDiscoveryDestination: Hashable {
 }
 
 private struct VoiceClonedSelectionNote: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     var body: some View {
         Text(AppLocalized("克隆音色 · 多语言适用 · 生成消耗月额度"))
             .font(.caption).foregroundStyle(AppTheme.mutedForeground)
@@ -336,7 +338,7 @@ private struct VoiceEditorialVoiceRow: View {
                     .background(AppTheme.primary.opacity(0.09), in: Capsule())
             }.buttonStyle(.plain).accessibilityIdentifier("voicePreview_\(voice.id)")
                 .accessibilityLabel(Text(AppLocalized("试听") + " · " + voice.name))
-                .accessibilityValue(Text(verbatim: previewStatus.rawValue))
+                .accessibilityValue(Text(previewStatus.localizedTitle))
         }.padding(.horizontal, 4).padding(.vertical, 2)
             .onReceive(VoiceSamplePlayer.shared.$playbackState.map { $0.status(for: voice.id) }.removeDuplicates()) { previewStatus = $0 }
     }
@@ -452,6 +454,8 @@ struct VoiceDiscoveryRow: View {
 }
 
 private struct VoicePreviewAvatar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let voice: VoiceOption
     let size: CGFloat
     let onPreview: () -> Void
@@ -469,7 +473,7 @@ private struct VoicePreviewAvatar: View {
                 }
         }.buttonStyle(.plain).accessibilityLabel(Text(AppLocalized("试听") + " · " + voice.name))
             .accessibilityIdentifier("voicePreview_\(voice.id)")
-            .accessibilityValue(Text(verbatim: previewStatus.rawValue))
+            .accessibilityValue(Text(previewStatus.localizedTitle))
             .onReceive(VoiceSamplePlayer.shared.$playbackState.map { $0.status(for: voice.id) }.removeDuplicates()) { previewStatus = $0 }
     }
 }
@@ -515,6 +519,8 @@ private struct VoicePortraitCard: View {
 }
 
 struct VoiceUsageBadge: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let voice: VoiceOption
     @ObservedObject private var pro = ProManager.shared
     @State private var showsQuota = false
@@ -675,6 +681,8 @@ struct VoiceDiscoveryCollectionView: View {
 /// Only this compact section observes personal voice state, keeping account and
 /// invitation updates out of the catalog/recommendation computation path.
 struct VoiceFamiliarSection: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let language: String
     var reader = false
     var query = ""
@@ -742,6 +750,8 @@ struct VoiceFamiliarSection: View {
 
 /// Presentation stays independent of catalog ranking and account fetching.
 struct VoiceFamiliarContent: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let voices: [ClonedVoice]
     var showsCreation = true
     var showsAll = true
@@ -790,7 +800,7 @@ struct VoiceFamiliarContent: View {
                                 }
                         }.buttonStyle(.plain).disabled(!voice.access.capabilities.canPreview)
                             .accessibilityLabel(AppLocalized(playingID == voice.id ? "停止试听" : "试听") + " · " + name(voice))
-                            .accessibilityValue(loadingID == voice.id ? "loading" : (playingID == voice.id ? "playing" : "stopped"))
+                            .accessibilityValue(Text((loadingID == voice.id ? VoiceSamplePlayer.Status.loading : (playingID == voice.id ? .playing : .stopped)).localizedTitle))
                             .accessibilityIdentifier("voiceFamiliarPreview_" + voice.id)
                         Button { onSelect(voice) } label: {
                             HStack(spacing: 10) {

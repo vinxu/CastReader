@@ -9,6 +9,8 @@
 import SwiftUI
 
 struct KindleFirstLaunchFlowView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var onboarding: BoundLibraryOnboardingStore
     let onSkip: () -> Void
     let onStartBook: (KindleBook) -> Void

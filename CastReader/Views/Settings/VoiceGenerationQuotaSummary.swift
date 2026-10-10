@@ -2,6 +2,8 @@ import SwiftUI
 
 /// All metered voices use the same server snapshot, including across languages.
 struct VoiceGenerationQuotaSummary: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var store = VoiceCloneStore.shared
     @ObservedObject private var pro = ProManager.shared
     @State private var showsExplanation = false
@@ -65,15 +67,16 @@ struct VoiceGenerationQuotaSummary: View {
         var value = AppLocalized("所有月额度音色与我的声音共享 2 小时/月，所有语言通用。") + "\n\n"
             + AppLocalized("按成功生成的音频时长计量；试听和重复播放已生成的音频不扣额度。")
         if pro.isPro, let balance = CloneCreditStore.shared.currentBalance, balance.enabled {
-            value += "\n\n" + AppLocalized("本月基础剩余") + ": " + CloneCreditPurchaseView.duration(balance.baseRemainingMs ?? 0)
-            value += "\n" + AppLocalized("加购剩余") + ": " + CloneCreditPurchaseView.duration(balance.purchasedRemainingMs ?? 0)
+            value += "\n\n" + AppLocalized("本月基础剩余") + ": " + CloneCreditPurchaseView.balanceText(balance.baseRemainingMs)
+            value += "\n" + AppLocalized("加购剩余") + ": " + CloneCreditPurchaseView.balanceText(balance.purchasedRemainingMs)
             value += "\n\n" + AppLocalized("加购额度长期有效，优先使用每月基础额度。仅 Pro 会员可购买及使用；Pro 到期后保留加购余额。")
         } else if pro.isPro {
             if let remaining = store.quotaPresentation.remainingSeconds {
-                value += "\n\n" + String(format: AppLocalized("本月剩余 %lld 分钟"), Int64(max(0, remaining) / 60))
+                value += "\n\n" + AppLocalized("本月基础剩余") + ": " + CloneCreditPurchaseView.duration(remaining * 1000)
             }
             if let reset = store.quotaPresentation.resetAt, reset > Date() {
-                value += "\n\n" + String(format: AppLocalized("下次更新：%@"), reset.formatted(date: .abbreviated, time: .omitted))
+                value += "\n\n" + String(format: AppLocalized("下次更新：%@"), reset.formatted(
+                    Date.FormatStyle(date: .abbreviated, time: .omitted).locale(AppLanguageManager.shared.locale)))
             } else if store.quotaPresentation.remainingSeconds == nil {
                 value += "\n\n" + AppLocalized("生成额度正在同步")
             }

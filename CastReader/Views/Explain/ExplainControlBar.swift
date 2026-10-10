@@ -79,6 +79,8 @@ struct ExplainPlaybackCaptionBubble: View {
 }
 
 struct ExplainControlBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var vm: ExplainViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let showTOC: (() -> Void)?

@@ -195,7 +195,16 @@ enum VoiceBrowserFilter {
 final class VoiceSamplePlayer: ObservableObject {
     static let shared = VoiceSamplePlayer()
 
-    enum Status: String { case stopped, loading, playing }
+    enum Status: String {
+        case stopped, loading, playing
+        var localizedTitle: String {
+            switch self {
+            case .stopped: return AppLocalized("stopped")
+            case .loading: return AppLocalized("loading")
+            case .playing: return AppLocalized("playing")
+            }
+        }
+    }
     enum PlaybackState: Equatable {
         case stopped, loading(String), playing(String)
         func status(for voiceID: String) -> Status {

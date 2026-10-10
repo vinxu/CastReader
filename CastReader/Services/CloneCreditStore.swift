@@ -146,15 +146,18 @@ final class CloneCreditStore: ObservableObject {
     private var environment = "Production"
     private var verifiedStoreEnvironment: String?
     private let storeEnvironment: @Sendable () async -> String?
+    private let loadProducts: @Sendable () async throws -> [Product]
 
     init(client: CloneCreditClient = CloneCreditClient(),
          account: @escaping @MainActor () -> String? = { AuthService.shared.account?.backendUserId },
          hasPro: @escaping @MainActor () -> Bool = { ProManager.shared.isPro },
-         storeEnvironment: @escaping @Sendable () async -> String? = { await CloneCreditStore.currentStoreEnvironment() }) {
+         storeEnvironment: @escaping @Sendable () async -> String? = { await CloneCreditStore.currentStoreEnvironment() },
+         loadProducts: @escaping @Sendable () async throws -> [Product] = { try await Product.products(for: [CloneCreditStore.productID]) }) {
         self.client = client
         self.account = account
         self.hasPro = hasPro
         self.storeEnvironment = storeEnvironment
+        self.loadProducts = loadProducts
     }
 
     deinit { listener?.cancel(); retryTask?.cancel() }
@@ -210,12 +213,16 @@ final class CloneCreditStore: ObservableObject {
                 environment = currentEnvironment
                 balance = nil
             }
-            async let products = Product.products(for: [Self.productID])
+            async let products = loadProducts()
             let snapshot = try await client.request(environment: environment)
+            guard owner == account(), read == sequence else { return }
+            // Balance is independent of the App Store price request. A slow
+            // StoreKit response must not keep a stale zero on the screen.
+            apply(snapshot)
+            message = nil
             let loadedProducts = try? await products
             guard owner == account(), read == sequence else { return }
             product = loadedProducts?.first
-            apply(snapshot)
         } catch {
             guard owner == account(), read == sequence else { return }
             message = error.localizedDescription

@@ -74,6 +74,8 @@ enum PhotoRegionCropper {
 
 /// 原图 + 可拖拽选框。不改动阅读器生命周期 —— 选择发生在进入阅读器之前。
 struct PhotoRegionPicker: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let document: ReadingDocument
     /// 传 `nil` 表示读整页。
     let onPick: (ReadingDocument?) -> Void

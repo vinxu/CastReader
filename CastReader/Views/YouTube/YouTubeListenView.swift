@@ -10,6 +10,8 @@ import SwiftUI
 import UIKit
 
 struct YouTubeListenView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var appearance = ReaderAppearanceSettings.shared
     let document: ReadingDocument
     @ObservedObject var readVM: ReadAloudViewModel

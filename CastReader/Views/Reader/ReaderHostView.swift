@@ -255,6 +255,8 @@ enum ReaderModeSwitchPlaybackContract {
 /// Matches Kindle's native TOC sheet so both bound-library readers have the
 /// same hierarchy, active-chapter indicator and loading/error interaction.
 private struct WeReadNativeTOCPanel: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let entries: [WeReadTOCEntry]
     let isLoading: Bool
     let errorText: String?
@@ -384,6 +386,8 @@ private struct WeReadNativeTOCPanel: View {
 }
 
 struct ReaderHostView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -1250,6 +1254,8 @@ struct ReaderHostView: View {
 /// The left playback area and right utility area receive equal width so the
 /// control deck stays visually stable as voice/status availability changes.
 struct ReaderPlaybackConsole<PlaybackControls: View>: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.appViewport) private var viewport
     private var stacked: Bool { AdaptiveLayout.stacksPlaybackControls(in: viewport) }
     let playbackStatus: String
@@ -1351,6 +1357,8 @@ struct ReaderPlaybackConsole<PlaybackControls: View>: View {
 }
 
 struct ReaderPlaybackPageTurnButton: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let direction: LiveWebPageTurnDirection
     let action: () -> Void
 
@@ -1385,6 +1393,8 @@ struct ReaderPlaybackPageTurnButton: View {
 // MARK: - 朗读控制条
 
 private struct ReadControlBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var vm: ReadAloudViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let showTOC: (() -> Void)?
@@ -1451,7 +1461,7 @@ private struct ReadControlBar: View {
         .hoverEffect(.highlight)
                     .accessibilityIdentifier("readPlayPauseButton")
                     .accessibilityLabel(Text(playbackStatus(for: presentationState)))
-                    .accessibilityValue(Text(presentationState == .playing ? "playing" : "paused"))
+                    .accessibilityValue(Text(AppLocalized(presentationState == .playing ? "playing" : "paused")))
                     if let nextPage {
                         ReaderPlaybackPageTurnButton(
                             direction: .next,
@@ -1508,6 +1518,8 @@ private struct ReadControlBar: View {
 }
 
 private struct ReaderLandscapeReadOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var vm: ReadAloudViewModel
     let showTOC: (() -> Void)?
     let previousPage: (() -> Void)?
@@ -1562,7 +1574,7 @@ private struct ReaderLandscapeReadOverlay: View {
         .hoverEffect(.highlight)
                     .accessibilityIdentifier("readPlayPauseButton")
                     .accessibilityLabel(Text(playbackStatus(for: presentationState)))
-                    .accessibilityValue(Text(presentationState == .playing ? "playing" : "paused"))
+                    .accessibilityValue(Text(AppLocalized(presentationState == .playing ? "playing" : "paused")))
                     if let nextPage {
                         ReaderPlaybackPageTurnButton(
                             direction: .next,
@@ -1633,6 +1645,8 @@ private struct ReaderLandscapeReadOverlay: View {
 }
 
 private struct ReaderLandscapeExplainOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var vm: ExplainViewModel
     let showTOC: (() -> Void)?
     let previousPage: (() -> Void)?
@@ -1732,7 +1746,7 @@ private struct ReaderLandscapeExplainOverlay: View {
             )
             .accessibilityLabel(Text(explainStatusLabel(for: presentationState)))
             .accessibilityValue(
-                Text(presentationState == .playing ? "playing" : "paused")
+                Text(AppLocalized(presentationState == .playing ? "playing" : "paused"))
             )
 
             if let nextPage {
@@ -1888,6 +1902,8 @@ enum SpeedMenuStyle {
 }
 
 struct SpeedMenu: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.appViewport) private var viewport
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var pro = ProManager.shared
@@ -2083,6 +2099,8 @@ struct SpeedMenu: View {
 /// 照片识别进行中的轻提示。图已经在屏幕上了，这里只交代「文字还在识别」，
 /// 不遮挡内容、不阻断操作。
 private struct PhotoRecognitionBadge: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     var body: some View {
         HStack(spacing: 8) {
             ProgressView().scaleEffect(0.8)

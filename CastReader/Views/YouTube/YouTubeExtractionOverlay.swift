@@ -26,6 +26,8 @@ enum YouTubeExtractionPresentation: Identifiable, Equatable {
 /// separate from `YouTubeExtractionOverlay`: cancelling here returns to a
 /// reader that is still playing, so it must not tear down the route request.
 struct YouTubeCaptionLanguageSwitchOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let targetLanguage: String
     let cancel: () -> Void
 
@@ -62,6 +64,8 @@ struct YouTubeCaptionLanguageSwitchOverlay: View {
 }
 
 struct YouTubeExtractionOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let presentation: YouTubeExtractionPresentation
     let cancel: () -> Void
     let retry: () -> Void

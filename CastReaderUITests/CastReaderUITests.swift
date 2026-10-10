@@ -3745,6 +3745,156 @@ final class VoiceAlignmentLiveUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["voiceBrowseLanguage"].firstMatch.waitForExistence(timeout: 15))
         return app
     }
+    /// The app language is changed through iOS preferences while the region
+    /// remains US. This catches using Locale.current to choose a voice language.
+    func testAllTwentyEightSystemAppLanguagesSelectMatchingVoices() throws {
+        let cases: [(String, String, String)] = [
+            ("en", "en-US", "Voice"),
+            ("zh-Hans", "zh-CN", "音色"),
+            ("ja", "ja-JP", "音声"),
+            ("es", "es-ES", "Voz"),
+            ("fr", "fr-FR", "Voix"),
+            ("pt-BR", "pt-BR", "Voz"),
+            ("it", "it-IT", "Voce"),
+            ("hi", "hi-IN", "आवाज़"),
+            ("de", "de-DE", "Stimme"),
+            ("nl", "nl-NL", "Stem"),
+            ("ko", "ko-KR", "음성"),
+            ("ar", "ar-XA", "الصوت"),
+            ("ru", "ru-RU", "Голос"),
+            ("pl", "pl-PL", "Głos"),
+            ("sv", "sv-SE", "Röst"),
+            ("da", "da-DK", "Stemme"),
+            ("nb", "nb-NO", "Stemme"),
+            ("fi", "fi-FI", "Ääni"),
+            ("cs", "cs-CZ", "Hlas"),
+            ("el", "el-GR", "Φωνή"),
+            ("hu", "hu-HU", "Hang"),
+            ("fil", "fil-PH", "Boses"),
+            ("he", "he-IL", "קול"),
+            ("id", "id-ID", "Suara"),
+            ("ms", "ms-MY", "Suara"),
+            ("ro", "ro-RO", "Voce"),
+            ("tr", "tr-TR", "Ses"),
+            ("vi", "vi-VN", "Giọng đọc")
+        ]
+        for (language, locale, title) in cases {
+            let app = XCUIApplication()
+            app.launchArguments = ["-AppleLanguages", "(\(language))", "-AppleLocale", "en_US",
+                "-interfaceLanguage", "system", "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate",
+                "-CastReaderRegion", "global", "-CastReaderServiceRoute", "global"]
+            app.launch()
+            let tab = app.tabBars.buttons[title].exists ? app.tabBars.buttons[title] : app.buttons[title].firstMatch
+            XCTAssertTrue(tab.waitForExistence(timeout: 20), language)
+            try save(app, "system-" + language + "-home")
+            tab.tap()
+            let selector = app.buttons["voiceBrowseLanguage"]
+            let expected = Locale(identifier: language).localizedString(forIdentifier: locale)!
+            XCTAssertTrue(wait(25) {
+                guard let value = selector.value as? String, !value.isEmpty else { return false }
+                return expected.localizedCaseInsensitiveContains(value)
+            }, "\(language): \(selector.value ?? "missing") != \(expected)")
+            XCTAssertTrue(app.descendants(matching: .any)["voiceCurrentCard"].firstMatch.waitForExistence(timeout: 30))
+            try save(app, "system-" + language + "-voices")
+            let tabs = app.segmentedControls["voiceBrowserCategoryPicker"]
+            XCTAssertEqual(tabs.buttons.count, 2)
+            tabs.buttons.element(boundBy: 1).tap()
+            try save(app, "system-" + language + "-my-voices")
+            app.buttons["settingsGearButton"].tap()
+            XCTAssertTrue(app.buttons["settingsLanguageLink"].waitForExistence(timeout: 10))
+            try save(app, "system-" + language + "-settings")
+            app.terminate()
+        }
+    }
+
+    func testChangingAppLanguageToKoreanResetsPreviouslyChosenVoiceLanguage() throws {
+        let app = launch("en", title: "Voice")
+        app.buttons["voiceBrowseLanguage"].tap()
+        let search = app.searchFields["Search Languages"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("Finnish")
+        app.buttons["voiceBrowseLanguage.fi"].tap()
+        XCTAssertTrue(wait(10) { (app.buttons["voiceBrowseLanguage"].value as? String ?? "").contains("Finnish") })
+        app.buttons["settingsGearButton"].tap()
+        app.buttons["settingsLanguageLink"].tap()
+        let korean = app.buttons["appLanguage.ko"]
+        for _ in 0..<5 where !korean.isHittable { app.swipeUp() }
+        XCTAssertTrue(korean.isHittable); korean.tap()
+        try save(app, "in-app-korean-language-selected")
+        app.navigationBars["언어"].buttons["BackButton"].tap()
+        app.buttons["settingsCloseButton"].tap()
+        XCTAssertTrue(wait(15) { (app.buttons["voiceBrowseLanguage"].value as? String ?? "").contains("한국어") })
+        XCTAssertEqual(app.buttons["settingsGearButton"].firstMatch.label, "계정 및 설정")
+        try save(app, "in-app-korean-voices")
+        app.buttons["홈"].firstMatch.tap()
+        XCTAssertEqual(app.buttons["scenario-paper"].label, "논문 / 학술")
+        XCTAssertFalse(app.staticTexts["Paste a video link"].exists)
+        try save(app, "in-app-korean-home")
+        app.terminate()
+    }
+
+    /// Read starts real regular TTS. Explain opens its actual pinned panel using
+    /// its output-language setting; prior long-play evidence covers generation.
+    func testTwentyEightReaderVoicePanelsFollowNarrationLanguage() throws {
+        let path = try XCTUnwrap(ProcessInfo.processInfo.environment["CASTREADER_READER_ACCEPTANCE_MANIFEST"])
+        let rows = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: path))) as! [[String: String]]
+        let filter = ProcessInfo.processInfo.environment["CASTREADER_VOICE_UI_LANGUAGES"]?.split(separator: ",").map(String.init)
+        for row in rows where filter == nil || filter!.contains(row["language"]!) {
+            let code = row["language"]!, locale = row["locale"]!, text = row["text"]!
+            let app = XCUIApplication()
+            app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+                "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderMultilingualAcceptance",
+                "-CastReaderRegion", "global", "-CastReaderServiceRoute", "global", "-explain_language", code,
+                "-CastReaderCaptureTextB64", Data(text.utf8).base64EncodedString()]
+            app.launch()
+            let play = app.buttons["readPlayPauseButton"].firstMatch
+            XCTAssertTrue(play.waitForExistence(timeout: 30)); play.tap()
+            let notice = app.staticTexts["readerPlaybackFailureNotice"]
+            XCTAssertTrue(wait(65) { (play.value as? String)?.lowercased() == "playing" || notice.exists }, code)
+            if notice.exists {
+                XCTAssertEqual(notice.label, "Cannot identify the text language. Choose a reading language.")
+                // Ambiguous short samples use the same explicit correction
+                // available to users; never force a language through a fixture.
+                try save(app, "reader-" + code + "-language-correction-required")
+                app.buttons["playbackVoiceButton"].firstMatch.tap()
+                let search = app.searchFields["Search Languages"]
+                XCTAssertTrue(search.waitForExistence(timeout: 10))
+                search.tap(); search.typeText(locale)
+                let target = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", locale)).firstMatch
+                XCTAssertTrue(target.waitForExistence(timeout: 10)); target.tap()
+                XCTAssertTrue(wait(65) {
+                    let value = self.metrics(app)
+                    let state = value["readStartState"] as? [String: Any] ?? [:]
+                    return value["playing"] as? Bool == true ||
+                        (state["hasQueuedSegments"] as? Bool == true && state["loading"] as? Bool == false && state["streaming"] as? Bool == false)
+                }, code)
+                if (play.value as? String)?.lowercased() != "playing" { play.tap() }
+                XCTAssertTrue(wait(65) { (play.value as? String)?.lowercased() == "playing" }, code)
+            }
+            let voice = app.buttons["playbackVoiceButton"].firstMatch
+            XCTAssertTrue(voice.waitForExistence(timeout: 10)); voice.tap()
+            let panel = try XCTUnwrap(app.otherElements.matching(identifier: "playbackVoicePanel").allElementsBoundByIndex.last)
+            let selector = panel.buttons["voiceBrowseLanguage"].firstMatch
+            let expected = Locale(identifier: "en").localizedString(forIdentifier: locale)!
+            XCTAssertTrue(wait(15) {
+                guard let value = selector.value as? String, !value.isEmpty else { return false }
+                return expected.localizedCaseInsensitiveContains(value)
+            }, "Wrong read voice panel for \(code): \(selector.value ?? "missing")")
+            try save(app, "reader-" + code + "-read-voice-panel")
+            app.buttons["playbackVoiceDoneButton"].tap()
+            if (play.value as? String)?.lowercased() == "playing" { play.tap() }
+            app.segmentedControls["readerModePicker"].buttons["Explain"].tap()
+            XCTAssertTrue(voice.waitForExistence(timeout: 10)); voice.tap()
+            let pinned = panel.descendants(matching: .any)["voiceBrowseLanguage"].firstMatch
+            XCTAssertTrue(wait(15) {
+                guard let value = pinned.value as? String, !value.isEmpty else { return false }
+                return expected.localizedCaseInsensitiveContains(value)
+            }, "Wrong explain voice panel for \(code): \(pinned.value ?? "missing")")
+            XCTAssertFalse(panel.buttons["Reading Language"].exists)
+            try save(app, "reader-" + code + "-explain-voice-panel")
+            app.terminate()
+        }
+    }
+
     func testVoiceLayoutAcrossLanguagesAndSearch() throws {
         let allCases = [("en", "Voice"), ("zh-Hans", "音色"), ("ko", "음성"), ("ru", "Голос"),
                      ("fi", "Ääni"), ("tr", "Ses"), ("it", "Voce"), ("ar", "الصوت"),
@@ -3928,7 +4078,7 @@ final class VoiceAlignmentLiveUITests: XCTestCase {
         XCTAssertTrue(wait(10) { app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voicePreview_")).count > 0 })
         let preview = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "voicePreview_")).firstMatch
         preview.tap()
-        XCTAssertTrue(wait(30) { ["loading", "playing"].contains(preview.value as? String ?? "") })
+        XCTAssertTrue(wait(30) { ["loading", "playing"].contains((preview.value as? String ?? "").lowercased()) })
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(featured.waitForExistence(timeout: 8))
         try save(app, "ko-clone-preview-returned")

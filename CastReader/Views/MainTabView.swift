@@ -2525,6 +2525,8 @@ private struct ShareInboxItem: Identifiable {
 }
 
 private struct ShareInboxView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let items: [ShareInboxItem]
     let errors: [UUID: String]
     let isProcessing: Bool
@@ -2642,6 +2644,8 @@ private struct ShareInboxView: View {
 
 /// 书架来源入口。首页与音色 Tab 共用同一颗按钮，切 Tab 时右上角不再变化。
 struct ShelfSourcesToolbarButton: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     /// 传入时由调用方负责呈现（首页统一走自己的 `activeSheet`，避免同屏多 sheet 互吞，
     /// 见 CLAUDE.md 避坑 #9）；不传则这颗按钮自己挂 sheet。
     var accessibilityID: String = "homeShelfSourcesButton"
@@ -2666,6 +2670,8 @@ struct ShelfSourcesToolbarButton: View {
 }
 
 struct SettingsToolbarButton: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     /// 收件箱从首页 toolbar 下沉进设置后，未读数改由这颗按钮代为提示。
     var shareInboxUnreadCount: Int = 0
     var onOpenShareInbox: (() -> Void)?

@@ -134,6 +134,8 @@ private struct OReillyRailCard: View {
 // MARK: - Library
 
 struct OReillyLibraryView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = OReillyLibraryStore.shared
     @ObservedObject private var onboarding =
@@ -276,6 +278,8 @@ struct OReillyCoverView: View {
 // MARK: - Binding
 
 struct OReillyLibraryConnectView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: OReillyLibrarySyncViewModel
     @State private var showsInstitutionOptions = false
