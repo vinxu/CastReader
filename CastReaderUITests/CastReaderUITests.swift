@@ -4214,3 +4214,350 @@ final class VoiceAlignmentLiveUITests: XCTestCase {
     }
 
 }
+
+/// Opt-in store capture using the user's already connected Kindle session.
+/// Does not seed shelves, entitlements, explanation, audio, or reader marks.
+final class LocalizedStoreCaptureUITests: XCTestCase {
+    private var output: URL?
+    private var currentName = "startup"
+    override func setUpWithError() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_STORE_CAPTURE"] == "1")
+        continueAfterFailure = false
+        if let path = ProcessInfo.processInfo.environment["CASTREADER_STORE_OUTPUT"] {
+            output = URL(fileURLWithPath: path)
+            try FileManager.default.createDirectory(at: output!, withIntermediateDirectories: true)
+        }
+    }
+    override func tearDownWithError() throws {
+        if (testRun?.totalFailureCount ?? 0) > 0 { try? snapshot(XCUIApplication(), name: currentName + "-failure") }
+    }
+    private func wait(_ seconds: TimeInterval, _ predicate: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(seconds)
+        repeat {
+            if predicate() { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        } while Date() < deadline
+        return predicate()
+    }
+    private func snapshot(_ app: XCUIApplication, name: String) throws {
+        let screenshot = XCUIScreen.main.screenshot()
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+        #if targetEnvironment(simulator)
+        if let output {
+            try screenshot.pngRepresentation.write(to: output.appendingPathComponent(name + ".png"))
+            try app.debugDescription.write(to: output.appendingPathComponent(name + ".txt"), atomically: true, encoding: .utf8)
+        }
+        #endif
+    }
+    private func metrics(_ app: XCUIApplication) -> [String: String] {
+        let value = app.descendants(matching: .any)["kindlePlaybackMetrics"].firstMatch.value as? String ?? ""
+        #if targetEnvironment(simulator)
+        if let output { try? value.write(to: output.appendingPathComponent("current-metrics.txt"), atomically: true, encoding: .utf8) }
+        #endif
+        return Dictionary(value.split(separator: ";").compactMap { item -> (String, String)? in
+            let pair = item.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+            return pair.count == 2 ? (String(pair[0]), String(pair[1])) : nil
+        }, uniquingKeysWith: { _, last in last })
+    }
+    func testCaptureFiveScenes() throws {
+        let env = ProcessInfo.processInfo.environment
+        let languages = (env["CASTREADER_STORE_LANGUAGES"] ?? "en").split(separator: ",").map(String.init)
+        let homeLabels = try JSONSerialization.jsonObject(with: Data((env["CASTREADER_STORE_HOME_LABELS"] ?? "{\"en\":\"Home\",\"zh-Hans\":\"首页\"}").utf8)) as! [String:String]
+        let isPad = env["CASTREADER_STORE_DEVICE"] == "ipad"
+        XCUIDevice.shared.orientation = isPad ? .landscapeLeft : .portrait
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+                "-interfaceLanguage", "en", "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate",
+                "-CastReaderIPadAcceptance", "-CastReaderRegion", "global", "-CastReaderServiceRoute", "global",
+                "-explain_language", "en"]
+        if env["CASTREADER_STORE_ATTACH"] != "1" { app.launch() } else { app.activate() }
+        if !isPad && env["CASTREADER_STORE_ATTACH"] != "1" {
+            let voiceTab = app.buttons["Voice"].firstMatch
+            XCTAssertTrue(voiceTab.waitForExistence(timeout: 25)); voiceTab.tap()
+            let search = app.textFields["voiceSearchField"].firstMatch
+            if !search.exists { app.buttons["voiceSearchToggle"].firstMatch.tap() }
+            XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("af_heart\n")
+            let normal = app.buttons["presetVoiceSelect_af_heart"].firstMatch
+            XCTAssertTrue(normal.waitForExistence(timeout: 20)); normal.tap()
+            app.buttons["Home"].firstMatch.tap()
+        }
+        for language in languages {
+            currentName = language
+            let settingsClose = app.buttons["settingsCloseButton"].firstMatch
+            if settingsClose.exists && settingsClose.isHittable { settingsClose.tap() }
+            let minimize = app.buttons["kindleMinimizeButton"].firstMatch
+            if minimize.waitForExistence(timeout: 2) && minimize.isHittable {
+                let m = metrics(app)
+                if m["playing"] == "true" {
+                    let control = m["mode"] == "explain" ? "kindleExplainPlayPauseButton" : "kindleReadPlayPauseButton"
+                    app.buttons[control].firstMatch.tap()
+                }
+                minimize.tap()
+            }
+            if language != "en" {
+                app.buttons["settingsGearButton"].firstMatch.tap()
+                let languageLink = app.buttons["settingsLanguageLink"].firstMatch
+                XCTAssertTrue(app.buttons["settingsCloseButton"].waitForExistence(timeout: 10))
+                for _ in 0..<6 where !languageLink.isHittable {
+                    app.collectionViews.element(boundBy: app.collectionViews.count - 1).swipeUp()
+                }
+                XCTAssertTrue(languageLink.isHittable); languageLink.tap()
+                let row = app.buttons["appLanguage." + language].firstMatch
+                for _ in 0..<12 where !row.isHittable { app.collectionViews.element(boundBy: app.collectionViews.count - 1).swipeUp() }
+                XCTAssertTrue(row.isHittable)
+                let list = app.collectionViews.element(boundBy: app.collectionViews.count - 1)
+                let offset = max(-0.3, min(0.3, (row.frame.midY - list.frame.midY) / list.frame.height))
+                if abs(offset) > 0.08 {
+                    list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.1,
+                        thenDragTo: list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5 - offset)),
+                        withVelocity: .slow, thenHoldForDuration: 0.5)
+                }
+                row.tap()
+                RunLoop.current.run(until: Date().addingTimeInterval(0.7))
+                app.navigationBars.buttons["BackButton"].firstMatch.tap()
+                app.buttons["settingsCloseButton"].tap()
+            }
+            let homeTitle = homeLabels[language] ?? "Home"
+            let home = app.cells["house.fill"].exists ? app.cells["house.fill"] : app.buttons[homeTitle].firstMatch
+            XCTAssertTrue(home.waitForExistence(timeout: 25)); home.tap()
+            let sidebar = app.buttons["ToggleSidebar"].firstMatch
+            if isPad && sidebar.exists { sidebar.tap() }
+            for label in ["Not Now", "以后", "以后再说"] where app.alerts.buttons[label].exists { app.alerts.buttons[label].tap() }
+            let shelf = app.buttons.matching(NSPredicate(format: "identifier == %@ OR identifier == %@", "homeShelfViewAll.kindle", "homeShelfSection.kindle")).firstMatch
+            XCTAssertTrue(shelf.waitForExistence(timeout: 30))
+            func shelfOnScreen() -> Bool {
+                shelf.exists && shelf.frame.minY > 110 && shelf.frame.maxY < app.frame.height - 110
+            }
+            for _ in 0..<8 where !shelfOnScreen() {
+                if shelf.frame.minY < 135 { app.swipeDown() } else { app.swipeUp() }
+            }
+            // Align the actual shelf without cropping or synthesizing UI.
+            let headerY: CGFloat = isPad ? 95 : 135
+            let delta = max(-0.45, min(0.45, (shelf.frame.minY - headerY) / app.frame.height))
+            if abs(delta) > 0.04 {
+                app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.72)).press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.72 - delta)), withVelocity: .slow, thenHoldForDuration: 0.6)
+            }
+            try snapshot(app, name: language + "-1")
+            XCTAssertTrue(shelfOnScreen())
+            shelf.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            XCTAssertTrue(app.buttons["kindleOfflineLibrary"].waitForExistence(timeout: 10))
+            try snapshot(app, name: language + "-4")
+            let back = app.navigationBars.buttons.firstMatch
+            XCTAssertTrue(back.exists); back.tap()
+            let plus = app.buttons["plusImportButton"].firstMatch
+            XCTAssertTrue(plus.waitForExistence(timeout: 10)); plus.tap()
+            XCTAssertTrue(app.buttons["importOptionsCancel"].waitForExistence(timeout: 10))
+            try snapshot(app, name: language + "-5")
+            app.buttons["importOptionsCancel"].tap()
+            let book = app.buttons["homeShelfBook.kindle.B002RKRMSY"].firstMatch
+            XCTAssertTrue(book.waitForExistence(timeout: 15))
+            // On the physical device, SwiftUI can report a visible shelf button
+            // as non-hittable. Use its observed on-screen geometry, then require
+            // the real reader to open before continuing.
+            for _ in 0..<4 where book.frame.minY < 110 || book.frame.maxY > app.frame.height - 110 {
+                if book.frame.minY < 110 { app.swipeDown() } else { app.swipeUp() }
+            }
+            XCTAssertTrue(book.frame.minY > 100 && book.frame.maxY < app.frame.height - 100)
+            book.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 45))
+            let keepPosition = app.webViews.buttons["No"].firstMatch
+            if language == languages.first && keepPosition.waitForExistence(timeout: 12) { keepPosition.tap() }
+            let readMode = app.buttons["kindleModeButton_read"].firstMatch
+            if !readMode.exists { app.buttons["kindleModeMenu"].tap() }
+            if readMode.exists { readMode.tap() }
+            // Store screenshots use the regular English voice for this English
+            // public-domain book, preserving the user's purchased clone balance.
+            if isPad && language == languages.first {
+                app.buttons["playbackVoiceButton"].firstMatch.tap()
+                XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].waitForExistence(timeout: 15))
+                let panel = app.otherElements.matching(identifier: "playbackVoicePanel")
+                    .containing(.button, identifier: "playbackVoiceDoneButton").firstMatch
+                let search = panel.textFields["voiceSearchField"]
+                if !search.exists { panel.buttons["voiceSearchToggle"].tap() }
+                XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("af_heart")
+                let normal = panel.buttons["presetVoiceSelect_af_heart"]
+                XCTAssertTrue(normal.waitForExistence(timeout: 20)); normal.tap()
+                app.buttons["playbackVoiceDoneButton"].tap()
+            }
+            let read = app.buttons["kindleReadPlayPauseButton"].firstMatch
+            XCTAssertTrue(wait(65) {
+                // Amazon's own position question may appear after web navigation.
+                let yes = app.webViews.buttons["No"].firstMatch
+                if yes.exists { yes.tap() }
+                return read.exists && read.isEnabled && read.isHittable
+            })
+            if metrics(app)["playing"] != "true" { read.tap() }
+            var lastRetry = Date()
+            XCTAssertTrue(wait(150) {
+                if keepPosition.exists { keepPosition.tap(); lastRetry = .distantPast }
+                let m = self.metrics(app)
+                if m["playing"] != "true", Date().timeIntervalSince(lastRetry) > 30,
+                   read.isEnabled && read.isHittable {
+                    read.tap(); lastRetry = Date()
+                }
+                return m["playing"] == "true" && (Double(m["time"] ?? "0") ?? 0) > 3 && (Int(m["word"] ?? "-1") ?? -1) >= 0
+            }, "Actual read playback and word highlight required")
+            try snapshot(app, name: language + "-2")
+            read.tap()
+            let explain = app.buttons["kindleModeButton_explain"].firstMatch
+            if !explain.exists { app.buttons["kindleModeMenu"].tap() }
+            XCTAssertTrue(explain.waitForExistence(timeout: 10)); explain.tap()
+            let explainPlay = app.buttons["kindleExplainPlayPauseButton"].firstMatch
+            if explainPlay.waitForExistence(timeout: 15) { if metrics(app)["playing"] != "true" { explainPlay.tap() } }
+            else if read.exists && read.isEnabled { read.tap() }
+            XCTAssertTrue(wait(240) {
+                let m = self.metrics(app)
+                return m["playing"] == "true" && (Int(m["ink"] ?? "0") ?? 0) > 0 && (Double(m["time"] ?? "0") ?? 0) > 3
+            }, "Actual explanation playback with visible original-page ink required")
+            try snapshot(app, name: language + "-3")
+            if explainPlay.exists && metrics(app)["playing"] == "true" { explainPlay.tap() }
+            XCTAssertTrue(wait(5) { self.metrics(app)["playing"] != "true" })
+            let evidence = XCTAttachment(data: try JSONSerialization.data(withJSONObject: metrics(app), options: [.prettyPrinted, .sortedKeys]), uniformTypeIdentifier: "public.json")
+            evidence.name = language + "-complete"; evidence.lifetime = .keepAlways; add(evidence)
+            #if targetEnvironment(simulator)
+            if let output {
+                try JSONSerialization.data(withJSONObject: metrics(app), options: [.prettyPrinted,.sortedKeys])
+                    .write(to: output.appendingPathComponent(language + "-complete.json"))
+            }
+            #endif
+            app.buttons["kindleMinimizeButton"].firstMatch.tap()
+        }
+    }
+}
+
+/// Opt-in release gate: genuine account, production routing, original text and
+/// fresh speech/explanation. Attachments preserve actual playback and marks.
+final class CoreReleaseLiveUITests: XCTestCase {
+    private var evidence: [[String: Any]] = []
+    private var region = "global"
+    override func setUpWithError() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_CORE_LIVE"] == "1")
+        continueAfterFailure = false
+        region = ProcessInfo.processInfo.environment["CASTREADER_CORE_REGION"] ?? "global"
+    }
+    private func metrics(_ app: XCUIApplication) -> [String: Any] {
+        guard let value = app.descendants(matching: .any)["readerLanguagePlaybackMetrics"].firstMatch.value as? String,
+              let object = try? JSONSerialization.jsonObject(with: Data(value.utf8)) as? [String: Any] else { return [:] }
+        return object
+    }
+    private func wait(_ seconds: TimeInterval, _ predicate: () -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(seconds)
+        repeat { if predicate() { return true }; RunLoop.current.run(until: Date().addingTimeInterval(0.5)) } while Date() < end
+        return predicate()
+    }
+    private func save(_ app: XCUIApplication, _ step: String) throws {
+        let quota = app.descendants(matching: .any)["voiceGenerationQuotaSummary"].firstMatch
+        let quotaText = quota.exists ? quota.descendants(matching: .any).allElementsBoundByIndex.map {
+            ["label": $0.label, "value": $0.value as? String ?? ""]
+        } : []
+        evidence.append(["step": step, "region": region, "at": ISO8601DateFormatter().string(from: Date()), "metrics": metrics(app), "visibleQuota": quotaText])
+        let data = XCTAttachment(data: try JSONSerialization.data(withJSONObject: evidence, options: [.sortedKeys, .prettyPrinted]), uniformTypeIdentifier: "public.json")
+        data.name = "core-" + region + "-" + step; data.lifetime = .keepAlways; add(data)
+        let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        image.name = "core-" + region + "-" + step; image.lifetime = .keepAlways; add(image)
+    }
+    override func tearDownWithError() throws {
+        if (testRun?.totalFailureCount ?? 0) > 0 { try? save(XCUIApplication(), "failure") }
+    }
+    func testRegionalReadAndExplainVoiceMatrix() throws {
+        let cn = region == "cn"
+        let language = cn ? "zh" : "en"
+        let normal = cn ? "zf_001" : "af_heart"
+        let community = cn ? "vl_65b2c4daaea282b057a7" : "vl_d1efb23a380bdaa2f6b0"
+        let owned = cn ? "vc_63a448ca35794f57b0aea0e189a68cb3" : "vc_62934fe77f764051aa341b4b076bbb85"
+        let english = [
+            "A useful reading routine begins with one clear question. Before opening an article, decide what you want to understand and what evidence would answer that question.",
+            "Read the first paragraph at a comfortable pace. Notice its main claim, then look for the examples that explain or support the author's point.",
+            "Listening while following the words gives attention a place to return to. When a sentence feels difficult, pause and read it again before continuing.",
+            "A summary should explain the idea in your own words. Copying an entire passage can hide the difference between recognizing a sentence and understanding it.",
+            "After a short section, close the text and recall its main idea. This small exercise reveals which parts are clear and which deserve another look.",
+            "Connect the argument to something you already know. A practical example can show both the usefulness of an idea and the limits of its explanation.",
+            "Changing the reading voice should preserve your place. The spoken sentence, highlighted words and visible paragraph should continue to describe the same passage.",
+            "Finish by returning to your original question. Write one answer supported by the text and one new question to guide your next reading session."
+        ].joined(separator: "\n\n")
+        let chinese = [
+            "有效阅读从一个明确的问题开始。在打开文章之前，先想一想自己希望理解什么，以及哪些证据可以回答这个问题。带着目标阅读，更容易把注意力放在真正重要的内容上。",
+            "阅读第一段时，先找出作者的主要观点，再留意支持观点的例子。不要因为一句话听起来很熟悉，就认为自己已经完全理解它。遇到困难的句子，可以暂停后重新阅读。",
+            "一边听朗读，一边跟随文字，可以帮助注意力回到当前段落。声音、文字高亮和阅读位置应当保持一致。切换音色以后，也应当从合适的位置继续，而不是重新播放无关的内容。",
+            "读完一个小节后，试着不用原文说出它的核心意思。主动回忆能够发现理解上的空白。然后回到文章，检查自己的概括是否准确，并找到需要补充的证据。",
+            "最后，把新学到的观点与实际经验联系起来。写下一条由文章支持的结论，再提出一个值得继续探索的问题。这样，阅读就不只是完成篇幅，而是形成能够再次使用的理解。"
+        ].joined(separator: "\n\n")
+        let env = ProcessInfo.processInfo.environment
+        let suppliedText = env["CASTREADER_CORE_TEXT_B64"].flatMap { Data(base64Encoded: $0) }
+            .flatMap { String(data: $0, encoding: .utf8) }
+        let text = suppliedText ?? ((cn ? chinese : english) + "\n\n" + (cn ? "本次验证编号：" : "Session reference: ") + UUID().uuidString)
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+            "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderMultilingualAcceptance",
+            "-CastReaderRegion", region, "-CastReaderServiceRoute", region, "-explain_language", language,
+            "-CastReaderCaptureTextB64", Data(text.utf8).base64EncodedString()]
+        // An externally launched normal app keeps stdout attached to devicectl
+        // so request routing and voice IDs can be matched to the UI evidence.
+        if env["CASTREADER_CORE_ATTACH"] == "1" { app.activate() } else { app.launch() }
+        let read = app.buttons["readPlayPauseButton"].firstMatch
+        XCTAssertTrue(read.waitForExistence(timeout: 45))
+        XCTAssertTrue(wait(40) { (self.metrics(app)["readStartState"] as? [String: Any])?["isPro"] as? Bool == true }, "Existing real Pro account is required; never grant or inject entitlement")
+        let panel = app.otherElements.matching(identifier: "playbackVoicePanel").containing(.button, identifier: "playbackVoiceDoneButton").firstMatch
+        func select(_ voice: String, mode: String) throws {
+            app.buttons["playbackVoiceButton"].firstMatch.tap()
+            XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].waitForExistence(timeout: 15))
+            let search = panel.textFields["voiceSearchField"]
+            if !search.exists { panel.buttons["voiceSearchToggle"].tap() }
+            XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap()
+            if let current = search.value as? String, !current.isEmpty && current != search.placeholderValue {
+                search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count))
+            }
+            search.typeText(voice + "\n")
+            let rowID = voice.hasPrefix("vc_") ? "voiceFamiliarSelect_" + voice : "presetVoiceSelect_" + voice
+            let row = panel.buttons[rowID]
+            XCTAssertTrue(row.waitForExistence(timeout: 35), "Voice must be available in the existing account: " + voice)
+            for _ in 0..<5 where !row.isHittable { panel.swipeUp() }
+            XCTAssertTrue(row.isHittable); row.tap()
+            try self.save(app, mode + "-selected-" + voice)
+            app.buttons["playbackVoiceDoneButton"].tap()
+            XCTAssertTrue(wait(45) { self.metrics(app)[mode + "VoiceID"] as? String == voice })
+        }
+        func verify(_ voice: String, mode: String, label: String, requireContinuation: Bool = true) throws {
+            let play = app.buttons[mode == "read" ? "readPlayPauseButton" : "explainPlayPauseButton"].firstMatch
+            if self.metrics(app)["playing"] as? Bool != true {
+                XCTAssertTrue(wait(90) { play.exists && play.isEnabled }); play.tap()
+            }
+            XCTAssertTrue(wait(150) {
+                let m = self.metrics(app)
+                return m["playing"] as? Bool == true && m[mode + "VoiceID"] as? String == voice && (m["time"] as? Double ?? 0) > 2
+            }, label + " real voice and playback progress")
+            let start = self.metrics(app)
+            XCTAssertTrue(wait(90) {
+                let m = self.metrics(app)
+                return mode == "read" ? !(m["highlight"] as? String ?? "").isEmpty : (m["marks"] as? Int ?? 0) > 0
+            }, label + " actual original-text highlight/marks")
+            try self.save(app, label + "-playing")
+            if requireContinuation {
+                XCTAssertTrue(wait(210) {
+                    let m = self.metrics(app)
+                    let key = mode == "read" ? "paragraph" : "block"
+                    return m["playing"] as? Bool == true && (m[key] as? Int ?? -1) > (start[key] as? Int ?? -1)
+                }, label + " automatic next paragraph/block")
+                try self.save(app, label + "-continued")
+            }
+            XCTAssertTrue((self.metrics(app)[mode + "Error"] as? String ?? "").isEmpty)
+        }
+        try select(normal, mode: "read")
+        for (index, voice) in [normal, community, owned, normal].enumerated() {
+            if index > 0 { try select(voice, mode: "read") }
+            try verify(voice, mode: "read", label: "read-\(index)", requireContinuation: index < 3)
+            read.tap(); XCTAssertTrue(wait(5) { self.metrics(app)["playing"] as? Bool == false })
+        }
+        app.segmentedControls["readerModePicker"].buttons["Explain"].tap()
+        let start = app.buttons["explainStartButton"]
+        XCTAssertTrue(start.waitForExistence(timeout: 15)); start.tap()
+        for (index, voice) in [normal, community, owned, normal].enumerated() {
+            if index > 0 { try select(voice, mode: "explain") }
+            try verify(voice, mode: "explain", label: "explain-\(index)", requireContinuation: index < 3)
+            app.buttons["explainPlayPauseButton"].firstMatch.tap()
+            XCTAssertTrue(wait(5) { self.metrics(app)["playing"] as? Bool == false })
+        }
+        try save(app, "complete")
+    }
+}

@@ -1,0 +1,149 @@
+{
+  "appInfo": {
+    "pt-BR": {
+      "locale": "pt-BR",
+      "name": "CastReader: Texto em voz e IA",
+      "subtitle": "Ouvir PDF, web e livros",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy"
+    },
+    "en-US": {
+      "locale": "en-US",
+      "name": "CastReader: Read Aloud Books",
+      "subtitle": "Audiobook from PDF, EPUB, Web",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy"
+    },
+    "es-MX": {
+      "locale": "es-MX",
+      "name": "CastReader: Texto a voz con IA",
+      "subtitle": "Escucha PDF, web y libros",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy"
+    },
+    "hi": {
+      "locale": "hi",
+      "name": "CastReader: सुनें और समझें",
+      "subtitle": "स्कैन करें और AI से समझें",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy"
+    },
+    "zh-Hant": {
+      "locale": "zh-Hant",
+      "name": "CastReader：朗讀 · AI解讀",
+      "subtitle": "PDF·網頁·電子書·拍照轉語音",
+      "privacyPolicyUrl": "https://castreader.com/zh/privacy-policy"
+    },
+    "ja": {
+      "locale": "ja",
+      "name": "CastReader：読み上げ・AI解説",
+      "subtitle": "PDF・Web・本を音声で聴く",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy"
+    },
+    "zh-Hans": {
+      "locale": "zh-Hans",
+      "name": "CastReader：朗读 · AI解读",
+      "subtitle": "PDF·网页·电子书·拍照转语音",
+      "privacyPolicyUrl": "https://castreader.com/zh/privacy-policy"
+    },
+    "de-DE": {
+      "locale": "de-DE",
+      "name": "CastReader: Vorlesen mit KI",
+      "subtitle": "PDF, Web & Bücher anhören",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy"
+    },
+    "fr-FR": {
+      "locale": "fr-FR",
+      "name": "CastReader : Lecture vocale IA",
+      "subtitle": "Écouter PDF, web et livres",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy"
+    },
+    "it": {
+      "locale": "it",
+      "name": "CastReader: Lettura vocale IA",
+      "subtitle": "Ascolta PDF, web e libri",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy"
+    },
+    "es-ES": {
+      "locale": "es-ES",
+      "name": "CastReader: Texto a voz con IA",
+      "subtitle": "Escucha PDF, web y libros",
+      "privacyPolicyUrl": "https://castreader.com/en/privacy-policy"
+    }
+  },
+  "version": {
+    "fr-FR": {
+      "locale": "fr-FR",
+      "keywords": "vidéo,sous-titres,transcription,lire,voix,lecteur,ocr,pdf,epub,étude,dyslexie,document",
+      "marketingUrl": "https://castreader.com/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com"
+    },
+    "hi": {
+      "locale": "hi",
+      "keywords": "video,caption,transcript,subtitle,listen,टीटीएस,ओसीआर,pdf,ebook",
+      "marketingUrl": "https://castreader.com/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com"
+    },
+    "zh-Hant": {
+      "locale": "zh-Hant",
+      "keywords": "影片字幕,字幕朗讀,逐字稿,文字轉語音,英語聽力,網頁閱讀,文件朗讀,有聲書",
+      "marketingUrl": "https://castreader.com/zh/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com/"
+    },
+    "pt-BR": {
+      "locale": "pt-BR",
+      "keywords": "vídeo,legendas,transcrição,ler,voz,leitor,ocr,pdf,epub,estudo,dislexia,documentos",
+      "marketingUrl": "https://castreader.com/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com"
+    },
+    "en-US": {
+      "locale": "en-US",
+      "keywords": "tts,video,caption,transcript,subtitle,voice,reader,ocr,scan,pdf,epub,article,dyslexia,study",
+      "marketingUrl": "https://castreader.com/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com"
+    },
+    "it": {
+      "locale": "it",
+      "keywords": "video,sottotitoli,trascrizione,leggere,voce,lettore,ocr,pdf,epub,studio,dislessia",
+      "marketingUrl": "https://castreader.com/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com"
+    },
+    "es-MX": {
+      "locale": "es-MX",
+      "keywords": "video,subtítulos,transcripción,leer,voz,lector,ocr,pdf,epub,estudio,dislexia,documentos",
+      "marketingUrl": "https://castreader.com/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com"
+    },
+    "zh-Hans": {
+      "locale": "zh-Hans",
+      "keywords": "视频字幕,字幕朗读,转录稿,文字转语音,英语听力,网页阅读,文档朗读,有声书",
+      "marketingUrl": "https://castreader.com/zh/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com/"
+    },
+    "de-DE": {
+      "locale": "de-DE",
+      "keywords": "video,untertitel,transkript,vorlesen,stimme,ocr,pdf,epub,lernen,hörbuch,dokument",
+      "marketingUrl": "https://castreader.com/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com"
+    },
+    "ja": {
+      "locale": "ja",
+      "keywords": "動画字幕,字幕読み上げ,文字起こし,音声朗読,電子書籍,語学学習,OCR,PDF",
+      "marketingUrl": "https://castreader.com/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com"
+    },
+    "es-ES": {
+      "locale": "es-ES",
+      "keywords": "video,subtítulos,transcripción,leer,voz,lector,ocr,pdf,epub,estudio,dislexia,documentos",
+      "marketingUrl": "https://castreader.com/castreader-app",
+      "promotionalText": null,
+      "supportUrl": "https://castreader.com"
+    }
+  }
+}

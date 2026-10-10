@@ -2545,6 +2545,15 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertEqual(root["sourceLanguage"] as? String, "zh-Hans")
         let strings = try XCTUnwrap(root["strings"] as? [String: Any])
         let protectedTokens = ["CastReader", "Apple", "Google", "Safari", "StoreKit", "WebView", "Xcode", "Amazon", "EPUB", "PDF", "DOCX", "TXT", "URL", "SLA", "API", "HTTP"]
+        // Recognized native names/expanded abbreviations remain valid prose;
+        // still require either the original token or its explicit equivalent.
+        let localizedTokenEquivalents: [String: [String: String]] = [
+            "Amazon": ["ar": "أمازون"],
+            "URL": ["nb": "nettadresse", "he": "כתובת אינטרנט"],
+            "SLA": ["ar": "اتفاقيات مستوى الخدمة", "fi": "palvelutasosopimukset",
+                    "hu": "szolgáltatási szintmegállapodások", "he": "הסכמי רמת שירות",
+                    "tr": "hizmet düzeyi anlaşmaları"]
+        ]
 
         for (key, rawEntry) in strings where !key.isEmpty {
             let entry = try XCTUnwrap(rawEntry as? [String: Any], "Invalid entry: \(key)")
@@ -2566,7 +2575,9 @@ final class LocalizationCatalogTests: XCTestCase {
                 XCTAssertEqual(try formatSignature(value), expectedSignature, "Format mismatch \(locale): \(key) => \(value)")
 
                 for token in protectedTokens where key.contains(token) {
-                    XCTAssertTrue(value.contains(token), "Protected token \(token) changed in \(locale): \(key) => \(value)")
+                    let equivalent = localizedTokenEquivalents[token]?[locale]
+                    XCTAssertTrue(value.contains(token) || equivalent.map(value.contains) == true,
+                                  "Protected token \(token) changed in \(locale): \(key) => \(value)")
                 }
             }
         }
