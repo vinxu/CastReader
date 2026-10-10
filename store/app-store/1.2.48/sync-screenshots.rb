@@ -60,6 +60,19 @@ selected.each do |locale|
     journal_path = File.join(report, 'screenshot-journals', "#{locale}-#{profile}.json")
     journal = File.exist?(journal_path) ? JSON.parse(File.read(journal_path)) : { 'versionID' => version_id, 'locale' => locale, 'profile' => profile, 'images' => {}, 'originals' => items }
     abort 'Journal target mismatch' unless journal.values_at('versionID','locale','profile') == [version_id,locale,profile]
+    if journal['complete'] && journal.fetch('images').keys.sort != desired_names.sort
+      # A reviewed recapture starts a new revision only when the currently
+      # published set is exactly the previous completed revision we own.
+      previous_ids = journal.fetch('images').values.map { |i| i.fetch('id') }.sort
+      abort 'Completed revision changed remotely; preserve and inspect' unless
+        set && set['id'] == journal['setID'] && items.map { |i| i['id'] }.sort == previous_ids &&
+        items.all? { |i| i.dig('attributes', 'assetDeliveryState', 'state') == 'COMPLETE' }
+      revision = Digest::SHA256.hexdigest(File.read(journal_path))[0,16]
+      archived = journal_path.sub(/\.json$/, "-revision-#{revision}.json")
+      FileUtils.cp(journal_path, archived) unless File.exist?(archived)
+      journal = { 'versionID' => version_id, 'locale' => locale, 'profile' => profile,
+                  'images' => {}, 'originals' => items, 'previousRevision' => File.basename(archived) }
+    end
     save = lambda do
       FileUtils.mkdir_p(File.dirname(journal_path))
       File.write(journal_path + '.tmp', JSON.pretty_generate(journal) + "\n", perm: 0o600)

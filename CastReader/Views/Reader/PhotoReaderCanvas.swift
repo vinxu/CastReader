@@ -274,7 +274,7 @@ private final class PhotoViewportScrollView: UIScrollView {
 }
 
 /// 照片内容（图片 + 高亮 / 手写标注叠加）。尺寸由外层 UIScrollView 决定；叠加层订阅 VM 自更新。
-private struct PhotoContent: View {
+struct PhotoContent: View {
     let document: ReadingDocument
     @ObservedObject var readVM: ReadAloudViewModel
     @ObservedObject var explainVM: ExplainViewModel
@@ -296,6 +296,9 @@ private struct PhotoContent: View {
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
+        // Preserve the image's physical coordinate system. Arabic/Hebrew OCR
+        // words already advance right-to-left within that same coordinate space.
+        .environment(\.layoutDirection, .leftToRight)
     }
 
     @ViewBuilder

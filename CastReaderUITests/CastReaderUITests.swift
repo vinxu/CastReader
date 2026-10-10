@@ -4327,7 +4327,7 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             let shelf = app.buttons.matching(NSPredicate(format: "identifier == %@ OR identifier == %@", "homeShelfViewAll.kindle", "homeShelfSection.kindle")).firstMatch
             XCTAssertTrue(shelf.waitForExistence(timeout: 30))
             func shelfOnScreen() -> Bool {
-                shelf.exists && shelf.frame.minY > 110 && shelf.frame.maxY < app.frame.height - 110
+                shelf.exists && shelf.frame.minY > (isPad ? 70 : 110) && shelf.frame.maxY < app.frame.height - 110
             }
             for _ in 0..<8 where !shelfOnScreen() {
                 if shelf.frame.minY < 135 { app.swipeDown() } else { app.swipeUp() }
@@ -4347,6 +4347,7 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             XCTAssertTrue(back.exists); back.tap()
             let plus = app.buttons["plusImportButton"].firstMatch
             XCTAssertTrue(plus.waitForExistence(timeout: 10)); plus.tap()
+            if !app.buttons["importOptionsCancel"].waitForExistence(timeout: 5) && plus.isHittable { plus.tap() }
             XCTAssertTrue(app.buttons["importOptionsCancel"].waitForExistence(timeout: 10))
             try snapshot(app, name: language + "-5")
             app.buttons["importOptionsCancel"].tap()
@@ -4398,6 +4399,32 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
                 }
                 return m["playing"] == "true" && (Double(m["time"] ?? "0") ?? 0) > 3 && (Int(m["word"] ?? "-1") ?? -1) >= 0
             }, "Actual read playback and word highlight required")
+            if env["CASTREADER_STORE_DIRECTION_AUDIT"] == "1" && ["ar", "he"].contains(language) {
+                // Pause at actual spoken words so pixels and word identity can
+                // be inspected together, without a timing race during capture.
+                for sample in 0..<3 {
+                    read.tap()
+                    XCTAssertTrue(wait(5) { self.metrics(app)["playing"] == "false" })
+                    let state = metrics(app)
+                    XCTAssertEqual(state["language"], "en")
+                    XCTAssertEqual(state["progression"], "ltr")
+                    let previous = app.buttons["kindlePreviousPageButton"].firstMatch
+                    let next = app.buttons["kindleNextPageButton"].firstMatch
+                    XCTAssertLessThan(previous.frame.midX, next.frame.midX,
+                        "English book navigation must stay LTR under Arabic/Hebrew UI")
+                    try snapshot(app, name: language + "-direction-\(sample)")
+                    let proof = XCTAttachment(data: try JSONSerialization.data(withJSONObject: state,
+                        options: [.prettyPrinted, .sortedKeys]), uniformTypeIdentifier: "public.json")
+                    proof.name = language + "-direction-\(sample)-metrics"; proof.lifetime = .keepAlways; add(proof)
+                    read.tap()
+                    XCTAssertTrue(wait(20) {
+                        let current = self.metrics(app)
+                        return current["playing"] == "true" && current["wordB64"] != state["wordB64"] &&
+                            (current["segment"] != state["segment"] || current["paragraph"] != state["paragraph"] ||
+                             (Double(current["time"] ?? "0") ?? 0) > (Double(state["time"] ?? "0") ?? 0) + 1)
+                    })
+                }
+            }
             try snapshot(app, name: language + "-2")
             read.tap()
             let explain = app.buttons["kindleModeButton_explain"].firstMatch

@@ -337,7 +337,7 @@ final class MultilingualContractTests: XCTestCase {
             XCTAssertGreaterThan(mass, 20, "The actual SwiftUI mark must render")
             return weightedX / max(mass, 1)
         }
-        for language in ["fil", "ar", "he"] {
+        for language in ["en", "fil", "ar", "he"] {
             for action in ["circle", "highlight", "number"] {
                 for kindle in [false, true] {
                     let ltr = await render(.leftToRight, language: language, action: action, kindle: kindle)

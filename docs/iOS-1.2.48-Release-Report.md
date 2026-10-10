@@ -16,12 +16,12 @@ Apple supports 27 of the 28 requested store languages. Filipino has complete loc
 
 All 29 descriptions, keywords, release notes, support/marketing URLs and intended promotional text were saved and exactly read back. Existing names/subtitles and shared Mac App Info are preserved. All four unique support/marketing URLs returned HTTP 200 with TLS verification. iPad renders are 2732 × 2048; iPhone renders are 1320 × 2868. Each set has five opaque PNGs with raw/final hashes. Replacement uploads retain old assets until all five new assets are COMPLETE, then verify exact ordering.
 
-iPad capture and visual review are complete for all 28 languages (140 deliverable
-images). All 29 supported/preserved App Store entries now have five COMPLETE iPad
-images in the verified order (145 uploads). The iPad remains signed in with its
-synced library, restored to Simplified Chinese and paused. iPhone capture has
-completed 11 languages (55 images); the remaining 17 and their uploads are in
-progress. Physical capture uses the existing iPhone 15 Pro Max via USB, retaining
+iPad capture previously covered all 28 languages (140 deliverable images), and
+all 29 supported/preserved App Store entries have five COMPLETE iPad images in
+the verified order (145 uploads). **Arabic/Hebrew reader scenes were invalidated
+by the reported RTL highlight bug and are being recaptured after the fix.**
+iPhone has 13 unaffected language sets (65 images); remaining sets and uploads
+are in progress. Physical capture uses the existing iPhone 15 Pro Max via USB, retaining
 the user's sessions. English shelf/library captures with an exposed search
 keyboard were rejected and replaced with genuine unobscured captures from the
 same device and candidate; reader images retain actual playback effects.
@@ -41,6 +41,27 @@ exact reasons are preserved in `unit-skips-summary.json`; skipped cases are not
 counted as passing.
 
 The current core gate is pending. Required cells are CN/Chinese and Global/English × Read/Explain × regular/community/private voices, including actual continuation, original-text marks, voice ownership and quota. No historical build's PASS is claimed for this candidate.
+
+### Mixed-language reading direction regression
+
+The user observed English highlighting moving in the wrong direction while the
+interface was Arabic. Real-device logs still identified the book as `en`, with
+`reading=ltr` and `progressionFallback=ltr`. The native held-page overlay inherited
+SwiftUI's RTL layout and mirrored physical OCR coordinates. A rendered regression
+test reproduced zero highlight coverage at the actual spoken word under RTL UI.
+
+The fix isolates Kindle held images, word highlights, held explanation origins,
+and photo reading canvases in their physical coordinate system. Arabic/Hebrew
+logical word order and mark stroke direction remain determined by the document.
+Kindle page buttons and held-page swipe gestures use the book's progression,
+including explicit publication metadata and the existing document correction.
+Interface menus retain their selected language and direction.
+
+The affected container/multilingual suites passed **51/51** tests; language,
+manual page queue, and held-explanation-origin checks passed **34/34**. Real-device
+Arabic/Hebrew UI with English Read/Explain and affected iPad scenes are pending
+visual readback. The earlier source manifest and affected screenshot acceptance
+must not authorize submission of the revised source.
 
 ## Evidence and remaining work
 
