@@ -10,7 +10,9 @@ from pathlib import Path
 import re
 import sys
 
-LOCALES = set("en-US zh-Hans zh-Hant ja es-ES es-MX fr-FR pt-BR it de-DE hi".split())
+CATALOG = json.loads((Path(__file__).resolve().parent.parent / "docs/aso/search-localizations.json").read_text())
+DESCRIPTIONS = json.loads((Path(__file__).resolve().parent.parent / "docs/aso/ios-description-localizations.json").read_text())
+LOCALES = set(CATALOG["localizations"])
 FIELDS = ("name", "subtitle", "promotionalText", "keywords", "description", "whatsNew")
 LIMITS = dict(name=30, subtitle=30, promotionalText=170, description=4000, whatsNew=4000)
 REJECTED = re.compile(r"google[\s\-]*play|play[\s\-]*books|play\.google\.com|谷歌\s*(?:图书|圖書|商店)", re.I)
@@ -23,13 +25,17 @@ def main():
     parser.add_argument("--version-localizations", type=Path)
     parser.add_argument("--app-info-localizations", type=Path)
     parser.add_argument("--review-notes", type=Path)
+    parser.add_argument("--platform", choices=("IOS", "MAC_OS"), default="IOS")
+    parser.add_argument("--allow-empty-whats-new", action="store_true", help="Metadata draft audit only; never use for submission preflight")
     args = parser.parse_args()
-    if not any(vars(args).values()):
+    if not any((args.metadata, args.whats_new, args.version_localizations, args.app_info_localizations, args.review_notes)):
         parser.error("Provide current candidate copy or pending ASC snapshots")
     errors, checked = [], []
 
     def check(source, locale, field, value):
         if value is None and field in ("promotionalText", "subtitle"):
+            value = ""
+        if value is None and field == "whatsNew" and args.allow_empty_whats_new:
             value = ""
         if not isinstance(value, str):
             errors.append(f"{source}: {locale}/{field}: missing or non-string")
@@ -40,11 +46,17 @@ def main():
             errors.append(f"{source}: {locale}/{field}: exceeds character limit")
         if field == "keywords" and len(value.encode("utf-8")) > 100:
             errors.append(f"{source}: {locale}/{field}: exceeds 100 UTF-8 bytes")
+        if locale in LOCALES and field in ("name", "subtitle", "keywords"):
+            if value != CATALOG["localizations"][locale][field]:
+                errors.append(f"{source}: {locale}/{field}: differs from current ASO catalog")
+        if locale in LOCALES and field == "description" and args.platform == "IOS":
+            if value != DESCRIPTIONS["localizations"][locale]["description"]:
+                errors.append(f"{source}: {locale}/description: differs from reviewed iOS description")
         checked.append(f"{source}:{locale}/{field}")
 
     def locales(source, values):
-        if len(values) != 11 or set(values) != LOCALES:
-            errors.append(f"{source}: expected exactly the 11 supported locales")
+        if len(values) != len(LOCALES) or set(values) != LOCALES:
+            errors.append(f"{source}: expected exactly {len(LOCALES)} supported locales; missing={sorted(LOCALES-set(values))}, unexpected={sorted(set(values)-LOCALES)}")
 
     if args.metadata:
         sections = re.findall(r"^## .*?— `([^`]+)`\n(.*?)(?=^## |\Z)", args.metadata.read_text(), re.M | re.S)
@@ -74,7 +86,7 @@ def main():
     if args.review_notes:
         notes = json.loads(args.review_notes.read_text())
         check("review-notes", "shared", "notes", notes["notes"])
-    print(json.dumps({"passed": not errors, "checkedFields": len(checked), "errors": errors}, ensure_ascii=False, indent=2))
+    print(json.dumps({"passed": not errors, "checkedFields": len(checked), "draftOnly": args.allow_empty_whats_new, "errors": errors}, ensure_ascii=False, indent=2))
     return 1 if errors else 0
 
 
