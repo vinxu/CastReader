@@ -35,7 +35,7 @@
 
 ## 4. 等待 Apple 时完成资料差异检查
 
-- 可并行完成 11 语 What's New、改变字段校验、受影响 UI/截图检查；同一模拟器或同一 ASC 对象的写入串行。
+- 可并行完成 29 个商店 locale 的 What's New、改变字段校验、受影响 UI/截图检查；同一模拟器或同一 ASC 对象的写入串行。
 - 创建/恢复版本，继承当前资料。默认只改本版 What's New；功能说明确需更新时只改对应字段。标题/副标题默认保留，空推广文字合法。
 - 元数据拒审须检索 **29 个商店 locale 全部当前字段**（名称、副标题、描述、关键词、推广文字、更新说明）及审核备注中的同类问题，不能只验证审核意见点名的单个字段。2.3.10 修复后用 `scripts/audit-app-store-copy.py` 检查本版文案及实际 pending ASC 回读；旧模板/历史报告不作为当前文案。Google Play 名称及其链接不得重新写回当前 iOS 商店说明。保持功能实现和法律声明不变。
 - 未变化且有效的截图保留；不为每次送审重做全套九语截图。仅对本次需要替换的图检查原始 UI、语言、顺序和 `COMPLETE`。不得恢复已删除的旧付费图（“Try Pro Free for 7 Days”、$4.99/$34.99）。
@@ -80,12 +80,12 @@
 ```bash
 RELEASE_SKILL=/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store
 ruby "$RELEASE_SKILL/scripts/release_ops.rb" inspect
-ruby "$RELEASE_SKILL/scripts/preflight.rb" --project "$PWD" \
+ruby scripts/run-release-skill-locales.rb preflight.rb --project "$PWD" \
   --metadata "$RELEASE_METADATA" --whats-new "$RELEASE_WHATS_NEW"
 ruby "$RELEASE_SKILL/scripts/release_ops.rb" wait-build --build-number "$RELEASE_BUILD"
 ruby "$RELEASE_SKILL/scripts/release_ops.rb" create-version --version "$RELEASE_VERSION"
 # 核对 dry-run 后，用同参数追加 --execute 创建/恢复版本。
-ruby "$RELEASE_SKILL/scripts/release_ops.rb" audit \
+ruby scripts/run-release-skill-locales.rb release_ops.rb audit \
   --version-id "$RELEASE_VERSION_ID" --build-id "$RELEASE_BUILD_ID" \
   --pending-app-info-id "$RELEASE_APP_INFO_ID" --baseline-app-info-id "$RELEASE_BASELINE_INFO_ID" \
   --title-policy preserve
@@ -95,4 +95,4 @@ ruby "$RELEASE_SKILL/scripts/submit_review.rb" 6757636395 "$RELEASE_VERSION_ID"
 
 每版一份 `docs/iOS-<version>-Release-Report.md`，一个 `reports/ios-release-<version>/` 证据目录：发布计划/对象 ID、[核心结果](iOS-Core-Service-Release-Gate.md#4-最小证据)、测试摘要、归档校验、ASC audit/提交回执。记录关键结论和实际文件路径，避免多份状态表互相矛盾。凭据不进入日志或仓库。
 
-固定 App ID、11 locale 和归档命令见发布技能 `references/castreader-app-store-config.md`；仅遇对应步骤/失败时查 `references/app-store-runbook.md`。不要重新阅读旧版本全部过程日志。
+固定 App ID 和归档命令见发布技能 `references/castreader-app-store-config.md`；旧 helper 的 11-locale 常量已落后于当前范围，使用 `scripts/run-release-skill-locales.rb` 运行 preflight/audit，将范围严格替换为已审查的 29 个 locale，其余检查不变。仅遇对应步骤/失败时查 `references/app-store-runbook.md`。不要重新阅读旧版本全部过程日志。

@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## iOS 1.2.49 ASO 待审核名额（2026-10-11）
+
+- 29-locale ASO 候选源码 `0be026c0ed6cb8e97f12d6b0aa13857941ecfd70`，工作树 `/Users/xuxuheng/.codex/worktrees/ios-1249-aso-release/CastReader`；四组件 **1.2.49（77）**。与已上线 1.2.48（75）仅版本/Build 不同，OCR 瘦身和语言识别实验均未纳入。
+- Build `682ca796-eb90-4340-a055-eca64c0c74a4` 已 VALID / APP_STORE_ELIGIBLE，并绑定 iOS 版本 `680b0b6d-968f-4a0c-a5a2-b8c25496e078`。29 locale 文案、290 张截图、核心证据兼容性及归档验证已通过。
+- **尚未正式送审**：Apple 返回同平台最多两单审核的上限错误。候选与审核单 `e3d5c230-c7e0-4a1c-91ca-2c2ba2b68d78` 均 READY_FOR_REVIEW；两单既有审核保持原样。继续时复用此 Build/审核单，不重复上传；未经用户明确决定不撤回既有三张自定产品页审核。详见 `docs/iOS-1.2.49-Release-Report.md`。
+
 ## iOS 1.2.48 28 语适配已送审（2026-10-10）
 
 - 最新验收并送审源码为 main 合并 `60b0973c5dd7e3a922349fb157c5ec0af96cc53b`（PR #5 / #6），工作树 `/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader`。App/Share/Widget/Safari 均为 **1.2.48（75）**；466 个应用/配置文件摘要 `5991aa3ba1bd6f8fbd86ac476319376e24a83af9b4d6c3f37cc40330b085feba`。不得从主目录旧分支覆盖真机。
