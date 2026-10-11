@@ -4,7 +4,7 @@
 
 - 29-locale ASO 候选源码 `0be026c0ed6cb8e97f12d6b0aa13857941ecfd70`，工作树 `/Users/xuxuheng/.codex/worktrees/ios-1249-aso-release/CastReader`；四组件 **1.2.49（77）**。与已上线 1.2.48（75）仅版本/Build 不同，OCR 瘦身和语言识别实验均未纳入。
 - Build `682ca796-eb90-4340-a055-eca64c0c74a4` 已 VALID / APP_STORE_ELIGIBLE，并绑定 iOS 版本 `680b0b6d-968f-4a0c-a5a2-b8c25496e078`。29 locale 文案、290 张截图、核心证据兼容性及归档验证已通过。
-- **尚未正式送审**：Apple 返回同平台最多两单审核的上限错误。候选与审核单 `e3d5c230-c7e0-4a1c-91ca-2c2ba2b68d78` 均 READY_FOR_REVIEW；两单既有审核保持原样。继续时复用此 Build/审核单，不重复上传；未经用户明确决定不撤回既有三张自定产品页审核。详见 `docs/iOS-1.2.49-Release-Report.md`。
+- **尚未正式送审**：Apple 返回同平台最多两单审核的上限错误。候选与审核单 `e3d5c230-c7e0-4a1c-91ca-2c2ba2b68d78` 均 READY_FOR_REVIEW；用户已明确选择保留两单既有审核、等待名额释放，不得撤回。自动化 `castreader-ios-1-2-49` 每小时检查，名额释放后继续提交；复用此 Build/审核单，不重复上传，成功后暂停自动化。详见 `docs/iOS-1.2.49-Release-Report.md`。
 
 ## iOS 1.2.48 28 语适配已送审（2026-10-10）
 
