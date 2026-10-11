@@ -1831,6 +1831,9 @@ private struct ImportOptionsSheet: View {
                 }
             }
         }
+        #if targetEnvironment(macCatalyst)
+        .frame(minWidth: 760, minHeight: 680)
+        #endif
         .task {
             guard Constants.Features.cloudStorageEnabled else { return }
             await cloudStorage.refreshConnectionStates()

@@ -1477,7 +1477,7 @@ final class VoiceCloneTests: XCTestCase {
             multipart["consent_version"],
             "voice-owner-consent-2026-07-12-v1"
         )
-        XCTAssertEqual(multipart["consent_source"], "ios")
+        XCTAssertEqual(multipart["consent_source"], Constants.clientPlatform)
         XCTAssertEqual(china["consentConfirmed"] as? Bool, true)
         XCTAssertEqual(
             china["consentVersion"] as? String,
@@ -1490,7 +1490,7 @@ final class VoiceCloneTests: XCTestCase {
             structuredConsent["version"] as? String,
             "voice-owner-consent-2026-07-12-v1"
         )
-        XCTAssertEqual(structuredConsent["source"] as? String, "ios")
+        XCTAssertEqual(structuredConsent["source"] as? String, Constants.clientPlatform)
     }
 
     func testCreateMetadataSendsTextOnlyWhenTheCallerExplicitlyProvidesIt() throws {

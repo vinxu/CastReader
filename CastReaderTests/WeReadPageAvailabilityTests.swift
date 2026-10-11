@@ -41,6 +41,11 @@ final class WeReadPageAvailabilityTests: XCTestCase {
             if text == self.first {
                 return .response(ReadAloudHTTPFixture.body("The first visible page is still here. ", tail: "Delayed tail.", duration: 0.25))
             }
+            if text.trimmingCharacters(in: .whitespaces) == "The first visible page is still here." {
+                // Mac plans the two sentences separately. Keep the same brief
+                // audible prefix and delayed tail that exercise the page gate.
+                return .response(ReadAloudHTTPFixture.body(text, duration: 0.25))
+            }
             return .response(ReadAloudHTTPFixture.body(text, duration: 5))
         }
         let document = ReadingDocument(id: UUID().uuidString, title: "WeRead availability",

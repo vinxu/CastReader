@@ -94,11 +94,16 @@ final class PaginationContinuityTests: XCTestCase {
                 sourceKind: .weread, language: "zh", paragraphs: []), audioService: audio, ttsService: fixture.service())
             defer { read.stop(); read.deactivate(); audio.stop() }
             read.loadWebParagraphs([ReadingParagraph(id: 0, text: source)], language: "zh")
-            // Live-page prefetch preserves one complete source unit. A cold
-            // Chinese start may split natural sentences before the HTTP call,
-            // which does not reproduce the reported multi-sentence audio part.
-            let parts = try await fixture.service().generatePagePrefetchSegments(
-                paragraphIndex: 0, text: source, voice: AppSettings.shared.voice(for: "zh"), language: "zh")
+            // A retained provider unit can still contain several sentences.
+            // Preserve that explicit unit to exercise legacy/cache playback;
+            // fresh Mac requests intentionally split at sentence boundaries.
+            var parts: [AudioSegment] = []
+            try await fixture.service().generateBufferedSpeech(paragraphIndex: 0,
+                text: source, voice: AppSettings.shared.voice(for: "zh"), speed: 1,
+                language: "zh", includeVoiceCode: true, speaker: nil, cloneRequestID: nil,
+                continuation: TTSContinuation(requestUnits: [source], nextSegmentIndex: 0,
+                    requiresSourceTiming: true, requestUnitsArePlanned: true),
+                beforeRequest: { _ in .interactive }, onSegmentReady: { parts.append($0) })
             XCTAssertEqual(parts.count, 1)
             read.startWithPrefetchedSegments(parts, paragraphIndex: 0)
             for _ in 0..<300 where audio.playbackPosition < 0.3 { try await Task.sleep(nanoseconds: 10_000_000) }
@@ -636,13 +641,13 @@ final class PaginationContinuityTests: XCTestCase {
         var received: [AudioSegment] = []
         try await fixture.service().generateBufferedSpeech(paragraphIndex: 0, text: raw, voice: "af_heart",
             speed: 1, language: "en", includeVoiceCode: true, speaker: nil, cloneRequestID: nil,
-            continuation: TTSContinuation(requestUnits: [raw], nextSegmentIndex: 0, requiresSourceTiming: true),
+            continuation: TTSContinuation(requestUnits: [normalized], nextSegmentIndex: 0, requiresSourceTiming: true, requestUnitsArePlanned: true),
             beforeRequest: { _ in .interactive }, onSegmentReady: { received.append($0) })
         XCTAssertEqual(fixture.requests, [normalized, "Afterward they left."])
         XCTAssertEqual(received.map(\.text).joined(), normalized)
     }
 
-    func testShortOpeningWaitsForOneDecodedBodyPartWithoutRepeatingPrefix() async throws {
+    func testColdShortOpeningFollowsPlatformPolicyWithoutRepeatingPrefix() async throws {
         try await verifyShortOpening(pauseWhilePreparing: false)
     }
 
@@ -679,7 +684,12 @@ final class PaginationContinuityTests: XCTestCase {
         for _ in 0..<200 where read.resumeNotice == nil {
             try await Task.sleep(for: .milliseconds(10))
         }
+        #if targetEnvironment(macCatalyst)
+        XCTAssertEqual(fixture.requests, [prefix.trimmingCharacters(in: .whitespaces),
+            "The replacement audio contains different later material."])
+        #else
         XCTAssertEqual(fixture.requests, [newSource])
+        #endif
         XCTAssertNotNil(read.resumeNotice, "A matching paragraph prefix does not prove the heard sentence survived")
         XCTAssertNil(audio.currentSegment, "Earlier unmatched audio must never enter the queue")
         XCTAssertFalse(audio.hasQueuedSegments)
@@ -708,10 +718,15 @@ final class PaginationContinuityTests: XCTestCase {
         read.replaceLiveWebPage(page, language: "en", autoplay: false,
             resumeAnchor: .init(segmentText: "Restored sentence. ", sourceParagraphText: source,
                 segmentProgress: 0.5, wasPlaying: false))
-        for _ in 0..<300 where audio.currentSegment?.text != "Restored sentence. " || abs(audio.playbackPosition - 2) > 0.2 {
+        #if targetEnvironment(macCatalyst)
+        let expectedRestoredText = "Restored sentence."
+        #else
+        let expectedRestoredText = "Restored sentence. "
+        #endif
+        for _ in 0..<300 where audio.currentSegment?.text != expectedRestoredText || abs(audio.playbackPosition - 2) > 0.2 {
             try await Task.sleep(nanoseconds: 10_000_000)
         }
-        XCTAssertEqual(audio.currentSegment?.text, "Restored sentence. ")
+        XCTAssertEqual(audio.currentSegment?.text, expectedRestoredText)
         XCTAssertFalse(audio.isPlaying)
         XCTAssertTrue(read.isPlaybackPausedByUser)
         XCTAssertEqual(audio.playbackPosition, 2, accuracy: 0.2)
@@ -747,7 +762,12 @@ final class PaginationContinuityTests: XCTestCase {
         read.start()
         for _ in 0..<200 where fixture.requests.count < 2 { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertEqual(fixture.requests, ["I", "Body tail."])
+        #if targetEnvironment(macCatalyst)
+        XCTAssertEqual(audio.currentSegment?.text, "I",
+            "Mac begins a cold title immediately while preparing its confirmed successor")
+        #else
         XCTAssertNil(audio.currentSegment, "The title cannot outrun the cold first body response")
+        #endif
         if pauseWhilePreparing { read.pausePlayback() }
         for _ in 0..<200 where !audio.hasQueuedSegments { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertTrue(audio.hasQueuedSegments, "A paused title remains queued for explicit resume")
@@ -766,6 +786,9 @@ final class PaginationContinuityTests: XCTestCase {
             for _ in 0..<300 where read.currentParagraphIndex != 1 { try await Task.sleep(nanoseconds: 10_000_000) }
             XCTAssertEqual(read.currentParagraphIndex, 1)
             XCTAssertEqual(fixture.requests.filter { $0 == "Body tail." }.count, 1)
+            for _ in 0..<200 where !fixture.requests.contains("tail.") {
+                try await Task.sleep(nanoseconds: 10_000_000)
+            }
             XCTAssertEqual(fixture.requests.filter { $0 == "tail." }.count, 1)
         }
     }
@@ -2178,7 +2201,7 @@ final class PaginationContinuityTests: XCTestCase {
         XCTAssertEqual(oldCompletions, finishBeforeAdoption ? 1 : 0)
     }
 
-    func testShortDialogueStartupAccumulatesSeveralOrderedParagraphs() async throws {
+    func testShortDialogueFollowsPlatformStartupPolicyAndPromotesParagraphsOnce() async throws {
         let oldPro = ProManager.shared.debugForcePro, oldSpeed = AppSettings.shared.speed
         ProManager.shared.debugForcePro = true
         AppSettings.shared.speed = 1.5
@@ -2197,8 +2220,16 @@ final class PaginationContinuityTests: XCTestCase {
         read.start()
         for _ in 0..<500 where !audio.hasAudibleProgress { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertTrue(audio.hasAudibleProgress)
+        #if targetEnvironment(macCatalyst)
+        XCTAssertEqual(audio.currentSegment?.text, texts[0])
+        XCTAssertLessThan(fixture.requests.count, texts.count,
+            "Mac cold playback starts before waiting for every short dialogue response")
+        XCTAssertTrue(read.dbgKindlePrefetchIndices.allSatisfy { (1...3).contains($0) },
+            "Only committed successors can be prepared")
+        #else
         XCTAssertEqual(fixture.requests, texts, "First playback waits for a bounded duration, not one short body part")
         XCTAssertEqual(read.dbgKindleReadyIndices, [1, 2, 3])
+        #endif
         for _ in 0..<500 where read.currentParagraphIndex < 3 { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertEqual(read.currentParagraphIndex, 3)
         XCTAssertEqual(fixture.requests, texts, "Promotion uses each existing producer exactly once")

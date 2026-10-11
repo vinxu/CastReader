@@ -153,6 +153,15 @@ struct VoiceBrowserView: View {
     @ObservedObject private var auth = AuthService.shared
 
     private var adaptive: Bool { VoiceBrowsePresentation.isAdaptive() }
+    private var contentWidth: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        // Use the same readable column as the iPad/player voice panel. A
+        // sparse language must not stretch a single voice across a Mac window.
+        return 720
+        #else
+        return AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity
+        #endif
+    }
     private var browseLanguage: String { readerLanguage ?? initialLanguage ?? library.browserLanguage }
     private var selectedVoiceID: String { settings.voice(for: browseLanguage) }
     private var isUnfiltered: Bool {
@@ -275,7 +284,7 @@ struct VoiceBrowserView: View {
                         if !adaptive { categoryTabs }
                     }
                 }
-                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity)
+                .frame(maxWidth: contentWidth)
                 .frame(maxWidth: .infinity)
             }
             .modifier(VoiceBrowseContentMargins())

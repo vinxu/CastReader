@@ -105,7 +105,9 @@ final class KindlePrefetchHorizonTests: XCTestCase {
         XCTAssertFalse(audio.hasTerminalPlaybackFailure)
     }
     func testOutOfOrderReadyReplansFromCurrentAnchorWithoutRecursiveWholePagePrefetch() async throws {
-        let texts = (0..<12).map { "Paragraph \($0) " + Array(repeating: "word", count: 45).joined(separator: " ") }
+        // Keep each paragraph within one bounded request so this exercises
+        // paragraph-horizon replanning independently of sentence chunking.
+        let texts = (0..<12).map { "Paragraph \($0) " + Array(repeating: "word", count: 20).joined(separator: " ") }
         let fixture = ReadAloudHTTPFixture { input, _ in
             let index = texts.firstIndex(of: input) ?? 0
             return .response(ReadAloudHTTPFixture.body(input, duration: index == 0 ? 2 : 0.2),

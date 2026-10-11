@@ -171,6 +171,8 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         for _ in 0..<200 where !audio.isPlaying { try await Task.sleep(for: .milliseconds(25)) }
         XCTAssertTrue(audio.isPlaying)
         read.pausePlayback()
+        let retainedAudioText = try XCTUnwrap(audio.currentSegment?.text)
+        XCTAssertTrue(source.hasPrefix(retainedAudioText))
         _ = try XCTUnwrap(read.makeWeReadPlaybackResumeAnchor())
         _ = try await webView.evaluateJavaScript("emitPage('refresh','First ','First sentence.','after-reflow')")
         for _ in 0..<200 {
@@ -205,7 +207,8 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         }
         XCTAssertEqual(read.stagedLiveWebParagraphTexts, [source, remainder],
             "Reopened source coordinates must retain the exact old audio and newly visible unread suffix")
-        XCTAssertEqual(audio.currentSegment?.text, source)
+        XCTAssertEqual(audio.currentSegment?.text, retainedAudioText,
+            "Reflow must preserve the current audio segment, including Mac sentence-sized requests")
         XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.15)
         XCTAssertNil(read.resumeNotice)
         XCTAssertFalse(audio.isPlaying)
