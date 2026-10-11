@@ -1,9 +1,12 @@
-# iPhone Duo campaign preparation
+# iPhone Duo screenshot campaign
 
 The Duo campaign reuses the released 28-language copy and five genuine scenes
 from `../1.2.48`: connected Kindle shelf, Read Aloud, Explain, Kindle library,
-and Quick Import. This is preparation, not proof that images have been captured
-or reviewed. No store version has yet been allocated to this candidate.
+and Quick Import. As of 2026-10-12, all 28 × 5 local images are complete,
+with native-size, opacity, scene-order, hash and layout checks plus representative
+visual review. Evidence lives in the private `reports/ios-duo-20261011`
+`duo-artwork-manifest.json` and `campaign-status.json`. No images have been
+uploaded and no store version has yet been allocated to this candidate.
 
 Capture with `LocalizedStoreCaptureUITests`, `CASTREADER_STORE_DEVICE=duo`, and
 `CASTREADER_STORE_OUTPUT` pointing to the private `reports/ios-duo-20261011/raw/duo`
@@ -24,7 +27,8 @@ The renderer preserves raw UI pixels, uses the approved side-caption campaign
 composition, requires all five genuine captures for each selected language,
 and emits opaque 2853 × 2007 PNG files with source/output hashes and layout
 bounds in `reports/ios-duo-20261011`. Only after reviewing the three samples
-should capture/render expand to all 28 languages (140 local images).
+should a new capture/render campaign expand to all 28 languages (140 local images).
+The current campaign has completed this sequence; reuse its unchanged outputs.
 
 Do not run the historical 1.2.48 screenshot uploader for this campaign. Its
 version ID and device enums belong to that completed release. The current
