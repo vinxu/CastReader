@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Czytanie i wyjaśnienia AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Czytaj na głos + Wyjaśnij AI"
+  },
+  "extDescription": {
+    "message": "Słuchaj w 28 językach z podświetlaniem tekstu, automatycznym przewijaniem i objaśnieniami AI."
+  },
+  "quickreadBtn": {
+    "message": "Szybkie podsumowanie"
+  },
+  "quickreadBtnExit": {
+    "message": "Wyjdź z podsumowania"
+  },
+  "quickreadPreparing": {
+    "message": "Generowanie podsumowania"
+  },
+  "quickreadError": {
+    "message": "Błąd podsumowania"
+  },
+  "quickreadStageExtract": {
+    "message": "Wydobywanie kluczowych punktów"
+  },
+  "quickreadStageTts": {
+    "message": "Generowanie lektora"
+  },
+  "quickreadStageRefine": {
+    "message": "Układanie rytmu"
+  },
+  "quickreadStageReady": {
+    "message": "Gotowe do odtwarzania…"
+  },
+  "quickreadFailed": {
+    "message": "Niepowodzenie: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Zamknij"
+  },
+  "quickreadCancel": {
+    "message": "Anuluj"
+  },
+  "quickreadDone": {
+    "message": "Gotowe"
+  },
+  "quickreadHint": {
+    "message": "Około 25–45 sekund, proszę czekać"
+  },
+  "quickreadQueued": {
+    "message": "W kolejce ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Dzienny darmowy limit Wyjaśnień wyczerpany. Reset jutro."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Dzienny darmowy limit Wyjaśnień wyczerpany"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Osiągnięto dzienny limit darmowy — przejdź na Pro, aby uzyskać nieograniczone Wyjaśnienia. Twój darmowy limit resetuje się jutro."
+  },
+  "quickreadUpgrade": {
+    "message": "Przejdź na Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Nie zalogowano"
+  },
+  "enableProMode": {
+    "message": "Aktywuj Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Dzienny darmowy limit 20 minut czytania wyczerpany"
+  },
+  "listenRateLimitBody": {
+    "message": "Wykorzystałeś dzisiejsze 20 darmowych minut czytania — przejdź na Pro, aby uzyskać nieograniczone czytanie. Twój darmowy limit resetuje się jutro."
+  },
+  "quickreadQuotaTip": {
+    "message": "Wyjaśnij · $n$/$max$ pozostało dzisiaj",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Wyjaśniaj · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Przeczytaj dokument"
+  },
+  "readerDrop": {
+    "message": "Upuść obraz / PDF / EPUB / Word / TXT tutaj"
+  },
+  "readerDropOver": {
+    "message": "Upuść, aby przesłać"
+  },
+  "readerSub": {
+    "message": "Czytaj na głos + podsumowanie AI dla oryginalnego pliku — układ bez zmian"
+  },
+  "readerOr": {
+    "message": "lub"
+  },
+  "readerPick": {
+    "message": "Wybierz plik"
+  },
+  "readerRendering": {
+    "message": "Renderowanie dokumentu…"
+  },
+  "readerListen": {
+    "message": "▶ Słuchaj"
+  },
+  "readerPause": {
+    "message": "⏸ Pauza"
+  },
+  "readerResume": {
+    "message": "▶ Wznów"
+  },
+  "readerStop": {
+    "message": "■ Zatrzymaj"
+  },
+  "readerExplain": {
+    "message": "✦ Wyjaśnij"
+  },
+  "readerExplainHint": {
+    "message": "Najpierw zatrzymaj czytanie"
+  },
+  "readerNewFile": {
+    "message": "Nowy plik"
+  },
+  "readerSpeed": {
+    "message": "Szybkość"
+  },
+  "readerUnsupported": {
+    "message": "Nieobsługiwany typ pliku"
+  },
+  "readerFailed": {
+    "message": "Przetwarzanie nie powiodło się"
+  },
+  "readerEmpty": {
+    "message": "Nie znaleziono czytelnych tekstów w tym dokumencie"
+  },
+  "readerQuotaLeft": {
+    "message": "pozostało dzisiaj"
+  },
+  "readerQuotaBlocked": {
+    "message": "Dzienny darmowy limit 10 podsumowań wyczerpany — reset jutro"
+  },
+  "readerPartial": {
+    "message": "Wyjaśniono sekcję w Twojej obecnej pozycji — przewiń w dół i dotknij Wyjaśnij ponownie dla następnej"
+  },
+  "readerTooLarge": {
+    "message": "Plik zbyt duży (ponad 100 MB). Użyj mniejszego pliku."
+  },
+  "readerLargeFilePro": {
+    "message": "Pliki powyżej 7 MB wymagają wersji Pro — wersja Pro otwiera dokumenty do 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "Zbyt duży, aby otworzyć z tej strony (ponad 7 MB). Otwórz czytnik dokumentów i wybierz go tam — do 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Otwórz czytnik dokumentów"
+  },
+  "readerContinue": {
+    "message": "Kontynuuj ✦"
+  },
+  "readerSettings": {
+    "message": "Ustawienia"
+  },
+  "readerExplainLang": {
+    "message": "Wyjaśniaj w języku"
+  },
+  "readerDocumentLang": {
+    "message": "Język dokumentu"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automatycznie (na podstawie tekstu)"
+  },
+  "readerDocumentLangHint": {
+    "message": "W przypadku obrazów lub skanowanych plików PDF bez tekstu do odczytania wybierz język dokumentu, a następnie otwórz plik."
+  },
+  "readerVoiceEn": {
+    "message": "Głos angielski"
+  },
+  "readerVoiceZh": {
+    "message": "Głos chiński"
+  },
+  "readerVoices": {
+    "message": "Głosy"
+  },
+  "readerBrowseVoices": {
+    "message": "Przeglądaj głosy"
+  },
+  "readerLangAuto": {
+    "message": "Automatycznie (język interfejsu)"
+  },
+  "readerLangFollow": {
+    "message": "Dopasuj do dokumentu"
+  },
+  "readerPreparing": {
+    "message": "Przygotowywanie lektury…"
+  },
+  "readerEncrypted": {
+    "message": "Ten plik PDF jest zabezpieczony hasłem"
+  },
+  "readerCorrupt": {
+    "message": "Ten plik wydaje się uszkodzony lub nieczytelny"
+  },
+  "readerTimeout": {
+    "message": "Otwieranie zajęło zbyt dużo czasu — plik może być zbyt złożony"
+  },
+  "readerEpubDrm": {
+    "message": "Ten EPUB jest chroniony przez DRM. Spróbuj EPUB bez DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Ten EPUB o stałym układzie nie zawiera tekstu, który mógłby synchronizować się z lekturą."
+  },
+  "readerEpubTooComplex": {
+    "message": "Ten EPUB przekracza bezpieczne limity przetwarzania lokalnego. Spróbuj mniejszego lub prostszego EPUB."
+  },
+  "readerEpubTooLarge": {
+    "message": "Pliki EPUB mogą mieć do 30 MB dla bezpiecznego przetwarzania lokalnego."
+  },
+  "inboxTitle": {
+    "message": "Skrzynka treści"
+  },
+  "inboxSubtitle": {
+    "message": "Zapisz strony internetowe lub wybrany tekst, a następnie przeczytaj je lub wyjaśnij, gdy będziesz gotowy."
+  },
+  "inboxEmpty": {
+    "message": "Twoja skrzynka jest pusta"
+  },
+  "inboxEmptyDescription": {
+    "message": "Kliknij prawym przyciskiem myszy stronę lub wybrany tekst i zapisz ją w CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Zapisz wybrany tekst w skrzynce CastReader"
+  },
+  "inboxSavePage": {
+    "message": "Zapisz stronę w skrzynce CastReader"
+  },
+  "inboxOpen": {
+    "message": "Otwórz skrzynkę treści"
+  },
+  "inboxSharedText": {
+    "message": "Wybrany tekst"
+  },
+  "inboxOpenFailed": {
+    "message": "Nie udało się otworzyć tej treści. Spróbuj ponownie."
+  },
+  "inboxRetry": {
+    "message": "Spróbuj ponownie"
+  },
+  "inboxRead": {
+    "message": "Czytaj na głos"
+  },
+  "inboxExplain": {
+    "message": "Wyjaśnij"
+  },
+  "inboxDelete": {
+    "message": "Usuń"
+  },
+  "inboxLink": {
+    "message": "Link"
+  },
+  "inboxText": {
+    "message": "Tekst"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Czytaj na głos + Wyjaśnij AI"
+  },
+  "edgeExtDescription": {
+    "message": "Czytaj z podświetlaniem i przewijaniem tekstu. AI wyjaśnia trudne fragmenty na stronie. Naturalne głosy w 28 językach."
+  },
+  "toggleSiteVisibility": {
+    "message": "Pokaż / ukryj CastReader na tej stronie"
+  },
+  "voiceCloneBenefit": {
+    "message": "Użyj własnego głosu do funkcji Czytaj na głos i Wyjaśnij · 120 minut miesięcznie"
+  },
+  "voiceClonePaywall": {
+    "message": "Twórz, zarządzaj i odtwarzaj stałe podglądy wielu osobistych głosów za darmo. W wersji Pro osobiste głosy są używane w funkcjach Czytaj na głos i Wyjaśnij przez 120 wygenerowanych minut każdego miesiąca."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Twoje minuty osobistego głosu zostały wyczerpane w tym miesiącu. Wybrany głos zostanie zachowany."
+  },
+  "ocrModelUnavailable": {
+    "message": "Nie udało się pobrać pliku językowego do rozpoznawania tekstu. Połącz się z internetem i spróbuj ponownie."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Rozpoznawanie obrazów i zeskanowanych stron nie jest jeszcze dostępne dla tego języka. Nadal można czytać strony internetowe, EPUB, TXT i pliki PDF z tekstem możliwym do zaznaczenia."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Czytanie na głos jest niedostępne na tej stronie"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Przeczytaj tę stronę na głos"
+  }
+}

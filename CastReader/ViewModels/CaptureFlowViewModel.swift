@@ -23,8 +23,8 @@ final class CaptureFlowViewModel: ObservableObject {
     @Published var pageProgress: (current: Int, total: Int)?
 
     /// 相册 / 剪贴板 / 系统分享进来的单张图片。会尝试文档透视矫正。
-    func process(image: UIImage) async {
-        await process(images: [image], alreadyRectified: false)
+    func process(image: UIImage, languageHint: String? = nil) async {
+        await process(images: [image], alreadyRectified: false, languageHint: languageHint)
     }
 
     /// 系统文档扫描器产出的页面：已由 VisionKit 矫正过，不再二次矫正。
@@ -32,7 +32,7 @@ final class CaptureFlowViewModel: ObservableObject {
         await process(images: images, alreadyRectified: true)
     }
 
-    func process(images: [UIImage], alreadyRectified: Bool) async {
+    func process(images: [UIImage], alreadyRectified: Bool, languageHint: String? = nil) async {
         guard !images.isEmpty else { return }
         isProcessing = true
         error = nil
@@ -44,13 +44,16 @@ final class CaptureFlowViewModel: ObservableObject {
         }
 
         var documents: [ReadingDocument] = []
+        let requestedLanguage = languageHint ?? AppSettings.shared.imageTextLanguage
         var firstAdvice: String?
         for (index, image) in images.enumerated() {
             if images.count > 1 { pageProgress = (index + 1, images.count) }
             let prepared = await Self.prepare(image, alreadyRectified: alreadyRectified)
             if firstAdvice == nil { firstAdvice = prepared.advice }
             do {
-                documents.append(try await OCRService.shared.recognizeImportedImage(image: prepared.image))
+                documents.append(try await OCRService.shared.recognizeImportedImage(image: prepared.image, languageHint: requestedLanguage))
+            } catch is CancellationError {
+                return
             } catch {
                 // 多页时单页失败不该毁掉整次扫描；全部失败才报错。
                 if images.count == 1 {

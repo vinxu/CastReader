@@ -137,7 +137,7 @@ cleanup_test_app() {
   fi
 }
 trap cleanup_test_app EXIT
-xcodebuild -xctestrun "$derived/Build/Products/Isolated.xctestrun" -destination "platform=$platform,id=$device" -parallel-testing-enabled NO -only-testing:CastReaderTests -skip-testing:CastReaderTests/PaymentTests -resultBundlePath "$report/tests.xcresult" test-without-building > "$report/tests.log" 2>&1 || status=$?
+xcodebuild -xctestrun "$derived/Build/Products/Isolated.xctestrun" -destination "platform=$platform,id=$device" -collect-test-diagnostics never -parallel-testing-enabled NO -only-testing:CastReaderTests -skip-testing:CastReaderTests/PaymentTests -resultBundlePath "$report/tests.xcresult" test-without-building > "$report/tests.log" 2>&1 || status=$?
 xcrun xcresulttool get test-results summary --path "$report/tests.xcresult" --format json > "$report/summary.json"
 printf 'Isolated unit tests exit=%s; report=%s\n' "$status" "$report"
 exit "$status"

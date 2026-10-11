@@ -1,0 +1,39 @@
+{
+  "reviewedStyleKeys": [
+    "温暖",
+    "柔和",
+    "低沉",
+    "明亮",
+    "清晰",
+    "沉稳",
+    "亲切",
+    "有表现力",
+    "俏皮",
+    "轻快",
+    "舒缓",
+    "沙哑"
+  ],
+  "fixedKey": "清晰",
+  "cause": "Clear was translated as deletion action instead of a voice adjective in the 19 added locales.",
+  "translations": {
+    "nl": "Helder",
+    "ko": "또렷한",
+    "ru": "Чёткий",
+    "pl": "Wyraźny",
+    "sv": "Tydlig",
+    "da": "Tydelig",
+    "nb": "Tydelig",
+    "fi": "Selkeä",
+    "cs": "Zřetelný",
+    "el": "Καθαρή άρθρωση",
+    "hu": "Tiszta",
+    "fil": "Malinaw",
+    "he": "ברור",
+    "id": "Jernih",
+    "ms": "Jelas",
+    "ar": "واضح",
+    "tr": "Net",
+    "ro": "Clar",
+    "vi": "Rõ ràng"
+  }
+}

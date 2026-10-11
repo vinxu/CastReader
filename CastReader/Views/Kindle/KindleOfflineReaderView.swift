@@ -136,6 +136,8 @@ struct KindleOfflineBookReaderView: View {
 
 @MainActor
 private struct KindleOfflineBookReaderContent: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject var model: KindleOfflineBookReaderModel
     @ObservedObject var speech: SystemSpeechPlaybackService

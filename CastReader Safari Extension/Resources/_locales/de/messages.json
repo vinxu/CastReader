@@ -1,88 +1,69 @@
 {
-  "extName": {
-    "message": "CastReader — Vorlesen + KI-Erklärung"
+  "readerTooLarge": {
+    "message": "Datei zu groß (über 100 MB). Bitte verwende eine kleinere Datei."
   },
-  "firefoxExtName": {
-    "message": "CastReader — Vorlesen + KI-Erklärung"
+  "readerEpubDrm": {
+    "message": "Dieses EPUB ist DRM-geschützt. Versuche ein DRM-freies EPUB."
   },
-  "extDescription": {
-    "message": "Kindle, PDFs und Webseiten synchron vorlesen. Volle Deutsch-Unterstützung mit 27 Stimmen und KI-Erklärungen."
+  "inboxSaveSelection": {
+    "message": "Ausgewählten Text im CastReader-Posteingang speichern"
   },
-  "quickreadBtn": {
-    "message": "Schnellübersicht"
+  "readerEpubTooLarge": {
+    "message": "Für eine sichere lokale Verarbeitung werden EPUB-Dateien bis 30 MB unterstützt."
+  },
+  "readerRendering": {
+    "message": "Dokument wird dargestellt…"
   },
   "quickreadBtnExit": {
     "message": "Übersicht schließen"
   },
-  "quickreadPreparing": {
-    "message": "Übersicht wird erstellt"
+  "readerTimeout": {
+    "message": "Das Öffnen hat zu lange gedauert — die Datei ist möglicherweise zu komplex"
   },
-  "quickreadError": {
-    "message": "Fehler bei der Übersicht"
+  "readerExplain": {
+    "message": "✦ Erklären"
   },
-  "quickreadStageExtract": {
-    "message": "Kernaussagen werden extrahiert"
+  "readerBrowseVoices": {
+    "message": "Stimmen durchsuchen"
   },
-  "quickreadStageTts": {
-    "message": "Sprachausgabe wird erzeugt"
+  "readerPreparing": {
+    "message": "Vorlesen wird vorbereitet…"
   },
-  "quickreadStageRefine": {
-    "message": "Rhythmus wird abgestimmt"
+  "readerSettings": {
+    "message": "Einstellungen"
   },
-  "quickreadStageReady": {
-    "message": "Bereit zur Wiedergabe…"
+  "inboxText": {
+    "message": "Text"
   },
-  "quickreadFailed": {
-    "message": "Fehlgeschlagen: $msg$",
-    "placeholders": {
-      "msg": {
-        "content": "$1"
-      }
-    }
+  "ocrModelUnavailable": {
+    "message": "Die Sprachdatei für die Texterkennung konnte nicht heruntergeladen werden. Stelle eine Internetverbindung her und versuche es erneut."
   },
-  "quickreadClose": {
-    "message": "Schließen"
+  "extName": {
+    "message": "CastReader — Vorlesen + KI-Erklärung"
   },
-  "quickreadCancel": {
-    "message": "Abbrechen"
+  "readerVoiceZh": {
+    "message": "Chinesische Stimme"
   },
-  "quickreadDone": {
-    "message": "Fertig"
+  "inboxSavePage": {
+    "message": "Seite im CastReader-Posteingang speichern"
   },
-  "quickreadHint": {
-    "message": "Dauert etwa 25–45 Sekunden, bitte warten"
+  "quickreadBtn": {
+    "message": "Schnellübersicht"
   },
-  "quickreadQueued": {
-    "message": "In Warteschlange ($pos$)",
-    "placeholders": {
-      "pos": {
-        "content": "$1"
-      }
-    }
+  "voiceClonePaywall": {
+    "message": "Erstelle und verwalte kostenlos mehrere persönliche Stimmen und höre ihre festen Vorschauen. Mit Pro kannst du sie monatlich 120 generierte Minuten zum Vorlesen und Erklären nutzen."
   },
-  "quickreadRateLimit": {
-    "message": "Die kostenlosen Erklärungen für heute sind aufgebraucht. Morgen wird das Kontingent zurückgesetzt."
+  "readerTooLargeForPage": {
+    "message": "Zu groß, um von dieser Seite geöffnet zu werden (über 7 MB). Öffne den Dokumentenleser und wähle die Datei dort aus (bis zu 100 MB)."
   },
-  "quickreadRateLimitTitle": {
-    "message": "Kostenlose Erklärungen für heute aufgebraucht"
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Vorlesen ist auf dieser Seite nicht verfügbar"
   },
-  "quickreadRateLimitBody": {
-    "message": "Das kostenlose Tageslimit ist erreicht — mit Pro erhältst du unbegrenzte Erklärungen. Morgen wird dein Kontingent zurückgesetzt."
+  "inboxTitle": {
+    "message": "Inhalts-Posteingang"
   },
-  "quickreadUpgrade": {
-    "message": "Auf Pro upgraden"
-  },
-  "accountNotSignedIn": {
-    "message": "Nicht angemeldet"
-  },
-  "enableProMode": {
-    "message": "Pro aktivieren"
-  },
-  "listenRateLimitTitle": {
-    "message": "Die täglichen 20 kostenlosen Vorleseminuten sind aufgebraucht"
-  },
-  "listenRateLimitBody": {
-    "message": "Du hast die heutigen 20 kostenlosen Vorleseminuten genutzt — mit Pro kannst du unbegrenzt vorlesen lassen. Morgen wird dein Kontingent zurückgesetzt."
+  "readerSub": {
+    "message": "Vorlesen + KI-Übersicht in der Originaldatei — Layout bleibt unverändert"
   },
   "quickreadQuotaTip": {
     "message": "Erklären · heute noch $n$/$max$",
@@ -95,211 +76,236 @@
       }
     }
   },
-  "quickreadQuotaPro": {
-    "message": "Erklären · Pro ∞"
-  },
-  "readerUploadTitle": {
-    "message": "Dokument vorlesen"
-  },
-  "readerDrop": {
-    "message": "Bild / PDF / EPUB / Word / TXT hier ablegen"
-  },
   "readerDropOver": {
     "message": "Zum Hochladen ablegen"
   },
-  "readerSub": {
-    "message": "Vorlesen + KI-Übersicht in der Originaldatei — Layout bleibt unverändert"
+  "firefoxExtName": {
+    "message": "CastReader — Vorlesen + KI-Erklärung"
   },
-  "readerOr": {
-    "message": "oder"
+  "quickreadUpgrade": {
+    "message": "Auf Pro upgraden"
   },
-  "readerPick": {
-    "message": "Datei auswählen"
+  "readerDocumentLangHint": {
+    "message": "Wählen Sie bei Bildern oder gescannten PDFs ohne auslesbaren Text zuerst die Dokumentsprache und öffnen Sie dann die Datei."
   },
-  "readerRendering": {
-    "message": "Dokument wird dargestellt…"
+  "quickreadQueued": {
+    "message": "In Warteschlange ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
   },
-  "readerListen": {
-    "message": "▶ Anhören"
+  "quickreadRateLimitTitle": {
+    "message": "Kostenlose Erklärungen für heute aufgebraucht"
   },
-  "readerPause": {
-    "message": "⏸ Pause"
+  "ocrLanguageUnsupported": {
+    "message": "Die Erkennung von Bildern und gescannten Seiten ist für diese Sprache noch nicht verfügbar. Webseiten, EPUB, TXT und PDFs mit auswählbarem Text können weiterhin vorgelesen werden."
   },
-  "readerResume": {
-    "message": "▶ Fortsetzen"
-  },
-  "readerStop": {
-    "message": "■ Stopp"
-  },
-  "readerExplain": {
-    "message": "✦ Erklären"
-  },
-  "readerExplainHint": {
-    "message": "Vorlesen zuerst beenden"
-  },
-  "readerNewFile": {
-    "message": "Neue Datei"
-  },
-  "readerSpeed": {
-    "message": "Geschwindigkeit"
-  },
-  "readerUnsupported": {
-    "message": "Nicht unterstützter Dateityp"
-  },
-  "readerFailed": {
-    "message": "Verarbeitung fehlgeschlagen"
-  },
-  "readerEmpty": {
-    "message": "In diesem Dokument wurde kein lesbarer Text gefunden"
-  },
-  "readerQuotaLeft": {
-    "message": "heute übrig"
+  "quickreadStageExtract": {
+    "message": "Kernaussagen werden extrahiert"
   },
   "readerQuotaBlocked": {
     "message": "Die 10 kostenlosen Übersichten für heute sind aufgebraucht — morgen wird das Kontingent zurückgesetzt"
   },
-  "readerPartial": {
-    "message": "Der Abschnitt an deiner aktuellen Position wurde erklärt — scrolle weiter und tippe für den nächsten Abschnitt erneut auf Erklären"
+  "readerListen": {
+    "message": "▶ Anhören"
   },
-  "readerTooLarge": {
-    "message": "Datei zu groß (über 100 MB). Bitte verwende eine kleinere Datei."
+  "readerQuotaLeft": {
+    "message": "heute übrig"
   },
-  "readerLargeFilePro": {
-    "message": "Dateien über 7 MB erfordern Pro — mit Pro öffnest du Dokumente bis zu 100 MB."
-  },
-  "readerTooLargeForPage": {
-    "message": "Zu groß, um von dieser Seite geöffnet zu werden (über 7 MB). Öffne den Dokumentenleser und wähle die Datei dort aus (bis zu 100 MB)."
-  },
-  "readerOpenReader": {
-    "message": "Dokumentenleser öffnen"
-  },
-  "readerContinue": {
-    "message": "Fortsetzen ✦"
-  },
-  "readerSettings": {
-    "message": "Einstellungen"
-  },
-  "readerExplainLang": {
-    "message": "Erklären auf"
-  },
-  "readerDocumentLang": {
-    "message": "Dokumentsprache"
-  },
-  "readerDocumentLangAuto": {
-    "message": "Automatisch (Browsersprache)"
-  },
-  "readerDocumentLangHint": {
-    "message": "Wähle bei Bildern und gescannten PDFs die Sprache für die beste Texterkennung."
-  },
-  "readerVoiceEn": {
-    "message": "Englische Stimme"
-  },
-  "readerVoiceZh": {
-    "message": "Chinesische Stimme"
-  },
-  "readerVoices": {
-    "message": "Stimmen"
-  },
-  "readerBrowseVoices": {
-    "message": "Stimmen durchsuchen"
-  },
-  "readerLangAuto": {
-    "message": "Automatisch (Oberflächensprache)"
-  },
-  "readerLangFollow": {
-    "message": "Dokumentsprache verwenden"
-  },
-  "readerPreparing": {
-    "message": "Vorlesen wird vorbereitet…"
-  },
-  "readerEncrypted": {
-    "message": "Dieses PDF ist passwortgeschützt"
-  },
-  "readerCorrupt": {
-    "message": "Diese Datei scheint beschädigt oder unlesbar zu sein"
-  },
-  "readerTimeout": {
-    "message": "Das Öffnen hat zu lange gedauert — die Datei ist möglicherweise zu komplex"
-  },
-  "readerEpubDrm": {
-    "message": "Dieses EPUB ist DRM-geschützt. Versuche ein DRM-freies EPUB."
-  },
-  "readerEpubFixedLayout": {
-    "message": "Dieses EPUB mit festem Layout enthält keinen Text, der mit der Sprachausgabe synchronisiert werden kann."
-  },
-  "readerEpubTooComplex": {
-    "message": "Dieses EPUB überschreitet die sicheren Grenzen der lokalen Verarbeitung. Versuche eine kleinere oder einfachere Datei."
-  },
-  "readerEpubTooLarge": {
-    "message": "Für eine sichere lokale Verarbeitung werden EPUB-Dateien bis 30 MB unterstützt."
-  },
-  "inboxTitle": {
-    "message": "Inhalts-Posteingang"
-  },
-  "inboxSubtitle": {
-    "message": "Speichere Webseiten oder ausgewählten Text und lies oder erkläre sie später."
-  },
-  "inboxEmpty": {
-    "message": "Dein Posteingang ist leer"
-  },
-  "inboxEmptyDescription": {
-    "message": "Klicke mit der rechten Maustaste auf eine Seite oder markierten Text und speichere ihn in CastReader."
-  },
-  "inboxSaveSelection": {
-    "message": "Ausgewählten Text im CastReader-Posteingang speichern"
-  },
-  "inboxSavePage": {
-    "message": "Seite im CastReader-Posteingang speichern"
-  },
-  "inboxOpen": {
-    "message": "Inhalts-Posteingang öffnen"
-  },
-  "inboxSharedText": {
-    "message": "Ausgewählter Text"
-  },
-  "inboxOpenFailed": {
-    "message": "Dieser Inhalt konnte nicht geöffnet werden. Bitte erneut versuchen."
-  },
-  "inboxRetry": {
-    "message": "Erneut versuchen"
-  },
-  "inboxRead": {
-    "message": "Vorlesen"
-  },
-  "inboxExplain": {
-    "message": "Erklären"
-  },
-  "inboxDelete": {
-    "message": "Löschen"
+  "readerEmpty": {
+    "message": "In diesem Dokument wurde kein lesbarer Text gefunden"
   },
   "inboxLink": {
     "message": "Link"
   },
-  "inboxText": {
-    "message": "Text"
+  "edgeExtDescription": {
+    "message": "Lesen mit synchroner Hervorhebung und Auto-Scroll. KI erklärt schwierige Stellen direkt auf der Seite. Stimmen in 28 Sprachen."
+  },
+  "inboxOpenFailed": {
+    "message": "Dieser Inhalt konnte nicht geöffnet werden. Bitte erneut versuchen."
+  },
+  "quickreadRateLimitBody": {
+    "message": "Das kostenlose Tageslimit ist erreicht — mit Pro erhältst du unbegrenzte Erklärungen. Morgen wird dein Kontingent zurückgesetzt."
+  },
+  "readerPause": {
+    "message": "⏸ Pause"
   },
   "edgeExtName": {
     "message": "CastReader — Vorlesen + KI-Erklärung"
   },
-  "edgeExtDescription": {
-    "message": "Artikel, PDFs und Kindle-Bücher synchron vorlesen. Volle Deutsch-Unterstützung mit 27 Stimmen und KI-Erklärungen."
+  "readerVoices": {
+    "message": "Stimmen"
+  },
+  "quickreadDone": {
+    "message": "Fertig"
+  },
+  "quickreadCancel": {
+    "message": "Abbrechen"
+  },
+  "quickreadQuotaPro": {
+    "message": "Erklären · Pro ∞"
+  },
+  "listenRateLimitBody": {
+    "message": "Du hast die heutigen 20 kostenlosen Vorleseminuten genutzt — mit Pro kannst du unbegrenzt vorlesen lassen. Morgen wird dein Kontingent zurückgesetzt."
+  },
+  "readerVoiceEn": {
+    "message": "Englische Stimme"
+  },
+  "readerLangAuto": {
+    "message": "Automatisch (Oberflächensprache)"
+  },
+  "readerExplainHint": {
+    "message": "Vorlesen zuerst beenden"
+  },
+  "readerSpeed": {
+    "message": "Geschwindigkeit"
+  },
+  "readerLangFollow": {
+    "message": "Dokumentsprache verwenden"
+  },
+  "inboxRetry": {
+    "message": "Erneut versuchen"
+  },
+  "quickreadHint": {
+    "message": "Dauert etwa 25–45 Sekunden, bitte warten"
+  },
+  "accountNotSignedIn": {
+    "message": "Nicht angemeldet"
+  },
+  "readerLargeFilePro": {
+    "message": "Dateien über 7 MB erfordern Pro — mit Pro öffnest du Dokumente bis zu 100 MB."
+  },
+  "readerUploadTitle": {
+    "message": "Dokument vorlesen"
+  },
+  "inboxExplain": {
+    "message": "Erklären"
+  },
+  "quickreadFailed": {
+    "message": "Fehlgeschlagen: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
   },
   "toggleSiteVisibility": {
     "message": "CastReader auf dieser Website ein-/ausblenden"
   },
-  "voiceCloneBenefit": {
-    "message": "Mit eigener Stimme vorlesen und erklären · 120 Minuten pro Monat"
+  "readerDocumentLang": {
+    "message": "Dokumentsprache"
   },
-  "voiceClonePaywall": {
-    "message": "Erstelle und verwalte kostenlos mehrere persönliche Stimmen und höre ihre festen Vorschauen. Mit Pro kannst du sie monatlich 120 generierte Minuten zum Vorlesen und Erklären nutzen."
+  "readerPick": {
+    "message": "Datei auswählen"
   },
-  "voiceCloneQuotaExhausted": {
-    "message": "Deine persönlichen Stimmminuten sind diesen Monat aufgebraucht. Die gewählte Stimme bleibt erhalten."
+  "readerOpenReader": {
+    "message": "Dokumentenleser öffnen"
+  },
+  "readerEpubFixedLayout": {
+    "message": "Dieses EPUB mit festem Layout enthält keinen Text, der mit der Sprachausgabe synchronisiert werden kann."
+  },
+  "quickreadStageRefine": {
+    "message": "Rhythmus wird abgestimmt"
+  },
+  "quickreadError": {
+    "message": "Fehler bei der Übersicht"
+  },
+  "readerDrop": {
+    "message": "Bild / PDF / EPUB / Word / TXT hier ablegen"
   },
   "toolbarReadPage": {
     "message": "CastReader - Diese Seite vorlesen"
   },
-  "toolbarPageUnsupported": {
-    "message": "CastReader - Vorlesen ist auf dieser Seite nicht verfügbar"
+  "voiceCloneQuotaExhausted": {
+    "message": "Deine persönlichen Stimmminuten sind diesen Monat aufgebraucht. Die gewählte Stimme bleibt erhalten."
+  },
+  "readerStop": {
+    "message": "■ Stopp"
+  },
+  "readerUnsupported": {
+    "message": "Nicht unterstützter Dateityp"
+  },
+  "inboxEmptyDescription": {
+    "message": "Klicke mit der rechten Maustaste auf eine Seite oder markierten Text und speichere ihn in CastReader."
+  },
+  "voiceCloneBenefit": {
+    "message": "Mit eigener Stimme vorlesen und erklären · 120 Minuten pro Monat"
+  },
+  "inboxRead": {
+    "message": "Vorlesen"
+  },
+  "readerResume": {
+    "message": "▶ Fortsetzen"
+  },
+  "listenRateLimitTitle": {
+    "message": "Die täglichen 20 kostenlosen Vorleseminuten sind aufgebraucht"
+  },
+  "readerCorrupt": {
+    "message": "Diese Datei scheint beschädigt oder unlesbar zu sein"
+  },
+  "readerContinue": {
+    "message": "Fortsetzen ✦"
+  },
+  "readerEncrypted": {
+    "message": "Dieses PDF ist passwortgeschützt"
+  },
+  "quickreadRateLimit": {
+    "message": "Die kostenlosen Erklärungen für heute sind aufgebraucht. Morgen wird das Kontingent zurückgesetzt."
+  },
+  "enableProMode": {
+    "message": "Pro aktivieren"
+  },
+  "readerNewFile": {
+    "message": "Neue Datei"
+  },
+  "inboxDelete": {
+    "message": "Löschen"
+  },
+  "quickreadStageTts": {
+    "message": "Sprachausgabe wird erzeugt"
+  },
+  "inboxSubtitle": {
+    "message": "Speichere Webseiten oder ausgewählten Text und lies oder erkläre sie später."
+  },
+  "inboxSharedText": {
+    "message": "Ausgewählter Text"
+  },
+  "readerExplainLang": {
+    "message": "Erklären auf"
+  },
+  "readerOr": {
+    "message": "oder"
+  },
+  "readerPartial": {
+    "message": "Der Abschnitt an deiner aktuellen Position wurde erklärt — scrolle weiter und tippe für den nächsten Abschnitt erneut auf Erklären"
+  },
+  "quickreadStageReady": {
+    "message": "Bereit zur Wiedergabe…"
+  },
+  "quickreadPreparing": {
+    "message": "Übersicht wird erstellt"
+  },
+  "extDescription": {
+    "message": "Vorlesen in 28 Sprachen mit synchroner Hervorhebung, automatischem Scrollen und KI-Erklärungen."
+  },
+  "readerFailed": {
+    "message": "Verarbeitung fehlgeschlagen"
+  },
+  "inboxEmpty": {
+    "message": "Dein Posteingang ist leer"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automatisch (aus dem Text)"
+  },
+  "inboxOpen": {
+    "message": "Inhalts-Posteingang öffnen"
+  },
+  "quickreadClose": {
+    "message": "Schließen"
+  },
+  "readerEpubTooComplex": {
+    "message": "Dieses EPUB überschreitet die sicheren Grenzen der lokalen Verarbeitung. Versuche eine kleinere oder einfachere Datei."
   }
 }

@@ -13,6 +13,8 @@
 import SwiftUI
 
 struct PhoneSignInView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let hasAcceptedTerms: Bool
 
     @Environment(\.dismiss) private var dismiss

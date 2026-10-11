@@ -1,0 +1,122 @@
+{
+  "de": {
+    "a5c6fb18c9af89b22a79": "Akzent",
+    "324b134f57c70c729ae3": "Probehören",
+    "6065ce5c3f3b01a03c1d": "Hörprobe stoppen",
+    "c18ef926fd32fd14aa7c": "Originalsprache"
+  },
+  "nl": {
+    "a5c6fb18c9af89b22a79": "Accent",
+    "324b134f57c70c729ae3": "Beluisteren",
+    "6065ce5c3f3b01a03c1d": "Luistervoorbeeld stoppen",
+    "c18ef926fd32fd14aa7c": "Taal van de brontekst"
+  },
+  "ko": {
+    "a5c6fb18c9af89b22a79": "억양",
+    "324b134f57c70c729ae3": "미리 듣기",
+    "6065ce5c3f3b01a03c1d": "미리 듣기 중지",
+    "c18ef926fd32fd14aa7c": "원문 언어에 맞춤"
+  },
+  "ar": {
+    "a5c6fb18c9af89b22a79": "اللهجة",
+    "324b134f57c70c729ae3": "استماع تجريبي",
+    "6065ce5c3f3b01a03c1d": "إيقاف الاستماع التجريبي",
+    "c18ef926fd32fd14aa7c": "حسب لغة النص الأصلي"
+  },
+  "ru": {
+    "a5c6fb18c9af89b22a79": "Акцент",
+    "324b134f57c70c729ae3": "Прослушать",
+    "6065ce5c3f3b01a03c1d": "Остановить прослушивание",
+    "c18ef926fd32fd14aa7c": "Язык исходного текста"
+  },
+  "pl": {
+    "a5c6fb18c9af89b22a79": "Akcent",
+    "324b134f57c70c729ae3": "Posłuchaj próbki",
+    "6065ce5c3f3b01a03c1d": "Zatrzymaj próbkę",
+    "c18ef926fd32fd14aa7c": "Język tekstu źródłowego"
+  },
+  "sv": {
+    "a5c6fb18c9af89b22a79": "Accent",
+    "324b134f57c70c729ae3": "Provlyssna",
+    "6065ce5c3f3b01a03c1d": "Stoppa provlyssning",
+    "c18ef926fd32fd14aa7c": "Originaltextens språk"
+  },
+  "da": {
+    "a5c6fb18c9af89b22a79": "Accent",
+    "324b134f57c70c729ae3": "Lyt til prøve",
+    "6065ce5c3f3b01a03c1d": "Stop lydprøve",
+    "c18ef926fd32fd14aa7c": "Originaltekstens sprog"
+  },
+  "nb": {
+    "a5c6fb18c9af89b22a79": "Aksent",
+    "324b134f57c70c729ae3": "Lytt til prøve",
+    "6065ce5c3f3b01a03c1d": "Stopp lydprøve",
+    "c18ef926fd32fd14aa7c": "Originaltekstens språk"
+  },
+  "fi": {
+    "a5c6fb18c9af89b22a79": "Aksentti",
+    "324b134f57c70c729ae3": "Kuuntele näyte",
+    "6065ce5c3f3b01a03c1d": "Pysäytä ääninäyte",
+    "c18ef926fd32fd14aa7c": "Alkuperäisen tekstin kieli"
+  },
+  "cs": {
+    "a5c6fb18c9af89b22a79": "Přízvuk",
+    "324b134f57c70c729ae3": "Poslechnout ukázku",
+    "6065ce5c3f3b01a03c1d": "Zastavit ukázku",
+    "c18ef926fd32fd14aa7c": "Jazyk původního textu"
+  },
+  "el": {
+    "a5c6fb18c9af89b22a79": "Προφορά",
+    "324b134f57c70c729ae3": "Ακρόαση δείγματος",
+    "6065ce5c3f3b01a03c1d": "Διακοπή δείγματος",
+    "c18ef926fd32fd14aa7c": "Γλώσσα του αρχικού κειμένου"
+  },
+  "hu": {
+    "a5c6fb18c9af89b22a79": "Akcentus",
+    "324b134f57c70c729ae3": "Meghallgatás",
+    "6065ce5c3f3b01a03c1d": "Minta leállítása",
+    "c18ef926fd32fd14aa7c": "Eredeti szöveg nyelve"
+  },
+  "fil": {
+    "a5c6fb18c9af89b22a79": "Punto",
+    "324b134f57c70c729ae3": "Pakinggan ang sample",
+    "6065ce5c3f3b01a03c1d": "Ihinto ang sample",
+    "c18ef926fd32fd14aa7c": "Wika ng orihinal na teksto"
+  },
+  "id": {
+    "a5c6fb18c9af89b22a79": "Aksen",
+    "324b134f57c70c729ae3": "Dengarkan contoh",
+    "6065ce5c3f3b01a03c1d": "Hentikan contoh",
+    "c18ef926fd32fd14aa7c": "Bahasa teks asli"
+  },
+  "ms": {
+    "a5c6fb18c9af89b22a79": "Loghat",
+    "324b134f57c70c729ae3": "Dengar sampel",
+    "6065ce5c3f3b01a03c1d": "Hentikan sampel",
+    "c18ef926fd32fd14aa7c": "Bahasa teks asal"
+  },
+  "vi": {
+    "a5c6fb18c9af89b22a79": "Giọng địa phương",
+    "324b134f57c70c729ae3": "Nghe thử",
+    "6065ce5c3f3b01a03c1d": "Dừng nghe thử",
+    "c18ef926fd32fd14aa7c": "Theo ngôn ngữ gốc"
+  },
+  "tr": {
+    "a5c6fb18c9af89b22a79": "Aksan",
+    "324b134f57c70c729ae3": "Ön Dinleme",
+    "6065ce5c3f3b01a03c1d": "Ön Dinlemeyi Durdur",
+    "c18ef926fd32fd14aa7c": "Orijinal metnin dili"
+  },
+  "ro": {
+    "a5c6fb18c9af89b22a79": "Accent",
+    "324b134f57c70c729ae3": "Ascultă o mostră",
+    "6065ce5c3f3b01a03c1d": "Oprește mostra",
+    "c18ef926fd32fd14aa7c": "Limba textului original"
+  },
+  "he": {
+    "a5c6fb18c9af89b22a79": "מבטא",
+    "324b134f57c70c729ae3": "האזנה לדוגמה",
+    "6065ce5c3f3b01a03c1d": "עצירת האזנה לדוגמה",
+    "c18ef926fd32fd14aa7c": "לפי שפת המקור"
+  }
+}

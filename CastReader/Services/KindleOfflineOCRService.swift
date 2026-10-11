@@ -53,7 +53,7 @@ final class KindleOfflineOCRService: KindleOfflineRecognizing {
         // Independent requests avoid Vision's first-locale bias. A book title
         // (often English marketing copy) must not override the page's script.
         let locales = ["zh-Hans", "zh-Hant", "ja-JP"] + SupportedTTSLanguage.allCases
-            .filter { $0 != .chinese && $0 != .japanese }.map(\.visionRecognitionLanguage)
+            .filter { !$0.isGoogle && $0 != .chinese && $0 != .japanese }.map(\.visionRecognitionLanguage)
         var best: (language: String, score: Double)?
         var strongCJK = false
         for (index, locale) in locales.enumerated() {

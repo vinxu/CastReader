@@ -1,0 +1,64 @@
+{
+  "es-MX": {
+    "appLanguage": "es",
+    "androidReferenceLocale": "es-ES",
+    "ascLocale": "es-MX",
+    "title": "CastReader: Texto a voz con IA",
+    "subtitle": "Escucha PDF, web y libros",
+    "description": "EN IPHONE Y IPAD\nDiseños adaptados al iPhone y al iPad, en vertical y horizontal. La extensión de Safari lee páginas web con resaltado y desplazamiento automático. Actívala en los ajustes de Safari y permite el acceso a las páginas que quieras escuchar.\n\nCastReader convierte cualquier texto en contenido que puedes escuchar y comprender.\n\nLECTURA EN VOZ ALTA — CONCENTRACIÓN SIN ESFUERZO\n\nConvierte fotos, páginas web, PDF, EPUB y texto en voz natural. El resaltado sincronizado y el desplazamiento automático mantienen tus ojos y oídos en la misma frase mientras estudias, viajas, haces ejercicio o descansas la vista.\n\nEXPLICACIÓN CON IA — MUCHO MÁS QUE LEER\n\nCastReader crea y lee una explicación clara mientras aparecen anotaciones manuscritas sobre el original: resaltados para las ideas clave, círculos alrededor de términos importantes y pasos numerados. Escucha y observa para comprender mejor los materiales difíciles.\n\nIMPORTA TU PROPIO CONTENIDO\n\n- Cámara o foto: reconocimiento de texto en el dispositivo\n- Web: abre una URL y empieza a escuchar\n- Archivos: PDF, EPUB, TXT, DOCX e imágenes\n- Pegar: convierte al instante el texto copiado en voz\n- Kindle: conecta tu biblioteca Kindle y continúa leyendo\n- Escuchar YouTube: comparte o pega el enlace de un vídeo público y escucha sus subtítulos públicos con resaltado sincronizado\n\nEscuchar YouTube solo admite vídeos públicos con subtítulos públicos accesibles. No se pueden leer vídeos que exijan inicio de sesión, verificación de edad, membresía, acceso regional o privado. CastReader no reproduce, descarga ni conserva transmisiones de vídeo o audio de YouTube; la voz se genera a partir del texto de los subtítulos. CastReader no está afiliado ni respaldado por YouTube.\n\nIDEAL PARA\n\n- Quienes prefieren escuchar artículos, documentos y libros electrónicos\n- Estudiantes de idiomas que necesitan una guía visual sincronizada\n- Estudiantes y profesionales que trabajan con contenido complejo\n- Personas que buscan descansar la vista o necesitan ayuda de accesibilidad\n\n28 IDIOMAS\n\nLa lectura en voz alta y la interfaz están disponibles en inglés, chino, japonés, español, francés, alemán, portugués de Brasil, italiano, hindi, neerlandés, coreano, árabe, ruso, polaco, sueco, danés, noruego, finés, checo, griego, húngaro, filipino, hebreo, indonesio, malayo, rumano, turco y vietnamita. Las voces disponibles y la compatibilidad con la clonación de voz varían según el idioma.\n\nGRATIS Y CASTREADER PRO\n\nUtiliza CastReader gratis cada día. La suscripción Pro mensual o anual incluye lectura ilimitada con voces estándar, explicaciones con IA ilimitadas, acceso a voces premium y velocidad de hasta 3x. Las voces clonadas requieren Pro y usan una cuota independiente de 120 minutos por periodo mensual de asignación. Puedes comprar paquetes adicionales de 120 minutos, que no amplían la duración de Pro. App Store muestra los precios locales, los periodos de facturación y las condiciones de renovación antes de la compra.\n\nLa disponibilidad de voces y funciones puede variar según la región.\n\nCompatible con modo oscuro y reproducción en segundo plano. Las fotos se reconocen con el OCR de Apple en el dispositivo y no se suben para reconocer texto. La precisión depende del idioma y de la calidad de la imagen. El historial local permanece en el dispositivo. Los servicios conectados conservan sus datos de cuenta y lectura según sus propias políticas.\n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "whatsNew": "La interfaz y la lectura ahora admiten 28 idiomas. La lista de voces sigue el idioma de la app, y al cambiar de voz durante la lectura se muestra el idioma del texto. Mejoras en el cambio de idioma, las traducciones y el saldo de voces clonadas en iPhone y iPad.",
+    "keywords": "video,subtítulos,transcripción,leer,voz,lector,ocr,pdf,epub,estudio,dislexia,documentos",
+    "promotionalText": null,
+    "supportUrl": "https://castreader.com",
+    "marketingUrl": "https://castreader.com/castreader-app",
+    "privacyPolicyUrl": "https://castreader.com/en/privacy-policy",
+    "phoneCaptions": [
+      "Tus libros Kindle, donde quieras",
+      "Convierte libros en audio",
+      "Comprende cada página",
+      "Tu biblioteca, siempre lista",
+      "Escucha cualquier texto"
+    ],
+    "ipadCaptions": [
+      "Más espacio para tus libros",
+      "Lee y escucha en pantalla grande",
+      "Comprende cada página",
+      "Tu biblioteca, siempre lista",
+      "Escucha cualquier texto"
+    ],
+    "rtl": false,
+    "submissionPolicy": "upload",
+    "screenshotFallbackAppLanguage": "es"
+  },
+  "zh-Hant": {
+    "appLanguage": "zh-Hans",
+    "androidReferenceLocale": "zh-CN",
+    "ascLocale": "zh-Hant",
+    "title": "CastReader：朗讀 · AI解讀",
+    "subtitle": "PDF·網頁·電子書·拍照轉語音",
+    "description": "適用於 IPHONE 和 IPAD\n為 iPhone 和 iPad 設計的直向與橫向閱讀介面。Safari 擴充功能可朗讀網頁，並同步醒目提示及自動捲動。在 Safari 設定中啟用擴充功能，並允許存取你想閱讀的網頁。\n\nCastReader 把文字變成可以聆聽、理解的內容。\n\n朗讀：用眼睛和耳朵一起專注\n將照片、網頁、PDF、EPUB 與純文字轉成自然語音。同步醒目提示與自動捲動，讓視線跟上正在朗讀的內容，適合學習、通勤、運動或休息雙眼時使用。\n\nAI 解讀：不只是讀出來，更幫你理解\nCastReader 生成清楚易懂的講解並朗讀，同時在原文上呈現手寫風格的重點標記、術語圈選與步驟編號。邊聽邊看，理解困難資料的結構與要點。\n\n匯入自己的內容\n- 拍照或選擇照片：在裝置上辨識文字\n- 網頁：開啟網址即可開始聆聽\n- 檔案：PDF、EPUB、TXT、DOCX 與圖片\n- 貼上：將複製的文字轉成語音\n- Kindle：連接 Kindle 書庫，接續閱讀\n- 聽 YouTube：分享或貼上公開影片連結，朗讀公開字幕並同步醒目提示\n\n「聽 YouTube」僅支援具有可存取公開字幕的公開影片。需要登入、年齡驗證、會員資格、地區權限或私人存取權限的影片無法朗讀。CastReader 不播放、下載或保留 YouTube 影片或音訊串流；語音由字幕文字生成。CastReader 與 YouTube 無關，亦未獲 YouTube 背書。\n\n28 種語言\n支援英語、中文、日語、西班牙語、法語、德語、巴西葡萄牙語、義大利語、印地語、荷蘭語、韓語、阿拉伯語、俄語、波蘭語、瑞典語、丹麥語、挪威語、芬蘭語、捷克語、希臘語、匈牙利語、菲律賓語、希伯來語、印尼語、馬來語、羅馬尼亞語、土耳其語與越南語朗讀。介面也提供對應的 28 種語言。音色選擇與音色複製的支援範圍依語言而異。\n\n免費使用與 CASTREADER PRO\n每天都可免費使用 CastReader。月訂閱或年訂閱 Pro 提供一般音色不限時朗讀、不限次 AI 解讀、進階音色及最高 3 倍速播放。複製音色需要有效 Pro，使用獨立的時間額度，每個月度額度週期包含 120 分鐘。亦可購買額外的 120 分鐘加購包；加購包不會延長 Pro 有效期間。當地價格、計費週期與續訂條件會在購買前於 App Store 顯示。\n\n支援深色模式與背景播放。照片文字透過 Apple 裝置端 OCR 辨識，不會為辨識文字而上傳照片；準確度依語言及影像品質而異。本機閱讀紀錄保存在裝置上。所連接服務的帳號及閱讀資料依各服務政策處理。\n\n音色和功能的可用範圍依地區而異。\n\nEULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "whatsNew": "介面與朗讀新增至 28 種語言。音色列表會跟隨 App 語言，播放時的音色選擇則對應正在朗讀的語言。改善 iPhone 和 iPad 的語言切換、介面翻譯及複製音色剩餘時間顯示。",
+    "keywords": "影片字幕,字幕朗讀,逐字稿,文字轉語音,英語聽力,網頁閱讀,文件朗讀,有聲書",
+    "promotionalText": null,
+    "supportUrl": "https://castreader.com/",
+    "marketingUrl": "https://castreader.com/zh/castreader-app",
+    "privacyPolicyUrl": "https://castreader.com/zh/privacy-policy",
+    "phoneCaptions": [
+      "随身携带你的 Kindle 书籍",
+      "把书籍变成有声书",
+      "读懂每一页",
+      "随时继续阅读",
+      "各种内容，都能听"
+    ],
+    "ipadCaptions": [
+      "大屏书架，一览更多好书",
+      "大屏阅读，边看边听",
+      "读懂每一页",
+      "随时继续阅读",
+      "各种内容，都能听"
+    ],
+    "rtl": false,
+    "submissionPolicy": "upload",
+    "screenshotFallbackAppLanguage": "zh-Hans"
+  }
+}

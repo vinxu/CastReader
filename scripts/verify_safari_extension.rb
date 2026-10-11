@@ -41,12 +41,23 @@ resources = File.join(extension_root, 'Resources')
 manifest = JSON.parse(File.read(File.join(resources, 'manifest.json')))
 abort 'Native account bridge permission missing' unless manifest.fetch('permissions').include?('nativeMessaging')
 abort 'Invalid WebExtension manifest version' unless manifest['version'].to_s.match?(/\A\d+\.\d+\.\d+\z/)
-%w[en zh_CN ja es fr de pt_BR it hi].each do |locale|
+locales = %w[en zh_CN ja es fr de pt_BR it hi nl ko ar ru pl sv da no fi cs el hu fil he id ms ro tr vi]
+source_keys = JSON.parse(File.read(File.join(resources, '_locales', 'en', 'messages.json'))).keys
+locales.each do |locale|
   abort "Missing Safari locale #{locale}" unless File.file?(File.join(resources, '_locales', locale, 'messages.json'))
+  messages = JSON.parse(File.read(File.join(resources, '_locales', locale, 'messages.json')))
+  abort "Incomplete Safari locale #{locale}" unless (source_keys - messages.keys).empty?
+  abort "Blank Safari translation #{locale}" unless messages.values.all? { |entry| entry['message'].is_a?(String) && !entry['message'].strip.empty? }
+  description = messages.dig('extDescription', 'message')
+  abort "Safari description exceeds 112 UTF-16 units: #{locale}" unless
+    description.is_a?(String) && !description.strip.empty? && description.encode('UTF-16LE').bytesize / 2 <= 112
+  name = messages.dig('extName', 'message')
+  abort "Safari name exceeds 40 UTF-16 units: #{locale}" unless name.encode('UTF-16LE').bytesize / 2 <= 40
 end
 script = File.join(resources, 'content-scripts', 'content.js')
 abort 'Temporary acceptance probe in production resources' if File.read(script).include?('castreader-qa-probe')
 puts JSON.pretty_generate(version: versions.first.first, build: versions.first.last,
   manifestVersion: manifest['version'],
+  localizedLanguages: locales.length,
   deviceFamilies: [1, 2], extensionPoint: info.dig('NSExtension', 'NSExtensionPointIdentifier'),
   contentSHA256: Digest::SHA256.file(script).hexdigest, status: 'PASS')

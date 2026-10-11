@@ -1,88 +1,69 @@
 {
-  "extName": {
-    "message": "CastReader — ज़ोर से पढ़ें + AI समझाएँ"
+  "readerTooLarge": {
+    "message": "फ़ाइल बहुत बड़ी है (100 MB से अधिक)। छोटी फ़ाइल चुनें।"
   },
-  "firefoxExtName": {
-    "message": "CastReader — ज़ोर से पढ़ें + AI समझाएँ"
+  "readerEpubDrm": {
+    "message": "यह EPUB DRM से सुरक्षित है। DRM-मुक्त EPUB आज़माएँ।"
   },
-  "extDescription": {
-    "message": "सिंक हाइलाइट के साथ सुनें और AI व्याख्या पाएँ। Kindle, PDF, लेख और किताबें। 9 भाषाओं में AI आवाज़ें।"
+  "inboxSaveSelection": {
+    "message": "चुना हुआ टेक्स्ट CastReader में सहेजें"
   },
-  "quickreadBtn": {
-    "message": "त्वरित सार"
+  "readerEpubTooLarge": {
+    "message": "सुरक्षित स्थानीय प्रोसेसिंग के लिए EPUB फ़ाइलें अधिकतम 30 MB हो सकती हैं।"
+  },
+  "readerRendering": {
+    "message": "दस्तावेज़ तैयार हो रहा है…"
   },
   "quickreadBtnExit": {
     "message": "सार से बाहर निकलें"
   },
-  "quickreadPreparing": {
-    "message": "सार तैयार हो रहा है"
+  "readerTimeout": {
+    "message": "खोलने में बहुत समय लगा; फ़ाइल बहुत जटिल हो सकती है"
   },
-  "quickreadError": {
-    "message": "सार में त्रुटि"
+  "readerExplain": {
+    "message": "✦ समझाएँ"
   },
-  "quickreadStageExtract": {
-    "message": "मुख्य बिंदु निकाले जा रहे हैं"
+  "readerBrowseVoices": {
+    "message": "आवाज़ें खोजें"
   },
-  "quickreadStageTts": {
-    "message": "आवाज़ तैयार हो रही है"
+  "readerPreparing": {
+    "message": "आवाज़ तैयार हो रही है…"
   },
-  "quickreadStageRefine": {
-    "message": "लय व्यवस्थित की जा रही है"
+  "readerSettings": {
+    "message": "सेटिंग्स"
   },
-  "quickreadStageReady": {
-    "message": "चलाने के लिए तैयार…"
+  "inboxText": {
+    "message": "टेक्स्ट"
   },
-  "quickreadFailed": {
-    "message": "विफल: $msg$",
-    "placeholders": {
-      "msg": {
-        "content": "$1"
-      }
-    }
+  "ocrModelUnavailable": {
+    "message": "टेक्स्ट पहचान के लिए भाषा फ़ाइल डाउनलोड नहीं हो सकी। इंटरनेट से कनेक्ट करें और फिर से कोशिश करें।"
   },
-  "quickreadClose": {
-    "message": "बंद करें"
+  "extName": {
+    "message": "CastReader — ज़ोर से पढ़ें + AI समझाएँ"
   },
-  "quickreadCancel": {
-    "message": "रद्द करें"
+  "readerVoiceZh": {
+    "message": "चीनी आवाज़"
   },
-  "quickreadDone": {
-    "message": "पूरा हुआ"
+  "inboxSavePage": {
+    "message": "पेज CastReader में सहेजें"
   },
-  "quickreadHint": {
-    "message": "लगभग 25-45 सेकंड लगेंगे। कृपया प्रतीक्षा करें"
+  "quickreadBtn": {
+    "message": "त्वरित सार"
   },
-  "quickreadQueued": {
-    "message": "कतार में ($pos$)",
-    "placeholders": {
-      "pos": {
-        "content": "$1"
-      }
-    }
+  "voiceClonePaywall": {
+    "message": "कई निजी आवाज़ें मुफ़्त बनाएँ और प्रबंधित करें, और उनके तय नमूने सुनें। Pro में इन्हें पढ़ने और समझाने के लिए हर महीने 120 जनरेटेड मिनट उपयोग कर सकते हैं।"
   },
-  "quickreadRateLimit": {
-    "message": "आज की मुफ़्त AI व्याख्याएँ पूरी हो गईं। कल फिर उपलब्ध होंगी।"
+  "readerTooLargeForPage": {
+    "message": "यह फ़ाइल इस पेज से खोलने के लिए बहुत बड़ी है (7 MB से अधिक)। दस्तावेज़ रीडर खोलें और वहाँ इसे चुनें (100 MB तक)।"
   },
-  "quickreadRateLimitTitle": {
-    "message": "आज की मुफ़्त AI व्याख्याएँ पूरी हो गईं"
+  "toolbarPageUnsupported": {
+    "message": "CastReader - इस पेज पर पढ़ने की सुविधा उपलब्ध नहीं है"
   },
-  "quickreadRateLimitBody": {
-    "message": "दैनिक मुफ़्त सीमा पूरी हो गई है। असीमित AI व्याख्या के लिए Pro लें। मुफ़्त कोटा कल रीसेट होगा।"
+  "inboxTitle": {
+    "message": "सामग्री इनबॉक्स"
   },
-  "quickreadUpgrade": {
-    "message": "Pro लें"
-  },
-  "accountNotSignedIn": {
-    "message": "साइन इन नहीं है"
-  },
-  "enableProMode": {
-    "message": "Pro सक्रिय करें"
-  },
-  "listenRateLimitTitle": {
-    "message": "आज के 20 मुफ़्त पढ़ने के मिनट पूरे हो गए"
-  },
-  "listenRateLimitBody": {
-    "message": "आज के 20 मुफ़्त मिनट पूरे हो गए हैं। असीमित पढ़ने के लिए Pro लें। मुफ़्त कोटा कल रीसेट होगा।"
+  "readerSub": {
+    "message": "मूल लेआउट बदले बिना फ़ाइल पर ज़ोर से पढ़ना और AI सार"
   },
   "quickreadQuotaTip": {
     "message": "व्याख्या · आज $n$/$max$ शेष",
@@ -95,211 +76,236 @@
       }
     }
   },
-  "quickreadQuotaPro": {
-    "message": "व्याख्या · Pro ∞"
-  },
-  "readerUploadTitle": {
-    "message": "दस्तावेज़ पढ़ें"
-  },
-  "readerDrop": {
-    "message": "चित्र / PDF / EPUB / Word / TXT यहाँ छोड़ें"
-  },
   "readerDropOver": {
     "message": "अपलोड करने के लिए छोड़ें"
   },
-  "readerSub": {
-    "message": "मूल लेआउट बदले बिना फ़ाइल पर ज़ोर से पढ़ना और AI सार"
+  "firefoxExtName": {
+    "message": "CastReader — ज़ोर से पढ़ें + AI समझाएँ"
   },
-  "readerOr": {
-    "message": "या"
+  "quickreadUpgrade": {
+    "message": "Pro लें"
   },
-  "readerPick": {
-    "message": "फ़ाइल चुनें"
+  "readerDocumentLangHint": {
+    "message": "ऐसी छवियों या स्कैन की गई PDF के लिए जिनसे पाठ नहीं निकाला जा सकता, पहले दस्तावेज़ की भाषा चुनें, फिर फ़ाइल खोलें।"
   },
-  "readerRendering": {
-    "message": "दस्तावेज़ तैयार हो रहा है…"
+  "quickreadQueued": {
+    "message": "कतार में ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
   },
-  "readerListen": {
-    "message": "▶ सुनें"
+  "quickreadRateLimitTitle": {
+    "message": "आज की मुफ़्त AI व्याख्याएँ पूरी हो गईं"
   },
-  "readerPause": {
-    "message": "⏸ रोकें"
+  "ocrLanguageUnsupported": {
+    "message": "इस भाषा में छवियों और स्कैन किए गए पृष्ठों की पहचान अभी उपलब्ध नहीं है। आप वेब पेज, EPUB, TXT और चयन योग्य पाठ वाले PDF पढ़ सकते हैं।"
   },
-  "readerResume": {
-    "message": "▶ जारी रखें"
-  },
-  "readerStop": {
-    "message": "■ बंद करें"
-  },
-  "readerExplain": {
-    "message": "✦ समझाएँ"
-  },
-  "readerExplainHint": {
-    "message": "पहले पढ़ना बंद करें"
-  },
-  "readerNewFile": {
-    "message": "नई फ़ाइल"
-  },
-  "readerSpeed": {
-    "message": "गति"
-  },
-  "readerUnsupported": {
-    "message": "यह फ़ाइल प्रकार समर्थित नहीं है"
-  },
-  "readerFailed": {
-    "message": "प्रोसेसिंग विफल हुई"
-  },
-  "readerEmpty": {
-    "message": "इस दस्तावेज़ में पढ़ने योग्य टेक्स्ट नहीं मिला"
-  },
-  "readerQuotaLeft": {
-    "message": "आज शेष"
+  "quickreadStageExtract": {
+    "message": "मुख्य बिंदु निकाले जा रहे हैं"
   },
   "readerQuotaBlocked": {
     "message": "आज के 10 मुफ़्त सार पूरे हो गए। कल फिर उपलब्ध होंगे"
   },
-  "readerPartial": {
-    "message": "आपकी वर्तमान जगह वाला भाग समझाया गया। नीचे स्क्रॉल करके अगले भाग के लिए फिर से समझाएँ दबाएँ"
+  "readerListen": {
+    "message": "▶ सुनें"
   },
-  "readerTooLarge": {
-    "message": "फ़ाइल बहुत बड़ी है (100 MB से अधिक)। छोटी फ़ाइल चुनें।"
+  "readerQuotaLeft": {
+    "message": "आज शेष"
   },
-  "readerLargeFilePro": {
-    "message": "7 MB से बड़ी फ़ाइलों के लिए Pro चाहिए — Pro में 100 MB तक के दस्तावेज़ खुलते हैं।"
-  },
-  "readerTooLargeForPage": {
-    "message": "यह फ़ाइल इस पेज से खोलने के लिए बहुत बड़ी है (7 MB से अधिक)। दस्तावेज़ रीडर खोलें और वहाँ इसे चुनें (100 MB तक)।"
-  },
-  "readerOpenReader": {
-    "message": "दस्तावेज़ रीडर खोलें"
-  },
-  "readerContinue": {
-    "message": "आगे समझाएँ ✦"
-  },
-  "readerSettings": {
-    "message": "सेटिंग्स"
-  },
-  "readerExplainLang": {
-    "message": "इस भाषा में समझाएँ"
-  },
-  "readerDocumentLang": {
-    "message": "दस्तावेज़ की भाषा"
-  },
-  "readerDocumentLangAuto": {
-    "message": "स्वतः (ब्राउज़र की भाषा)"
-  },
-  "readerDocumentLangHint": {
-    "message": "चित्रों और स्कैन किए गए PDF के बेहतर OCR के लिए सही भाषा चुनें।"
-  },
-  "readerVoiceEn": {
-    "message": "अंग्रेज़ी आवाज़"
-  },
-  "readerVoiceZh": {
-    "message": "चीनी आवाज़"
-  },
-  "readerVoices": {
-    "message": "आवाज़ें"
-  },
-  "readerBrowseVoices": {
-    "message": "आवाज़ें खोजें"
-  },
-  "readerLangAuto": {
-    "message": "स्वतः (इंटरफ़ेस भाषा)"
-  },
-  "readerLangFollow": {
-    "message": "दस्तावेज़ के अनुसार"
-  },
-  "readerPreparing": {
-    "message": "आवाज़ तैयार हो रही है…"
-  },
-  "readerEncrypted": {
-    "message": "यह PDF पासवर्ड से सुरक्षित है"
-  },
-  "readerCorrupt": {
-    "message": "यह फ़ाइल खराब या पढ़ने योग्य नहीं लगती"
-  },
-  "readerTimeout": {
-    "message": "खोलने में बहुत समय लगा; फ़ाइल बहुत जटिल हो सकती है"
-  },
-  "readerEpubDrm": {
-    "message": "यह EPUB DRM से सुरक्षित है। DRM-मुक्त EPUB आज़माएँ।"
-  },
-  "readerEpubFixedLayout": {
-    "message": "इस fixed-layout EPUB में ऐसा पाठ नहीं है जो वाचन के साथ सिंक रह सके।"
-  },
-  "readerEpubTooComplex": {
-    "message": "यह EPUB सुरक्षित स्थानीय प्रोसेसिंग सीमा से अधिक जटिल है। छोटा या सरल EPUB आज़माएँ।"
-  },
-  "readerEpubTooLarge": {
-    "message": "सुरक्षित स्थानीय प्रोसेसिंग के लिए EPUB फ़ाइलें अधिकतम 30 MB हो सकती हैं।"
-  },
-  "inboxTitle": {
-    "message": "सामग्री इनबॉक्स"
-  },
-  "inboxSubtitle": {
-    "message": "वेबपेज या चुना हुआ टेक्स्ट सहेजें और जब चाहें उसे पढ़ें या समझाएँ।"
-  },
-  "inboxEmpty": {
-    "message": "इनबॉक्स खाली है"
-  },
-  "inboxEmptyDescription": {
-    "message": "किसी पेज या चुने हुए टेक्स्ट पर राइट-क्लिक करके उसे CastReader में सहेजें।"
-  },
-  "inboxSaveSelection": {
-    "message": "चुना हुआ टेक्स्ट CastReader में सहेजें"
-  },
-  "inboxSavePage": {
-    "message": "पेज CastReader में सहेजें"
-  },
-  "inboxOpen": {
-    "message": "सामग्री इनबॉक्स खोलें"
-  },
-  "inboxSharedText": {
-    "message": "चुना हुआ टेक्स्ट"
-  },
-  "inboxOpenFailed": {
-    "message": "यह सामग्री नहीं खुल सकी। फिर से कोशिश करें।"
-  },
-  "inboxRetry": {
-    "message": "फिर से कोशिश करें"
-  },
-  "inboxRead": {
-    "message": "ज़ोर से पढ़ें"
-  },
-  "inboxExplain": {
-    "message": "समझाएँ"
-  },
-  "inboxDelete": {
-    "message": "हटाएँ"
+  "readerEmpty": {
+    "message": "इस दस्तावेज़ में पढ़ने योग्य टेक्स्ट नहीं मिला"
   },
   "inboxLink": {
     "message": "लिंक"
   },
-  "inboxText": {
-    "message": "टेक्स्ट"
+  "edgeExtDescription": {
+    "message": "साथ-साथ हाइलाइट और ऑटो-स्क्रॉल के साथ पढ़ें। AI पेज पर ही कठिन अंश समझाता है। 28 भाषाओं में प्राकृतिक आवाज़ें।"
+  },
+  "inboxOpenFailed": {
+    "message": "यह सामग्री नहीं खुल सकी। फिर से कोशिश करें।"
+  },
+  "quickreadRateLimitBody": {
+    "message": "दैनिक मुफ़्त सीमा पूरी हो गई है। असीमित AI व्याख्या के लिए Pro लें। मुफ़्त कोटा कल रीसेट होगा।"
+  },
+  "readerPause": {
+    "message": "⏸ रोकें"
   },
   "edgeExtName": {
     "message": "CastReader — ज़ोर से पढ़ें + AI समझाएँ"
   },
-  "edgeExtDescription": {
-    "message": "लेख, PDF और Kindle किताबें सिंक हाइलाइट व AI व्याख्या के साथ सुनें।"
+  "readerVoices": {
+    "message": "आवाज़ें"
+  },
+  "quickreadDone": {
+    "message": "पूरा हुआ"
+  },
+  "quickreadCancel": {
+    "message": "रद्द करें"
+  },
+  "quickreadQuotaPro": {
+    "message": "व्याख्या · Pro ∞"
+  },
+  "listenRateLimitBody": {
+    "message": "आज के 20 मुफ़्त मिनट पूरे हो गए हैं। असीमित पढ़ने के लिए Pro लें। मुफ़्त कोटा कल रीसेट होगा।"
+  },
+  "readerVoiceEn": {
+    "message": "अंग्रेज़ी आवाज़"
+  },
+  "readerLangAuto": {
+    "message": "स्वतः (इंटरफ़ेस भाषा)"
+  },
+  "readerExplainHint": {
+    "message": "पहले पढ़ना बंद करें"
+  },
+  "readerSpeed": {
+    "message": "गति"
+  },
+  "readerLangFollow": {
+    "message": "दस्तावेज़ के अनुसार"
+  },
+  "inboxRetry": {
+    "message": "फिर से कोशिश करें"
+  },
+  "quickreadHint": {
+    "message": "लगभग 25-45 सेकंड लगेंगे। कृपया प्रतीक्षा करें"
+  },
+  "accountNotSignedIn": {
+    "message": "साइन इन नहीं है"
+  },
+  "readerLargeFilePro": {
+    "message": "7 MB से बड़ी फ़ाइलों के लिए Pro चाहिए — Pro में 100 MB तक के दस्तावेज़ खुलते हैं।"
+  },
+  "readerUploadTitle": {
+    "message": "दस्तावेज़ पढ़ें"
+  },
+  "inboxExplain": {
+    "message": "समझाएँ"
+  },
+  "quickreadFailed": {
+    "message": "विफल: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
   },
   "toggleSiteVisibility": {
     "message": "इस साइट पर CastReader दिखाएँ / छिपाएँ"
   },
-  "voiceCloneBenefit": {
-    "message": "अपनी आवाज़ से पढ़ें और समझाएँ · हर महीने 120 मिनट"
+  "readerDocumentLang": {
+    "message": "दस्तावेज़ की भाषा"
   },
-  "voiceClonePaywall": {
-    "message": "कई निजी आवाज़ें मुफ़्त बनाएँ और प्रबंधित करें, और उनके तय नमूने सुनें। Pro में इन्हें पढ़ने और समझाने के लिए हर महीने 120 जनरेटेड मिनट उपयोग कर सकते हैं।"
+  "readerPick": {
+    "message": "फ़ाइल चुनें"
   },
-  "voiceCloneQuotaExhausted": {
-    "message": "इस महीने के निजी-आवाज़ मिनट समाप्त हो गए हैं। चुनी हुई आवाज़ सुरक्षित रहेगी।"
+  "readerOpenReader": {
+    "message": "दस्तावेज़ रीडर खोलें"
+  },
+  "readerEpubFixedLayout": {
+    "message": "इस fixed-layout EPUB में ऐसा पाठ नहीं है जो वाचन के साथ सिंक रह सके।"
+  },
+  "quickreadStageRefine": {
+    "message": "लय व्यवस्थित की जा रही है"
+  },
+  "quickreadError": {
+    "message": "सार में त्रुटि"
+  },
+  "readerDrop": {
+    "message": "चित्र / PDF / EPUB / Word / TXT यहाँ छोड़ें"
   },
   "toolbarReadPage": {
     "message": "CastReader - यह पेज पढ़ें"
   },
-  "toolbarPageUnsupported": {
-    "message": "CastReader - इस पेज पर पढ़ने की सुविधा उपलब्ध नहीं है"
+  "voiceCloneQuotaExhausted": {
+    "message": "इस महीने के निजी-आवाज़ मिनट समाप्त हो गए हैं। चुनी हुई आवाज़ सुरक्षित रहेगी।"
+  },
+  "readerStop": {
+    "message": "■ बंद करें"
+  },
+  "readerUnsupported": {
+    "message": "यह फ़ाइल प्रकार समर्थित नहीं है"
+  },
+  "inboxEmptyDescription": {
+    "message": "किसी पेज या चुने हुए टेक्स्ट पर राइट-क्लिक करके उसे CastReader में सहेजें।"
+  },
+  "voiceCloneBenefit": {
+    "message": "अपनी आवाज़ से पढ़ें और समझाएँ · हर महीने 120 मिनट"
+  },
+  "inboxRead": {
+    "message": "ज़ोर से पढ़ें"
+  },
+  "readerResume": {
+    "message": "▶ जारी रखें"
+  },
+  "listenRateLimitTitle": {
+    "message": "आज के 20 मुफ़्त पढ़ने के मिनट पूरे हो गए"
+  },
+  "readerCorrupt": {
+    "message": "यह फ़ाइल खराब या पढ़ने योग्य नहीं लगती"
+  },
+  "readerContinue": {
+    "message": "आगे समझाएँ ✦"
+  },
+  "readerEncrypted": {
+    "message": "यह PDF पासवर्ड से सुरक्षित है"
+  },
+  "quickreadRateLimit": {
+    "message": "आज की मुफ़्त AI व्याख्याएँ पूरी हो गईं। कल फिर उपलब्ध होंगी।"
+  },
+  "enableProMode": {
+    "message": "Pro सक्रिय करें"
+  },
+  "readerNewFile": {
+    "message": "नई फ़ाइल"
+  },
+  "inboxDelete": {
+    "message": "हटाएँ"
+  },
+  "quickreadStageTts": {
+    "message": "आवाज़ तैयार हो रही है"
+  },
+  "inboxSubtitle": {
+    "message": "वेबपेज या चुना हुआ टेक्स्ट सहेजें और जब चाहें उसे पढ़ें या समझाएँ।"
+  },
+  "inboxSharedText": {
+    "message": "चुना हुआ टेक्स्ट"
+  },
+  "readerExplainLang": {
+    "message": "इस भाषा में समझाएँ"
+  },
+  "readerOr": {
+    "message": "या"
+  },
+  "readerPartial": {
+    "message": "आपकी वर्तमान जगह वाला भाग समझाया गया। नीचे स्क्रॉल करके अगले भाग के लिए फिर से समझाएँ दबाएँ"
+  },
+  "quickreadStageReady": {
+    "message": "चलाने के लिए तैयार…"
+  },
+  "quickreadPreparing": {
+    "message": "सार तैयार हो रहा है"
+  },
+  "extDescription": {
+    "message": "साथ-साथ हाइलाइट और ऑटो-स्क्रॉल के साथ पढ़ें। AI पेज पर ही कठिन अंश समझाता है। 28 भाषाओं में प्राकृतिक आवाज़ें।"
+  },
+  "readerFailed": {
+    "message": "प्रोसेसिंग विफल हुई"
+  },
+  "inboxEmpty": {
+    "message": "इनबॉक्स खाली है"
+  },
+  "readerDocumentLangAuto": {
+    "message": "अपने आप (पाठ से)"
+  },
+  "inboxOpen": {
+    "message": "सामग्री इनबॉक्स खोलें"
+  },
+  "quickreadClose": {
+    "message": "बंद करें"
+  },
+  "readerEpubTooComplex": {
+    "message": "यह EPUB सुरक्षित स्थानीय प्रोसेसिंग सीमा से अधिक जटिल है। छोटा या सरल EPUB आज़माएँ।"
   }
 }

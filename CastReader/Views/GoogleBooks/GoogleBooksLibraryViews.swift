@@ -19,12 +19,14 @@ extension Notification.Name {
 // MARK: - 首页书架条
 
 struct GoogleBooksHomeSection: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = GoogleBooksLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
                 VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
@@ -131,7 +133,7 @@ enum GoogleBooksReaderLauncher {
             id: latestBook.id,
             title: latestBook.title,
             sourceKind: .googleBooks,
-            language: Constants.TTS.defaultLanguage,
+            language: HistoryStore.shared.records.first { $0.id == latestBook.id && $0.sourceKind == .googleBooks }?.language ?? "",
             paragraphs: [],
             sourceURL: sourceURL,
             coverURL: latestBook.coverURL
@@ -149,6 +151,8 @@ enum GoogleBooksReaderLauncher {
 // MARK: - 绑定（登录 + 同步）
 
 struct GoogleBooksLibraryConnectView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: GoogleBooksLibrarySyncViewModel
     @State private var keyboardIsVisible = false
@@ -365,6 +369,8 @@ struct GoogleBooksLibraryConnectView: View {
 // MARK: - 完整书架
 
 struct GoogleBooksLibraryView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = GoogleBooksLibraryStore.shared
@@ -463,10 +469,12 @@ struct GoogleBooksLibraryView: View {
 // MARK: - 卡片
 
 private struct GoogleBooksRailCard: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     private var cardWidth: CGFloat { typeSize.isAccessibilitySize ? 240 : 108 }
     let book: GoogleBooksBook
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             GoogleBooksCoverView(urlString: book.coverURL)
                 .frame(width: 96, height: 144)

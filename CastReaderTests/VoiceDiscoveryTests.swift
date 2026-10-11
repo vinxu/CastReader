@@ -2,6 +2,43 @@ import XCTest
 @testable import CastReader
 
 final class VoiceDiscoveryTests: XCTestCase {
+    @MainActor
+    func testEditorialTitlesUseLocalizedTopicWhenRemoteEditionLacksTheUILanguage() {
+        let language = AppLanguageManager.shared
+        let original = language.selectedLanguage
+        defer { language.select(original) }
+        let module = VoiceDiscoveryModule(id: "untranslated", layout: "feature",
+            title: ["en": "Remote edition headline"], theme: .everyday, voiceIds: [])
+        let collection = VoiceDiscoveryCollection(id: "untranslated", title: module.title,
+            theme: .stories, voiceIds: [])
+        for locale in AppLanguage.allCases where locale != .system {
+            language.select(locale)
+            XCTAssertEqual(module.localizedTitle, locale == .english ? "Remote edition headline" : VoiceDiscoveryTopic.everyday.title)
+            XCTAssertEqual(collection.localizedTitle, locale == .english ? "Remote edition headline" : VoiceDiscoveryTopic.stories.title)
+        }
+        language.select(.brazilianPortuguese)
+        XCTAssertEqual(VoiceDiscovery.localizedEditorialTitle(["pt-BR": "Título regional", "pt": "Título base"], theme: .everyday), "Título regional")
+        language.select(.arabic)
+        XCTAssertEqual(VoiceDiscovery.localizedEditorialTitle(["ar": "  ", "en": "English"], theme: .everyday), VoiceDiscoveryTopic.everyday.title)
+        XCTAssertEqual(VoiceDiscovery.localizedEditorialTitle(["ar": "عنوان جديد"], theme: .everyday), "عنوان جديد")
+    }
+
+    @MainActor
+    func testCatalogDescriptionNeverLeaksEnglishIntoAnotherInterfaceLanguage() {
+        let manager = AppLanguageManager.shared
+        let original = manager.selectedLanguage
+        defer { manager.select(original) }
+        let voice = VoiceOption(code: "test", name: "Name", isPro: false, lang: "en",
+            gender: "female", description: "English-only description", descriptionZh: "中文简介")
+        for language in AppLanguage.allCases where language != .system {
+            manager.select(language)
+            let subtitle = VoiceDiscovery.subtitle(voice, chinese: language == .simplifiedChinese)
+            if language == .english { XCTAssertEqual(subtitle, "English-only description") }
+            else if language == .simplifiedChinese { XCTAssertEqual(subtitle, "中文简介") }
+            else { XCTAssertEqual(subtitle, AppLocalized("女声"), language.rawValue) }
+        }
+    }
+
     private func voice(_ id: String, tags: [String] = [], language: String = "en", monthly: Bool = false) -> VoiceOption {
         VoiceOption(code: id, name: id, isPro: monthly, lang: language, gender: "female",
                     tags: tags, sampleURL: "https://api.castreader.ai/preview.mp3",
@@ -96,26 +133,30 @@ final class VoiceDiscoveryTests: XCTestCase {
 }
 
 extension VoiceDiscoveryTests {
+    private func standardVoiceID(_ language: String) -> String {
+        SupportedTTSLanguage(identifier: language)?.isGoogle == true ? "api_\(language)_fixture" : "default_\(language)"
+    }
+
     private func fullSnapshot(region: String = "cn", suffix: String = "") throws -> VoiceCatalogSnapshot {
         let codes = SupportedTTSLanguage.allCases.map(\.rawValue)
         func entry(_ id: String, _ language: String, _ monthly: Bool) -> [String: Any] {
-            var item: [String: Any] = ["id": id, "name": id + suffix, "engine": monthly ? "clone" : "kokoro",
-                "modelVersion": "v1", "language": language, "locale": language, "genderPresentation": "female",
+            var item: [String: Any] = ["id": id, "name": id + suffix, "engine": monthly ? "clone" : (SupportedTTSLanguage(identifier: language)?.isGoogle == true ? "google" : "kokoro"),
+                "modelVersion": SupportedTTSLanguage(identifier: language)?.isGoogle == true && !monthly ? "wavenet" : "v1", "language": language, "locale": language, "genderPresentation": "female",
                 "tier": monthly ? "pro" : "free", "status": "ga", "enabled": true, "selectable": true,
                 "timestampMode": "word", "sampleUrl": "https://example.invalid/preview/" + id, "tags": ["warm", "storytelling"], "description": "A calm narrator"]
             if monthly {
-                let supported = codes.filter { $0 != "hi" }
+                let supported = ["en", "zh", "ja", "es", "fr", "de", "pt", "it", "ko", "ru"]
                 item["usagePolicy"] = "monthly_generation"
                 item["supportedLanguages"] = supported
                 item["sampleUrls"] = Dictionary(uniqueKeysWithValues: supported.map { ($0, "/preview/\(id)/\($0)") })
             }
             return item
         }
-        var voices = codes.map { entry("default_" + $0, $0, false) }
+        var voices = codes.map { entry(standardVoiceID($0), $0, false) }
         voices += (0..<274).map { entry("regular_\($0)", "en", false) }
         voices += (0..<1323).map { entry("vl_performance_\($0)", "en", true) }
-        let languages: [[String: Any]] = codes.map { ["code": $0, "locale": $0, "name": $0, "status": "ga", "defaultVoice": "default_" + $0, "timestampMode": "word"] }
-        let object: [String: Any] = ["contract": "tts-voice-catalog-v1", "version": "performance-" + region + suffix,
+        let languages: [[String: Any]] = codes.map { ["code": $0, "locale": $0, "name": $0, "status": "ga", "defaultVoice": standardVoiceID($0), "timestampMode": "word"] }
+        let object: [String: Any] = ["contract": "tts-voice-catalog-v2", "version": "performance-" + region + suffix,
             "languages": languages, "voices": voices, "editorialRegion": region]
         var document = try TTSVoiceCatalogDocument.decodeServerResponse(from: JSONSerialization.data(withJSONObject: object))
         document.discovery = VoiceDiscoveryEdition(id: region, startsAt: "2026-09-14T00:00:00Z", endsAt: "2026-09-21T00:00:00Z", modules: [
@@ -128,8 +169,8 @@ extension VoiceDiscoveryTests {
 
     func testFullCatalogSnapshotIndexesLanguagesAndPreservesIdentity() throws {
         let snapshot = try fullSnapshot()
-        XCTAssertEqual(snapshot.all.count, 1606)
-        XCTAssertEqual(snapshot.languages.count, 9)
+        XCTAssertEqual(snapshot.all.count, 1625)
+        XCTAssertEqual(snapshot.languages.count, 28)
         XCTAssertEqual(snapshot.voices(for: "en", includingMonthly: true).count, 1598)
         XCTAssertEqual(snapshot.voices(for: "zh-Hans", includingMonthly: true).count, 1324)
         XCTAssertEqual(snapshot.voices(for: "zh", includingMonthly: false).map(\.id), ["default_zh"])
@@ -144,8 +185,8 @@ extension VoiceDiscoveryTests {
         var total = 0
         for _ in 0..<1000 { total += snapshot.voices(for: "zh", includingMonthly: true).count + snapshot.languages.count }
         let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1_000_000
-        XCTAssertEqual(total, 1_333_000)
-        XCTAssertLessThan(elapsed, 200, "Warm lookups must not rebuild 1,606 voice records")
+        XCTAssertEqual(total, 1_352_000)
+        XCTAssertLessThan(elapsed, 200, "Warm lookups must not rebuild 1,625 voice records")
         print("VOICE_PERF full catalog 1,000 language lookups: \(elapsed) ms")
     }
 
@@ -255,7 +296,7 @@ extension VoiceDiscoveryTests {
         let regularLanguages = languages.filter { SupportedTTSLanguage(identifier: $0) != nil }
         let outputLanguages = languages + ["it"]
         var voices: [[String: Any]] = regularLanguages.map { language in
-            ["id": "default_\(language)", "name": language, "engine": "kokoro", "modelVersion": "test",
+            ["id": standardVoiceID(language), "name": language, "engine": SupportedTTSLanguage(identifier: language)?.isGoogle == true ? "google" : "kokoro", "modelVersion": SupportedTTSLanguage(identifier: language)?.isGoogle == true ? "wavenet" : "test",
              "language": language, "locale": language, "genderPresentation": "female", "tier": "free",
              "status": "ga", "enabled": true, "selectable": true, "timestampMode": "word",
              "sampleUrl": "https://example.invalid/\(language).mp3"]
@@ -283,9 +324,9 @@ extension VoiceDiscoveryTests {
                  "title": ["en": "Curated"], "voiceIds": Array(cloneIDs[start..<min(start + 24, cloneIDs.count)])]
             }
             let json: [String: Any] = [
-                "contract": "tts-voice-catalog-v1", "version": "multilingual-pools", "editorialRegion": region,
+                "contract": "tts-voice-catalog-v2", "version": "multilingual-pools", "editorialRegion": region,
                 "languages": regularLanguages.map { ["code": $0, "locale": $0, "name": $0, "status": "ga",
-                    "defaultVoice": "default_\($0)", "timestampMode": "word"] }, "voices": voices,
+                    "defaultVoice": standardVoiceID($0), "timestampMode": "word"] }, "voices": voices,
                 "discovery": ["id": region, "startsAt": "2026-09-15T00:00:00Z", "endsAt": "2026-09-22T00:00:00Z", "modules": modules],
             ]
             let document = try TTSVoiceCatalogDocument.decodeServerResponse(from: JSONSerialization.data(withJSONObject: json))
@@ -309,7 +350,7 @@ extension VoiceDiscoveryTests {
         var request = VoiceBrowseRequest(catalogID: snapshot.id, language: "zh", locale: "en",
                                         usage: .regular, allLanguages: true)
         let regular = try await worker.results(request, snapshot: snapshot, vocabulary: .current)
-        XCTAssertEqual(regular.count, 283)
+        XCTAssertEqual(regular.count, 302)
         XCTAssertTrue(regular.allSatisfy { !$0.usesMonthlyGeneration })
         request.usage = .monthly
         let clones = try await worker.results(request, snapshot: snapshot, vocabulary: .current)
@@ -340,5 +381,112 @@ extension VoiceDiscoveryTests {
         let legacy = VoiceOption(code: "vl_legacy", name: "Legacy", isPro: true, lang: "en", gender: "female",
             usagePolicy: "monthly_generation", supportedLanguages: ["en", "zh"], previewLanguages: ["en": "zh", "zh": "zh"])
         XCTAssertEqual(legacy.discoveryLanguage, "zh")
+    }
+}
+
+extension VoiceDiscoveryTests {
+    @MainActor
+    func testBrowseLanguageFollowsAppContextAndPreservesPlaybackPreferences() throws {
+        let suite = "voice-context-" + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set("zh", forKey: "voice_browser_language_v1") // old contextless cache
+        defaults.set("vc_saved", forKey: "unrelated-playback-preference")
+        let languages = ["en", "vi", "zh", "ru"]
+        let store = VoiceLibraryStore(defaults: defaults)
+        store.synchronizeAppLanguage(context: "vi|vi", language: "vi", availableLanguages: languages)
+        XCTAssertEqual(store.browserLanguage, "vi")
+        store.setBrowserLanguage("ru")
+        let restored = VoiceLibraryStore(defaults: defaults)
+        restored.synchronizeAppLanguage(context: "vi|vi", language: "vi", availableLanguages: languages)
+        XCTAssertEqual(restored.browserLanguage, "ru")
+        restored.synchronizeAppLanguage(context: "en|en", language: "en", availableLanguages: languages)
+        XCTAssertEqual(restored.browserLanguage, "en")
+        restored.setBrowserLanguage("zh")
+        // Language changed while this view was absent, then returned to English.
+        defaults.removeObject(forKey: "voice_browser_app_language_v2")
+        restored.synchronizeAppLanguage(context: "en|en", language: "en", availableLanguages: languages)
+        XCTAssertEqual(restored.browserLanguage, "en")
+        restored.synchronizeAppLanguage(context: "system|vi", language: "vi", availableLanguages: languages)
+        XCTAssertEqual(restored.browserLanguage, "vi")
+        restored.synchronizeAppLanguage(context: "system|xx", language: "xx", availableLanguages: languages)
+        XCTAssertEqual(restored.browserLanguage, "en")
+        XCTAssertEqual(defaults.string(forKey: "unrelated-playback-preference"), "vc_saved")
+    }
+
+    func testAdaptiveClonePoolIsCompleteAndSourceScopedWithoutEditorialRequirement() {
+        let languages = ["de", "en", "es", "fr", "ja", "ko", "pt", "ru", "zh"]
+        func clone(_ id: String, _ source: String, status: String = "ga", preview: Bool = true,
+                   enabled: Bool = true, selectable: Bool = true) -> VoiceOption {
+            VoiceOption(code: id, name: id, isPro: true, lang: "en", gender: "female",
+                status: status, enabled: enabled, selectable: selectable, usagePolicy: "monthly_generation",
+                supportedLanguages: VoiceCloneLanguageSupport.all,
+                sampleURLs: preview ? Dictionary(uniqueKeysWithValues: VoiceCloneLanguageSupport.all.map { ($0, "https://example.invalid/preview.mp3") }) : [:],
+                referenceLanguage: source)
+        }
+        let pool = languages.flatMap { language in (0..<8).map { clone("vl_\(language)_\($0)", language) } }
+        for language in languages {
+            let editorial = "vl_\(language)_6"
+            let input = pool + [pool[0], clone("vl_lab", language, status: "lab"),
+                clone("vl_old", language, status: "legacy"), clone("vl_silent", language, preview: false),
+                clone("vl_off", language, enabled: false), clone("vl_unselectable", language, selectable: false)]
+            let result = VoiceBrowsePresentation.featuredClones(input, language: language, editorialIDs: [editorial, editorial, "missing"])
+            XCTAssertEqual(result.count, 8, "See all must retain the complete pool beyond the homepage limit")
+            XCTAssertEqual(result.first?.id, editorial)
+            XCTAssertTrue(result.allSatisfy { $0.discoveryLanguage == language })
+            XCTAssertEqual(VoiceBrowsePresentation.featuredClones(pool, language: language, editorialIDs: []).count, 8)
+        }
+        for language in ["it", "hi", "fi", "vi", "und"] {
+            XCTAssertTrue(VoiceBrowsePresentation.featuredClones(pool, language: language, editorialIDs: []).isEmpty)
+        }
+        XCTAssertTrue(VoiceCloneLanguageSupport.all.contains("ko"))
+        XCTAssertTrue(VoiceCloneLanguageSupport.all.contains("ru"))
+        XCTAssertFalse(VoiceCloneLanguageSupport.all.contains("hi"))
+    }
+
+    func testPersonalPreviewFiltersFullLibraryBeforeLimitAndKeepsReaderComplete() {
+        func item(_ id: String, _ date: String?, lang: String = "en", status: String = "ready",
+                  access: String = "active", gifted: Bool = false) -> ClonedVoice {
+            ClonedVoice(voiceId: id, createdAt: date, status: status, supportedLanguages: [lang],
+                access: VoiceGiftAccess(kind: gifted ? .gifted : .owner, status: access))
+        }
+        let voices = [item("incompatible", "2026-10-09T00:00:00Z", lang: "zh"),
+            item("current", "2026-10-08T00:00:00Z"), item("old", "2026-10-01T00:00:00Z"),
+            item("new-a", "2026-10-07T00:00:00.000Z", gifted: true), item("new-b", "2026-10-07T00:00:00Z"),
+            item("middle", "2026-10-05T00:00:00Z"), item("missing-date", nil),
+            item("bad-date", "bad"), item("new-a", "2026-10-07T00:00:00Z"),
+            item("pending", "2026-10-09T00:00:00Z", status: "pending"),
+            item("revoked", "2026-10-09T00:00:00Z", access: "revoked", gifted: true)]
+        let preview = VoiceFamiliarSelection.latest(from: voices, language: "en", excluding: "current")
+        XCTAssertEqual(preview.map(\.id), ["new-a", "new-b", "middle"])
+        let reader = VoiceFamiliarSelection.latest(from: voices, language: "en", excluding: "current", limit: nil)
+        XCTAssertEqual(reader.map(\.id), ["new-a", "new-b", "middle", "old", "missing-date", "bad-date"])
+        XCTAssertEqual(voices.count, 11, "Presentation cannot truncate the authoritative library")
+        XCTAssertTrue(VoiceFamiliarSelection.latest(from: voices, language: "vi").isEmpty)
+    }
+
+    func testAdaptiveFeedSuppressesSingletonGroupsAndRetainsCompleteClonePool() async throws {
+        let snapshot = try fullSnapshot(region: "international")
+        var input = VoiceBrowseRequest(catalogID: snapshot.id, language: "en", locale: "en")
+        input.adaptiveDiscovery = true
+        let feed = try await VoiceBrowseWorker().feed(input, snapshot: snapshot,
+            now: ISO8601DateFormatter().date(from: "2026-09-15T00:00:00Z")!)
+        XCTAssertEqual(feed.regularVoices.count, 275)
+        XCTAssertEqual(feed.featuredClones.count, 1323)
+        XCTAssertEqual(feed.featuredClones.first?.id, "vl_performance_1322")
+        XCTAssertTrue(feed.sections.isEmpty)
+        XCTAssertTrue(feed.collections.isEmpty)
+        XCTAssertTrue(feed.fallbackSections.allSatisfy { Set($0.voices.map(\.id)).count >= 2 })
+        XCTAssertTrue(feed.topics.allSatisfy { $0.count >= 2 })
+    }
+}
+
+
+extension VoiceDiscoveryTests {
+    func testAdaptiveVoicePresentationIsGlobalProductAndGlobalRouteOnly() {
+        XCTAssertTrue(VoiceBrowsePresentation.isAdaptive(region: .global, route: .globalGateway))
+        XCTAssertFalse(VoiceBrowsePresentation.isAdaptive(region: .cn, route: .globalGateway))
+        XCTAssertFalse(VoiceBrowsePresentation.isAdaptive(region: .global, route: .chinaGateway))
+        XCTAssertFalse(VoiceBrowsePresentation.isAdaptive(region: .cn, route: .chinaGateway))
     }
 }

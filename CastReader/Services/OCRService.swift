@@ -7,6 +7,26 @@
 
 import Foundation
 import Vision
+// Tesseract's Greek alphabet can emit U+00B5 (micro sign) for U+03BC.
+// Correct only tokens containing Greek letters, leaving SI units such as µm
+// and standalone mathematical symbols intact. Geometry and UTF-16 length stay
+// unchanged, and both line text and word text use the same normalization.
+enum OCRTextNormalization {
+    static func canonical(_ text: String, language: String) -> String {
+        let normalized = text.precomposedStringWithCanonicalMapping
+        guard language == "el", normalized.contains("µ"),
+              let expression = try? NSRegularExpression(pattern: #"[\p{Greek}\p{M}µ]+"#) else { return normalized }
+        let result = NSMutableString(string: normalized)
+        for match in expression.matches(in: normalized, range: NSRange(location: 0, length: result.length)).reversed() {
+            let token = result.substring(with: match.range)
+            guard token.unicodeScalars.contains(where: {
+                (0x0370...0x03FF).contains($0.value) || (0x1F00...0x1FFF).contains($0.value)
+            }) else { continue }
+            result.replaceCharacters(in: match.range, with: token.replacingOccurrences(of: "µ", with: "μ"))
+        }
+        return result as String
+    }
+}
 import UIKit
 import WebKit
 
@@ -83,11 +103,13 @@ private struct KindleTesseractResult {
 /// browser extension. It never loads remote content and is retained so consecutive
 /// Kindle pages reuse the active language model.
 @MainActor
-private final class KindleTesseractOCRService {
+private final class KindleTesseractOCRService: NSObject, WKNavigationDelegate {
     static let shared = KindleTesseractOCRService()
 
     private var webView: WKWebView?
     private var isReady = false
+    private var startupDeadline: TimeInterval?
+    private var startupError: Error?
     private let schemeHandler = KindleOCRSchemeHandler()
 
     func recognize(
@@ -148,25 +170,75 @@ private final class KindleTesseractOCRService {
     }
 
     private func readyWebView() async throws -> WKWebView {
+        try Task.checkCancellation()
         if let webView, isReady { return webView }
         guard Bundle.main.url(forResource: "ocr", withExtension: "html", subdirectory: "WebAssets/KindleOCR") != nil,
               let pageURL = URL(string: "castreader-ocr://local/ocr.html") else {
             throw OCRError.kindleEngine("missing-web-assets")
         }
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .nonPersistent()
-        configuration.setURLSchemeHandler(schemeHandler, forURLScheme: "castreader-ocr")
-        let webView = self.webView ?? WKWebView(frame: .zero, configuration: configuration)
-        self.webView = webView
-        webView.load(URLRequest(url: pageURL))
-        for _ in 0..<160 {
-            if (try? await webView.evaluateJavaScript("window.castReaderKindleOCRReady === true")) as? Bool == true {
-                isReady = true
-                return webView
-            }
-            try await Task.sleep(nanoseconds: 25_000_000)
+        let webView: WKWebView
+        if let existing = self.webView {
+            webView = existing
+        } else {
+            let configuration = WKWebViewConfiguration()
+            configuration.websiteDataStore = .nonPersistent()
+            configuration.setURLSchemeHandler(schemeHandler, forURLScheme: "castreader-ocr")
+            webView = WKWebView(frame: .zero, configuration: configuration)
+            webView.navigationDelegate = self
+            self.webView = webView
         }
+        if startupDeadline == nil {
+            startupError = nil
+            // Cold WebKit process launch can consume the old four-second
+            // polling budget before our local module even begins loading.
+            // Use a monotonic deadline shared by concurrent callers, so a
+            // second request neither reloads the page nor extends the wait.
+            startupDeadline = ProcessInfo.processInfo.systemUptime + 15
+            webView.load(URLRequest(url: pageURL))
+        }
+        while let deadline = startupDeadline, ProcessInfo.processInfo.systemUptime < deadline {
+            try Task.checkCancellation()
+            if let startupError { throw startupError }
+            if isReady { return webView }
+            let state = try? await webView.evaluateJavaScript(
+                "({ready: window.castReaderKindleOCRReady === true, error: window.castReaderKindleOCRError || ''})")
+            try Task.checkCancellation()
+            if let state = state as? [String: Any] {
+                if state["ready"] as? Bool == true {
+                    isReady = true
+                    return webView
+                }
+                if let error = state["error"] as? String, !error.isEmpty {
+                    let failure = OCRError.kindleEngine("web-runtime-script-error: " + String(error.prefix(160)))
+                    startupError = failure
+                    startupDeadline = nil
+                    throw failure
+                }
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        if let startupError { throw startupError }
+        startupDeadline = nil
+        webView.stopLoading()
         throw OCRError.kindleEngine("web-runtime-timeout")
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        failStartup(error)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        failStartup(error)
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        failStartup(OCRError.kindleEngine("web-process-terminated"))
+    }
+
+    private func failStartup(_ error: Error) {
+        isReady = false
+        startupError = error
+        startupDeadline = nil
     }
 
     private static func number(_ value: Any?) -> CGFloat {
@@ -314,10 +386,32 @@ enum KindleOCRTextContract {
 }
 
 /// Language selection for camera, photo-library, clipboard, shared images and
-/// scanned PDF pages. Vision can auto-detect seven product locales on current
-/// iOS runtimes, but does not expose a Hindi recognizer; a guarded Hindi
-/// Tesseract probe closes that gap without running eight OCR models together.
+/// scanned PDF pages. A failed/uncertain native pass can probe the three
+/// missing non-Latin scripts locally. Latin-script gaps retain enough glyph
+/// evidence for language identification and then use their explicit profile.
+/// This is bounded independently of the number of supported TTS languages.
 enum ImportedOCRLanguageSelection {
+    static func supplementalProbeLanguages(vision: LanguageDetector.Evidence?) -> [String] {
+        guard shouldRunHindiProbe(vision: vision) || vision?.status == .uncertain else { return [] }
+        let available = ["hi", "el", "he"]
+        let ranked = available.sorted {
+            (vision?.candidates[$0] ?? 0) > (vision?.candidates[$1] ?? 0)
+        }
+        return ranked
+    }
+
+    static func shouldPreferSupplemental(vision: LanguageDetector.Evidence?, candidate: LanguageDetector.Evidence,
+                                        language: String, meanConfidence: Double) -> Bool {
+        guard candidate.language == language, candidate.readableCharacterCount >= 6,
+              candidate.confidence >= 0.85, meanConfidence >= 55 else { return false }
+        guard let vision else { return true }
+        let score = candidate.confidence * min(1, Double(candidate.readableCharacterCount) / 24)
+            * min(1, meanConfidence / 75)
+        let nativeScore = vision.confidence * min(1, Double(vision.readableCharacterCount) / 24)
+        return candidate.readableCharacterCount >= max(6, Int(Double(vision.readableCharacterCount) * 0.55))
+            && score >= max(0.38, nativeScore * 0.9)
+    }
+
     static func shouldRunHindiProbe(vision: LanguageDetector.Evidence?) -> Bool {
         guard let vision else { return true }
         return vision.readableCharacterCount < 24 || vision.confidence < 0.88
@@ -357,6 +451,7 @@ actor OCRService {
     func recognizeImportedImage(
         image: UIImage,
         title: String? = nil,
+        languageHint: String? = nil,
         orientationSettled: Bool = false
     ) async throws -> ReadingDocument {
         try Task.checkCancellation()
@@ -370,6 +465,7 @@ actor OCRService {
                     return try await recognizeImportedImage(
                         image: upright,
                         title: title,
+                        languageHint: languageHint,
                         orientationSettled: true
                     )
                 }
@@ -381,6 +477,15 @@ actor OCRService {
             }
         }
         try Task.checkCancellation()
+        if let languageHint, !languageHint.isEmpty {
+            guard let language = SupportedTTSLanguage(identifier: languageHint),
+                  language.isSupported(in: ServiceRouting.current),
+                  let profile = KindleLanguageContract.profile(language: language.rawValue) else {
+                throw OCRError.unsupportedLanguages([languageHint])
+            }
+            return try await recognizeKindle(image: image, profile: profile,
+                title: title, paragraphStrategy: .kindleLayout)
+        }
         #if DEBUG
         // 把 OCR 真正吃进去的那张图留一份：版面问题只有拿真实样本
         // 离线复现才查得动，靠日志里的几个数字会一直在猜。
@@ -408,46 +513,43 @@ actor OCRService {
         try Task.checkCancellation()
 
         let visionEvidence = visionProbe.map { LanguageDetector.evidence(for: $0.fullText) }
-        var hindiCandidate: TesseractDocumentCandidate?
-        if ImportedOCRLanguageSelection.shouldRunHindiProbe(vision: visionEvidence),
-           let hindiProfile = KindleLanguageContract.profile(language: "hi") {
+        var supplementalCandidates: [(TesseractDocumentCandidate, LanguageDetector.Evidence)] = []
+        for language in ImportedOCRLanguageSelection.supplementalProbeLanguages(vision: visionEvidence) {
+            try Task.checkCancellation()
+            guard let profile = KindleLanguageContract.profile(language: language) else { continue }
             do {
                 let candidate = try await recognizeKindleWithTesseractCandidate(
-                    image: image,
-                    profile: hindiProfile,
-                    title: title,
-                    paragraphStrategy: .kindleLayout,
-                    verticalColumnHints: []
-                )
-                _ = try validateKindleDocument(candidate.document, profile: hindiProfile, engine: .tesseract)
-                hindiCandidate = candidate
-            } catch is CancellationError {
-                throw CancellationError()
-            } catch {
-                lastError = error
-            }
+                    image: image, profile: profile, title: title,
+                    paragraphStrategy: .kindleLayout, verticalColumnHints: [])
+                _ = try validateKindleDocument(candidate.document, profile: profile, engine: .tesseract)
+                let evidence = LanguageDetector.evidence(for: candidate.document.fullText)
+                if ImportedOCRLanguageSelection.shouldPreferSupplemental(
+                    vision: visionEvidence, candidate: evidence, language: language,
+                    meanConfidence: candidate.meanConfidence) {
+                    supplementalCandidates.append((candidate, evidence))
+                }
+            } catch is CancellationError { throw CancellationError() }
+            catch { lastError = error }
         }
         try Task.checkCancellation()
-
-        if let hindiCandidate {
-            let hindiEvidence = LanguageDetector.evidence(for: hindiCandidate.document.fullText)
-            if ImportedOCRLanguageSelection.shouldPreferHindi(
-                vision: visionEvidence,
-                hindi: hindiEvidence,
-                hindiMeanConfidence: hindiCandidate.meanConfidence
-            ) {
-                #if DEBUG
-                NSLog("CRDBG Imported OCR selected=hi engine=tesseract confidence=%d chars=%d",
-                      Int(hindiCandidate.meanConfidence.rounded()), hindiEvidence.readableCharacterCount)
-                #endif
-                try Task.checkCancellation()
-                return hindiCandidate.document
-            }
+        if let best = supplementalCandidates.max(by: {
+            $0.1.confidence * $0.0.meanConfidence < $1.1.confidence * $1.0.meanConfidence
+        }) {
+            return best.0.document
         }
 
-        guard let visionProbe,
-              let profile = KindleLanguageContract.profile(language: visionProbe.language) else {
-            throw lastError
+        guard let visionProbe else { throw lastError }
+        if let language = SupportedTTSLanguage(identifier: visionProbe.language), language.isGoogle {
+            // One narrowed Vision pass; no 28-language trial loop and no fabricated
+            // model download. Native availability is not a quality qualification.
+            guard let profile = KindleLanguageContract.profile(language: language.rawValue) else {
+                throw OCRError.unsupportedLanguages([language.rawValue])
+            }
+            return try await recognizeKindle(image: image, profile: profile,
+                title: title, paragraphStrategy: .kindleLayout)
+        }
+        guard let profile = KindleLanguageContract.profile(language: visionProbe.language) else {
+            throw OCRError.unsupportedLanguages([visionProbe.language])
         }
         do {
             let document = try await recognizeKindle(
@@ -568,7 +670,7 @@ actor OCRService {
         try Task.checkCancellation()
         guard let cg = image.cgImage else { throw OCRError.noCGImage }
 
-        let normalizedLanguage = KindleLanguageContract.normalize(languageHint)
+        let normalizedLanguage = languageHint.flatMap { SupportedTTSLanguage(identifier: $0)?.rawValue }
         let lines = try await recognizeLines(
             cgImage: cg,
             languages: languages,
@@ -751,7 +853,8 @@ actor OCRService {
             verticalColumnHints: verticalColumnHints
         )
         func normalizedWord(_ item: KindleTesseractWordBox) -> WordBox? {
-            let text = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let text = OCRTextNormalization.canonical(item.text, language: profile.language)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { return nil }
             let left = max(0, min(result.imageWidth, item.left))
             let right = max(left, min(result.imageWidth, item.right))
@@ -807,7 +910,10 @@ actor OCRService {
             paraBoxes = outcome.boxes
             columnCount = outcome.analysis?.columnCount
         }
-        let confidenceValues = result.words.map(\.confidence).filter { $0.isFinite && $0 >= 0 }
+        // tesseract-wasm exposes normalized 0...1 confidence. The selection
+        // policy and diagnostics use percentages, matching the native engine.
+        let confidenceValues = result.words.map(\.confidence).filter { $0.isFinite && $0 >= 0 && $0 <= 1 }
+            .map { $0 * 100 }
         let meanConfidence = confidenceValues.isEmpty
             ? -1
             : confidenceValues.reduce(0, +) / Double(confidenceValues.count)
@@ -864,7 +970,9 @@ actor OCRService {
         }
 
         return engineLines.indices.compactMap { index in
-            let mapped = assigned[index].sorted { $0.bbox.minX < $1.bbox.minX }
+            // Preserve the engine's logical token order. Sorting by x breaks
+            // Arabic/Hebrew lines containing LTR numbers or English terms.
+            let mapped = assigned[index]
             guard !mapped.isEmpty else { return nil }
             let engineText = engineLines[index].text.trimmingCharacters(in: .whitespacesAndNewlines)
             let text = engineText.isEmpty
@@ -919,7 +1027,9 @@ actor OCRService {
     func probeKindleLanguage(image: UIImage, titleContext: String) async throws -> KindleOCRLanguageProbe {
         let titleEvidence = LanguageDetector.evidence(for: titleContext)
         var candidates: [KindleOCRLanguageProbe] = []
-        for language in SupportedTTSLanguage.allCases {
+        // Preserve the qualified nine-language probe budget. New Vision locales
+        // require independent quality evidence before joining this expensive loop.
+        for language in SupportedTTSLanguage.allCases where !language.isGoogle {
             do {
                 let document = try await recognize(
                     image: image,
@@ -1012,7 +1122,10 @@ actor OCRService {
         request.usesLanguageCorrection = true
         if !languages.isEmpty {
             let available = Set((try? request.supportedRecognitionLanguages()) ?? [])
-            let supported = languages.filter(available.contains)
+            let supported = Array(Set(languages.compactMap { locale -> String? in
+                if available.contains(locale) { return locale }
+                return SupportedTTSLanguage(identifier: locale)?.availableVisionLocale(in: available)
+            })).sorted()
             try Task.checkCancellation()
             guard !supported.isEmpty else { throw OCRError.unsupportedLanguages(languages) }
             request.recognitionLanguages = supported
@@ -1224,15 +1337,19 @@ actor OCRService {
     /// 多栏页面上，段落聚类若在整幅图上做，左右栏同高度的行必被并成一行。
     private func rebuildKindleParagraphBoxes(from rawLines: [LineBox], language: String?) -> LayoutOutcome {
         var lines = rawLines
-        var analysis = OCRLayoutAnalyzer.analyze(lines: layoutInput(from: lines))
+        let rightToLeft = SupportedTTSLanguage(identifier: language ?? "")?.isRightToLeft == true
+        var analysis = OCRLayoutAnalyzer.analyze(lines: layoutInput(from: lines, rightToLeft: rightToLeft))
 
         // 第二遍：OCR 偶尔把两栏里同高度的行认成一整行（报纸底部尤其常见）。
         // 用第一遍的列边界把这种行按词切开再重新分析 —— 否则它会被当成跨栏
         // 横幅，把两栏的半句话拼在一起读出来。
         if analysis.isMultiColumn {
-            let split = splitLinesAtColumnBoundaries(lines, columns: analysis.columnRanges)
+            let columns = rightToLeft
+                ? analysis.columnRanges.map { (1 - $0.upperBound)...(1 - $0.lowerBound) }.sorted { $0.lowerBound < $1.lowerBound }
+                : analysis.columnRanges
+            let split = splitLinesAtColumnBoundaries(lines, columns: columns, preserveLogicalOrder: rightToLeft)
             if split.count > lines.count {
-                let second = OCRLayoutAnalyzer.analyze(lines: layoutInput(from: split))
+                let second = OCRLayoutAnalyzer.analyze(lines: layoutInput(from: split, rightToLeft: rightToLeft))
                 if second.isMultiColumn {
                     lines = split
                     analysis = second
@@ -1274,9 +1391,11 @@ actor OCRService {
         )
     }
 
-    private func layoutInput(from lines: [LineBox]) -> [OCRLayoutLine] {
+    private func layoutInput(from lines: [LineBox], rightToLeft: Bool = false) -> [OCRLayoutLine] {
         lines.enumerated().map {
-            OCRLayoutLine.fromVision(id: $0.offset, text: $0.element.text, visionBBox: $0.element.bbox)
+            let box = $0.element.bbox
+            let analysisBox = rightToLeft ? CGRect(x: 1 - box.maxX, y: box.minY, width: box.width, height: box.height) : box
+            return OCRLayoutLine.fromVision(id: $0.offset, text: $0.element.text, visionBBox: analysisBox)
         }
     }
 
@@ -1284,7 +1403,8 @@ actor OCRService {
     /// 只切正文字号的行：跨栏大标题本来就是横幅，整行保留。
     private func splitLinesAtColumnBoundaries(
         _ lines: [LineBox],
-        columns: [ClosedRange<CGFloat>]
+        columns: [ClosedRange<CGFloat>],
+        preserveLogicalOrder: Bool = false
     ) -> [LineBox] {
         guard columns.count >= 2 else { return lines }
         let medianHeight = median(lines.map { $0.bbox.height }, fallback: 0.012)
@@ -1327,7 +1447,7 @@ actor OCRService {
                 continue
             }
             for (_, words) in buckets.sorted(by: { $0.key < $1.key }) {
-                let sorted = words.sorted { $0.bbox.minX < $1.bbox.minX }
+                let sorted = preserveLogicalOrder ? words : words.sorted { $0.bbox.minX < $1.bbox.minX }
                 guard let box = union(sorted.map(\.bbox)) else { continue }
                 result.append(LineBox(
                     text: joinOcrWordTexts(sorted.map(\.text)),
@@ -1396,7 +1516,8 @@ actor OCRService {
         let raw = buildVisionParagraphBoxes(lines, language: language, preserveOrder: preserveOrder)
         let fallback = repairBrokenContinuations(raw, language: language)
         let wordBoxes = lines.flatMap(\.words)
-        let layoutLines = self.layoutLines(from: lines, preserveOrder: preserveOrder)
+        let layoutLines = self.layoutLines(from: lines, preserveOrder: preserveOrder,
+            preserveLogicalOrder: SupportedTTSLanguage(identifier: language ?? "")?.isRightToLeft == true)
         guard !layoutLines.isEmpty else { return fallback }
         if layoutLines.count == 1 {
             return [makeParagraphBox(from: layoutLines)]
@@ -1474,10 +1595,10 @@ actor OCRService {
     /// - Parameter preserveOrder: 多栏路径传 `true`。版面分析是在**倾角矫正后**的
     ///   坐标上排的序，倾斜页面上再按原始 y 排一次会把正确顺序打乱 —— 文本与词框
     ///   的顺序一起错位，朗读跳、高亮也跟着跳。
-    private func layoutLines(from lines: [LineBox], preserveOrder: Bool = false) -> [LayoutLine] {
+    private func layoutLines(from lines: [LineBox], preserveOrder: Bool = false, preserveLogicalOrder: Bool = false) -> [LayoutLine] {
         var result: [LayoutLine] = []
         for line in lines {
-            if OCRTokenGeometryCoverage.requiresEngineLineOrder(line.words),
+            if preserveLogicalOrder || OCRTokenGeometryCoverage.requiresEngineLineOrder(line.words),
                !line.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                OCRTokenGeometryCoverage.isUsable(line.bbox) {
                 result.append(LayoutLine(

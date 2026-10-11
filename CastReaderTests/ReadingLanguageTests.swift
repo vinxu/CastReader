@@ -40,7 +40,7 @@ final class ReadingLanguageTests: XCTestCase {
 
     func testCoverTitleIsOnlyAProvisionalLanguageHint() {
         let hint = ReadingLanguagePolicy.initialLanguage(title: "茶花女", remembered: "en")
-        XCTAssertEqual(hint, "zh")
+        XCTAssertEqual(hint, "en", "A three-character Han title cannot distinguish Japanese from Chinese; retain the document hint")
         XCTAssertEqual(ReadingLanguagePolicy.initialLanguage(title: "III", remembered: "it"), "it")
         XCTAssertEqual(ReadingLanguagePolicy.resolve(userOverride: nil,
             confidentDetection: ReadingLanguagePolicy.confidentLanguage(for: englishControl),
@@ -162,10 +162,11 @@ final class ReadingLanguageTests: XCTestCase {
     /// thin to trust; both gates are needed because each catches cases the other
     /// misses.
     func testThresholdsSitBetweenGuessworkAndRealPages() {
+        // Preserve the original raw Apple measurements alongside the new ensemble.
         // Confident but nearly textless: 13 readable characters read as English at
         // 0.94. Only the character floor rejects this one.
         let url = LanguageDetector.evidence(for: "www.example.com")
-        XCTAssertGreaterThan(url.confidence, ReadingLanguagePolicy.minimumConfidence)
+        XCTAssertGreaterThan(url.nativeCandidates.values.max() ?? 0, ReadingLanguagePolicy.minimumConfidence)
         XCTAssertLessThan(
             url.readableCharacterCount,
             ReadingLanguagePolicy.minimumReadableCharacters
@@ -176,18 +177,17 @@ final class ReadingLanguageTests: XCTestCase {
         for sample in ["III", "Fig. 1", "l1 |0 rn"] {
             let evidence = LanguageDetector.evidence(for: sample)
             XCTAssertLessThan(
-                evidence.confidence,
+                evidence.nativeCandidates.values.max() ?? 0,
                 ReadingLanguagePolicy.minimumConfidence,
-                "\(sample) must not clear the confidence floor"
+                "\(sample): retain the original system-recognizer confidence regression"
             )
             XCTAssertNil(ReadingLanguagePolicy.confidentLanguage(for: sample))
         }
 
-        // Nothing readable at all still returns "en" from the detector — the exact
-        // silent English fallback this policy exists to stop believing.
+        // Empty/nonlinguistic input stays explicitly uncertain.
         for sample in ["", "   \n  \t ", "42"] {
             let evidence = LanguageDetector.evidence(for: sample)
-            XCTAssertEqual(evidence.language, "en")
+            XCTAssertEqual(evidence.language, "")
             XCTAssertEqual(evidence.confidence, 0)
             XCTAssertNil(ReadingLanguagePolicy.confidentLanguage(for: sample))
         }
@@ -198,7 +198,7 @@ final class ReadingLanguageTests: XCTestCase {
             for: "lll 0O rn vv iii |||  ll1 O0O rnrn vvvv ii ||| lll OO0 rn vv iii ||| "
                 + "ll1 0OO rnrn vvv ii ||| lll OO rn vvv iiii ||| ll1 O0 rn vv ii |||"
         )
-        XCTAssertLessThan(garble.confidence, ReadingLanguagePolicy.minimumConfidence)
+        XCTAssertLessThan(garble.nativeCandidates.values.max() ?? 0, ReadingLanguagePolicy.minimumConfidence)
         XCTAssertNil(ReadingLanguagePolicy.confidentLanguage(in: garble))
     }
 
@@ -250,13 +250,13 @@ final class ReadingLanguageTests: XCTestCase {
         XCTAssertFalse(decision.shouldRemember)
     }
 
-    func testNothingKnownYetStillFallsBackToEnglish() {
+    func testNothingKnownYetRemainsUncertain() {
         let decision = ReadingLanguagePolicy.resolve(
             userOverride: nil,
             confidentDetection: nil,
             remembered: nil
         )
-        XCTAssertEqual(decision.language, "en")
+        XCTAssertEqual(decision.language, "")
         XCTAssertEqual(decision.source, .fallback)
         XCTAssertFalse(decision.shouldRemember)
     }
@@ -448,26 +448,90 @@ final class ReadingLanguageTests: XCTestCase {
     // MARK: - Correcting playback
 
     @MainActor
+    func testExplainAdoptsReadCorrectionOnModeSwitchAndReopen() {
+        let settings = AppSettings.shared
+        let previous = settings.explainLanguage
+        defer { settings.explainLanguage = previous }
+        settings.explainLanguage = ""
+        for detected in ["", "en"] {
+            let document = ReadingDocument(id: UUID().uuidString, title: "Corrected source",
+                sourceKind: .text, language: detected,
+                paragraphs: [ReadingParagraph(id: 0, text: englishControl, type: .paragraph)])
+            let key = ReadingLanguageStore.contentKey(for: document)
+            defer { ReadingLanguageStore.shared.clearOverride(for: key) }
+            let explain = ExplainViewModel(document: document)
+            XCTAssertEqual(explain.playbackLanguage, detected)
+            ReadAloudViewModel(document: document).correctReadingLanguage("it")
+            explain.activateAfterModeSwitch(autoplay: false)
+            XCTAssertEqual(explain.playbackLanguage, "it")
+            XCTAssertEqual(ExplainViewModel(document: document).playbackLanguage, "it")
+
+            // A correction belongs only to this document, never the next import.
+            let other = ReadingDocument(title: "Other", sourceKind: .text, language: "en",
+                paragraphs: document.paragraphs)
+            XCTAssertEqual(ExplainViewModel(document: other).playbackLanguage, "en")
+        }
+    }
+
+    @MainActor
+    func testExplicitExplanationLanguageWinsOverReadCorrection() {
+        let settings = AppSettings.shared
+        let previous = settings.explainLanguage
+        defer { settings.explainLanguage = previous }
+        settings.explainLanguage = "fr"
+        let document = ReadingDocument(id: UUID().uuidString, title: "Explicit explanation",
+            sourceKind: .text, language: "", paragraphs: [])
+        let key = ReadingLanguageStore.contentKey(for: document)
+        defer { ReadingLanguageStore.shared.clearOverride(for: key) }
+        let explain = ExplainViewModel(document: document)
+        ReadAloudViewModel(document: document).correctReadingLanguage("it")
+        explain.activateAfterModeSwitch(autoplay: false)
+        XCTAssertEqual(explain.playbackLanguage, "fr")
+        XCTAssertEqual(ExplainViewModel(document: document).playbackLanguage, "fr")
+    }
+
+    @MainActor
+    func testExplainCorrectionUsesStableBookIdentityAfterPageTurn() {
+        let settings = AppSettings.shared
+        let previous = settings.explainLanguage
+        defer { settings.explainLanguage = previous }
+        settings.explainLanguage = ""
+        let bookID = UUID().uuidString
+        let key = ReadingLanguageStore.contentKey(namespace: "kindle", bookID: bookID)
+        defer { ReadingLanguageStore.shared.clearOverride(for: key) }
+        ReadingLanguageStore.shared.setOverride("it", for: key)
+        for _ in 0..<2 {
+            let page = ReadingDocument(id: UUID().uuidString, title: "Book page",
+                sourceKind: .kindle, language: "", paragraphs: [])
+            let explain = ExplainViewModel(document: page)
+            explain.configurePlaybackMetadata(id: bookID, title: "Book", coverURL: nil)
+            XCTAssertEqual(explain.playbackLanguage, "it")
+        }
+    }
+
+    @MainActor
     func testCorrectingTheReadingLanguageRepointsTheVoice() throws {
         defer { VoiceCatalog.resetForTesting() }
         try VoiceCatalog.install(italianCatalog())
 
-        let document = ReadingDocument(
-            title: "Misdetected page",
-            sourceKind: .text,
-            language: "en",
-            paragraphs: [ReadingParagraph(id: 0, text: englishControl, type: .paragraph)]
-        )
-        let expectedEnglishVoice = AppSettings.shared.voice(for: "en")
-        let expectedItalianVoice = AppSettings.shared.voice(for: "it")
-        let vm = ReadAloudViewModel(document: document)
-        XCTAssertEqual(vm.playbackLanguage, "en")
-        XCTAssertEqual(AppSettings.shared.voice(for: vm.playbackLanguage), expectedEnglishVoice)
+        for detectedLanguage in ["en", ""] {
+            let document = ReadingDocument(
+                title: "Misdetected page",
+                sourceKind: .text,
+                language: detectedLanguage,
+                paragraphs: [ReadingParagraph(id: 0, text: englishControl, type: .paragraph)]
+            )
+            let expectedVoice = AppSettings.shared.voice(for: detectedLanguage)
+            let expectedItalianVoice = AppSettings.shared.voice(for: "it")
+            let vm = ReadAloudViewModel(document: document)
+            XCTAssertEqual(vm.playbackLanguage, detectedLanguage)
+            XCTAssertEqual(AppSettings.shared.voice(for: vm.playbackLanguage), expectedVoice)
 
-        vm.correctReadingLanguage("it-IT")
+            vm.correctReadingLanguage("it-IT")
 
-        XCTAssertEqual(vm.playbackLanguage, "it")
-        XCTAssertEqual(AppSettings.shared.voice(for: vm.playbackLanguage), expectedItalianVoice)
+            XCTAssertEqual(vm.playbackLanguage, "it")
+            XCTAssertEqual(AppSettings.shared.voice(for: vm.playbackLanguage), expectedItalianVoice)
+        }
     }
 
     /// A correction is about this book, not this page: re-extracting the next page
@@ -672,9 +736,14 @@ final class ReadingLanguageTests: XCTestCase {
         XCTAssertNil(
             KindleReadingLanguageCorrection.profile(correcting: metadataSaysEnglish, with: "en-GB")
         )
-        // An unsupported correction is not a licence to recognize under nothing.
+        // Korean now has a supported Vision profile, without an invented
+        // Tesseract fallback. Excluded languages remain unavailable.
+        let korean = KindleReadingLanguageCorrection.profile(correcting: metadataSaysEnglish, with: "ko")
+        XCTAssertEqual(korean?.language, "ko")
+        XCTAssertEqual(korean?.visionLocale, "ko-KR")
+        XCTAssertEqual(korean?.tesseractModel, "")
         XCTAssertNil(
-            KindleReadingLanguageCorrection.profile(correcting: metadataSaysEnglish, with: "ko")
+            KindleReadingLanguageCorrection.profile(correcting: metadataSaysEnglish, with: "uk")
         )
     }
 

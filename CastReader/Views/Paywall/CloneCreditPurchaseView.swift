@@ -2,6 +2,8 @@ import SwiftUI
 import StoreKit
 
 struct CloneCreditPurchaseView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @ObservedObject var store: CloneCreditStore = .shared
@@ -28,7 +30,8 @@ struct CloneCreditPurchaseView: View {
                             if let raw = balance.baseResetAt,
                                let date = ISO8601DateFormatter().date(from: raw)
                                 ?? Self.fractionalDate(raw) {
-                                Text(String(format: AppLocalized("下次更新：%@"), date.formatted(date: .abbreviated, time: .omitted)))
+                                Text(String(format: AppLocalized("下次更新：%@"), date.formatted(
+                                    Date.FormatStyle(date: .abbreviated, time: .omitted).locale(AppLanguageManager.shared.locale))))
                                     .font(.caption).foregroundStyle(AppTheme.mutedForeground)
                             }
                         }
@@ -93,7 +96,7 @@ struct CloneCreditPurchaseView: View {
         HStack {
             Text(AppLocalized(title))
             Spacer()
-            Text(milliseconds.map(Self.duration) ?? "—").monospacedDigit()
+            Text(Self.balanceText(milliseconds)).monospacedDigit()
         }.font(.subheadline)
     }
 
@@ -106,6 +109,10 @@ struct CloneCreditPurchaseView: View {
     static func duration(_ milliseconds: Int) -> String {
         if milliseconds > 0 && milliseconds < 60_000 { return AppLocalized("不足 1 分钟") }
         return String(format: AppLocalized("%lld 分钟"), Int64(max(0, milliseconds) / 60_000))
+    }
+
+    static func balanceText(_ milliseconds: Int?) -> String {
+        milliseconds.map(duration) ?? AppLocalized("生成额度正在同步")
     }
 }
 

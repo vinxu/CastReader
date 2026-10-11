@@ -406,7 +406,7 @@ actor TTSService: ParagraphSpeechGenerating {
                     audioData: audioData,
                     timestamps: TTSHighlightPolicy.displayTimestamps(
                         response.safeTimestamps,
-                        language: language
+                        language: language, voice: resolvedVoice
                     ),
                     duration: response.safeDuration,
                     text: coverage.processedText,
@@ -508,7 +508,7 @@ actor TTSService: ParagraphSpeechGenerating {
 
                 let timestamps = TTSHighlightPolicy.displayTimestamps(
                     response.safeTimestamps,
-                    language: language
+                    language: language, voice: voice
                 )
                 let duration = response.safeDuration
                 let coverage = try TTSPartlySourceCoverage.validate(

@@ -15,12 +15,14 @@ extension Notification.Name {
 }
 
 struct WeReadHomeSection: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = WeReadLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
                 VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
@@ -89,6 +91,8 @@ struct WeReadHomeSection: View {
 }
 
 struct WeReadLibraryConnectView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
@@ -238,6 +242,8 @@ struct WeReadLibraryConnectView: View {
 }
 
 struct WeReadLibraryView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = WeReadLibraryStore.shared
@@ -323,11 +329,13 @@ struct WeReadLibraryView: View {
 }
 
 private struct WeReadBookRailCard: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     let book: WeReadBook
     private var cardWidth: CGFloat { typeSize.isAccessibilitySize ? 240 : 108 }
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             WeReadCoverView(urlString: book.coverURL)
                 .frame(width: 96, height: 144)

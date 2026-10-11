@@ -9,6 +9,16 @@
 - 用户要求收敛测试并优先完成首版提交。不得把历史未闭环的 YouTube 提供方限流、WeRead 付费登录态重测及真实 Mac 购买记为通过。精确范围、327 文件冻结摘要、签名、11 语商店文案、三张 Mac 截图与提交回读见 `reports/mac-app-store-20261006/README.md`。
 
 
+
+## iOS 1.2.48 28 语适配已送审（2026-10-10）
+
+- 最新验收并送审源码为 main 合并 `60b0973c5dd7e3a922349fb157c5ec0af96cc53b`（PR #5 / #6），工作树 `/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader`。App/Share/Widget/Safari 均为 **1.2.48（75）**；466 个应用/配置文件摘要 `5991aa3ba1bd6f8fbd86ac476319376e24a83af9b4d6c3f37cc40330b085feba`。不得从主目录旧分支覆盖真机。
+- 国际 28 语、CN 原 9 语范围；28 语各含 iPhone/iPad 五图（280 本地成品），ASC 支持 27 个对应语言，保留 es-MX/zh-Hant 后共 29 条目、290 张 COMPLETE 截图。Filipino 无 ASC locale，本地文案/图片保留。
+- 两区真实朗读/解读 × 常规/社区/私人音色与额度验收通过；英文在 RTL 界面下的物理高亮/翻页方向已修复。完整单测并非全绿：印尼语/马来语自动识别覆盖率限制及手动选择回退见发布报告，不得隐去。Build 74 因 Safari 简介超 112 字符被拒，75 只改简介与 Build 号；兼容性核对后复用未变管线证据。
+- Build `b5fe510d-5916-44aa-99b7-bd573abd98fb` 为 VALID / APP_STORE_ELIGIBLE；审核单 `0e9aa3ea-588c-47fa-a38f-56fe017bbc34` 于北京时间 **20:42:21** 提交，版本/审核单均 WAITING_FOR_REVIEW，审核后自动发布，不冒称已上线。手机已安装同源码 Release 配置开发签名包 75。详见 `docs/iOS-1.2.48-Release-Report.md`。
+- 后续从最新远端 main 增量迭代，继续运行 `bash scripts/build-voice-toc-integration.sh --check` 和 `ruby scripts/verify_safari_extension.rb`；下方旧版本仅为历史记录。
+
+
 ## iOS 1.2.47 额度购买与 Kindle 修复已送审（2026-09-29）
 
 - 最新已验收并送审的应用基线为 main 合并 `fadb18a727c96c6ada3353e08882fe1ed34ccf74`（PR #2）；验收应用源码 `60ec382` 的 416 文件与该归档逐一一致，冻结摘要 `9f2ee75b8b30cddc7aef445517d6c49cdca3a535d175ab6c6dc3148514f76b5c`。工作树 `/Users/xuxuheng/.codex/worktrees/ios-release-1.2.47/CastReader`，不得从主目录旧分支覆盖真机。

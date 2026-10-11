@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Högläsning och AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Läs högt + AI-förklaring"
+  },
+  "extDescription": {
+    "message": "Lyssna på 28 språk med synkron markering, automatisk rullning och AI-förklaringar."
+  },
+  "quickreadBtn": {
+    "message": "Snabb översikt"
+  },
+  "quickreadBtnExit": {
+    "message": "Avsluta översikt"
+  },
+  "quickreadPreparing": {
+    "message": "Genererar översikt"
+  },
+  "quickreadError": {
+    "message": "Översiktsfel"
+  },
+  "quickreadStageExtract": {
+    "message": "Extraherar nyckelpunkter"
+  },
+  "quickreadStageTts": {
+    "message": "Genererar voiceover"
+  },
+  "quickreadStageRefine": {
+    "message": "Arrangerar rytm"
+  },
+  "quickreadStageReady": {
+    "message": "Klar att spela…"
+  },
+  "quickreadFailed": {
+    "message": "Misslyckades: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Stäng"
+  },
+  "quickreadCancel": {
+    "message": "Avbryt"
+  },
+  "quickreadDone": {
+    "message": "Klart"
+  },
+  "quickreadHint": {
+    "message": "Ungefär 25–45 sekunder, vänligen vänta"
+  },
+  "quickreadQueued": {
+    "message": "I kö ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Dagliga gratis Explains uppnådda. Återställs imorgon."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Dagliga gratis Explains uppnådda"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Daglig gratisgräns nådd — uppgradera till Pro för obegränsade Explains. Din gratiskvot återställs imorgon."
+  },
+  "quickreadUpgrade": {
+    "message": "Uppgradera till Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Inte inloggad"
+  },
+  "enableProMode": {
+    "message": "Aktivera Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Dagliga 20 minuter gratis läsning använda"
+  },
+  "listenRateLimitBody": {
+    "message": "Du har använt dagens 20 gratis minuter av läsning — uppgradera till Pro för obegränsad läsning. Din gratiskvot återställs imorgon."
+  },
+  "quickreadQuotaTip": {
+    "message": "Förklara · $n$/$max$ kvar idag",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Förklara · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Läs ett dokument"
+  },
+  "readerDrop": {
+    "message": "Släpp en bild / PDF / EPUB / Word / TXT här"
+  },
+  "readerDropOver": {
+    "message": "Släpp för att ladda upp"
+  },
+  "readerSub": {
+    "message": "Läs högt + AI-översikt på originalfilen — layout oförändrad"
+  },
+  "readerOr": {
+    "message": "eller"
+  },
+  "readerPick": {
+    "message": "Välj fil"
+  },
+  "readerRendering": {
+    "message": "Renderar dokument…"
+  },
+  "readerListen": {
+    "message": "▶ Lyssna"
+  },
+  "readerPause": {
+    "message": "⏸ Pausa"
+  },
+  "readerResume": {
+    "message": "▶ Fortsätt"
+  },
+  "readerStop": {
+    "message": "■ Stoppa"
+  },
+  "readerExplain": {
+    "message": "✦ Förklara"
+  },
+  "readerExplainHint": {
+    "message": "Stoppa läsningen först"
+  },
+  "readerNewFile": {
+    "message": "Ny fil"
+  },
+  "readerSpeed": {
+    "message": "Hastighet"
+  },
+  "readerUnsupported": {
+    "message": "Filtypen stöds inte"
+  },
+  "readerFailed": {
+    "message": "Bearbetningen misslyckades"
+  },
+  "readerEmpty": {
+    "message": "Ingen läsbar text hittades i detta dokument"
+  },
+  "readerQuotaLeft": {
+    "message": "kvar idag"
+  },
+  "readerQuotaBlocked": {
+    "message": "Dagliga 10 gratis översikter använda — återställs imorgon"
+  },
+  "readerPartial": {
+    "message": "Förklarade sektionen vid din nuvarande position — rulla ner och tryck på Förklara igen för nästa"
+  },
+  "readerTooLarge": {
+    "message": "Filen är för stor (över 100 MB). Använd en mindre fil."
+  },
+  "readerLargeFilePro": {
+    "message": "Filer över 7 MB kräver Pro — Pro öppnar dokument upp till 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "För stor för att öppnas från denna sida (över 7 MB). Öppna dokumentläsaren och välj den där — upp till 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Öppna dokumentläsare"
+  },
+  "readerContinue": {
+    "message": "Fortsätt ✦"
+  },
+  "readerSettings": {
+    "message": "Inställningar"
+  },
+  "readerExplainLang": {
+    "message": "Förklara på"
+  },
+  "readerDocumentLang": {
+    "message": "Dokumentets språk"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automatiskt (från texten)"
+  },
+  "readerDocumentLangHint": {
+    "message": "För bilder eller skannade PDF-filer utan extraherbar text väljer du dokumentets språk och öppnar sedan filen."
+  },
+  "readerVoiceEn": {
+    "message": "Engelsk röst"
+  },
+  "readerVoiceZh": {
+    "message": "Kinesisk röst"
+  },
+  "readerVoices": {
+    "message": "Röster"
+  },
+  "readerBrowseVoices": {
+    "message": "Bläddra i röster"
+  },
+  "readerLangAuto": {
+    "message": "Auto (gränsspråk)"
+  },
+  "readerLangFollow": {
+    "message": "Matcha dokument"
+  },
+  "readerPreparing": {
+    "message": "Förbereder uppläsning…"
+  },
+  "readerEncrypted": {
+    "message": "Denna PDF är lösenordsskyddad"
+  },
+  "readerCorrupt": {
+    "message": "Den här filen verkar skadad eller oläslig"
+  },
+  "readerTimeout": {
+    "message": "Öppningen tog för lång tid – filen kan vara för komplex"
+  },
+  "readerEpubDrm": {
+    "message": "Denna EPUB är skyddad av DRM. Försök med en DRM-fri EPUB."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Denna fast layout-EPUB har ingen text som kan synkroniseras med uppläsningen."
+  },
+  "readerEpubTooComplex": {
+    "message": "Denna EPUB överskrider gränserna för säker lokal bearbetning. Försök med en mindre eller enklare EPUB."
+  },
+  "readerEpubTooLarge": {
+    "message": "EPUB-filer får högst vara 30 MB för säker lokal bearbetning."
+  },
+  "inboxTitle": {
+    "message": "Inkorg för innehåll"
+  },
+  "inboxSubtitle": {
+    "message": "Spara webbsidor eller markerad text, och läs eller förklara dem när du är redo."
+  },
+  "inboxEmpty": {
+    "message": "Din inkorg är tom"
+  },
+  "inboxEmptyDescription": {
+    "message": "Högerklicka på en sida eller markerad text och spara den till CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Spara markerad text till CastReader-inkorgen"
+  },
+  "inboxSavePage": {
+    "message": "Spara sida till CastReader-inkorgen"
+  },
+  "inboxOpen": {
+    "message": "Öppna inkorg för innehåll"
+  },
+  "inboxSharedText": {
+    "message": "Markerad text"
+  },
+  "inboxOpenFailed": {
+    "message": "Det gick inte att öppna detta innehåll. Vänligen försök igen."
+  },
+  "inboxRetry": {
+    "message": "Försök igen"
+  },
+  "inboxRead": {
+    "message": "Läs högt"
+  },
+  "inboxExplain": {
+    "message": "Förklara"
+  },
+  "inboxDelete": {
+    "message": "Radera"
+  },
+  "inboxLink": {
+    "message": "Länk"
+  },
+  "inboxText": {
+    "message": "Text"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Läs högt + AI-förklaring"
+  },
+  "edgeExtDescription": {
+    "message": "Läs med synkroniserade markeringar och automatisk rullning. AI förklarar svåra avsnitt på sidan. Naturliga röster på 28 språk."
+  },
+  "toggleSiteVisibility": {
+    "message": "Visa / dölj CastReader på denna webbplats"
+  },
+  "voiceCloneBenefit": {
+    "message": "Använd din egen röst för Läs upp och Förklara · 120 minuter per månad"
+  },
+  "voiceClonePaywall": {
+    "message": "Skapa, hantera och spela fasta förhandsvisningar av flera personliga röster gratis. Pro använder personliga röster i Läs upp och Förklara för 120 genererade minuter varje månad."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Dina minuter för personlig röst är slut för denna månad. Din valda röst behålls."
+  },
+  "ocrModelUnavailable": {
+    "message": "Språkfilen för textigenkänning kunde inte hämtas. Anslut till internet och försök igen."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Bild- och skannad textigenkänning är ännu inte tillgänglig för det här språket. Du kan fortfarande läsa webbsidor, EPUB, TXT och PDF-filer med markerbar text."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Högläsning är inte tillgänglig på den här sidan"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Läs den här sidan högt"
+  }
+}

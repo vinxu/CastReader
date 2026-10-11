@@ -1,0 +1,170 @@
+{
+  "en": {
+    "platform": "ON IPHONE AND IPAD\nUse the layouts built for iPhone and iPad, in portrait or landscape. The Safari extension reads web pages with highlighting and automatic scrolling. Enable it in Safari settings and allow access to the pages you want to read.",
+    "privacy": "Dark mode and background playback are supported. Photo text recognition uses Apple’s on-device OCR; accuracy varies with the language and image quality. Photos are not uploaded for text recognition. Your local reading history stays on your device. Connected services retain their own account and reading data under their respective policies.",
+    "whatsNew": "The interface and reading now support 28 languages. Voice lists follow your app language, and playback voice selection follows the language being read. Improved language switching, localized labels and cloned-voice balance display on iPhone and iPad.",
+    "availability": "Voice and feature availability may vary by region."
+  },
+  "zh-Hans": {
+    "platform": "适配 iPhone 与 iPad\n为手机和平板提供横竖屏阅读布局。Safari 扩展支持网页朗读、同步高亮和自动滚动；在 Safari 设置中启用扩展，并允许访问要朗读的网页。",
+    "privacy": "支持深色模式与后台播放。照片文字使用 Apple 设备端 OCR 识别，准确度因语言和图片质量而异；照片不会为文字识别而上传。本地阅读历史保留在设备上，已连接服务依据各自政策保存其账号和阅读数据。",
+    "whatsNew": "界面与朗读扩展至 28 种语言。音色列表随 App 语言切换，播放中换声则对应当前朗读语言。改善 iPhone、iPad 上的语言切换、本地化文案与克隆音色余额显示。",
+    "availability": "音色和功能的可用范围因地区而异。"
+  },
+  "ja": {
+    "platform": "IPHONEとIPADに対応\niPhoneとiPadで縦向き・横向きの読みやすい画面を利用できます。Safari拡張機能は、Webページの読み上げ、同期ハイライト、自動スクロールに対応。Safariの設定で有効にし、読みたいページへのアクセスを許可してください。",
+    "privacy": "ダークモードとバックグラウンド再生に対応。写真の文字はAppleの端末内OCRで認識し、認識のために写真をアップロードしません。精度は言語や画像の品質により異なります。ローカルの読書履歴は端末に保存され、接続したサービスのアカウントや読書データには各サービスのポリシーが適用されます。",
+    "whatsNew": "画面と読み上げが28言語に対応。音声一覧はアプリの言語に、再生中の音声選択は読み上げる言語に合わせて表示されます。iPhoneとiPadで言語切り替え、翻訳、クローン音声の残り時間表示を改善しました。",
+    "availability": "音声と機能の提供状況は地域によって異なる場合があります。"
+  },
+  "de": {
+    "platform": "AUF IPHONE UND IPAD\nFür iPhone und iPad gestaltete Ansichten im Hoch- und Querformat. Die Safari-Erweiterung liest Webseiten mit Hervorhebung und automatischem Scrollen vor. Aktiviere sie in den Safari-Einstellungen und erlaube den Zugriff auf die gewünschten Seiten.",
+    "privacy": "Dunkelmodus und Hintergrundwiedergabe werden unterstützt. Fotos werden mit Apples OCR auf dem Gerät erkannt und dafür nicht hochgeladen. Die Genauigkeit hängt von Sprache und Bildqualität ab. Der lokale Leseverlauf bleibt auf deinem Gerät. Verbundene Dienste speichern ihre Konto- und Lesedaten gemäß ihren eigenen Richtlinien.",
+    "whatsNew": "Oberfläche und Vorlesen unterstützen jetzt 28 Sprachen. Die Stimmenliste folgt der App-Sprache; beim Vorlesen werden Stimmen für die gelesene Sprache angezeigt. Sprachwechsel, Übersetzungen und die Guthabenanzeige für geklonte Stimmen auf iPhone und iPad wurden verbessert.",
+    "availability": "Die Verfügbarkeit von Stimmen und Funktionen kann je nach Region variieren."
+  },
+  "fr": {
+    "platform": "SUR IPHONE ET IPAD\nDes interfaces adaptées à l’iPhone et à l’iPad, en portrait ou en paysage. L’extension Safari lit les pages web avec surlignage et défilement automatique. Activez-la dans les réglages de Safari et autorisez l’accès aux pages à lire.",
+    "privacy": "Mode sombre et lecture en arrière-plan disponibles. Les photos sont reconnues par l’OCR d’Apple sur l’appareil, sans être envoyées pour cette reconnaissance. La précision varie selon la langue et la qualité de l’image. L’historique local reste sur l’appareil. Les services connectés conservent leurs données de compte et de lecture selon leurs propres règles.",
+    "whatsNew": "L’interface et la lecture prennent désormais en charge 28 langues. La liste des voix suit la langue de l’app et le choix des voix pendant la lecture correspond au texte lu. Améliorations du changement de langue, des traductions et de l’affichage du solde des voix clonées sur iPhone et iPad.",
+    "availability": "La disponibilité des voix et des fonctions peut varier selon la région."
+  },
+  "es": {
+    "platform": "EN IPHONE Y IPAD\nDiseños adaptados al iPhone y al iPad, en vertical y horizontal. La extensión de Safari lee páginas web con resaltado y desplazamiento automático. Actívala en los ajustes de Safari y permite el acceso a las páginas que quieras escuchar.",
+    "privacy": "Compatible con modo oscuro y reproducción en segundo plano. Las fotos se reconocen con el OCR de Apple en el dispositivo y no se suben para reconocer texto. La precisión depende del idioma y de la calidad de la imagen. El historial local permanece en el dispositivo. Los servicios conectados conservan sus datos de cuenta y lectura según sus propias políticas.",
+    "whatsNew": "La interfaz y la lectura ahora admiten 28 idiomas. La lista de voces sigue el idioma de la app, y al cambiar de voz durante la lectura se muestra el idioma del texto. Mejoras en el cambio de idioma, las traducciones y el saldo de voces clonadas en iPhone y iPad.",
+    "availability": "La disponibilidad de voces y funciones puede variar según la región."
+  },
+  "pt-BR": {
+    "platform": "NO IPHONE E IPAD\nLayouts adaptados ao iPhone e ao iPad, na vertical ou horizontal. A extensão do Safari lê páginas com destaque e rolagem automática. Ative-a nos ajustes do Safari e permita o acesso às páginas que deseja ouvir.",
+    "privacy": "Compatível com modo escuro e reprodução em segundo plano. As fotos são reconhecidas pelo OCR da Apple no dispositivo e não são enviadas para reconhecer texto. A precisão varia conforme o idioma e a qualidade da imagem. O histórico local permanece no dispositivo. Os serviços conectados armazenam seus dados de conta e leitura conforme as próprias políticas.",
+    "whatsNew": "A interface e a leitura agora oferecem 28 idiomas. A lista de vozes acompanha o idioma do app, e a escolha durante a leitura corresponde ao idioma do texto. Melhorias na troca de idioma, nas traduções e na exibição do saldo de vozes clonadas no iPhone e iPad.",
+    "availability": "A disponibilidade de vozes e recursos pode variar conforme a região."
+  },
+  "it": {
+    "platform": "SU IPHONE E IPAD\nInterfacce adatte a iPhone e iPad, in verticale e orizzontale. L’estensione Safari legge le pagine web con evidenziazione e scorrimento automatico. Attivala nelle impostazioni di Safari e consenti l’accesso alle pagine da leggere.",
+    "privacy": "Sono disponibili modalità scura e riproduzione in background. Il testo nelle foto viene riconosciuto con l’OCR di Apple sul dispositivo, senza caricare le foto per il riconoscimento. La precisione varia in base alla lingua e alla qualità dell’immagine. La cronologia locale rimane sul dispositivo. I servizi collegati conservano i propri dati di account e lettura secondo le rispettive politiche.",
+    "whatsNew": "Interfaccia e lettura ora supportano 28 lingue. L’elenco delle voci segue la lingua dell’app; durante la lettura vengono proposte le voci della lingua del testo. Migliorati il cambio lingua, le traduzioni e la visualizzazione del saldo delle voci clonate su iPhone e iPad.",
+    "availability": "La disponibilità di voci e funzioni può variare in base alla regione."
+  },
+  "hi": {
+    "platform": "IPHONE और IPAD पर\niPhone और iPad के लिए बने लेआउट को पोर्ट्रेट या लैंडस्केप में इस्तेमाल करें। Safari एक्सटेंशन वेब पेज को हाइलाइट और अपने-आप स्क्रॉल करते हुए पढ़ता है। इसे Safari सेटिंग में चालू करें और जिन पेजों को पढ़ना है, उनकी अनुमति दें।",
+    "privacy": "डार्क मोड और बैकग्राउंड प्लेबैक उपलब्ध हैं। तस्वीरों का टेक्स्ट Apple के ऑन-डिवाइस OCR से पहचाना जाता है; इसके लिए तस्वीरें अपलोड नहीं होतीं। सटीकता भाषा और तस्वीर की गुणवत्ता पर निर्भर है। स्थानीय पढ़ने का इतिहास डिवाइस पर रहता है। जुड़े हुए सेवाप्रदाता अपने नियमों के अनुसार खाते और पढ़ने का डेटा रखते हैं।",
+    "whatsNew": "इंटरफ़ेस और पढ़कर सुनाना अब 28 भाषाओं में उपलब्ध हैं। आवाज़ों की सूची ऐप की भाषा के अनुसार और प्लेबैक में आवाज़ का चयन पढ़े जा रहे पाठ की भाषा के अनुसार होता है। iPhone और iPad पर भाषा बदलने, अनुवाद और क्लोन आवाज़ के शेष समय के प्रदर्शन में सुधार किया गया है।",
+    "availability": "आवाज़ों और सुविधाओं की उपलब्धता क्षेत्र के अनुसार बदल सकती है।"
+  },
+  "nl": {
+    "platform": "OP IPHONE EN IPAD\nGebruik de indeling voor iPhone en iPad, staand of liggend. De Safari-extensie leest webpagina’s voor met markeringen en automatisch scrollen. Schakel de extensie in bij de Safari-instellingen en geef toegang tot de gewenste pagina’s.",
+    "privacy": "Donkere modus en afspelen op de achtergrond zijn beschikbaar. Foto’s worden met Apples OCR op het apparaat herkend en hiervoor niet geüpload. De nauwkeurigheid hangt af van taal en beeldkwaliteit. Je lokale leesgeschiedenis blijft op het apparaat. Verbonden diensten bewaren hun account- en leesgegevens volgens hun eigen beleid.",
+    "whatsNew": "Interface en voorlezen ondersteunen nu 28 talen. De stemmenlijst volgt de app-taal; tijdens het lezen worden stemmen voor de gelezen taal getoond. Verbeterde taalwisseling, vertalingen en weergave van het tegoed voor gekloonde stemmen op iPhone en iPad.",
+    "availability": "De beschikbaarheid van stemmen en functies kan per regio verschillen."
+  },
+  "ko": {
+    "platform": "IPHONE과 IPAD에서\niPhone과 iPad에 맞춘 세로·가로 레이아웃을 이용하세요. Safari 확장 프로그램은 웹페이지를 읽으며 글자를 강조하고 자동으로 스크롤합니다. Safari 설정에서 활성화하고 읽을 페이지에 대한 접근을 허용하세요.",
+    "privacy": "다크 모드와 백그라운드 재생을 지원합니다. 사진 속 글자는 Apple의 기기 내 OCR로 인식하며 인식을 위해 사진을 업로드하지 않습니다. 정확도는 언어와 이미지 품질에 따라 달라집니다. 로컬 읽기 기록은 기기에 보관됩니다. 연결된 서비스의 계정과 읽기 데이터에는 각 서비스의 정책이 적용됩니다.",
+    "whatsNew": "인터페이스와 음성 읽기가 28개 언어를 지원합니다. 음성 목록은 앱 언어에 맞춰 바뀌고, 재생 중 음성 선택은 읽는 언어에 맞춰 표시됩니다. iPhone과 iPad의 언어 전환, 번역 및 복제 음성 잔여 시간 표시를 개선했습니다.",
+    "availability": "음성과 기능의 제공 여부는 지역에 따라 다를 수 있습니다."
+  },
+  "ar": {
+    "platform": "على IPHONE وIPAD\nواجهات مخصصة لـ iPhone وiPad بالاتجاهين الرأسي والأفقي. تقرأ إضافة Safari صفحات الويب مع التظليل والتمرير التلقائي. فعّلها في إعدادات Safari واسمح لها بالوصول إلى الصفحات التي تريد قراءتها.",
+    "privacy": "يدعم الوضع الداكن والتشغيل في الخلفية. يجري التعرف على النص في الصور باستخدام OCR من Apple على الجهاز، دون رفع الصور لهذا الغرض. تختلف الدقة حسب اللغة وجودة الصورة. يبقى سجل القراءة المحلي على جهازك. تحتفظ الخدمات المتصلة ببيانات الحساب والقراءة وفق سياساتها الخاصة.",
+    "whatsNew": "أصبحت الواجهة والقراءة تدعمان 28 لغة. تتبع قائمة الأصوات لغة التطبيق، ويطابق اختيار الصوت أثناء التشغيل لغة النص المقروء. تحسين تبديل اللغة والترجمات وعرض الرصيد المتبقي للأصوات المستنسخة على iPhone وiPad.",
+    "availability": "قد يختلف توفر الأصوات والميزات حسب المنطقة."
+  },
+  "ru": {
+    "platform": "НА IPHONE И IPAD\nИнтерфейс для iPhone и iPad в книжной и альбомной ориентации. Расширение Safari читает веб-страницы с подсветкой и автоматической прокруткой. Включите его в настройках Safari и разрешите доступ к нужным страницам.",
+    "privacy": "Доступны тёмная тема и фоновое воспроизведение. Текст на фотографиях распознаётся средствами Apple на устройстве; фотографии для этого не загружаются. Точность зависит от языка и качества изображения. Локальная история чтения остаётся на устройстве. Подключённые сервисы хранят данные учётной записи и чтения по собственным правилам.",
+    "whatsNew": "Интерфейс и чтение теперь поддерживают 28 языков. Список голосов следует языку приложения, а при воспроизведении предлагаются голоса для языка текста. Улучшены смена языка, переводы и отображение остатка времени клонированных голосов на iPhone и iPad.",
+    "availability": "Доступность голосов и функций может зависеть от региона."
+  },
+  "pl": {
+    "platform": "NA IPHONIE I IPADZIE\nUkłady dla iPhone’a i iPada, w pionie i poziomie. Rozszerzenie Safari czyta strony internetowe z podświetlaniem i automatycznym przewijaniem. Włącz je w ustawieniach Safari i zezwól na dostęp do wybranych stron.",
+    "privacy": "Dostępne są ciemny motyw i odtwarzanie w tle. Tekst na zdjęciach rozpoznaje OCR Apple na urządzeniu; zdjęcia nie są w tym celu przesyłane. Dokładność zależy od języka i jakości obrazu. Lokalna historia czytania pozostaje na urządzeniu. Połączone usługi przechowują dane konta i czytania zgodnie ze swoimi zasadami.",
+    "whatsNew": "Interfejs i czytanie obsługują teraz 28 języków. Lista głosów odpowiada językowi aplikacji, a wybór głosu podczas odtwarzania — językowi tekstu. Ulepszono zmianę języka, tłumaczenia i wyświetlanie pozostałego czasu sklonowanych głosów na iPhonie i iPadzie.",
+    "availability": "Dostępność głosów i funkcji może się różnić w zależności od regionu."
+  },
+  "sv": {
+    "platform": "PÅ IPHONE OCH IPAD\nLayouter för iPhone och iPad i stående och liggande läge. Safari-tillägget läser webbsidor med markering och automatisk rullning. Aktivera det i Safaris inställningar och ge åtkomst till sidorna du vill läsa.",
+    "privacy": "Mörkt läge och bakgrundsuppspelning stöds. Text i foton känns igen med Apples OCR på enheten; foton laddas inte upp för detta. Noggrannheten beror på språk och bildkvalitet. Lokal läshistorik stannar på enheten. Anslutna tjänster lagrar sina konto- och läsdata enligt sina egna regler.",
+    "whatsNew": "Gränssnitt och uppläsning stöder nu 28 språk. Röstlistan följer appens språk, medan röstval under uppspelning följer textens språk. Förbättrat språkbyte, översättningar och visning av återstående tid för klonade röster på iPhone och iPad.",
+    "availability": "Tillgången till röster och funktioner kan variera mellan regioner."
+  },
+  "da": {
+    "platform": "PÅ IPHONE OG IPAD\nLayout til iPhone og iPad i stående og liggende format. Safari-udvidelsen læser websider med fremhævning og automatisk rulning. Aktivér den i Safaris indstillinger, og tillad adgang til de sider, du vil læse.",
+    "privacy": "Mørk tilstand og baggrundsafspilning understøttes. Tekst i fotos genkendes med Apples OCR på enheden; fotos uploades ikke til dette formål. Nøjagtigheden afhænger af sprog og billedkvalitet. Lokal læsehistorik bliver på enheden. Tilsluttede tjenester gemmer deres konto- og læsedata efter egne politikker.",
+    "whatsNew": "Brugerfladen og oplæsning understøtter nu 28 sprog. Stemmelisten følger appens sprog, mens valg under afspilning følger tekstens sprog. Forbedret sprogskift, oversættelser og visning af resterende tid til klonede stemmer på iPhone og iPad.",
+    "availability": "Tilgængeligheden af stemmer og funktioner kan variere efter region."
+  },
+  "nb": {
+    "platform": "PÅ IPHONE OG IPAD\nOppsett for iPhone og iPad i stående og liggende retning. Safari-utvidelsen leser nettsider med utheving og automatisk rulling. Aktiver den i Safari-innstillingene og gi tilgang til sidene du vil lese.",
+    "privacy": "Mørk modus og bakgrunnsavspilling støttes. Tekst i bilder gjenkjennes med Apples OCR på enheten; bildene lastes ikke opp for dette formålet. Nøyaktigheten avhenger av språk og bildekvalitet. Lokal lesehistorikk blir på enheten. Tilkoblede tjenester lagrer konto- og lesedata etter egne retningslinjer.",
+    "whatsNew": "Grensesnitt og opplesing støtter nå 28 språk. Stemmelisten følger appens språk, mens stemmevalget under avspilling følger tekstens språk. Forbedret språkbytte, oversettelser og visning av gjenstående tid for klonede stemmer på iPhone og iPad.",
+    "availability": "Tilgjengeligheten av stemmer og funksjoner kan variere mellom regioner."
+  },
+  "fi": {
+    "platform": "IPHONELLA JA IPADILLA\niPhonelle ja iPadille suunnitellut näkymät pysty- ja vaaka-asennossa. Safari-laajennus lukee verkkosivuja korostuksen ja automaattisen vierityksen avulla. Ota se käyttöön Safarin asetuksissa ja salli pääsy luettaville sivuille.",
+    "privacy": "Tumma tila ja taustatoisto ovat käytettävissä. Valokuvien teksti tunnistetaan Applen OCR:llä laitteessa, eikä kuvia lähetetä tunnistusta varten. Tarkkuus riippuu kielestä ja kuvan laadusta. Paikallinen lukuhistoria säilyy laitteessa. Yhdistetyt palvelut säilyttävät tili- ja lukutiedot omien käytäntöjensä mukaisesti.",
+    "whatsNew": "Käyttöliittymä ja ääneenluku tukevat nyt 28 kieltä. Ääniluettelo seuraa sovelluksen kieltä, ja toiston aikana valittavat äänet vastaavat luettavan tekstin kieltä. Parannettu kielenvaihtoa, käännöksiä ja kloonattujen äänten jäljellä olevan ajan näyttöä iPhonessa ja iPadissa.",
+    "availability": "Äänien ja toimintojen saatavuus voi vaihdella alueittain."
+  },
+  "cs": {
+    "platform": "NA IPHONU A IPADU\nRozvržení pro iPhone a iPad na výšku i na šířku. Rozšíření Safari čte webové stránky se zvýrazňováním a automatickým posouváním. Zapněte je v nastavení Safari a povolte přístup ke stránkám, které chcete číst.",
+    "privacy": "Podporován je tmavý režim i přehrávání na pozadí. Text na fotografiích rozpoznává OCR společnosti Apple přímo v zařízení; fotografie se za tímto účelem nenahrávají. Přesnost závisí na jazyce a kvalitě obrazu. Místní historie čtení zůstává v zařízení. Připojené služby uchovávají údaje účtu a čtení podle vlastních pravidel.",
+    "whatsNew": "Rozhraní a předčítání nyní podporují 28 jazyků. Seznam hlasů sleduje jazyk aplikace, zatímco výběr hlasu při přehrávání odpovídá jazyku textu. Vylepšeno přepínání jazyků, překlady a zobrazení zbývajícího času klonovaných hlasů na iPhonu a iPadu.",
+    "availability": "Dostupnost hlasů a funkcí se může lišit podle oblasti."
+  },
+  "el": {
+    "platform": "ΣΕ IPHONE ΚΑΙ IPAD\nΔιατάξεις για iPhone και iPad σε κατακόρυφη ή οριζόντια προβολή. Η επέκταση Safari διαβάζει ιστοσελίδες με επισήμανση και αυτόματη κύλιση. Ενεργοποιήστε την στις ρυθμίσεις Safari και επιτρέψτε πρόσβαση στις σελίδες που θέλετε να διαβάσετε.",
+    "privacy": "Υποστηρίζονται σκοτεινό θέμα και αναπαραγωγή στο παρασκήνιο. Το κείμενο φωτογραφιών αναγνωρίζεται με το OCR της Apple στη συσκευή, χωρίς μεταφόρτωση των φωτογραφιών για αυτόν τον σκοπό. Η ακρίβεια εξαρτάται από τη γλώσσα και την ποιότητα της εικόνας. Το τοπικό ιστορικό παραμένει στη συσκευή. Οι συνδεδεμένες υπηρεσίες διατηρούν δεδομένα λογαριασμού και ανάγνωσης σύμφωνα με τις δικές τους πολιτικές.",
+    "whatsNew": "Το περιβάλλον και η ανάγνωση υποστηρίζουν πλέον 28 γλώσσες. Η λίστα φωνών ακολουθεί τη γλώσσα της εφαρμογής, ενώ η επιλογή κατά την αναπαραγωγή αντιστοιχεί στη γλώσσα του κειμένου. Βελτιώθηκαν η αλλαγή γλώσσας, οι μεταφράσεις και η εμφάνιση του υπολοίπου κλωνοποιημένων φωνών σε iPhone και iPad.",
+    "availability": "Η διαθεσιμότητα φωνών και λειτουργιών ενδέχεται να διαφέρει ανά περιοχή."
+  },
+  "hu": {
+    "platform": "IPHONE-ON ÉS IPADEN\niPhone-ra és iPadre készült felület álló és fekvő tájolásban. A Safari-bővítmény kiemeléssel és automatikus görgetéssel olvassa fel a weboldalakat. Kapcsold be a Safari beállításaiban, és engedélyezd a kívánt oldalak elérését.",
+    "privacy": "Sötét mód és háttérlejátszás is elérhető. A fotók szövegét az Apple OCR-je a készüléken ismeri fel, ehhez a képeket nem tölti fel. A pontosság a nyelvtől és a képminőségtől függ. A helyi olvasási előzmények a készüléken maradnak. A kapcsolt szolgáltatások saját szabályzataik szerint tárolják a fiók- és olvasási adatokat.",
+    "whatsNew": "A felület és a felolvasás már 28 nyelvet támogat. A hanglista az alkalmazás nyelvét követi, lejátszás közben pedig a szöveg nyelvéhez illő hangok választhatók. Javítottuk a nyelvváltást, a fordításokat és a klónozott hangok fennmaradó idejének kijelzését iPhone-on és iPaden.",
+    "availability": "A hangok és funkciók elérhetősége régiónként eltérhet."
+  },
+  "fil": {
+    "platform": "SA IPHONE AT IPAD\nGamitin ang layout para sa iPhone at iPad sa portrait o landscape. Binabasa ng Safari extension ang mga web page na may highlight at awtomatikong pag-scroll. I-enable ito sa Safari settings at pahintulutan ang access sa mga pahinang gusto mong basahin.",
+    "privacy": "May dark mode at background playback. Kinikilala ang teksto sa larawan gamit ang OCR ng Apple sa device; hindi ina-upload ang larawan para rito. Nakadepende ang katumpakan sa wika at kalidad ng larawan. Nananatili sa device ang lokal na reading history. Iniingatan ng mga konektadong serbisyo ang sariling account at reading data ayon sa kanilang mga patakaran.",
+    "whatsNew": "Sinusuportahan na ng interface at pagbasa ang 28 wika. Sumusunod ang listahan ng mga boses sa wika ng app, at ang pagpili habang nagpapatugtog ay tumutugma sa wika ng binabasa. Pinahusay ang pagpapalit ng wika, mga salin, at pagpapakita ng natitirang oras ng cloned voice sa iPhone at iPad.",
+    "availability": "Maaaring mag-iba ang mga available na boses at feature ayon sa rehiyon."
+  },
+  "he": {
+    "platform": "ב-IPHONE וב-IPAD\nתצוגות מותאמות ל-iPhone ול-iPad לאורך ולרוחב. הרחבת Safari מקריאה דפי אינטרנט עם הדגשה וגלילה אוטומטית. הפעילו אותה בהגדרות Safari ואפשרו גישה לדפים שתרצו לקרוא.",
+    "privacy": "יש תמיכה במצב כהה ובניגון ברקע. הטקסט בתמונות מזוהה באמצעות OCR של Apple במכשיר, ללא העלאת התמונות לצורך הזיהוי. הדיוק תלוי בשפה ובאיכות התמונה. היסטוריית הקריאה המקומית נשארת במכשיר. השירותים המחוברים שומרים את נתוני החשבון והקריאה בהתאם למדיניות שלהם.",
+    "whatsNew": "הממשק וההקראה תומכים כעת ב-28 שפות. רשימת הקולות מותאמת לשפת האפליקציה, ובחירת קול במהלך הניגון מותאמת לשפת הטקסט. שופרו החלפת השפה, התרגומים והצגת יתרת הזמן של קולות משוכפלים ב-iPhone וב-iPad.",
+    "availability": "זמינות הקולות והתכונות עשויה להשתנות לפי האזור."
+  },
+  "id": {
+    "platform": "DI IPHONE DAN IPAD\nTata letak untuk iPhone dan iPad, dalam posisi potret atau lanskap. Ekstensi Safari membacakan halaman web dengan sorotan dan gulir otomatis. Aktifkan di pengaturan Safari dan izinkan akses ke halaman yang ingin dibaca.",
+    "privacy": "Mode gelap dan pemutaran latar belakang didukung. Teks foto dikenali dengan OCR Apple di perangkat; foto tidak diunggah untuk pengenalan. Akurasi bergantung pada bahasa dan kualitas gambar. Riwayat baca lokal tetap di perangkat. Layanan yang terhubung menyimpan data akun dan bacanya sesuai kebijakan masing-masing.",
+    "whatsNew": "Antarmuka dan pembacaan kini mendukung 28 bahasa. Daftar suara mengikuti bahasa aplikasi, sedangkan pilihan suara saat pemutaran sesuai dengan bahasa teks. Peningkatan pergantian bahasa, terjemahan, dan tampilan sisa waktu suara kloning di iPhone dan iPad.",
+    "availability": "Ketersediaan suara dan fitur dapat berbeda menurut wilayah."
+  },
+  "ms": {
+    "platform": "PADA IPHONE DAN IPAD\nSusun atur untuk iPhone dan iPad dalam orientasi potret atau landskap. Sambungan Safari membaca halaman web dengan sorotan dan tatal automatik. Aktifkannya dalam tetapan Safari dan benarkan akses ke halaman yang ingin dibaca.",
+    "privacy": "Mod gelap dan main balik latar belakang disokong. Teks foto dikenal pasti menggunakan OCR Apple pada peranti; foto tidak dimuat naik untuk pengecaman. Ketepatan bergantung pada bahasa dan kualiti imej. Sejarah bacaan setempat kekal pada peranti. Perkhidmatan yang disambungkan menyimpan data akaun dan bacaan mengikut dasar masing-masing.",
+    "whatsNew": "Antara muka dan bacaan kini menyokong 28 bahasa. Senarai suara mengikut bahasa aplikasi, manakala pilihan suara semasa main balik mengikut bahasa teks. Pertukaran bahasa, terjemahan dan paparan baki masa suara klon pada iPhone dan iPad telah ditambah baik.",
+    "availability": "Ketersediaan suara dan ciri mungkin berbeza mengikut rantau."
+  },
+  "ro": {
+    "platform": "PE IPHONE ȘI IPAD\nAspecte adaptate pentru iPhone și iPad, în orientare portret sau peisaj. Extensia Safari citește pagini web cu evidențiere și derulare automată. Activeaz-o în configurările Safari și permite accesul la paginile dorite.",
+    "privacy": "Sunt acceptate modul întunecat și redarea în fundal. Textul din fotografii este recunoscut cu OCR Apple pe dispozitiv; fotografiile nu sunt încărcate pentru recunoaștere. Precizia depinde de limbă și de calitatea imaginii. Istoricul local rămâne pe dispozitiv. Serviciile conectate păstrează datele de cont și lectură conform propriilor politici.",
+    "whatsNew": "Interfața și citirea acceptă acum 28 de limbi. Lista vocilor urmează limba aplicației, iar selecția în timpul redării corespunde limbii textului. Am îmbunătățit schimbarea limbii, traducerile și afișarea timpului rămas pentru vocile clonate pe iPhone și iPad.",
+    "availability": "Disponibilitatea vocilor și funcțiilor poate varia în funcție de regiune."
+  },
+  "tr": {
+    "platform": "IPHONE VE IPAD'DE\niPhone ve iPad için dikey ve yatay düzenler. Safari uzantısı web sayfalarını vurgulama ve otomatik kaydırmayla okur. Safari ayarlarında etkinleştirin ve okumak istediğiniz sayfalara erişim izni verin.",
+    "privacy": "Karanlık mod ve arka planda oynatma desteklenir. Fotoğraflardaki metin Apple'ın cihaz içi OCR özelliğiyle tanınır; bu işlem için fotoğraflar yüklenmez. Doğruluk dile ve görüntü kalitesine bağlıdır. Yerel okuma geçmişi cihazda kalır. Bağlı hizmetler hesap ve okuma verilerini kendi politikalarına göre saklar.",
+    "whatsNew": "Arayüz ve sesli okuma artık 28 dili destekliyor. Ses listesi uygulama dilini, oynatma sırasında ses seçimi ise okunan metnin dilini izler. iPhone ve iPad'de dil değiştirme, çeviriler ve klonlanmış seslerin kalan süre gösterimi iyileştirildi.",
+    "availability": "Seslerin ve özelliklerin kullanılabilirliği bölgeye göre değişebilir."
+  },
+  "vi": {
+    "platform": "TRÊN IPHONE VÀ IPAD\nBố cục dành cho iPhone và iPad ở chế độ dọc hoặc ngang. Tiện ích Safari đọc trang web với tô sáng và cuộn tự động. Hãy bật tiện ích trong cài đặt Safari và cho phép truy cập những trang bạn muốn đọc.",
+    "privacy": "Hỗ trợ chế độ tối và phát nền. Văn bản trong ảnh được nhận dạng bằng OCR của Apple trên thiết bị; ảnh không được tải lên để nhận dạng. Độ chính xác tùy thuộc ngôn ngữ và chất lượng ảnh. Lịch sử đọc cục bộ được giữ trên thiết bị. Các dịch vụ đã kết nối lưu dữ liệu tài khoản và đọc theo chính sách riêng.",
+    "whatsNew": "Giao diện và đọc thành tiếng nay hỗ trợ 28 ngôn ngữ. Danh sách giọng theo ngôn ngữ ứng dụng, còn lựa chọn giọng khi phát theo ngôn ngữ văn bản. Cải thiện chuyển ngôn ngữ, bản dịch và hiển thị thời gian còn lại của giọng nhân bản trên iPhone và iPad.",
+    "availability": "Giọng đọc và tính năng có sẵn có thể khác nhau tùy theo khu vực."
+  }
+}

@@ -295,6 +295,8 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
 }
 
 struct YouTubeHomeSection: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     let activeDocumentID: String?
     var isSurfaceEnabled = true
@@ -432,7 +434,7 @@ struct YouTubeHomeSection: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(AppTheme.mutedForeground)
             }
@@ -484,6 +486,8 @@ struct YouTubeHomeSection: View {
 }
 
 private struct YouTubeHomeShelfRow: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let record: HistoryRecord
     let status: YouTubeHistoryStatus?
     let isActive: Bool
@@ -544,6 +548,8 @@ private struct YouTubeHomeShelfRow: View {
 }
 
 struct YouTubeHomeView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var coordinator: PlayerCoordinator
@@ -697,7 +703,7 @@ struct YouTubeHomeView: View {
     }
 
     private var guideArrow: some View {
-        Image(systemName: "chevron.right")
+        Image(systemName: "chevron.forward")
             .font(.caption.weight(.bold))
             .foregroundStyle(AppTheme.mutedForeground.opacity(0.55))
             .padding(.top, 15)

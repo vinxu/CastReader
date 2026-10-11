@@ -1,0 +1,11 @@
+{
+  "model": "GlotLID v3",
+  "upstream": "https://huggingface.co/cis-lmu/glotlid/tree/85cd6716494360367b75f642b5bc78667605d0b4",
+  "upstreamSHA256": "a818b6bd42a628ab47d3dfc1578c7ea615c45381f3494c42535e31e8c4cafc9e",
+  "modification": "Product quantization with fastText v0.9.2; cutoff=300000, qnorm, qout, dsub=2. No retraining or corpus input.",
+  "file": "glotlid-v3-q300k.ftz",
+  "bytes": 42022637,
+  "sha256": "3b654fe9280b7ccc18c96d7fd12393437dd7191304bb359258e34ae0b58f1fea",
+  "license": "Apache-2.0-plus-notices; full original LICENSE accompanies this file.",
+  "routingStatus": "Integrated candidate: unconstrained model + native evidence; near-family abstention. Final language quality and unseen-corpus acceptance remain pending."
+}

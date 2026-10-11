@@ -10,6 +10,8 @@ import SwiftUI
 import AuthenticationServices
 
 struct AppleSignInButton: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.colorScheme) private var colorScheme
     var onSuccess: () -> Void
     var onError: (String) -> Void

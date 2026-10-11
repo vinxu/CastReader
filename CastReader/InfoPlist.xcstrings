@@ -1,243 +1,699 @@
 {
-  "sourceLanguage" : "zh-Hans",
-  "strings" : {
-    "CFBundleName" : {
-      "comment" : "Bundle name",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "CFBundleName": {
+      "comment": "Bundle name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         }
       }
     },
-    "NSCameraUsageDescription" : {
-      "comment" : "Privacy - Camera Usage Description",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader benötigt die Kamera, um Text aufzunehmen und vorzulesen."
+    "NSCameraUsageDescription": {
+      "comment": "Privacy - Camera Usage Description",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografiere Text aus Büchern, Dokumenten oder von Bildschirmen. CastReader erkennt den Text auf deinem Gerät und liest ihn mit synchroner Hervorhebung vor oder erstellt eine KI-Erklärung mit handschriftlichen Anmerkungen. Fotos werden auf dem Gerät verarbeitet und nicht hochgeladen."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capture text from books, documents, or screens. CastReader recognizes it on your device, then reads it aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are processed on-device and are not uploaded."
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture text from books, documents, or screens. CastReader recognizes it on your device, then reads it aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are processed on-device and are not uploaded."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Captura texto de libros, documentos o pantallas. CastReader lo reconoce en el dispositivo y después lo lee en voz alta con resaltado sincronizado o genera una explicación con IA y anotaciones manuscritas. Las fotos se procesan en el dispositivo y no se suben."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captura texto de libros, documentos o pantallas. CastReader lo reconoce en el dispositivo y después lo lee en voz alta con resaltado sincronizado o genera una explicación con IA y anotaciones manuscritas. Las fotos se procesan en el dispositivo y no se suben."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photographiez du texte dans des livres, des documents ou sur des écrans. CastReader le reconnaît sur votre appareil, puis le lit à voix haute avec un surlignage synchronisé ou génère une explication par IA accompagnée d’annotations manuscrites. Les photos sont traitées sur l’appareil et ne sont pas importées."
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photographiez du texte dans des livres, des documents ou sur des écrans. CastReader le reconnaît sur votre appareil, puis le lit à voix haute avec un surlignage synchronisé ou génère une explication par IA accompagnée d’annotations manuscrites. Les photos sont traitées sur l’appareil et ne sont pas importées."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "किताबों, दस्तावेज़ों या स्क्रीन से टेक्स्ट कैप्चर करें। CastReader इसे आपके डिवाइस पर पहचानकर सिंक्रोनाइज़्ड हाइलाइटिंग के साथ पढ़ता है या हस्तलिखित नोट्स वाली AI व्याख्या बनाता है। फ़ोटो केवल डिवाइस पर प्रोसेस की जाती हैं और अपलोड नहीं होतीं।"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "किताबों, दस्तावेज़ों या स्क्रीन से टेक्स्ट कैप्चर करें। CastReader इसे आपके डिवाइस पर पहचानकर सिंक्रोनाइज़्ड हाइलाइटिंग के साथ पढ़ता है या हस्तलिखित नोट्स वाली AI व्याख्या बनाता है। फ़ोटो केवल डिवाइस पर प्रोसेस की जाती हैं और अपलोड नहीं होतीं।"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acquisisci testo da libri, documenti o schermi. CastReader lo riconosce sul dispositivo, quindi lo legge ad alta voce con evidenziazione sincronizzata oppure genera una spiegazione tramite IA con annotazioni manoscritte. Le foto vengono elaborate sul dispositivo e non vengono caricate."
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acquisisci testo da libri, documenti o schermi. CastReader lo riconosce sul dispositivo, quindi lo legge ad alta voce con evidenziazione sincronizzata oppure genera una spiegazione tramite IA con annotazioni manoscritte. Le foto vengono elaborate sul dispositivo e non vengono caricate."
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "本や書類、画面の文字を撮影します。CastReaderは端末上で文字を認識し、同期ハイライト付きで読み上げたり、手書き風の注釈を付けたAI解説を生成したりします。写真は端末内でのみ処理され、アップロードされません。"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本や書類、画面の文字を撮影します。CastReaderは端末上で文字を認識し、同期ハイライト付きで読み上げたり、手書き風の注釈を付けたAI解説を生成したりします。写真は端末内でのみ処理され、アップロードされません。"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capture textos de livros, documentos ou telas. O CastReader reconhece o conteúdo no dispositivo e depois o lê em voz alta com destaque sincronizado ou gera uma explicação por IA com anotações manuscritas. As fotos são processadas no dispositivo e não são enviadas."
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture textos de livros, documentos ou telas. O CastReader reconhece o conteúdo no dispositivo e depois o lê em voz alta com destaque sincronizado ou gera uma explicação por IA com anotações manuscritas. As fotos são processadas no dispositivo e não são enviadas."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "拍下书本、文档或屏幕上的文字，CastReader 在本机识别后即可为你朗读（边读边高亮跟随），或生成 AI 讲解并在原文上做手写标注。照片仅在设备上识别，不会上传。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拍下书本、文档或屏幕上的文字，CastReader 在本机识别后即可为你朗读（边读边高亮跟随），或生成 AI 讲解并在原文上做手写标注。照片仅在设备上识别，不会上传。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografeer tekst uit boeken, documenten of op schermen. CastReader herkent de tekst op uw apparaat en leest deze voor met gesynchroniseerde markering, of maakt een AI-uitleg met notities in handschriftstijl. Foto’s worden op het apparaat verwerkt en niet geüpload."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صوّر النص من الكتب أو المستندات أو الشاشات. يتعرّف CastReader على النص في جهازك، ثم يقرأه بصوت عالٍ مع تظليل متزامن، أو ينشئ شرحًا بالذكاء الاصطناعي مع ملاحظات بأسلوب الكتابة اليدوية. تُعالج الصور على الجهاز ولا تُرفع إلى الخادم."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сфотографируйте текст в книге, документе или на экране. CastReader распознаёт текст на вашем устройстве, затем читает его вслух с синхронной подсветкой или создаёт объяснение с помощью ИИ и пометками в рукописном стиле. Фотографии обрабатываются на устройстве и не отправляются на сервер."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zrób zdjęcie tekstu w książce, dokumencie lub na ekranie. CastReader rozpoznaje tekst na urządzeniu, a następnie czyta go na głos z zsynchronizowanym podświetleniem lub tworzy wyjaśnienie AI z notatkami w stylu pisma odręcznego. Zdjęcia są przetwarzane na urządzeniu i nie są przesyłane na serwer."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografera text i böcker, dokument eller på skärmar. CastReader känner igen texten på din enhet och läser upp den med synkroniserad markering eller skapar en AI-förklaring med anteckningar i handskriven stil. Foton behandlas på enheten och laddas inte upp."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografér tekst i bøger, dokumenter eller på skærme. CastReader genkender teksten på din enhed og læser den højt med synkroniseret fremhævelse eller laver en AI-forklaring med noter i håndskrevet stil. Fotos behandles på enheden og uploades ikke."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografer tekst i bøker, dokumenter eller på skjermer. CastReader gjenkjenner teksten på enheten din og leser den høyt med synkronisert markering eller lager en KI-forklaring med notater i håndskrevet stil. Bilder behandles på enheten og lastes ikke opp."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvaa tekstiä kirjoista, asiakirjoista tai näytöiltä. CastReader tunnistaa tekstin laitteellasi ja lukee sen ääneen korostaen tekstiä lukemisen tahdissa tai luo tekoälyselityksen käsinkirjoitusta muistuttavine merkintöineen. Kuvat käsitellään laitteella eikä niitä lähetetä palvelimelle."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyfoťte text z knih, dokumentů nebo obrazovek. CastReader rozpozná text ve vašem zařízení a přečte jej nahlas se synchronizovaným zvýrazněním nebo vytvoří vysvětlení pomocí AI s poznámkami ve stylu rukopisu. Fotografie se zpracovávají v zařízení a nenahrávají se na server."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Φωτογραφίστε κείμενο από βιβλία, έγγραφα ή οθόνες. Το CastReader αναγνωρίζει το κείμενο στη συσκευή σας και το διαβάζει φωναχτά με συγχρονισμένη επισήμανση ή δημιουργεί μια εξήγηση με τεχνητή νοημοσύνη και σημειώσεις σε χειρόγραφο στιλ. Οι φωτογραφίες υποβάλλονται σε επεξεργασία στη συσκευή και δεν μεταφορτώνονται."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotózz le szöveget könyvből, dokumentumból vagy képernyőről. A CastReader a készülékeden felismeri a szöveget, majd a felolvasással szinkronban kiemeli, vagy AI-magyarázatot készít kézírásos stílusú jegyzetekkel. A fotók feldolgozása a készüléken történik, nem kerülnek feltöltésre."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kunan ng larawan ang teksto sa mga aklat, dokumento, o screen. Kinikilala ng CastReader ang teksto sa iyong device, pagkatapos ay binabasa ito nang malakas habang naka-highlight ang binabasa, o gumagawa ng paliwanag gamit ang AI na may mga talang parang sulat-kamay. Pinoproseso ang mga larawan sa device at hindi ina-upload."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ambil gambar teks daripada buku, dokumen atau skrin. CastReader mengenal pasti teks pada peranti anda, kemudian membacakannya dengan penyerlahan yang disegerakkan atau menjana penjelasan AI dengan nota bergaya tulisan tangan. Foto diproses pada peranti dan tidak dimuat naik."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kitap, belge veya ekranlardaki metinlerin fotoğrafını çekin. CastReader metni cihazınızda tanır, ardından eş zamanlı vurgulamayla sesli okur veya el yazısı tarzında notlar içeren bir yapay zekâ açıklaması oluşturur. Fotoğraflar cihazda işlenir ve yüklenmez."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "책, 문서 또는 화면의 글을 촬영하세요. CastReader가 기기에서 텍스트를 인식한 뒤 읽기에 맞춰 강조 표시하며 소리 내어 읽거나 손글씨 스타일 메모가 포함된 AI 해설을 생성합니다. 사진은 기기에서 처리되며 업로드되지 않습니다."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foto teks dari buku, dokumen, atau layar. CastReader mengenali teks di perangkat Anda, lalu membacakannya dengan sorotan yang sinkron atau membuat penjelasan AI dengan catatan bergaya tulisan tangan. Foto diproses di perangkat dan tidak diunggah."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotografiază text din cărți, documente sau de pe ecrane. CastReader recunoaște textul pe dispozitiv, apoi îl citește cu voce tare cu evidențiere sincronizată sau generează o explicație AI cu adnotări în stil scris de mână. Fotografiile sunt procesate pe dispozitiv și nu sunt încărcate pe server."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "צלמו טקסט מתוך ספרים, מסמכים או מסכים. CastReader מזהה את הטקסט במכשיר שלכם, ואז מקריא אותו עם הדגשה מסונכרנת או יוצר הסבר בעזרת בינה מלאכותית עם הערות בסגנון כתב יד. התמונות מעובדות במכשיר ואינן מועלות לשרת."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chụp văn bản từ sách, tài liệu hoặc màn hình. CastReader nhận diện văn bản trên thiết bị, sau đó đọc thành tiếng kèm tô sáng đồng bộ hoặc tạo nội dung giải thích bằng AI với ghi chú kiểu viết tay. Ảnh được xử lý trên thiết bị và không được tải lên."
           }
         }
       }
     },
-    "NSMicrophoneUsageDescription" : {
-      "comment" : "Privacy - Microphone Usage Description",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader benötigt das Mikrofon, um ein Stimmbeispiel für das Stimmenklonen aufzunehmen."
+    "NSMicrophoneUsageDescription": {
+      "comment": "Privacy - Microphone Usage Description",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nimm eine kurze Sprachprobe auf, um deine persönliche Stimme zu erstellen."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Record a short sample to create your personal voice."
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record a short sample to create your personal voice."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Graba una muestra breve para crear tu voz personal."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Graba una muestra breve para crear tu voz personal."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrez un court extrait pour créer votre voix personnelle."
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrez un court extrait pour créer votre voix personnelle."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "अपनी व्यक्तिगत आवाज़ बनाने के लिए एक छोटा नमूना रिकॉर्ड करें।"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अपनी व्यक्तिगत आवाज़ बनाने के लिए एक छोटा नमूना रिकॉर्ड करें।"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registra un breve campione per creare la tua voce personale."
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra un breve campione per creare la tua voce personale."
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "短い音声サンプルを録音して、自分の声を作成します。"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "短い音声サンプルを録音して、自分の声を作成します。"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Grave uma breve amostra para criar sua voz pessoal."
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grave uma breve amostra para criar sua voz pessoal."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "录制一段简短样本，用于创建你的个人声音。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "录制一段简短样本，用于创建你的个人声音。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neem een kort stemfragment op om uw persoonlijke stem te maken."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سجّل عينة صوتية قصيرة لإنشاء صوتك الشخصي."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запишите короткий образец речи, чтобы создать свой голос."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nagraj krótką próbkę, aby utworzyć własny głos."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spela in ett kort röstprov för att skapa din egen röst."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optag en kort stemmeprøve for at oprette din egen stemme."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta opp en kort stemmeprøve for å lage din egen stemme."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallenna lyhyt ääninäyte luodaksesi oman äänesi."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nahrajte krátkou hlasovou ukázku a vytvořte si vlastní hlas."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ηχογραφήστε ένα σύντομο δείγμα για να δημιουργήσετε την προσωπική σας φωνή."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rögzíts egy rövid hangmintát a saját hangod létrehozásához."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magrekord ng maikling sample upang lumikha ng sarili mong boses."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rakam sampel pendek untuk mencipta suara peribadi anda."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kişisel sesinizi oluşturmak için kısa bir ses örneği kaydedin."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "짧은 음성 샘플을 녹음해 나만의 음성을 만드세요."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rekam sampel singkat untuk membuat suara pribadi Anda."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Înregistrează o mostră scurtă pentru a-ți crea vocea personală."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הקליטו דוגמה קצרה ליצירת הקול האישי שלכם."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu một mẫu ngắn để tạo giọng cá nhân của bạn."
           }
         }
       }
     },
-    "NSPhotoLibraryUsageDescription" : {
-      "comment" : "Privacy - Photo Library Usage Description",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader benötigt Zugriff auf Fotos, um Text in Bildern zu erkennen und vorzulesen."
+    "NSPhotoLibraryUsageDescription": {
+      "comment": "Privacy - Photo Library Usage Description",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle Fotos mit Text aus. CastReader erkennt den Text auf deinem Gerät und liest ihn mit synchroner Hervorhebung vor oder erstellt eine KI-Erklärung mit handschriftlichen Anmerkungen. Fotos werden auf dem Gerät verarbeitet und nicht hochgeladen."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose photos that contain text. CastReader recognizes the text on your device, then reads it aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are processed on-device and are not uploaded."
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose photos that contain text. CastReader recognizes the text on your device, then reads it aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are processed on-device and are not uploaded."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Selecciona fotos que contengan texto. CastReader lo reconoce en el dispositivo y después lo lee en voz alta con resaltado sincronizado o genera una explicación con IA y anotaciones manuscritas. Las fotos se procesan en el dispositivo y no se suben."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecciona fotos que contengan texto. CastReader lo reconoce en el dispositivo y después lo lee en voz alta con resaltado sincronizado o genera una explicación con IA y anotaciones manuscritas. Las fotos se procesan en el dispositivo y no se suben."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sélectionnez des photos contenant du texte. CastReader le reconnaît sur votre appareil, puis le lit à voix haute avec un surlignage synchronisé ou génère une explication par IA accompagnée d’annotations manuscrites. Les photos sont traitées sur l’appareil et ne sont pas importées."
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sélectionnez des photos contenant du texte. CastReader le reconnaît sur votre appareil, puis le lit à voix haute avec un surlignage synchronisé ou génère une explication par IA accompagnée d’annotations manuscrites. Les photos sont traitées sur l’appareil et ne sont pas importées."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "टेक्स्ट वाली फ़ोटो चुनें। CastReader टेक्स्ट को आपके डिवाइस पर पहचानकर सिंक्रोनाइज़्ड हाइलाइटिंग के साथ पढ़ता है या हस्तलिखित नोट्स वाली AI व्याख्या बनाता है। फ़ोटो केवल डिवाइस पर प्रोसेस की जाती हैं और अपलोड नहीं होतीं।"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "टेक्स्ट वाली फ़ोटो चुनें। CastReader टेक्स्ट को आपके डिवाइस पर पहचानकर सिंक्रोनाइज़्ड हाइलाइटिंग के साथ पढ़ता है या हस्तलिखित नोट्स वाली AI व्याख्या बनाता है। फ़ोटो केवल डिवाइस पर प्रोसेस की जाती हैं और अपलोड नहीं होतीं।"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scegli foto che contengono testo. CastReader lo riconosce sul dispositivo, quindi lo legge ad alta voce con evidenziazione sincronizzata oppure genera una spiegazione tramite IA con annotazioni manoscritte. Le foto vengono elaborate sul dispositivo e non vengono caricate."
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scegli foto che contengono testo. CastReader lo riconosce sul dispositivo, quindi lo legge ad alta voce con evidenziazione sincronizzata oppure genera una spiegazione tramite IA con annotazioni manoscritte. Le foto vengono elaborate sul dispositivo e non vengono caricate."
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "文字を含む写真を選択します。CastReaderは端末上で文字を認識し、同期ハイライト付きで読み上げたり、手書き風の注釈を付けたAI解説を生成したりします。写真は端末内でのみ処理され、アップロードされません。"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字を含む写真を選択します。CastReaderは端末上で文字を認識し、同期ハイライト付きで読み上げたり、手書き風の注釈を付けたAI解説を生成したりします。写真は端末内でのみ処理され、アップロードされません。"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Selecione fotos que contenham texto. O CastReader reconhece o conteúdo no dispositivo e depois o lê em voz alta com destaque sincronizado ou gera uma explicação por IA com anotações manuscritas. As fotos são processadas no dispositivo e não são enviadas."
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecione fotos que contenham texto. O CastReader reconhece o conteúdo no dispositivo e depois o lê em voz alta com destaque sincronizado ou gera uma explicação por IA com anotações manuscritas. As fotos são processadas no dispositivo e não são enviadas."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从相册选取含文字的图片，CastReader 在本机识别后即可为你朗读，或生成 AI 讲解并在原文上做手写标注。图片仅在设备上识别，不会上传。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从相册选取含文字的图片，CastReader 在本机识别后即可为你朗读，或生成 AI 讲解并在原文上做手写标注。图片仅在设备上识别，不会上传。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kies foto’s met tekst. CastReader herkent de tekst op uw apparaat en leest deze voor met gesynchroniseerde markering, of maakt een AI-uitleg met notities in handschriftstijl. Foto’s worden op het apparaat verwerkt en niet geüpload."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اختر صورًا تحتوي على نص. يتعرّف CastReader على النص في جهازك، ثم يقرأه بصوت عالٍ مع تظليل متزامن، أو ينشئ شرحًا بالذكاء الاصطناعي مع ملاحظات بأسلوب الكتابة اليدوية. تُعالج الصور على الجهاز ولا تُرفع إلى الخادم."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выберите фотографии с текстом. CastReader распознаёт текст на вашем устройстве, затем читает его вслух с синхронной подсветкой или создаёт объяснение с помощью ИИ и пометками в рукописном стиле. Фотографии обрабатываются на устройстве и не отправляются на сервер."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wybierz zdjęcia zawierające tekst. CastReader rozpoznaje tekst na urządzeniu, a następnie czyta go na głos z zsynchronizowanym podświetleniem lub tworzy wyjaśnienie AI z notatkami w stylu pisma odręcznego. Zdjęcia są przetwarzane na urządzeniu i nie są przesyłane na serwer."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj foton som innehåller text. CastReader känner igen texten på din enhet och läser upp den med synkroniserad markering eller skapar en AI-förklaring med anteckningar i handskriven stil. Foton behandlas på enheten och laddas inte upp."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vælg fotos med tekst. CastReader genkender teksten på din enhed og læser den højt med synkroniseret fremhævelse eller laver en AI-forklaring med noter i håndskrevet stil. Fotos behandles på enheden og uploades ikke."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg bilder som inneholder tekst. CastReader gjenkjenner teksten på enheten din og leser den høyt med synkronisert markering eller lager en KI-forklaring med notater i håndskrevet stil. Bilder behandles på enheten og lastes ikke opp."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valitse kuvia, joissa on tekstiä. CastReader tunnistaa tekstin laitteellasi ja lukee sen ääneen korostaen tekstiä lukemisen tahdissa tai luo tekoälyselityksen käsinkirjoitusta muistuttavine merkintöineen. Kuvat käsitellään laitteella eikä niitä lähetetä palvelimelle."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyberte fotografie obsahující text. CastReader rozpozná text ve vašem zařízení a přečte jej nahlas se synchronizovaným zvýrazněním nebo vytvoří vysvětlení pomocí AI s poznámkami ve stylu rukopisu. Fotografie se zpracovávají v zařízení a nenahrávají se na server."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Επιλέξτε φωτογραφίες που περιέχουν κείμενο. Το CastReader αναγνωρίζει το κείμενο στη συσκευή σας και το διαβάζει φωναχτά με συγχρονισμένη επισήμανση ή δημιουργεί μια εξήγηση με τεχνητή νοημοσύνη και σημειώσεις σε χειρόγραφο στιλ. Οι φωτογραφίες υποβάλλονται σε επεξεργασία στη συσκευή και δεν μεταφορτώνονται."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Válassz szöveget tartalmazó fotókat. A CastReader a készülékeden felismeri a szöveget, majd a felolvasással szinkronban kiemeli, vagy AI-magyarázatot készít kézírásos stílusú jegyzetekkel. A fotók feldolgozása a készüléken történik, nem kerülnek feltöltésre."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pumili ng mga larawang may teksto. Kinikilala ng CastReader ang teksto sa iyong device, pagkatapos ay binabasa ito nang malakas habang naka-highlight ang binabasa, o gumagawa ng paliwanag gamit ang AI na may mga talang parang sulat-kamay. Pinoproseso ang mga larawan sa device at hindi ina-upload."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pilih foto yang mengandungi teks. CastReader mengenal pasti teks pada peranti anda, kemudian membacakannya dengan penyerlahan yang disegerakkan atau menjana penjelasan AI dengan nota bergaya tulisan tangan. Foto diproses pada peranti dan tidak dimuat naik."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metin içeren fotoğrafları seçin. CastReader metni cihazınızda tanır, ardından eş zamanlı vurgulamayla sesli okur veya el yazısı tarzında notlar içeren bir yapay zekâ açıklaması oluşturur. Fotoğraflar cihazda işlenir ve yüklenmez."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "글이 있는 사진을 선택하세요. CastReader가 기기에서 텍스트를 인식한 뒤 읽기에 맞춰 강조 표시하며 소리 내어 읽거나 손글씨 스타일 메모가 포함된 AI 해설을 생성합니다. 사진은 기기에서 처리되며 업로드되지 않습니다."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pilih foto yang berisi teks. CastReader mengenali teks di perangkat Anda, lalu membacakannya dengan sorotan yang sinkron atau membuat penjelasan AI dengan catatan bergaya tulisan tangan. Foto diproses di perangkat dan tidak diunggah."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alege fotografii care conțin text. CastReader recunoaște textul pe dispozitiv, apoi îl citește cu voce tare cu evidențiere sincronizată sau generează o explicație AI cu adnotări în stil scris de mână. Fotografiile sunt procesate pe dispozitiv și nu sunt încărcate pe server."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "בחרו תמונות שמכילות טקסט. CastReader מזהה את הטקסט במכשיר שלכם, ואז מקריא אותו עם הדגשה מסונכרנת או יוצר הסבר בעזרת בינה מלאכותית עם הערות בסגנון כתב יד. התמונות מעובדות במכשיר ואינן מועלות לשרת."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn ảnh có văn bản. CastReader nhận diện văn bản trên thiết bị, sau đó đọc thành tiếng kèm tô sáng đồng bộ hoặc tạo nội dung giải thích bằng AI với ghi chú kiểu viết tay. Ảnh được xử lý trên thiết bị và không được tải lên."
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

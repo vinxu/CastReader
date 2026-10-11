@@ -1251,6 +1251,7 @@ final class VoiceClonePreviewPlayer: NSObject, ObservableObject, @preconcurrency
     @Published private(set) var loadingVoiceId: String?
     private var player: AVAudioPlayer?
     private var task: Task<Void, Never>?
+    private var operationID = UUID()
 
     func toggle(_ voice: ClonedVoice) {
         guard Constants.Features.voiceCloningEnabled else { return }
@@ -1259,13 +1260,16 @@ final class VoiceClonePreviewPlayer: NSObject, ObservableObject, @preconcurrency
         VoiceSamplePlayer.shared.stop(resumeSuspendedPlayback: false)
         VoicePreviewPlaybackCoordinator.shared.begin()
         loadingVoiceId = voice.voiceId
+        let operation = operationID
+        let account = AuthService.shared.accountBoundaryID
         task = Task {
             do {
                 let data = try await VoiceCloneService.shared.preview(
                     voiceId: voice.voiceId,
                     fallbackLanguage: voice.referenceLanguage
                 )
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, operationID == operation,
+                      AuthService.shared.accountBoundaryID == account else { return }
                 let player = try AVAudioPlayer(data: data)
                 player.delegate = self
                 self.player = player
@@ -1273,7 +1277,9 @@ final class VoiceClonePreviewPlayer: NSObject, ObservableObject, @preconcurrency
                 playingVoiceId = voice.voiceId
                 player.play()
             } catch {
-                guard loadingVoiceId == voice.voiceId else { return }
+                guard !Task.isCancelled, operationID == operation,
+                      AuthService.shared.accountBoundaryID == account,
+                      loadingVoiceId == voice.voiceId else { return }
                 loadingVoiceId = nil
                 VoicePreviewPlaybackCoordinator.shared.end()
                 if let cloneError = error as? VoiceCloneError,
@@ -1292,6 +1298,7 @@ final class VoiceClonePreviewPlayer: NSObject, ObservableObject, @preconcurrency
     }
 
     func stop(resumeSuspendedPlayback: Bool = true) {
+        operationID = UUID()
         task?.cancel(); task = nil
         player?.stop(); player = nil
         playingVoiceId = nil; loadingVoiceId = nil

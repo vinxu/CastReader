@@ -271,13 +271,18 @@ final class PaginationContinuityTests: XCTestCase {
         ProManager.shared.debugForcePro = true
         defer { ProManager.shared.debugForcePro = oldPro }
         useRegularVoiceForTest(language: "en")
+        let tailGate = ReadAloudHTTPFixture.ResponseGate()
+        defer { tailGate.release() }
         let fixture = ReadAloudHTTPFixture { text, _ in
             if text == "Slow rapidly onward." {
                 var body = try! JSONSerialization.jsonObject(with: ReadAloudHTTPFixture.body("Slow rapidly ", tail: "onward.", duration: 1.2)) as! [String: Any]
                 body["timestamps"] = [["word": "Slow", "start_time": 0.0, "end_time": 0.2], ["word": "rapidly", "start_time": 0.2, "end_time": 1.1]]
                 return .response(try! JSONSerialization.data(withJSONObject: body))
             }
-            return .response(ReadAloudHTTPFixture.body(text, duration: 0.8), delay: 0.7)
+            if text == "onward." {
+                return .gatedResponse(ReadAloudHTTPFixture.body(text, duration: 0.8), tailGate)
+            }
+            return .response(ReadAloudHTTPFixture.body(text, duration: 0.8))
         }
         defer { fixture.close() }
         let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
@@ -300,6 +305,7 @@ final class PaginationContinuityTests: XCTestCase {
         for _ in 0..<250 where !committed { try await Task.sleep(nanoseconds: 20_000_000) }
         XCTAssertTrue(committed)
         XCTAssertTrue(audio.moreSegmentsExpected)
+        tailGate.release()
         var heardTail = false
         for _ in 0..<250 {
             if audio.currentSegment?.text == "onward." { heardTail = true; break }

@@ -43,6 +43,7 @@ enum HomeLayout {
 
 /// 首页横滑卡片统一处理卡间距、阴影缓冲和与页面正文的首卡对齐。
 struct HomeHorizontalRail<Content: View>: View {
+    @Environment(\.layoutDirection) private var layoutDirection
     let alignment: VerticalAlignment
     private let content: Content
 
@@ -61,6 +62,11 @@ struct HomeHorizontalRail<Content: View>: View {
             }
             .padding(HomeLayout.railOverflow)
         }
+        .defaultScrollAnchor(.leading)
+        // A retained UIScrollView keeps its physical offset when direction
+        // changes, exposing the end of the collection instead of its first item.
+        // Recreate this rail only; keep the reader and provider sessions intact.
+        .id(layoutDirection)
         .padding(.horizontal, -HomeLayout.railOverflow)
     }
 }
@@ -351,6 +357,7 @@ struct HomeView: View {
     private let scenarioColumns = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
 
     var body: some View {
+        let _ = appLanguage.selectedLanguage
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: HomeLayout.sectionGap) {
@@ -486,71 +493,75 @@ struct HomeView: View {
             )
         }
         .sheet(item: $activeSheet, onDismiss: handleHomeSheetDismissed) { sheet in
-            switch sheet {
-            case .importPanel(let panel):
-                ImportOptionsSheet(
-                    panel: panel,
-                    onPick: { scenario, mode, source in
-                        beginImport(source, scenario: scenario, mode: mode)
-                    },
-                    onPickCloud: { scenario, mode, provider, action in
-                        beginCloudImport(
-                            provider,
-                            scenario: scenario,
-                            mode: mode,
-                            action: action
-                        )
-                    }
-                )
-            case .text:
-                TextInputSheet { title, text in
-                    activeSheet = nil
-                    confirmImport(format: .text)
-                    let doc = DocumentBuilder.fromPlainText(text, title: title)
-                    if !doc.isEmpty { finishImport(doc) }
-                    else { failImport(stage: "parse", code: "empty_content") }
-                }
-            case .url:
-                URLInputSheet { urlString in
-                    activeSheet = nil
-                    confirmImport(format: .web)
-                    if let doc = makeWebDocument(urlString) { finishImport(doc) }
-                    else {
-                        failImport(stage: "validation", code: "invalid_url")
-                        notice = AppLocalized("网址无效")
-                    }
-                }
-            case .cloudFlow(let route):
-                CloudStorageFlowView(
-                    provider: route.provider,
-                    scenario: importScenario.flatMap(ExplainContentType.init(rawValue:)),
-                    mode: importMode,
-                    analyticsContext: importAnalyticsContext,
-                    forceAccountSelection: route.action == .switchAccount,
-                    showsDisclosureOnStart: route.action == .privacy
-                        || !CloudPrivacyAcknowledgementStore.hasAcknowledged(route.provider),
-                    privacyReviewOnly: route.action == .privacy,
-                    expectedAccount: route.expectedAccount,
-                    onComplete: { result in
-                        confirmImport(format: analyticsFormat(for: result.format))
+            Group {
+                switch sheet {
+                case .importPanel(let panel):
+                    ImportOptionsSheet(
+                        panel: panel,
+                        onPick: { scenario, mode, source in
+                            beginImport(source, scenario: scenario, mode: mode)
+                        },
+                        onPickCloud: { scenario, mode, provider, action in
+                            beginCloudImport(
+                                provider,
+                                scenario: scenario,
+                                mode: mode,
+                                action: action
+                            )
+                        }
+                    )
+                case .text:
+                    TextInputSheet { title, text in
                         activeSheet = nil
-                        finishImport(result.document)
-                    },
-                    onCancel: {
-                        activeSheet = nil
-                        cancelImport()
+                        confirmImport(format: .text)
+                        let doc = DocumentBuilder.fromPlainText(text, title: title)
+                        if !doc.isEmpty { finishImport(doc) }
+                        else { failImport(stage: "parse", code: "empty_content") }
                     }
-                )
-            case .librarySources:
-                LibrarySourcesSheet()
-            case .proDetails:
-                PaywallView(
-                    analyticsTrigger: "home_pro_card_secondary",
-                    analyticsSurface: "home_pro_card"
-                )
-            case .loginForAnnualPurchase:
-                LoginView()
+                case .url:
+                    URLInputSheet { urlString in
+                        activeSheet = nil
+                        confirmImport(format: .web)
+                        if let doc = DocumentBuilder.fromWebURL(urlString) { finishImport(doc) }
+                        else {
+                            failImport(stage: "validation", code: "invalid_url")
+                            notice = AppLocalized("网址无效")
+                        }
+                    }
+                case .cloudFlow(let route):
+                    CloudStorageFlowView(
+                        provider: route.provider,
+                        scenario: importScenario.flatMap(ExplainContentType.init(rawValue:)),
+                        mode: importMode,
+                        analyticsContext: importAnalyticsContext,
+                        forceAccountSelection: route.action == .switchAccount,
+                        showsDisclosureOnStart: route.action == .privacy
+                            || !CloudPrivacyAcknowledgementStore.hasAcknowledged(route.provider),
+                        privacyReviewOnly: route.action == .privacy,
+                        expectedAccount: route.expectedAccount,
+                        onComplete: { result in
+                            confirmImport(format: analyticsFormat(for: result.format))
+                            activeSheet = nil
+                            finishImport(result.document)
+                        },
+                        onCancel: {
+                            activeSheet = nil
+                            cancelImport()
+                        }
+                    )
+                case .librarySources:
+                    LibrarySourcesSheet()
+                case .proDetails:
+                    PaywallView(
+                        analyticsTrigger: "home_pro_card_secondary",
+                        analyticsSurface: "home_pro_card"
+                    )
+                case .loginForAnnualPurchase:
+                    LoginView()
+                }
             }
+            .environment(\.locale, appLanguage.locale)
+            .environment(\.layoutDirection, appLanguage.selectedLanguage.isRightToLeft ? .rightToLeft : .leftToRight)
         }
         .task { await loadHomeProProductsIfNeeded() }
 #if DEBUG
@@ -562,6 +573,8 @@ struct HomeView: View {
         // 同屏挂多个 sheet/cover 会互相吞（见 CLAUDE.md 避坑指南）。
         .fullScreenCover(item: $captureStage) { stage in
             captureStageView(stage)
+                .environment(\.locale, appLanguage.locale)
+                .environment(\.layoutDirection, appLanguage.selectedLanguage.isRightToLeft ? .rightToLeft : .leftToRight)
         }
         .castReaderFileImporter(isPresented: $showFileImporter, allowedContentTypes: fileImportIsImageOnly ? [.image] : supportedTypes, allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first {
@@ -874,7 +887,7 @@ struct HomeView: View {
 
                 Spacer(minLength: 0)
 
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.caption.weight(.semibold))
                     .foregroundColor(AppTheme.mutedForeground)
             }
@@ -1081,7 +1094,7 @@ struct HomeView: View {
 
                 Spacer(minLength: 8)
 
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.caption.weight(.semibold))
                     .foregroundColor(AppTheme.mutedForeground.opacity(0.7))
             }
@@ -1117,7 +1130,7 @@ struct HomeView: View {
                         .foregroundColor(AppTheme.mutedForeground)
                 }
                 Spacer()
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.caption.weight(.semibold))
                     .foregroundColor(AppTheme.mutedForeground.opacity(0.7))
             }
@@ -1215,8 +1228,29 @@ struct HomeView: View {
     /// XCUITest 的 typeText（丢非 ASCII 字符）与剪贴板导入（触发系统「允许粘贴」弹窗会烂在录屏里）。
     private func handleCaptureLaunchTextIfNeeded() {
         struct Once { static var done = false }
-        guard !Once.done,
-              let b64 = UserDefaults.standard.string(forKey: "CastReaderCaptureTextB64"),
+        guard !Once.done else { return }
+        if let path = UserDefaults.standard.string(forKey: "CastReaderAcceptanceDocumentPath"),
+           let format = SupportedDocumentFormat(rawValue: URL(fileURLWithPath: path).pathExtension.lowercased()),
+           let boundary = AccountContentIsolation.captureBoundaryToken() {
+            Once.done = true
+            accountScopedImportTask = Task {
+                do {
+                    let result = try await DocumentImportPipeline().importDocument(
+                        DocumentImportRequest(localURL: URL(fileURLWithPath: path),
+                            expectedFormat: format, requiresSecurityScopedAccess: false))
+                    guard !Task.isCancelled, AccountContentIsolation.isCurrent(boundary) else { return }
+                    finishImport(result.document, expectedBoundary: boundary)
+                } catch { notice = documentImportErrorMessage(error) }
+            }
+            return
+        }
+        if let url = UserDefaults.standard.string(forKey: "CastReaderAcceptanceWebURL"),
+           let document = DocumentBuilder.fromWebURL(url) {
+            Once.done = true
+            finishImport(document)
+            return
+        }
+        guard let b64 = UserDefaults.standard.string(forKey: "CastReaderCaptureTextB64"),
               let data = Data(base64Encoded: b64),
               let text = String(data: data, encoding: .utf8),
               !text.isEmpty else { return }
@@ -1224,7 +1258,11 @@ struct HomeView: View {
         guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             guard AccountContentIsolation.isCurrent(boundary) else { return }
-            let doc = DocumentBuilder.fromPlainText(text, title: "")
+            var doc = DocumentBuilder.fromPlainText(text, title: "")
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderUnknownLanguageFixture") {
+                doc.language = ""
+                doc.languageContext = nil
+            }
             if !doc.isEmpty { finishImport(doc) }
         }
     }
@@ -1539,17 +1577,6 @@ struct HomeView: View {
         }
     }
 
-    /// 由用户输入的网址构建 web 源文档（WebView 直接加载，保留原网页排版）。
-    private func makeWebDocument(_ raw: String) -> ReadingDocument? {
-        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !s.isEmpty else { return nil }
-        if !s.lowercased().hasPrefix("http://") && !s.lowercased().hasPrefix("https://") {
-            s = "https://" + s
-        }
-        guard let url = URL(string: s), let host = url.host, !host.isEmpty else { return nil }
-        return ReadingDocument(title: host, sourceKind: .web, paragraphs: [], sourceURL: s)
-    }
-
     private var processingOverlay: some View {
         ZStack {
             Color.black.opacity(0.35).ignoresSafeArea()
@@ -1618,6 +1645,8 @@ struct HomeView: View {
 }
 
 private struct BoundLibraryActivationCard: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let source: BoundLibraryOnboardingSource?
     let playbackProgress: Double
     let actionTitle: String
@@ -1652,7 +1681,7 @@ private struct BoundLibraryActivationCard: View {
                     Text(actionTitle)
                         .font(.subheadline.weight(.semibold))
                     Spacer()
-                    Image(systemName: "arrow.right")
+                    Image(systemName: "arrow.forward")
                         .font(.caption.weight(.bold))
                 }
                 .foregroundStyle(AppTheme.primaryForeground)
@@ -1729,6 +1758,8 @@ private enum ImportPanel: Identifiable, Equatable {
 }
 
 private struct ImportOptionsSheet: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let panel: ImportPanel
     var onPick: (ExplainContentType?, ReaderMode, ImportSource) -> Void
     var onPickCloud: (ExplainContentType?, ReaderMode, CloudProviderID, CloudProviderAction) -> Void
@@ -1796,6 +1827,7 @@ private struct ImportOptionsSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     AdaptiveSheetDismissButton(title: AppLocalized("取消")) { dismiss() }
+                        .accessibilityIdentifier("importOptionsCancel")
                 }
             }
         }
@@ -2060,7 +2092,7 @@ private struct ImportOptionsSheet: View {
                             .foregroundColor(AppTheme.mutedForeground)
                     }
                     Spacer()
-                    Image(systemName: "chevron.right")
+                    Image(systemName: "chevron.forward")
                         .font(.caption.weight(.semibold))
                         .foregroundColor(AppTheme.mutedForeground)
                 }
@@ -2141,7 +2173,7 @@ private struct ImportSourceRow: View {
                 }
 
                 Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.caption.weight(.semibold))
                     .foregroundColor(AppTheme.mutedForeground.opacity(0.7))
             }
@@ -2188,6 +2220,8 @@ private extension ExplainContentType {
 // MARK: - 场景卡片
 
 private struct ScenarioPill: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let ct: ExplainContentType
 
     var body: some View {
@@ -2211,6 +2245,8 @@ private struct ScenarioPill: View {
 }
 
 private struct ScenarioCard: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let ct: ExplainContentType
 
     var body: some View {

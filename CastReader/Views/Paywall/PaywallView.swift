@@ -355,6 +355,8 @@ struct PaywallView: View {
 
 /// Pro 权益 + 购买按钮（PaywallView 与 UpgradeView 共用）。
 struct ProUpsellContent: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var readerScene: ReaderSceneContext
     var reason: String? = nil
     var analyticsTrigger: String = "unknown"

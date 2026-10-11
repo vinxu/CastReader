@@ -1,0 +1,83 @@
+{
+  "en": {
+    "b0e49b8baadc39f197de": "Speech is being generated. Please try again shortly.",
+    "2e4ce1baeba6dc4b8cb7": "The speech service has reached its daily limit. Please try again later.",
+    "59e1511cdfb0d708665f": "Text recognition",
+    "50f54123b4810cb1d2b8": "Image text language",
+    "836e5a7f8e818a97ddea": "Detect automatically",
+    "687473e505b94d355850": "If language detection is inaccurate, select the language in the image before importing or taking a photo.",
+    "31bd0dc62785a95b0f68": "The explanation language does not match your selection. Please try again."
+  },
+  "zh-Hans": {
+    "b0e49b8baadc39f197de": "语音正在生成，请稍后重试",
+    "2e4ce1baeba6dc4b8cb7": "语音服务今日额度已用完，请稍后重试",
+    "59e1511cdfb0d708665f": "图片文字识别",
+    "50f54123b4810cb1d2b8": "图片文字语言",
+    "836e5a7f8e818a97ddea": "自动检测",
+    "687473e505b94d355850": "识别语言不准确时，可在导入或拍摄前指定图片中的语言。",
+    "31bd0dc62785a95b0f68": "解读语言与所选语言不一致，请重试"
+  },
+  "ja": {
+    "b0e49b8baadc39f197de": "音声を生成中です。しばらくしてから再試行してください。",
+    "2e4ce1baeba6dc4b8cb7": "音声サービスの本日の上限に達しました。後でもう一度お試しください。",
+    "59e1511cdfb0d708665f": "テキスト認識",
+    "50f54123b4810cb1d2b8": "画像のテキスト言語",
+    "836e5a7f8e818a97ddea": "自動検出",
+    "687473e505b94d355850": "言語検出が正確でない場合は、インポートまたは撮影前に画像内の言語を選択してください。",
+    "31bd0dc62785a95b0f68": "説明言語が選択内容と一致していません。もう一度お試しください。"
+  },
+  "es": {
+    "b0e49b8baadc39f197de": "Se está generando el audio. Vuelve a intentarlo en unos momentos.",
+    "2e4ce1baeba6dc4b8cb7": "El servicio de voz ha alcanzado su límite diario. Inténtalo más tarde.",
+    "59e1511cdfb0d708665f": "Reconocimiento de texto",
+    "50f54123b4810cb1d2b8": "Idioma del texto en la imagen",
+    "836e5a7f8e818a97ddea": "Detectar automáticamente",
+    "687473e505b94d355850": "Si la detección del idioma no es precisa, selecciona el idioma del texto en la imagen antes de importar o tomar una foto.",
+    "31bd0dc62785a95b0f68": "El idioma de la explicación no coincide con tu selección. Por favor, inténtalo de nuevo."
+  },
+  "fr": {
+    "b0e49b8baadc39f197de": "L’audio est en cours de génération. Réessayez dans un instant.",
+    "2e4ce1baeba6dc4b8cb7": "Le service vocal a atteint sa limite quotidienne. Réessayez plus tard.",
+    "59e1511cdfb0d708665f": "Reconnaissance de texte",
+    "50f54123b4810cb1d2b8": "Langue du texte dans l'image",
+    "836e5a7f8e818a97ddea": "Détection automatique",
+    "687473e505b94d355850": "Si la détection de la langue est inexacte, sélectionnez la langue présente dans l'image avant d'importer ou de prendre une photo.",
+    "31bd0dc62785a95b0f68": "La langue d'explication ne correspond pas à votre sélection. Veuillez réessayer."
+  },
+  "de": {
+    "b0e49b8baadc39f197de": "Die Sprachausgabe wird erstellt. Bitte versuche es gleich erneut.",
+    "2e4ce1baeba6dc4b8cb7": "Der Sprachdienst hat sein Tageslimit erreicht. Bitte versuche es später erneut.",
+    "59e1511cdfb0d708665f": "Texterkennung",
+    "50f54123b4810cb1d2b8": "Sprache des Bildtextes",
+    "836e5a7f8e818a97ddea": "Automatisch erkennen",
+    "687473e505b94d355850": "Falls die Spracherkennung ungenau ist, wähle vor dem Importieren oder Fotografieren die Sprache im Bild aus.",
+    "31bd0dc62785a95b0f68": "Die Erklärungssprache stimmt nicht mit deiner Auswahl überein. Bitte versuche es erneut."
+  },
+  "pt-BR": {
+    "b0e49b8baadc39f197de": "O áudio está sendo gerado. Tente novamente em instantes.",
+    "2e4ce1baeba6dc4b8cb7": "O serviço de voz atingiu o limite diário. Tente novamente mais tarde.",
+    "59e1511cdfb0d708665f": "Reconhecimento de texto",
+    "50f54123b4810cb1d2b8": "Idioma do texto na imagem",
+    "836e5a7f8e818a97ddea": "Detectar automaticamente",
+    "687473e505b94d355850": "Se a detecção do idioma estiver imprecisa, selecione o idioma da imagem antes de importar ou tirar uma foto.",
+    "31bd0dc62785a95b0f68": "O idioma da explicação não corresponde à sua seleção. Por favor, tente novamente."
+  },
+  "it": {
+    "b0e49b8baadc39f197de": "L’audio è in fase di generazione. Riprova tra poco.",
+    "2e4ce1baeba6dc4b8cb7": "Il servizio vocale ha raggiunto il limite giornaliero. Riprova più tardi.",
+    "59e1511cdfb0d708665f": "Riconoscimento del testo",
+    "50f54123b4810cb1d2b8": "Lingua del testo nell'immagine",
+    "836e5a7f8e818a97ddea": "Rilevamento automatico",
+    "687473e505b94d355850": "Se il rilevamento della lingua non è accurato, seleziona la lingua presente nell'immagine prima di importare o scattare una foto.",
+    "31bd0dc62785a95b0f68": "La lingua della spiegazione non corrisponde alla tua selezione. Riprova."
+  },
+  "hi": {
+    "b0e49b8baadc39f197de": "आवाज़ तैयार की जा रही है। कृपया कुछ देर बाद फिर कोशिश करें।",
+    "2e4ce1baeba6dc4b8cb7": "वॉइस सेवा की दैनिक सीमा पूरी हो गई है। कृपया बाद में फिर कोशिश करें।",
+    "59e1511cdfb0d708665f": "पाठ पहचान",
+    "50f54123b4810cb1d2b8": "छवि में पाठ की भाषा",
+    "836e5a7f8e818a97ddea": "स्वतः पता लगाएं",
+    "687473e505b94d355850": "यदि भाषा पहचान सटीक नहीं है, तो फोटो लेने या आयात करने से पहले छवि में भाषा चुनें।",
+    "31bd0dc62785a95b0f68": "व्याख्या की भाषा चुनी गई भाषा से मेल नहीं खाती। कृपया फिर प्रयास करें।"
+  }
+}

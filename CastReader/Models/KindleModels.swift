@@ -99,7 +99,7 @@ enum KindleOCRRoutingContract {
         if profile.language == "hi" {
             return KindleOCRRoute(primary: .tesseract, fallback: nil)
         }
-        return KindleOCRRoute(primary: .vision, fallback: .tesseract)
+        return KindleOCRRoute(primary: .vision, fallback: profile.tesseractModel.isEmpty ? nil : .tesseract)
     }
 }
 
@@ -130,27 +130,10 @@ enum KindleLanguageContract {
     static let trustedLanguageSources: Set<String> = [
         "renderer-metadata", "renderer-token-geometry", "renderer-metadata+geometry", "ocr-consensus-v2"
     ]
-    private static let aliases: [String: String] = [
-        "eng": "en", "zho": "zh", "chi": "zh", "jpn": "ja",
-        "spa": "es", "fra": "fr", "fre": "fr", "deu": "de", "ger": "de", "por": "pt",
-        "ita": "it", "hin": "hi"
-    ]
-    private static let locales: [String: String] = [
-        "en": "en-US", "zh": "zh-Hans", "ja": "ja-JP", "es": "es-ES",
-        "fr": "fr-FR", "de": "de-DE", "pt": "pt-BR", "it": "it-IT", "hi": "hi-IN"
-    ]
-    private static let tesseractModels: [String: String] = [
-        "en": "eng", "zh": "chi_sim", "ja": "jpn", "es": "spa",
-        "fr": "fra", "de": "deu", "pt": "por", "it": "ita", "hi": "hin"
-    ]
 
     static func normalize(_ value: String?) -> String? {
         guard let value else { return nil }
-        let primary = value.trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased().replacingOccurrences(of: "_", with: "-")
-            .split(separator: "-").first.map(String.init) ?? ""
-        let language = aliases[primary] ?? primary
-        return locales[language] == nil ? nil : language
+        return SupportedTTSLanguage(identifier: value)?.rawValue
     }
 
     static func profile(
@@ -160,15 +143,16 @@ enum KindleLanguageContract {
         pageProgressionDirection: KindleReadingDirection? = nil
     ) -> KindleLanguageProfile? {
         guard let language = normalize(language),
-              let locale = locales[language],
-              var tesseractModel = tesseractModels[language] else { return nil }
+              let capability = SupportedTTSLanguage(identifier: language) else { return nil }
+        let locale = capability.visionRecognitionLanguage
+        var tesseractModel = capability.bundledOCRModel ?? ""
         if language == "ja", writingMode == .vertical { tesseractModel = "jpn_vert" }
         return KindleLanguageProfile(
             language: language,
             visionLocale: locale,
             tesseractModel: tesseractModel,
-            readingDirection: readingDirection ?? (language == "ja" ? .rtl : .ltr),
-            pageProgressionFallback: pageProgressionDirection ?? (language == "ja" ? .rtl : .ltr),
+            readingDirection: readingDirection ?? (language == "ja" || capability.isRightToLeft ? .rtl : .ltr),
+            pageProgressionFallback: pageProgressionDirection ?? (language == "ja" || capability.isRightToLeft ? .rtl : .ltr),
             writingMode: writingMode
         )
     }

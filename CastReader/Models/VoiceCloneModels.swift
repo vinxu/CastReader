@@ -72,6 +72,15 @@ enum VoiceCloneReferenceIntegrity {
 enum VoiceCloneLanguageSupport {
     static let all = ["de", "en", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh"]
 
+    /// Display only languages the current app route can actually select.
+    /// The server's clone metadata remains separate from standard TTS expansion.
+    static func selectableLanguages(for voice: ClonedVoice, route: ServiceRoute = ServiceRouting.current) -> [String] {
+        languages(for: voice).filter {
+            guard let language = SupportedTTSLanguage(identifier: $0) else { return false }
+            return language.isSupported(in: route)
+        }
+    }
+
     static func languages(for voice: ClonedVoice) -> [String] {
         let values = voice.supportedLanguages.isEmpty ? all : voice.supportedLanguages
         return Array(Set(values.map(VoiceCatalog.normalizedLanguage)))
@@ -92,9 +101,7 @@ enum VoiceCloneRecordingPrompt {
     ) -> String {
         let raw: String
         if selection == .system {
-            raw = systemLanguageCode
-                ?? Locale.autoupdatingCurrent.language.languageCode?.identifier
-                ?? "en"
+            raw = systemLanguageCode ?? AppLanguage.system.resolvedLanguageCode
         } else {
             raw = selection.rawValue
         }
@@ -714,20 +721,23 @@ enum VoiceCloneOrigin: String, Equatable, Decodable {
 }
 
 enum VoiceFamiliarSelection {
-    /// Compute only when the account library changes, never on playback ticks.
-    /// Personal voices are multilingual, so discovery language does not hide them.
-    static func latest(from voices: [ClonedVoice]) -> [ClonedVoice] {
+    /// Filter the full authoritative library before limiting its homepage preview.
+    static func latest(from voices: [ClonedVoice], language: String? = nil,
+                       excluding selectedID: String? = nil, limit: Int? = 3) -> [ClonedVoice] {
         let fractional = ISO8601DateFormatter()
         fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let standard = ISO8601DateFormatter()
         let candidates = voices.enumerated().compactMap { index, voice -> (Int, ClonedVoice, Date)? in
             guard voice.access.authorizationActive else { return nil }
+            guard voice.id != selectedID else { return nil }
+            if let language, !VoiceCloneLanguageSupport.languages(for: voice).contains(VoiceCatalog.normalizedLanguage(language)) { return nil }
             if let status = voice.status?.lowercased(), !["active", "ready"].contains(status) { return nil }
             let date = voice.createdAt.flatMap { fractional.date(from: $0) ?? standard.date(from: $0) } ?? .distantPast
             return (index, voice, date)
         }.sorted { $0.2 == $1.2 ? $0.0 < $1.0 : $0.2 > $1.2 }
         var seen = Set<String>()
-        return Array(candidates.compactMap { seen.insert($0.1.id).inserted ? $0.1 : nil }.prefix(3))
+        let result = candidates.compactMap { seen.insert($0.1.id).inserted ? $0.1 : nil }
+        return limit.map { Array(result.prefix(max(0, $0))) } ?? result
     }
 }
 

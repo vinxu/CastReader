@@ -1,0 +1,266 @@
+{
+  "status": "draft translations; native review pending",
+  "keys": [
+    "无法确定正文语言，请选择朗读语言",
+    "暂不支持朗读此语言",
+    "当前服务区域暂未提供此语言的声音，请稍后重试",
+    "此语言暂不支持克隆声音，请选择标准声音",
+    "语音同步数据不完整，请重试",
+    "语音正在生成，请稍后重试",
+    "语音服务今日额度已用完，请稍后重试"
+  ],
+  "translations": {
+    "en": [
+      "Cannot identify the text language. Choose a reading language.",
+      "Reading this language is not supported yet.",
+      "Voices for this language are unavailable in your service region. Please try again later.",
+      "Cloned voices are not supported for this language. Choose a standard voice.",
+      "Speech synchronization data is incomplete. Please try again.",
+      "Speech is being generated. Please try again shortly.",
+      "The speech service has reached its daily limit. Please try again later."
+    ],
+    "zh-Hans": [
+      "无法确定正文语言，请选择朗读语言",
+      "暂不支持朗读此语言",
+      "当前服务区域暂未提供此语言的声音，请稍后重试",
+      "此语言暂不支持克隆声音，请选择标准声音",
+      "语音同步数据不完整，请重试",
+      "语音正在生成，请稍后重试",
+      "语音服务今日额度已用完，请稍后重试"
+    ],
+    "ja": [
+      "本文の言語を判別できません。読み上げ言語を選択してください。",
+      "この言語の読み上げにはまだ対応していません。",
+      "現在のサービス地域では、この言語の音声を利用できません。後ほど再試行してください。",
+      "この言語ではクローン音声を利用できません。標準音声を選択してください。",
+      "音声の同期データが不完全です。再試行してください。",
+      "音声を生成中です。しばらくしてから再試行してください。",
+      "音声サービスの本日の上限に達しました。後でもう一度お試しください。"
+    ],
+    "es": [
+      "No se puede identificar el idioma del texto. Elige un idioma de lectura.",
+      "La lectura en este idioma aún no está disponible.",
+      "Las voces de este idioma no están disponibles en tu región de servicio. Inténtalo más tarde.",
+      "Las voces clonadas no están disponibles para este idioma. Elige una voz estándar.",
+      "Los datos de sincronización del audio están incompletos. Inténtalo de nuevo.",
+      "Se está generando el audio. Vuelve a intentarlo en unos momentos.",
+      "El servicio de voz ha alcanzado su límite diario. Inténtalo más tarde."
+    ],
+    "fr": [
+      "La langue du texte n’a pas pu être identifiée. Choisissez une langue de lecture.",
+      "La lecture dans cette langue n’est pas encore prise en charge.",
+      "Les voix de cette langue ne sont pas disponibles dans votre région de service. Réessayez plus tard.",
+      "Les voix clonées ne sont pas disponibles dans cette langue. Choisissez une voix standard.",
+      "Les données de synchronisation audio sont incomplètes. Réessayez.",
+      "L’audio est en cours de génération. Réessayez dans un instant.",
+      "Le service vocal a atteint sa limite quotidienne. Réessayez plus tard."
+    ],
+    "de": [
+      "Die Textsprache konnte nicht erkannt werden. Wähle eine Vorlesesprache.",
+      "Das Vorlesen in dieser Sprache wird noch nicht unterstützt.",
+      "Stimmen für diese Sprache sind in deiner Dienstregion nicht verfügbar. Versuche es später erneut.",
+      "Geklonte Stimmen werden für diese Sprache nicht unterstützt. Wähle eine Standardstimme.",
+      "Die Synchronisierungsdaten der Sprachausgabe sind unvollständig. Versuche es erneut.",
+      "Die Sprachausgabe wird erstellt. Bitte versuche es gleich erneut.",
+      "Der Sprachdienst hat sein Tageslimit erreicht. Bitte versuche es später erneut."
+    ],
+    "pt-BR": [
+      "Não foi possível identificar o idioma do texto. Escolha um idioma de leitura.",
+      "A leitura neste idioma ainda não é compatível.",
+      "As vozes deste idioma não estão disponíveis na sua região de serviço. Tente novamente mais tarde.",
+      "Vozes clonadas não são compatíveis com este idioma. Escolha uma voz padrão.",
+      "Os dados de sincronização do áudio estão incompletos. Tente novamente.",
+      "O áudio está sendo gerado. Tente novamente em instantes.",
+      "O serviço de voz atingiu o limite diário. Tente novamente mais tarde."
+    ],
+    "it": [
+      "Impossibile identificare la lingua del testo. Scegli una lingua di lettura.",
+      "La lettura in questa lingua non è ancora supportata.",
+      "Le voci per questa lingua non sono disponibili nella tua area di servizio. Riprova più tardi.",
+      "Le voci clonate non sono supportate per questa lingua. Scegli una voce standard.",
+      "I dati di sincronizzazione dell’audio sono incompleti. Riprova.",
+      "L’audio è in fase di generazione. Riprova tra poco.",
+      "Il servizio vocale ha raggiunto il limite giornaliero. Riprova più tardi."
+    ],
+    "hi": [
+      "पाठ की भाषा पहचानी नहीं जा सकी। पढ़ने की भाषा चुनें।",
+      "इस भाषा में पढ़ना अभी समर्थित नहीं है।",
+      "आपके सेवा क्षेत्र में इस भाषा की आवाज़ें उपलब्ध नहीं हैं। कृपया बाद में फिर प्रयास करें।",
+      "इस भाषा में क्लोन की गई आवाज़ें समर्थित नहीं हैं। मानक आवाज़ चुनें।",
+      "आवाज़ के समन्वयन का डेटा अधूरा है। कृपया फिर प्रयास करें।",
+      "आवाज़ तैयार की जा रही है। कृपया कुछ देर बाद फिर कोशिश करें।",
+      "वॉइस सेवा की दैनिक सीमा पूरी हो गई है। कृपया बाद में फिर कोशिश करें।"
+    ],
+    "nl": [
+      "De taal van de tekst kan niet worden herkend. Kies een voorleestaal.",
+      "Voorlezen in deze taal wordt nog niet ondersteund.",
+      "Stemmen voor deze taal zijn niet beschikbaar in je serviceregio. Probeer het later opnieuw.",
+      "Gekloonde stemmen worden niet ondersteund voor deze taal. Kies een standaardstem.",
+      "De synchronisatiegegevens voor de spraak zijn onvolledig. Probeer het opnieuw.",
+      "De spraak wordt gegenereerd. Probeer het zo opnieuw.",
+      "De spraakdienst heeft de daglimiet bereikt. Probeer het later opnieuw."
+    ],
+    "ko": [
+      "본문의 언어를 확인할 수 없습니다. 읽기 언어를 선택해 주세요.",
+      "이 언어의 읽기는 아직 지원되지 않습니다.",
+      "현재 서비스 지역에서 이 언어의 음성을 사용할 수 없습니다. 나중에 다시 시도해 주세요.",
+      "이 언어는 복제 음성을 지원하지 않습니다. 기본 음성을 선택해 주세요.",
+      "음성 동기화 데이터가 불완전합니다. 다시 시도해 주세요.",
+      "음성을 생성하고 있습니다. 잠시 후 다시 시도해 주세요.",
+      "음성 서비스의 일일 한도에 도달했습니다. 나중에 다시 시도해 주세요."
+    ],
+    "ar": [
+      "تعذّر تحديد لغة النص. اختر لغة القراءة.",
+      "قراءة هذه اللغة غير مدعومة بعد.",
+      "أصوات هذه اللغة غير متاحة في منطقة الخدمة الحالية. يُرجى المحاولة لاحقًا.",
+      "الأصوات المستنسخة غير مدعومة لهذه اللغة. اختر صوتًا قياسيًا.",
+      "بيانات مزامنة الصوت غير مكتملة. يُرجى المحاولة مجددًا.",
+      "جارٍ إنشاء الصوت. يُرجى إعادة المحاولة بعد قليل.",
+      "بلغت خدمة الصوت حدها اليومي. يُرجى إعادة المحاولة لاحقًا."
+    ],
+    "ru": [
+      "Не удалось определить язык текста. Выберите язык чтения.",
+      "Чтение на этом языке пока не поддерживается.",
+      "Голоса для этого языка недоступны в вашем регионе обслуживания. Повторите попытку позже.",
+      "Клонированные голоса не поддерживаются для этого языка. Выберите стандартный голос.",
+      "Данные синхронизации речи неполные. Повторите попытку.",
+      "Аудио создаётся. Повторите попытку через некоторое время.",
+      "Достигнут дневной лимит сервиса озвучивания. Повторите попытку позже."
+    ],
+    "pl": [
+      "Nie można rozpoznać języka tekstu. Wybierz język czytania.",
+      "Czytanie w tym języku nie jest jeszcze obsługiwane.",
+      "Głosy dla tego języka są niedostępne w Twoim regionie usługi. Spróbuj ponownie później.",
+      "Sklonowane głosy nie są obsługiwane w tym języku. Wybierz głos standardowy.",
+      "Dane synchronizacji mowy są niekompletne. Spróbuj ponownie.",
+      "Trwa generowanie mowy. Spróbuj ponownie za chwilę.",
+      "Usługa mowy osiągnęła dzienny limit. Spróbuj ponownie później."
+    ],
+    "sv": [
+      "Det går inte att identifiera textens språk. Välj ett uppläsningsspråk.",
+      "Uppläsning på det här språket stöds inte ännu.",
+      "Röster för det här språket är inte tillgängliga i din tjänsteregion. Försök igen senare.",
+      "Klonade röster stöds inte för det här språket. Välj en standardröst.",
+      "Synkroniseringsdata för talet är ofullständiga. Försök igen.",
+      "Talet genereras. Försök igen om en liten stund.",
+      "Taltjänsten har nått sin dagliga gräns. Försök igen senare."
+    ],
+    "da": [
+      "Tekstens sprog kan ikke genkendes. Vælg et oplæsningssprog.",
+      "Oplæsning på dette sprog understøttes endnu ikke.",
+      "Stemmer til dette sprog er ikke tilgængelige i dit tjenesteområde. Prøv igen senere.",
+      "Klonede stemmer understøttes ikke på dette sprog. Vælg en standardstemme.",
+      "Talens synkroniseringsdata er ufuldstændige. Prøv igen.",
+      "Talen er ved at blive genereret. Prøv igen om lidt.",
+      "Taletjenesten har nået sin daglige grænse. Prøv igen senere."
+    ],
+    "nb": [
+      "Tekstens språk kan ikke gjenkjennes. Velg et opplesningsspråk.",
+      "Opplesning på dette språket støttes ikke ennå.",
+      "Stemmer for dette språket er ikke tilgjengelige i tjenesteregionen din. Prøv igjen senere.",
+      "Klonede stemmer støttes ikke for dette språket. Velg en standardstemme.",
+      "Synkroniseringsdataene for talen er ufullstendige. Prøv igjen.",
+      "Talen genereres. Prøv igjen om litt.",
+      "Taletjenesten har nådd sin daglige grense. Prøv igjen senere."
+    ],
+    "fi": [
+      "Tekstin kieltä ei voitu tunnistaa. Valitse lukukieli.",
+      "Tämän kielen ääneen lukemista ei vielä tueta.",
+      "Tämän kielen ääniä ei ole saatavilla palvelualueellasi. Yritä myöhemmin uudelleen.",
+      "Kloonattuja ääniä ei tueta tällä kielellä. Valitse vakioääni.",
+      "Puheen synkronointitiedot ovat puutteelliset. Yritä uudelleen.",
+      "Puhetta luodaan. Yritä hetken kuluttua uudelleen.",
+      "Puhepalvelun päiväraja on saavutettu. Yritä myöhemmin uudelleen."
+    ],
+    "cs": [
+      "Jazyk textu se nepodařilo rozpoznat. Vyberte jazyk čtení.",
+      "Čtení v tomto jazyce zatím není podporováno.",
+      "Hlasy pro tento jazyk nejsou ve vašem regionu služby dostupné. Zkuste to později.",
+      "Klonované hlasy nejsou pro tento jazyk podporovány. Vyberte standardní hlas.",
+      "Údaje pro synchronizaci řeči jsou neúplné. Zkuste to znovu.",
+      "Probíhá generování řeči. Zkuste to za chvíli znovu.",
+      "Hlasová služba dosáhla denního limitu. Zkuste to později znovu."
+    ],
+    "el": [
+      "Δεν ήταν δυνατή η αναγνώριση της γλώσσας του κειμένου. Επιλέξτε γλώσσα ανάγνωσης.",
+      "Η ανάγνωση σε αυτή τη γλώσσα δεν υποστηρίζεται ακόμη.",
+      "Οι φωνές για αυτή τη γλώσσα δεν είναι διαθέσιμες στην περιοχή εξυπηρέτησής σας. Δοκιμάστε ξανά αργότερα.",
+      "Οι κλωνοποιημένες φωνές δεν υποστηρίζονται για αυτή τη γλώσσα. Επιλέξτε μια τυπική φωνή.",
+      "Τα δεδομένα συγχρονισμού ομιλίας είναι ελλιπή. Δοκιμάστε ξανά.",
+      "Η ομιλία δημιουργείται. Δοκιμάστε ξανά σε λίγο.",
+      "Η υπηρεσία ομιλίας έφτασε το ημερήσιο όριό της. Δοκιμάστε ξανά αργότερα."
+    ],
+    "hu": [
+      "A szöveg nyelve nem ismerhető fel. Válassza ki a felolvasás nyelvét.",
+      "A felolvasás ezen a nyelven még nem támogatott.",
+      "Az ehhez a nyelvhez tartozó hangok nem érhetők el az Ön szolgáltatási régiójában. Próbálja újra később.",
+      "A klónozott hangok ezen a nyelven nem támogatottak. Válasszon egy alapértelmezett hangot.",
+      "A beszéd szinkronizálási adatai hiányosak. Próbálja újra.",
+      "A beszéd létrehozása folyamatban van. Próbálja újra hamarosan.",
+      "A beszédszolgáltatás elérte a napi korlátját. Próbálja újra később."
+    ],
+    "fil": [
+      "Hindi matukoy ang wika ng teksto. Pumili ng wika sa pagbasa.",
+      "Hindi pa sinusuportahan ang pagbasa sa wikang ito.",
+      "Hindi available ang mga boses para sa wikang ito sa iyong rehiyon ng serbisyo. Subukan ulit sa ibang pagkakataon.",
+      "Hindi sinusuportahan ang mga na-clone na boses para sa wikang ito. Pumili ng karaniwang boses.",
+      "Hindi kumpleto ang data ng pag-synchronize ng boses. Pakisubukan ulit.",
+      "Ginagawa pa ang audio. Pakisubukang muli makalipas ang ilang sandali.",
+      "Naabot na ng serbisyo ng boses ang arawang limitasyon nito. Pakisubukang muli sa ibang pagkakataon."
+    ],
+    "he": [
+      "לא ניתן לזהות את שפת הטקסט. יש לבחור שפת הקראה.",
+      "הקראה בשפה זו עדיין אינה נתמכת.",
+      "קולות בשפה זו אינם זמינים באזור השירות שלך. יש לנסות שוב מאוחר יותר.",
+      "קולות משוכפלים אינם נתמכים בשפה זו. יש לבחור קול רגיל.",
+      "נתוני סנכרון הדיבור אינם מלאים. יש לנסות שוב.",
+      "האודיו נוצר כעת. יש לנסות שוב בעוד זמן קצר.",
+      "שירות הדיבור הגיע למגבלה היומית שלו. יש לנסות שוב מאוחר יותר."
+    ],
+    "id": [
+      "Bahasa teks tidak dapat dikenali. Pilih bahasa pembacaan.",
+      "Pembacaan dalam bahasa ini belum didukung.",
+      "Suara untuk bahasa ini tidak tersedia di wilayah layanan Anda. Coba lagi nanti.",
+      "Suara kloning tidak didukung untuk bahasa ini. Pilih suara standar.",
+      "Data sinkronisasi ucapan tidak lengkap. Silakan coba lagi.",
+      "Suara sedang dibuat. Silakan coba lagi sebentar lagi.",
+      "Layanan suara telah mencapai batas harian. Silakan coba lagi nanti."
+    ],
+    "ms": [
+      "Bahasa teks tidak dapat dikenal pasti. Pilih bahasa bacaan.",
+      "Bacaan dalam bahasa ini belum disokong.",
+      "Suara untuk bahasa ini tidak tersedia di rantau perkhidmatan anda. Cuba lagi kemudian.",
+      "Suara klon tidak disokong untuk bahasa ini. Pilih suara standard.",
+      "Data penyegerakan pertuturan tidak lengkap. Sila cuba lagi.",
+      "Audio sedang dijana. Sila cuba lagi sebentar nanti.",
+      "Perkhidmatan suara telah mencapai had hariannya. Sila cuba lagi kemudian."
+    ],
+    "ro": [
+      "Limba textului nu poate fi identificată. Alege o limbă de citire.",
+      "Citirea în această limbă nu este încă acceptată.",
+      "Vocile pentru această limbă nu sunt disponibile în regiunea ta de servicii. Încearcă din nou mai târziu.",
+      "Vocile clonate nu sunt acceptate pentru această limbă. Alege o voce standard.",
+      "Datele de sincronizare a vorbirii sunt incomplete. Încearcă din nou.",
+      "Se generează sunetul. Încearcă din nou în câteva momente.",
+      "Serviciul vocal a atins limita zilnică. Încearcă din nou mai târziu."
+    ],
+    "tr": [
+      "Metnin dili belirlenemedi. Bir okuma dili seçin.",
+      "Bu dilde okuma henüz desteklenmiyor.",
+      "Bu dilin sesleri hizmet bölgenizde kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
+      "Bu dil için klonlanmış sesler desteklenmiyor. Standart bir ses seçin.",
+      "Konuşma eşitleme verileri eksik. Lütfen tekrar deneyin.",
+      "Ses oluşturuluyor. Lütfen kısa bir süre sonra yeniden deneyin.",
+      "Ses hizmeti günlük sınırına ulaştı. Lütfen daha sonra yeniden deneyin."
+    ],
+    "vi": [
+      "Không thể xác định ngôn ngữ của văn bản. Hãy chọn ngôn ngữ đọc.",
+      "Chưa hỗ trợ đọc bằng ngôn ngữ này.",
+      "Giọng nói cho ngôn ngữ này chưa có trong khu vực dịch vụ của bạn. Vui lòng thử lại sau.",
+      "Ngôn ngữ này chưa hỗ trợ giọng nói nhân bản. Hãy chọn giọng nói tiêu chuẩn.",
+      "Dữ liệu đồng bộ giọng nói chưa đầy đủ. Vui lòng thử lại.",
+      "Đang tạo giọng đọc. Vui lòng thử lại sau giây lát.",
+      "Dịch vụ giọng nói đã đạt giới hạn hằng ngày. Vui lòng thử lại sau."
+    ]
+  }
+}

@@ -646,6 +646,9 @@ enum KindleParagraphPrefetchHorizon {
 final class ReadAloudViewModel: ObservableObject {
 
     private(set) var document: ReadingDocument
+    /// Photo correction must regenerate text and geometry together before speech resumes.
+    var onPhotoLanguageCorrection: ((String) -> Void)?
+    @Published var isCorrectingPhotoLanguage = false
     let analyticsContext: AnalyticsContentContext
 
     // 渲染状态
@@ -1040,6 +1043,17 @@ final class ReadAloudViewModel: ObservableObject {
     }
     /// 有效朗读语言：用户更正 > .web 源从正文检测的语言 > document.language。
     private var docLanguage: String { correctedLanguage ?? webLanguage ?? document.language }
+    #if DEBUG
+    /// Observe the same resolved source that playback uses, including live WebKit paragraphs.
+    var acceptanceReadingLanguage: String { docLanguage }
+    var acceptanceVoiceID: String { playbackVoiceID }
+    var acceptanceStartGates: [String: Bool] {
+        ["correctingPhotoLanguage": isCorrectingPhotoLanguage, "readablePageTask": readablePageTask != nil,
+         "webContentBlocked": webContentBlockMessage != nil, "ownsAudioQueue": ownsAudioQueue,
+         "liveWebCarry": currentSegmentBelongsToLiveWebCarry]
+    }
+    var acceptanceReadableParagraphCount: Int { readableIndices.count }
+    #endif
     @Published var webAudioSegments: [AudioSegment] = []   // 扁平全局顺序（供 bridge 转 JS audioSegments）
     @Published var webHighlight: WebHighlightCmd? = nil     // 当前 DOM 高亮指令（句级/词级）
     @Published var pdfHighlight: PDFWordHighlight? = nil    // PDF 词级高亮（当前段质量通过才更新，否则保留句级淡高亮）
@@ -1233,14 +1247,8 @@ final class ReadAloudViewModel: ObservableObject {
         // YouTube is the exception to book-level identity: each selected caption
         // track is its own content session. A stale correction for the video must
         // never override a newly selected track in another language.
-        let initialLanguageContentID = document.sourceKind == .youtube
-            ? document.contentSessionKey
-            : document.id
         self.correctedLanguage = ReadingLanguageStore.shared.override(
-            for: ReadingLanguageStore.contentKey(
-                namespace: document.sourceKind.rawValue,
-                bookID: initialLanguageContentID
-            )
+            for: ReadingLanguageStore.contentKey(for: document)
         )
         self.playbackVoiceID = AppSettings.shared
             .voice(for: correctedLanguage ?? document.language)
@@ -1257,17 +1265,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// metadata instead. Keying on that is what makes a correction survive a page
     /// turn on the very shelf the report came from.
     var readingLanguageContentKey: String {
-        if document.sourceKind == .youtube {
-            return ReadingLanguageStore.contentKey(
-                namespace: document.sourceKind.rawValue,
-                bookID: document.contentSessionKey
-            )
-        }
-        let bookID = playbackBookID?.trimmed ?? ""
-        return ReadingLanguageStore.contentKey(
-            namespace: document.sourceKind.rawValue,
-            bookID: bookID.isEmpty ? document.id : bookID
-        )
+        ReadingLanguageStore.contentKey(for: document, bookID: playbackBookID)
     }
 
     /// The book identity can arrive after `init`; pick the stored correction up
@@ -1548,6 +1546,10 @@ final class ReadAloudViewModel: ObservableObject {
     func correctReadingLanguage(_ language: String) {
         let normalized = VoiceCatalog.normalizedLanguage(language)
         guard !normalized.isEmpty, normalized != playbackLanguage else { return }
+        if document.sourceKind == .photo, let onPhotoLanguageCorrection {
+            onPhotoLanguageCorrection(normalized)
+            return
+        }
         let previous = playbackLanguage
         correctedLanguage = normalized
         // Persist per book, so the correction still holds on the next page and the
@@ -2202,7 +2204,7 @@ final class ReadAloudViewModel: ObservableObject {
                     self.kindlePrefetchFailures.insert(index)
                     self.synchronizeNextPrefetch(after: self.currentParagraphIndex)
                     if stream.promoted {
-                        self.status = .error(error.localizedDescription)
+                        self.status = .error(AppUserFacingError(error))
                         _ = self.audio.setMoreSegmentsExpected(!stream.segments.isEmpty, session: session)
                     }
                 } else if stream.promoted {
@@ -3040,6 +3042,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func start(allowAccessRefresh: Bool) {
+        guard !isCorrectingPhotoLanguage else { return }
         guard requireWebContentReady() else { return }
         guard resumeNotice == nil, readablePageTask == nil else { return }
         let restartingFinishedContent = isFinished
@@ -3196,6 +3199,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     func togglePlayPause() {
+        guard !isCorrectingPhotoLanguage else { return }
         guard requireWebContentReady() else { return }
         if isPreparingReadablePage { pausePlayback(); return }
         audio.sleepTimer.resumeByUser()
@@ -3292,6 +3296,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// Reattaching while audio is playing or TTS is still loading must not pause
     /// playback or start a duplicate generation request.
     func ensurePlaying() {
+        guard !isCorrectingPhotoLanguage else { return }
         guard requireWebContentReady() else { return }
         guard audio.sleepTimer.permitsAutomaticPlayback() else { return }
         guard resumeNotice == nil else { return }
@@ -4227,7 +4232,8 @@ final class ReadAloudViewModel: ObservableObject {
                     if let cursor = self.pendingReadingAudioCursor {
                         guard self.loadResumedReadingAudio(
                             self.segmentsByParagraph[index] ?? [], cursor: cursor,
-                            isComplete: true, autoPlay: autoPlay && !self.liveWebTurnIntentSuspended && !self.audio.isExplicitlyPaused,
+                            isComplete: true, autoPlay: (autoPlay || self.audio.hasPlaybackRequest)
+                                && !self.liveWebTurnIntentSuspended && !self.audio.isExplicitlyPaused,
                             session: session
                         ) else { return }
                     }
@@ -4298,7 +4304,7 @@ final class ReadAloudViewModel: ObservableObject {
                             "READ generate failed para=\(index) epoch=\(epoch) " +
                             "error=\(error.localizedDescription)"
                         )
-                        self.status = .error(error.localizedDescription)
+                        self.status = .error(AppUserFacingError(error))
                         self.finishVoiceSwitch(voiceSwitchID)
                         self.endAnalyticsReadSession(
                             result: .failed,
@@ -4649,7 +4655,15 @@ final class ReadAloudViewModel: ObservableObject {
                   !isPlaybackPausedByUser, !audio.isExplicitlyPaused,
                   ProcessInfo.processInfo.systemUptime < deadline {
                 guard let stream = readAheadStreams[next], stream.failure == nil else { break }
-                if let body = stream.segments.first, audio.isPreparedForPlayback(body) { break }
+                if let body = stream.segments.first, audio.isPreparedForPlayback(body) {
+                    // Decoder readiness can win the race with the producer's
+                    // completion callback. A complete short response must wait
+                    // for that callback before deciding whether to prepare the
+                    // next paragraph; a partly response keeps its own producer.
+                    if stream.finished || !body.unprocessedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        break
+                    }
+                }
                 if stream.finished, stream.segments.isEmpty { break }
                 try? await Task.sleep(nanoseconds: 20_000_000)
             }
@@ -4800,7 +4814,7 @@ final class ReadAloudViewModel: ObservableObject {
                 self.synchronizeNextPrefetch(after: self.currentParagraphIndex)
                 ReaderRunLog.write("READ prefetch failed para=\(nextIndex) epoch=\(epoch) promoted=\(stream.promoted) buffered=\(stream.segments.count) error=\(error.localizedDescription)")
                 if stream.promoted {
-                    self.status = .error(error.localizedDescription)
+                    self.status = .error(AppUserFacingError(error))
                     // A failed tail is not a completed paragraph. Drain the
                     // prefix, retain the exact continuation and offer Retry.
                     _ = self.audio.setMoreSegmentsExpected(!stream.segments.isEmpty, session: session)
@@ -4993,7 +5007,7 @@ final class ReadAloudViewModel: ObservableObject {
         let producing = stream.map { !$0.finished || $0.failure != nil } ?? false
         _ = audio.setMoreSegmentsExpected(producing, session: session)
         if let error = stream?.failure {
-            status = .error(error.localizedDescription)
+            status = .error(AppUserFacingError(error))
         } else {
             status = producing ? .streaming : .ready
         }
@@ -5649,7 +5663,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func hasReliableWordHighlight(_ segment: AudioSegment) -> Bool {
-        guard TTSHighlightPolicy.usesWordTimestamps(language: docLanguage) else {
+        guard TTSHighlightPolicy.usesWordTimestamps(language: docLanguage, voice: playbackVoiceID) else {
             return false
         }
         return TTSTimestampQuality.hasReliableWordGranularity(

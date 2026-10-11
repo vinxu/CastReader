@@ -1,253 +1,3274 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "Continue ${item} in ${mode} mode" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "${item} im Modus ${mode} fortsetzen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue ${item} in ${mode} mode" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar ${item} en modo ${mode}" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer ${item} en mode ${mode}" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${item} को ${mode} मोड में जारी रखें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua ${item} in modalità ${mode}" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${item}を${mode}モードで続ける" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar ${item} no modo ${mode}" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "以${mode}模式继续${item}" } }
+  "sourceLanguage": "en",
+  "strings": {
+    "Continue ${item} in ${mode} mode": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${item} im Modus ${mode} fortsetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue ${item} in ${mode} mode"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar ${item} en modo ${mode}"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer ${item} en mode ${mode}"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${item} को ${mode} मोड में जारी रखें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua ${item} in modalità ${mode}"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${item}を${mode}モードで続ける"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar ${item} no modo ${mode}"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以${mode}模式继续${item}"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doorgaan met ${item} in ${mode}-modus"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить ${item} в режиме ${mode}"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontynuuj ${item} w trybie ${mode}"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsätt ${item} i ${mode}-läge"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett ${item} i ${mode}-modus"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jatka kohdetta ${item} tilassa ${mode}"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovat v ${item} v režimu ${mode}"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συνέχεια ${item} σε λειτουργία ${mode}"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folytatás: ${item} (${mode}) módban"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magpatuloy sa ${item} sa ${mode} mode"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teruskan ${item} dalam mod ${mode}"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuă ${item} în modul ${mode}"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsæt ${item} i tilstanden ${mode}"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متابعة ${item} في وضع ${mode}"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${item}을(를) ${mode} 모드로 계속하기"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanjutkan ${item} dalam mode ${mode}"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "${item} öğesine ${mode} modunda devam et"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המשך ${item} במצב ${mode}"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp tục ${item} ở chế độ ${mode}"
+          }
+        }
       }
     },
-    "Continue in CastReader" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "In CastReader fortsetzen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue in CastReader" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar en CastReader" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer dans CastReader" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader में जारी रखें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua in CastReader" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "CastReaderで続きを開く" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar no CastReader" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 CastReader 中继续" } }
+    "Continue in CastReader": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In CastReader fortsetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue in CastReader"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar en CastReader"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer dans CastReader"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader में जारी रखें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua in CastReader"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReaderで続きを開く"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar no CastReader"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 CastReader 中继续"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doorgaan in CastReader"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить в CastReader"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontynuuj w CastReader"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsätt i CastReader"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsæt i CastReader"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett i CastReader"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jatka CastReaderissa"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovat v CastReader"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συνέχεια στο CastReader"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folytatás a CastReaderben"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magpatuloy sa CastReader"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teruskan dalam CastReader"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuă în CastReader"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المتابعة في CastReader"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader에서 계속하기"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanjutkan di CastReader"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader'da Devam Et"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המשך ב־CastReader"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp tục trong CastReader"
+          }
+        }
       }
     },
-    "Continue the latest item, or choose a recent CastReader item." : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Setze den letzten Inhalt fort oder wähle einen kürzlich verwendeten CastReader-Inhalt." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue the latest item, or choose a recent CastReader item." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continúa el último elemento o elige uno reciente de CastReader." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Reprenez le dernier élément ou choisissez un élément CastReader récent." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "सबसे हाल की सामग्री जारी रखें या CastReader की हाल की सामग्री चुनें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua l’ultimo elemento o scegline uno recente di CastReader." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最新の項目を続けるか、CastReaderの最近の項目を選びます。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continue o item mais recente ou escolha um item recente do CastReader." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续最近的内容，或选择一个最近使用的 CastReader 内容。" } }
+    "Continue the latest item, or choose a recent CastReader item.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setze den letzten Inhalt fort oder wähle einen kürzlich verwendeten CastReader-Inhalt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue the latest item, or choose a recent CastReader item."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continúa el último elemento o elige uno reciente de CastReader."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprenez le dernier élément ou choisissez un élément CastReader récent."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सबसे हाल की सामग्री जारी रखें या CastReader की हाल की सामग्री चुनें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua l’ultimo elemento o scegline uno recente di CastReader."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最新の項目を続けるか、CastReaderの最近の項目を選びます。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue o item mais recente ou escolha um item recente do CastReader."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续最近的内容，或选择一个最近使用的 CastReader 内容。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ga door met het laatste item, of kies een recent CastReader-item."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить последний элемент или выбрать недавний элемент из CastReader."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontynuuj najnowszy element lub wybierz niedawny element CastReader."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsätt med senaste objektet, eller välj ett nyligen använt CastReader-objekt."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsæt med det seneste element, eller vælg et nyligt CastReader-element."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett med det siste innholdet, eller velg et nylig åpnet element i CastReader."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jatka viimeisintä kohdetta tai valitse jokin äskettäin käytetyistä CastReader-kohdista."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovat v nejnovější položce nebo zvolit nedávnou položku z CastReader."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συνέχεια του τελευταίου στοιχείου ή επιλογή πρόσφατου στοιχείου CastReader."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folytasd a legutóbbi tartalmat, vagy válassz a CastReaderben nemrég megnyitott elemek közül."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magpatuloy sa huling item, o pumili ng kamakailang item sa CastReader."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teruskan item terkini, atau pilih item CastReader terkini."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuă cel mai recent element sau alege un element deschis recent în CastReader."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تابع أحدث عنصر، أو اختر عنصرًا حديثًا من CastReader."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "가장 최근 항목을 이어서 보거나 최근 CastReader 항목을 선택하세요."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanjutkan item terakhir, atau pilih item CastReader terbaru."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son öğeye devam edin veya yakın tarihli bir CastReader öğesi seçin."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המשך הפריט האחרון או בחירת פריט שנפתח לאחרונה ב־CastReader."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp tục mục mới nhất hoặc chọn một mục gần đây trong CastReader."
+          }
+        }
       }
     },
-    "Explain" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erklären" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Explain" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Expliquer" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "समझाएँ" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Spiega" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "解説" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解读" } }
+    "Explain": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erklären"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explicar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expliquer"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "समझाएँ"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiega"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解説"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explicar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uitleggen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "해설"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شرح"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Объяснить"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyjaśnij"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förklara"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forklar"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forklar"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selitä"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vysvětlit"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εξήγηση"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magyarázat"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ipaliwanag"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הסבר"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jelaskan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terangkan"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explică"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açıkla"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giải thích"
+          }
+        }
       }
     },
-    "Mode" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Modus" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mode" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Modo" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Mode" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "मोड" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Modalità" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "モード" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Modo" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "模式" } }
+    "Mode": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modus"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मोड"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modalità"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "モード"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模式"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modus"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Режим"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tryb"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läge"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilstand"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modus"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tila"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Režim"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Λειτουργία"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mód"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mod"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mod"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الوضع"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "모드"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mod"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מצב"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chế độ"
+          }
+        }
       }
     },
-    "Read Aloud" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorlesen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Read Aloud" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Leer en voz alta" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lire à voix haute" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ज़ोर से पढ़ें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Leggi ad alta voce" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み上げ" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ler em voz alta" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "朗读" } }
+    "Read Aloud": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorlesen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read Aloud"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leer en voz alta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lire à voix haute"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ज़ोर से पढ़ें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leggi ad alta voce"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み上げ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ler em voz alta"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "朗读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voorlezen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "소리 내어 읽기"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القراءة بصوت عالٍ"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтение вслух"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Czytaj na głos"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs upp"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Læs højt"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les høyt"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lue ääneen"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Číst nahlas"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ανάγνωση φωναχτά"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Felolvasás"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basahin nang malakas"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הקראה בקול"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baca nyaring"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baca lantang"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Citire cu voce tare"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesli oku"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đọc thành tiếng"
+          }
+        }
       }
     },
-    "Reading Item" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Leseinhalt" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading Item" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Elemento de lectura" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Élément de lecture" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पढ़ने की सामग्री" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Contenuto da leggere" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読書項目" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Item de leitura" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "阅读内容" } }
+    "Reading Item": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leseinhalt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading Item"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elemento de lectura"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Élément de lecture"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पढ़ने की सामग्री"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contenuto da leggere"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読書項目"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item de leitura"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "阅读内容"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leesitem"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العنصر المقروء"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Читаемый элемент"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Treść do czytania"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läsinnehåll"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Læseemne"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leseobjekt"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Luettava kohde"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Čtená položka"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Στοιχείο ανάγνωσης"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Olvasási elem"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item na Binabasa"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "읽을 항목"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item Bacaan"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item Bacaan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okuma Öğesi"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Element de lectură"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "פריט לקריאה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục đọc"
+          }
+        }
       }
     },
-    "Reading Mode" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Lesemodus" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading Mode" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Modo de lectura" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Mode de lecture" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पढ़ने का मोड" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Modalità di lettura" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み方" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Modo de leitura" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "阅读模式" } }
+    "Reading Mode": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lesemodus"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading Mode"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo de lectura"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode de lecture"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पढ़ने का मोड"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modalità di lettura"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み方"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo de leitura"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "阅读模式"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leesmodus"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وضع القراءة"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Режим чтения"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tryb czytania"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läsläge"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Læsetilstand"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lesemodus"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lukutila"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Režim čtení"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Λειτουργία ανάγνωσης"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Olvasási mód"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode ng pagbasa"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "읽기 모드"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mod Bacaan"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode Bacaan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okuma Modu"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mod de lectură"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מצב קריאה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chế độ đọc"
+          }
+        }
       }
     },
-    "Recent Item" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Letzter Inhalt" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recent Item" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Elemento reciente" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Élément récent" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "हाल की सामग्री" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Elemento recente" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近の項目" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Item recente" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最近内容" } }
+    "Recent Item": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzter Inhalt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent Item"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elemento reciente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Élément récent"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "हाल की सामग्री"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elemento recente"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近の項目"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item recente"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近内容"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent item"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العنصر الأخير"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Недавний элемент"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ostatni element"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senaste objekt"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seneste emne"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nylig objekt"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viimeisin kohde"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedávná položka"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Πρόσφατο στοιχείο"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legutóbbi elem"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Huling Item"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "최근 항목"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item Terkini"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Item Terbaru"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son Öğe"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Element recent"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "פריט אחרון"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mục gần đây"
+          }
+        }
       }
     },
-    "widget_continue" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fortsetzen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "जारी रखें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "続ける" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } }
+    "widget_continue": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "जारी रखें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "続ける"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doorgaan"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "계속"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متابعة"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontynuuj"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsätt"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsæt"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jatka"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovat"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συνέχεια"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folytatás"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magpatuloy"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המשך"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanjutkan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teruskan"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuă"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Devam Et"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp tục"
+          }
+        }
       }
     },
-    "widget_description" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Setze aktuelle Inhalte mit Vorlesen oder Erklären fort." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resume recent content with Read Aloud or Explain." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Retoma contenido reciente con Leer en voz alta o Explicar." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Reprenez un contenu récent avec Lire à voix haute ou Expliquer." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "हाल की सामग्री को ज़ोर से पढ़ें या समझाएँ।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Riprendi i contenuti recenti con Leggi ad alta voce o Spiega." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近のコンテンツを読み上げまたは解説で再開します。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Retome conteúdos recentes com Ler em voz alta ou Explicar." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用朗读或解读继续最近的内容。" } }
+    "widget_description": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setze aktuelle Inhalte mit Vorlesen oder Erklären fort."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume recent content with Read Aloud or Explain."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retoma contenido reciente con Leer en voz alta o Explicar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprenez un contenu récent avec Lire à voix haute ou Expliquer."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "हाल की सामग्री को ज़ोर से पढ़ें या समझाएँ।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riprendi i contenuti recenti con Leggi ad alta voce o Spiega."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近のコンテンツを読み上げまたは解説で再開します。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retome conteúdos recentes com Ler em voz alta ou Explicar."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用朗读或解读继续最近的内容。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hervat recente inhoud met Voorlezen of Uitleggen."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "소리 내어 읽기 또는 해설 기능으로 최근 콘텐츠를 이어서 보세요."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استمر في المحتوى الأخير باستخدام القراءة بصوت عالٍ أو الشرح."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжите недавний контент в режиме «Чтение вслух» или «Объяснить»."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wznów ostatnią treść za pomocą funkcji Czytaj na głos lub Wyjaśnij."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återuppta nyligen sett innehåll med Läs upp eller Förklara."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genoptag nyligt indhold med Læs højt eller Forklar."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett med nylig innhold ved hjelp av Les høyt eller Forklar."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jatka viimeisintä sisältöä Lue ääneen -toiminnolla tai Selitä-toiminnolla."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračujte v nedávném obsahu pomocí funkcí Číst nahlas nebo Vysvětlit."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συνεχίστε πρόσφατο περιεχόμενο με Ανάγνωση φωναχτά ή Εξήγηση."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folytasd a legutóbbi tartalmat a Felolvasás vagy a Magyarázat funkcióval."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ituloy ang huling nilalaman gamit ang Basahin nang Malakas o Ipaliwanag."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanjutkan konten terbaru dengan Baca nyaring atau Jelaskan."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teruskan kandungan terkini dengan Baca Lantang atau Terangkan."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son içeriklere Sesli Okuma veya Açıklama ile devam edin."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reia conținutul recent prin Citire cu voce tare sau Explică."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המשך תוכן שנפתח לאחרונה באמצעות הקראה או הסבר."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp tục nội dung gần đây bằng Đọc thành tiếng hoặc Giải thích."
+          }
+        }
       }
     },
-    "widget_empty_message" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Importiere Text, eine Datei oder ein Foto." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import text, a file, or a photo to get started." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Importa texto, un archivo o una foto para empezar." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Importez du texte, un fichier ou une photo pour commencer." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "शुरू करने के लिए टेक्स्ट, फ़ाइल या फ़ोटो आयात करें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Importa testo, un file o una foto per iniziare." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "テキスト、ファイル、写真を読み込んで始めましょう。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Importe texto, arquivo ou foto para começar." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入文本、文件或照片即可开始。" } }
+    "widget_empty_message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importiere Text, eine Datei oder ein Foto."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import text, a file, or a photo to get started."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importa texto, un archivo o una foto para empezar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importez du texte, un fichier ou une photo pour commencer."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "शुरू करने के लिए टेक्स्ट, फ़ाइल या फ़ोटो आयात करें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importa testo, un file o una foto per iniziare."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テキスト、ファイル、写真を読み込んで始めましょう。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importe texto, arquivo ou foto para começar."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入文本、文件或照片即可开始。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importeer tekst, een bestand of een foto om te beginnen."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "시작하려면 텍스트, 파일 또는 사진을 가져오세요."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استورد نصًا أو ملفًا أو صورة للبدء."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Импортируйте текст, файл или фото, чтобы начать."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importuj tekst, plik lub zdjęcie, aby rozpocząć."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importera text, en fil eller en bild för att komma igång."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importér tekst, en fil eller et foto for at komme i gang."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer tekst, en fil eller et bilde for å komme i gang."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuo tekstiä, tiedosto tai valokuva aloittaaksesi."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Začněte importem textu, souboru nebo fotografie."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εισαγάγετε κείμενο, αρχείο ή φωτογραφία για να ξεκινήσετε."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importálj szöveget, fájlt vagy fotót a kezdéshez."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mag-import ng teksto, file, o litrato upang magsimula."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impor teks, file, atau foto untuk memulai."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import teks, fail atau foto untuk bermula."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Başlamak için metin, dosya veya fotoğraf içe aktarın."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importă un text, un fișier sau o fotografie pentru a începe."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ייבוא טקסט, קובץ או תמונה כדי להתחיל."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập văn bản, tệp hoặc ảnh để bắt đầu."
+          }
+        }
       }
     },
-    "widget_empty_title" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nichts fortzusetzen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing to continue" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nada que continuar" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Rien à reprendre" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "जारी रखने के लिए कुछ नहीं" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nulla da continuare" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "続きから読める項目はありません" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Nada para continuar" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无可继续的内容" } }
+    "widget_empty_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nichts fortzusetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing to continue"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nada que continuar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien à reprendre"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "जारी रखने के लिए कुछ नहीं"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nulla da continuare"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "続きから読める項目はありません"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nada para continuar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无可继续的内容"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niets om te hervatten"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "계속할 내용이 없습니다"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يوجد محتوى لمتابعته"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нечего продолжить"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brak treści do kontynuowania"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget att återuppta"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intet at fortsætte med"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting å fortsette med"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei jatkettavaa sisältöä"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nic k pokračování"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Δεν υπάρχει περιεχόμενο προς συνέχιση"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nincs folytatandó tartalom"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Walang matutuloy"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tidak ada yang dapat dilanjutkan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiada kandungan untuk diteruskan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Devam edilecek içerik yok"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nu există conținut de continuat"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "אין תוכן להמשיך"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có nội dung để tiếp tục"
+          }
+        }
       }
     },
-    "widget_explain" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erklären" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Explain" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Expliquer" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "समझाएँ" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Spiega" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "解説" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解读" } }
+    "widget_explain": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erklären"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explicar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expliquer"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "समझाएँ"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiega"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解説"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explicar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uitleggen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "해설"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شرح"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Объяснить"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyjaśnij"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förklara"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forklar"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forklar"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selitä"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vysvětlit"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εξήγηση"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magyarázat"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ipaliwanag"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הסבר"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jelaskan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terangkan"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explică"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açıkla"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giải thích"
+          }
+        }
       }
     },
-    "widget_import" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Inhalt importieren" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import content" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Importar contenido" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Importer du contenu" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "सामग्री आयात करें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Importa contenuto" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンテンツを読み込む" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Importar conteúdo" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入内容" } }
+    "widget_import": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhalt importieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import content"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar contenido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer du contenu"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सामग्री आयात करें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importa contenuto"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コンテンツを読み込む"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importar conteúdo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入内容"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhoud importeren"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "콘텐츠 가져오기"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استيراد محتوى"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Импорт контента"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importuj treść"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importera innehåll"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importér indhold"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importer innhold"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuo sisältöä"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importovat obsah"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εισαγωγή περιεχομένου"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tartalom importálása"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mag-import ng nilalaman"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impor konten"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import kandungan"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İçerik içe aktar"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importă conținut"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ייבוא תוכן"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập nội dung"
+          }
+        }
       }
     },
-    "widget_name" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Weiterlesen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue Reading" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Seguir leyendo" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Reprendre la lecture" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पढ़ना जारी रखें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua a leggere" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読書を続ける" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar lendo" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续阅读" } }
+    "widget_name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiterlesen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue Reading"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir leyendo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprendre la lecture"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पढ़ना जारी रखें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua a leggere"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読書を続ける"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar lendo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续阅读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doorgaan met lezen"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить чтение"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontynuuj czytanie"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsätt läsa"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsæt læsning"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett å lese"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jatka lukemista"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokračovat v čtení"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Συνέχεια Ανάγνωσης"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Olvasás folytatása"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magpatuloy sa pagbabasa"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teruskan Membaca"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuă lectura"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متابعة القراءة"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "계속 읽기"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanjutkan Membaca"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okumaya Devam Et"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "המשך קריאה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiếp tục đọc"
+          }
+        }
       }
     },
-    "widget_placeholder_title" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Lernnotizen für diese Woche" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "This Week’s Study Notes" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Apuntes de estudio de esta semana" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Notes d’étude de la semaine" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "इस सप्ताह के अध्ययन नोट्स" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Appunti di studio della settimana" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "今週の学習ノート" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Notas de estudo desta semana" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "本周学习笔记" } }
+    "widget_placeholder_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lernnotizen für diese Woche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Week’s Study Notes"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apuntes de estudio de esta semana"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes d’étude de la semaine"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस सप्ताह के अध्ययन नोट्स"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appunti di studio della settimana"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今週の学習ノート"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notas de estudo desta semana"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本周学习笔记"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Studieaantekeningen van deze week"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이번 주 학습 노트"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ملاحظات الدراسة لهذا الأسبوع"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Учебные заметки за эту неделю"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notatki z tego tygodnia"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veckans studieanteckningar"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne uges studienoter"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ukens studienotater"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tämän viikon opintomuistiinpanot"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Týdenní studijní poznámky"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Σημειώσεις Μελέτης της Εβδομάδας"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "E heti tanulási jegyzetek"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mga Tala sa Pag-aaral ng Linggong Ito"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Catatan Studi Minggu Ini"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nota Pembelajaran Minggu Ini"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu Haftanın Çalışma Notları"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notițele de studiu din această săptămână"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "סיכומי הלימוד של השבוע"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ghi chú học tập tuần này"
+          }
+        }
       }
     },
-    "widget_read_aloud" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorlesen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Read Aloud" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Leer en voz alta" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lire à voix haute" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ज़ोर से पढ़ें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Leggi ad alta voce" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み上げ" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ler em voz alta" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "朗读" } }
+    "widget_read_aloud": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorlesen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read Aloud"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leer en voz alta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lire à voix haute"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ज़ोर से पढ़ें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leggi ad alta voce"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み上げ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ler em voz alta"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "朗读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voorlezen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "소리 내어 읽기"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القراءة بصوت عالٍ"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтение вслух"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Czytaj na głos"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs upp"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Læs højt"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les høyt"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lue ääneen"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Číst nahlas"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ανάγνωση φωναχτά"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Felolvasás"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basahin nang malakas"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הקראה בקול"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baca nyaring"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baca lantang"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Citire cu voce tare"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesli oku"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đọc thành tiếng"
+          }
+        }
       }
     },
-    "widget_recent" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zuletzt geöffnet" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recently opened" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abierto recientemente" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouvert récemment" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "हाल ही में खोला गया" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Aperto di recente" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近開いた項目" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Aberto recentemente" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最近打开" } }
+    "widget_recent": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuletzt geöffnet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recently opened"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abierto recientemente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvert récemment"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "हाल ही में खोला गया"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aperto di recente"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近開いた項目"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aberto recentemente"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近打开"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent geopend"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "최근에 연 항목"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مفتوح مؤخرًا"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Недавно открытые"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ostatnio otwarte"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nyligen öppnat"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nyligt åbnet"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nylig åpnet"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Äskettäin avattu"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedávno otevřené"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Πρόσφατα ανοιγμένα"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legutóbb megnyitottak"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamakailang binuksan"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baru saja dibuka"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baru dibuka"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son açılanlar"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deschise recent"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "נפתחו לאחרונה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã mở gần đây"
+          }
+        }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

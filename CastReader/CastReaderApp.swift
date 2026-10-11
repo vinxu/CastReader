@@ -427,6 +427,7 @@ private struct CastReaderWindowRoot: View {
             if startup.isReady {
                 RouteReadyRoot(pendingURLs: $pendingURLs)
                     .environment(\.locale, appLanguage.locale)
+                    .environment(\.layoutDirection, appLanguage.selectedLanguage.isRightToLeft ? .rightToLeft : .leftToRight)
             } else {
                 Color(uiColor: .systemBackground).ignoresSafeArea()
                     .accessibilityIdentifier("distribution_bootstrap")

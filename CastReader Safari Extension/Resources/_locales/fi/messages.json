@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Ääneenluku ja AI-selitys"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Lue ääneen + AI-tulkinta"
+  },
+  "extDescription": {
+    "message": "Kuuntele 28 kielellä: tekstin korostus, automaattinen vieritys ja tekoälyn selitykset."
+  },
+  "quickreadBtn": {
+    "message": "Nopea katsaus"
+  },
+  "quickreadBtnExit": {
+    "message": "Poistu katsauksesta"
+  },
+  "quickreadPreparing": {
+    "message": "Yhteenvetoa luodaan"
+  },
+  "quickreadError": {
+    "message": "Yhteenvetovirhe"
+  },
+  "quickreadStageExtract": {
+    "message": "Avainkohdat puretaan"
+  },
+  "quickreadStageTts": {
+    "message": "Ääniraitaa luodaan"
+  },
+  "quickreadStageRefine": {
+    "message": "Järjestetään rytmiä"
+  },
+  "quickreadStageReady": {
+    "message": "Valmis toistettavaksi…"
+  },
+  "quickreadFailed": {
+    "message": "Epäonnistui: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Sulje"
+  },
+  "quickreadCancel": {
+    "message": "Peruuta"
+  },
+  "quickreadDone": {
+    "message": "Valmis"
+  },
+  "quickreadHint": {
+    "message": "Noin 25–45 sekuntia, odota hetki"
+  },
+  "quickreadQueued": {
+    "message": "Jonossa ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Ilmaiset päivittäiset tulkinnat käytetty. Päivittyy huomenna."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Ilmaiset päivittäiset tulkinnat käytetty"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Päivittäinen ilmaisraja saavutettu — päivitys Pro-tilaan rajoittamattomiksi tulkinnaksi. Ilmaisraja päivittyy huomenna."
+  },
+  "quickreadUpgrade": {
+    "message": "Päivitä Pro-tilaan"
+  },
+  "accountNotSignedIn": {
+    "message": "Et ole kirjautunut sisään"
+  },
+  "enableProMode": {
+    "message": "Ota käyttöön Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Ilmainen päivittäinen lukuaika (20 min) käytetty"
+  },
+  "listenRateLimitBody": {
+    "message": "Olet käyttänyt tänään 20 ilmaista lukuminuuttiasi — päivitys Pro-tilaan rajoittamattomaan lukemiseen. Ilmaisraja päivittyy huomenna."
+  },
+  "quickreadQuotaTip": {
+    "message": "Tulkinta · $n$/$max$ jäljellä tänään",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Selitä · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Lue dokumentti"
+  },
+  "readerDrop": {
+    "message": "Vedä kuva / PDF / EPUB / Word / TXT tähän"
+  },
+  "readerDropOver": {
+    "message": "Vedä lataamista varten"
+  },
+  "readerSub": {
+    "message": "Lue ääneen + AI-yhteenveto alkuperäisestä tiedostosta – asettelu muuttumaton"
+  },
+  "readerOr": {
+    "message": "tai"
+  },
+  "readerPick": {
+    "message": "Valitse tiedosto"
+  },
+  "readerRendering": {
+    "message": "Dokumenttia renderöidään…"
+  },
+  "readerListen": {
+    "message": "▶ Kuuntele"
+  },
+  "readerPause": {
+    "message": "⏸ Tauko"
+  },
+  "readerResume": {
+    "message": "▶ Jatka"
+  },
+  "readerStop": {
+    "message": "■ Pysäytä"
+  },
+  "readerExplain": {
+    "message": "✦ Tulkaise"
+  },
+  "readerExplainHint": {
+    "message": "Pysäytä ensin lukeminen"
+  },
+  "readerNewFile": {
+    "message": "Uusi tiedosto"
+  },
+  "readerSpeed": {
+    "message": "Nopeus"
+  },
+  "readerUnsupported": {
+    "message": "Tiedostotyyppi ei tue"
+  },
+  "readerFailed": {
+    "message": "Käsittely epäonnistui"
+  },
+  "readerEmpty": {
+    "message": "Tämästä dokumentista ei löytynyt luettavaa tekstiä"
+  },
+  "readerQuotaLeft": {
+    "message": "jäljellä tänään"
+  },
+  "readerQuotaBlocked": {
+    "message": "Ilmaiset päivittäiset yhteenvetot (10 kpl) käytetty — päivittyy huomenna"
+  },
+  "readerPartial": {
+    "message": "Osio nykyisessä sijainnissasi on tulkittu — vieritä alas ja napauta Tulkaise uudelleen seuraavaa varten"
+  },
+  "readerTooLarge": {
+    "message": "Tiedosto liian suuri (yli 100 Mt). Käytä pienempää tiedostoa."
+  },
+  "readerLargeFilePro": {
+    "message": "Yli 7 Mt:n tiedostot vaativat Pro-tilan — Pro avaa dokumentteja jopa 100 Mt:n kokoon."
+  },
+  "readerTooLargeForPage": {
+    "message": "Liian suuri avattavaksi tästä sivusta (yli 7 Mt). Avaa dokumenttilukija ja valitse se siellä — jopa 100 Mt."
+  },
+  "readerOpenReader": {
+    "message": "Avaa dokumenttilukija"
+  },
+  "readerContinue": {
+    "message": "Jatka ✦"
+  },
+  "readerSettings": {
+    "message": "Asetukset"
+  },
+  "readerExplainLang": {
+    "message": "Selitä kielellä"
+  },
+  "readerDocumentLang": {
+    "message": "Dokumentin kieli"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automaattinen (tekstistä)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Kuvissa tai skannatuissa PDF-tiedostoissa ilman luettavaa tekstiä valitse dokumentin kieli, sitten avaa tiedosto."
+  },
+  "readerVoiceEn": {
+    "message": "Englanninkielinen ääni"
+  },
+  "readerVoiceZh": {
+    "message": "Kiinan kielen ääni"
+  },
+  "readerVoices": {
+    "message": "Äänet"
+  },
+  "readerBrowseVoices": {
+    "message": "Selaa ääniä"
+  },
+  "readerLangAuto": {
+    "message": "Automaattinen (käyttöliittymän kieli)"
+  },
+  "readerLangFollow": {
+    "message": "Sovita dokumenttiin"
+  },
+  "readerPreparing": {
+    "message": "Valmistellaan lukemista…"
+  },
+  "readerEncrypted": {
+    "message": "Tämä PDF-tiedosto on salasanan suojaama"
+  },
+  "readerCorrupt": {
+    "message": "Tiedosto vaikuttaa vioittuneelta tai luettavilta"
+  },
+  "readerTimeout": {
+    "message": "Avautuminen kesti liian kauan — tiedosto voi olla liian monimutkainen"
+  },
+  "readerEpubDrm": {
+    "message": "Tämä EPUB-tiedosto on suojattu DRM:llä. Kokeile DRM-vapaata EPUB-tiedostoa."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Tässä kiinteän asettelun EPUB-tiedostossa ei ole tekstiä, joka pysyisi synkronoituna lukemisen kanssa."
+  },
+  "readerEpubTooComplex": {
+    "message": "Tämä EPUB-tiedosto ylittää turvalliset paikalliset käsittelyrajat. Kokeile pienempää tai yksinkertaisempaa EPUB-tiedostoa."
+  },
+  "readerEpubTooLarge": {
+    "message": "EPUB-tiedostot voivat olla enintään 30 MB turvallista paikallista käsittelyä varten."
+  },
+  "inboxTitle": {
+    "message": "Sisältöpostilaatikko"
+  },
+  "inboxSubtitle": {
+    "message": "Tallenna verkkosivuja tai valittua tekstiä ja lue tai selitä ne myöhemmin."
+  },
+  "inboxEmpty": {
+    "message": "Postilaatikkosi on tyhjä"
+  },
+  "inboxEmptyDescription": {
+    "message": "Oikea-napsauta sivua tai valittua tekstiä ja tallenna se CastReaderiin."
+  },
+  "inboxSaveSelection": {
+    "message": "Tallenna valittu teksti CastReaderin sisältöpostilaatikkoon"
+  },
+  "inboxSavePage": {
+    "message": "Tallenna sivu CastReaderin sisältöpostilaatikkoon"
+  },
+  "inboxOpen": {
+    "message": "Avaa sisältöpostilaatikko"
+  },
+  "inboxSharedText": {
+    "message": "Valittu teksti"
+  },
+  "inboxOpenFailed": {
+    "message": "Tätä sisältöä ei voitu avata. Yritä uudelleen."
+  },
+  "inboxRetry": {
+    "message": "Yritä uudelleen"
+  },
+  "inboxRead": {
+    "message": "Lue ääneen"
+  },
+  "inboxExplain": {
+    "message": "Selitä"
+  },
+  "inboxDelete": {
+    "message": "Poista"
+  },
+  "inboxLink": {
+    "message": "Linkki"
+  },
+  "inboxText": {
+    "message": "Teksti"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Lue ääneen + AI-tulkinta"
+  },
+  "edgeExtDescription": {
+    "message": "Lue tekstin korostuksen ja automaattisen vierityksen avulla. Tekoäly selittää vaikeat kohdat. Luonnolliset äänet 28 kielellä."
+  },
+  "toggleSiteVisibility": {
+    "message": "Näytä / piilota CastReader tällä sivustolla"
+  },
+  "voiceCloneBenefit": {
+    "message": "Käytä omaa ääntäsi Lue ääneen - ja Selitä-toiminnoissa · 120 minuuttia kuukaudessa"
+  },
+  "voiceClonePaywall": {
+    "message": "Luo, hallinnoi ja toista useiden henkilökohtaisten äänien kiinteitä esikatseluja ilmaiseksi. Pro käyttää henkilökohtaisia ääniä Lue ääneen - ja Selitä-toiminnoissa 120 tuotetun minuutin ajan kuukaudessa."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Henkilökohtaisten äänten minuutit ovat loppuneet täksi kuukaudeksi. Valitsemasi ääni säilyy."
+  },
+  "ocrModelUnavailable": {
+    "message": "Tunnistuskielitiedostoa ei voitu ladata. Yhdistä internetiin ja yritä uudelleen."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Kuvien ja skannattujen sivujen tunnistusta ei vielä tueta tällä kielellä. Voit edelleen lukea verkkosivuja, EPUB- ja TXT-tiedostoja sekä PDF-tiedostoja, joiden teksti on valittavissa."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Tätä sivua ei voi lukea ääneen"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Lue tämä sivu ääneen"
+  }
+}

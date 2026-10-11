@@ -11,6 +11,19 @@ import ZIPFoundation
 @testable import CastReader
 
 final class EpubNativeEngineTests: XCTestCase {
+    func testDeclaredLanguagePreservesScriptWithoutReplacingBodyEvidence() throws {
+        let opf = """
+        <package xmlns="http://www.idpf.org/2007/opf">
+          <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Fixture</dc:title><dc:language>zh-Hant</dc:language></metadata>
+          <manifest><item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest>
+          <spine><itemref idref="chapter"/></spine>
+        </package>
+        """
+        let data = try makeMinimalEPUB(extraEntries: ["OEBPS/content.opf": Data(opf.utf8)])
+        XCTAssertEqual(EpubNativeEngine.parse(data: data, fallbackTitle: "fixture")?.declaredLanguage, "zh-Hant")
+        XCTAssertEqual(DocumentBuilder.fromEPUB(data: data, title: "fixture")?.declaredLanguage, "zh-Hant")
+    }
+
 
     /// 候选真实 EPUB（host 绝对路径；iOS 模拟器单测可读 mac 文件系统）。带图古登堡书优先（验证图片解码）。
     private func loadSampleEpub() -> (data: Data, name: String)? {

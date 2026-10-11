@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Højtlæsning og AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Læs højt + AI-forklaring"
+  },
+  "extDescription": {
+    "message": "Lyt på 28 sprog med synkron fremhævning, automatisk rulning og AI-forklaringer."
+  },
+  "quickreadBtn": {
+    "message": "Hurtig oversigt"
+  },
+  "quickreadBtnExit": {
+    "message": "Afslut oversigt"
+  },
+  "quickreadPreparing": {
+    "message": "Genererer oversigt"
+  },
+  "quickreadError": {
+    "message": "Oversigtsfejl"
+  },
+  "quickreadStageExtract": {
+    "message": "Uddrager nøglepunkter"
+  },
+  "quickreadStageTts": {
+    "message": "Genererer voiceover"
+  },
+  "quickreadStageRefine": {
+    "message": "Tilpasser rytmen"
+  },
+  "quickreadStageReady": {
+    "message": "Klar til afspilning…"
+  },
+  "quickreadFailed": {
+    "message": "Mislykkedes: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Luk"
+  },
+  "quickreadCancel": {
+    "message": "Annuller"
+  },
+  "quickreadDone": {
+    "message": "Færdig"
+  },
+  "quickreadHint": {
+    "message": "Ca. 25-45 sekunder, vent venligst"
+  },
+  "quickreadQueued": {
+    "message": "I kø ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Dagens gratis Forklaringer brugt op. Nulstilles i morgen."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Dagens gratis Forklaringer brugt op"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Dagens gratis grænse nået – opgrader til Pro for ubegrænsede Forklaringer. Din gratis kvote nulstilles i morgen."
+  },
+  "quickreadUpgrade": {
+    "message": "Opgrader til Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Ikke logget ind"
+  },
+  "enableProMode": {
+    "message": "Aktiver Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Dagens 20 minutters gratis læsning brugt op"
+  },
+  "listenRateLimitBody": {
+    "message": "Du har brugt dagens 20 gratis minutter til læsning – opgrader til Pro for ubegrænset læsning. Din gratis kvote nulstilles i morgen."
+  },
+  "quickreadQuotaTip": {
+    "message": "Forklar · $n$/$max$ tilbage i dag",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Forklar · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Læs et dokument"
+  },
+  "readerDrop": {
+    "message": "Slip et billede / PDF / EPUB / Word / TXT her"
+  },
+  "readerDropOver": {
+    "message": "Slip for at uploade"
+  },
+  "readerSub": {
+    "message": "Læs højt + AI-oversigt på originalfilen – layout uændret"
+  },
+  "readerOr": {
+    "message": "eller"
+  },
+  "readerPick": {
+    "message": "Vælg fil"
+  },
+  "readerRendering": {
+    "message": "Gengiver dokument…"
+  },
+  "readerListen": {
+    "message": "▶ Lyt"
+  },
+  "readerPause": {
+    "message": "⏸ Pause"
+  },
+  "readerResume": {
+    "message": "▶ Fortsæt"
+  },
+  "readerStop": {
+    "message": "■ Stop"
+  },
+  "readerExplain": {
+    "message": "✦ Forklar"
+  },
+  "readerExplainHint": {
+    "message": "Stop først læsningen"
+  },
+  "readerNewFile": {
+    "message": "Ny fil"
+  },
+  "readerSpeed": {
+    "message": "Hastighed"
+  },
+  "readerUnsupported": {
+    "message": "Ikke-understøttet filtype"
+  },
+  "readerFailed": {
+    "message": "Behandling mislykkedes"
+  },
+  "readerEmpty": {
+    "message": "Ingen læselig tekst fundet i dette dokument"
+  },
+  "readerQuotaLeft": {
+    "message": "tilbage i dag"
+  },
+  "readerQuotaBlocked": {
+    "message": "Dagens 10 gratis oversigter brugt op – nulstilles i morgen"
+  },
+  "readerPartial": {
+    "message": "Forklarede afsnittet ved din nuværende position – rul ned og tryk Forklar igen for næste"
+  },
+  "readerTooLarge": {
+    "message": "Fil for stor (over 100 MB). Brug venligst en mindre fil."
+  },
+  "readerLargeFilePro": {
+    "message": "Filer over 7 MB kræver Pro – Pro åbner dokumenter op til 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "For stor til at åbne fra denne side (over 7 MB). Åbn dokumentlæseren og vælg den der – op til 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Åbn dokumentlæser"
+  },
+  "readerContinue": {
+    "message": "Fortsæt ✦"
+  },
+  "readerSettings": {
+    "message": "Indstillinger"
+  },
+  "readerExplainLang": {
+    "message": "Forklar på"
+  },
+  "readerDocumentLang": {
+    "message": "Dokumentets sprog"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automatisk (ud fra teksten)"
+  },
+  "readerDocumentLangHint": {
+    "message": "For billeder eller scannede PDF-filer uden tekst, der kan udtrækkes, skal du vælge dokumentets sprog og derefter åbne filen."
+  },
+  "readerVoiceEn": {
+    "message": "Engelsk stemme"
+  },
+  "readerVoiceZh": {
+    "message": "Kinesisk stemme"
+  },
+  "readerVoices": {
+    "message": "Stemmer"
+  },
+  "readerBrowseVoices": {
+    "message": "Gennemse stemmer"
+  },
+  "readerLangAuto": {
+    "message": "Auto (grænsefladens sprog)"
+  },
+  "readerLangFollow": {
+    "message": "Match dokument"
+  },
+  "readerPreparing": {
+    "message": "Forbereder oplæsning…"
+  },
+  "readerEncrypted": {
+    "message": "Denne PDF er adgangsbeskyttet"
+  },
+  "readerCorrupt": {
+    "message": "Filen ser beskadiget eller ulæselig ud"
+  },
+  "readerTimeout": {
+    "message": "Åbning tog for lang tid – filen kan være for kompleks"
+  },
+  "readerEpubDrm": {
+    "message": "Dette EPUB er beskyttet af DRM. Prøv et DRM-frit EPUB."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Dette faste-layout EPUB har ingen tekst, der kan synkroniseres med oplæsningen."
+  },
+  "readerEpubTooComplex": {
+    "message": "Dette EPUB overskrider grænserne for sikker lokal behandling. Prøv et mindre eller enklere EPUB."
+  },
+  "readerEpubTooLarge": {
+    "message": "EPUB-filer kan være op til 30 MB for sikker lokal behandling."
+  },
+  "inboxTitle": {
+    "message": "Indbakke til indhold"
+  },
+  "inboxSubtitle": {
+    "message": "Gem websteder eller markeret tekst, og læs eller forklar dem, når du er klar."
+  },
+  "inboxEmpty": {
+    "message": "Din indbakke er tom"
+  },
+  "inboxEmptyDescription": {
+    "message": "Højreklik på en side eller markeret tekst og gem det i CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Gem markeret tekst i CastReader-indbakken"
+  },
+  "inboxSavePage": {
+    "message": "Gem side i CastReader-indbakken"
+  },
+  "inboxOpen": {
+    "message": "Åbn indbakke til indhold"
+  },
+  "inboxSharedText": {
+    "message": "Markeret tekst"
+  },
+  "inboxOpenFailed": {
+    "message": "Kunne ikke åbne dette indhold. Prøv igen."
+  },
+  "inboxRetry": {
+    "message": "Prøv igen"
+  },
+  "inboxRead": {
+    "message": "Læs højt"
+  },
+  "inboxExplain": {
+    "message": "Forklar"
+  },
+  "inboxDelete": {
+    "message": "Slet"
+  },
+  "inboxLink": {
+    "message": "Link"
+  },
+  "inboxText": {
+    "message": "Tekst"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Læs højt + AI-forklaring"
+  },
+  "edgeExtDescription": {
+    "message": "Læs med synkroniseret fremhævning og automatisk rulning. AI forklarer svære afsnit på siden. Naturlige stemmer på 28 sprog."
+  },
+  "toggleSiteVisibility": {
+    "message": "Vis / skjul CastReader på dette site"
+  },
+  "voiceCloneBenefit": {
+    "message": "Brug din egen stemme til Oplæs og Forklar · 120 minutter om måneden"
+  },
+  "voiceClonePaywall": {
+    "message": "Opret, administrer og afspil faste forhåndsvisninger af flere personlige stemmer gratis. Pro bruger personlige stemmer i Oplæs og Forklar til 120 genererede minutter hver måned."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Dine minutter til personlige stemmer er brugt op denne måned. Din valgte stemme beholdes."
+  },
+  "ocrModelUnavailable": {
+    "message": "Sprogfilen til tekstgenkendelse kunne ikke hentes. Opret forbindelse til internettet, og prøv igen."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Genkendelse af billeder og scannede sider er endnu ikke tilgængelig på dette sprog. Du kan stadig læse websider, EPUB, TXT og PDF-filer med tekst, der kan markeres."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Oplæsning er ikke tilgængelig på denne side"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Læs denne side højt"
+  }
+}

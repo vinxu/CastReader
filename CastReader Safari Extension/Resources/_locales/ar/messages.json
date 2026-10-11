@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — قراءة صوتية وشرح ذكي"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — قراءة صوتية وشرح ذكي"
+  },
+  "extDescription": {
+    "message": "اقرأ مع تمييز متزامن وتمرير تلقائي. يشرح الذكاء الاصطناعي المقاطع الصعبة في الصفحة نفسها. أصوات طبيعية بـ28 لغة."
+  },
+  "quickreadBtn": {
+    "message": "نظرة عامة سريعة"
+  },
+  "quickreadBtnExit": {
+    "message": "خروج من النظرة العامة"
+  },
+  "quickreadPreparing": {
+    "message": "جاري إنشاء نظرة عامة"
+  },
+  "quickreadError": {
+    "message": "خطأ في النظرة العامة"
+  },
+  "quickreadStageExtract": {
+    "message": "جاري استخراج النقاط الرئيسية"
+  },
+  "quickreadStageTts": {
+    "message": "جاري إنشاء التعليق الصوتي"
+  },
+  "quickreadStageRefine": {
+    "message": "جاري ضبط الإيقاع"
+  },
+  "quickreadStageReady": {
+    "message": "جاهز للتشغيل…"
+  },
+  "quickreadFailed": {
+    "message": "فشل: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "إغلاق"
+  },
+  "quickreadCancel": {
+    "message": "إلغاء"
+  },
+  "quickreadDone": {
+    "message": "تم"
+  },
+  "quickreadHint": {
+    "message": "حوالي 25-45 ثانية، يرجى الانتظار"
+  },
+  "quickreadQueued": {
+    "message": "في الانتظار ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "تم استهلاك الشروحات المجانية اليومية. تتجدد غدًا."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "تم استهلاك الشروحات المجانية اليومية"
+  },
+  "quickreadRateLimitBody": {
+    "message": "تم الوصول إلى الحد اليومي المجاني — قم بالترقية إلى Pro للحصول على شروحات غير محدودة. تتجدد حصتك المجانية غدًا."
+  },
+  "quickreadUpgrade": {
+    "message": "الترقية إلى Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "لم يتم تسجيل الدخول"
+  },
+  "enableProMode": {
+    "message": "تفعيل Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "تم استهلاك 20 دقيقة من القراءة المجانية اليومية"
+  },
+  "listenRateLimitBody": {
+    "message": "لقد استهلكت 20 دقيقة مجانية من القراءة اليوم — قم بالترقية إلى Pro لقراءة غير محدودة. تتجدد حصتك المجانية غدًا."
+  },
+  "quickreadQuotaTip": {
+    "message": "شرح · متبقي $n$/$max$ اليوم",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "شرح · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "قراءة مستند"
+  },
+  "readerDrop": {
+    "message": "أفلت صورة / PDF / EPUB / Word / TXT هنا"
+  },
+  "readerDropOver": {
+    "message": "أفلت للتحميل"
+  },
+  "readerSub": {
+    "message": "قراءة بصوت عالٍ + نظرة عامة بالذكاء الاصطناعي على الملف الأصلي — دون تغيير التنسيق"
+  },
+  "readerOr": {
+    "message": "or"
+  },
+  "readerPick": {
+    "message": "اختر ملفًا"
+  },
+  "readerRendering": {
+    "message": "جارٍ تجهيز المستند…"
+  },
+  "readerListen": {
+    "message": "▶ استماع"
+  },
+  "readerPause": {
+    "message": "⏸ إيقاف مؤقت"
+  },
+  "readerResume": {
+    "message": "▶ استئناف"
+  },
+  "readerStop": {
+    "message": "■ إيقاف"
+  },
+  "readerExplain": {
+    "message": "✦ شرح"
+  },
+  "readerExplainHint": {
+    "message": "أوقف القراءة أولاً"
+  },
+  "readerNewFile": {
+    "message": "ملف جديد"
+  },
+  "readerSpeed": {
+    "message": "السرعة"
+  },
+  "readerUnsupported": {
+    "message": "نوع ملف غير مدعوم"
+  },
+  "readerFailed": {
+    "message": "فشلت المعالجة"
+  },
+  "readerEmpty": {
+    "message": "لم يتم العثور على نص قابل للقراءة في هذا المستند"
+  },
+  "readerQuotaLeft": {
+    "message": "متبقية اليوم"
+  },
+  "readerQuotaBlocked": {
+    "message": "نفدت الـ 10 ملخصات المجانية اليومية — ستُعاد غداً"
+  },
+  "readerPartial": {
+    "message": "تم شرح القسم في موقعك الحالي — مرر لأسفل واضغط على \"شرح\" مجدداً للقسم التالي"
+  },
+  "readerTooLarge": {
+    "message": "الملف كبير جداً (أكثر من 100 ميجابايت). يرجى استخدام ملف أصغر."
+  },
+  "readerLargeFilePro": {
+    "message": "الملفات التي تزيد عن 7 ميجابايت تتطلب Pro — يفتح Pro المستندات التي تصل إلى 100 ميجابايت."
+  },
+  "readerTooLargeForPage": {
+    "message": "كبير جداً لفتحه من هذه الصفحة (أكثر من 7 ميجابايت). افتح قارئ المستندات واختره من هناك — حتى 100 ميجابايت."
+  },
+  "readerOpenReader": {
+    "message": "افتح قارئ المستندات"
+  },
+  "readerContinue": {
+    "message": "متابعة ✦"
+  },
+  "readerSettings": {
+    "message": "الإعدادات"
+  },
+  "readerExplainLang": {
+    "message": "الشرح بـ"
+  },
+  "readerDocumentLang": {
+    "message": "لغة المستند"
+  },
+  "readerDocumentLangAuto": {
+    "message": "تلقائي (من النص)"
+  },
+  "readerDocumentLangHint": {
+    "message": "للصور أو ملفات PDF الممسوحة ضوئيًا التي لا يمكن استخراج نص منها، اختر لغة المستند ثم افتح الملف."
+  },
+  "readerVoiceEn": {
+    "message": "صوت إنجليزي"
+  },
+  "readerVoiceZh": {
+    "message": "صوت صيني"
+  },
+  "readerVoices": {
+    "message": "الأصوات"
+  },
+  "readerBrowseVoices": {
+    "message": "تصفح الأصوات"
+  },
+  "readerLangAuto": {
+    "message": "تلقائي (لغة واجهة المستخدم)"
+  },
+  "readerLangFollow": {
+    "message": "مطابقة المستند"
+  },
+  "readerPreparing": {
+    "message": "جاري تحضير السرد..."
+  },
+  "readerEncrypted": {
+    "message": "ملف PDF هذا محمي بكلمة مرور"
+  },
+  "readerCorrupt": {
+    "message": "يبدو هذا الملف تالفاً أو غير قابل للقراءة"
+  },
+  "readerTimeout": {
+    "message": "استغرق الفتح وقتاً طويلاً جداً — قد يكون الملف معقداً للغاية"
+  },
+  "readerEpubDrm": {
+    "message": "ملف EPUB هذا محمي بواسطة إدارة الحقوق الرقمية (DRM). جرب ملف EPUB خالٍ من DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "ملف EPUB ذو التخطيط الثابت هذا لا يحتوي على نص يمكن أن يظل متزامناً مع السرد."
+  },
+  "readerEpubTooComplex": {
+    "message": "يتجاوز ملف EPUB هذا حدود المعالجة المحلية الآمنة. جرب ملف EPUB أصغر أو أبسط."
+  },
+  "readerEpubTooLarge": {
+    "message": "يمكن أن يصل حجم ملفات EPUB إلى 30 ميجابايت للمعالجة المحلية الآمنة."
+  },
+  "inboxTitle": {
+    "message": "صندوق وارد المحتوى"
+  },
+  "inboxSubtitle": {
+    "message": "احفظ صفحات الويب أو النص المحدد، ثم اقرأها أو اطلب شرحها عندما تكون مستعداً."
+  },
+  "inboxEmpty": {
+    "message": "صندوق الوارد الخاص بك فارغ"
+  },
+  "inboxEmptyDescription": {
+    "message": "انقر بزر الماوس الأيمن على صفحة أو نص محدد واحفظه في CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "حفظ النص المحدد في صندوق وارد CastReader"
+  },
+  "inboxSavePage": {
+    "message": "حفظ الصفحة في صندوق وارد CastReader"
+  },
+  "inboxOpen": {
+    "message": "فتح صندوق وارد المحتوى"
+  },
+  "inboxSharedText": {
+    "message": "النص المحدد"
+  },
+  "inboxOpenFailed": {
+    "message": "تعذر فتح هذا المحتوى. يرجى المحاولة مرة أخرى."
+  },
+  "inboxRetry": {
+    "message": "إعادة المحاولة"
+  },
+  "inboxRead": {
+    "message": "قراءة بصوت عالٍ"
+  },
+  "inboxExplain": {
+    "message": "شرح"
+  },
+  "inboxDelete": {
+    "message": "حذف"
+  },
+  "inboxLink": {
+    "message": "رابط"
+  },
+  "inboxText": {
+    "message": "نص"
+  },
+  "edgeExtName": {
+    "message": "CastReader — قراءة صوتية وشرح ذكي"
+  },
+  "edgeExtDescription": {
+    "message": "اقرأ مع تمييز متزامن وتمرير تلقائي. يشرح الذكاء الاصطناعي المقاطع الصعبة في الصفحة نفسها. أصوات طبيعية بـ28 لغة."
+  },
+  "toggleSiteVisibility": {
+    "message": "إظهار / إخفاء CastReader على هذا الموقع"
+  },
+  "voiceCloneBenefit": {
+    "message": "استخدم صوتك الخاص لميزتي \"القراءة بصوت عالٍ\" و\"الشرح\" · 120 دقيقة شهرياً"
+  },
+  "voiceClonePaywall": {
+    "message": "أنشئ عينات معاينة ثابتة لأصوات شخصية متعددة وقم بإدارتها وتشغيلها مجاناً. يستخدم Pro الأصوات الشخصية في \"القراءة بصوت عالٍ\" و\"الشرح\" لمدة 120 دقيقة توليد كل شهر."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "لقد نفدت دقائق صوتك الشخصي لهذا الشهر. تم الاحتفاظ بصوتك المحدد."
+  },
+  "ocrModelUnavailable": {
+    "message": "تعذّر تنزيل ملف اللغة للتعرّف على النص. اتصل بالإنترنت وحاول مرة أخرى."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "التعرّف على الصور والصفحات الممسوحة ضوئيًا غير متاح لهذه اللغة بعد. يمكنك قراءة صفحات الويب وملفات EPUB وTXT وPDF ذات النص القابل للتحديد."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - القراءة غير متاحة في هذه الصفحة"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - اقرأ هذه الصفحة"
+  }
+}

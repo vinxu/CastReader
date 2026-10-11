@@ -236,7 +236,7 @@ private struct KindleLibraryRow: View {
 
     private var lastOpenedText: String {
         let date = book.lastOpenedAt ?? book.lastSyncedAt
-        return date.formatted(.relative(presentation: .named))
+        return date.formatted(.relative(presentation: .named).locale(AppLanguageManager.shared.locale))
     }
 
     var body: some View {

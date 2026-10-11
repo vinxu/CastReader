@@ -177,6 +177,9 @@ struct ReadingDocument: Identifiable, Equatable {
     var title: String
     var sourceKind: ReadingSourceKind
     var language: String                 // "en"/"zh"… 决定 TTS 与 Vision 识别语言
+    /// Original document metadata; never silently used as a user override.
+    var declaredLanguage: String? = nil
+    var languageContext: DocumentLanguageContext? = nil
     var paragraphs: [ReadingParagraph] {
         didSet { precomputedResumeIndex = nil }
     }

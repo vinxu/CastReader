@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Đọc và giải thích AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Đọc to + Giải thích AI"
+  },
+  "extDescription": {
+    "message": "Nghe bằng 28 ngôn ngữ với tô sáng đồng bộ, cuộn tự động và giải thích bằng AI."
+  },
+  "quickreadBtn": {
+    "message": "Tổng quan nhanh"
+  },
+  "quickreadBtnExit": {
+    "message": "Thoát chế độ xem tổng quan"
+  },
+  "quickreadPreparing": {
+    "message": "Đang tạo tổng quan"
+  },
+  "quickreadError": {
+    "message": "Lỗi tổng quan"
+  },
+  "quickreadStageExtract": {
+    "message": "Đang trích xuất các điểm chính"
+  },
+  "quickreadStageTts": {
+    "message": "Đang tạo giọng đọc"
+  },
+  "quickreadStageRefine": {
+    "message": "Đang sắp xếp nhịp điệu"
+  },
+  "quickreadStageReady": {
+    "message": "Sẵn sàng phát…"
+  },
+  "quickreadFailed": {
+    "message": "Thất bại: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Đóng"
+  },
+  "quickreadCancel": {
+    "message": "Hủy"
+  },
+  "quickreadDone": {
+    "message": "Xong"
+  },
+  "quickreadHint": {
+    "message": "Khoảng 25-45 giây, vui lòng đợi"
+  },
+  "quickreadQueued": {
+    "message": "Đã xếp hàng ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Đã hết lượt Giải thích miễn phí hôm nay. Đặt lại vào ngày mai."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Đã hết lượt Giải thích miễn phí hôm nay"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Đã đạt giới hạn miễn phí hàng ngày — nâng cấp lên Pro để Giải thích không giới hạn. Hạn mức miễn phí của bạn sẽ đặt lại vào ngày mai."
+  },
+  "quickreadUpgrade": {
+    "message": "Nâng cấp lên Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Chưa đăng nhập"
+  },
+  "enableProMode": {
+    "message": "Kích hoạt Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Đã hết 20 phút đọc miễn phí hôm nay"
+  },
+  "listenRateLimitBody": {
+    "message": "Bạn đã dùng hết 20 phút đọc miễn phí hôm nay — nâng cấp lên Pro để đọc không giới hạn. Hạn mức miễn phí của bạn sẽ đặt lại vào ngày mai."
+  },
+  "quickreadQuotaTip": {
+    "message": "Giải thích · còn $n$/$max$ hôm nay",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Giải thích · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Đọc tài liệu"
+  },
+  "readerDrop": {
+    "message": "Kéo thả hình ảnh / PDF / EPUB / Word / TXT vào đây"
+  },
+  "readerDropOver": {
+    "message": "Thả để tải lên"
+  },
+  "readerSub": {
+    "message": "Đọc to + tóm tắt AI trên tệp gốc — giữ nguyên bố cục"
+  },
+  "readerOr": {
+    "message": "hoặc"
+  },
+  "readerPick": {
+    "message": "Chọn tệp"
+  },
+  "readerRendering": {
+    "message": "Đang hiển thị tài liệu…"
+  },
+  "readerListen": {
+    "message": "▶ Nghe"
+  },
+  "readerPause": {
+    "message": "⏸ Tạm dừng"
+  },
+  "readerResume": {
+    "message": "▶ Tiếp tục"
+  },
+  "readerStop": {
+    "message": "■ Dừng"
+  },
+  "readerExplain": {
+    "message": "✦ Giải thích"
+  },
+  "readerExplainHint": {
+    "message": "Dừng đọc trước"
+  },
+  "readerNewFile": {
+    "message": "Tệp mới"
+  },
+  "readerSpeed": {
+    "message": "Tốc độ"
+  },
+  "readerUnsupported": {
+    "message": "Loại tệp không được hỗ trợ"
+  },
+  "readerFailed": {
+    "message": "Xử lý thất bại"
+  },
+  "readerEmpty": {
+    "message": "Không tìm thấy văn bản có thể đọc trong tài liệu này"
+  },
+  "readerQuotaLeft": {
+    "message": "còn lại hôm nay"
+  },
+  "readerQuotaBlocked": {
+    "message": "Đã dùng hết 10 lượt tóm tắt miễn phí hàng ngày — đặt lại vào ngày mai"
+  },
+  "readerPartial": {
+    "message": "Đã giải thích phần tại vị trí hiện tại của bạn — cuộn xuống và nhấn Giải thích lần nữa cho phần tiếp theo"
+  },
+  "readerTooLarge": {
+    "message": "Tệp quá lớn (trên 100 MB). Vui lòng sử dụng tệp nhỏ hơn."
+  },
+  "readerLargeFilePro": {
+    "message": "Tệp trên 7 MB cần Pro — Pro mở tài liệu lên đến 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "Quá lớn để mở từ trang này (trên 7 MB). Mở trình đọc tài liệu và chọn ở đó — lên đến 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Mở trình đọc tài liệu"
+  },
+  "readerContinue": {
+    "message": "Tiếp tục ✦"
+  },
+  "readerSettings": {
+    "message": "Cài đặt"
+  },
+  "readerExplainLang": {
+    "message": "Giải thích bằng"
+  },
+  "readerDocumentLang": {
+    "message": "Ngôn ngữ tài liệu"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Tự động (từ văn bản)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Đối với hình ảnh hoặc PDF quét không có văn bản có thể đọc, hãy chọn ngôn ngữ tài liệu, sau đó mở tệp."
+  },
+  "readerVoiceEn": {
+    "message": "Giọng tiếng Anh"
+  },
+  "readerVoiceZh": {
+    "message": "Giọng tiếng Trung"
+  },
+  "readerVoices": {
+    "message": "Giọng đọc"
+  },
+  "readerBrowseVoices": {
+    "message": "Duyệt giọng đọc"
+  },
+  "readerLangAuto": {
+    "message": "Tự động (ngôn ngữ giao diện)"
+  },
+  "readerLangFollow": {
+    "message": "Khớp với tài liệu"
+  },
+  "readerPreparing": {
+    "message": "Đang chuẩn bị đọc…"
+  },
+  "readerEncrypted": {
+    "message": "PDF này được bảo vệ bằng mật khẩu"
+  },
+  "readerCorrupt": {
+    "message": "Tệp này có vẻ bị hỏng hoặc không thể đọc được"
+  },
+  "readerTimeout": {
+    "message": "Mở quá lâu — tệp có thể quá phức tạp"
+  },
+  "readerEpubDrm": {
+    "message": "EPUB này được bảo vệ bởi DRM. Hãy thử EPUB không DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "EPUB bố cục cố định này không có văn bản nào có thể đồng bộ với lời đọc."
+  },
+  "readerEpubTooComplex": {
+    "message": "EPUB này vượt quá giới hạn xử lý cục bộ an toàn. Hãy thử EPUB nhỏ hơn hoặc đơn giản hơn."
+  },
+  "readerEpubTooLarge": {
+    "message": "Tệp EPUB có thể lên đến 30 MB để xử lý cục bộ an toàn."
+  },
+  "inboxTitle": {
+    "message": "Hộp thư nội dung"
+  },
+  "inboxSubtitle": {
+    "message": "Lưu trang web hoặc văn bản đã chọn, sau đó đọc hoặc giải thích khi bạn sẵn sàng."
+  },
+  "inboxEmpty": {
+    "message": "Hộp thư của bạn đang trống"
+  },
+  "inboxEmptyDescription": {
+    "message": "Nhấp chuột phải vào trang hoặc văn bản đã chọn và lưu vào CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Lưu văn bản đã chọn vào Hộp thư CastReader"
+  },
+  "inboxSavePage": {
+    "message": "Lưu trang vào Hộp thư CastReader"
+  },
+  "inboxOpen": {
+    "message": "Mở Hộp thư nội dung"
+  },
+  "inboxSharedText": {
+    "message": "Văn bản đã chọn"
+  },
+  "inboxOpenFailed": {
+    "message": "Không thể mở nội dung này. Vui lòng thử lại."
+  },
+  "inboxRetry": {
+    "message": "Thử lại"
+  },
+  "inboxRead": {
+    "message": "Đọc to"
+  },
+  "inboxExplain": {
+    "message": "Giải thích"
+  },
+  "inboxDelete": {
+    "message": "Xóa"
+  },
+  "inboxLink": {
+    "message": "Liên kết"
+  },
+  "inboxText": {
+    "message": "Văn bản"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Đọc to + Giải thích AI"
+  },
+  "edgeExtDescription": {
+    "message": "Đọc với highlight đồng bộ và cuộn tự động. AI giải thích các đoạn khó trên trang. Giọng đọc tự nhiên hỗ trợ 28 ngôn ngữ."
+  },
+  "toggleSiteVisibility": {
+    "message": "Hiển thị / ẩn CastReader trên trang web này"
+  },
+  "voiceCloneBenefit": {
+    "message": "Sử dụng giọng nói của riêng bạn cho Đọc to và Giải thích · 120 phút mỗi tháng"
+  },
+  "voiceClonePaywall": {
+    "message": "Tạo, quản lý và phát các bản xem trước cố định của nhiều giọng nói cá nhân miễn phí. Pro sử dụng giọng nói cá nhân trong Đọc to và Giải thích với 120 phút được tạo mỗi tháng."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Bạn đã dùng hết phút giọng nói cá nhân trong tháng này. Giọng nói đã chọn của bạn vẫn được giữ lại."
+  },
+  "ocrModelUnavailable": {
+    "message": "Không thể tải xuống tệp ngôn ngữ nhận dạng. Hãy kết nối với internet và thử lại."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Chưa hỗ trợ nhận dạng hình ảnh và trang quét cho ngôn ngữ này. Bạn vẫn có thể đọc trang web, EPUB, TXT và PDF có văn bản chọn được."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Không thể đọc thành tiếng trang này"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Đọc thành tiếng trang này"
+  }
+}

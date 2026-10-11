@@ -203,7 +203,8 @@ struct TTSVoiceCatalogVoice: Codable, Equatable {
 }
 
 struct TTSVoiceCatalogDocument: Codable, Equatable {
-    static let expectedContract = "tts-voice-catalog-v1"
+    static let expectedContract = "tts-voice-catalog-v2"
+    static let legacyContract = "tts-voice-catalog-v1"
 
     let contract: String
     let version: String
@@ -228,7 +229,7 @@ struct TTSVoiceCatalogDocument: Codable, Equatable {
     }
 
     func validate() throws {
-        guard contract == Self.expectedContract else { throw VoiceCatalogError.contractMismatch }
+        guard [Self.expectedContract, Self.legacyContract].contains(contract) else { throw VoiceCatalogError.contractMismatch }
         guard !version.trimmed.isEmpty, !languages.isEmpty, !voices.isEmpty else {
             throw VoiceCatalogError.incompleteCatalog
         }
@@ -267,6 +268,25 @@ struct TTSVoiceCatalogDocument: Codable, Equatable {
             }
         }
 
+        // v1 continues its existing playback contract; only the new standard
+        // Google branch promises native word marks and these exact engine fields.
+        for voice in voices where voice.id.hasPrefix("api_") {
+            guard contract == Self.expectedContract,
+                  SupportedTTSLanguage(identifier: voice.language)?.isGoogle == true,
+                  voice.engine == "google", voice.modelVersion == "wavenet",
+                  voice.timestampMode == "word", ["free", "pro"].contains(voice.tier),
+                  voice.usagePolicy == nil || voice.usagePolicy == "regular",
+                  voice.supportedLanguages == nil || voice.supportedLanguages?.map(VoiceCatalog.normalizedLanguage) == [VoiceCatalog.normalizedLanguage(voice.language)] else {
+                throw VoiceCatalogError.incompleteCatalog
+            }
+        }
+        for language in languages where SupportedTTSLanguage(identifier: language.code)?.isGoogle == true {
+            guard contract == Self.expectedContract, language.timestampMode == "word",
+                  voices.contains(where: { $0.id == language.defaultVoice && $0.id.hasPrefix("api_") }) else {
+                throw VoiceCatalogError.incompleteCatalog
+            }
+        }
+
         guard !voices.contains(where: { $0.usagePolicy == "monthly_generation" && !$0.id.hasPrefix("vl_") }) else {
             throw VoiceCatalogError.incompleteCatalog
         }
@@ -284,6 +304,7 @@ struct TTSVoiceCatalogDocument: Codable, Equatable {
             let code = VoiceCatalog.normalizedLanguage(language.code)
             guard voices.contains(where: {
                 $0.id == language.defaultVoice && VoiceCatalog.normalizedLanguage($0.language) == code
+                    && (contract == Self.legacyContract || ($0.enabled && $0.selectable && $0.tier == "free"))
             }) else {
                 throw VoiceCatalogError.incompleteCatalog
             }
@@ -349,19 +370,20 @@ final class VoiceCatalogSnapshot: @unchecked Sendable {
         let remote = document?.voices.map(VoiceCatalog.option(from:)) ?? []
         let remoteLanguages = Set(remote.map(\.lang))
         all = document == nil ? fallback : remote + fallback.filter { !remoteLanguages.contains($0.lang) }
-        selectable = all.filter(\.selectable)
+        let requiresEnabled = document?.contract == TTSVoiceCatalogDocument.expectedContract
+        selectable = all.filter { $0.selectable && (!requiresEnabled || $0.enabled) }
         var lookup = Dictionary(fallback.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         for voice in remote { lookup[voice.id] = voice }
         byID = lookup
         var regular: [String: [VoiceOption]] = [:]
         var monthly: [String: [VoiceOption]] = [:]
-        for voice in (document == nil ? fallback : remote) where voice.selectable {
+        for voice in (document == nil ? fallback : remote) where voice.selectable && (!requiresEnabled || voice.enabled) {
             for language in Set(voice.supportedLanguages) {
                 if voice.usesMonthlyGeneration { monthly[language, default: []].append(voice) }
                 else { regular[language, default: []].append(voice) }
             }
         }
-        for voice in fallback where voice.selectable {
+        for voice in fallback where voice.selectable && (!requiresEnabled || voice.enabled) {
             for language in voice.supportedLanguages where regular[language] == nil {
                 regular[language] = fallback.filter { $0.selectable && $0.supportedLanguages.contains(language) }
             }
@@ -459,7 +481,7 @@ enum VoiceCatalog {
     /// 网络目录/缓存尚未到达时也能为九种语言解析正确的默认音色。
     /// 这里只保留每种新增语言的免费默认音色；完整音色与元数据仍以服务端为准。
     static let multilingualDefaults: [VoiceOption] = SupportedTTSLanguage.allCases
-        .filter { $0 != .english && $0 != .chinese }
+        .filter { !$0.isGoogle && $0 != .english && $0 != .chinese }
         .map {
             VoiceOption(
                 code: $0.defaultVoiceID,
@@ -504,8 +526,20 @@ enum VoiceCatalog {
     /// 未保存时采用远端权威 defaultVoice，目录不可用才走静态安全 fallback。
     static func resolvedVoice(preferred: String, for language: String) -> String {
         let normalized = normalizedLanguage(language)
+        guard let capability = SupportedTTSLanguage(identifier: normalized),
+              capability.isSupported(in: ServiceRouting.current) else { return "" }
         let value = preferred.trimmed
-        if !value.isEmpty { return value }
+        if !value.isEmpty {
+            // Preserve the selected clone identity. Per-voice compatibility is
+            // checked by selection and the authenticated synthesis path; it
+            // must never become a standard voice because its preset engine differs.
+            if VoiceOption.requiresGenerationQuota(value) { return value }
+            if let language = SupportedTTSLanguage(identifier: normalized), language.isGoogle {
+                guard let option = option(for: value), option.enabled, option.selectable,
+                      !option.usesMonthlyGeneration, option.supports(normalized) else { return "" }
+            }
+            return value
+        }
         if let remoteDefault = snapshot.document?.languages.first(where: {
             normalizedLanguage($0.code) == normalized
         })?.defaultVoice.trimmed, !remoteDefault.isEmpty {
@@ -528,11 +562,7 @@ enum VoiceCatalog {
     }
 
     static func normalizedLanguage(_ language: String) -> String {
-        // Catalog codes are already canonical. Avoid Foundation string processing
-        // in membership checks and repeated voice selection lookups.
-        if language.utf8.count == 2, language.utf8.allSatisfy({ $0 >= 97 && $0 <= 122 }) { return language }
-        let value = language.trimmed.lowercased().replacingOccurrences(of: "_", with: "-")
-        return value.split(separator: "-").first.map(String.init) ?? ""
+        SupportedTTSLanguage.normalizedIdentifier(language)
     }
 
     private static func defaultVoice(for language: String) -> String {
@@ -546,7 +576,7 @@ enum VoiceCatalog {
     }
 
     private static func fallbackDefault(for language: String) -> String {
-        SupportedTTSLanguage(identifier: language)?.defaultVoiceID ?? Constants.TTS.defaultVoice
+        SupportedTTSLanguage(identifier: language)?.defaultVoiceID ?? ""
     }
 
     private static func fallbackEnglish(
@@ -612,15 +642,17 @@ final class VoiceCatalogService: ObservableObject {
     @Published private(set) var source: VoiceCatalogSource = .fallback
     @Published private(set) var isRefreshing = false
 
-    /// legacy 继续使用历史 key，升级后不会丢目录；中国线路使用独立缓存，
-    /// 防止网关刷新失败时加载并长期沿用全球线路的音色目录。
-    private static let legacyCacheKey = "tts_voice_catalog_v2_nine_language_cache"
+    /// Scope public catalogs by route, contract policy and editorial region.
+    /// The previous nine-language record can migrate only within this scope.
+    private static let legacyCacheKey = "tts_voice_catalog_v3_28_language_cache"
     private static let minimumRefreshInterval: TimeInterval = 15 * 60
 
     private let session: URLSession
     private let defaults: UserDefaults
     private let endpoint: URL
+    private let standardEndpoint: URL?
     private let cacheKey: String
+    private let previousCacheKey: String
     private let editorialRegion: VoiceEditorialRegion
     private let now: () -> Date
     private var started = false
@@ -630,7 +662,7 @@ final class VoiceCatalogService: ObservableObject {
         session: URLSession? = nil,
         defaults: UserDefaults = .standard,
         endpoint: URL? = nil,
-        route: ServiceRoute = ComputeRouting.current,
+        route: ServiceRoute = ServiceRouting.current,
         editorialRegion: VoiceEditorialRegion = .current,
         now: @escaping () -> Date = Date.init
     ) {
@@ -644,7 +676,14 @@ final class VoiceCatalogService: ObservableObject {
             ?? URL(
                 string: "\(route.apiGatewayBaseURL)/api/tts/mobile-catalog?contract=tts-voice-catalog-v1&region=\(editorialRegion.rawValue)"
             )!
+        // Preserve the existing consumer library endpoint and its authorization source.
+        // The v2 standard catalog does not include discovery or gifted/private voices.
+        var standard = URLComponents(string: "\(route.apiGatewayBaseURL)/api/tts/catalog")!
+        standard.queryItems = [URLQueryItem(name: "contract", value: TTSVoiceCatalogDocument.expectedContract),
+            URLQueryItem(name: "languages", value: SupportedTTSLanguage.supported(in: route).map(\.rawValue).joined(separator: ","))]
+        self.standardEndpoint = endpoint == nil ? standard.url : nil
         self.cacheKey = Self.cacheKey(for: route, region: editorialRegion)
+        self.previousCacheKey = route.isolatedStorageKey("tts_voice_catalog_v2_nine_language_cache") + ".editorial-" + editorialRegion.rawValue
         self.editorialRegion = editorialRegion
         self.now = now
     }
@@ -687,17 +726,29 @@ final class VoiceCatalogService: ObservableObject {
             request.httpMethod = "GET"
             request.cachePolicy = .reloadIgnoringLocalCacheData
             request.timeoutInterval = 12
-            request.setValue(TTSVoiceCatalogDocument.expectedContract, forHTTPHeaderField: "x-catalog-contract")
+            request.setValue(TTSVoiceCatalogDocument.legacyContract, forHTTPHeaderField: "x-catalog-contract")
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse,
                   (200..<300).contains(http.statusCode) else {
                 throw VoiceCatalogError.invalidResponse
             }
+            let standards: TTSVoiceCatalogDocument?
+            if let standardEndpoint {
+                var standardRequest = URLRequest(url: standardEndpoint)
+                standardRequest.timeoutInterval = 12
+                standardRequest.cachePolicy = .reloadIgnoringLocalCacheData
+                let (standardData, standardResponse) = try await session.data(for: standardRequest)
+                guard let http = standardResponse as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                    throw VoiceCatalogError.invalidResponse
+                }
+                standards = try TTSVoiceCatalogDocument.decodeServerResponse(from: standardData)
+            } else { standards = nil }
             let region = editorialRegion.rawValue
             let savedAt = now()
             let oldDocument = VoiceCatalog.snapshot.document
             let prepared = try await Task.detached(priority: .userInitiated) {
-                let document = try TTSVoiceCatalogDocument.decodeServerResponse(from: data)
+                let consumer = try TTSVoiceCatalogDocument.decodeServerResponse(from: data)
+                let document = try Self.merging(standards: standards, consumer: consumer)
                 guard document.editorialRegion == nil || document.editorialRegion == region else {
                     throw VoiceCatalogError.invalidResponse
                 }
@@ -718,16 +769,59 @@ final class VoiceCatalogService: ObservableObject {
         }
     }
 
-    private func restoreCache() async {
-        let cacheDefaults = defaults, key = cacheKey, region = editorialRegion.rawValue
-        let prepared = await Task.detached(priority: .userInitiated) { () -> (VoiceCatalogSnapshot, Date)? in
-            guard let data = cacheDefaults.data(forKey: key) else { return nil }
+    nonisolated static func merging(standards: TTSVoiceCatalogDocument?, consumer: TTSVoiceCatalogDocument) throws -> TTSVoiceCatalogDocument {
+        guard let standards else { return consumer }
+        // Public library voices retain their consumer capabilities. My/gifted voices
+        // stay in VoiceCloneStore; they are never copied into this public cache.
+        let standardVoices = standards.voices.filter { !$0.id.hasPrefix("vl_") && !$0.id.hasPrefix("vc_") }
+        let library = consumer.voices.filter { $0.id.hasPrefix("vl_") }
+        let codes = Set(standards.languages.map(\.code))
+        let retainedLanguages = consumer.languages.filter { !codes.contains($0.code) }
+        let retainedCodes = Set(retainedLanguages.map(\.code))
+        let retainedVoices = consumer.voices.filter {
+            retainedCodes.contains($0.language) && !$0.id.hasPrefix("vl_") && !$0.id.hasPrefix("vc_")
+        }
+        let merged = TTSVoiceCatalogDocument(contract: standards.contract,
+            version: standards.version + "+consumer:" + consumer.version,
+            languages: standards.languages + retainedLanguages, voices: standardVoices + retainedVoices + library,
+            discovery: consumer.discovery, collections: consumer.collections, editorialRegion: consumer.editorialRegion)
+        try merged.validate()
+        return merged
+    }
+
+    nonisolated private static func cachedRecord(defaults: UserDefaults, key: String,
+        previousKey: String, region: String) -> VoiceCatalogCacheRecord? {
+        for candidate in [key, previousKey] {
+            guard let data = defaults.data(forKey: candidate) else { continue }
             do {
                 let record = try JSONDecoder().decode(VoiceCatalogCacheRecord.self, from: data)
-                guard record.catalog.editorialRegion == nil || record.catalog.editorialRegion == region else { return nil }
+                guard record.catalog.editorialRegion == nil || record.catalog.editorialRegion == region else {
+                    throw VoiceCatalogError.invalidResponse
+                }
                 try record.catalog.validate()
-                return (VoiceCatalogSnapshot(document: record.catalog), record.savedAt)
-            } catch { cacheDefaults.removeObject(forKey: key); return nil }
+                if candidate == previousKey {
+                    guard record.catalog.contract == TTSVoiceCatalogDocument.legacyContract,
+                          record.catalog.languages.allSatisfy({ SupportedTTSLanguage(identifier: $0.code)?.isGoogle == false }) else {
+                        throw VoiceCatalogError.invalidResponse
+                    }
+                    // Keep the original for rollback; never promote v1 into v2.
+                    defaults.set(data, forKey: key)
+                }
+                return record
+            } catch {
+                // Do not destroy migration/rollback evidence in the old key.
+                if candidate == key { defaults.removeObject(forKey: key) }
+            }
+        }
+        return nil
+    }
+
+    private func restoreCache() async {
+        let cacheDefaults = defaults, key = cacheKey, previousKey = previousCacheKey, region = editorialRegion.rawValue
+        let prepared = await Task.detached(priority: .userInitiated) { () -> (VoiceCatalogSnapshot, Date)? in
+            guard let record = Self.cachedRecord(defaults: cacheDefaults, key: key,
+                previousKey: previousKey, region: region) else { return nil }
+            return (VoiceCatalogSnapshot(document: record.catalog), record.savedAt)
         }.value
         guard let prepared, !Task.isCancelled, source != .network else { return }
         VoiceCatalog.publish(prepared.0)
@@ -736,27 +830,18 @@ final class VoiceCatalogService: ObservableObject {
         revision &+= 1
     }
 
-    /// Synchronous entry retained for isolated cache contract tests. App startup
-    /// restores and indexes the cache off the main actor via restoreCache().
+    /// Synchronous entry retained for isolated cache contract tests.
     @discardableResult
     func loadCachedCatalog() -> Bool {
-        guard let data = defaults.data(forKey: cacheKey) else { return false }
+        guard let record = Self.cachedRecord(defaults: defaults, key: cacheKey,
+            previousKey: previousCacheKey, region: editorialRegion.rawValue) else { return false }
         do {
-            let record = try JSONDecoder().decode(VoiceCatalogCacheRecord.self, from: data)
-            guard record.catalog.editorialRegion == nil || record.catalog.editorialRegion == editorialRegion.rawValue else {
-                throw VoiceCatalogError.invalidResponse
-            }
             try VoiceCatalog.install(record.catalog)
             lastNetworkRefreshAt = record.savedAt
             source = .cache
             revision &+= 1
-            debugLog("cache version=\(record.catalog.version) voices=\(record.catalog.voices.count)")
             return true
-        } catch {
-            defaults.removeObject(forKey: cacheKey)
-            debugLog("cache rejected error=\(error.localizedDescription)")
-            return false
-        }
+        } catch { return false }
     }
 
     func clearCacheForTesting() {

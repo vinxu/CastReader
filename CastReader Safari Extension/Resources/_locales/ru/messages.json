@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Озвучка и объяснения ИИ"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Чтение вслух + объяснения ИИ"
+  },
+  "extDescription": {
+    "message": "Чтение вслух на 28 языках с синхронной подсветкой, автопрокруткой и объяснениями ИИ."
+  },
+  "quickreadBtn": {
+    "message": "Быстрый обзор"
+  },
+  "quickreadBtnExit": {
+    "message": "Выйти из обзора"
+  },
+  "quickreadPreparing": {
+    "message": "Создание обзора"
+  },
+  "quickreadError": {
+    "message": "Ошибка создания обзора"
+  },
+  "quickreadStageExtract": {
+    "message": "Извлечение ключевых моментов"
+  },
+  "quickreadStageTts": {
+    "message": "Генерация озвучки"
+  },
+  "quickreadStageRefine": {
+    "message": "Настройка ритма"
+  },
+  "quickreadStageReady": {
+    "message": "Готово к воспроизведению…"
+  },
+  "quickreadFailed": {
+    "message": "Ошибка: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Закрыть"
+  },
+  "quickreadCancel": {
+    "message": "Отмена"
+  },
+  "quickreadDone": {
+    "message": "Готово"
+  },
+  "quickreadHint": {
+    "message": "Около 25–45 секунд, пожалуйста, подождите"
+  },
+  "quickreadQueued": {
+    "message": "В очереди ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Дневной лимит бесплатных объяснений исчерпан. Обновится завтра."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Дневной лимит бесплатных объяснений исчерпан"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Достигнут дневной лимит — перейдите на Pro для безлимитных объяснений. Ваша бесплатная квота обновится завтра."
+  },
+  "quickreadUpgrade": {
+    "message": "Перейти на Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Вход не выполнен"
+  },
+  "enableProMode": {
+    "message": "Включить Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Дневные 20 минут бесплатного чтения исчерпаны"
+  },
+  "listenRateLimitBody": {
+    "message": "Вы израсходовали сегодняшние 20 бесплатных минут чтения — перейдите на Pro для безлимитного чтения. Ваша бесплатная квота обновится завтра."
+  },
+  "quickreadQuotaTip": {
+    "message": "Объяснение · осталось $n$/$max$ на сегодня",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Объяснение · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Читать документ"
+  },
+  "readerDrop": {
+    "message": "Перетащите сюда изображение / PDF / EPUB / Word / TXT"
+  },
+  "readerDropOver": {
+    "message": "Отпустите для загрузки"
+  },
+  "readerSub": {
+    "message": "Чтение вслух + AI-обзор оригинального файла — разметка сохранена"
+  },
+  "readerOr": {
+    "message": "or"
+  },
+  "readerPick": {
+    "message": "Выбрать файл"
+  },
+  "readerRendering": {
+    "message": "Подготовка документа…"
+  },
+  "readerListen": {
+    "message": "▶ Слушать"
+  },
+  "readerPause": {
+    "message": "⏸ Пауза"
+  },
+  "readerResume": {
+    "message": "▶ Продолжить"
+  },
+  "readerStop": {
+    "message": "■ Стоп"
+  },
+  "readerExplain": {
+    "message": "✦ Объяснить"
+  },
+  "readerExplainHint": {
+    "message": "Сначала остановите чтение"
+  },
+  "readerNewFile": {
+    "message": "Новый файл"
+  },
+  "readerSpeed": {
+    "message": "Скорость"
+  },
+  "readerUnsupported": {
+    "message": "Неподдерживаемый тип файла"
+  },
+  "readerFailed": {
+    "message": "Ошибка обработки"
+  },
+  "readerEmpty": {
+    "message": "В этом документе не найден текст для чтения"
+  },
+  "readerQuotaLeft": {
+    "message": "осталось сегодня"
+  },
+  "readerQuotaBlocked": {
+    "message": "Дневной лимит в 10 бесплатных обзоров исчерпан — обновится завтра"
+  },
+  "readerPartial": {
+    "message": "Раздел на вашей текущей позиции объяснен — прокрутите вниз и нажмите «Объяснить» снова для следующего"
+  },
+  "readerTooLarge": {
+    "message": "Файл слишком большой (более 100 МБ). Пожалуйста, используйте файл меньшего размера."
+  },
+  "readerLargeFilePro": {
+    "message": "Для файлов крупнее 7 МБ требуется Pro — Pro открывает документы размером до 100 МБ."
+  },
+  "readerTooLargeForPage": {
+    "message": "Файл слишком велик для открытия с этой страницы (более 7 МБ). Откройте читалку документов и выберите его там — поддерживается до 100 МБ."
+  },
+  "readerOpenReader": {
+    "message": "Открыть читалку документов"
+  },
+  "readerContinue": {
+    "message": "Продолжить ✦"
+  },
+  "readerSettings": {
+    "message": "Настройки"
+  },
+  "readerExplainLang": {
+    "message": "Объяснить на"
+  },
+  "readerDocumentLang": {
+    "message": "Язык документа"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Автоматически (по тексту)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Для изображений или сканированных PDF без извлекаемого текста сначала выберите язык документа, затем откройте файл."
+  },
+  "readerVoiceEn": {
+    "message": "Английский голос"
+  },
+  "readerVoiceZh": {
+    "message": "Китайский голос"
+  },
+  "readerVoices": {
+    "message": "Голоса"
+  },
+  "readerBrowseVoices": {
+    "message": "Обзор голосов"
+  },
+  "readerLangAuto": {
+    "message": "Авто (язык интерфейса)"
+  },
+  "readerLangFollow": {
+    "message": "Как в документе"
+  },
+  "readerPreparing": {
+    "message": "Подготовка озвучки…"
+  },
+  "readerEncrypted": {
+    "message": "Этот PDF защищен паролем"
+  },
+  "readerCorrupt": {
+    "message": "Этот файл поврежден или нечитаем"
+  },
+  "readerTimeout": {
+    "message": "Открытие заняло слишком много времени — возможно, файл слишком сложный"
+  },
+  "readerEpubDrm": {
+    "message": "Этот EPUB защищен DRM. Попробуйте EPUB без DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Этот EPUB с фиксированной версткой не содержит текста, который можно синхронизировать с озвучкой."
+  },
+  "readerEpubTooComplex": {
+    "message": "Этот EPUB превышает безопасные лимиты локальной обработки. Попробуйте файл меньшего размера или проще."
+  },
+  "readerEpubTooLarge": {
+    "message": "Для безопасной локальной обработки размер файлов EPUB не должен превышать 30 МБ."
+  },
+  "inboxTitle": {
+    "message": "Входящие материалы"
+  },
+  "inboxSubtitle": {
+    "message": "Сохраняйте веб-страницы или выделенный текст, чтобы прочитать или получить объяснение, когда будете готовы."
+  },
+  "inboxEmpty": {
+    "message": "Ваш список входящих пуст"
+  },
+  "inboxEmptyDescription": {
+    "message": "Кликните правой кнопкой мыши на странице или выделенном тексте и сохраните в CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Сохранить выделенный текст во Входящие CastReader"
+  },
+  "inboxSavePage": {
+    "message": "Сохранить страницу во Входящие CastReader"
+  },
+  "inboxOpen": {
+    "message": "Открыть входящие материалы"
+  },
+  "inboxSharedText": {
+    "message": "Выделенный текст"
+  },
+  "inboxOpenFailed": {
+    "message": "Не удалось открыть этот контент. Пожалуйста, попробуйте еще раз."
+  },
+  "inboxRetry": {
+    "message": "Повторить"
+  },
+  "inboxRead": {
+    "message": "Читать вслух"
+  },
+  "inboxExplain": {
+    "message": "Объяснить"
+  },
+  "inboxDelete": {
+    "message": "Удалить"
+  },
+  "inboxLink": {
+    "message": "Ссылка"
+  },
+  "inboxText": {
+    "message": "Текст"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Чтение вслух + объяснения ИИ"
+  },
+  "edgeExtDescription": {
+    "message": "Читайте с синхронной подсветкой и автопрокруткой. ИИ объясняет сложные фрагменты на странице. Голоса на 28 языках."
+  },
+  "toggleSiteVisibility": {
+    "message": "Показать / скрыть CastReader на этом сайте"
+  },
+  "voiceCloneBenefit": {
+    "message": "Используйте собственный голос для функций «Читать вслух» и «Объяснить» · 120 минут в месяц"
+  },
+  "voiceClonePaywall": {
+    "message": "Создавайте, управляйте и прослушивайте фиксированные превью нескольких личных голосов бесплатно. Подписка Pro позволяет использовать личные голоса в функциях «Читать вслух» и «Объяснить» в пределах 120 сгенерированных минут каждый месяц."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Ваши минуты личного голоса на этот месяц исчерпаны. Выбранный вами голос сохранен."
+  },
+  "ocrModelUnavailable": {
+    "message": "Не удалось скачать языковой файл для распознавания текста. Подключитесь к интернету и повторите попытку."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Распознавание изображений и сканированных страниц для этого языка пока недоступно. Можно читать веб-страницы, EPUB, TXT и PDF с выделяемым текстом."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Чтение вслух недоступно на этой странице"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Прочитать эту страницу вслух"
+  }
+}

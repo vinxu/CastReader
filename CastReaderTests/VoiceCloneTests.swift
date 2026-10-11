@@ -612,7 +612,7 @@ final class VoiceCloneTests: XCTestCase {
 
         XCTAssertEqual(
             Set(localizations.keys),
-            Set(["de", "en", "es", "fr", "hi", "it", "ja", "pt-BR", "zh-Hans"])
+            Set(["de", "en", "es", "fr", "hi", "it", "ja", "pt-BR", "zh-Hans", "nl", "ko", "ar", "ru", "pl", "sv", "da", "nb", "fi", "cs", "el", "hu", "fil", "he", "id", "ms", "ro", "tr", "vi"])
         )
     }
 
@@ -627,7 +627,7 @@ final class VoiceCloneTests: XCTestCase {
         )
         let strings = try XCTUnwrap(root["strings"] as? [String: Any])
         let expectedLocales = Set([
-            "de", "en", "es", "fr", "hi", "it", "ja", "pt-BR", "zh-Hans",
+            "de", "en", "es", "fr", "hi", "it", "ja", "pt-BR", "zh-Hans", "nl", "ko", "ar", "ru", "pl", "sv", "da", "nb", "fi", "cs", "el", "hu", "fil", "he", "id", "ms", "ro", "tr", "vi",
         ])
         let identityKeys = [
             "保存",
@@ -686,7 +686,7 @@ final class VoiceCloneTests: XCTestCase {
         )
         let strings = try XCTUnwrap(root["strings"] as? [String: Any])
         let expectedLocales = Set([
-            "de", "en", "es", "fr", "hi", "it", "ja", "pt-BR", "zh-Hans",
+            "de", "en", "es", "fr", "hi", "it", "ja", "pt-BR", "zh-Hans", "nl", "ko", "ar", "ru", "pl", "sv", "da", "nb", "fi", "cs", "el", "hu", "fil", "he", "id", "ms", "ro", "tr", "vi",
         ])
         let giftKeys = [
             "邀请朋友录制声音暂未在当前地区开放",

@@ -3,184 +3,128 @@
 //  CastReader
 //
 //  统一语言检测——朗读/解读选音色与 TTS language 的唯一依据，避免中文用英文音色等错配。
-//  对齐扩展 readout-desktop：按脚本字符（CJK/假名/谚文/拉丁）占比判定，分母只算脚本字符
-//  （排除标点/空格/数字），中英混排也能正确判为中文。文本/文件/OCR/网页四种源统一调用。
+//  系统与本地模型均保留不支持语言，不能把候选限制成产品列表。
+//  文本/文件/OCR/网页统一取证；近似语言证据不足时由文档上下文或用户确认。
 //
 
 import Foundation
 import NaturalLanguage
 
-/// iOS TTS 的产品能力边界。音色明细由服务端 catalog 驱动，但语言集合、顺序与
-/// BCP-47 归一化只在这里定义，避免设置、OCR、检测和请求层各自维护一份名单。
-enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
-    case english = "en"
-    case chinese = "zh"
-    case japanese = "ja"
-    case spanish = "es"
-    case french = "fr"
-    case german = "de"
-    case brazilianPortuguese = "pt"
-    case italian = "it"
-    case hindi = "hi"
-
-    var id: String { rawValue }
-
-    var localeIdentifier: String {
-        switch self {
-        case .english: return "en-US"
-        case .chinese: return "zh-CN"
-        case .japanese: return "ja-JP"
-        case .spanish: return "es-ES"
-        case .french: return "fr-FR"
-        case .german: return "de-DE"
-        case .brazilianPortuguese: return "pt-BR"
-        case .italian: return "it-IT"
-        case .hindi: return "hi-IN"
-        }
-    }
-
-    var nativeName: String {
-        switch self {
-        case .english: return "English"
-        case .chinese: return "中文"
-        case .japanese: return "日本語"
-        case .spanish: return "Español"
-        case .french: return "Français"
-        case .german: return "Deutsch"
-        case .brazilianPortuguese: return "Português (Brasil)"
-        case .italian: return "Italiano"
-        case .hindi: return "हिन्दी"
-        }
-    }
-
-    var catalogName: String {
-        switch self {
-        case .english: return "English"
-        case .chinese: return "Mandarin Chinese"
-        case .japanese: return "Japanese"
-        case .spanish: return "Spanish"
-        case .french: return "French"
-        case .german: return "German"
-        case .brazilianPortuguese: return "Brazilian Portuguese"
-        case .italian: return "Italian"
-        case .hindi: return "Hindi"
-        }
-    }
-
-    var defaultVoiceID: String {
-        switch self {
-        case .english: return "af_heart"
-        case .chinese: return "zf_001"
-        case .japanese: return "jf_alpha"
-        case .spanish: return "ef_dora"
-        case .french: return "ff_siwis"
-        case .german: return "df_mls_19"
-        case .brazilianPortuguese: return "pf_dora"
-        case .italian: return "if_sara"
-        case .hindi: return "hf_alpha"
-        }
-    }
-
-    var defaultVoiceName: String {
-        switch self {
-        case .english: return "Heart"
-        case .chinese: return "晓萱"
-        case .japanese, .hindi: return "Alpha"
-        case .spanish, .brazilianPortuguese: return "Dora"
-        case .french: return "Siwis"
-        case .german: return "Emilia"
-        case .italian: return "Sara"
-        }
-    }
-
-    /// Production-verified synchronization ceiling. Runtime consumers still
-    /// validate every response segment before enabling word highlighting.
-    var timestampMode: String {
-        self == .chinese || self == .japanese ? "segment" : "word"
-    }
-
-    /// Vision 的 OCR locale 与 TTS locale 并不完全相同。简体中文必须使用
-    /// `zh-Hans`；传 `zh-CN` 会被 Vision 拒绝并在旧实现里静默退回英文。
-    var visionRecognitionLanguage: String {
-        self == .chinese ? "zh-Hans" : localeIdentifier
-    }
-
-    init?(identifier: String) {
-        let primary = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-            .replacingOccurrences(of: "_", with: "-")
-            .split(separator: "-")
-            .first
-            .map(String.init) ?? ""
-        self.init(rawValue: primary)
-    }
-
-    static func canonicalCode(_ identifier: String, fallback: SupportedTTSLanguage = .english) -> String {
-        SupportedTTSLanguage(identifier: identifier)?.rawValue ?? fallback.rawValue
-    }
-}
-
+/// Native evidence is unconstrained: excluded and neighbouring languages must remain
+/// visible. Script membership alone cannot distinguish Hindi/Nepali or Arabic/Urdu.
 enum LanguageDetector {
+    enum Status: Equatable {
+        case supported(SupportedTTSLanguage)
+        case unsupported(String)
+        case uncertain
+    }
 
     struct Evidence: Equatable {
         let language: String
         let confidence: Double
         let readableCharacterCount: Int
+        var candidates: [String: Double] = [:]
+        var nativeCandidates: [String: Double] = [:]
+        var supplementalCandidates: [String: Double] = [:]
+        var embeddedTermCandidates: [String: Double] = [:]
+
+        var status: Status {
+            guard confidence >= 0.75, readableCharacterCount > 0, !language.isEmpty,
+                  language != "und", language != "no" else { return .uncertain }
+            if let supported = SupportedTTSLanguage(identifier: language) { return .supported(supported) }
+            return .unsupported(language)
+        }
     }
 
-    /// 返回九语权威目录中的主语言码。CJK/假名/天城文先按脚本确定；
-    /// 拉丁字母语言交给 NaturalLanguage 在英/西/法/德/葡/意之间判别。
     static func detect(_ text: String) -> String {
-        evidence(for: text).language
+        let evidence = evidence(for: text)
+        switch evidence.status {
+        case .supported(let language): return language.rawValue
+        case .unsupported(let language): return language
+        case .uncertain: return ""
+        }
     }
 
-    /// Returns both the product language and the strength of the script/language evidence.
-    /// Kindle uses this to compare independent single-locale OCR passes; it must never let
-    /// the first locale in one multilingual Vision request become the book authority.
     static func evidence(for text: String) -> Evidence {
-        var cjk = 0, kana = 0, devanagari = 0, latin = 0
-        var seen = 0
-        for scalar in text.unicodeScalars {
-            seen += 1
-            if seen > 4000 { break }            // 取样上限，长文无需全扫
-            let v = scalar.value
-            if (0x4E00...0x9FFF).contains(v) || (0x3400...0x4DBF).contains(v) {
-                cjk += 1
-            } else if (0x3040...0x309F).contains(v) || (0x30A0...0x30FF).contains(v) {
-                kana += 1
-            } else if (0x0900...0x097F).contains(v) {
-                devanagari += 1
-            } else if scalar.properties.isAlphabetic {
-                latin += 1
-            }
-        }
-        let scripted = cjk + kana + devanagari + latin
-        guard scripted > 0 else { return Evidence(language: "en", confidence: 0, readableCharacterCount: 0) }
-        let total = Double(scripted)
-        // 假名优先（日文正文含大量汉字，会落入 cjk；有假名即判日文）。
-        if Double(kana) / total > 0.1 {
-            return Evidence(language: "ja", confidence: min(1, 0.65 + Double(kana) / total), readableCharacterCount: scripted)
-        }
-        if Double(devanagari) / total > 0.1 {
-            return Evidence(language: "hi", confidence: min(1, 0.65 + Double(devanagari) / total), readableCharacterCount: scripted)
-        }
-        // 中文：CJK 占脚本字符 ≥ 0.15（中英混排技术文章亦可正确判定；纯中文接近 1）。
-        if Double(cjk) / total > 0.15 {
-            return Evidence(language: "zh", confidence: min(1, 0.55 + Double(cjk) / total * 0.45), readableCharacterCount: scripted)
-        }
-
+        let sample = String(text.prefix(4000))
+        let count = sample.unicodeScalars.filter { $0.properties.isAlphabetic }.count
+        guard count > 0 else { return Evidence(language: "", confidence: 0, readableCharacterCount: 0) }
         let recognizer = NLLanguageRecognizer()
-        recognizer.languageConstraints = [.english, .spanish, .french, .german, .portuguese, .italian]
-        recognizer.processString(text)
-        let hypotheses = recognizer.languageHypotheses(withMaximum: 5)
-        let best = hypotheses.compactMap { language, probability -> (String, Double)? in
-            guard let supported = SupportedTTSLanguage(identifier: language.rawValue) else { return nil }
-            return (supported.rawValue, probability)
-        }.max { $0.1 < $1.1 }
-        guard let best else {
-            return Evidence(language: SupportedTTSLanguage.english.rawValue, confidence: 0, readableCharacterCount: scripted)
+        recognizer.processString(sample)
+        let hypotheses = recognizer.languageHypotheses(withMaximum: 8)
+        var candidates: [String: Double] = [:]
+        for (language, probability) in hypotheses {
+            let code = SupportedTTSLanguage.normalizedIdentifier(language.rawValue)
+            candidates[code] = (candidates[code] ?? 0) + probability
         }
-        return Evidence(language: best.0, confidence: best.1, readableCharacterCount: scripted)
+        let result = reconcile(native: candidates, supplemental: SupplementalLanguageIdentifier.hypotheses(for: sample),
+                               readableCharacterCount: count)
+        guard result.status == .uncertain,
+              let prose = proseAroundEmbeddedLatinTerm(sample) else { return result }
+        let proseRecognizer = NLLanguageRecognizer()
+        proseRecognizer.processString(prose)
+        let proseModel = SupplementalLanguageIdentifier.hypotheses(for: prose)
+        let proseNative = proseRecognizer.languageHypotheses(withMaximum: 2)
+        // This is additional linguistic evidence, not a Han-script override.
+        // Preserve Cantonese/Japanese/other candidates and the original scores.
+        guard (proseNative[.simplifiedChinese] ?? 0) + (proseNative[.traditionalChinese] ?? 0) >= 0.95,
+              (proseModel["zh"] ?? 0) >= 0.98 else { return result }
+        return Evidence(language: "zh", confidence: proseModel["zh"]!, readableCharacterCount: count,
+                        candidates: result.candidates, nativeCandidates: result.nativeCandidates,
+                        supplementalCandidates: result.supplementalCandidates, embeddedTermCandidates: proseModel)
+    }
+
+    /// A short inline Latin term can dominate both classifiers in a Chinese
+    /// sentence. Only reconsider a single bounded term surrounded by substantial
+    /// Han prose; foreign sentences, quotations and other scripts stay intact.
+    static func proseAroundEmbeddedLatinTerm(_ text: String) -> String? {
+        let pattern = #"^[\p{Han}\p{N}\p{P}\p{Z}\s]+([A-Za-z][A-Za-z\- ]*[A-Za-z])[\p{Han}\p{N}\p{P}\p{Z}\s]+$"#
+        guard text.count <= 240,
+              !text.contains(where: { "\"“”「」『』«»".contains($0) }),
+              let expression = try? NSRegularExpression(pattern: pattern),
+              let match = expression.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let termRange = Range(match.range(at: 1), in: text) else { return nil }
+        let term = text[termRange]
+        guard term.split(whereSeparator: { $0 == " " || $0 == "-" }).count <= 5,
+              term.count <= 60 else { return nil }
+        let before = String(text[..<termRange.lowerBound])
+        let after = String(text[termRange.upperBound...])
+        func hanCount(_ value: String) -> Int {
+            value.unicodeScalars.filter { (0x3400...0x4DBF).contains($0.value) || (0x4E00...0x9FFF).contains($0.value) }.count
+        }
+        guard hanCount(before) >= 4, hanCount(after) >= 4,
+              hanCount(before + after) >= 10,
+              !before.contains(where: { "。！？.!?".contains($0) }),
+              !after.dropLast().contains(where: { "。！？.!?".contains($0) }) else { return nil }
+        return before + " " + after
+    }
+
+    /// The system recognizer does not distinguish all product languages. In
+    /// particular its Indonesian and Bokmål scores cannot corroborate a claim
+    /// against Malay or Nynorsk. No device/UI/selected-voice prior participates.
+    static func reconcile(native: [String: Double], supplemental: [String: Double],
+                          readableCharacterCount count: Int) -> Evidence {
+        let nativeBest = native.max(by: { $0.value < $1.value })
+        guard let modelBest = supplemental.max(by: { $0.value < $1.value }) else {
+            // A missing/corrupt model must not restore the unsafe old guesses.
+            return Evidence(language: "", confidence: 0, readableCharacterCount: count,
+                            candidates: native, nativeCandidates: native)
+        }
+        let language = modelBest.key
+        let modelScore = min(1, max(0, modelBest.value))
+        let closeFamily = ["id", "ms", "nb", "nn", "da"].contains(language)
+        var confidence = modelScore
+        if closeFamily {
+            // These labels require a clear margin from the independent model;
+            // an Apple score of 1 cannot resolve a language it does not expose.
+            if modelScore < 0.98 { confidence = min(confidence, 0.74) }
+        } else if nativeBest?.key == language, modelScore >= 0.50 {
+            confidence = (modelScore + (nativeBest?.value ?? 0)) / 2
+        } else if modelScore < 0.90 {
+            confidence = min(confidence, 0.74)
+        }
+        return Evidence(language: language, confidence: confidence, readableCharacterCount: count,
+                        candidates: supplemental, nativeCandidates: native, supplementalCandidates: supplemental)
     }
 }
 

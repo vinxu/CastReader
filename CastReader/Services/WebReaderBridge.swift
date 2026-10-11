@@ -920,6 +920,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         self.readVM = readVM
         self.explainVM = explainVM
         explainVM.isSourcePanelPresented = false
+        // Every web-library adapter inherits this document's established
+        // language. A short opening page must not erase it; fresh documents
+        // without body evidence explicitly start with an empty language.
+        rememberedReadingLanguage = readVM.document.language
 
         if isAO3 {
             // Reopening a minimized reader must preserve the user's paused
@@ -930,7 +934,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
 
         if isWeRead {
-            rememberedReadingLanguage = readVM.document.language
             readVM.prepareReadableWebPage = { [weak self] in
                 await self?.prepareWeReadOpeningPage() ?? false
             }

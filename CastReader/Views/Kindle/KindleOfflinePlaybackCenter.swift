@@ -174,6 +174,8 @@ struct KindleOfflineMiniPlayer: View {
 
 @MainActor
 private struct KindleOfflineMiniPlayerBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var model: KindleOfflineBookReaderModel
     @ObservedObject var speech: SystemSpeechPlaybackService
     let expand: () -> Void

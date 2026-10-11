@@ -10,6 +10,8 @@
 import SwiftUI
 
 struct LibraryView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @EnvironmentObject private var importRouter: ImportRouter
     @ObservedObject private var history = HistoryStore.shared
@@ -453,6 +455,8 @@ struct LibraryView: View {
 // MARK: - History Row
 
 private struct HistoryRow: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let record: HistoryRecord
     let positionLabel: String?
     let connectionState: CloudConnectionState?
@@ -547,7 +551,7 @@ private struct HistoryRow: View {
         let dateStyle: Date.FormatStyle.DateStyle = s < 86_400 * 365 ? .abbreviated : .numeric
         return date.formatted(
             Date.FormatStyle(date: dateStyle, time: .omitted)
-                .locale(.current)
+                .locale(AppLanguageManager.shared.locale)
         )
     }
 }

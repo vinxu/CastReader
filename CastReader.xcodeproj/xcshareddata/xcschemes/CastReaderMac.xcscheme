@@ -411,6 +411,24 @@
                <Test
                   Identifier = "GoogleBooksContractTests">
                </Test>
+               <Test
+                  Identifier = "LocalizationCatalogTests">
+               </Test>
+               <Test
+                  Identifier = "MultilingualContractTests">
+               </Test>
+               <Test
+                  Identifier = "PhotoLanguageCorrectionTests">
+               </Test>
+               <Test
+                  Identifier = "ReadingLanguageTests">
+               </Test>
+               <Test
+                  Identifier = "CloneCreditBalanceRegressionTests">
+               </Test>
+               <Test
+                  Identifier = "ReaderViewportTests">
+               </Test>
             </SelectedTests>
          </TestableReference>
       </Testables>

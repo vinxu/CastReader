@@ -217,6 +217,7 @@ enum QuickReadError: Error, LocalizedError {
     case computeSessionExpired
     case missingJobTransport
     case jobUnavailable
+    case outputLanguageMismatch
 
     var errorDescription: String? {
         switch self {
@@ -229,7 +230,52 @@ enum QuickReadError: Error, LocalizedError {
         case .computeSessionExpired: return AppLocalized("解读算力凭据已过期")
         case .missingJobTransport: return AppLocalized("解读任务线路状态已丢失，请重新开始解读")
         case .jobUnavailable: return AppLocalized("解读任务已失效，请重新开始解读")
+        case .outputLanguageMismatch: return AppLocalized("解读语言与所选语言不一致，请重试")
         }
+    }
+}
+
+enum QuickReadOutputLanguage {
+    /// Preserve legacy responses without language metadata, but never allow
+    /// explicit server metadata to change the narration requested by the user.
+    static func validate(requested: String?, returned: String?) throws {
+        guard let requested, !requested.trimmed.isEmpty,
+              let returned, !returned.trimmed.isEmpty else { return }
+        guard SupportedTTSLanguage.canonicalCode(requested) == SupportedTTSLanguage.canonicalCode(returned) else {
+            throw QuickReadError.outputLanguageMismatch
+        }
+    }
+
+    /// Check the words that will actually be synthesized, not just the server's
+    /// language field. Run before every foreground or speculative TTS producer.
+    /// A short name, formula or quotation is not sufficient to reject a block.
+    static func validateNarration(_ text: String, requested: String) throws {
+        let expected = SupportedTTSLanguage.canonicalCode(requested)
+        guard !expected.isEmpty else { return }
+        let sample = String(text.prefix(4000))
+        let evidence = LanguageDetector.evidence(for: sample)
+        guard isClearMismatch(evidence, expected: expected) else { return }
+        let unquoted = sample.replacingOccurrences(
+            of: #""[^"\n]{1,1600}"|“[^”\n]{1,1600}”|«[^»\n]{1,1600}»|「[^」\n]{1,1600}」|『[^』\n]{1,1600}』"#,
+            with: " ", options: .regularExpression)
+        if unquoted != sample {
+            // Mixed-language quotations must not trigger an output-language
+            // error when the surrounding explanation follows the selection.
+            let surrounding = LanguageDetector.evidence(for: unquoted)
+            guard isClearMismatch(surrounding, expected: expected),
+                  surrounding.language == evidence.language else { return }
+        }
+        throw QuickReadError.outputLanguageMismatch
+    }
+
+    private static func isClearMismatch(_ evidence: LanguageDetector.Evidence, expected: String) -> Bool {
+        evidence.readableCharacterCount >= 80 && evidence.confidence >= 0.95 &&
+            !evidence.language.isEmpty && evidence.language != "und" &&
+            evidence.language != "no" && evidence.language != expected
+    }
+
+    static func resolve(preference: String?, source: String, locked: String? = nil) -> String {
+        SupportedTTSLanguage.canonicalCode(locked ?? preference ?? source)
     }
 }
 
@@ -786,12 +832,14 @@ actor QuickReadService {
         var dataBuffer = ""
         var done: PlanDone?
         var gotBlock0 = false
+        let requestedLanguage = (try? JSONSerialization.jsonObject(with: payload) as? [String: Any])?["lang"] as? String
 
         // 注意：URLSession.AsyncBytes.lines 会吞掉 SSE 事件间的空行，
         // 所以不能只靠空行判定边界——遇到下一个 `event:` 或空行就 flush 上一个事件。
         func flush() throws {
             defer { eventName = ""; dataBuffer = "" }
             try dispatch(event: eventName, data: dataBuffer,
+                         requestedLanguage: requestedLanguage,
                          onStage: onStage,
                          onBlock0: { gotBlock0 = true; onBlock0($0) },
                          onDone: { done = $0 })
@@ -814,6 +862,7 @@ actor QuickReadService {
     }
 
     private func dispatch(event: String, data: String,
+                          requestedLanguage: String?,
                           onStage: (String) -> Void,
                           onBlock0: (PlanBlock0) -> Void,
                           onDone: (PlanDone) -> Void) throws {
@@ -826,12 +875,16 @@ actor QuickReadService {
                 onStage(s)
             }
         case "block0":
+            let block: PlanBlock0
             do {
-                let block = try decoder.decode(PlanBlock0.self, from: payload)
-                debugLog("SSE block0 job=\(block.job_id) total_hint=\(block.total_blocks) marks=\(block.block_0.events.count) text=\(block.block_0.text.count)")
-                onBlock0(block)
+                block = try decoder.decode(PlanBlock0.self, from: payload)
             }
             catch { throw QuickReadError.decodeError("block0: \(error)") }
+            // Validate before the callback can submit billable TTS. Keep this
+            // error outside the decoder catch so it cannot trigger network retries.
+            try QuickReadOutputLanguage.validate(requested: requestedLanguage, returned: block.output_language)
+            debugLog("SSE block0 job=\(block.job_id) total_hint=\(block.total_blocks) marks=\(block.block_0.events.count) text=\(block.block_0.text.count)")
+            onBlock0(block)
         case "done":
             if let d = try? decoder.decode(PlanDone.self, from: payload) {
                 debugLog("SSE done job=\(d.job_id ?? "nil") total=\(d.total_blocks.map(String.init) ?? "nil") model=\(d.model_used ?? "nil")")

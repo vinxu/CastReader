@@ -44,6 +44,119 @@ final class KindleWebViewContainerTests: XCTestCase {
         XCTAssertTrue(fixture.webView.isUserInteractionEnabled)
     }
 
+    func testHeldWordHighlightUsesPhysicalPageCoordinatesInEitherInterfaceDirection() throws {
+        let size = CGSize(width: 400, height: 240)
+        let page = UIGraphicsImageRenderer(size: size).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+        }
+        // The same physical boxes advance left-to-right for English, and
+        // right-to-left for Arabic/Hebrew. UI direction must change neither.
+        for interfaceDirection in [LayoutDirection.leftToRight, .rightToLeft] {
+            for wordX in [0.12, 0.32, 0.72, 0.52] {
+                let word = CGRect(x: wordX, y: 0.5, width: 0.1, height: 0.08)
+                let renderer = ImageRenderer(content: KindleContinuousReadVisualHold(
+                    image: page, highlightRectsNorm: [word],
+                    imageRect: CGRect(origin: .zero, size: size),
+                    highlightContentRect: CGRect(origin: .zero, size: size))
+                    .frame(width: size.width, height: size.height)
+                    .environment(\.layoutDirection, interfaceDirection))
+                renderer.scale = 1
+                let rendered = try XCTUnwrap(renderer.uiImage)
+                let expected = ReadingGeometry.displayRect(forNorm: word, in: CGRect(origin: .zero, size: size))
+                let mirrored = CGRect(x: size.width - expected.maxX, y: expected.minY,
+                                      width: expected.width, height: expected.height)
+                XCTAssertGreaterThan(orangeCoverage(rendered, band: expected), 100,
+                    "The spoken word must be highlighted at its real x coordinate: \(wordX), UI \(interfaceDirection)")
+                XCTAssertLessThan(orangeCoverage(rendered, band: mirrored), 1,
+                    "The UI locale must not mirror the spoken word to the opposite side of the page")
+            }
+        }
+    }
+
+    func testIPadAndPhotoHighlightsFollowSourceWordOrderUnderRTLInterface() throws {
+        let size = CGSize(width: 400, height: 240)
+        let page = UIGraphicsImageRenderer(size: size).image { context in
+            UIColor.white.setFill(); context.fill(CGRect(origin: .zero, size: size))
+        }
+        for (language, text, positions) in [("en", "Hello world", [0.12, 0.32]),
+                                            ("ar", "مرحبا بالعالم", [0.72, 0.52]),
+                                            ("he", "שלום עולם", [0.72, 0.52])] {
+            let words = zip(text.split(separator: " "), positions).enumerated().map { i, pair in
+                OCRWord(id: i, text: String(pair.0), bboxNorm: CGRect(x: pair.1, y: 0.5, width: 0.1, height: 0.08))
+            }
+            let document = ReadingDocument(title: "Direction", sourceKind: .photo, language: language,
+                paragraphs: [.init(id: 0, text: text, words: words)], imageData: page.pngData(), imagePixelSize: size)
+            let read = ReadAloudViewModel(document: document, restoresSavedReadingPosition: false)
+            let explain = ExplainViewModel(document: document)
+            read.currentParagraphIndex = 0
+            for wordIndex in words.indices {
+                read.photoHighlightWordIndex = wordIndex
+                let expected = ReadingGeometry.displayRect(forNorm: words[wordIndex].bboxNorm,
+                                                           in: CGRect(origin: .zero, size: size))
+                for direction in [LayoutDirection.leftToRight, .rightToLeft] {
+                    let holds: [AnyView] = [
+                        AnyView(KindleIPadReadHoldView(state: .init(image: page, document: document, wordBoxes: nil),
+                            imageRect: CGRect(origin: .zero, size: size), owner: read)),
+                        AnyView(PhotoContent(document: document, readVM: read, explainVM: explain, mode: .read))
+                    ]
+                    for (i, hold) in holds.enumerated() {
+                        let renderer = ImageRenderer(content: hold.frame(width: size.width, height: size.height)
+                            .environment(\.layoutDirection, direction))
+                        renderer.scale = 1
+                        let rendered = try XCTUnwrap(renderer.uiImage)
+                        XCTAssertGreaterThan(orangeCoverage(rendered, band: expected), 60,
+                            "\(language), word \(wordIndex), UI \(direction), surface \(i)")
+                        let mirrored = CGRect(x: size.width - expected.maxX, y: expected.minY,
+                                              width: expected.width, height: expected.height)
+                        XCTAssertLessThan(orangeCoverage(rendered, band: mirrored), 1,
+                            "Physical OCR coordinates cannot inherit the interface's RTL mirroring")
+                    }
+                }
+            }
+        }
+    }
+
+    func testPageGesturesFollowBookProgressionRatherThanInterfaceLanguage() throws {
+        for language in ["en", "fr", "zh", "ar", "he"] {
+            let profile = try XCTUnwrap(KindleLanguageContract.profile(language: language))
+            let rtl = ["ar", "he"].contains(language)
+            XCTAssertEqual(profile.readingDirection, rtl ? .rtl : .ltr)
+            XCTAssertEqual(profile.pageProgressionFallback.layoutDirection, rtl ? .rightToLeft : .leftToRight)
+            XCTAssertEqual(profile.pageProgressionFallback.pageTurn(forHorizontalTranslation: rtl ? 80 : -80), .next)
+            XCTAssertEqual(profile.pageProgressionFallback.pageTurn(forHorizontalTranslation: rtl ? -80 : 80), .previous)
+        }
+        // A publication's explicit page progression remains authoritative.
+        let explicit = try XCTUnwrap(KindleLanguageContract.profile(language: "ja", pageProgressionDirection: .ltr))
+        XCTAssertEqual(explicit.pageProgressionFallback.pageTurn(forHorizontalTranslation: -80), .next)
+    }
+
+    func testHeldExplanationPreservesPhysicalImageOriginInRTLInterface() throws {
+        let size = CGSize(width: 400, height: 240)
+        let page = UIGraphicsImageRenderer(size: size).image { context in
+            UIColor.white.setFill(); context.fill(CGRect(origin: .zero, size: size))
+        }
+        let word = OCRWord(id: 0, text: "Evidence", bboxNorm: CGRect(x: 0.1, y: 0.5, width: 0.15, height: 0.08))
+        let document = ReadingDocument(title: "Direction", sourceKind: .kindle, language: "en",
+            paragraphs: [.init(id: 0, text: word.text, words: [word])])
+        let mark = ResolvedMark(id: UUID(), paragraphIndex: 0, charRange: 0..<8, action: "highlight", n: nil, seed: 42)
+        let imageRect = CGRect(x: 30, y: 20, width: 300, height: 200)
+        for direction in [LayoutDirection.leftToRight, .rightToLeft] {
+            let renderer = ImageRenderer(content: KindleExplainHeldInkLayer(
+                state: .init(image: page, imageRect: imageRect, document: document), marks: [mark],
+                animations: [mark.id: .init(startedAt: ProcessInfo.processInfo.systemUptime - 3, duration: 1)],
+                wordBoxOverrides: nil)
+                .frame(width: size.width, height: size.height)
+                .environment(\.layoutDirection, direction))
+            renderer.scale = 1
+            let rendered = try XCTUnwrap(renderer.uiImage)
+            let expected = ReadingGeometry.displayRect(forNorm: word.bboxNorm, in: imageRect)
+            XCTAssertGreaterThan(orangeCoverage(rendered, band: expected), 30,
+                "The original-page mark must include the same physical image origin in both UI directions")
+        }
+    }
+
+
     func testCircleKeepsSeparateSubpathsAcrossColumns() throws {
         let rects = [CGRect(x: 40, y: 340, width: 270, height: 24),
                      CGRect(x: 650, y: 100, width: 230, height: 24)]

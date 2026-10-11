@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Baca dan penjelasan AI"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Baca Nyaring + Penjelasan AI"
+  },
+  "extDescription": {
+    "message": "Dengarkan dalam 28 bahasa dengan sorotan sinkron, gulir otomatis, dan penjelasan AI."
+  },
+  "quickreadBtn": {
+    "message": "Ringkasan Cepat"
+  },
+  "quickreadBtnExit": {
+    "message": "Keluar dari Ringkasan"
+  },
+  "quickreadPreparing": {
+    "message": "Menghasilkan Ringkasan"
+  },
+  "quickreadError": {
+    "message": "Kesalahan Ringkasan"
+  },
+  "quickreadStageExtract": {
+    "message": "Mengekstrak poin-poin kunci"
+  },
+  "quickreadStageTts": {
+    "message": "Menghasilkan suara narasi"
+  },
+  "quickreadStageRefine": {
+    "message": "Menata ritme"
+  },
+  "quickreadStageReady": {
+    "message": "Siap diputar…"
+  },
+  "quickreadFailed": {
+    "message": "Gagal: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Tutup"
+  },
+  "quickreadCancel": {
+    "message": "Batal"
+  },
+  "quickreadDone": {
+    "message": "Selesai"
+  },
+  "quickreadHint": {
+    "message": "Sekitar 25-45 detik, harap tunggu"
+  },
+  "quickreadQueued": {
+    "message": "Dalam antrean ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Kuota Penjelasan gratis harian habis. Diatur ulang besok."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Kuota Penjelasan gratis harian habis"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Batas harian gratis tercapai — tingkatkan ke Pro untuk Penjelasan tanpa batas. Kuota gratis Anda diatur ulang besok."
+  },
+  "quickreadUpgrade": {
+    "message": "Tingkatkan ke Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Belum masuk"
+  },
+  "enableProMode": {
+    "message": "Aktifkan Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Kuota membaca gratis 20 menit harian habis"
+  },
+  "listenRateLimitBody": {
+    "message": "Anda telah menggunakan 20 menit membaca gratis hari ini — tingkatkan ke Pro untuk membaca tanpa batas. Kuota gratis Anda diatur ulang besok."
+  },
+  "quickreadQuotaTip": {
+    "message": "Jelaskan · sisa $n$/$max$ hari ini",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Jelaskan · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Baca dokumen"
+  },
+  "readerDrop": {
+    "message": "Letakkan gambar / PDF / EPUB / Word / TXT di sini"
+  },
+  "readerDropOver": {
+    "message": "Letakkan untuk mengunggah"
+  },
+  "readerSub": {
+    "message": "Baca keras + ringkasan AI pada file asli — tata letak tetap utuh"
+  },
+  "readerOr": {
+    "message": "atau"
+  },
+  "readerPick": {
+    "message": "Pilih file"
+  },
+  "readerRendering": {
+    "message": "Merender dokumen…"
+  },
+  "readerListen": {
+    "message": "▶ Dengarkan"
+  },
+  "readerPause": {
+    "message": "⏸ Jeda"
+  },
+  "readerResume": {
+    "message": "▶ Lanjutkan"
+  },
+  "readerStop": {
+    "message": "■ Hentikan"
+  },
+  "readerExplain": {
+    "message": "✦ Jelaskan"
+  },
+  "readerExplainHint": {
+    "message": "Hentikan pembacaan terlebih dahulu"
+  },
+  "readerNewFile": {
+    "message": "File baru"
+  },
+  "readerSpeed": {
+    "message": "Kecepatan"
+  },
+  "readerUnsupported": {
+    "message": "Jenis file tidak didukung"
+  },
+  "readerFailed": {
+    "message": "Pemrosesan gagal"
+  },
+  "readerEmpty": {
+    "message": "Tidak ditemukan teks yang dapat dibaca dalam dokumen ini"
+  },
+  "readerQuotaLeft": {
+    "message": "tersisa hari ini"
+  },
+  "readerQuotaBlocked": {
+    "message": "Kuota 10 ringkasan gratis harian habis — direset besok"
+  },
+  "readerPartial": {
+    "message": "Bagian pada posisi Anda saat ini telah dijelaskan — gulir ke bawah dan ketuk Jelaskan lagi untuk bagian berikutnya"
+  },
+  "readerTooLarge": {
+    "message": "File terlalu besar (lebih dari 100 MB). Silakan gunakan file yang lebih kecil."
+  },
+  "readerLargeFilePro": {
+    "message": "File lebih dari 7 MB memerlukan Pro — Pro membuka dokumen hingga 100 MB."
+  },
+  "readerTooLargeForPage": {
+    "message": "Terlalu besar untuk dibuka dari halaman ini (lebih dari 7 MB). Buka pembaca dokumen dan pilih file di sana — hingga 100 MB."
+  },
+  "readerOpenReader": {
+    "message": "Buka pembaca dokumen"
+  },
+  "readerContinue": {
+    "message": "Lanjutkan ✦"
+  },
+  "readerSettings": {
+    "message": "Pengaturan"
+  },
+  "readerExplainLang": {
+    "message": "Jelaskan dalam"
+  },
+  "readerDocumentLang": {
+    "message": "Bahasa dokumen"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Otomatis (dari teks)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Untuk gambar atau PDF hasil pindaian tanpa teks yang dapat dibaca, pilih bahasa dokumen, lalu buka file."
+  },
+  "readerVoiceEn": {
+    "message": "Suara bahasa Inggris"
+  },
+  "readerVoiceZh": {
+    "message": "Suara bahasa Tionghoa"
+  },
+  "readerVoices": {
+    "message": "Suara"
+  },
+  "readerBrowseVoices": {
+    "message": "Jelajahi suara"
+  },
+  "readerLangAuto": {
+    "message": "Otomatis (bahasa antarmuka)"
+  },
+  "readerLangFollow": {
+    "message": "Sesuaikan dengan dokumen"
+  },
+  "readerPreparing": {
+    "message": "Menyiapkan narasi…"
+  },
+  "readerEncrypted": {
+    "message": "PDF ini dilindungi kata sandi"
+  },
+  "readerCorrupt": {
+    "message": "File ini tampak rusak atau tidak dapat dibaca"
+  },
+  "readerTimeout": {
+    "message": "Terlalu lama untuk dibuka — file mungkin terlalu kompleks"
+  },
+  "readerEpubDrm": {
+    "message": "EPUB ini dilindungi DRM. Coba EPUB tanpa DRM."
+  },
+  "readerEpubFixedLayout": {
+    "message": "EPUB tata letak tetap ini tidak memiliki teks yang dapat disinkronkan dengan narasi."
+  },
+  "readerEpubTooComplex": {
+    "message": "EPUB ini melebihi batas pemrosesan lokal yang aman. Coba EPUB yang lebih kecil atau lebih sederhana."
+  },
+  "readerEpubTooLarge": {
+    "message": "File EPUB dapat berukuran hingga 30 MB untuk pemrosesan lokal yang aman."
+  },
+  "inboxTitle": {
+    "message": "Kotak Masuk Konten"
+  },
+  "inboxSubtitle": {
+    "message": "Simpan halaman web atau teks yang dipilih, lalu baca atau jelaskan saat Anda siap."
+  },
+  "inboxEmpty": {
+    "message": "Kotak masuk Anda kosong"
+  },
+  "inboxEmptyDescription": {
+    "message": "Klik kanan halaman atau teks yang dipilih dan simpan ke CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Simpan teks yang dipilih ke Kotak Masuk CastReader"
+  },
+  "inboxSavePage": {
+    "message": "Simpan halaman ke Kotak Masuk CastReader"
+  },
+  "inboxOpen": {
+    "message": "Buka Kotak Masuk Konten"
+  },
+  "inboxSharedText": {
+    "message": "Teks yang dipilih"
+  },
+  "inboxOpenFailed": {
+    "message": "Tidak dapat membuka konten ini. Silakan coba lagi."
+  },
+  "inboxRetry": {
+    "message": "Coba lagi"
+  },
+  "inboxRead": {
+    "message": "Bacakan dengan suara"
+  },
+  "inboxExplain": {
+    "message": "Jelaskan"
+  },
+  "inboxDelete": {
+    "message": "Hapus"
+  },
+  "inboxLink": {
+    "message": "Tautan"
+  },
+  "inboxText": {
+    "message": "Teks"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Baca Nyaring + Penjelasan AI"
+  },
+  "edgeExtDescription": {
+    "message": "Baca dengan sorotan tersinkronisasi dan gulir otomatis. AI menjelaskan bagian yang sulit di halaman. Suara alami dalam 28 bahasa."
+  },
+  "toggleSiteVisibility": {
+    "message": "Tampilkan / sembunyikan CastReader di situs ini"
+  },
+  "voiceCloneBenefit": {
+    "message": "Gunakan suara Anda sendiri untuk Baca Lantang dan Jelaskan · 120 menit per bulan"
+  },
+  "voiceClonePaywall": {
+    "message": "Buat, kelola, dan putar pratinjau tetap dari beberapa suara pribadi secara gratis. Pro menggunakan suara pribadi dalam Baca Lantang dan Jelaskan selama 120 menit yang dihasilkan setiap bulan."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "Menit suara pribadi Anda telah habis untuk bulan ini. Suara yang Anda pilih tetap disimpan."
+  },
+  "ocrModelUnavailable": {
+    "message": "File bahasa pengenalan tidak dapat diunduh. Sambungkan ke internet dan coba lagi."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "Pengenalan gambar dan halaman hasil pemindaian belum tersedia untuk bahasa ini. Anda tetap dapat membaca halaman web, EPUB, TXT, dan PDF dengan teks yang dapat dipilih."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Pembacaan tidak tersedia di halaman ini"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Bacakan halaman ini"
+  }
+}

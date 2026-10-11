@@ -9,6 +9,8 @@
 import SwiftUI
 
 struct ClipboardPromptView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let kind: ClipboardImportViewModel.Kind
     let onRead: () -> Void
     let onExplain: () -> Void

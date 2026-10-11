@@ -35,6 +35,7 @@ struct SettingsView: View {
     @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
     @ObservedObject private var voiceCatalog = VoiceCatalogService.shared
     @ObservedObject private var history = HistoryStore.shared
+    @State private var showLanguagePicker = false
     @State private var showPaywall = false
     @State private var showLogin = false
     @State private var showsDeleteAccountConfirm = false
@@ -73,7 +74,7 @@ struct SettingsView: View {
     }
 
     private var explainLanguages: [(String, String)] {
-        [("", AppLocalized("跟随原文"))] + SupportedTTSLanguage.allCases.map {
+        [("", AppLocalized("跟随原文"))] + SupportedTTSLanguage.currentServiceLanguages.map {
             ($0.rawValue, $0.nativeName)
         }
     }
@@ -84,7 +85,7 @@ struct SettingsView: View {
     ]
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 accountSection
                 proSection
@@ -108,6 +109,17 @@ struct SettingsView: View {
                 playbackSection
                 voiceSection
                 explainSection
+                Section("图片文字识别") {
+                    Picker("图片文字语言", selection: $settings.imageTextLanguage) {
+                        Text("自动检测").tag("")
+                        ForEach(SupportedTTSLanguage.currentServiceLanguages) { language in
+                            Text(language.nativeName).tag(language.rawValue)
+                        }
+                    }
+                    Text("识别语言不准确时，可在导入或拍摄前指定图片中的语言。")
+                        .font(.footnote)
+                        .foregroundStyle(AppTheme.mutedForeground)
+                }
                 appearanceSection
                 supportSection
                 Section {
@@ -129,6 +141,13 @@ struct SettingsView: View {
                 #if DEBUG
                 if DistributionTestingPolicy.showsDebugPanels { debugSection }
                 #endif
+            }
+            // UIKit-backed Form/List cells retain a mirror transform when the
+            // interface direction changes. Recreate only the form, while the
+            // NavigationStack keeps the language destination and settings state.
+            .id(appLanguage.selectedLanguage.isRightToLeft)
+            .navigationDestination(isPresented: $showLanguagePicker) {
+                AppLanguagePickerView()
             }
             .reservesMiniPlayerSpace()
             .navigationTitle(Text(AppLocalized("设置")))
@@ -158,7 +177,11 @@ struct SettingsView: View {
                 Button("好", role: .cancel) {}
             } message: { Text(restoreMessage) }
         }
-        .navigationViewStyle(.stack)
+        // A presented sheet can retain the environment from presentation time.
+        // Observe the selection here so both its navigation and pushed language
+        // list update immediately when switching between LTR and RTL.
+        .environment(\.locale, appLanguage.locale)
+        .environment(\.layoutDirection, appLanguage.selectedLanguage.isRightToLeft ? .rightToLeft : .leftToRight)
         .onAppear {
             synchronizeAccountRouteWithProductRegion(showMessage: false)
         }
@@ -182,16 +205,21 @@ struct SettingsView: View {
 
     private var languageSection: some View {
         Section {
-            NavigationLink {
-                AppLanguagePickerView()
+            Button {
+                showLanguagePicker = true
             } label: {
                 HStack {
                     Label("语言", systemImage: "globe")
                     Spacer()
                     Text(appLanguage.selectedLanguage.displayName)
                         .foregroundColor(AppTheme.mutedForeground)
+                    Image(systemName: "chevron.forward")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppTheme.mutedForeground)
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .accessibilityIdentifier("settingsLanguageLink")
         }
     }
@@ -503,7 +531,7 @@ struct SettingsView: View {
                         .padding(.vertical, 2)
                         .background(Capsule().fill(AppTheme.primary))
                 }
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.footnote.weight(.semibold))
                     .foregroundColor(AppTheme.mutedForeground)
             }
@@ -957,6 +985,7 @@ private struct AppLanguagePickerView: View {
             }
             .accessibilityIdentifier("appLanguage.\(language.rawValue)")
         }
+        .id(appLanguage.selectedLanguage.isRightToLeft)
         .navigationTitle(AppLocalized("语言"))
         .navigationBarTitleDisplayMode(.inline)
     }

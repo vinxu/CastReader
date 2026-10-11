@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-09T10:38:37.450025+00:00",
+  "scope": "iOS handoff only; no iOS implementation or acceptance claimed",
+  "androidImplementationCommit": "848c175d7c4997663671350a0997e49ce9da0772",
+  "androidEvidenceCommit": "b12cb49",
+  "androidRoot": "/Users/xuxuheng/.codex/worktrees/android-28-language/CastReader-Android",
+  "iosInspectedRoot": "/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader",
+  "iosInspectedHEAD": "09456f1979cc14ca19977ede4b1edde043c5f840",
+  "iosSnapshotNote": "Active working tree with ongoing changes; references are observations, not an immutable final iOS baseline",
+  "destinationThreadId": "01a119b5-7862-7fd0-a0bd-438d30fdecc5",
+  "destinationThreadTitle": "接收 iOS 多语言适配需求",
+  "acceptanceCases": 56,
+  "localeCount": 28,
+  "stringCount": 168,
+  "sources": [
+    {
+      "path": "docs/Android-Adaptive-Voice-Browser-2026-10-09.md",
+      "sha256": "93b8d72105fa6cbc86ca16f15b09ee340f2829e784ab30f156aba45ad4142380"
+    },
+    {
+      "path": "docs/contracts/android-adaptive-voice-browser-v1.json",
+      "sha256": "313608ab9dfc20aa69c8998cf8eb5e9fbc981ac02af1f488e4a33805764f48a3"
+    },
+    {
+      "path": "docs/evidence/android-adaptive-voice-20261009/acceptance.json",
+      "sha256": "824032976b2260ca6aaab102828ff9880502fa9a3d762334294393aed17bfc2d"
+    },
+    {
+      "path": "docs/evidence/android-adaptive-voice-20261009/arabic-large-font.png",
+      "sha256": "efb3950d79c174c30b0b70b368c56412ac9b08fe40d9bad4fe638ae02fed2d13"
+    },
+    {
+      "path": "docs/evidence/android-adaptive-voice-20261009/chinese-clones.png",
+      "sha256": "f5cce436f386f72f358107cc8efe96de1f83366828a39068e1c464d77e035453"
+    },
+    {
+      "path": "docs/evidence/android-adaptive-voice-20261009/finnish.png",
+      "sha256": "97f461e91e56c0ebba55f937166ae91a070cbd18eef6a9342b25fab975996f41"
+    },
+    {
+      "path": "docs/evidence/android-adaptive-voice-20261009/search-expanded.png",
+      "sha256": "25594be0348c4d7293440e89786341ef4c70e9d2d1870420204abc73ef76d275"
+    },
+    {
+      "path": "docs/evidence/android-adaptive-voice-20261009/turkish.png",
+      "sha256": "83ad4a3389e0b949d6720c901d85a97174bc3b54a3485d3301c6ba95a7661d39"
+    },
+    {
+      "path": "app/src/main/res/values/voice_adaptive_strings.xml",
+      "sha256": "58fff789813ff1b2f4349deec7a51877b6fc20be1d30a5e56cb7fc39e5506f87"
+    },
+    {
+      "path": "app/src/main/res/values-de/voice_adaptive_strings.xml",
+      "sha256": "2e8af3df54979c8a6e81767366c00200e38a90752ea932606d0e7db30d98d970"
+    },
+    {
+      "path": "app/src/main/res/values-es/voice_adaptive_strings.xml",
+      "sha256": "b546e44d9b1e815d8548cdf37c63d6b82466b86e1f5fc0c7af57a62e629dda49"
+    },
+    {
+      "path": "app/src/main/res/values-fr/voice_adaptive_strings.xml",
+      "sha256": "2a6e4ef6f717e04d0245319ca757a31b4e8330668f17de7aa39d61c5448a7fbb"
+    },
+    {
+      "path": "app/src/main/res/values-hi/voice_adaptive_strings.xml",
+      "sha256": "e48aaa23aceb9c8504ddef3dc0d4d6c38bc5f15b5d5bff70e6924af26f0bb7d7"
+    },
+    {
+      "path": "app/src/main/res/values-it/voice_adaptive_strings.xml",
+      "sha256": "b8e691aec201d9b5d95e44d459a9dfa6dfc32071fa2529367a0607a9fd542c79"
+    },
+    {
+      "path": "app/src/main/res/values-ja/voice_adaptive_strings.xml",
+      "sha256": "9053a51995b8f1bf9c7b3371073a6d41cc2426093c190c1236b830139260c7de"
+    },
+    {
+      "path": "app/src/main/res/values-pt-rBR/voice_adaptive_strings.xml",
+      "sha256": "ded35f2e8ecf59cb272473ddc9568276896f693b95d7dd282adbd15290620461"
+    },
+    {
+      "path": "app/src/main/res/values-zh/voice_adaptive_strings.xml",
+      "sha256": "2e650b63a990fe15dccb8682e67bea2205069ee243ae865c317614b83f8e3ccf"
+    },
+    {
+      "path": "app/src/global/res/values-ar/voice_adaptive_strings.xml",
+      "sha256": "54994b9c36dfadb0703bda72977203e5e4c95fa38618ae64a4943786c665f9b6"
+    },
+    {
+      "path": "app/src/global/res/values-b+fil/voice_adaptive_strings.xml",
+      "sha256": "b50534490561262d2d44f90d0465c16f84fbec54975655c12dd098dc3066c94d"
+    },
+    {
+      "path": "app/src/global/res/values-cs/voice_adaptive_strings.xml",
+      "sha256": "05622707e48bd7034709d5209e7c15cd358bb0e05b67fbd42b54eacdf2284777"
+    },
+    {
+      "path": "app/src/global/res/values-da/voice_adaptive_strings.xml",
+      "sha256": "238db0aebfb1477ced1d556e613faa8dbba54f4b756bda47e1d4217072ac3c02"
+    },
+    {
+      "path": "app/src/global/res/values-el/voice_adaptive_strings.xml",
+      "sha256": "e49d78a1b16ac3586bb95a13841aac6eb22a801d80b1821658fe34011e9a0cb3"
+    },
+    {
+      "path": "app/src/global/res/values-fi/voice_adaptive_strings.xml",
+      "sha256": "9388e45e28dc5aee16132446b3f3bd39bb94957f870ba1511321ed0185cd2f3e"
+    },
+    {
+      "path": "app/src/global/res/values-hu/voice_adaptive_strings.xml",
+      "sha256": "01df2979d932957267197a3c3115bdeff3e2453b321a7d5031aab3c361073620"
+    },
+    {
+      "path": "app/src/global/res/values-in/voice_adaptive_strings.xml",
+      "sha256": "b579fd4996fc716cd12213f8c13cd8dc1fc4baff576f8ca0379140a5824b5db4"
+    },
+    {
+      "path": "app/src/global/res/values-iw/voice_adaptive_strings.xml",
+      "sha256": "33494a9f57ba57d85eed1e941a4fefc17943c953e94ab1d55d20828e3f75efc1"
+    },
+    {
+      "path": "app/src/global/res/values-ko/voice_adaptive_strings.xml",
+      "sha256": "783770d1da64a7da3ac4add62843ab29fe461abb30be60d4d9aa6f984381650c"
+    },
+    {
+      "path": "app/src/global/res/values-ms/voice_adaptive_strings.xml",
+      "sha256": "ce080236bc4ba7ee7a8f0e336c901b386b0731d468f248516d20c3f87c6e14d4"
+    },
+    {
+      "path": "app/src/global/res/values-nb/voice_adaptive_strings.xml",
+      "sha256": "25aaff04c58022c9492d871351d7025417533421dc6a4725b03e2acf9652f49e"
+    },
+    {
+      "path": "app/src/global/res/values-nl/voice_adaptive_strings.xml",
+      "sha256": "66ae1ed6c6142d25c89c42b556b5448372922ea8cf8b329f814df3e46ee13196"
+    },
+    {
+      "path": "app/src/global/res/values-pl/voice_adaptive_strings.xml",
+      "sha256": "041eef49c44cb544bdbb0fbb77cdc15c6059d6bc1b8e6e478e7f819e7f433c12"
+    },
+    {
+      "path": "app/src/global/res/values-ro/voice_adaptive_strings.xml",
+      "sha256": "d6d2871ed0d42918986f51f030f604ebd9409a140a9d46c3faf76a852a094bcb"
+    },
+    {
+      "path": "app/src/global/res/values-ru/voice_adaptive_strings.xml",
+      "sha256": "77642d16be0d1c869b36683c23e2cdcba054ca2c0b812c114e8a889c6b6cf5b8"
+    },
+    {
+      "path": "app/src/global/res/values-sv/voice_adaptive_strings.xml",
+      "sha256": "bc7748043341e6d099b05a71d6bc518f12b0df0c711c2e17164ea40563403b0e"
+    },
+    {
+      "path": "app/src/global/res/values-tr/voice_adaptive_strings.xml",
+      "sha256": "3df98a0f4ec85088a3eb6ff9a58efd9823e324a2e95ef7f7cb6a655e41c7e0fe"
+    },
+    {
+      "path": "app/src/global/res/values-vi/voice_adaptive_strings.xml",
+      "sha256": "bd7fa04d669b1feadd40030c558d1d0b66d5a11c5e951653ec16b8e1aee03a1a"
+    }
+  ],
+  "updatedAt": "2026-10-09T10:46:27.537635+00:00",
+  "appLanguageFollowup": "App-language change resets browse override; see README section 6 and LANG-07..09"
+}

@@ -2,7 +2,10 @@
 # Never execute state-mutating unit tests in the user's signed-in Mac app.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-isolated="$(mktemp -d /tmp/CastReaderMacTests.XXXXXX)"
+isolated="${CASTREADER_TEST_WORKSPACE:-$(mktemp -d /tmp/CastReaderMacTests.XXXXXX)}"
+[[ "$isolated" == /tmp/CastReaderMacTests.* && -d "$isolated" ]] || {
+  printf 'Expected an existing isolated Mac test workspace under /tmp.\n' >&2; exit 2;
+}
 derived="$isolated/DerivedData"
 report="${CASTREADER_TEST_REPORT:-$root/reports/mac-parity-$(date +%Y%m%d)/unit-$(date +%H%M%S)}"
 mkdir -p "$report"
@@ -25,10 +28,8 @@ for name in sorted(set(paths)):
         text = data.decode('utf-8')
         # Namespace storage identities, keeping the public YouTube Embed origin stable.
         text = re.sub(r'(?<!https://)(?<!https%3A%2F%2F)com\.same\.castreader', 'com.same.castreader.releasechecksmac', text)
-        # macOS permits team-prefixed groups without registering a new shared
-        # production capability. Keep every fixture's group private to tests.
-        text = text.replace('group.com.same.castreader.releasechecksmac',
-                            'KQW6UNZE8J.com.same.castreader.releasechecksmac')
+        # Catalyst provisioning requires the group. prefix. This isolated
+        # test group shares no storage with the production application.
         text = text.replace('ai.castreader.auth', 'ai.castreader.releasechecksmac.auth')
         text = text.replace('com.microsoft.adalcache', 'com.microsoft.releasechecksmac.adalcache')
         if name == 'CastReader/CastReaderApp.swift':
@@ -53,7 +54,8 @@ for name in sorted(set(paths)):
         pass
     target = dest / name
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(copied)
+    if not target.exists() or target.read_bytes() != copied:
+        target.write_bytes(copied)
     if name == 'Secrets.xcconfig':
         target.chmod(0o600)
     manifest.append({'path': name, 'sourceSHA256': hashlib.sha256(data).hexdigest(), 'isolated': data != copied})
@@ -72,7 +74,7 @@ info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
 assert info['CFBundleIdentifier'] == 'com.same.castreader.releasechecksmac'
 assert info['CastReaderPrivateKeychainAccessGroup'].endswith('.com.same.castreader.releasechecksmac')
 ent = plistlib.loads(subprocess.run(['codesign', '-d', '--entitlements', ':-', str(app)], capture_output=True, check=True).stdout)
-assert ent['com.apple.security.application-groups'] == ['KQW6UNZE8J.com.same.castreader.releasechecksmac']
+assert ent['com.apple.security.application-groups'] == ['group.com.same.castreader.releasechecksmac']
 assert all(s.endswith('.com.same.castreader.releasechecksmac') for s in ent['keychain-access-groups'])
 source = max(products.glob('CastReaderMac_*.xctestrun'), key=lambda p: p.stat().st_mtime)
 run = plistlib.loads(source.read_bytes())

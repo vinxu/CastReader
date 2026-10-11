@@ -147,3 +147,11 @@ GoogleBooksShelfSyncTests
 GoogleBooksShelfWebTests
 GoogleBooksBindingRecoveryTests
 GoogleBooksContractTests
+
+# Mac 28-language integration: shared language, direction and balance contracts.
+LocalizationCatalogTests
+MultilingualContractTests
+PhotoLanguageCorrectionTests
+ReadingLanguageTests
+CloneCreditBalanceRegressionTests
+ReaderViewportTests

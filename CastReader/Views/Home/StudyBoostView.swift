@@ -190,168 +190,45 @@ struct StudyBoostCopy: Equatable {
     let continueCTA: String
     let close: String
 
-    static let supportedLanguages: [AppLanguage] = [
-        .english, .simplifiedChinese, .japanese, .spanish, .french,
-        .german, .brazilianPortuguese, .italian, .hindi
-    ]
+    static let supportedLanguages = AppLanguage.allCases.filter { $0 != .system }
 
     static func localized(
         for selectedLanguage: AppLanguage,
         locale: Locale = .autoupdatingCurrent
     ) -> StudyBoostCopy {
-        switch resolvedLanguage(selectedLanguage, locale: locale) {
-        case .simplifiedChinese:
-            return .init(
-                title: "开学季 · 学习加速", badge: "限时挑战",
-                subtitle: "在 9 月 15 日前完成 7 个不同学习日",
-                dateRange: "8 月 18 日 – 9 月 15 日",
-                progressTitle: "你的学习日", progressRule: "每天打开一份学习材料，即计为 1 个学习日。",
-                todayComplete: "今天的学习日已完成",
-                upcomingStatus: "8 月 18 日开始；现在可以先体验学习模式。",
-                activeStatus: "导入今天的材料，继续向 7 日目标前进。",
-                completedStatus: "挑战完成！你已经达成 7 个学习日。",
-                endedStatus: "本期挑战已结束，你仍可继续使用学习模式。",
-                stepImportTitle: "导入学习材料", stepImportDetail: "支持文件、拍照、图片、网址和文本",
-                stepListenTitle: "边听边看", stepListenDetail: "词级同步高亮帮你保持专注",
-                stepExplainTitle: "弄懂难点", stepExplainDetail: "用 AI 解读概念并提炼重点",
-                startCTA: "开始今天的学习", previewCTA: "体验学习模式", continueCTA: "继续学习", close: "关闭"
-            )
-        case .japanese:
-            return .init(
-                title: "新学期・学習ブースト", badge: "期間限定チャレンジ",
-                subtitle: "9月15日までに別々の7日間学習しよう", dateRange: "8月18日〜9月15日",
-                progressTitle: "学習した日", progressRule: "学習素材を開いた日は、1学習日として記録されます。",
-                todayComplete: "今日の学習日は完了しました",
-                upcomingStatus: "8月18日開始。今すぐ学習モードを試せます。",
-                activeStatus: "今日の素材を読み込み、7日間の目標を進めましょう。",
-                completedStatus: "達成！7日間の学習を完了しました。",
-                endedStatus: "チャレンジは終了しましたが、学習モードは引き続き使えます。",
-                stepImportTitle: "学習素材を読み込む", stepImportDetail: "ファイル、カメラ、画像、URL、テキストに対応",
-                stepListenTitle: "見ながら聴く", stepListenDetail: "単語ごとの同期ハイライトで集中",
-                stepExplainTitle: "難所を理解する", stepExplainDetail: "AI解説で概念と要点を整理",
-                startCTA: "今日の学習を始める", previewCTA: "学習モードを試す", continueCTA: "学習を続ける", close: "閉じる"
-            )
-        case .spanish:
-            return .init(
-                title: "Impulso para la vuelta a clase", badge: "RETO POR TIEMPO LIMITADO",
-                subtitle: "Estudia 7 días distintos hasta el 15 de septiembre", dateRange: "18 ago – 15 sep",
-                progressTitle: "Tus días de estudio", progressRule: "Cada día que abras material de estudio cuenta una vez.",
-                todayComplete: "El día de hoy ya está completado",
-                upcomingStatus: "Empieza el 18 de agosto. Ya puedes probar el modo Estudio.",
-                activeStatus: "Importa el material de hoy y avanza hacia los 7 días.",
-                completedStatus: "¡Reto completado! Has alcanzado 7 días de estudio.",
-                endedStatus: "El reto ha terminado, pero puedes seguir usando el modo Estudio.",
-                stepImportTitle: "Importa material", stepImportDetail: "Archivos, cámara, imágenes, URL y texto",
-                stepListenTitle: "Escucha y sigue", stepListenDetail: "Resaltado sincronizado palabra por palabra",
-                stepExplainTitle: "Aclara lo difícil", stepExplainDetail: "Explicaciones con IA para conceptos clave",
-                startCTA: "Empezar el estudio de hoy", previewCTA: "Probar modo Estudio", continueCTA: "Seguir estudiando", close: "Cerrar"
-            )
-        case .french:
-            return .init(
-                title: "Boost de rentrée", badge: "DÉFI À DURÉE LIMITÉE",
-                subtitle: "Étudiez 7 jours différents d’ici au 15 septembre", dateRange: "18 août – 15 sept.",
-                progressTitle: "Vos jours d’étude", progressRule: "Chaque jour où vous ouvrez un support compte une fois.",
-                todayComplete: "La journée d’aujourd’hui est validée",
-                upcomingStatus: "Début le 18 août. Vous pouvez déjà essayer le mode Étude.",
-                activeStatus: "Importez le support du jour et progressez vers les 7 jours.",
-                completedStatus: "Défi réussi ! Vous avez atteint 7 jours d’étude.",
-                endedStatus: "Le défi est terminé, mais le mode Étude reste disponible.",
-                stepImportTitle: "Importez vos supports", stepImportDetail: "Fichiers, appareil photo, images, URL et texte",
-                stepListenTitle: "Écoutez et suivez", stepListenDetail: "Surlignage synchronisé mot par mot",
-                stepExplainTitle: "Comprenez les difficultés", stepExplainDetail: "L’IA explique les notions et points clés",
-                startCTA: "Commencer aujourd’hui", previewCTA: "Essayer le mode Étude", continueCTA: "Continuer à étudier", close: "Fermer"
-            )
-        case .german:
-            return .init(
-                title: "Lernboost zum Schulstart", badge: "ZEITLICH BEGRENZTE CHALLENGE",
-                subtitle: "Lerne bis 15. September an 7 verschiedenen Tagen", dateRange: "18. Aug. – 15. Sept.",
-                progressTitle: "Deine Lerntage", progressRule: "Jeder Tag mit geöffnetem Lernmaterial zählt einmal.",
-                todayComplete: "Der heutige Lerntag ist geschafft",
-                upcomingStatus: "Start am 18. August. Den Lernmodus kannst du jetzt testen.",
-                activeStatus: "Importiere das heutige Material und komm deinem 7-Tage-Ziel näher.",
-                completedStatus: "Geschafft! Du hast 7 Lerntage erreicht.",
-                endedStatus: "Die Challenge ist vorbei, der Lernmodus bleibt verfügbar.",
-                stepImportTitle: "Lernmaterial importieren", stepImportDetail: "Dateien, Kamera, Bilder, URLs und Text",
-                stepListenTitle: "Hören und mitlesen", stepListenDetail: "Wortgenaue Hervorhebung hält dich fokussiert",
-                stepExplainTitle: "Schwieriges verstehen", stepExplainDetail: "KI erklärt Begriffe und Kernaussagen",
-                startCTA: "Heute lernen", previewCTA: "Lernmodus testen", continueCTA: "Weiterlernen", close: "Schließen"
-            )
-        case .brazilianPortuguese:
-            return .init(
-                title: "Impulso de volta às aulas", badge: "DESAFIO POR TEMPO LIMITADO",
-                subtitle: "Estude em 7 dias diferentes até 15 de setembro", dateRange: "18 de ago. – 15 de set.",
-                progressTitle: "Seus dias de estudo", progressRule: "Cada dia em que você abrir um material conta uma vez.",
-                todayComplete: "O dia de estudo de hoje está concluído",
-                upcomingStatus: "Começa em 18 de agosto. Você já pode testar o modo Estudo.",
-                activeStatus: "Importe o material de hoje e avance rumo aos 7 dias.",
-                completedStatus: "Desafio concluído! Você alcançou 7 dias de estudo.",
-                endedStatus: "O desafio terminou, mas o modo Estudo continua disponível.",
-                stepImportTitle: "Importe materiais", stepImportDetail: "Arquivos, câmera, imagens, URLs e texto",
-                stepListenTitle: "Ouça e acompanhe", stepListenDetail: "Destaque sincronizado palavra por palavra",
-                stepExplainTitle: "Entenda o difícil", stepExplainDetail: "A IA explica conceitos e pontos principais",
-                startCTA: "Começar o estudo de hoje", previewCTA: "Testar modo Estudo", continueCTA: "Continuar estudando", close: "Fechar"
-            )
-        case .italian:
-            return .init(
-                title: "Sprint per il rientro", badge: "SFIDA A TEMPO LIMITATO",
-                subtitle: "Studia in 7 giorni diversi entro il 15 settembre", dateRange: "18 ago – 15 set",
-                progressTitle: "I tuoi giorni di studio", progressRule: "Ogni giorno in cui apri del materiale viene conteggiato una volta.",
-                todayComplete: "Il giorno di studio di oggi è completato",
-                upcomingStatus: "Inizia il 18 agosto. Puoi già provare la modalità Studio.",
-                activeStatus: "Importa il materiale di oggi e avanza verso i 7 giorni.",
-                completedStatus: "Sfida completata! Hai raggiunto 7 giorni di studio.",
-                endedStatus: "La sfida è terminata, ma puoi continuare a usare la modalità Studio.",
-                stepImportTitle: "Importa il materiale", stepImportDetail: "File, fotocamera, immagini, URL e testo",
-                stepListenTitle: "Ascolta e segui", stepListenDetail: "Evidenziazione sincronizzata parola per parola",
-                stepExplainTitle: "Capisci i passaggi difficili", stepExplainDetail: "L’IA spiega concetti e punti chiave",
-                startCTA: "Inizia lo studio di oggi", previewCTA: "Prova modalità Studio", continueCTA: "Continua a studiare", close: "Chiudi"
-            )
-        case .hindi:
-            return .init(
-                title: "बैक-टू-स्कूल स्टडी बूस्ट", badge: "सीमित समय की चुनौती",
-                subtitle: "15 सितंबर तक 7 अलग-अलग दिनों में पढ़ें", dateRange: "18 अगस्त – 15 सितंबर",
-                progressTitle: "आपके पढ़ाई के दिन", progressRule: "जिस दिन आप अध्ययन सामग्री खोलते हैं, वह दिन एक बार गिना जाता है।",
-                todayComplete: "आज का पढ़ाई का दिन पूरा हुआ",
-                upcomingStatus: "18 अगस्त से शुरू। आप अभी स्टडी मोड आज़मा सकते हैं।",
-                activeStatus: "आज की सामग्री इम्पोर्ट करें और 7 दिनों के लक्ष्य की ओर बढ़ें।",
-                completedStatus: "चुनौती पूरी हुई! आपने पढ़ाई के 7 दिन पूरे किए।",
-                endedStatus: "चुनौती समाप्त हो गई है, लेकिन स्टडी मोड उपलब्ध है।",
-                stepImportTitle: "अध्ययन सामग्री इम्पोर्ट करें", stepImportDetail: "फ़ाइल, कैमरा, तस्वीर, URL और टेक्स्ट",
-                stepListenTitle: "सुनें और साथ पढ़ें", stepListenDetail: "हर शब्द के साथ सिंक हाइलाइट",
-                stepExplainTitle: "कठिन बातें समझें", stepExplainDetail: "AI से अवधारणाएँ और मुख्य बिंदु समझें",
-                startCTA: "आज की पढ़ाई शुरू करें", previewCTA: "स्टडी मोड आज़माएँ", continueCTA: "पढ़ाई जारी रखें", close: "बंद करें"
-            )
-        case .english, .system:
-            return .init(
-                title: "Back-to-School Study Boost", badge: "LIMITED-TIME CHALLENGE",
-                subtitle: "Study on 7 different days by September 15", dateRange: "Aug 18 – Sep 15",
-                progressTitle: "Your study days", progressRule: "Each day you open study material counts once.",
-                todayComplete: "Today’s study day is complete",
-                upcomingStatus: "Starts August 18. You can preview Study mode now.",
-                activeStatus: "Import today’s material and move closer to your 7-day goal.",
-                completedStatus: "Challenge complete! You reached 7 study days.",
-                endedStatus: "This challenge has ended, but Study mode is still available.",
-                stepImportTitle: "Import study material", stepImportDetail: "Use files, camera, images, URLs, or text",
-                stepListenTitle: "Listen and follow", stepListenDetail: "Stay focused with word-by-word highlights",
-                stepExplainTitle: "Understand hard parts", stepExplainDetail: "Use AI explanations for concepts and key points",
-                startCTA: "Start today’s study", previewCTA: "Preview Study mode", continueCTA: "Keep studying", close: "Close"
-            )
+        let code = selectedLanguage == .system ? locale.identifier : selectedLanguage.rawValue
+        let canonical = SupportedTTSLanguage(identifier: code)?.rawValue ?? "en"
+        let localization = ["zh": "zh-Hans", "pt": "pt-BR"][canonical] ?? canonical
+        let bundle = Bundle.main.path(forResource: localization, ofType: "lproj")
+            .flatMap(Bundle.init(path:)) ?? .main
+        func copy(_ key: String, _ fallback: String) -> String {
+            bundle.localizedString(forKey: "studyBoost." + key, value: fallback, table: "Localizable")
         }
+        return .init(
+            title: copy("title", "Back-to-School Study Boost"),
+            badge: copy("badge", "LIMITED-TIME CHALLENGE"),
+            subtitle: copy("subtitle", "Study on 7 different days by September 15"),
+            dateRange: copy("dateRange", "Aug 18 – Sep 15"),
+            progressTitle: copy("progressTitle", "Your study days"),
+            progressRule: copy("progressRule", "Each day you open study material counts once."),
+            todayComplete: copy("todayComplete", "Today’s study day is complete"),
+            upcomingStatus: copy("upcomingStatus", "Starts August 18. You can preview Study mode now."),
+            activeStatus: copy("activeStatus", "Import today’s material and move closer to your 7-day goal."),
+            completedStatus: copy("completedStatus", "Challenge complete! You reached 7 study days."),
+            endedStatus: copy("endedStatus", "This challenge has ended, but Study mode is still available."),
+            stepImportTitle: copy("stepImportTitle", "Import study material"),
+            stepImportDetail: copy("stepImportDetail", "Use files, camera, images, URLs, or text"),
+            stepListenTitle: copy("stepListenTitle", "Listen and follow"),
+            stepListenDetail: copy("stepListenDetail", "Stay focused with word-by-word highlights"),
+            stepExplainTitle: copy("stepExplainTitle", "Understand hard parts"),
+            stepExplainDetail: copy("stepExplainDetail", "Use AI explanations for concepts and key points"),
+            startCTA: copy("startCTA", "Start today’s study"),
+            previewCTA: copy("previewCTA", "Preview Study mode"),
+            continueCTA: copy("continueCTA", "Keep studying"),
+            close: copy("close", "Close")
+        )
     }
 
-    private static func resolvedLanguage(_ selection: AppLanguage, locale: Locale) -> AppLanguage {
-        guard selection == .system else { return selection }
-        let identifier = locale.identifier.lowercased()
-        if identifier.hasPrefix("zh") { return .simplifiedChinese }
-        if identifier.hasPrefix("ja") { return .japanese }
-        if identifier.hasPrefix("es") { return .spanish }
-        if identifier.hasPrefix("fr") { return .french }
-        if identifier.hasPrefix("de") { return .german }
-        if identifier.hasPrefix("pt") { return .brazilianPortuguese }
-        if identifier.hasPrefix("it") { return .italian }
-        if identifier.hasPrefix("hi") { return .hindi }
-        return .english
-    }
 }
 
 struct StudyBoostHomeCard: View {
@@ -391,7 +268,7 @@ struct StudyBoostHomeCard: View {
                 }
 
                 Spacer(minLength: 4)
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.white.opacity(0.9))
             }
@@ -586,7 +463,7 @@ struct StudyBoostView: View {
                 Text(actionTitle)
                     .fontWeight(.semibold)
                 Spacer()
-                Image(systemName: "arrow.right")
+                Image(systemName: "arrow.forward")
             }
             .font(.headline)
             .foregroundStyle(AppTheme.primaryForeground)

@@ -10,6 +10,25 @@ import SwiftUI
 import UIKit
 import WebKit
 
+private struct KindlePageProgressionKey: EnvironmentKey {
+    static let defaultValue: KindleReadingDirection = .ltr
+}
+
+private extension EnvironmentValues {
+    var kindlePageProgression: KindleReadingDirection {
+        get { self[KindlePageProgressionKey.self] }
+        set { self[KindlePageProgressionKey.self] = newValue }
+    }
+}
+
+extension KindleReadingDirection {
+    var layoutDirection: LayoutDirection { self == .rtl ? .rightToLeft : .leftToRight }
+
+    func pageTurn(forHorizontalTranslation translation: CGFloat) -> KindlePageTurnDirection {
+        (translation < 0) == (self == .ltr) ? .next : .previous
+    }
+}
+
 /// A cancelled caller must revoke a deferred start even while its WK/OCR await
 /// has not returned to the main actor yet.
 private final class KindlePlaybackStartCancellation: @unchecked Sendable {
@@ -34,7 +53,7 @@ private final class KindlePlaybackStartCancellation: @unchecked Sendable {
     }
 }
 
-private struct KindleContinuousReadVisualHold: View {
+struct KindleContinuousReadVisualHold: View {
     let image: UIImage
     let highlightRectsNorm: [CGRect]
     let imageRect: CGRect?
@@ -73,6 +92,9 @@ private struct KindleContinuousReadVisualHold: View {
             }
             .clipped()
         }
+        // OCR boxes are physical page coordinates, even for RTL text. Their
+        // logical word order already comes from the book, never the app locale.
+        .environment(\.layoutDirection, .leftToRight)
     }
 }
 
@@ -98,7 +120,7 @@ private struct KindleExplainVisualHoldView: View {
 /// Caption/transport updates do not change the held page's geometry. Keep the
 /// deterministic paths intact until marks, their timing or geometry changes;
 /// the individual ink views still animate on their original monotonic clock.
-private struct KindleExplainHeldInkLayer: View, Equatable {
+struct KindleExplainHeldInkLayer: View, Equatable {
     let state: KindleExplainVisualHoldState
     let marks: [ResolvedMark]
     let animations: [UUID: KindleMarkAnimationClock.Animation]
@@ -126,13 +148,15 @@ private struct KindleExplainHeldInkLayer: View, Equatable {
                 KindleTimedMarkInkView(
                     ink: HandwrittenMark.stroke(action: mark.action,
                         rects: resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange),
-                        seed: mark.seed, n: mark.n, weight: mark.weight),
+                        seed: mark.seed, n: mark.n, weight: mark.weight,
+                        rightToLeft: SupportedTTSLanguage(identifier: state.document.language)?.isRightToLeft == true),
                     animation: animations[mark.id]
                 )
                 .offset(x: state.imageRect.minX, y: state.imageRect.minY)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .environment(\.layoutDirection, .leftToRight)
         .clipped()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
@@ -145,7 +169,7 @@ struct KindleIPadViewportHoldState {
     let wordBoxes: [Int: [Int: [CGRect]]]?
 }
 
-private struct KindleIPadReadHoldView: View {
+struct KindleIPadReadHoldView: View {
     let state: KindleIPadViewportHoldState
     let imageRect: CGRect
     @ObservedObject var owner: ReadAloudViewModel
@@ -165,10 +189,13 @@ private struct KindleIPadReadHoldView: View {
                     .position(x: rects[index].midX, y: rects[index].midY)
             }
         }
+        .environment(\.layoutDirection, .leftToRight)
     }
 }
 
 struct KindleBookView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var importRouter: ImportRouter
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -285,6 +312,7 @@ struct KindleBookView: View {
             )
         }
         .environment(\.readerOfflineAction, ReaderOfflineAction(title: "离线保存整本书", open: { showOfflineDownload = true }))
+        .environment(\.kindlePageProgression, model.pageProgressionDirection)
         .task(id: playbackCenter.offlineDownloadRequestID) {
             guard playbackCenter.consumeOfflineDownloadRequest(for: model.offlineSourceBook.id) else { return }
             showOfflineDownload = true
@@ -405,6 +433,7 @@ struct KindleBookView: View {
                     .onChange(of: webSize) { updateReaderGeometry($0) }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            .environment(\.layoutDirection, .leftToRight)
             if !model.isKindleSyncDialogVisible, let image = model.continuousReadVisualHoldImage {
                 KindleContinuousReadVisualHold(
                     image: image,
@@ -417,7 +446,7 @@ struct KindleBookView: View {
                     guard model.interceptsSentenceStreamPageGestures,
                           abs(gesture.translation.width) > 40,
                           abs(gesture.translation.width) > abs(gesture.translation.height) else { return }
-                    let direction: KindlePageTurnDirection = gesture.translation.width < 0 ? .next : .previous
+                    let direction = model.pageProgressionDirection.pageTurn(forHorizontalTranslation: gesture.translation.width)
                     Task { await model.turnPage(direction) }
                 })
                 .allowsHitTesting(model.interceptsSentenceStreamPageGestures)
@@ -1030,6 +1059,8 @@ enum KindleReaderSurfaceContract {
 }
 
 private struct KindleEmptyPlaybackBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let isPreparing: Bool
     let canCancel: Bool
     let compact: Bool
@@ -1065,6 +1096,8 @@ private struct KindleEmptyPlaybackBar: View {
 }
 
 private struct KindleReadPlaybackBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ReadAloudViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
@@ -1175,7 +1208,10 @@ private struct KindlePageTurnButton: View {
 /// orientation. Previous/next stay immediately beside play; TOC, voice and
 /// speed form one compact tool group. Button order and height never change.
 private struct KindlePlaybackConsole<PlayControl: View>: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.appViewport) private var viewport
+    @Environment(\.kindlePageProgression) private var pageProgression
     private var stacked: Bool { AdaptiveLayout.stacksPlaybackControls(in: viewport) }
     let isLandscape: Bool
     let playbackStatus: String
@@ -1278,7 +1314,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
     private func playbackCluster(spacing: CGFloat) -> some View {
         HStack(spacing: spacing) {
             KindlePageTurnButton(
-                systemName: "chevron.left",
+                systemName: "chevron.backward",
                 accessibilityLabel: AppLocalized("上一页"),
                 action: previousPage
             )
@@ -1286,12 +1322,13 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
             playControl
                 .buttonStyle(.plain)
             KindlePageTurnButton(
-                systemName: "chevron.right",
+                systemName: "chevron.forward",
                 accessibilityLabel: AppLocalized("下一页"),
                 action: nextPage
             )
             .accessibilityIdentifier("kindleNextPageButton")
         }
+        .environment(\.layoutDirection, pageProgression.layoutDirection)
     }
 
     private func utilityCluster(spacing: CGFloat) -> some View {
@@ -1309,7 +1346,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
 
     @ViewBuilder
     private func voiceControl(showsLabel: Bool) -> some View {
-        if let voiceLanguage, !voiceLanguage.isEmpty {
+        if let voiceLanguage, !voiceLanguage.isEmpty || onCorrectReadingLanguage != nil {
             PlaybackVoiceButton(
                 language: voiceLanguage,
                 size: 32,
@@ -1339,6 +1376,8 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
 }
 
 private struct KindleExplainPlaybackBar: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ExplainViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
@@ -1500,6 +1539,8 @@ private struct KindleExplainCaption: View {
 }
 
 private struct KindleLandscapeEmptyOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let isPreparing: Bool
     let canCancel: Bool
     let start: () -> Void
@@ -1535,6 +1576,8 @@ private struct KindleLandscapeEmptyOverlay: View {
 }
 
 private struct KindleLandscapeReadOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ReadAloudViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
@@ -1578,6 +1621,8 @@ private struct KindleLandscapeReadOverlay: View {
 }
 
 private struct KindleLandscapeExplainOverlay: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var vm: ExplainViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isContinuingPage: Bool
@@ -1986,6 +2031,8 @@ private extension UIApplication.State {
 }
 
 struct KindleMiniPlayerView: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @ObservedObject var center: KindlePlaybackCenter
 
     var body: some View {
@@ -2314,6 +2361,8 @@ struct KindleTOCEntry: Identifiable, Equatable {
 }
 
 private struct KindleNativeTOCPanel: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let entries: [KindleTOCEntry]
     let isLoading: Bool
     let errorText: String?
@@ -2492,7 +2541,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
     var debugAcceptancePlayback: String {
         let audio = AudioPlayerService.shared
-        return "segment=\(audio.currentSegment?.id ?? "none");continuations=\(debugViewportContinuations);mode=\(mode == .read ? "read" : "explain");time=\(audio.currentTime);duration=\(audio.duration);playing=\(audio.isPlaying);marks=\(explainVM?.activeMarks.count ?? 0);shown=\(shownMarkIds.count);ink=\(debugVisibleInk);stable=\(!isRecoveringIPadViewport && !isReaderLayoutCurrentlyUnstable && !isRefocusingPlayback);readSession=\(readVM.map { String(describing: ObjectIdentifier($0)) } ?? "none");explainSession=\(explainVM.map { String(describing: ObjectIdentifier($0)) } ?? "none");paragraph=\(readVM?.currentParagraphIndex ?? -1);word=\(readVM?.photoHighlightWordIndex ?? -1)"
+        let paragraph = readVM.flatMap { vm in vm.document.paragraphs.first { $0.id == vm.currentParagraphIndex } }
+        let index = readVM?.photoHighlightWordIndex ?? -1
+        let word = paragraph.flatMap { $0.words.indices.contains(index) ? $0.words[index].text : nil } ?? ""
+        return "segment=\(audio.currentSegment?.id ?? "none");continuations=\(debugViewportContinuations);mode=\(mode == .read ? "read" : "explain");time=\(audio.currentTime);duration=\(audio.duration);playing=\(audio.isPlaying);marks=\(explainVM?.activeMarks.count ?? 0);shown=\(shownMarkIds.count);ink=\(debugVisibleInk);stable=\(!isRecoveringIPadViewport && !isReaderLayoutCurrentlyUnstable && !isRefocusingPlayback);readSession=\(readVM.map { String(describing: ObjectIdentifier($0)) } ?? "none");explainSession=\(explainVM.map { String(describing: ObjectIdentifier($0)) } ?? "none");paragraph=\(readVM?.currentParagraphIndex ?? -1);word=\(index);wordB64=\(Data(word.utf8).base64EncodedString());language=\(readVM?.document.language ?? book.language ?? "");progression=\(pageProgressionDirection.rawValue);voice=\(readVM?.acceptanceVoiceID ?? "")"
     }
     var debugAcceptancePage: String {
         guard let page = livePageKey, !page.isEmpty else { return "page=none" }
@@ -7917,7 +7969,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let escapedDirection = jsDirection
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "'", with: "\\'")
-        let progressionFallback = persistedKindleLanguageProfile()?.pageProgressionFallback.rawValue ?? "ltr"
+        let progressionFallback = pageProgressionDirection.rawValue
         let fromJSON = String(data: try JSONEncoder().encode(expectedFromKey ?? ""), encoding: .utf8)!
         let requestID = UUID().uuidString
         let script = """
@@ -15445,7 +15497,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let rects = resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange)
         guard !rects.isEmpty else { return nil }
         let ink = HandwrittenMark.stroke(action: mark.action, rects: rects, seed: mark.seed,
-                                         n: mark.n, weight: mark.weight)
+                                         n: mark.n, weight: mark.weight,
+                                         rightToLeft: SupportedTTSLanguage(identifier: owner.document.language)?.isRightToLeft == true)
         var drawingPayload = payload
         drawingPayload["canvasKey"] = key
         drawingPayload["canvasWidth"] = width
@@ -16144,6 +16197,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             namespace: ReadingSourceKind.kindle.rawValue,
             bookID: book.id
         )
+    }
+
+    var pageProgressionDirection: KindleReadingDirection {
+        let profile = persistedKindleLanguageProfile()
+        let corrected = KindleReadingLanguageCorrection.profile(correcting: profile,
+            with: ReadingLanguageStore.shared.override(for: readingLanguageContentKey))
+        return (corrected ?? profile)?.pageProgressionFallback ?? .ltr
     }
 
     private func persistedKindleLanguageProfile() -> KindleLanguageProfile? {

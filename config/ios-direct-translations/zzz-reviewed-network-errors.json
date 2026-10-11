@@ -1,0 +1,114 @@
+{
+  "en": {
+    "d762c0366098255babef": "The request timed out. Check your connection and try again",
+    "4135cbcedd39f38da826": "Network connection failed. Please try again."
+  },
+  "zh-Hans": {
+    "d762c0366098255babef": "请求超时，请检查网络后重试",
+    "4135cbcedd39f38da826": "网络连接失败，请重试。"
+  },
+  "ja": {
+    "d762c0366098255babef": "リクエストがタイムアウトしました。接続を確認して、もう一度お試しください",
+    "4135cbcedd39f38da826": "ネットワークに接続できませんでした。もう一度お試しください。"
+  },
+  "es": {
+    "d762c0366098255babef": "La solicitud agotó el tiempo de espera. Comprueba tu conexión e inténtalo de nuevo",
+    "4135cbcedd39f38da826": "Error de conexión a la red. Inténtalo de nuevo."
+  },
+  "fr": {
+    "d762c0366098255babef": "La demande a expiré. Vérifiez votre connexion et réessayez",
+    "4135cbcedd39f38da826": "La connexion au réseau a échoué. Veuillez réessayer."
+  },
+  "de": {
+    "d762c0366098255babef": "Die Anfrage hat zu lange gedauert. Prüfe deine Verbindung und versuche es erneut",
+    "4135cbcedd39f38da826": "Die Netzwerkverbindung ist fehlgeschlagen. Bitte versuche es erneut."
+  },
+  "pt-BR": {
+    "d762c0366098255babef": "A solicitação excedeu o tempo limite. Verifique sua conexão e tente novamente",
+    "4135cbcedd39f38da826": "Falha na conexão de rede. Tente novamente."
+  },
+  "it": {
+    "d762c0366098255babef": "La richiesta è scaduta. Controlla la connessione e riprova",
+    "4135cbcedd39f38da826": "Connessione di rete non riuscita. Riprova."
+  },
+  "hi": {
+    "d762c0366098255babef": "अनुरोध का समय समाप्त हो गया। अपना कनेक्शन जाँचें और फिर से कोशिश करें",
+    "4135cbcedd39f38da826": "नेटवर्क कनेक्शन विफल हुआ। कृपया फिर से कोशिश करें।"
+  },
+  "nl": {
+    "d762c0366098255babef": "Het verzoek duurde te lang. Controleer uw verbinding en probeer het opnieuw",
+    "4135cbcedd39f38da826": "De netwerkverbinding is mislukt. Probeer het opnieuw."
+  },
+  "ko": {
+    "d762c0366098255babef": "요청 시간이 초과되었습니다. 연결을 확인한 후 다시 시도하세요",
+    "4135cbcedd39f38da826": "네트워크 연결에 실패했습니다. 다시 시도하세요."
+  },
+  "ar": {
+    "d762c0366098255babef": "انتهت مهلة الطلب. تحقّق من اتصالك وحاول مجددًا",
+    "4135cbcedd39f38da826": "تعذّر الاتصال بالشبكة. حاول مجددًا."
+  },
+  "ru": {
+    "d762c0366098255babef": "Время ожидания запроса истекло. Проверьте подключение и повторите попытку",
+    "4135cbcedd39f38da826": "Не удалось подключиться к сети. Повторите попытку."
+  },
+  "pl": {
+    "d762c0366098255babef": "Upłynął limit czasu żądania. Sprawdź połączenie i spróbuj ponownie",
+    "4135cbcedd39f38da826": "Nie udało się połączyć z siecią. Spróbuj ponownie."
+  },
+  "sv": {
+    "d762c0366098255babef": "Begäran tog för lång tid. Kontrollera anslutningen och försök igen",
+    "4135cbcedd39f38da826": "Nätverksanslutningen misslyckades. Försök igen."
+  },
+  "da": {
+    "d762c0366098255babef": "Anmodningen tog for lang tid. Tjek forbindelsen, og prøv igen",
+    "4135cbcedd39f38da826": "Netværksforbindelsen mislykkedes. Prøv igen."
+  },
+  "nb": {
+    "d762c0366098255babef": "Forespørselen tok for lang tid. Sjekk tilkoblingen og prøv igjen",
+    "4135cbcedd39f38da826": "Kunne ikke koble til nettverket. Prøv igjen."
+  },
+  "fi": {
+    "d762c0366098255babef": "Pyynnön aikakatkaisu. Tarkista yhteys ja yritä uudelleen",
+    "4135cbcedd39f38da826": "Verkkoyhteys epäonnistui. Yritä uudelleen."
+  },
+  "cs": {
+    "d762c0366098255babef": "Vypršel časový limit požadavku. Zkontrolujte připojení a zkuste to znovu",
+    "4135cbcedd39f38da826": "Připojení k síti selhalo. Zkuste to znovu."
+  },
+  "el": {
+    "d762c0366098255babef": "Το αίτημα έληξε. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά",
+    "4135cbcedd39f38da826": "Η σύνδεση στο δίκτυο απέτυχε. Δοκιμάστε ξανά."
+  },
+  "hu": {
+    "d762c0366098255babef": "A kérés időtúllépés miatt megszakadt. Ellenőrizd a kapcsolatot, és próbáld újra",
+    "4135cbcedd39f38da826": "Nem sikerült csatlakozni a hálózathoz. Próbáld újra."
+  },
+  "fil": {
+    "d762c0366098255babef": "Naubos ang oras ng paghihintay sa kahilingan. Suriin ang koneksyon at subukang muli",
+    "4135cbcedd39f38da826": "Hindi makakonekta sa network. Subukang muli."
+  },
+  "he": {
+    "d762c0366098255babef": "תם הזמן הקצוב לבקשה. בדקו את החיבור ונסו שוב",
+    "4135cbcedd39f38da826": "החיבור לרשת נכשל. נסו שוב."
+  },
+  "id": {
+    "d762c0366098255babef": "Waktu permintaan habis. Periksa koneksi Anda dan coba lagi",
+    "4135cbcedd39f38da826": "Koneksi jaringan gagal. Silakan coba lagi."
+  },
+  "ms": {
+    "d762c0366098255babef": "Permintaan tamat masa. Semak sambungan anda dan cuba lagi",
+    "4135cbcedd39f38da826": "Sambungan rangkaian gagal. Sila cuba lagi."
+  },
+  "ro": {
+    "d762c0366098255babef": "Cererea a expirat. Verifică conexiunea și încearcă din nou",
+    "4135cbcedd39f38da826": "Conectarea la rețea a eșuat. Încearcă din nou."
+  },
+  "tr": {
+    "d762c0366098255babef": "İstek zaman aşımına uğradı. Bağlantınızı kontrol edip tekrar deneyin",
+    "4135cbcedd39f38da826": "Ağ bağlantısı başarısız oldu. Lütfen tekrar deneyin."
+  },
+  "vi": {
+    "d762c0366098255babef": "Yêu cầu đã hết thời gian chờ. Kiểm tra kết nối rồi thử lại",
+    "4135cbcedd39f38da826": "Kết nối mạng không thành công. Vui lòng thử lại."
+  }
+}

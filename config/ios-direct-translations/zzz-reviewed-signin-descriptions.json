@@ -1,0 +1,121 @@
+{
+  "nl": {
+    "02a0ba1834f5866bc0e9": "Log in om Pro en gebruik tussen apparaten te synchroniseren",
+    "5dcd0b325bf3abf78c44": "Nadat u bent ingelogd, wordt Mijn boeken automatisch geopend zodat u uw boeken met CastReader kunt synchroniseren. CastReader slaat uw wachtwoord nooit op.",
+    "0903567f4850eff6db56": "Nadat u bent ingelogd, wordt uw bibliotheek automatisch geopend. CastReader slaat uw wachtwoord nooit op.",
+    "958387f57a304fff4d7c": "Amazon is tijdelijk niet beschikbaar",
+    "b0924eb31382abfe22eb": "Slaaptimer"
+  },
+  "ko": {
+    "02a0ba1834f5866bc0e9": "로그인하여 기기 간에 Pro와 사용량을 동기화하세요",
+    "5dcd0b325bf3abf78c44": "로그인하면 내 책이 자동으로 열리며 CastReader와 동기화할 수 있습니다. CastReader는 비밀번호를 저장하지 않습니다.",
+    "0903567f4850eff6db56": "로그인하면 라이브러리가 자동으로 열립니다. CastReader는 비밀번호를 저장하지 않습니다.",
+    "958387f57a304fff4d7c": "Amazon을 일시적으로 사용할 수 없습니다",
+    "b0924eb31382abfe22eb": "수면 타이머"
+  },
+  "ar": {
+    "02a0ba1834f5866bc0e9": "سجّل الدخول لمزامنة Pro والاستخدام بين أجهزتك",
+    "5dcd0b325bf3abf78c44": "بعد تسجيل الدخول، تفتح صفحة «كتبي» تلقائيًا لتتمكن من مزامنتها مع CastReader. لا يحفظ CastReader كلمة مرورك مطلقًا.",
+    "0903567f4850eff6db56": "بعد تسجيل الدخول، تفتح مكتبتك تلقائيًا. لا يحفظ CastReader كلمة مرورك مطلقًا.",
+    "958387f57a304fff4d7c": "Amazon غير متاحة مؤقتًا",
+    "b0924eb31382abfe22eb": "مؤقت النوم"
+  },
+  "ru": {
+    "02a0ba1834f5866bc0e9": "Войдите, чтобы синхронизировать Pro и данные использования между устройствами",
+    "5dcd0b325bf3abf78c44": "После входа страница «Мои книги» откроется автоматически для синхронизации с CastReader. CastReader никогда не сохраняет ваш пароль.",
+    "0903567f4850eff6db56": "После входа ваша библиотека откроется автоматически. CastReader никогда не сохраняет ваш пароль.",
+    "958387f57a304fff4d7c": "Сервис Amazon временно недоступен",
+    "b0924eb31382abfe22eb": "Таймер сна"
+  },
+  "pl": {
+    "02a0ba1834f5866bc0e9": "Zaloguj się, aby synchronizować Pro i dane użycia między urządzeniami",
+    "5dcd0b325bf3abf78c44": "Po zalogowaniu strona „Moje książki” otworzy się automatycznie, aby umożliwić synchronizację z CastReader. CastReader nigdy nie zapisuje Twojego hasła.",
+    "0903567f4850eff6db56": "Po zalogowaniu Twoja biblioteka otworzy się automatycznie. CastReader nigdy nie zapisuje Twojego hasła.",
+    "958387f57a304fff4d7c": "Amazon jest tymczasowo niedostępny",
+    "b0924eb31382abfe22eb": "Timer snu"
+  },
+  "sv": {
+    "02a0ba1834f5866bc0e9": "Logga in för att synkronisera Pro och användning mellan enheter",
+    "5dcd0b325bf3abf78c44": "När du har loggat in öppnas Mina böcker automatiskt så att du kan synkronisera dem med CastReader. CastReader sparar aldrig ditt lösenord.",
+    "0903567f4850eff6db56": "När du har loggat in öppnas ditt bibliotek automatiskt. CastReader sparar aldrig ditt lösenord.",
+    "958387f57a304fff4d7c": "Amazon är tillfälligt inte tillgängligt",
+    "b0924eb31382abfe22eb": "Sovtimer"
+  },
+  "da": {
+    "02a0ba1834f5866bc0e9": "Log ind for at synkronisere Pro og forbrug på tværs af enheder",
+    "5dcd0b325bf3abf78c44": "Når du har logget ind, åbnes Mine bøger automatisk, så du kan synkronisere dem med CastReader. CastReader gemmer aldrig din adgangskode.",
+    "0903567f4850eff6db56": "Når du har logget ind, åbnes dit bibliotek automatisk. CastReader gemmer aldrig din adgangskode.",
+    "958387f57a304fff4d7c": "Amazon er midlertidigt utilgængelig",
+    "b0924eb31382abfe22eb": "Sovetimer"
+  },
+  "nb": {
+    "02a0ba1834f5866bc0e9": "Logg inn for å synkronisere Pro og bruk på tvers av enheter",
+    "5dcd0b325bf3abf78c44": "Når du har logget inn, åpnes Mine bøker automatisk slik at du kan synkronisere dem med CastReader. CastReader lagrer aldri passordet ditt.",
+    "0903567f4850eff6db56": "Når du har logget inn, åpnes biblioteket ditt automatisk. CastReader lagrer aldri passordet ditt.",
+    "958387f57a304fff4d7c": "Amazon er midlertidig utilgjengelig",
+    "b0924eb31382abfe22eb": "Sovnetimer"
+  },
+  "fi": {
+    "02a0ba1834f5866bc0e9": "Kirjaudu sisään synkronoidaksesi Pro-tilauksen ja käyttötiedot laitteiden välillä",
+    "5dcd0b325bf3abf78c44": "Kirjautumisen jälkeen Omat kirjat avautuu automaattisesti, jotta voit synkronoida kirjasi CastReaderiin. CastReader ei koskaan tallenna salasanaasi.",
+    "0903567f4850eff6db56": "Kirjautumisen jälkeen kirjastosi avautuu automaattisesti. CastReader ei koskaan tallenna salasanaasi.",
+    "958387f57a304fff4d7c": "Amazon ei ole väliaikaisesti käytettävissä",
+    "b0924eb31382abfe22eb": "Uniajastin"
+  },
+  "cs": {
+    "02a0ba1834f5866bc0e9": "Přihlaste se a synchronizujte Pro a údaje o využití mezi zařízeními",
+    "5dcd0b325bf3abf78c44": "Po přihlášení se automaticky otevře stránka Moje knihy, abyste mohli knihy synchronizovat s CastReader. CastReader nikdy neukládá vaše heslo.",
+    "0903567f4850eff6db56": "Po přihlášení se vaše knihovna automaticky otevře. CastReader nikdy neukládá vaše heslo.",
+    "958387f57a304fff4d7c": "Amazon je dočasně nedostupný",
+    "b0924eb31382abfe22eb": "Časovač spánku"
+  },
+  "el": {
+    "02a0ba1834f5866bc0e9": "Συνδεθείτε για να συγχρονίσετε το Pro και τα δεδομένα χρήσης μεταξύ συσκευών",
+    "5dcd0b325bf3abf78c44": "Μετά τη σύνδεση, ανοίγει αυτόματα η σελίδα «Τα βιβλία μου» για συγχρονισμό με το CastReader. Το CastReader δεν αποθηκεύει ποτέ τον κωδικό πρόσβασής σας.",
+    "0903567f4850eff6db56": "Μετά τη σύνδεση, η βιβλιοθήκη σας ανοίγει αυτόματα. Το CastReader δεν αποθηκεύει ποτέ τον κωδικό πρόσβασής σας.",
+    "958387f57a304fff4d7c": "Η Amazon είναι προσωρινά μη διαθέσιμη",
+    "b0924eb31382abfe22eb": "Χρονόμετρο ύπνου"
+  },
+  "hu": {
+    "02a0ba1834f5866bc0e9": "Jelentkezzen be a Pro és a használati adatok eszközök közötti szinkronizálásához",
+    "5dcd0b325bf3abf78c44": "Bejelentkezés után automatikusan megnyílik a Saját könyvek oldal, hogy szinkronizálhassa könyveit a CastReaderrel. A CastReader soha nem tárolja a jelszavát.",
+    "0903567f4850eff6db56": "Bejelentkezés után automatikusan megnyílik a könyvtára. A CastReader soha nem tárolja a jelszavát.",
+    "958387f57a304fff4d7c": "Az Amazon jelenleg nem érhető el",
+    "b0924eb31382abfe22eb": "Alvásidőzítő"
+  },
+  "fil": {
+    "02a0ba1834f5866bc0e9": "Mag-sign in para i-sync ang Pro at paggamit sa iba’t ibang device",
+    "5dcd0b325bf3abf78c44": "Pagkatapos mong mag-sign in, awtomatikong bubukas ang Aking mga aklat para ma-sync mo ang mga ito sa CastReader. Hindi kailanman iniimbak ng CastReader ang iyong password.",
+    "0903567f4850eff6db56": "Pagkatapos mong mag-sign in, awtomatikong bubukas ang iyong library. Hindi kailanman iniimbak ng CastReader ang iyong password.",
+    "958387f57a304fff4d7c": "Panandaliang hindi available ang Amazon",
+    "b0924eb31382abfe22eb": "Sleep Timer"
+  },
+  "id": {
+    "02a0ba1834f5866bc0e9": "Masuk untuk menyinkronkan Pro dan penggunaan antarperangkat",
+    "5dcd0b325bf3abf78c44": "Setelah Anda masuk, Buku saya akan terbuka secara otomatis agar Anda dapat menyinkronkannya dengan CastReader. CastReader tidak pernah menyimpan kata sandi Anda.",
+    "0903567f4850eff6db56": "Setelah Anda masuk, perpustakaan Anda akan terbuka secara otomatis. CastReader tidak pernah menyimpan kata sandi Anda.",
+    "958387f57a304fff4d7c": "Amazon sementara tidak tersedia",
+    "b0924eb31382abfe22eb": "Timer Tidur"
+  },
+  "ms": {
+    "02a0ba1834f5866bc0e9": "Log masuk untuk menyegerakkan Pro dan penggunaan merentas peranti",
+    "5dcd0b325bf3abf78c44": "Selepas anda log masuk, Buku saya akan dibuka secara automatik supaya anda boleh menyegerakkannya dengan CastReader. CastReader tidak pernah menyimpan kata laluan anda.",
+    "0903567f4850eff6db56": "Selepas anda log masuk, perpustakaan anda akan dibuka secara automatik. CastReader tidak pernah menyimpan kata laluan anda.",
+    "958387f57a304fff4d7c": "Amazon tidak tersedia buat sementara waktu",
+    "b0924eb31382abfe22eb": "Pemasa tidur"
+  },
+  "ro": {
+    "02a0ba1834f5866bc0e9": "Autentifică-te pentru a sincroniza Pro și utilizarea pe toate dispozitivele",
+    "5dcd0b325bf3abf78c44": "După autentificare, pagina Cărțile mele se deschide automat pentru a putea sincroniza cărțile cu CastReader. CastReader nu salvează niciodată parola ta.",
+    "0903567f4850eff6db56": "După autentificare, biblioteca ta se deschide automat. CastReader nu salvează niciodată parola ta.",
+    "958387f57a304fff4d7c": "Amazon este temporar indisponibil",
+    "b0924eb31382abfe22eb": "Cronometru de somn"
+  },
+  "tr": {
+    "02a0ba1834f5866bc0e9": "Pro ve kullanım verilerini cihazlar arasında eşitlemek için giriş yapın",
+    "5dcd0b325bf3abf78c44": "Giriş yaptıktan sonra CastReader ile eşitleyebilmeniz için Kitaplarım otomatik olarak açılır. CastReader parolanızı hiçbir zaman saklamaz.",
+    "0903567f4850eff6db56": "Giriş yaptıktan sonra kitaplığınız otomatik olarak açılır. CastReader parolanızı hiçbir zaman saklamaz.",
+    "958387f57a304fff4d7c": "Amazon geçici olarak kullanılamıyor",
+    "b0924eb31382abfe22eb": "Uyku Zamanlayıcısı"
+  }
+}

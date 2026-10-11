@@ -1,88 +1,69 @@
 {
-  "extName": {
-    "message": "CastReader — 音声読み上げ + AI解説"
+  "readerTooLarge": {
+    "message": "ファイルが大きすぎます（100 MB超）。小さいファイルを使用してください。"
   },
-  "firefoxExtName": {
-    "message": "CastReader — 音声読み上げ + AI解説"
+  "readerEpubDrm": {
+    "message": "このEPUBはDRMで保護されています。DRMフリーのEPUBをお試しください。"
   },
-  "extDescription": {
-    "message": "同期ハイライト付き音声読み上げと、ページに注釈するAI解説。Kindle、PDF、記事、書籍に対応。9言語の自然なAI音声。"
+  "inboxSaveSelection": {
+    "message": "選択したテキストを CastReader 受信箱に保存"
   },
-  "quickreadBtn": {
-    "message": "クイック解説"
+  "readerEpubTooLarge": {
+    "message": "安全なローカル処理のため、EPUBは30 MBまで対応しています。"
+  },
+  "readerRendering": {
+    "message": "文書を表示中…"
   },
   "quickreadBtnExit": {
     "message": "解説を終了"
   },
-  "quickreadPreparing": {
-    "message": "解説を生成中"
+  "readerTimeout": {
+    "message": "開くのに時間がかかりすぎました。ファイルが複雑すぎる可能性があります"
   },
-  "quickreadError": {
-    "message": "解説エラー"
+  "readerExplain": {
+    "message": "✦ 解説"
   },
-  "quickreadStageExtract": {
-    "message": "要点を抽出中"
+  "readerBrowseVoices": {
+    "message": "音声を探す"
   },
-  "quickreadStageTts": {
-    "message": "音声を生成中"
+  "readerPreparing": {
+    "message": "ナレーションを準備中…"
   },
-  "quickreadStageRefine": {
-    "message": "再生の流れを調整中"
+  "readerSettings": {
+    "message": "設定"
   },
-  "quickreadStageReady": {
-    "message": "再生準備ができました…"
+  "inboxText": {
+    "message": "テキスト"
   },
-  "quickreadFailed": {
-    "message": "失敗しました：$msg$",
-    "placeholders": {
-      "msg": {
-        "content": "$1"
-      }
-    }
+  "ocrModelUnavailable": {
+    "message": "文字認識用の言語ファイルをダウンロードできませんでした。インターネットに接続して、もう一度お試しください。"
   },
-  "quickreadClose": {
-    "message": "閉じる"
+  "extName": {
+    "message": "CastReader — 音声読み上げ + AI解説"
   },
-  "quickreadCancel": {
-    "message": "キャンセル"
+  "readerVoiceZh": {
+    "message": "中国語音声"
   },
-  "quickreadDone": {
-    "message": "完了"
+  "inboxSavePage": {
+    "message": "ページを CastReader 受信箱に保存"
   },
-  "quickreadHint": {
-    "message": "約25〜45秒かかります。しばらくお待ちください"
+  "quickreadBtn": {
+    "message": "クイック解説"
   },
-  "quickreadQueued": {
-    "message": "待機中（$pos$）",
-    "placeholders": {
-      "pos": {
-        "content": "$1"
-      }
-    }
+  "voiceClonePaywall": {
+    "message": "複数の自分の声を無料で作成・管理し、固定プレビューを再生できます。Proでは読み上げと解説に毎月120分使えます。"
   },
-  "quickreadRateLimit": {
-    "message": "本日の無料AI解説を使い切りました。明日リセットされます。"
+  "readerTooLargeForPage": {
+    "message": "7 MBを超えるファイルはページから直接渡せません。ドキュメントリーダーを開き、そこで選択してください（最大100 MB）。"
   },
-  "quickreadRateLimitTitle": {
-    "message": "本日の無料AI解説を使い切りました"
+  "toolbarPageUnsupported": {
+    "message": "CastReader - このページでは読み上げを利用できません"
   },
-  "quickreadRateLimitBody": {
-    "message": "本日の無料上限に達しました。ProにアップグレードするとAI解説を無制限に利用できます。無料枠は明日リセットされます。"
+  "inboxTitle": {
+    "message": "コンテンツ受信箱"
   },
-  "quickreadUpgrade": {
-    "message": "Proにアップグレード"
-  },
-  "accountNotSignedIn": {
-    "message": "サインインしていません"
-  },
-  "enableProMode": {
-    "message": "Proを有効にする"
-  },
-  "listenRateLimitTitle": {
-    "message": "本日の無料朗読20分を使い切りました"
-  },
-  "listenRateLimitBody": {
-    "message": "本日の無料朗読20分を使い切りました。Proにアップグレードすると無制限に朗読できます。無料枠は明日リセットされます。"
+  "readerSub": {
+    "message": "元のレイアウトを保ったまま、音声読み上げとAI解説を利用できます"
   },
   "quickreadQuotaTip": {
     "message": "AI解説 · 本日あと$n$/$max$回",
@@ -95,211 +76,236 @@
       }
     }
   },
-  "quickreadQuotaPro": {
-    "message": "AI解説 · Pro ∞"
-  },
-  "readerUploadTitle": {
-    "message": "文書を読み上げる"
-  },
-  "readerDrop": {
-    "message": "画像 / PDF / EPUB / Word / TXTをここにドロップ"
-  },
   "readerDropOver": {
     "message": "ドロップしてアップロード"
   },
-  "readerSub": {
-    "message": "元のレイアウトを保ったまま、音声読み上げとAI解説を利用できます"
+  "firefoxExtName": {
+    "message": "CastReader — 音声読み上げ + AI解説"
   },
-  "readerOr": {
-    "message": "または"
+  "quickreadUpgrade": {
+    "message": "Proにアップグレード"
   },
-  "readerPick": {
-    "message": "ファイルを選択"
+  "readerDocumentLangHint": {
+    "message": "画像や文字を抽出できないスキャン PDF は、文書の言語を選択してからファイルを開いてください。"
   },
-  "readerRendering": {
-    "message": "文書を表示中…"
+  "quickreadQueued": {
+    "message": "待機中（$pos$）",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
   },
-  "readerListen": {
-    "message": "▶ 読み上げ"
+  "quickreadRateLimitTitle": {
+    "message": "本日の無料AI解説を使い切りました"
   },
-  "readerPause": {
-    "message": "⏸ 一時停止"
+  "ocrLanguageUnsupported": {
+    "message": "この言語の画像・スキャンページの文字認識にはまだ対応していません。ウェブページ、EPUB、TXT、テキストを選択できる PDF は引き続き読み上げられます。"
   },
-  "readerResume": {
-    "message": "▶ 再開"
-  },
-  "readerStop": {
-    "message": "■ 停止"
-  },
-  "readerExplain": {
-    "message": "✦ 解説"
-  },
-  "readerExplainHint": {
-    "message": "先に読み上げを停止してください"
-  },
-  "readerNewFile": {
-    "message": "別のファイル"
-  },
-  "readerSpeed": {
-    "message": "速度"
-  },
-  "readerUnsupported": {
-    "message": "対応していないファイル形式です"
-  },
-  "readerFailed": {
-    "message": "処理に失敗しました"
-  },
-  "readerEmpty": {
-    "message": "この文書に読み取れるテキストがありません"
-  },
-  "readerQuotaLeft": {
-    "message": "本日の残り"
+  "quickreadStageExtract": {
+    "message": "要点を抽出中"
   },
   "readerQuotaBlocked": {
     "message": "本日の無料解説10回を使い切りました。明日リセットされます"
   },
-  "readerPartial": {
-    "message": "現在位置の範囲を解説しました。下にスクロールして、次の範囲でもう一度「解説」を押してください"
+  "readerListen": {
+    "message": "▶ 読み上げ"
   },
-  "readerTooLarge": {
-    "message": "ファイルが大きすぎます（100 MB超）。小さいファイルを使用してください。"
+  "readerQuotaLeft": {
+    "message": "本日の残り"
   },
-  "readerLargeFilePro": {
-    "message": "7 MBを超えるファイルにはProが必要です。Proなら最大100 MBのドキュメントを開けます。"
-  },
-  "readerTooLargeForPage": {
-    "message": "7 MBを超えるファイルはページから直接渡せません。ドキュメントリーダーを開き、そこで選択してください（最大100 MB）。"
-  },
-  "readerOpenReader": {
-    "message": "ドキュメントリーダーを開く"
-  },
-  "readerContinue": {
-    "message": "続けて解説 ✦"
-  },
-  "readerSettings": {
-    "message": "設定"
-  },
-  "readerExplainLang": {
-    "message": "解説する言語"
-  },
-  "readerDocumentLang": {
-    "message": "文書の言語"
-  },
-  "readerDocumentLangAuto": {
-    "message": "自動（ブラウザーの言語）"
-  },
-  "readerDocumentLangHint": {
-    "message": "画像やスキャン PDF は、正確な OCR のため言語を選択してください。"
-  },
-  "readerVoiceEn": {
-    "message": "英語音声"
-  },
-  "readerVoiceZh": {
-    "message": "中国語音声"
-  },
-  "readerVoices": {
-    "message": "音声"
-  },
-  "readerBrowseVoices": {
-    "message": "音声を探す"
-  },
-  "readerLangAuto": {
-    "message": "自動（UI言語）"
-  },
-  "readerLangFollow": {
-    "message": "文書に合わせる"
-  },
-  "readerPreparing": {
-    "message": "ナレーションを準備中…"
-  },
-  "readerEncrypted": {
-    "message": "このPDFはパスワードで保護されています"
-  },
-  "readerCorrupt": {
-    "message": "ファイルが破損しているか、読み取れないようです"
-  },
-  "readerTimeout": {
-    "message": "開くのに時間がかかりすぎました。ファイルが複雑すぎる可能性があります"
-  },
-  "readerEpubDrm": {
-    "message": "このEPUBはDRMで保護されています。DRMフリーのEPUBをお試しください。"
-  },
-  "readerEpubFixedLayout": {
-    "message": "この固定レイアウトEPUBには、読み上げと同期できるテキストがありません。"
-  },
-  "readerEpubTooComplex": {
-    "message": "このEPUBは安全なローカル処理の上限を超えています。より小さく単純なEPUBをお試しください。"
-  },
-  "readerEpubTooLarge": {
-    "message": "安全なローカル処理のため、EPUBは30 MBまで対応しています。"
-  },
-  "inboxTitle": {
-    "message": "コンテンツ受信箱"
-  },
-  "inboxSubtitle": {
-    "message": "ウェブページや選択したテキストを保存し、必要なときに読み上げまたは解説できます。"
-  },
-  "inboxEmpty": {
-    "message": "受信箱は空です"
-  },
-  "inboxEmptyDescription": {
-    "message": "ページまたは選択したテキストを右クリックして CastReader に保存します。"
-  },
-  "inboxSaveSelection": {
-    "message": "選択したテキストを CastReader 受信箱に保存"
-  },
-  "inboxSavePage": {
-    "message": "ページを CastReader 受信箱に保存"
-  },
-  "inboxOpen": {
-    "message": "コンテンツ受信箱を開く"
-  },
-  "inboxSharedText": {
-    "message": "選択したテキスト"
-  },
-  "inboxOpenFailed": {
-    "message": "コンテンツを開けませんでした。もう一度お試しください。"
-  },
-  "inboxRetry": {
-    "message": "再試行"
-  },
-  "inboxRead": {
-    "message": "読み上げ"
-  },
-  "inboxExplain": {
-    "message": "解説"
-  },
-  "inboxDelete": {
-    "message": "削除"
+  "readerEmpty": {
+    "message": "この文書に読み取れるテキストがありません"
   },
   "inboxLink": {
     "message": "リンク"
   },
-  "inboxText": {
-    "message": "テキスト"
+  "edgeExtDescription": {
+    "message": "音声と同期するハイライトと自動スクロールで読書に集中。AI が元のページで難しい箇所を解説。28 言語の自然な音声に対応。"
+  },
+  "inboxOpenFailed": {
+    "message": "コンテンツを開けませんでした。もう一度お試しください。"
+  },
+  "quickreadRateLimitBody": {
+    "message": "本日の無料上限に達しました。ProにアップグレードするとAI解説を無制限に利用できます。無料枠は明日リセットされます。"
+  },
+  "readerPause": {
+    "message": "⏸ 一時停止"
   },
   "edgeExtName": {
     "message": "CastReader — 音声読み上げ + AI解説"
   },
-  "edgeExtDescription": {
-    "message": "記事、PDF、Kindle書籍を同期ハイライト付きで読み上げ、AIが要点を解説します。"
+  "readerVoices": {
+    "message": "音声"
+  },
+  "quickreadDone": {
+    "message": "完了"
+  },
+  "quickreadCancel": {
+    "message": "キャンセル"
+  },
+  "quickreadQuotaPro": {
+    "message": "AI解説 · Pro ∞"
+  },
+  "listenRateLimitBody": {
+    "message": "本日の無料朗読20分を使い切りました。Proにアップグレードすると無制限に朗読できます。無料枠は明日リセットされます。"
+  },
+  "readerVoiceEn": {
+    "message": "英語音声"
+  },
+  "readerLangAuto": {
+    "message": "自動（UI言語）"
+  },
+  "readerExplainHint": {
+    "message": "先に読み上げを停止してください"
+  },
+  "readerSpeed": {
+    "message": "速度"
+  },
+  "readerLangFollow": {
+    "message": "文書に合わせる"
+  },
+  "inboxRetry": {
+    "message": "再試行"
+  },
+  "quickreadHint": {
+    "message": "約25〜45秒かかります。しばらくお待ちください"
+  },
+  "accountNotSignedIn": {
+    "message": "サインインしていません"
+  },
+  "readerLargeFilePro": {
+    "message": "7 MBを超えるファイルにはProが必要です。Proなら最大100 MBのドキュメントを開けます。"
+  },
+  "readerUploadTitle": {
+    "message": "文書を読み上げる"
+  },
+  "inboxExplain": {
+    "message": "解説"
+  },
+  "quickreadFailed": {
+    "message": "失敗しました：$msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
   },
   "toggleSiteVisibility": {
     "message": "このサイトで CastReader を表示 / 非表示"
   },
-  "voiceCloneBenefit": {
-    "message": "自分の声で読み上げ・解説 · 毎月120分"
+  "readerDocumentLang": {
+    "message": "文書の言語"
   },
-  "voiceClonePaywall": {
-    "message": "複数の自分の声を無料で作成・管理し、固定プレビューを再生できます。Proでは読み上げと解説に毎月120分使えます。"
+  "readerPick": {
+    "message": "ファイルを選択"
   },
-  "voiceCloneQuotaExhausted": {
-    "message": "今月の音声クローン時間を使い切りました。選択した音声は保持されます。"
+  "readerOpenReader": {
+    "message": "ドキュメントリーダーを開く"
+  },
+  "readerEpubFixedLayout": {
+    "message": "この固定レイアウトEPUBには、読み上げと同期できるテキストがありません。"
+  },
+  "quickreadStageRefine": {
+    "message": "再生の流れを調整中"
+  },
+  "quickreadError": {
+    "message": "解説エラー"
+  },
+  "readerDrop": {
+    "message": "画像 / PDF / EPUB / Word / TXTをここにドロップ"
   },
   "toolbarReadPage": {
     "message": "CastReader - このページを読み上げる"
   },
-  "toolbarPageUnsupported": {
-    "message": "CastReader - このページでは読み上げを利用できません"
+  "voiceCloneQuotaExhausted": {
+    "message": "今月の音声クローン時間を使い切りました。選択した音声は保持されます。"
+  },
+  "readerStop": {
+    "message": "■ 停止"
+  },
+  "readerUnsupported": {
+    "message": "対応していないファイル形式です"
+  },
+  "inboxEmptyDescription": {
+    "message": "ページまたは選択したテキストを右クリックして CastReader に保存します。"
+  },
+  "voiceCloneBenefit": {
+    "message": "自分の声で読み上げ・解説 · 毎月120分"
+  },
+  "inboxRead": {
+    "message": "読み上げ"
+  },
+  "readerResume": {
+    "message": "▶ 再開"
+  },
+  "listenRateLimitTitle": {
+    "message": "本日の無料朗読20分を使い切りました"
+  },
+  "readerCorrupt": {
+    "message": "ファイルが破損しているか、読み取れないようです"
+  },
+  "readerContinue": {
+    "message": "続けて解説 ✦"
+  },
+  "readerEncrypted": {
+    "message": "このPDFはパスワードで保護されています"
+  },
+  "quickreadRateLimit": {
+    "message": "本日の無料AI解説を使い切りました。明日リセットされます。"
+  },
+  "enableProMode": {
+    "message": "Proを有効にする"
+  },
+  "readerNewFile": {
+    "message": "別のファイル"
+  },
+  "inboxDelete": {
+    "message": "削除"
+  },
+  "quickreadStageTts": {
+    "message": "音声を生成中"
+  },
+  "inboxSubtitle": {
+    "message": "ウェブページや選択したテキストを保存し、必要なときに読み上げまたは解説できます。"
+  },
+  "inboxSharedText": {
+    "message": "選択したテキスト"
+  },
+  "readerExplainLang": {
+    "message": "解説する言語"
+  },
+  "readerOr": {
+    "message": "または"
+  },
+  "readerPartial": {
+    "message": "現在位置の範囲を解説しました。下にスクロールして、次の範囲でもう一度「解説」を押してください"
+  },
+  "quickreadStageReady": {
+    "message": "再生準備ができました…"
+  },
+  "quickreadPreparing": {
+    "message": "解説を生成中"
+  },
+  "extDescription": {
+    "message": "音声と同期するハイライトと自動スクロールで読書に集中。AI が元のページで難しい箇所を解説。28 言語の自然な音声に対応。"
+  },
+  "readerFailed": {
+    "message": "処理に失敗しました"
+  },
+  "inboxEmpty": {
+    "message": "受信箱は空です"
+  },
+  "readerDocumentLangAuto": {
+    "message": "自動（本文から判定）"
+  },
+  "inboxOpen": {
+    "message": "コンテンツ受信箱を開く"
+  },
+  "quickreadClose": {
+    "message": "閉じる"
+  },
+  "readerEpubTooComplex": {
+    "message": "このEPUBは安全なローカル処理の上限を超えています。より小さく単純なEPUBをお試しください。"
   }
 }

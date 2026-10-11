@@ -117,7 +117,8 @@ struct HomeProUpsellCard: View {
                 .foregroundColor(AppTheme.foreground)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(AppLocalized("Kindle 连续朗读 · 100+ 专业音色 · 9 种语言"))
+            Text(String(format: AppLocalized("standardReadingLanguageCount"),
+                        Int64(SupportedTTSLanguage.supported(in: ServiceRouting.current).count)))
                 .font(.subheadline)
                 .foregroundColor(AppTheme.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)

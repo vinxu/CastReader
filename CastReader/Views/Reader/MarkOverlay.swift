@@ -24,15 +24,21 @@ struct MarkInkView: View {
     var highlightColor: Color = Color(red: 253/255, green: 95/255, blue: 1/255)  // 同基色，绘制时各自叠 alpha
     var weight: String? = nil   // P1：重要度分层 → 笔触粗细倍率（nil = 普通，零回归）
     var animateOnAppear = true
+    var sourceLanguage: String = ""
 
     @State private var progress: CGFloat = 0
 
     private var ink: HandwrittenMark.Stroke {
-        HandwrittenMark.stroke(action: action, rects: rects, seed: seed, n: n, weight: weight)
+        HandwrittenMark.stroke(action: action, rects: rects, seed: seed, n: n, weight: weight,
+            rightToLeft: SupportedTTSLanguage(identifier: sourceLanguage)?.isRightToLeft == true)
     }
 
     var body: some View {
         shapeView
+        // These paths already use UIKit/Vision's physical word coordinates.
+        // SwiftUI must not mirror them when the surrounding interface is RTL;
+        // the source language controls stroke direction in HandwrittenMark.
+        .environment(\.layoutDirection, .leftToRight)
         .allowsHitTesting(false)
         .onAppear {
             guard progress == 0 else { return }   // 复用/重绘时不重播已画完的 mark

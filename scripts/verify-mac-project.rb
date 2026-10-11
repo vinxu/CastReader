@@ -41,7 +41,7 @@ mac.build_configurations.each do |config|
 end
 # Compare original targets and all their build phases/settings/dependencies to
 # HEAD. Mac integration must not silently change the released iOS product graph.
-original, status = Open3.capture2('git', '-C', root, 'show', '09456f1979cc14ca19977ede4b1edde043c5f840:CastReader.xcodeproj/project.pbxproj')
+original, status = Open3.capture2('git', '-C', root, 'show', 'd48a9af144bfef1d07af0e81c7a847b283d8bbf0:CastReader.xcodeproj/project.pbxproj')
 abort 'Cannot read baseline project' unless status.success?
 Dir.mktmpdir('CastReaderProjectBaseline') do |temp|
   path = File.join(temp, 'CastReader.xcodeproj')

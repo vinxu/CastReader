@@ -1,0 +1,372 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Existing manually authored Android UI text for iOS alignment; no translation service used",
+  "placeholder": "%1$@ is one language-name argument for String(format:); retain positional argument if integrating with xcstrings",
+  "localePolicy": "Use the iOS project locale identifiers; suggestedIOSLocale is a mapping hint, not permission to change existing locale setup",
+  "locales": {
+    "ar": {
+      "suggestedIOSLocale": "ar",
+      "androidQualifier": "values-ar",
+      "source": "app/src/global/res/values-ar/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "الصوت الحالي",
+        "voice_available_title": "الأصوات المتاحة",
+        "voice_default_scope": "الصوت الافتراضي للغة %1$@",
+        "voice_browse_languages": "تصفّح لغات أخرى",
+        "voice_supported_languages": "اللغات المدعومة: %1$@",
+        "voice_public_clones_title": "أصوات مستنسخة مختارة"
+      }
+    },
+    "cs": {
+      "suggestedIOSLocale": "cs",
+      "androidQualifier": "values-cs",
+      "source": "app/src/global/res/values-cs/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Aktuální hlas",
+        "voice_available_title": "Dostupné hlasy",
+        "voice_default_scope": "Výchozí hlas pro jazyk %1$@",
+        "voice_browse_languages": "Procházet další jazyky",
+        "voice_supported_languages": "Podporované jazyky: %1$@",
+        "voice_public_clones_title": "Vybrané klonované hlasy"
+      }
+    },
+    "da": {
+      "suggestedIOSLocale": "da",
+      "androidQualifier": "values-da",
+      "source": "app/src/global/res/values-da/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Aktuel stemme",
+        "voice_available_title": "Tilgængelige stemmer",
+        "voice_default_scope": "Standardstemme til %1$@",
+        "voice_browse_languages": "Se andre sprog",
+        "voice_supported_languages": "Understøttede sprog: %1$@",
+        "voice_public_clones_title": "Udvalgte klonede stemmer"
+      }
+    },
+    "de": {
+      "suggestedIOSLocale": "de",
+      "androidQualifier": "values-de",
+      "source": "app/src/main/res/values-de/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Aktuelle Stimme",
+        "voice_available_title": "Verfügbare Stimmen",
+        "voice_default_scope": "Standardstimme für %1$@",
+        "voice_browse_languages": "Andere Sprachen ansehen",
+        "voice_supported_languages": "Unterstützte Sprachen: %1$@",
+        "voice_public_clones_title": "Ausgewählte geklonte Stimmen"
+      }
+    },
+    "el": {
+      "suggestedIOSLocale": "el",
+      "androidQualifier": "values-el",
+      "source": "app/src/global/res/values-el/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Τρέχουσα φωνή",
+        "voice_available_title": "Διαθέσιμες φωνές",
+        "voice_default_scope": "Προεπιλεγμένη φωνή για %1$@",
+        "voice_browse_languages": "Περιήγηση σε άλλες γλώσσες",
+        "voice_supported_languages": "Υποστηριζόμενες γλώσσες: %1$@",
+        "voice_public_clones_title": "Επιλεγμένες κλωνοποιημένες φωνές"
+      }
+    },
+    "en": {
+      "suggestedIOSLocale": "en",
+      "androidQualifier": "values",
+      "source": "app/src/main/res/values/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Current voice",
+        "voice_available_title": "Available voices",
+        "voice_default_scope": "Default voice for %1$@",
+        "voice_browse_languages": "Browse other languages",
+        "voice_supported_languages": "Supported languages: %1$@",
+        "voice_public_clones_title": "Featured cloned voices"
+      }
+    },
+    "es": {
+      "suggestedIOSLocale": "es",
+      "androidQualifier": "values-es",
+      "source": "app/src/main/res/values-es/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Voz actual",
+        "voice_available_title": "Voces disponibles",
+        "voice_default_scope": "Voz predeterminada para %1$@",
+        "voice_browse_languages": "Explorar otros idiomas",
+        "voice_supported_languages": "Idiomas compatibles: %1$@",
+        "voice_public_clones_title": "Voces clonadas destacadas"
+      }
+    },
+    "fi": {
+      "suggestedIOSLocale": "fi",
+      "androidQualifier": "values-fi",
+      "source": "app/src/global/res/values-fi/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Nykyinen ääni",
+        "voice_available_title": "Saatavilla olevat äänet",
+        "voice_default_scope": "Oletusääni kielelle %1$@",
+        "voice_browse_languages": "Selaa muita kieliä",
+        "voice_supported_languages": "Tuetut kielet: %1$@",
+        "voice_public_clones_title": "Valikoidut kloonatut äänet"
+      }
+    },
+    "fil": {
+      "suggestedIOSLocale": "fil",
+      "androidQualifier": "values-b+fil",
+      "source": "app/src/global/res/values-b+fil/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Kasalukuyang boses",
+        "voice_available_title": "Mga available na boses",
+        "voice_default_scope": "Default na boses para sa %1$@",
+        "voice_browse_languages": "Tumingin ng ibang wika",
+        "voice_supported_languages": "Mga sinusuportahang wika: %1$@",
+        "voice_public_clones_title": "Mga tampok na kinlonang boses"
+      }
+    },
+    "fr": {
+      "suggestedIOSLocale": "fr",
+      "androidQualifier": "values-fr",
+      "source": "app/src/main/res/values-fr/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Voix actuelle",
+        "voice_available_title": "Voix disponibles",
+        "voice_default_scope": "Voix par défaut pour %1$@",
+        "voice_browse_languages": "Parcourir les autres langues",
+        "voice_supported_languages": "Langues prises en charge : %1$@",
+        "voice_public_clones_title": "Voix clonées à découvrir"
+      }
+    },
+    "he": {
+      "suggestedIOSLocale": "he",
+      "androidQualifier": "values-iw",
+      "source": "app/src/global/res/values-iw/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "הקול הנוכחי",
+        "voice_available_title": "קולות זמינים",
+        "voice_default_scope": "קול ברירת המחדל עבור %1$@",
+        "voice_browse_languages": "עיון בשפות נוספות",
+        "voice_supported_languages": "שפות נתמכות: %1$@",
+        "voice_public_clones_title": "קולות משוכפלים נבחרים"
+      }
+    },
+    "hi": {
+      "suggestedIOSLocale": "hi",
+      "androidQualifier": "values-hi",
+      "source": "app/src/main/res/values-hi/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "वर्तमान आवाज़",
+        "voice_available_title": "उपलब्ध आवाज़ें",
+        "voice_default_scope": "%1$@ के लिए डिफ़ॉल्ट आवाज़",
+        "voice_browse_languages": "अन्य भाषाएँ देखें",
+        "voice_supported_languages": "समर्थित भाषाएँ: %1$@",
+        "voice_public_clones_title": "चुनिंदा क्लोन की गई आवाज़ें"
+      }
+    },
+    "hu": {
+      "suggestedIOSLocale": "hu",
+      "androidQualifier": "values-hu",
+      "source": "app/src/global/res/values-hu/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Jelenlegi hang",
+        "voice_available_title": "Elérhető hangok",
+        "voice_default_scope": "Alapértelmezett hang ehhez a nyelvhez: %1$@",
+        "voice_browse_languages": "Más nyelvek böngészése",
+        "voice_supported_languages": "Támogatott nyelvek: %1$@",
+        "voice_public_clones_title": "Kiemelt klónozott hangok"
+      }
+    },
+    "id": {
+      "suggestedIOSLocale": "id",
+      "androidQualifier": "values-in",
+      "source": "app/src/global/res/values-in/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Suara saat ini",
+        "voice_available_title": "Suara yang tersedia",
+        "voice_default_scope": "Suara default untuk %1$@",
+        "voice_browse_languages": "Jelajahi bahasa lain",
+        "voice_supported_languages": "Bahasa yang didukung: %1$@",
+        "voice_public_clones_title": "Pilihan suara kloning"
+      }
+    },
+    "it": {
+      "suggestedIOSLocale": "it",
+      "androidQualifier": "values-it",
+      "source": "app/src/main/res/values-it/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Voce attuale",
+        "voice_available_title": "Voci disponibili",
+        "voice_default_scope": "Voce predefinita per %1$@",
+        "voice_browse_languages": "Esplora altre lingue",
+        "voice_supported_languages": "Lingue supportate: %1$@",
+        "voice_public_clones_title": "Voci clonate in evidenza"
+      }
+    },
+    "ja": {
+      "suggestedIOSLocale": "ja",
+      "androidQualifier": "values-ja",
+      "source": "app/src/main/res/values-ja/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "現在の音声",
+        "voice_available_title": "選択できる音声",
+        "voice_default_scope": "%1$@の既定の音声",
+        "voice_browse_languages": "ほかの言語を見る",
+        "voice_supported_languages": "対応言語：%1$@",
+        "voice_public_clones_title": "おすすめのクローン音声"
+      }
+    },
+    "ko": {
+      "suggestedIOSLocale": "ko",
+      "androidQualifier": "values-ko",
+      "source": "app/src/global/res/values-ko/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "현재 음성",
+        "voice_available_title": "사용 가능한 음성",
+        "voice_default_scope": "%1$@ 기본 음성",
+        "voice_browse_languages": "다른 언어 둘러보기",
+        "voice_supported_languages": "지원 언어: %1$@",
+        "voice_public_clones_title": "추천 복제 음성"
+      }
+    },
+    "ms": {
+      "suggestedIOSLocale": "ms",
+      "androidQualifier": "values-ms",
+      "source": "app/src/global/res/values-ms/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Suara semasa",
+        "voice_available_title": "Suara yang tersedia",
+        "voice_default_scope": "Suara lalai untuk %1$@",
+        "voice_browse_languages": "Lihat bahasa lain",
+        "voice_supported_languages": "Bahasa yang disokong: %1$@",
+        "voice_public_clones_title": "Suara klon pilihan"
+      }
+    },
+    "nb": {
+      "suggestedIOSLocale": "nb",
+      "androidQualifier": "values-nb",
+      "source": "app/src/global/res/values-nb/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Gjeldende stemme",
+        "voice_available_title": "Tilgjengelige stemmer",
+        "voice_default_scope": "Standardstemme for %1$@",
+        "voice_browse_languages": "Se andre språk",
+        "voice_supported_languages": "Støttede språk: %1$@",
+        "voice_public_clones_title": "Utvalgte klonede stemmer"
+      }
+    },
+    "nl": {
+      "suggestedIOSLocale": "nl",
+      "androidQualifier": "values-nl",
+      "source": "app/src/global/res/values-nl/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Huidige stem",
+        "voice_available_title": "Beschikbare stemmen",
+        "voice_default_scope": "Standaardstem voor %1$@",
+        "voice_browse_languages": "Andere talen bekijken",
+        "voice_supported_languages": "Ondersteunde talen: %1$@",
+        "voice_public_clones_title": "Uitgelichte gekloonde stemmen"
+      }
+    },
+    "pl": {
+      "suggestedIOSLocale": "pl",
+      "androidQualifier": "values-pl",
+      "source": "app/src/global/res/values-pl/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Bieżący głos",
+        "voice_available_title": "Dostępne głosy",
+        "voice_default_scope": "Domyślny głos dla języka: %1$@",
+        "voice_browse_languages": "Przeglądaj inne języki",
+        "voice_supported_languages": "Obsługiwane języki: %1$@",
+        "voice_public_clones_title": "Polecane sklonowane głosy"
+      }
+    },
+    "pt-BR": {
+      "suggestedIOSLocale": "pt-BR",
+      "androidQualifier": "values-pt-rBR",
+      "source": "app/src/main/res/values-pt-rBR/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Voz atual",
+        "voice_available_title": "Vozes disponíveis",
+        "voice_default_scope": "Voz padrão para %1$@",
+        "voice_browse_languages": "Explorar outros idiomas",
+        "voice_supported_languages": "Idiomas compatíveis: %1$@",
+        "voice_public_clones_title": "Vozes clonadas em destaque"
+      }
+    },
+    "ro": {
+      "suggestedIOSLocale": "ro",
+      "androidQualifier": "values-ro",
+      "source": "app/src/global/res/values-ro/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Vocea curentă",
+        "voice_available_title": "Voci disponibile",
+        "voice_default_scope": "Vocea implicită pentru %1$@",
+        "voice_browse_languages": "Explorează alte limbi",
+        "voice_supported_languages": "Limbi acceptate: %1$@",
+        "voice_public_clones_title": "Voci clonate recomandate"
+      }
+    },
+    "ru": {
+      "suggestedIOSLocale": "ru",
+      "androidQualifier": "values-ru",
+      "source": "app/src/global/res/values-ru/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Текущий голос",
+        "voice_available_title": "Доступные голоса",
+        "voice_default_scope": "Голос по умолчанию для языка «%1$@»",
+        "voice_browse_languages": "Посмотреть другие языки",
+        "voice_supported_languages": "Поддерживаемые языки: %1$@",
+        "voice_public_clones_title": "Избранные клонированные голоса"
+      }
+    },
+    "sv": {
+      "suggestedIOSLocale": "sv",
+      "androidQualifier": "values-sv",
+      "source": "app/src/global/res/values-sv/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Aktuell röst",
+        "voice_available_title": "Tillgängliga röster",
+        "voice_default_scope": "Standardröst för %1$@",
+        "voice_browse_languages": "Utforska andra språk",
+        "voice_supported_languages": "Språk som stöds: %1$@",
+        "voice_public_clones_title": "Utvalda klonade röster"
+      }
+    },
+    "tr": {
+      "suggestedIOSLocale": "tr",
+      "androidQualifier": "values-tr",
+      "source": "app/src/global/res/values-tr/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Geçerli ses",
+        "voice_available_title": "Kullanılabilir sesler",
+        "voice_default_scope": "%1$@ için varsayılan ses",
+        "voice_browse_languages": "Diğer dillere göz at",
+        "voice_supported_languages": "Desteklenen diller: %1$@",
+        "voice_public_clones_title": "Öne çıkan klonlanmış sesler"
+      }
+    },
+    "vi": {
+      "suggestedIOSLocale": "vi",
+      "androidQualifier": "values-vi",
+      "source": "app/src/global/res/values-vi/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "Giọng hiện tại",
+        "voice_available_title": "Giọng có sẵn",
+        "voice_default_scope": "Giọng mặc định cho %1$@",
+        "voice_browse_languages": "Khám phá ngôn ngữ khác",
+        "voice_supported_languages": "Ngôn ngữ được hỗ trợ: %1$@",
+        "voice_public_clones_title": "Giọng nhân bản nổi bật"
+      }
+    },
+    "zh": {
+      "suggestedIOSLocale": "zh-Hans",
+      "androidQualifier": "values-zh",
+      "source": "app/src/main/res/values-zh/voice_adaptive_strings.xml",
+      "strings": {
+        "voice_current_title": "当前音色",
+        "voice_available_title": "可选音色",
+        "voice_default_scope": "%1$@的默认音色",
+        "voice_browse_languages": "浏览其他语言",
+        "voice_supported_languages": "支持语言：%1$@",
+        "voice_public_clones_title": "精选克隆音色"
+      }
+    }
+  }
+}

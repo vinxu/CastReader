@@ -10,6 +10,8 @@
 import SwiftUI
 
 struct LibrarySourcesSheet: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var player: PlayerCoordinator
     @EnvironmentObject private var kindle: KindlePlaybackCenter
@@ -416,6 +418,8 @@ struct LibrarySourcesView: View {
 /// Provider percentages may be absent even after local listening. All shelf
 /// surfaces use the same durable checkpoint to expose their continue action.
 struct LibraryListeningProgressLabel: View {
+    @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+
     let bookID: String
     let providerProgress: String
     @ObservedObject private var history = HistoryStore.shared

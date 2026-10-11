@@ -1,0 +1,311 @@
+{
+  "extName": {
+    "message": "CastReader — Felolvasás és AI-magyarázat"
+  },
+  "firefoxExtName": {
+    "message": "CastReader — Felolvasás + AI magyarázat"
+  },
+  "extDescription": {
+    "message": "Felolvasás 28 nyelven, szinkron kiemeléssel, automatikus görgetéssel és AI-magyarázatokkal."
+  },
+  "quickreadBtn": {
+    "message": "Gyors áttekintés"
+  },
+  "quickreadBtnExit": {
+    "message": "Áttekintés bezárása"
+  },
+  "quickreadPreparing": {
+    "message": "Áttekintés generálása"
+  },
+  "quickreadError": {
+    "message": "Áttekintési hiba"
+  },
+  "quickreadStageExtract": {
+    "message": "Kulcspontok kinyerése"
+  },
+  "quickreadStageTts": {
+    "message": "Hangfelirat generálása"
+  },
+  "quickreadStageRefine": {
+    "message": "Ritmus rendezése"
+  },
+  "quickreadStageReady": {
+    "message": "Lejátszásra kész…"
+  },
+  "quickreadFailed": {
+    "message": "Sikertelen: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Bezárás"
+  },
+  "quickreadCancel": {
+    "message": "Mégse"
+  },
+  "quickreadDone": {
+    "message": "Kész"
+  },
+  "quickreadHint": {
+    "message": "Kb. 25–45 másodperc, kérjük várjon"
+  },
+  "quickreadQueued": {
+    "message": "Sorban áll ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Napi ingyenes magyarázatok elfogytak. Holnap frissül."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Napi ingyenes magyarázatok elfogytak"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Napi ingyenes limit elérve – válts Pro-ra a korlátlan magyarázatokért. Ingyenes kerete holnap frissül."
+  },
+  "quickreadUpgrade": {
+    "message": "Frissítés Pro-ra"
+  },
+  "accountNotSignedIn": {
+    "message": "Nincs bejelentkezve"
+  },
+  "enableProMode": {
+    "message": "Pro engedélyezése"
+  },
+  "listenRateLimitTitle": {
+    "message": "Napi 20 perc ingyenes olvasás elfogyott"
+  },
+  "listenRateLimitBody": {
+    "message": "Felhasználta a mai 20 ingyenes perces olvasási keretet – váltson Pro-ra a korlátlan olvasásért. Ingyenes kerete holnap frissül."
+  },
+  "quickreadQuotaTip": {
+    "message": "Magyarázat · $n$/$max$ maradt ma",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Magyarázat · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Dokumentum olvasása"
+  },
+  "readerDrop": {
+    "message": "Húzzon ide képet / PDF-et / EPUB-ot / Word-t / TXT-t"
+  },
+  "readerDropOver": {
+    "message": "Húzza a feltöltéshez"
+  },
+  "readerSub": {
+    "message": "Felolvasás + AI áttekintés az eredeti fájlban – a formázás érintetlen"
+  },
+  "readerOr": {
+    "message": "vagy"
+  },
+  "readerPick": {
+    "message": "Fájl kiválasztása"
+  },
+  "readerRendering": {
+    "message": "Dokumentum renderelése…"
+  },
+  "readerListen": {
+    "message": "▶ Hallgatás"
+  },
+  "readerPause": {
+    "message": "⏸ Szünet"
+  },
+  "readerResume": {
+    "message": "▶ Folytatás"
+  },
+  "readerStop": {
+    "message": "■ Leállítás"
+  },
+  "readerExplain": {
+    "message": "✦ Magyarázat"
+  },
+  "readerExplainHint": {
+    "message": "Először állítsa le az olvasást"
+  },
+  "readerNewFile": {
+    "message": "Új fájl"
+  },
+  "readerSpeed": {
+    "message": "Sebesség"
+  },
+  "readerUnsupported": {
+    "message": "Nem támogatott fájlformátum"
+  },
+  "readerFailed": {
+    "message": "Feldolgozás sikertelen"
+  },
+  "readerEmpty": {
+    "message": "Ebben a dokumentumban nem található olvasható szöveg"
+  },
+  "readerQuotaLeft": {
+    "message": "maradt ma"
+  },
+  "readerQuotaBlocked": {
+    "message": "Napi 10 ingyenes áttekintés elfogyott – holnap frissül"
+  },
+  "readerPartial": {
+    "message": "A jelenlegi pozícióban lévő szakaszt magyaráztuk – görgessen lejjebb és koppintson újra a Magyarázat gombra a következőhöz"
+  },
+  "readerTooLarge": {
+    "message": "A fájl túl nagy (több mint 100 MB). Kérjük, használjon kisebb fájlt."
+  },
+  "readerLargeFilePro": {
+    "message": "A 7 MB feletti fájlokhoz Pro szükséges – a Pro 100 MB-ig nyitja meg a dokumentumokat."
+  },
+  "readerTooLargeForPage": {
+    "message": "Túl nagy ahhoz, hogy ebből az oldalról megnyissa (több mint 7 MB). Nyissa meg a dokumentumolvasót, és válassza ki ott – akár 100 MB-ig."
+  },
+  "readerOpenReader": {
+    "message": "Dokumentumolvasó megnyitása"
+  },
+  "readerContinue": {
+    "message": "Folytatás ✦"
+  },
+  "readerSettings": {
+    "message": "Beállítások"
+  },
+  "readerExplainLang": {
+    "message": "Magyarázat nyelve"
+  },
+  "readerDocumentLang": {
+    "message": "Dokumentum nyelve"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automatikus (a szövegből)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Képek vagy olvasható szöveg nélküli szkennelt PDF-ek esetén válassza ki a dokumentum nyelvét, majd nyissa meg a fájlt."
+  },
+  "readerVoiceEn": {
+    "message": "Angol hang"
+  },
+  "readerVoiceZh": {
+    "message": "Kínai hang"
+  },
+  "readerVoices": {
+    "message": "Hangok"
+  },
+  "readerBrowseVoices": {
+    "message": "Hangok böngészése"
+  },
+  "readerLangAuto": {
+    "message": "Automatikus (felület nyelve)"
+  },
+  "readerLangFollow": {
+    "message": "Dokumentumhoz igazítás"
+  },
+  "readerPreparing": {
+    "message": "Előadás előkészítése…"
+  },
+  "readerEncrypted": {
+    "message": "Ez a PDF jelszóval védett"
+  },
+  "readerCorrupt": {
+    "message": "A fájl sérült vagy olvashatatlan"
+  },
+  "readerTimeout": {
+    "message": "Túl sokáig tartott a megnyitás – a fájl valószínűleg túl összetett"
+  },
+  "readerEpubDrm": {
+    "message": "Ez az EPUB DRM-védelem alatt áll. Próbáljon meg egy DRM-mentes EPUB fájlt."
+  },
+  "readerEpubFixedLayout": {
+    "message": "Ez a rögzített elrendezésű EPUB nem tartalmaz olyan szöveget, amely szinkronban maradhatna az előadással."
+  },
+  "readerEpubTooComplex": {
+    "message": "Ez az EPUB meghaladja a biztonságos helyi feldolgozási korlátokat. Próbáljon meg kisebb vagy egyszerűbb EPUB fájlt."
+  },
+  "readerEpubTooLarge": {
+    "message": "Az EPUB fájlok mérete legfeljebb 30 MB lehet a biztonságos helyi feldolgozáshoz."
+  },
+  "inboxTitle": {
+    "message": "Tartalmak doboza"
+  },
+  "inboxSubtitle": {
+    "message": "Mentsen weboldalakat vagy kijelölt szövegeket, majd olvassa fel vagy magyarázza el őket, amikor készen áll."
+  },
+  "inboxEmpty": {
+    "message": "A beérkezett üzenetek tárháza üres"
+  },
+  "inboxEmptyDescription": {
+    "message": "Jobb klikkeljen egy oldalra vagy kijelölt szövegre, és mentse a CastReader-be."
+  },
+  "inboxSaveSelection": {
+    "message": "Kijelölt szöveg mentése a CastReader Tartalmak dobozába"
+  },
+  "inboxSavePage": {
+    "message": "Oldal mentése a CastReader Tartalmak dobozába"
+  },
+  "inboxOpen": {
+    "message": "Tartalmak dobozának megnyitása"
+  },
+  "inboxSharedText": {
+    "message": "Kijelölt szöveg"
+  },
+  "inboxOpenFailed": {
+    "message": "Nem sikerült megnyitni ezt a tartalmat. Kérjük, próbálja újra."
+  },
+  "inboxRetry": {
+    "message": "Próbálja újra"
+  },
+  "inboxRead": {
+    "message": "Felolvasás"
+  },
+  "inboxExplain": {
+    "message": "Magyarázat"
+  },
+  "inboxDelete": {
+    "message": "Törlés"
+  },
+  "inboxLink": {
+    "message": "Hivatkozás"
+  },
+  "inboxText": {
+    "message": "Szöveg"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Felolvasás + AI magyarázat"
+  },
+  "edgeExtDescription": {
+    "message": "Felolvasás szinkron kiemeléssel és görgetéssel. Az AI elmagyarázza a nehéz részeket. Természetes hangok 28 nyelven."
+  },
+  "toggleSiteVisibility": {
+    "message": "CastReader megjelenítése/elrejtése ezen az oldalon"
+  },
+  "voiceCloneBenefit": {
+    "message": "Saját hang használata Felolvasás és Magyarázat funkciókhoz · 120 perc havonta"
+  },
+  "voiceClonePaywall": {
+    "message": "Hozzon létre, kezeljen és lejátszon több személyes hang rögzített előnézetét ingyenesen. A Pro verzió a Felolvasás és Magyarázat funkciókban 120 generált percet használ havonta személyes hangokkal."
+  },
+  "voiceCloneQuotaExhausted": {
+    "message": "A személyes hang órái elfogytak erre a hónapra. A kiválasztott hang megmarad."
+  },
+  "ocrModelUnavailable": {
+    "message": "A felismerési nyelvfájl letöltése sikertelen. Csatlakozzon az internethez, és próbálja újra."
+  },
+  "ocrLanguageUnsupported": {
+    "message": "A képek és beolvasott oldalak felismerése ezen a nyelven még nem érhető el. Weboldalak, EPUB, TXT és kijelölhető szöveget tartalmazó PDF-fájlok továbbra is olvashatók."
+  },
+  "toolbarPageUnsupported": {
+    "message": "CastReader - Ezen az oldalon nem érhető el a felolvasás"
+  },
+  "toolbarReadPage": {
+    "message": "CastReader - Az oldal felolvasása"
+  }
+}

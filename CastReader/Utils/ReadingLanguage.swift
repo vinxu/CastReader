@@ -27,7 +27,12 @@ enum ReadingLanguagePolicy {
         let source: Source
 
         /// 只有「这一页自己看清楚了」才值得写进记忆；沿用与兜底不能反过来固化自己。
-        var shouldRemember: Bool { source == .detected }
+        var shouldRemember: Bool { source == .detected && SupportedTTSLanguage(identifier: language) != nil }
+        var status: LanguageDetector.Status {
+            if language.isEmpty || language == "no" { return .uncertain }
+            return SupportedTTSLanguage(identifier: language).map(LanguageDetector.Status.supported)
+                ?? .unsupported(language)
+        }
     }
 
     /// 采信一页检测结果所需的最低把握。
@@ -74,7 +79,7 @@ enum ReadingLanguagePolicy {
            evidence.confidence >= 0.90, evidence.readableCharacterCount >= 2 {
             return evidence.language
         }
-        return normalized(remembered) ?? "en"
+        return normalized(remembered) ?? ""
     }
 
     /// 三级证据，**用户的显式选择永远排第一**：
@@ -86,26 +91,27 @@ enum ReadingLanguagePolicy {
         userOverride: String?,
         confidentDetection: String?,
         remembered: String?,
-        fallback: String = SupportedTTSLanguage.english.rawValue
+        fallback: String = ""
     ) -> Decision {
         if let language = normalized(userOverride) {
             return Decision(language: language, source: .user)
         }
-        if let language = normalized(confidentDetection) {
+        if let raw = confidentDetection, !raw.trimmed.isEmpty, raw != "no", raw != "und" {
+            let language = SupportedTTSLanguage.canonicalCode(raw)
             return Decision(language: language, source: .detected)
         }
         if let language = normalized(remembered) {
             return Decision(language: language, source: .remembered)
         }
         return Decision(
-            language: normalized(fallback) ?? SupportedTTSLanguage.english.rawValue,
+            language: normalized(fallback) ?? "",
             source: .fallback
         )
     }
 
     private static func normalized(_ value: String?) -> String? {
         guard let value, !value.trimmed.isEmpty else { return nil }
-        return SupportedTTSLanguage.canonicalCode(value)
+        return SupportedTTSLanguage(identifier: value)?.rawValue
     }
 }
 
@@ -128,22 +134,34 @@ final class ReadingLanguageStore {
         return "\(space):\(id)"
     }
 
+    static func contentKey(for document: ReadingDocument, bookID: String? = nil) -> String {
+        let stableID = bookID?.trimmed ?? ""
+        return contentKey(
+            namespace: document.sourceKind.rawValue,
+            bookID: document.sourceKind == .youtube ? document.contentSessionKey
+                : (stableID.isEmpty ? document.id : stableID)
+        )
+    }
+
     private let defaults: UserDefaults
     private let now: () -> Date
+    private let scopedKey: () -> String
 
-    init(defaults: UserDefaults = .standard, now: @escaping () -> Date = Date.init) {
+    init(defaults: UserDefaults = .standard, now: @escaping () -> Date = Date.init,
+         scopedKey: @escaping () -> String = { AccountContentScopeBridge.scopedDefaultsKey("reading_language_overrides_v2") }) {
         self.defaults = defaults
         self.now = now
+        self.scopedKey = scopedKey
     }
 
     func override(for contentKey: String) -> String? {
         guard !contentKey.isEmpty else { return nil }
-        return entries()[contentKey]?.language
+        return entries()[contentKey].flatMap { SupportedTTSLanguage(identifier: $0.language)?.rawValue }
     }
 
     func setOverride(_ language: String, for contentKey: String) {
         guard !contentKey.isEmpty else { return }
-        let normalized = SupportedTTSLanguage.canonicalCode(language)
+        guard let normalized = SupportedTTSLanguage(identifier: language)?.rawValue else { return }
         var next = entries()
         next[contentKey] = Entry(language: normalized, updatedAt: now().timeIntervalSince1970)
         persist(next)
@@ -162,7 +180,7 @@ final class ReadingLanguageStore {
     }
 
     private func entries() -> [String: Entry] {
-        guard let data = defaults.data(forKey: Keys.entries),
+        guard let data = defaults.data(forKey: scopedKey()),
               let decoded = try? JSONDecoder().decode([String: Entry].self, from: data)
         else { return [:] }
         return decoded
@@ -179,10 +197,96 @@ final class ReadingLanguageStore {
             )
         }
         guard let data = try? JSONEncoder().encode(bounded) else { return }
-        defaults.set(data, forKey: Keys.entries)
+        defaults.set(data, forKey: scopedKey())
     }
 
-    private enum Keys {
-        static let entries = "reading_language_overrides_v1"
+    // The unscoped v1 archive is retained for recovery, never assigned to a new
+    // account whose ownership cannot be established.
+}
+
+/// Bounded, independent body windows determine a document's language. Metadata
+/// is corroborating evidence, never an override; headings and quoted passages
+/// cannot outvote ordinary prose simply because they appear first in a book.
+struct DocumentLanguageContext: Equatable {
+    enum Source: String { case body, corroboratedMetadata, uncertain }
+    let language: String
+    let source: Source
+    let declaredLanguage: String?
+    let samples: [LanguageDetector.Evidence]
+
+    static func detect(paragraphs: [ReadingParagraph], declaredLanguage: String? = nil) -> Self {
+        let content = languageEvidenceBody(paragraphs)
+        let prose = content.filter { $0.type == .paragraph && !$0.text.trimmed.isEmpty }
+        let body = prose.isEmpty ? content.filter { $0.type.isReadable && !$0.text.trimmed.isEmpty } : prose
+        return resolve(samples: windows(body.map(\.text)).map(LanguageDetector.evidence(for:)),
+                       declaredLanguage: declaredLanguage)
+    }
+
+    /// Gutenberg includes substantial English distribution/licence text around
+    /// foreign-language books. Recognize paired publisher delimiters only for
+    /// language evidence; all paragraphs remain available to the reader.
+    static func languageEvidenceBody(_ paragraphs: [ReadingParagraph]) -> [ReadingParagraph] {
+        func marker(_ paragraph: ReadingParagraph, boundary: String) -> Bool {
+            paragraph.text.range(of: #"\*{3}\s*"# + boundary + #" OF (?:THE|THIS) PROJECT GUTENBERG\b"#,
+                                 options: [.regularExpression, .caseInsensitive]) != nil
+        }
+        guard let start = paragraphs.firstIndex(where: { marker($0, boundary: "START") }),
+              let end = paragraphs.indices.first(where: { $0 > start && marker(paragraphs[$0], boundary: "END") }),
+              end > start + 1 else { return paragraphs }
+        return Array(paragraphs[(start + 1)..<end])
+    }
+
+    static func resolve(samples: [LanguageDetector.Evidence], declaredLanguage: String?) -> Self {
+        let declared = declaredLanguage.map(SupportedTTSLanguage.canonicalCode).flatMap { $0.isEmpty ? nil : $0 }
+        let valid = samples.filter { $0.readableCharacterCount >= 12 }
+        var votes: [String: Int] = [:]
+        for sample in valid {
+            switch sample.status {
+            case .supported(let language): votes[language.rawValue, default: 0] += 1
+            case .unsupported(let language): votes[language, default: 0] += 1
+            case .uncertain: break
+            }
+        }
+        let ordered = votes.sorted { $0.value > $1.value }
+        if let winner = ordered.first,
+           winner.value * 3 >= valid.count * 2,
+           ordered.count == 1 || winner.value > ordered[1].value {
+            return Self(language: winner.key, source: .body, declaredLanguage: declared, samples: samples)
+        }
+        // Two separate windows must support the declared language. A weak
+        // candidate can corroborate metadata, but an absent candidate cannot.
+        if let declared, valid.count >= 2, declared != "und", declared != "no" {
+            let corroborating = valid.filter {
+                ($0.supplementalCandidates[declared] ?? $0.candidates[declared] ?? 0) >= 0.20
+            }.count
+            if corroborating >= 2, corroborating * 3 >= valid.count * 2 {
+                return Self(language: declared, source: .corroboratedMetadata,
+                            declaredLanguage: declared, samples: samples)
+            }
+        }
+        return Self(language: "", source: .uncertain, declaredLanguage: declared, samples: samples)
+    }
+
+    private static func windows(_ paragraphs: [String]) -> [String] {
+        guard !paragraphs.isEmpty else { return [] }
+        // At most seven 900-character windows, evenly distributed across the
+        // document. Never concatenate or classify an entire large EPUB.
+        let count = min(7, paragraphs.count)
+        var result: [String] = []
+        var consumedThrough = -1
+        for n in 0..<count {
+            let start = count == 1 ? 0 : n * (paragraphs.count - 1) / (count - 1)
+            guard start > consumedThrough else { continue }
+            var text = ""
+            var index = start
+            while index < paragraphs.count, text.count < 900 {
+                if !text.isEmpty { text += " " }
+                text += String(paragraphs[index].prefix(900 - text.count))
+                consumedThrough = index
+                index += 1
+            }
+            if !text.isEmpty { result.append(text) }
+        }
+        return result
     }
 }

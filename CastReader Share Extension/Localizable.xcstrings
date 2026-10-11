@@ -1,839 +1,3288 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "share_cancel" : {"extractionState": "manual", "localizations": {"en": {"stringUnit": {"state": "translated", "value": "Cancel"}}, "zh-Hans": {"stringUnit": {"state": "translated", "value": "取消"}}, "zh-Hant": {"stringUnit": {"state": "translated", "value": "取消"}}, "ja": {"stringUnit": {"state": "translated", "value": "キャンセル"}}, "ko": {"stringUnit": {"state": "translated", "value": "취소"}}, "es": {"stringUnit": {"state": "translated", "value": "Cancelar"}}, "fr": {"stringUnit": {"state": "translated", "value": "Annuler"}}, "de": {"stringUnit": {"state": "translated", "value": "Abbrechen"}}, "pt": {"stringUnit": {"state": "translated", "value": "Cancelar"}}}},
-    "share_detail" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Speichere diesen Inhalt im Eingang. Öffne CastReader, um ihn vorlesen oder erklären zu lassen."
+  "sourceLanguage": "en",
+  "strings": {
+    "share_cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save this content to your inbox. Open CastReader to read or explain it."
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guarda este contenido en tu bandeja. Abre CastReader para leerlo o explicarlo."
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrez ce contenu dans votre boîte de réception. Ouvrez CastReader pour le lire ou l’expliquer."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "इस सामग्री को इनबॉक्स में सहेजें। इसे पढ़ने या समझाने के लिए CastReader खोलें।"
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salva questo contenuto nella posta in arrivo. Apri CastReader per leggerlo o spiegarlo."
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このコンテンツを受信箱に保存します。CastReader を開いて、読み上げまたは解説を選べます。"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salve este conteúdo na caixa de entrada. Abra o CastReader para ouvir ou explicar."
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulla"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将内容保存到接收箱。打开 CastReader 后再选择朗读或解读。"
-          }
-        }
-      }
-    },
-    "share_document" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geteiltes Dokument"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "रद्द करें"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shared document"
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuleren"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Documento compartido"
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "취소"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Document partagé"
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إلغاء"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "साझा दस्तावेज़"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отмена"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Documento condiviso"
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anuluj"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "共有ドキュメント"
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avbryt"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Documento compartilhado"
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuller"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "分享的文档"
-          }
-        }
-      }
-    },
-    "share_done" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fertig"
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avbryt"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Done"
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peruuta"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Listo"
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zrušit"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Terminé"
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ακύρωση"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "पूर्ण"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mégse"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fine"
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanselahin"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完了"
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ביטול"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Concluir"
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batal"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完成"
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batal"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anulează"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İptal"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hủy"
           }
         }
       }
     },
-    "share_explain" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erklären"
+    "share_detail": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichere diesen Inhalt im Eingang. Öffne CastReader, um ihn vorlesen oder erklären zu lassen."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Explain"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save this content to your inbox. Open CastReader to read or explain it."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Explicar"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guarda este contenido en tu bandeja. Abre CastReader para leerlo o explicarlo."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Expliquer"
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrez ce contenu dans votre boîte de réception. Ouvrez CastReader pour le lire ou l’expliquer."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "समझाएँ"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस सामग्री को इनबॉक्स में सहेजें। इसे पढ़ने या समझाने के लिए CastReader खोलें।"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spiega"
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salva questo contenuto nella posta in arrivo. Apri CastReader per leggerlo o spiegarlo."
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "解説"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このコンテンツを受信箱に保存します。CastReader を開いて、読み上げまたは解説を選べます。"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Explicar"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salve este conteúdo na caixa de entrada. Abra o CastReader para ouvir ou explicar."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "解读"
-          }
-        }
-      }
-    },
-    "share_failed" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader konnte dieses Element nicht öffnen."
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将内容保存到接收箱。打开 CastReader 后再选择朗读或解读。"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader could not open this item."
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewaar deze inhoud in uw inbox. Open CastReader om deze te laten voorlezen of uitleggen."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader no pudo abrir este elemento."
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 콘텐츠를 콘텐츠 보관함에 저장하세요. CastReader를 열어 소리 내어 읽거나 해설을 들으세요."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader n’a pas pu ouvrir cet élément."
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "احفظ هذا المحتوى في صندوق الوارد الخاص بك. افتح CastReader لقراءته أو شرحه."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader इस आइटम को नहीं खोल सका।"
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохраните этот контент во входящих CastReader. Откройте CastReader, чтобы послушать текст или его объяснение."
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader non ha potuto aprire questo elemento."
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisz tę treść w skrzynce odbiorczej. Otwórz CastReader, aby jej posłuchać lub uzyskać wyjaśnienie."
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "この項目を開けませんでした。"
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara detta innehåll till din inkorg. Öppna CastReader för att läsa eller förklara det."
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O CastReader não conseguiu abrir este item."
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gem dette indhold i din indbakke. Åbn CastReader for at læse eller forklare det."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader 暂时无法打开此内容。"
-          }
-        }
-      }
-    },
-    "share_image" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geteiltes Bild"
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagre dette innholdet i innboksen din. Åpne CastReader for å lese eller forklare det."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shared image"
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallenna sisältö CastReaderin saapuneisiin sisältöihin. Avaa CastReader, niin voit kuunnella tekstin tai sen selityksen."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Imagen compartida"
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uložte tento obsah do složky příchozího obsahu. Otevřete CastReader pro předčítání nebo vysvětlení."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Image partagée"
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αποθηκεύστε αυτό το περιεχόμενο στα εισερχόμενά σας. Ανοίξτε το CastReader για ανάγνωση ή εξήγηση."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "साझा की गई छवि"
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mentsd ezt a tartalmat a beérkező tartalmak közé. Nyisd meg a CastReadert a felolvasáshoz vagy a magyarázathoz."
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Immagine condivisa"
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I-save ang nilalaman na ito sa iyong inbox. Buksan ang CastReader para mabasa o maipaliwanag."
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "共有画像"
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simpan konten ini ke kotak masuk Anda. Buka CastReader untuk membaca atau menjelaskannya."
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Imagem compartilhada"
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simpan kandungan ini ke peti masuk anda. Buka CastReader untuk membaca atau menerangkan."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "分享的图片"
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bu içeriği gelen kutunuza kaydedin. Okumak veya açıklamak için CastReader'ı açın."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvează acest conținut în inbox. Deschide CastReader pentru a-l citi sau explica."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "שמירת התוכן הזה בתיבת התוכן. יש לפתוח את CastReader כדי לקרוא או להסביר אותו."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lưu nội dung này vào hộp thư nội dung. Mở CastReader để đọc hoặc giải thích."
           }
         }
       }
     },
-    "share_importing" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inhalt wird vorbereitet …"
+    "share_document": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geteiltes Dokument"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preparing content…"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared document"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preparando contenido…"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documento compartido"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Préparation du contenu…"
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Document partagé"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "सामग्री तैयार हो रही है…"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "साझा दस्तावेज़"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preparazione dei contenuti…"
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documento condiviso"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コンテンツを準備中…"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有ドキュメント"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preparando conteúdo…"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documento compartilhado"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在准备内容…"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享的文档"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gedeeld document"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유된 문서"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مستند تمت مشاركته"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Документ, которым поделились"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Udostępniony dokument"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokument som delats"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delt dokument"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delt dokument"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaettu dokumentti"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sdílený dokument"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Κοινοποιημένο έγγραφο"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Megosztott dokumentum"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ibinahaging dokumento"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumen yang dibagikan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumen dikongsi"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paylaşılan belge"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Document distribuit"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מסמך ששותף"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tài liệu được chia sẻ"
           }
         }
       }
     },
-    "share_read" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vorlesen"
+    "share_done": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Read aloud"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leer en voz alta"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lire à voix haute"
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminé"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ज़ोर से पढ़ें"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "पूर्ण"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leggi ad alta voce"
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fine"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "読み上げ"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完了"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ler em voz alta"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concluir"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "朗读"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gereed"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "완료"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gotowe"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klart"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Færdig"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferdig"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valmis"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hotovo"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Τέλος"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kész"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tapos na"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "סיום"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selesai"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selesai"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gata"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitti"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xong"
           }
         }
       }
     },
-    "share_save" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zu CastReader hinzufügen"
+    "share_explain": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erklären"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add to CastReader"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explain"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Añadir a CastReader"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explicar"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajouter à CastReader"
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expliquer"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader में जोड़ें"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "समझाएँ"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiungi a CastReader"
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiega"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader に追加"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解説"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adicionar ao CastReader"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explicar"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加入 CastReader"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uitleggen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "해설"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شرح"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Объяснить"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyjaśnij"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förklara"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forklar"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forklar"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selitä"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vysvětlit"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εξήγηση"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magyarázat"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ipaliwanag"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הסבר"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jelaskan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terangkan"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explică"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Açıkla"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giải thích"
           }
         }
       }
     },
-    "share_saved" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Im Inhaltseingang gespeichert."
+    "share_failed": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader konnte dieses Element nicht öffnen."
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Saved to your content inbox."
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader could not open this item."
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guardado en tu bandeja de contenido."
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader no pudo abrir este elemento."
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistré dans votre boîte de réception de contenu."
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader n’a pas pu ouvrir cet élément."
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "कॉन्टेंट इनबॉक्स में सहेजा गया।"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader इस आइटम को नहीं खोल सका।"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salvato nella posta in arrivo dei contenuti."
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader non ha potuto aprire questo elemento."
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コンテンツ受信箱に保存しました。"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この項目を開けませんでした。"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Salvo na caixa de entrada de conteúdo."
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O CastReader não conseguiu abrir este item."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已保存到内容接收箱。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader 暂时无法打开此内容。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader kon dit item niet openen."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader에서 이 항목을 열 수 없습니다."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذر على CastReader فتح هذا العنصر."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader не удалось открыть этот элемент."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader nie mógł otworzyć tego elementu."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader kunde inte öppna detta objekt."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader kunne ikke åbne dette element."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader kunne ikke åpne dette elementet."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader ei pystynyt avaamaan tätä kohdetta."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader nemohl otevřít tuto položku."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Το CastReader δεν μπόρεσε να ανοίξει αυτό το στοιχείο."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A CastReader nem tudta megnyitni ezt az elemet."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hindi mabuksan ng CastReader ang item na ito."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader tidak dapat membuka item ini."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader tidak dapat membuka item ini."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader bu öğeyi açamadı."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader nu a putut deschide acest element."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader לא הצליח לפתוח את הפריט הזה."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader không thể mở mục này."
           }
         }
       }
     },
-    "share_success_title" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zu CastReader hinzugefügt"
+    "share_image": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geteiltes Bild"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Added to CastReader"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared image"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Añadido a CastReader"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imagen compartida"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajouté à CastReader"
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Image partagée"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader में जोड़ दिया गया"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "साझा की गई छवि"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiunto a CastReader"
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Immagine condivisa"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader に追加しました"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有画像"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adicionado ao CastReader"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imagem compartilhada"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已加入 CastReader"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享的图片"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gedeelde afbeelding"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유된 이미지"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صورة تمت مشاركتها"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Изображение, которым поделились"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Udostępniony obraz"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bild som delats"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delt billede"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delt bilde"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaettu kuva"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sdílený obrázek"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Κοινοποιημένη εικόνα"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Megosztott kép"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ibinahaging larawan"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gambar yang dibagikan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imej dikongsi"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paylaşılan görüntü"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imagine distribuită"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "תמונה ששותפה"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ảnh được chia sẻ"
           }
         }
       }
     },
-    "share_text" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Geteilter Text"
+    "share_importing": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhalt wird vorbereitet …"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shared text"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing content…"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Texto compartido"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparando contenido…"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Texte partagé"
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Préparation du contenu…"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "साझा किया गया टेक्स्ट"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सामग्री तैयार हो रही है…"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Testo condiviso"
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparazione dei contenuti…"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "共有テキスト"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コンテンツを準備中…"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Texto compartilhado"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparando conteúdo…"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "分享的文本"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在准备内容…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhoud voorbereiden…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "콘텐츠 준비 중…"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جاري تحضير المحتوى…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подготовка контента…"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Przygotowywanie treści…"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förbereder innehåll…"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forbereder indhold…"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forbereder innhold…"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valmistellaan sisältöä…"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Příprava obsahu…"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Προετοιμασία περιεχομένου…"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tartalom előkészítése…"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inihahanda ang nilalaman…"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menyiapkan konten…"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menyediakan kandungan…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İçerik hazırlanıyor…"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se pregătește conținutul…"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "מכין תוכן…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang chuẩn bị nội dung…"
           }
         }
       }
     },
-    "share_youtube_saved" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Der Videolink wurde gespeichert. CastReader wird jetzt geöffnet, wenn iOS es zulässt, oder automatisch beim nächsten App-Start." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your video link is saved. CastReader will open it now when iOS allows, or automatically the next time you open the app." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "El enlace del video se guardó. CastReader se abrirá ahora si iOS lo permite, o automáticamente la próxima vez que abras la app." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Le lien de la vidéo est enregistré. CastReader va s’ouvrir si iOS l’autorise, ou automatiquement à la prochaine ouverture." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "वीडियो लिंक सहेज लिया गया है। iOS की अनुमति मिलने पर CastReader अभी खुलेगा, या अगली बार ऐप खोलने पर अपने आप जारी रहेगा।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il link del video è stato salvato. CastReader si aprirà ora se iOS lo consente, oppure automaticamente al prossimo avvio." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "動画リンクを保存しました。iOS で許可されれば CastReader を今すぐ開き、許可されない場合は次回起動時に自動で続行します。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O link do vídeo foi salvo. O CastReader será aberto agora se o iOS permitir, ou automaticamente na próxima vez que você abrir o app." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "视频链接已保存。系统允许时会立即打开 CastReader；否则下次打开 App 时会自动继续。" } }
+    "share_read": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorlesen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read aloud"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leer en voz alta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lire à voix haute"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ज़ोर से पढ़ें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leggi ad alta voce"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み上げ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ler em voz alta"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "朗读"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voorlezen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "소리 내어 읽기"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القراءة بصوت عالٍ"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтение вслух"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Czytaj na głos"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs upp"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Læs højt"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les høyt"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lue ääneen"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Číst nahlas"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ανάγνωση φωναχτά"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Felolvasás"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basahin nang malakas"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הקראה בקול"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baca nyaring"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baca lantang"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Citire cu voce tare"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sesli oku"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đọc thành tiếng"
+          }
+        }
       }
     },
-    "share_youtube_success_title" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "YouTube-Transkript empfangen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "YouTube transcript received" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Transcripción de YouTube recibida" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Transcription YouTube reçue" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "YouTube ट्रांसक्रिप्ट प्राप्त हुआ" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Trascrizione YouTube ricevuta" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "YouTube の字幕を受信しました" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Transcrição do YouTube recebida" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已接收 YouTube 字幕稿" } }
+    "share_save": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu CastReader hinzufügen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to CastReader"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadir a CastReader"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter à CastReader"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader में जोड़ें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiungi a CastReader"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader に追加"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicionar ao CastReader"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加入 CastReader"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toevoegen aan CastReader"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader에 추가"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إضافة إلى CastReader"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить в CastReader"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodaj do CastReader"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till i CastReader"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Føj til CastReader"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til i CastReader"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää CastReaderiin"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přidat do CastReader"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Προσθήκη στο CastReader"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hozzáadás a CastReaderhez"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Idagdag sa CastReader"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tambahkan ke CastReader"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tambah ke CastReader"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader'a Ekle"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adaugă în CastReader"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הוספה ל־CastReader"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thêm vào CastReader"
+          }
+        }
       }
     },
-    "share_youtube_open_app" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "CastReader öffnen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open CastReader" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abrir CastReader" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouvrir CastReader" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader खोलें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apri CastReader" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "CastReader を開く" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Abrir o CastReader" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开 CastReader" } }
+    "share_saved": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Inhaltseingang gespeichert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved to your content inbox."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guardado en tu bandeja de contenido."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistré dans votre boîte de réception de contenu."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कॉन्टेंट इनबॉक्स में सहेजा गया।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvato nella posta in arrivo dei contenuti."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コンテンツ受信箱に保存しました。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvo na caixa de entrada de conteúdo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存到内容接收箱。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bewaard in uw content-inbox."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "콘텐츠 보관함에 저장되었습니다."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم الحفظ في صندوق المحتوى الوارد."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранено во входящих CastReader."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zapisano w skrzynce odbiorczej treści."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sparat till din innehållsinkorg."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gemt i din indbakke til indhold."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagret i innboksen for innhold."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallennettu CastReaderin saapuneisiin sisältöihin."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uloženo do složky příchozího obsahu."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αποθηκεύτηκε στα εισερχόμενα περιεχομένου σας."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elmentve a beérkező tartalmak közé."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na-save sa iyong inbox ng nilalaman."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disimpan ke kotak masuk konten Anda."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disimpan ke peti masuk kandungan anda."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "İçerik gelen kutunuza kaydedildi."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salvat în inboxul de conținut."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "נשמר בתיבת התוכן שלך."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã lưu vào hộp thư nội dung của bạn."
+          }
+        }
       }
     },
-    "share_youtube_open_manually" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Der Link ist sicher gespeichert. Tippe unten, um CastReader zu öffnen, oder öffne die App später manuell." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The link is safely saved. Tap below to open CastReader, or open the app manually later." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "El enlace está guardado. Toca abajo para abrir CastReader o abre la app manualmente más tarde." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Le lien est bien enregistré. Touchez ci-dessous pour ouvrir CastReader, ou ouvrez l’app manuellement plus tard." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "लिंक सुरक्षित है। CastReader खोलने के लिए नीचे टैप करें, या बाद में ऐप को स्वयं खोलें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il link è stato salvato. Tocca qui sotto per aprire CastReader oppure apri l’app manualmente più tardi." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "リンクは保存済みです。下のボタンで CastReader を開くか、後で手動でアプリを開いてください。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O link está salvo. Toque abaixo para abrir o CastReader ou abra o app manualmente depois." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "链接已安全保存。轻点下方按钮打开 CastReader；也可稍后手动打开 App 自动继续。" } }
+    "share_success_title": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu CastReader hinzugefügt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added to CastReader"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Añadido a CastReader"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouté à CastReader"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader में जोड़ दिया गया"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiunto a CastReader"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader に追加しました"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicionado ao CastReader"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已加入 CastReader"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toegevoegd aan CastReader"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader에 추가되었습니다."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تمت الإضافة إلى CastReader"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавлено в CastReader"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dodano do CastReader"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagt till i CastReader"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilføjet til CastReader"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagt til i CastReader"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisätty CastReaderiin"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přidáno do CastReader"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Προστέθηκε στο CastReader"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hozzáadva a CastReaderhez"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Idinagdag sa CastReader"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ditambahkan ke CastReader"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ditambah ke CastReader"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader'a eklendi"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adăugat în CastReader"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "נוסף ל־CastReader"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã thêm vào CastReader"
+          }
+        }
       }
     },
-    "share_youtube_opening" : {
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "CastReader wird geöffnet …" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Opening CastReader…" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abriendo CastReader…" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouverture de CastReader…" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader खोला जा रहा है…" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apertura di CastReader…" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "CastReader を開いています…" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Abrindo o CastReader…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在打开 CastReader…" } }
+    "share_text": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geteilter Text"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared text"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texto compartido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texte partagé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "साझा किया गया टेक्स्ट"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testo condiviso"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共有テキスト"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texto compartilhado"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享的文本"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gedeelde tekst"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "공유된 텍스트"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نص تمت مشاركته"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текст, которым поделились"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Udostępniony tekst"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text som delats"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delt tekst"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delt tekst"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaettu teksti"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sdílený text"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Κοινοποιημένο κείμενο"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Megosztott szöveg"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ibinahaging teksto"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teks yang dibagikan"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teks dikongsi"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paylaşılan metin"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text distribuit"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "טקסט ששותף"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Văn bản được chia sẻ"
+          }
+        }
       }
     },
-    "share_title" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "An CastReader senden"
+    "share_title": {
+      "extractionState": "stale",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An CastReader senden"
           }
         },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send to CastReader"
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send to CastReader"
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enviar a CastReader"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar a CastReader"
           }
         },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Envoyer vers CastReader"
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer vers CastReader"
           }
         },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader को भेजें"
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader को भेजें"
           }
         },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invia a CastReader"
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invia a CastReader"
           }
         },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader に送る"
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader に送る"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enviar para o CastReader"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar para o CastReader"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "发送到 CastReader"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发送到 CastReader"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Naar CastReader verzenden"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader로 보내기"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إرسال إلى CastReader"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправить в CastReader"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wyślij do CastReader"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skicka till CastReader"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send til CastReader"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send til CastReader"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lähetä CastReaderiin"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odeslat do CastReader"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αποστολή στο CastReader"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Küldés a CastReaderhez"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ipadala sa CastReader"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kirim ke CastReader"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hantar ke CastReader"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader'a Gönder"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trimite la CastReader"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "שליחה ל־CastReader"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gửi đến CastReader"
+          }
+        }
+      }
+    },
+    "share_youtube_open_app": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open CastReader"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir CastReader"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir CastReader"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader खोलें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apri CastReader"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader を開く"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrir o CastReader"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 CastReader"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open CastReader"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader 열기"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح CastReader"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть CastReader"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otwórz CastReader"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna CastReader"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åbn CastReader"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne CastReader"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avaa CastReader"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevřít CastReader"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Άνοιγμα CastReader"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader megnyitása"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buksan ang CastReader"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buka CastReader"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buka CastReader"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader'ı Aç"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deschide CastReader"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "פתיחת CastReader"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở CastReader"
+          }
+        }
+      }
+    },
+    "share_youtube_open_manually": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Link ist sicher gespeichert. Tippe unten, um CastReader zu öffnen, oder öffne die App später manuell."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The link is safely saved. Tap below to open CastReader, or open the app manually later."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El enlace está guardado. Toca abajo para abrir CastReader o abre la app manualmente más tarde."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le lien est bien enregistré. Touchez ci-dessous pour ouvrir CastReader, ou ouvrez l’app manuellement plus tard."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लिंक सुरक्षित है। CastReader खोलने के लिए नीचे टैप करें, या बाद में ऐप को स्वयं खोलें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il link è stato salvato. Tocca qui sotto per aprire CastReader oppure apri l’app manualmente più tardi."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リンクは保存済みです。下のボタンで CastReader を開くか、後で手動でアプリを開いてください。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O link está salvo. Toque abaixo para abrir o CastReader ou abra o app manualmente depois."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "链接已安全保存。轻点下方按钮打开 CastReader；也可稍后手动打开 App 自动继续。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De link is veilig opgeslagen. Tik hieronder om CastReader te openen, of open de app later handmatig."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "링크가 안전하게 저장되었습니다. 아래를 탭하여 CastReader를 열거나 나중에 앱을 직접 여세요."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم حفظ الرابط بأمان. اضغط أدناه لفتح CastReader، أو افتح التطبيق يدويًا لاحقًا."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ссылка безопасно сохранена. Нажмите ниже, чтобы открыть CastReader, или запустите приложение вручную позже."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link został bezpiecznie zapisany. Stuknij poniżej, aby otworzyć CastReader, lub uruchom aplikację ręcznie później."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Länken är säkert sparad. Tryck nedan för att öppna CastReader, eller öppna appen manuellt senare."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linket er sikkert gemt. Tryk nedenfor for at åbne CastReader, eller åbn appen manuelt senere."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lenken er trygt lagret. Trykk nedenfor for å åpne CastReader, eller åpne appen manuelt senere."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linkki on turvallisesti tallennettu. Napauta alla avataksesi CastReaderin tai avaa sovellus myöhemmin manuaalisesti."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkaz je bezpečně uložen. Klepněte níže pro otevření CastReader nebo aplikaci otevřete ručně později."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ο σύνδεσμος έχει αποθηκευτεί με ασφάλεια. Πατήστε παρακάτω για να ανοίξετε το CastReader ή ανοίξτε την εφαρμογή χειροκίνητα αργότερα."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A link biztonságosan el lett mentve. Koppints alább a CastReader megnyitásához, vagy nyisd meg az alkalmazást később."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ligtas na na-save ang link. I-tap sa ibaba upang buksan ang CastReader, o buksan ang app nang manu-mano mamaya."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tautan telah disimpan dengan aman. Ketuk di bawah untuk membuka CastReader, atau buka aplikasi secara manual nanti."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pautan telah disimpan dengan selamat. Ketuk di bawah untuk membuka CastReader, atau buka aplikasi secara manual kemudian."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bağlantı güvenle kaydedildi. CastReader'ı açmak için aşağıya dokunun veya uygulamayı daha sonra elle açın."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linkul a fost salvat în siguranță. Atinge mai jos pentru a deschide CastReader sau deschide aplicația manual mai târziu."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "הקישור נשמר בבטחה. אפשר להקיש למטה כדי לפתוח את CastReader, או לפתוח את האפליקציה ידנית בהמשך."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết đã được lưu an toàn. Nhấn bên dưới để mở CastReader hoặc tự mở ứng dụng sau."
+          }
+        }
+      }
+    },
+    "share_youtube_opening": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader wird geöffnet …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opening CastReader…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abriendo CastReader…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouverture de CastReader…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader खोला जा रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apertura di CastReader…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader を開いています…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abrindo o CastReader…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在打开 CastReader…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader wordt geopend…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader를 여는 중…"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جاري فتح CastReader…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открытие CastReader…"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otwieranie CastReader…"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppnar CastReader…"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åbner CastReader…"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpner CastReader…"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avataan CastReaderia…"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otevírání CastReader…"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Άνοιγμα CastReader…"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader megnyitása…"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Binubuksan ang CastReader…"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Membuka CastReader…"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Membuka CastReader…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader açılıyor…"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se deschide CastReader…"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "פותח את CastReader…"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang mở CastReader…"
+          }
+        }
+      }
+    },
+    "share_youtube_saved": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Videolink wurde gespeichert. CastReader wird jetzt geöffnet, wenn iOS es zulässt, oder automatisch beim nächsten App-Start."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your video link is saved. CastReader will open it now when iOS allows, or automatically the next time you open the app."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El enlace del video se guardó. CastReader se abrirá ahora si iOS lo permite, o automáticamente la próxima vez que abras la app."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le lien de la vidéo est enregistré. CastReader va s’ouvrir si iOS l’autorise, ou automatiquement à la prochaine ouverture."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "वीडियो लिंक सहेज लिया गया है। iOS की अनुमति मिलने पर CastReader अभी खुलेगा, या अगली बार ऐप खोलने पर अपने आप जारी रहेगा।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il link del video è stato salvato. CastReader si aprirà ora se iOS lo consente, oppure automaticamente al prossimo avvio."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "動画リンクを保存しました。iOS で許可されれば CastReader を今すぐ開き、許可されない場合は次回起動時に自動で続行します。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O link do vídeo foi salvo. O CastReader será aberto agora se o iOS permitir, ou automaticamente na próxima vez que você abrir o app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "视频链接已保存。系统允许时会立即打开 CastReader；否则下次打开 App 时会自动继续。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uw videolink is opgeslagen. CastReader opent deze nu zodra iOS dit toelaat, of automatisch de volgende keer dat u de app opent."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "동영상 링크가 저장되었습니다. iOS에서 허용하면 CastReader가 지금 링크를 열고, 그렇지 않으면 다음에 앱을 열 때 자동으로 엽니다."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم حفظ رابط الفيديو الخاص بك. سيفتح CastReader الرابط الآن عندما يسمح iOS، أو تلقائيًا عند فتح التطبيق في المرة القادمة."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ссылка на видео сохранена. CastReader откроет её сейчас, когда iOS разрешит, или автоматически при следующем запуске приложения."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link do filmu zapisano. CastReader otworzy go teraz, gdy iOS na to pozwoli, lub automatycznie przy następnym otwarciu aplikacji."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Din videolänk har sparats. CastReader öppnar den nu om iOS tillåter det, annars automatiskt nästa gång du öppnar appen."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dit videolink er gemt. CastReader åbner det nu, hvis iOS tillader det, eller automatisk næste gang du åbner appen."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videolenken er lagret. CastReader vil åpne den når iOS tillater det, eller automatisk neste gang du åpner appen."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Videolinkkisi on tallennettu. CastReader avaa sen nyt, kun iOS sallii, tai automaattisesti seuraavan kerran, kun avaat sovelluksen."
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odkaz na video je uložen. CastReader jej otevře nyní, jakmile to iOS dovolí, nebo automaticky při příštím spuštění aplikace."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ο σύνδεσμος του βίντεο αποθηκεύτηκε. Το CastReader θα τον ανοίξει τώρα, αν το επιτρέπει το iOS, ή αυτόματα την επόμενη φορά που θα ανοίξετε την εφαρμογή."
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A videólinked el lett mentve. A CastReader most megnyitja, ha az iOS engedi, vagy automatikusan a következő alkalommal, amikor megnyitod az alkalmazást."
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Na-save ang link ng video. Bubuksan ito ng CastReader ngayon kung papayagan ng iOS, o awtomatiko sa susunod mong pagbukas ng app."
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tautan video Anda telah disimpan. CastReader akan membukanya sekarang saat iOS mengizinkan, atau secara otomatis saat Anda membuka aplikasi berikutnya."
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pautan video anda telah disimpan. CastReader akan membukanya sekarang jika dibenarkan oleh iOS, atau secara automatik apabila anda membuka aplikasi pada kali seterusnya."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video bağlantınız kaydedildi. iOS izin verirse CastReader bağlantıyı şimdi, aksi takdirde uygulamayı bir sonraki açışınızda otomatik olarak açar."
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linkul videoclipului a fost salvat. CastReader îl va deschide acum, dacă iOS permite, sau automat la următoarea deschidere a aplicației."
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "קישור הסרטון שלך נשמר. CastReader יפתח אותו עכשיו אם iOS מאפשר זאת, או אוטומטית בפעם הבאה שהאפליקציה תיפתח."
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liên kết video đã được lưu. CastReader sẽ mở ngay khi iOS cho phép, hoặc tự động mở vào lần tiếp theo bạn mở ứng dụng."
+          }
+        }
+      }
+    },
+    "share_youtube_success_title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube-Transkript empfangen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube transcript received"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcripción de YouTube recibida"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcription YouTube reçue"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube ट्रांसक्रिप्ट प्राप्त हुआ"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trascrizione YouTube ricevuta"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube の字幕を受信しました"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcrição do YouTube recebida"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已接收 YouTube 字幕稿"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube-transcript ontvangen"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube 대본을 받았습니다"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم استلام نص فيديو YouTube"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Транскрипт YouTube получен"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transkrypcja YouTube otrzymana"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube-transkript mottaget"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube-transkript modtaget"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube-transkript mottatt"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube-litterointi vastaanotettu"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transkript YouTube přijat"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Λήφθηκε η απομαγνητοφώνηση του YouTube"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube-átirat fogadva"
+          }
+        },
+        "fil": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Natanggap ang transcript ng YouTube"
+          }
+        },
+        "id": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transkrip YouTube diterima"
+          }
+        },
+        "ms": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transkrip YouTube diterima"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "YouTube transkripti alındı"
+          }
+        },
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcriere YouTube primită"
+          }
+        },
+        "he": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "התקבל תמלול YouTube"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã nhận bản chép lời YouTube"
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

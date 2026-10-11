@@ -52,31 +52,6 @@ function charRangeInElement(el: HTMLElement, start: number, end: number): Range 
   return sourceRange(el, start, end)
 }
 
-function isCJKCh(ch: string): boolean {
-  if (!ch) return false
-  const c = ch.charCodeAt(0)
-  return (c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3400 && c <= 0x4DBF) || (c >= 0x3000 && c <= 0x303F) || (c >= 0xFF00 && c <= 0xFFEF)
-}
-
-// 折叠段内空白（HTML 源码换行/缩进进了 textContent → TTS 会在此停顿）：连续空白 → CJK 之间删除（中文连续）、
-// 其余单空格（保英文词边界）。同步改 text node，使 textContent 与 TTS 输入一致、高亮 charRange 不受影响。
-function normalizeWhitespace(el: HTMLElement): void {
-  const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT)
-  const nodes: Text[] = []
-  let n: Node | null
-  while ((n = walker.nextNode())) nodes.push(n as Text)
-  for (const node of nodes) {
-    const t = node.textContent || ''
-    if (!/\s/.test(t)) continue
-    const c = t.replace(/\s+/g, (m: string, off: number): string => {
-      const prev = off > 0 ? t[off - 1] : ''
-      const next = off + m.length < t.length ? t[off + m.length] : ''
-      return (isCJKCh(prev) && isCJKCh(next)) ? '' : ' '
-    })
-    if (c !== t) node.textContent = c
-  }
-}
-
 export function initBridge(deps: CRDeps): void {
   const { extract } = deps
   const paraElements = new Map<number, HTMLElement>()
@@ -323,13 +298,18 @@ export function initBridge(deps: CRDeps): void {
       const el = p.element
       installParagraphTaps(el.ownerDocument)
       try { el.setAttribute('data-cr-para', String(i)) } catch { /* */ }
-      // 折叠段内空白：HTML 源码换行/缩进否则会让 TTS 停顿；charRange 与 textContent 同步。
-      // exactText 的提取器已经在自己的坐标系里量过可见区间，再改文本节点会让偏移错位。
-      if (!p.exactText) normalizeWhitespace(el)
+      // Exact-text providers already own their measured source coordinates.
+      if (!p.exactText) {
+        // A visible paragraph can contain TemplateStyles, scripts or hidden
+        // annotations. Raw textContent would send that invisible code to TTS.
+        // Reuse the visible-text coordinate map for extraction and every
+        // highlight/mark, without removing or modifying the website's nodes.
+        el.dataset.crVisibleSource = 'true'
+      }
       paraElements.set(i, el)
       extractedParaElements.set(i, el)
       paraOffsets.set(i, p.charOffset || 0)
-      const text = p.exactText ? p.text : (el.textContent || p.text || '').trim()
+      const text = p.exactText ? p.text : sourceText(el).trim()
       const row: Record<string, unknown> = { paragraphIndex: i, text, type: 'paragraph' }
       if (p.speechText && p.speechText !== text) {
         row.boundaryUTF16Offset = text.length
