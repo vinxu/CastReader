@@ -15,10 +15,10 @@ Observed on 2026-10-11:
 - Xcode 27.1 Release Candidate is available from Apple (2026-10-05). Official page lists a 1.89 GB XIP and requires Apple silicon / macOS 26.6 or later.
 - Official download completed in the existing authenticated Chrome session; extracted and installed at `/Applications/Xcode-27.1.app`. Version 27.1, build 27A9275; bundle minimum macOS is 26.6. `codesign --verify --deep --strict` passed and Gatekeeper returned `accepted; source=Apple System`. Launch/SDK setup remains pending the host update.
 - XIP: 2,027,369,056 bytes; SHA-256 `038ad29cc2cd87e7762aac596833943000fd3d5fb64be530e2ecdbe5449cd660`. The duplicate downloaded archive can be removed after verified extraction to recover its space; the installed application is retained.
-- Software Update offers macOS Tahoe 26.7.1 (25G241), 7,617,861 KiB, restart required. Download-only preparation requested; installation/restart not yet performed. This meets the Xcode minimum without moving to macOS 27.
+- Software Update offers macOS Tahoe 26.7.1 (25G241), 7,617,861 KiB, restart required. Download-only preparation completed (softwareupdate exited 0 at 100%); installation/restart not yet performed. This meets the Xcode minimum without moving to macOS 27.
 - Initial free disk space approximately 26 GiB; Xcode.app 3.7 GB, default DerivedData 4.3 GB. CoreSimulator directory reports 39 GB, including mounted runtimes; this is not a promise of reclaimable disk space.
 
-Finish this stage by updating the host, launching Xcode 27.1, installing only the necessary iOS runtime, and confirming a Duo device can boot. Then remove the superseded Xcode application and measure actual free space. A user question requesting permission for installation/restart is pending because that interrupts other applications and agents. Do not treat elapsed time as approval. Old Xcode 26.6 remains selected and usable until then.
+Finish this stage by updating the host, launching Xcode 27.1, installing only the necessary iOS runtime, and confirming a Duo device can boot. Then remove the superseded Xcode application and measure actual free space. The user explicitly approved installation and restart: “允许，保存工作后更新并重启”. Save the execution checkpoint before invoking the system installer. Do not ask for the same restart permission again. Old Xcode 26.6 remains selected and usable until then.
 
 The release ancestry check and existing 28-language Safari verification both pass on the unchanged iOS baseline. No Duo application code or screenshots have been marked accepted.
 
@@ -65,3 +65,9 @@ The source audit found device/size assumptions in 24 Swift files. These are revi
 - https://developer.apple.com/news/?id=kkphp5qo
 
 This is the execution checkpoint, not a completed acceptance report. Resume the first unfinished stage rather than repeating completed checks.
+
+## Restart checkpoint
+
+- Work saved in branch `codex/ios-duo-adaptation`; application source unchanged. Xcode 27.1 is installed and signature-verified at `/Applications/Xcode-27.1.app`.
+- First action after restart: read `sw_vers`, verify the requested macOS update completed, and launch Xcode 27.1. Then finish SDK/runtime setup, switch developer tools and remove the authorized superseded 26.6 application.
+- Resume stage 2 only after recording the new toolchain/runtime status. Stage 2–5 are not accepted or submitted.
