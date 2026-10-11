@@ -27,7 +27,8 @@ app_id = ARGV.fetch(0)
 version_id = ARGV.fetch(1)
 client = ASCClient.new
 version_check = client.request("GET", "/v1/appStoreVersions/#{version_id}").fetch("data")
-abort "Wrong app/version/platform" unless app_id == "6757636395" && version_check.dig("attributes", "platform") == "MAC_OS" && version_check.dig("attributes", "versionString") == "1.2.47"
+release_config = JSON.parse(File.read(File.join(__dir__, 'mac-release-version.json')))
+abort "Wrong app/version/platform" unless app_id == "6757636395" && version_check.dig("attributes", "platform") == "MAC_OS" && version_check.dig("attributes", "versionString") == release_config.fetch('version')
 
 def submissions(client, app_id)
   client.get_all("/v1/apps/#{app_id}/reviewSubmissions?filter%5Bplatform%5D=MAC_OS&limit=200")

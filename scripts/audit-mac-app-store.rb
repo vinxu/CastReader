@@ -7,7 +7,8 @@ require "uri"
 require File.expand_path("~/.codex/skills/submit-castreader-ios-to-app-store/scripts/asc_client.rb")
 
 APP_ID = "6757636395"
-LOCALES = %w[en-US zh-Hans ja es-ES fr-FR pt-BR it hi de-DE zh-Hant es-MX].freeze
+RELEASE_CONFIG = JSON.parse(File.read(File.join(__dir__, 'mac-release-version.json'))).freeze
+LOCALES = JSON.parse(File.read(File.join(__dir__, '../store/app-store/mac-' + RELEASE_CONFIG.fetch('version'), 'asc-metadata.json'))).keys.freeze
 TERMINAL_REVIEW_STATES = %w[COMPLETE CANCELED].freeze
 VERSION_CREATION_ALLOWED_STATES = %w[READY_FOR_SALE READY_FOR_DISTRIBUTION].freeze
 
@@ -234,7 +235,7 @@ def audit_version(client, options)
   version_id = options.fetch(:version_id)
   expected_build_id = options.fetch(:build_id)
   version = client.request("GET", "/v1/appStoreVersions/#{version_id}").fetch("data")
-  abort "Wrong Mac version" unless version.dig("attributes", "platform") == "MAC_OS" && version.dig("attributes", "versionString") == "1.2.47"
+  abort "Wrong Mac version" unless version.dig("attributes", "platform") == "MAC_OS" && version.dig("attributes", "versionString") == RELEASE_CONFIG.fetch('version')
   build = client.request("GET", "/v1/appStoreVersions/#{version_id}/build")["data"]
   if build.nil?
     errors << "App Store version has no attached build"
@@ -254,7 +255,7 @@ def audit_version(client, options)
   errors << "Version locale set mismatch" unless version_localizations.keys.sort == LOCALES.sort
   # Apple permits Promotional Text to be absent; preserve an intentionally blank value.
   # https://developer.apple.com/app-store/product-page/#promotional-text
-  required_version_fields = %w[description keywords supportUrl marketingUrl] # First Mac release has no prior version changes.
+  required_version_fields = %w[description keywords supportUrl marketingUrl whatsNew]
   absent_promotional_text_locales = []
   version_localizations.each do |locale, item|
     required_version_fields.each do |field|
@@ -308,6 +309,7 @@ def audit_version(client, options)
       }
     end
     screenshots[locale] = { sets: set_summaries, complete: complete, fallbackToPrimary: sets.empty? }
+    errors << "#{locale} must have five COMPLETE Mac screenshots" unless set_summaries.size == 1 && set_summaries.first.values_at(:displayType, :complete, :total) == ['APP_DESKTOP', 5, 5]
     errors << "#{locale} has a screenshot set without a complete screenshot" if !sets.empty? && complete.zero?
   end
   errors << "Primary locale en-US has no complete screenshots" if screenshots.dig("en-US", :complete).to_i.zero?
