@@ -379,7 +379,7 @@ actor TTSService: ParagraphSpeechGenerating {
                 let networkRequestID = Self.cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex,
                     text: remainingText, voice: resolvedVoice, language: language, speed: speed, includeVoiceCode: includeVoiceCode)
                     ?? UUID().uuidString
-                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=\(presetPriority) chars=\(remainingText.utf16.count) planned=\(requestUnits.count)")
+                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) voice=\(resolvedVoice) language=\(language) priority=\(presetPriority) chars=\(remainingText.utf16.count) planned=\(requestUnits.count)")
                 let response = try await api.generateTTS(
                     text: remainingText,
                     voice: resolvedVoice,
@@ -476,7 +476,7 @@ actor TTSService: ParagraphSpeechGenerating {
                 let networkRequestID = Self.cloneSubrequestID(base: cloneRequestID, segmentIndex: segmentIndex,
                     text: remainingText, voice: voice, language: language, speed: speed, includeVoiceCode: includeVoiceCode)
                     ?? UUID().uuidString
-                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) priority=interactive chars=\(remainingText.utf16.count) planned=\(requestUnits.count)")
+                ReaderRunLog.write("TTS part begin para=\(paragraphIndex) part=\(segmentIndex) request=\(networkRequestID) voice=\(voice) language=\(language) priority=interactive chars=\(remainingText.utf16.count) planned=\(requestUnits.count)")
                 let response = try await api.generateTTS(
                     text: remainingText,
                     voice: voice,
