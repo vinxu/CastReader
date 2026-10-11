@@ -71,3 +71,5 @@ This is the execution checkpoint, not a completed acceptance report. Resume the 
 - Work saved in branch `codex/ios-duo-adaptation`; application source unchanged. Xcode 27.1 is installed and signature-verified at `/Applications/Xcode-27.1.app`.
 - First action after restart: read `sw_vers`, verify the requested macOS update completed, and launch Xcode 27.1. Then finish SDK/runtime setup, switch developer tools and remove the authorized superseded 26.6 application.
 - Resume stage 2 only after recording the new toolchain/runtime status. Stage 2–5 are not accepted or submitted.
+
+- Installer invoked through System Settings for **26.7.1** (not the separate macOS 27 offer). Current gate: the system password sheet requires the user to enter their Mac login password locally. User has already authorized installation/restart; do not ask again. No credentials were requested in chat or stored.
