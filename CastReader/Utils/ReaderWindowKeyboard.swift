@@ -66,6 +66,11 @@ final class ReaderWindowKeyboard: ObservableObject {
     func action(_ command: ReaderWindowCommand) -> (() -> Void)? {
         registrations.values.sorted { $0.priority > $1.priority }.compactMap { $0.actions[command] }.first
     }
+    static func canHandleCommands(in window: UIWindow?) -> Bool {
+        guard let window, window.isKeyWindow,
+              window.rootViewController?.presentedViewController == nil else { return false }
+        return !hasTextEditor(in: window)
+    }
     static func hasTextEditor(in view: UIView) -> Bool {
         guard !view.isHidden, view.alpha > 0.01 else { return false }
         if view.isFirstResponder {
@@ -122,9 +127,7 @@ struct ReaderAppKeyboardCommands: Commands {
     @FocusedObject private var keyboard: ReaderWindowKeyboard?
 
     private var available: Bool {
-        guard AdaptiveLayout.isPad, let window = scene?.window, window.isKeyWindow,
-              window.rootViewController?.presentedViewController == nil else { return false }
-        return !ReaderWindowKeyboard.hasTextEditor(in: window)
+        ReaderWindowKeyboard.canHandleCommands(in: scene?.window)
     }
     var body: some Commands {
         CommandMenu("CastReader") {

@@ -21,9 +21,7 @@ private struct KindleOfflinePageZoom: UIViewRepresentable {
         let doubleTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.doubleTap(_:)))
         doubleTap.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTap)
-        if AdaptiveLayout.isPad {
-            view.pinchGestureRecognizer?.addTarget(context.coordinator, action: #selector(Coordinator.recoverStalledPinch(_:)))
-        }
+        view.pinchGestureRecognizer?.addTarget(context.coordinator, action: #selector(Coordinator.recoverStalledPinch(_:)))
         return view
     }
     func updateUIView(_ view: Canvas, context: Context) {
@@ -133,6 +131,7 @@ struct KindleOfflineBookReaderView: View {
 
 @MainActor
 private struct KindleOfflineBookReaderContent: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @EnvironmentObject private var readerScene: ReaderSceneContext
@@ -274,7 +273,7 @@ private struct KindleOfflineBookReaderContent: View {
                             .accessibilityIdentifier("offlineBookParagraph.\(paragraph.id)")
                     }
                 }.padding(20)
-                    .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.readingWidth : .infinity)
+                    .frame(maxWidth: horizontalSizeClass == .regular ? AdaptiveLayout.readingWidth : .infinity)
                     .frame(maxWidth: .infinity)
             }.id(model.pageIndex)
             .task(id: speech.highlightedParagraphID) {

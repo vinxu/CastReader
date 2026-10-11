@@ -17,8 +17,8 @@ struct YouTubeCaptionLanguagePanelOverlay: View {
     var body: some View {
         GeometryReader { proxy in
             let horizontalInset: CGFloat = proxy.size.width > 700 ? 42 : 12
-            let panelWidth = min(560, proxy.size.width - horizontalInset * 2)
-            let panelHeight = min(560, max(300, proxy.size.height * 0.62))
+            let panelWidth = min(560, max(1, proxy.size.width - horizontalInset * 2))
+            let panelHeight = min(max(1, proxy.size.height - 20), min(560, max(300, proxy.size.height * 0.62)))
 
             ZStack(alignment: .bottom) {
                 Color.black.opacity(0.32)
@@ -39,11 +39,10 @@ struct YouTubeCaptionLanguagePanelOverlay: View {
                         .stroke(AppTheme.mutedForeground.opacity(0.16), lineWidth: 0.5)
                 }
                 .shadow(color: .black.opacity(0.22), radius: 24, y: 8)
-                .padding(.bottom, max(8, proxy.safeAreaInsets.bottom))
+                .padding(.bottom, 8)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .ignoresSafeArea(edges: .bottom)
         .accessibilityIdentifier("youtubeCaptionLanguagePanel")
     }
 }

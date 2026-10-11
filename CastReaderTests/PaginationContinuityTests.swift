@@ -836,6 +836,137 @@ final class PaginationContinuityTests: XCTestCase {
         XCTAssertFalse(audio.finishPagePresentation(hold), "A completion is consumed once")
     }
 
+    func testPageAcknowledgementBeforeNativeEndResumesSameMedia() async throws {
+        let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        defer { audio.stop() }
+        let session = audio.claimPlaybackSession(owner: .readAloud)
+        let part = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: wav(), timestamps: [],
+            duration: 2, text: "A sentence continues on the next painted page", isWavFormat: true)
+        var acknowledged = false, completions = 0
+        audio.onPlaybackComplete = { completions += 1 }
+        XCTAssertTrue(audio.loadSegments([part], autoPlay: false, session: session))
+        XCTAssertTrue(audio.armPagePresentationBoundary(segmentID: part.id, time: 0.2,
+            session: session, continuationTime: 0.35) { hold in
+            // Reproduce a busy WebKit paint: the media engine reaches its hard
+            // endpoint while main-queue deadline/end callbacks remain queued.
+            // The page acknowledges before those callbacks can set suspended.
+            let deadline = ProcessInfo.processInfo.systemUptime + 1
+            while audio.playbackPosition < 0.349 && ProcessInfo.processInfo.systemUptime < deadline {
+                usleep(2_000)
+            }
+            XCTAssertEqual(audio.playbackPosition, 0.35, accuracy: 0.002)
+            XCTAssertTrue(audio.finishPagePresentation(hold))
+            // Deliver the native stopped state after acknowledgement. The
+            // ordering varies by decoder; pin it to the Google Books trace
+            // without changing the service's retained user play intent.
+            let nativePlayer = audio.activePlayerForTesting!
+            nativePlayer.pause()
+            NotificationCenter.default.post(name: .AVPlayerItemDidPlayToEndTime,
+                object: nativePlayer.currentItem)
+            acknowledged = true
+        })
+        XCTAssertTrue(audio.play(session: session))
+        let player = try XCTUnwrap(audio.activePlayerForTesting)
+        let item = try XCTUnwrap(player.currentItem)
+        for _ in 0..<250 where !acknowledged || audio.playbackPosition < 0.6 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertTrue(acknowledged)
+        XCTAssertTrue(audio.activePlayerForTesting === player)
+        XCTAssertTrue(player.currentItem === item)
+        XCTAssertTrue(audio.hasPlaybackRequest)
+        XCTAssertGreaterThan(audio.playbackPosition, 0.6, "Late artificial end must resume the acknowledged page")
+        XCTAssertEqual(completions, 0, "An artificial page endpoint is not segment completion")
+        for _ in 0..<300 where completions == 0 { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(completions, 1, "The eventual real media end completes exactly once")
+    }
+
+    func testLateAcknowledgedEndpointHonorsPauseSleepAppearanceAndNewOwner() async throws {
+        for blocker in ["pause", "sleep", "appearance", "owner"] {
+            let (audio, session, hold) = try await presentationFixture()
+            defer { audio.stop() }
+            let player = try XCTUnwrap(audio.activePlayerForTesting)
+            let item = try XCTUnwrap(player.currentItem)
+            switch blocker {
+            case "pause": XCTAssertTrue(audio.pause(session: session))
+            case "sleep":
+                audio.sleepTimer.start(after: 0.001)
+                usleep(5_000) // Timer callback has not run; the resume path must check the deadline.
+            case "appearance": _ = audio.beginReaderAppearance()
+            default: _ = audio.claimPlaybackSession(owner: .explain)
+            }
+            XCTAssertEqual(audio.finishPagePresentation(hold), blocker != "owner")
+            NotificationCenter.default.post(name: .AVPlayerItemDidPlayToEndTime, object: item)
+            try await Task.sleep(for: .milliseconds(200))
+            XCTAssertEqual(player.rate, 0, "Late page end cannot override \(blocker)")
+            XCTAssertEqual(player.currentTime().seconds, 0.2, accuracy: 0.01, blocker)
+            if blocker == "sleep" { XCTAssertTrue(audio.sleepTimer.requiresExplicitResume) }
+        }
+    }
+
+    func testAppearanceSuspendsPendingNativePlaybackAndRespectsLaterPause() async throws {
+        for userPauses in [false, true] {
+            let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+            defer { audio.stop() }
+            let session = audio.claimPlaybackSession(owner: .readAloud)
+            let part = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: wav(), timestamps: [],
+                duration: 2, text: "Layout changes while the native clock is active", isWavFormat: true)
+            XCTAssertTrue(audio.loadSegments([part], autoPlay: true, session: session))
+            for _ in 0..<250 where audio.playbackPosition < 0.1 { try await Task.sleep(for: .milliseconds(10)) }
+            let player = try XCTUnwrap(audio.activePlayerForTesting)
+            XCTAssertGreaterThan(player.rate, 0)
+            // Native playback can precede its published KVO state during a
+            // page acknowledgement. Appearance must also honor pending intent.
+            audio.isPlaying = false
+            let appearance = audio.beginReaderAppearance()
+            let position = audio.playbackPosition
+            try await Task.sleep(for: .milliseconds(150))
+            XCTAssertEqual(player.rate, 0)
+            XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.01)
+            if userPauses { XCTAssertTrue(audio.pause(session: session)) }
+            audio.endReaderAppearance(appearance)
+            try await Task.sleep(for: .milliseconds(300))
+            if userPauses {
+                XCTAssertEqual(player.rate, 0)
+                XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.01)
+            } else {
+                XCTAssertGreaterThan(audio.playbackPosition, position + 0.05)
+                XCTAssertTrue(audio.activePlayerForTesting === player)
+            }
+        }
+    }
+
+    func testLateAcknowledgedEndpointKeepsSuccessorPageProtection() async throws {
+        let (audio, session, hold) = try await presentationFixture()
+        defer { audio.stop() }
+        let player = try XCTUnwrap(audio.activePlayerForTesting)
+        let item = try XCTUnwrap(player.currentItem)
+        let segment = try XCTUnwrap(audio.currentSegment)
+        XCTAssertTrue(audio.finishPagePresentation(hold))
+        player.pause()
+        await player.seek(to: CMTime(seconds: 0.2, preferredTimescale: 1_000_000),
+                          toleranceBefore: .zero, toleranceAfter: .zero)
+        var nextHold: UUID?, completions = 0
+        audio.onSegmentComplete = { completions += 1 }
+        XCTAssertTrue(audio.armPagePresentationBoundary(segmentID: segment.id, time: 0.55,
+            session: session, continuationTime: 0.7) { nextHold = $0 })
+        NotificationCenter.default.post(name: .AVPlayerItemDidPlayToEndTime, object: item)
+        XCTAssertNil(nextHold, "The previous endpoint cannot paint the next page early")
+        XCTAssertEqual(item.forwardPlaybackEndTime.seconds, 0.7, accuracy: 0.002)
+        for _ in 0..<250 where nextHold == nil || audio.playbackPosition < 0.699 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertNotNil(nextHold)
+        XCTAssertEqual(audio.playbackPosition, 0.7, accuracy: 0.002)
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(audio.playbackPosition, 0.7, accuracy: 0.002)
+        XCTAssertEqual(completions, 0)
+        XCTAssertTrue(audio.finishPagePresentation(try XCTUnwrap(nextHold)))
+        for _ in 0..<200 where audio.playbackPosition < 0.9 { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertGreaterThan(audio.playbackPosition, 0.9)
+        XCTAssertTrue(player.currentItem === item)
+    }
+
     func testMediaStopsAtVisibleEdgeWhileMainExecutorIsBusy() async throws {
         let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
         defer { audio.stop() }

@@ -1124,7 +1124,15 @@ enum WeReadWebScripts {
           const first=Math.min(...known.map(v=>v.offset)),last=Math.max(...known.map(v=>v.offset+v.text.length));
           const direction=pos<first?'prev':pos>=last?'next':'';if(!direction)return;
           const key=`${p.nativeSourceIdentity}:${direction}`;if(key!==revealKey){revealKey=key;revealCount=0;}if(revealCount>=3)return;
-          if(window.__castReaderWeReadNative?.turn(direction)){revealCount++;revealBusy=true;reflowUntil=Date.now()+800;schedule('source-reveal');}
+          // Native turn can synchronously publish paint and restore this mark.
+          // Claim recovery before entering it, just like the DOM-button path.
+          const priorCount=revealCount,priorUntil=reflowUntil,priorBusy=revealBusy;
+          revealCount++;revealBusy=true;reflowUntil=Date.now()+800;
+          if(window.__castReaderWeReadNative?.turn(direction)){
+            schedule('source-reveal');
+          }else{
+            revealCount=priorCount;reflowUntil=priorUntil;revealBusy=priorBusy;
+          }
           return;
         }
         const mapped=mappedRange(p,a.charStart||0,a.charEnd||1);

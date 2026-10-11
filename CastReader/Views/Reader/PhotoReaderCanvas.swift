@@ -44,9 +44,7 @@ struct PhotoReaderCanvas: UIViewRepresentable {
 
         context.coordinator.attach(scroll: scroll, host: host)
         scroll.onViewportChange = { [weak coordinator = context.coordinator] in coordinator?.relayoutIfNeeded() }
-        if AdaptiveLayout.isPad {
-            scroll.pinchGestureRecognizer?.addTarget(context.coordinator, action: #selector(Coordinator.recoverStalledPinch(_:)))
-        }
+        scroll.pinchGestureRecognizer?.addTarget(context.coordinator, action: #selector(Coordinator.recoverStalledPinch(_:)))
         DispatchQueue.main.async { context.coordinator.relayoutIfNeeded() }
         return scroll
     }

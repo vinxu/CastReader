@@ -11,18 +11,21 @@ import ImageIO
 import WebKit
 
 /// EPUB 图片降采样解码器（对齐 Android Coil 自动降采样）：用 ImageIO 缩略图避免大图全分辨率解码占内存/卡顿；
-/// 按字节 hash 缓存（同图复用、换书不串）。LazyVStack 仅可见段触发，配合此降采样根治大图性能问题。
+/// Cache by image bytes and requested pixel budget; a small persisted cover must
+/// not be reused for the same illustration on a larger or higher-density display.
 enum EpubImageDecoder {
-    private static let cache = NSCache<NSNumber, UIImage>()
+    private static let cache = NSCache<NSString, UIImage>()
 
-    static func downsampled(_ data: Data, maxPixel: CGFloat = 1400) -> UIImage? {
-        let key = NSNumber(value: data.hashValue)
+    static func downsampled(_ data: Data, maximumPixelDimension: CGFloat) -> UIImage? {
+        guard maximumPixelDimension.isFinite, maximumPixelDimension > 0 else { return nil }
+        let pixelLimit = max(1, maximumPixelDimension.rounded(.up))
+        let key = "\(data.hashValue)#\(pixelLimit)" as NSString
         if let hit = cache.object(forKey: key) { return hit }
         let opts: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
             kCGImageSourceShouldCacheImmediately: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixel * UIScreen.main.scale
+            kCGImageSourceThumbnailMaxPixelSize: pixelLimit
         ]
         let img: UIImage?
         if let src = CGImageSourceCreateWithData(data as CFData, nil),
@@ -53,6 +56,8 @@ final class TextViewRegistry {
 }
 
 struct TextReaderView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.displayScale) private var displayScale
     @ObservedObject private var appearance = ReaderAppearanceSettings.shared
     let document: ReadingDocument
     @ObservedObject var readVM: ReadAloudViewModel
@@ -79,7 +84,7 @@ struct TextReaderView: View {
                     }
                 }
                 .padding(20)
-                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.readingWidth : .infinity)
+                .frame(maxWidth: horizontalSizeClass == .regular ? AdaptiveLayout.readingWidth : .infinity)
                 .frame(maxWidth: .infinity)
             }
             .onChange(of: geometry.size.width) { _ in
@@ -174,7 +179,8 @@ struct TextReaderView: View {
             EpubSVGView(data: data)
                 .aspectRatio(EpubImageResource.svgAspectRatio(data), contentMode: .fit)
                 .frame(maxWidth: .infinity)
-        } else if let data = para.imageData, let ui = EpubImageDecoder.downsampled(data) {
+        } else if let data = para.imageData,
+                  let ui = EpubImageDecoder.downsampled(data, maximumPixelDimension: 1400 * displayScale) {
             Image(uiImage: ui)
                 .resizable()
                 .aspectRatio(contentMode: .fit)

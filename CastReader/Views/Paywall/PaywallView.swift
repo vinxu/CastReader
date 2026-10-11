@@ -223,6 +223,7 @@ struct UserDefaultsPaywallPurchaseIntentStore: @unchecked Sendable {
 }
 
 struct PaywallView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var pro = ProManager.shared
     let reason: String?
@@ -261,7 +262,7 @@ struct PaywallView: View {
                         Button { closePaywall() } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .bold))
-                                .frame(width: AdaptiveLayout.isPad ? 44 : 32, height: AdaptiveLayout.isPad ? 44 : 32)
+                                .frame(width: horizontalSizeClass == .regular ? 44 : 32, height: horizontalSizeClass == .regular ? 44 : 32)
                                 .background(.ultraThinMaterial, in: Circle())
                         }
                         .accessibilityLabel(Text("关闭"))
@@ -355,6 +356,7 @@ struct PaywallView: View {
 
 /// Pro 权益 + 购买按钮（PaywallView 与 UpgradeView 共用）。
 struct ProUpsellContent: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @EnvironmentObject private var readerScene: ReaderSceneContext
@@ -448,7 +450,7 @@ struct ProUpsellContent: View {
                 termsRow
             }
             .padding(20)
-            .frame(maxWidth: AdaptiveLayout.isPad ? 680 : .infinity)
+            .frame(maxWidth: horizontalSizeClass == .regular ? 680 : .infinity)
             .frame(maxWidth: .infinity)
         }
         .background(AppTheme.background.ignoresSafeArea())

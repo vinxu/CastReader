@@ -19,6 +19,10 @@ struct CloneCreditBalance: Decodable, Equatable, Sendable {
     let canPurchase: Bool
     let delivery: Delivery?
 
+    // A depleted monthly bucket alone does not exhaust purchased credit.
+    // Missing/unsynchronized totals must never be presented as zero.
+    var isExhausted: Bool { enabled && availableMs == 0 }
+
     struct Delivery: Decodable, Equatable, Sendable {
         let transactionId: String
         let credited: Bool

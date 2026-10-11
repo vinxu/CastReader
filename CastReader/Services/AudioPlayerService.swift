@@ -386,7 +386,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// Bind the hold to its owner so changing books cannot suspend another reader.
     func beginReaderAppearance() -> UUID {
         if let hold = readerAppearanceHold, hold.session == playbackOwnership.activeSession { return hold.id }
-        let resume = suspendActivePlaybackForVoicePreview()
+        let resume = suspendActivePlaybackForVoicePreview(includePendingPlayback: true)
         let id = UUID()
         readerAppearanceHold = (id, playbackOwnership.activeSession, resume)
         return id
@@ -414,7 +414,14 @@ class AudioPlayerService: NSObject, ObservableObject {
     private var presentationDeadlineObserver: (player: AVPlayer, token: Any)?
     private var presentationHold: PresentationBoundary?
     private var presentationSuspended = false
-    private var presentationMediaLimit: (itemID: ObjectIdentifier, time: Double)?
+    private struct PresentationMediaLimit {
+        let itemID: ObjectIdentifier
+        let time: Double
+        let edgeID: UUID
+        let session: AudioPlaybackSessionToken
+    }
+    private var presentationMediaLimit: PresentationMediaLimit?
+    private var acknowledgedPresentationMediaLimit: PresentationMediaLimit?
     var pagePresentationHoldID: UUID? { presentationHold?.id }
 
     /// The actual media clock owns this edge. A UI poll and a character ratio
@@ -460,7 +467,8 @@ class AudioPlayerService: NSObject, ObservableObject {
             // AVPlayer itself stops at the source edge, even when the main
             // executor is busy painting and delivers its observer late.
             item.forwardPlaybackEndTime = CMTime(seconds: edge.continuationTime, preferredTimescale: 1_000_000)
-            presentationMediaLimit = (ObjectIdentifier(item), edge.continuationTime)
+            presentationMediaLimit = PresentationMediaLimit(itemID: ObjectIdentifier(item),
+                time: edge.continuationTime, edgeID: edge.id, session: edge.session)
         }
         if edge.continuationTime > edge.time {
             let token = player.addBoundaryTimeObserver(forTimes: [NSValue(time:
@@ -537,6 +545,11 @@ class AudioPlayerService: NSObject, ObservableObject {
               playbackOwnership.permitsPlayback(requestedBy: hold.session),
               currentSegment?.id == hold.segmentID else { return false }
         let wasSuspended = presentationSuspended
+        if let limit = presentationMediaLimit, limit.edgeID == hold.id {
+            // Keep this receipt if the next page arms another endpoint before
+            // AVFoundation delivers the previous endpoint's stopped state.
+            acknowledgedPresentationMediaLimit = limit
+        }
         removePresentationObserver()
         presentationHold = nil
         presentationSuspended = false
@@ -547,19 +560,32 @@ class AudioPlayerService: NSObject, ObservableObject {
             // End notification can precede the page acknowledgement. Deliver
             // its completion once, then advance under the retained play intent.
             handlePlayerDidFinishPlaying(itemID: ObjectIdentifier(item))
-        } else if wasSuspended && hasPlaybackRequest && !playbackSuspendedByInterruption {
-            guard !hasTerminalPlaybackFailure else { return true }
-            if playerItem?.status == .failed || player?.status == .failed {
-                _ = recoverPlaybackFailure(stage: .resume, error: playerItem?.error ?? player?.error)
-                return true
-            }
-            // This active session only paused for a page. Re-activating the
-            // shared audio session here serializes OS work after page paint.
-            player?.playImmediately(atRate: playbackRate)
-            isPlaying = player?.timeControlStatus == .playing
-            updateNowPlayingInfo()
+        } else if wasSuspended, let item = playerItem {
+            resumeAfterPagePresentation(itemID: ObjectIdentifier(item), session: hold.session)
         }
         return true
+    }
+
+    private func resumeAfterPagePresentation(itemID: ObjectIdentifier, session: AudioPlaybackSessionToken) {
+        guard let item = playerItem, ObjectIdentifier(item) == itemID,
+              playerItemSession == session, currentItemCanPublishPlaybackState(),
+              permitsAutomaticPlayback(), hasPlaybackRequest,
+              !currentItemDrained, !currentItemCompletionDelivered, !isSeekingInitialPosition else { return }
+        if let next = presentationBoundary {
+            // A later edge keeps its native stop time. An already reached edge
+            // must receive its own paint acknowledgement before any more audio.
+            guard next.session == session, next.segmentID == currentSegment?.id,
+                  playbackPosition + 0.002 < next.time else { return }
+        }
+        if item.status == .failed || player?.status == .failed {
+            _ = recoverPlaybackFailure(stage: .resume, error: item.error ?? player?.error)
+            return
+        }
+        // Resume the same decoder without creating a new user Play intent,
+        // seeking, advancing the queue, or clearing a successor page's limit.
+        player?.playImmediately(atRate: playbackRate)
+        isPlaying = player?.timeControlStatus == .playing
+        updateNowPlayingInfo()
     }
 
     /// Exact native book-end evidence resolves a drained page, not a missing
@@ -574,6 +600,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         removePresentationObserver()
         if playerItem?.forwardPlaybackEndTime.isValid == true { playerItem?.forwardPlaybackEndTime = .invalid }
         presentationMediaLimit = nil
+        acknowledgedPresentationMediaLimit = nil
         presentationBoundary = nil
         presentationHold = nil
         presentationSuspended = false
@@ -887,10 +914,10 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// Voice samples use a separate AVPlayer, so they temporarily suspend the
     /// active content item. The handle binds resumption to the exact ownership
     /// generation and segment; a mode switch invalidates it automatically.
-    func suspendActivePlaybackForVoicePreview() -> AudioPlaybackResumeHandle? {
+    func suspendActivePlaybackForVoicePreview(includePendingPlayback: Bool = false) -> AudioPlaybackResumeHandle? {
         let session = playbackOwnership.activeSession
         guard playbackOwnership.permitsPlayback(requestedBy: session),
-              isPlaying,
+              isPlaying || (includePendingPlayback && hasPlaybackRequest),
               let segmentID = currentSegment?.id,
               pause(session: session) else {
             return nil
@@ -2346,6 +2373,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         // Release the previous asset and callbacks before removing its file.
         removeTimeObserver()
         presentationMediaLimit = nil
+        acknowledgedPresentationMediaLimit = nil
         playerItemStatusCancellable?.cancel()
         player?.pause()
         player?.replaceCurrentItem(with: nil)
@@ -2728,17 +2756,27 @@ class AudioPlayerService: NSObject, ObservableObject {
             // pause or otherwise mutate the new current item.
             return
         }
+        if let receipt = acknowledgedPresentationMediaLimit, receipt.itemID == itemID,
+           abs(playbackPosition - receipt.time) <= 0.002 {
+            // The native endpoint may stop the decoder after its page already
+            // acknowledged. This is still the same incomplete audio item.
+            resumeAfterPagePresentation(itemID: itemID, session: receipt.session)
+            return
+        }
         if let limit = presentationMediaLimit, limit.itemID == itemID,
            abs(playbackPosition - limit.time) <= 0.002 {
             // Only the exact artificial endpoint belongs to the visual hold.
             // MP3 padding and server duration estimates can differ from the
             // genuine item end; comparing against full duration would swallow
             // that real completion and strand the following paragraph.
-            if let edge = presentationBoundary, let player {
+            if let edge = presentationBoundary, edge.id == limit.edgeID, let player {
                 reachPresentationBoundary(edge, player: player)
             }
-            if let edge = presentationHold, let player {
+            if let edge = presentationHold, edge.id == limit.edgeID, let player {
                 suspendForPresentationIfNeeded(edge, player: player)
+            }
+            if acknowledgedPresentationMediaLimit?.edgeID == limit.edgeID {
+                resumeAfterPagePresentation(itemID: itemID, session: limit.session)
             }
             return
         }

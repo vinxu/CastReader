@@ -19,16 +19,48 @@ final class iPadAdaptationUITests: XCTestCase {
             "-CastReaderRegion", "global", "-AppleLanguages", "(\(language))",
             "-AppleLocale", "en_US", "-interfaceLanguage", language, "-auto_play", "NO"] + extra
         app.launch()
+        restoreFullScreenWindow(app)
         let ready = app.buttons["plusImportButton"].waitForExistence(timeout: 30)
         if !ready { capture(app, "home-readiness-failure") }
         XCTAssertTrue(ready)
         dismissRatingIfPresent(app)
-        if app.windows.firstMatch.frame.width < 700 {
-            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
-            let full = NSPredicate { _, _ in app.windows.firstMatch.frame.width >= 700 }
-            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: full, object: app)], timeout: 10), .completed)
-        }
         return app
+    }
+
+    /// These helpers launch full-screen rotation cases. Tests for compact
+    /// windows resize explicitly afterwards; a previous floating window must
+    /// not turn device rotation into an unrelated window-aspect assertion.
+    private func restoreFullScreenWindow(_ app: XCUIApplication) {
+        let window = app.windows.firstMatch
+        XCTAssertTrue(window.waitForExistence(timeout: 30))
+        dismissRatingIfPresent(app)
+        let ready = NSPredicate { _, _ in
+            let frame = window.frame
+            return frame.minX.isFinite && frame.minY.isFinite && frame.width > 0 && frame.height > 0 && window.isHittable
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: ready, object: app)], timeout: 10), .completed,
+                       "Window coordinates must be usable before a resize gesture")
+        let display = XCUIApplication(bundleIdentifier: "com.apple.springboard").frame
+        XCTAssertFalse(display.isEmpty)
+        let displayShortSide = min(display.width, display.height)
+        let displayLongSide = max(display.width, display.height)
+        let full = NSPredicate { _, _ in
+            let frame = app.windows.firstMatch.frame
+            // SpringBoard can retain portrait axes after the app rotates.
+            // Compare both complete dimensions without treating a correctly
+            // maximized landscape window as another candidate for double tap.
+            return frame.minX.isFinite && frame.minY.isFinite
+                && abs(frame.minX) <= 2 && abs(frame.minY) <= 2
+                && abs(min(frame.width, frame.height) - displayShortSide) <= 2
+                && abs(max(frame.width, frame.height) - displayLongSide) <= 2
+        }
+        if !full.evaluate(with: app) {
+            window.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
+            let result = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: full, object: app)], timeout: 10)
+            if result != .completed { capture(app, "full-screen-window-preparation-failure") }
+            XCTAssertEqual(result, .completed, "Rotation acceptance requires a full-screen window")
+        }
+        XCTAssertTrue(window.isHittable)
     }
 
     private func capture(_ app: XCUIApplication, _ name: String) {
@@ -40,6 +72,10 @@ final class iPadAdaptationUITests: XCTestCase {
 
     private func rotate(_ app: XCUIApplication, _ orientation: UIDeviceOrientation) {
         XCUIDevice.shared.orientation = orientation
+        // iPadOS can restore a different saved floating-window size for this
+        // orientation. These cases require full screen before checking the
+        // app's direction; a truly locked full-screen app will still fail it.
+        restoreFullScreenWindow(app)
         let landscape = orientation.isLandscape
         let predicate = NSPredicate { _, _ in
             let frame = app.windows.firstMatch.frame
@@ -69,6 +105,39 @@ final class iPadAdaptationUITests: XCTestCase {
             XCTAssertTrue(cell.isHittable)
             cell.tap()
         }
+    }
+
+    private func dockedKeyboardFrame(in app: XCUIApplication) -> CGRect? {
+        guard app.keyboards.firstMatch.exists else { return nil }
+        let window = app.windows.firstMatch.frame
+        // During rotation the keyboard's child AX frame can retain portrait
+        // coordinates. Its inputView host reports the actual docked bounds.
+        let candidates = app.otherElements.matching(identifier: "inputView").allElementsBoundByIndex
+            + app.keyboards.allElementsBoundByIndex
+        return candidates.map(\.frame).first { frame in
+            frame.minX.isFinite && frame.minY.isFinite && frame.height > 100
+                && frame.width >= window.width * 0.9
+                && frame.minX >= window.minX - 2 && frame.maxX <= window.maxX + 2
+                && frame.minY > window.minY && abs(frame.maxY - window.maxY) <= 2
+        }
+    }
+
+    private func assertLoginActionAboveKeyboard(_ button: XCUIElement, app: XCUIApplication) {
+        let form = app.descendants(matching: .any)["login.form"].firstMatch
+        XCTAssertTrue(form.waitForExistence(timeout: 10))
+        let identifiedScroll = app.scrollViews["login.form"].firstMatch
+        let scroll = identifiedScroll.exists ? identifiedScroll : form.scrollViews.firstMatch
+        XCTAssertTrue(scroll.exists, "The login form must remain scrollable with the keyboard open")
+        let keyboardReady = NSPredicate { _, _ in self.dockedKeyboardFrame(in: app) != nil }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: keyboardReady, object: app)], timeout: 10), .completed)
+        func fullyVisible() -> Bool {
+            guard let keyboard = dockedKeyboardFrame(in: app), button.exists else { return false }
+            let frame = button.frame
+            return button.isHittable && frame.width > 0 && frame.height > 0
+                && app.windows.firstMatch.frame.contains(frame) && frame.maxY <= keyboard.minY
+        }
+        for _ in 0..<5 where !fullyVisible() { scroll.swipeUp() }
+        XCTAssertTrue(fullyVisible(), "The entire Send code button must be above the visible keyboard")
     }
 
     func testUniversalNavigationAndAllOrientations() {
@@ -168,6 +237,8 @@ final class iPadAdaptationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["playbackVoiceDoneButton"].waitForExistence(timeout: 10))
         capture(app, "module4-player-voice-landscape")
         let search = app.textFields["voiceSearchField"]
+        if !search.exists { app.buttons["voiceSearchToggle"].firstMatch.tap() }
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
         search.tap(); search.typeText("Heart")
         rotate(app, .portrait)
         XCTAssertEqual(search.value as? String, "Heart")
@@ -186,6 +257,7 @@ final class iPadAdaptationUITests: XCTestCase {
         app.terminate()
         let live = home()
         selectTab("Voice", app: live)
+        if !live.textFields["voiceSearchField"].exists { live.buttons["voiceSearchToggle"].firstMatch.tap() }
         XCTAssertTrue(live.textFields["voiceSearchField"].waitForExistence(timeout: 20))
         rotate(live, .landscapeLeft)
         capture(live, "module4-voice-wide")
@@ -211,14 +283,32 @@ final class iPadAdaptationUITests: XCTestCase {
         confirm.tap()
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         for owner in [springboard, app] {
-            let allow = owner.buttons["Allow"].firstMatch
-            if allow.waitForExistence(timeout: 2) && allow.isHittable { allow.tap() }
+            guard owner.alerts.firstMatch.waitForExistence(timeout: 2) else { continue }
+            // Only accept the microphone request from the recording action.
+            // An unrelated permission must not be mistaken for this step.
+            for alert in owner.alerts.allElementsBoundByIndex {
+                let isMicrophone = alert.staticTexts.allElementsBoundByIndex.contains {
+                    $0.label.localizedCaseInsensitiveContains("microphone")
+                }
+                guard isMicrophone else { continue }
+                let allow = alert.buttons["Allow"].firstMatch
+                let accept = allow.exists ? allow : alert.buttons["OK"].firstMatch
+                XCTAssertTrue(accept.isHittable)
+                accept.tap()
+            }
         }
         let hold = app.descendants(matching: .any)["voiceCloneHoldButton"].firstMatch
         XCTAssertTrue(hold.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.descendants(matching: .any)["clipboardImportPrompt"].firstMatch.exists,
+                       "Returning from microphone permission must preserve the recording sheet")
         for _ in 0..<5 where !hold.isHittable { app.swipeUp() }
         XCTAssertTrue(hold.isHittable)
         capture(app, "module4-recording-controls-landscape")
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        XCTAssertTrue(hold.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.descendants(matching: .any)["clipboardImportPrompt"].firstMatch.exists,
+                       "Foreground clipboard detection must not replace an active sheet")
         rotate(app, .portrait)
         XCTAssertTrue(hold.exists)
         capture(app, "module4-recording-controls-portrait")
@@ -267,6 +357,7 @@ final class iPadAdaptationUITests: XCTestCase {
         app.launchArguments = ["-CastReaderIPadFormFixture", "-CastReaderRegion", "global",
             "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
         app.launch()
+        restoreFullScreenWindow(app)
         XCTAssertTrue(app.buttons["ipadForm.login"].waitForExistence(timeout: 20))
         app.buttons["ipadForm.login"].tap()
         XCTAssertTrue(app.buttons["login.email"].waitForExistence(timeout: 10))
@@ -278,11 +369,12 @@ final class iPadAdaptationUITests: XCTestCase {
         XCTAssertEqual(email.value as? String, "ipad-layout@example.com")
         XCTAssertTrue(app.buttons["ipadFormDone"].isHittable)
         let sendCode = app.buttons["login.sendCode"]
-        for _ in 0..<5 where !sendCode.isHittable { app.scrollViews.firstMatch.swipeUp() }
-        XCTAssertTrue(sendCode.isHittable)
+        assertLoginActionAboveKeyboard(sendCode, app: app)
         // Verify reachability without sending mail or changing the real account.
         capture(app, "module4-login-keyboard-landscape")
         rotate(app, .portrait)
+        XCTAssertEqual(email.value as? String, "ipad-layout@example.com")
+        assertLoginActionAboveKeyboard(sendCode, app: app)
         capture(app, "module4-login-keyboard-portrait")
         app.buttons["ipadFormDone"].tap()
         app.buttons["ipadForm.pro"].tap()
@@ -355,6 +447,82 @@ final class iPadAdaptationUITests: XCTestCase {
         app.terminate()
     }
 
+    func testLegacySidebarKeepsLibraryAndSettingsWhenWindowBecomesCompact() throws {
+        guard #available(iOS 26.0, *), UIDevice.current.userInterfaceIdiom == .pad else {
+            throw XCTSkip("Uses iPad window resizing to exercise the legacy navigation owner")
+        }
+        addTeardownBlock {
+            let app = XCUIApplication()
+            guard app.state == .runningForeground else { return }
+            self.restoreFullScreenWindow(app)
+            app.terminate()
+        }
+        for (title, marker) in [("Library", "libraryImportButton"), ("Settings", "settingsLanguageLink"), ("Home", "plusImportButton")] {
+            let app = home(extra: ["-CastReaderLegacyIPadNavigation"])
+            rotate(app, .landscapeLeft)
+            selectTab(title, app: app)
+            let destination = app.buttons[marker].firstMatch
+            XCTAssertTrue(destination.waitForExistence(timeout: 10), title)
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.992, dy: 0.992)).press(forDuration: 1,
+                thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.58, dy: 0.65)))
+            let compact = NSPredicate { _, _ in app.windows.firstMatch.frame.width <= 430 }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: compact, object: app)], timeout: 10), .completed)
+            if title == "Settings" {
+                // The Form virtualizes its lower rows in the shorter window.
+                // First require the selected destination itself, then verify
+                // that its Language action is still reachable by scrolling.
+                XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10),
+                              "The selected Settings page must remain the compact destination")
+                let form = app.collectionViews.firstMatch
+                XCTAssertTrue(form.exists)
+                for _ in 0..<4 where !destination.exists || !destination.isHittable { form.swipeUp() }
+            }
+            XCTAssertTrue(destination.waitForExistence(timeout: 10),
+                          "The selected legacy \(title) destination must survive becoming compact")
+            if title == "Home" || title == "Settings" {
+                XCTAssertTrue(destination.isHittable, "Compact legacy \(title) must retain its action")
+            }
+            capture(app, "legacy-selected-\(title)-compact")
+            restoreFullScreenWindow(app)
+            app.terminate()
+        }
+    }
+
+    func testModernCompactNavigationHasOneBarAndKeepsSelection() throws {
+        guard #available(iOS 26.0, *), UIDevice.current.userInterfaceIdiom == .pad else {
+            throw XCTSkip("Uses iPad window resizing to exercise regular-to-compact navigation")
+        }
+        let app = home()
+        addTeardownBlock {
+            guard app.state == .runningForeground else { return }
+            self.restoreFullScreenWindow(app)
+            app.terminate()
+        }
+        selectTab("Voice", app: app)
+        XCTAssertTrue(app.buttons["voiceBrowseLanguage"].waitForExistence(timeout: 10))
+        rotate(app, .landscapeLeft)
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.992, dy: 0.992)).press(forDuration: 1,
+            thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.58, dy: 0.65)))
+        let compactBar = app.tabBars["compactNavigationBar"]
+        XCTAssertTrue(compactBar.waitForExistence(timeout: 10))
+        XCTAssertTrue(compactBar.buttons["Voice"].isSelected, "Resizing must preserve the selected tab")
+        XCTAssertTrue(app.buttons["voiceBrowseLanguage"].isHittable)
+        XCTAssertEqual(app.buttons.matching(identifier: "Home").allElementsBoundByIndex.filter(\.isHittable).count, 1,
+                       "The native and custom navigation bars must not both remain visible")
+        XCTAssertFalse(app.buttons["Library"].firstMatch.isHittable)
+        XCTAssertFalse(app.buttons["Settings"].firstMatch.isHittable)
+        capture(app, "modern-navigation-one-compact-bar")
+        app.buttons["plusImportButton"].tap()
+        XCTAssertTrue(app.buttons["importOptionsCancel"].waitForExistence(timeout: 10))
+        app.buttons["importOptionsCancel"].tap()
+        restoreFullScreenWindow(app)
+        XCTAssertFalse(compactBar.exists)
+        XCTAssertTrue(app.buttons["Library"].firstMatch.isHittable)
+        XCTAssertTrue(app.buttons["plusImportButton"].isHittable)
+        capture(app, "modern-navigation-restored-regular-bar")
+        app.terminate()
+    }
+
     func testNativeTextRotation() { verifyReaderRotation("text-long") }
     func testNativeEPUBRotation() { verifyReaderRotation("epub-long") }
     func testNativePDFRotation() { verifyReaderRotation("pdf") }
@@ -386,6 +554,11 @@ final class iPadAdaptationUITests: XCTestCase {
             "-auto_play", "NO", "-tts_speed", "1", "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
             "-interfaceLanguage", "en"]
         app.launch()
+        restoreFullScreenWindow(app)
+        let target = app.buttons["scenarioSeekTarget"]
+        let ready = NSPredicate { _, _ in target.exists && target.isHittable }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: ready, object: app)], timeout: 45), .completed,
+                       "The reading target must be tappable before playback and rotation checks")
         return app
     }
 

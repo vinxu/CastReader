@@ -3,25 +3,28 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const {chromium} = require('playwright');
 const sharp = require('sharp');
 const root = path.resolve(__dirname, '../../..');
-const report = path.join(root, 'reports/ios-release-1.2.48');
+const report = path.join(root, process.argv.includes('--duo') ? 'reports/ios-duo-20261011' : 'reports/ios-release-1.2.48');
 const metadata = JSON.parse(fs.readFileSync(path.join(__dirname, 'metadata.json')));
 const args = process.argv.slice(2), selected = args.filter(x => !x.startsWith('--'));
-const profiles = args.includes('--ipad') ? ['ipad'] : args.includes('--iphone') ? ['iphone'] : ['iphone','ipad'];
+const profiles = args.includes('--duo') ? ['duo'] : args.includes('--ipad') ? ['ipad'] : args.includes('--iphone') ? ['iphone'] : ['iphone','ipad'];
 const icon = fs.readFileSync(path.join(__dirname, 'brand-icon.png')).toString('base64');
 const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 (async () => {
  const browser = await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',headless:true});
  const qa = [];
  for (const profile of profiles) {
-  const pad = profile==='ipad', width=pad?2732:1320, height=pad?2048:2868;
+  const duo = profile==='duo', pad = profile!=='iphone';
+  const width=duo?2853:pad?2732:1320, height=duo?2007:pad?2048:2868;
+  const deviceName=duo?'iPhone Duo':pad?'iPad':'iPhone';
   const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
   for (const [language,m] of Object.entries(metadata)) {
    if(selected.length && !selected.includes(language)) continue;
    for(let scene=1;scene<=5;scene++) {
     const raw=path.join(report,'raw',profile,`${language}-${scene}.png`);
-    if(!fs.existsSync(raw)) continue;
+    if(!fs.existsSync(raw)) { if(duo) throw Error('Missing genuine Duo capture: '+raw); continue; }
     const sourceBytes=fs.readFileSync(raw), bytes=await sharp(sourceBytes).autoOrient().png().toBuffer(), rawMeta=await sharp(bytes).metadata();
     if(pad ? rawMeta.width<rawMeta.height : rawMeta.width>rawMeta.height) throw Error('Wrong orientation: '+raw);
+    if(duo && (rawMeta.width!==2853 || rawMeta.height!==2007)) throw Error('Expected genuine expanded Duo capture (2853 × 2007): '+raw);
     const title=(pad?m.ipadCaptions:m.phoneCaptions)[scene-1];
     const textSide=m.rtl?'right':'left', imageSide=m.rtl?'left':'right';
     const rawURL='data:image/png;base64,'+bytes.toString('base64');
@@ -40,7 +43,7 @@ const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',
      .device img{display:block;width:${screenW}px;height:${screenH}px;border-radius:${pad?28:73}px}
      .detail{position:absolute;${pad?textSide+':90px':'left:0;width:100%;text-align:center'};bottom:${pad?146:39}px;font-size:${pad?29:26}px;color:#6c6c63;direction:ltr}
      .dots{position:absolute;${textSide}:90px;bottom:100px;display:flex;gap:12px}.dots i{width:45px;height:6px;background:#ddd7cf}.dots i.active{background:#f66b23}
-     </style>${pad?'<div class="wash"></div>':''}<div class="brand"><img src="data:image/png;base64,${icon}">CastReader</div><div class="copy"><h1>${esc(title)}</h1><div class="rule"></div></div><div class="device"><img src="${rawURL}"></div><div class="detail">CastReader · ${pad?'iPad':'iPhone'}</div>${pad?`<div class="dots">${[1,2,3,4,5].map(n=>`<i class="${n===scene?'active':''}"></i>`).join('')}</div>`:''}</html>`;
+     </style>${pad?'<div class="wash"></div>':''}<div class="brand"><img src="data:image/png;base64,${icon}">CastReader</div><div class="copy"><h1>${esc(title)}</h1><div class="rule"></div></div><div class="device"><img src="${rawURL}"></div><div class="detail">CastReader · ${deviceName}</div>${pad?`<div class="dots">${[1,2,3,4,5].map(n=>`<i class="${n===scene?'active':''}"></i>`).join('')}</div>`:''}</html>`;
     await page.setContent(html);await page.evaluate(()=>document.fonts.ready);
     const layout=await page.evaluate(({pad,phoneTop,width,height})=>{
       const h=document.querySelector('h1'),copy=document.querySelector('.copy');let size=parseInt(getComputedStyle(h).fontSize);

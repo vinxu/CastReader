@@ -3,15 +3,23 @@ import XCTest
 /// Explicit opt-in against already authorized platform accounts. No fixture
 /// book, speech, authentication bypass, cookie reset or library mutation.
 final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
+    private var isDuo: Bool {
+        ProcessInfo.processInfo.environment["CASTREADER_PLATFORM_DEVICE"] == "duo"
+    }
+
+    private var hasDuoFoldControl: Bool {
+        isDuo && !(ProcessInfo.processInfo.environment["CASTREADER_PLATFORM_FOLD_CONTROL"] ?? "").isEmpty
+    }
+
     override func setUp() {
         continueAfterFailure = false
-        XCUIDevice.shared.orientation = .portrait
+        if !isDuo { XCUIDevice.shared.orientation = .portrait }
     }
 
     override func tearDown() {
         let app = XCUIApplication()
         if app.state == .runningForeground { capture(app, "live-platform-final-state") }
-        XCUIDevice.shared.orientation = .portrait
+        if !isDuo { XCUIDevice.shared.orientation = .portrait }
         super.tearDown()
     }
 
@@ -24,8 +32,18 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
     }
 
     private func capture(_ app: XCUIApplication, _ name: String) {
-        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        screenshot.name = name; screenshot.lifetime = .keepAlways; add(screenshot)
+        // Duo's main-screen capture alone can show the inactive display.
+        // Keep every screen exposed by XCTest, including the other panel.
+        let screens = isDuo ? XCUIScreen.screens : [XCUIScreen.main]
+        for (index, screen) in screens.enumerated() {
+            let screenshot = XCTAttachment(screenshot: screen.screenshot())
+            screenshot.name = isDuo ? name + "-screen-\(index)" : name
+            screenshot.lifetime = .keepAlways; add(screenshot)
+        }
+        if isDuo {
+            let diagnostics = XCTAttachment(string: "device=duo; screens=\(screens.count); foldControl=\(hasDuoFoldControl)")
+            diagnostics.name = name + "-display-context"; diagnostics.lifetime = .keepAlways; add(diagnostics)
+        }
         let tree = XCTAttachment(string: app.debugDescription)
         tree.name = name + "-accessibility"; tree.lifetime = .keepAlways; add(tree)
         let metrics = app.otherElements["livePlatformPlaybackMetrics"]
@@ -57,10 +75,63 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
     }
 
     private func rotate(_ app: XCUIApplication, _ orientation: UIDeviceOrientation) {
+        // Actual Duo opening/closing below replaces iPad-only aspect-ratio
+        // expectations. Never fake a fold with a resize or orientation change.
+        guard !isDuo else { return }
         XCUIDevice.shared.orientation = orientation
         wait(15) {
             let size = app.windows.firstMatch.frame.size
             return orientation.isLandscape ? size.width > size.height : size.height > size.width
+        }
+    }
+
+    /// The controller must operate Device Hub's actual Open/Closed control,
+    /// then atomically acknowledge this request. A stale ack cannot advance a
+    /// new stage, retry, platform or test run. No product state is modified here.
+    private func awaitDuoFold(_ app: XCUIApplication, platform: String, phase: String, target: String) throws {
+        guard hasDuoFoldControl else { return }
+        let path = ProcessInfo.processInfo.environment["CASTREADER_PLATFORM_FOLD_CONTROL"] ?? ""
+        guard path.hasPrefix("/") else {
+            throw NSError(domain: "PlatformFoldControl", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "CASTREADER_PLATFORM_FOLD_CONTROL must be an absolute directory"])
+        }
+        let directory = URL(fileURLWithPath: path, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let requestID = UUID().uuidString
+        let before = app.windows.firstMatch.frame
+        let request: [String: Any] = ["schema": 1, "requestID": requestID, "test": name,
+            "platform": platform, "phase": phase, "target": target,
+            "createdAt": ISO8601DateFormatter().string(from: Date()),
+            "windowWidth": before.width, "windowHeight": before.height,
+            "metrics": playbackSnapshot(app)]
+        capture(app, "\(platform)-\(phase)-before-\(target)")
+        try JSONSerialization.data(withJSONObject: request, options: [.prettyPrinted, .sortedKeys])
+            .write(to: directory.appendingPathComponent("request.json"), options: .atomic)
+        print("PLATFORM_DUO_FOLD requestID=\(requestID) platform=\(platform) phase=\(phase) target=\(target)")
+        wait(180) {
+            guard let data = try? Data(contentsOf: directory.appendingPathComponent("ack.json")),
+                  let ack = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return false }
+            return ack["requestID"] as? String == requestID && ack["target"] as? String == target
+                && ack["completed"] as? Bool == true
+        }
+        // An acknowledgment without an actual viewport change is not a fold.
+        wait(20) {
+            let after = app.windows.firstMatch.frame
+            return after.width.isFinite && after.height.isFinite && after.width > 1 && after.height > 1
+                && (abs(after.width - before.width) > 2 || abs(after.height - before.height) > 2)
+        }
+        capture(app, "\(platform)-\(phase)-after-\(target)")
+    }
+
+    private func selectReaderMode(_ label: String, in app: XCUIApplication) {
+        let picker = app.segmentedControls["readerModePicker"]
+        if picker.exists {
+            XCTAssertTrue(picker.buttons[label].isHittable); picker.buttons[label].tap()
+        } else {
+            let menu = app.buttons["readerModeMenu"]
+            XCTAssertTrue(menu.waitForExistence(timeout: 10)); XCTAssertTrue(menu.isHittable); menu.tap()
+            let choice = app.buttons[label].firstMatch
+            XCTAssertTrue(choice.waitForExistence(timeout: 5)); XCTAssertTrue(choice.isHittable); choice.tap()
         }
     }
 
@@ -69,7 +140,18 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
             if element.exists, element.frame.width > 1, element.isHittable,
                element.frame.minY > app.windows.firstMatch.frame.minY + 100,
                element.frame.maxY < app.windows.firstMatch.frame.maxY - 90 { return }
-            app.scrollViews.firstMatch.swipeUp()
+            if isDuo, let heading = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfViewAll."))
+                .allElementsBoundByIndex.first(where: { candidate in
+                    let frame = candidate.frame, window = app.windows.firstMatch.frame
+                    return frame.minY > window.minY + 110 && frame.maxY < window.maxY - 100 && candidate.isHittable
+                }) {
+                let origin = heading.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                let delta: CGFloat = element.exists && element.frame.minY < 100 ? 220 : -220
+                origin.press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: 0, dy: delta)),
+                             withVelocity: .slow, thenHoldForDuration: 0.3)
+            } else {
+                app.scrollViews.firstMatch.swipeUp()
+            }
         }
         XCTAssertTrue(element.exists && element.isHittable)
     }
@@ -86,7 +168,7 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 30),
                       "The existing signed-in account must remain usable")
-        if app.windows.firstMatch.frame.width < 700 {
+        if !isDuo, app.windows.firstMatch.frame.width < 700 {
             app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.33, dy: 0.055)).doubleTap()
             wait(15) { app.windows.firstMatch.frame.width >= 700 }
         }
@@ -104,8 +186,14 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         rotate(app, .landscapeLeft)
         capture(app, "\(platform)-full-shelf-landscape")
         rotate(app, .portrait)
-        let back = app.navigationBars.buttons.firstMatch
+        // iOS 27 Duo places this control in the system rail, outside the
+        // navigationBars accessibility subtree (observed in raw/duo/en-4.txt).
+        let back = isDuo ? app.buttons["BackButton"] : app.navigationBars.buttons.firstMatch
         XCTAssertTrue(back.waitForExistence(timeout: 10))
+        if isDuo {
+            XCTAssertEqual(app.buttons.matching(identifier: "BackButton").count, 1)
+            XCTAssertTrue(back.isHittable)
+        }
         // iPad's floating tab bar can make XCTest's navigation-bar hit-test
         // return (-1,-1) after rotation although the back button is visible.
         // Tap its fresh on-screen frame, then prove we actually returned home.
@@ -800,20 +888,56 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         return app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "weReadTOCEntry.", label)).firstMatch
     }
 
+    private func googleAppearanceValue(between left: XCUIElement, and right: XCUIElement, in app: XCUIApplication) -> String {
+        guard left.exists, right.exists else { return "" }
+        let bounds = left.frame.union(right.frame)
+        return app.webViews["googleBooksReaderWebView"].staticTexts.allElementsBoundByIndex.first {
+            $0.label.hasSuffix("%") && bounds.contains(CGPoint(x: $0.frame.midX, y: $0.frame.midY))
+        }?.label ?? ""
+    }
+
+    private func revealGoogleAppearanceControls(_ controls: [XCUIElement], in app: XCUIApplication) {
+        let close = app.buttons["关闭显示选项"]
+        XCTAssertTrue(close.waitForExistence(timeout: 10))
+        let window = app.windows.firstMatch
+        func visible() -> Bool {
+            let top = close.frame.maxY + 12
+            let bottom = min(window.frame.height * 0.62, app.buttons["readerMoreButton"].frame.minY - 70)
+            return controls.allSatisfy { $0.exists && $0.isHittable && $0.frame.minY > top && $0.frame.maxY < bottom }
+        }
+        for _ in 0..<6 where !visible() {
+            // WK overflow descendants can report hittable while below the panel
+            // clip. Scroll inside the observed panel, never tap that hidden frame.
+            let origin = window.coordinate(withNormalizedOffset: .zero)
+            let top = close.frame.maxY
+            let x = close.frame.midX - 60
+            origin.withOffset(CGVector(dx: x, dy: top + 175)).press(forDuration: 0.1,
+                thenDragTo: origin.withOffset(CGVector(dx: x, dy: top + 40)))
+        }
+        XCTAssertTrue(visible(), "Appearance controls must be fully visible inside the scrolling panel")
+    }
+
     private func verify(_ platform: String, launch: [String] = []) throws {
+        if isDuo {
+            try XCTSkipUnless(hasDuoFoldControl,
+                "Duo Read/Explain geometry acceptance requires CASTREADER_PLATFORM_FOLD_CONTROL; rotation is not fold coverage")
+        }
+        let phases = Set((ProcessInfo.processInfo.environment["CASTREADER_PLATFORM_PHASES"] ?? "read,appearance,explain")
+            .split(separator: ",").map(String.init))
+        XCTAssertFalse(phases.isEmpty)
+        XCTAssertTrue(phases.isSubset(of: ["read", "appearance", "explain"]))
         let app = try home(platform, extra: launch)
         let book = liveBook(platform, in: app)
         reveal(book, in: app)
         book.tap()
         let read = app.buttons["readPlayPauseButton"]
         if platform == "weread" {
-            wait(45) { read.exists && (self.field("ready", app) == "true" || app.buttons["下一页"].exists) }
-            if field("ready", app) != "true" { read.tap() }
-        }
-        wait(120) { read.exists && self.field("ready", app) == "true" }
-        if platform == "weread" {
+            // A newly opened book can land on its recommendation/cover page.
+            // Choose the genuine body chapter before requiring readable text.
+            let contents = app.buttons["Table of Contents"]
+            wait(45) { read.exists && contents.isHittable }
             if field("playing", app) == "true" { read.tap() }
-            app.buttons["Table of Contents"].tap()
+            contents.tap()
             let chapter = liveWeReadBodyChapter(in: app)
             XCTAssertTrue(chapter.waitForExistence(timeout: 30)); chapter.tap()
             wait(90) { self.field("ready", app) == "true" && self.number("characters", app) > 20 && !app.buttons["weReadTOCClose"].exists }
@@ -824,154 +948,187 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
                 wait(90) { self.field("ready", app) == "true" && self.field("page", app) != page && self.number("characters", app) > 20 }
             }
         }
+        wait(120) { read.exists && self.field("ready", app) == "true" }
         XCTAssertGreaterThan(number("characters", app), 20)
         capture(app, "\(platform)-reader-ready-portrait")
-        let changedPosition = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "saved position cannot be restored")).firstMatch
-        if platform == "google_books" || platform == "kobo" || changedPosition.exists {
-            // Select a real paragraph so rotation starts with enough audio
-            // remaining to assert exact source identity. A nearly finished
-            // restored segment could legitimately advance during rotation.
-            if platform == "kobo" {
-                let web = app.webViews["koboReaderWebView"], bounds = app.webViews["koboReaderWebView"].frame
-                let paragraph = web.staticTexts.allElementsBoundByIndex.first {
-                    let frame = $0.frame
-                    return $0.label.count > 80 && frame.width > 20 && frame.height > 20 &&
-                        frame.minX >= bounds.minX + 20 && frame.maxX <= bounds.maxX - 20 &&
-                        frame.minY >= bounds.minY + 20 && frame.maxY <= bounds.maxY - 20
+        if phases.contains("read") {
+            let changedPosition = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "saved position cannot be restored")).firstMatch
+            if platform == "google_books" || platform == "kobo" || changedPosition.exists {
+                // Select a real paragraph so rotation starts with enough audio
+                // remaining to assert exact source identity. A nearly finished
+                // restored segment could legitimately advance during rotation.
+                if platform == "kobo" {
+                    let web = app.webViews["koboReaderWebView"], bounds = app.webViews["koboReaderWebView"].frame
+                    let paragraph = web.staticTexts.allElementsBoundByIndex.first {
+                        let frame = $0.frame
+                        return $0.label.count > 80 && frame.width > 20 && frame.height > 20 &&
+                            frame.minX >= bounds.minX + 20 && frame.maxX <= bounds.maxX - 20 &&
+                            frame.minY >= bounds.minY + 20 && frame.maxY <= bounds.maxY - 20
+                    }
+                    XCTAssertNotNil(paragraph, "Select observed body text inside the chapter viewport")
+                    if let paragraph {
+                        // Kobo's gesture layer owns hit testing above its iframe;
+                        // tap the observed text position through that real layer.
+                        let point = paragraph.frame
+                        app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
+                            .withOffset(CGVector(dx: point.minX + 12, dy: point.minY + 12)).tap()
+                    }
+                    wait { self.field("readActive", app) == "true" && self.field("readPaused", app) == "false" }
+                } else {
+                    app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.26)).tap()
                 }
-                XCTAssertNotNil(paragraph, "Select observed body text inside the chapter viewport")
-                if let paragraph {
-                    // Kobo's gesture layer owns hit testing above its iframe;
-                    // tap the observed text position through that real layer.
-                    let point = paragraph.frame
-                    app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
-                        .withOffset(CGVector(dx: point.minX + 12, dy: point.minY + 12)).tap()
-                }
-                wait { self.field("readActive", app) == "true" && self.field("readPaused", app) == "false" }
-            } else {
-                app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.26)).tap()
+                wait { !changedPosition.exists }
             }
-            wait { !changedPosition.exists }
-        }
-        // Preserve the user's automatic playback preference. If opening the
-        // real book already requested speech, tapping now would pause loading.
-        if field("readActive", app) != "true" || field("readPaused", app) == "true" { read.tap() }
-        wait(180) { self.field("playing", app) == "true" && self.number("time", app) > 1 && self.number("wordVisible", app) > 0 && self.field("surfaceCovered", app) == "false" }
-        capture(app, "\(platform)-read-highlight-portrait")
-        var beforeRotation: [String: String] = [:]
-        wait(30) {
-            let value = self.playbackSnapshot(app)
-            guard value["playing"] == "true", value["segment"]?.isEmpty == false,
-                  value["audioText"]?.isEmpty == false else { return false }
-            beforeRotation = value
-            return true
-        }
-        let session = beforeRotation["readSession"] ?? ""
-        let spokenSource = beforeRotation["audioText"] ?? ""
-        let time = Double(beforeRotation["time"] ?? "") ?? -1
-        let segment = beforeRotation["segment"] ?? ""
-        rotate(app, .landscapeLeft)
-        var afterRotation: [String: String] = [:]
-        wait(90) {
-            let value = self.playbackSnapshot(app)
-            guard value["playing"] == "true", value["segment"]?.isEmpty == false,
-                  value["audioText"]?.isEmpty == false,
-                  (Double(value["wordVisible"] ?? "") ?? 0) > 0,
-                  value["surfaceCovered"] == "false",
-                  value["segment"] != segment || (Double(value["time"] ?? "") ?? -1) > time + 0.3 else { return false }
-            afterRotation = value
-            return true
-        }
-        XCTAssertEqual(afterRotation["readSession"], session)
-        if afterRotation["audioText"] == spokenSource || afterRotation["segment"] == segment {
-            // Paragraph IDs are local to the newly laid-out spread. The same
-            // audio can change 1-0 to 17-0 while keeping its exact text/clock.
-            XCTAssertEqual(afterRotation["audioText"], spokenSource, "Rotation must keep the speaking source")
-        } else {
-            // A restored segment may naturally finish during the gesture.
-            // Allow only forward queue progression, never restart/reversal.
-            let before = segment.split(separator: "-").compactMap { Int($0) }
-            let after = (afterRotation["segment"] ?? "").split(separator: "-").compactMap { Int($0) }
-            XCTAssertEqual(before.count, 2); XCTAssertEqual(after.count, 2)
-            XCTAssertTrue(after[0] > before[0] || (after[0] == before[0] && after[1] > before[1]))
-        }
-        capture(app, "\(platform)-read-highlight-landscape")
-        read.tap()
-        wait { self.field("playing", app) == "false" }
-        let paused = number("time", app), pausedAudioText = field("audioText", app)
-        rotate(app, .portrait)
-        wait(60) { self.number("wordVisible", app) > 0 && self.field("surfaceCovered", app) == "false" }
-        XCTAssertEqual(number("time", app), paused, accuracy: 0.4)
-        XCTAssertEqual(field("audioText", app), pausedAudioText)
-        capture(app, "\(platform)-read-paused-reflow")
+            // Preserve the user's automatic playback preference. If opening the
+            // real book already requested speech, tapping now would pause loading.
+            if field("readActive", app) != "true" || field("readPaused", app) == "true" { read.tap() }
+            wait(180) { self.field("playing", app) == "true" && self.number("time", app) > 1 && self.number("wordVisible", app) > 0 && self.field("surfaceCovered", app) == "false" }
+            capture(app, "\(platform)-read-highlight-portrait")
+            // Start in Device Hub Open mode. Each physical transition retains the
+            // original session/source/forward-clock/highlight assertions below.
+            for foldTarget in hasDuoFoldControl ? ["closed", "open"] : [""] {
+                var beforeRotation: [String: String] = [:]
+                wait(30) {
+                    let value = self.playbackSnapshot(app)
+                    guard value["playing"] == "true", value["segment"]?.isEmpty == false,
+                          value["audioText"]?.isEmpty == false else { return false }
+                    beforeRotation = value
+                    return true
+                }
+                let session = beforeRotation["readSession"] ?? ""
+                let spokenSource = beforeRotation["audioText"] ?? ""
+                let time = Double(beforeRotation["time"] ?? "") ?? -1
+                let segment = beforeRotation["segment"] ?? ""
+                if hasDuoFoldControl {
+                    try awaitDuoFold(app, platform: platform, phase: "read-playing", target: foldTarget)
+                } else {
+                    rotate(app, .landscapeLeft)
+                }
+                var afterRotation: [String: String] = [:]
+                wait(90) {
+                    let value = self.playbackSnapshot(app)
+                    guard value["playing"] == "true", value["segment"]?.isEmpty == false,
+                          value["audioText"]?.isEmpty == false,
+                          (Double(value["wordVisible"] ?? "") ?? 0) > 0,
+                          value["surfaceCovered"] == "false",
+                          value["segment"] != segment || (Double(value["time"] ?? "") ?? -1) > time + 0.3 else { return false }
+                    afterRotation = value
+                    return true
+                }
+                XCTAssertEqual(afterRotation["readSession"], session)
+                if afterRotation["audioText"] == spokenSource || afterRotation["segment"] == segment {
+                    // Paragraph IDs are local to the newly laid-out spread. The same
+                    // audio can change 1-0 to 17-0 while keeping its exact text/clock.
+                    XCTAssertEqual(afterRotation["audioText"], spokenSource, "Rotation must keep the speaking source")
+                } else {
+                    // A restored segment may naturally finish during the gesture.
+                    // Allow only forward queue progression, never restart/reversal.
+                    let before = segment.split(separator: "-").compactMap { Int($0) }
+                    let after = (afterRotation["segment"] ?? "").split(separator: "-").compactMap { Int($0) }
+                    XCTAssertEqual(before.count, 2); XCTAssertEqual(after.count, 2)
+                    let beforeTurns = Int(beforeRotation["automaticReadTurns"] ?? "") ?? 0
+                    let afterTurns = Int(afterRotation["automaticReadTurns"] ?? "") ?? 0
+                    if afterTurns > beforeTurns && afterRotation["page"] != beforeRotation["page"] {
+                        // Paragraph/segment IDs are local to each committed provider
+                        // page. A verified forward page turn can restart them at zero.
+                        XCTAssertEqual(afterRotation["pendingPageTurn"], "false")
+                        XCTAssertEqual(afterRotation["ready"], "true")
+                    } else {
+                        XCTAssertTrue(after[0] > before[0] || (after[0] == before[0] && after[1] > before[1]))
+                    }
+                }
+                capture(app, hasDuoFoldControl ? "\(platform)-read-highlight-\(foldTarget)" : "\(platform)-read-highlight-landscape")
+            }
+            read.tap()
+            wait { self.field("playing", app) == "false" }
+            let paused = number("time", app), pausedAudioText = field("audioText", app)
+            rotate(app, .portrait)
+            wait(60) { self.number("wordVisible", app) > 0 && self.field("surfaceCovered", app) == "false" }
+            XCTAssertEqual(number("time", app), paused, accuracy: 0.4)
+            XCTAssertEqual(field("audioText", app), pausedAudioText)
+            capture(app, "\(platform)-read-paused-reflow")
 
-        // Platform-native Aa is opened through the same More entry as Kindle.
-        app.buttons["readerMoreButton"].tap()
-        let appearance = app.buttons["readerAppearanceMenuItem"]
-        XCTAssertTrue(appearance.waitForExistence(timeout: 10)); appearance.tap()
-        if platform == "google_books" {
-            wait { self.number("panelCount", app) > 0 && self.number("panelClipped", app) == 0 }
-            let larger = app.buttons["放大字体"], smaller = app.buttons["缩小字体"]
-            XCTAssertTrue(larger.isHittable); larger.tap()
-            XCTAssertTrue(smaller.isHittable); smaller.tap()
         }
-        if platform == "weread" {
-            let nativeAa = app.webViews.buttons["Reading settings"]
-            XCTAssertTrue(nativeAa.waitForExistence(timeout: 15)); nativeAa.tap()
-            wait { self.number("panelCount", app) > 0 && self.number("panelClipped", app) == 0 }
-            let label = app.staticTexts["字号大小"]
-            XCTAssertTrue(label.isHittable)
-            label.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 12, dy: 53)).tap()
-            wait(30) { self.number("providerFont", app) == 18 }
-            let font = number("providerFont", app)
-            // Real provider slider observed in the live accessibility tree:
-            // seven stops across its 404 pt track below this native heading.
-            label.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 74, dy: 53)).tap()
-            wait(30) { self.number("providerFont", app) > 0 && self.number("providerFont", app) != font }
-            capture(app, "weread-native-font-increased")
-            label.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 12, dy: 53)).tap()
-            wait(30) { self.number("providerFont", app) == font }
-        }
-        if platform == "kobo" {
-            XCTAssertTrue(app.buttons["Increase font size"].waitForExistence(timeout: 15))
-            app.buttons["Increase font size"].tap()
-            app.buttons["Decrease font size"].tap()
-        }
-        capture(app, "\(platform)-appearance-portrait")
-        rotate(app, .landscapeLeft)
-        if platform == "google_books" {
-            wait { self.number("panelCount", app) > 0 && self.number("panelClipped", app) == 0 }
-        }
-        if platform == "kobo" {
-            wait { self.field("surfaceCovered", app) == "false" }
-            XCTAssertTrue(app.buttons["Close dialog"].isHittable)
-        }
-        capture(app, "\(platform)-appearance-landscape")
-        if platform == "google_books" {
-            let window = app.windows.firstMatch
-            window.coordinate(withNormalizedOffset: CGVector(dx: 0.84, dy: 0.75))
-                .press(forDuration: 0.1, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.84, dy: 0.40)))
-            let increase = app.buttons["增大行高"], decrease = app.buttons["减小行高"]
-            XCTAssertTrue(increase.isHittable); XCTAssertTrue(decrease.isHittable)
-            XCTAssertLessThan(increase.frame.maxY, app.buttons["readerMoreButton"].frame.minY)
-            increase.tap(); decrease.tap()
-            capture(app, "google_books-appearance-landscape-scrolled")
-        }
-        // Native platform panels are dismissed using a tap on the book body;
-        // the following playback/mode assertion verifies the dismissal.
-        if platform == "google_books" {
-            app.buttons["关闭显示选项"].tap()
-            wait { self.number("panelCount", app) == 0 }
-        } else if platform == "kobo" {
-            app.buttons["Close dialog"].tap()
-        } else {
-            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.40)).tap()
-            wait { self.number("panelCount", app) == 0 }
-        }
-        rotate(app, .portrait)
 
-        let picker = app.segmentedControls["readerModePicker"]
-        XCTAssertTrue(picker.buttons["Explain"].isHittable); picker.buttons["Explain"].tap()
+        if phases.contains("appearance") {
+            // Platform-native Aa is opened through the same More entry as Kindle.
+            app.buttons["readerMoreButton"].tap()
+            let appearance = app.buttons["readerAppearanceMenuItem"]
+            XCTAssertTrue(appearance.waitForExistence(timeout: 10)); appearance.tap()
+            if platform == "google_books" {
+                wait { self.number("panelCount", app) > 0 && self.number("panelClipped", app) == 0 }
+                let larger = app.buttons["放大字体"], smaller = app.buttons["缩小字体"]
+                revealGoogleAppearanceControls([larger, smaller], in: app)
+                let font = googleAppearanceValue(between: smaller, and: larger, in: app)
+                XCTAssertFalse(font.isEmpty)
+                larger.tap()
+                wait(30) { !self.googleAppearanceValue(between: smaller, and: larger, in: app).isEmpty && self.googleAppearanceValue(between: smaller, and: larger, in: app) != font }
+                capture(app, "google_books-font-increased")
+                revealGoogleAppearanceControls([larger, smaller], in: app)
+                smaller.tap()
+                wait(30) { self.googleAppearanceValue(between: smaller, and: larger, in: app) == font }
+            }
+            if platform == "weread" {
+                let nativeAa = app.webViews.buttons["Reading settings"]
+                XCTAssertTrue(nativeAa.waitForExistence(timeout: 15)); nativeAa.tap()
+                wait { self.number("panelCount", app) > 0 && self.number("panelClipped", app) == 0 }
+                let label = app.staticTexts["字号大小"]
+                XCTAssertTrue(label.isHittable)
+                label.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 12, dy: 53)).tap()
+                wait(30) { self.number("providerFont", app) == 18 }
+                let font = number("providerFont", app)
+                // Real provider slider observed in the live accessibility tree:
+                // seven stops across its 404 pt track below this native heading.
+                label.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 74, dy: 53)).tap()
+                wait(30) { self.number("providerFont", app) > 0 && self.number("providerFont", app) != font }
+                capture(app, "weread-native-font-increased")
+                label.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 12, dy: 53)).tap()
+                wait(30) { self.number("providerFont", app) == font }
+            }
+            if platform == "kobo" {
+                XCTAssertTrue(app.buttons["Increase font size"].waitForExistence(timeout: 15))
+                app.buttons["Increase font size"].tap()
+                app.buttons["Decrease font size"].tap()
+            }
+            capture(app, "\(platform)-appearance-portrait")
+            rotate(app, .landscapeLeft)
+            if platform == "google_books" {
+                wait { self.number("panelCount", app) > 0 && self.number("panelClipped", app) == 0 }
+            }
+            if platform == "kobo" {
+                wait { self.field("surfaceCovered", app) == "false" }
+                XCTAssertTrue(app.buttons["Close dialog"].isHittable)
+            }
+            capture(app, "\(platform)-appearance-landscape")
+            if platform == "google_books" {
+                let increase = app.buttons["增大行高"], decrease = app.buttons["减小行高"]
+                revealGoogleAppearanceControls([increase, decrease], in: app)
+                XCTAssertLessThan(increase.frame.maxY, app.buttons["readerMoreButton"].frame.minY)
+                let lineHeight = googleAppearanceValue(between: decrease, and: increase, in: app)
+                XCTAssertFalse(lineHeight.isEmpty)
+                increase.tap()
+                wait(30) { !self.googleAppearanceValue(between: decrease, and: increase, in: app).isEmpty && self.googleAppearanceValue(between: decrease, and: increase, in: app) != lineHeight }
+                decrease.tap()
+                wait(30) { self.googleAppearanceValue(between: decrease, and: increase, in: app) == lineHeight }
+                capture(app, "google_books-appearance-landscape-scrolled")
+            }
+            // Native platform panels are dismissed using a tap on the book body;
+            // the following playback/mode assertion verifies the dismissal.
+            if platform == "google_books" {
+                app.buttons["关闭显示选项"].tap()
+                wait { self.number("panelCount", app) == 0 }
+            } else if platform == "kobo" {
+                app.buttons["Close dialog"].tap()
+            } else {
+                app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.40)).tap()
+                wait { self.number("panelCount", app) == 0 }
+            }
+            rotate(app, .portrait)
+
+        }
+
+        guard phases.contains("explain") else { return }
+        selectReaderMode("Explain", in: app)
         let start = app.buttons["explainStartButton"]
         XCTAssertTrue(start.waitForExistence(timeout: 15)); start.tap()
         let explain = app.buttons["explainPlayPauseButton"]
@@ -993,16 +1150,39 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         XCTAssertEqual(number("time", app), explainTime, accuracy: 0.4)
         capture(app, "\(platform)-explain-ink-landscape")
         app.buttons["readerMinimizeButton"].tap()
-        rotate(app, .portrait)
+        if hasDuoFoldControl {
+            try awaitDuoFold(app, platform: platform, phase: "explain-paused-minimized", target: "closed")
+        } else {
+            rotate(app, .portrait)
+        }
         let mini = app.buttons["readerMiniPlayerExpand"]
         XCTAssertTrue(mini.waitForExistence(timeout: 15)); XCTAssertTrue(mini.isHittable)
         XCTAssertGreaterThanOrEqual(mini.frame.height, 44); mini.tap()
         wait(60) { explain.exists && explain.isHittable && self.number("inkVisible", app) > 0 && self.field("surfaceCovered", app) == "false" }
         XCTAssertEqual(field("explainSession", app), explainSession)
         XCTAssertEqual(number("time", app), explainTime, accuracy: 0.4)
+        XCTAssertEqual(field("markIDs", app), markIDs)
+        XCTAssertEqual(field("playing", app), "false")
         capture(app, "\(platform)-expanded-paused-portrait")
+        if hasDuoFoldControl {
+            try awaitDuoFold(app, platform: platform, phase: "explain-paused-expanded", target: "open")
+            wait(60) { explain.exists && explain.isHittable && self.number("inkVisible", app) > 0 && self.field("surfaceCovered", app) == "false" }
+            XCTAssertEqual(field("explainSession", app), explainSession)
+            XCTAssertEqual(field("markIDs", app), markIDs)
+            XCTAssertEqual(number("time", app), explainTime, accuracy: 0.4)
+            XCTAssertEqual(field("playing", app), "false")
+            capture(app, "\(platform)-expanded-paused-open")
+            let pausedSegment = field("segment", app)
+            explain.tap()
+            wait(60) { self.field("playing", app) == "true" &&
+                (self.field("segment", app) != pausedSegment || self.number("time", app) > explainTime + 0.5) }
+            XCTAssertEqual(field("explainSession", app), explainSession)
+            capture(app, "\(platform)-explain-resumed-open")
+            explain.tap()
+            wait { self.field("playing", app) == "false" }
+        }
 
-        picker.buttons["Read Aloud"].tap()
+        selectReaderMode("Read Aloud", in: app)
         wait { read.exists && read.isHittable }
         let oldPage = field("page", app)
         let next = app.buttons["readerNextPageButton"]

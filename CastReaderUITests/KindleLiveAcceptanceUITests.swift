@@ -32,7 +32,7 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
     }()
 
     private func playbackIs(_ element: XCUIElement, _ state: String) -> Bool {
-        localizedPlaybackStates[state]?.contains((element.value as? String ?? "").lowercased()) == true
+        element.exists && localizedPlaybackStates[state]?.contains((element.value as? String ?? "").lowercased()) == true
     }
 
     private func wait(_ timeout: Double, _ condition: @escaping () -> Bool, file: StaticString = #filePath, line: UInt = #line) {
@@ -117,10 +117,13 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
     }
 
     private func snapshot(_ app: XCUIApplication, _ name: String) {
-        let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        image.name = name
-        image.lifetime = .keepAlways
-        add(image)
+        let duo = ProcessInfo.processInfo.environment["CASTREADER_KINDLE_DUO_FOLD_CONTROL"] != nil
+        for (index, screen) in (duo ? XCUIScreen.screens : [XCUIScreen.main]).enumerated() {
+            let image = XCTAttachment(screenshot: screen.screenshot())
+            image.name = duo ? name + "-screen-\(index)" : name
+            image.lifetime = .keepAlways
+            add(image)
+        }
         let tree = XCTAttachment(string: app.debugDescription)
         tree.name = name + "-accessibility"
         tree.lifetime = .keepAlways
@@ -144,7 +147,9 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
     override func tearDown() {
         let app = XCUIApplication()
         if app.state == .runningForeground { snapshot(app, "Kindle-live-at-teardown") }
-        XCUIDevice.shared.orientation = .portrait
+        if ProcessInfo.processInfo.environment["CASTREADER_KINDLE_DUO_FOLD_CONTROL"] == nil {
+            XCUIDevice.shared.orientation = .portrait
+        }
         super.tearDown()
     }
 
@@ -184,7 +189,10 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         snapshot(app, "store-\(language)-02-kindle-read")
         read.tap()
         waitForPausedReader(app)
-        app.buttons["kindleModeButton_explain"].tap()
+        let explainMode = app.buttons["kindleModeButton_explain"].firstMatch
+        if !explainMode.exists { app.buttons["kindleModeMenu"].tap() }
+        XCTAssertTrue(explainMode.waitForExistence(timeout: 5))
+        explainMode.tap()
         let explain = app.buttons["kindleExplainPlayPauseButton"]
         wait(30) { explain.exists && explain.isEnabled && explain.isHittable }
         explain.tap()
@@ -252,6 +260,119 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         app.terminate()
     }
 
+    func testAuthorizedDuoReadExplainFoldContinuity() throws {
+        let environment = ProcessInfo.processInfo.environment
+        try XCTSkipUnless(environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1")
+        let modes = Set((environment["CASTREADER_KINDLE_DUO_MODES"] ?? "read,explain").split(separator: ",").map(String.init))
+        XCTAssertFalse(modes.isEmpty)
+        XCTAssertTrue(modes.isSubset(of: ["read", "explain"]))
+        let path = try XCTUnwrap(environment["CASTREADER_KINDLE_DUO_FOLD_CONTROL"])
+        XCTAssertTrue(path.hasPrefix("/"))
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipSignInGate", "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderIPadAcceptance", "-CastReaderTTSClockDiagnostics",
+            "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.launch()
+        let book = app.buttons["homeShelfBook.kindle.B002RKRMSY"]
+        XCTAssertTrue(book.waitForExistence(timeout: 30))
+        wait(20) {
+            if book.isHittable { return true }
+            app.scrollViews.firstMatch.swipeUp(); return false
+        }
+        book.tap()
+        waitForPausedReader(app)
+        let probe = app.otherElements["kindlePlaybackMetrics"]
+        func state() -> [String: String] {
+            guard probe.exists else { return [:] }
+            return Dictionary((probe.value as? String ?? "").split(separator: ";").compactMap {
+                let pair = $0.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+                return pair.count == 2 ? (String(pair[0]), String(pair[1])) : nil
+            }, uniquingKeysWith: { _, last in last })
+        }
+        func number(_ key: String) -> Double { Double(state()[key] ?? "") ?? -1 }
+        func fold(_ target: String, phase: String) throws {
+            let directory = URL(fileURLWithPath: path, isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let requestID = UUID().uuidString, before = app.windows.firstMatch.frame
+            let request: [String: Any] = ["schema": 1, "requestID": requestID, "test": name,
+                "platform": "kindle", "phase": phase, "target": target,
+                "windowWidth": before.width, "windowHeight": before.height, "metrics": state()]
+            snapshot(app, "kindle-\(phase)-before-\(target)")
+            try JSONSerialization.data(withJSONObject: request, options: [.prettyPrinted, .sortedKeys])
+                .write(to: directory.appendingPathComponent("request.json"), options: .atomic)
+            print("KINDLE_DUO_FOLD requestID=\(requestID) phase=\(phase) target=\(target)")
+            // Leave the UI automation connection idle for the external
+            // Device Hub controller. The usual wait helper polls Amazon's
+            // dialogs and can starve host accessibility on the minimized shelf.
+            let acknowledged = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                guard let data = try? Data(contentsOf: directory.appendingPathComponent("ack.json")),
+                      let ack = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return false }
+                return ack["requestID"] as? String == requestID && ack["target"] as? String == target
+                    && ack["completed"] as? Bool == true
+            }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [acknowledged], timeout: 180), .completed)
+            wait(20) {
+                let after = app.windows.firstMatch.frame
+                return after.width > 1 && after.height > 1 &&
+                    (abs(after.width - before.width) > 2 || abs(after.height - before.height) > 2)
+            }
+        }
+        if modes.contains("read") {
+        let read = app.buttons["kindleReadPlayPauseButton"]
+        XCTAssertTrue(read.exists); read.tap()
+        wait(150) { self.playbackIs(read, "playing") && number("time") >= 1.5 }
+        for target in ["closed", "open"] {
+            let before = state()
+            XCTAssertFalse((before["readSession"] ?? "").isEmpty)
+            try fold(target, phase: "read-playing")
+            wait(90) { self.playbackIs(read, "playing") && state()["stable"] == "true" &&
+                (state()["segment"] != before["segment"] || number("time") > (Double(before["time"] ?? "") ?? 0) + 0.2) }
+            let after = state()
+            XCTAssertTrue(after["readSession"] == before["readSession"] ||
+                (Double(after["continuations"] ?? "") ?? 0) > (Double(before["continuations"] ?? "") ?? 0),
+                "Only a natural page completion may replace the reading session during folding")
+            snapshot(app, "kindle-read-playing-\(target)")
+        }
+        read.tap(); waitForPausedReader(app)
+        }
+        guard modes.contains("explain") else { return }
+        let mode = app.buttons["kindleModeButton_explain"].firstMatch
+        if !mode.exists { app.buttons["kindleModeMenu"].tap() }
+        XCTAssertTrue(mode.waitForExistence(timeout: 10)); mode.tap()
+        let explain = app.buttons["kindleExplainPlayPauseButton"]
+        // Before either VM is created, the shared empty console starts the
+        // currently selected mode. Its identifier is the Read control's ID.
+        let initialPlay = app.buttons["kindleReadPlayPauseButton"]
+        wait(30) { (explain.exists && explain.isEnabled && explain.isHittable) ||
+            (initialPlay.exists && initialPlay.isEnabled && initialPlay.isHittable) }
+        (explain.exists ? explain : initialPlay).tap()
+        wait(180) { self.playbackIs(explain, "playing") && number("time") > 1.5 && number("marks") > 0 && number("ink") > 0 }
+        snapshot(app, "kindle-explain-playing-open")
+        explain.tap()
+        wait(15) { self.playbackIs(explain, "paused") }
+        let paused = state(), marks = number("marks"), pausedTime = number("time")
+        app.buttons["kindleMinimizeButton"].tap()
+        let mini = app.buttons["kindleMiniPlayerExpand"]
+        XCTAssertTrue(mini.waitForExistence(timeout: 15))
+        try fold("closed", phase: "explain-paused-minimized")
+        XCTAssertTrue(mini.isHittable); mini.tap()
+        for target in ["closed", "open"] {
+            if target == "open" { try fold(target, phase: "explain-paused-expanded") }
+            wait(90) { self.playbackIs(explain, "paused") && state()["stable"] == "true" &&
+                number("marks") >= marks && number("shown") >= marks && number("ink") > 0 }
+            XCTAssertEqual(state()["explainSession"], paused["explainSession"])
+            XCTAssertEqual(state()["segment"], paused["segment"])
+            XCTAssertEqual(number("time"), pausedTime, accuracy: 0.4)
+            snapshot(app, "kindle-explain-reopened-\(target)")
+        }
+        explain.tap()
+        wait(60) { self.playbackIs(explain, "playing") &&
+            (state()["segment"] != paused["segment"] || number("time") > pausedTime + 0.5) }
+        snapshot(app, "kindle-explain-resumed-open")
+        explain.tap(); wait(15) { self.playbackIs(explain, "paused") }
+    }
+
     func testAuthorizedIPadReadExplainAndRotation() throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_KINDLE_LIVE_ACCEPTANCE"] == "1")
         continueAfterFailure = false
@@ -303,7 +424,10 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         }
         read.tap()
         waitForPausedReader(app)
-        app.buttons["kindleModeButton_explain"].tap()
+        let explainMode = app.buttons["kindleModeButton_explain"].firstMatch
+        if !explainMode.exists { app.buttons["kindleModeMenu"].tap() }
+        XCTAssertTrue(explainMode.waitForExistence(timeout: 5))
+        explainMode.tap()
         let explain = app.buttons["kindleExplainPlayPauseButton"]
         wait(30) { explain.exists && explain.isEnabled && explain.isHittable }
         explain.tap()

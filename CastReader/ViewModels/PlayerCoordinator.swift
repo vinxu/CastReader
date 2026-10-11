@@ -306,18 +306,11 @@ final class PlayerCoordinator: ObservableObject {
     /// 收起阅读器（不停播放）→ Mini Player 接管。
     func minimize() {
         session?.readVM.flushReadingProgress()
-        guard let document = session?.document else { return }
-        if AdaptiveLayout.isPad {
-            AppOrientationLock.unlock(owner: Self.orientationOwner)
-        } else if Self.isPortraitOnly(document.sourceKind) {
-            // Portrait-only in both the full reader and the Mini Player: the
-            // reader stays mounted off-screen, so releasing the lock here would
-            // let a rotation reflow it behind the user's back.
-            AppOrientationLock.lockPortrait(owner: Self.orientationOwner)
-        } else {
-            AppOrientationLock.lockCurrent(owner: Self.orientationOwner)
-        }
+        guard session != nil else { return }
         isReaderPresented = false
+        // ReaderHost retains the hidden surface's size. A document's visible
+        // reader policy must not keep Home sideways after a fold or rotation.
+        AppOrientationLock.unlock(owner: Self.orientationOwner)
     }
 
     /// 从 Mini Player 重新展开完整阅读器。
@@ -362,7 +355,7 @@ final class PlayerCoordinator: ObservableObject {
     }
 
     private func updateOrientationForExpandedReader(_ document: ReadingDocument) {
-        if Self.isPortraitOnly(document.sourceKind) {
+        if isPortraitOnly(document.sourceKind) {
             AppOrientationLock.lockPortrait(owner: Self.orientationOwner)
         } else {
             AppOrientationLock.unlock(owner: Self.orientationOwner)
@@ -375,7 +368,7 @@ final class PlayerCoordinator: ObservableObject {
     /// timestamped list; in landscape the artwork eats the viewport and the
     /// layout falls apart. WeRead is portrait-only for a different reason —
     /// rotating its live WebView reflows the page mid-playback.
-    private static func isPortraitOnly(_ sourceKind: ReadingSourceKind) -> Bool {
-        !AdaptiveLayout.isPad && (sourceKind == .weread || sourceKind == .youtube)
+    private func isPortraitOnly(_ sourceKind: ReadingSourceKind) -> Bool {
+        scene?.window?.traitCollection.userInterfaceIdiom != .pad && (sourceKind == .weread || sourceKind == .youtube)
     }
 }

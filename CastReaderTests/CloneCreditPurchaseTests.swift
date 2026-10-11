@@ -302,6 +302,19 @@ final class CloneCreditEnvironmentTests: XCTestCase {
 /// No StoreKit transactions, real credentials or shared entitlement mutation.
 @MainActor
 final class CloneCreditBalanceRegressionTests: XCTestCase {
+    func testExhaustionUsesConfirmedTotalIncludingPurchasedMinutes() throws {
+        func balance(_ fields: [String: Any]) throws -> CloneCreditBalance {
+            try JSONDecoder().decode(CloneCreditBalance.self, from: JSONSerialization.data(withJSONObject:
+                ["enabled": true, "canPurchase": true].merging(fields) { _, new in new }))
+        }
+        XCTAssertFalse(try balance(["baseRemainingMs": 0, "purchasedRemainingMs": 2_280_000,
+                                    "availableMs": 2_280_000]).isExhausted)
+        XCTAssertFalse(try balance(["baseRemainingMs": 0]).isExhausted,
+                       "An absent total is syncing, not exhausted")
+        XCTAssertFalse(try balance(["availableMs": 1]).isExhausted)
+        XCTAssertTrue(try balance(["availableMs": 0]).isExhausted)
+        XCTAssertFalse(try balance(["enabled": false, "availableMs": 0]).isExhausted)
+    }
     private func response(_ fields: [String: Any]) throws -> HTTPURLResponse {
         let raw = String(data: try JSONSerialization.data(withJSONObject: fields), encoding: .utf8)!
         return HTTPURLResponse(url: URL(string: "https://example.invalid/tts")!, statusCode: 200,

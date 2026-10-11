@@ -112,6 +112,33 @@ final class ReaderViewportTests: XCTestCase {
         XCTAssertEqual(BottomOverlayMetrics.requiredInset(contentBottom: 720, playerTop: nil, tabBarTop: 800), 0)
     }
 
+    func testWindowKeyboardCommandsYieldToEditingAndPresentedPanels() async throws {
+        let controller = UIViewController()
+        let field = UITextField(frame: CGRect(x: 24, y: 100, width: 240, height: 44))
+        controller.view.addSubview(field)
+        try await show(controller)
+        let window = try XCTUnwrap(testWindow)
+        XCTAssertTrue(ReaderWindowKeyboard.canHandleCommands(in: window))
+        XCTAssertFalse(ReaderWindowKeyboard.canHandleCommands(in: nil))
+
+        XCTAssertTrue(field.becomeFirstResponder())
+        try await settle()
+        XCTAssertFalse(ReaderWindowKeyboard.canHandleCommands(in: window),
+                       "Typing, including space and shifted letters, belongs to the editor")
+        field.resignFirstResponder()
+        try await settle()
+        XCTAssertTrue(ReaderWindowKeyboard.canHandleCommands(in: window))
+
+        let panel = UIViewController()
+        controller.present(panel, animated: false)
+        try await settle()
+        XCTAssertFalse(ReaderWindowKeyboard.canHandleCommands(in: window),
+                       "A presented panel must not send shortcuts to its hidden reader")
+        controller.dismiss(animated: false)
+        try await settle()
+        XCTAssertTrue(ReaderWindowKeyboard.canHandleCommands(in: window))
+    }
+
     func testEPUBParagraphTransitionDoesNotVisitTopBeforeWordFocus() async throws {
         try await verifyNativeTransition(source: .epub)
     }
@@ -487,6 +514,77 @@ final class ReaderViewportTests: XCTestCase {
         let normal = try XCTUnwrap(normalPage.selection(for: normalText.range(of: "Biologia")))
         XCTAssertEqual(PDFSelectionGeometry.bounds(of: normal, on: normalPage), normal.bounds(for: normalPage),
                        "Normal font selection geometry must stay unchanged")
+    }
+
+    func testPDFHighlightsRemainVisibleOnBlackAndWhitePages() async throws {
+        let text = "Visible reader highlight"
+        let size = CGSize(width: 360, height: 160)
+        let savedColor = AppSettings.shared.highlightColorHex
+        AppSettings.shared.highlightColorHex = "#FD5F01"
+        defer { AppSettings.shared.highlightColorHex = savedColor }
+        for dark in [false, true] {
+            for explainMode in [false, true] {
+                let data = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: size)).pdfData { renderer in
+                    renderer.beginPage()
+                    (dark ? UIColor.black : UIColor.white).setFill()
+                    renderer.cgContext.fill(CGRect(origin: .zero, size: size))
+                    (text as NSString).draw(at: CGPoint(x: 30, y: 65), withAttributes: [
+                        .font: UIFont.systemFont(ofSize: 22),
+                        .foregroundColor: dark ? UIColor.white : UIColor.black
+                    ])
+                }
+                let pdf = try XCTUnwrap(PDFDocument(data: data))
+                let page = try XCTUnwrap(pdf.page(at: 0))
+                let source = try XCTUnwrap(page.string) as NSString
+                let word = source.range(of: "Visible")
+                let wordSelection = try XCTUnwrap(page.selection(for: word))
+                let rect = PDFSelectionGeometry.bounds(of: wordSelection, on: page)
+                let paragraph = ReadingParagraph(id: 0, text: text, pdfPageIndex: 0,
+                                                 pdfRange: source.range(of: text))
+                let document = ReadingDocument(title: "Contrast", sourceKind: .pdf, language: "en",
+                                               paragraphs: [paragraph], fileData: data)
+                let read = ReadAloudViewModel(document: document, historyStore: HistoryStore(directory: directory))
+                defer { read.stop() }
+                read.autoScrollEnabled = false
+                let explain = ExplainViewModel(document: document)
+                let view = PDFView(); view.document = pdf
+                let coordinator = PDFReaderView.Coordinator(); coordinator.pdfView = view
+                coordinator.setMode(explainMode ? .explain : .read)
+                coordinator.attach(readVM: read, explainVM: explain, doc: document)
+                if explainMode {
+                    explain.activeMarks = [.init(id: UUID(), paragraphIndex: 0, charRange: 0..<7,
+                                                 action: "highlight", n: nil, seed: 42)]
+                    try await settle()
+                } else {
+                    coordinator.highlight(0)
+                    coordinator.highlightWord(PDFWordHighlight(paragraphIndex: 0,
+                        words: ["Visible", "reader", "highlight"], wordIndex: 0))
+                }
+                let format = UIGraphicsImageRendererFormat(); format.scale = 1
+                let image = UIGraphicsImageRenderer(size: size, format: format).image { renderer in
+                    renderer.cgContext.translateBy(x: 0, y: size.height)
+                    renderer.cgContext.scaleBy(x: 1, y: -1)
+                    page.draw(with: .mediaBox, to: renderer.cgContext)
+                }
+                let cg = try XCTUnwrap(image.cgImage)
+                let patch = try XCTUnwrap(cg.cropping(to: CGRect(x: rect.minX, y: size.height - rect.maxY,
+                                                               width: rect.width, height: rect.height)))
+                var pixels = [UInt8](repeating: 0, count: patch.width * patch.height * 4)
+                let context = try XCTUnwrap(CGContext(data: &pixels, width: patch.width, height: patch.height,
+                    bitsPerComponent: 8, bytesPerRow: patch.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+                context.draw(patch, in: CGRect(x: 0, y: 0, width: patch.width, height: patch.height))
+                let colored = stride(from: 0, to: pixels.count, by: 4).filter {
+                    Int(pixels[$0]) - Int(pixels[$0 + 2]) > 30 && Int(pixels[$0]) - Int(pixels[$0 + 1]) > 20
+                }.count
+                XCTAssertGreaterThan(Double(colored) / Double(patch.width * patch.height), 0.35,
+                    "The highlight must color the word's background, including a black PDF; dark=\(dark), Explain=\(explainMode)")
+                let attachment = XCTAttachment(image: image)
+                attachment.name = "pdf-highlight-dark-\(dark)-explain-\(explainMode)"
+                attachment.lifetime = .keepAlways; add(attachment)
+                _ = coordinator
+            }
+        }
     }
 
     func testPDFNumeralsFollowSourceDirectionForNativeAndOCRText() async throws {

@@ -38,6 +38,10 @@ final class CastReaderAppDelegate: NSObject, UIApplicationDelegate {
 /// Scene-scoped orientation policy used by reader integrations that cannot
 /// provide a usable landscape layout. WeRead owns this lock only while its
 /// reader is visible; every other CastReader surface keeps the app defaults.
+// TODO: Modernization - Move this legacy rotation-lock policy to the presenting
+// controller's prefersInterfaceOrientationLocked (iOS 26+) when migrating all
+// callers together. Preserve the older-OS masks; a fold can resize the scene
+// despite either lock, so reader layout recovery must remain independent.
 @MainActor
 enum AppOrientationLock {
     private struct Request {

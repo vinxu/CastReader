@@ -15,6 +15,7 @@ extension Notification.Name {
 }
 
 struct WeReadHomeSection: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
@@ -35,7 +36,7 @@ struct WeReadHomeSection: View {
                         if !typeSize.isAccessibilitySize { Spacer() }
                         NavigationLink(destination: WeReadLibraryView()) {
                             Text(AppLocalized("查看全部")).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.primary)
-                                .frame(minHeight: AdaptiveLayout.isPad ? 44 : nil)
+                                .frame(minHeight: horizontalSizeClass == .regular ? 44 : nil)
                         }
                         .accessibilityIdentifier("homeShelfViewAll.weread")
                     }
@@ -222,6 +223,7 @@ struct WeReadLibraryConnectView: View {
 }
 
 struct WeReadLibraryView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -256,7 +258,7 @@ struct WeReadLibraryView: View {
                     }
                     Button { showConnect = true } label: {
                         Image(systemName: "arrow.clockwise")
-                            .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: AdaptiveLayout.isPad ? 44 : 36)
+                            .frame(width: horizontalSizeClass == .regular ? 44 : 36, height: horizontalSizeClass == .regular ? 44 : 36)
                             .background(AppTheme.primary.opacity(0.12), in: Circle())
                     }
                     .foregroundColor(AppTheme.primary)

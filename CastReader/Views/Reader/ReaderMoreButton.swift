@@ -24,6 +24,7 @@ enum ReaderMoreFormatting {
 
 struct ReaderMoreButton: View {
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @Environment(\.readerAppearanceSource) private var appearanceSource
     @Environment(\.readerOfflineAction) private var offlineAction
@@ -63,7 +64,7 @@ struct ReaderMoreButton: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 20, weight: .semibold))
-                .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: 44)
+                .frame(width: horizontalSizeClass == .regular ? 44 : 36, height: 44)
                 .contentShape(Rectangle())
                 .overlay(alignment: .topTrailing) {
                     if timer.isActive {
@@ -181,6 +182,7 @@ struct SleepTimerSheet: View {
 
 private struct ReaderAppearanceSheet: View {
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     let source: ReaderAppearanceSource
     @ObservedObject private var settings = ReaderAppearanceSettings.shared
@@ -246,7 +248,7 @@ private struct ReaderAppearanceSheet: View {
                 }
             }
         }
-        .presentationDetents(AdaptiveLayout.isPad ? [.large] : [.medium, .large])
+        .presentationDetents(horizontalSizeClass == .regular ? [.large] : [.medium, .large])
         .presentationDragIndicator(.visible)
     }
 }

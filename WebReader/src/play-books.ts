@@ -2048,6 +2048,15 @@ export function installPlayBooksReader(
       return false
     }
 
+    if (changeReasonInFlight === 'refresh') {
+      // A resize may still be settling when audio reaches its page edge.
+      // Its old timer/reason cannot commit the upcoming physical turn as an
+      // identity-less refresh: that would strand native's exact turn hold.
+      if (settleTimer) clearTimeout(settleTimer)
+      settleTimer = null
+      clearSettledChange('refresh')
+      observedSignature = visualBaseline
+    }
     pendingAuto = true
     pendingDirection = direction
     pendingAutoMetadata = metadata
@@ -2198,6 +2207,10 @@ export function installPlayBooksReader(
         changeBaseline = manual.baselineSignature
         changeMetadata = manual
         commit('manual', 0, true)
+      } else if (pendingAuto) {
+        // An unowned geometry probe cannot replace the automatic turn's
+        // observer, paint witness, or immutable metadata while it is pending.
+        return
       } else {
         commit('refresh', 0, true)
       }
