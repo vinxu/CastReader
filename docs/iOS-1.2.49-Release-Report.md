@@ -1,6 +1,15 @@
-# iOS 1.2.49 (77) release record
+# iOS 1.2.49 ASO candidate (77) — handed off for Duo integration
 
-Status: **READY_FOR_REVIEW — submission blocked by Apple’s two in-flight iOS review limit**, verified 2026-10-11. The build is uploaded, eligible and bound; formal submission was attempted and rejected with HTTP 409. This release has **not** entered WAITING_FOR_REVIEW.
+Status: **HANDED OFF — DO NOT SUBMIT BUILD 77 FROM THIS TASK**, recorded 2026-10-12. The user chose to merge Duo into 1.2.49 and coordinate the original submission task. The hourly submission automation is confirmed **PAUSED**. This task will make no further writes to the prepared App Store version or review submission and will not upload or submit the old candidate. Earlier build and audit results below are historical evidence, not a final Duo release approval.
+
+## Release ownership transfer
+
+- The iPhone Duo task `01a119b5-7862-7fd0-a0bd-438d30fdecc5` relayed the user's explicit decision: “合并到 1.2.49，协调原任务的自动提交”. Its release checkout is `/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader`.
+- That task owns the Duo implementation, a new Build, 28 languages × five Duo screenshots, updated release notes and final submission. It will retain the reviewed 29-locale ASO copy, existing iPhone/iPad screenshots and the two independent in-flight content submissions.
+- The user permits release after Duo simulator acceptance without a physical Duo device. The receiving task must verify its changed implementation and final release; the old candidate's unchanged-source service evidence does not by itself certify the new Duo code.
+- Automation `castreader-ios-1-2-49` was paused by the receiving task and verified PAUSED here. Do not resume it. The original instruction to submit Build 77 as soon as review capacity becomes available is superseded by this handoff.
+- The last read-only check before handoff was **2026-10-12 08:14:24 +08:00**: version and own review were READY_FOR_REVIEW, Build 77 was VALID / APP_STORE_ELIGIBLE, and the two other review slots were still occupied. This handoff did not re-query or change App Store Connect. Any later state must be established by the receiving release task.
+- Preserve this checkout, its ASO catalogs and private evidence for the receiving task. No review was withdrawn, no duplicate upload occurred, and no successful submission is claimed by this report.
 
 ## Scope and source
 
@@ -24,7 +33,7 @@ The 290 inherited screenshots comprise five iPhone and five iPad images in each 
 
 Private evidence is under `reports/ios-release-1.2.49/` in the release checkout and is not committed. It includes source identity, preflight, core-evidence links, archive verification, immutable payload checks, metadata snapshots, screenshot identity, exact eligible build, upload receipt, final release audit and review-submission readback. Credentials and private account content are excluded from this report and Git.
 
-## Submission
+## Original submission attempt (historical)
 
 - Official Xcode upload succeeded **2026-10-11 18:34:13 +08:00**. Build `682ca796-eb90-4340-a055-eca64c0c74a4` is **77 / VALID / APP_STORE_ELIGIBLE**, with `usesNonExemptEncryption=false`, and belongs to iOS 1.2.49.
 - Version `680b0b6d-968f-4a0c-a5a2-b8c25496e078` is bound to that exact build. Release mode remains `AFTER_APPROVAL`.
@@ -32,8 +41,8 @@ Private evidence is under `reports/ios-release-1.2.49/` in the release checkout 
 - Export changed only archive-level `Info.plist`; all 403 product/dSYM files were unchanged. Stable payload manifest SHA-256: `1f803946d8c24799e7bcfdba38a2c402dbb18f129746f454a15e201ae793e747`.
 - Prepared review submission `e3d5c230-c7e0-4a1c-91ca-2c2ba2b68d78` contains exactly this version. Both the version and its submission remain **READY_FOR_REVIEW**. The normal submit helper passed its explicit-submission dry run, then Apple rejected `submitted=true` with `STATE_ERROR.MAX_IN_REVIEW_SUBMISSIONS_PER_PLATFORM_LIMIT_REACHED`: the maximum is two in-flight iOS submissions. The failure is an Apple API concurrency limit, not an approval-policy rejection or metadata/build validation error.
 - Two existing submissions remain untouched: `238ef1b0-762a-4e34-872d-b9e16742cd3f` (three non-version items; their resource type is not exposed by the reviewed public API relationships) and `c3c2a6cc-598f-4196-9f5d-1188fd743ea2` (Books, Documents and Study custom product pages). Both were WAITING_FOR_REVIEW at inspection. The Mac version/review was not modified.
-- The user explicitly chose to preserve the existing reviews and wait for capacity. Do not withdraw the custom-product-page submission or any other review. Thread heartbeat `castreader-ios-1-2-49` is ACTIVE and checks hourly; once capacity is available it is authorized to resume this exact prepared submission, verify the final state and pause itself. It reports completion or a new actionable blocker, and otherwise stays quiet. Releasing capacity is the sole remaining external dependency.
+- The user's earlier choice was to preserve existing reviews and wait for capacity. The heartbeat performed read-only hourly checks and no submission writes while both slots remained occupied. On 2026-10-12, the later Duo integration decision superseded this continuation plan; the heartbeat is now PAUSED and release ownership has transferred as recorded above.
 
-Resume by re-reading these exact objects and the saved final audit; reuse Build 77 and review submission `e3d5c230-c7e0-4a1c-91ca-2c2ba2b68d78`. Do not upload a duplicate build or create another version/submission. Recheck affected metadata and invoke the normal submit helper with that `--submission-id`; require both version and submission to reach WAITING_FOR_REVIEW or later before calling the release submitted.
+The original Build 77 submission instructions are no longer active. Only the receiving Duo release task may proceed with the version and review draft under its updated scope, new Build and acceptance evidence. This task must not bind, submit, cancel or otherwise modify those objects or restore the paused automation.
 
 Apple documents a maximum of two concurrent submissions per platform: [Overview of submitting for review](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/overview-of-submitting-for-review).

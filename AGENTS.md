@@ -1,10 +1,11 @@
 # AGENTS.md
 
-## iOS 1.2.49 ASO 待审核名额（2026-10-11）
+## iOS 1.2.49 已交由 Duo 合并发布（2026-10-12）
 
-- 29-locale ASO 候选源码 `0be026c0ed6cb8e97f12d6b0aa13857941ecfd70`，工作树 `/Users/xuxuheng/.codex/worktrees/ios-1249-aso-release/CastReader`；四组件 **1.2.49（77）**。与已上线 1.2.48（75）仅版本/Build 不同，OCR 瘦身和语言识别实验均未纳入。
-- Build `682ca796-eb90-4340-a055-eca64c0c74a4` 已 VALID / APP_STORE_ELIGIBLE，并绑定 iOS 版本 `680b0b6d-968f-4a0c-a5a2-b8c25496e078`。29 locale 文案、290 张截图、核心证据兼容性及归档验证已通过。
-- **尚未正式送审**：Apple 返回同平台最多两单审核的上限错误。候选与审核单 `e3d5c230-c7e0-4a1c-91ca-2c2ba2b68d78` 均 READY_FOR_REVIEW；用户已明确选择保留两单既有审核、等待名额释放，不得撤回。自动化 `castreader-ios-1-2-49` 每小时检查，名额释放后继续提交；复用此 Build/审核单，不重复上传，成功后暂停自动化。详见 `docs/iOS-1.2.49-Release-Report.md`。
+- 原 29-locale ASO 候选源码 `0be026c0ed6cb8e97f12d6b0aa13857941ecfd70`，本工作树 `/Users/xuxuheng/.codex/worktrees/ios-1249-aso-release/CastReader` 的四组件 **1.2.49（77）**仅保留为已验证历史候选；**本任务不得继续送审 Build 77，也不得写入既有版本或审核草稿**。
+- 原 Build `682ca796-eb90-4340-a055-eca64c0c74a4` 已上传、VALID / APP_STORE_ELIGIBLE，并绑定 iOS 版本 `680b0b6d-968f-4a0c-a5a2-b8c25496e078`；审核草稿为 `e3d5c230-c7e0-4a1c-91ca-2c2ba2b68d78`。本任务最后于 2026-10-12 08:14:24 北京时间回读二者 READY_FOR_REVIEW，尚未正式提交。上述状态是交接前记录，后续以 Duo 发布回执为准。
+- 用户通过 iPhone Duo 适配任务 `01a119b5-7862-7fd0-a0bd-438d30fdecc5` 明确选择“合并到 1.2.49，协调原任务的自动提交”。Duo 工作树 `/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader` 负责新 Build、Duo 功能、28 语 × 5 张 Duo 截图、更新说明及最终送审；保留现有 29 语 ASO、iPhone/iPad 截图及两个独立在途素材审核。用户允许 Duo 模拟器验收后发布，无需 Duo 真机；新功能仍由接手任务完成对应验证，不以旧 Build 77 证据冒充。
+- 自动化 `castreader-ios-1-2-49` 已由接手任务暂停，本任务已核实 **PAUSED**；不得恢复。不得撤回其他审核、重新上传旧候选或抢先提交。此交接取代先前“名额释放即自动提交 Build 77”的安排。详见 `docs/iOS-1.2.49-Release-Report.md`。
 
 ## iOS 1.2.48 28 语适配已送审（2026-10-10）
 
