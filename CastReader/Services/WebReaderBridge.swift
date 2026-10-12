@@ -43,6 +43,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     func receiveGoogleBooksPageForTesting(_ payload: [String: Any]) {
         handle(["type": "rendered", "payload": payload])
     }
+    private var liveAcceptanceBackgroundReadCommits = 0
     private var liveAcceptanceAutomaticReadTurns = 0
     private var liveAcceptanceAutomaticExplainTurns = 0
     private var liveAcceptancePhysicalExplainPages = 0
@@ -103,6 +104,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             "page=\(SHA256.hash(data: Data(signature.utf8)).map { String(format: "%02x", $0) }.joined())", "mode=\(isReadMode ? "read" : "explain")",
             "readSession=\(ObjectIdentifier(readVM))", "explainSession=\(ObjectIdentifier(explainVM))",
             "automaticReadTurns=\(liveAcceptanceAutomaticReadTurns)",
+            "backgroundReadCommits=\(liveAcceptanceBackgroundReadCommits)",
             "automaticExplainTurns=\(liveAcceptanceAutomaticExplainTurns)",
             "physicalExplainPages=\(liveAcceptancePhysicalExplainPages)",
             "pendingPageTurn=\(pendingGoogleBooksTurn)",
@@ -214,8 +216,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
     private var googleBooksTurnOwner: GoogleBooksTurnOwner?
     private var googleBooksTurnTimeout: Task<Void, Never>?
-    private var googleBooksTurnSuspendedInBackground = false
-    private var googleBooksTurnActionDeferredForForeground = false
     private var googleBooksManualIntentProbeTask: Task<Void, Never>?
     private var googleBooksManualRestartTask: Task<Void, Never>?
     private var pendingGoogleBooksManualTurn = false
@@ -232,18 +232,37 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var googleBooksCarryAdvance: GoogleBooksCarryAdvance?
     private var googleBooksPresentationDeadline: Task<Void, Never>?
     private var googleBooksPresentationRetry: Task<Void, Never>?
+    private var googleBooksConfirmedPresentation: UUID?
+    private var weReadPresentationTask: Task<Void, Never>?
+    private var pendingWeReadPresentation: (candidate: WeReadPageCandidate, holdID: UUID)?
     private func awaitGoogleBooksPresentation(_ holdID: UUID) {
         googleBooksPresentationDeadline?.cancel()
+        guard isApplicationActive else { return }
         googleBooksPresentationDeadline = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 8_000_000_000)
-            guard !Task.isCancelled, let self,
+            guard !Task.isCancelled, let self, self.isApplicationActive,
                   AudioPlayerService.shared.pagePresentationHoldID == holdID else { return }
             ReaderRunLog.write("PAGINATION anchor_ack_timeout platform=\(self.livePlatform?.rawValue ?? "web")")
-            self.readVM?.invalidateWebContent(message: AppLocalized("网络连接失败，请重试。"))
+            self.invalidateGoogleBooksLivePage(reason: "presentation-timeout", clearConsumedCursor: false)
+            self.googleBooksRecoveryShouldResume = false
+            self.googleBooksRecoveryOwner = nil
+            self.call("gbRefresh")
         }
     }
-    private func confirmGoogleBooksPresentation(presentedHoldID: UUID? = nil) {
+    private func confirmGoogleBooksPresentation(presentedHoldID: UUID? = nil, sourceCommitted: Bool = false) {
         guard let id = AudioPlayerService.shared.pagePresentationHoldID else { return }
+        if sourceCommitted { googleBooksConfirmedPresentation = id }
+        // The commit path has already checked frame, turn and exact source.
+        // Lock-screen narration needs that evidence, not an invisible paint.
+        if !isApplicationActive {
+            guard googleBooksConfirmedPresentation == id else { return }
+            googleBooksPresentationDeadline?.cancel()
+            googleBooksPresentationRetry?.cancel()
+            googleBooksPresentationRetry = nil
+            _ = AudioPlayerService.shared.finishPagePresentation(id)
+            ReaderRunLog.write("PAGINATION background_source_confirmed platform=\(livePlatform?.rawValue ?? "web")")
+            return
+        }
         if presentedHoldID == id {
             googleBooksPresentationDeadline?.cancel()
             googleBooksPresentationRetry?.cancel()
@@ -346,6 +365,47 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var weReadRefreshSerial = 0
     private var isApplicationActive = true
     private var lastApplicationActivityState: Bool?
+    private var backgroundTurnTask: Task<Void, Never>?
+    private var backgroundTurnObservationID: UUID?
+    private var backgroundTurnLease: UIBackgroundTaskIdentifier = .invalid
+
+    /// Keep an already authorized page transition alive through the brief
+    /// decoder gap. Never emit silent audio or repeat the semantic page click.
+    private func observeBackgroundTurnIfNeeded() {
+        guard !isApplicationActive, backgroundTurnTask == nil,
+              pendingGoogleBooksTurn || pendingWeReadTurn ||
+                AudioPlayerService.shared.pagePresentationHoldID != nil else { return }
+        let observationID = UUID()
+        backgroundTurnObservationID = observationID
+        backgroundTurnLease = UIApplication.shared.beginBackgroundTask(withName: "Reader page continuation") { [weak self] in
+            Task { @MainActor in self?.endBackgroundTurnObservation(ifOwnedBy: observationID) }
+        }
+        backgroundTurnTask = Task { @MainActor [weak self] in
+            for _ in 0..<30 {
+                do { try await Task.sleep(nanoseconds: 750_000_000) } catch { break }
+                guard let self, !self.isApplicationActive else { break }
+                guard self.pendingGoogleBooksTurn || self.pendingWeReadTurn ||
+                        AudioPlayerService.shared.pagePresentationHoldID != nil else { break }
+                if self.isGoogleBooks, self.pendingGoogleBooksTurn {
+                    self.call("gbRefresh", self.googleBooksTurnIdentity?.payload ?? [:])
+                } else if self.isWeRead {
+                    self.callWeRead("pollSource")
+                }
+            }
+            self?.endBackgroundTurnObservation(ifOwnedBy: observationID)
+        }
+    }
+
+    private func endBackgroundTurnObservation(ifOwnedBy observationID: UUID? = nil) {
+        if let observationID, backgroundTurnObservationID != observationID { return }
+        backgroundTurnObservationID = nil
+        backgroundTurnTask?.cancel()
+        backgroundTurnTask = nil
+        if backgroundTurnLease != .invalid {
+            UIApplication.shared.endBackgroundTask(backgroundTurnLease)
+            backgroundTurnLease = .invalid
+        }
+    }
     private var shouldReloadWeReadOnForeground = false
     private var weReadForegroundProbeSerial = 0
     private var weReadForegroundProbeAttemptSerial = 0
@@ -1418,7 +1478,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
             ReaderRunLog.write(
                 "GBOOKS turn requested method=\((msg.payload["method"] as? String) ?? "") " +
-                "discovery=\((msg.payload["discovery"] as? String) ?? "")"
+                "discovery=\((msg.payload["discovery"] as? String) ?? "") " +
+                "transport=\((msg.payload["transport"] as? String) ?? "") " +
+                "animated=\((msg.payload["animated"] as? Bool).map { String($0) } ?? "unknown") " +
+                "page=\((msg.payload["currentPage"] as? Int) ?? -1)->\((msg.payload["targetPage"] as? Int) ?? -1)"
             )
         case "googleBooksTurnFailed":
             guard acceptsActiveGoogleBooksFrameEvent(msg.payload) else { return }
@@ -2147,7 +2210,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         if pendingWeReadTOCJump { failWeReadTOCJump(reason: reason) }
         lastWeReadFingerprint = ""
         lastWeReadEvidence = nil
-        let message = reason == "resume-unverified"
+        let message = reason == "resume-unverified" || reason.hasPrefix("presentation-") || reason == "turn-confirmation-failed"
             ? AppLocalized("正在同步当前书页，请稍后重试。")
             : reason == "access-gate"
             ? AppLocalized("请先在微信读书页面恢复正文，再继续播放。")
@@ -2864,8 +2927,19 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func confirmWeReadPresentation(_ candidate: WeReadPageCandidate, holdID: UUID?) {
-        guard let holdID, let webView else { return }
+        guard let holdID, let webView,
+              AudioPlayerService.shared.pagePresentationHoldID == holdID else { return }
+        weReadPresentationTask?.cancel()
+        pendingWeReadPresentation = (candidate, holdID)
+        if !isApplicationActive {
+            guard candidate.fingerprint == lastWeReadFingerprint else { return }
+            pendingWeReadPresentation = nil
+            _ = AudioPlayerService.shared.finishPagePresentation(holdID)
+            ReaderRunLog.write("PAGINATION background_source_confirmed platform=weread")
+            return
+        }
         if candidate.presentedOperationID == holdID {
+            pendingWeReadPresentation = nil
             // Native canvas + exact source highlight were painted together in
             // JS before this page receipt. Do not add another WebKit round trip
             // and two additional frames on the audible handoff path.
@@ -2875,24 +2949,25 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
         let fingerprint = candidate.fingerprint
         let content = candidate.evidence.contentFingerprint
-        Task { @MainActor [weak self, weak webView] in
+        weReadPresentationTask = Task { @MainActor [weak self, weak webView] in
             guard let self, let webView else { return }
             // WebKit resolves this promise after the frame containing the
             // highlight has been painted. No fixed delay stands in for paint.
             let deadline = Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
-                guard !Task.isCancelled, let self, self.lastWeReadFingerprint == fingerprint,
+                guard !Task.isCancelled, let self, self.isApplicationActive, self.lastWeReadFingerprint == fingerprint,
                       AudioPlayerService.shared.pagePresentationHoldID == holdID else { return }
                 ReaderRunLog.write("PAGINATION anchor_ack_timeout platform=weread")
-                self.readVM?.invalidateWebContent(message: AppLocalized("网络连接失败，请重试。"))
+                self.invalidateWeReadContent(reason: "presentation-timeout")
             }
             defer { deadline.cancel() }
             let script = "return await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(window.CR?.confirmPresentation?.({contentFingerprint: content}) === true))));"
             let result = try? await webView.callAsyncJavaScript(script,
                 arguments: ["content": content], in: nil, contentWorld: .page)
-            guard self.lastWeReadFingerprint == fingerprint,
+            guard !Task.isCancelled, self.isApplicationActive, self.lastWeReadFingerprint == fingerprint,
                   AudioPlayerService.shared.pagePresentationHoldID == holdID else { return }
             if result as? Bool == true {
+                self.pendingWeReadPresentation = nil
                 _ = AudioPlayerService.shared.finishPagePresentation(holdID)
                 self.updateWeReadCarryHighlightIfNeeded()
             } else {
@@ -2900,7 +2975,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     "return window.CR?.presentationState?.({contentFingerprint: content})", arguments: ["content": content], in: nil, contentWorld: .page) {
                     ReaderRunLog.write("PAGINATION anchor_ack_rejected platform=weread state=\(state)")
                 }
-                self.readVM?.invalidateWebContent(message: AppLocalized("音频播放失败，请重试"))
+                self.invalidateWeReadContent(reason: "presentation-rejected")
             }
         }
     }
@@ -2968,6 +3043,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 && pendingWeReadTurn
                 && candidate.isConfirmedTurn
                 && !suppressAppReviewContinuationForPendingTurn
+        #if DEBUG
+        if isConfirmedAutomaticReadCommit, !isApplicationActive { liveAcceptanceBackgroundReadCommits += 1 }
+        #endif
         let queuedAppReviewReadSession = automaticAppReviewContinuation
             .takeForConfirmedAutomaticCommit(isConfirmedAutomaticReadCommit)
         // When visual confirmation wins the race against natural audio
@@ -3272,6 +3350,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         weReadManualCommitTask?.cancel()
         weReadManualCommitTask = nil
         pendingWeReadTurn = true
+        observeBackgroundTurnIfNeeded()
         #if DEBUG
         if isReadMode { liveAcceptanceAutomaticReadTurns += 1 }
         else { liveAcceptanceAutomaticExplainTurns += 1 }
@@ -3311,6 +3390,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             guard let self else { return }
             if let error { NSLog("CRDBG WeRead nextPage error %@", "\(error)") }
             if (value as? Bool) != true {
+                if !self.isApplicationActive, error != nil {
+                    // The side effect is uncertain: retain its owner and
+                    // observe, never issue another next-page click.
+                    self.observeBackgroundTurnIfNeeded()
+                    return
+                }
                 self.automaticAppReviewContinuation.cancel()
                 self.suppressAppReviewContinuationForPendingTurn = false
                 self.pendingWeReadTurn = false
@@ -3318,32 +3403,36 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 self.weReadTurnRequestedAt = nil
                 self.cancelWeReadContinuousHandoff(reason: "semantic-next-unavailable")
                 if AudioPlayerService.shared.pagePresentationHoldID != nil {
-                    self.readVM?.invalidateWebContent(message: AppLocalized("网络连接失败，请重试。"))
+                    self.invalidateWeReadContent(reason: "turn-confirmation-failed")
                 }
                 if !self.isReadMode { self.explainVM?.finishLivePageContinuation() }
                 return
             }
-            // Confirmation is observational only.  Timeout never performs a
-            // second click; the user remains on the current page safely.
-            self.weReadTurnTimeout?.cancel()
-            self.weReadTurnTimeout = Task { @MainActor [weak self] in
-                try? await Task.sleep(nanoseconds: 4_000_000_000)
-                guard let self, !Task.isCancelled, self.pendingWeReadTurn else { return }
-                self.automaticAppReviewContinuation.cancel()
-                self.suppressAppReviewContinuationForPendingTurn = false
-                self.pendingWeReadTurn = false
-                self.pendingWeReadActionID = ""
-                self.pendingWeReadBoundaryTurn = nil
-                self.weReadTurnRequestedAt = nil
-                self.resumeReadAfterWeReadTurn = false
-                self.resumeExplainAfterWeReadTurn = false
-                self.cancelWeReadContinuousHandoff(reason: "turn-confirmation-timeout")
-                if AudioPlayerService.shared.pagePresentationHoldID != nil {
-                    self.readVM?.invalidateWebContent(message: AppLocalized("网络连接失败，请重试。"))
-                }
-                if !self.isReadMode { self.explainVM?.finishLivePageContinuation() }
-                ReaderRunLog.write("WEREAD page turn confirmation timeout no-retry")
+            self.armWeReadTurnTimeout()
+        }
+    }
+
+    private func armWeReadTurnTimeout() {
+        weReadTurnTimeout?.cancel()
+        guard isApplicationActive else { return }
+        // Confirmation only. A repeated click could skip the target page.
+        weReadTurnTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            guard let self, !Task.isCancelled, self.isApplicationActive, self.pendingWeReadTurn else { return }
+            self.automaticAppReviewContinuation.cancel()
+            self.suppressAppReviewContinuationForPendingTurn = false
+            self.pendingWeReadTurn = false
+            self.pendingWeReadActionID = ""
+            self.pendingWeReadBoundaryTurn = nil
+            self.weReadTurnRequestedAt = nil
+            self.resumeReadAfterWeReadTurn = false
+            self.resumeExplainAfterWeReadTurn = false
+            self.cancelWeReadContinuousHandoff(reason: "turn-confirmation-timeout")
+            if AudioPlayerService.shared.pagePresentationHoldID != nil {
+                self.invalidateWeReadContent(reason: "turn-confirmation-failed")
             }
+            if !self.isReadMode { self.explainVM?.finishLivePageContinuation() }
+            ReaderRunLog.write("WEREAD page turn confirmation timeout no-retry")
         }
     }
 
@@ -3758,7 +3847,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                                 sourceParagraphIndex: sourceParagraphIndex,
                                 sourceVisibleEnd: Self.double(item["sourceUTF16End"]).map { Int($0) }
                             )
-                        }
+                }
                     }
                 }
             }
@@ -6030,6 +6119,11 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             .takeForConfirmedAutomaticCommit(
                 isReadMode && wasAutomaticTurn && reason == .auto
             )
+        #if DEBUG
+        if isReadMode, wasAutomaticTurn, reason == .auto, !isApplicationActive {
+            liveAcceptanceBackgroundReadCommits += 1
+        }
+        #endif
         finishGoogleBooksTurn(reason: "committed")
         if let automaticIdentity {
             call("gbCompleteTurn", ["turnID": automaticIdentity.turnID])
@@ -6183,7 +6277,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     paintPreparedOpening(first, source: parsed.paragraphs[first.paragraphIndex].text,
                         paragraph: first.paragraphIndex)
                 }
-                confirmGoogleBooksPresentation(presentedHoldID: presentedHoldID)
+                confirmGoogleBooksPresentation(presentedHoldID: presentedHoldID, sourceCommitted: true)
                 ReaderRunLog.write(
                     "GBOOKS continuous committed serial=\(handoff.serial) " +
                     "next=\(String(handoff.preview.contentFingerprint.prefix(12)))"
@@ -6244,7 +6338,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     paintPreparedOpening(first, source: parsed.paragraphs[first.paragraphIndex].text,
                         paragraph: first.paragraphIndex)
                 }
-                confirmGoogleBooksPresentation(presentedHoldID: presentedHoldID)
+                confirmGoogleBooksPresentation(presentedHoldID: presentedHoldID, sourceCommitted: true)
                 ReaderRunLog.write(
                     "GBOOKS speech continuous committed " +
                     "serial=\(handoff.serial) " +
@@ -6288,7 +6382,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 parsed: parsed
             )
             updateGoogleBooksCarryHighlightIfNeeded()
-            confirmGoogleBooksPresentation(presentedHoldID: presentedHoldID)
+            confirmGoogleBooksPresentation(presentedHoldID: presentedHoldID, sourceCommitted: true)
             ReaderRunLog.write(
                 "GBOOKS boundary carry committed trim=\(parsed.carryUTF16Length)"
             )
@@ -6809,6 +6903,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             reason: "new-automatic-turn"
         )
         pendingGoogleBooksTurn = true
+        observeBackgroundTurnIfNeeded()
+        googleBooksConfirmedPresentation = nil
         #if DEBUG
         if isReadMode { liveAcceptanceAutomaticReadTurns += 1 }
         else { liveAcceptanceAutomaticExplainTurns += 1 }
@@ -6839,20 +6935,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             "GBOOKS next page requested sig=\(String(lastGoogleBooksSignature.prefix(24))) " +
             "visuals=retained-until-commit"
         )
-        if isApplicationActive {
-            // 主帧只有转发壳，真正的翻页在跨源阅读帧里执行。
-            googleBooksTurnActionDeferredForForeground = false
-            var payload = googleBooksTurnIdentity?.payload ?? [:]
-            if isReadMode, let hold = AudioPlayerService.shared.pagePresentationHoldID {
-                payload["sourcePresentation"] = googleBooksSourcePresentation(holdID: hold)
-            }
-            call("gbNextPage", payload)
-            armGoogleBooksTurnTimeout()
-        } else {
-            googleBooksTurnSuspendedInBackground = true
-            googleBooksTurnActionDeferredForForeground = true
-            ReaderRunLog.write("GBOOKS next page deferred until foreground")
+        // Dispatch exactly once even while locked. The adapter still proves
+        // the successor's identity; hidden animation frames are not that proof.
+        var payload = googleBooksTurnIdentity?.payload ?? [:]
+        if isReadMode, let hold = AudioPlayerService.shared.pagePresentationHoldID {
+            payload["sourcePresentation"] = googleBooksSourcePresentation(holdID: hold)
         }
+        call("gbNextPage", payload)
+        armGoogleBooksTurnTimeout()
         return true
     }
 
@@ -6899,11 +6989,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     private func armGoogleBooksTurnTimeout() {
         googleBooksTurnTimeout?.cancel()
+        guard isApplicationActive else {
+            return
+        }
         googleBooksTurnTimeout = Task { @MainActor [weak self] in
             try? await Task.sleep(
                 nanoseconds: GoogleBooksPageTurnContract.turnConfirmationTimeoutNanoseconds
             )
-            guard let self, !Task.isCancelled, self.pendingGoogleBooksTurn else { return }
+            guard let self, !Task.isCancelled, self.isApplicationActive, self.pendingGoogleBooksTurn else { return }
             // 只观察不重试：重试点击会跳页。
             self.finishGoogleBooksTurn(reason: "confirmation-timeout")
         }
@@ -6915,8 +7008,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     ) {
         googleBooksTurnTimeout?.cancel()
         googleBooksTurnTimeout = nil
-        googleBooksTurnSuspendedInBackground = false
-        googleBooksTurnActionDeferredForForeground = false
         guard pendingGoogleBooksTurn else { return }
         let wasAwaitingReaderRecovery =
             googleBooksAwaitingReaderRecovery
@@ -7131,8 +7222,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         googleBooksAwaitingReaderRecovery = true
         googleBooksTurnTimeout?.cancel()
         googleBooksTurnTimeout = nil
-        googleBooksTurnSuspendedInBackground = false
-        googleBooksTurnActionDeferredForForeground = false
         pendingGoogleBooksTurn = false
         googleBooksTurnOwner = nil
         googleBooksTurnIdentity = nil
@@ -7757,47 +7846,47 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     // MARK: - WeRead lifecycle / viewport recovery
 
     func applicationActivityChanged(isActive: Bool) {
+        guard isGoogleBooks || isWeRead,
+              lastApplicationActivityState != isActive else { return }
+        lastApplicationActivityState = isActive
+        isApplicationActive = isActive
+        if isActive { endBackgroundTurnObservation() }
+        else { observeBackgroundTurnIfNeeded() }
+        call("setPresentationActive", ["active": isActive])
+        ReaderRunLog.write("LIVEWEB lifecycle active=\(isActive) platform=\(livePlatform?.rawValue ?? "weread")")
         if isGoogleBooks {
-            guard lastApplicationActivityState != isActive else { return }
-            lastApplicationActivityState = isActive
-            isApplicationActive = isActive
             if !isActive {
+                googleBooksPresentationDeadline?.cancel()
+                googleBooksPresentationRetry?.cancel()
+                googleBooksPresentationRetry = nil
                 if pendingGoogleBooksTurn {
-                    // iOS suspends WebKit timers/evaluation in the background.
-                    // Do not let a wall-clock timeout discard semantic turn
-                    // ownership while the frame has had no chance to respond.
                     googleBooksTurnTimeout?.cancel()
                     googleBooksTurnTimeout = nil
-                    googleBooksTurnSuspendedInBackground = true
-                }
+                        }
+                confirmGoogleBooksPresentation()
                 return
             }
             guard didInit else { return }
-            if pendingGoogleBooksTurn, googleBooksTurnSuspendedInBackground {
-                googleBooksTurnSuspendedInBackground = false
-                if googleBooksTurnActionDeferredForForeground {
-                    googleBooksTurnActionDeferredForForeground = false
-                    call("gbNextPage", googleBooksTurnIdentity?.payload ?? [:])
-                    ReaderRunLog.write(
-                        "GBOOKS sent foreground-deferred next page " +
-                        "visuals=retained-until-commit"
-                    )
-                } else {
-                    call("gbRefresh", googleBooksTurnIdentity?.payload ?? [:])
-                }
+            if pendingGoogleBooksTurn {
+                // Observation only: a second nextPage would skip content.
+                call("gbRefresh", googleBooksTurnIdentity?.payload ?? [:])
                 armGoogleBooksTurnTimeout()
             } else {
                 call("gbRefresh")
             }
+            if let hold = AudioPlayerService.shared.pagePresentationHoldID {
+                awaitGoogleBooksPresentation(hold)
+                if googleBooksConfirmedPresentation == hold { confirmGoogleBooksPresentation() }
+            }
             return
         }
-        guard isWeRead else { return }
-        guard lastApplicationActivityState != isActive else { return }
-        lastApplicationActivityState = isActive
-        isApplicationActive = isActive
         weReadForegroundProbeSerial &+= 1
         weReadForegroundProbeAttemptSerial &+= 1
         if !isActive {
+            weReadTurnTimeout?.cancel()
+            if let pending = pendingWeReadPresentation {
+                confirmWeReadPresentation(pending.candidate, holdID: pending.holdID)
+            }
             ReaderRunLog.write("WEREAD background preserve-webview fingerprint=\(String(lastWeReadFingerprint.prefix(12)))")
             return
         }
@@ -7806,7 +7895,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             recoverWeReadWebContent(reason: "foreground-after-process-termination")
             return
         }
-        guard didInit, webView != nil else { return }
+        guard (didInit || weReadContentBlocked), webView != nil else { return }
+        if pendingWeReadTurn { armWeReadTurnTimeout() }
         scheduleWeReadForegroundProbe(attempt: 0, serial: weReadForegroundProbeSerial)
     }
 
@@ -7843,6 +7933,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                           self.isApplicationActive else { return }
                     self.weReadForegroundProbeAttemptSerial &+= 1
                     if error == nil, (value as? Bool) == true {
+                        if self.weReadContentBlocked {
+                            self.callWeRead("invalidateSource")
+                        }
                         self.callWeRead("resumeAfterForeground", ["reason": "foreground"])
                         ReaderRunLog.write("WEREAD foreground reused-live-webview attempt=\(attempt + 1)")
                     } else {

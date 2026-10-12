@@ -147,6 +147,28 @@ export function initBridge(deps: CRDeps): void {
   }
   const log = (message: string): void => post('log', { message })
 
+  // A hidden reader cannot receive animation frames. Source receipts must
+  // still reach native playback; only visible receipts assert a painted cue.
+  let presentationActive = !document.hidden
+  const pendingPresentations = new Set<(painted: boolean) => void>()
+  function afterPresentation(callback: (painted: boolean) => void): void {
+    if (!presentationActive || document.hidden) { callback(false); return }
+    const finish = (painted: boolean) => {
+      if (!pendingPresentations.delete(finish)) return
+      callback(painted)
+    }
+    pendingPresentations.add(finish)
+    requestAnimationFrame(() => requestAnimationFrame(() => finish(presentationActive && !document.hidden)))
+  }
+  function setPresentationActive(arg: { active: boolean }): void {
+    presentationActive = arg.active
+    if (!presentationActive) [...pendingPresentations].forEach(finish => finish(false))
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) [...pendingPresentations].forEach(finish => finish(false))
+  })
+
+
   // overlay 高亮：清掉旧矩形 div，按 range 各行 rect 画半透明矩形（跳过零宽，避免残留线）。
   function clearOverlay(): void {
     lastPaintedRange = null
@@ -331,13 +353,13 @@ export function initBridge(deps: CRDeps): void {
         setOverlay(target.element, domStart, domStart + end - start) > 0) {
       const painted = [...overlayNodes]
       const signature = payload.signature
-      requestAnimationFrame(() => requestAnimationFrame(() => {
+      afterPresentation(didPaint => {
         if (revision !== extractionRevision || deps.pageMeta?.().signature !== signature) return
-        if (painted.every(node => node.isConnected && overlayNodes.has(node))) {
+        if (didPaint && painted.every(node => node.isConnected && overlayNodes.has(node))) {
           payload.presentedOperationID = cue.id
         }
         send()
-      }))
+      })
     } else { send() }
     ;(window as unknown as { __crLastRendered?: unknown }).__crLastRendered = out
     log(`extracted ${out.length} paragraphs${reason ? ' reason=' + reason : ''}`)
@@ -346,6 +368,7 @@ export function initBridge(deps: CRDeps): void {
   const CR = {
     version: 'm1',
     extract: doExtract,
+    setPresentationActive,
     confirmPresentation(arg: { holdID: string; signature: string }): void {
       const acknowledge = () => {
         const meta = deps.pageMeta?.() || {}
@@ -353,7 +376,7 @@ export function initBridge(deps: CRDeps): void {
           node.isConnected && [...node.getClientRects()].some(r => r.width > 0 && r.height > 0))
         post('pagePresentationReady', { ...meta, holdID: arg.holdID, ready })
       }
-      requestAnimationFrame(() => requestAnimationFrame(acknowledge))
+      afterPresentation(didPaint => { if (didPaint) acknowledge() })
     },
     // 本地 DOCX：native 传 base64 字节 → mammoth 转 HTML 注入 DOM → 复用 Visual Zone 提取（不上传后端）。
     renderDocx(arg: { base64: string }): void {

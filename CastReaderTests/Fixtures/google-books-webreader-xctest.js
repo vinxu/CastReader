@@ -53745,6 +53745,27 @@ var __CRWeb = (() => {
       }
     };
     const log = (message) => post("log", { message });
+    let presentationActive = !document.hidden;
+    const pendingPresentations = /* @__PURE__ */ new Set();
+    function afterPresentation(callback) {
+      if (!presentationActive || document.hidden) {
+        callback(false);
+        return;
+      }
+      const finish = (painted) => {
+        if (!pendingPresentations.delete(finish)) return;
+        callback(painted);
+      };
+      pendingPresentations.add(finish);
+      requestAnimationFrame(() => requestAnimationFrame(() => finish(presentationActive && !document.hidden)));
+    }
+    function setPresentationActive(arg) {
+      presentationActive = arg.active;
+      if (!presentationActive) [...pendingPresentations].forEach((finish) => finish(false));
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) [...pendingPresentations].forEach((finish) => finish(false));
+    });
     function clearOverlay() {
       lastPaintedRange = null;
       overlayNodes.forEach((node) => {
@@ -53918,14 +53939,14 @@ var __CRWeb = (() => {
       if (target && cue && end > start && sourceText(target.element).slice(domStart, domStart + end - start) === expected && setOverlay(target.element, domStart, domStart + end - start) > 0) {
         const painted = [...overlayNodes];
         const signature = payload.signature;
-        requestAnimationFrame(() => requestAnimationFrame(() => {
+        afterPresentation((didPaint) => {
           var _a3;
           if (revision !== extractionRevision || ((_a3 = deps.pageMeta) == null ? void 0 : _a3.call(deps).signature) !== signature) return;
-          if (painted.every((node) => node.isConnected && overlayNodes.has(node))) {
+          if (didPaint && painted.every((node) => node.isConnected && overlayNodes.has(node))) {
             payload.presentedOperationID = cue.id;
           }
           send();
-        }));
+        });
       } else {
         send();
       }
@@ -53936,6 +53957,7 @@ var __CRWeb = (() => {
     const CR = {
       version: "m1",
       extract: doExtract,
+      setPresentationActive,
       confirmPresentation(arg) {
         const acknowledge = () => {
           var _a2;
@@ -53943,7 +53965,9 @@ var __CRWeb = (() => {
           const ready2 = meta.signature === arg.signature && [...overlayNodes].some((node) => node.isConnected && [...node.getClientRects()].some((r) => r.width > 0 && r.height > 0));
           post("pagePresentationReady", __spreadProps(__spreadValues({}, meta), { holdID: arg.holdID, ready: ready2 }));
         };
-        requestAnimationFrame(() => requestAnimationFrame(acknowledge));
+        afterPresentation((didPaint) => {
+          if (didPaint) acknowledge();
+        });
       },
       // 本地 DOCX：native 传 base64 字节 → mammoth 转 HTML 注入 DOM → 复用 Visual Zone 提取（不上传后端）。
       renderDocx(arg) {
@@ -56354,7 +56378,8 @@ var __CRWeb = (() => {
       "gbRefresh",
       "gbRetargetTurnBaseline",
       "gbCompleteTurn",
-      "confirmPresentation"
+      "confirmPresentation",
+      "setPresentationActive"
     ];
     let turnContext = null;
     const protocolArg = (arg) => {
@@ -56829,7 +56854,7 @@ var __CRWeb = (() => {
     if (koboSemanticTransportPromise) return "loading";
     return koboSemanticTransportFailure;
   }
-  function invokeKoboSemanticPageTurn(direction) {
+  function invokeKoboSemanticPageTurn(direction, animated = true) {
     const transport = koboSemanticTransport;
     if (!transport || !koboSemanticTransportReady(direction)) {
       return { accepted: false };
@@ -56843,13 +56868,15 @@ var __CRWeb = (() => {
         if (exactTarget && typeof api.goToPageByBookPercentage === "function") {
           result2 = api.goToPageByBookPercentage.call(
             api,
-            exactTarget.targetPercentage
+            exactTarget.targetPercentage,
+            animated
           );
           return {
             accepted: true,
             completion: Promise.resolve(result2).then(() => void 0),
             details: {
               transport: "ur-progress",
+              animated,
               currentPage: exactTarget.currentPage + 1,
               targetPage: exactTarget.targetPage + 1,
               pagesOfBook: exactTarget.pagesOfBook,
@@ -58184,6 +58211,10 @@ var __CRWeb = (() => {
           }
           const finalSignature = current;
           const returnedToBaseline = changeBaseline.length > 0 && finalSignature === changeBaseline;
+          if (reason === "auto" && returnedToBaseline && forceExtract) {
+            clearSettledChange(reason);
+            return;
+          }
           if (returnedToBaseline && !forceExtract && reason !== "refresh") {
             if (reason === "manual") {
               postForFrame("googleBooksPageChanging", __spreadValues({
@@ -58390,7 +58421,7 @@ var __CRWeb = (() => {
         return true;
       }
       if (method === "semantic") {
-        const invocation = invokeKoboSemanticPageTurn(direction);
+        const invocation = invokeKoboSemanticPageTurn(direction, false);
         if (!invocation.accepted) {
           clearAutoTurn();
           postForFrame("log", {

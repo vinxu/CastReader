@@ -243,6 +243,48 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         app.buttons["Close"].firstMatch.tap()
     }
 
+    func testGoogleBooksBackgroundContinuation() throws { try backgroundContinuation("google_books") }
+    func testKoboBackgroundContinuation() throws { try backgroundContinuation("kobo") }
+    func testWeReadBackgroundContinuation() throws { try backgroundContinuation("weread") }
+
+    private func backgroundContinuation(_ platform: String) throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_PLATFORM_LIVE_ACCEPTANCE"] == "1")
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipLibraryOnboarding", "-CastReaderLivePlatformAcceptance",
+            "-AppleLanguages", "(en)", "-interfaceLanguage", "en"]
+        app.launch()
+        XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 30))
+        let ignore = app.buttons["Ignore"]
+        if app.staticTexts["There's text in your clipboard"].exists && ignore.isHittable { ignore.tap() }
+        let book = liveBook(platform, in: app)
+        reveal(book, in: app); book.tap()
+        let read = app.buttons["readPlayPauseButton"]
+        wait(120) { read.exists && self.field("ready", app) == "true" && self.number("characters", app) > 20 }
+        let notice = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "saved position cannot be restored")).firstMatch
+        if notice.exists {
+            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.26)).tap()
+            wait { !notice.exists }
+        }
+        app.buttons["Playback Speed"].tap(); app.buttons["3x"].tap()
+        if field("playing", app) != "true" { read.tap() }
+        wait(120) { self.field("playing", app) == "true" && self.number("wordVisible", app) > 0 }
+        let before = number("backgroundReadCommits", app)
+        capture(app, "\(platform)-background-before")
+        XCUIDevice.shared.press(.home)
+        wait(10) { app.state == .runningBackground }
+        // Do not query reader accessibility while hidden: that could wake it.
+        // The native counter advances only for confirmed pages while inactive.
+        RunLoop.current.run(until: Date().addingTimeInterval(100))
+        XCTAssertEqual(app.state, .runningBackground)
+        app.activate()
+        wait(20) { self.number("backgroundReadCommits", app) >= before + 2 }
+        wait(30) { self.field("playing", app) == "true" && self.number("wordVisible", app) > 0 }
+        XCTAssertFalse(app.staticTexts["Network connection failed. Please try again."].exists)
+        capture(app, "\(platform)-background-after")
+        read.tap()
+        wait { self.field("playing", app) == "false" }
+    }
+
     func testGoogleBooksNaturalContinuation() throws { try continuation("google_books") }
     func testKoboNaturalContinuation() throws { try continuation("kobo") }
     func testWeReadNaturalContinuation() throws { try continuation("weread") }

@@ -127,7 +127,8 @@ type KoboURReaderAPI = {
   turnLeft?: () => unknown | Promise<unknown>
   getCurrentReadingRange?: () => unknown
   goToPageByBookPercentage?: (
-    percentage: number
+    percentage: number,
+    animated?: boolean
   ) => unknown | Promise<unknown>
   bookView?: unknown
 }
@@ -528,7 +529,8 @@ type KoboSemanticTurnInvocation = {
 }
 
 function invokeKoboSemanticPageTurn(
-  direction: 'next' | 'prev'
+  direction: 'next' | 'prev',
+  animated = true
 ): KoboSemanticTurnInvocation {
   const transport = koboSemanticTransport
   if (!transport || !koboSemanticTransportReady(direction)) {
@@ -546,13 +548,15 @@ function invokeKoboSemanticPageTurn(
       ) {
         result = api.goToPageByBookPercentage.call(
           api,
-          exactTarget.targetPercentage
+          exactTarget.targetPercentage,
+          animated
         )
         return {
           accepted: true,
           completion: Promise.resolve(result).then(() => undefined),
           details: {
             transport: 'ur-progress',
+            animated,
             currentPage: exactTarget.currentPage + 1,
             targetPage: exactTarget.targetPage + 1,
             pagesOfBook: exactTarget.pagesOfBook,
@@ -2347,6 +2351,15 @@ export function installKoboReader(
         const returnedToBaseline =
           changeBaseline.length > 0 && finalSignature === changeBaseline
 
+        // A native background probe observes the existing turn; it does not
+        // prove that the provider has finished. Keep the owner and its timeout
+        // while the DOM is still the old page. Publishing it here would clear
+        // pendingAuto, yet native correctly rejects the unchanged signature.
+        if (reason === 'auto' && returnedToBaseline && forceExtract) {
+          clearSettledChange(reason)
+          return
+        }
+
         // Rotation may expose an intermediate slice, causing the polling
         // loop to restart settlement without the original forceExtract flag.
         // Even if the final source signature returns to its baseline, refresh
@@ -2636,7 +2649,12 @@ export function installKoboReader(
     }
 
     if (method === 'semantic') {
-      const invocation = invokeKoboSemanticPageTurn(direction)
+      // UR's default slide transition waits for animation frames. Automatic
+      // speech turns must also finish if the phone locks mid-transition. Use
+      // the provider's own exact, nonanimated jump; still require a new stable
+      // source signature before native can release audio. Manual turns retain
+      // Kobo's animation preference.
+      const invocation = invokeKoboSemanticPageTurn(direction, false)
       if (!invocation.accepted) {
         clearAutoTurn()
         postForFrame('log', {

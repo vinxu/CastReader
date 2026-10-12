@@ -128,7 +128,9 @@ export function installWeReadNativeBridge(existingReader?: any) {
   }
   function schedule(): void {
     if (scheduled) return;
-    scheduled = true; requestAnimationFrame(publish);
+    // paintPageFinish already records the provider's actual canvas identity.
+    // Publishing that receipt is source bookkeeping, not a display animation.
+    scheduled = true; Promise.resolve().then(publish);
   }
   function attach(candidate: any): boolean {
     if (reader || candidate?.$options?.name !== 'HorizontalReader' ||
@@ -212,6 +214,7 @@ export function installWeReadNativeBridge(existingReader?: any) {
     }
   });
   return {
+    refreshSnapshot: publish,
     readerPosition() {
       const first = state?.ready && state.columns.find(p => p.id === state!.current[0]);
       const chapterOffset = first && first.glyphs[0]?.offset;
