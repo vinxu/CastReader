@@ -59,6 +59,7 @@ struct LoginConsentGate: Equatable {
 }
 
 struct LoginView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @EnvironmentObject private var readerScene: ReaderSceneContext
@@ -91,6 +92,7 @@ struct LoginView: View {
 
     var body: some View {
         content
+            .accessibilityIdentifier("login.form")
             // 宽屏（横屏 / iPad）不让内容拉满：50pt 高的按钮横跨整个屏幕会失衡，
             // 也超出舒适阅读宽度。限宽后居中。
             .frame(maxWidth: 420)
@@ -126,11 +128,10 @@ struct LoginView: View {
         }
     }
 
-    /// 竖屏用 Spacer 把内容撑成上中下三段；横屏（`verticalSizeClass == .compact`）
-    /// 垂直空间不够，Spacer 会把内容挤扁甚至溢出，改成紧凑的可滚动布局。
+    /// 横屏紧凑高度缩短间距；所有尺寸都允许滚动，避免窄弹窗的键盘遮住登录操作。
     @ViewBuilder
     private var content: some View {
-        if AdaptiveLayout.isPad {
+        if horizontalSizeClass == .regular {
             AdaptiveFormScroll {
                 VStack(spacing: 20) {
                     if !net.isOnline { offlineBanner }
@@ -155,14 +156,16 @@ struct LoginView: View {
                 .padding(.vertical, 12)
             }
         } else {
-            VStack(spacing: 20) {
-                if !net.isOnline { offlineBanner }
-                Spacer()
-                if isRootGate { rootGateHeader } else { sheetHeader }
-                Spacer()
-                channelStack
-                errorText
-                termsFooter
+            AdaptiveFormScroll {
+                VStack(spacing: 20) {
+                    if !net.isOnline { offlineBanner }
+                    Spacer()
+                    if isRootGate { rootGateHeader } else { sheetHeader }
+                    Spacer()
+                    channelStack
+                    errorText
+                    termsFooter
+                }
             }
         }
     }

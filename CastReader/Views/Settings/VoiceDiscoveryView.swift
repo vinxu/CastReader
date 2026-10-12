@@ -537,20 +537,12 @@ struct VoiceUsageBadge: View {
                     .foregroundStyle(AppTheme.mutedForeground)
             }
         }.font(.system(size: 10, weight: .medium))
-            .alert(AppLocalized("生成额度"), isPresented: $showsQuota) {
-                Button(AppLocalized("完成"), role: .cancel) {}
-            } message: {
-                VoiceQuotaExplanation()
-            }
+            .sheet(isPresented: $showsQuota) { CloneCreditPurchaseView() }
     }
 }
 
-private struct VoiceQuotaExplanation: View {
-    @ObservedObject private var store = VoiceCloneStore.shared
-    var body: some View { Text(VoiceGenerationQuotaSummary.sharedExplanation) }
-}
-
 struct VoiceDiscoveryCollectionView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let title: String
     var voiceIDs: [String]? = nil
     var topic: VoiceDiscoveryTopic? = nil
@@ -657,7 +649,7 @@ struct VoiceDiscoveryCollectionView: View {
                     }
                 }
             }.padding(.vertical, 12)
-                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity)
+                .frame(maxWidth: horizontalSizeClass == .regular ? AdaptiveLayout.pageWidth : .infinity)
                 .frame(maxWidth: .infinity)
         }.background(AppTheme.background).modifier(VoiceBrowseContentMargins())
             .scrollDismissesKeyboard(.interactively)

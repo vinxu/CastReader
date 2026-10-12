@@ -127,6 +127,210 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
             "A real foreground rotation must still use the current surface")
     }
 
+    func testMinimizedReaderKeepsActualViewportAcrossFoldUntilExpanded() async throws {
+        try await loadFixture(initializeControls: false)
+        let expanded = CGSize(width: 814, height: 530)
+        let folded = CGSize(width: 375, height: 600)
+        let crop = KindleViewportCrop(scale: 1.25, heightScale: 1.2, offsetX: -48.75, offsetY: -60)
+        let fit = KindleViewportPresentationFit(scale: 0.98, translationX: 2, translationY: 1)
+        let host = KindleWebViewContainer(webView: model.webView, crop: crop, presentationFit: fit)
+        host.frame = CGRect(origin: .zero, size: expanded)
+        window.rootViewController!.view.addSubview(host)
+        host.layoutIfNeeded()
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        let bounds = model.webView.bounds
+        let center = model.webView.center
+        let transform = model.webView.transform
+        try await waitForCSSViewport(bounds.size)
+        let documentID = try await model.webView.evaluateJavaScript("fixtureLoadID") as? String
+        XCTAssertNotNil(documentID)
+
+        let playbackCenter = KindlePlaybackCenter()
+        playbackCenter.activate(model: model)
+        playbackCenter.isPresented = true
+        playbackCenter.minimize()
+        XCTAssertFalse(playbackCenter.isPresented)
+        XCTAssertTrue(playbackCenter.model === model)
+        let snapshot = try XCTUnwrap(model.minimizedReaderViewport)
+        XCTAssertEqual(snapshot.surfaceSize, expanded)
+        XCTAssertEqual(snapshot.crop, crop)
+        XCTAssertEqual(snapshot.fit, fit)
+        model.updateReaderSurfaceSize(folded)
+        model.noteReaderLayoutChange(reason: "reader-size")
+        model.notePlaybackLayoutChange(reason: "orientation")
+        // A foreground cycle while minimized must not drop the held viewport.
+        model.setApplicationActive(false)
+        model.setApplicationActive(true)
+        let held = try XCTUnwrap(model.readerViewportSnapshot)
+        host.frame.size = KindleReaderSurfaceContract.renderSize(measured: folded,
+            stable: held.surfaceSize, isPlayerOverlayPresented: true)
+        host.crop = model.effectiveViewportCrop(forSurfaceSize: folded)
+        host.presentationFit = model.effectiveViewportPresentationFit(forSurfaceSize: folded)
+        host.layoutIfNeeded()
+        XCTAssertEqual(model.webView.bounds, bounds)
+        XCTAssertEqual(model.webView.center, center)
+        XCTAssertEqual(model.webView.transform, transform)
+        try await assertCSSViewport(bounds.size)
+        let retainedDocumentID = try await model.webView.evaluateJavaScript("fixtureLoadID") as? String
+        XCTAssertEqual(retainedDocumentID, documentID)
+
+        model.setReaderPresented(true)
+        XCTAssertNil(model.minimizedReaderViewport)
+        XCTAssertNil(model.readerViewportSnapshot)
+        XCTAssertEqual(KindleReaderSurfaceContract.renderSize(measured: folded,
+            stable: expanded, isPlayerOverlayPresented: false), folded,
+            "Reopening must release the old viewport for the current outer display")
+    }
+
+    func testResizeRecoveryWaitsForExistingExpandWithoutPausingOwner() async throws {
+        try await loadFixture()
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        let vm = makeRefocusOwner()
+        _ = try await model.webView.evaluateJavaScript("""
+          Object.defineProperty(window,'__crKindleState',{configurable:false,writable:false,value:()=>
+            JSON.stringify({key:'stable-fixture',liveKey:'stable-fixture',orderedCount:1,
+              visibleArea:innerWidth*innerHeight,bandVisibleArea:innerWidth*innerHeight,
+              viewportWidth:innerWidth,viewportHeight:innerHeight})});
+          true;
+        """)
+        var pending: CheckedContinuation<Void, Never>?
+        var reasons: [String] = []
+        model.refocusRenderSurfaceForTesting = { reason in
+            reasons.append(reason)
+            if reasons.count == 1 {
+                await withCheckedContinuation { pending = $0 }
+            }
+        }
+        let expand = Task { await model.refocusPlaybackPosition(reason: "expand") }
+        defer { expand.cancel(); pending?.resume(); pending = nil }
+        try await waitUntil { pending != nil }
+
+        // Reproduce the actual ordering: expand already owns an async native
+        // operation when the new viewport arrives and starts its repair.
+        model.prepareViewportRecoveryForTesting()
+        let usable = try await model.refreshReaderLayoutState(reason: "ipad-viewport")
+        XCTAssertEqual(usable["key"] as? String, "stable-fixture")
+        XCTAssertEqual(usable["orderedCount"] as? Int, 1)
+        XCTAssertGreaterThan((usable["visibleArea"] as? Double) ?? 0, 0)
+        await model.repairViewportForTesting()
+        XCTAssertTrue(model.isRecoveringIPadViewport, "Busy must retain recovery instead of finishing as a failed match")
+        XCTAssertTrue(model.needsIPadViewportProjection)
+        XCTAssertTrue(model.hasScheduledLayoutRepairForTesting, "The waiting viewport must be retried")
+        XCTAssertFalse(vm.isPlaybackPausedByUser, "A temporarily busy refocus must not synthesize a user pause")
+        XCTAssertNil(model.playbackErrorText)
+        XCTAssertTrue(model.readVM === vm)
+        XCTAssertTrue(vm.ownsPlaybackSession)
+        XCTAssertEqual(reasons, ["expand"], "Two refocus operations must never own the reader together")
+
+        pending?.resume()
+        pending = nil
+        let obsolete = await expand.value
+        XCTAssertEqual(obsolete, .deferred)
+        let replacement = await model.refocusPlaybackPosition(reason: "ipad-viewport")
+        XCTAssertEqual(replacement, .completed, "The obsolete owner must release the reader when it unwinds")
+        XCTAssertEqual(reasons, ["expand", "ipad-viewport"])
+    }
+
+    func testPendingResizeRecoveryDefersOrdinaryExpandAndForeground() async throws {
+        try await loadFixture()
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        let vm = makeRefocusOwner()
+        model.prepareViewportRecoveryForTesting()
+        var reasons: [String] = []
+        model.refocusRenderSurfaceForTesting = { reasons.append($0) }
+        for reason in ["expand", "foreground", "highlight-recovery"] {
+            let result = await model.refocusPlaybackPosition(reason: reason)
+            XCTAssertEqual(result, .deferred)
+        }
+        XCTAssertTrue(reasons.isEmpty, "A queued exact-page refocus cannot run once reflow owns the viewport")
+        let result = await model.refocusPlaybackPosition(reason: "ipad-viewport")
+        XCTAssertEqual(result, .completed)
+        XCTAssertEqual(reasons, ["ipad-viewport"])
+        XCTAssertTrue(model.readVM === vm)
+        XCTAssertTrue(vm.ownsPlaybackSession)
+        XCTAssertFalse(vm.isPlaybackPausedByUser)
+    }
+
+    func testCancelledStablePageReplyCannotStartAnchorOrScrollAgain() async throws {
+        try await assertPlaybackRestoreCancellation(after: "visibility")
+    }
+
+    func testCancelledAnchorReplyCannotContinuePositioningLoop() async throws {
+        try await assertPlaybackRestoreCancellation(after: "anchor")
+    }
+
+    private func assertPlaybackRestoreCancellation(after phase: String) async throws {
+        try await loadFixture()
+        var restoration: Task<Bool, Never>?
+        var cancellationObserved = false
+        let observer = LightLockObserver {
+            cancellationObserved = true
+            restoration?.cancel()
+        }
+        let controller = model.webView.configuration.userContentController
+        controller.add(observer, name: "fixtureRestoreAwait")
+        defer {
+            restoration?.cancel()
+            controller.removeScriptMessageHandler(forName: "fixtureRestoreAwait")
+        }
+        _ = try await model.webView.evaluateJavaScript("""
+          (()=>{
+            window.fixtureRestoreCalls={position:0,visibility:0,anchor:0};
+            function suspendReply(phase){
+              if(phase!=='\(phase)')return;
+              window.webkit.messageHandlers.fixtureRestoreAwait.postMessage(phase);
+              // Cancel the native task while its real WebContent response is
+              // still pending; the following page mutation must never happen.
+              const until=performance.now()+250;while(performance.now()<until){}
+            }
+            const functions={
+              __crKindlePositionKeyForPlayback:key=>{
+                fixtureRestoreCalls.position++;
+                return JSON.stringify({ok:'\(phase)'!=='anchor',currentKey:key});
+              },
+              __crKindleKeyVisibility:key=>{
+                fixtureRestoreCalls.visibility++;suspendReply('visibility');
+                return JSON.stringify({visibleKey:key,visible:true,aligned:true,
+                  width:390,height:700,viewportH:700,top:0,bottom:700});
+              },
+              __crKindleRestoreAnchor:key=>{
+                fixtureRestoreCalls.anchor++;suspendReply('anchor');
+                return JSON.stringify({ok:true,target:0});
+              }
+            };
+            for(const [name,value] of Object.entries(functions))
+              Object.defineProperty(window,name,{configurable:false,writable:false,value});
+            return true;
+          })()
+        """)
+        restoration = Task { await model.restorePlaybackKeyVisibilityForTesting("original-page", reason: "refocus-target", maxSteps: 4) }
+        let task = try XCTUnwrap(restoration)
+        let restored = await task.value
+        XCTAssertTrue(cancellationObserved, "The fixture must cancel during a real pending WebContent reply")
+        XCTAssertFalse(restored)
+        let calls = try await settingsJSON("JSON.stringify(fixtureRestoreCalls)")
+        XCTAssertEqual(calls["position"] as? Int, 1, "No old-key scroll may be dispatched after cancellation")
+        XCTAssertEqual(calls["anchor"] as? Int, phase == "anchor" ? 1 : 0,
+            "A cancelled stable-page check must not fall through to anchor restoration")
+        XCTAssertEqual(calls["visibility"] as? Int, phase == "visibility" ? 1 : 0)
+    }
+
+    private func makeRefocusOwner() -> ReadAloudViewModel {
+        let document = ReadingDocument(title: "Local fold recovery", sourceKind: .kindle,
+            language: "en", paragraphs: [ReadingParagraph(id: 0, text: "Preserve this spoken reading position.")])
+        let vm = ReadAloudViewModel(document: document)
+        model.readVM = vm
+        vm.currentParagraphIndex = 0
+        vm.status = .loading
+        vm.activate()
+        // Claim the real shared audio owner without generating or playing audio.
+        XCTAssertTrue(model.shouldRunPlaybackRefocus)
+        return vm
+    }
+
     private func assertVoicePanelKeepsViewport(mode: ReaderMode) async throws {
         let center = PlaybackVoicePanelCenter.shared
         center.dismiss()

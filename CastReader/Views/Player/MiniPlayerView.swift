@@ -89,7 +89,7 @@ private struct MiniPlayerBar: View {
                         .foregroundColor(AppTheme.mutedForeground)
                         .lineLimit(1)
                 }
-                .frame(maxWidth: .infinity, minHeight: AdaptiveLayout.isPad ? 44 : nil, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -119,7 +119,7 @@ private struct MiniPlayerBar: View {
                             .foregroundColor(AppTheme.foreground)
                     }
                 }
-                .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
+                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
             }
             .accessibilityIdentifier("readerMiniPlayerPlayPause")
@@ -129,7 +129,7 @@ private struct MiniPlayerBar: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(AppTheme.mutedForeground)
-                    .frame(width: AdaptiveLayout.isPad ? 44 : 30, height: AdaptiveLayout.isPad ? 44 : 30)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .accessibilityIdentifier("readerMiniPlayerClose")

@@ -91,7 +91,7 @@ struct SettingsView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 14))
                         .listRowBackground(Color.blue.opacity(0.07))
                 }
-                if AdaptiveLayout.isPad, supportsMultipleWindows {
+                if supportsMultipleWindows {
                     Section {
                         Button { openWindow(id: "main") } label: {
                             Label("新窗口", systemImage: "plus.rectangle.on.rectangle")

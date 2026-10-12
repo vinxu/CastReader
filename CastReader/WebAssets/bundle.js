@@ -23976,9 +23976,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/conventions.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/conventions.js
   var require_conventions2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/conventions.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/conventions.js"(exports2) {
       "use strict";
       function find2(list, predicate, ac) {
         if (ac === void 0) {
@@ -24103,9 +24103,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom.js
   var require_dom2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom.js"(exports2) {
       var conventions = require_conventions2();
       var find2 = conventions.find;
       var NAMESPACE = conventions.NAMESPACE;
@@ -25517,9 +25517,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/entities.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/entities.js
   var require_entities2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/entities.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/entities.js"(exports2) {
       "use strict";
       var freeze = require_conventions2().freeze;
       exports2.XML_ENTITIES = freeze({
@@ -27660,9 +27660,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/sax.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/sax.js
   var require_sax2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/sax.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/sax.js"(exports2) {
       var NAMESPACE = require_conventions2().NAMESPACE;
       var nameStartChar = /[A-Z_a-z\xC0-\xD6\xD8-\xF6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/;
       var nameChar = new RegExp("[\\-\\.0-9" + nameStartChar.source.slice(1, -1) + "\\u00B7\\u0300-\\u036F\\u203F-\\u2040]");
@@ -28241,9 +28241,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom-parser.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom-parser.js
   var require_dom_parser2 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/dom-parser.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/dom-parser.js"(exports2) {
       var conventions = require_conventions2();
       var dom = require_dom2();
       var entities = require_entities2();
@@ -28450,9 +28450,9 @@ var __CRWeb = (() => {
     }
   });
 
-  // ../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/index.js
+  // ../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/index.js
   var require_lib4 = __commonJS({
-    "../../../CastReader/WebReader/node_modules/epubjs/../../../CastReader/WebReader/node_modules/@xmldom/xmldom/lib/index.js"(exports2) {
+    "../../../CastReader/WebReader/node_modules/epubjs/node_modules/@xmldom/xmldom/lib/index.js"(exports2) {
       var dom = require_dom2();
       exports2.DOMImplementation = dom.DOMImplementation;
       exports2.XMLSerializer = dom.XMLSerializer;
@@ -42924,7 +42924,7 @@ var __CRWeb = (() => {
   };
 
   // src/source-text.ts
-  const cache = /* @__PURE__ */ new WeakMap();
+  var cache = /* @__PURE__ */ new WeakMap();
   function usesMappedSource(el) {
     var _a, _b;
     if (el.dataset.crNativeNormalized === "true" || el.dataset.crVisibleSource === "true") return true;
@@ -42985,10 +42985,10 @@ var __CRWeb = (() => {
     if (usesMappedSource(el)) {
       const source = mappedSource(el), a2 = source.starts[start], b2 = source.ends[end - 1];
       if (!a2 || !b2) return null;
-      const range2 = el.ownerDocument.createRange();
-      range2.setStart(a2.node, a2.offset);
-      range2.setEnd(b2.node, b2.offset);
-      return range2;
+      const range3 = el.ownerDocument.createRange();
+      range3.setStart(a2.node, a2.offset);
+      range3.setEnd(b2.node, b2.offset);
+      return range3;
     }
     const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     let cursor = 0, node, a, b;
@@ -43002,10 +43002,10 @@ var __CRWeb = (() => {
       cursor = next;
     }
     if (!a || !b) return null;
-    const range = el.ownerDocument.createRange();
-    range.setStart(a.node, a.offset);
-    range.setEnd(b.node, b.offset);
-    return range;
+    const range2 = el.ownerDocument.createRange();
+    range2.setStart(a.node, a.offset);
+    range2.setEnd(b.node, b.offset);
+    return range2;
   }
 
   // ../../../MyProject/readout-desktop/src/ui/handwritten-marks.ts
@@ -43092,7 +43092,7 @@ var __CRWeb = (() => {
   }
 
   // src/mark-renderer.ts
-  const SVG_NS = "http://www.w3.org/2000/svg";
+  var SVG_NS = "http://www.w3.org/2000/svg";
   function weightMul(weight) {
     if (weight === "primary" || weight === "high") return 1.6;
     if (weight === "tertiary" || weight === "low") return 0.65;
@@ -43166,9 +43166,9 @@ var __CRWeb = (() => {
     }
     function ensureSvg(doc) {
       var _a;
-      const root = doc.documentElement;
+      const root2 = doc.documentElement;
       const body = doc.body;
-      const host = body || root;
+      const host = body || root2;
       if (!host) return null;
       const ownerWindow = doc.defaultView;
       if (ownerWindow && !observedWindows.has(ownerWindow)) {
@@ -43176,8 +43176,8 @@ var __CRWeb = (() => {
         ownerWindow.addEventListener("resize", scheduleRelayout);
         (_a = doc.fonts) == null ? void 0 : _a.addEventListener("loadingdone", scheduleRelayout);
       }
-      const width = Math.max((root == null ? void 0 : root.scrollWidth) || 0, (body == null ? void 0 : body.scrollWidth) || 0, 1);
-      const height = Math.max((root == null ? void 0 : root.scrollHeight) || 0, (body == null ? void 0 : body.scrollHeight) || 0, 1);
+      const width = Math.max((root2 == null ? void 0 : root2.scrollWidth) || 0, (body == null ? void 0 : body.scrollWidth) || 0, 1);
+      const height = Math.max((root2 == null ? void 0 : root2.scrollHeight) || 0, (body == null ? void 0 : body.scrollHeight) || 0, 1);
       const existing = svgs.get(doc);
       if (existing && existing.isConnected) {
         existing.style.width = `${width}px`;
@@ -43202,28 +43202,28 @@ var __CRWeb = (() => {
     }
     function appendPath(s, d, strokeWidth, opacity) {
       var _a, _b;
-      const path = s.ownerDocument.createElementNS(SVG_NS, "path");
-      path.setAttribute("d", d);
-      path.setAttribute("stroke", color);
-      path.setAttribute("stroke-width", String(strokeWidth));
-      path.setAttribute("stroke-opacity", String(opacity));
-      path.setAttribute("fill", "none");
-      path.setAttribute("stroke-linecap", "round");
-      path.setAttribute("stroke-linejoin", "round");
-      s.appendChild(path);
+      const path5 = s.ownerDocument.createElementNS(SVG_NS, "path");
+      path5.setAttribute("d", d);
+      path5.setAttribute("stroke", color);
+      path5.setAttribute("stroke-width", String(strokeWidth));
+      path5.setAttribute("stroke-opacity", String(opacity));
+      path5.setAttribute("fill", "none");
+      path5.setAttribute("stroke-linecap", "round");
+      path5.setAttribute("stroke-linejoin", "round");
+      s.appendChild(path5);
       if (!animateDrawing) return;
       try {
-        const len = (_b = (_a = path.getTotalLength) == null ? void 0 : _a.call(path)) != null ? _b : 120;
-        path.style.strokeDasharray = String(len);
-        path.style.strokeDashoffset = String(len);
-        void path.getBoundingClientRect();
-        path.style.transition = `stroke-dashoffset 700ms ${MARK_EASE}`;
+        const len = (_b = (_a = path5.getTotalLength) == null ? void 0 : _a.call(path5)) != null ? _b : 120;
+        path5.style.strokeDasharray = String(len);
+        path5.style.strokeDashoffset = String(len);
+        void path5.getBoundingClientRect();
+        path5.style.transition = `stroke-dashoffset 700ms ${MARK_EASE}`;
         const ownerWindow = s.ownerDocument.defaultView;
         if (ownerWindow) ownerWindow.requestAnimationFrame(() => {
-          path.style.strokeDashoffset = "0";
+          path5.style.strokeDashoffset = "0";
         });
         else requestAnimationFrame(() => {
-          path.style.strokeDashoffset = "0";
+          path5.style.strokeDashoffset = "0";
         });
       } catch (e) {
       }
@@ -43233,9 +43233,9 @@ var __CRWeb = (() => {
       if (shown.has(m.id)) return;
       const el = getParaEl(m.paragraphIndex, m.domParagraphIndex);
       if (!el) return;
-      const range = charRange(el, m.charStart, m.charEnd);
-      if (!range) return;
-      const rects = textLineRects(el, range);
+      const range2 = charRange(el, m.charStart, m.charEnd);
+      if (!range2) return;
+      const rects = textLineRects(el, range2);
       if (!rects.length) return;
       const ownerDocument = el.ownerDocument;
       const ownerWindow = ownerDocument.defaultView;
@@ -43253,7 +43253,7 @@ var __CRWeb = (() => {
       });
       if (!lineRects.length) return;
       shown.set(m.id, m);
-      const last = lineRects[lineRects.length - 1];
+      const last2 = lineRects[lineRects.length - 1];
       const wm = weightMul(m.weight);
       switch (m.action) {
         case "underline":
@@ -43282,13 +43282,13 @@ var __CRWeb = (() => {
           break;
         }
         case "star":
-          appendPath(s, handDrawnStar(last.right + sx + 14, last.top + sy + last.height / 2, 10, rng), 2.5 * wm, 0.95);
+          appendPath(s, handDrawnStar(last2.right + sx + 14, last2.top + sy + last2.height / 2, 10, rng), 2.5 * wm, 0.95);
           break;
         case "question":
-          appendPath(s, handDrawnQuery(last.right + sx + 12, last.top + sy + last.height / 2, 14, rng), 2.5 * wm, 0.95);
+          appendPath(s, handDrawnQuery(last2.right + sx + 12, last2.top + sy + last2.height / 2, 14, rng), 2.5 * wm, 0.95);
           break;
         case "exclaim":
-          appendPath(s, handDrawnExclaim(last.right + sx + 12, last.top + sy + last.height / 2, 14, rng), 2.5 * wm, 0.95);
+          appendPath(s, handDrawnExclaim(last2.right + sx + 12, last2.top + sy + last2.height / 2, 14, rng), 2.5 * wm, 0.95);
           break;
         case "highlight":
         default:
@@ -53657,25 +53657,6 @@ var __CRWeb = (() => {
   var src_default = epub_default;
 
   // src/cr-bridge.ts
-  var __defProp = Object.defineProperty;
-  var __defProps = Object.defineProperties;
-  var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-  var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-  var __hasOwnProp = Object.prototype.hasOwnProperty;
-  var __propIsEnum = Object.prototype.propertyIsEnumerable;
-  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-  var __spreadValues = (a, b) => {
-    for (var prop in b || (b = {}))
-      if (__hasOwnProp.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    if (__getOwnPropSymbols)
-      for (var prop of __getOwnPropSymbols(b)) {
-        if (__propIsEnum.call(b, prop))
-          __defNormalProp(a, prop, b[prop]);
-      }
-    return a;
-  };
-  var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   function showDbg(s) {
     var _a, _b, _c;
     try {
@@ -53689,7 +53670,7 @@ var __CRWeb = (() => {
   }
   function initBridge(deps) {
     var _a;
-    const { extract } = deps;
+    const { extract: extract2 } = deps;
     const paraElements = /* @__PURE__ */ new Map();
     const extractedParaElements = /* @__PURE__ */ new Map();
     const paraOffsets = /* @__PURE__ */ new Map();
@@ -53716,9 +53697,9 @@ var __CRWeb = (() => {
           const sy = box.height / Math.max(1, frame.offsetHeight);
           const x = (e.clientX - box.left) / sx - frame.clientLeft;
           const y = (e.clientY - box.top) / sy - frame.clientTop;
-          const range = owner.createRange();
-          range.selectNodeContents(candidate);
-          for (const rect of Array.from(range.getClientRects())) {
+          const range2 = owner.createRange();
+          range2.selectNodeContents(candidate);
+          for (const rect of Array.from(range2.getClientRects())) {
             if (rect.width < 1 || rect.height < 1 || x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue;
             if (deps.acceptHighlightRect && !deps.acceptHighlightRect(candidate, rect)) continue;
             post("paragraphTapped", { paragraphIndex });
@@ -53734,32 +53715,32 @@ var __CRWeb = (() => {
     const overlayDocuments = /* @__PURE__ */ new Set();
     let autoScroll = true;
     let lastPaintedRange = null;
-    function revealRange(range) {
+    function revealRange(range2) {
       if (CR.disableScroll || !autoScroll) return;
-      const doc = range.startContainer.ownerDocument;
+      const doc = range2.startContainer.ownerDocument;
       const win = doc == null ? void 0 : doc.defaultView;
       if (!win) return;
-      let ancestor = range.startContainer.parentElement;
+      let ancestor = range2.startContainer.parentElement;
       while (ancestor && ancestor !== (doc == null ? void 0 : doc.body)) {
         const style = win.getComputedStyle(ancestor);
         if (/(auto|scroll)/.test(style.overflowY) && ancestor.scrollHeight > ancestor.clientHeight) {
-          const word = range.getBoundingClientRect(), box = ancestor.getBoundingClientRect();
+          const word = range2.getBoundingClientRect(), box = ancestor.getBoundingClientRect();
           if (word.top < box.top + 24 || word.bottom > box.bottom - 24) {
             ancestor.scrollTop += word.top - box.top - ancestor.clientHeight * 0.3;
           }
         }
         ancestor = ancestor.parentElement;
       }
-      const rect = range.getBoundingClientRect();
+      const rect = range2.getBoundingClientRect();
       if (rect.top < win.innerHeight * 0.18 || rect.bottom > win.innerHeight * 0.78) {
         win.scrollBy({ top: rect.top - win.innerHeight * 0.3, behavior: "instant" });
       }
     }
-    const post = (type, payload = {}) => {
+    const post = (type2, payload = {}) => {
       var _a2, _b, _c;
       try {
         ;
-        (_c = (_b = (_a2 = window.webkit) == null ? void 0 : _a2.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type, payload });
+        (_c = (_b = (_a2 = window.webkit) == null ? void 0 : _a2.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type: type2, payload });
       } catch (e) {
       }
     };
@@ -53781,15 +53762,15 @@ var __CRWeb = (() => {
       });
       overlayDocuments.clear();
     }
-    function paintOverlay(range, el) {
+    function paintOverlay(range2, el) {
       clearOverlay();
-      lastPaintedRange = { range, el };
-      revealRange(range);
-      const ownerDocument = range.startContainer.ownerDocument || (el == null ? void 0 : el.ownerDocument) || document;
+      lastPaintedRange = { range: range2, el };
+      revealRange(range2);
+      const ownerDocument = range2.startContainer.ownerDocument || (el == null ? void 0 : el.ownerDocument) || document;
       const ownerWindow = ownerDocument.defaultView;
       const host = ownerDocument.body || ownerDocument.documentElement;
       if (!ownerWindow || !host) return 0;
-      const rects = Array.from(range.getClientRects());
+      const rects = Array.from(range2.getClientRects());
       const sx = ownerWindow.scrollX, sy = ownerWindow.scrollY;
       overlayDocuments.add(ownerDocument);
       let n = 0;
@@ -53808,12 +53789,12 @@ var __CRWeb = (() => {
       return n;
     }
     function setOverlay(el, charStart, charEnd) {
-      const range = charRangeInElement(el, charStart, charEnd);
-      if (!range) {
+      const range2 = charRangeInElement(el, charStart, charEnd);
+      if (!range2) {
         clearOverlay();
         return 0;
       }
-      return paintOverlay(range, el);
+      return paintOverlay(range2, el);
     }
     let wcPara = -1, wcSeg = -1, wcRanges = [], paraCursor = 0;
     function findWordPos(text, lower, word, from) {
@@ -53875,7 +53856,7 @@ var __CRWeb = (() => {
       const revision = ++extractionRevision;
       let paras = [];
       try {
-        paras = extract();
+        paras = extract2();
       } catch (e) {
         post("error", { stage: "extract", message: String(e) });
       }
@@ -53964,7 +53945,7 @@ var __CRWeb = (() => {
         };
         requestAnimationFrame(() => requestAnimationFrame(acknowledge));
       },
-      // 本地 DOCX：native 传 base64 字节 → import_mammoth.default 转 HTML 注入 DOM → 复用 Visual Zone 提取（不上传后端）。
+      // 本地 DOCX：native 传 base64 字节 → mammoth 转 HTML 注入 DOM → 复用 Visual Zone 提取（不上传后端）。
       renderDocx(arg) {
         try {
           const bin = atob(arg.base64);
@@ -54141,11 +54122,11 @@ var __CRWeb = (() => {
         const el = paraElements.get(arg.paragraphIndex);
         if (!el) return;
         const base = paraOffsets.get(arg.paragraphIndex) || 0;
-        const range = typeof arg.charStart === "number" && typeof arg.charEnd === "number" ? charRangeInElement(el, arg.charStart + base, arg.charEnd + base) : (lastPaintedRange == null ? void 0 : lastPaintedRange.el) === el ? lastPaintedRange.range : null;
-        if (range) {
-          if ((lastPaintedRange == null ? void 0 : lastPaintedRange.el) === el && lastPaintedRange.range === range) {
-            paintOverlay(range, el);
-          } else revealRange(range);
+        const range2 = typeof arg.charStart === "number" && typeof arg.charEnd === "number" ? charRangeInElement(el, arg.charStart + base, arg.charEnd + base) : (lastPaintedRange == null ? void 0 : lastPaintedRange.el) === el ? lastPaintedRange.range : null;
+        if (range2) {
+          if ((lastPaintedRange == null ? void 0 : lastPaintedRange.el) === el && lastPaintedRange.range === range2) {
+            paintOverlay(range2, el);
+          } else revealRange(range2);
         } else el.scrollIntoView({ block: "center", behavior: "auto" });
       },
       setAutoScroll(arg) {
@@ -56028,6 +56009,12 @@ var __CRWeb = (() => {
         }, metadata));
         return false;
       }
+      if (changeReasonInFlight === "refresh") {
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = null;
+        clearSettledChange("refresh");
+        observedSignature = visualBaseline;
+      }
       pendingAuto = true;
       pendingDirection = direction;
       pendingAutoMetadata = metadata;
@@ -56156,6 +56143,8 @@ var __CRWeb = (() => {
           changeBaseline = manual.baselineSignature;
           changeMetadata = manual;
           commit("manual", 0, true);
+        } else if (pendingAuto) {
+          return;
         } else {
           commit("refresh", 0, true);
         }
@@ -58221,6 +58210,7 @@ var __CRWeb = (() => {
               baselineSignature: changeBaseline
             }, payloadFor(committedMetadata)));
           }
+          warmSemanticTransport();
           const extractStartedAt = performance.now();
           requestExtract(reason, payloadFor(committedMetadata), paragraphs);
           if (reason === "auto" && automaticTiming && automaticTiming.turnID === (committedMetadata == null ? void 0 : committedMetadata.turnID)) {
@@ -58319,6 +58309,12 @@ var __CRWeb = (() => {
           lateEligible: false
         }, metadata));
         return false;
+      }
+      if (changeReasonInFlight === "refresh") {
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = null;
+        clearSettledChange("refresh");
+        observedSignature = visualBaseline;
       }
       pendingAuto = true;
       const observeTurnFrame = () => {
@@ -58588,6 +58584,7 @@ var __CRWeb = (() => {
         const fallbackBaseline = committedSignature || koboSignature();
         const automatic = nonemptyString2(recordArg2(arg).turnID) ? automaticMetadata2(arg, fallbackBaseline) : null;
         const manual = manualMetadata2(arg, fallbackBaseline);
+        if (!automatic && !manual && pendingAuto) return;
         if (automatic) {
           changeReasonInFlight = "auto";
           changeBaseline = ((_b = liveLateAutoTurn()) == null ? void 0 : _b.detectionBaselineSignature) || fallbackBaseline;
@@ -58823,6 +58820,7 @@ var __CRWeb = (() => {
         observedSignature = signature;
         hasPublishedInitialPage = true;
         layoutRefreshActive = false;
+        warmSemanticTransport();
         postForFrame("log", { message: koboLayoutDiagnostic() });
         requestExtract("initial");
         scheduleNextPagePreview();

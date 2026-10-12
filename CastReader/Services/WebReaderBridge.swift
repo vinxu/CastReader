@@ -37,6 +37,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     var pageSpeechGenerator: ParagraphSpeechGenerating = TTSService.shared
     #if DEBUG
     var onGoogleBooksLocationRecordedForTesting: ((String) -> Void)?
+    /// Local WK fixtures run the reader in a main frame, which the production
+    /// origin policy correctly rejects. Enter the unchanged page-message route
+    /// after that separately tested boundary, retaining frame/session checks.
+    func receiveGoogleBooksPageForTesting(_ payload: [String: Any]) {
+        handle(["type": "rendered", "payload": payload])
+    }
     private var liveAcceptanceAutomaticReadTurns = 0
     private var liveAcceptanceAutomaticExplainTurns = 0
     private var liveAcceptancePhysicalExplainPages = 0
@@ -5681,7 +5687,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
         let explainSegments: [[String: Any]]
         if preservesExplanation {
-            googleBooksReflowRevealSignatures.removeAll()
+            // A source-search miss also returns a refresh. Keep its attempt
+            // budget until the current mark can actually paint, otherwise
+            // pushMarks immediately retries the same missing source forever.
+            if livePlatform != .googleBooks || explainVM?.activeMarks.last.map({
+                googleExplanationMarkHasVisibleFragment($0, on: parsed)
+            }) == true {
+                googleBooksReflowRevealSignatures.removeAll()
+            }
             let remapped = googleBooksExplainSourceSlices.map { LiveWebSourceReflowContract.remap($0, in: parsed.sourceSlices) }
             explainSegments = googleBooksExplainSourceSlices.enumerated().map { index, slice in
                 ["paragraphIndex": index, "text": slice.text,
@@ -7417,6 +7430,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     // MARK: - native → JS
 
+    private func googleExplanationMarkHasVisibleFragment(_ mark: ResolvedMark,
+                                                         on page: GoogleBooksParsedPage) -> Bool {
+        guard googleBooksExplainSourceSlices.indices.contains(mark.paragraphIndex),
+              let range = explainVM?.webUTF16Range(for: mark) else { return false }
+        return LiveWebSourceReflowContract.domFragments(
+            for: googleBooksExplainSourceSlices[mark.paragraphIndex], in: page.sourceSlices,
+            domOffsets: page.explainDOMCharacterOffsets).contains {
+                max($0.charStart, range.lowerBound) < min($0.charEnd, range.upperBound)
+            }
+    }
+
     private func revealGoogleExplanationMark(_ mark: ResolvedMark, on page: GoogleBooksParsedPage,
                                             signature: String) -> Bool {
         guard (livePlatform == .googleBooks || livePlatform == .kobo), !isReadMode,
@@ -7426,11 +7450,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               !googleBooksReflowRevealSignatures.contains(signature),
               let frame = activeGoogleBooksFrameSessionID else { return false }
         let source = googleBooksExplainSourceSlices[mark.paragraphIndex]
-        if let range = explainVM?.webUTF16Range(for: mark),
-           LiveWebSourceReflowContract.domFragments(for: source, in: page.sourceSlices,
-                domOffsets: page.explainDOMCharacterOffsets).contains(where: {
-                    max($0.charStart, range.lowerBound) < min($0.charEnd, range.upperBound)
-                }) {
+        if googleExplanationMarkHasVisibleFragment(mark, on: page) {
             // The same source paragraph may occupy both visible columns.
             // Its first fragment alone cannot authorize another page turn.
             return false
@@ -7453,10 +7473,21 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             direction = neighbors.isEmpty ? nil : neighbors.allSatisfy { $0 < mark.paragraphIndex } ? "next" :
                 (neighbors.allSatisfy { $0 > mark.paragraphIndex } ? "prev" : nil)
         }
-        guard let direction else { return false }
+        var request: [String: Any] = ["reflowBaseline": signature, "originFrameSessionID": frame]
+        if let direction {
+            request["reflowDirection"] = direction
+        } else {
+            // Google can reset to the chapter's first spread after resize,
+            // leaving no old visible neighbors. Its native page sequence can
+            // locate a unique exact source without replacing the paused scope.
+            guard livePlatform == .googleBooks,
+                  explainVM?.webUTF16Range(for: mark) != nil,
+                  (24...16000).contains(source.text.utf16.count) else { return false }
+            request["reflowSourceText"] = source.text
+        }
         googleBooksReflowRevealSignatures.insert(signature)
-        call("gbRefresh", ["reflowDirection": direction, "reflowBaseline": signature, "originFrameSessionID": frame])
-        ReaderRunLog.write("GBOOKS reflow reveals explanation source direction=\(direction)")
+        call("gbRefresh", request)
+        ReaderRunLog.write("GBOOKS reflow reveals explanation source \(direction.map { "direction=\($0)" } ?? "verified-native-source")")
         return true
     }
 

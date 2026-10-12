@@ -2408,6 +2408,7 @@ export function installKoboReader(
             ...payloadFor(committedMetadata),
           })
         }
+        warmSemanticTransport()
         const extractStartedAt = performance.now()
         // All three consumers use this same synchronous DOM observation.
         // The host must discard it before the next task/frame so a subsequent
@@ -2557,6 +2558,15 @@ export function installKoboReader(
       return false
     }
 
+    if (changeReasonInFlight === 'refresh') {
+      // Fold reflow can still be settling at the spoken page boundary.
+      // Retire its unowned extraction before starting the physical turn;
+      // otherwise native never receives the automatic turn's identity.
+      if (settleTimer) clearTimeout(settleTimer)
+      settleTimer = null
+      clearSettledChange('refresh')
+      observedSignature = visualBaseline
+    }
     pendingAuto = true
     // Observe this owned native operation on paint frames. The idle poll is
     // only recovery; it must not add up to 250 ms to every audio boundary.
@@ -2895,6 +2905,9 @@ export function installKoboReader(
         ? automaticMetadata(arg, fallbackBaseline)
         : null
       const manual = manualMetadata(arg, fallbackBaseline)
+      // An unowned geometry probe must not replace an in-flight automatic
+      // settlement. The turn still samples the current reflow geometry.
+      if (!automatic && !manual && pendingAuto) return
       if (automatic) {
         changeReasonInFlight = 'auto'
         changeBaseline =
@@ -3257,6 +3270,10 @@ export function installKoboReader(
       observedSignature = signature
       hasPublishedInitialPage = true
       layoutRefreshActive = false
+      // A slow chapter can publish its UR controller after the timed warmups.
+      // Discover again when genuine content becomes ready, so the first spoken
+      // boundary uses its exact page API instead of an inactive legacy bus.
+      warmSemanticTransport()
       postForFrame('log', { message: koboLayoutDiagnostic() })
       requestExtract('initial')
       scheduleNextPagePreview()

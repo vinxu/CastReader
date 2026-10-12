@@ -8,6 +8,24 @@ import ZIPFoundation
 
 @MainActor
 final class DocumentImagePreservationTests: XCTestCase {
+    func testDownsampledCoverCannotPoisonLargerReaderImageCache() throws {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let data = UIGraphicsImageRenderer(size: CGSize(width: 320, height: 160), format: format).pngData { context in
+            UIColor.systemOrange.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 320, height: 160))
+        }
+        let cover = try XCTUnwrap(EpubImageDecoder.downsampled(data, maximumPixelDimension: 80))
+        let reader = try XCTUnwrap(EpubImageDecoder.downsampled(data, maximumPixelDimension: 240))
+        let lowerDensity = try XCTUnwrap(EpubImageDecoder.downsampled(data, maximumPixelDimension: 120))
+        XCTAssertEqual(try XCTUnwrap(cover.cgImage).width, 80)
+        XCTAssertEqual(try XCTUnwrap(reader.cgImage).width, 240,
+                       "A previous cover decode must not limit the reader's display resolution")
+        XCTAssertEqual(try XCTUnwrap(lowerDensity.cgImage).width, 120,
+                       "A display-scale change must use its current pixel budget")
+        XCTAssertTrue(EpubImageDecoder.downsampled(data, maximumPixelDimension: 80) === cover)
+    }
+
     private func image() -> Data {
         UIGraphicsImageRenderer(size: CGSize(width: 320, height: 160)).pngData { context in
             UIColor.white.setFill(); context.fill(CGRect(x: 0, y: 0, width: 320, height: 160))

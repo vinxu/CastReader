@@ -194,6 +194,7 @@ struct KindleIPadReadHoldView: View {
 }
 
 struct KindleBookView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @Environment(\.dismiss) private var dismiss
@@ -216,9 +217,9 @@ struct KindleBookView: View {
     }
 
     private var usesCompactPlaybackBar: Bool {
-        AdaptiveLayout.isPad
-            ? AdaptiveLayout.usesCompactControls(size: hostSize, accessibility: dynamicTypeSize.isAccessibilitySize)
-            : verticalSizeClass == .compact
+        !dynamicTypeSize.isAccessibilitySize && (
+            verticalSizeClass == .compact || AdaptiveLayout.usesCompactControls(size: hostSize)
+        )
     }
 
     private var shouldHidePlaybackForNativeTOC: Bool {
@@ -325,7 +326,6 @@ struct KindleBookView: View {
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .navigationBar)
-        .toolbar(playbackCenter.isPresented ? .hidden : .visible, for: .tabBar)
         .onAppear {
             importRouter.hideMainChrome = playbackCenter.isPresented
             model.setReaderSurfaceAttached(true)
@@ -351,6 +351,8 @@ struct KindleBookView: View {
         }
         .onChange(of: verticalSizeClass) { _ in
             guard playbackCenter.isPresented else { return }
+            refocusTask?.cancel()
+            refocusTask = nil
             model.noteReaderLayoutChange(reason: "orientation")
             model.notePlaybackLayoutChange(reason: "orientation")
         }
@@ -541,7 +543,11 @@ struct KindleBookView: View {
         model.updateReaderSurfaceSize(size)
         guard playbackCenter.isPresented, previous != .zero,
               abs(previous.width - size.width) > 4 || abs(previous.height - size.height) > 4 else { return }
-        // iPad keeps regular size classes through rotation and window resizing.
+        // An expand callback can run before SwiftUI delivers the new size.
+        // Reflow owns recovery now; cancel the old exact-page expand request.
+        refocusTask?.cancel()
+        refocusTask = nil
+        // Folding and window resizing can leave both size classes unchanged.
         // Let the existing page-identity recovery observe the actual viewport.
         model.noteReaderLayoutChange(reason: "reader-size")
         model.notePlaybackLayoutChange(reason: "reader-size")
@@ -656,7 +662,7 @@ struct KindleBookView: View {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(AppTheme.foreground)
-                    .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
+                    .frame(width: horizontalSizeClass == .regular ? 44 : 34, height: horizontalSizeClass == .regular ? 44 : 34)
                     .contentShape(Rectangle())
             }
 
@@ -682,7 +688,7 @@ struct KindleBookView: View {
             #endif
 
             Group {
-            if AdaptiveLayout.isPad && (hostSize.width < 500 || dynamicTypeSize.isAccessibilitySize) {
+            if (hostSize.width > 0 && hostSize.width < 500) || dynamicTypeSize.isAccessibilitySize {
                 Menu {
                     Button(LocalizedStringKey(ReaderMode.read.rawValue)) { model.selectMode(.read) }
                     Button(LocalizedStringKey(ReaderMode.explain.rawValue)) { model.selectMode(.explain) }
@@ -720,7 +726,7 @@ struct KindleBookView: View {
                 .foregroundColor(model.mode == mode ? AppTheme.foreground : AppTheme.mutedForeground)
                 .lineLimit(1)
                 .padding(.horizontal, 12)
-                .frame(height: AdaptiveLayout.isPad ? 44 : 28)
+                .frame(height: horizontalSizeClass == .regular ? 44 : 28)
                 .background(model.mode == mode ? AppTheme.surface : Color.clear, in: Capsule())
         }
         .buttonStyle(.plain)
@@ -1128,6 +1134,7 @@ private struct KindlePlayButtonContent: View {
 }
 
 private struct KindlePageTurnButton: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let systemName: String
     var accessibilityLabel: String?
     let action: () -> Void
@@ -1136,7 +1143,7 @@ private struct KindlePageTurnButton: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 20, weight: .semibold))
-                .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: AdaptiveLayout.isPad ? 44 : 36)
+                .frame(width: horizontalSizeClass == .regular ? 44 : 36, height: horizontalSizeClass == .regular ? 44 : 36)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1495,6 +1502,9 @@ private struct KindleLandscapeEmptyOverlay: View {
                     )
                 }
                 .disabled(isPreparing)
+                .accessibilityIdentifier("kindleReadPlayPauseButton")
+                .accessibilityLabel(Text(AppLocalized(isPreparing ? "正在准备…" : "已暂停")))
+                .accessibilityValue(isPreparing ? "loading" : "paused")
             }
         }
     }
@@ -1540,7 +1550,10 @@ private struct KindleLandscapeReadOverlay: View {
                         size: 44
                     )
                 }
-                }
+                .accessibilityIdentifier("kindleReadPlayPauseButton")
+                .accessibilityLabel(Text(AppLocalized(isLoading ? "正在准备…" : (vm.isPlaying ? "朗读中" : "已暂停"))))
+                .accessibilityValue(isLoading ? "loading" : (vm.isPlaying ? "playing" : "paused"))
+            }
         }
     }
 }
@@ -1602,8 +1615,15 @@ private struct KindleLandscapeExplainOverlay: View {
         }
     }
 
+    private var isLoading: Bool {
+        if isContinuingPage || vm.isPreparingNext { return true }
+        if case .planning = vm.status { return true }
+        return false
+    }
+
     @ViewBuilder
     private var centerPlayControl: some View {
+        Group {
         switch vm.status {
         case .idle:
             if isContinuingPage {
@@ -1648,6 +1668,10 @@ private struct KindleLandscapeExplainOverlay: View {
                 }
             }
         }
+        }
+        .accessibilityIdentifier("kindleExplainPlayPauseButton")
+        .accessibilityLabel(Text(playbackStatus))
+        .accessibilityValue(isLoading ? "loading" : (vm.isPlaying ? "playing" : "paused"))
     }
 }
 
@@ -2164,10 +2188,12 @@ final class KindlePlaybackCenter: ObservableObject {
     }
 
     func minimize() {
-        guard model != nil else { return }
-        if AdaptiveLayout.isPad { AppOrientationLock.unlock(owner: Self.orientationOwner) }
-        else { AppOrientationLock.lockCurrent(owner: Self.orientationOwner) }
+        guard let model else { return }
+        // Freeze the hidden web surface before releasing orientation. The home
+        // scene must follow a fold/rotation while this reader keeps playing.
+        model.setReaderPresented(false)
         isPresented = false
+        AppOrientationLock.unlock(owner: Self.orientationOwner)
     }
 
     func close(preservingSleepTimer: Bool = false) {
@@ -2237,6 +2263,7 @@ struct KindleTOCEntry: Identifiable, Equatable {
 }
 
 private struct KindleNativeTOCPanel: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     let entries: [KindleTOCEntry]
@@ -2257,7 +2284,7 @@ private struct KindleNativeTOCPanel: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(AppTheme.mutedForeground)
-                        .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
+                        .frame(width: horizontalSizeClass == .regular ? 44 : 34, height: horizontalSizeClass == .regular ? 44 : 34)
                         .contentShape(Rectangle())
                         .background(AppTheme.surfaceVariant, in: Circle())
                 }
@@ -2697,6 +2724,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     var syncDialogReadinessForTesting: (() async throws -> Void)?
     var readSpeechGeneratorForTesting: (any ParagraphSpeechGenerating)?
     var explainAdvanceReadyForTesting: (() -> Void)?
+    var refocusRenderSurfaceForTesting: ((String) async -> Void)?
+    func prepareViewportRecoveryForTesting() {
+        didLoad = true
+        isRecoveringIPadViewport = true
+        needsIPadViewportProjection = true
+    }
+    func repairViewportForTesting() async { await repairReaderLayout(reason: "ipad-viewport") }
+    var hasScheduledLayoutRepairForTesting: Bool { readerLayoutRepairTask != nil }
+    func restorePlaybackKeyVisibilityForTesting(_ key: String, reason: String, maxSteps: Int) async -> Bool {
+        await restorePlaybackKeyVisibility(key, reason: reason, maxSteps: maxSteps)
+    }
     func bindLivePlaybackForTesting(document: ReadingDocument) { bindLivePlayback(document: document) }
     func waitForStablePageForTesting() async throws { try await waitForKindleImageStable() }
     var coldListeningRestorePendingForTesting: Bool { needsColdListeningPageRestore }
@@ -2721,8 +2759,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var isPlayerControlOverlayPresented = false
     @Published private(set) var playerOverlayViewport: KindlePlayerOverlayViewport?
     @Published private(set) var inactiveReaderViewport: KindlePlayerOverlayViewport?
+    @Published private(set) var minimizedReaderViewport: KindlePlayerOverlayViewport?
     var readerViewportSnapshot: KindlePlayerOverlayViewport? {
-        playerOverlayViewport ?? inactiveReaderViewport
+        minimizedReaderViewport ?? playerOverlayViewport ?? inactiveReaderViewport
     }
     private var playerOverlaySubscription: AnyCancellable?
     private var playerOverlayDismissTask: Task<Void, Never>?
@@ -2779,7 +2818,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func setReaderPresented(_ presented: Bool) {
         guard isReaderPresented != presented else { return }
+        if !presented, isReaderSurfaceAttached {
+            minimizedReaderViewport = KindlePlayerOverlayViewport(webView: webView)
+        }
         isReaderPresented = presented
+        if presented { minimizedReaderViewport = nil }
         KindleRunLog.write("KINDLE lifecycle presented=\(presented ? "Y" : "N")")
         if presented {
             // Messages received while the mini player owned the WebView are
@@ -2889,6 +2932,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func updateReaderSurfaceSize(_ size: CGSize) {
         guard isApplicationActive else { return }
         guard size.width.isFinite, size.height.isFinite, size.width > 80, size.height > 80 else { return }
+        guard minimizedReaderViewport == nil else { return }
         let normalized = CGSize(
             width: max(1, size.width.rounded(.toNearestOrAwayFromZero)),
             height: max(1, size.height.rounded(.toNearestOrAwayFromZero))
@@ -2918,7 +2962,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         }
 
-        if AdaptiveLayout.isPad, hasActivePlaybackSession { needsIPadViewportProjection = true }
+        if hasActivePlaybackSession { needsIPadViewportProjection = true }
         resetViewportPresentation(reason: "surface-size")
         readerSurfaceSize = normalized
         let crop = Self.predictedViewportCrop(for: normalized)
@@ -3029,9 +3073,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         }
         guard didLoad else { return }
-        // iPad resizing reflows Amazon's page image. Preserve the playback VM,
+        // A fold or resize reflows Amazon's page image. Preserve the playback VM,
         // generated explanation and user pause intent; only rebuild OCR geometry.
-        if AdaptiveLayout.isPad, Self.layoutReasonShouldRestartPlayback(reason), hasActivePlaybackSession {
+        if Self.layoutReasonShouldRestartPlayback(reason), hasActivePlaybackSession {
             if !isRecoveringIPadViewport {
                 if let page = livePage, let image = UIImage(data: page.imageData),
                    let document = mode == .read ? readVM?.document : explainVM?.document {
@@ -3183,7 +3227,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write(
                 "KINDLE reader layout repair reason=\(reason) ok=\(String(describing: result["ok"] ?? false)) key=\(Self.keyLog(key)) live=\(Self.keyLog(liveKey)) ordered=\(String(describing: result["orderedCount"] ?? 0)) viewport=\(String(describing: result["viewportWidth"] ?? 0))x\(String(describing: result["viewportHeight"] ?? 0)) visible=\(String(describing: result["visibleArea"] ?? 0)) band=\(String(describing: result["bandVisibleArea"] ?? 0))"
             )
-            await logKindleGeometrySnapshot(reason: "layout-repair-\(reason)")
+            await logKindleGeometrySnapshot(reason: "layout-repair-\(reason)", traitCollection: webView.traitCollection)
             guard !Task.isCancelled, readerControlsNavigationGeneration == navigation,
                   readingSettingsRevision == settings,
                   readerOperationAllowed(.layoutRepair, reason: reason) else { return }
@@ -3199,8 +3243,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             } else {
                 if reason == "ipad-viewport" {
                     let revision = viewportProjectionRevision
-                    await refocusPlaybackPosition(reason: reason)
+                    let refocus = await refocusPlaybackPosition(reason: reason)
                     guard !Task.isCancelled else { return }
+                    // A cancelled expand can still be unwinding a WebKit/OCR
+                    // await. Busy is not a failed position match or a user pause.
+                    if refocus == .deferred {
+                        scheduleReaderLayoutRepairRetry(reason: reason, attempt: attempt)
+                        return
+                    }
                     let recovered = viewportProjectionRevision > revision
                     needsIPadViewportProjection = !recovered
                     readerLayoutUnstableUntil = nil
@@ -4773,7 +4823,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             try? await self.waitForKindleImageStable()
             guard !Task.isCancelled else { return }
             await self.logReaderLayoutProbe(reason: reason)
-            await self.logKindleGeometrySnapshot(reason: reason)
+            await self.logKindleGeometrySnapshot(reason: reason, traitCollection: self.webView.traitCollection)
             self.schedulePendingContinueListening(reason: "webview-\(reason)")
         }
     }
@@ -6404,7 +6454,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
-    private func logKindleGeometrySnapshot(reason: String) async {
+    private func logKindleGeometrySnapshot(reason: String, traitCollection: UITraitCollection) async {
         let expectedBook = book.id
         let expectedEpoch = preloadEpoch
         let expectedGeneration = viewportPresentationGeneration
@@ -6424,7 +6474,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             let containerBounds = webView.superview?.bounds ?? webView.bounds
             let swiftFrameInWindow = webView.superview?.convert(webView.frame, to: nil) ?? webView.convert(webView.bounds, to: nil)
             let windowBounds = webView.window?.bounds ?? .zero
-            let screenScale = webView.window?.screen.scale ?? UIScreen.main.scale
+            let screenScale = traitCollection.displayScale
             let scrollBounds = webView.scrollView.bounds
             let inset = webView.scrollView.adjustedContentInset
             let viewportWidth = Self.numberValue(viewport["width"]) ?? 0
@@ -8067,7 +8117,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         try await waitForKindleImageStable()
         guard !Task.isCancelled, preloadEpoch == prepareEpoch else { throw CancellationError() }
         if force {
-            await logKindleGeometrySnapshot(reason: "pre-capture-\(mode.rawValue)")
+            await logKindleGeometrySnapshot(reason: "pre-capture-\(mode.rawValue)", traitCollection: webView.traitCollection)
         }
         var lastOverlayError: Error?
         for attempt in 1...3 {
@@ -8134,7 +8184,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     startCachingNextPage(afterKey: actualLiveKey)
                 }
                 if force {
-                    await logKindleGeometrySnapshot(reason: "post-overlay-\(mode.rawValue)")
+                    await logKindleGeometrySnapshot(reason: "post-overlay-\(mode.rawValue)", traitCollection: webView.traitCollection)
                 }
                 statusText = AppLocalized("当前 Kindle 页面已就绪。")
                 return doc
@@ -9442,32 +9492,51 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         historyStore.recordKindleBook(book, language: language)
     }
 
-    func refocusPlaybackPosition(reason: String) async {
-        guard readerOperationAllowed(.visualRecovery, reason: reason) else { return }
-        guard readVM != nil || explainVM != nil else { return }
-        guard shouldRunPlaybackRefocus else { return }
+    enum PlaybackRefocusResult: Equatable { case completed, deferred, unavailable }
+
+    @discardableResult
+    func refocusPlaybackPosition(reason: String) async -> PlaybackRefocusResult {
+        guard !Task.isCancelled else { return .unavailable }
+        guard readerOperationAllowed(.visualRecovery, reason: reason) else { return .unavailable }
+        guard readVM != nil || explainVM != nil else { return .unavailable }
+        guard shouldRunPlaybackRefocus else { return .unavailable }
         guard !isPageTurnResuming else {
             KindleRunLog.write("KINDLE refocus skipped-manual-resume reason=\(reason) key=\(Self.keyLog(livePageKey ?? ""))")
-            return
+            return .unavailable
         }
-        guard !isRefocusingPlayback else { return }
+        guard !isRefocusingPlayback else { return .deferred }
+        guard !isRecoveringIPadViewport || reason == "ipad-viewport" else {
+            KindleRunLog.write("KINDLE refocus deferred-viewport reason=\(reason)")
+            return .deferred
+        }
         // Foreground/expand recovery is anchored to what audio is currently
         // speaking. Treating the stale visible page as a manual page change here
         // would rewind playback after a long background session.
         if reason != "foreground", reason != "expand", reason != "highlight-recovery", reason != "ipad-viewport",
            await scheduleExternalPageChangeFromCurrentVisiblePage(reason: reason) {
-            return
+            return .unavailable
         }
         if Self.refocusHandledByLayoutRestart(reason) {
             KindleRunLog.write("KINDLE refocus skipped-layout-restart reason=\(reason) key=\(Self.keyLog(livePageKey ?? ""))")
-            return
+            return .unavailable
         }
         if isReaderLayoutCurrentlyUnstable, Self.refocusShouldWaitForStableLayout(reason) {
             KindleRunLog.write("KINDLE refocus skipped-layout-unstable reason=\(reason) key=\(Self.keyLog(livePageKey ?? ""))")
-            return
+            return .unavailable
         }
+        // External-page observation above can suspend; recheck ownership before
+        // claiming the shared native reader after that await.
+        guard !Task.isCancelled, !isRefocusingPlayback,
+              !isRecoveringIPadViewport || reason == "ipad-viewport" else { return .deferred }
         isRefocusingPlayback = true
         defer { isRefocusingPlayback = false }
+        #if DEBUG
+        if let render = refocusRenderSurfaceForTesting {
+            await render(reason)
+            guard !Task.isCancelled, !isRecoveringIPadViewport || reason == "ipad-viewport" else { return .deferred }
+            return .completed
+        }
+        #endif
 
         let target = currentRefocusTarget()
         let targetPageKey = target?.pageKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -9477,22 +9546,25 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
            reason != "route-miss",
            canUseCurrentOverlay,
            await refreshLiveOverlay(reason: reason, attempt: 1) {
+            guard !Task.isCancelled, !isRecoveringIPadViewport || reason == "ipad-viewport" else { return .deferred }
             await refocusPlaybackPositionOnce(reason: reason, attempt: 1)
             needsForegroundVisualResync = false
-            return
+            return .completed
         }
 
         let attempts = reason == "ipad-viewport" ? 1 : 2
         for attempt in 1...attempts {
-            guard !Task.isCancelled else { return }
-            guard shouldRunPlaybackRefocus else { return }
+            guard !Task.isCancelled, !isRecoveringIPadViewport || reason == "ipad-viewport" else { return .deferred }
+            guard shouldRunPlaybackRefocus else { return .unavailable }
             await refreshRenderSurfaceForCurrentPlayback(reason: reason, attempt: attempt)
-            guard shouldRunPlaybackRefocus else { return }
+            guard !Task.isCancelled, !isRecoveringIPadViewport || reason == "ipad-viewport" else { return .deferred }
+            guard shouldRunPlaybackRefocus else { return .unavailable }
             await refocusPlaybackPositionOnce(reason: reason, attempt: attempt + 1)
             if attempt < attempts {
                 try? await Task.sleep(nanoseconds: 320_000_000)
             }
         }
+        return .completed
     }
 
     func cancelPlaybackRefocusEffects(reason: String) {
@@ -9505,6 +9577,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 KindleRunLog.write("KINDLE refocus cancel-effects error reason=\(reason) \(error.localizedDescription)")
             }
         }
+    }
+
+    private func requireCurrentPlaybackRefocus(reason: String) throws {
+        try Task.checkCancellation()
+        guard !isRecoveringIPadViewport || reason == "ipad-viewport" else { throw CancellationError() }
     }
 
     private static func refocusNeedsFreshProjection(_ reason: String) -> Bool {
@@ -9578,14 +9655,18 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let navigation = readerControlsNavigationGeneration
         let recoveryMode = mode
         do {
-            if reason != "ipad-viewport" { try await scrollTowardRefocusTarget(target) }
+            try requireCurrentPlaybackRefocus(reason: reason)
+            if reason != "ipad-viewport" { try await scrollTowardRefocusTarget(target, reason: reason) }
+            try requireCurrentPlaybackRefocus(reason: reason)
             guard shouldRunPlaybackRefocus else { return }
             try await Task.sleep(nanoseconds: attempt == 1 ? 260_000_000 : 120_000_000)
+            try requireCurrentPlaybackRefocus(reason: reason)
             guard shouldRunPlaybackRefocus else { return }
             installCaptureScript()
             await setKindlePageModeLocked(true)
             try await waitForPageReady()
             try await waitForKindleImageStable()
+            try requireCurrentPlaybackRefocus(reason: reason)
             guard shouldRunPlaybackRefocus else { return }
             guard var match = try await findRefocusMatch(for: target, reason: reason, attempt: attempt, followsPlayback: targetOverride == nil) else {
                 #if DEBUG
@@ -9599,11 +9680,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 return
             }
 
-            try Task.checkCancellation()
+            try requireCurrentPlaybackRefocus(reason: reason)
             guard readerControlsNavigationGeneration == navigation, mode == recoveryMode else { return }
             if reason == "ipad-viewport", match.offset != 0 {
                 guard await restorePlaybackKeyVisibility(match.page.key, reason: "ipad-viewport-anchor", maxSteps: 2) else { return }
-                try Task.checkCancellation()
+                try requireCurrentPlaybackRefocus(reason: reason)
             }
             let installedTarget = reason == "ipad-viewport" && targetOverride == nil ? (currentRefocusTarget() ?? target) : target
             if reason == "ipad-viewport", targetOverride == nil {
@@ -9621,7 +9702,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 return
             }
             let actualKey = try await installLiveOverlay(page: match.page, document: match.projection.document)
-            try Task.checkCancellation()
+            try requireCurrentPlaybackRefocus(reason: reason)
             guard readerControlsNavigationGeneration == navigation, mode == recoveryMode else { return }
             if Self.refocusRequiresExactPageKey(reason),
                let expectedKey = target.pageKey?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -9635,6 +9716,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 KindleRunLog.write("KINDLE refocus install reject-unstable reason=\(reason) key=\(Self.keyLog(actualKey))")
                 return
             }
+            try requireCurrentPlaybackRefocus(reason: reason)
+            guard readerControlsNavigationGeneration == navigation, mode == recoveryMode else { return }
             livePage = match.page
             livePageKey = actualKey
             liveVisibleTopNorm = match.page.visibleTopNorm
@@ -9763,10 +9846,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         seenKeys: inout Set<String>
     ) async throws -> KindleRefocusCandidateMatch? {
         for offset in offsets {
-            guard !Task.isCancelled else { return nil }
+            try requireCurrentPlaybackRefocus(reason: reason)
             guard shouldRunPlaybackRefocus else { return nil }
             do {
                 let page = try await captureNearbyPage(offset: offset)
+                try requireCurrentPlaybackRefocus(reason: reason)
                 let expectedKey = target.pageKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 if Self.refocusRequiresExactPageKey(reason),
                    !expectedKey.isEmpty,
@@ -9811,6 +9895,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     page: page,
                     projection: projection
                 )
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 #if DEBUG
                 NSLog("CRDBG KINDLE refocus scan error reason=%@ phase=%@ attempt=%d offset=%d %@",
@@ -10029,16 +10115,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         KindleRunLog.write("KINDLE audiobook anchor saved reason=\(reason) book=\(Self.keyLog(anchor.bookId)) key=\(Self.keyLog(anchor.pageKey)) hash=\(anchor.pageTextHash.prefix(12)) p=\(anchor.paragraphIndex) w=\(anchor.wordIndex ?? -1) offset=\(anchor.charOffset) schema=\(anchor.schemaVersion) reader=\(anchor.readerImplementationVersion)")
     }
 
-    private func scrollTowardRefocusTarget(_ target: KindleRefocusTarget) async throws {
+    private func scrollTowardRefocusTarget(_ target: KindleRefocusTarget, reason: String) async throws {
+        try requireCurrentPlaybackRefocus(reason: reason)
         if await scheduleExternalPageChangeFromCurrentVisiblePage(reason: "scroll-\(target.paragraphIndex)") {
             throw CancellationError()
         }
+        try requireCurrentPlaybackRefocus(reason: reason)
         if let pageKey = target.pageKey?.trimmingCharacters(in: .whitespacesAndNewlines),
            !pageKey.isEmpty {
             if !(await restorePlaybackKeyVisibility(pageKey, reason: "refocus-target", maxSteps: 4)) {
+                try requireCurrentPlaybackRefocus(reason: reason)
                 _ = try? await scrollToKey(pageKey, block: "nearest")
             }
-            try? await Task.sleep(nanoseconds: 180_000_000)
+            try await Task.sleep(nanoseconds: 180_000_000)
+            try requireCurrentPlaybackRefocus(reason: reason)
         }
         if let wordIndex = target.wordIndex,
            let route = textQueue?.wordRoutes["\(target.paragraphIndex)#\(wordIndex)"] {
@@ -10080,7 +10170,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func refocusPlaybackPositionOnce(reason: String, attempt: Int) async {
-        guard shouldRunPlaybackRefocus else { return }
+        let navigation = readerControlsNavigationGeneration
+        let recoveryMode = mode
+        func isCurrent() -> Bool {
+            !Task.isCancelled && readerControlsNavigationGeneration == navigation && mode == recoveryMode &&
+                (!isRecoveringIPadViewport || reason == "ipad-viewport") && shouldRunPlaybackRefocus
+        }
+        guard isCurrent() else { return }
         switch mode {
         case .read:
             guard let vm = readVM,
@@ -10098,6 +10194,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             #endif
             KindleRunLog.write("KINDLE refocus read reason=\(reason) attempt=\(attempt) key=\(Self.keyLog(livePageKey ?? "")) p=\(paragraphIndex) w=\(wordIndex.map(String.init) ?? "nil")")
             await scrollToParagraph(paragraphIndex, force: true)
+            guard isCurrent(), readVM === vm else { return }
             if let range = vm.photoHighlightWordRange, range.count > 1 {
                 await highlightWordRange(paragraphIndex: paragraphIndex, range: range, sequence: nextVisualSyncSequence(), force: true)
             } else if let wordIndex {
@@ -10124,6 +10221,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             if !vm.activeMarks.isEmpty {
                 await pushMarks(vm.activeMarks, force: true)
             }
+            guard isCurrent(), explainVM === vm else { return }
             await scrollToParagraph(target, force: true)
         }
     }
@@ -13285,7 +13383,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             Task { @MainActor [weak self, weak vm] in
                 guard let self, let vm, self.explainVM === vm,
                       self.mode == .explain, self.livePageKey == key else { return }
-                await self.logKindleGeometrySnapshot(reason: "explain-page-start")
+                await self.logKindleGeometrySnapshot(reason: "explain-page-start", traitCollection: self.webView.traitCollection)
             }
         }
         KindleRunLog.write("KINDLE explain playback start reason=\(reason) key=\(Self.keyLog(livePageKey ?? "")) paras=\(document.paragraphs.count)")
@@ -16490,12 +16588,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         maxSteps: Int
     ) async -> Bool {
         let key = rawKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { return false }
+        let navigation = readerControlsNavigationGeneration
+        let recoveryMode = mode
+        func isCurrent() -> Bool {
+            !Task.isCancelled && readerControlsNavigationGeneration == navigation && mode == recoveryMode &&
+                (reason != "refocus-target" || !isRecoveringIPadViewport)
+        }
+        guard !key.isEmpty, isCurrent() else { return false }
 
-        if await tryScrollToPlaybackKey(key, reason: reason, phase: "direct", attempt: 0) {
-            if await waitForPlaybackKeyStable(key, reason: reason, phase: "direct") {
-                return true
-            }
+        let positioned = await tryScrollToPlaybackKey(key, reason: reason, phase: "direct", attempt: 0)
+        guard isCurrent() else { return false }
+        if positioned {
+            let stable = await waitForPlaybackKeyStable(key, reason: reason, phase: "direct")
+            guard isCurrent() else { return false }
+            if stable { return true }
         }
 
         guard Self.restoreShouldUseAnchor(reason: reason) else {
@@ -16503,13 +16609,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return false
         }
 
-        if await restorePlaybackKeyAnchor(key, reason: reason) {
+        let restored = await restorePlaybackKeyAnchor(key, reason: reason)
+        guard isCurrent() else { return false }
+        if restored {
             for attempt in 1...max(1, maxSteps) {
-                try? await Task.sleep(nanoseconds: attempt == 1 ? 420_000_000 : 220_000_000)
-                if await tryScrollToPlaybackKey(key, reason: reason, phase: "anchor", attempt: attempt) {
-                    if await waitForPlaybackKeyStable(key, reason: reason, phase: "anchor-\(attempt)") {
-                        return true
-                    }
+                do {
+                    try await Task.sleep(nanoseconds: attempt == 1 ? 420_000_000 : 220_000_000)
+                } catch { return false }
+                guard isCurrent() else { return false }
+                let positioned = await tryScrollToPlaybackKey(key, reason: reason, phase: "anchor", attempt: attempt)
+                guard isCurrent() else { return false }
+                if positioned {
+                    let stable = await waitForPlaybackKeyStable(key, reason: reason, phase: "anchor-\(attempt)")
+                    guard isCurrent() else { return false }
+                    if stable { return true }
                 }
             }
         }
@@ -16528,16 +16641,23 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         reason: String,
         phase: String
     ) async -> Bool {
+        let navigation = readerControlsNavigationGeneration
+        let recoveryMode = mode
+        func isCurrent() -> Bool {
+            !Task.isCancelled && readerControlsNavigationGeneration == navigation && mode == recoveryMode &&
+                (reason != "refocus-target" || !isRecoveringIPadViewport)
+        }
         var lastSignature = ""
         var stableHits = 0
         for attempt in 1...10 {
-            guard !Task.isCancelled else { return false }
+            guard isCurrent() else { return false }
             installCaptureScript()
             guard let state = try? await playbackKeyVisibility(key) else {
                 try? await Task.sleep(nanoseconds: 180_000_000)
                 continue
             }
 
+            guard isCurrent() else { return false }
             let currentKey = (state["visibleKey"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let width = Self.number(from: state["width"]) ?? 0
             let height = Self.number(from: state["height"]) ?? 0
@@ -16620,7 +16740,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         attempt: Int
     ) async -> Bool {
         do {
+            try Task.checkCancellation()
             let result = try await positionPlaybackKey(key)
+            try Task.checkCancellation()
             let ok = Self.boolValue(result["ok"])
             let missReason = result["reason"] as? String ?? ""
             let currentKey = result["currentKey"] as? String ?? ""
@@ -16644,7 +16766,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   missReason)
             #endif
             if ok {
-                try? await Task.sleep(nanoseconds: 260_000_000)
+                try await Task.sleep(nanoseconds: 260_000_000)
                 return true
             }
         } catch {

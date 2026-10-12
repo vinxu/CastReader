@@ -255,6 +255,7 @@ enum ReaderModeSwitchPlaybackContract {
 /// Matches Kindle's native TOC sheet so both bound-library readers have the
 /// same hierarchy, active-chapter indicator and loading/error interaction.
 private struct WeReadNativeTOCPanel: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     let entries: [WeReadTOCEntry]
@@ -275,7 +276,7 @@ private struct WeReadNativeTOCPanel: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(AppTheme.mutedForeground)
-                        .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
+                        .frame(width: horizontalSizeClass == .regular ? 44 : 34, height: horizontalSizeClass == .regular ? 44 : 34)
                         .contentShape(Rectangle())
                         .background(AppTheme.surfaceVariant, in: Circle())
                 }
@@ -386,6 +387,7 @@ private struct WeReadNativeTOCPanel: View {
 }
 
 struct ReaderHostView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @EnvironmentObject private var readerScene: ReaderSceneContext
@@ -439,10 +441,9 @@ struct ReaderHostView: View {
 
     private var mode: ReaderMode { coordinator.mode }
     private var usesCompactPlaybackBar: Bool {
-        if AdaptiveLayout.isPad {
-            return AdaptiveLayout.usesCompactControls(size: hostSize, accessibility: dynamicTypeSize.isAccessibilitySize)
-        }
-        return verticalSizeClass == .compact
+        !dynamicTypeSize.isAccessibilitySize && (
+            verticalSizeClass == .compact || AdaptiveLayout.usesCompactControls(size: hostSize)
+        )
     }
 
     var body: some View {
@@ -455,23 +456,20 @@ struct ReaderHostView: View {
             VStack(spacing: 0) {
                 header
                 Divider()
-                readerSurface
-                if !usesCompactPlaybackBar {
-                    Divider()
-                    controls
+                KindleReaderPlaybackDock(isLandscape: usesCompactPlaybackBar) {
+                    readerSurface
+                } playback: {
+                    if usesCompactPlaybackBar {
+                        landscapeControls
+                            .padding(.horizontal, 22)
+                            .padding(.bottom, 8)
+                    } else {
+                        controls
+                    }
                 }
             }
             .accessibilityHidden(weReadTOC.isPresented || weReadTOC.isJumping)
             .allowsHitTesting(!weReadTOC.isPresented && !weReadTOC.isJumping)
-
-            if usesCompactPlaybackBar {
-                landscapeControls
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, 8)
-                    .opacity(weReadTOC.isPresented ? 0 : 1)
-                    .allowsHitTesting(!weReadTOC.isPresented && !weReadTOC.isJumping)
-                    .accessibilityHidden(weReadTOC.isPresented || weReadTOC.isJumping)
-            }
 
             if let message = playbackFailureMessage, !weReadTOC.isPresented {
                 Text(message)
@@ -480,7 +478,7 @@ struct ReaderHostView: View {
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(12)
-                    .frame(maxWidth: AdaptiveLayout.isPad ? 600 : .infinity, alignment: .leading)
+                    .frame(maxWidth: horizontalSizeClass == .regular ? 600 : .infinity, alignment: .leading)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal, 16)
                     .padding(.bottom, AdaptiveLayout.playbackHeight(in: hostSize) + 12)
@@ -639,7 +637,10 @@ struct ReaderHostView: View {
 
     private var readerSurface: some View {
         GeometryReader { geometry in
-            let surfaceSize = geometry.size
+            // A minimized reader stays mounted, but must not repaginate behind
+            // Home when the scene rotates or folds. Reflow only when reopened.
+            let surfaceSize = !coordinator.isReaderPresented && readerSurfaceSize.width > 1 && readerSurfaceSize.height > 1
+                ? readerSurfaceSize : geometry.size
             Group {
                 if surfaceSize.width > 1, surfaceSize.height > 1 {
                     content(surfaceSize: surfaceSize)
@@ -660,7 +661,7 @@ struct ReaderHostView: View {
               abs(size.width - readerSurfaceSize.width) > 2 || abs(size.height - readerSurfaceSize.height) > 2 else { return }
         readerSurfaceSize = size
         guard coordinator.isReaderPresented else { return }
-        // iPad stays regular-height when rotated. Observe this exact surface,
+        // A fold or resize can preserve both size classes. Observe this exact surface,
         // not a size class or a preference that another subtree can overwrite.
         scheduleRefocusBurst(reason: "surfaceSize")
     }
@@ -673,7 +674,7 @@ struct ReaderHostView: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(AppTheme.foreground)
-                    .frame(width: AdaptiveLayout.isPad ? 44 : nil, height: AdaptiveLayout.isPad ? 44 : nil)
+                    .frame(width: horizontalSizeClass == .regular ? 44 : nil, height: horizontalSizeClass == .regular ? 44 : nil)
                     .contentShape(Rectangle())
             }
             .accessibilityIdentifier("readerMinimizeButton")
@@ -733,7 +734,7 @@ struct ReaderHostView: View {
 
     private var usesModeMenu: Bool {
         dynamicTypeSize.isAccessibilitySize
-            || (AdaptiveLayout.isPad && hostSize.width < 500)
+            || (hostSize.width > 0 && hostSize.width < 500)
             || modeControlWidth > min(260, max(140, hostSize.width * 0.58))
     }
 
@@ -800,12 +801,9 @@ struct ReaderHostView: View {
                 mode: mode,
                 refocusToken: refocusToken,
                 initialSurfaceSize: surfaceSize,
-                // The compact landscape controls are two local capsules, not
-                // a full-width bottom bar. `bottomContentOcclusion` describes
-                // only a full-width covered band; reporting 68pt here made
-                // Kobo discard visible text across the entire bottom of both
-                // columns, so playback reached its (truncated) snapshot end
-                // and turned while words were still visible on screen.
+                // The dock already reserves all playback controls outside this
+                // surface. Reporting another bottom occlusion would discard
+                // visible text and turn the native page before it is read.
                 bottomContentOcclusion:
                     ReaderPlaybackBarLayoutContract.bottomContentOcclusion(
                         controlsCoverFullWidth: false
@@ -868,7 +866,7 @@ struct ReaderHostView: View {
                 )
             }
         }
-        // Keep the same fixed 72pt boundary as Kindle in every state. Explain
+        // Keep the same fixed boundary for this viewport as Kindle. Explain
         // captions overflow upward as a visual overlay and never take layout
         // space, so WeRead/Google Books do not repaginate sentence by sentence.
         .frame(height: AdaptiveLayout.playbackHeight(in: hostSize))
@@ -1254,6 +1252,7 @@ struct ReaderHostView: View {
 /// The left playback area and right utility area receive equal width so the
 /// control deck stays visually stable as voice/status availability changes.
 struct ReaderPlaybackConsole<PlaybackControls: View>: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @Environment(\.appViewport) private var viewport
@@ -1318,7 +1317,7 @@ struct ReaderPlaybackConsole<PlaybackControls: View>: View {
                 Button(action: showTOC) {
                     Image(systemName: "list.bullet")
                         .font(.system(size: 20, weight: .semibold))
-                        .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: AdaptiveLayout.isPad ? 44 : 36)
+                        .frame(width: horizontalSizeClass == .regular ? 44 : 36, height: horizontalSizeClass == .regular ? 44 : 36)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -1357,6 +1356,7 @@ struct ReaderPlaybackConsole<PlaybackControls: View>: View {
 }
 
 struct ReaderPlaybackPageTurnButton: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     let direction: LiveWebPageTurnDirection
@@ -1370,7 +1370,7 @@ struct ReaderPlaybackPageTurnButton: View {
                     : "chevron.right"
             )
             .font(.system(size: 20, weight: .semibold))
-            .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: 44)
+            .frame(width: horizontalSizeClass == .regular ? 44 : 36, height: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -1393,6 +1393,7 @@ struct ReaderPlaybackPageTurnButton: View {
 // MARK: - 朗读控制条
 
 private struct ReadControlBar: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @ObservedObject var vm: ReadAloudViewModel
@@ -1436,7 +1437,7 @@ private struct ReadControlBar: View {
                         Button { vm.skipBackward() } label: {
                             Image(systemName: "gobackward.15")
                                 .font(.system(size: 20))
-                                .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: 44)
+                                .frame(width: horizontalSizeClass == .regular ? 44 : 36, height: 44)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -1471,7 +1472,7 @@ private struct ReadControlBar: View {
                         Button { vm.skipForward() } label: {
                             Image(systemName: "goforward.15")
                                 .font(.system(size: 20))
-                                .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: 44)
+                                .frame(width: horizontalSizeClass == .regular ? 44 : 36, height: 44)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -1518,6 +1519,7 @@ private struct ReadControlBar: View {
 }
 
 private struct ReaderLandscapeReadOverlay: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @ObservedObject var vm: ReadAloudViewModel
@@ -1554,7 +1556,7 @@ private struct ReaderLandscapeReadOverlay: View {
                         Button { vm.skipBackward() } label: {
                             Image(systemName: "gobackward.15")
                                 .font(.system(size: 19))
-                                .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: AdaptiveLayout.isPad ? 44 : 36)
+                                .frame(width: horizontalSizeClass == .regular ? 44 : 36, height: horizontalSizeClass == .regular ? 44 : 36)
                                 .contentShape(Rectangle())
                         }
                     }
@@ -1584,7 +1586,7 @@ private struct ReaderLandscapeReadOverlay: View {
                         Button { vm.skipForward() } label: {
                             Image(systemName: "goforward.15")
                                 .font(.system(size: 19))
-                                .frame(width: AdaptiveLayout.isPad ? 44 : 36, height: AdaptiveLayout.isPad ? 44 : 36)
+                                .frame(width: horizontalSizeClass == .regular ? 44 : 36, height: horizontalSizeClass == .regular ? 44 : 36)
                                 .contentShape(Rectangle())
                         }
                     }
@@ -1598,7 +1600,7 @@ private struct ReaderLandscapeReadOverlay: View {
                         Button(action: showTOC) {
                             Image(systemName: "list.bullet")
                                 .font(.system(size: 19, weight: .semibold))
-                                .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
+                                .frame(width: horizontalSizeClass == .regular ? 44 : 34, height: horizontalSizeClass == .regular ? 44 : 34)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -1645,6 +1647,7 @@ private struct ReaderLandscapeReadOverlay: View {
 }
 
 private struct ReaderLandscapeExplainOverlay: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @ObservedObject var vm: ExplainViewModel
@@ -1690,7 +1693,7 @@ private struct ReaderLandscapeExplainOverlay: View {
                             Button(action: showTOC) {
                                 Image(systemName: "list.bullet")
                                     .font(.system(size: 19, weight: .semibold))
-                                    .frame(width: AdaptiveLayout.isPad ? 44 : 34, height: AdaptiveLayout.isPad ? 44 : 34)
+                                    .frame(width: horizontalSizeClass == .regular ? 44 : 34, height: horizontalSizeClass == .regular ? 44 : 34)
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
@@ -1902,6 +1905,7 @@ enum SpeedMenuStyle {
 }
 
 struct SpeedMenu: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @Environment(\.appViewport) private var viewport
@@ -1930,7 +1934,7 @@ struct SpeedMenu: View {
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                 }
-                .frame(width: AdaptiveLayout.isPad ? 86 : 70, height: AdaptiveLayout.isPad ? 44 : 36)
+                .frame(width: horizontalSizeClass == .regular ? 86 : 70, height: horizontalSizeClass == .regular ? 44 : 36)
                 .background(AppTheme.surfaceVariant)
                 .foregroundColor(AppTheme.foreground)
                 .cornerRadius(8)
@@ -1953,7 +1957,7 @@ struct SpeedMenu: View {
                         .fixedSize(horizontal: true, vertical: false)
                 }
                 .foregroundStyle(AppTheme.foreground)
-                .frame(width: AdaptiveLayout.isPad ? 86 : 62, height: AdaptiveLayout.isPad ? 44 : 36)
+                .frame(width: horizontalSizeClass == .regular ? 86 : 62, height: horizontalSizeClass == .regular ? 44 : 36)
             }
             }.dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
@@ -1975,7 +1979,7 @@ struct SpeedMenu: View {
 
     @ViewBuilder
     private var speedPicker: some View {
-        if AdaptiveLayout.isPad {
+        if horizontalSizeClass == .regular {
             ScrollView { speedPickerContent }
                 .frame(width: 292, height: min(500, viewport.height > 0 ? max(1, viewport.height - 140) : 500))
                 .background(AppTheme.surface)

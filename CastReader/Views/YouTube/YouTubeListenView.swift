@@ -10,6 +10,7 @@ import SwiftUI
 import UIKit
 
 struct YouTubeListenView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @ObservedObject private var appearance = ReaderAppearanceSettings.shared
@@ -29,7 +30,7 @@ struct YouTubeListenView: View {
         Group {
             if let transcript {
                 GeometryReader { geometry in
-                let wide = AdaptiveLayout.isPad && geometry.size.width >= 900 && !dynamicTypeSize.isAccessibilitySize
+                let wide = geometry.size.width >= 900 && !dynamicTypeSize.isAccessibilitySize
                 let layout = wide ? AnyLayout(HStackLayout(alignment: .top, spacing: 0))
                                   : AnyLayout(VStackLayout(spacing: 0))
                 layout {
@@ -41,7 +42,7 @@ struct YouTubeListenView: View {
                         paragraphIndexes:
                             readVM.youtubeReadableParagraphIndexes,
                         documentLanguage: document.language,
-                        artworkMaxHeight: AdaptiveLayout.isPad ? min(200, max(70, geometry.size.height * 0.24)) : nil
+                        artworkMaxHeight: horizontalSizeClass == .regular ? min(200, max(70, geometry.size.height * 0.24)) : nil
                     )
                     .frame(width: wide ? 320 : nil)
                     Divider()
@@ -73,7 +74,7 @@ struct YouTubeListenView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
-                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.readingWidth : .infinity)
+                .frame(maxWidth: horizontalSizeClass == .regular ? AdaptiveLayout.readingWidth : .infinity)
                 .frame(maxWidth: .infinity)
             }
             .simultaneousGesture(

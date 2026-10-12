@@ -6,20 +6,30 @@ private struct AppViewportKey: EnvironmentKey {
     static let defaultValue = CGSize.zero
 }
 
+private struct BottomImportControlKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 extension EnvironmentValues {
     var appViewport: CGSize {
         get { self[AppViewportKey.self] }
         set { self[AppViewportKey.self] = newValue }
     }
+
+    var hasBottomImportControl: Bool {
+        get { self[BottomImportControlKey.self] }
+        set { self[BottomImportControlKey.self] = newValue }
+    }
 }
 
 enum AdaptiveLayout {
-    static var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
     static let pageWidth: CGFloat = 1100
     static let readingWidth: CGFloat = 800
-    static func stacksPlaybackControls(in size: CGSize) -> Bool { isPad && size.width > 0 && size.width < 500 }
-    static func playbackHeight(in size: CGSize) -> CGFloat { stacksPlaybackControls(in: size) ? 128 : 72 }
-    static func consoleHeight(in size: CGSize) -> CGFloat { stacksPlaybackControls(in: size) ? 120 : 64 }
+    // The compact playback and utility groups fit on one row at phone widths.
+    // Stack only when their combined controls no longer fit the actual viewport.
+    static func stacksPlaybackControls(in size: CGSize) -> Bool { size.width > 0 && size.width < 360 }
+    static func playbackHeight(in size: CGSize) -> CGFloat { stacksPlaybackControls(in: size) ? 104 : 72 }
+    static func consoleHeight(in size: CGSize) -> CGFloat { stacksPlaybackControls(in: size) ? 96 : 64 }
 
     static func usesCompactControls(size: CGSize, accessibility: Bool = false) -> Bool {
         !accessibility && size.width >= 600 && size.width > size.height && size.height < 600
@@ -30,19 +40,18 @@ enum AdaptiveLayout {
 /// Compact windows use the system sheet adaptation so every row stays reachable.
 private struct ReaderSettingsPresentation<Item: Identifiable, Panel: View>: ViewModifier {
     @Environment(\.appViewport) private var viewport
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Binding var item: Item?
     let panel: (Item) -> Panel
 
     @ViewBuilder func body(content: Content) -> some View {
-        if AdaptiveLayout.isPad {
-            content.popover(item: $item, attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) { value in
-                panel(value)
-                    .frame(width: min(420, viewport.width > 0 ? max(1, viewport.width - 32) : 420),
-                           height: min(600, viewport.height > 0 ? max(1, viewport.height - 140) : 600))
-                    .presentationCompactAdaptation(.sheet)
-            }
-        } else {
-            content.sheet(item: $item, content: panel)
+        // One presentation modifier preserves its source view and open panel
+        // when the same scene moves between compact and regular width.
+        content.popover(item: $item, attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) { value in
+            panel(value)
+                .frame(width: horizontalSizeClass == .regular ? min(420, viewport.width > 0 ? max(1, viewport.width - 32) : 420) : nil,
+                       height: horizontalSizeClass == .regular ? min(600, viewport.height > 0 ? max(1, viewport.height - 140) : 600) : nil)
+                .presentationCompactAdaptation(.sheet)
         }
     }
 }
@@ -57,66 +66,17 @@ extension View {
 
 /// A form can grow beyond a short landscape window without hiding its actions.
 struct AdaptiveFormScroll<Content: View>: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ViewBuilder var content: () -> Content
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
                 content()
-                    .frame(maxWidth: AdaptiveLayout.isPad ? 680 : .infinity)
+                    .frame(maxWidth: horizontalSizeClass == .regular ? 680 : .infinity)
                     .frame(minHeight: geometry.size.height)
                     .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
-        }
-    }
-}
-
-/// Overlays do not participate in their host's keyboard avoidance. Measure the
-/// docked keyboard in this view's own window and reserve its intersection once,
-/// instead of letting a fixed-height nested NavigationStack subtract it again.
-struct WindowKeyboardInsetReader: UIViewRepresentable {
-    @Binding var inset: CGFloat
-    func makeUIView(context: Context) -> Probe {
-        let view = Probe()
-        view.changed = { value in
-            DispatchQueue.main.async { if abs(inset - value) > 0.5 { inset = value } }
-        }
-        return view
-    }
-    func updateUIView(_ view: Probe, context: Context) {}
-
-    final class Probe: UIView {
-        var changed: ((CGFloat) -> Void)?
-        private var keyboardFrame: CGRect?
-        override init(frame: CGRect) {
-            super.init(frame: frame)
-            isUserInteractionEnabled = false
-            NotificationCenter.default.addObserver(self, selector: #selector(keyboardChanged),
-                name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
-            NotificationCenter.default.addObserver(self, selector: #selector(keyboardHidden),
-                name: UIResponder.keyboardWillHideNotification, object: nil)
-        }
-        required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-        deinit { NotificationCenter.default.removeObserver(self) }
-        override func layoutSubviews() { super.layoutSubviews(); measure() }
-        @objc private func keyboardChanged(_ note: Notification) {
-            guard let window, containsFirstResponder(window) else { return }
-            keyboardFrame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
-            measure()
-        }
-        @objc private func keyboardHidden(_ note: Notification) { keyboardFrame = nil; changed?(0) }
-        private func containsFirstResponder(_ view: UIView) -> Bool {
-            view.isFirstResponder || view.subviews.contains(where: containsFirstResponder)
-        }
-        private func measure() {
-            guard let window, let keyboardFrame else { changed?(0); return }
-            let keyboard = window.convert(keyboardFrame, from: window.screen.coordinateSpace)
-            let container = convert(bounds, to: window)
-            let intersection = container.intersection(keyboard)
-            // Floating keyboards are movable and must not collapse the whole panel.
-            let docked = keyboard.maxY >= window.bounds.maxY - 1 &&
-                intersection.width >= container.width * 0.8
-            changed?(docked && !intersection.isNull ? max(0, intersection.height) : 0)
         }
     }
 }
@@ -146,9 +106,13 @@ private struct ReaderWindowControlInsets: ViewModifier {
                 isAccessibilityElement = false
             }
             required init?(coder: NSCoder) { fatalError("init(coder:) is unavailable") }
+            override func safeAreaInsetsDidChange() {
+                super.safeAreaInsetsDidChange()
+                setNeedsLayout()
+            }
             override func layoutSubviews() {
                 super.layoutSubviews()
-                guard AdaptiveLayout.isPad, #available(iOS 26.0, *) else { return }
+                guard #available(iOS 26.0, *) else { return }
                 let insets = directionalEdgeInsets(for: .safeArea(cornerAdaptation: .horizontal))
                 // Header content already has a 14–16 point horizontal inset.
                 let start = max(0, insets.leading - 14)

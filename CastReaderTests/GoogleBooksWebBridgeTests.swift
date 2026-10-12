@@ -2121,6 +2121,174 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         XCTAssertFalse(inbox.messages.contains { ($0.payload["reason"] as? String) == "manual" || ($0.payload["reason"] as? String) == "auto" })
     }
 
+    func testGooglePausedExplanationRecoversSourceWithoutVisibleNeighbors() async throws {
+        try await verifyPausedGoogleExplanationReflow(sourceAvailability: "unique")
+    }
+
+    func testGooglePausedExplanationMissingSourceStopsRetrying() async throws {
+        try await verifyPausedGoogleExplanationReflow(sourceAvailability: "missing")
+    }
+
+    func testGooglePausedExplanationRepeatedSourceNeverChoosesAPage() async throws {
+        try await verifyPausedGoogleExplanationReflow(sourceAvailability: "repeated")
+    }
+
+    func testGooglePausedExplanationShortSourceNeverScansPages() async throws {
+        try await verifyPausedGoogleExplanationReflow(sourceAvailability: "short")
+    }
+
+    /// Exercises the real native page route and the existing Google DOM bundle
+    /// after origin validation. Origin policy itself has separate tests: this
+    /// local fixture cannot impersonate Google's cross-origin reader iframe.
+    private func verifyPausedGoogleExplanationReflow(sourceAvailability: String) async throws {
+        let oldAutoPlay = AppSettings.shared.autoPlay
+        AppSettings.shared.autoPlay = false
+        let audio = AudioPlayerService.shared
+        audio.stop()
+        defer { AppSettings.shared.autoPlay = oldAutoPlay; audio.stop() }
+        let source = sourceAvailability == "short" ? "A short source."
+            : "The exact retained explanation source survives a reset to the unrelated chapter opening."
+        let url = "https://play.google.com/books/reader?id=b_40EQAAQBAJ"
+        let document = ReadingDocument(id: UUID().uuidString, title: "Paused explanation reflow",
+            sourceKind: .googleBooks, language: "en", paragraphs: [], sourceURL: url)
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let read = ReadAloudViewModel(document: document, historyStore: HistoryStore(directory: directory))
+        let explain = ExplainViewModel(document: document)
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .googleBooks,
+            bookID: document.id, readerURL: url)
+        bridge.attach(readVM: read, explainVM: explain)
+        bridge.webView = webView
+        inbox.onMessage = { type, payload in
+            if type == "rendered" { bridge.receiveGoogleBooksPageForTesting(payload) }
+        }
+        defer {
+            inbox.onMessage = nil
+            explain.stop(); explain.deactivate(); read.stop(); read.deactivate()
+            try? FileManager.default.removeItem(at: directory)
+        }
+        let sourceLiteral = try javaScriptStringLiteral(source)
+        let availabilityLiteral = try javaScriptStringLiteral(sourceAvailability)
+        webView.loadHTMLString("""
+        <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>html,body{margin:0;width:100%;height:100%;overflow:hidden}
+        reader-page{position:absolute;top:0;display:block}reader-rendered-page{display:block}
+        .gb-segment{font:20px/30px Georgia;padding:20px}p{margin:0}</style></head><body>
+        <reader-horizontal-view><ol><li class="onepage">
+        <reader-page id="page-0-0" class="-gb-loaded" style="left:1000px"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>Earlier unrelated chapter opening.</p></div></reader-rendered-page></reader-page>
+        <reader-page id="page-0-1" class="-gb-loaded" style="left:1000px"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>A different intervening native page.</p></div></reader-rendered-page></reader-page>
+        <reader-page id="page-0-2" class="shown -gb-loaded" style="left:0"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p></p></div></reader-rendered-page></reader-page>
+        </li></ol></reader-horizontal-view>
+        <button id="next" onclick="window.turns++;showPage(Math.min(2,window.currentPage+1))"><mat-icon>chevron_right</mat-icon></button>
+        <script>
+        window.currentPage=2;window.turns=0;window.sourceRequests=[];
+        document.querySelector('#page-0-2 p').textContent=\(sourceLiteral);
+        window.showPage=index=>{window.currentPage=index;document.querySelectorAll('reader-page').forEach((p,i)=>{
+          p.classList.toggle('shown',i===index);p.style.left=i===index?'0px':'1000px'});};
+        window.resetForReflow=()=>{
+          const availability=\(availabilityLiteral);
+          if(availability==='missing')document.querySelector('#page-0-2 p').textContent='An unrelated replacement native page.';
+          if(availability==='repeated')document.querySelector('#page-0-1 p').textContent=\(sourceLiteral);
+          CR.clearMarks();showPage(0);CastReaderGoogleBooks.refresh({});
+        };
+        </script></body></html>
+        """, baseURL: URL(string: "https://books.googleusercontent.com/books/reader/frame"))
+        for _ in 0..<160 where explain.stagedLiveWebParagraphTexts != [source] {
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [source])
+        bridge.setActive(readMode: false)
+        explain.currentBlockIndex = 0
+        let mark = ResolvedMark(id: UUID(), paragraphIndex: 0, charRange: 2..<12,
+            action: "underline", n: nil, seed: 17)
+        explain.activeMarks = [mark]
+        explain.pauseOwnedPlayback()
+        let session = try XCTUnwrap(audio.activePlaybackSession)
+        let clock = audio.currentTime
+        func state() async throws -> [String: Any] {
+            let value = try await webView.evaluateJavaScript("""
+            (()=>({page:window.currentPage,turns:window.turns,requests:window.sourceRequests.length,
+              ink:[...document.querySelectorAll('svg[data-cr-marks] path')].filter(p=>{
+                const r=p.getBoundingClientRect();return r.width>0&&r.height>0&&r.left<innerWidth&&r.right>0&&r.top<innerHeight&&r.bottom>0;
+              }).length}))()
+            """)
+            return try XCTUnwrap(value as? [String: Any])
+        }
+        var initial = try await state()
+        for _ in 0..<100 where (initial["ink"] as? Int ?? 0) == 0 {
+            try await Task.sleep(for: .milliseconds(25)); initial = try await state()
+        }
+        XCTAssertGreaterThan(initial["ink"] as? Int ?? 0, 0, "The original mark must really paint before reflow")
+        _ = try await webView.evaluateJavaScript("""
+        // The local reader frame has no enclosing Google shell. Delegate its
+        // native command directly to the same adapter the shell relay targets.
+        (()=>{CR.gbRefresh=arg=>{
+          if(typeof arg?.reflowSourceText==='string')sourceRequests.push(arg);
+          return CastReaderGoogleBooks.refresh(arg)};resetForReflow();return true})()
+        """)
+        var result = try await state()
+        for _ in 0..<240 {
+            if sourceAvailability == "short" { break }
+            if sourceAvailability == "unique", result["page"] as? Int == 2,
+               (result["ink"] as? Int ?? 0) > 0 { break }
+            if sourceAvailability != "unique", (result["requests"] as? Int ?? 0) >= 1 { break }
+            try await Task.sleep(for: .milliseconds(25)); result = try await state()
+        }
+        if sourceAvailability == "unique" {
+            XCTAssertEqual(result["turns"] as? Int, 2, "Follow verified native pages to the retained source")
+            XCTAssertEqual(result["requests"] as? Int, 2)
+            XCTAssertGreaterThan(result["ink"] as? Int ?? 0, 0, "The paused mark must repaint without a new clock tick")
+            _ = try await webView.evaluateJavaScript("resetForReflow();true")
+            for _ in 0..<240 {
+                result = try await state()
+                if result["turns"] as? Int == 4, (result["ink"] as? Int ?? 0) > 0 { break }
+                try await Task.sleep(for: .milliseconds(25))
+            }
+            XCTAssertEqual(result["requests"] as? Int, 4, "Successfully painted marks release the budget for the next resize")
+            XCTAssertEqual(result["turns"] as? Int, 4)
+            XCTAssertGreaterThan(result["ink"] as? Int ?? 0, 0)
+        } else {
+            // A same-signature miss returns another refresh. It must not reset
+            // the attempt set and recursively ask JS to find the same source.
+            try await Task.sleep(for: .milliseconds(600)); result = try await state()
+            XCTAssertEqual(result["requests"] as? Int, sourceAvailability == "short" ? 0 : 1)
+            XCTAssertEqual(result["turns"] as? Int, 0)
+            XCTAssertEqual(result["ink"] as? Int, 0, "Unrelated source must never receive old marks")
+            if sourceAvailability == "missing" {
+                var signatures = Set<String>()
+                for i in 1...4 {
+                    let revision = "Unrelated layout revision \(i)."
+                    _ = try await webView.callAsyncJavaScript("document.querySelector('#page-0-0 p').textContent=text;CastReaderGoogleBooks.refresh({});",
+                        arguments: ["text": revision], in: nil, contentWorld: .page)
+                    // The real adapter coalesces changes until geometry has
+                    // settled. Wait for native adoption, not a shorter timer
+                    // that merely cancels the previous candidate refresh.
+                    for _ in 0..<160 where read.stagedLiveWebParagraphTexts != [revision] {
+                        try await Task.sleep(for: .milliseconds(25))
+                    }
+                    XCTAssertEqual(read.stagedLiveWebParagraphTexts, [revision])
+                    let event = try XCTUnwrap(inbox.messages.last { event in
+                        event.type == "rendered" && paragraphs(event.payload).first?["text"] as? String == revision
+                    })
+                    XCTAssertTrue(signatures.insert(try XCTUnwrap(event.payload["signature"] as? String)).inserted,
+                        "Each attempt must be backed by a distinct committed native signature")
+                    result = try await state()
+                    XCTAssertEqual(result["requests"] as? Int, min(i + 1, 3))
+                }
+                result = try await state()
+                XCTAssertEqual(result["requests"] as? Int, 3, "Different reflow signatures share a bounded recovery budget")
+                XCTAssertEqual(result["turns"] as? Int, 0)
+            }
+        }
+        XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [source])
+        XCTAssertEqual(explain.activeMarks, [mark])
+        XCTAssertEqual(explain.currentBlockIndex, 0)
+        XCTAssertTrue(explain.ownsPlaybackSession)
+        XCTAssertEqual(audio.activePlaybackSession, session)
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertEqual(audio.currentTime, clock, accuracy: 0.01)
+    }
+
     func testIdenticalPausedWordIsRepaintedAfterDOMInvalidation() async throws {
         let document = ReadingDocument(id: UUID().uuidString, title: "Reflow contract", sourceKind: .kobo,
             language: "en", paragraphs: [], sourceURL: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001")

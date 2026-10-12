@@ -66,7 +66,7 @@ final class PDFReaderContainerView: UIView {
         let anchorPoint = anchorPage.map { pdfView.convert(center, to: $0) }
         viewport = bounds.size
         pdfView.frame = bounds
-        guard AdaptiveLayout.isPad, pdfView.document != nil else { return }
+        guard pdfView.document != nil else { return }
         pdfView.layoutIfNeeded()
         let fit = pdfView.scaleFactorForSizeToFit
         guard fit.isFinite, fit > 0 else { return }
@@ -559,7 +559,7 @@ struct PDFReaderView: UIViewRepresentable {
             if para.pdfRange == nil {
                 let rects = PDFOCRGeometry.rects(para, page: page)
                 for rect in rects {
-                    let ann = PDFAnnotation(bounds: rect, forType: .highlight, withProperties: nil)
+                    let ann = PDFReadingHighlightAnnotation(bounds: rect)
                     ann.color = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.22)
                     page.addAnnotation(ann)
                     shown.append((page, ann))
@@ -584,7 +584,7 @@ struct PDFReaderView: UIViewRepresentable {
                 for p in lineSel.pages {
                     let b = PDFSelectionGeometry.bounds(of: lineSel, on: p)
                     if b.isNull || b.width < 1 || b.height < 1 { continue }
-                    let ann = PDFAnnotation(bounds: b, forType: .highlight, withProperties: nil)
+                    let ann = PDFReadingHighlightAnnotation(bounds: b)
                     ann.color = color
                     p.addAnnotation(ann)
                     shown.append((p, ann))
@@ -664,7 +664,7 @@ struct PDFReaderView: UIViewRepresentable {
                 wordAnn = nil
                 for index in range where para.words.indices.contains(index) {
                     let rect = PDFOCRGeometry.pageRect(para.words[index].bboxNorm, page: page)
-                    let ann = PDFAnnotation(bounds: rect, forType: .highlight, withProperties: nil)
+                    let ann = PDFReadingHighlightAnnotation(bounds: rect)
                     ann.color = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.5)
                     page.addAnnotation(ann); ocrWordAnnotations.append((page, ann))
                 }
@@ -700,12 +700,31 @@ struct PDFReaderView: UIViewRepresentable {
             guard !rect.isNull, rect.width > 1, rect.height > 1 else { return }   // 没定位到 → 保留上一个词高亮
             if let prev = wordAnn { prev.page.removeAnnotation(prev.ann) }
             let color = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.5)
-            let ann = PDFAnnotation(bounds: rect, forType: .highlight, withProperties: nil)
+            let ann = PDFReadingHighlightAnnotation(bounds: rect)
             ann.color = color
             page.addAnnotation(ann)
             wordAnn = (page, ann)
             revealWord(rect, page: page)
         }
+    }
+}
+
+/// Native PDF highlights multiply their color into the page, disappearing on
+/// black backgrounds. Draw a translucent overlay so both dark and light source
+/// pages retain the sentence and word highlight without changing source colors.
+final class PDFReadingHighlightAnnotation: PDFAnnotation {
+    init(bounds: CGRect) {
+        super.init(bounds: bounds, forType: .stamp, withProperties: nil)
+    }
+
+    required init?(coder: NSCoder) { super.init(coder: coder) }
+
+    override func draw(with box: PDFDisplayBox, in context: CGContext) {
+        context.saveGState()
+        context.setBlendMode(.normal)
+        context.setFillColor(color.cgColor)
+        context.fill(bounds)
+        context.restoreGState()
     }
 }
 
@@ -760,7 +779,7 @@ final class HandwrittenPDFAnnotation: PDFAnnotation {
             stroke = primaryColor
             lineWidth = (local.map { $0.height }.max() ?? 18) * 0.85 * wMul
             alpha = 0.28
-            context.setBlendMode(.multiply)
+            context.setBlendMode(.normal)
         case "circle":
             path = HandwrittenMark.circlePath(around: local, seed: markSeed)
             stroke = primaryColor

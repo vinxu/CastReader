@@ -715,13 +715,59 @@ final class KindleWebViewContainerTests: XCTestCase {
         XCTAssertEqual(before["resizes"] as? Int, restored["resizes"] as? Int)
     }
 
-    private func settleDock(host: UIView, container: KindleWebViewContainer, size: CGSize) async throws {
+    func testFoldSizeChangesKeepReaderMountedAndReserveCurrentPlaybackDock() async throws {
+        let fixture = try await ContainerFixture.make()
+        defer { fixture.close() }
+        let state = DockFixtureState()
+        let controls = UIView()
+        fixture.container.crop = .identity
+        let initial = CGSize(width: 375, height: 650)
+        state.compact = false
+        let host = UIHostingController(rootView: DockLayoutFixture(
+            container: fixture.container, controls: controls, state: state, size: initial
+        ))
+        host.view.frame = CGRect(origin: .zero, size: initial)
+        fixture.window.addSubview(host.view)
+        defer { host.view.removeFromSuperview() }
+        try await settleDock(host: host.view, container: fixture.container, size: initial, dockHeight: 72)
+        _ = try await fixture.webView.evaluateJavaScript("window.duoReaderIdentity='same-live-reader'")
+
+        let viewports: [(CGSize, CGFloat)] = [
+            (CGSize(width: 900, height: 650), 72),
+            (CGSize(width: 780, height: 320), 68),
+            (initial, 72),
+            (CGSize(width: 320, height: 650), 104),
+            (initial, 72)
+        ]
+        for (size, dockHeight) in viewports {
+            state.compact = AdaptiveLayout.usesCompactControls(size: size)
+            host.rootView = DockLayoutFixture(
+                container: fixture.container, controls: controls, state: state, size: size
+            )
+            host.view.frame = CGRect(origin: .zero, size: size)
+            try await settleDock(host: host.view, container: fixture.container, size: size, dockHeight: dockHeight)
+            let viewport = try await fixture.metrics()
+            XCTAssertEqual(try number(viewport, "width"), Double(fixture.webView.bounds.width), accuracy: 1)
+            XCTAssertEqual(try number(viewport, "height"), Double(fixture.webView.bounds.height), accuracy: 1)
+            let identity = try await fixture.webView.evaluateJavaScript("window.duoReaderIdentity") as? String
+            XCTAssertEqual(identity, "same-live-reader")
+            XCTAssertTrue(fixture.webView.superview === fixture.container)
+            XCTAssertEqual(state.readerMounts, 1, "Changing control layout must not remount the reading surface")
+            let readerFrame = fixture.container.convert(fixture.container.bounds, to: host.view)
+            let controlFrame = controls.convert(controls.bounds, to: host.view)
+            XCTAssertLessThanOrEqual(readerFrame.maxY, controlFrame.minY,
+                                     "The current playback dock must remain outside the readable viewport")
+        }
+    }
+
+    private func settleDock(host: UIView, container: KindleWebViewContainer, size: CGSize,
+                            dockHeight: CGFloat = ReaderPlaybackBarLayoutContract.landscapeControlHeight) async throws {
         for _ in 0..<40 {
             host.setNeedsLayout()
             host.layoutIfNeeded()
             container.layoutIfNeeded()
             if abs(container.bounds.width - size.width) <= 1,
-               abs(container.bounds.height - (size.height - ReaderPlaybackBarLayoutContract.landscapeControlHeight)) <= 1 {
+               abs(container.bounds.height - (size.height - dockHeight)) <= 1 {
                 try await Task.sleep(nanoseconds: 120_000_000)
                 return
             }
@@ -1005,6 +1051,8 @@ private final class ContainerFixture {
 @MainActor
 private final class DockFixtureState: ObservableObject {
     @Published var controlsHidden = false
+    @Published var compact = true
+    var readerMounts = 0
 }
 
 private struct DockLayoutFixture: View {
@@ -1014,14 +1062,15 @@ private struct DockLayoutFixture: View {
     let size: CGSize
 
     var body: some View {
-        KindleReaderPlaybackDock(isLandscape: true) {
-            DockNativeView(view: container)
+        KindleReaderPlaybackDock(isLandscape: state.compact) {
+            DockNativeView(view: container, onMake: { state.readerMounts += 1 })
         } playback: {
             DockNativeView(view: controls)
                 .frame(width: 360, height: 56)
                 .padding(.bottom, 8)
                 .opacity(state.controlsHidden ? 0 : 1)
         }
+        .environment(\.appViewport, size)
         .frame(width: size.width, height: size.height)
         .ignoresSafeArea()
     }
@@ -1029,6 +1078,7 @@ private struct DockLayoutFixture: View {
 
 private struct DockNativeView: UIViewRepresentable {
     let view: UIView
-    func makeUIView(context: Context) -> UIView { view }
+    var onMake: (() -> Void)? = nil
+    func makeUIView(context: Context) -> UIView { onMake?(); return view }
     func updateUIView(_ uiView: UIView, context: Context) { }
 }

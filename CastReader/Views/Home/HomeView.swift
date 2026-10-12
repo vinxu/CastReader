@@ -237,6 +237,8 @@ enum VoiceGiftHomeEntryPolicy {
 }
 
 struct HomeView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.hasBottomImportControl) private var hasBottomImportControl
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var readerScene: ReaderSceneContext
     let shareInboxUnreadCount: Int
@@ -378,7 +380,7 @@ struct HomeView: View {
                     }
                 }
                 .padding(HomeLayout.pageInset)
-                .frame(maxWidth: AdaptiveLayout.isPad ? AdaptiveLayout.pageWidth : .infinity)
+                .frame(maxWidth: horizontalSizeClass == .regular ? AdaptiveLayout.pageWidth : .infinity)
                 .frame(maxWidth: .infinity)
             }
             // Inside the NavigationView on purpose — an inset applied outside it
@@ -389,7 +391,7 @@ struct HomeView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     // 收件箱下沉到设置里（低频入口），未读数由头像上的红点接手。
-                    if AdaptiveLayout.isPad {
+                    if !hasBottomImportControl {
                         Button { importRouter.openQuickImport() } label: {
                             Image(systemName: "plus.circle.fill")
                                 .frame(minWidth: 44, minHeight: 44)
@@ -1183,7 +1185,7 @@ struct HomeView: View {
         struct Once { static var done = false }
         guard !Once.done else { return }
         if let path = UserDefaults.standard.string(forKey: "CastReaderAcceptanceDocumentPath"),
-           let format = SupportedDocumentFormat(rawValue: URL(fileURLWithPath: path).pathExtension.lowercased()),
+           let format = SupportedDocumentFormat(fileExtension: URL(fileURLWithPath: path).pathExtension),
            let boundary = AccountContentIsolation.captureBoundaryToken() {
             Once.done = true
             accountScopedImportTask = Task {

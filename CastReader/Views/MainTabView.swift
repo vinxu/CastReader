@@ -95,6 +95,7 @@ private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UITabBar {
         let bar = UITabBar()
+        bar.accessibilityIdentifier = "compactNavigationBar"
         bar.items = [
             UITabBarItem(title: AppLocalized("首页"), image: UIImage(systemName: "house.fill"), tag: 0),
             UITabBarItem(title: nil, image: plusImage, tag: 1),
@@ -144,10 +145,11 @@ private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
 struct MainTabView: View {
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     /// Where the floating player sits. Purely visual — the space tab content
     /// gives up for it is measured, not derived from this number, so the two can
     /// no longer drift apart.
-    private static var miniPlayerBottomPadding: CGFloat { AdaptiveLayout.isPad ? 12 : 68 }
+    private var legacyMiniPlayerBottomPadding: CGFloat { legacyUsesPadNavigation ? 12 : 68 }
     private static let rootSpace = "mainTabRoot"
 
     private enum LibraryOnboardingPostDismissAction {
@@ -185,6 +187,7 @@ struct MainTabView: View {
     private let audioPlayer = AudioPlayerService.shared
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     @State private var viewport = CGSize.zero
     @Environment(\.requestReview) private var requestReview
     @SceneStorage("reader.selectedTab") private var selectedTab: Int = 0
@@ -256,6 +259,7 @@ struct MainTabView: View {
                 .modifier(ReaderDropImport(scene: readerScene))
                 .readerSceneEnvironment(readerScene)
                 .environment(\.appViewport, geometry.size)
+                .environment(\.hasBottomImportControl, hasBottomImportControl)
                 .background(ReaderKeyboardRegistration(scene: readerScene, actions: windowKeyboardActions))
                 .onAppear { viewport = geometry.size }
                 .onChange(of: geometry.size) { viewport = $0 }
@@ -269,14 +273,17 @@ struct MainTabView: View {
     private var windowKeyboardActions: [ReaderWindowCommand: () -> Void] {
         guard !playbackVoicePanel.isPresented, !studyBoostRouter.isPresented,
               youtubeExtractionPresentation == nil else { return [:] }
-        return [
+        var actions: [ReaderWindowCommand: () -> Void] = [
             .home: { minimizeReaders(); selectedTab = 0 },
-            .library: { minimizeReaders(); selectedTab = 3 },
             .voices: { minimizeReaders(); selectedTab = 2 },
-            .settings: { minimizeReaders(); selectedTab = 4 },
-            .importContent: { minimizeReaders(); selectedTab = 0; importRouter.openQuickImport() },
-            .newWindow: { openWindow(id: "main") }
+            .importContent: { minimizeReaders(); selectedTab = 0; importRouter.openQuickImport() }
         ]
+        if supportsDirectLibraryAndSettingsTabs {
+            actions[.library] = { minimizeReaders(); selectedTab = 3 }
+            actions[.settings] = { minimizeReaders(); selectedTab = 4 }
+        }
+        if supportsMultipleWindows { actions[.newWindow] = { openWindow(id: "main") } }
+        return actions
     }
 
     private func minimizeReaders() {
@@ -293,9 +300,39 @@ struct MainTabView: View {
         return true
     }
 
+    // Compatibility only: iOS 17's original navigation owner and tag set must
+    // survive compact iPad resizing. NavigationSplitView collapses its own
+    // columns; replacing it with TabView here would discard the selected page.
+    private var legacyUsesPadNavigation: Bool {
+        (readerScene.window?.traitCollection.userInterfaceIdiom ?? UIDevice.current.userInterfaceIdiom) == .pad
+    }
+
+    private var usesLegacyNavigationChrome: Bool {
+        if #available(iOS 18.0, *) { return usesLegacySidebar && legacyUsesPadNavigation }
+        return true
+    }
+
+    private var supportsDirectLibraryAndSettingsTabs: Bool {
+        if #available(iOS 18.0, *) { return true }
+        return legacyUsesPadNavigation
+    }
+
+    private var hasBottomImportControl: Bool {
+        if usesLegacyNavigationChrome { return !legacyUsesPadNavigation }
+        return horizontalSizeClass != .regular
+    }
+
+    private var nativeTabBarVisibility: Visibility {
+        if importRouter.hideMainChrome { return .hidden }
+        // iOS 17 phones use their native three-item bar, including import.
+        // Only the modern compact shell supplies a separate custom bar.
+        if usesLegacyNavigationChrome { return .visible }
+        return horizontalSizeClass == .regular ? .automatic : .hidden
+    }
+
     @ViewBuilder
     private var adaptiveTabs: some View {
-        if AdaptiveLayout.isPad && usesLegacySidebar {
+        if usesLegacySidebar && legacyUsesPadNavigation {
             NavigationSplitView {
                 List(selection: Binding<Int?>(get: { selectedTab }, set: { if let value = $0 { selectedTab = value } })) {
                     NavigationLink(value: 0) { Label("首页", systemImage: "house.fill") }
@@ -308,18 +345,26 @@ struct MainTabView: View {
             } detail: {
                 tabPage(selectedTab)
             }
-        } else if AdaptiveLayout.isPad {
-            if #available(iOS 18.0, *) { tabs.tabViewStyle(.sidebarAdaptable) }
-            else { tabs }
-        } else if #available(iOS 26.0, *) {
-            iPhoneTabs
+        } else if #available(iOS 18.0, *) {
+            tabs
+                .tabViewStyle(.sidebarAdaptable)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    modernBottomChrome
+                }
         } else {
             tabs
         }
     }
 
     private var tabOrder: [Int] {
-        let order = AdaptiveLayout.isPad ? [0, 3, 2, 4] : [0, 1, 2]
+        let order: [Int]
+        if #available(iOS 18.0, *) {
+            // Keep every page and tag present across folds. Only navigation
+            // chrome adapts; the selected page and its navigation state survive.
+            order = [0, 3, 2, 4]
+        } else {
+            order = legacyUsesPadNavigation ? [0, 3, 2, 4] : [0, 1, 2]
+        }
         return appLanguage.selectedLanguage.isRightToLeft ? order.reversed() : order
     }
 
@@ -327,12 +372,18 @@ struct MainTabView: View {
         TabView(selection: $selectedTab) {
             ForEach(tabOrder, id: \.self) { tab in
                 if tab == 1 {
-                    Color.clear.tabItem {
-                        Image(uiImage: Self.plusTabImage).renderingMode(.original)
-                        Text("")
-                    }.tag(tab)
+                    Color.clear
+                        .toolbar(nativeTabBarVisibility, for: .tabBar)
+                        .tabItem {
+                            Image(uiImage: Self.plusTabImage).renderingMode(.original)
+                            Text("")
+                        }.tag(tab)
                 } else {
                     tabPage(tab)
+                        // The selected page owns the one visibility policy.
+                        // An outer `.visible` preference can otherwise bring
+                        // native tabs back over compact navigation after a fold.
+                        .toolbar(nativeTabBarVisibility, for: .tabBar)
                         .environment(\.locale, appLanguage.locale)
                         .environment(\.layoutDirection, appLanguage.selectedLanguage.isRightToLeft ? .rightToLeft : .leftToRight)
                         .tabItem {
@@ -354,38 +405,39 @@ struct MainTabView: View {
         .environment(\.layoutDirection, .leftToRight)
     }
 
-    private var iPhoneTabs: some View {
-        ZStack {
-            tabPage(0)
-                .opacity(selectedTab == 0 ? 1 : 0)
-                .allowsHitTesting(selectedTab == 0)
-                .accessibilityHidden(selectedTab != 0)
-            tabPage(2)
-                .opacity(selectedTab == 2 ? 1 : 0)
-                .allowsHitTesting(selectedTab == 2)
-                .accessibilityHidden(selectedTab != 2)
-            if selectedTab == 3 || selectedTab == 4 {
-                tabPage(selectedTab)
-            }
-        }
-        .animation(nil, value: selectedTab)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+    private var modernBottomChrome: some View {
+        VStack(spacing: 12) {
             if !importRouter.hideMainChrome {
-                iPhoneTabBar
-                    .background {
-                        GeometryReader { proxy in
-                            Color.clear.preference(
-                                key: FloatingTabBarTopKey.self,
-                                value: proxy.frame(in: .named(Self.rootSpace)).minY
-                            )
+                if offlineCenter.showsMiniPlayer || coordinator.showsMiniPlayer || kindleCenter.showsMiniPlayer {
+                    miniPlayer
+                        .background(miniPlayerTopReporter)
+                }
+                if horizontalSizeClass != .regular {
+                    iPhoneTabBar
+                        .background {
+                            GeometryReader { proxy in
+                                Color.clear.preference(
+                                    key: FloatingTabBarTopKey.self,
+                                    value: proxy.frame(in: .named(Self.rootSpace)).minY
+                                )
+                            }
                         }
-                    }
-                    .padding(.bottom, 6)
-                    .offset(y: max(0, (readerScene.window?.safeAreaInsets.bottom ?? 34) - 14))
+                        .padding(.bottom, 6)
+                }
             }
         }
         .onChange(of: selectedTab) { newTab in
             if newTab != 2 { VoiceSamplePlayer.shared.stop() }
+        }
+    }
+
+    @ViewBuilder private var miniPlayer: some View {
+        if offlineCenter.showsMiniPlayer {
+            KindleOfflineMiniPlayer(center: offlineCenter)
+        } else if coordinator.showsMiniPlayer {
+            MiniPlayerView(coordinator: coordinator)
+        } else if kindleCenter.showsMiniPlayer {
+            KindleMiniPlayerView(center: kindleCenter)
         }
     }
 
@@ -474,28 +526,16 @@ struct MainTabView: View {
                 }
             }
 
-            if !AdaptiveLayout.isPad && !importRouter.hideMainChrome {
-                if #available(iOS 26.0, *) { EmptyView() }
-                else { plusTapTarget }
+            if usesLegacyNavigationChrome && !legacyUsesPadNavigation && !importRouter.hideMainChrome {
+                plusTapTarget
             }
 
             // Mini Player 悬浮在 tab bar 上方（有会话且阅读器收起时）
-            if !importRouter.hideMainChrome {
-                if offlineCenter.showsMiniPlayer {
-                    KindleOfflineMiniPlayer(center: offlineCenter)
-                        .padding(.bottom, Self.miniPlayerBottomPadding)
-                        .background(miniPlayerTopReporter)
-                } else if coordinator.showsMiniPlayer {
-                    MiniPlayerView(coordinator: coordinator)
-                        .padding(.bottom, Self.miniPlayerBottomPadding)
-                        .background(miniPlayerTopReporter)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                } else if kindleCenter.showsMiniPlayer {
-                    KindleMiniPlayerView(center: kindleCenter)
-                        .padding(.bottom, Self.miniPlayerBottomPadding)
-                        .background(miniPlayerTopReporter)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
+            if usesLegacyNavigationChrome && !importRouter.hideMainChrome {
+                miniPlayer
+                    .padding(.bottom, legacyMiniPlayerBottomPadding)
+                    .background(miniPlayerTopReporter)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
             // 阅读器常驻顶层（会话存活期间）：用上移/下移替代 fullScreenCover 的 present/dismiss，
@@ -610,7 +650,6 @@ struct MainTabView: View {
         .onReceive(importRouter.$cloudReconnectRequest.compactMap { $0 }) { _ in
             selectedTab = 0
         }
-        .toolbar(importRouter.hideMainChrome ? .hidden : .visible, for: .tabBar)
         .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
         .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
         .animation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
@@ -673,7 +712,11 @@ struct MainTabView: View {
                     : routePendingSystemActionIfAvailable()
                 if !routedYouTube,
                    !routedSystemAction,
-                   !libraryOnboarding.isChooserPresented {
+                   !libraryOnboarding.isChooserPresented,
+                   !hasBlockingSystemPresentation {
+                    // Permission dialogs also reactivate this scene. Do not
+                    // replace an existing recording/login/import sheet, or
+                    // mark that clipboard change as seen while it is blocked.
                     clipboard.check()   // 进 App / 回前台 → 探测剪贴板
                 }
                 reloadShareInbox(showWhenPending: false)
@@ -815,6 +858,7 @@ struct MainTabView: View {
                 onExplain: { handleClipboard(kind, mode: .explain) },
                 onIgnore: { clipboard.consume() }
             )
+            .accessibilityIdentifier("clipboardImportPrompt")
             .presentationDetents([.height(290)])
         }
         .sheet(isPresented: $showShareInbox) {

@@ -296,7 +296,7 @@ struct ReaderDropImport: ViewModifier {
     @State private var targeted = false
     func body(content: Content) -> some View {
         content
-            .onDrop(of: AdaptiveLayout.isPad ? ReaderDropImportModel.types : [], isTargeted: $targeted) { providers in
+            .onDrop(of: ReaderDropImportModel.types, isTargeted: $targeted) { providers in
                 guard scene.window?.rootViewController?.presentedViewController == nil,
                       !scene.voicePanel.isPresented else { return false }
                 #if DEBUG

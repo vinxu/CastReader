@@ -542,6 +542,37 @@ async function run() {
     manualPreviousIntent && manualPreviousRendered,
     'native previous-page control did not complete its manual transaction'
   );
+  // Folding and an audio-boundary Next can arrive in either order. A
+  // concurrent geometry refresh must not publish the new page without the
+  // automatic turn identity that native is waiting to acknowledge.
+  for (const order of ['resize-before-turn', 'turn-before-resize']) {
+    const first = messages.length;
+    const baseline = KoboFixture.koboSignature();
+    const metadata = {turnID:'fixture-' + order, baselineSignature:baseline,
+      originFrameSessionID:'kbf-fixture', sourcePresentation:{id:'paint-' + order}};
+    if (order === 'resize-before-turn') window.CR.gbRelayout({reason:order});
+    assert(window.CastReaderKobo.nextPage(metadata), 'fold turn was not accepted');
+    if (order === 'turn-before-resize') window.CR.gbRelayout({reason:order});
+    window.CastReaderKobo.refresh({});
+    await new Promise(resolve => setTimeout(resolve, 2_000));
+    const committed = messages.slice(first).filter(message => message.type === 'rendered');
+    assert(committed.length === 1 && committed[0].payload.reason === 'auto',
+      'fold must preserve one automatic commit: ' + JSON.stringify(committed));
+    const p = committed[0].payload;
+    assert(p.turnID === metadata.turnID && p.baselineSignature === baseline &&
+      p.originFrameSessionID === 'kbf-fixture' && p.sourcePresentation?.id === metadata.sourcePresentation.id,
+      'fold lost the turn identity or source-presentation witness');
+    assert(p.signature !== baseline, 'fold must commit the actual next page');
+    assert(!messages.slice(first).some(m => m.type === 'googleBooksTurnFailed'),
+      'confirmed fold turn must not fail');
+    const refreshStart = messages.length;
+    currentFrame.contentDocument.getElementById('visibleP').style.transform = '';
+    window.CR.gbRelayout({reason:'fixture-restore-after-' + order});
+    await new Promise(resolve => setTimeout(resolve, 2_000));
+    const restored = messages.slice(refreshStart).filter(m => m.type === 'rendered');
+    assert(restored.length === 1 && restored[0].payload.reason === 'refresh' &&
+      !restored[0].payload.turnID, 'later standalone reflow must not inherit automatic identity');
+  }
   window.__koboURProgressTurns = [];
   messages.length = 0;
   highlightClears = 0;
@@ -656,7 +687,7 @@ run().then(value => {
     '--disable-web-security',
     `--user-data-dir=${join(scratch, 'chrome-profile')}`,
     '--window-size=390,700',
-    '--virtual-time-budget=10000',
+    '--virtual-time-budget=20000',
     '--dump-dom',
     `file://${fixturePath}`,
   ], {

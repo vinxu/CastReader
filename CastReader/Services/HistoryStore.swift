@@ -1297,7 +1297,7 @@ final class HistoryStore: ObservableObject {
               record.sourceKind != .youtube else { return }
         if let t = title { applyTitle(t, id: id, in: scope) }
         var savedName = ""
-        if let data = imageData, let down = EpubImageDecoder.downsampled(data, maxPixel: 640),
+        if let data = imageData, let down = EpubImageDecoder.downsampled(data, maximumPixelDimension: 640),
            let jpeg = down.jpegData(compressionQuality: 0.72) {
             let url = coverFileURL(id, in: scope)
             try? jpeg.write(to: url)

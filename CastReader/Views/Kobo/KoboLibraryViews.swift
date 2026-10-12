@@ -56,6 +56,7 @@ enum KoboReaderLauncher {
 // MARK: - Home
 
 struct KoboHomeSection: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.dynamicTypeSize) private var typeSize
     @EnvironmentObject private var coordinator: PlayerCoordinator
@@ -82,7 +83,7 @@ struct KoboHomeSection: View {
                             Text(AppLocalized("查看全部"))
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundColor(AppTheme.primary)
-                                .frame(minHeight: AdaptiveLayout.isPad ? 44 : nil)
+                                .frame(minHeight: horizontalSizeClass == .regular ? 44 : nil)
                         }
                         .accessibilityIdentifier("homeShelfViewAll.kobo")
                     }
@@ -154,6 +155,7 @@ private struct KoboRailCard: View {
 // MARK: - Library
 
 struct KoboLibraryView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -240,7 +242,7 @@ struct KoboLibraryView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else { Image(systemName: "ellipsis.circle") }
             }
-            .frame(minWidth: AdaptiveLayout.isPad ? 44 : nil, minHeight: AdaptiveLayout.isPad ? 44 : nil)
+            .frame(minWidth: horizontalSizeClass == .regular ? 44 : nil, minHeight: horizontalSizeClass == .regular ? 44 : nil)
         }
         .accessibilityLabel(AppLocalized("排序"))
         .accessibilityIdentifier("koboShelfOptions")

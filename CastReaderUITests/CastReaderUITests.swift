@@ -3248,6 +3248,10 @@ final class AppStoreCaptureUITests: XCTestCase {
 /// The simulator must already be signed in for Explain. No entitlement/session
 /// is injected, no account state is reset, and the source is a public fixture.
 final class MultilingualReaderLiveUITests: XCTestCase {
+    private var duoFoldControlDirectory: String? {
+        ProcessInfo.processInfo.environment["CASTREADER_LONG_DUO_FOLD_CONTROL"]
+    }
+
     /// Body extraction can be verified while the shared speech budget is unavailable.
     /// Disable the normal Auto Play preference for this import-only launch.
     func testNewLanguageWebImportsWithoutStartingSpeech() throws {
@@ -3307,6 +3311,11 @@ final class MultilingualReaderLiveUITests: XCTestCase {
         let seconds = Double(env["CASTREADER_LONG_SECONDS"] ?? "180") ?? 180
         let modes = Set((env["CASTREADER_LONG_MODES"] ?? "read,explain").split(separator: ",").map(String.init))
         let reportPath = env["CASTREADER_LONG_REPORT"]
+        if let directory = duoFoldControlDirectory {
+            try require(directory.hasPrefix("/"), "Duo fold control must be an absolute directory")
+            try require(!modes.isEmpty && modes.isSubset(of: ["read", "explain"]) && seconds >= 30,
+                        "Duo acceptance requires at least 30 observed seconds per selected mode")
+        }
         var results: [[String: Any]] = []
         XCUIDevice.shared.orientation = .portrait
         try configureManualPlayback()
@@ -3411,7 +3420,7 @@ final class MultilingualReaderLiveUITests: XCTestCase {
                 else { app.buttons["readerModeMenu"].tap(); app.buttons["Explain"].firstMatch.tap() }
                 let startButton = app.buttons["explainStartButton"].firstMatch
                 try require(startButton.waitForExistence(timeout: 15), "Explain start missing")
-                if format == "pdf" {
+                if format == "pdf", row["explainFromCurrentPage"] as? Bool != true {
                     // PDF Explain starts at the visible page, including after
                     // a reimport restores the content's saved reading cursor.
                     // Navigate through the real view instead of clearing it.
@@ -3422,6 +3431,7 @@ final class MultilingualReaderLiveUITests: XCTestCase {
                     try require(self.metrics(probe)["explainScopeStart"] as? Int == 0, "PDF Explain did not start at the beginning")
                     result["explainStartedFromFirstPage"] = true
                 }
+                result["explainStartingParagraph"] = self.metrics(probe)["explainScopeStart"]
                 startButton.tap()
                 let error = app.staticTexts["readerExplainError"]
                 try require(wait(150) { self.metrics(probe)["playing"] as? Bool == true || error.exists }, "Explain did not start")
@@ -3430,6 +3440,10 @@ final class MultilingualReaderLiveUITests: XCTestCase {
                 snapshot(app, "\(language)-\(format)-explain-start")
                 result["explain"] = try observeContinuousPlayback(app, probe: probe, seconds: seconds,
                     name: "\(language)-\(format)-explain", playID: "explainPlayPauseButton", errorID: "readerExplainError")
+                if duoFoldControlDirectory != nil {
+                    result["duoExplainResume"] = try verifyDuoExplainMinimizeAndReopen(
+                        app, probe: probe, source: "\(language)-\(format)")
+                }
                 }
                 result["status"] = "passed"
             } catch {
@@ -3459,6 +3473,13 @@ final class MultilingualReaderLiveUITests: XCTestCase {
     /// Use the real preference control. Launch-argument strings do not satisfy
     /// AppSettings' stored Bool type check, so `-auto_play NO` is ineffective.
     private func configureManualPlayback() throws {
+        // Duo's inner-display XCTest scroll events can miss the real surface.
+        // The parent may prepare this preference through the visible app UI;
+        // this opt-in skips only setup, never the live playback assertions.
+        if duoFoldControlDirectory != nil,
+           ProcessInfo.processInfo.environment["CASTREADER_LONG_DUO_PREFS_PREPARED"] == "1" {
+            return
+        }
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
             "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate"]
@@ -3483,17 +3504,20 @@ final class MultilingualReaderLiveUITests: XCTestCase {
         }
         try require(wait(5) { autoplay.value as? String == "0" },
                     "Auto-play preference did not turn off: \(autoplay.value ?? "nil")")
-        settingsClose.tap()
+        if settingsClose.exists { settingsClose.tap() }
+        try require(app.buttons["settingsGearButton"].waitForExistence(timeout: 10),
+                    "Home did not return after setting manual playback")
         app.terminate()
     }
 
     private func observeContinuousPlayback(_ app: XCUIApplication, probe: XCUIElement,
         seconds: Double, name: String, playID: String, errorID: String) throws -> [String: Any] {
-        let deadline = Date().addingTimeInterval(seconds + 240)
+        var deadline = Date().addingTimeInterval(seconds + 240)
         var prior = metrics(probe), priorDate = Date(), played = 0.0, lastProgress = Date()
         var samples: [[String: Any]] = [], segments = Set<String>(), paragraphs = Set<Int>()
         var captions = Set<String>(), highlights = Set<String>(), maximumMarks = 0
         var paused = false, halfwayShot = false
+        var duoFoldStages: [[String: Any]] = []
         defer {
             if let data = try? JSONSerialization.data(withJSONObject: samples, options: [.sortedKeys]) {
                 let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
@@ -3532,6 +3556,10 @@ final class MultilingualReaderLiveUITests: XCTestCase {
                 throw NSError(domain: "ReaderAcceptance", code: 2, userInfo: [NSLocalizedDescriptionKey:
                     "Explanation completed normally after \(played) seconds; fixture is too short from the selected starting page"])
             }
+            if name.hasSuffix("read"), current["readFinished"] as? Bool == true, played < seconds {
+                throw NSError(domain: "ReaderAcceptance", code: 2, userInfo: [NSLocalizedDescriptionKey:
+                    "Document completed normally after \(played) directly observed seconds; fold-handshake playback is excluded from the duration gate"])
+            }
             try require(date.timeIntervalSince(lastProgress) < 75, "player stopped or stalled before three minutes")
             prior = current; priorDate = date
             if !paused && played >= 12 {
@@ -3554,6 +3582,37 @@ final class MultilingualReaderLiveUITests: XCTestCase {
                 }
             }
             if !halfwayShot && played >= seconds / 2 { snapshot(app, "\(name)-halfway"); halfwayShot = true }
+            if duoFoldControlDirectory != nil, playID == "readPlayPauseButton", paused,
+               duoFoldStages.count < 2,
+               played >= (duoFoldStages.isEmpty ? min(20, seconds / 3) : seconds / 2) {
+                let target = duoFoldStages.isEmpty ? "closed" : "open"
+                let stageStarted = Date()
+                try require(wait(30) { self.metrics(probe)["playing"] as? Bool == true },
+                            "Read must be audible before the Duo \(target) request")
+                let before = metrics(probe)
+                var stage = try requestDuoFold(app, source: name, phase: "read-\(target)",
+                                              target: target, before: before)
+                try require(wait(30) {
+                    let current = self.metrics(probe)
+                    return current["playing"] as? Bool == true &&
+                        (!(current["segment"] as? String ?? "").isEmpty) &&
+                        (current["segment"] as? String != before["segment"] as? String ||
+                         (current["time"] as? Double ?? 0) > (before["time"] as? Double ?? 0) + 0.1)
+                }, "Duo \(target) stopped Read or lost its live audio clock")
+                let after = metrics(probe)
+                try require(after["sourceKind"] as? String == before["sourceKind"] as? String &&
+                            after["mode"] as? String == before["mode"] as? String,
+                            "Duo \(target) replaced the reading source or mode")
+                try require((after["readError"] as? String ?? "").isEmpty,
+                            "Read failed after Duo \(target)")
+                stage["after"] = after
+                duoFoldStages.append(stage)
+                snapshot(app, "\(name)-duo-\(target)")
+                // Handshake time is extra evidence, not credited toward the
+                // existing minimum of directly observed live playing seconds.
+                deadline = deadline.addingTimeInterval(Date().timeIntervalSince(stageStarted))
+                prior = after; priorDate = Date(); lastProgress = Date()
+            }
         }
         try require(played >= seconds, "insufficient actual playing time: \(played)")
         try require(paused, "pause and resume were not exercised during audible playback")
@@ -3563,11 +3622,116 @@ final class MultilingualReaderLiveUITests: XCTestCase {
             try require(maximumMarks > 0, "Explain did not resolve any original-text marks")
         } else {
             try require(highlights.count > 1, "Read highlight cursor did not advance")
+            if duoFoldControlDirectory != nil {
+                try require(duoFoldStages.count == 2, "Both actual Duo Read fold stages must finish")
+            }
         }
         snapshot(app, "\(name)-three-minutes")
         return ["effectivePlayingSeconds": played, "pauseResume": paused, "segmentsVisited": segments.count,
             "paragraphsVisited": paragraphs.sorted(), "captionChanges": captions.count,
-            "highlightChanges": highlights.count, "maximumMarks": maximumMarks, "samples": samples]
+            "highlightChanges": highlights.count, "maximumMarks": maximumMarks, "samples": samples,
+            "duoFoldStages": duoFoldStages]
+    }
+
+    /// Only the parent operates the simulator's fold control. A unique request
+    /// prevents an old acknowledgement from passing a later document or stage.
+    private func requestDuoFold(_ app: XCUIApplication, source: String, phase: String,
+                                target: String, before: [String: Any]) throws -> [String: Any] {
+        guard let path = duoFoldControlDirectory else {
+            throw NSError(domain: "ReaderAcceptance", code: 3,
+                          userInfo: [NSLocalizedDescriptionKey: "Duo control directory missing"])
+        }
+        let directory = URL(fileURLWithPath: path, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let requestID = UUID().uuidString
+        let beforeFrame = app.windows.firstMatch.frame
+        try require(beforeFrame.width.isFinite && beforeFrame.height.isFinite &&
+                    beforeFrame.width > 0 && beforeFrame.height > 0, "Duo window has no usable size before folding")
+        var request: [String: Any] = ["requestID": requestID, "source": source,
+            "phase": phase, "target": target, "before": before,
+            "windowBefore": String(describing: beforeFrame)]
+        try JSONSerialization.data(withJSONObject: request, options: [.sortedKeys, .prettyPrinted])
+            .write(to: directory.appendingPathComponent("request.json"), options: .atomic)
+        var acknowledgement: [String: Any] = [:]
+        let acknowledged = wait(180) {
+            guard let bytes = try? Data(contentsOf: directory.appendingPathComponent("ack.json")),
+                  let value = try? JSONSerialization.jsonObject(with: bytes) as? [String: Any],
+                  value["requestID"] as? String == requestID,
+                  value["target"] as? String == target else { return false }
+            acknowledgement = value
+            return true
+        }
+        try require(acknowledged, "Actual Duo \(phase) was not acknowledged within 180 seconds")
+        try require(acknowledgement["error"] == nil,
+                    "Duo fold controller failed: \(acknowledgement["error"] ?? "")")
+        try require(acknowledgement["completed"] as? Bool == true, "Duo controller did not complete the physical fold")
+        try require(wait(15) {
+            let window = app.windows.firstMatch
+            guard window.exists else { return false }
+            let frame = window.frame
+            return frame.width.isFinite && frame.height.isFinite && frame.width > 0 && frame.height > 0 &&
+                (abs(frame.width - beforeFrame.width) > 2 || abs(frame.height - beforeFrame.height) > 2)
+        }, "Duo acknowledgement did not produce a different app window size")
+        request["acknowledgement"] = acknowledgement
+        request["windowAfter"] = String(describing: app.windows.firstMatch.frame)
+        let attachment = XCTAttachment(data: try JSONSerialization.data(withJSONObject: request, options: [.sortedKeys]),
+                                      uniformTypeIdentifier: "public.json")
+        attachment.name = "\(source)-\(phase)-fold-handshake.json"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        return request
+    }
+
+    private func verifyDuoExplainMinimizeAndReopen(_ app: XCUIApplication, probe: XCUIElement,
+                                                  source: String) throws -> [String: Any] {
+        let play = app.buttons["explainPlayPauseButton"].firstMatch
+        try require(wait(30) { play.exists && play.isHittable && play.isEnabled && self.metrics(probe)["playing"] as? Bool == true },
+                    "Explain must still be playing before the paused fold check")
+        play.tap()
+        try require(wait(8) { self.metrics(probe)["playing"] as? Bool == false }, "Explain pause failed before folding")
+        RunLoop.current.run(until: Date().addingTimeInterval(1))
+        let paused = metrics(probe)
+        try require(!(paused["segment"] as? String ?? "").isEmpty, "Paused Explain has no audio segment")
+        app.buttons["readerMinimizeButton"].tap()
+        let expand = app.buttons["readerMiniPlayerExpand"]
+        try require(wait(10) { expand.exists && expand.isHittable }, "Paused Explain mini player missing")
+        var closed = try requestDuoFold(app, source: source, phase: "explain-minimized-closed",
+                                        target: "closed", before: paused)
+        try require(wait(10) { expand.exists && expand.isHittable }, "Fold hid the existing mini player")
+        expand.tap()
+        try require(wait(15) { play.exists && play.isHittable }, "Explain controls missing after reopening")
+        try requirePausedDuoExplain(probe, matches: paused)
+        closed["after"] = metrics(probe)
+        snapshot(app, "\(source)-explain-reopened-closed")
+        var opened = try requestDuoFold(app, source: source, phase: "explain-paused-open",
+                                        target: "open", before: metrics(probe))
+        try requirePausedDuoExplain(probe, matches: paused)
+        opened["after"] = metrics(probe)
+        snapshot(app, "\(source)-explain-paused-open")
+        play.tap()
+        try require(wait(30) {
+            let current = self.metrics(probe)
+            return current["playing"] as? Bool == true &&
+                (current["segment"] as? String != paused["segment"] as? String ||
+                 (current["time"] as? Double ?? 0) > (paused["time"] as? Double ?? 0) + 0.1)
+        }, "Explain did not resume after the fold round trip")
+        snapshot(app, "\(source)-explain-resumed-open")
+        play.tap()
+        try require(wait(8) { self.metrics(probe)["playing"] as? Bool == false }, "Explain did not pause after acceptance")
+        return ["stages": [closed, opened], "resumed": true]
+    }
+
+    private func requirePausedDuoExplain(_ probe: XCUIElement, matches expected: [String: Any]) throws {
+        try require(wait(10) {
+            let current = self.metrics(probe)
+            return current["playing"] as? Bool == false &&
+                current["mode"] as? String == expected["mode"] as? String &&
+                current["sourceKind"] as? String == expected["sourceKind"] as? String &&
+                current["segment"] as? String == expected["segment"] as? String &&
+                current["block"] as? Int == expected["block"] as? Int &&
+                current["marks"] as? Int == expected["marks"] as? Int &&
+                abs((current["time"] as? Double ?? -10) - (expected["time"] as? Double ?? 0)) < 0.5
+        }, "Paused Explain lost its mode, segment, block, marks or audio position across Duo folding")
     }
 
 
@@ -4240,12 +4404,47 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
         return predicate()
     }
     private func snapshot(_ app: XCUIApplication, name: String) throws {
-        let screenshot = XCUIScreen.main.screenshot()
-        let attachment = XCTAttachment(screenshot: screenshot)
+        let data: Data
+        if (ProcessInfo.processInfo.environment["CASTREADER_STORE_DEVICE"] ?? "").hasPrefix("duo") {
+            let closed = ProcessInfo.processInfo.environment["CASTREADER_STORE_DEVICE"] == "duo-closed"
+            let expectedPoints = closed ? CGSize(width: 466, height: 678) : CGSize(width: 951, height: 669)
+            let expectedPixels = closed ? CGSize(width: 1398, height: 2034) : CGSize(width: 2853, height: 2007)
+            // An inactive inner framebuffer can retain a valid-sized old image.
+            // Require the live app itself to occupy the unfolded landscape surface.
+            let frame = app.windows.firstMatch.frame
+            guard abs(frame.width - expectedPoints.width) <= 1, abs(frame.height - expectedPoints.height) <= 1 else {
+                throw NSError(domain: "DuoStoreCapture", code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "Set Duo to the requested fold state before capture; actual app frame: \(frame)"])
+            }
+            // XCUIScreen currently rounds the 669 × 951 point inner display to
+            // 2006 × 2852 pixels. Ask the host to capture its native framebuffer,
+            // explicitly selecting the inner display; never resize those pixels.
+            let output = try XCTUnwrap(output, "Duo capture requires a host output directory")
+            let queue = output.appendingPathComponent("capture-requests", isDirectory: true)
+            try FileManager.default.createDirectory(at: queue, withIntermediateDirectories: true)
+            let token = UUID().uuidString
+            let request = queue.appendingPathComponent(token + ".request.json")
+            let reply = queue.appendingPathComponent(token + ".response.json")
+            try JSONSerialization.data(withJSONObject: ["token": token, "name": name])
+                .write(to: request, options: .atomic)
+            XCTAssertTrue(wait(45) { FileManager.default.fileExists(atPath: reply.path) },
+                "Start store/app-store/duo/capture-host.py before the Duo capture test")
+            let response = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(contentsOf: reply)) as? [String: Any])
+            XCTAssertEqual(response["token"] as? String, token)
+            XCTAssertEqual(response["status"] as? String, "ok", response["error"] as? String ?? "Capture failed")
+            data = try Data(contentsOf: queue.appendingPathComponent(token + ".png"))
+            let image = try XCTUnwrap(UIImage(data: data))
+            XCTAssertEqual(image.cgImage?.width, Int(expectedPixels.width))
+            XCTAssertEqual(image.cgImage?.height, Int(expectedPixels.height))
+            XCTAssertEqual(image.imageOrientation, .up)
+        } else {
+            data = XCUIScreen.main.screenshot().pngRepresentation
+        }
+        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.png")
         attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
         #if targetEnvironment(simulator)
         if let output {
-            try screenshot.pngRepresentation.write(to: output.appendingPathComponent(name + ".png"))
+            try data.write(to: output.appendingPathComponent(name + ".png"), options: .atomic)
             try app.debugDescription.write(to: output.appendingPathComponent(name + ".txt"), atomically: true, encoding: .utf8)
         }
         #endif
@@ -4264,15 +4463,19 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
         let env = ProcessInfo.processInfo.environment
         let languages = (env["CASTREADER_STORE_LANGUAGES"] ?? "en").split(separator: ",").map(String.init)
         let homeLabels = try JSONSerialization.jsonObject(with: Data((env["CASTREADER_STORE_HOME_LABELS"] ?? "{\"en\":\"Home\",\"zh-Hans\":\"首页\"}").utf8)) as! [String:String]
-        let isPad = env["CASTREADER_STORE_DEVICE"] == "ipad"
-        XCUIDevice.shared.orientation = isPad ? .landscapeLeft : .portrait
+        let deviceProfile = env["CASTREADER_STORE_DEVICE"] ?? "iphone"
+        XCTAssertTrue(["iphone", "ipad", "duo", "duo-closed"].contains(deviceProfile))
+        let usesExpandedLayout = deviceProfile != "iphone"
+        if !deviceProfile.hasPrefix("duo") {
+            XCUIDevice.shared.orientation = usesExpandedLayout ? .landscapeLeft : .portrait
+        }
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US",
                 "-interfaceLanguage", "en", "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate",
                 "-CastReaderIPadAcceptance", "-CastReaderRegion", "global", "-CastReaderServiceRoute", "global",
                 "-explain_language", "en"]
         if env["CASTREADER_STORE_ATTACH"] != "1" { app.launch() } else { app.activate() }
-        if !isPad && env["CASTREADER_STORE_ATTACH"] != "1" {
+        if !usesExpandedLayout && env["CASTREADER_STORE_ATTACH"] != "1" {
             let voiceTab = app.buttons["Voice"].firstMatch
             XCTAssertTrue(voiceTab.waitForExistence(timeout: 25)); voiceTab.tap()
             let search = app.textFields["voiceSearchField"].firstMatch
@@ -4315,41 +4518,61 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
                 }
                 row.tap()
                 RunLoop.current.run(until: Date().addingTimeInterval(0.7))
-                app.navigationBars.buttons["BackButton"].firstMatch.tap()
+                app.buttons["BackButton"].firstMatch.tap()
                 app.buttons["settingsCloseButton"].tap()
             }
             let homeTitle = homeLabels[language] ?? "Home"
-            let home = app.cells["house.fill"].exists ? app.cells["house.fill"] : app.buttons[homeTitle].firstMatch
+            let homeByID = app.descendants(matching: .any)["house.fill"].firstMatch
+            let home = homeByID.exists ? homeByID : app.buttons[homeTitle].firstMatch
             XCTAssertTrue(home.waitForExistence(timeout: 25)); home.tap()
             let sidebar = app.buttons["ToggleSidebar"].firstMatch
-            if isPad && sidebar.exists { sidebar.tap() }
+            if usesExpandedLayout && sidebar.exists { sidebar.tap() }
             for label in ["Not Now", "以后", "以后再说"] where app.alerts.buttons[label].exists { app.alerts.buttons[label].tap() }
             let shelf = app.buttons.matching(NSPredicate(format: "identifier == %@ OR identifier == %@", "homeShelfViewAll.kindle", "homeShelfSection.kindle")).firstMatch
             XCTAssertTrue(shelf.waitForExistence(timeout: 30))
             func shelfOnScreen() -> Bool {
-                shelf.exists && shelf.frame.minY > (isPad ? 70 : 110) && shelf.frame.maxY < app.frame.height - 110
+                shelf.exists && shelf.frame.minY > (deviceProfile.hasPrefix("duo") ? 10 : (usesExpandedLayout ? 70 : 110)) && shelf.frame.maxY < app.frame.height - 110
             }
             for _ in 0..<8 where !shelfOnScreen() {
                 if shelf.frame.minY < 135 { app.swipeDown() } else { app.swipeUp() }
             }
             // Align the actual shelf without cropping or synthesizing UI.
-            let headerY: CGFloat = isPad ? 95 : 135
-            let delta = max(-0.45, min(0.45, (shelf.frame.minY - headerY) / app.frame.height))
-            if abs(delta) > 0.04 {
-                app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.72)).press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.72 - delta)), withVelocity: .slow, thenHoldForDuration: 0.6)
+            let headerY: CGFloat = deviceProfile.hasPrefix("duo") ? 35 : (usesExpandedLayout ? 95 : 135)
+            let alignmentTolerance: CGFloat = deviceProfile.hasPrefix("duo") ? 5 : 25
+            for _ in 0..<5 where abs(shelf.frame.minY - headerY) > alignmentTolerance {
+                // Drag the shelf heading rather than a horizontal book row;
+                // the nested row otherwise consumes the vertical gesture.
+                let frame = shelf.frame
+                let distance = frame.minY - headerY
+                // A tiny drag stays inside UIScrollView's pan recognition slop.
+                let panLead: CGFloat = deviceProfile.hasPrefix("duo") ? (distance > 0 ? 12 : -12) : 0
+                let offset = max(-app.frame.height * 0.45, min(app.frame.height * 0.45, distance + panLead))
+                let origin = shelf.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                origin.press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: 0, dy: -offset)),
+                           withVelocity: .slow, thenHoldForDuration: 0.6)
+            }
+            XCTAssertLessThanOrEqual(abs(shelf.frame.minY - headerY), alignmentTolerance,
+                                     "The store capture must start at Kindle, below Continue Listening")
+            if deviceProfile.hasPrefix("duo") {
+                let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "continue-item-"))
+                for card in cards.allElementsBoundByIndex {
+                    XCTAssertLessThanOrEqual(card.frame.maxY, app.windows.firstMatch.frame.minY,
+                        "Continue cards must be fully above the visible store screenshot")
+                }
             }
             try snapshot(app, name: language + "-1")
+            if env["CASTREADER_STORE_HOME_ONLY"] == "1" { continue }
             XCTAssertTrue(shelfOnScreen())
             shelf.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
             XCTAssertTrue(app.buttons["kindleOfflineLibrary"].waitForExistence(timeout: 10))
             try snapshot(app, name: language + "-4")
-            let back = app.navigationBars.buttons.firstMatch
+            let back = deviceProfile.hasPrefix("duo") ? app.buttons["BackButton"].firstMatch : app.navigationBars.buttons.firstMatch
             XCTAssertTrue(back.exists); back.tap()
             // A system notification can intercept the navigation tap. Require
             // the real home shelf before opening the next capture scene.
             for _ in 0..<2 where !shelf.waitForExistence(timeout: 5) {
                 app.activate()
-                let retryBack = app.navigationBars.buttons["BackButton"].firstMatch
+                let retryBack = app.buttons["BackButton"].firstMatch
                 if retryBack.exists && retryBack.isHittable { retryBack.tap() }
             }
             XCTAssertTrue(shelf.waitForExistence(timeout: 10))
@@ -4395,7 +4618,7 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
                 }
                 return m["playing"] == "true" && (Double(m["time"] ?? "0") ?? 0) > 3 && (Int(m["word"] ?? "-1") ?? -1) >= 0
             }, "Actual read playback and word highlight required")
-            if isPad && language == languages.first {
+            if usesExpandedLayout && language == languages.first {
                 read.tap()
                 XCTAssertTrue(wait(5) { self.metrics(app)["playing"] == "false" })
                 XCTAssertTrue(app.buttons["playbackVoiceButton"].firstMatch.waitForExistence(timeout: 10))
