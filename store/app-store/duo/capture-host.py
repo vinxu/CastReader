@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 
-def serve(output: Path, device: str, display: str, timeout: float) -> None:
+def serve(output: Path, device: str, display: str, timeout: float, closed: bool = False) -> None:
     queue = output / "capture-requests"
     queue.mkdir(parents=True, exist_ok=True)
     deadline = time.monotonic() + timeout
@@ -40,8 +40,8 @@ def serve(output: Path, device: str, display: str, timeout: float) -> None:
                 if data[:8] != b"\x89PNG\r\n\x1a\n" or data[12:16] != b"IHDR":
                     raise ValueError("Capture did not return PNG pixels")
                 width, height = struct.unpack(">II", data[16:24])
-                if (width, height) != (2853, 2007):
-                    raise ValueError(f"Expected expanded landscape 2853x2007, got {width}x{height}")
+                if (width, height) != ((1398, 2034) if closed else (2853, 2007)):
+                    raise ValueError(f"Unexpected Duo framebuffer dimensions: {width}x{height}")
                 temporary.replace(queue / f"{token}.png")
                 response.update(status="ok", width=width, height=height,
                                 sha256=hashlib.sha256(data).hexdigest(),
@@ -62,5 +62,6 @@ if __name__ == "__main__":
     parser.add_argument("--device", required=True, help="Exact Duo simulator UDID")
     parser.add_argument("--display", required=True, help="Inner display identifier from simctl io enumerate")
     parser.add_argument("--timeout", type=float, default=3600)
+    parser.add_argument("--closed", action="store_true", help="Capture the native upright outer display")
     args = parser.parse_args()
-    serve(args.output.resolve(), args.device, args.display, args.timeout)
+    serve(args.output.resolve(), args.device, args.display, args.timeout, args.closed)

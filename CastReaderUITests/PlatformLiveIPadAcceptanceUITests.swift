@@ -925,7 +925,7 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
         let phases = Set((ProcessInfo.processInfo.environment["CASTREADER_PLATFORM_PHASES"] ?? "read,appearance,explain")
             .split(separator: ",").map(String.init))
         XCTAssertFalse(phases.isEmpty)
-        XCTAssertTrue(phases.isSubset(of: ["read", "appearance", "explain"]))
+        XCTAssertTrue(phases.isSubset(of: ["read", "appearance", "explain", "manual"]))
         let app = try home(platform, extra: launch)
         let book = liveBook(platform, in: app)
         reveal(book, in: app)
@@ -958,20 +958,13 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
                 // remaining to assert exact source identity. A nearly finished
                 // restored segment could legitimately advance during rotation.
                 if platform == "kobo" {
-                    let web = app.webViews["koboReaderWebView"], bounds = app.webViews["koboReaderWebView"].frame
-                    let paragraph = web.staticTexts.allElementsBoundByIndex.first {
-                        let frame = $0.frame
-                        return $0.label.count > 80 && frame.width > 20 && frame.height > 20 &&
-                            frame.minX >= bounds.minX + 20 && frame.maxX <= bounds.maxX - 20 &&
-                            frame.minY >= bounds.minY + 20 && frame.maxY <= bounds.maxY - 20
-                    }
-                    XCTAssertNotNil(paragraph, "Select observed body text inside the chapter viewport")
-                    if let paragraph {
-                        // Kobo's gesture layer owns hit testing above its iframe;
-                        // tap the observed text position through that real layer.
-                        let point = paragraph.frame
-                        app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
-                            .withOffset(CGVector(dx: point.minX + 12, dy: point.minY + 12)).tap()
+                    // Start from the provider's restored page using the visible
+                    // playback control. AX paragraph frames can extend through
+                    // iframe margins and do not identify a tappable text glyph.
+                    // Fold assertions below still require the same session and
+                    // a forward audio clock or an acknowledged next page.
+                    if field("readActive", app) != "true" || field("readPaused", app) == "true" {
+                        read.tap()
                     }
                     wait { self.field("readActive", app) == "true" && self.field("readPaused", app) == "false" }
                 } else {
@@ -1127,6 +1120,10 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
 
         }
 
+        if phases == ["manual"] {
+            verifyPausedManualPageTurn(app, platform: platform)
+            return
+        }
         guard phases.contains("explain") else { return }
         selectReaderMode("Explain", in: app)
         let start = app.buttons["explainStartButton"]
@@ -1182,8 +1179,19 @@ final class PlatformLiveIPadAcceptanceUITests: XCTestCase {
             wait { self.field("playing", app) == "false" }
         }
 
+        verifyPausedManualPageTurn(app, platform: platform)
+    }
+
+    private func verifyPausedManualPageTurn(_ app: XCUIApplication, platform: String) {
+        let read = app.buttons["readPlayPauseButton"]
         selectReaderMode("Read Aloud", in: app)
         wait { read.exists && read.isHittable }
+        // Changing modes can legitimately auto-start because of the user's
+        // autoplay setting. Establish a paused precondition before browsing.
+        if field("readActive", app) == "true" && field("readPaused", app) != "true" {
+            read.tap()
+        }
+        wait { self.field("playing", app) == "false" }
         let oldPage = field("page", app)
         let next = app.buttons["readerNextPageButton"]
         XCTAssertTrue(next.isHittable); next.tap()

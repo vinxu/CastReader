@@ -4405,13 +4405,16 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
     }
     private func snapshot(_ app: XCUIApplication, name: String) throws {
         let data: Data
-        if ProcessInfo.processInfo.environment["CASTREADER_STORE_DEVICE"] == "duo" {
+        if (ProcessInfo.processInfo.environment["CASTREADER_STORE_DEVICE"] ?? "").hasPrefix("duo") {
+            let closed = ProcessInfo.processInfo.environment["CASTREADER_STORE_DEVICE"] == "duo-closed"
+            let expectedPoints = closed ? CGSize(width: 466, height: 678) : CGSize(width: 951, height: 669)
+            let expectedPixels = closed ? CGSize(width: 1398, height: 2034) : CGSize(width: 2853, height: 2007)
             // An inactive inner framebuffer can retain a valid-sized old image.
             // Require the live app itself to occupy the unfolded landscape surface.
             let frame = app.windows.firstMatch.frame
-            guard abs(frame.width - 951) <= 1, abs(frame.height - 669) <= 1 else {
+            guard abs(frame.width - expectedPoints.width) <= 1, abs(frame.height - expectedPoints.height) <= 1 else {
                 throw NSError(domain: "DuoStoreCapture", code: 1,
-                    userInfo: [NSLocalizedDescriptionKey: "Open Duo in landscape before capture; actual app frame: \(frame)"])
+                    userInfo: [NSLocalizedDescriptionKey: "Set Duo to the requested fold state before capture; actual app frame: \(frame)"])
             }
             // XCUIScreen currently rounds the 669 × 951 point inner display to
             // 2006 × 2852 pixels. Ask the host to capture its native framebuffer,
@@ -4431,8 +4434,8 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             XCTAssertEqual(response["status"] as? String, "ok", response["error"] as? String ?? "Capture failed")
             data = try Data(contentsOf: queue.appendingPathComponent(token + ".png"))
             let image = try XCTUnwrap(UIImage(data: data))
-            XCTAssertEqual(image.cgImage?.width, 2853)
-            XCTAssertEqual(image.cgImage?.height, 2007)
+            XCTAssertEqual(image.cgImage?.width, Int(expectedPixels.width))
+            XCTAssertEqual(image.cgImage?.height, Int(expectedPixels.height))
             XCTAssertEqual(image.imageOrientation, .up)
         } else {
             data = XCUIScreen.main.screenshot().pngRepresentation
@@ -4461,9 +4464,9 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
         let languages = (env["CASTREADER_STORE_LANGUAGES"] ?? "en").split(separator: ",").map(String.init)
         let homeLabels = try JSONSerialization.jsonObject(with: Data((env["CASTREADER_STORE_HOME_LABELS"] ?? "{\"en\":\"Home\",\"zh-Hans\":\"首页\"}").utf8)) as! [String:String]
         let deviceProfile = env["CASTREADER_STORE_DEVICE"] ?? "iphone"
-        XCTAssertTrue(["iphone", "ipad", "duo"].contains(deviceProfile))
+        XCTAssertTrue(["iphone", "ipad", "duo", "duo-closed"].contains(deviceProfile))
         let usesExpandedLayout = deviceProfile != "iphone"
-        if deviceProfile != "duo" {
+        if !deviceProfile.hasPrefix("duo") {
             XCUIDevice.shared.orientation = usesExpandedLayout ? .landscapeLeft : .portrait
         }
         let app = XCUIApplication()
@@ -4528,21 +4531,21 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             let shelf = app.buttons.matching(NSPredicate(format: "identifier == %@ OR identifier == %@", "homeShelfViewAll.kindle", "homeShelfSection.kindle")).firstMatch
             XCTAssertTrue(shelf.waitForExistence(timeout: 30))
             func shelfOnScreen() -> Bool {
-                shelf.exists && shelf.frame.minY > (deviceProfile == "duo" ? 10 : (usesExpandedLayout ? 70 : 110)) && shelf.frame.maxY < app.frame.height - 110
+                shelf.exists && shelf.frame.minY > (deviceProfile.hasPrefix("duo") ? 10 : (usesExpandedLayout ? 70 : 110)) && shelf.frame.maxY < app.frame.height - 110
             }
             for _ in 0..<8 where !shelfOnScreen() {
                 if shelf.frame.minY < 135 { app.swipeDown() } else { app.swipeUp() }
             }
             // Align the actual shelf without cropping or synthesizing UI.
-            let headerY: CGFloat = deviceProfile == "duo" ? 35 : (usesExpandedLayout ? 95 : 135)
-            let alignmentTolerance: CGFloat = deviceProfile == "duo" ? 5 : 25
+            let headerY: CGFloat = deviceProfile.hasPrefix("duo") ? 35 : (usesExpandedLayout ? 95 : 135)
+            let alignmentTolerance: CGFloat = deviceProfile.hasPrefix("duo") ? 5 : 25
             for _ in 0..<5 where abs(shelf.frame.minY - headerY) > alignmentTolerance {
                 // Drag the shelf heading rather than a horizontal book row;
                 // the nested row otherwise consumes the vertical gesture.
                 let frame = shelf.frame
                 let distance = frame.minY - headerY
                 // A tiny drag stays inside UIScrollView's pan recognition slop.
-                let panLead: CGFloat = deviceProfile == "duo" ? (distance > 0 ? 12 : -12) : 0
+                let panLead: CGFloat = deviceProfile.hasPrefix("duo") ? (distance > 0 ? 12 : -12) : 0
                 let offset = max(-app.frame.height * 0.45, min(app.frame.height * 0.45, distance + panLead))
                 let origin = shelf.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
                 origin.press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: 0, dy: -offset)),
@@ -4550,7 +4553,7 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             }
             XCTAssertLessThanOrEqual(abs(shelf.frame.minY - headerY), alignmentTolerance,
                                      "The store capture must start at Kindle, below Continue Listening")
-            if deviceProfile == "duo" {
+            if deviceProfile.hasPrefix("duo") {
                 let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "continue-item-"))
                 for card in cards.allElementsBoundByIndex {
                     XCTAssertLessThanOrEqual(card.frame.maxY, app.windows.firstMatch.frame.minY,
@@ -4563,7 +4566,7 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             shelf.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
             XCTAssertTrue(app.buttons["kindleOfflineLibrary"].waitForExistence(timeout: 10))
             try snapshot(app, name: language + "-4")
-            let back = deviceProfile == "duo" ? app.buttons["BackButton"].firstMatch : app.navigationBars.buttons.firstMatch
+            let back = deviceProfile.hasPrefix("duo") ? app.buttons["BackButton"].firstMatch : app.navigationBars.buttons.firstMatch
             XCTAssertTrue(back.exists); back.tap()
             // A system notification can intercept the navigation tap. Require
             // the real home shelf before opening the next capture scene.

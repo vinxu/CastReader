@@ -58210,6 +58210,7 @@ var __CRWeb = (() => {
               baselineSignature: changeBaseline
             }, payloadFor(committedMetadata)));
           }
+          warmSemanticTransport();
           const extractStartedAt = performance.now();
           requestExtract(reason, payloadFor(committedMetadata), paragraphs);
           if (reason === "auto" && automaticTiming && automaticTiming.turnID === (committedMetadata == null ? void 0 : committedMetadata.turnID)) {
@@ -58308,6 +58309,12 @@ var __CRWeb = (() => {
           lateEligible: false
         }, metadata));
         return false;
+      }
+      if (changeReasonInFlight === "refresh") {
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = null;
+        clearSettledChange("refresh");
+        observedSignature = visualBaseline;
       }
       pendingAuto = true;
       const observeTurnFrame = () => {
@@ -58577,6 +58584,7 @@ var __CRWeb = (() => {
         const fallbackBaseline = committedSignature || koboSignature();
         const automatic = nonemptyString2(recordArg2(arg).turnID) ? automaticMetadata2(arg, fallbackBaseline) : null;
         const manual = manualMetadata2(arg, fallbackBaseline);
+        if (!automatic && !manual && pendingAuto) return;
         if (automatic) {
           changeReasonInFlight = "auto";
           changeBaseline = ((_b = liveLateAutoTurn()) == null ? void 0 : _b.detectionBaselineSignature) || fallbackBaseline;
@@ -58812,6 +58820,7 @@ var __CRWeb = (() => {
         observedSignature = signature;
         hasPublishedInitialPage = true;
         layoutRefreshActive = false;
+        warmSemanticTransport();
         postForFrame("log", { message: koboLayoutDiagnostic() });
         requestExtract("initial");
         scheduleNextPagePreview();

@@ -1,6 +1,6 @@
 # CastReader iOS 1.2.49 Store Metadata
 
-Reviewed ASO copy plus metadata-only release notes.
+Reviewed ASO copy with iPhone Duo adaptation and release notes; existing names, subtitles, keywords and description paragraphs are preserved.
 
 ## no — `no`
 
@@ -63,6 +63,8 @@ Tilgjengeligheten av stemmer og funksjoner kan variere mellom regioner.
 
 Mørk modus og bakgrunnsavspilling støttes. Tekst i bilder gjenkjennes med Apples OCR på enheten; bildene lastes ikke opp for dette formålet. Nøyaktigheten avhenger av språk og bildekvalitet. Lokal lesehistorikk blir på enheten. Tilkoblede tjenester lagrer konto- og lesedata etter egne retningslinjer.
 
+Støtte for iPhone Duo: brett ut skjermen for mer leseplass, og brett den sammen igjen uten å miste leseposisjonen. Høytlesning og KI-forklaringer tilpasser seg den tilgjengelige plassen.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -70,6 +72,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Vi har oppdatert informasjonen i App Store på de tilgjengelige språkene for å beskrive opplesning, støttede filformater og KI-forklaringer tydeligere.
+
+Støtte for iPhone Duo: brett ut skjermen for mer leseplass, og brett den sammen igjen uten å miste leseposisjonen. Høytlesning og KI-forklaringer tilpasser seg den tilgjengelige plassen.
 ```
 
 ## pt-BR — `pt-BR`
@@ -133,6 +137,8 @@ A disponibilidade de vozes e recursos pode variar conforme a região.
 
 Compatível com modo escuro e reprodução em segundo plano. As fotos são reconhecidas pelo OCR da Apple no dispositivo e não são enviadas para reconhecer texto. A precisão varia conforme o idioma e a qualidade da imagem. O histórico local permanece no dispositivo. Os serviços conectados armazenam seus dados de conta e leitura conforme as próprias políticas.
 
+Compatível com o iPhone Duo: abra a tela para ter mais espaço de leitura e feche-a sem perder sua posição. A leitura em voz alta e as explicações por IA se adaptam ao espaço disponível.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -140,6 +146,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Atualizamos as informações da App Store nos idiomas disponíveis para explicar melhor a leitura em voz alta, os formatos de arquivo compatíveis e as explicações com IA.
+
+Compatível com o iPhone Duo: abra a tela para ter mais espaço de leitura e feche-a sem perder sua posição. A leitura em voz alta e as explicações por IA se adaptam ao espaço disponível.
 ```
 
 ## ru — `ru`
@@ -203,6 +211,8 @@ YouTube поддерживается только для публичных ви
 
 Доступны тёмная тема и фоновое воспроизведение. Текст на фотографиях распознаётся средствами Apple на устройстве; фотографии для этого не загружаются. Точность зависит от языка и качества изображения. Локальная история чтения остаётся на устройстве. Подключённые сервисы хранят данные учётной записи и чтения по собственным правилам.
 
+Поддержка iPhone Duo: раскройте экран для более просторного чтения и сложите его, сохранив место в тексте. Интерфейсы чтения вслух и объяснений ИИ подстраиваются под доступное пространство.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -210,6 +220,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Обновили описание в App Store на доступных языках, чтобы понятнее рассказать о чтении вслух, поддерживаемых форматах файлов и объяснениях с ИИ.
+
+Поддержка iPhone Duo: раскройте экран для более просторного чтения и сложите его, сохранив место в тексте. Интерфейсы чтения вслух и объяснений ИИ подстраиваются под доступное пространство.
 ```
 
 ## hi — `hi`
@@ -273,6 +285,8 @@ CastReader का हर दिन मुफ़्त उपयोग करे�
 
 डार्क मोड और बैकग्राउंड प्लेबैक उपलब्ध हैं। तस्वीरों का टेक्स्ट Apple के ऑन-डिवाइस OCR से पहचाना जाता है; इसके लिए तस्वीरें अपलोड नहीं होतीं। सटीकता भाषा और तस्वीर की गुणवत्ता पर निर्भर है। स्थानीय पढ़ने का इतिहास डिवाइस पर रहता है। जुड़े हुए सेवाप्रदाता अपने नियमों के अनुसार खाते और पढ़ने का डेटा रखते हैं।
 
+iPhone Duo का समर्थन: पढ़ने के लिए ज़्यादा जगह पाने के लिए स्क्रीन खोलें, फिर उसे मोड़ने पर भी पढ़ने की जगह बनी रहेगी। आवाज़ में पढ़ने और AI समझाने का इंटरफ़ेस उपलब्ध जगह के अनुसार ढलता है।
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -280,6 +294,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 अलग-अलग भाषाओं में App Store की जानकारी अपडेट की है, ताकि पढ़कर सुनाने, समर्थित फ़ाइल फ़ॉर्मैट और AI व्याख्या की सुविधाएं अधिक स्पष्ट हों।
+
+iPhone Duo का समर्थन: पढ़ने के लिए ज़्यादा जगह पाने के लिए स्क्रीन खोलें, फिर उसे मोड़ने पर भी पढ़ने की जगह बनी रहेगी। आवाज़ में पढ़ने और AI समझाने का इंटरफ़ेस उपलब्ध जगह के अनुसार ढलता है।
 ```
 
 ## da — `da`
@@ -343,6 +359,8 @@ Tilgængeligheden af stemmer og funktioner kan variere efter region.
 
 Mørk tilstand og baggrundsafspilning understøttes. Tekst i fotos genkendes med Apples OCR på enheden; fotos uploades ikke til dette formål. Nøjagtigheden afhænger af sprog og billedkvalitet. Lokal læsehistorik bliver på enheden. Tilsluttede tjenester gemmer deres konto- og læsedata efter egne politikker.
 
+Understøttelse af iPhone Duo: fold skærmen ud for at få mere plads til at læse, og fold den sammen igen uden at miste din læseposition. Oplæsning og AI-forklaringer tilpasser sig den tilgængelige plads.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -350,6 +368,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Vi har opdateret oplysningerne i App Store på de tilgængelige sprog, så oplæsning, understøttede filformater og AI-forklaringer beskrives tydeligere.
+
+Understøttelse af iPhone Duo: fold skærmen ud for at få mere plads til at læse, og fold den sammen igen uden at miste din læseposition. Oplæsning og AI-forklaringer tilpasser sig den tilgængelige plads.
 ```
 
 ## ar-SA — `ar-SA`
@@ -413,6 +433,8 @@ CastReader: قراءة النصوص
 
 يدعم الوضع الداكن والتشغيل في الخلفية. يجري التعرف على النص في الصور باستخدام OCR من Apple على الجهاز، دون رفع الصور لهذا الغرض. تختلف الدقة حسب اللغة وجودة الصورة. يبقى سجل القراءة المحلي على جهازك. تحتفظ الخدمات المتصلة ببيانات الحساب والقراءة وفق سياساتها الخاصة.
 
+دعم iPhone Duo: افتح الشاشة لتحصل على مساحة أوسع للقراءة، ثم اطوها مع الاحتفاظ بموضعك. تتكيف واجهتا القراءة بصوت عالٍ والشرح بالذكاء الاصطناعي مع المساحة المتاحة.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -420,6 +442,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 حدّثنا معلومات App Store باللغات المتاحة لتوضيح القراءة بصوت عالٍ وتنسيقات الملفات المدعومة والشرح بالذكاء الاصطناعي.
+
+دعم iPhone Duo: افتح الشاشة لتحصل على مساحة أوسع للقراءة، ثم اطوها مع الاحتفاظ بموضعك. تتكيف واجهتا القراءة بصوت عالٍ والشرح بالذكاء الاصطناعي مع المساحة المتاحة.
 ```
 
 ## ko — `ko`
@@ -483,6 +507,8 @@ iPhone과 iPad에 맞춘 세로·가로 레이아웃을 이용하세요. Safari 
 
 다크 모드와 백그라운드 재생을 지원합니다. 사진 속 글자는 Apple의 기기 내 OCR로 인식하며 인식을 위해 사진을 업로드하지 않습니다. 정확도는 언어와 이미지 품질에 따라 달라집니다. 로컬 읽기 기록은 기기에 보관됩니다. 연결된 서비스의 계정과 읽기 데이터에는 각 서비스의 정책이 적용됩니다.
 
+iPhone Duo 지원: 화면을 펼쳐 더 넓게 읽고, 다시 접어도 읽던 위치가 유지됩니다. 소리 내어 읽기와 AI 해설 화면이 사용 가능한 공간에 맞춰 조정됩니다.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -490,6 +516,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 여러 언어로 제공되는 App Store 소개를 업데이트하여 텍스트 읽어주기, 지원 파일 형식, AI 해설 기능을 더 명확하게 안내합니다.
+
+iPhone Duo 지원: 화면을 펼쳐 더 넓게 읽고, 다시 접어도 읽던 위치가 유지됩니다. 소리 내어 읽기와 AI 해설 화면이 사용 가능한 공간에 맞춰 조정됩니다.
 ```
 
 ## ja — `ja`
@@ -553,6 +581,8 @@ CastReaderは毎日無料で利用できます。月額または年額のProで�
 
 ダークモードとバックグラウンド再生に対応。写真の文字はAppleの端末内OCRで認識し、認識のために写真をアップロードしません。精度は言語や画像の品質により異なります。ローカルの読書履歴は端末に保存され、接続したサービスのアカウントや読書データには各サービスのポリシーが適用されます。
 
+iPhone Duo に対応。画面を開くと読みやすい広々とした表示になり、閉じても読んでいた位置を保ちます。読み上げと AI 解説の画面が表示領域に合わせて変化します。
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -560,6 +590,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 App Storeの各言語の説明を更新し、読み上げ、対応ファイル形式、AI解説の機能をよりわかりやすく紹介しました。
+
+iPhone Duo に対応。画面を開くと読みやすい広々とした表示になり、閉じても読んでいた位置を保ちます。読み上げと AI 解説の画面が表示領域に合わせて変化します。
 ```
 
 ## hu — `hu`
@@ -623,6 +655,8 @@ A hangok és funkciók elérhetősége régiónként eltérhet.
 
 Sötét mód és háttérlejátszás is elérhető. A fotók szövegét az Apple OCR-je a készüléken ismeri fel, ehhez a képeket nem tölti fel. A pontosság a nyelvtől és a képminőségtől függ. A helyi olvasási előzmények a készüléken maradnak. A kapcsolt szolgáltatások saját szabályzataik szerint tárolják a fiók- és olvasási adatokat.
 
+iPhone Duo-támogatás: nyissa ki a képernyőt a tágasabb olvasási nézethez, majd csukja össze az olvasási pozíció elvesztése nélkül. A felolvasás és az AI-magyarázatok felülete a rendelkezésre álló helyhez igazodik.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -630,6 +664,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Frissítettük az App Store leírásait az elérhető nyelveken, hogy érthetőbben mutassuk be a felolvasást, a támogatott fájlformátumokat és az AI-magyarázatokat.
+
+iPhone Duo-támogatás: nyissa ki a képernyőt a tágasabb olvasási nézethez, majd csukja össze az olvasási pozíció elvesztése nélkül. A felolvasás és az AI-magyarázatok felülete a rendelkezésre álló helyhez igazodik.
 ```
 
 ## es-MX — `es-MX`
@@ -693,6 +729,8 @@ La disponibilidad de voces y funciones puede variar según la región.
 
 Compatible con modo oscuro y reproducción en segundo plano. Las fotos se reconocen con el OCR de Apple en el dispositivo y no se suben para reconocer texto. La precisión depende del idioma y de la calidad de la imagen. El historial local permanece en el dispositivo. Los servicios conectados conservan sus datos de cuenta y lectura según sus propias políticas.
 
+Compatible con iPhone Duo: despliega la pantalla para leer con más espacio y vuelve a plegarla sin perder tu posición. La lectura en voz alta y las explicaciones de IA se adaptan al espacio disponible.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -700,6 +738,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Actualizamos la información de App Store en los idiomas disponibles para explicar con mayor claridad la lectura en voz alta, los formatos compatibles y las explicaciones con IA.
+
+Compatible con iPhone Duo: despliega la pantalla para leer con más espacio y vuelve a plegarla sin perder tu posición. La lectura en voz alta y las explicaciones de IA se adaptan al espacio disponible.
 ```
 
 ## fr-FR — `fr-FR`
@@ -763,6 +803,8 @@ La disponibilité des voix et des fonctions peut varier selon la région.
 
 Mode sombre et lecture en arrière-plan disponibles. Les photos sont reconnues par l’OCR d’Apple sur l’appareil, sans être envoyées pour cette reconnaissance. La précision varie selon la langue et la qualité de l’image. L’historique local reste sur l’appareil. Les services connectés conservent leurs données de compte et de lecture selon leurs propres règles.
 
+Compatible avec l’iPhone Duo : dépliez l’écran pour lire plus confortablement, puis repliez-le sans perdre votre position. La lecture à voix haute et les explications IA s’adaptent à l’espace disponible.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -770,6 +812,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Nous avons actualisé les informations de l’App Store dans les langues disponibles pour mieux présenter la lecture à voix haute, les formats pris en charge et les explications IA.
+
+Compatible avec l’iPhone Duo : dépliez l’écran pour lire plus confortablement, puis repliez-le sans perdre votre position. La lecture à voix haute et les explications IA s’adaptent à l’espace disponible.
 ```
 
 ## id — `id`
@@ -833,6 +877,8 @@ Ketersediaan suara dan fitur dapat berbeda menurut wilayah.
 
 Mode gelap dan pemutaran latar belakang didukung. Teks foto dikenali dengan OCR Apple di perangkat; foto tidak diunggah untuk pengenalan. Akurasi bergantung pada bahasa dan kualitas gambar. Riwayat baca lokal tetap di perangkat. Layanan yang terhubung menyimpan data akun dan bacanya sesuai kebijakan masing-masing.
 
+Dukungan untuk iPhone Duo: buka lipatan layar untuk ruang baca yang lebih luas, lalu lipat kembali tanpa kehilangan posisi membaca. Tampilan baca nyaring dan penjelasan AI menyesuaikan ruang yang tersedia.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -840,6 +886,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Kami memperbarui informasi App Store dalam bahasa yang tersedia agar fitur pembacaan teks, format file yang didukung, dan penjelasan AI lebih jelas.
+
+Dukungan untuk iPhone Duo: buka lipatan layar untuk ruang baca yang lebih luas, lalu lipat kembali tanpa kehilangan posisi membaca. Tampilan baca nyaring dan penjelasan AI menyesuaikan ruang yang tersedia.
 ```
 
 ## cs — `cs`
@@ -903,6 +951,8 @@ Dostupnost hlasů a funkcí se může lišit podle oblasti.
 
 Podporován je tmavý režim i přehrávání na pozadí. Text na fotografiích rozpoznává OCR společnosti Apple přímo v zařízení; fotografie se za tímto účelem nenahrávají. Přesnost závisí na jazyce a kvalitě obrazu. Místní historie čtení zůstává v zařízení. Připojené služby uchovávají údaje účtu a čtení podle vlastních pravidel.
 
+Podpora iPhonu Duo: rozložte displej a získejte více prostoru pro čtení. Po složení zůstane vaše místo v textu zachováno. Předčítání a vysvětlení pomocí AI se přizpůsobují dostupnému prostoru.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -910,6 +960,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Aktualizovali jsme informace v App Storu v dostupných jazycích, aby lépe popisovaly čtení nahlas, podporované formáty souborů a vysvětlení pomocí AI.
+
+Podpora iPhonu Duo: rozložte displej a získejte více prostoru pro čtení. Po složení zůstane vaše místo v textu zachováno. Předčítání a vysvětlení pomocí AI se přizpůsobují dostupnému prostoru.
 ```
 
 ## pl — `pl`
@@ -973,6 +1025,8 @@ Dostępność głosów i funkcji może się różnić w zależności od regionu.
 
 Dostępne są ciemny motyw i odtwarzanie w tle. Tekst na zdjęciach rozpoznaje OCR Apple na urządzeniu; zdjęcia nie są w tym celu przesyłane. Dokładność zależy od języka i jakości obrazu. Lokalna historia czytania pozostaje na urządzeniu. Połączone usługi przechowują dane konta i czytania zgodnie ze swoimi zasadami.
 
+Obsługa iPhone’a Duo: rozłóż ekran, aby zyskać więcej miejsca do czytania, a potem złóż go bez utraty pozycji w tekście. Czytanie na głos i objaśnienia AI dostosowują się do dostępnej przestrzeni.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -980,6 +1034,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Zaktualizowaliśmy informacje w App Store w dostępnych językach, aby lepiej wyjaśnić czytanie na głos, obsługiwane formaty plików i wyjaśnienia AI.
+
+Obsługa iPhone’a Duo: rozłóż ekran, aby zyskać więcej miejsca do czytania, a potem złóż go bez utraty pozycji w tekście. Czytanie na głos i objaśnienia AI dostosowują się do dostępnej przestrzeni.
 ```
 
 ## en-US — `en-US`
@@ -1043,6 +1099,8 @@ Voice and feature availability may vary by region.
 
 Dark mode and background playback are supported. Photo text recognition uses Apple’s on-device OCR; accuracy varies with the language and image quality. Photos are not uploaded for text recognition. Your local reading history stays on your device. Connected services retain their own account and reading data under their respective policies.
 
+Support for iPhone Duo: unfold for a roomier reading view, then fold back while keeping your place. Read Aloud and AI Explain adapt to the available space.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1050,6 +1108,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Updated our localized App Store information to explain Read Aloud, supported file formats, and AI Explain more clearly.
+
+Support for iPhone Duo: unfold for a roomier reading view, then fold back while keeping your place. Read Aloud and AI Explain adapt to the available space.
 ```
 
 ## it — `it`
@@ -1113,6 +1173,8 @@ La disponibilità di voci e funzioni può variare in base alla regione.
 
 Sono disponibili modalità scura e riproduzione in background. Il testo nelle foto viene riconosciuto con l’OCR di Apple sul dispositivo, senza caricare le foto per il riconoscimento. La precisione varia in base alla lingua e alla qualità dell’immagine. La cronologia locale rimane sul dispositivo. I servizi collegati conservano i propri dati di account e lettura secondo le rispettive politiche.
 
+Supporto per iPhone Duo: apri lo schermo per leggere con più spazio e richiudilo senza perdere il punto. La lettura ad alta voce e le spiegazioni IA si adattano allo spazio disponibile.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1120,6 +1182,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Abbiamo aggiornato le informazioni dell’App Store nelle lingue disponibili per spiegare meglio la lettura ad alta voce, i formati supportati e le spiegazioni IA.
+
+Supporto per iPhone Duo: apri lo schermo per leggere con più spazio e richiudilo senza perdere il punto. La lettura ad alta voce e le spiegazioni IA si adattano allo spazio disponibile.
 ```
 
 ## vi — `vi`
@@ -1183,6 +1247,8 @@ Giọng đọc và tính năng có sẵn có thể khác nhau tùy theo khu vự
 
 Hỗ trợ chế độ tối và phát nền. Văn bản trong ảnh được nhận dạng bằng OCR của Apple trên thiết bị; ảnh không được tải lên để nhận dạng. Độ chính xác tùy thuộc ngôn ngữ và chất lượng ảnh. Lịch sử đọc cục bộ được giữ trên thiết bị. Các dịch vụ đã kết nối lưu dữ liệu tài khoản và đọc theo chính sách riêng.
 
+Hỗ trợ iPhone Duo: mở màn hình để có không gian đọc rộng hơn, rồi gập lại mà vẫn giữ nguyên vị trí đọc. Giao diện đọc thành tiếng và giải thích bằng AI thích ứng với không gian hiển thị.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1190,6 +1256,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Đã cập nhật thông tin App Store bằng các ngôn ngữ hiện có để giải thích rõ hơn về đọc thành tiếng, định dạng tệp được hỗ trợ và lời giải thích của AI.
+
+Hỗ trợ iPhone Duo: mở màn hình để có không gian đọc rộng hơn, rồi gập lại mà vẫn giữ nguyên vị trí đọc. Giao diện đọc thành tiếng và giải thích bằng AI thích ứng với không gian hiển thị.
 ```
 
 ## he — `he`
@@ -1253,6 +1321,8 @@ CastReader: הקראת טקסט
 
 יש תמיכה במצב כהה ובניגון ברקע. הטקסט בתמונות מזוהה באמצעות OCR של Apple במכשיר, ללא העלאת התמונות לצורך הזיהוי. הדיוק תלוי בשפה ובאיכות התמונה. היסטוריית הקריאה המקומית נשארת במכשיר. השירותים המחוברים שומרים את נתוני החשבון והקריאה בהתאם למדיניות שלהם.
 
+תמיכה ב-iPhone Duo: פתחו את המסך לתצוגת קריאה מרווחת יותר וקפלו אותו שוב בלי לאבד את המקום בטקסט. ממשקי ההקראה וההסברים באמצעות AI מתאימים את עצמם לשטח הזמין.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1260,6 +1330,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 עדכנו את המידע ב-App Store בשפות הזמינות כדי להסביר בצורה ברורה יותר את ההקראה, פורמטי הקבצים הנתמכים וההסברים בעזרת AI.
+
+תמיכה ב-iPhone Duo: פתחו את המסך לתצוגת קריאה מרווחת יותר וקפלו אותו שוב בלי לאבד את המקום בטקסט. ממשקי ההקראה וההסברים באמצעות AI מתאימים את עצמם לשטח הזמין.
 ```
 
 ## nl-NL — `nl-NL`
@@ -1323,6 +1395,8 @@ De beschikbaarheid van stemmen en functies kan per regio verschillen.
 
 Donkere modus en afspelen op de achtergrond zijn beschikbaar. Foto’s worden met Apples OCR op het apparaat herkend en hiervoor niet geüpload. De nauwkeurigheid hangt af van taal en beeldkwaliteit. Je lokale leesgeschiedenis blijft op het apparaat. Verbonden diensten bewaren hun account- en leesgegevens volgens hun eigen beleid.
 
+Ondersteuning voor iPhone Duo: vouw het scherm open voor meer leesruimte en weer dicht zonder je leespositie te verliezen. Voorlezen en AI-uitleg passen zich aan de beschikbare ruimte aan.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1330,6 +1404,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 We hebben de App Store-informatie in de beschikbare talen bijgewerkt om voorlezen, ondersteunde bestandsformaten en AI-uitleg duidelijker te beschrijven.
+
+Ondersteuning voor iPhone Duo: vouw het scherm open voor meer leesruimte en weer dicht zonder je leespositie te verliezen. Voorlezen en AI-uitleg passen zich aan de beschikbare ruimte aan.
 ```
 
 ## de-DE — `de-DE`
@@ -1393,6 +1469,8 @@ Die Verfügbarkeit von Stimmen und Funktionen kann je nach Region variieren.
 
 Dunkelmodus und Hintergrundwiedergabe werden unterstützt. Fotos werden mit Apples OCR auf dem Gerät erkannt und dafür nicht hochgeladen. Die Genauigkeit hängt von Sprache und Bildqualität ab. Der lokale Leseverlauf bleibt auf deinem Gerät. Verbundene Dienste speichern ihre Konto- und Lesedaten gemäß ihren eigenen Richtlinien.
 
+Unterstützung für iPhone Duo: Aufgeklappt bietet die Leseansicht mehr Platz. Beim Zuklappen bleibt Ihre Leseposition erhalten. Vorlesen und KI-Erklärungen passen sich dem verfügbaren Platz an.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1400,6 +1478,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Wir haben die lokalisierten App-Store-Informationen überarbeitet, um Vorlesen, unterstützte Dateiformate und KI-Erklärungen verständlicher vorzustellen.
+
+Unterstützung für iPhone Duo: Aufgeklappt bietet die Leseansicht mehr Platz. Beim Zuklappen bleibt Ihre Leseposition erhalten. Vorlesen und KI-Erklärungen passen sich dem verfügbaren Platz an.
 ```
 
 ## zh-Hans — `zh-Hans`
@@ -1463,6 +1543,8 @@ AI 解读，把难懂的内容讲明白
 
 支持深色模式与后台播放。照片文字使用 Apple 设备端 OCR 识别，准确度因语言和图片质量而异；照片不会为文字识别而上传。本地阅读历史保留在设备上，已连接服务依据各自政策保存其账号和阅读数据。
 
+适配 iPhone Duo：展开屏幕，享受更宽敞的阅读界面；折叠后继续原来的阅读位置。朗读与 AI 解读界面会随可用空间调整。
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1470,6 +1552,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 更新多语言 App Store 介绍，更清楚地说明原文朗读、支持的文件格式和 AI 解读功能。
+
+适配 iPhone Duo：展开屏幕，享受更宽敞的阅读界面；折叠后继续原来的阅读位置。朗读与 AI 解读界面会随可用空间调整。
 ```
 
 ## el — `el`
@@ -1533,6 +1617,8 @@ PDF, βιβλία και ιστοσελίδες
 
 Υποστηρίζονται σκοτεινό θέμα και αναπαραγωγή στο παρασκήνιο. Το κείμενο φωτογραφιών αναγνωρίζεται με το OCR της Apple στη συσκευή, χωρίς μεταφόρτωση των φωτογραφιών για αυτόν τον σκοπό. Η ακρίβεια εξαρτάται από τη γλώσσα και την ποιότητα της εικόνας. Το τοπικό ιστορικό παραμένει στη συσκευή. Οι συνδεδεμένες υπηρεσίες διατηρούν δεδομένα λογαριασμού και ανάγνωσης σύμφωνα με τις δικές τους πολιτικές.
 
+Υποστήριξη iPhone Duo: ξεδιπλώστε την οθόνη για περισσότερο χώρο ανάγνωσης και διπλώστε την ξανά χωρίς να χάσετε τη θέση σας. Η εκφώνηση και οι εξηγήσεις AI προσαρμόζονται στον διαθέσιμο χώρο.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1540,6 +1626,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Ενημερώσαμε τις πληροφορίες του App Store στις διαθέσιμες γλώσσες, ώστε να παρουσιάζονται πιο ξεκάθαρα η εκφώνηση κειμένου, οι υποστηριζόμενες μορφές αρχείων και οι επεξηγήσεις AI.
+
+Υποστήριξη iPhone Duo: ξεδιπλώστε την οθόνη για περισσότερο χώρο ανάγνωσης και διπλώστε την ξανά χωρίς να χάσετε τη θέση σας. Η εκφώνηση και οι εξηγήσεις AI προσαρμόζονται στον διαθέσιμο χώρο.
 ```
 
 ## ms — `ms`
@@ -1603,6 +1691,8 @@ Ketersediaan suara dan ciri mungkin berbeza mengikut rantau.
 
 Mod gelap dan main balik latar belakang disokong. Teks foto dikenal pasti menggunakan OCR Apple pada peranti; foto tidak dimuat naik untuk pengecaman. Ketepatan bergantung pada bahasa dan kualiti imej. Sejarah bacaan setempat kekal pada peranti. Perkhidmatan yang disambungkan menyimpan data akaun dan bacaan mengikut dasar masing-masing.
 
+Sokongan untuk iPhone Duo: buka lipatan skrin untuk ruang bacaan yang lebih luas, kemudian lipat semula tanpa kehilangan kedudukan bacaan. Paparan bacaan lantang dan penerangan AI menyesuaikan diri dengan ruang yang tersedia.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1610,6 +1700,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Kami mengemas kini maklumat App Store dalam bahasa yang tersedia untuk menerangkan bacaan teks, format fail yang disokong dan huraian AI dengan lebih jelas.
+
+Sokongan untuk iPhone Duo: buka lipatan skrin untuk ruang bacaan yang lebih luas, kemudian lipat semula tanpa kehilangan kedudukan bacaan. Paparan bacaan lantang dan penerangan AI menyesuaikan diri dengan ruang yang tersedia.
 ```
 
 ## es-ES — `es-ES`
@@ -1673,6 +1765,8 @@ La disponibilidad de voces y funciones puede variar según la región.
 
 Compatible con modo oscuro y reproducción en segundo plano. Las fotos se reconocen con el OCR de Apple en el dispositivo y no se suben para reconocer texto. La precisión depende del idioma y de la calidad de la imagen. El historial local permanece en el dispositivo. Los servicios conectados conservan sus datos de cuenta y lectura según sus propias políticas.
 
+Compatible con iPhone Duo: despliega la pantalla para leer con más espacio y vuelve a plegarla sin perder tu posición. La lectura en voz alta y las explicaciones de IA se adaptan al espacio disponible.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1680,6 +1774,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Hemos actualizado la información de App Store en los idiomas disponibles para explicar mejor la lectura en voz alta, los formatos compatibles y las explicaciones con IA.
+
+Compatible con iPhone Duo: despliega la pantalla para leer con más espacio y vuelve a plegarla sin perder tu posición. La lectura en voz alta y las explicaciones de IA se adaptan al espacio disponible.
 ```
 
 ## tr — `tr`
@@ -1743,6 +1839,8 @@ Seslerin ve özelliklerin kullanılabilirliği bölgeye göre değişebilir.
 
 Karanlık mod ve arka planda oynatma desteklenir. Fotoğraflardaki metin Apple'ın cihaz içi OCR özelliğiyle tanınır; bu işlem için fotoğraflar yüklenmez. Doğruluk dile ve görüntü kalitesine bağlıdır. Yerel okuma geçmişi cihazda kalır. Bağlı hizmetler hesap ve okuma verilerini kendi politikalarına göre saklar.
 
+iPhone Duo desteği: daha geniş bir okuma alanı için ekranı açın, ardından kaldığınız yeri kaybetmeden tekrar katlayın. Sesli okuma ve yapay zekâ açıklamaları kullanılabilir alana uyum sağlar.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1750,6 +1848,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Sesli okuma, desteklenen dosya biçimleri ve yapay zekâ açıklamalarını daha anlaşılır sunmak için App Store bilgilerini mevcut dillerde güncelledik.
+
+iPhone Duo desteği: daha geniş bir okuma alanı için ekranı açın, ardından kaldığınız yeri kaybetmeden tekrar katlayın. Sesli okuma ve yapay zekâ açıklamaları kullanılabilir alana uyum sağlar.
 ```
 
 ## fi — `fi`
@@ -1813,6 +1913,8 @@ Kloonattujen äänten käyttö edellyttää Prota. Jokaiseen kuukausittaiseen ti
 
 Tumma tila ja taustatoisto ovat käytettävissä. Valokuvien teksti tunnistetaan Applen OCR:llä laitteessa, eikä kuvia lähetetä tunnistusta varten. Tarkkuus riippuu kielestä ja kuvan laadusta. Paikallinen lukuhistoria säilyy laitteessa. Yhdistetyt palvelut säilyttävät tili- ja lukutiedot omien käytäntöjensä mukaisesti.
 
+iPhone Duo -tuki: avaa näyttö saadaksesi enemmän lukutilaa ja taita se takaisin menettämättä lukukohtaasi. Ääneenluku ja tekoälyselitykset mukautuvat käytettävissä olevaan tilaan.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1820,6 +1922,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Päivitimme App Storen tiedot saatavilla olevilla kielillä, jotta ääneen lukeminen, tuetut tiedostomuodot ja tekoälyn selitykset on kuvattu selkeämmin.
+
+iPhone Duo -tuki: avaa näyttö saadaksesi enemmän lukutilaa ja taita se takaisin menettämättä lukukohtaasi. Ääneenluku ja tekoälyselitykset mukautuvat käytettävissä olevaan tilaan.
 ```
 
 ## ro — `ro`
@@ -1883,6 +1987,8 @@ Disponibilitatea vocilor și funcțiilor poate varia în funcție de regiune.
 
 Sunt acceptate modul întunecat și redarea în fundal. Textul din fotografii este recunoscut cu OCR Apple pe dispozitiv; fotografiile nu sunt încărcate pentru recunoaștere. Precizia depinde de limbă și de calitatea imaginii. Istoricul local rămâne pe dispozitiv. Serviciile conectate păstrează datele de cont și lectură conform propriilor politici.
 
+Suport pentru iPhone Duo: deschide ecranul pentru mai mult spațiu de lectură, apoi pliază-l fără să pierzi locul în text. Citirea cu voce tare și explicațiile AI se adaptează spațiului disponibil.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1890,6 +1996,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Am actualizat informațiile din App Store în limbile disponibile pentru a explica mai clar citirea cu voce tare, formatele de fișiere acceptate și explicațiile AI.
+
+Suport pentru iPhone Duo: deschide ecranul pentru mai mult spațiu de lectură, apoi pliază-l fără să pierzi locul în text. Citirea cu voce tare și explicațiile AI se adaptează spațiului disponibil.
 ```
 
 ## sv — `sv`
@@ -1953,6 +2061,8 @@ Tillgången till röster och funktioner kan variera mellan regioner.
 
 Mörkt läge och bakgrundsuppspelning stöds. Text i foton känns igen med Apples OCR på enheten; foton laddas inte upp för detta. Noggrannheten beror på språk och bildkvalitet. Lokal läshistorik stannar på enheten. Anslutna tjänster lagrar sina konto- och läsdata enligt sina egna regler.
 
+Stöd för iPhone Duo: vik upp skärmen för mer läsutrymme och vik ihop den igen utan att tappa din plats. Högläsning och AI-förklaringar anpassas till det tillgängliga utrymmet.
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -1960,6 +2070,8 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 Vi har uppdaterat informationen i App Store på de tillgängliga språken för att tydligare beskriva uppläsning, filformat som stöds och AI-förklaringar.
+
+Stöd för iPhone Duo: vik upp skärmen för mer läsutrymme och vik ihop den igen utan att tappa din plats. Högläsning och AI-förklaringar anpassas till det tillgängliga utrymmet.
 ```
 
 ## zh-Hant — `zh-Hant`
@@ -2022,6 +2134,8 @@ AI 解讀，協助理解內容
 
 音色和功能的可用範圍依地區而異。
 
+支援 iPhone Duo：展開螢幕，享受更寬敞的閱讀介面；摺疊後保留原來的閱讀位置。朗讀與 AI 解說介面會隨可用空間調整。
+
 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
@@ -2029,5 +2143,7 @@ EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 
 ```text
 更新多語言 App Store 介紹，更清楚地說明原文朗讀、支援的檔案格式與 AI 解讀功能。
+
+支援 iPhone Duo：展開螢幕，享受更寬敞的閱讀介面；摺疊後保留原來的閱讀位置。朗讀與 AI 解說介面會隨可用空間調整。
 ```
 
