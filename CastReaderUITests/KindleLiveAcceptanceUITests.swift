@@ -352,6 +352,7 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         explain.tap()
         wait(15) { self.playbackIs(explain, "paused") }
         let paused = state(), marks = number("marks"), pausedTime = number("time")
+        snapshot(app, "kindle-explain-paused-open")
         app.buttons["kindleMinimizeButton"].tap()
         let mini = app.buttons["kindleMiniPlayerExpand"]
         XCTAssertTrue(mini.waitForExistence(timeout: 15))
@@ -359,8 +360,12 @@ final class KindleLiveAcceptanceUITests: XCTestCase {
         XCTAssertTrue(mini.isHittable); mini.tap()
         for target in ["closed", "open"] {
             if target == "open" { try fold(target, phase: "explain-paused-expanded") }
+            // Narrow reflow can put an earlier marked phrase on the preceding
+            // page. Keep all semantic marks, require visible ink on the current
+            // page, and require every mark to reappear after unfolding.
+            let requiredVisibleMarks = target == "open" ? marks : 1
             wait(90) { self.playbackIs(explain, "paused") && state()["stable"] == "true" &&
-                number("marks") >= marks && number("shown") >= marks && number("ink") > 0 }
+                number("marks") >= marks && number("shown") >= requiredVisibleMarks && number("ink") > 0 }
             XCTAssertEqual(state()["explainSession"], paused["explainSession"])
             XCTAssertEqual(state()["segment"], paused["segment"])
             XCTAssertEqual(number("time"), pausedTime, accuracy: 0.4)
