@@ -45,10 +45,16 @@ const services = {
           end: { pageIndexInBook: 24 }
         };
       },
-      goToPageByBookPercentage(percentage) {
+      goToPageByBookPercentage(percentage, animated = true) {
         globalThis.__koboURProgressTurns =
           globalThis.__koboURProgressTurns || [];
         globalThis.__koboURProgressTurns.push(percentage);
+        globalThis.__koboURAnimations = globalThis.__koboURAnimations || [];
+        globalThis.__koboURAnimations.push(animated);
+        if (globalThis.__koboRequireNoAnimation && animated) return new Promise(() => {});
+        if (globalThis.__koboDelayedTurn) return new Promise(resolve => setTimeout(() => {
+          globalThis.__koboApplyProgressTurn?.(percentage); resolve();
+        }, 450));
         globalThis.__koboApplyProgressTurn?.(percentage);
         if (globalThis.__koboRejectURTurn) {
           return Promise.reject(new Error('fixture-ur-turn-rejected'));
@@ -573,6 +579,39 @@ async function run() {
     assert(restored.length === 1 && restored[0].payload.reason === 'refresh' &&
       !restored[0].payload.turnID, 'later standalone reflow must not inherit automatic identity');
   }
+  // UR defaults to animation; hidden WebKit does not run its animation frames.
+  // Native observation may beat the provider's asynchronous source commit.
+  const lockedStart = messages.length;
+  const lockedBaseline = KoboFixture.koboSignature();
+  const lockedTurns = window.__koboURProgressTurns.length;
+  const lockedMetadata = {turnID:'fixture-locked-delayed', baselineSignature:lockedBaseline,
+    originFrameSessionID:'kbf-fixture'};
+  window.__koboRequireNoAnimation = true;
+  window.__koboDelayedTurn = true;
+  const originalRAF = window.requestAnimationFrame;
+  window.requestAnimationFrame = () => 0;
+  assert(window.CastReaderKobo.nextPage(lockedMetadata), 'locked UR turn was not accepted');
+  assert(window.__koboURAnimations.at(-1) === false, 'automatic UR turn waits for hidden animation');
+  window.CastReaderKobo.refresh(lockedMetadata);
+  await new Promise(resolve => setTimeout(resolve, 160));
+  assert(!messages.slice(lockedStart).some(m => m.type === 'rendered'),
+    'background probe published unchanged source before the provider completed');
+  assert(!window.CastReaderKobo.navigationReady(), 'background probe retired the pending turn');
+  await new Promise(resolve => setTimeout(resolve, 700));
+  window.CastReaderKobo.refresh(lockedMetadata);
+  await new Promise(resolve => setTimeout(resolve, 200));
+  const lockedCommits = messages.slice(lockedStart).filter(m => m.type === 'rendered');
+  assert(lockedCommits.length === 1 && lockedCommits[0].payload.reason === 'auto' &&
+    lockedCommits[0].payload.turnID === lockedMetadata.turnID &&
+    lockedCommits[0].payload.signature !== lockedBaseline,
+    'locked delayed UR turn must publish exactly one verified successor');
+  assert(window.__koboURProgressTurns.length === lockedTurns + 1, 'probe repeated the physical turn');
+  window.requestAnimationFrame = originalRAF;
+  delete window.__koboRequireNoAnimation;
+  delete window.__koboDelayedTurn;
+  currentFrame.contentDocument.getElementById('visibleP').style.transform = '';
+  window.CR.gbRelayout({reason:'restore-after-locked-turn'});
+  await new Promise(resolve => setTimeout(resolve, 2_000));
   window.__koboURProgressTurns = [];
   messages.length = 0;
   highlightClears = 0;

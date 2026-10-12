@@ -1871,6 +1871,9 @@ enum ReaderRunLog {
     #endif
 
     static func write(_ message: String) {
+        #if !DEBUG
+        KindleRunLog.write(message)
+        #endif
         #if DEBUG
         // Keep the timestamp at the event, not at eventual file delivery.
         let occurredAt = Date()

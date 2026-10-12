@@ -2065,6 +2065,37 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         }
     }
 
+    func testNativeBackgroundCompletionDispatchesOneGoogleTurnBeforeUnlock() async throws {
+        let initial = try await loadReaderFrame()
+        let oldAutoPlay = AppSettings.shared.autoPlay
+        AppSettings.shared.autoPlay = false
+        defer { AppSettings.shared.autoPlay = oldAutoPlay }
+        let document = ReadingDocument(id: UUID().uuidString, title: "Background turn",
+            sourceKind: .googleBooks, language: "en", paragraphs: [],
+            sourceURL: "https://play.google.com/books/reader?id=background-fixture")
+        let read = ReadAloudViewModel(document: document)
+        let explain = ExplainViewModel(document: document)
+        let bridge = WebReaderBridge()
+        bridge.configure(expectsDynamicWebContent: true, livePlatform: .googleBooks,
+            bookID: document.id, readerURL: document.sourceURL)
+        bridge.attach(readVM: read, explainVM: explain)
+        bridge.webView = webView
+        bridge.receiveGoogleBooksPageForTesting(initial)
+        defer { read.stop(); read.deactivate(); explain.stop(); explain.deactivate() }
+        // This local fixture is the reading frame; the actual Google shell
+        // supplies these relay methods around the same reader API.
+        _ = try await webView.evaluateJavaScript("CR.gbNextPage=arg=>CastReaderGoogleBooks.nextPage(arg);CR.gbRefresh=arg=>CastReaderGoogleBooks.refresh(arg);window.requestAnimationFrame=()=>0;true")
+        bridge.applicationActivityChanged(isActive: false)
+        read.onDocumentFinished?(nil)
+        let committed = try await waitForRendered(reason: "auto")
+        XCTAssertNotEqual(committed["signature"] as? String, initial["signature"] as? String)
+        XCTAssertNil(committed["presentedOperationID"], "Hidden source confirmation is not a painted receipt")
+        bridge.receiveGoogleBooksPageForTesting(committed)
+        let page = try await webView.evaluateJavaScript("window.fixturePage") as? Int
+        XCTAssertEqual(page, 1, "Background observation cannot dispatch another page click")
+        XCTAssertNil(read.webContentBlockMessage)
+    }
+
     func testPureViewportResizeIsRefreshRatherThanManualTurn() async throws {
         _ = try await loadReaderFrame()
         for size in [CGSize(width: 430, height: 700), CGSize(width: 820, height: 1000),

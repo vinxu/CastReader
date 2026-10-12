@@ -145,7 +145,7 @@
     function schedule() {
       if (scheduled) return;
       scheduled = true;
-      requestAnimationFrame(publish);
+      Promise.resolve().then(publish);
     }
     function attach(candidate) {
       var _a, _b, _c;
@@ -236,6 +236,7 @@
       }
     });
     return {
+      refreshSnapshot: publish,
       readerPosition() {
         var _a;
         const first = (state == null ? void 0 : state.ready) && state.columns.find((p) => p.id === state.current[0]);

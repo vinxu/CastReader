@@ -2459,7 +2459,7 @@ export function installPlayBooksRelay(): void {
     'init', 'extract', 'highlightRange', 'highlightWord', 'clearHighlight',
     'setColor', 'setActive', 'scrollTo', 'setAutoScroll', 'showMark', 'clearMarks',
     'gbNextPage', 'gbPrevPage', 'gbManualPage', 'gbRefresh', 'gbRetargetTurnBaseline',
-    'gbCompleteTurn', 'confirmPresentation',
+    'gbCompleteTurn', 'confirmPresentation', 'setPresentationActive',
   ]
   type RelayTurnContext = {
     arg: Record<string, unknown>

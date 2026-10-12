@@ -304,7 +304,11 @@ final class PaginationContinuityTests: XCTestCase {
         try await Task.sleep(nanoseconds: 150_000_000)
         XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.01)
         read.togglePlayPause()
-        try await Task.sleep(nanoseconds: 200_000_000)
+        // AVFoundation decoder preroll can exceed a fixed 200 ms on 27.1.
+        // Require measurable progress within one second, with the same media.
+        for _ in 0..<100 where audio.playbackPosition <= position + 0.1 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         XCTAssertTrue(audio.activePlayerForTesting === player)
         XCTAssertGreaterThan(audio.playbackPosition, position + 0.1)
         XCTAssertEqual(fixture.requests.filter { $0 == "Slow rapidly." }.count, 1)
@@ -830,7 +834,9 @@ final class PaginationContinuityTests: XCTestCase {
         XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.01)
         XCTAssertFalse(audio.finishPagePresentation(UUID()), "Wrong page operation cannot release media")
         XCTAssertTrue(audio.finishPagePresentation(hold))
-        try await Task.sleep(nanoseconds: 250_000_000)
+        for _ in 0..<100 where audio.playbackPosition <= position + 0.1 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         XCTAssertTrue(audio.activePlayerForTesting === player)
         XCTAssertGreaterThan(audio.playbackPosition, position + 0.1)
         XCTAssertFalse(audio.finishPagePresentation(hold), "A completion is consumed once")
@@ -984,7 +990,9 @@ final class PaginationContinuityTests: XCTestCase {
         XCTAssertLessThanOrEqual(audio.playbackPosition, 0.301)
         for _ in 0..<100 where hold == nil { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertTrue(audio.finishPagePresentation(try XCTUnwrap(hold)))
-        try await Task.sleep(nanoseconds: 250_000_000)
+        for _ in 0..<100 where audio.playbackPosition <= 0.4 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         XCTAssertGreaterThan(audio.playbackPosition, 0.4)
     }
 
@@ -1133,7 +1141,16 @@ final class PaginationContinuityTests: XCTestCase {
         try await verifyWeReadSourceCarry(pageCount: 3)
     }
 
-    private func verifyWeReadSourceCarry(pageCount: Int) async throws {
+    func testWeReadLockedThreePagesContinueWithoutAnimationFrames() async throws {
+        try await verifyWeReadSourceCarry(pageCount: 3, background: true)
+    }
+
+    func testWeReadPresentationTimeoutRestoresVerifiedPageForExplicitRetry() async throws {
+        try await verifyWeReadSourceCarry(pageCount: 2, presentationTimeout: true)
+    }
+
+    private func verifyWeReadSourceCarry(pageCount: Int, background: Bool = false,
+                                       presentationTimeout: Bool = false) async throws {
         let oldPro = ProManager.shared.debugForcePro
         ProManager.shared.debugForcePro = true
         defer { ProManager.shared.debugForcePro = oldPro }
@@ -1188,7 +1205,29 @@ final class PaginationContinuityTests: XCTestCase {
         """#, baseURL: URL(string: document.sourceURL!))
         for _ in 0..<300 where !read.hasReadableWebContent { try await Task.sleep(nanoseconds: 20_000_000) }
         XCTAssertTrue(read.hasReadableWebContent)
+        if background || presentationTimeout {
+            _ = try await web.evaluateJavaScript("window.requestAnimationFrame=()=>0;true")
+        }
+        if background { bridge.applicationActivityChanged(isActive: false) }
+        var failures = 0
+        let observer = read.$status.sink { if case .error = $0 { failures += 1 } }
+        defer { observer.cancel() }
         read.start()
+        if presentationTimeout {
+            for _ in 0..<600 {
+                if failures > 0, read.webContentBlockMessage == nil,
+                   read.stagedLiveWebParagraphTexts.contains(where: { $0.contains("后半句") }) { break }
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
+            XCTAssertGreaterThan(failures, 0, "Exercise the actual presentation timeout")
+            XCTAssertNil(read.webContentBlockMessage, "A transient paint timeout must not permanently block Retry")
+            XCTAssertFalse(audio.isPlaying, "Recovery must wait for explicit user intent")
+            read.togglePlayPause()
+            for _ in 0..<200 where !audio.isPlaying { try await Task.sleep(nanoseconds: 20_000_000) }
+            XCTAssertTrue(audio.isPlaying, "Explicit Retry must play the verified current source")
+            XCTAssertTrue(audio.currentSegment?.text.contains("后半句") == true)
+            return
+        }
         var resumed = false
         for _ in 0..<400 {
             if inbox.turnPositions.count == pageCount - 1, audio.currentSegment?.text.contains("前半句") == true,
@@ -1203,7 +1242,7 @@ final class PaginationContinuityTests: XCTestCase {
             if inbox.turnPositions.count == 2 { XCTAssertEqual(inbox.turnPositions[1], 0.9, accuracy: 0.04) }
         }
         XCTAssertTrue(resumed, "Native painted continuation must resume the same source audio")
-        XCTAssertEqual(inbox.weReadPaintedReceipts.count, pageCount - 1,
+        XCTAssertEqual(inbox.weReadPaintedReceipts.count, background ? 0 : pageCount - 1,
                        "Canvas and exact next cue should arrive in one painted receipt, without a second JS handshake")
         XCTAssertEqual(fixture.requests.filter { $0.contains("前半句") }.count, 1)
     }
@@ -1315,9 +1354,17 @@ final class PaginationContinuityTests: XCTestCase {
         try await verifyKoboCuePages(pageCount: 2, wholePage: true, multipartPreload: true)
     }
 
+    func testKoboLockedThreePagesContinueWithoutAnimationFrames() async throws {
+        try await verifyKoboCuePages(pageCount: 3, background: true)
+    }
+
+    func testKoboLockedWholePageReleasesPreparedSuccessorWithoutPaint() async throws {
+        try await verifyKoboCuePages(pageCount: 2, wholePage: true, background: true)
+    }
+
     private func verifyKoboCuePages(pageCount: Int, wholePage: Bool = false, deferFirstAnchor: Bool = false,
                                   preparedCarry: Bool = false, expectsNativePaint: Bool? = nil,
-                                  bookEnd: Bool = false, multipartPreload: Bool = false, untimedOpening: Bool = false) async throws {
+                                  bookEnd: Bool = false, multipartPreload: Bool = false, untimedOpening: Bool = false, background: Bool = false) async throws {
         let oldPro = ProManager.shared.debugForcePro
         ProManager.shared.debugForcePro = true
         defer { ProManager.shared.debugForcePro = oldPro }
@@ -1418,6 +1465,10 @@ final class PaginationContinuityTests: XCTestCase {
                   nativeBookEnd:{pagesOfBook:100,firstPage:99,lastPage:99}}});return false};true
               """)
         }
+        if background {
+            _ = try await web.evaluateJavaScript("window.requestAnimationFrame=()=>0;true")
+            bridge.applicationActivityChanged(isActive: false)
+        }
         read.start()
         if bookEnd {
             for _ in 0..<250 where !read.isFinished || audio.pagePresentationHoldID != nil {
@@ -1434,7 +1485,10 @@ final class PaginationContinuityTests: XCTestCase {
         var mediaAfterAcknowledgement = false
         for _ in 0..<600 {
             held = held || audio.pagePresentationHoldID != nil
-            if inbox.presentations.filter({ $0["ready"] as? Bool == true }).count >= pageCount - 1,
+            let confirmed = background
+                ? inbox.turnPositions.count >= pageCount - 1 && audio.pagePresentationHoldID == nil
+                : inbox.presentations.filter({ $0["ready"] as? Bool == true }).count >= pageCount - 1
+            if confirmed,
                audio.playbackPosition > (pageCount == 2 ? 0.6 : 1.5),
                !preparedCarry || audio.currentSegment?.text == "The prepared successor.",
                !wholePage || audio.currentSegment?.text == "Rapidly onward." {
@@ -1448,7 +1502,11 @@ final class PaginationContinuityTests: XCTestCase {
                            "A transient missing anchor must stay held, not destroy the active queue")
         }
         XCTAssertTrue(held, "The real AVPlayer cue must freeze transport during the native turn")
-        XCTAssertTrue(mediaAfterAcknowledgement, "A painted live source anchor must release the same item")
+        XCTAssertTrue(mediaAfterAcknowledgement, "A verified source must release audio; only visible playback waits for paint")
+        XCTAssertNil(read.webContentBlockMessage)
+        if background {
+            XCTAssertTrue(inbox.presentations.isEmpty, "Background receipts must not claim the screen painted")
+        }
         if let expectsNativePaint {
             XCTAssertEqual(inbox.presentations.contains { $0["nativePagePaint"] as? Bool == true }, expectsNativePaint)
             let confirmations = try await web.evaluateJavaScript("window.hostConfirmations") as? Int ?? -1
