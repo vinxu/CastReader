@@ -1,5 +1,15 @@
 # AGENTS.md
 
+## iOS 1.2.49 Duo 与锁屏翻页修复已送审（2026-10-12）
+
+- 最新验收并送审的应用源码为 main 合并 `6e200ad7f109a750579a2be3e242478e01546ab9`（PR #9；含 PR #7 / #8 的 Duo、导航与 Kindle 回归修复）。工作树 `/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader`；App/Share/Widget/Safari 均为 **1.2.49（84）**，356 个应用/配置文件摘要 `5ccb668e3352175c05c46e4ac71e28697b89746b852283a0d779f30837868bc3`。不得从主目录旧分支覆盖真机。
+- 普通 iPhone/iPad 保持底部导航；只有实际 Duo 系统纵向导航区使用侧边导航。保留折叠过程的场景能力、Kindle 原始页序与跨页整句、投影恢复及用户暂停所有权。微信读书/Google/Kobo 锁屏翻页按已确认源页继续播放，不依赖隐藏页面的动画帧；Kobo 自动使用无动画精确页跳转，旧页探测不提前清除翻页所有权，严禁重复点击跳页。
+- 用户真机接受 Build 84 Kobo：约四分钟锁屏、四次自动跨页；WeRead/Google 真机证据来自 Build 83，Kindle 来自 Build 81。Duo Read/Explain/折叠和普通设备导航通过；本轮完整两区四格真机矩阵未重跑，用户明确接受 Duo 模拟器范围，未改 TTS/账号/额度沿用 1.2.48 证据。历史非全绿/跳过边界见报告，不得扩大 PASS 范围。
+- 28 语本地截图，ASC 29 个条目；**464 张 COMPLETE**：iPhone/iPad 每条 5 张、Duo 每条 6 张（含合屏＋展开）。已准备的 1.2.49 ASO 文案保留，严格核对当前目标与原 pending 快照；不要用已发布 1.2.48 的旧标题覆盖。
+- Build `52b4fe60-e03c-4fe6-97fa-94cbec9e51b5` 为 VALID / APP_STORE_ELIGIBLE；审核单 `7516b784-66d1-4f0b-b04f-b3604c0d67b7` 于北京时间 **15:09:30** 提交，版本/审核单均 WAITING_FOR_REVIEW，审核后自动发布。手机保留同源码 Release 开发签名包 84；原 ASO 自动提交保持暂停。完整记录：`docs/iOS-1.2.49-Release-Report.md`。
+- 后续从最新远端 main 增量迭代，继续执行 `bash scripts/build-voice-toc-integration.sh --check`、`ruby scripts/verify_safari_extension.rb`，保护上述已验收管线；下方仅为历史记录。
+
+
 ## iOS 1.2.48 28 语适配已送审（2026-10-10）
 
 - 最新验收并送审源码为 main 合并 `60b0973c5dd7e3a922349fb157c5ec0af96cc53b`（PR #5 / #6），工作树 `/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader`。App/Share/Widget/Safari 均为 **1.2.48（75）**；466 个应用/配置文件摘要 `5991aa3ba1bd6f8fbd86ac476319376e24a83af9b4d6c3f37cc40330b085feba`。不得从主目录旧分支覆盖真机。
