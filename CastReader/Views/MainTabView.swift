@@ -145,7 +145,7 @@ private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
 struct MainTabView: View {
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.readerHasVerticalNavigation) private var hasVerticalNavigation
     /// Where the floating player sits. Purely visual — the space tab content
     /// gives up for it is measured, not derived from this number, so the two can
     /// no longer drift apart.
@@ -190,7 +190,10 @@ struct MainTabView: View {
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     @State private var viewport = CGSize.zero
     @Environment(\.requestReview) private var requestReview
-    @SceneStorage("reader.selectedTab") private var selectedTab: Int = 0
+    @SceneStorage("reader.selectedTab") private var savedSelectedTab: Int = 0
+    // Native tab gestures need their selection updated in the same render
+    // transaction. SceneStorage is a restoration record, not the live binding.
+    @State private var selectedTab: Int = 0
     @SceneStorage("reader.restoredItemID") private var restoredItemID = ""
     @SceneStorage("reader.restoredOfflineBookID") private var restoredOfflineBookID = ""
     @SceneStorage("reader.restoredMode") private var restoredMode = "read"
@@ -261,8 +264,12 @@ struct MainTabView: View {
                 .environment(\.appViewport, geometry.size)
                 .environment(\.hasBottomImportControl, hasBottomImportControl)
                 .background(ReaderKeyboardRegistration(scene: readerScene, actions: windowKeyboardActions))
-                .onAppear { viewport = geometry.size }
+                .onAppear {
+                    viewport = geometry.size
+                    readerScene.hasVerticalNavigation = hasVerticalNavigation
+                }
                 .onChange(of: geometry.size) { viewport = $0 }
+                .onChange(of: hasVerticalNavigation) { readerScene.hasVerticalNavigation = $0 }
         }
     }
 
@@ -319,15 +326,22 @@ struct MainTabView: View {
 
     private var hasBottomImportControl: Bool {
         if usesLegacyNavigationChrome { return !legacyUsesPadNavigation }
-        return horizontalSizeClass != .regular
+        return usesBottomNavigation
+    }
+
+    private var usesBottomNavigation: Bool {
+        // Only Duo's actual vertical system region owns side navigation.
+        // Ordinary iPad windows keep the same bottom controls as iPhone,
+        // including when their horizontal size class is regular.
+        !hasVerticalNavigation
     }
 
     private var nativeTabBarVisibility: Visibility {
         if importRouter.hideMainChrome { return .hidden }
         // iOS 17 phones use their native three-item bar, including import.
-        // Only the modern compact shell supplies a separate custom bar.
+        // Ordinary modern windows supply one bottom bar; Duo uses its rail.
         if usesLegacyNavigationChrome { return .visible }
-        return horizontalSizeClass == .regular ? .automatic : .hidden
+        return usesBottomNavigation ? .hidden : .automatic
     }
 
     @ViewBuilder
@@ -412,8 +426,9 @@ struct MainTabView: View {
                     miniPlayer
                         .background(miniPlayerTopReporter)
                 }
-                if horizontalSizeClass != .regular {
+                if usesBottomNavigation {
                     iPhoneTabBar
+                        .frame(maxWidth: 480)
                         .background {
                             GeometryReader { proxy in
                                 Color.clear.preference(
@@ -423,6 +438,9 @@ struct MainTabView: View {
                             }
                         }
                         .padding(.bottom, 6)
+                        // UITabBar's floating capsule already has its own
+                        // lower inset. Preserve the released phone placement.
+                        .offset(y: max(0, (readerScene.window?.safeAreaInsets.bottom ?? 34) - 14))
                 }
             }
         }
@@ -693,7 +711,10 @@ struct MainTabView: View {
         }
         .onChange(of: coordinator.session?.document.id) { _ in saveWindowBookmark() }
         .onChange(of: coordinator.mode) { _ in saveWindowBookmark() }
-        .onChange(of: selectedTab) { _ in saveWindowBookmark() }
+        .onChange(of: selectedTab) { tab in
+            savedSelectedTab = tab
+            saveWindowBookmark()
+        }
         .onChange(of: kindleCenter.model?.book.id) { _ in saveWindowBookmark() }
         .onChange(of: kindleCenter.model?.mode) { _ in saveWindowBookmark() }
         .onChange(of: offlineCenter.model?.book.id) { _ in saveWindowBookmark() }
@@ -2352,6 +2373,7 @@ struct MainTabView: View {
         guard !didRestoreWindow, !isRestoringWindow, readerScene.sceneSessionID != nil else { return }
         isRestoringWindow = true
         defer { isRestoringWindow = false; didRestoreWindow = true }
+        selectedTab = [0, 2, 3, 4].contains(savedSelectedTab) ? savedSelectedTab : 0
         ReaderRunLog.write("WINDOW bookmark restore scene=\(readerScene.sceneSessionID ?? "nil") item=\(!restoredItemID.isEmpty) mode=\(restoredMode) scopeMatches=\(restoredScope == AccountContentIsolation.activeStorageID)")
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments

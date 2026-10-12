@@ -2791,6 +2791,10 @@ class CastReaderUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["homeShelfSourcesButton"].exists)
 
+        // StoreKit's rating prompt can arrive after launch and is exposed as a
+        // separate app window, not a SpringBoard alert. Do not rate the app.
+        let ratingLater = app.buttons["Not Now"].firstMatch
+        if ratingLater.waitForExistence(timeout: 2) && ratingLater.isHittable { ratingLater.tap() }
         app.tabBars.buttons["音色"].tap()
         XCTAssertTrue(app.navigationBars["音色"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["探索"].exists)
@@ -4384,6 +4388,72 @@ final class VoiceAlignmentLiveUITests: XCTestCase {
 final class LocalizedStoreCaptureUITests: XCTestCase {
     private var output: URL?
     private var currentName = "startup"
+    /// Uses the real system navigation and already signed-in account. The host
+    /// folds Device Hub in response to the request; never forces orientation.
+    func testDuoVerticalNavigation() throws { try verifyDuoVerticalNavigation(fold: false) }
+    func testDuoVerticalNavigationSurvivesFold() throws { try verifyDuoVerticalNavigation(fold: true) }
+    private func verifyDuoVerticalNavigation(fold: Bool) throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-interfaceLanguage", "zh-Hans", "-CastReaderSkipLibraryOnboarding",
+                               "-CastReaderSkipSignInGate", "-CastReaderIPadAcceptance"]
+        app.launch()
+        let home = app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "house.fill", "首页")).firstMatch
+        let library = app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "books.vertical", "文库")).firstMatch
+        let voices = app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "waveform", "音色")).firstMatch
+        let settings = app.buttons.matching(NSPredicate(format: "identifier == %@ OR label == %@", "gearshape", "设置")).firstMatch
+        func verifyRail() {
+            XCTAssertTrue(home.waitForExistence(timeout: 20))
+            let window = app.windows.firstMatch.frame
+            XCTAssertFalse(app.tabBars["compactNavigationBar"].exists)
+            for item in [home, library, voices, settings] {
+                XCTAssertTrue(item.isHittable, item.identifier)
+                XCTAssertGreaterThan(item.frame.minX, window.width * 0.8)
+                XCTAssertLessThanOrEqual(item.frame.maxY, window.maxY)
+            }
+        }
+        verifyRail()
+        XCTAssertEqual(app.windows.firstMatch.frame.width, 466, accuracy: 1)
+        library.tap()
+        XCTAssertTrue(app.buttons["libraryImportButton"].waitForExistence(timeout: 10))
+        settings.tap()
+        XCTAssertTrue(app.buttons["settingsProLink"].waitForExistence(timeout: 10))
+        home.tap()
+        let plus = app.buttons["plusImportButton"].firstMatch
+        XCTAssertTrue(plus.isHittable)
+        XCTAssertGreaterThan(plus.frame.minX, app.windows.firstMatch.frame.width * 0.8)
+        plus.tap()
+        let cancel = app.buttons["importOptionsCancel"].firstMatch
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10)); cancel.tap()
+        for _ in 0..<3 {
+            voices.tap()
+            XCTAssertTrue(voices.isSelected)
+            home.tap()
+            XCTAssertTrue(home.isSelected)
+        }
+        voices.tap()
+        let search = app.textFields["voiceSearchField"].firstMatch
+        if !search.exists { app.buttons["voiceSearchToggle"].firstMatch.tap() }
+        XCTAssertTrue(search.waitForExistence(timeout: 10)); search.tap(); search.typeText("af_heart\n")
+        if !fold { home.tap(); return }
+        let directory = try XCTUnwrap(output)
+        for (target, width) in [("Open", 951.0), ("Closed", 466.0)] {
+            let token = UUID().uuidString
+            let request: [String: String] = ["requestID": token, "target": target]
+            try JSONSerialization.data(withJSONObject: request).write(to: directory.appendingPathComponent("navigation-fold-request.json"), options: .atomic)
+            XCTAssertTrue(wait(180) {
+                guard let data = try? Data(contentsOf: directory.appendingPathComponent("navigation-fold-ack.json")),
+                      let reply = try? JSONSerialization.jsonObject(with: data) as? [String: String] else { return false }
+                return reply["requestID"] == token
+            }, "Host must complete actual \(target) fold")
+            XCTAssertTrue(wait(15) { abs(app.windows.firstMatch.frame.width - width) <= 1 })
+            verifyRail()
+            XCTAssertTrue(voices.isSelected, "Fold must retain the selected Voice page")
+            XCTAssertEqual(search.value as? String, "af_heart", "Fold must retain the live search state")
+            let capture = XCTAttachment(screenshot: app.screenshot())
+            capture.name = "navigation-\(target)"; capture.lifetime = .keepAlways; add(capture)
+        }
+        home.tap()
+    }
     override func setUpWithError() throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_STORE_CAPTURE"] == "1")
         continueAfterFailure = false
@@ -4485,8 +4555,20 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             XCTAssertTrue(normal.waitForExistence(timeout: 20)); normal.tap()
             app.buttons["Home"].firstMatch.tap()
         }
+        let navigationCapture = env["CASTREADER_STORE_HOME_ONLY"] == "1" || env["CASTREADER_STORE_NAVIGATION_ONLY"] == "1"
         for language in languages {
             currentName = language
+            if navigationCapture {
+                // Capture real localized UI without revisiting Settings for
+                // every unchanged language. Accounts and shelves stay intact.
+                app.terminate()
+                var arguments = app.launchArguments
+                if let index = arguments.firstIndex(of: "-interfaceLanguage") {
+                    arguments[index + 1] = language
+                }
+                app.launchArguments = arguments
+                app.launch()
+            }
             let settingsClose = app.buttons["settingsCloseButton"].firstMatch
             if settingsClose.exists && settingsClose.isHittable { settingsClose.tap() }
             let minimize = app.buttons["kindleMinimizeButton"].firstMatch
@@ -4498,8 +4580,15 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
                 }
                 minimize.tap()
             }
-            if language != "en" {
-                app.buttons["settingsGearButton"].firstMatch.tap()
+            if language != "en" && !navigationCapture {
+                let settings = app.buttons["settingsGearButton"].firstMatch
+                // The outer display hides its header after scrolling to Kindle.
+                // Restore the real header before changing the next UI language.
+                if deviceProfile == "duo-closed" {
+                    for _ in 0..<8 where !settings.isHittable { app.swipeDown() }
+                }
+                XCTAssertTrue(settings.isHittable)
+                settings.tap()
                 let languageLink = app.buttons["settingsLanguageLink"].firstMatch
                 XCTAssertTrue(app.buttons["settingsCloseButton"].waitForExistence(timeout: 10))
                 for _ in 0..<6 where !languageLink.isHittable {
@@ -4582,6 +4671,9 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             XCTAssertTrue(app.buttons["importOptionsCancel"].waitForExistence(timeout: 10))
             try snapshot(app, name: language + "-5")
             app.buttons["importOptionsCancel"].tap()
+            // A navigation-only recapture preserves accepted Read/Explain
+            // images and avoids spending live synthesis on unchanged scenes.
+            if env["CASTREADER_STORE_NAVIGATION_ONLY"] == "1" { continue }
             let book = app.buttons["homeShelfBook.kindle.B002RKRMSY"].firstMatch
             XCTAssertTrue(book.waitForExistence(timeout: 15))
             // On the physical device, SwiftUI can report a visible shelf button

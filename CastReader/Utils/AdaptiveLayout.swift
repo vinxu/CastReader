@@ -11,6 +11,13 @@ private struct BottomImportControlKey: EnvironmentKey {
 }
 
 extension EnvironmentValues {
+    /// Some compact windows have a system-provided vertical navigation region.
+    /// Observe its live placement rather than inferring it from width or model.
+    var readerHasVerticalNavigation: Bool {
+        if #available(iOS 27.1, *) { return toolbarVerticalEdge != nil }
+        return false
+    }
+
     var appViewport: CGSize {
         get { self[AppViewportKey.self] }
         set { self[AppViewportKey.self] = newValue }

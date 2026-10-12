@@ -306,11 +306,17 @@ final class PlayerCoordinator: ObservableObject {
     /// 收起阅读器（不停播放）→ Mini Player 接管。
     func minimize() {
         session?.readVM.flushReadingProgress()
-        guard session != nil else { return }
+        guard let document = session?.document else { return }
         isReaderPresented = false
         // ReaderHost retains the hidden surface's size. A document's visible
         // reader policy must not keep Home sideways after a fold or rotation.
-        AppOrientationLock.unlock(owner: Self.orientationOwner)
+        if scene?.supportsVerticalNavigation == true || scene?.window?.traitCollection.userInterfaceIdiom == .pad {
+            AppOrientationLock.unlock(owner: Self.orientationOwner)
+        } else if isPortraitOnly(document.sourceKind) {
+            AppOrientationLock.lockPortrait(owner: Self.orientationOwner)
+        } else {
+            AppOrientationLock.lockCurrent(owner: Self.orientationOwner)
+        }
     }
 
     /// 从 Mini Player 重新展开完整阅读器。

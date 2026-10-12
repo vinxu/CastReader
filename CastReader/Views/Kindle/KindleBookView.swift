@@ -194,6 +194,7 @@ struct KindleIPadReadHoldView: View {
 }
 
 struct KindleBookView: View {
+    @Environment(\.readerHasVerticalNavigation) private var hasVerticalNavigation
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject private var interfaceLanguage = AppLanguageManager.shared
 
@@ -688,7 +689,7 @@ struct KindleBookView: View {
             #endif
 
             Group {
-            if (hostSize.width > 0 && hostSize.width < 500) || dynamicTypeSize.isAccessibilitySize {
+            if ((hasVerticalNavigation || model.webView.traitCollection.userInterfaceIdiom == .pad) && hostSize.width > 0 && hostSize.width < 500) || dynamicTypeSize.isAccessibilitySize {
                 Menu {
                     Button(LocalizedStringKey(ReaderMode.read.rawValue)) { model.selectMode(.read) }
                     Button(LocalizedStringKey(ReaderMode.explain.rawValue)) { model.selectMode(.explain) }
@@ -1085,8 +1086,8 @@ private struct KindleReadPlaybackBar: View {
         ) {
             Button(action: { if vm.isPlaying || isLoading { pause() } else { start() } }) {
                 KindlePlayButtonContent(
-                    isLoading: false,
-                    isPlaying: vm.isPlaying || isLoading,
+                    isLoading: isLoading && !vm.isPlaying,
+                    isPlaying: vm.isPlaying,
                     size: compact ? 44 : 52
                 )
             }
@@ -1545,8 +1546,8 @@ private struct KindleLandscapeReadOverlay: View {
             ) {
                 Button(action: { if vm.isPlaying || isLoading { pause() } else { start() } }) {
                     KindlePlayButtonContent(
-                        isLoading: false,
-                        isPlaying: vm.isPlaying || isLoading,
+                        isLoading: isLoading && !vm.isPlaying,
+                        isPlaying: vm.isPlaying,
                         size: 44
                     )
                 }
@@ -1693,7 +1694,15 @@ extension Notification.Name {
 }
 
 enum KindleRunLog {
-    #if DEBUG
+    private static let enabled: Bool = {
+        #if DEBUG
+        return true
+        #else
+        // Explicit local diagnostics also work in the release candidate. Normal
+        // App Store launches do not write reading traces.
+        return ProcessInfo.processInfo.arguments.contains("-CastReaderKindleDiagnostics")
+        #endif
+    }()
     private static let queue = DispatchQueue(label: "ai.castreader.kindle-diagnostics", qos: .utility)
     // Accessed only on queue, like ReaderRunLog. Diagnostics must not add disk
     // I/O, date-formatter initialization or regex work at the audio boundary.
@@ -1711,10 +1720,9 @@ enum KindleRunLog {
         append("\n===== launch \(formatter.string(from: Date())) =====\n")
         append("\n===== launch \(formatter.string(from: Date())) =====\n", fileName: "kindle-sentence-stream.log")
     }()
-    #endif
 
     static func write(_ message: String) {
-        #if DEBUG
+        guard enabled else { return }
         let occurredAt = Date()
         let stateName: String
         if Thread.isMainThread {
@@ -1732,10 +1740,8 @@ enum KindleRunLog {
                 append(line, fileName: "kindle-sentence-stream.log")
             }
         }
-        #endif
     }
 
-    #if DEBUG
     private static func sanitized(_ message: String) -> String {
         var value = message
         let replacements: [(String, String)] = [
@@ -1758,8 +1764,8 @@ enum KindleRunLog {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
         let url = docs.appendingPathComponent(fileName)
-        if fileName == "kindle-sentence-stream.log",
-           let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 262_144 {
+        if let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+           size > (fileName == "kindle-sentence-stream.log" ? 262_144 : 4_194_304) {
             try? Data(text.utf8).write(to: url, options: .atomic)
             return
         }
@@ -1776,7 +1782,6 @@ enum KindleRunLog {
             try? handle.close()
         }
     }
-    #endif
 }
 
 /// Read-only diagnostics for the Amazon session behind the Kindle WebViews.
@@ -2193,7 +2198,11 @@ final class KindlePlaybackCenter: ObservableObject {
         // scene must follow a fold/rotation while this reader keeps playing.
         model.setReaderPresented(false)
         isPresented = false
-        AppOrientationLock.unlock(owner: Self.orientationOwner)
+        if model.preservesPlaybackThroughViewportChanges {
+            AppOrientationLock.unlock(owner: Self.orientationOwner)
+        } else {
+            AppOrientationLock.lockCurrent(owner: Self.orientationOwner)
+        }
     }
 
     func close(preservingSleepTimer: Bool = false) {
@@ -2534,9 +2543,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private(set) var needsIPadViewportProjection = false
     private var iPadViewportAudioHold: UUID?
     private var viewportProjectionRevision = 0
+    @Published private(set) var isRecoveringReadHighlight = false
 
     var isPlaybackPreparing: Bool {
-        (isRecoveringIPadViewport && !AudioPlayerService.shared.isPlaying) || isPreparing || isPageTurnResuming || isApplyingReadingSettings || isNavigating
+        (isRecoveringIPadViewport && !AudioPlayerService.shared.isPlaying) || isRecoveringReadHighlight || isPreparing || isPageTurnResuming || isApplyingReadingSettings || isNavigating
     }
 
     var isExplainTransitionLoading: Bool {
@@ -2725,11 +2735,44 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     var readSpeechGeneratorForTesting: (any ParagraphSpeechGenerating)?
     var explainAdvanceReadyForTesting: (() -> Void)?
     var refocusRenderSurfaceForTesting: ((String) async -> Void)?
-    func prepareViewportRecoveryForTesting() {
+    func prepareViewportRecoveryForTesting(recovering: Bool = true) {
         didLoad = true
-        isRecoveringIPadViewport = true
-        needsIPadViewportProjection = true
+        isRecoveringIPadViewport = recovering
+        needsIPadViewportProjection = recovering
     }
+    func prepareSentenceStreamForTesting(pages: [ReadingDocument], refocused: Bool) throws -> [Int] {
+        let session = KindleSentenceStreamSession(scope: .init(bookID: book.id,
+            layoutRevision: readingSettingsRevision, navigationGeneration: preloadEpoch), presentedKey: "fixture-0")
+        sentenceStream = session
+        for (index, document) in pages.enumerated() {
+            let page = CapturedKindlePage(pageIndex: index, key: "fixture-\(index)", pixelFingerprint: nil,
+                sessionId: 1, kind: "fixture", title: document.title, url: nil, progress: nil,
+                visibleTopNorm: 0, visibleBottomNorm: 1, imageData: Data(), document: document,
+                text: document.paragraphs.map(\.text).joined(separator: " "), columnLayout: "single")
+            try acceptKindleSentencePage(.init(afterKey: index == 0 ? "" : "fixture-\(index - 1)",
+                page: page, document: document, startParagraphIndex: nil), session: session)
+        }
+        if let first = session.pages[session.presentedKey] {
+            livePage = first.page
+            livePageKey = first.page.key
+            liveDocument = first.document
+        }
+        rebuildKindleSentenceRoutes(session)
+        if refocused {
+            refocusWordRoutes = textQueue?.wordRoutes ?? [:]
+            refocusMarkBoxes = [0: [0: [CGRect(x: 0.1, y: 0.5, width: 0.1, height: 0.1)]]]
+        }
+        return session.units.map(\.paragraph.id)
+    }
+    func paintSentenceForTesting(paragraph: Int, range: Range<Int>) async -> Bool {
+        let handled = paintKindleSentenceHighlight(paragraph: paragraph, range: range)
+        await visualSyncTask?.value
+        return handled
+    }
+    func highlightRangeForTesting(paragraph: Int, range: Range<Int>) async {
+        await highlightWordRange(paragraphIndex: paragraph, range: range, sequence: nextVisualSyncSequence())
+    }
+    var hasRefocusProjectionForTesting: Bool { refocusMarkBoxes != nil }
     func repairViewportForTesting() async { await repairReaderLayout(reason: "ipad-viewport") }
     var hasScheduledLayoutRepairForTesting: Bool { readerLayoutRepairTask != nil }
     func restorePlaybackKeyVisibilityForTesting(_ key: String, reason: String, maxSteps: Int) async -> Bool {
@@ -2962,7 +3005,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         }
 
-        if hasActivePlaybackSession { needsIPadViewportProjection = true }
+        if preservesPlaybackThroughViewportChanges, hasActivePlaybackSession { needsIPadViewportProjection = true }
         resetViewportPresentation(reason: "surface-size")
         readerSurfaceSize = normalized
         let crop = Self.predictedViewportCrop(for: normalized)
@@ -3066,6 +3109,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return boxes
     }
 
+    var preservesPlaybackThroughViewportChanges: Bool {
+        webView.traitCollection.userInterfaceIdiom == .pad || playbackCenter.scene?.supportsVerticalNavigation == true
+    }
+
     func noteReaderLayoutChange(reason: String) {
         guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
         guard !isPlayerControlOverlayPresented, playerOverlayViewport == nil else {
@@ -3075,7 +3122,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard didLoad else { return }
         // A fold or resize reflows Amazon's page image. Preserve the playback VM,
         // generated explanation and user pause intent; only rebuild OCR geometry.
-        if Self.layoutReasonShouldRestartPlayback(reason), hasActivePlaybackSession {
+        if preservesPlaybackThroughViewportChanges, Self.layoutReasonShouldRestartPlayback(reason), hasActivePlaybackSession {
             if !isRecoveringIPadViewport {
                 if let page = livePage, let image = UIImage(data: page.imageData),
                    let document = mode == .read ? readVM?.document : explainVM?.document {
@@ -10609,7 +10656,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             livePageKey = page.page.key
             liveVisibleTopNorm = page.page.visibleTopNorm
             liveVisibleBottomNorm = page.page.visibleBottomNorm
+            // The confirmed page owns a fresh native overlay. Both halves of
+            // the previous expand/reflow projection must expire together;
+            // retaining its boxes suppresses the new sentence source routes.
             refocusWordRoutes.removeAll()
+            refocusMarkBoxes = nil
             lastHighlightedWordByParagraph.removeAll()
             preparedParagraphKeys.removeAll()
             rebuildKindleSentenceRoutes(session)
@@ -15035,20 +15086,26 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE_HIGHLIGHT p=\(paragraphIndex) mode=segment words=\(range.count) routed=\(compatibleRoutes.count) rects=\(Self.int(from: result["rects"]) ?? 0)")
         } catch {
             KindleRunLog.write("KINDLE read segment highlight error p=\(paragraphIndex) range=\(range.lowerBound)..<\(range.upperBound) error=\(error.localizedDescription)")
+            guard !Task.isCancelled, isCurrentVisualSequence(sequence) else { return }
             if requiresImmediateVisualSync {
-                // Projection mismatch is recoverable and must never destroy the
-                // VM/TTS queue. Pause at the same audio item, rebuild routes from
-                // the visible pixels, then resume the exact item.
+                // An in-flight expand already owns projection repair. A stale
+                // paint must not recursively pause/resume that recovery.
+                guard !isRefocusingPlayback, let owner = readVM else { return }
+                // Retain the exact VM/TTS item while its visual mapping heals.
+                // Expose this wait to the controls and honor a user pause made
+                // during the await instead of automatically playing again.
+                isRecoveringReadHighlight = true
+                defer { isRecoveringReadHighlight = false }
                 let audio = AudioPlayerService.shared
                 let shouldResume = audio.isPlaying
                 _ = audio.pauseActivePlaybackForCoordinator(owner: .readAloud)
                 await refocusPlaybackPosition(reason: "highlight-recovery")
-                if shouldResume,
-                   ownsPlaybackSession,
-                   readVM != nil {
+                let resume = shouldResume && !Task.isCancelled && ownsPlaybackSession &&
+                    readVM === owner && !owner.isPlaybackPausedByUser
+                if resume {
                     _ = audio.playActivePlaybackForCoordinator(owner: .readAloud)
                 }
-                KindleRunLog.write("KINDLE read segment highlight recovered p=\(paragraphIndex) resumed=\(shouldResume ? "Y" : "N")")
+                KindleRunLog.write("KINDLE read segment highlight recovered p=\(paragraphIndex) resumed=\(resume ? "Y" : "N")")
             } else {
                 deferVisualSyncUntilForeground(reason: "segment-highlight-unavailable")
             }

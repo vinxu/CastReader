@@ -99,7 +99,17 @@ final class iPadAdaptationUITests: XCTestCase {
         // The iPadOS adaptable sidebar exposes cells; its top tab bar exposes buttons.
         let button = app.buttons[title].firstMatch
         let cell = app.cells.matching(NSPredicate(format: "label == %@", title)).firstMatch
-        if button.exists && button.isHittable { button.tap() }
+        if button.exists && button.isHittable {
+            // iPadOS 26 exposes both the top-tab container and its child as
+            // buttons. Its suggested activation point can land on the adjacent
+            // tab; use the visible target's center, as a normal touch would.
+            button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
+        else if title == "Settings", app.tabBars["compactNavigationBar"].exists {
+            let settings = app.buttons["settingsGearButton"].firstMatch
+            XCTAssertTrue(settings.waitForExistence(timeout: 10))
+            settings.tap()
+        }
         else {
             XCTAssertTrue(cell.waitForExistence(timeout: 10))
             XCTAssertTrue(cell.isHittable)
@@ -150,12 +160,22 @@ final class iPadAdaptationUITests: XCTestCase {
             capture(app, "module1-home-\(name)")
         }
         rotate(app, .portrait)
-        for title in ["Library", "Voice", "Settings", "Home"] {
+        let bottomNavigation = app.tabBars["compactNavigationBar"].exists
+        let destinations = bottomNavigation ? ["Voice", "Home"] : ["Library", "Voice", "Settings", "Home"]
+        for title in destinations {
             selectTab(title, app: app)
             capture(app, "module1-\(title)-portrait")
             rotate(app, .landscapeLeft)
             capture(app, "module1-\(title)-landscape")
             rotate(app, .portrait)
+        }
+        if bottomNavigation {
+            selectTab("Settings", app: app)
+            capture(app, "module1-Settings-portrait")
+            rotate(app, .landscapeLeft)
+            capture(app, "module1-Settings-landscape")
+            rotate(app, .portrait)
+            app.buttons["settingsCloseButton"].tap()
         }
         app.buttons["plusImportButton"].tap()
         capture(app, "module1-import-portrait")
@@ -498,12 +518,15 @@ final class iPadAdaptationUITests: XCTestCase {
             self.restoreFullScreenWindow(app)
             app.terminate()
         }
+        let compactBar = app.tabBars["compactNavigationBar"]
+        XCTAssertTrue(compactBar.waitForExistence(timeout: 10))
+        XCTAssertGreaterThan(compactBar.frame.minY, app.windows.firstMatch.frame.midY,
+                             "Ordinary iPad navigation must stay at the bottom")
         selectTab("Voice", app: app)
         XCTAssertTrue(app.buttons["voiceBrowseLanguage"].waitForExistence(timeout: 10))
         rotate(app, .landscapeLeft)
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.992, dy: 0.992)).press(forDuration: 1,
             thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.58, dy: 0.65)))
-        let compactBar = app.tabBars["compactNavigationBar"]
         XCTAssertTrue(compactBar.waitForExistence(timeout: 10))
         XCTAssertTrue(compactBar.buttons["Voice"].isSelected, "Resizing must preserve the selected tab")
         XCTAssertTrue(app.buttons["voiceBrowseLanguage"].isHittable)
@@ -515,9 +538,22 @@ final class iPadAdaptationUITests: XCTestCase {
         app.buttons["plusImportButton"].tap()
         XCTAssertTrue(app.buttons["importOptionsCancel"].waitForExistence(timeout: 10))
         app.buttons["importOptionsCancel"].tap()
+        // Import intentionally returns to Home. Select Voice again so the
+        // inverse resize checks the same destination as the compact phase.
+        selectTab("Voice", app: app)
+        XCTAssertTrue(app.buttons["voiceBrowseLanguage"].waitForExistence(timeout: 10))
         restoreFullScreenWindow(app)
-        XCTAssertFalse(compactBar.exists)
-        XCTAssertTrue(app.buttons["Library"].firstMatch.isHittable)
+        XCTAssertTrue(compactBar.exists)
+        XCTAssertTrue(compactBar.buttons["Voice"].isSelected)
+        XCTAssertGreaterThan(compactBar.frame.minY, app.windows.firstMatch.frame.midY)
+        XCTAssertEqual(app.buttons.matching(identifier: "Home").allElementsBoundByIndex.filter(\.isHittable).count, 1)
+        XCTAssertFalse(app.buttons["Library"].firstMatch.isHittable)
+        XCTAssertFalse(app.buttons["Settings"].firstMatch.isHittable)
+        capture(app, "modern-navigation-regular-selection")
+        XCTAssertTrue(app.buttons["voiceBrowseLanguage"].isHittable,
+                      "Restoring the regular window must keep the Voice page")
+        selectTab("Home", app: app)
+        XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["plusImportButton"].isHittable)
         capture(app, "modern-navigation-restored-regular-bar")
         app.terminate()

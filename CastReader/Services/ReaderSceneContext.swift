@@ -9,6 +9,15 @@ final class ReaderSceneContext: ObservableObject, Identifiable {
     let id = UUID()
     let keyboard = ReaderWindowKeyboard()
     weak var window: UIWindow?
+    /// Set by the root's actual system navigation placement, including Duo's
+    /// closed display. A narrow ordinary iPhone must keep its existing policy.
+    var hasVerticalNavigation = false {
+        didSet { if hasVerticalNavigation { supportsVerticalNavigation = true } }
+    }
+    /// The placement can briefly disappear while the same foldable scene
+    /// animates between displays. Playback policy follows its observed
+    /// capability for the scene lifetime, not that transient placement.
+    private(set) var supportsVerticalNavigation = false
     @Published var sceneSessionID: String?
     let player: PlayerCoordinator
     let kindle: KindlePlaybackCenter
