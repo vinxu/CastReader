@@ -734,7 +734,7 @@ struct ReaderHostView: View {
 
     private var usesModeMenu: Bool {
         dynamicTypeSize.isAccessibilitySize
-            || (hostSize.width > 0 && hostSize.width < 500)
+            || ((readerScene.supportsVerticalNavigation || readerScene.window?.traitCollection.userInterfaceIdiom == .pad) && hostSize.width > 0 && hostSize.width < 500)
             || modeControlWidth > min(260, max(140, hostSize.width * 0.58))
     }
 

@@ -264,8 +264,12 @@ struct MainTabView: View {
                 .environment(\.appViewport, geometry.size)
                 .environment(\.hasBottomImportControl, hasBottomImportControl)
                 .background(ReaderKeyboardRegistration(scene: readerScene, actions: windowKeyboardActions))
-                .onAppear { viewport = geometry.size }
+                .onAppear {
+                    viewport = geometry.size
+                    readerScene.hasVerticalNavigation = hasVerticalNavigation
+                }
                 .onChange(of: geometry.size) { viewport = $0 }
+                .onChange(of: hasVerticalNavigation) { readerScene.hasVerticalNavigation = $0 }
         }
     }
 
@@ -434,6 +438,9 @@ struct MainTabView: View {
                             }
                         }
                         .padding(.bottom, 6)
+                        // UITabBar's floating capsule already has its own
+                        // lower inset. Preserve the released phone placement.
+                        .offset(y: max(0, (readerScene.window?.safeAreaInsets.bottom ?? 34) - 14))
                 }
             }
         }

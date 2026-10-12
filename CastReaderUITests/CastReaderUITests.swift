@@ -4555,8 +4555,20 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             XCTAssertTrue(normal.waitForExistence(timeout: 20)); normal.tap()
             app.buttons["Home"].firstMatch.tap()
         }
+        let navigationCapture = env["CASTREADER_STORE_HOME_ONLY"] == "1" || env["CASTREADER_STORE_NAVIGATION_ONLY"] == "1"
         for language in languages {
             currentName = language
+            if navigationCapture {
+                // Capture real localized UI without revisiting Settings for
+                // every unchanged language. Accounts and shelves stay intact.
+                app.terminate()
+                var arguments = app.launchArguments
+                if let index = arguments.firstIndex(of: "-interfaceLanguage") {
+                    arguments[index + 1] = language
+                }
+                app.launchArguments = arguments
+                app.launch()
+            }
             let settingsClose = app.buttons["settingsCloseButton"].firstMatch
             if settingsClose.exists && settingsClose.isHittable { settingsClose.tap() }
             let minimize = app.buttons["kindleMinimizeButton"].firstMatch
@@ -4568,7 +4580,7 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
                 }
                 minimize.tap()
             }
-            if language != "en" {
+            if language != "en" && !navigationCapture {
                 let settings = app.buttons["settingsGearButton"].firstMatch
                 // The outer display hides its header after scrolling to Kindle.
                 // Restore the real header before changing the next UI language.
@@ -4659,6 +4671,9 @@ final class LocalizedStoreCaptureUITests: XCTestCase {
             XCTAssertTrue(app.buttons["importOptionsCancel"].waitForExistence(timeout: 10))
             try snapshot(app, name: language + "-5")
             app.buttons["importOptionsCancel"].tap()
+            // A navigation-only recapture preserves accepted Read/Explain
+            // images and avoids spending live synthesis on unchanged scenes.
+            if env["CASTREADER_STORE_NAVIGATION_ONLY"] == "1" { continue }
             let book = app.buttons["homeShelfBook.kindle.B002RKRMSY"].firstMatch
             XCTAssertTrue(book.waitForExistence(timeout: 15))
             // On the physical device, SwiftUI can report a visible shelf button

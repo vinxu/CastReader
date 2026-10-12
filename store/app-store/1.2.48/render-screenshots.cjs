@@ -3,7 +3,8 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const {chromium} = require('playwright');
 const sharp = require('sharp');
 const root = path.resolve(__dirname, '../../..');
-const report = path.join(root, process.argv.includes('--duo') ? 'reports/ios-duo-20261011' : 'reports/ios-release-1.2.48');
+const reportOverride = process.argv.find(x => x.startsWith('--report='));
+const report = reportOverride ? path.resolve(reportOverride.slice('--report='.length)) : path.join(root, process.argv.includes('--duo') ? 'reports/ios-duo-20261011' : 'reports/ios-release-1.2.48');
 const metadata = JSON.parse(fs.readFileSync(path.join(__dirname, 'metadata.json')));
 const args = process.argv.slice(2), selected = args.filter(x => !x.startsWith('--'));
 const profiles = args.includes('--duo') ? ['duo'] : args.includes('--ipad') ? ['ipad'] : args.includes('--iphone') ? ['iphone'] : ['iphone','ipad'];
@@ -21,6 +22,7 @@ const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',
    if(selected.length && !selected.includes(language)) continue;
    for(let scene=(args.includes('--duo-folded')?6:1);scene<=(args.includes('--duo-folded')?6:5);scene++) {
     if(args.includes('--home-only') && scene!==1) continue;
+    if(args.includes('--navigation-only') && ![1,4,5].includes(scene)) continue;
     const foldedPair=duo && scene===6 && args.includes('--duo-folded');
     let closedBytes=null, closedMeta=null;
     if(foldedPair) {

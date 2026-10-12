@@ -77,6 +77,115 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         try await assertVoicePanelKeepsViewport(mode: .read)
     }
 
+    func testOrdinaryPhoneResizeDoesNotEnterFoldSentenceRecovery() async throws {
+        try await assertPhoneResizePolicy(hasVerticalNavigation: false)
+    }
+
+    func testClosedDuoRetainsFoldSentenceRecoveryAtPhoneWidth() async throws {
+        try await assertPhoneResizePolicy(hasVerticalNavigation: true)
+    }
+
+    func testDuoUnfoldTransientPlacementRetainsPlaybackPolicy() async throws {
+        try await assertPhoneResizePolicy(hasVerticalNavigation: true, transientlyHidden: true)
+    }
+
+    private func assertPhoneResizePolicy(hasVerticalNavigation: Bool, transientlyHidden: Bool = false) async throws {
+        try await loadFixture()
+        window.rootViewController!.traitOverrides.userInterfaceIdiom = .phone
+        window.rootViewController!.view.layoutIfNeeded()
+        XCTAssertEqual(model.webView.traitCollection.userInterfaceIdiom, .phone)
+        let scene = ReaderSceneContext()
+        scene.hasVerticalNavigation = hasVerticalNavigation
+        if transientlyHidden { scene.hasVerticalNavigation = false }
+        XCTAssertEqual(scene.supportsVerticalNavigation, hasVerticalNavigation)
+        let oldScene = model.playbackCenter.scene
+        model.playbackCenter.scene = scene
+        defer { model.playbackCenter.scene = oldScene }
+        model.prepareViewportRecoveryForTesting(recovering: false)
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        _ = makeRefocusOwner()
+        model.updateReaderSurfaceSize(CGSize(width: 430, height: 714))
+        XCTAssertEqual(model.needsIPadViewportProjection, hasVerticalNavigation)
+        model.noteReaderLayoutChange(reason: "reader-size")
+        XCTAssertEqual(model.isRecoveringIPadViewport, hasVerticalNavigation,
+            "An ordinary phone must not seal its sentence input through the fold recovery path")
+    }
+
+    func testAutomaticSentencePageAfterExpandUsesNewSourceWordRoutes() async throws {
+        try await assertSentencePageRoutes(refocused: true)
+    }
+
+    func testAutomaticSentencePageWithoutExpandUsesNewSourceWordRoutes() async throws {
+        try await assertSentencePageRoutes(refocused: false)
+    }
+
+    private func assertSentencePageRoutes(refocused: Bool) async throws {
+        try await loadFixture(initializeControls: false)
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        _ = makeRefocusOwner()
+        var recoveries: [String] = []
+        model.refocusRenderSurfaceForTesting = { recoveries.append($0) }
+        _ = try await model.webView.evaluateJavaScript("""
+          window.fixturePaints=[];
+          Object.defineProperty(window,'__crKindleLiveHighlightWords',{value:(p,start,end)=>{
+            fixturePaints.push({p,start,end});
+            return JSON.stringify({ok:p===0 && start===0 && end===1,
+              reason:'word-range-not-found',rects:1});
+          }}); true;
+        """)
+        let pages = ["Old passage.", "Stromboli continued."].map { text in
+            ReadingDocument(title: "Source route fixture", sourceKind: .kindle, language: "en",
+                paragraphs: [ReadingParagraph(id: 0, text: text,
+                    words: text.split(separator: " ").enumerated().map {
+                        OCRWord(id: $0.offset, text: String($0.element),
+                            bboxNorm: CGRect(x: Double($0.offset) * 0.2, y: 0.5, width: 0.1, height: 0.1))
+                    })])
+        }
+        let units = try model.prepareSentenceStreamForTesting(pages: pages, refocused: refocused)
+        let next = try XCTUnwrap(units.last)
+        XCTAssertGreaterThan(next, 0, "The speech cursor differs from the page-local paragraph ID")
+        XCTAssertEqual(model.hasRefocusProjectionForTesting, refocused)
+        let handled = await model.paintSentenceForTesting(paragraph: next, range: 0..<1)
+        XCTAssertTrue(handled)
+        let paints = try await settingsJSON("JSON.stringify({paints:fixturePaints})")["paints"] as? [[String: Int]]
+        XCTAssertEqual(paints?.last, ["p": 0, "start": 0, "end": 1],
+            "Crossing to the confirmed page must use its local OCR indices, not the global speech paragraph")
+        XCTAssertFalse(model.hasRefocusProjectionForTesting,
+            "An expand projection cannot suppress the next page's confirmed source routes")
+        XCTAssertTrue(recoveries.isEmpty, "A ready page must not pause audio for another OCR/refocus pass")
+        XCTAssertFalse(model.isRecoveringReadHighlight)
+    }
+
+    func testHighlightRecoveryPublishesLoadingAndPreservesUserPause() async throws {
+        try await loadFixture(initializeControls: false)
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        let vm = makeRefocusOwner()
+        _ = try await model.webView.evaluateJavaScript("""
+          Object.defineProperty(window,'__crKindleLiveHighlightWords',{value:()=>
+            JSON.stringify({ok:false,reason:'word-range-not-found'})}); true;
+        """)
+        var pending: CheckedContinuation<Void, Never>?
+        model.refocusRenderSurfaceForTesting = { _ in
+            await withCheckedContinuation { pending = $0 }
+        }
+        let recovery = Task { await model.highlightRangeForTesting(paragraph: 0, range: 0..<1) }
+        defer { recovery.cancel(); pending?.resume(); pending = nil }
+        try await waitUntil { pending != nil }
+        XCTAssertTrue(model.isRecoveringReadHighlight)
+        XCTAssertTrue(model.isPlaybackPreparing, "Controls must expose a real visual-recovery wait as loading")
+        model.pauseReadPlayback()
+        pending?.resume()
+        pending = nil
+        await recovery.value
+        XCTAssertFalse(model.isRecoveringReadHighlight)
+        XCTAssertTrue(vm.isPlaybackPausedByUser)
+        XCTAssertFalse(AudioPlayerService.shared.isPlaying)
+        XCTAssertTrue(model.readVM === vm, "Visual repair must retain the speech owner")
+    }
+
     func testVoicePanelRetainsActualExplainViewportThroughDismissal() async throws {
         try await assertVoicePanelKeepsViewport(mode: .explain)
     }
